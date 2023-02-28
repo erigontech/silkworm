@@ -65,7 +65,7 @@ BlockNum ExecutionEngine::CanonicalChain::find_forking_point(db::RWTxn& tx, Hash
     else {
         auto parent = db::read_header(tx, height - 1, parent_hash);  // todo: maybe use parent cache?
         ensure_invariant(parent.has_value(),
-                         "CanonicalChain could not find parent with hash " + to_hex(parent_hash) +
+                         "canonical chain could not find parent with hash " + to_hex(parent_hash) +
                              " and height " + std::to_string(height - 1) + " for header " + to_hex(header->hash()));
 
         auto ancestor_hash = parent->parent_hash;
@@ -146,14 +146,19 @@ ExecutionEngine::ExecutionEngine(NodeSettings& ns, const db::RWAccess dba)
       db_access_{dba},
       tx_{db_access_.start_rw_tx()},
       pipeline_{&ns},
-      current_status_{ValidChain{0}},
-      canonical_chain_(tx_)
+      canonical_chain_(tx_),
+      canonical_status_{ValidChain{0}},  // we do not know the last status yet
+      last_fork_choice_{0}
 // header_cache_{kCacheSize}
 {
 }
 
 auto ExecutionEngine::current_status() -> VerificationResult {
-    return current_status_;
+    return canonical_status_;
+}
+
+auto ExecutionEngine::last_fork_choice() -> BlockId {
+    return last_fork_choice_;
 }
 
 void ExecutionEngine::insert_header(const BlockHeader& header) {
@@ -186,25 +191,23 @@ void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<BLOCK>>& blocks)
         insert_header(block->header);
         insert_body(*block);
     });
+
+    if (is_first_sync_) tx_.commit_and_renew();
 }
 
 // we need template explicit instantiation
 template void ExecutionEngine::insert_blocks<BlockEx>(std::vector<std::shared_ptr<BlockEx>>& blocks);
 
 auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
-    // "nothing to do" condition
-    if (canonical_chain_.current_head().hash == head_block_hash) {
-        return ValidChain{canonical_chain_.current_head().number};
-    }
+    SILK_TRACE << "ExecutionEngine: verifying chain " << head_block_hash.to_hex();
 
     // retrieve the head header
     auto header = get_header(head_block_hash);
     ensure_invariant(header.has_value(), "header to verify non present");
 
     // db commit policy
-    bool cycle_in_one_tx = !is_first_sync && header->number - canonical_chain_.current_head().number < 4096;
-    if (cycle_in_one_tx)
-        tx_.disable_commit();
+    bool commit_at_each_stage = is_first_sync_;
+    if (!commit_at_each_stage) tx_.disable_commit();
 
     // the new head is on a new fork?
     BlockNum forking_point = canonical_chain_.find_forking_point(tx_, head_block_hash);  // the forking origin
@@ -215,7 +218,7 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
         success_or_throw(unwind_result);  // unwind must complete with success
         // remove last part of canonical
         canonical_chain_.delete_down_to(forking_point);
-    }  // todo for PoS: do not unwind, just find the correct overlay
+    }
 
     // update canonical up to header_hash
     canonical_chain_.update_up_to(header->number, head_block_hash);
@@ -256,39 +259,31 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
     }
 
     // finish
-    current_status_ = verify_result;
+    canonical_status_ = verify_result;
     tx_.enable_commit();
-    tx_.commit_and_renew();  // todo for PoS: do nothing, wait update_fork_choice to persist the correct overlay
+    if (commit_at_each_stage) tx_.commit_and_renew();
     return verify_result;
 }
 
-bool ExecutionEngine::notify_fork_choice_updated(Hash head_block_hash) {
-    // db commit policy
-    bool cycle_in_one_tx = !is_first_sync;
-    std::unique_ptr<db::RWTxn> inner_tx{nullptr};
-    if (cycle_in_one_tx)
-        tx_.disable_commit();
-
-    if (canonical_chain_.current_head().hash != head_block_hash) {  // todo for PoS: choose the corresponding overlay and do commit
+bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash) {
+    if (canonical_chain_.current_head().hash != head_block_hash) {
         // usually update_fork_choice must follow verify_chain with the same header
-        // except when verify_chain returned InvalidChain, so we need to do an unwind
+        // except when verify_chain returned InvalidChain, in which case we expect
+        // update_fork_choice to be called with a previous valid head block hash
 
-        BlockNum forking_point = canonical_chain_.find_forking_point(tx_, head_block_hash);  // the forking origin on the canonical
+        auto verification = verify_chain(head_block_hash);
 
-        auto unwind_result = pipeline_.unwind(tx_, forking_point);
-        success_or_throw(unwind_result);  // unwind must complete with success
+        if (!std::holds_alternative<ValidChain>(verification)) return false;
 
-        // remove last part of canonical
-        canonical_chain_.delete_down_to(forking_point);
-
-        current_status_ = ValidChain{.current_point = forking_point};
+        ensure_invariant(canonical_chain_.current_head().hash == head_block_hash,
+                         "canonical head not aligned with fork choice");
     }
 
-    is_first_sync = false;
+    tx_.commit_and_renew();
 
-    // finish
-    tx_.enable_commit();
-    tx_.commit_and_renew();  // todo for PoS: commit the correct shard and discard the others
+    last_fork_choice_ = canonical_chain_.current_head();
+
+    is_first_sync_ = false;
 
     return true;
 }
@@ -358,14 +353,13 @@ auto ExecutionEngine::get_body(Hash header_hash) -> std::optional<BlockBody> {
 }
 
 auto ExecutionEngine::get_block_progress() -> BlockNum {
-    // header progress
-    auto header_progress = db::stages::read_stage_progress(tx_, db::stages::kHeadersKey);
-    // body progress must be the same for bodies, here we read it only to check the invariant
-    auto body_progress = db::stages::read_stage_progress(tx_, db::stages::kBlockBodiesKey);
-    ensure_invariant(header_progress == body_progress, "header and body progress mismatch: " +
-                                                           std::to_string(header_progress) + " != " + std::to_string(body_progress));
-    // return one
-    return header_progress;
+    BlockNum block_progress = 0;
+
+    read_headers_in_reverse_order(tx_, 1, [&block_progress](BlockHeader&& header) {
+        block_progress = header.number;
+    });
+
+    return block_progress;
 }
 
 auto ExecutionEngine::get_canonical_head() -> ChainHead {
@@ -386,6 +380,19 @@ auto ExecutionEngine::get_last_headers(BlockNum limit) -> std::vector<BlockHeade
     });
 
     return headers;
+}
+
+auto ExecutionEngine::extends_last_fork_choice(BlockNum height, Hash hash) -> bool {
+    while (height > last_fork_choice_.number) {
+        auto header = get_header(height, hash);
+        if (!header) return false;
+        if (header->parent_hash == last_fork_choice_.hash) return true;
+        height--;
+        hash = header->parent_hash;
+    }
+    if (height == last_fork_choice_.number) return hash == last_fork_choice_.hash;
+
+    return false;
 }
 
 }  // namespace silkworm::stagedsync

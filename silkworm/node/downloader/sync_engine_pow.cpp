@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "sync_engine.hpp"
+#include "sync_engine_pow.hpp"
 
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/node/common/measure.hpp>
@@ -125,9 +125,13 @@ void PoWSync::execution_loop() {
     using InvalidChain = ExecutionEngine::InvalidChain;
     bool is_starting_up = true;
 
-    while (!is_stopping()) {  // resume from last known state, we will redo a verify_chain to check all stages are ok
-        NewHeight new_height = is_starting_up ? resume() : forward_and_insert_blocks();
+    while (!is_stopping()) {
+        // resume from previous run or download new blocks
+        NewHeight new_height = is_starting_up
+                                   ? resume()                      // resuming, the following verify_chain is needed to check all stages
+                                   : forward_and_insert_blocks();  // downloads new blocks and inserts them into the db
 
+        // verify the new section of the chain
         log::Info("Sync") << "Verifying chain, head=" << new_height.block_num;
         auto verification = exec_engine_.verify_chain(new_height.hash);
 
@@ -135,32 +139,40 @@ void PoWSync::execution_loop() {
             auto invalid_chain = std::get<InvalidChain>(verification);
             log::Info("Sync") << "Invalid chain, unwinding down to=" << invalid_chain.unwind_point;
 
+            // if it is not valid, unwind the chain
             unwind({invalid_chain.unwind_point});
 
             if (!invalid_chain.bad_headers.empty()) {
                 update_bad_headers(std::move(invalid_chain.bad_headers));
             }
 
+            // notify fork choice update
             log::Info("Sync") << "Notifying fork choice updated, head=" << invalid_chain.unwind_point;
-            exec_engine_.notify_fork_choice_updated(invalid_chain.unwind_head);
+            exec_engine_.notify_fork_choice_update(invalid_chain.unwind_head);
+
         } else if (std::holds_alternative<ValidChain>(verification)) {
             auto valid_chain = std::get<ValidChain>(verification);
             log::Info("Sync") << "Valid chain, new head=" << valid_chain.current_point;
 
+            // if it is valid, do nothing, only check invariant
             ensure_invariant(valid_chain.current_point == new_height.block_num, "Invalid verify_chain result");
 
+            // notify fork choice update
             log::Info("Sync") << "Notifying fork choice updated, new head=" << new_height.block_num;
-            exec_engine_.notify_fork_choice_updated(new_height.hash);
+            exec_engine_.notify_fork_choice_update(new_height.hash);
 
             send_new_block_hash_announcements();  // according to eth/67 they must be done after a full block verification
+
         } else if (std::holds_alternative<ValidationError>(verification)) {
+            // if it returned a validation error, raise an exception
             auto error = std::get<ValidationError>(verification);
             throw std::logic_error("Consensus, validation error, last point=" + std::to_string(error.last_point));
+
         } else {
             throw std::logic_error("Consensus, unknown error");
         }
 
-        is_first_sync_ = is_starting_up ? true : false;
+        is_first_sync_ = is_starting_up;
         is_starting_up = false;
     }
 };

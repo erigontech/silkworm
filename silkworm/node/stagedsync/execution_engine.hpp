@@ -52,13 +52,15 @@ class ExecutionEngine : public Stoppable {
     // actions
     template <std::derived_from<Block> BLOCK>
     void insert_blocks(std::vector<std::shared_ptr<BLOCK>>&);
+    void insert_block(const Block& block);
 
     auto verify_chain(Hash head_block_hash) -> VerificationResult;
 
-    bool notify_fork_choice_updated(Hash head_block_hash);
+    bool notify_fork_choice_update(Hash head_block_hash);
 
     // state
-    VerificationResult current_status();
+    auto current_status() -> VerificationResult;
+    auto last_fork_choice() -> BlockId;
     auto get_canonical_head() -> ChainHead;
     auto get_block_progress() -> BlockNum;
 
@@ -68,21 +70,13 @@ class ExecutionEngine : public Stoppable {
     auto get_header_td(BlockNum, Hash) -> std::optional<Total_Difficulty>;
     auto get_body(Hash) -> std::optional<BlockBody>;
     auto get_last_headers(BlockNum limit) -> std::vector<BlockHeader>;
+    auto extends_last_fork_choice(BlockNum, Hash) -> bool;
 
   protected:
     void insert_header(const BlockHeader&);
     void insert_body(const Block&);
-    void insert_block(const Block& block);
 
     std::set<Hash> collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain);
-
-    NodeSettings& node_settings_;
-    db::RWAccess db_access_;
-    db::RWTxn tx_;
-    ExecutionPipeline pipeline_;
-    bool is_first_sync{true};
-    VerificationResult current_status_;
-    // lru_cache<Hash, BlockHeader> header_cache_; // todo: use cache if improve performances
 
     class CanonicalChain {
       public:
@@ -106,6 +100,18 @@ class ExecutionEngine : public Stoppable {
 
         static constexpr size_t kCacheSize = 1000;
         lru_cache<BlockNum, Hash> canonical_cache_;
-    } canonical_chain_;
+    };
+
+    NodeSettings& node_settings_;
+    db::RWAccess db_access_;
+    db::RWTxn tx_;
+    bool is_first_sync_{true};
+    // lru_cache<Hash, BlockHeader> header_cache_;  // use cache if it improves performances
+
+    ExecutionPipeline pipeline_;
+
+    CanonicalChain canonical_chain_;
+    VerificationResult canonical_status_;
+    BlockId last_fork_choice_;
 };
 }  // namespace silkworm::stagedsync

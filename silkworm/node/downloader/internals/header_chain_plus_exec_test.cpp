@@ -200,7 +200,7 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(db::read_canonical_hash(tx, 2) == header2_hash);
 
         // update the fork choice
-        exec_engine.notify_fork_choice_updated(header2_hash);
+        exec_engine.notify_fork_choice_update(header2_hash);
 
         // check db content
         REQUIRE(db::read_head_header_hash(tx) == header2_hash);
@@ -318,7 +318,7 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(db::read_canonical_hash(tx, 2) == header2_hash);
 
         // update the fork choice
-        exec_engine.notify_fork_choice_updated(header2_hash);
+        exec_engine.notify_fork_choice_update(header2_hash);
 
         // check db content
         REQUIRE(db::read_head_header_hash(tx) == header2_hash);
@@ -442,7 +442,7 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(db::read_canonical_head(tx) == std::make_tuple(1, header1b_hash));
 
         // update the fork choice
-        exec_engine.notify_fork_choice_updated(header1b_hash);
+        exec_engine.notify_fork_choice_update(header1b_hash);
 
         // check db content
         REQUIRE(db::read_head_header_hash(tx) == header1b_hash);
@@ -565,7 +565,7 @@ TEST_CASE("Headers receiving and saving") {
         REQUIRE(db::read_canonical_head(tx) == std::make_tuple(2, header2_hash));
 
         // update the fork choice
-        exec_engine.notify_fork_choice_updated(header2_hash);
+        exec_engine.notify_fork_choice_update(header2_hash);
 
         // check db content
         REQUIRE(db::read_head_header_hash(tx) == header2_hash);

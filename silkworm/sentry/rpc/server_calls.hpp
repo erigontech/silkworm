@@ -360,8 +360,26 @@ class PenalizePeerCall : public sw_rpc::server::UnaryCall<proto::PenalizePeerReq
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceState& /*state*/) {
-        co_await agrpc::finish_with_error(responder_, grpc::Status{grpc::StatusCode::UNIMPLEMENTED, "PenalizePeerCall"});
+    awaitable<void> operator()(const ServiceState& state) {
+        auto peer_public_key = interfaces::peer_public_key_from_id(request_.peer_id());
+
+        co_await state.peer_penalize_calls_channel.send({peer_public_key});
+
+        co_await agrpc::finish(responder_, protobuf::Empty{}, grpc::Status::OK);
+    }
+};
+
+// rpc PeerUseless(PeerUselessRequest) returns (google.protobuf.Empty);
+class PeerUselessCall : public sw_rpc::server::UnaryCall<proto::PeerUselessRequest, protobuf::Empty> {
+  public:
+    using Base::UnaryCall;
+
+    awaitable<void> operator()(const ServiceState& state) {
+        auto peer_public_key = interfaces::peer_public_key_from_id(request_.peer_id());
+
+        co_await state.peer_penalize_calls_channel.send({peer_public_key});
+
+        co_await agrpc::finish(responder_, protobuf::Empty{}, grpc::Status::OK);
     }
 };
 

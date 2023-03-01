@@ -132,6 +132,7 @@ static rpc::common::ServiceState make_service_state(
         peer_manager_api.peer_count_calls_channel(),
         peer_manager_api.peers_calls_channel(),
         peer_manager_api.peer_calls_channel(),
+        peer_manager_api.peer_penalize_calls_channel(),
         peer_manager_api.peer_events_calls_channel(),
         std::move(node_info_provider),
     };

@@ -33,13 +33,14 @@
 #include <silkworm/sentry/common/timeout.hpp>
 
 #include "auth/handshake.hpp"
-#include "common/disconnect_message.hpp"
 #include "ping_message.hpp"
+#include "rlpx_common/disconnect_message.hpp"
 
 namespace silkworm::sentry::rlpx {
 
 using namespace std::chrono_literals;
 using namespace boost::asio;
+using namespace rlpx_common;
 
 Peer::Peer(
     any_io_executor&& executor,
@@ -132,6 +133,7 @@ awaitable<void> Peer::handle() {
 
         handshake_promise_.set_value(true);
 
+        bool is_disconnecting = false;
         bool is_cancelled = false;
         bool is_ping_timed_out = false;
 
@@ -140,6 +142,8 @@ awaitable<void> Peer::handle() {
                 send_messages(message_stream) &&
                 receive_messages(message_stream) &&
                 ping_periodically(message_stream));
+        } catch (const DisconnectedError&) {
+            is_disconnecting = true;
         } catch (const PingTimeoutError&) {
             is_ping_timed_out = true;
         } catch (const boost::system::system_error& ex) {
@@ -148,6 +152,13 @@ awaitable<void> Peer::handle() {
             } else {
                 throw;
             }
+        }
+
+        if (is_disconnecting) {
+            log::Debug() << "Peer::handle disconnecting";
+            auto reason = disconnect_reason_.get().value_or(DisconnectReason::DisconnectRequested);
+            co_await (message_stream.send(DisconnectMessage{reason}.to_message()) ||
+                      common::Timeout::after(kPeerDisconnectTimeout));
         }
 
         if (is_cancelled) {
@@ -166,10 +177,8 @@ awaitable<void> Peer::handle() {
 
     } catch (const auth::Handshake::DisconnectError&) {
         log::Debug() << "Peer::handle DisconnectError";
-        co_return;
     } catch (const common::Timeout::ExpiredError&) {
         log::Debug() << "Peer::handle timeout expired";
-        co_return;
     } catch (const boost::system::system_error& ex) {
         if (is_fatal_network_error(ex)) {
             log::Debug() << "Peer::handle network error: " << ex.what();
@@ -206,7 +215,8 @@ awaitable<void> Peer::drop(DisconnectReason reason) {
                   common::Timeout::after(kPeerDisconnectTimeout));
     } catch (const auth::Handshake::DisconnectError&) {
         log::Debug() << "Peer::drop DisconnectError";
-        co_return;
+    } catch (const common::Timeout::ExpiredError&) {
+        log::Debug() << "Peer::drop timeout expired";
     } catch (const boost::system::system_error& ex) {
         if (is_fatal_network_error(ex)) {
             log::Debug() << "Peer::drop network error: " << ex.what();
@@ -221,6 +231,12 @@ awaitable<void> Peer::drop(DisconnectReason reason) {
         log::Error() << "Peer::drop exception: " << ex.what();
         throw;
     }
+}
+
+void Peer::disconnect(DisconnectReason reason) {
+    log::Debug() << "Peer::disconnect reason " << static_cast<int>(reason);
+    disconnect_reason_.set({reason});
+    this->close();
 }
 
 awaitable<framing::MessageStream> Peer::handshake() {
@@ -245,6 +261,7 @@ void Peer::close() {
     try {
         send_message_channel_.close();
         receive_message_channel_.close();
+        pong_channel_.close();
     } catch (const std::exception& ex) {
         log::Warning() << "Peer::close exception: " << ex.what();
     }
@@ -289,7 +306,14 @@ awaitable<void> Peer::send_message(common::Message message) {
 awaitable<void> Peer::send_messages(framing::MessageStream& message_stream) {
     // loop until message_stream exception
     while (true) {
-        auto message = co_await send_message_channel_.receive();
+        common::Message message;
+        try {
+            message = co_await send_message_channel_.receive();
+        } catch (const boost::system::system_error& ex) {
+            if (ex.code() == boost::asio::experimental::error::channel_closed)
+                throw DisconnectedError();
+            throw;
+        }
         co_await message_stream.send(std::move(message));
     }
 }
@@ -315,11 +339,23 @@ awaitable<void> Peer::receive_messages(framing::MessageStream& message_stream) {
             co_await message_stream.send(PongMessage{}.to_message());
             continue;
         } else if (message.id == PongMessage::kId) {
-            co_await pong_channel_.send(std::move(message));
+            try {
+                co_await pong_channel_.send(std::move(message));
+            } catch (const boost::system::system_error& ex) {
+                if (ex.code() == boost::asio::experimental::error::channel_closed)
+                    throw DisconnectedError();
+                throw;
+            }
             continue;
         }
 
-        co_await receive_message_channel_.send(std::move(message));
+        try {
+            co_await receive_message_channel_.send(std::move(message));
+        } catch (const boost::system::system_error& ex) {
+            if (ex.code() == boost::asio::experimental::error::channel_closed)
+                throw DisconnectedError();
+            throw;
+        }
     }
 }
 
@@ -336,6 +372,10 @@ awaitable<void> Peer::ping_periodically(framing::MessageStream& message_stream) 
             co_await (pong_channel_.receive() || common::Timeout::after(kPeerPingInterval / 3));
         } catch (const common::Timeout::ExpiredError&) {
             throw PingTimeoutError();
+        } catch (const boost::system::system_error& ex) {
+            if (ex.code() == boost::asio::experimental::error::channel_closed)
+                throw DisconnectedError();
+            throw;
         }
     }
 }

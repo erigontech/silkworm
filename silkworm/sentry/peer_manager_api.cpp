@@ -29,6 +29,7 @@
 
 #include <silkworm/node/common/log.hpp>
 #include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
+#include <silkworm/sentry/rlpx/rlpx_common/disconnect_reason.hpp>
 
 namespace silkworm::sentry {
 
@@ -43,6 +44,7 @@ awaitable<void> PeerManagerApi::start(std::shared_ptr<PeerManagerApi> self) {
         self->handle_peer_count_calls() &&
         self->handle_peers_calls() &&
         self->handle_peer_calls() &&
+        self->handle_peer_penalize_calls() &&
         self->handle_peer_events_calls() &&
         self->events_unsubscription_tasks_.wait() &&
         self->forward_peer_events();
@@ -116,6 +118,20 @@ awaitable<void> PeerManagerApi::handle_peer_calls() {
         });
 
         call.result_promise->set_value(info_opt);
+    }
+}
+
+awaitable<void> PeerManagerApi::handle_peer_penalize_calls() {
+    // loop until receive() throws a cancelled exception
+    while (true) {
+        auto peer_public_key_opt = co_await peer_penalize_calls_channel_.receive();
+
+        co_await peer_manager_.enumerate_peers([peer_public_key_opt](std::shared_ptr<rlpx::Peer> peer) {
+            auto key_opt = peer->peer_public_key();
+            if (key_opt && peer_public_key_opt && (key_opt.value() == peer_public_key_opt.value())) {
+                peer->disconnect(rlpx::rlpx_common::DisconnectReason::DisconnectRequested);
+            }
+        });
     }
 }
 

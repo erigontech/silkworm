@@ -18,6 +18,7 @@
 
 #include <list>
 #include <memory>
+#include <optional>
 
 #include <silkworm/node/concurrency/coroutine.hpp>
 
@@ -26,6 +27,7 @@
 #include <boost/asio/strand.hpp>
 
 #include <silkworm/sentry/common/channel.hpp>
+#include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/event_notifier.hpp>
 #include <silkworm/sentry/common/promise.hpp>
 #include <silkworm/sentry/common/task_group.hpp>
@@ -47,6 +49,7 @@ class PeerManagerApi : public PeerManagerObserver {
           peer_count_calls_channel_(io_context),
           peers_calls_channel_(io_context),
           peer_calls_channel_(io_context),
+          peer_penalize_calls_channel_(io_context),
           peer_events_calls_channel_(io_context),
           strand_(boost::asio::make_strand(io_context)),
           events_unsubscription_tasks_(strand_, 1000),
@@ -66,6 +69,10 @@ class PeerManagerApi : public PeerManagerObserver {
         return peer_calls_channel_;
     }
 
+    common::Channel<std::optional<common::EccPublicKey>>& peer_penalize_calls_channel() {
+        return peer_penalize_calls_channel_;
+    }
+
     common::Channel<rpc::common::PeerEventsCall>& peer_events_calls_channel() {
         return peer_events_calls_channel_;
     }
@@ -74,6 +81,7 @@ class PeerManagerApi : public PeerManagerObserver {
     boost::asio::awaitable<void> handle_peer_count_calls();
     boost::asio::awaitable<void> handle_peers_calls();
     boost::asio::awaitable<void> handle_peer_calls();
+    boost::asio::awaitable<void> handle_peer_penalize_calls();
     boost::asio::awaitable<void> handle_peer_events_calls();
     boost::asio::awaitable<void> unsubscribe_peer_events_on_signal(std::shared_ptr<common::EventNotifier> unsubscribe_signal);
     boost::asio::awaitable<void> forward_peer_events();
@@ -87,6 +95,7 @@ class PeerManagerApi : public PeerManagerObserver {
     common::Channel<std::shared_ptr<common::Promise<size_t>>> peer_count_calls_channel_;
     common::Channel<std::shared_ptr<common::Promise<rpc::common::PeerInfos>>> peers_calls_channel_;
     common::Channel<rpc::common::PeerCall> peer_calls_channel_;
+    common::Channel<std::optional<common::EccPublicKey>> peer_penalize_calls_channel_;
     common::Channel<rpc::common::PeerEventsCall> peer_events_calls_channel_;
 
     struct Subscription {

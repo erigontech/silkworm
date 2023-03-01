@@ -17,8 +17,10 @@
 #pragma once
 
 #include <functional>
+#include <optional>
 
 #include <silkworm/sentry/common/channel.hpp>
+#include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/promise.hpp>
 #include <silkworm/sentry/eth/status_data.hpp>
 
@@ -41,6 +43,7 @@ struct ServiceState {
     sentry::common::Channel<std::shared_ptr<sentry::common::Promise<size_t>>>& peer_count_calls_channel;
     sentry::common::Channel<std::shared_ptr<sentry::common::Promise<PeerInfos>>>& peers_calls_channel;
     sentry::common::Channel<PeerCall>& peer_calls_channel;
+    sentry::common::Channel<std::optional<sentry::common::EccPublicKey>>& peer_penalize_calls_channel;
     sentry::common::Channel<PeerEventsCall>& peer_events_calls_channel;
 
     std::function<rpc::common::NodeInfo()> node_info_provider;

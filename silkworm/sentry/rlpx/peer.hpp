@@ -39,9 +39,9 @@
 #include <silkworm/sentry/common/task_group.hpp>
 
 #include "auth/hello_message.hpp"
-#include "common/disconnect_reason.hpp"
 #include "framing/message_stream.hpp"
 #include "protocol.hpp"
+#include "rlpx_common/disconnect_reason.hpp"
 
 namespace silkworm::sentry::rlpx {
 
@@ -108,7 +108,8 @@ class Peer {
     ~Peer();
 
     static boost::asio::awaitable<void> start(std::shared_ptr<Peer> peer);
-    static boost::asio::awaitable<void> drop(const std::shared_ptr<Peer>& peer, DisconnectReason reason);
+    static boost::asio::awaitable<void> drop(const std::shared_ptr<Peer>& peer, rlpx_common::DisconnectReason reason);
+    void disconnect(rlpx_common::DisconnectReason reason);
     static boost::asio::awaitable<bool> wait_for_handshake(std::shared_ptr<Peer> self);
 
     static void post_message(const std::shared_ptr<Peer>& peer, const common::Message& message);
@@ -145,8 +146,8 @@ class Peer {
   private:
     static boost::asio::awaitable<void> handle(std::shared_ptr<Peer> peer);
     boost::asio::awaitable<void> handle();
-    static boost::asio::awaitable<void> drop_in_strand(std::shared_ptr<Peer> peer, DisconnectReason reason);
-    boost::asio::awaitable<void> drop(DisconnectReason reason);
+    static boost::asio::awaitable<void> drop_in_strand(std::shared_ptr<Peer> peer, rlpx_common::DisconnectReason reason);
+    boost::asio::awaitable<void> drop(rlpx_common::DisconnectReason reason);
     boost::asio::awaitable<framing::MessageStream> handshake();
     void close();
 
@@ -169,6 +170,7 @@ class Peer {
 
     common::AtomicValue<std::optional<auth::HelloMessage>> hello_message_{std::nullopt};
     common::Promise<bool> handshake_promise_;
+    common::AtomicValue<std::optional<rlpx_common::DisconnectReason>> disconnect_reason_{std::nullopt};
 
     boost::asio::strand<boost::asio::any_io_executor> strand_;
     common::TaskGroup send_message_tasks_;

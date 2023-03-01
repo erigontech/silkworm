@@ -37,8 +37,8 @@
 #include <silkworm/sentry/common/task_group.hpp>
 #include <silkworm/sentry/discovery/discovery.hpp>
 #include <silkworm/sentry/rlpx/client.hpp>
-#include <silkworm/sentry/rlpx/common/disconnect_reason.hpp>
 #include <silkworm/sentry/rlpx/peer.hpp>
+#include <silkworm/sentry/rlpx/rlpx_common/disconnect_reason.hpp>
 #include <silkworm/sentry/rlpx/server.hpp>
 
 namespace silkworm::sentry {
@@ -79,7 +79,7 @@ class PeerManager {
     boost::asio::awaitable<void> wait_for_peer_handshake(std::shared_ptr<rlpx::Peer> peer);
     boost::asio::awaitable<void> drop_peer(
         std::shared_ptr<rlpx::Peer> peer,
-        DisconnectReason reason);
+        rlpx::rlpx_common::DisconnectReason reason);
 
     static constexpr size_t kMaxSimultaneousDropPeerTasks = 10;
 

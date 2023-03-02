@@ -43,13 +43,13 @@ if(CONAN_PACKAGE_MANAGER) # CMAKE CONAN START
     boost/1.81.0
     catch2/2.13.9
     cli11/2.2.0
-    grpc/1.48.0
+    grpc/1.44.0
     ms-gsl/4.0.0
-    nlohmann_json/3.10.5
-    openssl/1.1.1q
+    nlohmann_json/3.11.2
+    openssl/1.1.1o
     protobuf/3.21.4
-    snappy/1.1.9
-    zlib/1.2.12
+    snappy/1.1.7
+    zlib/1.2.13
   )
   
   conan_cmake_configure(REQUIRES ${DEPENDENCY_LIST} GENERATORS cmake_find_package)

@@ -18,6 +18,8 @@
 
 #include <cstdint>
 
+namespace silkworm::sentry::rlpx::rlpx_common {
+
 enum class DisconnectReason : uint8_t {
     DisconnectRequested = 0,
     UselessPeer = 3,
@@ -25,3 +27,5 @@ enum class DisconnectReason : uint8_t {
     ClientQuitting = 8,
     PingTimeout = 11,
 };
+
+}  // namespace silkworm::sentry::rlpx::rlpx_common

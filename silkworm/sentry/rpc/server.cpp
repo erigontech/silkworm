@@ -70,7 +70,7 @@ ServerImpl::ServerImpl(
     const silkworm::rpc::ServerConfig& config,
     ServiceState state)
     : silkworm::rpc::Server(config),
-      state_(state) {
+      state_(std::move(state)) {
     log::Info() << "Server created"
                 << " listening on: " << config.address_uri() << ";"
                 << " contexts: " << config.num_contexts();
@@ -105,13 +105,14 @@ void ServerImpl::register_request_calls(agrpc::GrpcContext* grpc_context) {
     request_repeatedly<PeerCountCall>(&AsyncService::RequestPeerCount, grpc_context);
     request_repeatedly<PeerByIdCall>(&AsyncService::RequestPeerById, grpc_context);
     request_repeatedly<PenalizePeerCall>(&AsyncService::RequestPenalizePeer, grpc_context);
+    request_repeatedly<PeerUselessCall>(&AsyncService::RequestPeerUseless, grpc_context);
     request_repeatedly<PeerEventsCall>(&AsyncService::RequestPeerEvents, grpc_context);
 }
 
 Server::Server(
     const silkworm::rpc::ServerConfig& config,
     ServiceState state)
-    : p_impl_(std::make_unique<ServerImpl>(config, state)) {}
+    : p_impl_(std::make_unique<ServerImpl>(config, std::move(state))) {}
 
 Server::~Server() {
     log::Trace() << "silkworm::sentry::rpc::Server::~Server";

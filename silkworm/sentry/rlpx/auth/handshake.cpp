@@ -19,8 +19,8 @@
 #include <silkworm/node/common/log.hpp>
 #include <silkworm/sentry/common/awaitable_wait_for_one.hpp>
 #include <silkworm/sentry/common/timeout.hpp>
-#include <silkworm/sentry/rlpx/common/disconnect_message.hpp>
 #include <silkworm/sentry/rlpx/framing/framing_cipher.hpp>
+#include <silkworm/sentry/rlpx/rlpx_common/disconnect_message.hpp>
 
 #include "auth_initiator.hpp"
 #include "auth_recipient.hpp"
@@ -75,7 +75,7 @@ boost::asio::awaitable<Handshake::HandshakeResult> Handshake::execute(common::So
 
     Message reply_message = std::get<Message>(co_await (message_stream.receive() || timeout()));
     if (reply_message.id != HelloMessage::kId) {
-        if (reply_message.id == DisconnectMessage::kId) {
+        if (reply_message.id == rlpx_common::DisconnectMessage::kId) {
             throw DisconnectError();
         } else {
             throw std::runtime_error("Handshake: unexpected RLPx message");

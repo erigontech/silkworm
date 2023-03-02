@@ -23,7 +23,7 @@
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/node/common/decoding_exception.hpp>
 
-namespace silkworm::sentry::rlpx {
+namespace silkworm::sentry::rlpx::rlpx_common {
 
 using sentry::common::Message;
 
@@ -53,4 +53,4 @@ DisconnectMessage DisconnectMessage::from_message(const Message& message) {
     return rlp_decode(message.data);
 }
 
-}  // namespace silkworm::sentry::rlpx
+}  // namespace silkworm::sentry::rlpx::rlpx_common

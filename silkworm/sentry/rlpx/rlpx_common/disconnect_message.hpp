@@ -21,7 +21,7 @@
 
 #include "disconnect_reason.hpp"
 
-namespace silkworm::sentry::rlpx {
+namespace silkworm::sentry::rlpx::rlpx_common {
 
 struct DisconnectMessage {
     [[nodiscard]] Bytes rlp_encode() const;
@@ -34,4 +34,4 @@ struct DisconnectMessage {
     DisconnectReason reason{DisconnectReason::DisconnectRequested};
 };
 
-}  // namespace silkworm::sentry::rlpx
+}  // namespace silkworm::sentry::rlpx::rlpx_common

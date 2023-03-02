@@ -55,7 +55,7 @@ awaitable<void> PeerManager::start_in_strand(common::Channel<std::shared_ptr<rlp
         if (peers_.size() + starting_peers_.size() >= max_peers_) {
             if (drop_peer_tasks_count_ < kMaxSimultaneousDropPeerTasks) {
                 drop_peer_tasks_count_++;
-                drop_peer_tasks_.spawn(strand_, drop_peer(peer, DisconnectReason::TooManyPeers));
+                drop_peer_tasks_.spawn(strand_, drop_peer(peer, rlpx::rlpx_common::DisconnectReason::TooManyPeers));
             } else {
                 log::Warning() << "PeerManager::start_in_strand too many extra peers to disconnect gracefully, dropping a peer on the floor";
             }
@@ -100,7 +100,7 @@ boost::asio::awaitable<void> PeerManager::wait_for_peer_handshake(std::shared_pt
 
 boost::asio::awaitable<void> PeerManager::drop_peer(
     std::shared_ptr<rlpx::Peer> peer,
-    DisconnectReason reason) {
+    rlpx::rlpx_common::DisconnectReason reason) {
     auto _ = gsl::finally([this] { this->drop_peer_tasks_count_--; });
 
     try {

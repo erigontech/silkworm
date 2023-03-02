@@ -17,16 +17,13 @@
 #include "block_exchange.hpp"
 
 #include <chrono>
-#include <thread>
 
-#include <silkworm/node/common/decoding_exception.cpp>
+#include <silkworm/node/common/decoding_exception.hpp>
 #include <silkworm/node/common/log.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/sync/internals/random_number.hpp>
 #include <silkworm/sync/messages/inbound_message.hpp>
 #include <silkworm/sync/messages/internal_message.hpp>
-#include <silkworm/sync/messages/outbound_get_block_bodies.hpp>
-#include <silkworm/sync/messages/outbound_get_block_headers.hpp>
 #include <silkworm/sync/rpc/penalize_peer.hpp>
 
 namespace silkworm {

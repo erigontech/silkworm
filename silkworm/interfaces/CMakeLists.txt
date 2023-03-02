@@ -19,22 +19,41 @@ set(protobuf_MODULE_COMPATIBLE TRUE)
 find_package(Protobuf CONFIG REQUIRED)
 find_program(PROTOBUF_PROTOC protoc REQUIRED)
 
+# Find Protobuf version
+execute_process(
+    COMMAND "${PROTOBUF_PROTOC}" --version
+    OUTPUT_VARIABLE PROTOC_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+string(SUBSTRING "${PROTOC_VERSION}" 10 -1 PROTOC_VERSION)
+
 # Find gRPC installation
 find_package(gRPC CONFIG REQUIRED)
 find_program(GRPC_CPP_PLUGIN_EXECUTABLE grpc_cpp_plugin REQUIRED)
 
 set(PROTO_PATH "${CMAKE_CURRENT_SOURCE_DIR}/proto")
+set(OUT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${PROTOC_VERSION}")
+set(OUT_PATH_SYMLINK "${CMAKE_CURRENT_SOURCE_DIR}")
 
 set(PROTOC_ARGS
-    --cpp_out "${CMAKE_CURRENT_SOURCE_DIR}"
+    --cpp_out "${OUT_PATH}"
     -I "${PROTO_PATH}"
     --experimental_allow_proto3_optional
 )
 set(PROTOC_ARGS_GRPC
     ${PROTOC_ARGS}
-    --grpc_out "${CMAKE_CURRENT_SOURCE_DIR}"
+    --grpc_out "${OUT_PATH}"
     "--plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN_EXECUTABLE}"
 )
+
+macro(create_symlink_target target link_path target_path)
+    add_custom_command(
+        OUTPUT "${link_path}"
+        COMMAND "${CMAKE_COMMAND}"
+        ARGS -E create_symlink "${target_path}" "${link_path}"
+        COMMENT "${target}: symlink ${link_path} -> ${target_path}")
+    add_custom_target(${target} DEPENDS "${link_path}")
+endmacro()
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Types
@@ -43,14 +62,23 @@ set(PROTOC_ARGS_GRPC
 set(TYPES_PROTO "${PROTO_PATH}/types/types.proto")
 
 # Generate sources
-set(TYPES_PROTO_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/types/types.pb.cc")
-set(TYPES_PROTO_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/types/types.pb.h")
+set(TYPES_PROTO_SOURCES "${OUT_PATH}/types/types.pb.cc")
+set(TYPES_PROTO_HEADERS "${OUT_PATH}/types/types.pb.h")
 
 add_custom_command(
     OUTPUT "${TYPES_PROTO_SOURCES}" "${TYPES_PROTO_HEADERS}"
     COMMAND ${PROTOBUF_PROTOC}
     ARGS ${PROTOC_ARGS} "${TYPES_PROTO}"
     DEPENDS "${TYPES_PROTO}"
+    COMMENT "Running C++ gRPC compiler on ${TYPES_PROTO}"
+)
+
+create_symlink_target(generate_types_proto_symlink "${OUT_PATH_SYMLINK}/types" "${OUT_PATH}/types")
+
+add_custom_target(
+    generate_types_proto
+    DEPENDS "${TYPES_PROTO_SOURCES}" "${TYPES_PROTO_HEADERS}"
+            generate_types_proto_symlink
 )
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -60,24 +88,26 @@ add_custom_command(
 set(SENTRY_PROTO "${PROTO_PATH}/p2psentry/sentry.proto")
 
 # Generate sources
-set(SENTRY_PROTO_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/p2psentry/sentry.pb.cc")
-set(SENTRY_PROTO_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/p2psentry/sentry.pb.h")
-set(SENTRY_GRPC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/p2psentry/sentry.grpc.pb.cc")
-set(SENTRY_GRPC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/p2psentry/sentry.grpc.pb.h")
+set(SENTRY_PROTO_SOURCES "${OUT_PATH}/p2psentry/sentry.pb.cc")
+set(SENTRY_PROTO_HEADERS "${OUT_PATH}/p2psentry/sentry.pb.h")
+set(SENTRY_GRPC_SOURCES "${OUT_PATH}/p2psentry/sentry.grpc.pb.cc")
+set(SENTRY_GRPC_HEADERS "${OUT_PATH}/p2psentry/sentry.grpc.pb.h")
 
 add_custom_command(
     OUTPUT "${SENTRY_PROTO_SOURCES}" "${SENTRY_PROTO_HEADERS}" "${SENTRY_GRPC_SOURCES}" "${SENTRY_GRPC_HEADERS}"
     COMMAND ${PROTOBUF_PROTOC}
     ARGS ${PROTOC_ARGS_GRPC} "${SENTRY_PROTO}"
     DEPENDS "${SENTRY_PROTO}"
+    COMMENT "Running C++ gRPC compiler on ${SENTRY_PROTO}"
 )
 
-add_custom_target(generate_types_proto DEPENDS "${TYPES_PROTO_SOURCES}" "${TYPES_PROTO_HEADERS}")
+create_symlink_target(generate_sentry_grpc_symlink "${OUT_PATH_SYMLINK}/p2psentry" "${OUT_PATH}/p2psentry")
 
 add_custom_target(
     generate_sentry_grpc
     DEPENDS "${SENTRY_PROTO_SOURCES}" "${SENTRY_PROTO_HEADERS}" "${SENTRY_GRPC_SOURCES}" "${SENTRY_GRPC_HEADERS}"
             generate_types_proto
+            generate_sentry_grpc_symlink
 )
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -87,10 +117,10 @@ add_custom_target(
 set(KV_PROTO "${PROTO_PATH}/remote/kv.proto")
 
 # Generate sources
-set(KV_PROTO_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/remote/kv.pb.cc")
-set(KV_PROTO_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/remote/kv.pb.h")
-set(KV_GRPC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/remote/kv.grpc.pb.cc")
-set(KV_GRPC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/remote/kv.grpc.pb.h")
+set(KV_PROTO_SOURCES "${OUT_PATH}/remote/kv.pb.cc")
+set(KV_PROTO_HEADERS "${OUT_PATH}/remote/kv.pb.h")
+set(KV_GRPC_SOURCES "${OUT_PATH}/remote/kv.grpc.pb.cc")
+set(KV_GRPC_HEADERS "${OUT_PATH}/remote/kv.grpc.pb.h")
 
 add_custom_command(
     OUTPUT "${KV_PROTO_SOURCES}" "${KV_PROTO_HEADERS}" "${KV_GRPC_SOURCES}" "${KV_GRPC_HEADERS}"
@@ -100,10 +130,13 @@ add_custom_command(
     COMMENT "Running C++ gRPC compiler on ${KV_PROTO}"
 )
 
+create_symlink_target(generate_remote_grpc_symlink "${OUT_PATH_SYMLINK}/remote" "${OUT_PATH}/remote")
+
 add_custom_target(
     generate_kv_grpc
     DEPENDS "${KV_PROTO_SOURCES}" "${KV_PROTO_HEADERS}" "${KV_GRPC_SOURCES}" "${KV_GRPC_HEADERS}"
             generate_types_proto
+            generate_remote_grpc_symlink
 )
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -113,10 +146,10 @@ add_custom_target(
 set(ETHBACKEND_PROTO "${PROTO_PATH}/remote/ethbackend.proto")
 
 # Generate sources
-set(ETHBACKEND_PROTO_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/remote/ethbackend.pb.cc")
-set(ETHBACKEND_PROTO_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/remote/ethbackend.pb.h")
-set(ETHBACKEND_GRPC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/remote/ethbackend.grpc.pb.cc")
-set(ETHBACKEND_GRPC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/remote/ethbackend.grpc.pb.h")
+set(ETHBACKEND_PROTO_SOURCES "${OUT_PATH}/remote/ethbackend.pb.cc")
+set(ETHBACKEND_PROTO_HEADERS "${OUT_PATH}/remote/ethbackend.pb.h")
+set(ETHBACKEND_GRPC_SOURCES "${OUT_PATH}/remote/ethbackend.grpc.pb.cc")
+set(ETHBACKEND_GRPC_HEADERS "${OUT_PATH}/remote/ethbackend.grpc.pb.h")
 
 add_custom_command(
     OUTPUT "${ETHBACKEND_PROTO_SOURCES}" "${ETHBACKEND_PROTO_HEADERS}" "${ETHBACKEND_GRPC_SOURCES}" "${ETHBACKEND_GRPC_HEADERS}"
@@ -130,4 +163,5 @@ add_custom_target(
     generate_ethbackend_grpc
     DEPENDS "${ETHBACKEND_PROTO_SOURCES}" "${ETHBACKEND_PROTO_HEADERS}" "${ETHBACKEND_GRPC_SOURCES}" "${ETHBACKEND_GRPC_HEADERS}"
             generate_types_proto
+            generate_remote_grpc_symlink
 )

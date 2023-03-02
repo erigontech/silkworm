@@ -19,7 +19,6 @@
 #include <ostream>
 
 #include <silkworm/node/common/log.hpp>
-#include <silkworm/node/rpc/common/util.hpp>
 
 namespace silkworm::test {
 
@@ -33,7 +32,6 @@ class SetLogVerbosityGuard {
 
   private:
     log::Level current_level_;
-    rpc::Grpc2SilkwormLogGuard grpc_log_guard_;
 };
 
 //! Factory function creating one null output stream (all characters are discarded)

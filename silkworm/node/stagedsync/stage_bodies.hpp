@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <silkworm/core/types/block.hpp>
 #include <silkworm/core/consensus/engine.hpp>
+#include <silkworm/core/types/block.hpp>
 #include <silkworm/node/concurrency/containers.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>

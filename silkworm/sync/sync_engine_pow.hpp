@@ -19,9 +19,9 @@
 #include <silkworm/node/common/log.hpp>
 #include <silkworm/node/common/settings.hpp>
 #include <silkworm/node/concurrency/active_component.hpp>
+#include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/sync/internals/chain_fork_view.hpp>
 #include <silkworm/sync/messages/internal_message.hpp>
-#include <silkworm/node/stagedsync/execution_engine.hpp>
 
 #include "block_exchange.hpp"
 

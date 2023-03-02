@@ -28,10 +28,24 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/rlp/decode.hpp>
 #include <silkworm/core/types/bloom.hpp>
+#include <silkworm/core/types/hash.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/core/types/withdrawal.hpp>
 
 namespace silkworm {
+
+using TotalDifficulty = intx::uint256;
+
+struct BlockId {
+    BlockNum number{};
+    Hash hash;
+};
+
+struct ChainHead {
+    BlockNum height{};
+    Hash hash;
+    TotalDifficulty total_difficulty{};
+};
 
 struct BlockHeader {
     using NonceType = std::array<uint8_t, 8>;
@@ -106,5 +120,22 @@ namespace rlp {
     template <>
     DecodingResult decode(ByteView& from, Block& to) noexcept;
 }  // namespace rlp
+
+// Comparison operator ==
+inline bool operator==(const BlockId& a, const BlockId& b) {
+    return a.number == b.number && a.hash == b.hash;
+}
+
+inline bool operator==(const ChainHead& a, const BlockId& b) {
+    return a.height == b.number && a.hash == b.hash;
+}
+
+inline bool operator==(const BlockId& a, const ChainHead& b) {
+    return a.number == b.height && a.hash == b.hash;
+}
+
+inline bool operator==(const ChainHead& a, const ChainHead& b) {
+    return a.height == b.height && a.hash == b.hash && a.total_difficulty == b.total_difficulty;
+}
 
 }  // namespace silkworm

@@ -33,7 +33,7 @@ if(NOT SILKWORM_CORE_ONLY)
   find_package(CLI11 CONFIG REQUIRED)
 
   add_executable(silkworm silkworm.cpp common.cpp)
-  target_link_libraries(silkworm PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11 $<$<BOOL:${MSVC}>:Kernel32.lib>)
+  target_link_libraries(silkworm PRIVATE silkworm_node silkworm_sync silkworm-buildinfo CLI11::CLI11 $<$<BOOL:${MSVC}>:Kernel32.lib>)
 
   add_executable(check_changes check_changes.cpp)
   target_link_libraries(check_changes PRIVATE silkworm_node CLI11::CLI11 absl::time)
@@ -69,6 +69,6 @@ if(NOT SILKWORM_CORE_ONLY)
   target_link_libraries(sentry PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11 silkworm_sentry)
 
   add_executable(backend_kv_server backend_kv_server.cpp common.cpp)
-  target_link_libraries(backend_kv_server PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11)
+  target_link_libraries(backend_kv_server PRIVATE silkworm_node silkworm_sync silkworm-buildinfo CLI11::CLI11)
 
 endif()

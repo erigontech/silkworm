@@ -22,10 +22,11 @@
 #include <variant>
 #include <vector>
 
+#include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/lru_cache.hpp>
+#include <silkworm/core/types/block.hpp>
 #include <silkworm/node/common/asio_timer.hpp>
 #include <silkworm/node/common/stopwatch.hpp>
-#include <silkworm/node/downloader/internals/types.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 #include <silkworm/node/stagedsync/stage.hpp>
 
@@ -51,7 +52,17 @@ class ExecutionEngine : public Stoppable {
 
     // actions
     template <std::derived_from<Block> BLOCK>
-    void insert_blocks(std::vector<std::shared_ptr<BLOCK>>&);
+    void insert_blocks(std::vector<std::shared_ptr<BLOCK>>& blocks) {
+        SILK_TRACE << "ExecutionEngine: inserting " << blocks.size() << " blocks";
+        if (blocks.empty()) return;
+
+        as_range::for_each(blocks, [&, this](const auto& block) {
+            insert_header(block->header);
+            insert_body(*block);
+        });
+
+        if (is_first_sync_) tx_.commit_and_renew();
+    }
     void insert_block(const Block& block);
 
     auto verify_chain(Hash head_block_hash) -> VerificationResult;
@@ -67,7 +78,7 @@ class ExecutionEngine : public Stoppable {
     auto get_header(Hash) -> std::optional<BlockHeader>;
     auto get_header(BlockNum, Hash) -> std::optional<BlockHeader>;
     auto get_canonical_hash(BlockNum) -> std::optional<Hash>;
-    auto get_header_td(BlockNum, Hash) -> std::optional<Total_Difficulty>;
+    auto get_header_td(BlockNum, Hash) -> std::optional<TotalDifficulty>;
     auto get_body(Hash) -> std::optional<BlockBody>;
     auto get_last_headers(BlockNum limit) -> std::vector<BlockHeader>;
     auto extends_last_fork_choice(BlockNum, Hash) -> bool;

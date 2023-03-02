@@ -32,8 +32,8 @@
 #include <silkworm/node/common/directories.hpp>
 #include <silkworm/node/common/log.hpp>
 #include <silkworm/node/db/mdbx.hpp>
-#include <silkworm/node/downloader/sentry_client.hpp>
 #include <silkworm/node/rpc/common/util.hpp>
+#include <silkworm/sync/sentry_client.hpp>
 
 #include "common.hpp"
 

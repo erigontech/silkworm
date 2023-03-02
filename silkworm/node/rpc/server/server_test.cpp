@@ -56,7 +56,7 @@ static const std::string kTestAddressUri{"localhost:12345"};
 TEST_CASE("Barebone gRPC Server", "[silkworm][node][rpc]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     grpc::ServerBuilder builder;
-    // Add *at least one non-empty* ServerCompletionQueue (otherwise: ASAN SEGV error in Shutdown)
+    // Add *at least one non-empty* ServerCompletionQueue (otherwise: ASAN SIGSEGV error in Shutdown)
     std::unique_ptr<grpc::ServerCompletionQueue> cq = builder.AddCompletionQueue();
     auto alarm = std::make_unique<grpc::Alarm>();
     alarm->Set(cq.get(), gpr_now(GPR_CLOCK_MONOTONIC), reinterpret_cast<void*>(0));

@@ -20,8 +20,7 @@
 
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/downloader/internals/body_sequence.hpp>
-#include <silkworm/node/downloader/internals/db_utils.hpp>
+#include <silkworm/node/db/db_utils.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -182,22 +181,6 @@ void ExecutionEngine::insert_block(const Block& block) {
     insert_body(block);
 }
 
-template <std::derived_from<Block> BLOCK>
-void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<BLOCK>>& blocks) {
-    SILK_TRACE << "ExecutionEngine: inserting " << blocks.size() << " blocks";
-    if (blocks.empty()) return;
-
-    as_range::for_each(blocks, [&, this](const auto& block) {
-        insert_header(block->header);
-        insert_body(*block);
-    });
-
-    if (is_first_sync_) tx_.commit_and_renew();
-}
-
-// we need template explicit instantiation
-template void ExecutionEngine::insert_blocks<BlockEx>(std::vector<std::shared_ptr<BlockEx>>& blocks);
-
 auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
     SILK_TRACE << "ExecutionEngine: verifying chain " << head_block_hash.to_hex();
 
@@ -341,7 +324,7 @@ auto ExecutionEngine::get_canonical_hash(BlockNum height) -> std::optional<Hash>
     return hash;
 }
 
-auto ExecutionEngine::get_header_td(BlockNum header_height, Hash header_hash) -> std::optional<BigInt> {
+auto ExecutionEngine::get_header_td(BlockNum header_height, Hash header_hash) -> std::optional<TotalDifficulty> {
     return db::read_total_difficulty(tx_, header_height, header_hash);
 }
 
@@ -365,7 +348,7 @@ auto ExecutionEngine::get_block_progress() -> BlockNum {
 auto ExecutionEngine::get_canonical_head() -> ChainHead {
     auto [height, hash] = db::read_canonical_head(tx_);
 
-    std::optional<BigInt> td = db::read_total_difficulty(tx_, height, hash);
+    std::optional<TotalDifficulty> td = db::read_total_difficulty(tx_, height, hash);
     ensure_invariant(td.has_value(),
                      "total difficulty of canonical hash at height " + std::to_string(height) + " not found in db");
 

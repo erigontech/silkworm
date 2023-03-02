@@ -119,7 +119,7 @@ TEST_CASE("HeadersStage - data model") {
         hm.update_tables(header2);
 
         // check internal status
-        BigInt expected_td = header0->difficulty + header1.difficulty + header2.difficulty;
+        intx::uint256 expected_td = header0->difficulty + header1.difficulty + header2.difficulty;
 
         REQUIRE(hm.total_difficulty() == expected_td);
         REQUIRE(hm.highest_height() == 2);
@@ -136,7 +136,7 @@ TEST_CASE("HeadersStage - data model") {
         hm_fork.update_tables(header1b);  // suppose it arrives after header2
 
         // check internal status
-        BigInt expected_td_fork = header0->difficulty + header1b.difficulty;
+        intx::uint256 expected_td_fork = header0->difficulty + header1b.difficulty;
 
         REQUIRE(hm_fork.total_difficulty() == expected_td_fork);
         REQUIRE(hm_fork.highest_height() == 1);

@@ -16,11 +16,11 @@
 
 #pragma once
 
+#include <silkworm/core/types/block.hpp>
 #include <silkworm/core/consensus/engine.hpp>
 #include <silkworm/node/concurrency/containers.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
-#include <silkworm/node/downloader/internals/types.hpp>
 #include <silkworm/node/stagedsync/stage.hpp>
 
 namespace silkworm::stagedsync {

@@ -17,9 +17,9 @@
 
 #include <atomic>
 
+#include <silkworm/core/types/hash.hpp>
 #include <silkworm/node/common/measure.hpp>
 #include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/downloader/internals/types.hpp>
 #include <silkworm/node/stagedsync/stage.hpp>
 
 namespace silkworm::stagedsync {
@@ -88,12 +88,12 @@ class HeadersStage : public Stage {
         // holds the status of a batch insertion of headers
         [[nodiscard]] BlockNum highest_height() const;
         [[nodiscard]] Hash highest_hash() const;
-        [[nodiscard]] BigInt total_difficulty() const;
+        [[nodiscard]] intx::uint256 total_difficulty() const;
 
       private:
         db::RWTxn& tx_;
         Hash previous_hash_;
-        Total_Difficulty previous_td_{0};
+        intx::uint256 previous_td_{0};
         BlockNum previous_height_{0};
     };
 };

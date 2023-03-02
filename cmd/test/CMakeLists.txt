@@ -34,7 +34,7 @@ if(NOT SILKWORM_CORE_ONLY)
   if(SILKWORM_SANITIZE)
     target_compile_definitions(node_test PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
   endif()
-  target_link_libraries(node_test silkworm_node Catch2::Catch2)
+  target_link_libraries(node_test silkworm_node silkworm_sync Catch2::Catch2)
 
   # Ethereum Consensus Tests
   hunter_add_package(CLI11)

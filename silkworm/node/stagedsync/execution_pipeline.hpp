@@ -20,9 +20,9 @@
 #include <map>
 #include <vector>
 
+#include <silkworm/core/types/hash.hpp>
 #include <silkworm/node/common/asio_timer.hpp>
 #include <silkworm/node/common/stopwatch.hpp>
-#include <silkworm/node/downloader/internals/types.hpp>
 #include <silkworm/node/stagedsync/stage.hpp>
 
 namespace silkworm::stagedsync {

@@ -21,10 +21,10 @@
 #include <silkworm/core/consensus/base/engine.hpp>
 #include <silkworm/node/common/log.hpp>
 #include <silkworm/node/common/measure.hpp>
+#include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/common/stopwatch.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/stages.hpp>
-#include <silkworm/node/downloader/internals/preverified_hashes.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -55,7 +55,7 @@ void BodiesStage::BodyDataModel::update_tables(const Block& block) {
     if (block_num > preverified_height_) {
         // Here we skip a full body pre-validation like
         // validation_result = consensus_engine_->pre_validate_block_body(block, chain_state_);
-        // because we assume that the downloader (BlockExchange) has already checked transaction & ommers root hash
+        // because we assume that the sync (BlockExchange) has already checked transaction & ommers root hash
         validation_result = consensus_engine_->pre_validate_transactions(block);
         if (validation_result == ValidationResult::kOk)
             validation_result = consensus_engine_->validate_ommers(block, chain_state_);
@@ -64,7 +64,7 @@ void BodiesStage::BodyDataModel::update_tables(const Block& block) {
     // Note that here we expect:
     //    1) only bodies on the canonical chain
     //    2) only bodies whose ommers hashes and transaction root hashes were checked against those
-    //       of the headers by the downloader (BlockExchange)
+    //       of the headers by the sync (BlockExchange)
 
     if (validation_result != ValidationResult::kOk) {
         unwind_needed_ = true;

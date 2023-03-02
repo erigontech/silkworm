@@ -21,6 +21,7 @@ if(NOT SILKWORM_CORE_ONLY)
     add_subdirectory(interfaces)
     add_subdirectory(node)
     add_subdirectory(sentry)
+    add_subdirectory(sync)
 endif()
 
 if(SILKWORM_WASM_API)

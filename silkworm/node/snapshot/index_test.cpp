@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/node/common/decoding_exception.cpp>
+#include <silkworm/node/common/decoding_exception.hpp>
 #include <silkworm/node/test/log.hpp>
 #include <silkworm/node/test/snapshots.hpp>
 

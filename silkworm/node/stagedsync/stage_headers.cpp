@@ -23,8 +23,8 @@
 #include <silkworm/node/common/log.hpp>
 #include <silkworm/node/common/measure.hpp>
 #include <silkworm/node/common/stopwatch.hpp>
+#include <silkworm/node/db/db_utils.hpp>
 #include <silkworm/node/db/stages.hpp>
-#include <silkworm/node/downloader/internals/db_utils.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -32,7 +32,7 @@ HeadersStage::HeaderDataModel::HeaderDataModel(db::RWTxn& tx, BlockNum headers_h
     auto headers_hash = db::read_canonical_hash(tx, headers_height);
     if (!headers_hash) throw std::logic_error("Headers stage, canonical must be consistent, not found hash at height " + std::to_string(headers_height));
 
-    std::optional<BigInt> headers_head_td = db::read_total_difficulty(tx, headers_height, *headers_hash);
+    std::optional<intx::uint256> headers_head_td = db::read_total_difficulty(tx, headers_height, *headers_hash);
     if (!headers_head_td) throw std::logic_error("Headers stage, not found total difficulty of canonical hash at height " + std::to_string(headers_height));
 
     previous_hash_ = *headers_hash;
@@ -44,7 +44,7 @@ BlockNum HeadersStage::HeaderDataModel::highest_height() const { return previous
 
 Hash HeadersStage::HeaderDataModel::highest_hash() const { return previous_hash_; }
 
-BigInt HeadersStage::HeaderDataModel::total_difficulty() const { return previous_td_; }
+intx::uint256 HeadersStage::HeaderDataModel::total_difficulty() const { return previous_td_; }
 
 void HeadersStage::HeaderDataModel::update_tables(const BlockHeader& header) {
     auto height = header.number;

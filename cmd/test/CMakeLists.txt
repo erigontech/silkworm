@@ -14,18 +14,14 @@
    limitations under the License.
 ]]
 
+find_package(absl REQUIRED)
 find_package(Catch2 REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
 
 # Silkworm Core Tests
 file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/core/*_test.cpp")
 add_executable(core_test unit_test.cpp ${SILKWORM_CORE_TESTS})
-if(CONAN_PACKAGE_MANAGER)
-  find_package(absl REQUIRED)
-  target_link_libraries(core_test silkworm_core Catch2::Catch2 evmone absl::flat_hash_map absl::flat_hash_set absl::node_hash_map)
-else()
-  target_link_libraries(core_test silkworm_core Catch2::Catch2 evmone)
-endif()
+target_link_libraries(core_test silkworm_core Catch2::Catch2 evmone absl::flat_hash_map absl::flat_hash_set absl::node_hash_map)
 
 if(MSVC)
   target_compile_options(core_test PRIVATE /EHa- /EHsc)

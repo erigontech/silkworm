@@ -224,8 +224,8 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
     const Bytes starting_key{db::block_key(expected_blocknum)};
     trie::PrefixSet ret;
 
-    db::Cursor account_changeset(txn, db::table::kAccountChangeSet);
-    db::Cursor plain_state(txn, db::table::kPlainState);
+    db::PooledCursor account_changeset(txn, db::table::kAccountChangeSet);
+    db::PooledCursor plain_state(txn, db::table::kPlainState);
 
     auto changeset_data{account_changeset.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)};
 
@@ -322,7 +322,7 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
 
     // Eventually delete nodes from trie for deleted accounts
     if (!deleted_ts_prefixes.empty()) {
-        db::Cursor trie_storage(txn, db::table::kTrieOfStorage);
+        db::PooledCursor trie_storage(txn, db::table::kTrieOfStorage);
         for (const auto& prefix : deleted_ts_prefixes) {
             const auto prefix_slice{db::to_slice(prefix)};
             auto data{trie_storage.lower_bound(prefix_slice, /*throw_notfound=*/false)};
@@ -364,7 +364,7 @@ trie::PrefixSet InterHashes::collect_storage_changes(db::RWTxn& txn, BlockNum fr
     // Don't rehash same addresses
     absl::btree_map<evmc::address, ethash_hash256>::iterator hashed_addresses_it{hashed_addresses.begin()};
 
-    db::Cursor storage_changeset(txn, db::table::kStorageChangeSet);
+    db::PooledCursor storage_changeset(txn, db::table::kStorageChangeSet);
     auto changeset_data{storage_changeset.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)};
 
     while (changeset_data) {
@@ -559,7 +559,7 @@ void InterHashes::flush_collected_nodes(db::RWTxn& txn) {
     current_target_ = std::string(db::table::kTrieOfAccounts.name);
     log_lck.unlock();
 
-    db::Cursor target(txn, db::table::kTrieOfAccounts);
+    db::PooledCursor target(txn, db::table::kTrieOfAccounts);
     MDBX_put_flags_t flags{target.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT};
     loading_collector_->load(target, nullptr, flags);
 

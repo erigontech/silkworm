@@ -36,9 +36,9 @@ TEST_CASE("Stage Transaction Lookups") {
     log_settings.log_std_out = true;
     log::init(log_settings);
 
-    db::Cursor canonicals(txn, db::table::kCanonicalHashes);
-    db::Cursor bodies_table(txn, db::table::kBlockBodies);
-    db::Cursor transactions_table(txn, db::table::kBlockTransactions);
+    db::PooledCursor canonicals(txn, db::table::kCanonicalHashes);
+    db::PooledCursor bodies_table(txn, db::table::kBlockBodies);
+    db::PooledCursor transactions_table(txn, db::table::kBlockTransactions);
 
     db::detail::BlockBodyForStorage block{};
     auto transactions{test::sample_transactions()};
@@ -78,7 +78,7 @@ TEST_CASE("Stage Transaction Lookups") {
     REQUIRE(stage_tx_lookup.forward(txn) == stagedsync::Stage::Result::kSuccess);
 
     SECTION("Forward checks and unwind") {
-        db::Cursor lookup_table(txn, db::table::kTxLookup);
+        db::PooledCursor lookup_table(txn, db::table::kTxLookup);
         REQUIRE(lookup_table.size() == 2);  // Must be two transactions indexed
 
         // Retrieve block numbers associated with hashes
@@ -127,7 +127,7 @@ TEST_CASE("Stage Transaction Lookups") {
         // Only leave block 2 alive
         REQUIRE(stage_tx_lookup.prune(txn) == stagedsync::Stage::Result::kSuccess);
 
-        db::Cursor lookup_table(txn, db::table::kTxLookup);
+        db::PooledCursor lookup_table(txn, db::table::kTxLookup);
         REQUIRE(lookup_table.size() == 1);
 
         // Block 1 should NOT be there

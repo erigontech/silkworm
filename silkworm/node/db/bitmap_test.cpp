@@ -135,7 +135,7 @@ TEST_CASE("Bitmap Index Loader") {
 
     // Load into LogAddressIndex
     REQUIRE_NOTHROW(bm_loader.merge_bitmaps(txn, kAddressLength, &collector));
-    Cursor log_addresses(txn, table::kLogAddressIndex);
+    PooledCursor log_addresses(txn, table::kLogAddressIndex);
     REQUIRE(log_addresses.size() > static_cast<size_t>(bitmaps.size()));
 
     // Check we have an incomplete shard for each key

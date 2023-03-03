@@ -80,7 +80,7 @@ class TxCall : public server::BidiStreamingCall<remote::Cursor, remote::Pair> {
 
   private:
     struct TxCursor {
-        db::Cursor cursor;
+        db::PooledCursor cursor;
         std::string bucket_name;
     };
 
@@ -97,7 +97,7 @@ class TxCall : public server::BidiStreamingCall<remote::Cursor, remote::Pair> {
 
     void handle_cursor_close(const remote::Cursor* request);
 
-    void handle_operation(const remote::Cursor* request, db::Cursor& cursor, remote::Pair& response);
+    void handle_operation(const remote::Cursor* request, db::PooledCursor& cursor, remote::Pair& response);
 
     void handle_max_ttl_timer_expired();
 
@@ -105,35 +105,35 @@ class TxCall : public server::BidiStreamingCall<remote::Cursor, remote::Pair> {
 
     bool restore_cursors(std::vector<CursorPosition>& positions);
 
-    void handle_first(db::Cursor& cursor, remote::Pair& response);
+    void handle_first(db::PooledCursor& cursor, remote::Pair& response);
 
-    void handle_first_dup(db::Cursor& cursor, remote::Pair& response);
+    void handle_first_dup(db::PooledCursor& cursor, remote::Pair& response);
 
-    void handle_seek(const remote::Cursor* request, db::Cursor& cursor, remote::Pair& response);
+    void handle_seek(const remote::Cursor* request, db::PooledCursor& cursor, remote::Pair& response);
 
-    void handle_seek_both(const remote::Cursor* request, db::Cursor& cursor, remote::Pair& response);
+    void handle_seek_both(const remote::Cursor* request, db::PooledCursor& cursor, remote::Pair& response);
 
-    void handle_seek_exact(const remote::Cursor* request, db::Cursor& cursor, remote::Pair& response);
+    void handle_seek_exact(const remote::Cursor* request, db::PooledCursor& cursor, remote::Pair& response);
 
-    void handle_seek_both_exact(const remote::Cursor* request, db::Cursor& cursor, remote::Pair& response);
+    void handle_seek_both_exact(const remote::Cursor* request, db::PooledCursor& cursor, remote::Pair& response);
 
-    void handle_current(db::Cursor& cursor, remote::Pair& response);
+    void handle_current(db::PooledCursor& cursor, remote::Pair& response);
 
-    void handle_last(db::Cursor& cursor, remote::Pair& response);
+    void handle_last(db::PooledCursor& cursor, remote::Pair& response);
 
-    void handle_last_dup(db::Cursor& cursor, remote::Pair& response);
+    void handle_last_dup(db::PooledCursor& cursor, remote::Pair& response);
 
-    void handle_next(db::Cursor& cursor, remote::Pair& response);
+    void handle_next(db::PooledCursor& cursor, remote::Pair& response);
 
-    void handle_next_dup(db::Cursor& cursor, remote::Pair& response);
+    void handle_next_dup(db::PooledCursor& cursor, remote::Pair& response);
 
-    void handle_next_no_dup(db::Cursor& cursor, remote::Pair& response);
+    void handle_next_no_dup(db::PooledCursor& cursor, remote::Pair& response);
 
-    void handle_prev(db::Cursor& cursor, remote::Pair& response);
+    void handle_prev(db::PooledCursor& cursor, remote::Pair& response);
 
-    void handle_prev_dup(db::Cursor& cursor, remote::Pair& response);
+    void handle_prev_dup(db::PooledCursor& cursor, remote::Pair& response);
 
-    void handle_prev_no_dup(db::Cursor& cursor, remote::Pair& response);
+    void handle_prev_no_dup(db::PooledCursor& cursor, remote::Pair& response);
 
     void throw_with_internal_error(const remote::Cursor* request, const std::exception& exc);
 

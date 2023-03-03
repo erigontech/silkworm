@@ -122,7 +122,7 @@ namespace db {
             SECTION("Without genesis block") {
                 // Nothing should happen
                 db::update_chain_config(txn, silkworm::kMainnetConfig);
-                db::Cursor config(txn, db::table::kConfig);
+                db::PooledCursor config(txn, db::table::kConfig);
                 REQUIRE(config.empty());
             }
 

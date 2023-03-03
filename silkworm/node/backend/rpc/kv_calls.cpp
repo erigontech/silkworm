@@ -232,7 +232,7 @@ void TxCall::handle_cursor_open(const remote::Cursor* request, remote::Pair& res
 
     // Create a new database cursor tracking also bucket name (needed for reopening).
     const db::MapConfig map_config{bucket_name.c_str()};
-    db::Cursor cursor{read_only_txn_, map_config};
+    db::PooledCursor cursor{read_only_txn_, map_config};
     const auto [cursor_it, inserted] = cursors_.insert({++last_cursor_id_, TxCursor{std::move(cursor), bucket_name}});
 
     SILKWORM_ASSERT(cursor_it->first == last_cursor_id_);
@@ -256,7 +256,7 @@ void TxCall::handle_cursor_operation(const remote::Cursor* request, remote::Pair
         SILK_ERROR << "Tx peer: " << peer() << " op=" << remote::Op_Name(request->op()) << " " << error_message;
         throw_with_error(grpc::Status{grpc::StatusCode::INVALID_ARGUMENT, error_message});
     }
-    db::Cursor& cursor = cursor_it->second.cursor;
+    db::PooledCursor& cursor = cursor_it->second.cursor;
     try {
         handle_operation(request, cursor, response);
     } catch (const std::exception& exc) {
@@ -276,7 +276,7 @@ void TxCall::handle_cursor_close(const remote::Cursor* request) {
     SILK_DEBUG << "Tx peer: " << peer() << " closed cursor: " << request->cursor();
 }
 
-void TxCall::handle_operation(const remote::Cursor* request, db::Cursor& cursor, remote::Pair& response) {
+void TxCall::handle_operation(const remote::Cursor* request, db::PooledCursor& cursor, remote::Pair& response) {
     SILK_DEBUG << "Tx peer=" << peer() << " op=" << remote::Op_Name(request->op()) << " cursor=" << request->cursor();
 
     switch (request->op()) {
@@ -388,7 +388,7 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
         const db::MapConfig map_config{bucket_name.c_str()};
 
         // Bind each cursor to the renewed transaction.
-        db::Cursor& cursor = tx_cursor.cursor;
+        db::PooledCursor& cursor = tx_cursor.cursor;
         cursor.bind(read_only_txn_, map_config);
 
         const auto& [current_key, current_value] = *position_iterator;
@@ -428,7 +428,7 @@ bool TxCall::restore_cursors(std::vector<CursorPosition>& positions) {
     return true;
 }
 
-void TxCall::handle_first(db::Cursor& cursor, remote::Pair& response) {
+void TxCall::handle_first(db::PooledCursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_first " << this << " START";
 
     const auto result = cursor.to_first(/*throw_notfound=*/false);
@@ -442,7 +442,7 @@ void TxCall::handle_first(db::Cursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_first " << this << " END";
 }
 
-void TxCall::handle_first_dup(db::Cursor& cursor, remote::Pair& response) {
+void TxCall::handle_first_dup(db::PooledCursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_first_dup " << this << " START";
 
     const auto result = cursor.to_current_first_multi(/*throw_notfound=*/false);
@@ -456,7 +456,7 @@ void TxCall::handle_first_dup(db::Cursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_first_dup " << this << " END";
 }
 
-void TxCall::handle_seek(const remote::Cursor* request, db::Cursor& cursor, remote::Pair& response) {
+void TxCall::handle_seek(const remote::Cursor* request, db::PooledCursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_seek " << this << " START";
     mdbx::slice key{request->k()};
 
@@ -471,7 +471,7 @@ void TxCall::handle_seek(const remote::Cursor* request, db::Cursor& cursor, remo
     SILK_TRACE << "TxCall::handle_seek " << this << " END";
 }
 
-void TxCall::handle_seek_both(const remote::Cursor* request, db::Cursor& cursor, remote::Pair& response) {
+void TxCall::handle_seek_both(const remote::Cursor* request, db::PooledCursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_seek_both " << this << " START";
     mdbx::slice key{request->k()};
     mdbx::slice value{request->v()};
@@ -486,7 +486,7 @@ void TxCall::handle_seek_both(const remote::Cursor* request, db::Cursor& cursor,
     SILK_TRACE << "TxCall::handle_seek_both " << this << " END";
 }
 
-void TxCall::handle_seek_exact(const remote::Cursor* request, db::Cursor& cursor, remote::Pair& response) {
+void TxCall::handle_seek_exact(const remote::Cursor* request, db::PooledCursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_seek_exact " << this << " START";
     mdbx::slice key{request->k()};
 
@@ -506,7 +506,7 @@ void TxCall::handle_seek_exact(const remote::Cursor* request, db::Cursor& cursor
     SILK_TRACE << "TxCall::handle_seek_exact " << this << " END";
 }
 
-void TxCall::handle_seek_both_exact(const remote::Cursor* request, db::Cursor& cursor, remote::Pair& response) {
+void TxCall::handle_seek_both_exact(const remote::Cursor* request, db::PooledCursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_seek_both_exact " << this << " START";
     mdbx::slice key{request->k()};
     mdbx::slice value{request->v()};
@@ -522,7 +522,7 @@ void TxCall::handle_seek_both_exact(const remote::Cursor* request, db::Cursor& c
     SILK_TRACE << "TxCall::handle_seek_both_exact " << this << " END";
 }
 
-void TxCall::handle_current(db::Cursor& cursor, remote::Pair& response) {
+void TxCall::handle_current(db::PooledCursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_current " << this << " START";
 
     const auto result = cursor.current(/*throw_notfound=*/false);
@@ -536,7 +536,7 @@ void TxCall::handle_current(db::Cursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_current " << this << " END";
 }
 
-void TxCall::handle_last(db::Cursor& cursor, remote::Pair& response) {
+void TxCall::handle_last(db::PooledCursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_last " << this << " START";
 
     const auto result = cursor.to_last(/*throw_notfound=*/false);
@@ -550,7 +550,7 @@ void TxCall::handle_last(db::Cursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_last " << this << " END";
 }
 
-void TxCall::handle_last_dup(db::Cursor& cursor, remote::Pair& response) {
+void TxCall::handle_last_dup(db::PooledCursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_last_dup " << this << " START";
 
     const auto result = cursor.to_current_last_multi(/*throw_notfound=*/false);
@@ -564,7 +564,7 @@ void TxCall::handle_last_dup(db::Cursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_last_dup " << this << " END";
 }
 
-void TxCall::handle_next(db::Cursor& cursor, remote::Pair& response) {
+void TxCall::handle_next(db::PooledCursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_next " << this << " START";
 
     const auto result = cursor.to_next(/*throw_notfound=*/false);
@@ -578,7 +578,7 @@ void TxCall::handle_next(db::Cursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_next " << this << " END";
 }
 
-void TxCall::handle_next_dup(db::Cursor& cursor, remote::Pair& response) {
+void TxCall::handle_next_dup(db::PooledCursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_next_dup " << this << " START";
 
     const auto result = cursor.to_current_next_multi(/*throw_notfound=*/false);
@@ -592,7 +592,7 @@ void TxCall::handle_next_dup(db::Cursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_next_dup " << this << " END";
 }
 
-void TxCall::handle_next_no_dup(db::Cursor& cursor, remote::Pair& response) {
+void TxCall::handle_next_no_dup(db::PooledCursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_next_no_dup " << this << " START";
 
     const auto result = cursor.to_next_first_multi(/*throw_notfound=*/false);
@@ -606,7 +606,7 @@ void TxCall::handle_next_no_dup(db::Cursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_next_no_dup " << this << " END";
 }
 
-void TxCall::handle_prev(db::Cursor& cursor, remote::Pair& response) {
+void TxCall::handle_prev(db::PooledCursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_prev " << this << " START";
 
     const auto result = cursor.to_previous(/*throw_notfound=*/false);
@@ -620,7 +620,7 @@ void TxCall::handle_prev(db::Cursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_prev " << this << " END";
 }
 
-void TxCall::handle_prev_dup(db::Cursor& cursor, remote::Pair& response) {
+void TxCall::handle_prev_dup(db::PooledCursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_prev_dup " << this << " START";
 
     const auto result = cursor.to_current_prev_multi(/*throw_notfound=*/false);
@@ -634,7 +634,7 @@ void TxCall::handle_prev_dup(db::Cursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_prev_dup " << this << " END";
 }
 
-void TxCall::handle_prev_no_dup(db::Cursor& cursor, remote::Pair& response) {
+void TxCall::handle_prev_no_dup(db::PooledCursor& cursor, remote::Pair& response) {
     SILK_TRACE << "TxCall::handle_prev_no_dup " << this << " START";
 
     const auto result = cursor.to_previous_last_multi(/*throw_notfound=*/false);

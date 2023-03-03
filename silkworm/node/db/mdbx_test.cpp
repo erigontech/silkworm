@@ -96,7 +96,7 @@ TEST_CASE("Env opening") {
     SECTION("Non default page size") {
         const TemporaryDirectory tmp_dir;
         db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-        db_config.inmemory = true;
+        db_config.in_memory = true;
         db_config.page_size = 8_Kibi;
         auto env{db::open_env(db_config)};
         REQUIRE(env.get_pagesize() == db_config.page_size);
@@ -106,7 +106,7 @@ TEST_CASE("Env opening") {
         const TemporaryDirectory tmp_dir;
         {
             db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-            db_config.inmemory = true;
+            db_config.in_memory = true;
             db_config.page_size = 4_Kibi;
             REQUIRE_NOTHROW((void)db::open_env(db_config));
         }
@@ -114,7 +114,7 @@ TEST_CASE("Env opening") {
         {
             // Try to reopen same db with 16KB page size
             db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ false};
-            db_config.inmemory = true;
+            db_config.in_memory = true;
             db_config.page_size = 16_Kibi;
             REQUIRE_THROWS((void)db::open_env(db_config));
         }
@@ -124,7 +124,7 @@ TEST_CASE("Env opening") {
 TEST_CASE("Cursor") {
     const TemporaryDirectory tmp_dir;
     db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-    db_config.inmemory = true;
+    db_config.in_memory = true;
     auto env{db::open_env(db_config)};
 
     const db::MapConfig map_config{"GeneticCode"};
@@ -141,16 +141,16 @@ TEST_CASE("Cursor") {
     // Cursors cache may get polluted by previous tests or is empty
     // in case this is the only test being executed. So we can't rely
     // on empty() property rather we must evaluate deltas.
-    size_t original_cache_size{db::Cursor::handles_cache().size()};
+    size_t original_cache_size{db::PooledCursor::handles_cache().size()};
 
     {
-        db::Cursor cursor1(txn, map_config);
+        db::PooledCursor cursor1(txn, map_config);
         if (original_cache_size) {
             // One handle pulled from cache
-            REQUIRE(db::Cursor::handles_cache().size() == original_cache_size - 1);
+            REQUIRE(db::PooledCursor::handles_cache().size() == original_cache_size - 1);
         } else {
             // A new handle has been created
-            REQUIRE(db::Cursor::handles_cache().size() == original_cache_size);
+            REQUIRE(db::PooledCursor::handles_cache().size() == original_cache_size);
         }
         REQUIRE(cursor1.get_map_stat().ms_entries == 0);
     }
@@ -158,28 +158,28 @@ TEST_CASE("Cursor") {
     // After destruction of previous cursor cache has increased by one if it was originally empty, otherwise it is
     // restored to its original size
     if (!original_cache_size) {
-        REQUIRE(db::Cursor::handles_cache().size() == original_cache_size + 1);
+        REQUIRE(db::PooledCursor::handles_cache().size() == original_cache_size + 1);
     } else {
-        REQUIRE(db::Cursor::handles_cache().size() == original_cache_size);
+        REQUIRE(db::PooledCursor::handles_cache().size() == original_cache_size);
     }
 
     txn.abort();
     txn = env.start_write();
-    db::Cursor broken(txn, {"Test"});
+    db::PooledCursor broken(txn, {"Test"});
 
     // Force exceed of cache size
-    std::vector<db::Cursor> cursors;
+    std::vector<db::PooledCursor> cursors;
     for (size_t i = 0; i < original_cache_size + 5; ++i) {
         cursors.emplace_back(txn, map_config);
     }
-    REQUIRE(db::Cursor::handles_cache().empty() == true);
+    REQUIRE(db::PooledCursor::handles_cache().empty() == true);
     cursors.clear();
-    REQUIRE(db::Cursor::handles_cache().empty() == false);
-    REQUIRE(db::Cursor::handles_cache().size() == original_cache_size + 5);
+    REQUIRE(db::PooledCursor::handles_cache().empty() == false);
+    REQUIRE(db::PooledCursor::handles_cache().size() == original_cache_size + 5);
 
-    db::Cursor cursor2(db::Cursor(txn, {"test"}));
+    db::PooledCursor cursor2(db::PooledCursor(txn, {"test"}));
     REQUIRE(cursor2.operator bool() == true);
-    db::Cursor cursor3 = std::move(cursor2);
+    db::PooledCursor cursor3 = std::move(cursor2);
     REQUIRE(cursor2.operator bool() == false);
     REQUIRE(cursor3.operator bool() == true);
 
@@ -190,14 +190,14 @@ TEST_CASE("Cursor") {
     std::atomic<size_t> other_thread_size2{0};
     std::thread t([&other_thread_size1, &other_thread_size2, &env]() {
         auto thread_txn{env.start_write()};
-        { db::Cursor cursor(thread_txn, {"Test"}); }
-        other_thread_size1 = db::Cursor::handles_cache().size();
+        { db::PooledCursor cursor(thread_txn, {"Test"}); }
+        other_thread_size1 = db::PooledCursor::handles_cache().size();
 
         // Pull a handle from the pool and close the cursor directly
         // so is not returned to the pool
-        db::Cursor cursor(thread_txn, {"Test"});
+        db::PooledCursor cursor(thread_txn, {"Test"});
         cursor.close();
-        other_thread_size2 = db::Cursor::handles_cache().size();
+        other_thread_size2 = db::PooledCursor::handles_cache().size();
     });
     t.join();
     REQUIRE(other_thread_size1 == 1);
@@ -207,14 +207,14 @@ TEST_CASE("Cursor") {
 TEST_CASE("RWTxn") {
     const TemporaryDirectory tmp_dir;
     db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-    db_config.inmemory = true;
+    db_config.in_memory = true;
     auto env{db::open_env(db_config)};
     static const char* table_name{"GeneticCode"};
 
     SECTION("Managed") {
         {
             auto tx{db::RWTxn(env)};
-            db::Cursor table_cursor(*tx, {table_name});
+            db::PooledCursor table_cursor(*tx, {table_name});
 
             // populate table
             for (const auto& [key, value] : kGeneticCode) {
@@ -225,7 +225,7 @@ TEST_CASE("RWTxn") {
         }
 
         auto tx{env.start_read()};
-        db::Cursor table_cursor(tx, {table_name});
+        db::PooledCursor table_cursor(tx, {table_name});
         REQUIRE(table_cursor.empty() == false);
     }
 
@@ -243,7 +243,7 @@ TEST_CASE("RWTxn") {
 
     SECTION("Cursor from RWTxn") {
         auto tx{db::RWTxn(env)};
-        db::Cursor table_cursor(tx, {table_name});
+        db::PooledCursor table_cursor(tx, {table_name});
         REQUIRE(table_cursor.empty());
         REQUIRE_NOTHROW(table_cursor.bind(tx, {table_name}));
         table_cursor.close();
@@ -254,13 +254,13 @@ TEST_CASE("RWTxn") {
 TEST_CASE("Cursor walk") {
     const TemporaryDirectory tmp_dir;
     db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-    db_config.inmemory = true;
+    db_config.in_memory = true;
     auto env{db::open_env(db_config)};
     auto txn{env.start_write()};
 
     static const char* table_name{"GeneticCode"};
 
-    db::Cursor table_cursor(txn, {table_name});
+    db::PooledCursor table_cursor(txn, {table_name});
 
     // A map to collect data
     std::map<std::string, std::string> data_map;
@@ -472,7 +472,7 @@ TEST_CASE("OF pages") {
     db::RWTxn& txn = context.rw_txn();
 
     SECTION("No overflow") {
-        db::Cursor target(txn, db::table::kAccountHistory);
+        db::PooledCursor target(txn, db::table::kAccountHistory);
         Bytes key(20, '\0');
         Bytes value(db::max_value_size_for_leaf_page(*txn, key.size()), '\0');
         target.insert(db::to_slice(key), db::to_slice(value));
@@ -483,7 +483,7 @@ TEST_CASE("OF pages") {
     }
 
     SECTION("Let's overflow") {
-        db::Cursor target(txn, db::table::kAccountHistory);
+        db::PooledCursor target(txn, db::table::kAccountHistory);
         Bytes key(20, '\0');
         Bytes value(db::max_value_size_for_leaf_page(*txn, key.size()) + /*any extra value */ 1, '\0');
         target.insert(db::to_slice(key), db::to_slice(value));

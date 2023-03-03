@@ -29,7 +29,7 @@ void IndexLoader::merge_bitmaps(RWTxn& txn, size_t key_size, etl::Collector* bit
     const size_t optimal_shard_size{
         db::max_value_size_for_leaf_page(*txn, key_size + /*shard upper_bound*/ sizeof(uint64_t))};
 
-    db::Cursor target(txn, index_config_);
+    db::PooledCursor target(txn, index_config_);
     etl::LoadFunc load_func{[&last_shard_suffix, &optimal_shard_size](const etl::Entry& entry,
                                                                       mdbx::cursor& index_cursor,
                                                                       MDBX_put_flags_t put_flags) -> void {
@@ -70,7 +70,7 @@ void IndexLoader::unwind_bitmaps(RWTxn& txn, BlockNum to, const std::map<Bytes, 
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 
-    db::Cursor target(txn, index_config_);
+    db::PooledCursor target(txn, index_config_);
     for (const auto& [key, created] : keys) {
         // Log and abort check
         if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
@@ -132,7 +132,7 @@ void IndexLoader::prune_bitmaps(RWTxn& txn, BlockNum threshold) {
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 
-    db::Cursor target(txn, index_config_);
+    db::PooledCursor target(txn, index_config_);
     auto target_data{target.to_first(/*throw_notfound=*/false)};
     while (target_data) {
         const auto data_key_view{db::from_slice(target_data.key)};

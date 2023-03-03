@@ -46,10 +46,10 @@ evmc::bytes32 TrieLoader::calculate_root() {
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 
-    db::Cursor hashed_accounts(txn_, db::table::kHashedAccounts);
-    db::Cursor hashed_storage(txn_, db::table::kHashedStorage);
-    db::Cursor trie_accounts(txn_, db::table::kTrieOfAccounts);
-    db::Cursor trie_storage(txn_, db::table::kTrieOfStorage);
+    db::PooledCursor hashed_accounts(txn_, db::table::kHashedAccounts);
+    db::PooledCursor hashed_storage(txn_, db::table::kHashedStorage);
+    db::PooledCursor trie_accounts(txn_, db::table::kTrieOfAccounts);
+    db::PooledCursor trie_storage(txn_, db::table::kTrieOfStorage);
 
     // On full regeneration we must assert both trees are empty
     if (!account_changes_) {
@@ -144,7 +144,7 @@ evmc::bytes32 TrieLoader::calculate_root() {
 }
 
 evmc::bytes32 TrieLoader::calculate_storage_root(TrieCursor& trie_storage_cursor, HashBuilder& storage_hash_builder,
-                                                 db::Cursor& hashed_storage, const Bytes& db_storage_prefix) {
+                                                 db::PooledCursor& hashed_storage, const Bytes& db_storage_prefix) {
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 

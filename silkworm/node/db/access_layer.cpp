@@ -28,7 +28,7 @@
 namespace silkworm::db {
 
 std::optional<VersionBase> read_schema_version(ROTxn& txn) {
-    Cursor src(txn, db::table::kDatabaseInfo);
+    PooledCursor src(txn, db::table::kDatabaseInfo);
     if (!src.seek(mdbx::slice{kDbSchemaVersionKey})) {
         return std::nullopt;
     }
@@ -59,18 +59,18 @@ void write_schema_version(RWTxn& txn, const VersionBase& schema_version) {
     endian::store_big_u32(&value[4], schema_version.Minor);
     endian::store_big_u32(&value[8], schema_version.Patch);
 
-    Cursor src(txn, db::table::kDatabaseInfo);
+    PooledCursor src(txn, db::table::kDatabaseInfo);
     src.upsert(mdbx::slice{kDbSchemaVersionKey}, to_slice(value));
 }
 
 void write_build_info_height(RWTxn& txn, Bytes key, BlockNum height) {
-    Cursor tgt(txn, db::table::kDatabaseInfo);
+    PooledCursor tgt(txn, db::table::kDatabaseInfo);
     Bytes value{db::block_key(height)};
     tgt.upsert(db::to_slice(key), db::to_slice(value));
 }
 
 std::vector<std::string> read_snapshots(ROTxn& txn) {
-    Cursor db_info_cursor{txn, table::kDatabaseInfo};
+    PooledCursor db_info_cursor{txn, table::kDatabaseInfo};
     if (!db_info_cursor.seek(mdbx::slice{kDbSnapshotsKey})) {
         return {};
     }
@@ -81,7 +81,7 @@ std::vector<std::string> read_snapshots(ROTxn& txn) {
 }
 
 void write_snapshots(RWTxn& txn, const std::vector<std::string>& snapshot_file_names) {
-    Cursor db_info_cursor{txn, table::kDatabaseInfo};
+    PooledCursor db_info_cursor{txn, table::kDatabaseInfo};
     nlohmann::json json_value = snapshot_file_names;
     db_info_cursor.upsert(mdbx::slice{kDbSnapshotsKey}, mdbx::slice(json_value.dump().data()));
 }
@@ -107,7 +107,7 @@ std::optional<BlockHeader> read_header(ROTxn& txn, ByteView key) {
 }
 
 Bytes read_header_raw(ROTxn& txn, ByteView key) {
-    Cursor src(txn, db::table::kHeaders);
+    PooledCursor src(txn, db::table::kHeaders);
     auto data{src.find(to_slice(key), false)};
     if (!data) {
         return {};
@@ -144,7 +144,7 @@ std::vector<BlockHeader> read_headers(ROTxn& txn, BlockNum height) {
 
 // process headers at specific height
 size_t process_headers_at_height(ROTxn& txn, BlockNum height, std::function<void(BlockHeader&&)> process_func) {
-    db::Cursor headers_table(txn, db::table::kHeaders);
+    db::PooledCursor headers_table(txn, db::table::kHeaders);
     auto key_prefix{db::block_key(height)};
 
     auto count = db::cursor_for_prefix(
@@ -169,7 +169,7 @@ void write_header(RWTxn& txn, const BlockHeader& header, bool with_header_number
     auto skey = db::to_slice(key);
     auto svalue = db::to_slice(value);
 
-    Cursor target(txn, table::kHeaders);
+    PooledCursor target(txn, table::kHeaders);
     target.upsert(skey, svalue);
     if (with_header_numbers) {
         write_header_number(txn, header_hash.bytes, header.number);
@@ -177,7 +177,7 @@ void write_header(RWTxn& txn, const BlockHeader& header, bool with_header_number
 }
 
 std::optional<ByteView> read_rlp_encoded_header(ROTxn& txn, BlockNum bn, const evmc::bytes32& hash) {
-    Cursor header_table(txn, db::table::kHeaders);
+    PooledCursor header_table(txn, db::table::kHeaders);
     auto key = db::block_key(bn, hash.bytes);
     auto data = header_table.find(db::to_slice(key), /*throw_notfound*/ false);
     if (!data) return std::nullopt;
@@ -197,7 +197,7 @@ static Bytes header_numbers_key(evmc::bytes32 hash) {
 }
 
 std::optional<BlockNum> read_block_number(ROTxn& txn, const evmc::bytes32& hash) {
-    Cursor blockhashes_table(txn, db::table::kHeaderNumbers);
+    PooledCursor blockhashes_table(txn, db::table::kHeaderNumbers);
     auto key = header_numbers_key(hash);
     auto data = blockhashes_table.find(db::to_slice(key), /*throw_notfound*/ false);
     if (!data) {
@@ -208,7 +208,7 @@ std::optional<BlockNum> read_block_number(ROTxn& txn, const evmc::bytes32& hash)
 }
 
 void write_header_number(RWTxn& txn, const uint8_t (&hash)[kHashLength], const BlockNum number) {
-    Cursor target(txn, table::kHeaderNumbers);
+    PooledCursor target(txn, table::kHeaderNumbers);
     auto value{db::block_key(number)};
     target.upsert({hash, kHashLength}, to_slice(value));
 }
@@ -224,7 +224,7 @@ std::optional<intx::uint256> read_total_difficulty(ROTxn& txn, BlockNum block_nu
 }
 
 std::optional<intx::uint256> read_total_difficulty(ROTxn& txn, ByteView key) {
-    Cursor src(txn, table::kDifficulty);
+    PooledCursor src(txn, table::kDifficulty);
     auto data{src.find(to_slice(key), false)};
     if (!data) {
         return std::nullopt;
@@ -240,7 +240,7 @@ void write_total_difficulty(RWTxn& txn, const Bytes& key, const intx::uint256& t
     Bytes value{};
     rlp::encode(value, total_difficulty);
 
-    Cursor target(txn, table::kDifficulty);
+    PooledCursor target(txn, table::kDifficulty);
     target.upsert(to_slice(key), to_slice(value));
 }
 
@@ -257,7 +257,7 @@ void write_total_difficulty(RWTxn& txn, BlockNum block_number, const evmc::bytes
 }
 
 std::tuple<BlockNum, evmc::bytes32> read_canonical_head(ROTxn& txn) {
-    Cursor cursor(txn, table::kCanonicalHashes);
+    PooledCursor cursor(txn, table::kCanonicalHashes);
     auto data = cursor.to_last();
     if (!data) return {};
     evmc::bytes32 hash{};
@@ -267,7 +267,7 @@ std::tuple<BlockNum, evmc::bytes32> read_canonical_head(ROTxn& txn) {
 }
 
 std::optional<evmc::bytes32> read_canonical_header_hash(ROTxn& txn, BlockNum number) {
-    Cursor source(txn, table::kCanonicalHashes);
+    PooledCursor source(txn, table::kCanonicalHashes);
     auto key{db::block_key(number)};
     auto data{source.find(to_slice(key), /*throw_notfound=*/false)};
     if (!data) {
@@ -283,7 +283,7 @@ void write_canonical_header(RWTxn& txn, const BlockHeader& header) {
 }
 
 void write_canonical_header_hash(RWTxn& txn, const uint8_t (&hash)[kHashLength], BlockNum number) {
-    Cursor target(txn, table::kCanonicalHashes);
+    PooledCursor target(txn, table::kCanonicalHashes);
     auto key{db::block_key(number)};
     target.upsert(to_slice(key), db::to_slice(hash));
 }
@@ -293,7 +293,7 @@ void read_transactions(ROTxn& txn, uint64_t base_id, uint64_t count, std::vector
         out.clear();
         return;
     }
-    Cursor src(txn, table::kBlockTransactions);
+    PooledCursor src(txn, table::kBlockTransactions);
     read_transactions(src, base_id, count, out);
 }
 
@@ -302,7 +302,7 @@ void write_transactions(RWTxn& txn, const std::vector<Transaction>& transactions
         return;
     }
 
-    Cursor target(txn, table::kBlockTransactions);
+    PooledCursor target(txn, table::kBlockTransactions);
     auto key{db::block_key(base_id)};
     for (const auto& transaction : transactions) {
         Bytes value{};
@@ -332,7 +332,7 @@ void read_transactions(mdbx::cursor& txn_table, uint64_t base_id, uint64_t count
 }
 
 bool read_block_by_number(ROTxn& txn, BlockNum number, bool read_senders, Block& block) {
-    Cursor canonical_hashes_cursor(txn, table::kCanonicalHashes);
+    PooledCursor canonical_hashes_cursor(txn, table::kCanonicalHashes);
     const Bytes key{block_key(number)};
     const auto data{canonical_hashes_cursor.find(to_slice(key), false)};
     if (!data) {
@@ -366,7 +366,7 @@ bool read_block(ROTxn& txn, std::span<const uint8_t, kHashLength> hash, BlockNum
 
 // process blocks at specific height
 size_t process_blocks_at_height(ROTxn& txn, BlockNum height, std::function<void(Block&)> process_func, bool read_senders) {
-    db::Cursor bodies_table(txn, db::table::kBlockBodies);
+    db::PooledCursor bodies_table(txn, db::table::kBlockBodies);
     auto key_prefix{db::block_key(height)};
 
     auto count = db::cursor_for_prefix(
@@ -408,7 +408,7 @@ bool read_body(ROTxn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLen
 }
 
 bool read_body(ROTxn& txn, const Bytes& key, bool read_senders, BlockBody& out) {
-    Cursor src(txn, table::kBlockBodies);
+    PooledCursor src(txn, table::kBlockBodies);
     auto data{src.find(to_slice(key), false)};
     if (!data) {
         return false;
@@ -444,7 +444,7 @@ bool read_canonical_block(ROTxn& txn, BlockNum height, Block& block) {
 
 bool has_body(ROTxn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]) {
     auto key{block_key(block_number, hash)};
-    Cursor src(txn, table::kBlockBodies);
+    PooledCursor src(txn, table::kBlockBodies);
     return src.find(to_slice(key), false);
 }
 
@@ -465,14 +465,14 @@ void write_body(RWTxn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLe
     Bytes value{body_for_storage.encode()};
     auto key{db::block_key(number, hash)};
 
-    Cursor target(txn, table::kBlockBodies);
+    PooledCursor target(txn, table::kBlockBodies);
     target.upsert(to_slice(key), to_slice(value));
 
     write_transactions(txn, body.transactions, body_for_storage.base_txn_id);
 }
 
 static ByteView read_senders_raw(ROTxn& txn, const Bytes& key) {
-    Cursor src(txn, table::kSenders);
+    PooledCursor src(txn, table::kSenders);
     auto data{src.find(to_slice(key), /*throw_notfound = */ false)};
     return data ? from_slice(data.value) : ByteView();
 }
@@ -515,7 +515,7 @@ void parse_senders(ROTxn& txn, const Bytes& key, std::vector<Transaction>& out) 
 }
 
 std::optional<ByteView> read_code(ROTxn& txn, const evmc::bytes32& code_hash) {
-    Cursor src(txn, table::kCode);
+    PooledCursor src(txn, table::kCode);
     auto key{to_slice(code_hash)};
     auto data{src.find(key, /*throw_notfound=*/false)};
     if (!data) {
@@ -526,7 +526,7 @@ std::optional<ByteView> read_code(ROTxn& txn, const evmc::bytes32& code_hash) {
 
 // Erigon FindByHistory for account
 static std::optional<ByteView> historical_account(ROTxn& txn, const evmc::address& address, BlockNum block_number) {
-    Cursor src(txn, table::kAccountHistory);
+    PooledCursor src(txn, table::kAccountHistory);
     const Bytes history_key{account_history_key(address, block_number)};
     const auto data{src.lower_bound(to_slice(history_key), /*throw_notfound=*/false)};
     if (!data || !data.key.starts_with(to_slice(address))) {
@@ -547,7 +547,7 @@ static std::optional<ByteView> historical_account(ROTxn& txn, const evmc::addres
 // Erigon FindByHistory for storage
 static std::optional<ByteView> historical_storage(ROTxn& txn, const evmc::address& address, uint64_t incarnation,
                                                   const evmc::bytes32& location, BlockNum block_number) {
-    Cursor src(txn, table::kStorageHistory);
+    PooledCursor src(txn, table::kStorageHistory);
     const Bytes history_key{storage_history_key(address, location, block_number)};
     const auto data{src.lower_bound(to_slice(history_key), /*throw_notfound=*/false)};
     if (!data) {
@@ -578,7 +578,7 @@ std::optional<Account> read_account(ROTxn& txn, const evmc::address& address, st
                                                           : std::nullopt};
 
     if (!encoded.has_value()) {
-        Cursor src(txn, table::kPlainState);
+        PooledCursor src(txn, table::kPlainState);
         if (auto data{src.find({address.bytes, sizeof(evmc::address)}, false)}; data.done) {
             encoded.emplace(from_slice(data.value));
         }
@@ -593,7 +593,7 @@ std::optional<Account> read_account(ROTxn& txn, const evmc::address& address, st
 
     if (acc.incarnation > 0 && acc.code_hash == kEmptyHash) {
         // restore code hash
-        Cursor src(txn, table::kPlainCodeHash);
+        PooledCursor src(txn, table::kPlainCodeHash);
         auto key{storage_prefix(address, acc.incarnation)};
         if (auto data{src.find(to_slice(key), /*throw_notfound*/ false)};
             data.done && data.value.length() == kHashLength) {
@@ -610,7 +610,7 @@ evmc::bytes32 read_storage(ROTxn& txn, const evmc::address& address, uint64_t in
                                     ? historical_storage(txn, address, incarnation, location, block_num.value())
                                     : std::nullopt};
     if (!val.has_value()) {
-        Cursor src(txn, table::kPlainState);
+        PooledCursor src(txn, table::kPlainState);
         auto key{storage_prefix(address, incarnation)};
         val = find_value_suffix(src, key, location);
     }
@@ -636,7 +636,7 @@ std::optional<uint64_t> read_previous_incarnation(ROTxn& txn, const evmc::addres
         return historical_previous_incarnation();
     }
 
-    Cursor src(txn, table::kIncarnationMap);
+    PooledCursor src(txn, table::kIncarnationMap);
     if (auto data{src.find(to_slice(address), /*throw_notfound=*/false)}; data.done) {
         SILKWORM_ASSERT(data.value.length() == 8);
         return endian::load_big_u64(static_cast<uint8_t*>(data.value.data()));
@@ -647,7 +647,7 @@ std::optional<uint64_t> read_previous_incarnation(ROTxn& txn, const evmc::addres
 AccountChanges read_account_changes(ROTxn& txn, BlockNum block_num) {
     AccountChanges changes;
 
-    Cursor src(txn, table::kAccountChangeSet);
+    PooledCursor src(txn, table::kAccountChangeSet);
     auto key{block_key(block_num)};
     auto data{src.find(to_slice(key), /*throw_notfound=*/false)};
     while (data) {
@@ -667,7 +667,7 @@ StorageChanges read_storage_changes(ROTxn& txn, BlockNum block_num) {
 
     const Bytes block_prefix{block_key(block_num)};
 
-    Cursor src(txn, table::kStorageChangeSet);
+    PooledCursor src(txn, table::kStorageChangeSet);
     auto key_prefix{to_slice(block_prefix)};
     auto data{src.lower_bound(key_prefix, false)};
     while (data) {
@@ -696,7 +696,7 @@ StorageChanges read_storage_changes(ROTxn& txn, BlockNum block_num) {
 }
 
 std::optional<ChainConfig> read_chain_config(ROTxn& txn) {
-    Cursor src(txn, table::kCanonicalHashes);
+    PooledCursor src(txn, table::kCanonicalHashes);
     auto data{src.find(to_slice(block_key(0)), /*throw_notfound=*/false)};
     if (!data) {
         return std::nullopt;
@@ -719,7 +719,7 @@ void update_chain_config(RWTxn& txn, const ChainConfig& config) {
     if (!genesis_hash.has_value()) {
         return;
     }
-    Cursor cursor(txn, db::table::kConfig);
+    PooledCursor cursor(txn, db::table::kConfig);
     auto config_data{config.to_json().dump()};
     cursor.upsert(db::to_slice(genesis_hash->bytes), mdbx::slice(config_data.data()));
 }
@@ -735,7 +735,7 @@ void write_head_header_hash(RWTxn& txn, const evmc::bytes32& hash) {
 }
 
 void write_head_header_hash(RWTxn& txn, const uint8_t (&hash)[kHashLength]) {
-    Cursor target(txn, table::kHeadHeader);
+    PooledCursor target(txn, table::kHeadHeader);
     Bytes key = head_header_key();
     auto skey = db::to_slice(key);
 
@@ -743,7 +743,7 @@ void write_head_header_hash(RWTxn& txn, const uint8_t (&hash)[kHashLength]) {
 }
 
 std::optional<evmc::bytes32> read_head_header_hash(ROTxn& txn) {
-    Cursor src(txn, table::kHeadHeader);
+    PooledCursor src(txn, table::kHeadHeader);
     Bytes key = head_header_key();
     auto skey = db::to_slice(key);
     auto data{src.find(skey, /*throw_notfound=*/false)};
@@ -754,7 +754,7 @@ std::optional<evmc::bytes32> read_head_header_hash(ROTxn& txn) {
 }
 
 std::optional<evmc::bytes32> read_canonical_hash(ROTxn& txn, BlockNum b) {  // throws db exceptions
-    Cursor hashes_table(txn, db::table::kCanonicalHashes);
+    PooledCursor hashes_table(txn, db::table::kCanonicalHashes);
     // accessing this table with only b we will get the hash of the canonical block at height b
     auto key = db::block_key(b);
     auto data = hashes_table.find(db::to_slice(key), /*throw_notfound*/ false);
@@ -768,12 +768,12 @@ void write_canonical_hash(RWTxn& txn, BlockNum b, const evmc::bytes32& hash) {
     auto skey = db::to_slice(key);
     auto svalue = db::to_slice(hash);
 
-    Cursor hashes_table(txn, db::table::kCanonicalHashes);
+    PooledCursor hashes_table(txn, db::table::kCanonicalHashes);
     hashes_table.upsert(skey, svalue);
 }
 
 void delete_canonical_hash(RWTxn& txn, BlockNum b) {
-    Cursor hashes_table(txn, db::table::kCanonicalHashes);
+    PooledCursor hashes_table(txn, db::table::kCanonicalHashes);
     Bytes key = db::block_key(b);
     auto skey = db::to_slice(key);
     (void)hashes_table.erase(skey);
@@ -782,7 +782,7 @@ void delete_canonical_hash(RWTxn& txn, BlockNum b) {
 uint64_t increment_map_sequence(RWTxn& txn, const char* map_name, uint64_t increment) {
     uint64_t current_value{read_map_sequence(txn, map_name)};
     if (increment) {
-        Cursor target(txn, table::kSequence);
+        PooledCursor target(txn, table::kSequence);
         mdbx::slice key(map_name);
         uint64_t new_value{current_value + increment};  // Note ! May overflow
         Bytes new_data(sizeof(uint64_t), '\0');
@@ -793,7 +793,7 @@ uint64_t increment_map_sequence(RWTxn& txn, const char* map_name, uint64_t incre
 }
 
 uint64_t read_map_sequence(ROTxn& txn, const char* map_name) {
-    Cursor target(txn, table::kSequence);
+    PooledCursor target(txn, table::kSequence);
     mdbx::slice key(map_name);
     auto data{target.find(key, /*throw_notfound=*/false)};
     if (!data.done) {
@@ -808,7 +808,7 @@ uint64_t read_map_sequence(ROTxn& txn, const char* map_name) {
 uint64_t reset_map_sequence(RWTxn& txn, const char* map_name, uint64_t new_sequence) {
     uint64_t current_sequence{read_map_sequence(txn, map_name)};
     if (new_sequence != current_sequence) {
-        Cursor target(txn, table::kSequence);
+        PooledCursor target(txn, table::kSequence);
         mdbx::slice key(map_name);
         Bytes new_sequence_buffer(sizeof(uint64_t), '\0');
         endian::store_big_u64(new_sequence_buffer.data(), new_sequence);

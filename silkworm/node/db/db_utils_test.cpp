@@ -30,7 +30,7 @@ namespace db {
         TemporaryDirectory tmp_dir;
 
         db::EnvConfig db_config{tmp_dir.path().string(), /*create*/ true};
-        db_config.inmemory = true;
+        db_config.in_memory = true;
 
         auto db = db::open_env(db_config);
         db::RWAccess rw_access(db);

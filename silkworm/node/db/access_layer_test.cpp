@@ -91,7 +91,7 @@ namespace db {
         // Empty dir
         std::string empty{};
         db::EnvConfig db_config{empty};
-        db_config.inmemory = true;
+        db_config.in_memory = true;
         REQUIRE_THROWS_AS(db::open_env(db_config), std::invalid_argument);
 
         // Conflicting flags
@@ -121,7 +121,7 @@ namespace db {
         db_config = db::EnvConfig{tmp_dir2.path().string()};
         db_config.create = true;
         db_config.readonly = true;
-        db_config.inmemory = true;
+        db_config.in_memory = true;
         REQUIRE_THROWS_AS(db::open_env(db_config), std::runtime_error);
 
         // Must open

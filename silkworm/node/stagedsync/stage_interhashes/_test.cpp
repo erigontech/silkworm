@@ -33,7 +33,7 @@ TEST_CASE("Trie Cursor") {
 
     SECTION("Only root trie no changes") {
         trie::PrefixSet changed_accounts{};
-        db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
+        db::PooledCursor trie_accounts(txn, db::table::kTrieOfAccounts);
         trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts};
 
         Bytes k{};
@@ -71,7 +71,7 @@ TEST_CASE("Trie Cursor") {
 
     SECTION("Only root trie with changes") {
         trie::PrefixSet changed_accounts{};
-        db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
+        db::PooledCursor trie_accounts(txn, db::table::kTrieOfAccounts);
         trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts};
 
         Bytes k{};
@@ -105,7 +105,7 @@ TEST_CASE("Trie Cursor") {
     SECTION("Root + child with changes") {
         etl::Collector collector{db_context.dir().path()};
         trie::PrefixSet changed_accounts{};
-        db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
+        db::PooledCursor trie_accounts(txn, db::table::kTrieOfAccounts);
         trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts, &collector};
 
         Bytes k{};
@@ -159,7 +159,7 @@ TEST_CASE("Trie Cursor") {
     SECTION("Root + 16 children with changes") {
         etl::Collector collector{db_context.dir().path()};
         trie::PrefixSet changed_accounts{};
-        db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
+        db::PooledCursor trie_accounts(txn, db::table::kTrieOfAccounts);
         trie::TrieCursor ta_cursor{trie_accounts, &changed_accounts, &collector};
 
         // Fake root node with no hashes and only tree mask (must descend to all)
@@ -197,7 +197,7 @@ TEST_CASE("Trie Cursor") {
 
     SECTION("Empty prefixed trie no changes") {
         trie::PrefixSet changed_accounts{};
-        db::Cursor trie_storage(txn, db::table::kTrieOfStorage);
+        db::PooledCursor trie_storage(txn, db::table::kTrieOfStorage);
         trie::TrieCursor ts_cursor{trie_storage, &changed_accounts};
         Bytes prefix{*from_hex("0xfff2bcbbf823e72a3a9025c14b96f5c28026735aeb7f19e5f2f317aa7a017c080000000000000001")};
         auto ts_data{ts_cursor.to_prefix(prefix)};
@@ -220,7 +220,7 @@ TEST_CASE("Trie Cursor") {
 
     SECTION("Missing prefixed root no changes") {
         trie::PrefixSet changed_storage{};
-        db::Cursor trie_storage(txn, db::table::kTrieOfStorage);
+        db::PooledCursor trie_storage(txn, db::table::kTrieOfStorage);
 
         Bytes k{
             *from_hex("0xfff2bcbbf823e72a3a9025c14b96f5c28026735aeb7f19e5f2f317aa7a017c080000000000000001" /* prefix */
@@ -302,7 +302,7 @@ static evmc::bytes32 setup_storage(mdbx::txn& txn, ByteView storage_key) {
         {0x3000000000000000000000000000000000000000000000000000000000E00001_bytes32, *from_hex("0x05")},
     };
 
-    db::Cursor hashed_storage(txn, db::table::kHashedStorage);
+    db::PooledCursor hashed_storage(txn, db::table::kHashedStorage);
     HashBuilder storage_hb;
     Bytes value_rlp{};
 
@@ -347,7 +347,7 @@ static evmc::bytes32 increment_intermediate_hashes(mdbx::txn& txn, std::filesyst
     auto computed_root{trie_loader.calculate_root()};
 
     // Save collected node changes
-    db::Cursor target(txn, db::table::kTrieOfAccounts);
+    db::PooledCursor target(txn, db::table::kTrieOfAccounts);
     MDBX_put_flags_t flags{target.size() ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
     account_trie_node_collector.load(target, nullptr, flags);
 
@@ -428,7 +428,7 @@ TEST_CASE("Account and storage trie") {
     // Check account trie
     // ----------------------------------------------------------------
 
-    db::Cursor account_trie(txn, db::table::kTrieOfAccounts);
+    db::PooledCursor account_trie(txn, db::table::kTrieOfAccounts);
     REQUIRE(account_trie.size() == 2);
 
     std::map<Bytes, Node> node_map{read_all_nodes(account_trie)};
@@ -456,7 +456,7 @@ TEST_CASE("Account and storage trie") {
     // Check storage trie
     // ----------------------------------------------------------------
 
-    db::Cursor storage_trie(txn, db::table::kTrieOfStorage);
+    db::PooledCursor storage_trie(txn, db::table::kTrieOfStorage);
     REQUIRE(storage_trie.size() == 1);
 
     node_map = read_all_nodes(storage_trie);
@@ -525,7 +525,7 @@ TEST_CASE("Account and storage trie") {
             REQUIRE(computed_root == expected_root);
 
             // Save collected node changes
-            db::Cursor target(txn, db::table::kTrieOfAccounts);
+            db::PooledCursor target(txn, db::table::kTrieOfAccounts);
             MDBX_put_flags_t flags{target.size() ? MDBX_put_flags_t::MDBX_UPSERT : MDBX_put_flags_t::MDBX_APPEND};
             account_trie_node_collector.load(target, nullptr, flags);
 
@@ -610,7 +610,7 @@ TEST_CASE("Account trie around extension node") {
     const evmc::bytes32 computed_root{regenerate_intermediate_hashes(txn, context.dir().etl().path())};
     REQUIRE(to_hex(computed_root.bytes, true) == to_hex(expected_root.bytes, true));
 
-    db::Cursor account_trie(txn, db::table::kTrieOfAccounts);
+    db::PooledCursor account_trie(txn, db::table::kTrieOfAccounts);
     std::map<Bytes, Node> node_map{read_all_nodes(account_trie)};
     CHECK(node_map.size() == 2);
 

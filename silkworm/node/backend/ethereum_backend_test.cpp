@@ -35,7 +35,7 @@ TEST_CASE("EthereumBackEnd", "[silkworm][backend][ethereum_backend]") {
     REQUIRE_NOTHROW(data_dir.deploy());
     db::EnvConfig db_config{data_dir.chaindata().path().string()};
     db_config.create = true;
-    db_config.inmemory = true;
+    db_config.in_memory = true;
     auto database_env = db::open_env(db_config);
     NodeSettings node_settings;
 

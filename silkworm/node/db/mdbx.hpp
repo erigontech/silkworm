@@ -48,9 +48,8 @@ namespace detail {
     };
 }  // namespace detail
 
-//! \brief This class wraps a read only transaction.
-//! It is used to make clear in the methods signature that the method does not require read-write access.
-//! It can either create a transaction from an environment or manage an externally created one.
+//! \brief This class wraps a read-only transaction.
+//! It is used in function signatures to clarify that read-only access is sufficient, read-write access is not required.
 class ROTxn {
   public:
     explicit ROTxn(mdbx::env& env) : managed_txn_{env.start_read()} {}
@@ -75,9 +74,10 @@ class ROTxn {
     mdbx::txn_managed managed_txn_;
 };
 
-//! \brief This class wraps read-write transactions, it is used to manages mdbx transactions across stages.
-//! It either creates new mdbx transaction as need be or uses an externally provided transaction.
-//! The external transaction mode is handy for running several stages on a handful of blocks atomically.
+//! \brief This class wraps a read-write transaction.
+//! It is used in function signatures to clarify that read-write access is required.
+//! It supports explicit disable/enable of commit capabilities.
+//! Disabling commit is useful for running several stages on a handful of blocks atomically.
 class RWTxn : public ROTxn {
   public:
     // This variant creates new mdbx transactions as need be.
@@ -118,11 +118,12 @@ class RWTxn : public ROTxn {
     void commit_and_stop() { commit(false); }
 
   protected:
+    RWTxn(mdbx::txn_managed&& source) : ROTxn{std::move(source)} {}
+
     bool commit_disabled_{false};
 };
 
 //! \brief This class create ROTxn(s) on demand, it is used to enforce in some method signatures the type of db access
-//!
 class ROAccess {
   public:
     explicit ROAccess(mdbx::env& env) : env_{env} {}
@@ -137,7 +138,6 @@ class ROAccess {
 };
 
 //! \brief This class create RWTxn(s) on demand, it is used to enforce in some method signatures the type of db access
-//!
 class RWAccess : public ROAccess {
   public:
     explicit RWAccess(mdbx::env& env) : ROAccess{env} {}
@@ -155,7 +155,7 @@ struct EnvConfig {
     bool create{false};          // Whether db file must be created
     bool readonly{false};        // Whether db should be opened in RO mode
     bool exclusive{false};       // Whether this process has exclusive access
-    bool inmemory{false};        // Whether this db is in memory
+    bool in_memory{false};       // Whether this db is in memory
     bool shared{false};          // Whether this process opens a db already opened by another process
     bool read_ahead{false};      // Whether to enable mdbx read ahead
     bool write_map{false};       // Whether to enable mdbx write map
@@ -204,17 +204,17 @@ size_t max_value_size_for_leaf_page(const ::mdbx::txn& txn, size_t key_size);
 //! \brief Managed cursor class to access cursor API
 //! \remarks Unlike ::mdbx::cursor_managed this class withdraws and deposits allocated MDBX_cursor handles in a
 //! thread_local pool for reuse. This helps avoiding multiple mallocs on cursor creation.
-class Cursor : public ::mdbx::cursor {
+class PooledCursor : public ::mdbx::cursor {
   public:
-    explicit Cursor(::mdbx::txn& txn, const MapConfig& config);
-    explicit Cursor(RWTxn& txn, const MapConfig& config) : Cursor(*txn, config){};
-    ~Cursor();
+    explicit PooledCursor(::mdbx::txn& txn, const MapConfig& config);
+    explicit PooledCursor(RWTxn& txn, const MapConfig& config) : PooledCursor(*txn, config){};
+    ~PooledCursor();
 
-    Cursor(Cursor&& other) noexcept;
-    Cursor& operator=(Cursor&& other) noexcept;
+    PooledCursor(PooledCursor&& other) noexcept;
+    PooledCursor& operator=(PooledCursor&& other) noexcept;
 
-    Cursor(const Cursor&) = delete;
-    Cursor& operator=(const Cursor&) = delete;
+    PooledCursor(const PooledCursor&) = delete;
+    PooledCursor& operator=(const PooledCursor&) = delete;
 
     //! \brief (re)uses current cursor binding it to provided transaction and map
     void bind(::mdbx::txn& tx, const MapConfig& config);

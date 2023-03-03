@@ -131,7 +131,7 @@ bool SnapshotSync::index_snapshots(db::RWTxn& txn, const std::vector<std::string
             hash2bn_collector.collect({block_hash.bytes, encoded_block_number});
             return true;
         });
-        db::Cursor header_numbers_cursor{txn, db::table::kHeaderNumbers};
+        db::PooledCursor header_numbers_cursor{txn, db::table::kHeaderNumbers};
         hash2bn_collector.load(header_numbers_cursor);
 
         // Reset sequence for kBlockTransactions table

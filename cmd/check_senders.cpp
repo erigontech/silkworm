@@ -68,10 +68,10 @@ int main(int argc, char* argv[]) {
     auto env{db::open_env(db_config)};
     auto txn{env.start_read()};
 
-    db::Cursor canonical_hashes_cursor(txn, db::table::kCanonicalHashes);
-    db::Cursor bodies_cursor{txn, db::table::kBlockBodies};
-    db::Cursor tx_cursor{txn, db::table::kBlockTransactions};
-    db::Cursor senders_cursor{txn, db::table::kSenders};
+    db::PooledCursor canonical_hashes_cursor(txn, db::table::kCanonicalHashes);
+    db::PooledCursor bodies_cursor{txn, db::table::kBlockBodies};
+    db::PooledCursor tx_cursor{txn, db::table::kBlockTransactions};
+    db::PooledCursor senders_cursor{txn, db::table::kSenders};
 
     uint64_t expected_block_number{block_from};
     uint64_t processed_senders_count{0};

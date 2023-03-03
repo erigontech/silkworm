@@ -234,7 +234,7 @@ void TxLookup::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum 
     current_key_.clear();
     log_lck.unlock();
 
-    db::Cursor target(txn, db::table::kTxLookup);
+    db::PooledCursor target(txn, db::table::kTxLookup);
     collector_->load(target, nullptr,
                      target.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT);
 
@@ -266,7 +266,7 @@ void TxLookup::unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     current_key_.clear();
     log_lck.unlock();
 
-    db::Cursor target(txn, db::table::kTxLookup);
+    db::PooledCursor target(txn, db::table::kTxLookup);
     collector_->load(target, nullptr, MDBX_put_flags_t::MDBX_UPSERT);
 
     log_lck.lock();
@@ -299,7 +299,7 @@ void TxLookup::prune_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     current_key_.clear();
     log_lck.unlock();
 
-    db::Cursor target(txn, db::table::kTxLookup);
+    db::PooledCursor target(txn, db::table::kTxLookup);
     collector_->load(target, nullptr, MDBX_put_flags_t::MDBX_UPSERT);
 
     log_lck.lock();
@@ -323,9 +323,9 @@ void TxLookup::collect_transaction_hashes_from_canonical_bodies(db::RWTxn& txn,
 
     auto start_key{db::block_key(expected_block_number)};
     Bytes etl_value{};
-    db::Cursor canonicals(txn, db::table::kCanonicalHashes);
-    db::Cursor bodies(txn, db::table::kBlockBodies);
-    db::Cursor transactions{txn, db::table::kBlockTransactions};
+    db::PooledCursor canonicals(txn, db::table::kCanonicalHashes);
+    db::PooledCursor bodies(txn, db::table::kBlockBodies);
+    db::PooledCursor transactions{txn, db::table::kBlockTransactions};
 
     auto canonical_data{canonicals.find(db::to_slice(start_key), /*throw_notfound=*/false)};
     if (!canonical_data) {

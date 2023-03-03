@@ -161,7 +161,7 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
     const size_t count{std::min(static_cast<size_t>(to - from + 1), kMaxPrefetchedBlocks)};
     size_t num_read{0};
 
-    db::Cursor canonicals(txn, db::table::kCanonicalHashes);
+    db::PooledCursor canonicals(txn, db::table::kCanonicalHashes);
     Bytes starting_key{db::block_key(from)};
     if (canonicals.seek(db::to_slice(starting_key))) {
         BlockNum block_num{from};
@@ -349,10 +349,10 @@ Stage::Result Execution::unwind(db::RWTxn& txn) {
 
         {
             // Revert states
-            db::Cursor plain_state_table(txn, db::table::kPlainState);
-            db::Cursor plain_code_table(txn, db::table::kPlainCodeHash);
-            db::Cursor account_changeset_table(txn, db::table::kAccountChangeSet);
-            db::Cursor storage_changeset_table(txn, db::table::kStorageChangeSet);
+            db::PooledCursor plain_state_table(txn, db::table::kPlainState);
+            db::PooledCursor plain_code_table(txn, db::table::kPlainCodeHash);
+            db::PooledCursor account_changeset_table(txn, db::table::kAccountChangeSet);
+            db::PooledCursor storage_changeset_table(txn, db::table::kStorageChangeSet);
 
             unwind_state_from_changeset(account_changeset_table, plain_state_table, plain_code_table, to);
             unwind_state_from_changeset(storage_changeset_table, plain_state_table, plain_code_table, to);
@@ -362,7 +362,7 @@ Stage::Result Execution::unwind(db::RWTxn& txn) {
         // Note erasing forward the start key is included that's why we increase unwind_point by 1
         Bytes start_key{db::block_key(to + 1)};
         for (const auto& map_config : unwind_tables) {
-            db::Cursor unwind_cursor(txn, map_config);
+            db::PooledCursor unwind_cursor(txn, map_config);
             auto erased{db::cursor_erase(unwind_cursor, start_key, db::CursorMoveDirection::Forward)};
             log::Info() << "Erased " << erased << " records from " << map_config.name;
         }
@@ -430,7 +430,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
 
             auto key{db::block_key(prune_threshold)};
             size_t erased{0};
-            db::Cursor source(txn, db::table::kAccountChangeSet);
+            db::PooledCursor source(txn, db::table::kAccountChangeSet);
             auto data{source.lower_bound(db::to_slice(key), /*throw_notfound=*/false)};
             while (data) {
                 erased += source.count_multivalue();
@@ -475,7 +475,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
                            "threshold", std::to_string(prune_threshold)});
             }
             auto key{db::block_key(prune_threshold)};
-            db::Cursor source(txn, db::table::kBlockReceipts);
+            db::PooledCursor source(txn, db::table::kBlockReceipts);
             size_t erased = db::cursor_erase(source, key, db::CursorMoveDirection::Reverse);
             if (stop_watch) {
                 const auto [_, duration] = stop_watch->lap();
@@ -507,7 +507,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
                            "threshold", std::to_string(prune_threshold)});
             }
             auto key{db::block_key(prune_threshold)};
-            db::Cursor source(txn, db::table::kCallTraceSet);
+            db::PooledCursor source(txn, db::table::kCallTraceSet);
             size_t erased = db::cursor_erase(source, key, db::CursorMoveDirection::Reverse);
             if (stop_watch) {
                 const auto [_, duration] = stop_watch->lap();

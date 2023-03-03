@@ -103,7 +103,7 @@ static inline mdbx::cursor::move_operation move_operation(CursorMoveDirection di
     if (config.readonly) {
         flags |= MDBX_RDONLY;
     }
-    if (config.inmemory) {
+    if (config.in_memory) {
         flags |= MDBX_NOMETASYNC;
     }
     if (config.exclusive) {
@@ -118,8 +118,8 @@ static inline mdbx::cursor::move_operation move_operation(CursorMoveDirection di
 
     ::mdbx::env_managed::create_parameters cp{};  // Default create parameters
     if (!config.shared) {
-        auto max_map_size = static_cast<intptr_t>(config.inmemory ? 128_Mebi : config.max_size);
-        auto growth_size = static_cast<intptr_t>(config.inmemory ? 8_Mebi : config.growth_size);
+        auto max_map_size = static_cast<intptr_t>(config.in_memory ? 128_Mebi : config.max_size);
+        auto growth_size = static_cast<intptr_t>(config.in_memory ? 8_Mebi : config.growth_size);
         cp.geometry.make_dynamic(::mdbx::env::geometry::default_value, max_map_size);
         cp.geometry.growth_step = growth_size;
         if (!db_ondisk_file_size)
@@ -160,7 +160,7 @@ static inline mdbx::cursor::move_operation move_operation(CursorMoveDirection di
                 ::mdbx_env_set_option(ret, MDBX_opt_merge_threshold_16dot16_percent, 32_Kibi));
         }
     }
-    if (!config.inmemory) {
+    if (!config.in_memory) {
         ret.check_readers();
     }
     return ret;
@@ -211,9 +211,9 @@ size_t max_value_size_for_leaf_page(const mdbx::txn& txn, const size_t key_size)
     return max_value_size_for_leaf_page(page_size, key_size);
 }
 
-thread_local ObjectPool<MDBX_cursor, detail::cursor_handle_deleter> Cursor::handles_pool_{};
+thread_local ObjectPool<MDBX_cursor, detail::cursor_handle_deleter> PooledCursor::handles_pool_{};
 
-Cursor::Cursor(::mdbx::txn& txn, const MapConfig& config) {
+PooledCursor::PooledCursor(::mdbx::txn& txn, const MapConfig& config) {
     handle_ = handles_pool_.acquire();
     if (!handle_) {
         handle_ = ::mdbx_cursor_create(nullptr);
@@ -221,20 +221,20 @@ Cursor::Cursor(::mdbx::txn& txn, const MapConfig& config) {
     bind(txn, config);
 }
 
-Cursor::Cursor(Cursor&& other) noexcept { std::swap(handle_, other.handle_); }
+PooledCursor::PooledCursor(PooledCursor&& other) noexcept { std::swap(handle_, other.handle_); }
 
-Cursor& Cursor::operator=(Cursor&& other) noexcept {
+PooledCursor& PooledCursor::operator=(PooledCursor&& other) noexcept {
     std::swap(handle_, other.handle_);
     return *this;
 }
 
-Cursor::~Cursor() {
+PooledCursor::~PooledCursor() {
     if (handle_) {
         handles_pool_.add(handle_);
     }
 }
 
-void Cursor::bind(::mdbx::txn& txn, const MapConfig& config) {
+void PooledCursor::bind(::mdbx::txn& txn, const MapConfig& config) {
     if (!handle_) throw std::runtime_error("Can't bind a closed cursor");
     // Check cursor is bound to a live transaction
     if (auto cm_tx{mdbx_cursor_txn(handle_)}; cm_tx) {
@@ -249,35 +249,35 @@ void Cursor::bind(::mdbx::txn& txn, const MapConfig& config) {
     ::mdbx::cursor::bind(txn, map);
 }
 
-void Cursor::close() {
+void PooledCursor::close() {
     ::mdbx_cursor_close(handle_);
     handle_ = nullptr;
 }
-MDBX_stat Cursor::get_map_stat() const {
+MDBX_stat PooledCursor::get_map_stat() const {
     if (!handle_) {
         mdbx::error::success_or_throw(EINVAL);
     }
     return txn().get_map_stat(map());
 }
 
-MDBX_db_flags_t Cursor::get_map_flags() const {
+MDBX_db_flags_t PooledCursor::get_map_flags() const {
     if (!handle_) {
         mdbx::error::success_or_throw(EINVAL);
     }
     return txn().get_handle_info(map()).flags;
 }
 
-bool Cursor::is_multi_value() const {
+bool PooledCursor::is_multi_value() const {
     return get_map_flags() & MDBX_DUPSORT;
 }
 
-bool Cursor::is_dangling() const {
+bool PooledCursor::is_dangling() const {
     return eof() && !on_last();
 }
 
-size_t Cursor::size() const { return get_map_stat().ms_entries; }
+size_t PooledCursor::size() const { return get_map_stat().ms_entries; }
 
-bool Cursor::empty() const { return size() == 0; }
+bool PooledCursor::empty() const { return size() == 0; }
 
 bool has_map(::mdbx::txn& tx, const char* map_name) {
     try {

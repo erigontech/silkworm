@@ -347,7 +347,7 @@ struct BackEndKvE2eTest {
         db_config->max_readers = options.chaindata_env_config.max_readers;
         db_config->path = data_dir.chaindata().path().string();
         db_config->create = true;
-        db_config->inmemory = true;
+        db_config->in_memory = true;
         database_env = db::open_env(*db_config);
         auto rw_txn{database_env.start_write()};
         db::open_map(rw_txn, kTestMap);
@@ -375,10 +375,10 @@ struct BackEndKvE2eTest {
 
     void fill_tables() {
         auto rw_txn = database_env.start_write();
-        db::Cursor rw_cursor1{rw_txn, kTestMap};
+        db::PooledCursor rw_cursor1{rw_txn, kTestMap};
         rw_cursor1.upsert(mdbx::slice{"AA"}, mdbx::slice{"00"});
         rw_cursor1.upsert(mdbx::slice{"BB"}, mdbx::slice{"11"});
-        db::Cursor rw_cursor2{rw_txn, kTestMultiMap};
+        db::PooledCursor rw_cursor2{rw_txn, kTestMultiMap};
         rw_cursor2.upsert(mdbx::slice{"AA"}, mdbx::slice{"00"});
         rw_cursor2.upsert(mdbx::slice{"AA"}, mdbx::slice{"11"});
         rw_cursor2.upsert(mdbx::slice{"AA"}, mdbx::slice{"22"});
@@ -388,9 +388,9 @@ struct BackEndKvE2eTest {
 
     void alter_tables() {
         auto rw_txn = database_env.start_write();
-        db::Cursor rw_cursor1{rw_txn, kTestMap};
+        db::PooledCursor rw_cursor1{rw_txn, kTestMap};
         rw_cursor1.upsert(mdbx::slice{"CC"}, mdbx::slice{"22"});
-        db::Cursor rw_cursor2{rw_txn, kTestMultiMap};
+        db::PooledCursor rw_cursor2{rw_txn, kTestMultiMap};
         rw_cursor2.upsert(mdbx::slice{"AA"}, mdbx::slice{"33"});
         rw_cursor2.upsert(mdbx::slice{"BB"}, mdbx::slice{"33"});
         rw_txn.commit();
@@ -434,7 +434,7 @@ TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
     REQUIRE_NOTHROW(data_dir.deploy());
     db::EnvConfig db_config{data_dir.chaindata().path().string()};
     db_config.create = true;
-    db_config.inmemory = true;
+    db_config.in_memory = true;
     auto database_env = db::open_env(db_config);
     NodeSettings node_settings;
     EthereumBackEnd backend{node_settings, &database_env};

@@ -172,7 +172,7 @@ Stage::Result HashState::prune(db::RWTxn&) {
 Stage::Result HashState::hash_from_plainstate(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
     try {
-        db::Cursor source(txn, db::table::kPlainState);
+        db::PooledCursor source(txn, db::table::kPlainState);
         auto data{source.to_first(/*throw_notfound=*/true)};
 
         /*
@@ -271,8 +271,8 @@ Stage::Result HashState::hash_from_plainstate(db::RWTxn& txn) {
         throw_if_stopping();
 
         if (!collector_->empty()) {
-            db::Cursor account_target(txn, db::table::kHashedAccounts);
-            db::Cursor storage_target(txn, db::table::kHashedStorage);
+            db::PooledCursor account_target(txn, db::table::kHashedAccounts);
+            db::PooledCursor storage_target(txn, db::table::kHashedStorage);
 
             if (!account_target.empty())
                 throw std::runtime_error(std::string(db::table::kHashedAccounts.name) + " should be empty");
@@ -335,7 +335,7 @@ Stage::Result HashState::hash_from_plainstate(db::RWTxn& txn) {
 Stage::Result HashState::hash_from_plaincode(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
     try {
-        db::Cursor source(txn, db::table::kPlainCodeHash);
+        db::PooledCursor source(txn, db::table::kPlainCodeHash);
         auto data{source.to_first(/*throw_notfound=*/false)};
 
         evmc::address last_address{};
@@ -377,7 +377,7 @@ Stage::Result HashState::hash_from_plaincode(db::RWTxn& txn) {
         throw_if_stopping();
 
         if (!collector_->empty()) {
-            db::Cursor target(txn, db::table::kHashedCodeHash);
+            db::PooledCursor target(txn, db::table::kHashedCodeHash);
             if (!target.empty())
                 throw std::runtime_error(std::string(db::table::kHashedCodeHash.name) + " should be empty");
 
@@ -430,8 +430,8 @@ Stage::Result HashState::hash_from_account_changeset(db::RWTxn& txn, BlockNum pr
         log_lck.unlock();
 
         auto source_initial_key{db::block_key(expected_blocknum)};
-        db::Cursor source_changeset(txn, db::table::kAccountChangeSet);
-        db::Cursor source_plainstate(txn, db::table::kPlainState);
+        db::PooledCursor source_changeset(txn, db::table::kAccountChangeSet);
+        db::PooledCursor source_plainstate(txn, db::table::kPlainState);
         auto changeset_data{
             source_changeset.find(db::to_slice(source_initial_key),  // Initial record MUST be found because
                                   /*throw_notfound=*/true)};         // there is at least 1 change per block
@@ -513,8 +513,8 @@ Stage::Result HashState::hash_from_storage_changeset(db::RWTxn& txn, BlockNum pr
         current_key_ = std::to_string(previous_progress + 1);
         log_lck.unlock();
 
-        db::Cursor source_changeset(txn, db::table::kStorageChangeSet);
-        db::Cursor source_plainstate(txn, db::table::kPlainState);
+        db::PooledCursor source_changeset(txn, db::table::kStorageChangeSet);
+        db::PooledCursor source_plainstate(txn, db::table::kPlainState);
 
         // find fist block with changes
         BlockNum initial_block{previous_progress + 1};
@@ -619,7 +619,7 @@ Stage::Result HashState::unwind_from_account_changeset(db::RWTxn& txn, BlockNum 
 
         throw_if_stopping();
 
-        db::Cursor source_changeset(txn, db::table::kAccountChangeSet);
+        db::PooledCursor source_changeset(txn, db::table::kAccountChangeSet);
         auto source_initial_key{db::block_key(expected_blocknum)};
         auto changeset_data{source_changeset.lower_bound(db::to_slice(source_initial_key),
                                                          /*throw_notfound=*/true)};  // Initial record MUST be found
@@ -706,7 +706,7 @@ Stage::Result HashState::unwind_from_storage_changeset(db::RWTxn& txn, BlockNum 
         current_key_ = std::to_string(to + 1);
         log_lck.unlock();
 
-        db::Cursor source_changeset(txn, db::table::kStorageChangeSet);
+        db::PooledCursor source_changeset(txn, db::table::kStorageChangeSet);
         auto source_initial_key{db::block_key(to + 1)};
         auto changeset_data{source_changeset.lower_bound(db::to_slice(source_initial_key), /*throw_notfound=*/true)};
 
@@ -781,9 +781,9 @@ Stage::Result HashState::write_changes_from_changed_addresses(db::RWTxn& txn, co
     current_key_ = to_hex(changed_addresses.begin()->first.bytes, /*with_prefix=*/true);
     log_lck.unlock();
 
-    db::Cursor source_plaincode(txn, db::table::kPlainCodeHash);
-    db::Cursor target_hashed_accounts(txn, db::table::kHashedAccounts);
-    db::Cursor target_hashed_code(txn, db::table::kHashedCodeHash);
+    db::PooledCursor source_plaincode(txn, db::table::kPlainCodeHash);
+    db::PooledCursor target_hashed_accounts(txn, db::table::kHashedAccounts);
+    db::PooledCursor target_hashed_code(txn, db::table::kHashedCodeHash);
 
     Bytes plain_code_key(kAddressLength + db::kIncarnationLength, '\0');  // Only one allocation
     Bytes hashed_code_key(kHashLength + db::kIncarnationLength, '\0');    // Only one allocation
@@ -832,7 +832,7 @@ Stage::Result HashState::write_changes_from_changed_storage(
     db::RWTxn& txn, db::StorageChanges& storage_changes,
     const absl::btree_map<evmc::address, evmc::bytes32>& hashed_addresses) {
     throw_if_stopping();
-    db::Cursor target_hashed_storage(txn, db::table::kHashedStorage);
+    db::PooledCursor target_hashed_storage(txn, db::table::kHashedStorage);
 
     std::unique_lock log_lck(log_mtx_);
     loading_ = true;

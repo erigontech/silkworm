@@ -92,7 +92,7 @@ Stage::Result Senders::unwind(db::RWTxn& txn) {
                        "span", std::to_string(segment_width)});
         }
 
-        db::Cursor unwind_table(txn, db::table::kSenders);
+        db::PooledCursor unwind_table(txn, db::table::kSenders);
         const auto start_key{db::block_key(to + 1)};
         size_t erased{0};
         auto data{unwind_table.lower_bound(db::to_slice(start_key), /*throw_notfound=*/false)};
@@ -184,7 +184,7 @@ Stage::Result Senders::prune(db::RWTxn& txn) {
                        "threshold", std::to_string(prune_threshold)});
         }
 
-        db::Cursor prune_table(txn, db::table::kSenders);
+        db::PooledCursor prune_table(txn, db::table::kSenders);
         const auto upper_key{db::block_key(prune_threshold)};
         size_t erased{0};
         auto prune_data{prune_table.lower_bound(db::to_slice(upper_key), /*throw_notfound=*/false)};

@@ -340,7 +340,7 @@ void LogIndex::collect_bitmaps_from_logs(db::RWTxn& txn,
     CborListener listener{on_log_bytes};
 
     auto start_key{db::block_key(from + 1)};
-    db::Cursor source(txn, source_config);
+    db::PooledCursor source(txn, source_config);
     auto source_data{source.lower_bound(db::to_slice(start_key), false)};
     while (source_data) {
         reached_block_number = endian::load_big_u64(static_cast<uint8_t*>(source_data.key.data()));
@@ -409,7 +409,7 @@ void LogIndex::collect_unique_keys_from_logs(db::RWTxn& txn,
     CborListener listener{on_log_bytes};
 
     auto start_key{db::block_key(expected_block_number)};
-    db::Cursor source(txn, source_config);
+    db::PooledCursor source(txn, source_config);
     auto source_data{source.lower_bound(db::to_slice(start_key), false)};
     while (source_data) {
         reached_block_number = endian::load_big_u64(static_cast<uint8_t*>(source_data.key.data()));

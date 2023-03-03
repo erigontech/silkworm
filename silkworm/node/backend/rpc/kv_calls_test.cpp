@@ -69,17 +69,17 @@ TEST_CASE("dump_mdbx_result", "[silkworm][rpc][kv_calls]") {
     db::EnvConfig db_config;
     db_config.path = data_dir.chaindata().path().string();
     db_config.create = true;
-    db_config.inmemory = true;
+    db_config.in_memory = true;
     auto database_env = db::open_env(db_config);
     auto rw_txn{database_env.start_write()};
     db::open_map(rw_txn, kTestMap);
-    db::Cursor rw_cursor{rw_txn, kTestMap};
+    db::PooledCursor rw_cursor{rw_txn, kTestMap};
     rw_cursor.upsert(mdbx::slice{"AA"}, mdbx::slice{"00"});
     rw_cursor.upsert(mdbx::slice{"BB"}, mdbx::slice{"11"});
     rw_txn.commit();
 
     auto ro_txn = database_env.start_read();
-    db::Cursor cursor{ro_txn, kTestMap};
+    db::PooledCursor cursor{ro_txn, kTestMap};
     mdbx::cursor::move_result result = cursor.to_first(/*throw_notfound=*/false);
     const auto result_dump = detail::dump_mdbx_result(result);
     CHECK(result_dump.find(std::to_string(result.done)) != std::string::npos);

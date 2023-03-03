@@ -29,7 +29,7 @@ static BlockNum get_stage_data(ROTxn& txn, const char* stage_name, const db::Map
     }
 
     try {
-        db::Cursor src(txn, domain);
+        db::PooledCursor src(txn, domain);
         std::string item_key{stage_name};
         if (key_prefix) {
             item_key.insert(0, std::string(key_prefix));
@@ -60,7 +60,7 @@ static void set_stage_data(RWTxn& txn, const char* stage_name, uint64_t block_nu
         }
         Bytes stage_progress(sizeof(block_num), 0);
         endian::store_big_u64(stage_progress.data(), block_num);
-        db::Cursor target(txn, domain);
+        db::PooledCursor target(txn, domain);
         mdbx::slice key(item_key.c_str());
         mdbx::slice value{db::to_slice(stage_progress)};
         target.upsert(key, value);

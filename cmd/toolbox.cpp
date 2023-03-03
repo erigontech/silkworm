@@ -1040,7 +1040,7 @@ void do_trie_scan(db::EnvConfig& config, bool del) {
         if (SignalHandler::signalled()) {
             break;
         }
-        db::Cursor cursor(txn, map_config);
+        db::PooledCursor cursor(txn, map_config);
         std::cout << " Scanning " << map_config.name << std::endl;
         auto data{cursor.to_first(false)};
         while (data) {
@@ -1080,9 +1080,9 @@ void do_trie_integrity(db::EnvConfig& config, bool with_state_coverage, bool con
     std::string source{db::table::kTrieOfAccounts.name};
 
     bool is_healthy{true};
-    db::Cursor trie_cursor1(txn, db::table::kTrieOfAccounts);
-    db::Cursor trie_cursor2(txn, db::table::kTrieOfAccounts);
-    db::Cursor state_cursor(txn, db::table::kHashedAccounts);
+    db::PooledCursor trie_cursor1(txn, db::table::kTrieOfAccounts);
+    db::PooledCursor trie_cursor2(txn, db::table::kTrieOfAccounts);
+    db::PooledCursor state_cursor(txn, db::table::kHashedAccounts);
     size_t prefix_len{0};
 
     Bytes buffer;
@@ -1414,7 +1414,7 @@ void do_trie_root(db::EnvConfig& config) {
 
     auto env{silkworm::db::open_env(config)};
     db::ROTxn txn{env};
-    db::Cursor trie_accounts(txn, db::table::kTrieOfAccounts);
+    db::PooledCursor trie_accounts(txn, db::table::kTrieOfAccounts);
     std::string source{db::table::kTrieOfAccounts.name};
 
     // Retrieve expected state root
@@ -1477,7 +1477,7 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
 
     // Void TxLookup stage
     log::Info(db::stages::kTxLookupKey, {"table", db::table::kTxLookup.name}) << "truncating ...";
-    db::Cursor source(*txn, db::table::kTxLookup);
+    db::PooledCursor source(*txn, db::table::kTxLookup);
     txn->clear_map(source.map());
     db::stages::write_stage_progress(txn, db::stages::kTxLookupKey, 0);
     db::stages::write_stage_prune_progress(txn, db::stages::kTxLookupKey, 0);
@@ -1559,8 +1559,8 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
     {
         log::Info(db::stages::kExecutionKey, {"table", db::table::kPlainState.name})
             << " reverting from " << db::table::kAccountChangeSet.name << " ...";
-        db::Cursor account_changeset(txn, db::table::kAccountChangeSet);
-        db::Cursor plain_state(txn, db::table::kPlainState);
+        db::PooledCursor account_changeset(txn, db::table::kAccountChangeSet);
+        db::PooledCursor plain_state(txn, db::table::kPlainState);
         absl::btree_map<evmc::address, std::optional<Account>> unique_addresses;
         auto unique_addresses_it{unique_addresses.end()};
         auto data{account_changeset.to_first(/*throw_notfound=*/false)};
@@ -1602,8 +1602,8 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
          */
         log::Info(db::stages::kExecutionKey, {"table", db::table::kPlainState.name})
             << " reverting from " << db::table::kStorageChangeSet.name << " ...";
-        db::Cursor storage_changeset(txn, db::table::kStorageChangeSet);
-        db::Cursor plain_state(txn, db::table::kPlainState);
+        db::PooledCursor storage_changeset(txn, db::table::kStorageChangeSet);
+        db::PooledCursor plain_state(txn, db::table::kPlainState);
         auto data{plain_state.to_first(/*throw_notfound=*/false)};
         while (data) {
             if (data.key.size() == db::kPlainStoragePrefixLength) {

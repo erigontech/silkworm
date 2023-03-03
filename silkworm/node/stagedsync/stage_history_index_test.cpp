@@ -125,14 +125,14 @@ TEST_CASE("Stage History Index") {
         db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 3);
 
         SECTION("Forward and Unwind") {
-            db::Cursor account_changes(txn, db::table::kAccountChangeSet);
+            db::PooledCursor account_changes(txn, db::table::kAccountChangeSet);
             REQUIRE(!account_changes.empty());
 
             stagedsync::SyncContext sync_context{};
             stagedsync::HistoryIndex stage_history_index(&context.node_settings(), &sync_context);
             REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);
-            db::Cursor account_history(txn, db::table::kAccountHistory);
-            db::Cursor storage_history(txn, db::table::kStorageHistory);
+            db::PooledCursor account_history(txn, db::table::kAccountHistory);
+            db::PooledCursor storage_history(txn, db::table::kStorageHistory);
             REQUIRE(!account_history.empty());
             REQUIRE(!storage_history.empty());
 
@@ -231,8 +231,8 @@ TEST_CASE("Stage History Index") {
             REQUIRE(db::stages::read_stage_progress(txn, db::stages::kHistoryIndexKey) == 3);
             REQUIRE(db::stages::read_stage_prune_progress(txn, db::stages::kHistoryIndexKey) == 3);
 
-            db::Cursor account_history(txn, db::table::kAccountHistory);
-            db::Cursor storage_history(txn, db::table::kStorageHistory);
+            db::PooledCursor account_history(txn, db::table::kAccountHistory);
+            db::PooledCursor storage_history(txn, db::table::kStorageHistory);
             REQUIRE(!account_history.empty());
             REQUIRE(!storage_history.empty());
 
@@ -282,7 +282,7 @@ TEST_CASE("Stage History Index") {
                                              {0x0000000000000000000000000000000000000003_address}};
 
         // Use a large dataset in change sets (actual values do not matter)
-        db::Cursor account_changeset(txn, db::table::kAccountChangeSet);
+        db::PooledCursor account_changeset(txn, db::table::kAccountChangeSet);
         BlockNum block{1};
 
         for (; block <= 50000; ++block) {
@@ -304,7 +304,7 @@ TEST_CASE("Stage History Index") {
         stagedsync::SyncContext sync_context{};
         stagedsync::HistoryIndex stage_history_index(&context.node_settings(), &sync_context);
         REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);
-        db::Cursor account_history(txn, db::table::kAccountHistory);
+        db::PooledCursor account_history(txn, db::table::kAccountHistory);
         auto batch_1{account_history.size()};
         REQUIRE(batch_1 != 0);
 

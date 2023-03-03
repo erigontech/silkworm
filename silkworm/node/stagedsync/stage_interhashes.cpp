@@ -39,7 +39,7 @@ Stage::Result InterHashes::forward(db::RWTxn& txn) {
 
         // Check stage boundaries from previous execution and previous stage execution
         auto previous_progress{get_progress(txn)};
-        auto hashstate_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey)};
+        auto hashstate_stage_progress{db::stages::read_stage_progress(txn, db::stages::kHashStateKey)};
         if (previous_progress == hashstate_stage_progress) {
             // Nothing to process
             operation_ = OperationType::None;
@@ -63,12 +63,12 @@ Stage::Result InterHashes::forward(db::RWTxn& txn) {
         }
 
         // Retrieve header's state_root at target block to be compared with the one computed here
-        auto header_hash{db::read_canonical_header_hash(*txn, hashstate_stage_progress)};
+        auto header_hash{db::read_canonical_header_hash(txn, hashstate_stage_progress)};
         if (!header_hash.has_value()) {
             throw std::runtime_error("Could not find hash for canonical header " +
                                      std::to_string(hashstate_stage_progress));
         }
-        auto header{db::read_header(*txn, hashstate_stage_progress, header_hash->bytes)};
+        auto header{db::read_header(txn, hashstate_stage_progress, header_hash->bytes)};
         if (!header_hash.has_value()) {
             throw std::runtime_error("Could not find canonical header number " +
                                      std::to_string(hashstate_stage_progress) +
@@ -93,7 +93,7 @@ Stage::Result InterHashes::forward(db::RWTxn& txn) {
 
         success_or_throw(ret);
         throw_if_stopping();
-        db::stages::write_stage_progress(*txn, db::stages::kIntermediateHashesKey, hashstate_stage_progress);
+        db::stages::write_stage_progress(txn, db::stages::kIntermediateHashesKey, hashstate_stage_progress);
         txn.commit();
 
     } catch (const StageError& ex) {
@@ -146,12 +146,12 @@ Stage::Result InterHashes::unwind(db::RWTxn& txn) {
 
         // Retrieve header's state_root at target block to be compared with the one computed here
         // Retrieve header's state_root at target block to be compared with the one computed here
-        auto header_hash{db::read_canonical_header_hash(*txn, to)};
+        auto header_hash{db::read_canonical_header_hash(txn, to)};
         if (!header_hash.has_value()) {
             throw std::runtime_error("Could not find hash for canonical header " +
                                      std::to_string(to));
         }
-        auto header{db::read_header(*txn, to, header_hash->bytes)};
+        auto header{db::read_header(txn, to, header_hash->bytes)};
         if (!header_hash.has_value()) {
             throw std::runtime_error("Could not find canonical header number " +
                                      std::to_string(to) +
@@ -171,7 +171,7 @@ Stage::Result InterHashes::unwind(db::RWTxn& txn) {
 
         success_or_throw(ret);
         throw_if_stopping();
-        db::stages::write_stage_progress(*txn, db::stages::kIntermediateHashesKey, to);
+        db::stages::write_stage_progress(txn, db::stages::kIntermediateHashesKey, to);
         txn.commit();
 
     } catch (const StageError& ex) {

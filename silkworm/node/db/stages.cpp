@@ -22,7 +22,7 @@
 
 namespace silkworm::db::stages {
 
-static BlockNum get_stage_data(mdbx::txn& txn, const char* stage_name, const db::MapConfig& domain,
+static BlockNum get_stage_data(ROTxn& txn, const char* stage_name, const db::MapConfig& domain,
                                const char* key_prefix = nullptr) {
     if (!is_known_stage(stage_name)) {
         throw std::invalid_argument("Unknown stage name " + std::string(stage_name));
@@ -47,7 +47,7 @@ static BlockNum get_stage_data(mdbx::txn& txn, const char* stage_name, const db:
     }
 }
 
-static void set_stage_data(mdbx::txn& txn, const char* stage_name, uint64_t block_num, const db::MapConfig& domain,
+static void set_stage_data(RWTxn& txn, const char* stage_name, uint64_t block_num, const db::MapConfig& domain,
                            const char* key_prefix = nullptr) {
     if (!is_known_stage(stage_name)) {
         throw std::invalid_argument("Unknown stage name");
@@ -70,27 +70,27 @@ static void set_stage_data(mdbx::txn& txn, const char* stage_name, uint64_t bloc
     }
 }
 
-BlockNum read_stage_progress(mdbx::txn& txn, const char* stage_name) {
+BlockNum read_stage_progress(ROTxn& txn, const char* stage_name) {
     return get_stage_data(txn, stage_name, silkworm::db::table::kSyncStageProgress);
 }
 
-BlockNum read_stage_prune_progress(mdbx::txn& txn, const char* stage_name) {
+BlockNum read_stage_prune_progress(ROTxn& txn, const char* stage_name) {
     return get_stage_data(txn, stage_name, silkworm::db::table::kSyncStageProgress, "prune_");
 }
 
-void write_stage_progress(mdbx::txn& txn, const char* stage_name, BlockNum block_num) {
+void write_stage_progress(RWTxn& txn, const char* stage_name, BlockNum block_num) {
     set_stage_data(txn, stage_name, block_num, silkworm::db::table::kSyncStageProgress);
 }
 
-void write_stage_prune_progress(mdbx::txn& txn, const char* stage_name, BlockNum block_num) {
+void write_stage_prune_progress(RWTxn& txn, const char* stage_name, BlockNum block_num) {
     set_stage_data(txn, stage_name, block_num, silkworm::db::table::kSyncStageProgress, "prune_");
 }
 
-BlockNum read_stage_unwind(mdbx::txn& txn, const char* stage_name) {
+BlockNum read_stage_unwind(ROTxn& txn, const char* stage_name) {
     return get_stage_data(txn, stage_name, silkworm::db::table::kSyncStageUnwind);
 }
 
-void write_stage_unwind(mdbx::txn& txn, const char* stage_name, BlockNum block_num) {
+void write_stage_unwind(RWTxn& txn, const char* stage_name, BlockNum block_num) {
     set_stage_data(txn, stage_name, block_num, silkworm::db::table::kSyncStageUnwind);
 }
 

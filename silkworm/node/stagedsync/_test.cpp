@@ -54,14 +54,14 @@ TEST_CASE("Sync Stages") {
 
     auto chaindata_env{db::open_env(node_settings.chaindata_env_config)};
     db::RWTxn txn(chaindata_env);
-    db::table::check_or_create_chaindata_tables(*txn);
+    db::table::check_or_create_chaindata_tables(txn);
     txn.commit(true);
 
     auto source_data{read_genesis_data(node_settings.network_id)};
     auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
-    db::initialize_genesis(*txn, genesis_json, /*allow_exceptions=*/true);
+    db::initialize_genesis(txn, genesis_json, /*allow_exceptions=*/true);
     txn.commit();
-    node_settings.chain_config = db::read_chain_config(*txn);
+    node_settings.chain_config = db::read_chain_config(txn);
 
     SECTION("BlockHashes") {
         SECTION("Forward/Unwind/Prune args validation") {
@@ -89,7 +89,7 @@ TEST_CASE("Sync Stages") {
                 Bytes block_key{db::block_key(block_num++)};
                 canonical_table.insert(db::to_slice(block_key), db::to_slice(hash));
             }
-            db::stages::write_stage_progress(*txn, db::stages::kHeadersKey, 3);
+            db::stages::write_stage_progress(txn, db::stages::kHeadersKey, 3);
             REQUIRE_NOTHROW(txn.commit(true));
 
             stagedsync::SyncContext sync_context{};
@@ -102,7 +102,7 @@ TEST_CASE("Sync Stages") {
 
             {
                 // Verify written data is consistent
-                auto target_table{db::open_cursor(*txn, db::table::kHeaderNumbers)};
+                auto target_table{db::open_cursor(txn, db::table::kHeaderNumbers)};
 
                 REQUIRE(txn->get_map_stat(target_table.map()).ms_entries ==
                         block_hashes.size() + 1);  // +1 cause block 0 is genesis
@@ -149,29 +149,29 @@ TEST_CASE("Sync Stages") {
 
         // First block - 1 transaction
         block_body.transactions.push_back(sample_transactions[0]);
-        REQUIRE_NOTHROW(db::write_body(*txn, block_body, block_hashes[0].bytes, 1));
+        REQUIRE_NOTHROW(db::write_body(txn, block_body, block_hashes[0].bytes, 1));
 
         // Second block - 1 transactions
-        REQUIRE_NOTHROW(db::write_body(*txn, block_body, block_hashes[1].bytes, 2));
+        REQUIRE_NOTHROW(db::write_body(txn, block_body, block_hashes[1].bytes, 2));
 
         // Third block - 0 transactions
         block_body.transactions.clear();
-        REQUIRE_NOTHROW(db::write_body(*txn, block_body, block_hashes[2].bytes, 3));
+        REQUIRE_NOTHROW(db::write_body(txn, block_body, block_hashes[2].bytes, 3));
 
         // Write canonical hashes
-        REQUIRE_NOTHROW(db::write_canonical_header_hash(*txn, block_hashes[0].bytes, 1));
-        REQUIRE_NOTHROW(db::write_canonical_header_hash(*txn, block_hashes[1].bytes, 2));
-        REQUIRE_NOTHROW(db::write_canonical_header_hash(*txn, block_hashes[2].bytes, 3));
+        REQUIRE_NOTHROW(db::write_canonical_header_hash(txn, block_hashes[0].bytes, 1));
+        REQUIRE_NOTHROW(db::write_canonical_header_hash(txn, block_hashes[1].bytes, 2));
+        REQUIRE_NOTHROW(db::write_canonical_header_hash(txn, block_hashes[2].bytes, 3));
 
         // Update progresses
-        REQUIRE_NOTHROW(db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 3));
-        REQUIRE_NOTHROW(db::stages::write_stage_progress(*txn, db::stages::kBlockHashesKey, 3));
+        REQUIRE_NOTHROW(db::stages::write_stage_progress(txn, db::stages::kBlockBodiesKey, 3));
+        REQUIRE_NOTHROW(db::stages::write_stage_progress(txn, db::stages::kBlockHashesKey, 3));
 
         // Commit
         REQUIRE_NOTHROW(txn.commit());
 
         // Verify sequence for transactions has been incremented properly
-        auto last_tx_sequence{db::read_map_sequence(*txn, db::table::kBlockTransactions.name)};
+        auto last_tx_sequence{db::read_map_sequence(txn, db::table::kBlockTransactions.name)};
         REQUIRE(last_tx_sequence == 2);
 
         // Prepare stage
@@ -201,15 +201,15 @@ TEST_CASE("Sync Stages") {
             REQUIRE(txn->get_map_stat(senders_map).ms_entries == 2);
 
             auto expected_sender{0xc15eb501c014515ad0ecb4ecbf75cc597110b060_address};
-            auto written_senders{db::read_senders(*txn, 1, block_hashes[0].bytes)};
+            auto written_senders{db::read_senders(txn, 1, block_hashes[0].bytes)};
             REQUIRE(written_senders.size() == 1);
             REQUIRE(written_senders[0] == expected_sender);
 
-            written_senders = db::read_senders(*txn, 2, block_hashes[1].bytes);
+            written_senders = db::read_senders(txn, 2, block_hashes[1].bytes);
             REQUIRE(written_senders.size() == 1);
             REQUIRE(written_senders[0] == expected_sender);
 
-            written_senders = db::read_senders(*txn, 3, block_hashes[2].bytes);
+            written_senders = db::read_senders(txn, 3, block_hashes[2].bytes);
             REQUIRE(written_senders.empty());
         }
 
@@ -223,14 +223,14 @@ TEST_CASE("Sync Stages") {
             REQUIRE(txn->get_map_stat(senders_map).ms_entries == 1);
 
             auto expected_sender{0xc15eb501c014515ad0ecb4ecbf75cc597110b060_address};
-            auto written_senders{db::read_senders(*txn, 1, block_hashes[0].bytes)};
+            auto written_senders{db::read_senders(txn, 1, block_hashes[0].bytes)};
             REQUIRE(written_senders.size() == 1);
             REQUIRE(written_senders[0] == expected_sender);
 
-            written_senders = db::read_senders(*txn, 2, block_hashes[1].bytes);
+            written_senders = db::read_senders(txn, 2, block_hashes[1].bytes);
             REQUIRE(written_senders.empty());
 
-            written_senders = db::read_senders(*txn, 3, block_hashes[2].bytes);
+            written_senders = db::read_senders(txn, 3, block_hashes[2].bytes);
             REQUIRE(written_senders.empty());
         }
 
@@ -247,7 +247,7 @@ TEST_CASE("Sync Stages") {
 
         stage_result = stage.prune(txn);
         REQUIRE(stage_result == stagedsync::Stage::Result::kSuccess);
-        auto written_senders{db::read_senders(*txn, 1, block_hashes[0].bytes)};
+        auto written_senders{db::read_senders(txn, 1, block_hashes[0].bytes)};
         REQUIRE(written_senders.empty());
     }
 
@@ -287,7 +287,7 @@ TEST_CASE("Sync Stages") {
         block.transactions[0].s = 1;  // dummy
         block.transactions[0].from = sender;
 
-        db::Buffer buffer{*txn, 0};
+        db::Buffer buffer{txn, 0};
         Account sender_account{};
         sender_account.balance = kEther;
         buffer.update_account(sender, std::nullopt, sender_account);
@@ -338,7 +338,7 @@ TEST_CASE("Sync Stages") {
             magic_enum::enum_name(execute_block(block, buffer, node_settings.chain_config.value()));
         REQUIRE(expected_validation_result == actual_validation_result);
         REQUIRE_NOTHROW(buffer.write_to_db());
-        REQUIRE_NOTHROW(db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3));
+        REQUIRE_NOTHROW(db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 3));
         REQUIRE_NOTHROW(txn.commit());
 
         SECTION("Execution Unwind") {
@@ -350,7 +350,7 @@ TEST_CASE("Sync Stages") {
             stagedsync::Execution stage(&node_settings, &sync_context);
             REQUIRE(stage.unwind(txn) == stagedsync::Stage::Result::kSuccess);
 
-            db::Buffer buffer2{*txn, 0};
+            db::Buffer buffer2{txn, 0};
 
             std::optional<Account> contract_account{buffer2.read_account(contract_address)};
             REQUIRE(contract_account.has_value());
@@ -391,7 +391,7 @@ TEST_CASE("Sync Stages") {
             REQUIRE(actual_block_num == expected_block_num);
 
             // There is no pruning setting enabled hence no pruning occurred
-            REQUIRE(db::stages::read_stage_prune_progress(*txn, db::stages::kExecutionKey) == 0);
+            REQUIRE(db::stages::read_stage_prune_progress(txn, db::stages::kExecutionKey) == 0);
         }
 
         SECTION("Execution Prune History") {
@@ -412,7 +412,7 @@ TEST_CASE("Sync Stages") {
             BlockNum expected_block_num = 2;  // We've pruned history *before* 2 so the last is 2
             BlockNum actual_block_num = endian::load_big_u64(db::from_slice(data.key).data());
             REQUIRE(actual_block_num == expected_block_num);
-            REQUIRE(db::stages::read_stage_prune_progress(*txn, db::stages::kExecutionKey) == 3);
+            REQUIRE(db::stages::read_stage_prune_progress(txn, db::stages::kExecutionKey) == 3);
         }
 
         SECTION("HashState") {
@@ -422,7 +422,7 @@ TEST_CASE("Sync Stages") {
                 magic_enum::enum_name<stagedsync::Stage::Result>(stagedsync::Stage::Result::kSuccess)};
             auto actual_stage_result = magic_enum::enum_name<stagedsync::Stage::Result>(stage.forward(txn));
             REQUIRE(expected_stage_result == actual_stage_result);
-            REQUIRE(db::stages::read_stage_progress(*txn, db::stages::kHashStateKey) == 3);
+            REQUIRE(db::stages::read_stage_progress(txn, db::stages::kHashStateKey) == 3);
 
             // ---------------------------------------
             // Check hashed account
@@ -474,7 +474,7 @@ TEST_CASE("Sync Stages") {
                 auto account{Account::from_encoded_storage(account_encoded)};
                 CHECK(account->nonce == 1);
                 CHECK(account->balance == kEther);
-                CHECK(db::stages::read_stage_progress(*txn, db::stages::kHashStateKey) == unwind_to);
+                CHECK(db::stages::read_stage_progress(txn, db::stages::kHashStateKey) == unwind_to);
             }
         }
     }

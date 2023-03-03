@@ -32,7 +32,7 @@ Stage::Result HashState::forward(db::RWTxn& txn) {
 
         // Check stage boundaries from previous execution and previous stage execution
         const auto previous_progress{get_progress(txn)};
-        auto execution_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
+        auto execution_stage_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
         if (previous_progress == execution_stage_progress) {
             // Nothing to process
             return ret;
@@ -83,7 +83,7 @@ Stage::Result HashState::forward(db::RWTxn& txn) {
         }
 
         throw_if_stopping();
-        db::stages::write_stage_progress(*txn, db::stages::kHashStateKey, execution_stage_progress);
+        db::stages::write_stage_progress(txn, db::stages::kHashStateKey, execution_stage_progress);
         txn.commit();
 
     } catch (const StageError& ex) {
@@ -118,7 +118,7 @@ Stage::Result HashState::unwind(db::RWTxn& txn) {
     operation_ = OperationType::Unwind;
     try {
         throw_if_stopping();
-        auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
+        auto previous_progress{db::stages::read_stage_progress(txn, stage_name_)};
         if (to >= previous_progress) {
             // Nothing to unwind actually
             return ret;

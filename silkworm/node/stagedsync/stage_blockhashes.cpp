@@ -34,7 +34,7 @@ Stage::Result BlockHashes::forward(db::RWTxn& txn) {
 
         // Check stage boundaries from previous execution and previous stage execution
         const auto previous_progress{get_progress(txn)};
-        const auto headers_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kHeadersKey)};
+        const auto headers_stage_progress{db::stages::read_stage_progress(txn, db::stages::kHeadersKey)};
         if (previous_progress == headers_stage_progress) {
             // Nothing to process
             operation_ = OperationType::None;

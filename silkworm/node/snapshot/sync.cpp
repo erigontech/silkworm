@@ -56,7 +56,7 @@ bool SnapshotSync::download_and_index_snapshots(db::RWTxn& txn) {
     const bool download_completed = download_snapshots(snapshot_file_names);
     if (!download_completed) return false;
 
-    db::write_snapshots(*txn, snapshot_file_names);
+    db::write_snapshots(txn, snapshot_file_names);
 
     return index_snapshots(txn, snapshot_file_names);
 }
@@ -120,10 +120,10 @@ bool SnapshotSync::index_snapshots(db::RWTxn& txn, const std::vector<std::string
 
             // Write block header into kDifficulty table
             total_difficulty += header->difficulty;
-            db::write_total_difficulty(*txn, block_number, block_hash, total_difficulty);
+            db::write_total_difficulty(txn, block_number, block_hash, total_difficulty);
 
             // Write block header into kCanonicalHashes table
-            db::write_canonical_hash(*txn, block_number, block_hash);
+            db::write_canonical_hash(txn, block_number, block_hash);
 
             // Collect entries for later loading kHeaderNumbers table
             Bytes encoded_block_number{sizeof(uint64_t), '\0'};
@@ -131,14 +131,14 @@ bool SnapshotSync::index_snapshots(db::RWTxn& txn, const std::vector<std::string
             hash2bn_collector.collect({block_hash.bytes, encoded_block_number});
             return true;
         });
-        db::Cursor header_numbers_cursor{*txn, db::table::kHeaderNumbers};
+        db::Cursor header_numbers_cursor{txn, db::table::kHeaderNumbers};
         hash2bn_collector.load(header_numbers_cursor);
 
         // Reset sequence for kBlockTransactions table
         const auto view_result = repository_.view_tx_segment(max_block_available, [&](const auto* tx_sn) {
             // TODO(canepat) implement recsplit.Index
             const auto last_tx_id = /*tx_sn->idx_txn_hash()->base_data_id() +*/ tx_sn->item_count();
-            db::reset_map_sequence(*txn, db::table::kBlockTransactions.name, last_tx_id + 1);
+            db::reset_map_sequence(txn, db::table::kBlockTransactions.name, last_tx_id + 1);
             return true;
         });
         if (view_result != SnapshotRepository::ViewResult::kWalkSuccess) {
@@ -149,12 +149,12 @@ bool SnapshotSync::index_snapshots(db::RWTxn& txn, const std::vector<std::string
         // Update head block header in kHeadHeader table
         // TODO(canepat) Get canonical hash from block reader
         const Hash canonical_hash{};
-        db::write_head_header_hash(*txn, canonical_hash);
+        db::write_head_header_hash(txn, canonical_hash);
 
         // Update progress for related stages
-        db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, max_block_available);
-        db::stages::write_stage_progress(*txn, db::stages::kBlockHashesKey, max_block_available);
-        db::stages::write_stage_progress(*txn, db::stages::kSendersKey, max_block_available);
+        db::stages::write_stage_progress(txn, db::stages::kBlockBodiesKey, max_block_available);
+        db::stages::write_stage_progress(txn, db::stages::kBlockHashesKey, max_block_available);
+        db::stages::write_stage_progress(txn, db::stages::kSendersKey, max_block_available);
     }
 
     // TODO(canepat) add_headers_from_snapshots towards header downloader persisted link queue

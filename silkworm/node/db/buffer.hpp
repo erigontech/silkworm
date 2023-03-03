@@ -29,6 +29,7 @@
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/receipt.hpp>
+#include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/db/util.hpp>
 
 namespace silkworm::db {
@@ -36,7 +37,7 @@ namespace silkworm::db {
 class Buffer : public State {
   public:
     // txn must be valid (its handle != nullptr)
-    explicit Buffer(mdbx::txn& txn, BlockNum prune_history_threshold,
+    explicit Buffer(ROTxn& txn, BlockNum prune_history_threshold,
                     std::optional<BlockNum> historical_block = std::nullopt)
         : txn_{txn}, prune_history_threshold_{prune_history_threshold}, historical_block_{historical_block} {
         assert(txn_);
@@ -130,7 +131,7 @@ class Buffer : public State {
     //! \brief Persists *state* accrued contents into db
     void write_state_to_db();
 
-    mdbx::txn& txn_;
+    ROTxn& txn_;
     uint64_t prune_history_threshold_;
     std::optional<uint64_t> historical_block_{};
 

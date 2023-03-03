@@ -53,7 +53,7 @@ TEST_CASE("Stage Transaction Lookups") {
 
     transactions_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(tx_rlp));
     bodies_table.upsert(db::to_slice(db::block_key(1, hash_0.bytes)), db::to_slice(block.encode()));
-    REQUIRE_NOTHROW(db::write_canonical_header_hash(*txn, hash_0.bytes, 1));
+    REQUIRE_NOTHROW(db::write_canonical_header_hash(txn, hash_0.bytes, 1));
 
     // ---------------------------------------
     // Push second block
@@ -66,11 +66,11 @@ TEST_CASE("Stage Transaction Lookups") {
 
     transactions_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(tx_rlp));
     bodies_table.upsert(db::to_slice(db::block_key(2, hash_1.bytes)), db::to_slice(block.encode()));
-    REQUIRE_NOTHROW(db::write_canonical_header_hash(*txn, hash_1.bytes, 2));
+    REQUIRE_NOTHROW(db::write_canonical_header_hash(txn, hash_1.bytes, 2));
 
-    db::stages::write_stage_progress(*txn, db::stages::kBlockBodiesKey, 2);
-    db::stages::write_stage_progress(*txn, db::stages::kBlockHashesKey, 2);
-    db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 2);
+    db::stages::write_stage_progress(txn, db::stages::kBlockBodiesKey, 2);
+    db::stages::write_stage_progress(txn, db::stages::kBlockHashesKey, 2);
+    db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 2);
 
     // Execute stage forward
     stagedsync::SyncContext sync_context{};

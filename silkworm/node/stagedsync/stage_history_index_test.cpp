@@ -75,7 +75,7 @@ TEST_CASE("Stage History Index") {
         block.transactions[0].s = 1;  // dummy
         block.transactions[0].from = sender;
 
-        db::Buffer buffer{*txn, 0};
+        db::Buffer buffer{txn, 0};
         Account sender_account{};
         sender_account.balance = kEther;
         buffer.update_account(sender, std::nullopt, sender_account);
@@ -122,7 +122,7 @@ TEST_CASE("Stage History Index") {
 
         CHECK(execute_block(block, buffer, kMainnetConfig) == ValidationResult::kOk);
         buffer.write_to_db();
-        db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, 3);
+        db::stages::write_stage_progress(txn, db::stages::kExecutionKey, 3);
 
         SECTION("Forward and Unwind") {
             db::Cursor account_changes(txn, db::table::kAccountChangeSet);
@@ -137,8 +137,8 @@ TEST_CASE("Stage History Index") {
             REQUIRE(!storage_history.empty());
 
             // Miner has mined 3 blocks hence is historical balance must be < current balance
-            auto current_miner_account{db::read_account(*txn, miner)};
-            auto historical_miner_account{db::read_account(*txn, miner, 2)};
+            auto current_miner_account{db::read_account(txn, miner)};
+            auto historical_miner_account{db::read_account(txn, miner, 2)};
             REQUIRE(current_miner_account.has_value());
             REQUIRE(historical_miner_account.has_value());
             REQUIRE(historical_miner_account->balance);
@@ -183,7 +183,7 @@ TEST_CASE("Stage History Index") {
 
             sync_context.unwind_point.emplace(2);
             REQUIRE(stage_history_index.unwind(txn) == stagedsync::Stage::Result::kSuccess);
-            REQUIRE(db::stages::read_stage_progress(*txn, db::stages::kHistoryIndexKey) == 2);
+            REQUIRE(db::stages::read_stage_progress(txn, db::stages::kHistoryIndexKey) == 2);
 
             // Account retrieving from Database
             account_history_data = account_history.lower_bound(db::to_slice(sender), /*throw_notfound=*/false);
@@ -228,8 +228,8 @@ TEST_CASE("Stage History Index") {
             stagedsync::HistoryIndex stage_history_index(&context.node_settings(), &sync_context);
             REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);
             REQUIRE(stage_history_index.prune(txn) == stagedsync::Stage::Result::kSuccess);
-            REQUIRE(db::stages::read_stage_progress(*txn, db::stages::kHistoryIndexKey) == 3);
-            REQUIRE(db::stages::read_stage_prune_progress(*txn, db::stages::kHistoryIndexKey) == 3);
+            REQUIRE(db::stages::read_stage_progress(txn, db::stages::kHistoryIndexKey) == 3);
+            REQUIRE(db::stages::read_stage_prune_progress(txn, db::stages::kHistoryIndexKey) == 3);
 
             db::Cursor account_history(txn, db::table::kAccountHistory);
             db::Cursor storage_history(txn, db::table::kStorageHistory);
@@ -298,7 +298,7 @@ TEST_CASE("Stage History Index") {
         }
 
         // Fake generation of changesets
-        db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, block - 1);
+        db::stages::write_stage_progress(txn, db::stages::kExecutionKey, block - 1);
 
         // Forward history
         stagedsync::SyncContext sync_context{};
@@ -362,7 +362,7 @@ TEST_CASE("Stage History Index") {
                     account_changeset.put(db::to_slice(block_key), &value_slice, MDBX_put_flags_t::MDBX_APPENDDUP));
             }
         }
-        db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, block - 1);
+        db::stages::write_stage_progress(txn, db::stages::kExecutionKey, block - 1);
         txn.commit();
 
         REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);

@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
         data_dir.deploy();
         db::EnvConfig db_config{data_dir.chaindata().path().string()};
         auto env{db::open_env(db_config)};
-        auto txn{env.start_read()};
+        db::ROTxn txn{env};
         auto chain_config{db::read_chain_config(txn)};
         if (!chain_config) {
             throw std::runtime_error("Unable to retrieve chain config");
@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
             // Note: See the comment above. You may uncomment that line and comment the next line if you're certain
             // that Erigon is not syncing on the same machine. If you use a long-running transaction by doing this, and
             // you're mistaken (Erigon is syncing), the database file may 'grow quickly' as per the LMDB docs.
-            txn.renew_reading();
+            txn->renew_reading();
 
             // Read the block
             if (!db::read_block_by_number(txn, block_num, /*read_senders=*/true, block)) {

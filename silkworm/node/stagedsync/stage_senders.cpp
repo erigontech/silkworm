@@ -76,7 +76,7 @@ Stage::Result Senders::unwind(db::RWTxn& txn) {
 
         // Check stage boundaries from previous execution and previous stage execution
         const auto previous_progress{get_progress(txn)};
-        const auto bodies_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
+        const auto bodies_stage_progress{db::stages::read_stage_progress(txn, db::stages::kBlockBodiesKey)};
         if (previous_progress <= to || bodies_stage_progress <= to) {
             // Nothing to process
             operation_ = OperationType::None;
@@ -238,9 +238,9 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
     Stage::Result ret{Stage::Result::kSuccess};
     try {
         // Check stage boundaries using previous execution of current stage and current execution of previous stage
-        auto previous_progress{db::stages::read_stage_progress(*txn, db::stages::kSendersKey)};
-        auto block_hashes_progress{db::stages::read_stage_progress(*txn, db::stages::kBlockHashesKey)};
-        auto block_bodies_progress{db::stages::read_stage_progress(*txn, db::stages::kBlockBodiesKey)};
+        auto previous_progress{db::stages::read_stage_progress(txn, db::stages::kSendersKey)};
+        auto block_hashes_progress{db::stages::read_stage_progress(txn, db::stages::kBlockHashesKey)};
+        auto block_bodies_progress{db::stages::read_stage_progress(txn, db::stages::kBlockBodiesKey)};
         auto target_progress{std::min(block_hashes_progress, block_bodies_progress)};
 
         if (previous_progress == target_progress) {
@@ -350,7 +350,7 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
         store_senders(txn);
 
         // Update stage progress with last reached block number
-        db::stages::write_stage_progress(*txn, db::stages::kSendersKey, reached_block_num);
+        db::stages::write_stage_progress(txn, db::stages::kSendersKey, reached_block_num);
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
                    {"function", std::string(__FUNCTION__), "exception", std::string(ex.what())});

@@ -28,7 +28,7 @@ namespace db {
 
     TEST_CASE("Database genesis initialization") {
         test::Context context;
-        auto& txn{context.txn()};
+        auto& txn{context.rw_txn()};
 
         SECTION("Initialize with Mainnet") {
             auto source_data{silkworm::read_genesis_data(silkworm::kMainnetConfig.chain_id)};

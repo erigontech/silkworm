@@ -17,6 +17,7 @@
 #pragma once
 
 #include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/node/db/mdbx.hpp>
 
 namespace silkworm::db {
 //! \brief Validates provided genesis json payload
@@ -29,6 +30,6 @@ std::pair<bool, std::vector<std::string>> validate_genesis_json(const nlohmann::
 //! \param [in] genesis_json : the payload to write
 //! \param [in] allow_exceptions : whether to throw exceptions on failure(s)
 //! \returns True/False
-bool initialize_genesis(mdbx::txn& txn, const nlohmann::json& genesis_json, bool allow_exceptions);
+bool initialize_genesis(RWTxn& txn, const nlohmann::json& genesis_json, bool allow_exceptions);
 
 }  // namespace silkworm::db

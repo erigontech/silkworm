@@ -36,23 +36,9 @@ if(CONAN_PACKAGE_MANAGER) # CMAKE CONAN START
   
   include(${CMAKE_BINARY_DIR}/conan.cmake)
 
-  set(DEPENDENCY_LIST
-    abseil/20220623.0 # grpc dependency
-    asio-grpc/2.4.0
-    benchmark/1.6.1
-    boost/1.81.0
-    catch2/2.13.9
-    cli11/2.2.0
-    grpc/1.46.3
-    ms-gsl/4.0.0
-    nlohmann_json/3.11.2
-    openssl/1.1.1s # grpc dependency
-    protobuf/[^3.0.0] # grpc dependency, its version matches the grpc requirements
-    snappy/1.1.7
-  )
-  
-  conan_cmake_configure(REQUIRES ${DEPENDENCY_LIST} GENERATORS cmake_find_package)
-  
+  # provide a static conanfile.txt instead of generating it with conan_cmake_configure()
+  file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/conanfile.txt" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+
   if(NOT DEFINED CONAN_PROFILE)
   
     message(STATUS "CONAN_PROFILE not defined. Use autodetect settings...")

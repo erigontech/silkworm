@@ -30,6 +30,7 @@ if(NOT SILKWORM_CORE_ONLY)
   add_subdirectory(benchmark)
 
   find_package(absl REQUIRED)
+  find_package(Boost REQUIRED)
   find_package(CLI11 REQUIRED)
 
   add_executable(silkworm silkworm.cpp common.cpp)
@@ -48,12 +49,7 @@ if(NOT SILKWORM_CORE_ONLY)
   target_link_libraries(toolbox PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(genesistool genesistool.cpp)
-  if(CONAN_PACKAGE_MANAGER)
-    find_package(Boost REQUIRED thread)
-    target_link_libraries(genesistool PRIVATE CLI11::CLI11 Boost::thread)
-  else()
-    target_link_libraries(genesistool PRIVATE CLI11::CLI11)
-  endif()
+  target_link_libraries(genesistool PRIVATE CLI11::CLI11 Boost::headers)
 
   add_executable(check_hashstate check_hashstate.cpp)
   target_link_libraries(check_hashstate PRIVATE silkworm_node CLI11::CLI11)

@@ -49,7 +49,6 @@ if(CONAN_PACKAGE_MANAGER) # CMAKE CONAN START
     openssl/1.1.1s # grpc dependency
     protobuf/[^3.0.0] # grpc dependency, its version matches the grpc requirements
     snappy/1.1.7
-    zlib/1.2.13
   )
   
   conan_cmake_configure(REQUIRES ${DEPENDENCY_LIST} GENERATORS cmake_find_package)

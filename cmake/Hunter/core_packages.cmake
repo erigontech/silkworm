@@ -13,14 +13,9 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 ]]
-if(CONAN_PACKAGE_MANAGER)
-    hunter_add_package(intx)
-    hunter_add_package(ethash)
-else()
-    hunter_add_package(Catch)
-    hunter_add_package(intx)
-    hunter_add_package(Microsoft.GSL)
-    hunter_add_package(nlohmann_json)
-    hunter_add_package(ethash)
-endif()
 
+hunter_add_package(Catch)
+hunter_add_package(intx)
+hunter_add_package(Microsoft.GSL)
+hunter_add_package(nlohmann_json)
+hunter_add_package(ethash)

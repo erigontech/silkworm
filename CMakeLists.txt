@@ -91,13 +91,19 @@ if(NOT SILKWORM_HAS_PARENT)
     set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchain/cxx20.cmake CACHE FILEPATH "" FORCE)
   endif()
 
+  if(CONAN_PACKAGE_MANAGER)
+    set(HUNTER_CONFIG_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/HunterAndConan/config.cmake")
+  else()
+    set(HUNTER_CONFIG_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/config.cmake")
+  endif()
+
   include(third_party/evmone/cmake/cable/HunterGate.cmake)
   # https://github.com/cpp-pm/hunter/releases/
   HunterGate(
     URL "https://github.com/cpp-pm/hunter/archive/v0.24.15.tar.gz"
     SHA1 "8010d63d5ae611c564889d5fe12d3cb7a45703ac"
-    LOCAL
-    )
+    FILEPATH "${HUNTER_CONFIG_PATH}"
+  )
 endif()
 
 #[[
@@ -141,9 +147,13 @@ set(SILKWORM_MAIN_SRC_DIR "${SILKWORM_MAIN_DIR}/silkworm")
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler_settings.cmake)
 
 # Include dependencies handled by Hunter package manager
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/core_packages.cmake)
-if(NOT SILKWORM_CORE_ONLY)
-  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/extra_packages.cmake)
+if(CONAN_PACKAGE_MANAGER)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/HunterAndConan/core_packages.cmake)
+else()
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/core_packages.cmake)
+  if(NOT SILKWORM_CORE_ONLY)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/extra_packages.cmake)
+  endif()
 endif()
 
 if(NOT SILKWORM_CORE_ONLY)

@@ -14,11 +14,10 @@
    limitations under the License.
 ]]
 
-hunter_add_package(abseil)
-hunter_add_package(asio-grpc)
-hunter_add_package(benchmark)
-hunter_add_package(Boost COMPONENTS container thread)
-hunter_add_package(CLI11)
-hunter_add_package(gRPC)
-hunter_add_package(OpenSSL)
-hunter_add_package(Protobuf)
+include(hunter_cmake_args)
+
+hunter_config(
+  ethash
+  VERSION 0.9.0
+  CMAKE_ARGS ETHASH_BUILD_ETHASH=ON ETHASH_BUILD_GLOBAL_CONTEXT=OFF ETHASH_BUILD_TESTS=OFF
+)

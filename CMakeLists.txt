@@ -40,25 +40,18 @@ if(CONAN_PACKAGE_MANAGER) # CMAKE CONAN START
   file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/conanfile.txt" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 
   if(NOT DEFINED CONAN_PROFILE)
-  
     message(STATUS "CONAN_PROFILE not defined. Use autodetect settings...")
-  
     conan_cmake_autodetect(CONAN_SETTINGS)
-  
     conan_cmake_install(PATH_OR_REFERENCE .
           BUILD missing
           REMOTE conancenter
           SETTINGS ${CONAN_SETTINGS})
-  
   else()
-  
     message(STATUS "CONAN_PROFILE: ${CONAN_PROFILE}")
-  
     conan_cmake_install(PATH_OR_REFERENCE .
           BUILD missing
           REMOTE conancenter
-          PROFILE ${CMAKE_CURRENT_SOURCE_DIR}/conan/${CONAN_PROFILE})
-  
+          PROFILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/profiles/${CONAN_PROFILE})
   endif()
 endif() # CMAKE CONAN END
 

@@ -37,7 +37,7 @@ if(CONAN_PACKAGE_MANAGER) # CMAKE CONAN START
   include(${CMAKE_BINARY_DIR}/conan.cmake)
 
   set(DEPENDENCY_LIST
-    abseil/20220623.0
+    abseil/20220623.0 # grpc dependency
     asio-grpc/2.4.0
     benchmark/1.6.1
     boost/1.81.0
@@ -46,8 +46,8 @@ if(CONAN_PACKAGE_MANAGER) # CMAKE CONAN START
     grpc/1.46.3
     ms-gsl/4.0.0
     nlohmann_json/3.11.2
-    openssl/1.1.1s
-    protobuf/3.21.4
+    openssl/1.1.1s # grpc dependency
+    protobuf/[^3.0.0] # grpc dependency, its version matches the grpc requirements
     snappy/1.1.7
     zlib/1.2.13
   )

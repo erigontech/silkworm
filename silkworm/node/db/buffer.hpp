@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <cassert>
 #include <optional>
 #include <vector>
 
@@ -39,9 +38,7 @@ class Buffer : public State {
     // txn must be valid (its handle != nullptr)
     explicit Buffer(ROTxn& txn, BlockNum prune_history_threshold,
                     std::optional<BlockNum> historical_block = std::nullopt)
-        : txn_{txn}, prune_history_threshold_{prune_history_threshold}, historical_block_{historical_block} {
-        assert(txn_);
-    }
+        : txn_{txn}, prune_history_threshold_{prune_history_threshold}, historical_block_{historical_block} {}
 
     /** @name Readers */
     ///@{

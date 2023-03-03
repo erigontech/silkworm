@@ -22,33 +22,36 @@ option(CONAN_PACKAGE_MANAGER "Use Conan.io as package manager" OFF)
 if(CONAN_PACKAGE_MANAGER) # CMAKE CONAN START
   message("Package manager: Conan")
 
-  list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
-  list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR})
+  set(CONAN_BINARY_DIR "${CMAKE_BINARY_DIR}/conan")
+  list(APPEND CMAKE_MODULE_PATH ${CONAN_BINARY_DIR})
+  list(APPEND CMAKE_PREFIX_PATH ${CONAN_BINARY_DIR})
   
   set(CMAKE_CXX_STANDARD 20)
   
-  if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
+  if(NOT EXISTS "${CONAN_BINARY_DIR}/conan.cmake")
     message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
     file(DOWNLOAD "https://raw.githubusercontent.com/conan-io/cmake-conan/0.18.1/conan.cmake"
-            "${CMAKE_BINARY_DIR}/conan.cmake"
+            "${CONAN_BINARY_DIR}/conan.cmake"
             TLS_VERIFY ON)
   endif()
   
-  include(${CMAKE_BINARY_DIR}/conan.cmake)
+  include(${CONAN_BINARY_DIR}/conan.cmake)
 
   # provide a static conanfile.txt instead of generating it with conan_cmake_configure()
-  file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/conanfile.txt" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+  file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/conanfile.txt" DESTINATION "${CONAN_BINARY_DIR}")
 
   if(NOT DEFINED CONAN_PROFILE)
     message(STATUS "CONAN_PROFILE not defined. Use autodetect settings...")
     conan_cmake_autodetect(CONAN_SETTINGS)
-    conan_cmake_install(PATH_OR_REFERENCE .
+    conan_cmake_install(PATH_OR_REFERENCE "${CONAN_BINARY_DIR}"
+          INSTALL_FOLDER "${CONAN_BINARY_DIR}"
           BUILD missing
           REMOTE conancenter
           SETTINGS ${CONAN_SETTINGS})
   else()
     message(STATUS "CONAN_PROFILE: ${CONAN_PROFILE}")
-    conan_cmake_install(PATH_OR_REFERENCE .
+    conan_cmake_install(PATH_OR_REFERENCE "${CONAN_BINARY_DIR}"
+          INSTALL_FOLDER "${CONAN_BINARY_DIR}"
           BUILD missing
           REMOTE conancenter
           PROFILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/profiles/${CONAN_PROFILE})

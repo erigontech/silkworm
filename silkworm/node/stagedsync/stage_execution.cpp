@@ -43,10 +43,10 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
         StopWatch commit_stopwatch;
         // Check stage boundaries from previous execution and previous stage execution
         auto previous_progress{get_progress(txn)};
-        auto senders_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kSendersKey)};
+        auto senders_stage_progress{db::stages::read_stage_progress(txn, db::stages::kSendersKey)};
 
         // This is next stage probably needing full history
-        auto hashstate_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kHashStateKey)};
+        auto hashstate_stage_progress{db::stages::read_stage_progress(txn, db::stages::kHashStateKey)};
 
         if (previous_progress == senders_stage_progress) {
             // Nothing to process
@@ -112,7 +112,7 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
             // Persist forward and prune progresses
             update_progress(txn, block_num_);
             if (node_settings_->prune_mode->history().enabled() || node_settings_->prune_mode->receipts().enabled()) {
-                db::stages::write_stage_prune_progress(*txn, db::stages::kExecutionKey, block_num_);
+                db::stages::write_stage_prune_progress(txn, db::stages::kExecutionKey, block_num_);
             }
 
             (void)commit_stopwatch.start(/*with_reset=*/true);
@@ -179,7 +179,7 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
 
             const auto hash_ptr{value.data()};
             prefetched_blocks_.push_back();
-            if (!db::read_block(*txn, std::span<const uint8_t, kHashLength>{hash_ptr, kHashLength}, block_num,
+            if (!db::read_block(txn, std::span<const uint8_t, kHashLength>{hash_ptr, kHashLength}, block_num,
                                 /*read_senders=*/true, prefetched_blocks_.back())) {
                 throw std::runtime_error("Unable to read block " + std::to_string(block_num));
             }
@@ -206,7 +206,7 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, B
     auto log_time{std::chrono::steady_clock::now()};
 
     try {
-        db::Buffer buffer(*txn, prune_history_threshold);
+        db::Buffer buffer(txn, prune_history_threshold);
         std::vector<Receipt> receipts;
 
         // Transform batch_size limit into Ggas
@@ -331,7 +331,7 @@ Stage::Result Execution::unwind(db::RWTxn& txn) {
 
     operation_ = OperationType::Unwind;
     try {
-        BlockNum previous_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
+        BlockNum previous_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
         if (to >= previous_progress) {
             operation_ = OperationType::None;
             return Stage::Result::kSuccess;
@@ -366,7 +366,7 @@ Stage::Result Execution::unwind(db::RWTxn& txn) {
             auto erased{db::cursor_erase(unwind_cursor, start_key, db::CursorMoveDirection::Forward)};
             log::Info() << "Erased " << erased << " records from " << map_config.name;
         }
-        db::stages::write_stage_progress(*txn, db::stages::kExecutionKey, to);
+        db::stages::write_stage_progress(txn, db::stages::kExecutionKey, to);
         txn.commit();
 
     } catch (const StageError& ex) {
@@ -518,7 +518,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
             }
         }
 
-        db::stages::write_stage_prune_progress(*txn, db::stages::kExecutionKey, forward_progress);
+        db::stages::write_stage_prune_progress(txn, db::stages::kExecutionKey, forward_progress);
         txn.commit();
 
     } catch (const StageError& ex) {

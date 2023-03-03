@@ -104,10 +104,10 @@ class Stage : public Stoppable {
     [[nodiscard]] virtual Stage::Result prune(db::RWTxn& txn) = 0;
 
     //! \brief Returns the actual progress recorded into db
-    BlockNum get_progress(db::RWTxn& txn);
+    BlockNum get_progress(db::ROTxn& txn);
 
     //! \brief Returns the actual prune progress recorded into db
-    BlockNum get_prune_progress(db::RWTxn& txn);
+    BlockNum get_prune_progress(db::ROTxn& txn);
 
     //! \brief Updates current stage progress
     void update_progress(db::RWTxn& txn, BlockNum progress);

@@ -31,7 +31,7 @@ Stage::Result TxLookup::forward(db::RWTxn& txn) {
 
         // Check stage boundaries from previous execution and previous stage execution
         auto previous_progress{get_progress(txn)};
-        const auto target_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
+        const auto target_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
         if (previous_progress == target_progress) {
             // Nothing to process
             operation_ = OperationType::None;
@@ -100,7 +100,7 @@ Stage::Result TxLookup::unwind(db::RWTxn& txn) {
 
         // Check stage boundaries from previous execution and previous stage execution
         const auto previous_progress{get_progress(txn)};
-        const auto execution_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
+        const auto execution_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
         if (previous_progress <= to || execution_progress <= to) {
             // Nothing to process
             operation_ = OperationType::None;
@@ -190,7 +190,7 @@ Stage::Result TxLookup::prune(db::RWTxn& txn) {
         }
 
         reset_log_progress();
-        db::stages::write_stage_prune_progress(*txn, stage_name_, forward_progress);
+        db::stages::write_stage_prune_progress(txn, stage_name_, forward_progress);
         txn.commit();
 
     } catch (const StageError& ex) {

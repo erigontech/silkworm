@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/db/tables.hpp>
 
 /*
@@ -111,27 +112,27 @@ inline constexpr size_t kLargeBlockSegmentWorthRegen{100'000};
 //! \param [in] txn : a reference to a ro/rw db transaction
 //! \param [in] stage_name : the name of the requested stage (must be known see kAllStages[])
 //! \return The actual chain height (BlockNum) the stage has reached
-BlockNum read_stage_progress(mdbx::txn& txn, const char* stage_name);
+BlockNum read_stage_progress(ROTxn& txn, const char* stage_name);
 
 //! \brief Reads from db the prune progress (block height) of the provided stage name
 //! \param [in] txn : a reference to a ro/rw db transaction
 //! \param [in] stage_name : the name of the requested stage (must be known see kAllStages[])
 //! \return The actual chain height (BlockNum) the stage has pruned its data up to
 //! \remarks A pruned height X means the prune stage function has run up to this block
-BlockNum read_stage_prune_progress(mdbx::txn& txn, const char* stage_name);
+BlockNum read_stage_prune_progress(ROTxn& txn, const char* stage_name);
 
 //! \brief Writes into db the progress (block height) for the provided stage name
 //! \param [in] txn : a reference to a rw db transaction
 //! \param [in] stage_name : the name of the involved stage (must be known see kAllStages[])
 //! \param [in] block_num : the actual chain height (BlockNum) the stage must record
-void write_stage_progress(mdbx::txn& txn, const char* stage_name, BlockNum block_num);
+void write_stage_progress(RWTxn& txn, const char* stage_name, BlockNum block_num);
 
 //! \brief Writes into db the prune progress (block height) for the provided stage name
 //! \param [in] txn : a reference to a rw db transaction
 //! \param [in] stage_name : the name of the involved stage (must be known see kAllStages[])
 //! \param [in] block_num : the actual chain height (BlockNum) the stage must record
 //! \remarks A pruned height X means the prune stage function has run up to this block
-void write_stage_prune_progress(mdbx::txn& txn, const char* stage_name, BlockNum block_num);
+void write_stage_prune_progress(RWTxn& txn, const char* stage_name, BlockNum block_num);
 
 //! \brief Reads from db the invalidation point (block height) of provided stage name. Invalidation point means that
 //! that stage needs to roll back to the invalidation point and re-execute its work for subsequent blocks (if any)
@@ -140,14 +141,14 @@ void write_stage_prune_progress(mdbx::txn& txn, const char* stage_name, BlockNum
 //! \return The invalidation point
 //! \remarks An invalidation point == 0 means there is no invalidation point. BlockNum 0 is the genesis and you can't
 //! unwind it
-BlockNum read_stage_unwind(mdbx::txn& txn, const char* stage_name);
+BlockNum read_stage_unwind(ROTxn& txn, const char* stage_name);
 
 //! \brief Writes into db the invalidation point (block height) for the provided stage name
 //! \param [in] txn : a reference to a rw db transaction
 //! \param [in] stage_name : the name of the involved stage (must be known see kAllStages[])
 //! \param [in] block_num : the actual chain invalidation point (BlockNum) the stage must record. If omitted the value
 //! defaults to 0 which means to clear any previously recorded invalidation point.
-void write_stage_unwind(mdbx::txn& txn, const char* stage_name, BlockNum block_num = 0);
+void write_stage_unwind(RWTxn& txn, const char* stage_name, BlockNum block_num = 0);
 
 //! \brief Whether the provided stage name is known to Silkworm
 //! \param [in] stage_name : The name of the stage to check for

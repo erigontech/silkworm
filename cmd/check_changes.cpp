@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
         data_dir.deploy();
         db::EnvConfig db_config{data_dir.chaindata().path().string()};
         auto env{db::open_env(db_config)};
-        auto txn{env.start_read()};
+        db::ROTxn txn{env};
         auto chain_config{db::read_chain_config(txn)};
         if (!chain_config.has_value()) {
             throw std::runtime_error("Unable to retrieve chain config");
@@ -87,7 +87,7 @@ int main(int argc, char* argv[]) {
         auto engine{consensus::engine_factory(chain_config.value())};
         Block block;
         for (; block_num < to; ++block_num) {
-            txn.renew_reading();
+            txn->renew_reading();
             if (!db::read_block_by_number(txn, block_num, /*read_senders=*/true, block)) {
                 break;
             }

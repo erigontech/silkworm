@@ -107,8 +107,9 @@ std::pair<bool, std::vector<std::string>> validate_genesis_json(const nlohmann::
     ret.first = ret.second.empty();
     return ret;
 }
-bool initialize_genesis(mdbx::txn& txn, const nlohmann::json& genesis_json, bool allow_exceptions) {
-    if (!txn.is_readwrite()) {
+
+bool initialize_genesis(RWTxn& txn, const nlohmann::json& genesis_json, bool allow_exceptions) {
+    if (!txn->is_readwrite()) {
         if (!allow_exceptions) {
             return false;
         }

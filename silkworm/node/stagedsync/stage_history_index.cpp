@@ -29,9 +29,9 @@ Stage::Result HistoryIndex::forward(db::RWTxn& txn) {
 
         // Check stage boundaries from previous execution and previous stage execution
         const auto previous_progress{get_progress(txn)};
-        auto previous_progress_accounts{db::stages::read_stage_progress(*txn, db::stages::kAccountHistoryIndexKey)};
-        auto previous_progress_storage{db::stages::read_stage_progress(*txn, db::stages::kStorageHistoryIndexKey)};
-        const auto target_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
+        auto previous_progress_accounts{db::stages::read_stage_progress(txn, db::stages::kAccountHistoryIndexKey)};
+        auto previous_progress_storage{db::stages::read_stage_progress(txn, db::stages::kStorageHistoryIndexKey)};
+        const auto target_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
         if (previous_progress == target_progress) {
             // Nothing to process
             operation_ = OperationType::None;
@@ -111,10 +111,10 @@ Stage::Result HistoryIndex::unwind(db::RWTxn& txn) {
         // Check stage boundaries from previous execution and previous stage execution
         const auto previous_progress{get_progress(txn)};
         const auto previous_progress_accounts{
-            db::stages::read_stage_progress(*txn, db::stages::kAccountHistoryIndexKey)};
+            db::stages::read_stage_progress(txn, db::stages::kAccountHistoryIndexKey)};
         const auto previous_progress_storage{
-            db::stages::read_stage_progress(*txn, db::stages::kStorageHistoryIndexKey)};
-        const auto execution_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
+            db::stages::read_stage_progress(txn, db::stages::kStorageHistoryIndexKey)};
+        const auto execution_stage_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
         if (previous_progress <= to || execution_stage_progress <= to) {
             // Nothing to process
             operation_ = OperationType::None;
@@ -200,9 +200,9 @@ Stage::Result HistoryIndex::prune(db::RWTxn& txn) {
 
         // We split the stage in two
         const auto prune_progress_accounts{
-            db::stages::read_stage_prune_progress(*txn, db::stages::kAccountHistoryIndexKey)};
+            db::stages::read_stage_prune_progress(txn, db::stages::kAccountHistoryIndexKey)};
         const auto prune_progress_storage{
-            db::stages::read_stage_prune_progress(*txn, db::stages::kStorageHistoryIndexKey)};
+            db::stages::read_stage_prune_progress(txn, db::stages::kStorageHistoryIndexKey)};
 
         if (!prune_progress_accounts || prune_progress_accounts < forward_progress)
             success_or_throw(prune_impl(txn, prune_threshold, forward_progress, /*storage=*/false));
@@ -210,7 +210,7 @@ Stage::Result HistoryIndex::prune(db::RWTxn& txn) {
             success_or_throw(prune_impl(txn, prune_threshold, forward_progress, /*storage=*/true));
 
         reset_log_progress();
-        db::stages::write_stage_prune_progress(*txn, stage_name_, forward_progress);
+        db::stages::write_stage_prune_progress(txn, stage_name_, forward_progress);
         txn.commit();
 
     } catch (const StageError& ex) {
@@ -266,7 +266,7 @@ Stage::Result HistoryIndex::forward_impl(db::RWTxn& txn, const BlockNum from, co
     }
 
     db::stages::write_stage_progress(
-        *txn, (storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey), to);
+        txn, (storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey), to);
 
     return Stage::Result::kSuccess;
 }
@@ -298,7 +298,7 @@ Stage::Result HistoryIndex::unwind_impl(db::RWTxn& txn, const BlockNum from, con
     log_lck.unlock();
 
     db::stages::write_stage_progress(
-        *txn, (storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey), to);
+        txn, (storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey), to);
 
     return Stage::Result::kSuccess;
 }
@@ -324,7 +324,7 @@ Stage::Result HistoryIndex::prune_impl(db::RWTxn& txn, const BlockNum threshold,
     log_lck.unlock();
 
     db::stages::write_stage_prune_progress(
-        *txn, (storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey), to);
+        txn, (storage ? db::stages::kStorageHistoryIndexKey : db::stages::kAccountHistoryIndexKey), to);
 
     return Stage::Result::kSuccess;
 }

@@ -171,7 +171,7 @@ namespace db {
     TEST_CASE("Sequences") {
         test::SetLogVerbosityGuard log_guard{log::Level::kNone};
         test::Context context;
-        auto& txn{context.txn()};
+        auto& txn{context.rw_txn()};
 
         auto val1{read_map_sequence(txn, table::kBlockTransactions.name)};
         CHECK(val1 == 0);
@@ -187,7 +187,7 @@ namespace db {
         CHECK(val5 == 8);
 
         context.commit_and_renew_txn();
-        auto& txn2{context.txn()};
+        auto& txn2{context.rw_txn()};
 
         auto val6{read_map_sequence(txn2, table::kBlockTransactions.name)};
         CHECK(val6 == 8);
@@ -220,36 +220,36 @@ namespace db {
         test::Context context(/*with_create_tables=*/false);
 
         SECTION("Read/Write") {
-            auto version{db::read_schema_version(context.txn())};
+            auto version{db::read_schema_version(context.rw_txn())};
             CHECK(version.has_value() == false);
 
             version = VersionBase{3, 0, 0};
-            CHECK_NOTHROW(db::write_schema_version(context.txn(), version.value()));
+            CHECK_NOTHROW(db::write_schema_version(context.rw_txn(), version.value()));
             context.commit_and_renew_txn();
-            version = db::read_schema_version(context.txn());
+            version = db::read_schema_version(context.rw_txn());
             CHECK(version.has_value() == true);
 
-            auto version2{db::read_schema_version(context.txn())};
+            auto version2{db::read_schema_version(context.rw_txn())};
             CHECK(version.value() == version2.value());
 
             version2 = VersionBase{2, 0, 0};
-            CHECK_THROWS(db::write_schema_version(context.txn(), version2.value()));
+            CHECK_THROWS(db::write_schema_version(context.rw_txn(), version2.value()));
 
             version2 = VersionBase{3, 1, 0};
-            CHECK_NOTHROW(db::write_schema_version(context.txn(), version2.value()));
+            CHECK_NOTHROW(db::write_schema_version(context.rw_txn(), version2.value()));
         }
 
         SECTION("Incompatible schema") {
             // Reduce compat schema version
             auto incompatible_version = VersionBase{db::table::kRequiredSchemaVersion.Major - 1, 0, 0};
-            REQUIRE_NOTHROW(db::write_schema_version(context.txn(), incompatible_version));
-            REQUIRE_THROWS(db::table::check_or_create_chaindata_tables(context.txn()));
+            REQUIRE_NOTHROW(db::write_schema_version(context.rw_txn(), incompatible_version));
+            REQUIRE_THROWS(db::table::check_or_create_chaindata_tables(context.rw_txn()));
         }
 
         SECTION("Incompatible table") {
             (void)context.txn().create_map(db::table::kBlockBodies.name, mdbx::key_mode::reverse,
                                            mdbx::value_mode::multi_reverse);
-            REQUIRE_THROWS(db::table::check_or_create_chaindata_tables(context.txn()));
+            REQUIRE_THROWS(db::table::check_or_create_chaindata_tables(context.rw_txn()));
         }
     }
 
@@ -383,7 +383,7 @@ namespace db {
     TEST_CASE("Stages") {
         test::SetLogVerbosityGuard log_guard{log::Level::kNone};
         test::Context context;
-        auto& txn{context.txn()};
+        auto& txn{context.rw_txn()};
 
         // Querying a non-existent stage name should throw
         CHECK_THROWS(stages::read_stage_progress(txn, "NonExistentStage"));
@@ -408,7 +408,7 @@ namespace db {
         // Write voluntary wrong value in stage
         Bytes stage_progress(2, 0);
         auto map{db::open_cursor(txn, table::kSyncStageProgress)};
-        CHECK_NOTHROW(txn.upsert(map, mdbx::slice{stages::kBlockBodiesKey}, to_slice(stage_progress)));
+        CHECK_NOTHROW(txn->upsert(map, mdbx::slice{stages::kBlockBodiesKey}, to_slice(stage_progress)));
         CHECK_THROWS(block_num = stages::read_stage_progress(txn, stages::kBlockBodiesKey));
 
         // Check "prune_" prefix
@@ -421,7 +421,7 @@ namespace db {
 
     TEST_CASE("Snapshots") {
         test::Context context;
-        auto& txn{context.txn()};
+        auto& txn{context.rw_txn()};
 
         const std::vector<std::string> snapshot_list{
             "v1-000000-000500-bodies.seg",
@@ -435,7 +435,7 @@ namespace db {
 
     TEST_CASE("Difficulty") {
         test::Context context;
-        auto& txn{context.txn()};
+        auto& txn{context.rw_txn()};
 
         BlockNum block_num{10};
         uint8_t hash[kHashLength]{};
@@ -448,7 +448,7 @@ namespace db {
     TEST_CASE("Headers and bodies") {
         test::SetLogVerbosityGuard log_guard{log::Level::kNone};
         test::Context context;
-        auto& txn{context.txn()};
+        auto& txn{context.rw_txn()};
 
         uint64_t block_num{11'054'435};
 
@@ -613,7 +613,7 @@ namespace db {
     TEST_CASE("Storage") {
         test::SetLogVerbosityGuard log_guard{log::Level::kNone};
         test::Context context;
-        auto& txn{context.txn()};
+        auto& txn{context.rw_txn()};
 
         auto table{db::open_cursor(txn, table::kPlainState)};
 
@@ -641,7 +641,7 @@ namespace db {
 
     TEST_CASE("Account_changes") {
         test::Context context;
-        auto& txn{context.txn()};
+        auto& txn{context.rw_txn()};
 
         uint64_t block_num1{42};
         uint64_t block_num2{49};
@@ -701,7 +701,7 @@ namespace db {
     TEST_CASE("Storage changes") {
         test::SetLogVerbosityGuard log_guard{log::Level::kNone};
         test::Context context;
-        auto& txn{context.txn()};
+        auto& txn{context.rw_txn()};
 
         uint64_t block_num1{42};
         uint64_t block_num2{49};
@@ -756,7 +756,7 @@ namespace db {
         auto key4{storage_change_key(block_num3, addr4, incarnation4)};
         table.upsert(db::to_slice(key4), db::to_slice(data4));
 
-        CHECK(txn.get_map_stat(table.map()).ms_entries == 4);
+        CHECK(txn->get_map_stat(table.map()).ms_entries == 4);
 
         StorageChanges expected_changes1;
         expected_changes1[addr1][incarnation1][location1] = val1;
@@ -781,7 +781,7 @@ namespace db {
     TEST_CASE("Chain config") {
         test::SetLogVerbosityGuard log_guard{log::Level::kNone};
         test::Context context;
-        auto& txn{context.txn()};
+        auto& txn{context.rw_txn()};
 
         const auto chain_config1{read_chain_config(txn)};
         CHECK(chain_config1 == std::nullopt);
@@ -804,7 +804,7 @@ namespace db {
     TEST_CASE("Head header") {
         test::SetLogVerbosityGuard log_guard{log::Level::kNone};
         test::Context context;
-        auto& txn{context.txn()};
+        auto& txn{context.rw_txn()};
 
         REQUIRE(db::read_head_header_hash(txn) == std::nullopt);
         REQUIRE_NOTHROW(db::write_head_header_hash(txn, kSepoliaGenesisHash));

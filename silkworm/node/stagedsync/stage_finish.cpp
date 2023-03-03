@@ -30,7 +30,7 @@ Stage::Result Finish::forward(db::RWTxn& txn) {
 
         // Check stage boundaries from previous execution and previous stage execution
         const auto previous_progress{get_progress(txn)};
-        auto execution_stage_progress{db::stages::read_stage_progress(*txn, db::stages::kExecutionKey)};
+        auto execution_stage_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
         if (previous_progress >= execution_stage_progress) {
             // Nothing to process
             const auto stop_at_block = Environment::get_stop_at_block();  // User can specify to stop at some block
@@ -50,7 +50,7 @@ Stage::Result Finish::forward(db::RWTxn& txn) {
         // Log the new version of app at this height
         if (sync_context_->is_first_cycle) {
             Bytes build_info{byte_ptr_cast(node_settings_->build_info.data())};
-            db::write_build_info_height(*txn, build_info, execution_stage_progress);
+            db::write_build_info_height(txn, build_info, execution_stage_progress);
         }
         txn.commit();
 
@@ -82,7 +82,7 @@ Stage::Result Finish::unwind(db::RWTxn& txn) {
     operation_ = OperationType::Unwind;
     try {
         throw_if_stopping();
-        auto previous_progress{db::stages::read_stage_progress(*txn, stage_name_)};
+        auto previous_progress{db::stages::read_stage_progress(txn, stage_name_)};
         if (to >= previous_progress) return ret;
         throw_if_stopping();
         update_progress(txn, to);

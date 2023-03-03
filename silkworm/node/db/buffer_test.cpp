@@ -28,7 +28,7 @@ namespace silkworm::db {
 TEST_CASE("Storage update") {
     test::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
-    auto& txn{context.txn()};
+    auto& txn{context.rw_txn()};
 
     const auto address{0xbe00000000000000000000000000000000000000_address};
     const Bytes key{storage_prefix(address, kDefaultIncarnation)};
@@ -72,7 +72,7 @@ TEST_CASE("Storage update") {
 TEST_CASE("Account update") {
     test::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
-    auto& txn{context.txn()};
+    auto& txn{context.rw_txn()};
 
     SECTION("New EOA account") {
         const auto address{0xbe00000000000000000000000000000000000000_address};
@@ -86,7 +86,7 @@ TEST_CASE("Account update") {
         REQUIRE_NOTHROW(buffer.write_to_db());
 
         auto account_changeset{db::open_cursor(txn, table::kAccountChangeSet)};
-        REQUIRE(txn.get_map_stat(account_changeset.map()).ms_entries == 1);
+        REQUIRE(txn->get_map_stat(account_changeset.map()).ms_entries == 1);
         auto data{account_changeset.to_first()};
         auto data_key_view{db::from_slice(data.key)};
         auto data_value_view{db::from_slice(data.value)};
@@ -117,7 +117,7 @@ TEST_CASE("Account update") {
         REQUIRE_NOTHROW(buffer.write_to_db());
 
         auto account_changeset{db::open_cursor(txn, table::kAccountChangeSet)};
-        REQUIRE(txn.get_map_stat(account_changeset.map()).ms_entries == 1);
+        REQUIRE(txn->get_map_stat(account_changeset.map()).ms_entries == 1);
         auto data{account_changeset.to_first()};
         auto data_key_view{db::from_slice(data.key)};
         auto data_value_view{db::from_slice(data.value)};

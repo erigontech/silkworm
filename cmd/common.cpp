@@ -345,16 +345,16 @@ void run_preflight_checklist(NodeSettings& node_settings, bool init_if_empty) {
     db::RWTxn tx(chaindata_env);
 
     // Ensures all tables are present
-    db::table::check_or_create_chaindata_tables(*tx);
-    log::Message("Database schema", {"version", db::read_schema_version(*tx)->to_string()});
+    db::table::check_or_create_chaindata_tables(tx);
+    log::Message("Database schema", {"version", db::read_schema_version(tx)->to_string()});
 
     // Detect the highest downloaded header. We need that to detect if we can apply changes in chain config and/or
     // prune mode
-    const auto header_download_progress{db::stages::read_stage_progress(*tx, db::stages::kHeadersKey)};
+    const auto header_download_progress{db::stages::read_stage_progress(tx, db::stages::kHeadersKey)};
 
     // Check db is initialized with chain config
     {
-        node_settings.chain_config = db::read_chain_config(*tx);
+        node_settings.chain_config = db::read_chain_config(tx);
         if (!node_settings.chain_config.has_value() && init_if_empty) {
             auto source_data{read_genesis_data(node_settings.network_id)};
             auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
@@ -363,9 +363,9 @@ void run_preflight_checklist(NodeSettings& node_settings, bool init_if_empty) {
                                          std::to_string(node_settings.network_id) + " : unknown network");
             }
             log::Message("Priming database", {"network id", std::to_string(node_settings.network_id)});
-            db::initialize_genesis(*tx, genesis_json, /*allow_exceptions=*/true);
+            db::initialize_genesis(tx, genesis_json, /*allow_exceptions=*/true);
             tx.commit();
-            node_settings.chain_config = db::read_chain_config(*tx);
+            node_settings.chain_config = db::read_chain_config(tx);
         }
 
         if (!node_settings.chain_config.has_value()) {
@@ -454,7 +454,7 @@ void run_preflight_checklist(NodeSettings& node_settings, bool init_if_empty) {
             }
 
             if (new_members_added || old_members_changed) {
-                db::update_chain_config(*tx, *(known_chain->second));
+                db::update_chain_config(tx, *(known_chain->second));
                 tx.commit();
                 node_settings.chain_config = *(known_chain->second);
             }

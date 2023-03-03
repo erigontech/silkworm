@@ -29,7 +29,7 @@ find_package(gRPC REQUIRED)
 set(SILKWORM_EMBED embed)
 find_package(CLI11 REQUIRED)
 add_executable(${SILKWORM_EMBED} ${SILKWORM_MAIN_DIR}/cmd/embed.cpp)
-target_link_libraries(${SILKWORM_EMBED} PRIVATE CLI11::CLI11)
+target_link_libraries(${SILKWORM_EMBED} PRIVATE CLI11::CLI11 Boost::headers)
 
 set(SILKWORM_TOML_SRC_DIR "${SILKWORM_MAIN_DIR}/third_party/erigon-snapshot")
 set(SILKWORM_TOML_SRC

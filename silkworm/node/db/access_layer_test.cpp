@@ -134,11 +134,11 @@ namespace db {
     TEST_CASE("Methods cursor_for_each/cursor_for_count") {
         test::SetLogVerbosityGuard log_guard{log::Level::kNone};
         test::Context context;
-        auto& txn{context.txn()};
+        auto& txn{context.rw_txn()};
 
         ::mdbx::map_handle main_map{1};
-        auto main_stat{txn.get_map_stat(main_map)};
-        auto main_crs{txn.open_cursor(main_map)};
+        auto main_stat{txn->get_map_stat(main_map)};
+        db::PooledCursor main_crs{txn, main_map};
         std::vector<std::string> table_names{};
 
         const auto walk_func{[&table_names](ByteView key, ByteView) {
@@ -615,7 +615,7 @@ namespace db {
         test::Context context;
         auto& txn{context.rw_txn()};
 
-        auto table{db::open_cursor(txn, table::kPlainState)};
+        db::PooledCursor table{txn, table::kPlainState};
 
         const auto addr{0xb000000000000000000000000000000000000008_address};
         const Bytes key{storage_prefix(addr, kDefaultIncarnation)};

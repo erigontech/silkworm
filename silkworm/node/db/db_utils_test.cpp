@@ -19,6 +19,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/node/common/directories.hpp>
+#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/db/tables.hpp>
 

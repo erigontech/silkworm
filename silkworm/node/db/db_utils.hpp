@@ -20,15 +20,16 @@
 #include <set>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/hash.hpp>
-#include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/node/db/mdbx.hpp>
 
 namespace silkworm {
 
 //! \brief Read all headers up to limit, in reverse order from last, processing each via a user defined callback
-void read_headers_in_reverse_order(mdbx::txn& txn, size_t limit, std::function<void(BlockHeader&&)> callback);
+void read_headers_in_reverse_order(db::ROTxn& txn, size_t limit, std::function<void(BlockHeader&&)> callback);
 
 //! \brief Return (block-num, hash) of the header with the biggest total difficulty skipping bad headers
-std::tuple<BlockNum, Hash> header_with_biggest_td(mdbx::txn& txn, const std::set<Hash>* bad_headers = nullptr);
+std::tuple<BlockNum, Hash> header_with_biggest_td(db::ROTxn& txn, const std::set<Hash>* bad_headers = nullptr);
 
 }  // namespace silkworm

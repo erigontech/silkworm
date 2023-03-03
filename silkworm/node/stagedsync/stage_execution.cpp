@@ -564,8 +564,8 @@ std::vector<std::string> Execution::get_log_progress() {
             "txns/s", std::to_string(speed_transactions), "Mgas/s", std::to_string(speed_mgas)};
 }
 
-void Execution::revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state_table,
-                             mdbx::cursor& plain_code_table) {
+void Execution::revert_state(ByteView key, ByteView value, db::RWCursorDupSort& plain_state_table,
+                             db::RWCursor& plain_code_table) {
     if (key.size() == kAddressLength) {
         if (!value.empty()) {
             const auto account_res{Account::from_encoded_storage(value)};
@@ -611,8 +611,8 @@ void Execution::revert_state(ByteView key, ByteView value, mdbx::cursor& plain_s
     }
 }
 
-void Execution::unwind_state_from_changeset(mdbx::cursor& source_changeset, mdbx::cursor& plain_state_table,
-                                            mdbx::cursor& plain_code_table, BlockNum unwind_to) {
+void Execution::unwind_state_from_changeset(db::ROCursor& source_changeset, db::RWCursorDupSort& plain_state_table,
+                                            db::RWCursor& plain_code_table, BlockNum unwind_to) {
     auto src_data{source_changeset.to_last(/*throw_notfound*/ false)};
     while (src_data) {
         auto key(db::from_slice(src_data.key));

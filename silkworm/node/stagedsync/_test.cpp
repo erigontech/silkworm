@@ -102,7 +102,7 @@ TEST_CASE("Sync Stages") {
 
             {
                 // Verify written data is consistent
-                auto target_table{db::open_cursor(txn, db::table::kHeaderNumbers)};
+                db::PooledCursor target_table{txn, db::table::kHeaderNumbers};
 
                 REQUIRE(txn->get_map_stat(target_table.map()).ms_entries ==
                         block_hashes.size() + 1);  // +1 cause block 0 is genesis

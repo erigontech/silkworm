@@ -59,12 +59,12 @@ class Execution final : public Stage {
                                 BlockNum prune_receipts_threshold);
 
     //! \brief For given changeset cursor/bucket it reverts the changes on states buckets
-    static void unwind_state_from_changeset(mdbx::cursor& source_changeset, mdbx::cursor& plain_state_table,
-                                            mdbx::cursor& plain_code_table, BlockNum unwind_to);
+    static void unwind_state_from_changeset(db::ROCursor& source_changeset, db::RWCursorDupSort& plain_state_table,
+                                            db::RWCursor& plain_code_table, BlockNum unwind_to);
 
     //! \brief Revert State for given address/storage location
-    static void revert_state(ByteView key, ByteView value, mdbx::cursor& plain_state_table,
-                             mdbx::cursor& plain_code_table);
+    static void revert_state(ByteView key, ByteView value, db::RWCursorDupSort& plain_state_table,
+                             db::RWCursor& plain_code_table);
 
     // Stats
     std::mutex progress_mtx_;  // Synchronizes access to progress stats

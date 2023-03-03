@@ -280,7 +280,7 @@ Stage::Result HashState::hash_from_plainstate(db::RWTxn& txn) {
                 throw std::runtime_error(std::string(db::table::kHashedStorage.name) + " should be empty");
 
             // ETL key contains hashed location; for DB put we need to move it from key to value
-            const etl::LoadFunc load_func = [&storage_target](const etl::Entry& entry, mdbx::cursor& target,
+            const etl::LoadFunc load_func = [&storage_target](const etl::Entry& entry, db::RWCursorDupSort& target,
                                                               MDBX_put_flags_t) -> void {
                 if (entry.value.empty()) {
                     return;

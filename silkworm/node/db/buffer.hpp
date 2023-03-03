@@ -36,7 +36,7 @@ namespace silkworm::db {
 class Buffer : public State {
   public:
     // txn must be valid (its handle != nullptr)
-    explicit Buffer(ROTxn& txn, BlockNum prune_history_threshold,
+    explicit Buffer(RWTxn& txn, BlockNum prune_history_threshold,
                     std::optional<BlockNum> historical_block = std::nullopt)
         : txn_{txn}, prune_history_threshold_{prune_history_threshold}, historical_block_{historical_block} {}
 
@@ -128,7 +128,7 @@ class Buffer : public State {
     //! \brief Persists *state* accrued contents into db
     void write_state_to_db();
 
-    ROTxn& txn_;
+    RWTxn& txn_;
     uint64_t prune_history_threshold_;
     std::optional<uint64_t> historical_block_{};
 

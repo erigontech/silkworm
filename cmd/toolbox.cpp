@@ -145,7 +145,16 @@ struct dbFreeInfo {
     std::vector<dbFreeEntry> entries{};
 };
 
-bool user_confirmation(std::string message = {"Confirm ?"}) {
+void cursor_for_each(mdbx::cursor& cursor, db::WalkFuncRef walker) {
+    const bool throw_notfound{false};
+    auto data = cursor.eof() ? cursor.to_first(throw_notfound) : cursor.current(throw_notfound);
+    while (data) {
+        walker(db::from_slice(data.key), db::from_slice(data.value));
+        data = cursor.move(mdbx::cursor::move_operation::next, throw_notfound);
+    }
+}
+
+bool user_confirmation(const std::string& message = {"Confirm ?"}) {
     static std::regex pattern{"^([yY])?([nN])?$"};
     std::smatch matches;
 
@@ -238,7 +247,7 @@ dbFreeInfo get_freeInfo(::mdbx::txn& txn) {
     }};
 
     auto free_crs{txn.open_cursor(free_map)};
-    (void)db::cursor_for_each(free_crs, collect_func);
+    cursor_for_each(free_crs, collect_func);
 
     return ret;
 }
@@ -284,7 +293,7 @@ dbTablesInfo get_tablesInfo(::mdbx::txn& txn) {
 
     // Get all tables from the unnamed database
     auto main_crs{txn.open_cursor(main_map)};
-    db::cursor_for_each(main_crs, collect_func);
+    cursor_for_each(main_crs, collect_func);
     return ret;
 }
 
@@ -891,18 +900,18 @@ void do_first_byte_analysis(db::EnvConfig& config) {
     size_t batch_size{progress.get_increment_count()};
 
     code_cursor.to_first();
-    db::cursor_for_each(code_cursor,
-                        [&histogram, &batch_size, &progress](ByteView, ByteView value) {
-                            if (value.length() > 0) {
+    cursor_for_each(code_cursor,
+                    [&histogram, &batch_size, &progress](ByteView, ByteView value) {
+                        if (value.length() > 0) {
                                 uint8_t first_byte{value.at(0)};
                                 ++histogram[first_byte];
-                            }
-                            if (!--batch_size) {
-                                progress.set_current(progress.get_current() + progress.get_increment_count());
-                                std::cout << progress.print_interval('.') << std::flush;
-                                batch_size = progress.get_increment_count();
-                            }
-                        });
+                        }
+                        if (!--batch_size) {
+                            progress.set_current(progress.get_current() + progress.get_increment_count());
+                            std::cout << progress.print_interval('.') << std::flush;
+                            batch_size = progress.get_increment_count();
+                        }
+                    });
 
     BlockNum last_block{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
     progress.set_current(total_entries);
@@ -1006,15 +1015,15 @@ void do_trie_account_analysis(db::EnvConfig& config) {
     size_t batch_size{progress.get_increment_count()};
 
     code_cursor.to_first();
-    db::cursor_for_each(code_cursor,
-                        [&histogram, &batch_size, &progress](ByteView key, ByteView) {
-                            ++histogram[key.length()];
-                            if (!--batch_size) {
-                                progress.set_current(progress.get_current() + progress.get_increment_count());
-                                std::cout << progress.print_interval('.') << std::flush;
-                                batch_size = progress.get_increment_count();
-                            }
-                        });
+    cursor_for_each(code_cursor,
+                    [&histogram, &batch_size, &progress](ByteView key, ByteView) {
+                        ++histogram[key.length()];
+                        if (!--batch_size) {
+                            progress.set_current(progress.get_current() + progress.get_increment_count());
+                            std::cout << progress.print_interval('.') << std::flush;
+                            batch_size = progress.get_increment_count();
+                        }
+                    });
 
     progress.set_current(total_entries);
     std::cout << progress.print_interval('.') << std::endl;

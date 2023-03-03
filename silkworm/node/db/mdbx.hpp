@@ -18,6 +18,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <memory>
 #include <string>
 
 #pragma GCC diagnostic push
@@ -33,7 +34,6 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/object_pool.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/node/db/util.hpp>
 
 namespace silkworm::db {
 
@@ -48,11 +48,118 @@ namespace detail {
     };
 }  // namespace detail
 
+using MoveOperation = ::mdbx::cursor::move_operation;
+using CursorResult = ::mdbx::cursor::move_result;
+using Slice = ::mdbx::slice;
+
+//! \brief Read-only key-value cursor for single-value tables
+class ROCursor {
+  public:
+    virtual ~ROCursor() = default;
+
+    [[nodiscard]] virtual ::mdbx::map_handle map() const = 0;
+
+    virtual CursorResult to_first() = 0;
+    virtual CursorResult to_first(bool throw_notfound) = 0;
+    virtual CursorResult to_previous() = 0;
+    virtual CursorResult to_previous(bool throw_notfound) = 0;
+    virtual CursorResult current() const = 0;
+    virtual CursorResult current(bool throw_notfound) const = 0;
+    virtual CursorResult to_next() = 0;
+    virtual CursorResult to_next(bool throw_notfound) = 0;
+    virtual CursorResult to_last() = 0;
+    virtual CursorResult to_last(bool throw_notfound) = 0;
+    virtual CursorResult find(const Slice& key) = 0;
+    virtual CursorResult find(const Slice& key, bool throw_notfound) = 0;
+    virtual CursorResult lower_bound(const Slice& key) = 0;
+    virtual CursorResult lower_bound(const Slice& key, bool throw_notfound) = 0;
+    virtual CursorResult move(MoveOperation operation, bool throw_notfound) = 0;
+    virtual CursorResult move(MoveOperation operation, const Slice& key, bool throw_notfound) = 0;
+    virtual bool seek(const Slice& key) = 0;
+    virtual bool eof() const = 0;
+    virtual bool on_first() const = 0;
+    virtual bool on_last() const = 0;
+};
+
+//! \brief Read-only key-value cursor for multi-value tables
+class ROCursorDupSort : public virtual ROCursor {
+  public:
+    virtual ~ROCursorDupSort() = default;
+
+    virtual CursorResult to_previous_last_multi() = 0;
+    virtual CursorResult to_previous_last_multi(bool throw_notfound) = 0;
+    virtual CursorResult to_current_first_multi() = 0;
+    virtual CursorResult to_current_first_multi(bool throw_notfound) = 0;
+    virtual CursorResult to_current_prev_multi() = 0;
+    virtual CursorResult to_current_prev_multi(bool throw_notfound) = 0;
+    virtual CursorResult to_current_next_multi() = 0;
+    virtual CursorResult to_current_next_multi(bool throw_notfound) = 0;
+    virtual CursorResult to_current_last_multi() = 0;
+    virtual CursorResult to_current_last_multi(bool throw_notfound) = 0;
+    virtual CursorResult to_next_first_multi() = 0;
+    virtual CursorResult to_next_first_multi(bool throw_notfound) = 0;
+    virtual CursorResult find_multivalue(const Slice &key, const Slice &value) = 0;
+    virtual CursorResult find_multivalue(const Slice &key, const Slice &value, bool throw_notfound) = 0;
+    virtual CursorResult lower_bound_multivalue(const Slice &key, const Slice &value) = 0;
+    virtual CursorResult lower_bound_multivalue(const Slice &key, const Slice &value, bool throw_notfound) = 0;
+    virtual CursorResult move(MoveOperation operation, bool throw_notfound) = 0;
+    virtual CursorResult move(MoveOperation operation, const Slice& key, bool throw_notfound) = 0;
+    virtual CursorResult move(MoveOperation operation, const Slice& key, const Slice& value, bool throw_notfound) = 0;
+    virtual std::size_t count_multivalue() const = 0;
+};
+
+//! \brief Read-write key-value cursor for single-value tables
+class RWCursor : public virtual ROCursor {
+  public:
+    virtual ~RWCursor() = default;
+
+    virtual MDBX_error_t put(const Slice& key, Slice* value, MDBX_put_flags_t flags) noexcept = 0;
+    virtual void insert(const Slice& key, Slice value) = 0;
+    virtual void upsert(const Slice& key, const Slice& value) = 0;
+    virtual void update(const Slice& key, const Slice& value) = 0;
+
+    /// \brief Remove single key-value pair at the current cursor position.
+    virtual bool erase() = 0;
+    virtual bool erase(bool whole_multivalue) = 0;
+
+    /// \brief Seek and remove first value of the given key.
+    /// \return true if the key is found and a value(s) is removed.
+    virtual bool erase(const Slice& key) = 0;
+    virtual bool erase(const Slice& key, bool whole_multivalue) = 0;
+};
+
+//! \brief Read-write key-value cursor for multi-value tables
+class RWCursorDupSort : public RWCursor, public ROCursorDupSort {
+  public:
+    virtual ~RWCursorDupSort() = default;
+
+    /// \brief Remove all multi-values at the current cursor position.
+    virtual bool erase() = 0;
+    virtual bool erase(bool whole_multivalue) = 0;
+
+    /// \brief Seek and remove whole multi-value of the given key.
+    /// \return true if the key is found and a value(s) is removed.
+    virtual bool erase(const Slice& key) = 0;
+    virtual bool erase(const Slice& key, bool whole_multivalue) = 0;
+
+    /// \brief Seek and remove the particular multi-value entry of the key.
+    /// \return true if the given key-value pair is found and removed
+    virtual bool erase(const Slice& key, const Slice& value) = 0;
+};
+
+//! \brief Configuration settings for a "map" (aka a table)
+struct MapConfig {
+    const char* name{nullptr};                                        // Name of the table (is key in MAIN_DBI)
+    const ::mdbx::key_mode key_mode{::mdbx::key_mode::usual};         // Key collation order
+    const ::mdbx::value_mode value_mode{::mdbx::value_mode::single};  // Data Storage Mode
+};
+
 //! \brief This class wraps a read-only transaction.
 //! It is used in function signatures to clarify that read-only access is sufficient, read-write access is not required.
 class ROTxn {
   public:
     explicit ROTxn(mdbx::env& env) : managed_txn_{env.start_read()} {}
+    virtual ~ROTxn() = default;
 
     // Not copyable
     ROTxn(const ROTxn&) = delete;
@@ -66,10 +173,13 @@ class ROTxn {
     mdbx::txn* operator->() { return &managed_txn_; }
     operator mdbx::txn&() { return managed_txn_; }
 
+    virtual std::unique_ptr<ROCursor> ro_cursor(const MapConfig& config);
+    virtual std::unique_ptr<ROCursorDupSort> ro_cursor_dup_sort(const MapConfig& config);
+
     void abort() { managed_txn_.abort(); }
 
   protected:
-    ROTxn(mdbx::txn_managed&& source) : managed_txn_{std::move(source)} {}
+    explicit ROTxn(mdbx::txn_managed&& source) : managed_txn_{std::move(source)} {}
 
     mdbx::txn_managed managed_txn_;
 };
@@ -82,6 +192,7 @@ class RWTxn : public ROTxn {
   public:
     // This variant creates new mdbx transactions as need be.
     explicit RWTxn(mdbx::env& env) : ROTxn{env.start_write()} {}
+    ~RWTxn() override = default;
 
     // Not copyable
     RWTxn(const RWTxn&) = delete;
@@ -92,6 +203,9 @@ class RWTxn : public ROTxn {
 
     void disable_commit() { commit_disabled_ = true; }
     void enable_commit() { commit_disabled_ = false; }
+
+    virtual std::unique_ptr<RWCursor> rw_cursor(const MapConfig& config);
+    virtual std::unique_ptr<RWCursorDupSort> rw_cursor_dup_sort(const MapConfig& config);
 
     void commit(const bool renew = true) {
         /*
@@ -118,7 +232,7 @@ class RWTxn : public ROTxn {
     void commit_and_stop() { commit(false); }
 
   protected:
-    RWTxn(mdbx::txn_managed&& source) : ROTxn{std::move(source)} {}
+    explicit RWTxn(mdbx::txn_managed&& source) : ROTxn{std::move(source)} {}
 
     bool commit_disabled_{false};
 };
@@ -166,13 +280,6 @@ struct EnvConfig {
     uint32_t max_readers{100};   // Default max number of readers
 };
 
-//! \brief Configuration settings for a "map" (aka a table)
-struct MapConfig {
-    const char* name{nullptr};                                        // Name of the table (is key in MAIN_DBI)
-    const ::mdbx::key_mode key_mode{::mdbx::key_mode::usual};         // Key collation order
-    const ::mdbx::value_mode value_mode{::mdbx::value_mode::single};  // Data Storage Mode
-};
-
 //! \brief Opens an mdbx environment using the provided environment config
 //! \param [in] config : A structure containing essential environment settings
 //! \return A handler to mdbx::env_managed class
@@ -204,11 +311,13 @@ size_t max_value_size_for_leaf_page(const ::mdbx::txn& txn, size_t key_size);
 //! \brief Managed cursor class to access cursor API
 //! \remarks Unlike ::mdbx::cursor_managed this class withdraws and deposits allocated MDBX_cursor handles in a
 //! thread_local pool for reuse. This helps avoiding multiple mallocs on cursor creation.
-class PooledCursor : public ::mdbx::cursor {
+class PooledCursor : public RWCursorDupSort, protected ::mdbx::cursor {
   public:
+    explicit PooledCursor();
+    explicit PooledCursor(RWTxn& txn, ::mdbx::map_handle map);
     explicit PooledCursor(::mdbx::txn& txn, const MapConfig& config);
-    explicit PooledCursor(RWTxn& txn, const MapConfig& config) : PooledCursor(*txn, config){};
-    ~PooledCursor();
+    explicit PooledCursor(RWTxn& txn, const MapConfig& config) : PooledCursor(*txn, config) {}
+    ~PooledCursor() override;
 
     PooledCursor(PooledCursor&& other) noexcept;
     PooledCursor& operator=(PooledCursor&& other) noexcept;
@@ -216,10 +325,13 @@ class PooledCursor : public ::mdbx::cursor {
     PooledCursor(const PooledCursor&) = delete;
     PooledCursor& operator=(const PooledCursor&) = delete;
 
-    //! \brief (re)uses current cursor binding it to provided transaction and map
-    void bind(::mdbx::txn& tx, const MapConfig& config);
+    //! \brief Reuse current cursor binding it to provided transaction and map
+    void bind(RWTxn& txn, ::mdbx::map_handle map);
 
-    //! \brief (re)uses current cursor binding it to provided transaction and map
+    //! \brief Reuse current cursor binding it to provided transaction and map configuration
+    void bind(::mdbx::txn& txn, const MapConfig& config);
+
+    //! \brief Reuse current cursor binding it to provided transaction and map configuration
     void bind(RWTxn& txn, const MapConfig& config) { bind(*txn, config); }
 
     //! \brief Closes cursor causing de-allocation of MDBX_cursor handle
@@ -244,6 +356,58 @@ class PooledCursor : public ::mdbx::cursor {
     //! \brief Returns whether the underlying table is empty
     [[nodiscard]] bool empty() const;
 
+    using ::mdbx::cursor::operator bool;
+
+    [[nodiscard]] ::mdbx::map_handle map() const override;
+
+    CursorResult to_first() override;
+    CursorResult to_first(bool throw_notfound) override;
+    CursorResult to_previous() override;
+    CursorResult to_previous(bool throw_notfound) override;
+    [[nodiscard]] CursorResult current() const override;
+    [[nodiscard]] CursorResult current(bool throw_notfound) const override;
+    CursorResult to_next() override;
+    CursorResult to_next(bool throw_notfound) override;
+    CursorResult to_last() override;
+    CursorResult to_last(bool throw_notfound) override;
+    CursorResult find(const Slice& key) override;
+    CursorResult find(const Slice& key, bool throw_notfound) override;
+    CursorResult lower_bound(const Slice& key) override;
+    CursorResult lower_bound(const Slice& key, bool throw_notfound) override;
+    CursorResult move(MoveOperation operation, bool throw_notfound) override;
+    CursorResult move(MoveOperation operation, const Slice& key, bool throw_notfound) override;
+    bool seek(const Slice& key) override;
+    [[nodiscard]] bool eof() const override;
+    [[nodiscard]] bool on_first() const override;
+    [[nodiscard]] bool on_last() const override;
+    CursorResult to_previous_last_multi() override;
+    CursorResult to_previous_last_multi(bool throw_notfound) override;
+    CursorResult to_current_first_multi() override;
+    CursorResult to_current_first_multi(bool throw_notfound) override;
+    CursorResult to_current_prev_multi() override;
+    CursorResult to_current_prev_multi(bool throw_notfound) override;
+    CursorResult to_current_next_multi() override;
+    CursorResult to_current_next_multi(bool throw_notfound) override;
+    CursorResult to_current_last_multi() override;
+    CursorResult to_current_last_multi(bool throw_notfound) override;
+    CursorResult to_next_first_multi() override;
+    CursorResult to_next_first_multi(bool throw_notfound) override;
+    CursorResult find_multivalue(const Slice &key, const Slice &value) override;
+    CursorResult find_multivalue(const Slice &key, const Slice &value, bool throw_notfound) override;
+    CursorResult lower_bound_multivalue(const Slice &key, const Slice &value) override;
+    CursorResult lower_bound_multivalue(const Slice &key, const Slice &value, bool throw_notfound) override;
+    CursorResult move(MoveOperation operation, const Slice& key, const Slice& value, bool throw_notfound) override;
+    [[nodiscard]] std::size_t count_multivalue() const override;
+    MDBX_error_t put(const Slice& key, Slice* value, MDBX_put_flags_t flags) noexcept override;
+    void insert(const Slice& key, Slice value) override;
+    void upsert(const Slice& key, const Slice& value) override;
+    void update(const Slice& key, const Slice& value) override;
+    bool erase() override;
+    bool erase(bool whole_multivalue) override;
+    bool erase(const Slice& key) override;
+    bool erase(const Slice& key, bool whole_multivalue) override;
+    bool erase(const Slice& key, const Slice& value) override;
+
     //! \brief Exposes handles cache
     static const ObjectPool<MDBX_cursor, detail::cursor_handle_deleter>& handles_cache() { return handles_pool_; }
 
@@ -260,7 +424,7 @@ bool has_map(::mdbx::txn& tx, const char* map_name);
 //! \brief Builds the full path to mdbx datafile provided a directory
 //! \param [in] base_path : a reference to the directory holding the data file
 //! \return A path with file name
-static inline std::filesystem::path get_datafile_path(const std::filesystem::path& base_path) noexcept {
+inline std::filesystem::path get_datafile_path(const std::filesystem::path& base_path) noexcept {
     return std::filesystem::path(base_path / std::filesystem::path(kDbDataFileName));
 }
 
@@ -278,7 +442,7 @@ enum class CursorMoveDirection {
 //! \return The overall number of processed records
 //! \remarks If the provided cursor is *not* positioned on any record it will be moved to either the beginning or the
 //! end of the table on behalf of the move criteria
-size_t cursor_for_each(::mdbx::cursor& cursor, WalkFuncRef func,
+size_t cursor_for_each(ROCursor& cursor, WalkFuncRef func,
                        CursorMoveDirection direction = CursorMoveDirection::Forward);
 
 //! \brief Executes a function on each record reachable by the provided cursor asserting keys start with provided prefix
@@ -288,7 +452,7 @@ size_t cursor_for_each(::mdbx::cursor& cursor, WalkFuncRef func,
 //! function may stop the loop
 //! \param [in] direction : Whether the cursor should navigate records forward (default) or backwards
 //! \return The overall number of processed records
-size_t cursor_for_prefix(::mdbx::cursor& cursor, ByteView prefix, WalkFuncRef func,
+size_t cursor_for_prefix(ROCursor& cursor, ByteView prefix, WalkFuncRef func,
                          CursorMoveDirection direction = CursorMoveDirection::Forward);
 
 //! \brief Executes a function on each record reachable by the provided cursor up to a max number of iterations
@@ -301,7 +465,7 @@ size_t cursor_for_prefix(::mdbx::cursor& cursor, ByteView prefix, WalkFuncRef fu
 //! reached either the end or the beginning of table earlier
 //! \remarks If the provided cursor is *not* positioned on any record it will be moved to either the beginning or the
 //! end of the table on behalf of the move criteria
-size_t cursor_for_count(::mdbx::cursor& cursor, WalkFuncRef func, size_t max_count,
+size_t cursor_for_count(ROCursor& cursor, WalkFuncRef func, size_t max_count,
                         CursorMoveDirection direction = CursorMoveDirection::Forward);
 
 //! \brief Erases map records by cursor until any record is found
@@ -311,12 +475,12 @@ size_t cursor_for_count(::mdbx::cursor& cursor, WalkFuncRef func, size_t max_cou
 //! \return The overall number of erased records
 //! \remarks When direction is forward all keys greater equal set_key will be deleted. When direction is reverse all
 //! keys lower than set_key will be deleted.
-size_t cursor_erase(::mdbx::cursor& cursor, ByteView set_key,
+size_t cursor_erase(RWCursor& cursor, ByteView set_key,
                     CursorMoveDirection direction = CursorMoveDirection::Forward);
 
 //! \brief Erases all records whose key starts with a prefix
 //! \param [in] cursor : A reference to a cursor opened on a map
 //! \param [in] prefix : Delete keys starting with this prefix
-size_t cursor_erase_prefix(::mdbx::cursor& cursor, ByteView prefix);
+size_t cursor_erase_prefix(RWCursor& cursor, ByteView prefix);
 
 }  // namespace silkworm::db

@@ -40,7 +40,7 @@ TEST_CASE("Storage update") {
     const auto location_b{0x0000000000000000000000000000000000000000000000000000000000000002_bytes32};
     const auto value_b{0x0000000000000000000000000000000000000000000000000000000000000132_bytes32};
 
-    auto state{db::open_cursor(txn, table::kPlainState)};
+    db::PooledCursor state{txn, table::kPlainState};
 
     upsert_storage_value(state, key, location_a, value_a1);
     upsert_storage_value(state, key, location_b, value_b);

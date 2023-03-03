@@ -314,7 +314,7 @@ void write_transactions(RWTxn& txn, const std::vector<Transaction>& transactions
     }
 }
 
-void read_transactions(mdbx::cursor& txn_table, uint64_t base_id, uint64_t count, std::vector<Transaction>& v) {
+void read_transactions(ROCursor& txn_table, uint64_t base_id, uint64_t count, std::vector<Transaction>& v) {
     v.resize(count);
     if (count == 0) {
         return;

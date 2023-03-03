@@ -26,8 +26,6 @@ if(CONAN_PACKAGE_MANAGER) # CMAKE CONAN START
   list(APPEND CMAKE_MODULE_PATH ${CONAN_BINARY_DIR})
   list(APPEND CMAKE_PREFIX_PATH ${CONAN_BINARY_DIR})
   
-  set(CMAKE_CXX_STANDARD 20)
-  
   if(NOT EXISTS "${CONAN_BINARY_DIR}/conan.cmake")
     message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
     file(DOWNLOAD "https://raw.githubusercontent.com/conan-io/cmake-conan/0.18.1/conan.cmake"
@@ -41,12 +39,7 @@ if(CONAN_PACKAGE_MANAGER) # CMAKE CONAN START
   file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/conanfile.txt" DESTINATION "${CONAN_BINARY_DIR}")
 
   if(NOT DEFINED CONAN_PROFILE)
-    message(STATUS "CONAN_PROFILE not defined. Use autodetect settings...")
-    conan_cmake_autodetect(CONAN_SETTINGS)
-    conan_cmake_install(PATH_OR_REFERENCE "${CONAN_BINARY_DIR}"
-          INSTALL_FOLDER "${CONAN_BINARY_DIR}"
-          BUILD missing
-          SETTINGS ${CONAN_SETTINGS})
+    message(FATAL_ERROR "CONAN_PROFILE is not defined")
   else()
     message(STATUS "CONAN_PROFILE: ${CONAN_PROFILE}")
     conan_cmake_install(PATH_OR_REFERENCE "${CONAN_BINARY_DIR}"

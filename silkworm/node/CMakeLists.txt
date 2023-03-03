@@ -14,15 +14,15 @@
    limitations under the License.
 ]]
 
-find_package(absl CONFIG REQUIRED)
-find_package(asio-grpc CONFIG REQUIRED)
+find_package(absl REQUIRED)
+find_package(asio-grpc REQUIRED)
 find_package(Boost CONFIG REQUIRED container thread)
-find_package(nlohmann_json CONFIG REQUIRED)
-find_package(gRPC CONFIG REQUIRED)
+find_package(nlohmann_json REQUIRED)
+find_package(gRPC REQUIRED)
 
 # Generate source files containing snapshot TOML files as binary data
 set(SILKWORM_EMBED embed)
-find_package(CLI11 CONFIG REQUIRED)
+find_package(CLI11 REQUIRED)
 add_executable(${SILKWORM_EMBED} ${SILKWORM_MAIN_DIR}/cmd/embed.cpp)
 target_link_libraries(${SILKWORM_EMBED} PRIVATE CLI11::CLI11)
 

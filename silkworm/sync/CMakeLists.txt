@@ -14,9 +14,9 @@
    limitations under the License.
 ]]
 
-find_package(absl CONFIG REQUIRED)
+find_package(absl REQUIRED)
 find_package(Boost CONFIG REQUIRED container thread)
-find_package(gRPC CONFIG REQUIRED)
+find_package(gRPC REQUIRED)
 
 file(GLOB_RECURSE SILKWORM_SYNC_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h" "*.cc")
 list(FILTER SILKWORM_SYNC_SRC EXCLUDE REGEX "_test\\.cpp$")

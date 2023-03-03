@@ -18,12 +18,12 @@ set(TARGET silkworm_sentry)
 
 hunter_add_package(Snappy)
 
-find_package(absl CONFIG REQUIRED)
+find_package(absl REQUIRED)
 find_package(Boost CONFIG REQUIRED thread)
-find_package(gRPC CONFIG REQUIRED)
-find_package(Microsoft.GSL CONFIG REQUIRED)
+find_package(gRPC REQUIRED)
+find_package(Microsoft.GSL REQUIRED)
 find_package(OpenSSL REQUIRED)
-find_package(Snappy CONFIG REQUIRED)
+find_package(Snappy REQUIRED)
 
 set(SRC "")
 file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h" "*.cc")

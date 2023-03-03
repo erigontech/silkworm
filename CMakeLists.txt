@@ -111,8 +111,8 @@ if(SILKWORM_WASM_API)
   add_compile_definitions(EVMC_LOADER_MOCK)
 endif()
 
-find_package(intx CONFIG REQUIRED)   # Required from here below
-find_package(ethash CONFIG REQUIRED) # Required from here below
+find_package(intx REQUIRED)   # Required from here below
+find_package(ethash REQUIRED) # Required from here below
 
 add_subdirectory(third_party/evmone/evmc)
 
@@ -178,7 +178,7 @@ endif()
 
 # libtorrent
 if(NOT SILKWORM_CORE_ONLY)
-  find_package(Boost CONFIG REQUIRED)
+  find_package(Boost REQUIRED)
   # Define Boost::headers target if missing because libtorrent needs it
   if(NOT TARGET Boost::headers)
     add_library(Boost::headers INTERFACE IMPORTED)

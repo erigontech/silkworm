@@ -29,8 +29,8 @@ if(NOT SILKWORM_CORE_ONLY)
   # Benchmarks
   add_subdirectory(benchmark)
 
-  find_package(absl CONFIG REQUIRED)
-  find_package(CLI11 CONFIG REQUIRED)
+  find_package(absl REQUIRED)
+  find_package(CLI11 REQUIRED)
 
   add_executable(silkworm silkworm.cpp common.cpp)
   target_link_libraries(silkworm PRIVATE silkworm_node silkworm_sync silkworm-buildinfo CLI11::CLI11 $<$<BOOL:${MSVC}>:Kernel32.lib>)

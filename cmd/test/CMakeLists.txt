@@ -14,8 +14,8 @@
    limitations under the License.
 ]]
 
-find_package(Catch2 CONFIG REQUIRED)
-find_package(Microsoft.GSL CONFIG REQUIRED)
+find_package(Catch2 REQUIRED)
+find_package(Microsoft.GSL REQUIRED)
 
 # Silkworm Core Tests
 file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/core/*_test.cpp")
@@ -38,7 +38,7 @@ if(NOT SILKWORM_CORE_ONLY)
 
   # Ethereum Consensus Tests
   hunter_add_package(CLI11)
-  find_package(CLI11 CONFIG REQUIRED)
+  find_package(CLI11 REQUIRED)
   add_executable(consensus consensus.cpp)
   target_compile_definitions(consensus PRIVATE SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/third_party/tests")
   target_link_libraries(consensus PRIVATE silkworm_node evmc::loader CLI11::CLI11)

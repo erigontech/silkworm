@@ -14,8 +14,8 @@
    limitations under the License.
 ]]
 
-find_package(Microsoft.GSL CONFIG REQUIRED)
-find_package(nlohmann_json CONFIG REQUIRED)
+find_package(Microsoft.GSL REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 if(MSVC)
   add_compile_options(/EHsc)
@@ -35,7 +35,7 @@ set(SILKWORM_CORE_PRIVATE_LIBS "")
 
 if(NOT SILKWORM_WASM_API)
   hunter_add_package(abseil)
-  find_package(absl CONFIG REQUIRED)
+  find_package(absl REQUIRED)
   list(APPEND SILKWORM_CORE_PRIVATE_LIBS absl::flat_hash_map absl::flat_hash_set absl::node_hash_map)
 endif()
 

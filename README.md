@@ -201,7 +201,7 @@ You can find all available conan profiles inside the [cmake/profiles](cmake/prof
 
 The conan packages could also be pre-installed using [conan install](https://docs.conan.io/1/reference/commands/consumer/install.html):
 
-    conan install --install-folder=build/conan --build=missing --settings build_type=Debug .
+    conan install --install-folder=build/conan --build=missing -s build_type=Debug -s compiler.cppstd=20 .
 
 or with a profile:
 

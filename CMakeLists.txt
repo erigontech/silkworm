@@ -46,14 +46,12 @@ if(CONAN_PACKAGE_MANAGER) # CMAKE CONAN START
     conan_cmake_install(PATH_OR_REFERENCE "${CONAN_BINARY_DIR}"
           INSTALL_FOLDER "${CONAN_BINARY_DIR}"
           BUILD missing
-          REMOTE conancenter
           SETTINGS ${CONAN_SETTINGS})
   else()
     message(STATUS "CONAN_PROFILE: ${CONAN_PROFILE}")
     conan_cmake_install(PATH_OR_REFERENCE "${CONAN_BINARY_DIR}"
           INSTALL_FOLDER "${CONAN_BINARY_DIR}"
           BUILD missing
-          REMOTE conancenter
           PROFILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/profiles/${CONAN_PROFILE})
   endif()
 endif() # CMAKE CONAN END

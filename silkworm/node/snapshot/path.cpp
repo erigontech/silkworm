@@ -22,6 +22,7 @@
 #include <utility>
 
 #include <absl/strings/str_split.h>
+#include <absl/strings/string_view.h>
 #include <boost/format.hpp>
 #include <magic_enum.hpp>
 
@@ -36,7 +37,7 @@ std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
     const std::string filename_no_ext = path.stem().string();
 
     // Expected stem format: <version>-<6_digit_block_from>-<6_digit_block_to>-<tag>
-    const std::vector<std::string_view> tokens = absl::StrSplit(filename_no_ext, "-");
+    const std::vector<absl::string_view> tokens = absl::StrSplit(filename_no_ext, "-");
     if (tokens.size() != 4) {
         return std::nullopt;
     }
@@ -70,7 +71,8 @@ std::optional<SnapshotPath> SnapshotPath::parse(fs::path path) {
     const BlockNum block_to{scaled_block_to * kFileNameBlockScaleFactor};
 
     // Expected tag format: headers|bodies|transactions (parsing relies on magic_enum, so SnapshotType items must match exactly)
-    const auto type = magic_enum::enum_cast<SnapshotType>(tag);
+    std::string_view tag_str{tag.data(), tag.size()};
+    const auto type = magic_enum::enum_cast<SnapshotType>(tag_str);
     if (!type) {
         return std::nullopt;
     }

@@ -903,8 +903,8 @@ void do_first_byte_analysis(db::EnvConfig& config) {
     cursor_for_each(code_cursor,
                     [&histogram, &batch_size, &progress](ByteView, ByteView value) {
                         if (value.length() > 0) {
-                                uint8_t first_byte{value.at(0)};
-                                ++histogram[first_byte];
+                            uint8_t first_byte{value.at(0)};
+                            ++histogram[first_byte];
                         }
                         if (!--batch_size) {
                             progress.set_current(progress.get_current() + progress.get_increment_count());

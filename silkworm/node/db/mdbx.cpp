@@ -329,7 +329,7 @@ bool PooledCursor::empty() const { return size() == 0; }
 }
 
 CursorResult PooledCursor::to_first() {
-    return ::mdbx::cursor::to_first(/*throw_notfound =*/ true);
+    return ::mdbx::cursor::to_first(/*throw_notfound =*/true);
 }
 
 CursorResult PooledCursor::to_first(bool throw_notfound) {
@@ -337,7 +337,7 @@ CursorResult PooledCursor::to_first(bool throw_notfound) {
 }
 
 CursorResult PooledCursor::to_previous() {
-    return ::mdbx::cursor::to_previous(/*throw_notfound =*/ true);
+    return ::mdbx::cursor::to_previous(/*throw_notfound =*/true);
 }
 
 CursorResult PooledCursor::to_previous(bool throw_notfound) {
@@ -345,7 +345,7 @@ CursorResult PooledCursor::to_previous(bool throw_notfound) {
 }
 
 CursorResult PooledCursor::current() const {
-    return ::mdbx::cursor::current(/*throw_notfound =*/ true);
+    return ::mdbx::cursor::current(/*throw_notfound =*/true);
 }
 
 CursorResult PooledCursor::current(bool throw_notfound) const {
@@ -353,7 +353,7 @@ CursorResult PooledCursor::current(bool throw_notfound) const {
 }
 
 CursorResult PooledCursor::to_next() {
-    return ::mdbx::cursor::to_next(/*throw_notfound =*/ true);
+    return ::mdbx::cursor::to_next(/*throw_notfound =*/true);
 }
 
 CursorResult PooledCursor::to_next(bool throw_notfound) {
@@ -361,7 +361,7 @@ CursorResult PooledCursor::to_next(bool throw_notfound) {
 }
 
 CursorResult PooledCursor::to_last() {
-    return ::mdbx::cursor::to_last(/*throw_notfound =*/ true);
+    return ::mdbx::cursor::to_last(/*throw_notfound =*/true);
 }
 
 CursorResult PooledCursor::to_last(bool throw_notfound) {
@@ -369,7 +369,7 @@ CursorResult PooledCursor::to_last(bool throw_notfound) {
 }
 
 CursorResult PooledCursor::find(const Slice& key) {
-    return ::mdbx::cursor::find(key, /*throw_notfound =*/ true);
+    return ::mdbx::cursor::find(key, /*throw_notfound =*/true);
 }
 
 CursorResult PooledCursor::find(const Slice& key, bool throw_notfound) {
@@ -377,7 +377,7 @@ CursorResult PooledCursor::find(const Slice& key, bool throw_notfound) {
 }
 
 CursorResult PooledCursor::lower_bound(const Slice& key) {
-    return ::mdbx::cursor::lower_bound(key, /*throw_notfound =*/ true);
+    return ::mdbx::cursor::lower_bound(key, /*throw_notfound =*/true);
 }
 
 CursorResult PooledCursor::lower_bound(const Slice& key, bool throw_notfound) {
@@ -409,7 +409,7 @@ bool PooledCursor::on_last() const {
 }
 
 CursorResult PooledCursor::to_previous_last_multi() {
-    return ::mdbx::cursor::to_previous_last_multi(/*throw_notfound =*/ true);
+    return ::mdbx::cursor::to_previous_last_multi(/*throw_notfound =*/true);
 }
 
 CursorResult PooledCursor::to_previous_last_multi(bool throw_notfound) {
@@ -417,7 +417,7 @@ CursorResult PooledCursor::to_previous_last_multi(bool throw_notfound) {
 }
 
 CursorResult PooledCursor::to_current_first_multi() {
-    return ::mdbx::cursor::to_current_first_multi(/*throw_notfound =*/ true);
+    return ::mdbx::cursor::to_current_first_multi(/*throw_notfound =*/true);
 }
 
 CursorResult PooledCursor::to_current_first_multi(bool throw_notfound) {
@@ -425,7 +425,7 @@ CursorResult PooledCursor::to_current_first_multi(bool throw_notfound) {
 }
 
 CursorResult PooledCursor::to_current_prev_multi() {
-    return ::mdbx::cursor::to_current_prev_multi(/*throw_notfound =*/ true);
+    return ::mdbx::cursor::to_current_prev_multi(/*throw_notfound =*/true);
 }
 
 CursorResult PooledCursor::to_current_prev_multi(bool throw_notfound) {
@@ -433,7 +433,7 @@ CursorResult PooledCursor::to_current_prev_multi(bool throw_notfound) {
 }
 
 CursorResult PooledCursor::to_current_next_multi() {
-    return ::mdbx::cursor::to_current_next_multi(/*throw_notfound =*/ true);
+    return ::mdbx::cursor::to_current_next_multi(/*throw_notfound =*/true);
 }
 
 CursorResult PooledCursor::to_current_next_multi(bool throw_notfound) {
@@ -441,7 +441,7 @@ CursorResult PooledCursor::to_current_next_multi(bool throw_notfound) {
 }
 
 CursorResult PooledCursor::to_current_last_multi() {
-    return ::mdbx::cursor::to_current_last_multi(/*throw_notfound =*/ true);
+    return ::mdbx::cursor::to_current_last_multi(/*throw_notfound =*/true);
 }
 
 CursorResult PooledCursor::to_current_last_multi(bool throw_notfound) {
@@ -449,31 +449,31 @@ CursorResult PooledCursor::to_current_last_multi(bool throw_notfound) {
 }
 
 CursorResult PooledCursor::to_next_first_multi() {
-    return ::mdbx::cursor::to_next_first_multi(/*throw_notfound =*/ true);
+    return ::mdbx::cursor::to_next_first_multi(/*throw_notfound =*/true);
 }
 
 CursorResult PooledCursor::to_next_first_multi(bool throw_notfound) {
     return ::mdbx::cursor::to_next_first_multi(throw_notfound);
 }
 
-CursorResult PooledCursor::find_multivalue(const Slice &key, const Slice &value) {
-    return ::mdbx::cursor::find_multivalue(key, value, /*throw_notfound =*/ true);
+CursorResult PooledCursor::find_multivalue(const Slice& key, const Slice& value) {
+    return ::mdbx::cursor::find_multivalue(key, value, /*throw_notfound =*/true);
 }
 
-CursorResult PooledCursor::find_multivalue(const Slice &key, const Slice &value, bool throw_notfound) {
+CursorResult PooledCursor::find_multivalue(const Slice& key, const Slice& value, bool throw_notfound) {
     return ::mdbx::cursor::find_multivalue(key, value, throw_notfound);
 }
 
-CursorResult PooledCursor::lower_bound_multivalue(const Slice &key, const Slice &value) {
-    return ::mdbx::cursor::lower_bound_multivalue(key, value, /*throw_notfound =*/ false);
+CursorResult PooledCursor::lower_bound_multivalue(const Slice& key, const Slice& value) {
+    return ::mdbx::cursor::lower_bound_multivalue(key, value, /*throw_notfound =*/false);
 }
 
-CursorResult PooledCursor::lower_bound_multivalue(const Slice &key, const Slice &value, bool throw_notfound) {
+CursorResult PooledCursor::lower_bound_multivalue(const Slice& key, const Slice& value, bool throw_notfound) {
     return ::mdbx::cursor::lower_bound_multivalue(key, value, throw_notfound);
 }
 
 CursorResult PooledCursor::move(MoveOperation operation, const Slice& key, const Slice& value, bool throw_notfound) {
-    return ::mdbx::cursor::move(operation, key, value, throw_notfound);;
+    return ::mdbx::cursor::move(operation, key, value, throw_notfound);
 }
 
 std::size_t PooledCursor::count_multivalue() const {
@@ -497,7 +497,7 @@ void PooledCursor::update(const Slice& key, const Slice& value) {
 }
 
 bool PooledCursor::erase() {
-    return ::mdbx::cursor::erase(/*whole_multivalue =*/ false);
+    return ::mdbx::cursor::erase(/*whole_multivalue =*/false);
 }
 
 bool PooledCursor::erase(bool whole_multivalue) {
@@ -505,7 +505,7 @@ bool PooledCursor::erase(bool whole_multivalue) {
 }
 
 bool PooledCursor::erase(const Slice& key) {
-    return ::mdbx::cursor::erase(key, /*whole_multivalue =*/ true);
+    return ::mdbx::cursor::erase(key, /*whole_multivalue =*/true);
 }
 
 bool PooledCursor::erase(const Slice& key, bool whole_multivalue) {

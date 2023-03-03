@@ -102,7 +102,7 @@ class TrieCursor {
     Bytes prefix_{};  // Db key prefix for this trie (0 bytes TrieAccount - 40 bytes TrieStorage)
     Bytes buffer_{};  // A convenience buffer
 
-    db::ROCursor& db_cursor_;     // The underlying db cursor (TrieAccount/TrieStorage)
+    db::ROCursor& db_cursor_;    // The underlying db cursor (TrieAccount/TrieStorage)
     PrefixSet* changed_list_;    // The collection of changed nibbled keys
     ByteView next_created_{};    // The next created account/location in changed list
     etl::Collector* collector_;  // Pointer to a collector for deletion of obsolete keys

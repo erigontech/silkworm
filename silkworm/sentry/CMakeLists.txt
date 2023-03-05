@@ -55,7 +55,7 @@ if(SILKWORM_SANITIZE)
 endif()
 
 target_include_directories(${TARGET} PUBLIC
-  ${CMAKE_SOURCE_DIR}
+  ${SILKWORM_MAIN_DIR}
   "${SILKWORM_MAIN_SRC_DIR}/interfaces"
   "${SILKWORM_MAIN_DIR}/third_party/stbrumme-keccak"
   "${SILKWORM_MAIN_DIR}/third_party/stbrumme-crc32"

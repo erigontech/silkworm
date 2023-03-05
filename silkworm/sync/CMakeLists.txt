@@ -45,7 +45,7 @@ if(SILKWORM_SANITIZE)
 endif()
 
 target_include_directories(silkworm_sync PUBLIC
-        ${CMAKE_SOURCE_DIR}
+        ${SILKWORM_MAIN_DIR}
         ${SILKWORM_MAIN_SRC_DIR}/interfaces
         ${SILKWORM_MAIN_DIR}/third_party/magic_enum/include)
 

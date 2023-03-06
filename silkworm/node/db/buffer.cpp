@@ -298,14 +298,14 @@ void Buffer::write_state_to_db() {
         log::Trace("Sorted addresses", {"in", StopWatch::format(duration)});
     }
 
-    auto state_table{db::open_cursor(txn_, table::kPlainState)};
+    auto state_table = txn_.rw_cursor_dup_sort(table::kPlainState);
     for (const auto& address : addresses) {
         if (auto it{accounts_.find(address)}; it != accounts_.end()) {
             auto key{to_slice(address)};
-            state_table.erase(key, /*whole_multivalue=*/true);  // PlainState is multivalue
+            state_table->erase(key, /*whole_multivalue=*/true);  // PlainState is multivalue
             if (it->second.has_value()) {
                 Bytes encoded{it->second->encode_for_storage()};
-                state_table.upsert(key, to_slice(encoded));
+                state_table->upsert(key, to_slice(encoded));
                 written_size += kAddressLength + encoded.length();
             }
             accounts_.erase(it);
@@ -315,7 +315,7 @@ void Buffer::write_state_to_db() {
             for (const auto& [incarnation, contract_storage] : it->second) {
                 Bytes prefix{storage_prefix(address, incarnation)};
                 for (const auto& [location, value] : contract_storage) {
-                    upsert_storage_value(state_table, prefix, location, value);
+                    upsert_storage_value(*state_table, prefix, location, value);
                     written_size += prefix.length() + kLocationLength + kHashLength;
                 }
             }

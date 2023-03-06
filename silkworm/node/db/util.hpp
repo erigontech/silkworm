@@ -110,10 +110,10 @@ inline ByteView from_slice(const mdbx::slice slice) {
 // If there exists an entry in a multivalue table with a given key and a value starting with a given prefix,
 // return the suffix of the value.
 // Otherwise, return nullopt.
-std::optional<ByteView> find_value_suffix(mdbx::cursor& table, ByteView key, ByteView value_prefix);
+std::optional<ByteView> find_value_suffix(ROCursorDupSort& table, ByteView key, ByteView value_prefix);
 
 // We can't simply call upsert for storage values because they live in mdbx::value_mode::multi tables
-void upsert_storage_value(mdbx::cursor& state_cursor, ByteView storage_prefix, ByteView location, ByteView new_value);
+void upsert_storage_value(RWCursorDupSort& state_cursor, ByteView storage_prefix, ByteView location, ByteView new_value);
 
 namespace detail {
 

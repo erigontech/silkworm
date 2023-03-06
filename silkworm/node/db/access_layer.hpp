@@ -141,7 +141,7 @@ void parse_senders(ROTxn& txn, const Bytes& key, std::vector<Transaction>& out);
 
 // See Erigon ReadTransactions
 void read_transactions(ROTxn& txn, uint64_t base_id, uint64_t count, std::vector<Transaction>& out);
-void read_transactions(mdbx::cursor& txn_table, uint64_t base_id, uint64_t count, std::vector<Transaction>& out);
+void read_transactions(ROCursor& txn_table, uint64_t base_id, uint64_t count, std::vector<Transaction>& out);
 
 //! \brief Persist transactions into db's bucket table::kBlockTransactions.
 //! The key starts from base_id and is incremented by 1 for each transaction.

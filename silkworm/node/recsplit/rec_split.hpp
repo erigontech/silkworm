@@ -300,8 +300,8 @@ class RecSplit {
         };
         try {
             // Passing a void cursor is valid case for ETL when DB modification is not expected
-            mdbx::cursor empty_cursor{};
-            bucket_collector_.load(empty_cursor, [&](const etl::Entry& entry, mdbx::cursor&, MDBX_put_flags_t) {
+            db::PooledCursor empty_cursor{};
+            bucket_collector_.load(empty_cursor, [&](const etl::Entry& entry, auto&, MDBX_put_flags_t) {
                 // k is the big-endian encoding of the bucket number and the v is the key that is assigned into that bucket
                 const uint64_t bucket_id = endian::load_big_u64(entry.key.data());
                 SILK_TRACE << "[index] processing bucket_id=" << bucket_id;
@@ -329,8 +329,8 @@ class RecSplit {
         // Build Elias-Fano index for offsets (if any)
         if (double_enum_index_) {
             ef_offsets_ = std::make_unique<EliasFano>(keys_added_, max_offset_);
-            mdbx::cursor empty_cursor{};
-            offset_collector_.load(empty_cursor, [&](const etl::Entry& entry, mdbx::cursor&, MDBX_put_flags_t) {
+            db::PooledCursor empty_cursor{};
+            offset_collector_.load(empty_cursor, [&](const etl::Entry& entry, auto&, MDBX_put_flags_t) {
                 const uint64_t offset = endian::load_big_u64(entry.key.data());
                 ef_offsets_->add_offset(offset);
             });

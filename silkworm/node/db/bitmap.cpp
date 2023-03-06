@@ -31,7 +31,7 @@ void IndexLoader::merge_bitmaps(RWTxn& txn, size_t key_size, etl::Collector* bit
 
     db::PooledCursor target(txn, index_config_);
     etl::LoadFunc load_func{[&last_shard_suffix, &optimal_shard_size](const etl::Entry& entry,
-                                                                      mdbx::cursor& index_cursor,
+                                                                      RWCursorDupSort& index_cursor,
                                                                       MDBX_put_flags_t put_flags) -> void {
         auto new_bitmap{db::bitmap::parse(entry.value)};  // Bitmap being merged
 

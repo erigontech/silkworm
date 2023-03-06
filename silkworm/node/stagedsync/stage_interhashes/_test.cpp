@@ -316,7 +316,7 @@ static evmc::bytes32 setup_storage(mdbx::txn& txn, ByteView storage_key) {
     return storage_hb.root_hash();
 }
 
-static std::map<Bytes, Node> read_all_nodes(mdbx::cursor& cursor) {
+static std::map<Bytes, Node> read_all_nodes(db::ROCursor& cursor) {
     cursor.to_first(/*throw_notfound=*/false);
     std::map<Bytes, Node> out;
     auto save_nodes{[&out](ByteView key, ByteView value) {
@@ -647,15 +647,15 @@ static evmc::bytes32 int_to_bytes32(uint64_t i) {
 
 TEST_CASE("Trie Accounts : incremental vs regeneration") {
     test::Context context;
-    auto& txn{context.txn()};
+    auto& txn{context.rw_txn()};
 
     PrefixSet account_changes;
     PrefixSet storage_changes;
 
     static constexpr size_t n{10'000};
 
-    auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
-    auto account_trie{db::open_cursor(txn, db::table::kTrieOfAccounts)};
+    db::PooledCursor hashed_accounts{txn, db::table::kHashedAccounts};
+    db::PooledCursor account_trie{txn, db::table::kTrieOfAccounts};
 
     // ------------------------------------------------------------------------------
     // Take A: create some accounts at genesis and then apply some changes
@@ -708,7 +708,7 @@ TEST_CASE("Trie Accounts : incremental vs regeneration") {
     // Take B: generate intermediate hashes for the accounts as of Block 1 in one go,
     // without increment_intermediate_hashes
     // ------------------------------------------------------------------------------
-    txn.clear_map(db::open_map(txn, db::table::kHashedAccounts));
+    txn->clear_map(db::open_map(txn, db::table::kHashedAccounts));
 
     // Accounts [0,n) now hold 2 ETH
     for (size_t i{0}; i < n; ++i) {
@@ -726,8 +726,8 @@ TEST_CASE("Trie Accounts : incremental vs regeneration") {
         hashed_accounts.upsert(db::to_slice(hash.bytes), db::to_slice(one_eth.encode_for_storage()));
     }
 
-    txn.clear_map(db::open_map(txn, db::table::kTrieOfAccounts));
-    txn.clear_map(db::open_map(txn, db::table::kTrieOfStorage));
+    txn->clear_map(db::open_map(txn, db::table::kTrieOfAccounts));
+    txn->clear_map(db::open_map(txn, db::table::kTrieOfStorage));
     const auto fused_root{regenerate_intermediate_hashes(txn, context.dir().etl().path())};
 
     const std::map<Bytes, Node> fused_nodes{read_all_nodes(account_trie)};
@@ -741,16 +741,16 @@ TEST_CASE("Trie Accounts : incremental vs regeneration") {
 
 TEST_CASE("Trie Storage : incremental vs regeneration") {
     test::Context context;
-    auto& txn{context.txn()};
+    auto& txn{context.rw_txn()};
 
     PrefixSet account_changes;
     PrefixSet storage_changes;
 
     static constexpr size_t n{2'000};
 
-    auto hashed_accounts{db::open_cursor(txn, db::table::kHashedAccounts)};
-    auto hashed_storage{db::open_cursor(txn, db::table::kHashedStorage)};
-    auto storage_trie{db::open_cursor(txn, db::table::kTrieOfStorage)};
+    db::PooledCursor hashed_accounts{txn, db::table::kHashedAccounts};
+    db::PooledCursor hashed_storage{txn, db::table::kHashedStorage};
+    db::PooledCursor storage_trie{txn, db::table::kTrieOfStorage};
 
     static constexpr uint64_t incarnation1{3};
     static constexpr uint64_t incarnation2{1};
@@ -842,7 +842,7 @@ TEST_CASE("Trie Storage : incremental vs regeneration") {
     // Take B: generate intermediate hashes for the storage as of Block 1 in one go,
     // without increment_intermediate_hashes
     // ------------------------------------------------------------------------------
-    txn.clear_map(db::open_map(txn, db::table::kHashedStorage));
+    txn->clear_map(db::open_map(txn, db::table::kHashedStorage));
 
     // The first third of the storage now has value_y
     for (size_t i{0}; i < n; ++i) {
@@ -856,8 +856,8 @@ TEST_CASE("Trie Storage : incremental vs regeneration") {
         upsert_storage_for_two_test_accounts(i, value_x, false);
     }
 
-    txn.clear_map(db::open_map(txn, db::table::kTrieOfAccounts));
-    txn.clear_map(db::open_map(txn, db::table::kTrieOfStorage));
+    txn->clear_map(db::open_map(txn, db::table::kTrieOfAccounts));
+    txn->clear_map(db::open_map(txn, db::table::kTrieOfStorage));
     const auto fused_root{regenerate_intermediate_hashes(txn, context.dir().etl().path())};
 
     const std::map<Bytes, Node> fused_nodes{read_all_nodes(storage_trie)};

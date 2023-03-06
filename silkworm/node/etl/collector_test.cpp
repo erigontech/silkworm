@@ -57,7 +57,7 @@ static std::vector<Entry> generate_entry_set(size_t size) {
     return pairs;
 }
 
-void run_collector_test(LoadFunc load_func, bool do_copy = true) {
+void run_collector_test(const LoadFunc& load_func, bool do_copy = true) {
     test::Context context;
 
     // Initialize random seed
@@ -92,7 +92,7 @@ void run_collector_test(LoadFunc load_func, bool do_copy = true) {
         }
     });
 
-    auto to{db::open_cursor(context.txn(), db::table::kHeaderNumbers)};
+    db::PooledCursor to{context.rw_txn(), db::table::kHeaderNumbers};
     collector.load(to, load_func);
     // Check whether temporary files were cleaned
     CHECK(std::distance(fs::directory_iterator{context.dir().etl().path()}, fs::directory_iterator{}) == 0);
@@ -111,7 +111,7 @@ TEST_CASE("collect_and_default_load_move") {
 
 TEST_CASE("collect_and_load") {
     test::SetLogVerbosityGuard log_guard{log::Level::kNone};
-    run_collector_test([](const Entry& entry, mdbx::cursor& table, MDBX_put_flags_t) {
+    run_collector_test([](const Entry& entry, auto& table, MDBX_put_flags_t) {
         Bytes key{entry.key};
         key.at(0) = 1;
         table.upsert(db::to_slice(key), db::to_slice(entry.value));

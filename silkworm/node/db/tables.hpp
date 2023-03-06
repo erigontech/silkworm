@@ -19,6 +19,7 @@
 #include <optional>
 
 #include <silkworm/node/db/mdbx.hpp>
+#include <silkworm/node/db/util.hpp>
 
 /*
 Part of the compatibility layer with the Turbo-Geth DB format;

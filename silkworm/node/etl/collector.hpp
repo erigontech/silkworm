@@ -32,7 +32,7 @@ namespace silkworm::etl {
 inline constexpr size_t kOptimalBufferSize = 256_Mebi;
 
 // Function pointer to process Load on before Load data into tables
-using LoadFunc = std::function<void(const Entry&, mdbx::cursor&, MDBX_put_flags_t)>;
+using LoadFunc = std::function<void(const Entry&, db::RWCursorDupSort&, MDBX_put_flags_t)>;
 
 // Collects data Extracted from db
 class Collector {
@@ -56,11 +56,11 @@ class Collector {
     void collect(Entry&& entry);       // Store key-value pair in memory or on disk
 
     //! \brief Loads and optionally transforms collected entries into db
-    //! \param [in] target : an mdbx cursor opened on target table
+    //! \param [in] target : a cursor opened on target table and owned by caller (can be empty)
     //! \param [in] load_func : Pointer to function transforming collected entries. If NULL no transform is executed
     //! \param [in] flags : Optional put flags for append or upsert (default)
     //! items
-    void load(mdbx::cursor& target, const LoadFunc& load_func = {},
+    void load(db::RWCursorDupSort& target, const LoadFunc& load_func = {},
               MDBX_put_flags_t flags = MDBX_put_flags_t::MDBX_UPSERT);
 
     //! \brief Returns the number of actually collected items

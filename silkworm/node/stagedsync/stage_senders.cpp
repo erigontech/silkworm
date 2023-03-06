@@ -272,8 +272,8 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
         // Load block transactions from db and recover tx senders in batches
         log::Trace(log_prefix_, {"op", "read bodies", "from", std::to_string(from), "to", std::to_string(target_progress)});
 
-        auto bodies_cursor{db::open_cursor(*txn, db::table::kBlockBodies)};
-        auto transactions_cursor{db::open_cursor(*txn, db::table::kBlockTransactions)};
+        auto bodies_cursor = txn.ro_cursor(db::table::kBlockBodies);
+        auto transactions_cursor = txn.ro_cursor(db::table::kBlockTransactions);
 
         uint64_t total_collected_senders{0};
 
@@ -282,13 +282,13 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
         BlockNum expected_block_num{from};
         auto block_hash_it{canonical_hashes_.begin()};
         auto bodies_initial_key{db::block_key(from, block_hash_it->bytes)};
-        auto body_data{bodies_cursor.find(db::to_slice(bodies_initial_key), false)};
+        auto body_data{bodies_cursor->find(db::to_slice(bodies_initial_key), false)};
         while (body_data.done) {
             auto body_data_key_view{db::from_slice(body_data.key)};
             reached_block_num = endian::load_big_u64(body_data_key_view.data());
             if (reached_block_num < expected_block_num) {
                 // The same block height has been recorded but is not canonical, move to next and continue
-                body_data = bodies_cursor.to_next(false);
+                body_data = bodies_cursor->to_next(false);
                 continue;
             } else if (reached_block_num > expected_block_num) {
                 // We exceeded the expected block hence 1) the db misses a block or 2) blocks are not stored sequentially
@@ -299,7 +299,7 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
 
             if (memcmp(&body_data_key_view[8], block_hash_it->bytes, sizeof(kHashLength)) != 0) {
                 // We stumbled into a non-canonical block (not matching header), move to next and continue
-                body_data = bodies_cursor.to_next(false);
+                body_data = bodies_cursor->to_next(false);
                 continue;
             }
 
@@ -313,7 +313,7 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
             auto block_body{db::detail::decode_stored_block_body(body_rlp)};
             if (block_body.txn_count) {
                 std::vector<Transaction> transactions;
-                db::read_transactions(transactions_cursor, block_body.base_txn_id, block_body.txn_count, transactions);
+                db::read_transactions(*transactions_cursor, block_body.base_txn_id, block_body.txn_count, transactions);
                 total_collected_senders += transactions.size();
                 success_or_throw(add_to_batch(reached_block_num, std::move(transactions)));
 
@@ -330,7 +330,7 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
                 break;
             }
             expected_block_num++;
-            body_data = bodies_cursor.to_next(false);
+            body_data = bodies_cursor->to_next(false);
         }
 
         // Recover last incomplete batch [likely]
@@ -594,9 +594,9 @@ void Senders::store_senders(db::RWTxn& txn) {
     if (!collector_.empty()) {
         log::Trace(log_prefix_, {"load ETL items", std::to_string(collector_.size())});
         // Prepare target table
-        auto senders_cursor{db::open_cursor(*txn, db::table::kSenders)};
+        auto senders_cursor = txn.rw_cursor_dup_sort(db::table::kSenders);
         log::Trace(log_prefix_, {"load ETL data", human_size(collector_.bytes_size())});
-        collector_.load(senders_cursor, nullptr, MDBX_put_flags_t::MDBX_APPEND);
+        collector_.load(*senders_cursor, nullptr, MDBX_put_flags_t::MDBX_APPEND);
     }
 }
 

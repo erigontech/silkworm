@@ -18,6 +18,8 @@
 
 #include <stdexcept>
 
+#include <silkworm/node/db/util.hpp>
+
 namespace silkworm::db {
 
 //! \brief Returns data of current cursor position or moves it to the beginning or the end of the table based on
@@ -25,7 +27,7 @@ namespace silkworm::db {
 //! \param [in] c : A reference to an open cursor
 //! \param [in] d : Direction cursor should have \return ::mdbx::cursor::move_result
 static inline ::mdbx::cursor::move_result adjust_cursor_position_if_unpositioned(
-    ::mdbx::cursor& c, CursorMoveDirection d) {
+    ROCursor& c, CursorMoveDirection d) {
     // Warning: eof() is not exactly what we need here since it returns true not only for cursors
     // that are not positioned, but also for those pointing to the end of data.
     // Unfortunately, there's no MDBX API to differentiate the two.
@@ -37,7 +39,7 @@ static inline ::mdbx::cursor::move_result adjust_cursor_position_if_unpositioned
 }
 
 // Last entry whose key is strictly less than the given key
-static inline mdbx::cursor::move_result strict_lower_bound(mdbx::cursor& cursor, const ByteView key) {
+static inline mdbx::cursor::move_result strict_lower_bound(ROCursor& cursor, const ByteView key) {
     if (!cursor.lower_bound(key, /*throw_notfound=*/false)) {
         // all DB keys are less than the given key
         return cursor.to_last(/*throw_notfound=*/false);
@@ -211,7 +213,38 @@ size_t max_value_size_for_leaf_page(const mdbx::txn& txn, const size_t key_size)
     return max_value_size_for_leaf_page(page_size, key_size);
 }
 
+std::unique_ptr<ROCursor> ROTxn::ro_cursor(const MapConfig& config) {
+    return std::make_unique<PooledCursor>(*this, config);
+}
+
+std::unique_ptr<ROCursorDupSort> ROTxn::ro_cursor_dup_sort(const MapConfig& config) {
+    return std::make_unique<PooledCursor>(*this, config);
+}
+
+std::unique_ptr<RWCursor> RWTxn::rw_cursor(const MapConfig& config) {
+    return std::make_unique<PooledCursor>(*this, config);
+}
+
+std::unique_ptr<RWCursorDupSort> RWTxn::rw_cursor_dup_sort(const MapConfig& config) {
+    return std::make_unique<PooledCursor>(*this, config);
+}
+
 thread_local ObjectPool<MDBX_cursor, detail::cursor_handle_deleter> PooledCursor::handles_pool_{};
+
+PooledCursor::PooledCursor() {
+    handle_ = handles_pool_.acquire();
+    if (!handle_) {
+        handle_ = ::mdbx_cursor_create(nullptr);
+    }
+}
+
+PooledCursor::PooledCursor(RWTxn& txn, ::mdbx::map_handle map) {
+    handle_ = handles_pool_.acquire();
+    if (!handle_) {
+        handle_ = ::mdbx_cursor_create(nullptr);
+    }
+    bind(txn, map);
+}
 
 PooledCursor::PooledCursor(::mdbx::txn& txn, const MapConfig& config) {
     handle_ = handles_pool_.acquire();
@@ -234,12 +267,24 @@ PooledCursor::~PooledCursor() {
     }
 }
 
-void PooledCursor::bind(::mdbx::txn& txn, const MapConfig& config) {
-    if (!handle_) throw std::runtime_error("Can't bind a closed cursor");
+void PooledCursor::bind(RWTxn& txn, ::mdbx::map_handle map) {
+    if (!handle_) throw std::runtime_error("cannot bind a closed cursor");
     // Check cursor is bound to a live transaction
     if (auto cm_tx{mdbx_cursor_txn(handle_)}; cm_tx) {
-        // If current transaction id does not match cursor's transaction close it
-        // and recreate a new one
+        // If current transaction id does not match cursor's transaction close it and recreate a new one
+        if (txn->id() != mdbx_txn_id(cm_tx)) {
+            close();
+            handle_ = ::mdbx_cursor_create(nullptr);
+        }
+    }
+    ::mdbx::cursor::bind(*txn, map);
+}
+
+void PooledCursor::bind(::mdbx::txn& txn, const MapConfig& config) {
+    if (!handle_) throw std::runtime_error("cannot bind a closed cursor");
+    // Check cursor is bound to a live transaction
+    if (auto cm_tx{mdbx_cursor_txn(handle_)}; cm_tx) {
+        // If current transaction id does not match cursor's transaction close it and recreate a new one
         if (txn.id() != mdbx_txn_id(cm_tx)) {
             close();
             handle_ = ::mdbx_cursor_create(nullptr);
@@ -279,6 +324,198 @@ size_t PooledCursor::size() const { return get_map_stat().ms_entries; }
 
 bool PooledCursor::empty() const { return size() == 0; }
 
+::mdbx::map_handle PooledCursor::map() const {
+    return ::mdbx::cursor::map();
+}
+
+CursorResult PooledCursor::to_first() {
+    return ::mdbx::cursor::to_first(/*throw_notfound =*/true);
+}
+
+CursorResult PooledCursor::to_first(bool throw_notfound) {
+    return ::mdbx::cursor::to_first(throw_notfound);
+}
+
+CursorResult PooledCursor::to_previous() {
+    return ::mdbx::cursor::to_previous(/*throw_notfound =*/true);
+}
+
+CursorResult PooledCursor::to_previous(bool throw_notfound) {
+    return ::mdbx::cursor::to_previous(throw_notfound);
+}
+
+CursorResult PooledCursor::current() const {
+    return ::mdbx::cursor::current(/*throw_notfound =*/true);
+}
+
+CursorResult PooledCursor::current(bool throw_notfound) const {
+    return ::mdbx::cursor::current(throw_notfound);
+}
+
+CursorResult PooledCursor::to_next() {
+    return ::mdbx::cursor::to_next(/*throw_notfound =*/true);
+}
+
+CursorResult PooledCursor::to_next(bool throw_notfound) {
+    return ::mdbx::cursor::to_next(throw_notfound);
+}
+
+CursorResult PooledCursor::to_last() {
+    return ::mdbx::cursor::to_last(/*throw_notfound =*/true);
+}
+
+CursorResult PooledCursor::to_last(bool throw_notfound) {
+    return ::mdbx::cursor::to_last(throw_notfound);
+}
+
+CursorResult PooledCursor::find(const Slice& key) {
+    return ::mdbx::cursor::find(key, /*throw_notfound =*/true);
+}
+
+CursorResult PooledCursor::find(const Slice& key, bool throw_notfound) {
+    return ::mdbx::cursor::find(key, throw_notfound);
+}
+
+CursorResult PooledCursor::lower_bound(const Slice& key) {
+    return ::mdbx::cursor::lower_bound(key, /*throw_notfound =*/true);
+}
+
+CursorResult PooledCursor::lower_bound(const Slice& key, bool throw_notfound) {
+    return ::mdbx::cursor::lower_bound(key, throw_notfound);
+}
+
+CursorResult PooledCursor::move(MoveOperation operation, bool throw_notfound) {
+    return ::mdbx::cursor::move(operation, throw_notfound);
+}
+
+CursorResult PooledCursor::move(MoveOperation operation, const Slice& key, bool throw_notfound) {
+    return ::mdbx::cursor::move(operation, key, throw_notfound);
+}
+
+bool PooledCursor::seek(const Slice& key) {
+    return ::mdbx::cursor::seek(key);
+}
+
+bool PooledCursor::eof() const {
+    return ::mdbx::cursor::eof();
+}
+
+bool PooledCursor::on_first() const {
+    return ::mdbx::cursor::on_first();
+}
+
+bool PooledCursor::on_last() const {
+    return ::mdbx::cursor::on_last();
+}
+
+CursorResult PooledCursor::to_previous_last_multi() {
+    return ::mdbx::cursor::to_previous_last_multi(/*throw_notfound =*/true);
+}
+
+CursorResult PooledCursor::to_previous_last_multi(bool throw_notfound) {
+    return ::mdbx::cursor::to_previous_last_multi(throw_notfound);
+}
+
+CursorResult PooledCursor::to_current_first_multi() {
+    return ::mdbx::cursor::to_current_first_multi(/*throw_notfound =*/true);
+}
+
+CursorResult PooledCursor::to_current_first_multi(bool throw_notfound) {
+    return ::mdbx::cursor::to_current_first_multi(throw_notfound);
+}
+
+CursorResult PooledCursor::to_current_prev_multi() {
+    return ::mdbx::cursor::to_current_prev_multi(/*throw_notfound =*/true);
+}
+
+CursorResult PooledCursor::to_current_prev_multi(bool throw_notfound) {
+    return ::mdbx::cursor::to_current_prev_multi(throw_notfound);
+}
+
+CursorResult PooledCursor::to_current_next_multi() {
+    return ::mdbx::cursor::to_current_next_multi(/*throw_notfound =*/true);
+}
+
+CursorResult PooledCursor::to_current_next_multi(bool throw_notfound) {
+    return ::mdbx::cursor::to_current_next_multi(throw_notfound);
+}
+
+CursorResult PooledCursor::to_current_last_multi() {
+    return ::mdbx::cursor::to_current_last_multi(/*throw_notfound =*/true);
+}
+
+CursorResult PooledCursor::to_current_last_multi(bool throw_notfound) {
+    return ::mdbx::cursor::to_current_last_multi(throw_notfound);
+}
+
+CursorResult PooledCursor::to_next_first_multi() {
+    return ::mdbx::cursor::to_next_first_multi(/*throw_notfound =*/true);
+}
+
+CursorResult PooledCursor::to_next_first_multi(bool throw_notfound) {
+    return ::mdbx::cursor::to_next_first_multi(throw_notfound);
+}
+
+CursorResult PooledCursor::find_multivalue(const Slice& key, const Slice& value) {
+    return ::mdbx::cursor::find_multivalue(key, value, /*throw_notfound =*/true);
+}
+
+CursorResult PooledCursor::find_multivalue(const Slice& key, const Slice& value, bool throw_notfound) {
+    return ::mdbx::cursor::find_multivalue(key, value, throw_notfound);
+}
+
+CursorResult PooledCursor::lower_bound_multivalue(const Slice& key, const Slice& value) {
+    return ::mdbx::cursor::lower_bound_multivalue(key, value, /*throw_notfound =*/false);
+}
+
+CursorResult PooledCursor::lower_bound_multivalue(const Slice& key, const Slice& value, bool throw_notfound) {
+    return ::mdbx::cursor::lower_bound_multivalue(key, value, throw_notfound);
+}
+
+CursorResult PooledCursor::move(MoveOperation operation, const Slice& key, const Slice& value, bool throw_notfound) {
+    return ::mdbx::cursor::move(operation, key, value, throw_notfound);
+}
+
+std::size_t PooledCursor::count_multivalue() const {
+    return ::mdbx::cursor::count_multivalue();
+}
+
+MDBX_error_t PooledCursor::put(const Slice& key, Slice* value, MDBX_put_flags_t flags) noexcept {
+    return ::mdbx::cursor::put(key, value, flags);
+}
+
+void PooledCursor::insert(const Slice& key, Slice value) {
+    ::mdbx::cursor::insert(key, value);
+}
+
+void PooledCursor::upsert(const Slice& key, const Slice& value) {
+    ::mdbx::cursor::upsert(key, value);
+}
+
+void PooledCursor::update(const Slice& key, const Slice& value) {
+    ::mdbx::cursor::update(key, value);
+}
+
+bool PooledCursor::erase() {
+    return ::mdbx::cursor::erase(/*whole_multivalue =*/false);
+}
+
+bool PooledCursor::erase(bool whole_multivalue) {
+    return ::mdbx::cursor::erase(whole_multivalue);
+}
+
+bool PooledCursor::erase(const Slice& key) {
+    return ::mdbx::cursor::erase(key, /*whole_multivalue =*/true);
+}
+
+bool PooledCursor::erase(const Slice& key, bool whole_multivalue) {
+    return ::mdbx::cursor::erase(key, whole_multivalue);
+}
+
+bool PooledCursor::erase(const Slice& key, const Slice& value) {
+    return ::mdbx::cursor::erase(key, value);
+}
+
 bool has_map(::mdbx::txn& tx, const char* map_name) {
     try {
         ::mdbx::map_handle main_map{1};
@@ -290,7 +527,7 @@ bool has_map(::mdbx::txn& tx, const char* map_name) {
     }
 }
 
-size_t cursor_for_each(::mdbx::cursor& cursor, WalkFuncRef walker, const CursorMoveDirection direction) {
+size_t cursor_for_each(ROCursor& cursor, WalkFuncRef walker, const CursorMoveDirection direction) {
     size_t ret{0};
     auto data{adjust_cursor_position_if_unpositioned(cursor, direction)};
     while (data) {
@@ -301,7 +538,7 @@ size_t cursor_for_each(::mdbx::cursor& cursor, WalkFuncRef walker, const CursorM
     return ret;
 }
 
-size_t cursor_for_prefix(::mdbx::cursor& cursor, const ByteView prefix, WalkFuncRef walker,
+size_t cursor_for_prefix(ROCursor& cursor, const ByteView prefix, WalkFuncRef walker,
                          CursorMoveDirection direction) {
     size_t ret{0};
     auto data{cursor.lower_bound(prefix, false)};
@@ -316,7 +553,7 @@ size_t cursor_for_prefix(::mdbx::cursor& cursor, const ByteView prefix, WalkFunc
     return ret;
 }
 
-size_t cursor_erase_prefix(::mdbx::cursor& cursor, const ByteView prefix) {
+size_t cursor_erase_prefix(RWCursor& cursor, const ByteView prefix) {
     size_t ret{0};
     auto data{cursor.lower_bound(prefix, /*throw_notfound=*/false)};
     while (data) {
@@ -330,7 +567,7 @@ size_t cursor_erase_prefix(::mdbx::cursor& cursor, const ByteView prefix) {
     return ret;
 }
 
-size_t cursor_for_count(::mdbx::cursor& cursor, WalkFuncRef walker, size_t count,
+size_t cursor_for_count(ROCursor& cursor, WalkFuncRef walker, size_t count,
                         const CursorMoveDirection direction) {
     size_t ret{0};
     auto data{adjust_cursor_position_if_unpositioned(cursor, direction)};
@@ -343,7 +580,7 @@ size_t cursor_for_count(::mdbx::cursor& cursor, WalkFuncRef walker, size_t count
     return ret;
 }
 
-size_t cursor_erase(mdbx::cursor& cursor, const ByteView set_key, const CursorMoveDirection direction) {
+size_t cursor_erase(RWCursor& cursor, const ByteView set_key, const CursorMoveDirection direction) {
     mdbx::cursor::move_result data{direction == CursorMoveDirection::Forward
                                        ? cursor.lower_bound(set_key, /*throw_notfound=*/false)
                                        : strict_lower_bound(cursor, set_key)};

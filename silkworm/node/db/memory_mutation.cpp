@@ -92,8 +92,10 @@ std::unique_ptr<RWCursorDupSort> MemoryMutation::rw_cursor_dup_sort(const MapCon
 }
 
 void MemoryMutation::rollback() {
-    managed_txn_.abort();
-    // memory_db_.close(); // TODO(canepat) add only if rollback is really needed
+    // Idempotent rollback: abort iff transaction is still alive (i.e. handle is not null)
+    if (managed_txn_) {
+        managed_txn_.abort();
+    }
     stateless_cursors_.clear();
 }
 

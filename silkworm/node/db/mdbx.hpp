@@ -52,11 +52,24 @@ using MoveOperation = ::mdbx::cursor::move_operation;
 using CursorResult = ::mdbx::cursor::move_result;
 using Slice = ::mdbx::slice;
 
+class ROTxn;
+struct MapConfig;
+
 //! \brief Read-only key-value cursor for single-value tables
 class ROCursor {
   public:
     virtual ~ROCursor() = default;
 
+    //! \brief Reuse current cursor binding it to provided transaction and map configuration
+    virtual void bind(ROTxn& txn, const MapConfig& config) = 0;
+
+    //! \brief Flag indicating if table is single-value or multi-value
+    [[nodiscard]] virtual bool is_multi_value() const = 0;
+
+    //! \brief Flag indicating if cursor has been positioned or not
+    [[nodiscard]] virtual bool is_dangling() const = 0;
+
+    //! \brief Escape hatch returning the underlying MDBX map handle
     [[nodiscard]] virtual ::mdbx::map_handle map() const = 0;
 
     virtual CursorResult to_first() = 0;
@@ -158,6 +171,7 @@ struct MapConfig {
 //! It is used in function signatures to clarify that read-only access is sufficient, read-write access is not required.
 class ROTxn {
   public:
+    explicit ROTxn() = default;
     explicit ROTxn(mdbx::env& env) : managed_txn_{env.start_read()} {}
     virtual ~ROTxn() = default;
 
@@ -167,6 +181,10 @@ class ROTxn {
 
     // Only movable
     ROTxn(ROTxn&& source) noexcept : managed_txn_(std::move(source.managed_txn_)) {}
+    ROTxn& operator=(ROTxn&& other) noexcept {
+        managed_txn_ = std::move(other.managed_txn_);
+        return *this;
+    }
 
     // Access to the underling raw mdbx transaction
     mdbx::txn& operator*() { return managed_txn_; }
@@ -190,6 +208,7 @@ class ROTxn {
 //! Disabling commit is useful for running several stages on a handful of blocks atomically.
 class RWTxn : public ROTxn {
   public:
+    explicit RWTxn() = default;
     // This variant creates new mdbx transactions as need be.
     explicit RWTxn(mdbx::env& env) : ROTxn{env.start_write()} {}
     ~RWTxn() override = default;
@@ -200,6 +219,11 @@ class RWTxn : public ROTxn {
 
     // Only movable
     RWTxn(RWTxn&& source) noexcept : ROTxn(std::move(source)), commit_disabled_{source.commit_disabled_} {}
+    RWTxn& operator=(RWTxn&& other) noexcept {
+        commit_disabled_ = other.commit_disabled_;
+        ROTxn::operator=(std::move(other));
+        return *this;
+    }
 
     void disable_commit() { commit_disabled_ = true; }
     void enable_commit() { commit_disabled_ = false; }
@@ -326,13 +350,12 @@ class PooledCursor : public RWCursorDupSort, protected ::mdbx::cursor {
     PooledCursor& operator=(const PooledCursor&) = delete;
 
     //! \brief Reuse current cursor binding it to provided transaction and map
-    void bind(RWTxn& txn, ::mdbx::map_handle map);
+    void bind(ROTxn& txn, ::mdbx::map_handle map);
 
     //! \brief Reuse current cursor binding it to provided transaction and map configuration
     void bind(::mdbx::txn& txn, const MapConfig& config);
 
-    //! \brief Reuse current cursor binding it to provided transaction and map configuration
-    void bind(RWTxn& txn, const MapConfig& config) { bind(*txn, config); }
+    void bind(ROTxn& txn, const MapConfig& config) override { bind(*txn, config); }
 
     //! \brief Closes cursor causing de-allocation of MDBX_cursor handle
     //! \remarks After this call the cursor is not reusable and the handle does not return to the cache
@@ -344,12 +367,6 @@ class PooledCursor : public RWCursorDupSort, protected ::mdbx::cursor {
     //! \brief Returns flags of underlying dbi
     [[nodiscard]] MDBX_db_flags_t get_map_flags() const;
 
-    //! \brief Flag indicating if table is single-value or multi-value
-    [[nodiscard]] bool is_multi_value() const;
-
-    //! \brief Flag indicating if cursor has been positioned or not
-    [[nodiscard]] bool is_dangling() const;
-
     //! \brief Returns the size of the underlying table
     [[nodiscard]] size_t size() const;
 
@@ -357,6 +374,10 @@ class PooledCursor : public RWCursorDupSort, protected ::mdbx::cursor {
     [[nodiscard]] bool empty() const;
 
     using ::mdbx::cursor::operator bool;
+
+    [[nodiscard]] bool is_multi_value() const override;
+
+    [[nodiscard]] bool is_dangling() const override;
 
     [[nodiscard]] ::mdbx::map_handle map() const override;
 

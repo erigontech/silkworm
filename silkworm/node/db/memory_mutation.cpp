@@ -43,7 +43,7 @@ MemoryOverlay::MemoryOverlay(MemoryOverlay&& other) noexcept : memory_env_(std::
     return memory_env_.start_write();
 }
 
-MemoryMutation::MemoryMutation(MemoryOverlay& memory_db, RWTxn* txn)
+MemoryMutation::MemoryMutation(MemoryOverlay& memory_db, ROTxn* txn)
     : RWTxn{::mdbx::txn_managed{}}, memory_db_(memory_db), txn_(txn) {
     managed_txn_ = memory_db_.start_rw_tx();
 
@@ -70,7 +70,7 @@ bool MemoryMutation::is_entry_deleted(const std::string& bucket_name, const Byte
     return deleted_entries_.at(bucket_name) == key;
 }
 
-void MemoryMutation::update_txn(RWTxn* txn) {
+void MemoryMutation::update_txn(ROTxn* txn) {
     txn_ = txn;
     stateless_cursors_.clear();
 }

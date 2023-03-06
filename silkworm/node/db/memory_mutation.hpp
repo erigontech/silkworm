@@ -41,15 +41,15 @@ class MemoryMutationCursor;
 
 class MemoryMutation : public RWTxn {
   public:
-    MemoryMutation(MemoryOverlay& memory_db, RWTxn* txn);
+    MemoryMutation(MemoryOverlay& memory_db, ROTxn* txn);
     ~MemoryMutation() override;
 
     [[nodiscard]] bool is_table_cleared(const std::string& bucket_name) const;
     [[nodiscard]] bool is_entry_deleted(const std::string& bucket_name, const Bytes& key) const;
 
-    [[nodiscard]] db::RWTxn* external_txn() const { return txn_; }
+    [[nodiscard]] db::ROTxn* external_txn() const { return txn_; }
 
-    void update_txn(RWTxn* txn);
+    void update_txn(ROTxn* txn);
 
     std::unique_ptr<ROCursor> ro_cursor(const MapConfig& config) override;
     std::unique_ptr<ROCursorDupSort> ro_cursor_dup_sort(const MapConfig& config) override;
@@ -62,7 +62,7 @@ class MemoryMutation : public RWTxn {
     std::unique_ptr<MemoryMutationCursor> make_cursor(const MapConfig& config);
 
     MemoryOverlay& memory_db_;
-    db::RWTxn* txn_;
+    db::ROTxn* txn_;
     std::map<std::string, db::PooledCursor> stateless_cursors_;
     std::map<std::string, Bytes> deleted_entries_;
     std::map<std::string, bool> cleared_tables_;

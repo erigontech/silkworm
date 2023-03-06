@@ -66,12 +66,12 @@ int main(int argc, char* argv[]) {
     etl::Collector collector(data_dir.etl().path().string().c_str(), /* flush size */ 512 * kMebi);
 
     auto env{db::open_env(db_config)};
-    auto txn{env.start_read()};
+    db::ROTxn txn{env};
 
-    db::PooledCursor canonical_hashes_cursor(txn, db::table::kCanonicalHashes);
-    db::PooledCursor bodies_cursor{txn, db::table::kBlockBodies};
-    db::PooledCursor tx_cursor{txn, db::table::kBlockTransactions};
-    db::PooledCursor senders_cursor{txn, db::table::kSenders};
+    auto canonical_hashes_cursor = txn.ro_cursor(db::table::kCanonicalHashes);
+    auto bodies_cursor = txn.ro_cursor(db::table::kBlockBodies);
+    auto tx_cursor = txn.ro_cursor(db::table::kBlockTransactions);
+    auto senders_cursor = txn.ro_cursor(db::table::kSenders);
 
     uint64_t expected_block_number{block_from};
     uint64_t processed_senders_count{0};
@@ -82,14 +82,14 @@ int main(int argc, char* argv[]) {
         // Seek at the first block body (if any)
         Bytes first_block(8, '\0');
         endian::store_big_u64(first_block.data(), block_from);
-        const bool block_from_found = bodies_cursor.seek(db::to_slice(first_block));
+        const bool block_from_found = bodies_cursor->seek(db::to_slice(first_block));
         if (block_from_found) {
             log::Error() << "First block " << block_from << " not found in " << db::table::kBlockBodies.name << " table";
             return -1;
         }
 
         // Read one block body at a time until last block is reached or execution is interrupted
-        auto bodies_data = bodies_cursor.current(false);
+        auto bodies_data = bodies_cursor->current(false);
         while (bodies_data) {
             // Decode table key and check expected block number
             auto block_number = endian::load_big_u64(static_cast<uint8_t*>(bodies_data.key.data()));
@@ -107,7 +107,7 @@ int main(int argc, char* argv[]) {
             if (body.txn_count > 0) {
                 // Retrieve canonical block hash
                 const Bytes canonical_key{db::block_key(block_number)};
-                const auto canonical_data{canonical_hashes_cursor.find(db::to_slice(canonical_key), false)};
+                const auto canonical_data{canonical_hashes_cursor->find(db::to_slice(canonical_key), false)};
                 if (!canonical_data) {
                     log::Error() << "Block " << block_number << " not found in " << db::table::kCanonicalHashes.name << " table";
                     continue;
@@ -118,7 +118,7 @@ int main(int argc, char* argv[]) {
 
                 // Read the ordered sequence of block senders (one for each transaction)
                 auto senders_key{db::block_key(block_number, block_hash.bytes)};
-                auto senders_data{senders_cursor.find(db::to_slice(senders_key), /*throw_notfound = */ false)};
+                auto senders_data{senders_cursor->find(db::to_slice(senders_key), /*throw_notfound = */ false)};
                 if (!senders_data) {
                     log::Error() << "Block " << block_number << " hash " << to_hex(block_hash) << " not found in " << db::table::kSenders.name << " table";
                     break;
@@ -138,8 +138,8 @@ int main(int argc, char* argv[]) {
                 // Read block transactions one at a time
                 std::vector<Transaction> transactions;
                 uint64_t i{0};
-                auto tx_data{tx_cursor.find(db::to_slice(tx_key), false)};
-                for (; i < body.txn_count && tx_data.done; i++, tx_data = tx_cursor.to_next(false)) {
+                auto tx_data{tx_cursor->find(db::to_slice(tx_key), false)};
+                for (; i < body.txn_count && tx_data.done; i++, tx_data = tx_cursor->to_next(false)) {
                     if (!tx_data) {
                         log::Error() << "Block " << block_number << " tx " << i << " not found in " << db::table::kBlockTransactions.name << " table";
                         continue;
@@ -185,7 +185,7 @@ int main(int argc, char* argv[]) {
 
             // Move to next block body
             expected_block_number++;
-            bodies_data = bodies_cursor.to_next(false);
+            bodies_data = bodies_cursor->to_next(false);
         }
 
         log::Info() << "Check " << (SignalHandler::signalled() ? "aborted" : "completed");

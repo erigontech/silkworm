@@ -185,7 +185,7 @@ Silkworm uses Hunter as package manager, but will soon switch to Conan (https://
 
 Install Conan using:
 
-    pip3 install --user conan chardet
+    pip3 install --user conan==1.58.0 chardet
 
 and add its binary to PATH:
 
@@ -201,11 +201,7 @@ You can find all available conan profiles inside the [cmake/profiles](cmake/prof
 
 The conan packages could also be pre-installed using [conan install](https://docs.conan.io/1/reference/commands/consumer/install.html):
 
-    conan install --install-folder=build/conan --build=missing -s build_type=Debug -s compiler.cppstd=20 .
-
-or with a profile:
-
-    conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/macos_arm_clang_14_debug .
+    conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/macos_arm_clang_13_debug .
 
 
 <a name="guide"></a>

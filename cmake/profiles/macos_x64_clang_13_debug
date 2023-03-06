@@ -1,12 +1,12 @@
 [settings]
-os=Linux
-os_build=Linux
+os=Macos
+os_build=Macos
 arch=x86_64
 arch_build=x86_64
-compiler=clang
-compiler.version=13
+compiler=apple-clang
+compiler.version=13.0
 compiler.libcxx=libc++
-build_type=Release
+build_type=Debug
 [options]
 [build_requires]
 [env]

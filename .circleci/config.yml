@@ -54,7 +54,7 @@ commands:
       - run:
           name: "Cmake"
           working_directory: ~/build
-          command: cmake ../project -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/toolchain/$TOOLCHAIN.cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DSILKWORM_CLANG_COVERAGE=$CLANG_COVERAGE -DSILKWORM_SANITIZE=$SANITIZE
+          command: cmake ../project -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/toolchain/$TOOLCHAIN.cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CMAKE_ARGS
       - save_cache:
           name: "Save Hunter cache"
           key: *hunter-cache-key
@@ -101,8 +101,7 @@ jobs:
     environment:
       TOOLCHAIN: cxx20
       BUILD_TYPE: Debug
-      CLANG_COVERAGE: OFF
-      SANITIZE: thread
+      BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=thread
     docker:
       - image: ethereum/cpp-build-env:18-gcc-11
     resource_class: xlarge
@@ -115,8 +114,6 @@ jobs:
     environment:
       TOOLCHAIN: cxx20
       BUILD_TYPE: Release
-      CLANG_COVERAGE: OFF
-      SANITIZE: OFF
     docker:
       - image: ethereum/cpp-build-env:18-gcc-12
     resource_class: xlarge
@@ -130,8 +127,7 @@ jobs:
       TOOLCHAIN: clang_libcxx
       CLANG_VERSION: 13
       BUILD_TYPE: Debug
-      CLANG_COVERAGE: OFF
-      SANITIZE: address
+      BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=address
     docker:
       - image: ethereum/cpp-build-env:18-clang-13
     resource_class: xlarge
@@ -147,8 +143,7 @@ jobs:
       TOOLCHAIN: clang_libcxx
       CLANG_VERSION: 13
       BUILD_TYPE: Debug
-      CLANG_COVERAGE: ON
-      SANITIZE: OFF
+      BUILD_CMAKE_ARGS: -DSILKWORM_CLANG_COVERAGE=ON
     docker:
       - image: ethereum/cpp-build-env:18-clang-13
     resource_class: xlarge

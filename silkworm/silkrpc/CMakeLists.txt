@@ -27,6 +27,7 @@ find_package(jwt-cpp REQUIRED)
 if(SILKRPC_USE_MIMALLOC)
     find_package(mimalloc 2.0 REQUIRED)
 endif()
+find_package(nlohmann_json REQUIRED)
 
 set(SILKWORM_INTERFACE_SRC
     ${SILKWORM_MAIN_SRC_DIR}/interfaces/remote/ethbackend.grpc.pb.cc

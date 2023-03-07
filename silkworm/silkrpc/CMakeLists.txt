@@ -50,6 +50,11 @@ set(SILKWORM_INTERFACE_SRC
     ${SILKWORM_MAIN_SRC_DIR}/interfaces/types/types.pb.cc
     ${SILKWORM_MAIN_SRC_DIR}/interfaces/types/types.pb.h)
 
+set_source_files_properties(${SILKWORM_INTERFACE_SRC} PROPERTIES GENERATED TRUE)
+if(NOT MSVC)
+    set_source_files_properties(${SILKWORM_INTERFACE_SRC} PROPERTIES COMPILE_FLAGS -Wno-sign-conversion)
+endif(NOT MSVC)
+
 # Silkrpc library
 file(GLOB_RECURSE SILKRPC_SRC CONFIGURE_DEPENDS "*.cpp" "*.cc" "*.hpp" "*.c" "*.h")
 list(FILTER SILKRPC_SRC EXCLUDE REGEX "main\\.cpp$|_test\\.cpp$|\\.pb\\.cc|\\.pb\\.h")
@@ -88,7 +93,6 @@ list(REMOVE_ITEM SILKRPC_COMPILE_OPTIONS "-pedantic")
 # TO BE REMOVED: END: temporarily disable warnings entirely to make silkrpc compile as it is
 
 set_property(TARGET silkrpc PROPERTY COMPILE_OPTIONS ${SILKRPC_COMPILE_OPTIONS})
-message(STATUS "COMPILE_OPTIONS after: ${SILKRPC_COMPILE_OPTIONS}")
 
 add_dependencies(silkrpc generate_ethbackend_grpc generate_kv_grpc generate_mining_grpc generate_txpool_grpc)
 target_include_directories(silkrpc PUBLIC

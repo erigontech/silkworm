@@ -14,16 +14,16 @@
    limitations under the License.
 ]]
 
-find_package(absl CONFIG REQUIRED)
-find_package(asio-grpc CONFIG REQUIRED)
+find_package(absl REQUIRED)
+find_package(asio-grpc REQUIRED)
 if(CONAN_PACKAGE_MANAGER)
     find_package(Boost REQUIRED container thread)
 else()
     find_package(Boost CONFIG REQUIRED container thread)
 endif()
-find_package(intx CONFIG REQUIRED)
+find_package(intx REQUIRED)
 set(JWT_BUILD_EXAMPLES OFF CACHE BOOL "disable examples" FORCE)
-find_package(jwt-cpp CONFIG REQUIRED)
+find_package(jwt-cpp REQUIRED)
 if(SILKRPC_USE_MIMALLOC)
     find_package(mimalloc 2.0 REQUIRED)
 endif()

@@ -26,9 +26,9 @@
 #include <utility>
 #include <vector>
 
-#include <jwt-cpp/jwt.h>
 #include <boost/asio/write.hpp>
 #include <nlohmann/json.hpp>
+#include <jwt-cpp/jwt.h>
 
 #include <silkworm/silkrpc/common/clock_time.hpp>
 #include <silkworm/silkrpc/common/log.hpp>

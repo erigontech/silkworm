@@ -58,7 +58,7 @@ set(PROTOC_ARGS
 )
 set(PROTOC_ARGS_GRPC
     ${PROTOC_ARGS}
-    --grpc_out "${OUT_PATH}"
+    --grpc_out generate_mock_code=true:"${OUT_PATH}"
     "--plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN_EXECUTABLE}"
 )
 
@@ -180,4 +180,62 @@ add_custom_target(
     DEPENDS "${ETHBACKEND_PROTO_SOURCES}" "${ETHBACKEND_PROTO_HEADERS}" "${ETHBACKEND_GRPC_SOURCES}" "${ETHBACKEND_GRPC_HEADERS}"
             generate_types_proto
             generate_remote_grpc_symlink
+)
+
+# ---------------------------------------------------------------------------------------------------------------------
+# MINING
+# ---------------------------------------------------------------------------------------------------------------------
+# gRPC protocol interface file
+set(MINING_PROTO "${PROTO_PATH}/txpool/mining.proto")
+
+# Generate sources
+set(MINING_PROTO_SOURCES "${OUT_PATH}/txpool/mining.pb.cc")
+set(MINING_PROTO_HEADERS "${OUT_PATH}/txpool/mining.pb.h")
+set(MINING_GRPC_SOURCES "${OUT_PATH}/txpool/mining.grpc.pb.cc")
+set(MINING_GRPC_HEADERS "${OUT_PATH}/txpool/mining.grpc.pb.h")
+set(MINING_MOCK_GRPC_HEADERS "${OUT_PATH}/txpool/mining_mock.grpc.pb.h")
+
+add_custom_command(
+        OUTPUT "${MINING_PROTO_SOURCES}" "${MINING_PROTO_HEADERS}" "${MINING_GRPC_SOURCES}" "${MINING_GRPC_HEADERS}" "${MINING_MOCK_GRPC_HEADERS}"
+        COMMAND ${PROTOBUF_PROTOC}
+        ARGS ${PROTOC_ARGS_GRPC} "${MINING_PROTO}"
+        DEPENDS "${MINING_PROTO}"
+        COMMENT "Running C++ gRPC compiler on ${KV_PROTO}"
+)
+
+create_symlink_target(generate_txpool_grpc_symlink "${OUT_PATH_SYMLINK}/txpool" "${OUT_PATH}/txpool")
+
+add_custom_target(
+        generate_mining_grpc
+        DEPENDS "${KV_PROTO_SOURCES}" "${KV_PROTO_HEADERS}" "${KV_GRPC_SOURCES}" "${KV_GRPC_HEADERS}" "${MINING_MOCK_GRPC_HEADERS}"
+        generate_types_proto
+        generate_txpool_grpc_symlink
+)
+
+# ---------------------------------------------------------------------------------------------------------------------
+# TXPOOL
+# ---------------------------------------------------------------------------------------------------------------------
+# gRPC protocol interface file
+set(TXPOOL_PROTO "${PROTO_PATH}/txpool/txpool.proto")
+
+# Generate sources
+set(TXPOOL_PROTO_SOURCES "${OUT_PATH}/txpool/txpool.pb.cc")
+set(TXPOOL_PROTO_HEADERS "${OUT_PATH}/txpool/txpool.pb.h")
+set(TXPOOL_GRPC_SOURCES "${OUT_PATH}/txpool/txpool.grpc.pb.cc")
+set(TXPOOL_GRPC_HEADERS "${OUT_PATH}/txpool/txpool.grpc.pb.h")
+set(TXPOOL_MOCK_GRPC_HEADERS "${OUT_PATH}/txpool/txpool_mock.grpc.pb.h")
+
+add_custom_command(
+        OUTPUT "${TXPOOL_PROTO_SOURCES}" "${TXPOOL_PROTO_HEADERS}" "${TXPOOL_GRPC_SOURCES}" "${TXPOOL_GRPC_HEADERS}" "${TXPOOL_MOCK_GRPC_HEADERS}"
+        COMMAND ${PROTOBUF_PROTOC}
+        ARGS ${PROTOC_ARGS_GRPC} "${TXPOOL_PROTO}"
+        DEPENDS "${TXPOOL_PROTO}"
+        COMMENT "Running C++ gRPC compiler on ${TXPOOL_PROTO}"
+)
+
+add_custom_target(
+        generate_txpool_grpc
+        DEPENDS "${TXPOOL_PROTO_SOURCES}" "${TXPOOL_PROTO_HEADERS}" "${TXPOOL_GRPC_SOURCES}" "${TXPOOL_GRPC_HEADERS}" "${TXPOOL_MOCK_GRPC_HEADERS}"
+        generate_types_proto
+        generate_txpool_grpc_symlink
 )

@@ -179,6 +179,30 @@ $env:STOP_AT_BLOCK=15000000
 ./cmd/silkworm.exe
 ```
 
+## Use Conan as Package Manager
+
+Silkworm uses Hunter as package manager, but will soon switch to Conan (https://conan.io/).
+
+Install Conan using:
+
+    pip3 install --user conan==1.58.0 chardet
+
+and add its binary to PATH:
+
+    export "PATH=$HOME/Library/Python/3.9/bin:$PATH"
+
+To use Conan at this experimental stage add the `-DCONAN_PACKAGE_MANAGER` option set to `ON`, and the Conan profile with the `-DCONAN_PROFILE` option, with the name of the profile to use.
+
+Example: 
+```
+cmake .. -DCONAN_PACKAGE_MANAGER=ON -DCONAN_PROFILE=linux_gcc_11_release
+```
+You can find all available conan profiles inside the [cmake/profiles](cmake/profiles) folder.
+
+The conan packages could also be pre-installed using [conan install](https://docs.conan.io/1/reference/commands/consumer/install.html):
+
+    conan install --install-folder=build/conan --build=missing --profile=cmake/profiles/macos_arm_clang_13_debug .
+
 
 <a name="guide"></a>
 ## Style Guide

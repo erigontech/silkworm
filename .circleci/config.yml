@@ -54,7 +54,7 @@ commands:
       - run:
           name: "Cmake"
           working_directory: ~/build
-          command: cmake ../project -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/toolchain/$TOOLCHAIN.cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DSILKWORM_CLANG_COVERAGE=$CLANG_COVERAGE -DSILKWORM_SANITIZE=$SANITIZE
+          command: cmake ../project -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/toolchain/$TOOLCHAIN.cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CMAKE_ARGS
       - save_cache:
           name: "Save Hunter cache"
           key: *hunter-cache-key
@@ -101,8 +101,7 @@ jobs:
     environment:
       TOOLCHAIN: cxx20
       BUILD_TYPE: Debug
-      CLANG_COVERAGE: OFF
-      SANITIZE: thread
+      BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=thread
     docker:
       - image: ethereum/cpp-build-env:18-gcc-11
     resource_class: xlarge
@@ -111,12 +110,36 @@ jobs:
       - build
       - test
 
+  linux-gcc-11-conan:
+    environment:
+      TOOLCHAIN: cxx20
+      BUILD_TYPE: Debug
+      BUILD_CMAKE_ARGS: -DCONAN_PACKAGE_MANAGER=ON -DCONAN_PROFILE=linux_gcc_11_debug
+    docker:
+      - image: ethereum/cpp-build-env:18-gcc-11
+    resource_class: xlarge
+    steps:
+      - run:
+          name: "Install Conan"
+          command: |
+            pip install --user conan==1.58.0 chardet
+            echo 'export "PATH=$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+      - checkout_with_submodules
+      - restore_cache:
+          name: "Restore Conan cache"
+          key: &conan-cache-key conan-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/profiles/linux_gcc_11_debug"}}-{{checksum "conanfile.txt"}}
+      - build
+      - save_cache:
+          name: "Save Conan cache"
+          key: *conan-cache-key
+          paths:
+            - ~/.conan
+      - test
+
   linux-gcc-12-release:
     environment:
       TOOLCHAIN: cxx20
       BUILD_TYPE: Release
-      CLANG_COVERAGE: OFF
-      SANITIZE: OFF
     docker:
       - image: ethereum/cpp-build-env:18-gcc-12
     resource_class: xlarge
@@ -130,8 +153,7 @@ jobs:
       TOOLCHAIN: clang_libcxx
       CLANG_VERSION: 13
       BUILD_TYPE: Debug
-      CLANG_COVERAGE: OFF
-      SANITIZE: address
+      BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=address
     docker:
       - image: ethereum/cpp-build-env:18-clang-13
     resource_class: xlarge
@@ -147,8 +169,7 @@ jobs:
       TOOLCHAIN: clang_libcxx
       CLANG_VERSION: 13
       BUILD_TYPE: Debug
-      CLANG_COVERAGE: ON
-      SANITIZE: OFF
+      BUILD_CMAKE_ARGS: -DSILKWORM_CLANG_COVERAGE=ON
     docker:
       - image: ethereum/cpp-build-env:18-clang-13
     resource_class: xlarge
@@ -272,6 +293,7 @@ workflows:
   silkworm:
     jobs:
       - linux-gcc-12-release
+      - linux-gcc-11-conan
       - linux-gcc-11-thread-sanitizer
       - linux-clang-13-coverage
       - linux-clang-13-address-sanitizer

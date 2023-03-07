@@ -14,8 +14,10 @@
    limitations under the License.
 ]]
 
-find_package(benchmark REQUIRED)
+include(hunter_cmake_args)
 
-file(GLOB_RECURSE SILKWORM_BENCHMARK_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/*_benchmark.cpp")
-add_executable(benchmark_test benchmark_test.cpp ${SILKWORM_BENCHMARK_TESTS})
-target_link_libraries(benchmark_test silkworm_node benchmark::benchmark)
+hunter_config(
+  ethash
+  VERSION 0.9.0
+  CMAKE_ARGS ETHASH_BUILD_ETHASH=ON ETHASH_BUILD_GLOBAL_CONTEXT=OFF ETHASH_BUILD_TESTS=OFF
+)

@@ -14,17 +14,21 @@
    limitations under the License.
 ]]
 
-find_package(absl CONFIG REQUIRED)
-find_package(asio-grpc CONFIG REQUIRED)
-find_package(Boost CONFIG REQUIRED container thread)
-find_package(nlohmann_json CONFIG REQUIRED)
-find_package(gRPC CONFIG REQUIRED)
+find_package(absl REQUIRED)
+find_package(asio-grpc REQUIRED)
+if(CONAN_PACKAGE_MANAGER)
+  find_package(Boost REQUIRED container thread)
+else()
+  find_package(Boost CONFIG REQUIRED container thread)
+endif()
+find_package(nlohmann_json REQUIRED)
+find_package(gRPC REQUIRED)
 
 # Generate source files containing snapshot TOML files as binary data
 set(SILKWORM_EMBED embed)
-find_package(CLI11 CONFIG REQUIRED)
+find_package(CLI11 REQUIRED)
 add_executable(${SILKWORM_EMBED} ${SILKWORM_MAIN_DIR}/cmd/embed.cpp)
-target_link_libraries(${SILKWORM_EMBED} PRIVATE CLI11::CLI11)
+target_link_libraries(${SILKWORM_EMBED} PRIVATE CLI11::CLI11 Boost::headers)
 
 set(SILKWORM_TOML_SRC_DIR "${SILKWORM_MAIN_DIR}/third_party/erigon-snapshot")
 set(SILKWORM_TOML_SRC
@@ -58,6 +62,7 @@ add_custom_target(generate_toml DEPENDS "${SILKWORM_TOML_SRC}" "${SILKWORM_EMBED
 
 file(GLOB_RECURSE SILKWORM_NODE_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h" "*.cc")
 list(FILTER SILKWORM_NODE_SRC EXCLUDE REGEX "_test\\.cpp$")
+list(FILTER SILKWORM_NODE_SRC EXCLUDE REGEX "_benchmark\\.cpp$")
 
 set(SILKWORM_INTERFACE_SRC
         ${SILKWORM_MAIN_SRC_DIR}/interfaces/p2psentry/sentry.grpc.pb.cc

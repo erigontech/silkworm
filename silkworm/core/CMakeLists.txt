@@ -14,8 +14,8 @@
    limitations under the License.
 ]]
 
-find_package(Microsoft.GSL CONFIG REQUIRED)
-find_package(nlohmann_json CONFIG REQUIRED)
+find_package(Microsoft.GSL REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 if(MSVC)
   add_compile_options(/EHsc)
@@ -25,17 +25,20 @@ endif()
 
 file(GLOB_RECURSE SILKWORM_CORE_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h")
 list(FILTER SILKWORM_CORE_SRC EXCLUDE REGEX "_test\\.cpp$")
+list(FILTER SILKWORM_CORE_SRC EXCLUDE REGEX "_benchmark\\.cpp$")
 
 add_library(silkworm_core ${SILKWORM_CORE_SRC})
 target_include_directories(silkworm_core PUBLIC ${SILKWORM_MAIN_DIR})
 target_include_directories(silkworm_core SYSTEM PUBLIC ${SILKWORM_MAIN_DIR}/third_party/expected/include)
 
-set(SILKWORM_CORE_PUBLIC_LIBS ethash::ethash evmc evmone intx::intx Microsoft.GSL::GSL nlohmann_json silkpre)
+set(SILKWORM_CORE_PUBLIC_LIBS ethash::ethash evmc evmone intx::intx Microsoft.GSL::GSL nlohmann_json::nlohmann_json silkpre)
 set(SILKWORM_CORE_PRIVATE_LIBS "")
 
 if(NOT SILKWORM_WASM_API)
-  hunter_add_package(abseil)
-  find_package(absl CONFIG REQUIRED)
+  if(NOT CONAN_PACKAGE_MANAGER)
+    hunter_add_package(abseil)
+  endif()
+  find_package(absl REQUIRED)
   list(APPEND SILKWORM_CORE_PRIVATE_LIBS absl::flat_hash_map absl::flat_hash_set absl::node_hash_map)
 endif()
 

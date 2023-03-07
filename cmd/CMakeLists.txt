@@ -29,8 +29,9 @@ if(NOT SILKWORM_CORE_ONLY)
   # Benchmarks
   add_subdirectory(benchmark)
 
-  find_package(absl CONFIG REQUIRED)
-  find_package(CLI11 CONFIG REQUIRED)
+  find_package(absl REQUIRED)
+  find_package(Boost REQUIRED)
+  find_package(CLI11 REQUIRED)
 
   add_executable(silkworm silkworm.cpp common.cpp)
   target_link_libraries(silkworm PRIVATE silkworm_node silkworm_sync silkworm-buildinfo CLI11::CLI11 $<$<BOOL:${MSVC}>:Kernel32.lib>)
@@ -48,7 +49,7 @@ if(NOT SILKWORM_CORE_ONLY)
   target_link_libraries(toolbox PRIVATE silkworm_node CLI11::CLI11)
 
   add_executable(genesistool genesistool.cpp)
-  target_link_libraries(genesistool PRIVATE CLI11::CLI11)
+  target_link_libraries(genesistool PRIVATE CLI11::CLI11 Boost::headers)
 
   add_executable(check_hashstate check_hashstate.cpp)
   target_link_libraries(check_hashstate PRIVATE silkworm_node CLI11::CLI11)

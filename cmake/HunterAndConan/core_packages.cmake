@@ -14,8 +14,5 @@
    limitations under the License.
 ]]
 
-find_package(benchmark REQUIRED)
-
-file(GLOB_RECURSE SILKWORM_BENCHMARK_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/*_benchmark.cpp")
-add_executable(benchmark_test benchmark_test.cpp ${SILKWORM_BENCHMARK_TESTS})
-target_link_libraries(benchmark_test silkworm_node benchmark::benchmark)
+hunter_add_package(intx)
+hunter_add_package(ethash)

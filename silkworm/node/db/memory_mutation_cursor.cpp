@@ -32,8 +32,22 @@ bool MemoryMutationCursor::is_entry_deleted(const Bytes& key) const {
     return memory_mutation_.is_entry_deleted(config_.name, key);
 }
 
+void MemoryMutationCursor::bind(ROTxn& txn, const MapConfig& config) {
+    memory_mutation_.update_txn(&txn);
+    cursor_->bind(txn, config);
+    memory_cursor_->bind(txn, config);
+}
+
 ::mdbx::map_handle MemoryMutationCursor::map() const {
     return memory_cursor_->map();
+}
+
+bool MemoryMutationCursor::is_multi_value() const {
+    return cursor_->is_multi_value();
+}
+
+bool MemoryMutationCursor::is_dangling() const {
+    return cursor_->is_dangling();
 }
 
 CursorResult MemoryMutationCursor::to_first() {

@@ -72,6 +72,17 @@ TEST_CASE("MemoryMutation", "[silkworm][node][db][memory_mutation]") {
         MemoryMutation mutation{overlay, &main_rw_txn};
         CHECK_THROWS_AS(MemoryMutation(overlay, &main_rw_txn), ::mdbx::exception);
     }
+
+    SECTION("Rollback an empty mutation") {
+        MemoryMutation mutation{overlay, &main_rw_txn};
+        CHECK_NOTHROW(mutation.rollback());
+    }
+
+    SECTION("Rollback twice an empty mutation") {
+        MemoryMutation mutation{overlay, &main_rw_txn};
+        CHECK_NOTHROW(mutation.rollback());
+        CHECK_NOTHROW(mutation.rollback());
+    }
 }
 
 }  // namespace silkworm::db

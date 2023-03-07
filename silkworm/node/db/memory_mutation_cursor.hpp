@@ -32,7 +32,13 @@ class MemoryMutationCursor : public RWCursorDupSort {
     [[nodiscard]] bool is_table_cleared() const;
     [[nodiscard]] bool is_entry_deleted(const Bytes& key) const;
 
+    void bind(ROTxn& txn, const MapConfig& config) override;
+
     [[nodiscard]] ::mdbx::map_handle map() const override;
+
+    [[nodiscard]] bool is_multi_value() const override;
+
+    [[nodiscard]] bool is_dangling() const override;
 
     CursorResult to_first() override;
     CursorResult to_first(bool throw_notfound) override;

@@ -40,10 +40,10 @@ TEST_CASE("Storage update") {
     const auto location_b{0x0000000000000000000000000000000000000000000000000000000000000002_bytes32};
     const auto value_b{0x0000000000000000000000000000000000000000000000000000000000000132_bytes32};
 
-    db::PooledCursor state{txn, table::kPlainState};
+    auto state = txn.rw_cursor_dup_sort(table::kPlainState);
 
-    upsert_storage_value(state, key, location_a, value_a1);
-    upsert_storage_value(state, key, location_b, value_b);
+    upsert_storage_value(*state, key, location_a, value_a1);
+    upsert_storage_value(*state, key, location_b, value_b);
 
     Buffer buffer{txn, 0};
 
@@ -59,12 +59,12 @@ TEST_CASE("Storage update") {
     buffer.write_to_db();
 
     // Location A should have the new value
-    const std::optional<ByteView> db_value_a{find_value_suffix(state, key, location_a)};
+    const std::optional<ByteView> db_value_a{find_value_suffix(*state, key, location_a)};
     REQUIRE(db_value_a.has_value());
     CHECK(db_value_a == zeroless_view(value_a2));
 
     // Location B should not change
-    const std::optional<ByteView> db_value_b{find_value_suffix(state, key, location_b)};
+    const std::optional<ByteView> db_value_b{find_value_suffix(*state, key, location_b)};
     REQUIRE(db_value_b.has_value());
     CHECK(db_value_b == zeroless_view(value_b));
 }

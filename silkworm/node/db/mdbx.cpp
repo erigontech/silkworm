@@ -267,7 +267,7 @@ PooledCursor::~PooledCursor() {
     }
 }
 
-void PooledCursor::bind(RWTxn& txn, ::mdbx::map_handle map) {
+void PooledCursor::bind(ROTxn& txn, ::mdbx::map_handle map) {
     if (!handle_) throw std::runtime_error("cannot bind a closed cursor");
     // Check cursor is bound to a live transaction
     if (auto cm_tx{mdbx_cursor_txn(handle_)}; cm_tx) {

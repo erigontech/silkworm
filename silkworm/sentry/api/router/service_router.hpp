@@ -33,7 +33,7 @@
 
 namespace silkworm::sentry::api::router {
 
-struct ServiceState {
+struct ServiceRouter {
     uint8_t eth_version;
     sentry::common::Channel<eth::StatusData>& status_channel;
 

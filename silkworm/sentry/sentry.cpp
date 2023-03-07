@@ -118,13 +118,13 @@ static silkworm::rpc::ServerConfig make_server_config(const Settings& settings) 
     return config;
 }
 
-static api::router::ServiceState make_service_state(
+static api::router::ServiceRouter make_service_router(
     common::Channel<eth::StatusData>& status_channel,
     MessageSender& message_sender,
     MessageReceiver& message_receiver,
     PeerManagerApi& peer_manager_api,
     std::function<api::api_common::NodeInfo()> node_info_provider) {
-    return api::router::ServiceState{
+    return api::router::ServiceRouter{
         eth::Protocol::kVersion,
         status_channel,
         message_sender.send_message_channel(),
@@ -167,7 +167,7 @@ SentryImpl::SentryImpl(Settings settings)
       message_sender_(context_pool_.next_io_context()),
       message_receiver_(std::make_shared<MessageReceiver>(context_pool_.next_io_context(), settings_.max_peers)),
       peer_manager_api_(std::make_shared<PeerManagerApi>(context_pool_.next_io_context(), peer_manager_)),
-      rpc_server_(make_server_config(settings_), make_service_state(status_manager_.status_channel(), message_sender_, *message_receiver_, *peer_manager_api_, node_info_provider())) {
+      rpc_server_(make_server_config(settings_), make_service_router(status_manager_.status_channel(), message_sender_, *message_receiver_, *peer_manager_api_, node_info_provider())) {
 }
 
 void SentryImpl::start() {

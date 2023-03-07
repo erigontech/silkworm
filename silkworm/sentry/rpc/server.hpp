@@ -19,7 +19,7 @@
 #include <memory>
 
 #include <silkworm/node/rpc/server/server_config.hpp>
-#include <silkworm/sentry/api/router/service_state.hpp>
+#include <silkworm/sentry/api/router/service_router.hpp>
 
 namespace silkworm::sentry::rpc {
 
@@ -29,7 +29,7 @@ class Server final {
   public:
     explicit Server(
         const silkworm::rpc::ServerConfig& config,
-        api::router::ServiceState state);
+        api::router::ServiceRouter router);
     ~Server();
 
     Server(const Server&) = delete;

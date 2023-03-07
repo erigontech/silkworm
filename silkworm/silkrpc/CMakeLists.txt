@@ -67,6 +67,7 @@ set(SILKRPC_LIBRARIES
     intx::intx
     jwt-cpp::jwt-cpp
     gRPC::grpc++
+    nlohmann_json::nlohmann_json
     protobuf::libprotobuf
     silkworm_core
     silkworm_node)

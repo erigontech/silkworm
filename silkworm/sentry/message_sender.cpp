@@ -27,7 +27,7 @@ boost::asio::awaitable<void> MessageSender::start(PeerManager& peer_manager) {
     while (true) {
         auto call = co_await send_message_channel_.receive();
 
-        rpc::common::SendMessageCall::PeerKeys sent_peer_keys;
+        api::router::SendMessageCall::PeerKeys sent_peer_keys;
 
         auto sender = [&message = call.message(), &sent_peer_keys, peer_filter = call.peer_filter()](std::shared_ptr<rlpx::Peer> peer) {
             auto key_opt = peer->peer_public_key();

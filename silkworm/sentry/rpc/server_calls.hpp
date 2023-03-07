@@ -19,6 +19,8 @@
 #include <sstream>
 #include <vector>
 
+#include <silkworm/node/concurrency/coroutine.hpp>
+
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <gsl/util>
@@ -27,16 +29,18 @@
 #include <silkworm/node/common/log.hpp>
 #include <silkworm/node/rpc/interfaces/types.hpp>
 #include <silkworm/node/rpc/server/call.hpp>
+#include <silkworm/sentry/api/api_common/message_id_set.hpp>
+#include <silkworm/sentry/api/api_common/node_info.hpp>
+#include <silkworm/sentry/api/api_common/peer_event.hpp>
+#include <silkworm/sentry/api/api_common/peer_info.hpp>
+#include <silkworm/sentry/api/router/messages_call.hpp>
+#include <silkworm/sentry/api/router/peer_call.hpp>
+#include <silkworm/sentry/api/router/peer_events_call.hpp>
+#include <silkworm/sentry/api/router/send_message_call.hpp>
+#include <silkworm/sentry/api/router/service_state.hpp>
 #include <silkworm/sentry/common/promise.hpp>
 #include <silkworm/sentry/eth/fork_id.hpp>
 
-#include "common/messages_call.hpp"
-#include "common/node_info.hpp"
-#include "common/peer_call.hpp"
-#include "common/peer_events_call.hpp"
-#include "common/peer_info.hpp"
-#include "common/send_message_call.hpp"
-#include "common/service_state.hpp"
 #include "interfaces/message.hpp"
 #include "interfaces/peer_id.hpp"
 
@@ -49,7 +53,7 @@ namespace proto = ::sentry;
 namespace proto_types = ::types;
 using AsyncService = proto::Sentry::AsyncService;
 namespace sw_rpc = silkworm::rpc;
-using common::ServiceState;
+using api::router::ServiceState;
 
 // rpc SetStatus(StatusData) returns (SetStatusReply);
 class SetStatusCall : public sw_rpc::server::UnaryCall<proto::StatusData, proto::SetStatusReply> {
@@ -113,7 +117,7 @@ class NodeInfoCall : public sw_rpc::server::UnaryCall<protobuf::Empty, proto_typ
         co_await agrpc::finish(responder_, reply, grpc::Status::OK);
     }
 
-    static proto_types::NodeInfoReply make_node_info_reply(const common::NodeInfo& info) {
+    static proto_types::NodeInfoReply make_node_info_reply(const api::api_common::NodeInfo& info) {
         proto_types::NodeInfoReply reply;
         reply.set_id(interfaces::peer_id_string_from_public_key(info.node_public_key));
         reply.set_name(info.client_id);
@@ -138,11 +142,11 @@ class NodeInfoCall : public sw_rpc::server::UnaryCall<protobuf::Empty, proto_typ
 awaitable<proto::SentPeers> do_send_message_call(
     const ServiceState& state,
     const proto::OutboundMessageData& request,
-    common::PeerFilter peer_filter) {
+    api::api_common::PeerFilter peer_filter) {
     auto message = interfaces::message_from_outbound_data(request);
 
     auto executor = co_await boost::asio::this_coro::executor;
-    common::SendMessageCall call{std::move(message), peer_filter, executor};
+    api::router::SendMessageCall call{std::move(message), peer_filter, executor};
 
     co_await state.send_message_channel.send(call);
 
@@ -165,7 +169,7 @@ class SendMessageByIdCall : public sw_rpc::server::UnaryCall<proto::SendMessageB
         proto::SentPeers reply = co_await do_send_message_call(
             state,
             request_.data(),
-            common::PeerFilter::with_peer_public_key(peer_public_key));
+            api::api_common::PeerFilter::with_peer_public_key(peer_public_key));
         co_await agrpc::finish(responder_, reply, grpc::Status::OK);
     }
 };
@@ -179,7 +183,7 @@ class SendMessageToRandomPeersCall : public sw_rpc::server::UnaryCall<proto::Sen
         proto::SentPeers reply = co_await do_send_message_call(
             state,
             request_.data(),
-            common::PeerFilter::with_max_peers(request_.max_peers()));
+            api::api_common::PeerFilter::with_max_peers(request_.max_peers()));
         co_await agrpc::finish(responder_, reply, grpc::Status::OK);
     }
 };
@@ -190,7 +194,7 @@ class SendMessageToAllCall : public sw_rpc::server::UnaryCall<proto::OutboundMes
     using Base::UnaryCall;
 
     awaitable<void> operator()(const ServiceState& state) {
-        proto::SentPeers reply = co_await do_send_message_call(state, request_, common::PeerFilter{});
+        proto::SentPeers reply = co_await do_send_message_call(state, request_, api::api_common::PeerFilter{});
         co_await agrpc::finish(responder_, reply, grpc::Status::OK);
     }
 };
@@ -205,7 +209,7 @@ class SendMessageByMinBlockCall : public sw_rpc::server::UnaryCall<proto::SendMe
         proto::SentPeers reply = co_await do_send_message_call(
             state,
             request_.data(),
-            common::PeerFilter::with_max_peers(request_.max_peers()));
+            api::api_common::PeerFilter::with_max_peers(request_.max_peers()));
         co_await agrpc::finish(responder_, reply, grpc::Status::OK);
     }
 };
@@ -231,7 +235,7 @@ class MessagesCall : public sw_rpc::server::ServerStreamingCall<proto::MessagesR
 
     awaitable<void> operator()(const ServiceState& state) {
         auto executor = co_await boost::asio::this_coro::executor;
-        common::MessagesCall call{
+        api::router::MessagesCall call{
             make_message_id_filter(request_),
             executor,
         };
@@ -257,8 +261,8 @@ class MessagesCall : public sw_rpc::server::ServerStreamingCall<proto::MessagesR
         co_await agrpc::finish(responder_, grpc::Status::OK);
     }
 
-    static common::MessagesCall::MessageIdSet make_message_id_filter(const proto::MessagesRequest& request) {
-        common::MessagesCall::MessageIdSet filter;
+    static api::api_common::MessageIdSet make_message_id_filter(const proto::MessagesRequest& request) {
+        api::api_common::MessageIdSet filter;
         for (int i = 0; i < request.ids_size(); i++) {
             auto id = request.ids(i);
             filter.insert(interfaces::message_id(id));
@@ -267,7 +271,7 @@ class MessagesCall : public sw_rpc::server::ServerStreamingCall<proto::MessagesR
     }
 };
 
-proto_types::PeerInfo make_peer_info(const common::PeerInfo& peer) {
+proto_types::PeerInfo make_peer_info(const api::api_common::PeerInfo& peer) {
     proto_types::PeerInfo info;
     info.set_id(interfaces::peer_id_string_from_public_key(peer.peer_public_key));
     info.set_name(peer.client_id);
@@ -301,7 +305,7 @@ class PeersCall : public sw_rpc::server::UnaryCall<protobuf::Empty, proto::Peers
 
     awaitable<void> operator()(const ServiceState& state) {
         auto executor = co_await boost::asio::this_coro::executor;
-        auto call = std::make_shared<sentry::common::Promise<common::PeerInfos>>(executor);
+        auto call = std::make_shared<sentry::common::Promise<api::api_common::PeerInfos>>(executor);
 
         co_await state.peers_calls_channel.send(call);
         auto peers = co_await call->wait();
@@ -341,7 +345,7 @@ class PeerByIdCall : public sw_rpc::server::UnaryCall<proto::PeerByIdRequest, pr
     awaitable<void> operator()(const ServiceState& state) {
         auto peer_public_key = interfaces::peer_public_key_from_id(request_.peer_id());
         auto executor = co_await boost::asio::this_coro::executor;
-        common::PeerCall call{peer_public_key, executor};
+        api::router::PeerCall call{peer_public_key, executor};
 
         co_await state.peer_calls_channel.send(call);
         auto peer_opt = co_await call.result_promise->wait();
@@ -391,7 +395,7 @@ class PeerEventsCall : public sw_rpc::server::ServerStreamingCall<proto::PeerEve
 
     awaitable<void> operator()(const ServiceState& state) {
         auto executor = co_await boost::asio::this_coro::executor;
-        common::PeerEventsCall call{executor};
+        api::router::PeerEventsCall call{executor};
 
         auto unsubscribe_signal = call.unsubscribe_signal;
         auto _ = gsl::finally([=]() { unsubscribe_signal->notify(); });
@@ -408,10 +412,10 @@ class PeerEventsCall : public sw_rpc::server::ServerStreamingCall<proto::PeerEve
                 reply.mutable_peer_id()->CopyFrom(interfaces::peer_id_from_public_key(event.peer_public_key.value()));
             }
             switch (event.event_id) {
-                case common::PeerEventsCall::PeerEventId::kAdded:
+                case api::api_common::PeerEventId::kAdded:
                     reply.set_event_id(proto::PeerEvent_PeerEventId_Connect);
                     break;
-                case common::PeerEventsCall::PeerEventId::kRemoved:
+                case api::api_common::PeerEventId::kRemoved:
                     reply.set_event_id(proto::PeerEvent_PeerEventId_Disconnect);
                     break;
             }

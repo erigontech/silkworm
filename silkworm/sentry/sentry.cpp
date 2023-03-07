@@ -37,6 +37,7 @@
 #include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 
+#include "api/api_common/node_info.hpp"
 #include "discovery/discovery.hpp"
 #include "eth/protocol.hpp"
 #include "message_receiver.hpp"
@@ -47,7 +48,6 @@
 #include "rlpx/client.hpp"
 #include "rlpx/protocol.hpp"
 #include "rlpx/server.hpp"
-#include "rpc/common/node_info.hpp"
 #include "rpc/server.hpp"
 #include "status_manager.hpp"
 
@@ -85,8 +85,8 @@ class SentryImpl final {
     std::function<std::unique_ptr<rlpx::Client>()> client_factory();
     [[nodiscard]] std::string client_id() const;
     common::EnodeUrl make_node_url() const;
-    rpc::common::NodeInfo make_node_info() const;
-    std::function<rpc::common::NodeInfo()> node_info_provider() const;
+    api::api_common::NodeInfo make_node_info() const;
+    std::function<api::api_common::NodeInfo()> node_info_provider() const;
 
     Settings settings_;
     std::optional<NodeKey> node_key_;
@@ -118,13 +118,13 @@ static silkworm::rpc::ServerConfig make_server_config(const Settings& settings) 
     return config;
 }
 
-static rpc::common::ServiceState make_service_state(
+static api::router::ServiceState make_service_state(
     common::Channel<eth::StatusData>& status_channel,
     MessageSender& message_sender,
     MessageReceiver& message_receiver,
     PeerManagerApi& peer_manager_api,
-    std::function<rpc::common::NodeInfo()> node_info_provider) {
-    return rpc::common::ServiceState{
+    std::function<api::api_common::NodeInfo()> node_info_provider) {
+    return api::router::ServiceState{
         eth::Protocol::kVersion,
         status_channel,
         message_sender.send_message_channel(),
@@ -301,7 +301,7 @@ common::EnodeUrl SentryImpl::make_node_url() const {
     };
 }
 
-rpc::common::NodeInfo SentryImpl::make_node_info() const {
+api::api_common::NodeInfo SentryImpl::make_node_info() const {
     return {
         make_node_url(),
         node_key_.value().public_key(),
@@ -311,7 +311,7 @@ rpc::common::NodeInfo SentryImpl::make_node_info() const {
     };
 }
 
-std::function<rpc::common::NodeInfo()> SentryImpl::node_info_provider() const {
+std::function<api::api_common::NodeInfo()> SentryImpl::node_info_provider() const {
     return [this] { return this->make_node_info(); };
 }
 

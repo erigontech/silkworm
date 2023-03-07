@@ -18,7 +18,6 @@
 
 #include <memory>
 #include <optional>
-#include <set>
 #include <utility>
 
 #include <silkworm/node/concurrency/coroutine.hpp>
@@ -26,26 +25,20 @@
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
 
+#include <silkworm/sentry/api/api_common/message_from_peer.hpp>
+#include <silkworm/sentry/api/api_common/message_id_set.hpp>
 #include <silkworm/sentry/common/channel.hpp>
-#include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/event_notifier.hpp>
-#include <silkworm/sentry/common/message.hpp>
 #include <silkworm/sentry/common/promise.hpp>
 
-namespace silkworm::sentry::rpc::common {
+namespace silkworm::sentry::api::router {
 
 class MessagesCall final {
   public:
-    struct MessageFromPeer {
-        sentry::common::Message message;
-        std::optional<sentry::common::EccPublicKey> peer_public_key;
-    };
-
-    using MessageIdSet = std::set<uint8_t>;
-    using TResult = std::shared_ptr<sentry::common::Channel<MessageFromPeer>>;
+    using TResult = std::shared_ptr<sentry::common::Channel<api_common::MessageFromPeer>>;
 
     MessagesCall(
-        MessageIdSet message_id_filter,
+        api_common::MessageIdSet message_id_filter,
         boost::asio::any_io_executor& executor)
         : message_id_filter_(std::move(message_id_filter)),
           result_promise_(std::make_shared<sentry::common::Promise<TResult>>(executor)),
@@ -53,7 +46,7 @@ class MessagesCall final {
 
     MessagesCall() = default;
 
-    [[nodiscard]] const MessageIdSet& message_id_filter() const { return message_id_filter_; }
+    [[nodiscard]] const api_common::MessageIdSet& message_id_filter() const { return message_id_filter_; }
 
     boost::asio::awaitable<TResult> result() {
         return result_promise_->wait();
@@ -68,9 +61,9 @@ class MessagesCall final {
     }
 
   private:
-    MessageIdSet message_id_filter_;
+    api_common::MessageIdSet message_id_filter_;
     std::shared_ptr<sentry::common::Promise<TResult>> result_promise_;
     std::shared_ptr<sentry::common::EventNotifier> unsubscribe_signal_;
 };
 
-}  // namespace silkworm::sentry::rpc::common
+}  // namespace silkworm::sentry::api::router

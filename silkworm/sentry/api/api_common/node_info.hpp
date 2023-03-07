@@ -17,26 +17,20 @@
 #pragma once
 
 #include <string>
-#include <vector>
 
 #include <boost/asio/ip/tcp.hpp>
 
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 
-namespace silkworm::sentry::rpc::common {
+namespace silkworm::sentry::api::api_common {
 
-struct PeerInfo {
-    sentry::common::EnodeUrl url;
-    sentry::common::EccPublicKey peer_public_key;
-    boost::asio::ip::tcp::endpoint local_endpoint;
-    boost::asio::ip::tcp::endpoint remote_endpoint;
-    bool is_inbound;
-    bool is_static;
+struct NodeInfo {
+    sentry::common::EnodeUrl node_url;
+    sentry::common::EccPublicKey node_public_key;
     std::string client_id;
-    std::vector<std::string> capabilities;
+    boost::asio::ip::tcp::endpoint rlpx_server_listen_endpoint;
+    uint16_t rlpx_server_port;
 };
 
-using PeerInfos = std::vector<PeerInfo>;
-
-}  // namespace silkworm::sentry::rpc::common
+}  // namespace silkworm::sentry::api::api_common

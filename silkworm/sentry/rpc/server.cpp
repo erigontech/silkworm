@@ -34,7 +34,7 @@ namespace silkworm::sentry::rpc {
 
 using namespace silkworm::log;
 using AsyncService = ::sentry::Sentry::AsyncService;
-using common::ServiceState;
+using api::router::ServiceState;
 
 class ServerImpl final : public silkworm::rpc::Server {
   public:

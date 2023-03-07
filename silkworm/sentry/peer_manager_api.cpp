@@ -60,7 +60,7 @@ awaitable<void> PeerManagerApi::handle_peer_count_calls() {
     }
 }
 
-static std::optional<rpc::common::PeerInfo> make_peer_info(rlpx::Peer& peer) {
+static std::optional<api::api_common::PeerInfo> make_peer_info(rlpx::Peer& peer) {
     auto url_opt = peer.url();
     if (!url_opt) return std::nullopt;
     auto peer_public_key_opt = peer.peer_public_key();
@@ -74,7 +74,7 @@ static std::optional<rpc::common::PeerInfo> make_peer_info(rlpx::Peer& peer) {
         capabilities.push_back(capability.to_string());
     }
 
-    return rpc::common::PeerInfo{
+    return api::api_common::PeerInfo{
         url_opt.value(),
         peer_public_key_opt.value(),
         peer.local_endpoint(),
@@ -91,7 +91,7 @@ awaitable<void> PeerManagerApi::handle_peers_calls() {
     while (true) {
         auto call = co_await peers_calls_channel_.receive();
 
-        rpc::common::PeerInfos peers;
+        api::api_common::PeerInfos peers;
         co_await peer_manager_.enumerate_peers([&peers](std::shared_ptr<rlpx::Peer> peer) {
             auto info_opt = make_peer_info(*peer);
             if (info_opt) {
@@ -109,7 +109,7 @@ awaitable<void> PeerManagerApi::handle_peer_calls() {
         auto call = co_await peer_calls_channel_.receive();
         auto peer_public_key_opt = call.peer_public_key;
 
-        std::optional<rpc::common::PeerInfo> info_opt;
+        std::optional<api::api_common::PeerInfo> info_opt;
         co_await peer_manager_.enumerate_peers([&info_opt, peer_public_key_opt](std::shared_ptr<rlpx::Peer> peer) {
             auto key_opt = peer->peer_public_key();
             if (key_opt && peer_public_key_opt && (key_opt.value() == peer_public_key_opt.value())) {
@@ -142,7 +142,7 @@ awaitable<void> PeerManagerApi::handle_peer_events_calls() {
     while (true) {
         auto call = co_await peer_events_calls_channel_.receive();
 
-        auto events_channel = std::make_shared<common::Channel<rpc::common::PeerEventsCall::PeerEvent>>(executor);
+        auto events_channel = std::make_shared<common::Channel<api::api_common::PeerEvent>>(executor);
 
         events_subscriptions_.push_back({
             events_channel,
@@ -199,9 +199,9 @@ awaitable<void> PeerManagerApi::forward_peer_events() {
 
 // PeerManagerObserver
 void PeerManagerApi::on_peer_added(std::shared_ptr<rlpx::Peer> peer) {
-    rpc::common::PeerEventsCall::PeerEvent event{
+    api::api_common::PeerEvent event{
         peer->peer_public_key(),
-        rpc::common::PeerEventsCall::PeerEventId::kAdded,
+        api::api_common::PeerEventId::kAdded,
     };
     bool ok = peer_events_channel_.try_send(std::move(event));
     if (!ok) {
@@ -211,9 +211,9 @@ void PeerManagerApi::on_peer_added(std::shared_ptr<rlpx::Peer> peer) {
 
 // PeerManagerObserver
 void PeerManagerApi::on_peer_removed(std::shared_ptr<rlpx::Peer> peer) {
-    rpc::common::PeerEventsCall::PeerEvent event{
+    api::api_common::PeerEvent event{
         peer->peer_public_key(),
-        rpc::common::PeerEventsCall::PeerEventId::kRemoved,
+        api::api_common::PeerEventId::kRemoved,
     };
     bool ok = peer_events_channel_.try_send(std::move(event));
     if (!ok) {

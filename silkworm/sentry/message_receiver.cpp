@@ -52,7 +52,7 @@ awaitable<void> MessageReceiver::handle_calls() {
     while (true) {
         auto call = co_await message_calls_channel_.receive();
 
-        auto messages_channel = std::make_shared<common::Channel<rpc::common::MessagesCall::MessageFromPeer>>(executor);
+        auto messages_channel = std::make_shared<common::Channel<api::api_common::MessageFromPeer>>(executor);
 
         subscriptions_.push_back({
             messages_channel,
@@ -100,12 +100,12 @@ awaitable<void> MessageReceiver::receive_messages(std::shared_ptr<rlpx::Peer> pe
             break;
         }
 
-        rpc::common::MessagesCall::MessageFromPeer message_from_peer{
+        api::api_common::MessageFromPeer message_from_peer{
             std::move(message),
             {peer->peer_public_key()},
         };
 
-        std::list<std::shared_ptr<common::Channel<rpc::common::MessagesCall::MessageFromPeer>>> messages_channels;
+        std::list<std::shared_ptr<common::Channel<api::api_common::MessageFromPeer>>> messages_channels;
         for (auto& subscription : subscriptions_) {
             if (subscription.message_id_filter.empty() || subscription.message_id_filter.contains(message_from_peer.message.id)) {
                 messages_channels.push_back(subscription.messages_channel);

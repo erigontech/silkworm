@@ -26,14 +26,15 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/strand.hpp>
 
+#include <silkworm/sentry/api/api_common/peer_event.hpp>
+#include <silkworm/sentry/api/api_common/peer_info.hpp>
+#include <silkworm/sentry/api/router/peer_call.hpp>
+#include <silkworm/sentry/api/router/peer_events_call.hpp>
 #include <silkworm/sentry/common/channel.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/event_notifier.hpp>
 #include <silkworm/sentry/common/promise.hpp>
 #include <silkworm/sentry/common/task_group.hpp>
-#include <silkworm/sentry/rpc/common/peer_call.hpp>
-#include <silkworm/sentry/rpc/common/peer_events_call.hpp>
-#include <silkworm/sentry/rpc/common/peer_info.hpp>
 
 #include "peer_manager.hpp"
 #include "rlpx/peer.hpp"
@@ -61,11 +62,11 @@ class PeerManagerApi : public PeerManagerObserver {
         return peer_count_calls_channel_;
     }
 
-    common::Channel<std::shared_ptr<common::Promise<rpc::common::PeerInfos>>>& peers_calls_channel() {
+    common::Channel<std::shared_ptr<common::Promise<api::api_common::PeerInfos>>>& peers_calls_channel() {
         return peers_calls_channel_;
     }
 
-    common::Channel<rpc::common::PeerCall>& peer_calls_channel() {
+    common::Channel<api::router::PeerCall>& peer_calls_channel() {
         return peer_calls_channel_;
     }
 
@@ -73,7 +74,7 @@ class PeerManagerApi : public PeerManagerObserver {
         return peer_penalize_calls_channel_;
     }
 
-    common::Channel<rpc::common::PeerEventsCall>& peer_events_calls_channel() {
+    common::Channel<api::router::PeerEventsCall>& peer_events_calls_channel() {
         return peer_events_calls_channel_;
     }
 
@@ -93,20 +94,20 @@ class PeerManagerApi : public PeerManagerObserver {
     PeerManager& peer_manager_;
 
     common::Channel<std::shared_ptr<common::Promise<size_t>>> peer_count_calls_channel_;
-    common::Channel<std::shared_ptr<common::Promise<rpc::common::PeerInfos>>> peers_calls_channel_;
-    common::Channel<rpc::common::PeerCall> peer_calls_channel_;
+    common::Channel<std::shared_ptr<common::Promise<api::api_common::PeerInfos>>> peers_calls_channel_;
+    common::Channel<api::router::PeerCall> peer_calls_channel_;
     common::Channel<std::optional<common::EccPublicKey>> peer_penalize_calls_channel_;
-    common::Channel<rpc::common::PeerEventsCall> peer_events_calls_channel_;
+    common::Channel<api::router::PeerEventsCall> peer_events_calls_channel_;
 
     struct Subscription {
-        std::shared_ptr<common::Channel<rpc::common::PeerEventsCall::PeerEvent>> events_channel;
+        std::shared_ptr<common::Channel<api::api_common::PeerEvent>> events_channel;
         std::shared_ptr<common::EventNotifier> unsubscribe_signal;
     };
 
     std::list<Subscription> events_subscriptions_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     common::TaskGroup events_unsubscription_tasks_;
-    common::Channel<rpc::common::PeerEventsCall::PeerEvent> peer_events_channel_;
+    common::Channel<api::api_common::PeerEvent> peer_events_channel_;
 };
 
 }  // namespace silkworm::sentry

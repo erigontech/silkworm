@@ -21,6 +21,7 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 endif()
 
 find_package(absl REQUIRED)
+find_package(CLI11 REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(Protobuf REQUIRED)
 if(SILKRPC_USE_MIMALLOC)
@@ -59,7 +60,8 @@ set_property(TARGET silkrpc_toolbox PROPERTY COMPILE_OPTIONS ${SILKRPCTOOLBOX_CO
 set(SILKRPC_DAEMON_LIBRARIES
     silkworm-buildinfo
     silkrpc
-    absl::flags_parse)
+    absl::flags_parse
+    CLI11::CLI11)
 if(SILKRPC_USE_MIMALLOC)
     list(APPEND SILKRPC_DAEMON_LIBRARIES mimalloc)
 endif()

@@ -22,8 +22,11 @@ else()
     find_package(Boost CONFIG REQUIRED container thread)
 endif()
 find_package(intx REQUIRED)
+
+set(JWT_DISABLE_PICOJSON ON CACHE BOOL "disable picojson" FORCE)
 set(JWT_BUILD_EXAMPLES OFF CACHE BOOL "disable examples" FORCE)
 find_package(jwt-cpp REQUIRED)
+
 if(SILKRPC_USE_MIMALLOC)
     find_package(mimalloc 2.0 REQUIRED)
 endif()

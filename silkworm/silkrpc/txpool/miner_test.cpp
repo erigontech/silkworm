@@ -28,10 +28,11 @@
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/interfaces/txpool/mining.grpc.pb.h>
-#include <silkworm/interfaces/txpool/mining_mock_fix24351.grpc.pb.h>
+#include <silkworm/silkrpc/test/interfaces/mining_mock_fix24351.grpc.pb.h>
 #include <silkworm/silkrpc/test/api_test_base.hpp>
 #include <silkworm/silkrpc/test/grpc_actions.hpp>
 #include <silkworm/silkrpc/test/grpc_responder.hpp>
+
 #include <silkworm/core/common/base.hpp>
 
 namespace silkrpc::txpool {

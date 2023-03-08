@@ -48,7 +48,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
     test::Context context;
     context.add_genesis_data();
 
-    auto& txn{context.txn()};
+    auto& txn{context.rw_txn()};
 
     // add header 1 to db
     std::string raw_header1 =
@@ -447,7 +447,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         BlockHeader header2;
         header2.number = 2;
         header2.parent_hash = header1_hash;
-        auto txn2 = context.env().start_write();
+        db::RWTxn txn2{context.env()};
         db::write_canonical_header_hash(txn2, header2.hash().bytes, 1);
         db::write_canonical_header(txn2, header2);
         db::write_header(txn2, header2, true);

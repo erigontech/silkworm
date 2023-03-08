@@ -1,5 +1,5 @@
 #[[
-   Copyright 2020 The SilkRpc Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -79,7 +79,6 @@ add_library(silkrpc ${SILKRPC_SRC} ${SILKWORM_INTERFACE_SRC})
 
 # TO BE REMOVED: START: temporarily disable warnings entirely to make silkrpc compile as it is
 get_target_property(SILKRPC_COMPILE_OPTIONS silkrpc COMPILE_OPTIONS)
-message(STATUS "COMPILE_OPTIONS before: ${SILKRPC_COMPILE_OPTIONS}")
 list(REMOVE_ITEM SILKRPC_COMPILE_OPTIONS "-Wall")
 list(REMOVE_ITEM SILKRPC_COMPILE_OPTIONS "-Werror")
 list(REMOVE_ITEM SILKRPC_COMPILE_OPTIONS "-Wextra")
@@ -91,9 +90,8 @@ list(REMOVE_ITEM SILKRPC_COMPILE_OPTIONS "-Wno-missing-field-initializers")
 list(REMOVE_ITEM SILKRPC_COMPILE_OPTIONS "-Wnon-virtual-dtor")
 list(REMOVE_ITEM SILKRPC_COMPILE_OPTIONS "-Wthread-safety")
 list(REMOVE_ITEM SILKRPC_COMPILE_OPTIONS "-pedantic")
-# TO BE REMOVED: END: temporarily disable warnings entirely to make silkrpc compile as it is
-
 set_property(TARGET silkrpc PROPERTY COMPILE_OPTIONS ${SILKRPC_COMPILE_OPTIONS})
+# TO BE REMOVED: END: temporarily disable warnings entirely to make silkrpc compile as it is
 
 add_dependencies(silkrpc generate_ethbackend_grpc generate_kv_grpc generate_mining_grpc generate_txpool_grpc)
 target_include_directories(silkrpc PUBLIC

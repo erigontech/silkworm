@@ -30,7 +30,7 @@ using Catch::Matchers::Message;
 TEST_CASE("NetRpcApi::NetRpcApi", "[silkrpc][erigon_api]") {
     boost::asio::io_context io_context;
     auto channel{grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials())};
-    agrpc::GrpcContext grpc_context{std::make_unique<grpc::CompletionQueue>()};
+    agrpc::GrpcContext grpc_context;
     std::unique_ptr<ethbackend::BackEnd> backend{
         std::make_unique<ethbackend::RemoteBackEnd>(io_context, channel, grpc_context)
     };

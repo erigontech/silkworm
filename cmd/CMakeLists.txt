@@ -33,6 +33,9 @@ if(NOT SILKWORM_CORE_ONLY)
   find_package(Boost REQUIRED)
   find_package(CLI11 REQUIRED)
 
+  # Silkworm components
+  add_subdirectory(rpcdaemon)
+
   add_executable(silkworm silkworm.cpp common.cpp)
   target_link_libraries(silkworm PRIVATE silkworm_node silkworm_sync silkworm-buildinfo CLI11::CLI11 $<$<BOOL:${MSVC}>:Kernel32.lib>)
 

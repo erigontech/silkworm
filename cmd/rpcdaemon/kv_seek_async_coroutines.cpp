@@ -27,10 +27,10 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
+#include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/ethdb/kv/remote_database.hpp>
 
 using silkrpc::LogLevel;

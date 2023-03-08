@@ -25,9 +25,7 @@ if(CORE_TEST_ABSEIL_ENABLED)
   find_package(absl REQUIRED)
 endif()
 
-find_package(asio-grpc REQUIRED)
 find_package(Catch2 REQUIRED)
-find_package(GTest REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
 
 # Silkworm Core Tests
@@ -57,6 +55,9 @@ else()
 endif()
 
 if(NOT SILKWORM_CORE_ONLY)
+  find_package(asio-grpc REQUIRED)
+  find_package(GTest REQUIRED)
+
   # Silkworm Node Tests
   file(GLOB_RECURSE SILKWORM_NODE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/node/*_test.cpp")
   add_executable(node_test unit_test.cpp ${SILKWORM_NODE_TESTS})

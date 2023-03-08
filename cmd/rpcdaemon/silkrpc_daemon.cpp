@@ -14,8 +14,6 @@
    limitations under the License.
 */
 
-#include <silkworm/silkrpc/config.hpp>
-
 #include <string>
 
 #include <absl/flags/flag.h>
@@ -28,6 +26,7 @@
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/silkrpc/config.hpp>
 #include <silkworm/silkrpc/daemon.hpp>
 
 #include "../common.hpp"
@@ -75,7 +74,7 @@ silkrpc::DaemonSettings parse_args(int argc, char* argv[]) {
     config.contains_helpshort_flags = [](absl::string_view) { return false; };
     config.contains_help_flags = [](absl::string_view filename) { return absl::EndsWith(filename, "main.cpp"); };
     config.contains_helppackage_flags = [](absl::string_view) { return false; };
-    config.normalize_filename = [](absl::string_view f) { return std::string{f.substr(f.rfind("/") + 1)}; };
+    config.normalize_filename = [](absl::string_view f) { return std::string{f.substr(f.rfind('/') + 1)}; };
     config.version_string = []() { return get_version_from_build_info() + "\n"; };
     absl::SetFlagsUsageConfig(config);
     absl::SetProgramUsageMessage("C++ implementation of Ethereum JSON RPC API service within Thorax architecture");
@@ -83,10 +82,10 @@ silkrpc::DaemonSettings parse_args(int argc, char* argv[]) {
 
     const auto datadir = absl::GetFlag(FLAGS_datadir);
     std::optional<std::string> datadir_optional;
-    if (!datadir.empty())  {
+    if (!datadir.empty()) {
         datadir_optional = datadir;
     }
-    const silkrpc::DaemonSettings rpc_daemon_settings{
+    silkrpc::DaemonSettings rpc_daemon_settings{
         datadir_optional,
         absl::GetFlag(FLAGS_http_port),
         absl::GetFlag(FLAGS_engine_port),
@@ -98,7 +97,6 @@ silkrpc::DaemonSettings parse_args(int argc, char* argv[]) {
         absl::GetFlag(FLAGS_wait_mode),
         absl::GetFlag(FLAGS_jwt_secret_file),
     };
-
     return rpc_daemon_settings;
 }
 

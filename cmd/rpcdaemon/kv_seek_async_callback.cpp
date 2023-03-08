@@ -22,15 +22,13 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/signal_set.hpp>
 #include <grpcpp/grpcpp.h>
-#include <silkworm/core/common/util.hpp>
 
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
-#include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
-
 class GrpcKvCallbackReactor final : public grpc::ClientBidiReactor<remote::Cursor, remote::Pair> {
-public:
+  public:
     explicit GrpcKvCallbackReactor(remote::KV::Stub& stub, std::chrono::milliseconds timeout) : stub_(stub) {
         context_.set_deadline(std::chrono::system_clock::now() + timeout);
         stub_.experimental_async()->Tx(&context_, this);
@@ -55,7 +53,7 @@ public:
         write_completed_(ok);
     }
 
-private:
+  private:
     remote::KV::Stub& stub_;
     grpc::ClientContext context_;
     remote::Pair pair_;
@@ -72,7 +70,8 @@ int kv_seek_async_callback(const std::string& target, const std::string& table_n
 
     boost::asio::signal_set signals(context, SIGINT, SIGTERM);
     signals.async_wait([&](const boost::system::error_code& error, int signal_number) {
-        std::cout << "Signal caught, error: " << error.message() << " number: " << signal_number << std::endl << std::flush;
+        std::cout << "Signal caught, error: " << error.message() << " number: " << signal_number << std::endl
+                  << std::flush;
         context.stop();
     });
 

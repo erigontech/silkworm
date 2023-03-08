@@ -18,11 +18,9 @@
 #include <iostream>
 
 #include <grpcpp/grpcpp.h>
+
 #include <silkworm/core/common/util.hpp>
-
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
-
-#include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/grpc/util.hpp>
 

@@ -1,4 +1,3 @@
-
 /*
    Copyright 2023 The Silkworm Authors
 

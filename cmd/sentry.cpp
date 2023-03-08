@@ -25,10 +25,11 @@
 #include <silkworm/sentry/sentry.hpp>
 #include <silkworm/sentry/settings.hpp>
 
-#include "common.hpp"
+#include "common/common.hpp"
+#include "common/shutdown_signal.hpp"
 
 using namespace silkworm;
-using namespace silkworm::cmd;
+using namespace silkworm::cmd::common;
 using namespace silkworm::sentry;
 
 Settings sentry_parse_cli_settings(int argc, char* argv[]) {
@@ -118,6 +119,12 @@ void sentry_main(Settings settings) {
     silkworm::rpc::Grpc2SilkwormLogGuard log_guard;
 
     Sentry sentry{std::move(settings)};
+
+    ShutdownSignal shutdown_signal{sentry.context_pool().next_io_context()};
+    shutdown_signal.on_signal([&sentry](ShutdownSignal::SignalNumber /*num*/) {
+        sentry.stop();
+    });
+
     sentry.start();
 
     const auto pid = boost::this_process::get_id();

@@ -19,6 +19,7 @@
 #include <functional>
 #include <future>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include <silkworm/node/concurrency/coroutine.hpp>
@@ -28,7 +29,8 @@
 #include <boost/asio/cancellation_signal.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/signal_set.hpp>
+#include <boost/system/errc.hpp>
+#include <boost/system/system_error.hpp>
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/node/common/directories.hpp>
@@ -53,7 +55,6 @@
 
 namespace silkworm::sentry {
 
-using namespace std;
 using namespace boost;
 
 class SentryImpl final {
@@ -67,9 +68,10 @@ class SentryImpl final {
     void stop();
     void join();
 
+    silkworm::rpc::ServerContextPool& context_pool() { return context_pool_; }
+
   private:
     void setup_node_key();
-    void setup_shutdown_on_signals(asio::io_context&);
     void spawn_run_tasks();
     boost::asio::awaitable<void> run_tasks();
     boost::asio::awaitable<void> start_status_manager();
@@ -107,8 +109,6 @@ class SentryImpl final {
 
     std::promise<void> tasks_promise_;
     asio::cancellation_signal tasks_stop_signal_;
-
-    optional<unique_ptr<asio::signal_set>> shutdown_signals_;
 };
 
 static silkworm::rpc::ServerConfig make_server_config(const Settings& settings) {
@@ -160,7 +160,7 @@ class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
 
 SentryImpl::SentryImpl(Settings settings)
     : settings_(std::move(settings)),
-      context_pool_(settings_.num_contexts, settings_.wait_mode, [] { return make_unique<DummyServerCompletionQueue>(); }),
+      context_pool_(settings_.num_contexts, settings_.wait_mode, [] { return std::make_unique<DummyServerCompletionQueue>(); }),
       status_manager_(context_pool_.next_io_context()),
       rlpx_server_(context_pool_.next_io_context(), settings_.port),
       discovery_(settings_.static_peers),
@@ -176,7 +176,6 @@ void SentryImpl::start() {
 
     context_pool_.start();
     spawn_run_tasks();
-    setup_shutdown_on_signals(context_pool_.next_io_context());
 }
 
 void SentryImpl::setup_node_key() {
@@ -273,15 +272,6 @@ void SentryImpl::join() {
     context_pool_.join();
 }
 
-void SentryImpl::setup_shutdown_on_signals(asio::io_context& io_context) {
-    shutdown_signals_ = {make_unique<asio::signal_set>(io_context, SIGINT, SIGTERM)};
-    shutdown_signals_.value()->async_wait([&](const boost::system::error_code& error, int signal_number) {
-        log::Info() << "\n";
-        log::Info() << "Signal caught, error: " << error << " number: " << signal_number;
-        this->stop();
-    });
-}
-
 static std::string make_client_id(const buildinfo& info) {
     return std::string(info.project_name) +
            "/v" + info.project_version +
@@ -319,7 +309,7 @@ std::function<api::api_common::NodeInfo()> SentryImpl::node_info_provider() cons
 }
 
 Sentry::Sentry(Settings settings)
-    : p_impl_(make_unique<SentryImpl>(std::move(settings))) {
+    : p_impl_(std::make_unique<SentryImpl>(std::move(settings))) {
 }
 
 Sentry::~Sentry() {
@@ -329,5 +319,7 @@ Sentry::~Sentry() {
 void Sentry::start() { p_impl_->start(); }
 void Sentry::stop() { p_impl_->stop(); }
 void Sentry::join() { p_impl_->join(); }
+
+silkworm::rpc::ServerContextPool& Sentry::context_pool() { return p_impl_->context_pool(); }
 
 }  // namespace silkworm::sentry

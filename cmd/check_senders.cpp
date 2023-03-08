@@ -28,9 +28,10 @@
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/etl/collector.hpp>
 
-#include "common.hpp"
+#include "common/common.hpp"
 
 using namespace silkworm;
+using namespace silkworm::cmd::common;
 
 int main(int argc, char* argv[]) {
     SignalHandler::init();
@@ -51,13 +52,13 @@ int main(int argc, char* argv[]) {
         ->capture_default_str()
         ->check(CLI::NonNegativeNumber);
     log::Settings log_settings{};
-    cmd::add_logging_options(app, log_settings);
+    add_logging_options(app, log_settings);
 
     CLI11_PARSE(app, argc, argv)
 
     log::init(log_settings);
 
-    const auto node_name{cmd::get_node_name_from_build_info(silkworm_get_buildinfo())};
+    const auto node_name{get_node_name_from_build_info(silkworm_get_buildinfo())};
     log::Info() << "Build info: " << node_name;
 
     auto data_dir{DataDirectory::from_chaindata(chaindata)};

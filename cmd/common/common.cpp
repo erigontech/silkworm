@@ -26,7 +26,7 @@
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/db/stages.hpp>
 
-namespace silkworm::cmd {
+namespace silkworm::cmd::common {
 
 PruneModeValidator::PruneModeValidator() {
     func_ = [](const std::string& value) -> std::string {
@@ -508,4 +508,4 @@ std::string get_node_name_from_build_info(const buildinfo* build_info) {
     return node_name;
 }
 
-}  // namespace silkworm::cmd
+}  // namespace silkworm::cmd::common

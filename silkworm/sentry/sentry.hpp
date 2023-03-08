@@ -18,6 +18,8 @@
 
 #include <memory>
 
+#include <silkworm/node/rpc/server/server_context_pool.hpp>
+
 #include "settings.hpp"
 
 namespace silkworm::sentry {
@@ -35,6 +37,8 @@ class Sentry final {
     void start();
     void stop();
     void join();
+
+    silkworm::rpc::ServerContextPool& context_pool();
 
   private:
     std::unique_ptr<SentryImpl> p_impl_;

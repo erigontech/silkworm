@@ -27,8 +27,8 @@
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
+#include <silkworm/node/concurrency/channel.hpp>
 #include <silkworm/node/rpc/server/server_context_pool.hpp>
-#include <silkworm/sentry/common/channel.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 
 #include "peer.hpp"
@@ -51,14 +51,14 @@ class Server final {
     const boost::asio::ip::address& ip() const { return ip_; }
     boost::asio::ip::tcp::endpoint listen_endpoint() const;
 
-    common::Channel<std::shared_ptr<Peer>>& peer_channel() {
+    concurrency::Channel<std::shared_ptr<Peer>>& peer_channel() {
         return peer_channel_;
     }
 
   private:
     boost::asio::ip::address ip_;
     uint16_t port_;
-    common::Channel<std::shared_ptr<Peer>> peer_channel_;
+    concurrency::Channel<std::shared_ptr<Peer>> peer_channel_;
 };
 
 }  // namespace silkworm::sentry::rlpx

@@ -21,8 +21,8 @@
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 
+#include <silkworm/node/concurrency/channel.hpp>
 #include <silkworm/sentry/api/router/send_message_call.hpp>
-#include <silkworm/sentry/common/channel.hpp>
 
 #include "peer_manager.hpp"
 
@@ -33,14 +33,14 @@ class MessageSender {
     explicit MessageSender(boost::asio::io_context& io_context)
         : send_message_channel_(io_context) {}
 
-    common::Channel<api::router::SendMessageCall>& send_message_channel() {
+    concurrency::Channel<api::router::SendMessageCall>& send_message_channel() {
         return send_message_channel_;
     }
 
     boost::asio::awaitable<void> start(PeerManager& peer_manager);
 
   private:
-    common::Channel<api::router::SendMessageCall> send_message_channel_;
+    concurrency::Channel<api::router::SendMessageCall> send_message_channel_;
 };
 
 }  // namespace silkworm::sentry

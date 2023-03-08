@@ -47,7 +47,7 @@ awaitable<void> PeerManager::start(
     co_await co_spawn(strand_, std::move(start), use_awaitable);
 }
 
-awaitable<void> PeerManager::start_in_strand(common::Channel<std::shared_ptr<rlpx::Peer>>& peer_channel) {
+awaitable<void> PeerManager::start_in_strand(concurrency::Channel<std::shared_ptr<rlpx::Peer>>& peer_channel) {
     // loop until receive() throws a cancelled exception
     while (true) {
         auto peer = co_await peer_channel.receive();

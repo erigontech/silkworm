@@ -30,10 +30,10 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/strand.hpp>
 
+#include <silkworm/node/concurrency/channel.hpp>
+#include <silkworm/node/concurrency/event_notifier.hpp>
 #include <silkworm/node/rpc/server/server_context_pool.hpp>
-#include <silkworm/sentry/common/channel.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
-#include <silkworm/sentry/common/event_notifier.hpp>
 #include <silkworm/sentry/common/task_group.hpp>
 #include <silkworm/sentry/discovery/discovery.hpp>
 #include <silkworm/sentry/rlpx/client.hpp>
@@ -74,7 +74,7 @@ class PeerManager {
     void add_observer(std::weak_ptr<PeerManagerObserver> observer);
 
   private:
-    boost::asio::awaitable<void> start_in_strand(common::Channel<std::shared_ptr<rlpx::Peer>>& peer_channel);
+    boost::asio::awaitable<void> start_in_strand(concurrency::Channel<std::shared_ptr<rlpx::Peer>>& peer_channel);
     boost::asio::awaitable<void> start_peer(std::shared_ptr<rlpx::Peer> peer);
     boost::asio::awaitable<void> wait_for_peer_handshake(std::shared_ptr<rlpx::Peer> peer);
     boost::asio::awaitable<void> drop_peer(
@@ -110,9 +110,9 @@ class PeerManager {
 
     std::set<common::EnodeUrl> connecting_peer_urls_;
     silkworm::rpc::ServerContextPool& context_pool_;
-    common::EventNotifier need_peers_notifier_;
+    concurrency::EventNotifier need_peers_notifier_;
     common::TaskGroup connect_peer_tasks_;
-    common::Channel<std::shared_ptr<rlpx::Peer>> client_peer_channel_;
+    concurrency::Channel<std::shared_ptr<rlpx::Peer>> client_peer_channel_;
 
     std::list<std::weak_ptr<PeerManagerObserver>> observers_;
     std::mutex observers_mutex_;

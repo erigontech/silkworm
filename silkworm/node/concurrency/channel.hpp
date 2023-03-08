@@ -28,7 +28,7 @@
 #include <boost/system/error_code.hpp>
 #include <boost/system/system_error.hpp>
 
-namespace silkworm::sentry::common {
+namespace silkworm::concurrency {
 
 template <typename T>
 class Channel {
@@ -75,4 +75,4 @@ class Channel {
     boost::asio::experimental::concurrent_channel<void(boost::system::error_code, T)> channel_;
 };
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::concurrency

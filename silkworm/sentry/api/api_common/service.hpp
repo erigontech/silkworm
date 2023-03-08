@@ -24,7 +24,7 @@
 
 #include <boost/asio/awaitable.hpp>
 
-#include <silkworm/sentry/common/channel.hpp>
+#include <silkworm/node/concurrency/channel.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/message.hpp>
 #include <silkworm/sentry/eth/status_data.hpp>
@@ -67,7 +67,7 @@ struct Service {
     virtual boost::asio::awaitable<void> peer_min_block(common::EccPublicKey public_key) = 0;
 
     // rpc Messages(MessagesRequest) returns (stream InboundMessage);
-    virtual boost::asio::awaitable<std::shared_ptr<common::Channel<MessageFromPeer>>> messages(MessageIdSet message_id_filter) = 0;
+    virtual boost::asio::awaitable<std::shared_ptr<concurrency::Channel<MessageFromPeer>>> messages(MessageIdSet message_id_filter) = 0;
 
     // rpc Peers(google.protobuf.Empty) returns (PeersReply);
     virtual boost::asio::awaitable<PeerInfos> peers() = 0;
@@ -85,7 +85,7 @@ struct Service {
     virtual boost::asio::awaitable<void> peer_useless(common::EccPublicKey public_key) = 0;
 
     // rpc PeerEvents(PeerEventsRequest) returns (stream PeerEvent);
-    virtual boost::asio::awaitable<std::shared_ptr<common::Channel<PeerEvent>>> peer_events() = 0;
+    virtual boost::asio::awaitable<std::shared_ptr<concurrency::Channel<PeerEvent>>> peer_events() = 0;
 };
 
 }  // namespace silkworm::sentry::api::api_common

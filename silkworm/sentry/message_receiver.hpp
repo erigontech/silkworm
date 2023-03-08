@@ -25,11 +25,11 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/strand.hpp>
 
+#include <silkworm/node/concurrency/channel.hpp>
+#include <silkworm/node/concurrency/event_notifier.hpp>
 #include <silkworm/sentry/api/api_common/message_from_peer.hpp>
 #include <silkworm/sentry/api/api_common/message_id_set.hpp>
 #include <silkworm/sentry/api/router/messages_call.hpp>
-#include <silkworm/sentry/common/channel.hpp>
-#include <silkworm/sentry/common/event_notifier.hpp>
 #include <silkworm/sentry/common/task_group.hpp>
 
 #include "peer_manager.hpp"
@@ -46,7 +46,7 @@ class MessageReceiver : public PeerManagerObserver {
 
     ~MessageReceiver() override = default;
 
-    common::Channel<api::router::MessagesCall>& message_calls_channel() {
+    concurrency::Channel<api::router::MessagesCall>& message_calls_channel() {
         return message_calls_channel_;
     }
 
@@ -54,7 +54,7 @@ class MessageReceiver : public PeerManagerObserver {
 
   private:
     boost::asio::awaitable<void> handle_calls();
-    boost::asio::awaitable<void> unsubscribe_on_signal(std::shared_ptr<common::EventNotifier> unsubscribe_signal);
+    boost::asio::awaitable<void> unsubscribe_on_signal(std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal);
     boost::asio::awaitable<void> receive_messages(std::shared_ptr<rlpx::Peer> peer);
 
     // PeerManagerObserver
@@ -62,15 +62,15 @@ class MessageReceiver : public PeerManagerObserver {
     void on_peer_removed(std::shared_ptr<rlpx::Peer> peer) override;
     boost::asio::awaitable<void> on_peer_added_in_strand(std::shared_ptr<rlpx::Peer> peer);
 
-    common::Channel<api::router::MessagesCall> message_calls_channel_;
+    concurrency::Channel<api::router::MessagesCall> message_calls_channel_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     common::TaskGroup peer_tasks_;
     common::TaskGroup unsubscription_tasks_;
 
     struct Subscription {
-        std::shared_ptr<common::Channel<api::api_common::MessageFromPeer>> messages_channel;
+        std::shared_ptr<concurrency::Channel<api::api_common::MessageFromPeer>> messages_channel;
         api::api_common::MessageIdSet message_id_filter;
-        std::shared_ptr<common::EventNotifier> unsubscribe_signal;
+        std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal;
     };
 
     std::list<Subscription> subscriptions_;

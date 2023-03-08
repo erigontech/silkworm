@@ -142,7 +142,7 @@ awaitable<void> PeerManagerApi::handle_peer_events_calls() {
     while (true) {
         auto call = co_await peer_events_calls_channel_.receive();
 
-        auto events_channel = std::make_shared<common::Channel<api::api_common::PeerEvent>>(executor);
+        auto events_channel = std::make_shared<concurrency::Channel<api::api_common::PeerEvent>>(executor);
 
         events_subscriptions_.push_back({
             events_channel,
@@ -155,7 +155,7 @@ awaitable<void> PeerManagerApi::handle_peer_events_calls() {
     }
 }
 
-awaitable<void> PeerManagerApi::unsubscribe_peer_events_on_signal(std::shared_ptr<common::EventNotifier> unsubscribe_signal) {
+awaitable<void> PeerManagerApi::unsubscribe_peer_events_on_signal(std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal) {
     try {
         co_await unsubscribe_signal->wait();
     } catch (const boost::system::system_error& ex) {

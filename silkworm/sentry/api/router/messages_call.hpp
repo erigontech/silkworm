@@ -25,24 +25,24 @@
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
 
+#include <silkworm/node/concurrency/channel.hpp>
+#include <silkworm/node/concurrency/event_notifier.hpp>
 #include <silkworm/sentry/api/api_common/message_from_peer.hpp>
 #include <silkworm/sentry/api/api_common/message_id_set.hpp>
-#include <silkworm/sentry/common/channel.hpp>
-#include <silkworm/sentry/common/event_notifier.hpp>
 #include <silkworm/sentry/common/promise.hpp>
 
 namespace silkworm::sentry::api::router {
 
 class MessagesCall final {
   public:
-    using TResult = std::shared_ptr<sentry::common::Channel<api_common::MessageFromPeer>>;
+    using TResult = std::shared_ptr<concurrency::Channel<api_common::MessageFromPeer>>;
 
     MessagesCall(
         api_common::MessageIdSet message_id_filter,
         boost::asio::any_io_executor& executor)
         : message_id_filter_(std::move(message_id_filter)),
           result_promise_(std::make_shared<sentry::common::Promise<TResult>>(executor)),
-          unsubscribe_signal_(std::make_shared<sentry::common::EventNotifier>(executor)) {}
+          unsubscribe_signal_(std::make_shared<concurrency::EventNotifier>(executor)) {}
 
     MessagesCall() = default;
 
@@ -56,14 +56,14 @@ class MessagesCall final {
         result_promise_->set_value(std::move(result));
     }
 
-    [[nodiscard]] std::shared_ptr<sentry::common::EventNotifier> unsubscribe_signal() const {
+    [[nodiscard]] std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal() const {
         return unsubscribe_signal_;
     }
 
   private:
     api_common::MessageIdSet message_id_filter_;
     std::shared_ptr<sentry::common::Promise<TResult>> result_promise_;
-    std::shared_ptr<sentry::common::EventNotifier> unsubscribe_signal_;
+    std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal_;
 };
 
 }  // namespace silkworm::sentry::api::router

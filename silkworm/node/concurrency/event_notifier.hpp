@@ -26,7 +26,7 @@
 
 #include "channel.hpp"
 
-namespace silkworm::sentry::common {
+namespace silkworm::concurrency {
 
 // A simplified condition variable similar to Rust Tokio Notify:
 // https://docs.rs/tokio/1.25.0/tokio/sync/struct.Notify.html
@@ -48,4 +48,4 @@ class EventNotifier {
     Channel<std::monostate> channel_;
 };
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::concurrency

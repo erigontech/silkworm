@@ -118,16 +118,8 @@ Server::~Server() {
     log::Trace() << "silkworm::sentry::rpc::Server::~Server";
 }
 
-void Server::build_and_start() {
-    p_impl_->build_and_start();
-}
-
-void Server::join() {
-    p_impl_->join();
-}
-
-void Server::shutdown() {
-    p_impl_->shutdown();
+boost::asio::awaitable<void> Server::async_run() {
+    return p_impl_->async_run();
 }
 
 }  // namespace silkworm::sentry::rpc

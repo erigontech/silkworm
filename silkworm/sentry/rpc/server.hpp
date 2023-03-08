@@ -18,6 +18,10 @@
 
 #include <memory>
 
+#include <silkworm/node/concurrency/coroutine.hpp>
+
+#include <boost/asio/awaitable.hpp>
+
 #include <silkworm/node/rpc/server/server_config.hpp>
 #include <silkworm/sentry/api/router/service_router.hpp>
 
@@ -35,9 +39,7 @@ class Server final {
     Server(const Server&) = delete;
     Server& operator=(const Server&) = delete;
 
-    void build_and_start();
-    void join();
-    void shutdown();
+    boost::asio::awaitable<void> async_run();
 
   private:
     std::unique_ptr<ServerImpl> p_impl_;

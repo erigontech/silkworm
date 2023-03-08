@@ -75,7 +75,7 @@ awaitable<void> DirectService::peer_min_block(common::EccPublicKey /*public_key*
     co_return;
 }
 
-awaitable<std::shared_ptr<common::Channel<api_common::MessageFromPeer>>> DirectService::messages(api_common::MessageIdSet message_id_filter) {
+awaitable<std::shared_ptr<concurrency::Channel<api_common::MessageFromPeer>>> DirectService::messages(api_common::MessageIdSet message_id_filter) {
     auto executor = co_await this_coro::executor;
     MessagesCall call{std::move(message_id_filter), executor};
     co_await router_.message_calls_channel.send(call);
@@ -111,7 +111,7 @@ awaitable<void> DirectService::peer_useless(common::EccPublicKey public_key) {
     co_await router_.peer_penalize_calls_channel.send({std::move(public_key)});
 }
 
-awaitable<std::shared_ptr<common::Channel<api_common::PeerEvent>>> DirectService::peer_events() {
+awaitable<std::shared_ptr<concurrency::Channel<api_common::PeerEvent>>> DirectService::peer_events() {
     auto executor = co_await this_coro::executor;
     PeerEventsCall call{executor};
     co_await router_.peer_events_calls_channel.send(call);

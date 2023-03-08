@@ -27,7 +27,7 @@
 #include <boost/system/system_error.hpp>
 #include <catch2/catch.hpp>
 
-namespace silkworm::sentry::common {
+namespace silkworm::concurrency {
 
 using namespace std::chrono_literals;
 using namespace boost::asio;
@@ -62,4 +62,4 @@ TEST_CASE("Channel.close_and_receive") {
     CHECK_THROWS_AS(run(context, channel.receive()), boost::system::system_error);
 }
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::concurrency

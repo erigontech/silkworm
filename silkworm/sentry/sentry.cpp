@@ -79,6 +79,7 @@ class SentryImpl final {
     boost::asio::awaitable<void> start_message_sender();
     boost::asio::awaitable<void> start_message_receiver();
     boost::asio::awaitable<void> start_peer_manager_api();
+    boost::asio::awaitable<void> start_rpc_server();
     std::unique_ptr<rlpx::Protocol> make_protocol();
     std::function<std::unique_ptr<rlpx::Protocol>()> protocol_factory();
     std::unique_ptr<rlpx::Client> make_client();
@@ -119,7 +120,7 @@ static silkworm::rpc::ServerConfig make_server_config(const Settings& settings) 
 }
 
 static api::router::ServiceRouter make_service_router(
-    common::Channel<eth::StatusData>& status_channel,
+    concurrency::Channel<eth::StatusData>& status_channel,
     MessageSender& message_sender,
     MessageReceiver& message_receiver,
     PeerManagerApi& peer_manager_api,
@@ -173,8 +174,6 @@ SentryImpl::SentryImpl(Settings settings)
 void SentryImpl::start() {
     setup_node_key();
 
-    rpc_server_.build_and_start();
-
     context_pool_.start();
     spawn_run_tasks();
     setup_shutdown_on_signals(context_pool_.next_io_context());
@@ -187,13 +186,15 @@ void SentryImpl::setup_node_key() {
 }
 
 void SentryImpl::spawn_run_tasks() {
+    using namespace common::awaitable_wait_for_all;
+
     auto completion = [&](const std::exception_ptr& ex_ptr) {
         rethrow_unless_cancelled(ex_ptr, "SentryImpl::run_tasks");
         this->tasks_promise_.set_value();
     };
     asio::co_spawn(
         context_pool_.next_io_context(),
-        run_tasks(),
+        run_tasks() && start_rpc_server(),
         asio::bind_cancellation_slot(tasks_stop_signal_.slot(), completion));
 }
 
@@ -257,13 +258,15 @@ boost::asio::awaitable<void> SentryImpl::start_peer_manager_api() {
     return PeerManagerApi::start(peer_manager_api_);
 }
 
+boost::asio::awaitable<void> SentryImpl::start_rpc_server() {
+    return rpc_server_.async_run();
+}
+
 void SentryImpl::stop() {
-    rpc_server_.shutdown();
     tasks_stop_signal_.emit(asio::cancellation_type::all);
 }
 
 void SentryImpl::join() {
-    rpc_server_.join();
     tasks_promise_.get_future().wait();
 
     context_pool_.stop();

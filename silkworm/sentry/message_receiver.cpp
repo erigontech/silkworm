@@ -52,7 +52,7 @@ awaitable<void> MessageReceiver::handle_calls() {
     while (true) {
         auto call = co_await message_calls_channel_.receive();
 
-        auto messages_channel = std::make_shared<common::Channel<api::api_common::MessageFromPeer>>(executor);
+        auto messages_channel = std::make_shared<concurrency::Channel<api::api_common::MessageFromPeer>>(executor);
 
         subscriptions_.push_back({
             messages_channel,
@@ -66,7 +66,7 @@ awaitable<void> MessageReceiver::handle_calls() {
     }
 }
 
-awaitable<void> MessageReceiver::unsubscribe_on_signal(std::shared_ptr<common::EventNotifier> unsubscribe_signal) {
+awaitable<void> MessageReceiver::unsubscribe_on_signal(std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal) {
     try {
         co_await unsubscribe_signal->wait();
     } catch (const boost::system::system_error& ex) {
@@ -105,7 +105,7 @@ awaitable<void> MessageReceiver::receive_messages(std::shared_ptr<rlpx::Peer> pe
             {peer->peer_public_key()},
         };
 
-        std::list<std::shared_ptr<common::Channel<api::api_common::MessageFromPeer>>> messages_channels;
+        std::list<std::shared_ptr<concurrency::Channel<api::api_common::MessageFromPeer>>> messages_channels;
         for (auto& subscription : subscriptions_) {
             if (subscription.message_id_filter.empty() || subscription.message_id_filter.contains(message_from_peer.message.id)) {
                 messages_channels.push_back(subscription.messages_channel);

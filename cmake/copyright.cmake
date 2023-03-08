@@ -57,7 +57,6 @@ list(FILTER SRC EXCLUDE REGEX "silkworm/node/common/preverified_hashes_[a-z]+\\.
 list(FILTER SRC EXCLUDE REGEX "silkworm/node/concurrency/thread_pool\\.hpp\$")
 list(FILTER SRC EXCLUDE REGEX "silkworm/node/snapshot/config/[a-z_]+.cpp\$")
 list(FILTER SRC EXCLUDE REGEX "silkworm/node/snapshot/toml.hpp$$")
-list(FILTER SRC EXCLUDE REGEX "silkworm/silkrpc/")
 
 foreach(F IN LISTS SRC)
     check("${F}")

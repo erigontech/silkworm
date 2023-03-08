@@ -17,18 +17,15 @@
 #include <iostream>
 
 #include <grpcpp/grpcpp.h>
-#include <silkworm/core/common/util.hpp>
 
-#include <silkworm//interfaces/remote/ethbackend.grpc.pb.h>
-#include <silkworm/silkrpc/common/constants.hpp>
-#include <silkworm/silkrpc/common/util.hpp>
+#include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>
 #include <silkworm/silkrpc/grpc/util.hpp>
 
 int ethbackend_async(const std::string& target) {
     // Create ETHBACKEND stub using insecure channel to target
     grpc::CompletionQueue queue;
     grpc::Status status;
-    void * got_tag;
+    void* got_tag;
     bool ok;
 
     const auto channel = grpc::CreateChannel(target, grpc::InsecureChannelCredentials());

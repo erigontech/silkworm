@@ -14,17 +14,19 @@
    limitations under the License.
 */
 
-#include <silkworm/silkrpc/config.hpp>
-
 #include <functional>
 #include <iomanip>
 #include <iostream>
 #include <utility>
 
+// clang-format off
+#include <silkworm/silkrpc/config.hpp>
+// clang-format on
+
 #include <boost/asio/co_spawn.hpp>
 #include <grpcpp/grpcpp.h>
-#include <silkworm/core/common/util.hpp>
 
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
@@ -35,16 +37,22 @@ using silkrpc::LogLevel;
 
 boost::asio::awaitable<void> kv_seek(silkrpc::ethdb::Database& kv_db, const std::string& table_name, const silkworm::Bytes& key) {
     const auto kv_transaction = co_await kv_db.begin();
-    std::cout << "KV Tx OPEN -> table_name: " << table_name << "\n" << std::flush;
+    std::cout << "KV Tx OPEN -> table_name: " << table_name << "\n"
+              << std::flush;
     const auto kv_cursor = co_await kv_transaction->cursor(table_name);
     auto cursor_id = kv_cursor->cursor_id();
-    std::cout << "KV Tx OPEN <- cursor: " << cursor_id << "\n" << std::flush;
-    std::cout << "KV Tx SEEK -> cursor: " << cursor_id << " key: " << key << "\n" << std::flush;
+    std::cout << "KV Tx OPEN <- cursor: " << cursor_id << "\n"
+              << std::flush;
+    std::cout << "KV Tx SEEK -> cursor: " << cursor_id << " key: " << key << "\n"
+              << std::flush;
     auto kv_pair = co_await kv_cursor->seek(key);
-    std::cout << "KV Tx SEEK <- key: " << kv_pair.key << " value: " << kv_pair.value << "\n" << std::flush;
-    std::cout << "KV Tx CLOSE -> cursor: " << cursor_id << "\n" << std::flush;
+    std::cout << "KV Tx SEEK <- key: " << kv_pair.key << " value: " << kv_pair.value << "\n"
+              << std::flush;
+    std::cout << "KV Tx CLOSE -> cursor: " << cursor_id << "\n"
+              << std::flush;
     co_await kv_transaction->close();
-    std::cout << "KV Tx CLOSE <- cursor: 0\n" << std::flush;
+    std::cout << "KV Tx CLOSE <- cursor: 0\n"
+              << std::flush;
     co_return;
 }
 
@@ -66,9 +74,11 @@ int kv_seek_async_coroutines(const std::string& target, const std::string& table
 
         context_pool.run();
     } catch (const std::exception& e) {
-        std::cerr << "Exception: " << e.what() << "\n" << std::flush;
+        std::cerr << "Exception: " << e.what() << "\n"
+                  << std::flush;
     } catch (...) {
-        std::cerr << "Unexpected exception\n" << std::flush;
+        std::cerr << "Unexpected exception\n"
+                  << std::flush;
     }
 
     return 0;

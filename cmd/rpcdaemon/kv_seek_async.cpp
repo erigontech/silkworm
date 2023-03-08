@@ -19,11 +19,9 @@
 #include <iostream>
 
 #include <grpcpp/grpcpp.h>
+
 #include <silkworm/core/common/util.hpp>
-
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
-
-#include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 int kv_seek_async(const std::string& target, const std::string& table_name, const silkworm::Bytes& key, uint32_t timeout) {
@@ -31,7 +29,7 @@ int kv_seek_async(const std::string& target, const std::string& table_name, cons
     grpc::ClientContext context;
     grpc::CompletionQueue queue;
     grpc::Status status;
-    void * got_tag;
+    void* got_tag;
     bool ok;
 
     const auto channel = grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
@@ -41,11 +39,11 @@ int kv_seek_async(const std::string& target, const std::string& table_name, cons
     context.set_deadline(std::chrono::system_clock::system_clock::now() + std::chrono::milliseconds{timeout});
     const auto reader_writer = stub->PrepareAsyncTx(&context, &queue);
 
-    void* START_TAG  = reinterpret_cast<void *>(0);
-    void* OPEN_TAG   = reinterpret_cast<void *>(1);
-    void* SEEK_TAG   = reinterpret_cast<void *>(2);
-    void* CLOSE_TAG  = reinterpret_cast<void *>(3);
-    void* FINISH_TAG = reinterpret_cast<void *>(4);
+    void* START_TAG = reinterpret_cast<void*>(0);
+    void* OPEN_TAG = reinterpret_cast<void*>(1);
+    void* SEEK_TAG = reinterpret_cast<void*>(2);
+    void* CLOSE_TAG = reinterpret_cast<void*>(3);
+    void* FINISH_TAG = reinterpret_cast<void*>(4);
 
     // 1) StartCall
     std::cout << "KV Tx START\n";

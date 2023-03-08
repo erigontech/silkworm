@@ -14,19 +14,19 @@
    limitations under the License.
 */
 
-#include <silkworm/silkrpc/config.hpp>
-
 #include <exception>
 #include <iomanip>
 #include <iostream>
 
+// clang-format off
+#include <silkworm/silkrpc/config.hpp>
+// clang-format on
+
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/signal_set.hpp>
 #include <grpcpp/grpcpp.h>
-#include <silkworm/core/common/util.hpp>
 
 #include <silkworm/interfaces/types/types.pb.h>
-#include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/ethbackend/remote_backend.hpp>
@@ -34,7 +34,7 @@
 inline std::ostream& operator<<(std::ostream& out, const types::H160& address) {
     out << "address=" << address.has_hi();
     if (address.has_hi()) {
-        auto hi_half = address.hi();
+        auto& hi_half = address.hi();
         out << std::hex << hi_half.hi() << hi_half.lo();
     } else {
         auto lo_half = address.lo();
@@ -68,7 +68,8 @@ int ethbackend_coroutines(const std::string& target) {
 
         boost::asio::signal_set signals(*io_context, SIGINT, SIGTERM);
         signals.async_wait([&](const boost::system::error_code& error, int signal_number) {
-            std::cout << "Signal caught, error: " << error.message() << " number: " << signal_number << std::endl << std::flush;
+            std::cout << "Signal caught, error: " << error.message() << " number: " << signal_number << std::endl
+                      << std::flush;
             context_pool.stop();
         });
 
@@ -82,9 +83,11 @@ int ethbackend_coroutines(const std::string& target) {
 
         context_pool.run();
     } catch (const std::exception& e) {
-        std::cerr << "Exception: " << e.what() << "\n" << std::flush;
+        std::cerr << "Exception: " << e.what() << "\n"
+                  << std::flush;
     } catch (...) {
-        std::cerr << "Unexpected exception\n" << std::flush;
+        std::cerr << "Unexpected exception\n"
+                  << std::flush;
     }
     return 0;
 }

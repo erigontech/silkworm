@@ -20,8 +20,8 @@
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
 #include <absl/flags/usage.h>
-#include <silkworm/core/common/util.hpp>
 
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 
@@ -236,7 +236,8 @@ int kv_seek() {
 }
 
 int main(int argc, char* argv[]) {
-    absl::SetProgramUsageMessage("Execute specified Silkrpc tool:\n"
+    absl::SetProgramUsageMessage(
+        "Execute specified Silkrpc tool:\n"
         "\tethbackend\t\t\tquery the Erigon/Silkworm ETHBACKEND remote interface\n"
         "\tethbackend_async\t\tquery the Erigon/Silkworm ETHBACKEND remote interface\n"
         "\tethbackend_coroutines\t\tquery the Erigon/Silkworm ETHBACKEND remote interface\n"
@@ -244,8 +245,7 @@ int main(int argc, char* argv[]) {
         "\tkv_seek_async\t\t\tquery using SEEK the Erigon/Silkworm Key-Value (KV) remote interface to database\n"
         "\tkv_seek_async_callback\t\tquery using SEEK the Erigon/Silkworm Key-Value (KV) remote interface to database\n"
         "\tkv_seek_async_coroutines\tquery using SEEK the Erigon/Silkworm Key-Value (KV) remote interface to database\n"
-        "\tkv_seek_both\t\t\tquery using SEEK_BOTH the Erigon/Silkworm Key-Value (KV) remote interface to database\n"
-    );
+        "\tkv_seek_both\t\t\tquery using SEEK_BOTH the Erigon/Silkworm Key-Value (KV) remote interface to database\n");
     const auto positional_args = absl::ParseCommandLine(argc, argv);
     if (positional_args.size() < 2) {
         std::cerr << "No Silkrpc tool specified as first positional argument\n\n";
@@ -281,7 +281,7 @@ int main(int argc, char* argv[]) {
         return kv_seek();
     }
 
-    std::cerr << "Unknown tool " << tool <<  " specified as first argument\n\n";
+    std::cerr << "Unknown tool " << tool << " specified as first argument\n\n";
     std::cerr << absl::ProgramUsageMessage();
     return -1;
 }

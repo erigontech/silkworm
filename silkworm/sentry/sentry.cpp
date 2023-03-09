@@ -17,25 +17,12 @@
 #include "sentry.hpp"
 
 #include <functional>
-#include <future>
-#include <memory>
 #include <optional>
 #include <string>
-
-#include <silkworm/node/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
-#include <boost/asio/bind_cancellation_slot.hpp>
-#include <boost/asio/cancellation_signal.hpp>
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/io_context.hpp>
-#include <boost/system/errc.hpp>
-#include <boost/system/system_error.hpp>
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/node/common/directories.hpp>
 #include <silkworm/node/common/log.hpp>
-#include <silkworm/node/rpc/server/server_context_pool.hpp>
 #include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 
@@ -59,20 +46,15 @@ using namespace boost;
 
 class SentryImpl final {
   public:
-    explicit SentryImpl(Settings settings);
+    explicit SentryImpl(Settings settings, silkworm::rpc::ServerContextPool& context_pool);
 
     SentryImpl(const SentryImpl&) = delete;
     SentryImpl& operator=(const SentryImpl&) = delete;
 
-    void start();
-    void stop();
-    void join();
-
-    silkworm::rpc::ServerContextPool& context_pool() { return context_pool_; }
+    boost::asio::awaitable<void> run();
 
   private:
     void setup_node_key();
-    void spawn_run_tasks();
     boost::asio::awaitable<void> run_tasks();
     boost::asio::awaitable<void> start_status_manager();
     boost::asio::awaitable<void> start_server();
@@ -93,7 +75,7 @@ class SentryImpl final {
 
     Settings settings_;
     std::optional<NodeKey> node_key_;
-    silkworm::rpc::ServerContextPool context_pool_;
+    silkworm::rpc::ServerContextPool& context_pool_;
 
     StatusManager status_manager_;
 
@@ -106,9 +88,6 @@ class SentryImpl final {
     std::shared_ptr<PeerManagerApi> peer_manager_api_;
 
     rpc::Server rpc_server_;
-
-    std::promise<void> tasks_promise_;
-    asio::cancellation_signal tasks_stop_signal_;
 };
 
 static silkworm::rpc::ServerConfig make_server_config(const Settings& settings) {
@@ -139,28 +118,9 @@ static api::router::ServiceRouter make_service_router(
     };
 }
 
-static void rethrow_unless_cancelled(const std::exception_ptr& ex_ptr, const std::string& log_message) {
-    if (!ex_ptr)
-        return;
-    try {
-        std::rethrow_exception(ex_ptr);
-    } catch (const boost::system::system_error& e) {
-        if (e.code() != boost::system::errc::operation_canceled) {
-            log::Error() << log_message << " system_error: " << e.what();
-            throw;
-        }
-    } catch (const std::exception& e) {
-        log::Error() << log_message << " exception: " << e.what();
-        throw;
-    }
-}
-
-class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
-};
-
-SentryImpl::SentryImpl(Settings settings)
+SentryImpl::SentryImpl(Settings settings, silkworm::rpc::ServerContextPool& context_pool)
     : settings_(std::move(settings)),
-      context_pool_(settings_.num_contexts, settings_.wait_mode, [] { return std::make_unique<DummyServerCompletionQueue>(); }),
+      context_pool_(context_pool),
       status_manager_(context_pool_.next_io_context()),
       rlpx_server_(context_pool_.next_io_context(), settings_.port),
       discovery_(settings_.static_peers),
@@ -171,30 +131,18 @@ SentryImpl::SentryImpl(Settings settings)
       rpc_server_(make_server_config(settings_), make_service_router(status_manager_.status_channel(), message_sender_, *message_receiver_, *peer_manager_api_, node_info_provider())) {
 }
 
-void SentryImpl::start() {
+boost::asio::awaitable<void> SentryImpl::run() {
+    using namespace common::awaitable_wait_for_all;
+
     setup_node_key();
 
-    context_pool_.start();
-    spawn_run_tasks();
+    return (run_tasks() && start_rpc_server());
 }
 
 void SentryImpl::setup_node_key() {
     DataDirectory data_dir{settings_.data_dir_path, true};
     NodeKey node_key = node_key_get_or_generate(settings_.node_key, data_dir);
     node_key_ = {node_key};
-}
-
-void SentryImpl::spawn_run_tasks() {
-    using namespace common::awaitable_wait_for_all;
-
-    auto completion = [&](const std::exception_ptr& ex_ptr) {
-        rethrow_unless_cancelled(ex_ptr, "SentryImpl::run_tasks");
-        this->tasks_promise_.set_value();
-    };
-    asio::co_spawn(
-        context_pool_.next_io_context(),
-        run_tasks() && start_rpc_server(),
-        asio::bind_cancellation_slot(tasks_stop_signal_.slot(), completion));
 }
 
 boost::asio::awaitable<void> SentryImpl::run_tasks() {
@@ -261,17 +209,6 @@ boost::asio::awaitable<void> SentryImpl::start_rpc_server() {
     return rpc_server_.async_run();
 }
 
-void SentryImpl::stop() {
-    tasks_stop_signal_.emit(asio::cancellation_type::all);
-}
-
-void SentryImpl::join() {
-    tasks_promise_.get_future().wait();
-
-    context_pool_.stop();
-    context_pool_.join();
-}
-
 static std::string make_client_id(const buildinfo& info) {
     return std::string(info.project_name) +
            "/v" + info.project_version +
@@ -308,18 +245,16 @@ std::function<api::api_common::NodeInfo()> SentryImpl::node_info_provider() cons
     return [this] { return this->make_node_info(); };
 }
 
-Sentry::Sentry(Settings settings)
-    : p_impl_(std::make_unique<SentryImpl>(std::move(settings))) {
+Sentry::Sentry(Settings settings, silkworm::rpc::ServerContextPool& context_pool)
+    : p_impl_(std::make_unique<SentryImpl>(std::move(settings), context_pool)) {
 }
 
 Sentry::~Sentry() {
     log::Trace() << "silkworm::sentry::Sentry::~Sentry";
 }
 
-void Sentry::start() { p_impl_->start(); }
-void Sentry::stop() { p_impl_->stop(); }
-void Sentry::join() { p_impl_->join(); }
-
-silkworm::rpc::ServerContextPool& Sentry::context_pool() { return p_impl_->context_pool(); }
+boost::asio::awaitable<void> Sentry::run() {
+    return p_impl_->run();
+}
 
 }  // namespace silkworm::sentry

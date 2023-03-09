@@ -18,6 +18,10 @@
 
 #include <memory>
 
+#include <silkworm/node/concurrency/coroutine.hpp>
+
+#include <boost/asio/awaitable.hpp>
+
 #include <silkworm/node/rpc/server/server_context_pool.hpp>
 
 #include "settings.hpp"
@@ -28,17 +32,13 @@ class SentryImpl;
 
 class Sentry final {
   public:
-    explicit Sentry(Settings settings);
+    explicit Sentry(Settings settings, silkworm::rpc::ServerContextPool& context_pool);
     ~Sentry();
 
     Sentry(const Sentry&) = delete;
     Sentry& operator=(const Sentry&) = delete;
 
-    void start();
-    void stop();
-    void join();
-
-    silkworm::rpc::ServerContextPool& context_pool();
+    boost::asio::awaitable<void> run();
 
   private:
     std::unique_ptr<SentryImpl> p_impl_;

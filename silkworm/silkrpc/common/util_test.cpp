@@ -58,10 +58,10 @@ TEST_CASE("calculate hash of transaction", "[silkrpc][common][util]") {
 }
 
 TEST_CASE("print ByteView", "[silkrpc][common][util]") {
-    silkworm::ByteView bv1{};
-    CHECK_NOTHROW(null_stream() << bv1);
-    silkworm::ByteView bv2{*silkworm::from_hex("0x0608")};
-    CHECK_NOTHROW(null_stream() << bv2);
+    silkworm::Bytes b1;
+    CHECK_NOTHROW(null_stream() << b1);
+    silkworm::Bytes b2{*silkworm::from_hex("0x0608")};
+    CHECK_NOTHROW(null_stream() << b2);
 }
 
 TEST_CASE("print empty address", "[silkrpc][common][util]") {

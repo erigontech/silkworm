@@ -34,6 +34,8 @@ using Catch::Matchers::Message;
 
 ChannelFactory create_channel = []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); };
 
+// Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
+#ifndef SILKWORM_SANITIZE
 TEST_CASE("Context", "[silkrpc][context_pool]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
@@ -235,5 +237,6 @@ TEST_CASE("print context pool", "[silkrpc][context_pool]") {
     ContextPool cp{1, create_channel};
     CHECK_NOTHROW(null_stream() << cp.next_context());
 }
+#endif  // SILKWORM_SANITIZE
 
 } // namespace silkrpc

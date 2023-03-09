@@ -222,7 +222,7 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor<WorldState, VM>::call(
                 VM evm{block, state_, config_};
                 evm.beneficiary = consensus_engine_->get_beneficiary(block.header);
 
-                for (auto& tracer : tracers) {
+                for (auto tracer : tracers) {
                     evm.add_tracer(*tracer);
                 }
 

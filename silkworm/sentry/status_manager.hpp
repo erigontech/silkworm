@@ -21,8 +21,8 @@
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 
+#include <silkworm/node/concurrency/channel.hpp>
 #include <silkworm/sentry/common/atomic_value.hpp>
-#include <silkworm/sentry/common/channel.hpp>
 
 #include "eth/status_data.hpp"
 
@@ -38,7 +38,7 @@ class StatusManager {
 
     boost::asio::awaitable<void> start();
 
-    common::Channel<eth::StatusData>& status_channel() {
+    concurrency::Channel<eth::StatusData>& status_channel() {
         return status_channel_;
     }
 
@@ -47,7 +47,7 @@ class StatusManager {
     }
 
   private:
-    common::Channel<eth::StatusData> status_channel_;
+    concurrency::Channel<eth::StatusData> status_channel_;
     common::AtomicValue<eth::StatusData> status_;
 };
 

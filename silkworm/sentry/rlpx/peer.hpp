@@ -28,8 +28,8 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/strand.hpp>
 
+#include <silkworm/node/concurrency/channel.hpp>
 #include <silkworm/sentry/common/atomic_value.hpp>
-#include <silkworm/sentry/common/channel.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
@@ -174,9 +174,9 @@ class Peer {
 
     boost::asio::strand<boost::asio::any_io_executor> strand_;
     common::TaskGroup send_message_tasks_;
-    common::Channel<common::Message> send_message_channel_;
-    common::Channel<common::Message> receive_message_channel_;
-    common::Channel<common::Message> pong_channel_;
+    concurrency::Channel<common::Message> send_message_channel_;
+    concurrency::Channel<common::Message> receive_message_channel_;
+    concurrency::Channel<common::Message> pong_channel_;
 };
 
 }  // namespace silkworm::sentry::rlpx

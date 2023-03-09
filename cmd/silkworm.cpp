@@ -32,9 +32,10 @@
 #include <silkworm/sync/sentry_client.hpp>
 #include <silkworm/sync/sync_engine_pow.hpp>
 
-#include "common.hpp"
+#include "common/common.hpp"
 
 using namespace silkworm;
+using namespace silkworm::cmd::common;
 
 // progress log
 class ResourceUsageLog : public ActiveComponent {
@@ -73,8 +74,8 @@ int main(int argc, char* argv[]) {
     cli.get_formatter()->column_width(50);
 
     try {
-        cmd::SilkwormCoreSettings settings;
-        cmd::parse_silkworm_command_line(cli, argc, argv, settings);
+        SilkwormCoreSettings settings;
+        parse_silkworm_command_line(cli, argc, argv, settings);
 
         auto& node_settings = settings.node_settings;
         auto& snapshot_settings = settings.snapshot_settings;
@@ -108,7 +109,7 @@ int main(int argc, char* argv[]) {
                      {"version", mdbx_ver.git.describe, "build", mdbx_bld.target, "compiler", mdbx_bld.compiler});
 
         // Check db
-        cmd::run_preflight_checklist(node_settings);  // Prepare database for takeoff
+        run_preflight_checklist(node_settings);  // Prepare database for takeoff
 
         auto chaindata_db{silkworm::db::open_env(node_settings.chaindata_env_config)};
 
@@ -129,7 +130,7 @@ int main(int argc, char* argv[]) {
         auto resource_usage_logging = std::thread([&resource_usage_log]() { resource_usage_log.execution_loop(); });
 
         // BackEnd & KV server
-        const auto node_name{silkworm::cmd::get_node_name_from_build_info(build_info)};
+        const auto node_name{get_node_name_from_build_info(build_info)};
         silkworm::EthereumBackEnd backend{node_settings, &chaindata_db};
         backend.set_node_name(node_name);
 

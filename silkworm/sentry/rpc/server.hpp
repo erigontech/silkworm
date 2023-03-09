@@ -18,9 +18,12 @@
 
 #include <memory>
 
-#include <silkworm/node/rpc/server/server_config.hpp>
+#include <silkworm/node/concurrency/coroutine.hpp>
 
-#include "common/service_state.hpp"
+#include <boost/asio/awaitable.hpp>
+
+#include <silkworm/node/rpc/server/server_config.hpp>
+#include <silkworm/sentry/api/router/service_router.hpp>
 
 namespace silkworm::sentry::rpc {
 
@@ -30,15 +33,13 @@ class Server final {
   public:
     explicit Server(
         const silkworm::rpc::ServerConfig& config,
-        common::ServiceState state);
+        api::router::ServiceRouter router);
     ~Server();
 
     Server(const Server&) = delete;
     Server& operator=(const Server&) = delete;
 
-    void build_and_start();
-    void join();
-    void shutdown();
+    boost::asio::awaitable<void> async_run();
 
   private:
     std::unique_ptr<ServerImpl> p_impl_;

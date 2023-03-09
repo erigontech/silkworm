@@ -19,34 +19,38 @@
 #include <functional>
 #include <optional>
 
-#include <silkworm/sentry/common/channel.hpp>
+#include <silkworm/node/concurrency/channel.hpp>
+#include <silkworm/sentry/api/api_common/node_info.hpp>
+#include <silkworm/sentry/api/api_common/peer_info.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/promise.hpp>
 #include <silkworm/sentry/eth/status_data.hpp>
 
 #include "messages_call.hpp"
-#include "node_info.hpp"
 #include "peer_call.hpp"
 #include "peer_events_call.hpp"
-#include "peer_info.hpp"
 #include "send_message_call.hpp"
 
-namespace silkworm::sentry::rpc::common {
+namespace silkworm::sentry::api::router {
 
-struct ServiceState {
+struct ServiceRouter {
     uint8_t eth_version;
-    sentry::common::Channel<eth::StatusData>& status_channel;
 
-    sentry::common::Channel<SendMessageCall>& send_message_channel;
-    sentry::common::Channel<MessagesCall>& message_calls_channel;
+    template <typename T>
+    using Channel = concurrency::Channel<T>;
 
-    sentry::common::Channel<std::shared_ptr<sentry::common::Promise<size_t>>>& peer_count_calls_channel;
-    sentry::common::Channel<std::shared_ptr<sentry::common::Promise<PeerInfos>>>& peers_calls_channel;
-    sentry::common::Channel<PeerCall>& peer_calls_channel;
-    sentry::common::Channel<std::optional<sentry::common::EccPublicKey>>& peer_penalize_calls_channel;
-    sentry::common::Channel<PeerEventsCall>& peer_events_calls_channel;
+    Channel<eth::StatusData>& status_channel;
 
-    std::function<rpc::common::NodeInfo()> node_info_provider;
+    Channel<SendMessageCall>& send_message_channel;
+    Channel<MessagesCall>& message_calls_channel;
+
+    Channel<std::shared_ptr<sentry::common::Promise<size_t>>>& peer_count_calls_channel;
+    Channel<std::shared_ptr<sentry::common::Promise<api_common::PeerInfos>>>& peers_calls_channel;
+    Channel<PeerCall>& peer_calls_channel;
+    Channel<std::optional<sentry::common::EccPublicKey>>& peer_penalize_calls_channel;
+    Channel<PeerEventsCall>& peer_events_calls_channel;
+
+    std::function<api_common::NodeInfo()> node_info_provider;
 };
 
-}  // namespace silkworm::sentry::rpc::common
+}  // namespace silkworm::sentry::api::router

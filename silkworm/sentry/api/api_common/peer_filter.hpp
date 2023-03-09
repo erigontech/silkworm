@@ -20,7 +20,7 @@
 
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 
-namespace silkworm::sentry::rpc::common {
+namespace silkworm::sentry::api::api_common {
 
 struct PeerFilter {
     std::optional<size_t> max_peers;
@@ -35,4 +35,4 @@ struct PeerFilter {
     }
 };
 
-}  // namespace silkworm::sentry::rpc::common
+}  // namespace silkworm::sentry::api::api_common

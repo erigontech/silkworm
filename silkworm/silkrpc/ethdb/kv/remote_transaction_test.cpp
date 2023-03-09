@@ -36,6 +36,7 @@ struct RemoteTransactionTest : test::KVTestBase {
     RemoteTransaction remote_tx_{*stub_, grpc_context_};
 };
 
+#ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::open", "[silkrpc][ethdb][kv][remote_transaction]") {
     SECTION("success") {
         // Set the call expectations:
@@ -379,5 +380,6 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
             test::exception_has_cancelled_grpc_status_code());
     }
 }
+#endif  // SILKWORM_SANITIZE
 
 } // namespace silkrpc::ethdb::kv

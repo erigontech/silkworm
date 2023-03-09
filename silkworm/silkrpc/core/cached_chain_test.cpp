@@ -32,12 +32,12 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/node/common/log.hpp>
-
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/ethdb/tables.hpp>
+#include <silkworm/silkrpc/test/mock_database_reader.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/chain_config.hpp>
 #include <silkworm/silkrpc/types/receipt.hpp>
@@ -114,19 +114,9 @@ static void check_expected_transaction(const Transaction& transaction) {
     CHECK(transaction.type == Transaction::Type::kLegacy);
 }
 
-
-class MockDatabaseReader : public rawdb::DatabaseReader {
-public:
-    MOCK_CONST_METHOD2(get, boost::asio::awaitable<KeyValue>(const std::string&, const silkworm::ByteView&));
-    MOCK_CONST_METHOD2(get_one, boost::asio::awaitable<silkworm::Bytes>(const std::string&, const silkworm::ByteView&));
-    MOCK_CONST_METHOD3(get_both_range, boost::asio::awaitable<std::optional<silkworm::Bytes>>(const std::string&, const silkworm::ByteView&, const silkworm::ByteView&));
-    MOCK_CONST_METHOD4(walk, boost::asio::awaitable<void>(const std::string&, const silkworm::ByteView&, uint32_t, Walker));
-    MOCK_CONST_METHOD3(for_prefix, boost::asio::awaitable<void>(const std::string&, const silkworm::ByteView&, Walker));
-};
-
 TEST_CASE("read_block_by_number_or_hash") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
     BlockCache cache(10, true);
 
     SECTION("using valid number") {
@@ -194,7 +184,7 @@ TEST_CASE("read_block_by_number_or_hash") {
 TEST_CASE("silkrpc::core::read_block_by_number") {
     uint64_t bn = 5'000'001;
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
     BlockCache cache(10, true);
 
     SECTION("using valid block_number") {
@@ -291,7 +281,7 @@ TEST_CASE("silkrpc::core::read_block_by_number") {
 TEST_CASE("silkrpc::core::read_block_by_hash") {
     const evmc::bytes32 bh = 0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32;
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
     BlockCache cache(10, true);
 
     SECTION("using valid block_hash") {
@@ -394,7 +384,7 @@ TEST_CASE("silkrpc::core::read_block_by_hash") {
 
 TEST_CASE("read_block_by_transaction_hash") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
     BlockCache cache(10, true);
 
     SECTION("block header number not found") {
@@ -485,7 +475,7 @@ TEST_CASE("read_block_by_transaction_hash") {
 
 TEST_CASE("read_transaction_by_hash") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
     BlockCache cache(10, true);
 
     SECTION("block header number not found") {

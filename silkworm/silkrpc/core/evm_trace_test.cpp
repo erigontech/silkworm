@@ -2914,8 +2914,9 @@ TEST_CASE("TraceCallExecutor::trace_replayTransaction") {
         BlockCache block_cache;
         TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
         boost::asio::io_context& io_context = context_pool.next_io_context();
+        TraceConfig config{.vm_trace = true, .trace = false, .state_diff = false};
         auto execution_result = boost::asio::co_spawn(io_context.get_executor(),
-            executor.trace_transaction(block_with_hash.block, transaction, {true, false, false}), boost::asio::use_future);
+            executor.trace_transaction(block_with_hash.block, transaction, config), boost::asio::use_future);
         auto result = execution_result.get();
 
         context_pool.stop();
@@ -3236,8 +3237,9 @@ TEST_CASE("TraceCallExecutor::trace_replayTransaction") {
         BlockCache block_cache;
         TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
         boost::asio::io_context& io_context = context_pool.next_io_context();
+        TraceConfig config{.vm_trace = false, .trace = true, .state_diff = false};
         auto execution_result = boost::asio::co_spawn(io_context.get_executor(),
-            executor.trace_transaction(block_with_hash.block, transaction, {false, true, false}), boost::asio::use_future);
+            executor.trace_transaction(block_with_hash.block, transaction, config), boost::asio::use_future);
         auto result = execution_result.get();
 
         context_pool.stop();
@@ -3272,8 +3274,9 @@ TEST_CASE("TraceCallExecutor::trace_replayTransaction") {
         BlockCache block_cache;
         TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
         boost::asio::io_context& io_context = context_pool.next_io_context();
+        TraceConfig config{.vm_trace = false, .trace = false, .state_diff = true};
         auto execution_result = boost::asio::co_spawn(io_context.get_executor(),
-            executor.trace_transaction(block_with_hash.block, transaction, {false, false, true}), boost::asio::use_future);
+            executor.trace_transaction(block_with_hash.block, transaction, config), boost::asio::use_future);
         auto result = execution_result.get();
 
         context_pool.stop();
@@ -3331,7 +3334,9 @@ TEST_CASE("TraceCallExecutor::trace_replayTransaction") {
         BlockCache block_cache;
         TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
         boost::asio::io_context& io_context = context_pool.next_io_context();
-        auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.trace_transaction(block_with_hash.block, transaction, {true, true, true}), boost::asio::use_future);
+        TraceConfig config{.vm_trace = true, .trace = true, .state_diff = true};
+        auto execution_result = boost::asio::co_spawn(io_context.get_executor(),
+            executor.trace_transaction(block_with_hash.block, transaction, config), boost::asio::use_future);
         auto result = execution_result.get();
 
         context_pool.stop();

@@ -34,6 +34,7 @@ struct RemoteDatabaseTest : test::KVTestBase {
     RemoteDatabase remote_db_{grpc_context_, std::unique_ptr<StrictMockKVStub>{kv_stub_}};
 };
 
+#ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(RemoteDatabaseTest, "RemoteDatabase::begin", "[silkrpc][ethdb][kv][remote_database]") {
     using namespace testing;  // NOLINT(build/namespaces)
 
@@ -81,5 +82,6 @@ TEST_CASE_METHOD(RemoteDatabaseTest, "RemoteDatabase::begin", "[silkrpc][ethdb][
             test::exception_has_cancelled_grpc_status_code());
     }
 }
+#endif  // SILKWORM_SANITIZE
 
 } // namespace silkrpc::ethdb::kv

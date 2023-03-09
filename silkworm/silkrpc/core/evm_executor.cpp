@@ -209,7 +209,7 @@ template<typename WorldState, typename VM>
 boost::asio::awaitable<ExecutionResult> EVMExecutor<WorldState, VM>::call(
     const silkworm::Block& block,
     const silkworm::Transaction& txn,
-    const Tracers& tracers,
+    Tracers tracers,
     bool refund,
     bool gas_bailout) {
     SILKRPC_DEBUG << "EVMExecutor::call: " << block.header.number << " gasLimit: " << txn.gas_limit << " refund: " << refund << " gasBailout: " << gas_bailout << "\n";
@@ -222,7 +222,7 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor<WorldState, VM>::call(
                 VM evm{block, state_, config_};
                 evm.beneficiary = consensus_engine_->get_beneficiary(block.header);
 
-                for (auto tracer : tracers) {
+                for (auto& tracer : tracers) {
                     evm.add_tracer(*tracer);
                 }
 

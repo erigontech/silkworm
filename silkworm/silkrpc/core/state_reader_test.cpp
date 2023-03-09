@@ -60,8 +60,6 @@ struct StateReaderTest : public test::ContextTestBase {
 };
 
 TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
-
     SECTION("no account for history empty and current state empty") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kAccountHistory returns empty key-value
@@ -156,8 +154,6 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
 }
 
 TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
-
     SECTION("empty storage for history empty and current state empty") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kStorageHistory returns empty key-value
@@ -216,8 +212,6 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
 }
 
 TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
-
     SECTION("no code for empty code hash") {
         // Execute the test: calling read_code should return no code for empty hash
         std::optional<silkworm::Bytes> code;

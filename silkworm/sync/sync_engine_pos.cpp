@@ -127,26 +127,35 @@ Block PoSSync::make_execution_block(const ExecutionPayload& payload) {
     block.ommers = {};  // RLP([]) = 0xc0
 
     // as per EIP-4399
-    if (payload.number >= TRANSITION_BLOCK) {
-        header.mix_hash = payload.prev_randao;
-    }
+    header.mix_hash = payload.prev_randao;
 
     return block;
 }
 
-void PoSSync::validate_execution_block(evmc::bytes32 /*blockHash*/, const Block&) {
-    // use consensus VerifyHeader?
+void PoSSync::do_sanity_checks(const Block& exec_block, const BlockHeader& parent, TotalDifficulty parent_td) {
+    auto terminal_total_difficulty = block_exchange_.chain_config().terminal_total_difficulty;
+
+    if (parent_td < terminal_total_difficulty) throw PayloadValidationError("parent td < terminal total difficulty");
+
+    // here Geth checks parent.Difficulty().BitLen() > 0 && gptd != nil && gptd.Cmp(ttd) >= 0
+    auto grand_parent_td = exec_engine_.get_header_td(parent.number - 1, parent.parent_hash);
+    if (parent.difficulty != 0 && grand_parent_td && grand_parent_td >= terminal_total_difficulty)
+        throw PayloadValidationError("ignoring pre-merge parent block");
+
+    if (exec_block.header.timestamp <= parent.timestamp) throw PayloadValidationError("invalid timestamp");
+    // here Geth return last_valid = fcu head
 }
 
 bool PoSSync::extends_canonical(const Block& block, Hash block_hash) {
-    // specs are not clear on the meaning of extends_canonical, we implement this as follows
-    return exec_engine_.extends_last_fork_choice(block.header.number, block_hash);  // todo: use chain_fork_view_ cache?
+    // the current canonical is defined by the last FCU, it is from FCU head hash back to the genesis
+    return exec_engine_.extends_last_fork_choice(block.header.number, block_hash);
 }
 
 PayloadStatus PoSSync::new_payload(const ExecutionPayload& payload, seconds_t /*timeout*/) {
     using ValidChain = stagedsync::ExecutionEngine::ValidChain;
     using InvalidChain = stagedsync::ExecutionEngine::InvalidChain;
     constexpr evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
+    auto terminal_total_difficulty = block_exchange_.chain_config().terminal_total_difficulty;
 
     try {
         Block block = make_execution_block(payload);  // as per the EngineAPI spec
@@ -154,20 +163,25 @@ PayloadStatus PoSSync::new_payload(const ExecutionPayload& payload, seconds_t /*
         Hash block_hash = block.header.hash();
         if (payload.block_hash != block_hash) return {.status = PayloadStatus::kInvalidBlockHash};
 
-        validate_execution_block(payload.block_hash, block);
-
-        auto parent = exec_engine_.get_header(block.header.parent_hash);  // todo: use chain_fork_view_ cache?
+        auto parent = exec_engine_.get_header(block.header.parent_hash);  // todo: decide whether to use chain_fork_view_ cache instead
         if (!parent) {
             // send payload to the block exchange to extend the chain up to it
             block_exchange_.new_target_block(block);
             return {.status = PayloadStatus::kSyncing};  // .latestValidHash = nullopt
         }
+        auto parent_td = exec_engine_.get_header_td(block.header.number, block.header.parent_hash);
+        if (!parent_td) {
+            return {.status = PayloadStatus::kSyncing};
+        }
+
+        do_sanity_checks(block, *parent, *parent_td);
+
+        exec_engine_.insert_block(block);
 
         if (!extends_canonical(block, block_hash)) {
             return {PayloadStatus::kAccepted};  // .latestValidHash = nullopt
         }
 
-        exec_engine_.insert_block(block);
         auto verification = exec_engine_.verify_chain(block_hash);
 
         if (std::holds_alternative<ValidChain>(verification)) {
@@ -176,9 +190,10 @@ PayloadStatus PoSSync::new_payload(const ExecutionPayload& payload, seconds_t /*
         } else if (std::holds_alternative<InvalidChain>(verification)) {
             // INVALID
             auto invalid_chain = std::get<InvalidChain>(verification);
-            Hash latest_valid_hash = invalid_chain.unwind_point < TRANSITION_BLOCK
+            auto unwind_point_td = exec_engine_.get_header_td(invalid_chain.unwind_point, invalid_chain.unwind_head);
+            Hash latest_valid_hash = invalid_chain.unwind_point < terminal_total_difficulty
                                          ? kZeroHash
-                                         : invalid_chain.unwind_head;  // todo: check!
+                                         : invalid_chain.unwind_head;
             return {.status = PayloadStatus::kInvalid, .latest_valid_hash = latest_valid_hash};
         } else {
             // ERROR

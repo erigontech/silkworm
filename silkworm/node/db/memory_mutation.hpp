@@ -45,7 +45,7 @@ class MemoryMutation : public RWTxn {
     ~MemoryMutation() override;
 
     [[nodiscard]] bool is_table_cleared(const std::string& bucket_name) const;
-    [[nodiscard]] bool is_entry_deleted(const std::string& bucket_name, const Bytes& key) const;
+    [[nodiscard]] bool is_entry_deleted(const std::string& bucket_name, const Slice& key) const;
 
     [[nodiscard]] db::ROTxn* external_txn() const { return txn_; }
 
@@ -64,7 +64,7 @@ class MemoryMutation : public RWTxn {
     MemoryOverlay& memory_db_;
     db::ROTxn* txn_;
     std::map<std::string, db::PooledCursor> stateless_cursors_;
-    std::map<std::string, Bytes> deleted_entries_;
+    std::map<std::string, Slice> deleted_entries_;
     std::map<std::string, bool> cleared_tables_;
 };
 

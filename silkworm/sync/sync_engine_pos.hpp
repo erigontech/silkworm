@@ -36,14 +36,15 @@ class PoSSync : public ActiveComponent {
 
     // public interface called by the external PoS client
     PayloadStatus new_payload(const ExecutionPayload&, seconds_t timeout = 8s);
-    PayloadStatus fork_choice_update(const ForkChoiceState&, const std::optional<PayloadAttributes>&, seconds_t timeout = 8s);
+    ForkChoiceUpdateReply fork_choice_update(const ForkChoiceState&, const std::optional<PayloadAttributes>&, seconds_t timeout = 8s);
     ExecutionPayload get_payload(std::string payloadId, seconds_t timeout = 1s);
     TransitionConfiguration exchange_transition_config(const TransitionConfiguration&, seconds_t timeout = 1s);
 
   private:
     Block make_execution_block(const ExecutionPayload& payload);
-    void do_sanity_checks(const Block&, const BlockHeader&, TotalDifficulty parent_td);
+    void do_sanity_checks(const BlockHeader& header, const BlockHeader& parent, TotalDifficulty parent_td);
     bool extends_canonical(const Block& block, Hash block_hash);
+    auto has_bad_ancestor(const Hash& block_hash) -> std::tuple<bool, Hash>;
 
     BlockExchange& block_exchange_;
     stagedsync::ExecutionEngine& exec_engine_;

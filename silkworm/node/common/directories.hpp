@@ -65,10 +65,10 @@ class TemporaryDirectory final : public Directory {
     //! \brief Creates an instance of a TemporaryDirectory from a user provided path
     //! \param [in] base_path :  A path where to append this instance to
     explicit TemporaryDirectory(const std::filesystem::path& base_path)
-        : Directory(TemporaryDirectory::get_unique_temporary_path(base_path), true){};
+        : Directory(TemporaryDirectory::get_unique_temporary_path(base_path), true) {}
 
     //! \brief Creates an instance of a TemporaryDirectory from OS temporary path
-    explicit TemporaryDirectory() : Directory(TemporaryDirectory::get_unique_temporary_path(), true){};
+    explicit TemporaryDirectory() : Directory(TemporaryDirectory::get_unique_temporary_path(), true) {}
 
     ~TemporaryDirectory() final {
         Directory::clear();
@@ -98,7 +98,7 @@ class DataDirectory final : public Directory {
         : Directory(base_path, create),
           chaindata_(base_path / "chaindata", create),
           etl_(base_path / "etl-temp", create),
-          nodes_(base_path / "nodes", create){};
+          nodes_(base_path / "nodes", create) {}
 
     //! \brief Creates an instance of Silkworm's data directory starting from default storage path. (each host OS has
     //! its own)

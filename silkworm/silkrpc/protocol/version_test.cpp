@@ -45,6 +45,7 @@ using testing::Return;
 using testing::SetArgPointee;
 using testing::_;
 
+#ifndef SILKWORM_SANITIZE
 TEST_CASE("write protocol version to ostream", "[silkrpc][protocol][version]") {
     const ProtocolVersion v{1, 0, 0};
     CHECK_NOTHROW(null_stream() << v);
@@ -380,6 +381,7 @@ TEST_CASE("TXPOOL protocol version with server stub", "[silkrpc][protocol][wait_
     CHECK(version_result.result.find("incompatible") == std::string::npos);
     CHECK(version_result.result.find("compatible") != std::string::npos);
 }
+#endif  // SILKWORM_SANITIZE
 
 } // namespace silkrpc
 

@@ -164,7 +164,7 @@ void ContextPool::start() {
         throw std::logic_error("cannot restart context pool, create another one");
     }
 
-    // Create a pool of threads to run all of the contexts (each one having 1 threads)
+    // Create a pool of threads to run all the contexts
     for (std::size_t i{0}; i < contexts_.size(); ++i) {
         auto& context = contexts_[i];
         context_threads_.create_thread([&, i = i]() {

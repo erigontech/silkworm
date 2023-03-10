@@ -27,8 +27,6 @@
 
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
-#include <silkworm/silkrpc/core/rawdb/accessors.hpp>
-#include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/test/mock_database_reader.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
@@ -43,7 +41,6 @@ using testing::InvokeWithoutArgs;
 
 static silkworm::Bytes kZeroKey{*silkworm::from_hex("0000000000000000")};
 static silkworm::Bytes kZeroHeader{*silkworm::from_hex("bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a")};
-static silkworm::Bytes kZeroAddress{*silkworm::from_hex("00000000000000000000")};
 
 static silkworm::Bytes kConfigKey{
     *silkworm::from_hex("bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a")};
@@ -131,9 +128,6 @@ TEST_CASE("DebugExecutor::execute precompiled") {
         auto execution_result = boost::asio::co_spawn(io_context, executor.execute(block, call), boost::asio::use_future);
         const auto result = execution_result.get();
 
-        context_pool.stop();
-        context_pool.join();
-
         CHECK(!result.pre_check_error);
         CHECK(result.debug_trace == R"({
             "failed":true,
@@ -142,6 +136,9 @@ TEST_CASE("DebugExecutor::execute precompiled") {
             "structLogs":[]
         })"_json);
     }
+
+    context_pool.stop();
+    context_pool.join();
 }
 
 TEST_CASE("DebugExecutor::execute call 1") {
@@ -282,10 +279,6 @@ TEST_CASE("DebugExecutor::execute call 1") {
         auto execution_result = boost::asio::co_spawn(io_context, executor.execute(block, call), boost::asio::use_future);
         auto result = execution_result.get();
 
-        context_pool.stop();
-        io_context.stop();
-        context_pool.join();
-
         CHECK(result.pre_check_error.has_value() == true);
         CHECK(result.pre_check_error.value() == "tracing failed: intrinsic gas too low: have 50000, want 53072");
     }
@@ -338,10 +331,6 @@ TEST_CASE("DebugExecutor::execute call 1") {
         boost::asio::io_context& io_context = context_pool.next_io_context();
         auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.execute(block, call), boost::asio::use_future);
         auto result = execution_result.get();
-
-        context_pool.stop();
-        io_context.stop();
-        context_pool.join();
 
         CHECK(result.pre_check_error.has_value() == false);
 
@@ -448,10 +437,6 @@ TEST_CASE("DebugExecutor::execute call 1") {
         auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.execute(block, call), boost::asio::use_future);
         auto result = execution_result.get();
 
-        context_pool.stop();
-        io_context.stop();
-        context_pool.join();
-
         CHECK(result.pre_check_error.has_value() == false);
         CHECK(result.debug_trace == R"({
             "failed": false,
@@ -546,10 +531,6 @@ TEST_CASE("DebugExecutor::execute call 1") {
         boost::asio::io_context& io_context = context_pool.next_io_context();
         auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.execute(block, call), boost::asio::use_future);
         auto result = execution_result.get();
-
-        context_pool.stop();
-        io_context.stop();
-        context_pool.join();
 
         CHECK(result.pre_check_error.has_value() == false);
 
@@ -651,9 +632,6 @@ TEST_CASE("DebugExecutor::execute call 1") {
         boost::asio::io_context& io_context = context_pool.next_io_context();
         auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.execute(block, call), boost::asio::use_future);
         auto result = execution_result.get();
-
-        context_pool.stop();
-        context_pool.join();
 
         CHECK(result.pre_check_error.has_value() == false);
 
@@ -757,9 +735,6 @@ TEST_CASE("DebugExecutor::execute call 1") {
         auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.execute(block, call), boost::asio::use_future);
         auto result = execution_result.get();
 
-        context_pool.stop();
-        context_pool.join();
-
         CHECK(result.pre_check_error.has_value() == false);
 
         CHECK(result.debug_trace == R"({
@@ -854,9 +829,6 @@ TEST_CASE("DebugExecutor::execute call 1") {
         auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.execute(block, call, &stream), boost::asio::use_future);
         auto result = execution_result.get();
 
-        context_pool.stop();
-        context_pool.join();
-
         stream.close_object();
         stream.close();
 
@@ -899,6 +871,9 @@ TEST_CASE("DebugExecutor::execute call 1") {
             ]
         })"_json);
     }
+
+    context_pool.stop();
+    context_pool.join();
 }
 
 TEST_CASE("DebugExecutor::execute call 2") {
@@ -1110,9 +1085,6 @@ TEST_CASE("DebugExecutor::execute call 2") {
         auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.execute(block, call), boost::asio::use_future);
         auto result = execution_result.get();
 
-        context_pool.stop();
-        context_pool.join();
-
         CHECK(result.pre_check_error.has_value() == false);
         CHECK(result.debug_trace == R"({
             "failed": false,
@@ -1121,6 +1093,9 @@ TEST_CASE("DebugExecutor::execute call 2") {
             "structLogs": []
         })"_json);
     }
+
+    context_pool.stop();
+    context_pool.join();
 }
 
 TEST_CASE("DebugExecutor::execute call with error") {
@@ -1361,8 +1336,8 @@ TEST_CASE("DebugTrace json serialization") {
     log.gas_cost = 4;
     log.depth = 1;
     log.error = false;
-    log.memory.push_back("0000000000000000000000000000000000000000000000000000000000000080");
-    log.stack.push_back("0x80");
+    log.memory.emplace_back("0000000000000000000000000000000000000000000000000000000000000080");
+    log.stack.emplace_back("0x80");
     log.storage["804292fe56769f4b9f0e91cf85875f67487cd9e85a084cbba2188be4466c4f23"] = "0000000000000000000000000000000000000000000000000000000000000008";
 
     SECTION("DebugTrace: no memory, stack and storage") {
@@ -1590,4 +1565,5 @@ TEST_CASE("DebugConfig") {
         CHECK(os.str() == "disableStorage: true disableMemory: false disableStack: true");
     }
 }
+
 }  // namespace silkrpc::debug

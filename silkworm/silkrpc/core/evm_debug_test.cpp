@@ -124,7 +124,7 @@ TEST_CASE("DebugExecutor::execute precompiled") {
         block.header.number = 10'336'006;
 
         boost::asio::io_context& io_context = context_pool.next_io_context();
-        DebugExecutor executor{context_pool.next_io_context(), db_reader, workers};
+        DebugExecutor executor{io_context, db_reader, workers};
         auto execution_result = boost::asio::co_spawn(io_context, executor.execute(block, call), boost::asio::use_future);
         const auto result = execution_result.get();
 
@@ -275,7 +275,7 @@ TEST_CASE("DebugExecutor::execute call 1") {
         silkworm::Block block{};
         block.header.number = block_number;
         boost::asio::io_context& io_context = context_pool.next_io_context();
-        DebugExecutor executor{context_pool.next_io_context(), db_reader, workers};
+        DebugExecutor executor{io_context, db_reader, workers};
         auto execution_result = boost::asio::co_spawn(io_context, executor.execute(block, call), boost::asio::use_future);
         auto result = execution_result.get();
 
@@ -327,8 +327,8 @@ TEST_CASE("DebugExecutor::execute call 1") {
         silkworm::Block block{};
         block.header.number = block_number;
 
-        DebugExecutor executor{context_pool.next_io_context(), db_reader, workers};
         boost::asio::io_context& io_context = context_pool.next_io_context();
+        DebugExecutor executor{io_context, db_reader, workers};
         auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.execute(block, call), boost::asio::use_future);
         auto result = execution_result.get();
 
@@ -1080,8 +1080,8 @@ TEST_CASE("DebugExecutor::execute call 2") {
         silkworm::Block block{};
         block.header.number = block_number;
 
-        DebugExecutor executor{context_pool.next_io_context(), db_reader, workers};
         boost::asio::io_context& io_context = context_pool.next_io_context();
+        DebugExecutor executor{io_context, db_reader, workers};
         auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.execute(block, call), boost::asio::use_future);
         auto result = execution_result.get();
 
@@ -1286,8 +1286,8 @@ TEST_CASE("DebugExecutor::execute call with error") {
     silkworm::Block block{};
     block.header.number = block_number;
 
-    DebugExecutor executor{context_pool.next_io_context(), db_reader, workers};
     boost::asio::io_context& io_context = context_pool.next_io_context();
+    DebugExecutor executor{io_context, db_reader, workers};
     auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.execute(block, call), boost::asio::use_future);
     auto result = execution_result.get();
 

@@ -276,6 +276,9 @@ CursorResult MemoryMutationCursor::next_by_type(MemoryMutationCursor::NextType t
         case NextType::kNoDup: {
             return cursor_->to_next_first_multi(throw_notfound);
         }
+        default: {
+            return CursorResult{::mdbx::cursor{}, throw_notfound};
+        }
     }
 }
 

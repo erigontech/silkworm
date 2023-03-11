@@ -33,7 +33,7 @@ TEST_CASE("MemoryOverlay", "[silkworm][node][db][memory_mutation]") {
         MemoryOverlay overlay{tmp_dir.path()};
         ::mdbx::txn_managed rw_txn;
         CHECK_NOTHROW((rw_txn = overlay.start_rw_tx()));
-        CHECK(rw_txn.env().is_empty());
+        CHECK(!rw_txn.env().is_empty());
     }
 
     SECTION("Cannot create more than one R/W transaction in a temporary database") {

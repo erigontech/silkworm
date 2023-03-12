@@ -25,6 +25,16 @@ namespace silkworm::db {
 const MapConfig kTestMap{"TestTable"};
 const MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
+static mdbx::env_managed create_main_env(const db::EnvConfig& main_db_config) {
+    auto main_env = db::open_env(main_db_config);
+    RWTxn main_txn{main_env};
+    table::check_or_create_chaindata_tables(main_txn);
+    open_map(main_txn, kTestMap);
+    open_map(main_txn, kTestMultiMap);
+    main_txn.commit_and_stop();
+    return main_env;
+}
+
 static void fill_tables(RWTxn& rw_txn) {
     db::PooledCursor rw_cursor1{rw_txn, kTestMap};
     rw_cursor1.upsert(mdbx::slice{"AA"}, mdbx::slice{"00"});
@@ -48,10 +58,6 @@ static void alter_tables(RWTxn& rw_txn) {
 
 struct MemoryMutationCursorTest {
     explicit MemoryMutationCursorTest() {
-        table::check_or_create_chaindata_tables(main_txn);
-        open_map(main_txn, kTestMap);
-        open_map(main_txn, kTestMultiMap);
-        main_txn.commit_and_renew();
         open_map(mutation, kTestMap);
         open_map(mutation, kTestMultiMap);
         mutation.commit_and_renew();
@@ -80,7 +86,7 @@ struct MemoryMutationCursorTest {
         .create = true,
         .in_memory = true,
     };
-    mdbx::env_managed main_env{db::open_env(main_db_config)};
+    mdbx::env_managed main_env{create_main_env(main_db_config)};
     RWTxn main_txn{main_env};
     MemoryOverlay overlay{tmp_dir.path()};
     MemoryMutation mutation{overlay, &main_txn};

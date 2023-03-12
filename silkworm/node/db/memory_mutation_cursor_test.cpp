@@ -25,6 +25,8 @@ namespace silkworm::db {
 const MapConfig kTestMap{"TestTable"};
 const MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
+// Avoid false positive from TSAN on potential cycle lock acquisition
+[[gnu::no_sanitize_thread, clang::no_sanitize("thread")]]
 static mdbx::env_managed create_main_env(const db::EnvConfig& main_db_config) {
     auto main_env = db::open_env(main_db_config);
     RWTxn main_txn{main_env};

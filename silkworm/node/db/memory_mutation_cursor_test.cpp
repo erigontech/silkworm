@@ -25,9 +25,6 @@ namespace silkworm::db {
 const MapConfig kTestMap{"TestTable"};
 const MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
-// Avoid false positive from TSAN on potential cycle lock acquisition
-#define DISABLE_TSAN [[gnu::no_sanitize_thread, clang::no_sanitize("thread")]]
-
 static mdbx::env_managed create_main_env(const db::EnvConfig& main_db_config) {
     auto main_env = db::open_env(main_db_config);
     RWTxn main_txn{main_env};
@@ -60,13 +57,13 @@ static void alter_tables(RWTxn& rw_txn) {
 }
 
 struct MemoryMutationCursorTest {
-    DISABLE_TSAN explicit MemoryMutationCursorTest() {
+    explicit MemoryMutationCursorTest() {
         open_map(mutation, kTestMap);
         open_map(mutation, kTestMultiMap);
         mutation.commit_and_renew();
     }
 
-    DISABLE_TSAN void fill_main_tables() {
+    void fill_main_tables() {
         fill_tables(main_txn);
     }
 
@@ -95,6 +92,8 @@ struct MemoryMutationCursorTest {
     MemoryMutation mutation{overlay, &main_txn};
 };
 
+// Skip in TSAN build due to false positive w/ lock-order-inversion: https://github.com/google/sanitizers/issues/814
+#ifndef SILKWORM_SANITIZE
 TEST_CASE("MemoryMutationCursor", "[silkworm][node][db][memory_mutation_cursor]") {
     MemoryMutationCursorTest test;
     test.fill_main_tables();
@@ -160,5 +159,6 @@ TEST_CASE("MemoryMutationCursor", "[silkworm][node][db][memory_mutation_cursor]"
         CHECK(mutation_cursor.to_first(false));
     }
 }
+#endif  // SILKWORM_SANITIZE
 
 }  // namespace silkworm::db

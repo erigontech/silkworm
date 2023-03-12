@@ -26,7 +26,9 @@ const MapConfig kTestMap{"TestTable"};
 const MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
 // Avoid false positive from TSAN on potential cycle lock acquisition
-[[gnu::no_sanitize_thread, clang::no_sanitize("thread")]] static mdbx::env_managed create_main_env(const db::EnvConfig& main_db_config) {
+#define DISABLE_TSAN [[gnu::no_sanitize_thread, clang::no_sanitize("thread")]]
+
+static mdbx::env_managed create_main_env(const db::EnvConfig& main_db_config) {
     auto main_env = db::open_env(main_db_config);
     RWTxn main_txn{main_env};
     table::check_or_create_chaindata_tables(main_txn);
@@ -58,13 +60,13 @@ static void alter_tables(RWTxn& rw_txn) {
 }
 
 struct MemoryMutationCursorTest {
-    explicit MemoryMutationCursorTest() {
+    DISABLE_TSAN explicit MemoryMutationCursorTest() {
         open_map(mutation, kTestMap);
         open_map(mutation, kTestMultiMap);
         mutation.commit_and_renew();
     }
 
-    void fill_main_tables() {
+    DISABLE_TSAN void fill_main_tables() {
         fill_tables(main_txn);
     }
 

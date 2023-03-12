@@ -65,7 +65,7 @@ CursorResult MemoryMutationCursor::to_first(bool throw_notfound) {
     }
 
     auto db_result = cursor_->to_first(throw_notfound);
-    if (!db_result) {
+    if (!db_result.done) {
         return db_result;
     }
 
@@ -283,12 +283,14 @@ CursorResult MemoryMutationCursor::next_by_type(MemoryMutationCursor::NextType t
 }
 
 CursorResult MemoryMutationCursor::resolve_priority(CursorResult memory_result, CursorResult db_result, NextType type) {
-    if (memory_result.value.empty() && db_result.value.empty()) {
+    SILKWORM_ASSERT(db_result.done);
+
+    if (memory_result.done && memory_result.value.empty() && db_result.value.empty()) {
         // TODO(canepat) check how to handle this properly
         return memory_result;
     }
 
-    if (memory_result && db_result) {
+    if (memory_result.done) {
         const auto s1 = memory_result.key.as_string();
         const auto s2 = db_result.key.as_string();
         bool b = s1 == s2;
@@ -301,19 +303,23 @@ CursorResult MemoryMutationCursor::resolve_priority(CursorResult memory_result, 
     }
 
     current_db_entry_ = db_result.value ? db_result : Pair{{}, {}};
-    current_memory_entry_ = memory_result.value ? memory_result : Pair{{}, {}};
+    current_memory_entry_ = memory_result.done && memory_result.value ? memory_result : Pair{{}, {}};
 
-    if (memory_result && db_result) {
+    if (memory_result.done) {
         const auto s1 = memory_result.key.as_string();
         const auto s2 = db_result.key.as_string();
         bool b = s1 == s2;
         (void)b;
     }
 
-    if (memory_result.key == db_result.key) {
-        is_previous_from_db_ = db_result.value && (!memory_result.value || memory_result.value > db_result.value);
+    if (memory_result.done) {
+        if (memory_result.key == db_result.key) {
+            is_previous_from_db_ = db_result.value && (!memory_result.value || memory_result.value > db_result.value);
+        } else {
+            is_previous_from_db_ = db_result.value && (!memory_result.key || memory_result.key > db_result.key);
+        }
     } else {
-        is_previous_from_db_ = db_result.value && (!memory_result.key || memory_result.key > db_result.key);
+        is_previous_from_db_ = db_result.value;
     }
 
     if (is_previous_from_db_) {
@@ -331,11 +337,13 @@ CursorResult MemoryMutationCursor::resolve_priority(CursorResult memory_result, 
 }
 
 CursorResult MemoryMutationCursor::skip_intersection(CursorResult memory_result, CursorResult db_result, NextType type) {
+    SILKWORM_ASSERT(db_result.done);
+
     auto new_db_key = db_result.key;
     auto new_db_value = db_result.value;
 
     // Check for duplicates
-    if (memory_result.key == db_result.key) {
+    if (memory_result.done && memory_result.key == db_result.key) {
         bool skip{false};
         if (type == NextType::kNormal) {
             skip = !cursor_->is_multi_value() || memory_result.value == db_result.value;

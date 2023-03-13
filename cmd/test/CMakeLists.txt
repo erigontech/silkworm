@@ -94,10 +94,6 @@ if(NOT SILKWORM_CORE_ONLY)
   set_property(TARGET rpcdaemon_test PROPERTY COMPILE_OPTIONS ${RPCDAEMON_TEST_COMPILE_OPTIONS})
   # TO BE REMOVED: END: temporarily disable warnings entirely to make rpcdaemon_test compile as it is
 
-  include(CTest)
-  include(Catch)
-  catch_discover_tests(rpcdaemon_test)
-
   # Silkworm Sentry Tests
   file(GLOB_RECURSE SENTRY_TEST_FILES CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/sentry/*_test.cpp")
   add_executable(sentry_test unit_test.cpp ${SENTRY_TEST_FILES})

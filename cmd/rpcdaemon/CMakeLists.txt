@@ -66,7 +66,7 @@ if(SILKRPC_USE_MIMALLOC)
     list(APPEND SILKRPC_DAEMON_LIBRARIES mimalloc)
 endif()
 
-add_executable(silkrpcdaemon silkrpc_daemon.cpp ../common.cpp)
+add_executable(silkrpcdaemon silkrpc_daemon.cpp ../common/common.cpp)
 target_include_directories(silkrpcdaemon PUBLIC ${CMAKE_SOURCE_DIR})
 target_link_libraries(silkrpcdaemon PRIVATE ${SILKRPC_DAEMON_LIBRARIES})
 

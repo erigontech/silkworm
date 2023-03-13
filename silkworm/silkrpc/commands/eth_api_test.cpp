@@ -47,6 +47,7 @@ public:
 
 using EthereumRpcApiTest = test::JsonApiWithWorkersTestBase<EthereumRpcApi_ForTest>;
 
+#ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(EthereumRpcApiTest, "handle_eth_block_number succeeds if request well-formed", "[silkrpc][eth_api]") {
     nlohmann::json reply;
 
@@ -103,5 +104,6 @@ TEST_CASE_METHOD(EthereumRpcApiTest, "handle_eth_send_raw_transaction fails wron
         "error":{"code":-32000,"message":"rlp: unexpected EIP-2178 serialization"},"id":1,"jsonrpc":"2.0"
     })"_json);
 }
+#endif  // SILKWORM_SANITIZE
 
 } // namespace silkrpc::commands

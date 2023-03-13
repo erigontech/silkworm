@@ -25,9 +25,6 @@ namespace silkworm::db {
 const MapConfig kTestMap{"TestTable"};
 const MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
-const MapConfig kNonexistentTestMap{"NonexistentTable"};
-const MapConfig kNonexistentTestMultiMap{"NonexistentMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
-
 static mdbx::env_managed create_main_env(const db::EnvConfig& main_db_config) {
     auto main_env = db::open_env(main_db_config);
     RWTxn main_txn{main_env};
@@ -97,6 +94,10 @@ struct MemoryMutationCursorTest {
 
 // Skip in TSAN build due to false positive lock-order-inversion: https://github.com/google/sanitizers/issues/814
 #ifndef SILKWORM_SANITIZE
+
+const MapConfig kNonexistentTestMap{"NonexistentTable"};
+const MapConfig kNonexistentTestMultiMap{"NonexistentMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
+
 TEST_CASE("MemoryMutationCursor: empty overlay", "[silkworm][node][db][memory_mutation_cursor]") {
     MemoryMutationCursorTest test;
     test.fill_main_tables();

@@ -43,7 +43,7 @@ Context::Context(
     WaitMode wait_mode)
     : io_context_{std::make_shared<boost::asio::io_context>()},
       io_context_work_{boost::asio::make_work_guard(*io_context_)},
-      grpc_context_{std::make_unique<agrpc::GrpcContext>(std::make_unique<grpc::CompletionQueue>())},
+      grpc_context_{std::make_shared<agrpc::GrpcContext>()},
       grpc_context_work_{boost::asio::make_work_guard(grpc_context_->get_executor())},
       block_cache_(block_cache),
       state_cache_(state_cache),
@@ -79,8 +79,8 @@ void Context::execute_loop_single_threaded(WaitStrategy&& wait_strategy) {
 
 void Context::execute_loop_multi_threaded() {
     SILKRPC_DEBUG << "Multi-thread execution loop start [" << this << "]\n";
-    std::thread grpc_context_thread{[&]() {
-        grpc_context_->run_completion_queue();
+    std::thread grpc_context_thread{[grpc_context = grpc_context_]() {
+        grpc_context->run_completion_queue();
     }};
     io_context_->run();
 

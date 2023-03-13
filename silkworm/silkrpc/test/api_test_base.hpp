@@ -17,9 +17,12 @@
 #pragma once
 
 #include <memory>
-#include <silkworm/silkrpc/config.hpp>
-#include <silkworm/silkrpc/test/context_test_base.hpp>
 #include <utility>
+
+#include <boost/asio/thread_pool.hpp>
+
+#include <silkworm/silkrpc/config.hpp> // NOLINT(build/include_order)
+#include <silkworm/silkrpc/test/context_test_base.hpp>
 
 namespace silkrpc::test {
 
@@ -31,6 +34,20 @@ class JsonApiTestBase : public ContextTestBase {
         JsonApi api{context_};
         return spawn_and_wait((api.*method)(std::forward<Args>(args)...));
     }
+};
+
+template <typename JsonApi>
+class JsonApiWithWorkersTestBase : public ContextTestBase {
+  public:
+    explicit JsonApiWithWorkersTestBase() : ContextTestBase(), workers_{1} {}
+
+    template <auto method, typename... Args>
+    auto run(Args&&... args) {
+        JsonApi api{context_, workers_};
+        return spawn_and_wait((api.*method)(std::forward<Args>(args)...));
+    }
+
+    boost::asio::thread_pool workers_;
 };
 
 template <typename GrpcApi, typename Stub>

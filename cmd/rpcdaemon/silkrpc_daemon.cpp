@@ -29,7 +29,7 @@
 #include <silkworm/silkrpc/config.hpp>
 #include <silkworm/silkrpc/daemon.hpp>
 
-#include "../common.hpp"
+#include "../common/common.hpp"
 
 using namespace silkworm::cmd;
 
@@ -57,7 +57,7 @@ std::string get_version_from_build_info() {
 
 //! Assemble the application fully-qualified name using the Cable build information
 std::string get_name_from_build_info() {
-    return get_node_name_from_build_info(silkworm_get_buildinfo());
+    return common::get_node_name_from_build_info(silkworm_get_buildinfo());
 }
 
 //! Assemble the relevant library version information

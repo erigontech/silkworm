@@ -147,6 +147,34 @@ TEST_CASE("MemoryMutationCursor: empty overlay", "[silkworm][node][db][memory_mu
         CHECK(!mutation_cursor.to_first(false));
     }
 
+    SECTION("Single-value table: current") {
+        MemoryMutationCursor mutation_cursor{test.mutation, kTestMap};
+        CHECK_THROWS_AS(mutation_cursor.current(), mdbx::no_data);
+        CHECK_THROWS_AS(mutation_cursor.current(false), mdbx::no_data);
+        REQUIRE(mutation_cursor.to_first());
+        const auto result = mutation_cursor.current();
+        CHECK(result);
+        if (result) {
+            CHECK(result.key == "AA");
+            CHECK(result.value == "00");
+        }
+        CHECK(mutation_cursor.current(false));
+    }
+
+    SECTION("Multi-value table: current") {
+        MemoryMutationCursor mutation_cursor{test.mutation, kTestMultiMap};
+        CHECK_THROWS_AS(mutation_cursor.current(), mdbx::no_data);
+        CHECK_THROWS_AS(mutation_cursor.current(false), mdbx::no_data);
+        REQUIRE(mutation_cursor.to_first());
+        const auto result = mutation_cursor.current();
+        CHECK(result);
+        if (result) {
+            CHECK(result.key == "AA");
+            CHECK(result.value == "00");
+        }
+        CHECK(mutation_cursor.current(false));
+    }
+
     SECTION("Single-value table: to_first") {
         MemoryMutationCursor mutation_cursor{test.mutation, kTestMap};
         const auto result = mutation_cursor.to_first();
@@ -204,6 +232,35 @@ TEST_CASE("MemoryMutationCursor: non-empty overlay", "[silkworm][node][db][memor
             CHECK_NOTHROW(!mutation_cursor.is_table_cleared());
             CHECK_NOTHROW(!mutation_cursor.is_entry_deleted(Slice{}));
         }
+    }
+
+    SECTION("Single-value table: current") {
+        MemoryMutationCursor mutation_cursor{test.mutation, kTestMap};
+        CHECK_THROWS_AS(mutation_cursor.current(), mdbx::no_data);
+        CHECK_THROWS_AS(mutation_cursor.current(false), mdbx::no_data);
+
+        REQUIRE(mutation_cursor.to_first());
+        const auto result = mutation_cursor.current();
+        CHECK(result);
+        if (result) {
+            CHECK(result.key == "AA");
+            CHECK(result.value == "00");
+        }
+        CHECK(mutation_cursor.current(false));
+    }
+
+    SECTION("Multi-value table: current") {
+        MemoryMutationCursor mutation_cursor{test.mutation, kTestMultiMap};
+        CHECK_THROWS_AS(mutation_cursor.current(), mdbx::no_data);
+        CHECK_THROWS_AS(mutation_cursor.current(false), mdbx::no_data);
+        REQUIRE(mutation_cursor.to_first());
+        const auto result = mutation_cursor.current();
+        CHECK(result);
+        if (result) {
+            CHECK(result.key == "AA");
+            CHECK(result.value == "00");
+        }
+        CHECK(mutation_cursor.current(false));
     }
 
     SECTION("Single-value table: to_first") {

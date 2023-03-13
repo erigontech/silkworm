@@ -17,38 +17,27 @@
 #pragma once
 
 #include <memory>
-#include <optional>
 
 #include <boost/asio/any_io_executor.hpp>
 
-#include <silkworm/sentry/common/channel.hpp>
-#include <silkworm/sentry/common/ecc_public_key.hpp>
-#include <silkworm/sentry/common/event_notifier.hpp>
+#include <silkworm/node/concurrency/channel.hpp>
+#include <silkworm/node/concurrency/event_notifier.hpp>
+#include <silkworm/sentry/api/api_common/peer_event.hpp>
 #include <silkworm/sentry/common/promise.hpp>
 
-namespace silkworm::sentry::rpc::common {
+namespace silkworm::sentry::api::router {
 
 struct PeerEventsCall {
-    enum class PeerEventId {
-        kAdded,
-        kRemoved,
-    };
-
-    struct PeerEvent {
-        std::optional<sentry::common::EccPublicKey> peer_public_key;
-        PeerEventId event_id;
-    };
-
-    using TResult = std::shared_ptr<sentry::common::Channel<PeerEvent>>;
+    using TResult = std::shared_ptr<concurrency::Channel<api_common::PeerEvent>>;
 
     std::shared_ptr<sentry::common::Promise<TResult>> result_promise;
-    std::shared_ptr<sentry::common::EventNotifier> unsubscribe_signal;
+    std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal;
 
     PeerEventsCall() = default;
 
     explicit PeerEventsCall(boost::asio::any_io_executor& executor)
         : result_promise(std::make_shared<sentry::common::Promise<TResult>>(executor)),
-          unsubscribe_signal(std::make_shared<sentry::common::EventNotifier>(executor)) {}
+          unsubscribe_signal(std::make_shared<concurrency::EventNotifier>(executor)) {}
 };
 
-}  // namespace silkworm::sentry::rpc::common
+}  // namespace silkworm::sentry::api::router

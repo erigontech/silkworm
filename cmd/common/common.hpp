@@ -27,7 +27,7 @@
 #include <silkworm/node/rpc/server/wait_strategy.hpp>
 #include <silkworm/node/snapshot/settings.hpp>
 
-namespace silkworm::cmd {
+namespace silkworm::cmd::common {
 
 //! The overall settings for Silkworm Core component
 struct SilkwormCoreSettings {
@@ -112,4 +112,4 @@ void add_option_wait_mode(CLI::App& cli, silkworm::rpc::WaitMode& wait_mode);
 //! \brief Setup options to populate snapshot settings after cli.parse()
 void add_snapshot_options(CLI::App& cli, SnapshotSettings& snapshot_settings);
 
-}  // namespace silkworm::cmd
+}  // namespace silkworm::cmd::common

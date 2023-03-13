@@ -20,9 +20,13 @@
 #include <stdexcept>
 #include <vector>
 
+#include <silkworm/node/concurrency/coroutine.hpp>
+
+#include <boost/asio/awaitable.hpp>
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/node/common/log.hpp>
+#include <silkworm/node/concurrency/async_thread.hpp>
 #include <silkworm/node/rpc/server/server_config.hpp>
 #include <silkworm/node/rpc/server/server_context_pool.hpp>
 
@@ -121,6 +125,15 @@ class Server {
         context_pool_.stop();
 
         SILK_TRACE << "Server::shutdown " << this << " END";
+    }
+
+    boost::asio::awaitable<void> async_run() {
+        auto run = [this] {
+            this->build_and_start();
+            this->join();
+        };
+        auto stop = [this] { this->shutdown(); };
+        co_await concurrency::async_thread(std::move(run), std::move(stop));
     }
 
     //! Returns the number of server contexts.

@@ -18,7 +18,13 @@
 
 #include <atomic>
 
+#include <silkworm/node/concurrency/coroutine.hpp>
+
+#include <boost/asio/awaitable.hpp>
+
 #include <silkworm/node/concurrency/stoppable.hpp>
+
+#include "async_thread.hpp"
 
 namespace silkworm {
 
@@ -32,6 +38,12 @@ namespace silkworm {
 class ActiveComponent : public Stoppable {
   public:
     virtual void execution_loop() = 0;
+
+    boost::asio::awaitable<void> async_run() {
+        auto run = [this] { this->execution_loop(); };
+        auto stop = [this] { this->stop(); };
+        co_await concurrency::async_thread(std::move(run), std::move(stop));
+    }
 };
 
 }  // namespace silkworm

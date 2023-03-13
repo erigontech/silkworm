@@ -27,8 +27,9 @@
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 
+#include <silkworm/node/concurrency/channel.hpp>
+
 #include "atomic_value.hpp"
-#include "channel.hpp"
 
 namespace silkworm::sentry::common {
 
@@ -64,7 +65,7 @@ class Promise {
 
   private:
     AtomicValue<std::optional<T>> value_{std::nullopt};
-    Channel<T> channel_;
+    concurrency::Channel<T> channel_;
     std::mutex mutex_;
 };
 

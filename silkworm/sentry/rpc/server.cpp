@@ -34,13 +34,13 @@ namespace silkworm::sentry::rpc {
 
 using namespace silkworm::log;
 using AsyncService = ::sentry::Sentry::AsyncService;
-using common::ServiceState;
+using api::router::ServiceRouter;
 
 class ServerImpl final : public silkworm::rpc::Server {
   public:
     explicit ServerImpl(
         const silkworm::rpc::ServerConfig& config,
-        ServiceState state);
+        ServiceRouter router);
 
     ServerImpl(const ServerImpl&) = delete;
     ServerImpl& operator=(const ServerImpl&) = delete;
@@ -56,21 +56,21 @@ class ServerImpl final : public silkworm::rpc::Server {
         RPC rpc,
         agrpc::GrpcContext* grpc_context) {
         auto async_service = &async_service_;
-        const auto& state = state_;
-        silkworm::rpc::request_repeatedly(*grpc_context, async_service, rpc, [state](auto&&... args) -> boost::asio::awaitable<void> {
-            co_await RequestHandler{std::forward<decltype(args)>(args)...}(state);
+        const auto& router = router_;
+        silkworm::rpc::request_repeatedly(*grpc_context, async_service, rpc, [router](auto&&... args) -> boost::asio::awaitable<void> {
+            co_await RequestHandler{std::forward<decltype(args)>(args)...}(router);
         });
     }
 
-    ServiceState state_;
+    ServiceRouter router_;
     AsyncService async_service_;
 };
 
 ServerImpl::ServerImpl(
     const silkworm::rpc::ServerConfig& config,
-    ServiceState state)
+    ServiceRouter router)
     : silkworm::rpc::Server(config),
-      state_(std::move(state)) {
+      router_(std::move(router)) {
     log::Info() << "Server created"
                 << " listening on: " << config.address_uri() << ";"
                 << " contexts: " << config.num_contexts();
@@ -111,23 +111,15 @@ void ServerImpl::register_request_calls(agrpc::GrpcContext* grpc_context) {
 
 Server::Server(
     const silkworm::rpc::ServerConfig& config,
-    ServiceState state)
-    : p_impl_(std::make_unique<ServerImpl>(config, std::move(state))) {}
+    ServiceRouter router)
+    : p_impl_(std::make_unique<ServerImpl>(config, std::move(router))) {}
 
 Server::~Server() {
     log::Trace() << "silkworm::sentry::rpc::Server::~Server";
 }
 
-void Server::build_and_start() {
-    p_impl_->build_and_start();
-}
-
-void Server::join() {
-    p_impl_->join();
-}
-
-void Server::shutdown() {
-    p_impl_->shutdown();
+boost::asio::awaitable<void> Server::async_run() {
+    return p_impl_->async_run();
 }
 
 }  // namespace silkworm::sentry::rpc

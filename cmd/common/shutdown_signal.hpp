@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,32 +16,29 @@
 
 #pragma once
 
-#include <memory>
+#include <functional>
 
 #include <silkworm/node/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/signal_set.hpp>
 
-#include <silkworm/node/rpc/server/server_context_pool.hpp>
+namespace silkworm::cmd::common {
 
-#include "settings.hpp"
-
-namespace silkworm::sentry {
-
-class SentryImpl;
-
-class Sentry final {
+class ShutdownSignal {
   public:
-    explicit Sentry(Settings settings, silkworm::rpc::ServerContextPool& context_pool);
-    ~Sentry();
+    explicit ShutdownSignal(boost::asio::io_context& io_context)
+        : signals_(io_context, SIGINT, SIGTERM) {}
 
-    Sentry(const Sentry&) = delete;
-    Sentry& operator=(const Sentry&) = delete;
+    using SignalNumber = int;
 
-    boost::asio::awaitable<void> run();
+    void on_signal(std::function<void(SignalNumber)> callback);
+
+    boost::asio::awaitable<SignalNumber> wait();
 
   private:
-    std::unique_ptr<SentryImpl> p_impl_;
+    boost::asio::signal_set signals_;
 };
 
-}  // namespace silkworm::sentry
+}  // namespace silkworm::cmd::common

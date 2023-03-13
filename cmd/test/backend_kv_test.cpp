@@ -25,7 +25,6 @@
 
 #include <CLI/CLI.hpp>
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/signal_set.hpp>
 #include <boost/process/environment.hpp>
 #include <grpcpp/grpcpp.h>
 #include <magic_enum.hpp>
@@ -39,6 +38,8 @@
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/rpc/common/conversion.hpp>
 #include <silkworm/node/rpc/common/util.hpp>
+
+#include "../common/shutdown_signal.hpp"
 
 using namespace std::literals;
 
@@ -974,9 +975,6 @@ int main(int argc, char* argv[]) {
     silkworm::rpc::Grpc2SilkwormLogGuard log_guard;
 
     try {
-        boost::asio::io_context scheduler;
-        boost::asio::signal_set signals{scheduler, SIGINT, SIGTERM};
-
         std::vector<std::shared_ptr<grpc::Channel>> channels;
         for (int i{0}; i < num_channels; ++i) {
             grpc::ChannelArguments channel_args;
@@ -1025,10 +1023,9 @@ int main(int argc, char* argv[]) {
             SILK_TRACE << "Completion thread: " << completion_thread.get_id() << " end";
         }};
 
-        SILK_DEBUG << "Signals registered on scheduler " << &scheduler;
-        signals.async_wait([&](const boost::system::error_code& error, int signal_number) {
-            std::cout << "\n";
-            SILK_INFO << "Signal caught, error: " << error << " number: " << signal_number;
+        boost::asio::io_context scheduler;
+        silkworm::cmd::common::ShutdownSignal shutdown_signal{scheduler};
+        shutdown_signal.on_signal([&](silkworm::cmd::common::ShutdownSignal::SignalNumber /*num*/) {
             pump_stop = true;
             completion_stop = true;
             shutdown_requested.notify_one();

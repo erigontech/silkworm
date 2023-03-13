@@ -28,7 +28,7 @@
 #include <boost/asio/cancellation_signal.hpp>
 #include <boost/asio/io_context.hpp>
 
-#include "channel.hpp"
+#include <silkworm/node/concurrency/channel.hpp>
 
 namespace silkworm::sentry::common {
 
@@ -70,7 +70,7 @@ class TaskGroup {
     bool is_closed_{false};
     std::size_t last_task_id_{0};
     std::map<std::size_t, boost::asio::cancellation_signal> tasks_;
-    Channel<std::size_t> completions_;
+    concurrency::Channel<std::size_t> completions_;
 };
 
 }  // namespace silkworm::sentry::common

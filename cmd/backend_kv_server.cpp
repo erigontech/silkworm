@@ -19,14 +19,13 @@
 #include <string>
 
 #include <CLI/CLI.hpp>
+#include <boost/asio/error.hpp>
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/address.hpp>
-#include <boost/asio/signal_set.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/process/environment.hpp>
+#include <boost/system/error_code.hpp>
 
 #include <silkworm/buildinfo.h>
-#include <silkworm/core/chain/config.hpp>
 #include <silkworm/node/backend/backend_kv_server.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/common/directories.hpp>
@@ -35,9 +34,11 @@
 #include <silkworm/node/rpc/common/util.hpp>
 #include <silkworm/sync/sentry_client.hpp>
 
-#include "common.hpp"
+#include "common/common.hpp"
+#include "common/shutdown_signal.hpp"
 
 using namespace silkworm;
+using namespace silkworm::cmd::common;
 
 //! Assemble the relevant library version information
 std::string get_library_versions() {
@@ -49,7 +50,7 @@ std::string get_library_versions() {
 }
 
 //! Standalone BackEndKV server settings
-struct StandaloneBackEndKVSettings : public cmd::SilkwormCoreSettings {
+struct StandaloneBackEndKVSettings : public SilkwormCoreSettings {
     bool simulate_state_changes{false};
 };
 
@@ -61,26 +62,26 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, StandaloneBackEndK
 
     // Node options
     std::filesystem::path data_dir;
-    cmd::add_option_data_dir(app, data_dir);
+    add_option_data_dir(app, data_dir);
 
     std::string etherbase_address;
-    cmd::add_option_etherbase(app, etherbase_address);
+    add_option_etherbase(app, etherbase_address);
 
     uint32_t max_readers;
-    cmd::add_option_db_max_readers(app, max_readers);
+    add_option_db_max_readers(app, max_readers);
 
     // RPC Server options
-    cmd::add_option_private_api_address(app, node_settings.private_api_addr);
-    cmd::add_option_external_sentry_address(app, node_settings.external_sentry_addr);
+    add_option_private_api_address(app, node_settings.private_api_addr);
+    add_option_external_sentry_address(app, node_settings.external_sentry_addr);
 
     uint32_t num_contexts;
-    cmd::add_option_num_contexts(app, num_contexts);
+    add_option_num_contexts(app, num_contexts);
 
     rpc::WaitMode wait_mode;
-    cmd::add_option_wait_mode(app, wait_mode);
+    add_option_wait_mode(app, wait_mode);
 
     // Logging options
-    cmd::add_logging_options(app, log_settings);
+    add_logging_options(app, log_settings);
 
     // Standalone BackEndKV server options
     app.add_flag("--simulate.state.changes", settings.simulate_state_changes, "Simulate state change notifications");
@@ -134,7 +135,7 @@ int main(int argc, char* argv[]) {
         // TODO(canepat): this could be an option in Silkworm logging facility
         rpc::Grpc2SilkwormLogGuard log_guard;
 
-        const auto node_name{cmd::get_node_name_from_build_info(silkworm_get_buildinfo())};
+        const auto node_name{get_node_name_from_build_info(silkworm_get_buildinfo())};
         SILK_LOG << "BackEndKvServer build info: " << node_name;
         SILK_LOG << "BackEndKvServer library info: " << get_library_versions();
         SILK_LOG << "BackEndKvServer launched with chaindata: " << node_settings.chaindata_env_config.path
@@ -175,12 +176,9 @@ int main(int argc, char* argv[]) {
         server.build_and_start();
 
         boost::asio::io_context& scheduler = server.next_io_context();
-        boost::asio::signal_set signals{scheduler, SIGINT, SIGTERM};
 
-        SILK_DEBUG << "Signals registered on scheduler " << &scheduler;
-        signals.async_wait([&](const boost::system::error_code& error, int signal_number) {
-            std::cout << "\n";
-            SILK_INFO << "Signal caught, error: " << error << " number: " << signal_number;
+        ShutdownSignal shutdown_signal{scheduler};
+        shutdown_signal.on_signal([&](ShutdownSignal::SignalNumber /*num*/) {
             backend.close();
             server.shutdown();
         });

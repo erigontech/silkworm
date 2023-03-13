@@ -21,7 +21,6 @@
 
 #include <CLI/CLI.hpp>
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/signal_set.hpp>
 #include <boost/process/environment.hpp>
 #include <magic_enum.hpp>
 
@@ -34,9 +33,11 @@
 #include <silkworm/node/snapshot/snapshot.hpp>
 #include <silkworm/node/snapshot/sync.hpp>
 
-#include "common.hpp"
+#include "common/common.hpp"
+#include "common/shutdown_signal.hpp"
 
 using namespace silkworm;
+using namespace silkworm::cmd::common;
 
 const std::vector<std::string> kDefaultSnapshotFiles{
     "v1-000000-000500-bodies.seg",
@@ -87,7 +88,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
     bittorrent_settings.repository_path = kSnapshotDir / ".torrent";
     bittorrent_settings.magnets_file_path = ".magnet_links";
 
-    cmd::add_logging_options(app, log_settings);
+    add_logging_options(app, log_settings);
 
     std::map<std::string, SnapshotTool> snapshot_tool_mapping{
         {"count_bodies", SnapshotTool::count_bodies},
@@ -232,17 +233,14 @@ void download(const BitTorrentSettings& settings) {
     BitTorrentClient client{settings};
 
     boost::asio::io_context scheduler;
-    boost::asio::signal_set signals{scheduler, SIGINT, SIGTERM};
-    signals.async_wait([&](const boost::system::error_code& error, int signal_number) {
-        std::cout << "\n";
-        SILK_INFO << "Signal caught, error: " << error << " number: " << signal_number;
+    ShutdownSignal shutdown_signal{scheduler};
+    shutdown_signal.on_signal([&](ShutdownSignal::SignalNumber /*num*/) {
         client.stop();
         SILK_DEBUG << "Torrent client stopped";
         scheduler.stop();
         SILK_DEBUG << "Scheduler stopped";
     });
     std::thread scheduler_thread{[&scheduler]() { scheduler.run(); }};
-    SILK_DEBUG << "Signals registered on scheduler " << &scheduler;
 
     SILK_INFO << "Bittorrent async download started for magnet file: " << *settings.magnets_file_path;
     client.execute_loop();
@@ -274,7 +272,7 @@ int main(int argc, char* argv[]) {
         const auto pid = boost::this_process::get_id();
         SILK_LOG << "Snapshots toolbox starting [pid=" << std::to_string(pid) << "]";
 
-        const auto node_name{cmd::get_node_name_from_build_info(silkworm_get_buildinfo())};
+        const auto node_name{get_node_name_from_build_info(silkworm_get_buildinfo())};
         SILK_LOG << "Snapshots toolbox build info: " << node_name;
 
         auto& log_settings = settings.log_settings;

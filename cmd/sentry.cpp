@@ -15,20 +15,26 @@
 */
 
 #include <filesystem>
+#include <memory>
 
 #include <CLI/CLI.hpp>
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/use_future.hpp>
 #include <boost/process/environment.hpp>
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/node/rpc/common/util.hpp>
+#include <silkworm/node/rpc/server/server_context_pool.hpp>
+#include <silkworm/sentry/common/awaitable_wait_for_one.hpp>
 #include <silkworm/sentry/sentry.hpp>
 #include <silkworm/sentry/settings.hpp>
 
-#include "common.hpp"
+#include "common/common.hpp"
+#include "common/shutdown_signal.hpp"
 
 using namespace silkworm;
-using namespace silkworm::cmd;
+using namespace silkworm::cmd::common;
 using namespace silkworm::sentry;
 
 Settings sentry_parse_cli_settings(int argc, char* argv[]) {
@@ -111,19 +117,45 @@ Settings sentry_parse_cli_settings(int argc, char* argv[]) {
     return settings;
 }
 
+class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
+};
+
 void sentry_main(Settings settings) {
+    using namespace common::awaitable_wait_for_one;
+
     log::init(settings.log_settings);
     log::set_thread_name("main");
     // TODO(canepat): this could be an option in Silkworm logging facility
     silkworm::rpc::Grpc2SilkwormLogGuard log_guard;
 
-    Sentry sentry{std::move(settings)};
-    sentry.start();
+    silkworm::rpc::ServerContextPool context_pool{
+        settings.num_contexts,
+        settings.wait_mode,
+        [] { return std::make_unique<DummyServerCompletionQueue>(); },
+    };
+
+    ShutdownSignal shutdown_signal{context_pool.next_io_context()};
+
+    Sentry sentry{std::move(settings), context_pool};
+
+    auto run_future = boost::asio::co_spawn(
+        context_pool.next_io_context(),
+        sentry.run() || shutdown_signal.wait(),
+        boost::asio::use_future);
+
+    context_pool.start();
 
     const auto pid = boost::this_process::get_id();
     const auto tid = std::this_thread::get_id();
     log::Info() << "Sentry is now running [pid=" << pid << ", main thread=" << tid << "]";
-    sentry.join();
+
+    // wait until either:
+    // - shutdown_signal, then the sentry.run() is cancelled gracefully
+    // - sentry.run() exception, then it is rethrown here
+    run_future.get();
+
+    context_pool.stop();
+    context_pool.join();
 
     log::Info() << "Sentry exiting [pid=" << pid << ", main thread=" << tid << "]";
 }

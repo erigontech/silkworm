@@ -16,21 +16,10 @@
 
 #pragma once
 
-#include <string>
+#include <set>
 
-#include <boost/asio/ip/tcp.hpp>
+namespace silkworm::sentry::api::api_common {
 
-#include <silkworm/sentry/common/ecc_public_key.hpp>
-#include <silkworm/sentry/common/enode_url.hpp>
+using MessageIdSet = std::set<uint8_t>;
 
-namespace silkworm::sentry::rpc::common {
-
-struct NodeInfo {
-    sentry::common::EnodeUrl node_url;
-    sentry::common::EccPublicKey node_public_key;
-    std::string client_id;
-    boost::asio::ip::tcp::endpoint rlpx_server_listen_endpoint;
-    uint16_t rlpx_server_port;
-};
-
-}  // namespace silkworm::sentry::rpc::common
+}  // namespace silkworm::sentry::api::api_common

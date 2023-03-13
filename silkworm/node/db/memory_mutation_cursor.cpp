@@ -88,7 +88,16 @@ CursorResult MemoryMutationCursor::current() const {
 }
 
 CursorResult MemoryMutationCursor::current(bool throw_notfound) const {
-    return CursorResult{::mdbx::cursor{}, throw_notfound};
+    if (is_table_cleared()) {
+        return memory_cursor_->current(throw_notfound);
+    }
+
+    // We need to copy result because creating CursorResult requires a mdbx::cursor instance
+    auto result = cursor_->current(throw_notfound);
+    result.done = true;
+    result.key = current_pair_.key;
+    result.value = current_pair_.value;
+    return result;
 }
 
 CursorResult MemoryMutationCursor::to_next() {

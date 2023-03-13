@@ -25,6 +25,9 @@ namespace silkworm::db {
 const MapConfig kTestMap{"TestTable"};
 const MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
+const MapConfig kNonexistentTestMap{"NonexistentTable"};
+const MapConfig kNonexistentTestMultiMap{"NonexistentMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
+
 static mdbx::env_managed create_main_env(const db::EnvConfig& main_db_config) {
     auto main_env = db::open_env(main_db_config);
     RWTxn main_txn{main_env};
@@ -92,11 +95,16 @@ struct MemoryMutationCursorTest {
     MemoryMutation mutation{overlay, &main_txn};
 };
 
-// Skip in TSAN build due to false positive w/ lock-order-inversion: https://github.com/google/sanitizers/issues/814
+// Skip in TSAN build due to false positive lock-order-inversion: https://github.com/google/sanitizers/issues/814
 #ifndef SILKWORM_SANITIZE
-TEST_CASE("MemoryMutationCursor", "[silkworm][node][db][memory_mutation_cursor]") {
+TEST_CASE("MemoryMutationCursor: empty overlay", "[silkworm][node][db][memory_mutation_cursor]") {
     MemoryMutationCursorTest test;
     test.fill_main_tables();
+
+    SECTION("Create memory mutation cursor for non-existent tables") {
+        CHECK_NOTHROW(MemoryMutationCursor{test.mutation, kNonexistentTestMap});
+        CHECK_NOTHROW(MemoryMutationCursor{test.mutation, kNonexistentTestMultiMap});
+    }
 
     SECTION("Create one memory mutation cursor") {
         CHECK_NOTHROW(MemoryMutationCursor{test.mutation, kTestMap});
@@ -126,7 +134,19 @@ TEST_CASE("MemoryMutationCursor", "[silkworm][node][db][memory_mutation_cursor]"
         }
     }
 
-    SECTION("Empty kTestMap: to_first") {
+    SECTION("Nonexistent single-value table: to_first") {
+        MemoryMutationCursor mutation_cursor{test.mutation, kNonexistentTestMap};
+        CHECK_THROWS_AS(mutation_cursor.to_first(), mdbx::not_found);
+        CHECK(!mutation_cursor.to_first(false));
+    }
+
+    SECTION("Nonexistent multi-value table: to_first") {
+        MemoryMutationCursor mutation_cursor{test.mutation, kNonexistentTestMultiMap};
+        CHECK_THROWS_AS(mutation_cursor.to_first(), mdbx::not_found);
+        CHECK(!mutation_cursor.to_first(false));
+    }
+
+    SECTION("Single-value table: to_first") {
         MemoryMutationCursor mutation_cursor{test.mutation, kTestMap};
         const auto result = mutation_cursor.to_first();
         CHECK(result);
@@ -137,6 +157,43 @@ TEST_CASE("MemoryMutationCursor", "[silkworm][node][db][memory_mutation_cursor]"
         CHECK(mutation_cursor.to_first(false));
     }
 
+    SECTION("Multi-value table: to_first") {
+        MemoryMutationCursor mutation_cursor{test.mutation, kTestMultiMap};
+        const auto result = mutation_cursor.to_first();
+        CHECK(result);
+        if (result) {
+            CHECK(result.key == "AA");
+            CHECK(result.value == "00");
+        }
+        CHECK(mutation_cursor.to_first(false));
+    }
+
+    SECTION("Single-value table: to_last") {
+        MemoryMutationCursor mutation_cursor{test.mutation, kTestMap};
+        const auto result = mutation_cursor.to_last();
+        CHECK(result);
+        if (result) {
+            CHECK(result.key == "BB");
+            CHECK(result.value == "11");
+        }
+        CHECK(mutation_cursor.to_last(false));
+    }
+
+    SECTION("Multi-value table: to_last") {
+        MemoryMutationCursor mutation_cursor{test.mutation, kTestMultiMap};
+        const auto result = mutation_cursor.to_last();
+        CHECK(result);
+        if (result) {
+            CHECK(result.key == "BB");
+            CHECK(result.value == "22");
+        }
+        CHECK(mutation_cursor.to_last(false));
+    }
+}
+
+TEST_CASE("MemoryMutationCursor: non-empty overlay", "[silkworm][node][db][memory_mutation_cursor]") {
+    MemoryMutationCursorTest test;
+    test.fill_main_tables();
     test.fill_mutation_tables();
 
     SECTION("Check tables") {
@@ -148,7 +205,7 @@ TEST_CASE("MemoryMutationCursor", "[silkworm][node][db][memory_mutation_cursor]"
         }
     }
 
-    SECTION("Non-empty kTestMap: to_first") {
+    SECTION("Single-value table: to_first") {
         MemoryMutationCursor mutation_cursor{test.mutation, kTestMap};
         const auto result = mutation_cursor.to_first();
         CHECK(result);
@@ -157,6 +214,39 @@ TEST_CASE("MemoryMutationCursor", "[silkworm][node][db][memory_mutation_cursor]"
             CHECK(result.value == "00");
         }
         CHECK(mutation_cursor.to_first(false));
+    }
+
+    SECTION("Multi-value table: to_first") {
+        MemoryMutationCursor mutation_cursor{test.mutation, kTestMultiMap};
+        const auto result = mutation_cursor.to_first();
+        CHECK(result);
+        if (result) {
+            CHECK(result.key == "AA");
+            CHECK(result.value == "00");
+        }
+        CHECK(mutation_cursor.to_first(false));
+    }
+
+    SECTION("Single-value table: to_last") {
+        MemoryMutationCursor mutation_cursor{test.mutation, kTestMap};
+        const auto result = mutation_cursor.to_last();
+        CHECK(result);
+        if (result) {
+            CHECK(result.key == "BB");
+            CHECK(result.value == "11");
+        }
+        CHECK(mutation_cursor.to_last(false));
+    }
+
+    SECTION("Multi-value table: to_last") {
+        MemoryMutationCursor mutation_cursor{test.mutation, kTestMultiMap};
+        const auto result = mutation_cursor.to_last();
+        CHECK(result);
+        if (result) {
+            CHECK(result.key == "BB");
+            CHECK(result.value == "22");
+        }
+        CHECK(mutation_cursor.to_last(false));
     }
 }
 #endif  // SILKWORM_SANITIZE

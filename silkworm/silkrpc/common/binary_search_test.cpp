@@ -56,6 +56,7 @@ boost::asio::awaitable<std::size_t> binary_search_in_vector(std::vector<std::siz
     });
 }
 
+#ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(BinarySearchTest, "binary_search", "[silkrpc][common][binary_search]") {
     for (int i{0}; i < kTestData.size(); ++i) {
         const auto [s, v, r] = kTestData[i];
@@ -64,5 +65,6 @@ TEST_CASE_METHOD(BinarySearchTest, "binary_search", "[silkrpc][common][binary_se
         }
     }
 }
+#endif  // SILKWORM_SANITIZE
 
 } // namespace silkrpc

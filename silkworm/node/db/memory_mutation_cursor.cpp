@@ -93,10 +93,11 @@ CursorResult MemoryMutationCursor::current(bool throw_notfound) const {
     }
 
     // We need to copy result because creating CursorResult requires a mdbx::cursor instance
-    auto result = cursor_->current(throw_notfound);
-    result.done = true;
+    auto result = cursor_->current(/*throw_notfound*/false);
+    result.done = current_pair_.key;
     result.key = current_pair_.key;
     result.value = current_pair_.value;
+    if (!result && throw_notfound) throw_error_notfound();
     return result;
 }
 

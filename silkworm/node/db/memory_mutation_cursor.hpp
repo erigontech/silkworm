@@ -91,6 +91,8 @@ class MemoryMutationCursor : public RWCursorDupSort {
     bool erase(const Slice& key, const Slice& value) override;
 
   private:
+    static void throw_error_notfound();
+
     enum class NextType {
         kNormal,
         kDup,
@@ -101,7 +103,6 @@ class MemoryMutationCursor : public RWCursorDupSort {
     CursorResult skip_intersection(CursorResult memory_result, CursorResult db_result, NextType type);
     CursorResult next_on_db(NextType type, bool throw_notfound);
     CursorResult next_by_type(NextType type, bool throw_notfound);
-    void throw_error_notfound();
 
     MemoryMutation& memory_mutation_;
     const MapConfig& config_;

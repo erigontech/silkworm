@@ -64,16 +64,17 @@ CursorResult MemoryMutationCursor::to_first(bool throw_notfound) {
         return memory_result;
     }
 
-    auto db_result = cursor_->to_first(throw_notfound);
-    if (!db_result.done) {
-        return db_result;
-    }
+    auto db_result = cursor_->to_first(false);
 
     if (db_result.key && is_entry_deleted(db_result.key)) {
         db_result = next_on_db(NextType::kNormal, throw_notfound);
     }
 
-    return resolve_priority(memory_result, db_result, NextType::kNormal);
+    const auto result = resolve_priority(memory_result, db_result, NextType::kNormal);
+    if (!result.done && throw_notfound) {
+        mdbx::error::throw_exception(MDBX_error_t::MDBX_NOTFOUND);
+    }
+    return result;
 }
 
 CursorResult MemoryMutationCursor::to_previous() {

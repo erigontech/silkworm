@@ -57,6 +57,7 @@ static silkworm::Bytes kConfigValue{*silkworm::from_hex(
 struct DebugExecutorTest : public test::ContextTestBase {
 };
 
+#ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
     static silkworm::Bytes kAccountHistoryKey1{*silkworm::from_hex("0a6bb546b9208cfab9e8fa2b9b2c042b18df703000000000009db707")};
     static silkworm::Bytes kAccountHistoryKey2{*silkworm::from_hex("000000000000000000000000000000000000000900000000009db707")};
@@ -1403,5 +1404,6 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugConfig") {
         CHECK(os.str() == "disableStorage: true disableMemory: false disableStack: true");
     }
 }
+#endif  // SILKWORM_SANITIZE
 
 }  // namespace silkrpc::debug

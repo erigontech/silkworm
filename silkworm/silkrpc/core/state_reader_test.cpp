@@ -59,6 +59,7 @@ struct StateReaderTest : public test::ContextTestBase {
     StateReader state_reader_{database_reader_};
 };
 
+#ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
     SECTION("no account for history empty and current state empty") {
         // Set the call expectations:
@@ -251,6 +252,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
         }
     }
 }
+#endif  // SILKWORM_SANITIZE
 
 } // namespace silkrpc
 

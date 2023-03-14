@@ -124,7 +124,7 @@ CursorResult MemoryMutationCursor::to_last(bool throw_notfound) {
         return memory_result;
     }
 
-    if (db_result.done && !db_result.value) {
+    if (!db_result.done || (db_result.done && !db_result.value)) {
         is_previous_from_db_ = false;
         if (!memory_result.done && throw_notfound) throw_error_notfound();
         return memory_result;

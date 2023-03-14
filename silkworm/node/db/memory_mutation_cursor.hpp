@@ -24,13 +24,15 @@
 
 namespace silkworm::db {
 
+using Pair = ::mdbx::pair;
+
 class MemoryMutationCursor : public RWCursorDupSort {
   public:
     MemoryMutationCursor(MemoryMutation& memory_mutation, const MapConfig& config);
     ~MemoryMutationCursor() override = default;
 
     [[nodiscard]] bool is_table_cleared() const;
-    [[nodiscard]] bool is_entry_deleted(const Bytes& key) const;
+    [[nodiscard]] bool is_entry_deleted(const Slice& key) const;
 
     void bind(ROTxn& txn, const MapConfig& config) override;
 
@@ -89,10 +91,25 @@ class MemoryMutationCursor : public RWCursorDupSort {
     bool erase(const Slice& key, const Slice& value) override;
 
   private:
+    enum class NextType {
+        kNormal,
+        kDup,
+        kNoDup
+    };
+
+    CursorResult resolve_priority(CursorResult memory_result, CursorResult db_result, NextType type);
+    CursorResult skip_intersection(CursorResult memory_result, CursorResult db_result, NextType type);
+    CursorResult next_on_db(NextType type, bool throw_notfound);
+    CursorResult next_by_type(NextType type, bool throw_notfound);
+
     MemoryMutation& memory_mutation_;
     const MapConfig& config_;
     std::unique_ptr<ROCursorDupSort> cursor_;
     std::unique_ptr<RWCursorDupSort> memory_cursor_;
+    Pair current_db_entry_;
+    Pair current_memory_entry_;
+    Pair current_pair_;
+    bool is_previous_from_db_{false};
 };
 
 }  // namespace silkworm::db

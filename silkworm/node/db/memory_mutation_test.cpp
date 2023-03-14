@@ -33,7 +33,7 @@ TEST_CASE("MemoryOverlay", "[silkworm][node][db][memory_mutation]") {
         MemoryOverlay overlay{tmp_dir.path()};
         ::mdbx::txn_managed rw_txn;
         CHECK_NOTHROW((rw_txn = overlay.start_rw_tx()));
-        CHECK(rw_txn.env().is_empty());
+        CHECK(!rw_txn.env().is_empty());
     }
 
     SECTION("Cannot create more than one R/W transaction in a temporary database") {
@@ -55,7 +55,7 @@ TEST_CASE("MemoryMutation", "[silkworm][node][db][memory_mutation]") {
     };
     auto main_env{db::open_env(main_db_config)};
     RWTxn main_rw_txn{main_env};
-    MemoryOverlay overlay{tmp_dir.path() / "silkworm_mem_db"};
+    MemoryOverlay overlay{tmp_dir.path()};
 
     SECTION("Create one memory mutation") {
         CHECK_NOTHROW(MemoryMutation{overlay, &main_rw_txn});
@@ -65,7 +65,7 @@ TEST_CASE("MemoryMutation", "[silkworm][node][db][memory_mutation]") {
         MemoryMutation mutation{overlay, &main_rw_txn};
         CHECK_NOTHROW(mutation.external_txn() == &main_rw_txn);
         CHECK_NOTHROW(!mutation.is_table_cleared("TestTable"));
-        CHECK_NOTHROW(!mutation.is_entry_deleted("TestTable", Bytes{}));
+        CHECK_NOTHROW(!mutation.is_entry_deleted("TestTable", Slice{}));
     }
 
     SECTION("Cannot create two memory mutations") {

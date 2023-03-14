@@ -35,6 +35,11 @@ MemoryOverlay::MemoryOverlay(const std::filesystem::path& tmp_dir) {
         .max_size = 512_Mebi,
     };
     memory_env_ = db::open_env(memory_config);
+
+    // Create predefined tables for chaindata schema
+    RWTxn txn{memory_env_};
+    table::check_or_create_chaindata_tables(txn);
+    txn.commit_and_stop();
 }
 
 MemoryOverlay::MemoryOverlay(MemoryOverlay&& other) noexcept : memory_env_(std::move(other.memory_env_)) {}
@@ -63,7 +68,7 @@ bool MemoryMutation::is_table_cleared(const std::string& bucket_name) const {
     return cleared_tables_.contains(bucket_name);
 }
 
-bool MemoryMutation::is_entry_deleted(const std::string& bucket_name, const Bytes& key) const {
+bool MemoryMutation::is_entry_deleted(const std::string& bucket_name, const Slice& key) const {
     if (!deleted_entries_.contains(bucket_name)) {
         return false;
     }

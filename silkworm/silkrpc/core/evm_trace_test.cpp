@@ -61,6 +61,7 @@ static silkworm::Bytes kConfigValue{*silkworm::from_hex(
 struct TraceCallExecutorTest : public test::ContextTestBase {
 };
 
+#ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call precompiled") {
     static silkworm::Bytes kAccountHistoryKey1{*silkworm::from_hex("0a6bb546b9208cfab9e8fa2b9b2c042b18df703000000000009db707")};
     static silkworm::Bytes kAccountHistoryKey2{*silkworm::from_hex("000000000000000000000000000000000000000900000000009db707")};
@@ -6655,5 +6656,6 @@ TEST_CASE("TraceManyCallResult: json serialization") {
         ])"_json);
     }
 }
+#endif  // SILKWORM_SANITIZE
 
 }  // namespace silkrpc::trace

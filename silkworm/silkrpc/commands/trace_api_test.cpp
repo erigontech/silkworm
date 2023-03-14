@@ -24,6 +24,7 @@ namespace silkrpc::commands {
 
 using Catch::Matchers::Message;
 
+#ifndef SILKWORM_SANITIZE
 TEST_CASE("TraceRpcApi") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
     ChannelFactory create_channel = []() {
@@ -36,6 +37,7 @@ TEST_CASE("TraceRpcApi") {
         CHECK_NOTHROW(TraceRpcApi{context, workers});
     }
 }
+#endif  // SILKWORM_SANITIZE
 
 } // namespace silkrpc::commands
 

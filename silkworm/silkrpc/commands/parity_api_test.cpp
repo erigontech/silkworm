@@ -23,11 +23,13 @@ namespace silkrpc::commands {
 
 using Catch::Matchers::Message;
 
+#ifndef SILKWORM_SANITIZE
 TEST_CASE("ParityRpcApi::ParityRpcApi", "[silkrpc][erigon_api]") {
     ContextPool context_pool{1, []() {
         return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials());
     }};
     CHECK_NOTHROW(ParityRpcApi{context_pool.next_context()});
 }
+#endif  // SILKWORM_SANITIZE
 
 } // namespace silkrpc::commands

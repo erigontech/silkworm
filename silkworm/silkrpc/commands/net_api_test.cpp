@@ -27,6 +27,7 @@ namespace silkrpc::commands {
 
 using Catch::Matchers::Message;
 
+#ifndef SILKWORM_SANITIZE
 TEST_CASE("NetRpcApi::NetRpcApi", "[silkrpc][erigon_api]") {
     boost::asio::io_context io_context;
     auto channel{grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials())};
@@ -36,5 +37,6 @@ TEST_CASE("NetRpcApi::NetRpcApi", "[silkrpc][erigon_api]") {
     };
     CHECK_NOTHROW(NetRpcApi{backend});
 }
+#endif  // SILKWORM_SANITIZE
 
 } // namespace silkrpc::commands

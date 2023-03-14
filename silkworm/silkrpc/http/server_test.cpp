@@ -23,6 +23,9 @@ namespace silkrpc::http {
 
 using Catch::Matchers::Message;
 
+// Exclude from sanitizer builds due to errors in Catch2 signal handling
+// WARNING: ThreadSanitizer: signal-unsafe call inside a signal
+#ifndef SILKWORM_SANITIZE
 TEST_CASE("server creation", "[silkrpc][http][server]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
@@ -39,5 +42,6 @@ TEST_CASE("server creation", "[silkrpc][http][server]") {
         context_pool.join();
     }
 }
+#endif  // SILKWORM_SANITIZE
 
 } // namespace silkrpc::http

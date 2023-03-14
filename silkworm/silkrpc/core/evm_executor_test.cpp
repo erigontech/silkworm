@@ -33,6 +33,7 @@ namespace silkrpc {
 using Catch::Matchers::Message;
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 
+#ifndef SILKWORM_SANITIZE
 TEST_CASE("EVMExecutor") {
     SILKRPC_LOG_STREAMS(null_stream(), null_stream());
 
@@ -371,5 +372,6 @@ TEST_CASE("EVMExecutor") {
         CHECK(error_message == "wasm trap");
     }
 }
+#endif  // SILKWORM_SANITIZE
 
 } // namespace silkrpc

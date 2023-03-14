@@ -71,9 +71,7 @@ CursorResult MemoryMutationCursor::to_first(bool throw_notfound) {
     }
 
     const auto result = resolve_priority(memory_result, db_result, NextType::kNormal);
-    if (!result.done && throw_notfound) {
-        mdbx::error::throw_exception(MDBX_error_t::MDBX_NOTFOUND);
-    }
+    if (!result.done && throw_notfound) throw_error_notfound();
     return result;
 }
 
@@ -106,7 +104,59 @@ CursorResult MemoryMutationCursor::to_last() {
 }
 
 CursorResult MemoryMutationCursor::to_last(bool throw_notfound) {
-    return CursorResult{::mdbx::cursor{}, throw_notfound};
+    auto memory_result = memory_cursor_->to_last(false);
+    if (is_table_cleared()) {
+        return memory_result;
+    }
+
+    auto db_result = cursor_->to_last(false);
+
+    db_result = skip_intersection(memory_result, db_result, NextType::kNormal);
+
+    // Basic checks
+    current_db_entry_ = db_result.done && db_result.value ? db_result : Pair{{}, {}};
+    current_memory_entry_ = memory_result.done && memory_result.value ? memory_result : Pair{{}, {}};
+
+    if (db_result.done && db_result.key && is_entry_deleted(db_result.key)) {
+        current_db_entry_ = Pair{{}, {}};
+        is_previous_from_db_ = true;
+        if (!memory_result.done && throw_notfound) throw_error_notfound();
+        return memory_result;
+    }
+
+    if (!db_result.done || (db_result.done && !db_result.value)) {
+        is_previous_from_db_ = false;
+        if (!memory_result.done && throw_notfound) throw_error_notfound();
+        return memory_result;
+    }
+
+    if (!memory_result.done || (memory_result.done && !memory_result.value)) {
+        is_previous_from_db_ = true;
+        if (!db_result.done && throw_notfound) throw_error_notfound();
+        return db_result;
+    }
+
+    // Determine which one is last
+    const auto key_diff = Slice::compare_fast(memory_result.key, db_result.key);
+    if (key_diff == 0) {
+        if (memory_result.value > db_result.value) {
+            current_db_entry_ = Pair{{}, {}};
+            is_previous_from_db_ = false;
+            return memory_result;
+        } else {
+            current_memory_entry_ = Pair{{}, {}};
+            is_previous_from_db_ = true;
+            return db_result;
+        }
+    } else if (key_diff > 0) {
+        current_db_entry_ = Pair{{}, {}};
+        is_previous_from_db_ = false;
+        return memory_result;
+    } else {  // key_diff < 0
+        current_memory_entry_ = Pair{{}, {}};
+        is_previous_from_db_ = true;
+        return db_result;
+    }
 }
 
 CursorResult MemoryMutationCursor::find(const Slice& key) {
@@ -284,18 +334,8 @@ CursorResult MemoryMutationCursor::next_by_type(MemoryMutationCursor::NextType t
 }
 
 CursorResult MemoryMutationCursor::resolve_priority(CursorResult memory_result, CursorResult db_result, NextType type) {
-    SILKWORM_ASSERT(db_result.done);
-
     if (memory_result.done && memory_result.value.empty() && db_result.value.empty()) {
-        // TODO(canepat) check how to handle this properly
         return memory_result;
-    }
-
-    if (memory_result.done) {
-        const auto s1 = memory_result.key.as_string();
-        const auto s2 = db_result.key.as_string();
-        bool b = s1 == s2;
-        (void)b;
     }
 
     db_result = skip_intersection(memory_result, db_result, type);
@@ -305,13 +345,6 @@ CursorResult MemoryMutationCursor::resolve_priority(CursorResult memory_result, 
 
     current_db_entry_ = db_result.value ? db_result : Pair{{}, {}};
     current_memory_entry_ = memory_result.done && memory_result.value ? memory_result : Pair{{}, {}};
-
-    if (memory_result.done) {
-        const auto s1 = memory_result.key.as_string();
-        const auto s2 = db_result.key.as_string();
-        bool b = s1 == s2;
-        (void)b;
-    }
 
     if (memory_result.done) {
         if (memory_result.key == db_result.key) {
@@ -338,13 +371,11 @@ CursorResult MemoryMutationCursor::resolve_priority(CursorResult memory_result, 
 }
 
 CursorResult MemoryMutationCursor::skip_intersection(CursorResult memory_result, CursorResult db_result, NextType type) {
-    SILKWORM_ASSERT(db_result.done);
-
     auto new_db_key = db_result.key;
     auto new_db_value = db_result.value;
 
     // Check for duplicates
-    if (memory_result.done && memory_result.key == db_result.key) {
+    if (memory_result.done && db_result.done && memory_result.key == db_result.key) {
         bool skip{false};
         if (type == NextType::kNormal) {
             skip = !cursor_->is_multi_value() || memory_result.value == db_result.value;
@@ -353,9 +384,10 @@ CursorResult MemoryMutationCursor::skip_intersection(CursorResult memory_result,
         }
         if (skip) {
             const auto next_result = next_on_db(type, /*.throw_notfound*/ false);
-            if (!next_result) return next_result;
-            new_db_key = next_result.key;
-            new_db_value = next_result.value;
+            if (next_result) {
+                new_db_key = next_result.key;
+                new_db_value = next_result.value;
+            }
         }
     }
 
@@ -363,8 +395,11 @@ CursorResult MemoryMutationCursor::skip_intersection(CursorResult memory_result,
     auto result = db_result;
     result.key = new_db_key;
     result.value = new_db_value;
-    result.done = true;
     return result;
+}
+
+void MemoryMutationCursor::throw_error_notfound() {
+    mdbx::error::throw_exception(MDBX_error_t::MDBX_NOTFOUND);
 }
 
 }  // namespace silkworm::db

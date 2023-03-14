@@ -91,6 +91,8 @@ class MemoryMutationCursor : public RWCursorDupSort {
     bool erase(const Slice& key, const Slice& value) override;
 
   private:
+    static void throw_error_notfound();
+
     enum class NextType {
         kNormal,
         kDup,

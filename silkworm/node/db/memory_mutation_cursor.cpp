@@ -106,7 +106,31 @@ CursorResult MemoryMutationCursor::to_next() {
 }
 
 CursorResult MemoryMutationCursor::to_next(bool throw_notfound) {
-    return CursorResult{::mdbx::cursor{}, throw_notfound};
+    if (is_table_cleared()) {
+        return memory_cursor_->to_next(throw_notfound);
+    }
+
+    if (is_previous_from_db_) {
+        const auto db_result = next_on_db(NextType::kNormal, throw_notfound);
+        if (!db_result.done) return db_result;
+
+        // We need to copy result because creating CursorResult requires a mdbx::cursor instance
+        auto current_memory_result = db_result;
+        current_memory_result.done = true;
+        current_memory_result.key = current_memory_entry_.key;
+        current_memory_result.value = current_memory_entry_.value;
+        return resolve_priority(current_memory_result, db_result, NextType::kNormal);
+    } else {
+        const auto memory_result = memory_cursor_->to_next(throw_notfound);
+        if (!memory_result.done) return memory_result;
+
+        // We need to copy result because creating CursorResult requires a mdbx::cursor instance
+        auto current_db_result = memory_result;
+        current_db_result.done = true;
+        current_db_result.key = current_db_entry_.key;
+        current_db_result.value = current_db_entry_.value;
+        return resolve_priority(memory_result, current_db_result, NextType::kNormal);
+    }
 }
 
 CursorResult MemoryMutationCursor::to_last() {
@@ -316,11 +340,11 @@ bool MemoryMutationCursor::erase(const Slice& /*key*/, const Slice& /*value*/) {
 
 CursorResult MemoryMutationCursor::next_on_db(MemoryMutationCursor::NextType type, bool throw_notfound) {
     CursorResult result = next_by_type(type, throw_notfound);
-    if (!result) return result;
+    if (!result.done) return result;
 
     while (result.key && result.value && is_entry_deleted(result.key)) {
         result = next_by_type(type, throw_notfound);
-        if (!result) return result;
+        if (!result.done) return result;
     }
 
     return result;
@@ -349,7 +373,7 @@ CursorResult MemoryMutationCursor::resolve_priority(CursorResult memory_result, 
     }
 
     db_result = skip_intersection(memory_result, db_result, type);
-    if (!db_result) {
+    if (!db_result.done) {
         return db_result;
     }
 
@@ -394,7 +418,7 @@ CursorResult MemoryMutationCursor::skip_intersection(CursorResult memory_result,
         }
         if (skip) {
             const auto next_result = next_on_db(type, /*.throw_notfound*/ false);
-            if (next_result) {
+            if (next_result.done) {
                 new_db_key = next_result.key;
                 new_db_value = next_result.value;
             }

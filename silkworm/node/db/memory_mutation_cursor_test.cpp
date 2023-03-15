@@ -98,158 +98,374 @@ struct MemoryMutationCursorTest {
 const MapConfig kNonexistentTestMap{"NonexistentTable"};
 const MapConfig kNonexistentTestMultiMap{"NonexistentMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
-TEST_CASE("MemoryMutationCursor: empty overlay", "[silkworm][node][db][memory_mutation_cursor]") {
-    MemoryMutationCursorTest test;
-    test.fill_main_tables();
+static void check_cursor_result(CursorResult result, Pair kv_pair) {
+    CHECK(result);
+    if (result) {
+        CHECK(result.key == kv_pair.key);
+        CHECK(result.value == kv_pair.value);
+    }
+}
 
-    SECTION("Create memory mutation cursor for non-existent tables") {
-        CHECK_NOTHROW(MemoryMutationCursor{test.mutation, kNonexistentTestMap});
-        CHECK_NOTHROW(MemoryMutationCursor{test.mutation, kNonexistentTestMultiMap});
+TEST_CASE("MemoryMutationCursor: initialization", "[silkworm][node][db][memory_mutation_cursor]") {
+    MemoryMutationCursorTest test1;
+    test1.fill_main_tables();
+
+    SECTION("Empty overlay: Create memory mutation cursor for non-existent tables") {
+        CHECK_NOTHROW(MemoryMutationCursor{test1.mutation, kNonexistentTestMap});
+        CHECK_NOTHROW(MemoryMutationCursor{test1.mutation, kNonexistentTestMultiMap});
     }
 
-    SECTION("Create one memory mutation cursor") {
-        CHECK_NOTHROW(MemoryMutationCursor{test.mutation, kTestMap});
-        CHECK_NOTHROW(MemoryMutationCursor{test.mutation, kTestMultiMap});
+    SECTION("Empty overlay: Create one memory mutation cursor") {
+        CHECK_NOTHROW(MemoryMutationCursor{test1.mutation, kTestMap});
+        CHECK_NOTHROW(MemoryMutationCursor{test1.mutation, kTestMultiMap});
     }
 
-    SECTION("Create many memory mutation cursors") {
+    SECTION("Empty overlay: Create many memory mutation cursors") {
         std::vector<std::unique_ptr<MemoryMutationCursor>> memory_cursors;
         for (int i{0}; i < 10; ++i) {
-            CHECK_NOTHROW(memory_cursors.emplace_back(std::make_unique<MemoryMutationCursor>(test.mutation, kTestMap)));
-            CHECK_NOTHROW(memory_cursors.emplace_back(std::make_unique<MemoryMutationCursor>(test.mutation, kTestMultiMap)));
+            CHECK_NOTHROW(memory_cursors.emplace_back(std::make_unique<MemoryMutationCursor>(test1.mutation, kTestMap)));
+            CHECK_NOTHROW(memory_cursors.emplace_back(std::make_unique<MemoryMutationCursor>(test1.mutation, kTestMultiMap)));
         }
     }
 
-    SECTION("Check initial values") {
-        MemoryMutationCursor mutation_cursor{test.mutation, kTestMap};
+    SECTION("Empty overlay: Check initial values") {
+        MemoryMutationCursor mutation_cursor{test1.mutation, kTestMap};
         CHECK_NOTHROW(!mutation_cursor.is_table_cleared());
         CHECK_NOTHROW(!mutation_cursor.is_entry_deleted(Slice{}));
     }
 
-    SECTION("Check predefined tables") {
+    SECTION("Empty overlay: Check predefined tables") {
         for (const auto& table : table::kChainDataTables) {
-            MemoryMutationCursor mutation_cursor{test.mutation, table};
-            CHECK_NOTHROW(has_map(test.mutation, table.name));
+            MemoryMutationCursor mutation_cursor{test1.mutation, table};
+            CHECK_NOTHROW(has_map(test1.mutation, table.name));
             CHECK_NOTHROW(!mutation_cursor.is_table_cleared());
             CHECK_NOTHROW(!mutation_cursor.is_entry_deleted(Slice{}));
         }
     }
 
-    SECTION("Nonexistent single-value table: to_first") {
-        MemoryMutationCursor mutation_cursor{test.mutation, kNonexistentTestMap};
-        CHECK_THROWS_AS(mutation_cursor.to_first(), mdbx::not_found);
-        CHECK(!mutation_cursor.to_first(false));
-    }
+    MemoryMutationCursorTest test2;
+    test2.fill_main_tables();
+    test2.fill_mutation_tables();
 
-    SECTION("Nonexistent multi-value table: to_first") {
-        MemoryMutationCursor mutation_cursor{test.mutation, kNonexistentTestMultiMap};
-        CHECK_THROWS_AS(mutation_cursor.to_first(), mdbx::not_found);
-        CHECK(!mutation_cursor.to_first(false));
-    }
-
-    SECTION("Single-value table: to_first") {
-        MemoryMutationCursor mutation_cursor{test.mutation, kTestMap};
-        const auto result = mutation_cursor.to_first();
-        CHECK(result);
-        if (result) {
-            CHECK(result.key == "AA");
-            CHECK(result.value == "00");
-        }
-        CHECK(mutation_cursor.to_first(false));
-    }
-
-    SECTION("Multi-value table: to_first") {
-        MemoryMutationCursor mutation_cursor{test.mutation, kTestMultiMap};
-        const auto result = mutation_cursor.to_first();
-        CHECK(result);
-        if (result) {
-            CHECK(result.key == "AA");
-            CHECK(result.value == "00");
-        }
-        CHECK(mutation_cursor.to_first(false));
-    }
-
-    SECTION("Single-value table: to_last") {
-        MemoryMutationCursor mutation_cursor{test.mutation, kTestMap};
-        const auto result = mutation_cursor.to_last();
-        CHECK(result);
-        if (result) {
-            CHECK(result.key == "BB");
-            CHECK(result.value == "11");
-        }
-        CHECK(mutation_cursor.to_last(false));
-    }
-
-    SECTION("Multi-value table: to_last") {
-        MemoryMutationCursor mutation_cursor{test.mutation, kTestMultiMap};
-        const auto result = mutation_cursor.to_last();
-        CHECK(result);
-        if (result) {
-            CHECK(result.key == "BB");
-            CHECK(result.value == "22");
-        }
-        CHECK(mutation_cursor.to_last(false));
-    }
-}
-
-TEST_CASE("MemoryMutationCursor: non-empty overlay", "[silkworm][node][db][memory_mutation_cursor]") {
-    MemoryMutationCursorTest test;
-    test.fill_main_tables();
-    test.fill_mutation_tables();
-
-    SECTION("Check tables") {
+    SECTION("Nonempty overlay: Check tables") {
         for (const auto& table : {kTestMap, kTestMultiMap}) {
-            MemoryMutationCursor mutation_cursor{test.mutation, table};
+            MemoryMutationCursor mutation_cursor{test2.mutation, table};
             CHECK_NOTHROW(mutation_cursor.to_first());
             CHECK_NOTHROW(!mutation_cursor.is_table_cleared());
             CHECK_NOTHROW(!mutation_cursor.is_entry_deleted(Slice{}));
         }
     }
+}
 
-    SECTION("Single-value table: to_first") {
-        MemoryMutationCursor mutation_cursor{test.mutation, kTestMap};
-        const auto result = mutation_cursor.to_first();
-        CHECK(result);
-        if (result) {
-            CHECK(result.key == "AA");
-            CHECK(result.value == "00");
-        }
-        CHECK(mutation_cursor.to_first(false));
-    }
+TEST_CASE("MemoryMutationCursor: to_first", "[silkworm][node][db][memory_mutation_cursor]") {
+    MemoryMutationCursorTest test1;
+    test1.fill_main_tables();
 
-    SECTION("Multi-value table: to_first") {
-        MemoryMutationCursor mutation_cursor{test.mutation, kTestMultiMap};
-        const auto result = mutation_cursor.to_first();
-        CHECK(result);
-        if (result) {
-            CHECK(result.key == "AA");
-            CHECK(result.value == "00");
-        }
-        CHECK(mutation_cursor.to_first(false));
-    }
+    MemoryMutationCursorTest test2;
+    test2.fill_main_tables();
+    test2.fill_mutation_tables();
 
-    SECTION("Single-value table: to_last") {
-        MemoryMutationCursor mutation_cursor{test.mutation, kTestMap};
-        const auto result = mutation_cursor.to_last();
-        CHECK(result);
-        if (result) {
-            CHECK(result.key == "BB");
-            CHECK(result.value == "11");
+    std::map<std::string, MemoryMutationCursorTest*> mutation_tests = {
+        {"Empty overlay", &test1},
+        {"Nonempty overlay", &test2},
+    };
+    for (auto [tag, test] : mutation_tests) {
+        SECTION(tag + ": Nonexistent single-value table") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMap};
+            CHECK_THROWS_AS(mutation_cursor.to_first(), mdbx::not_found);
         }
-        CHECK(mutation_cursor.to_last(false));
-    }
 
-    SECTION("Multi-value table: to_last") {
-        MemoryMutationCursor mutation_cursor{test.mutation, kTestMultiMap};
-        const auto result = mutation_cursor.to_last();
-        CHECK(result);
-        if (result) {
-            CHECK(result.key == "BB");
-            CHECK(result.value == "22");
+        SECTION(tag + ": Nonexistent single-value table: throw_notfound=true") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMap};
+            CHECK_THROWS_AS(mutation_cursor.to_first(/*throw_notfound=*/true), mdbx::not_found);
         }
-        CHECK(mutation_cursor.to_last(false));
+
+        SECTION(tag + ": Nonexistent multi-value table: throw_notfound=false") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMap};
+            CHECK(!mutation_cursor.to_first(/*throw_notfound=*/false));
+        }
+
+        SECTION(tag + ": Nonexistent multi-value table") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMultiMap};
+            CHECK_THROWS_AS(mutation_cursor.to_first(), mdbx::not_found);
+        }
+
+        SECTION(tag + ": Nonexistent multi-value table: throw_notfound=true") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMultiMap};
+            CHECK_THROWS_AS(mutation_cursor.to_first(/*throw_notfound=*/true), mdbx::not_found);
+        }
+
+        SECTION(tag + ": Nonexistent single-value table: throw_notfound=false") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMultiMap};
+            CHECK(!mutation_cursor.to_first(/*throw_notfound=*/false));
+        }
+
+        SECTION(tag + ": Single-value table") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMap};
+            const auto result = mutation_cursor.to_first();
+            check_cursor_result(result, {"AA", "00"});
+        }
+
+        SECTION(tag + ": Single-value table: throw_notfound=true") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMap};
+            const auto result = mutation_cursor.to_first(/*throw_notfound=*/true);
+            check_cursor_result(result, {"AA", "00"});
+        }
+
+        SECTION(tag + ": Multi-value table: throw_notfound=false") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMap};
+            const auto result = mutation_cursor.to_first(/*throw_notfound=*/false);
+            check_cursor_result(result, {"AA", "00"});
+        }
+
+        SECTION(tag + ": Multi-value table") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMultiMap};
+            const auto result = mutation_cursor.to_first();
+            check_cursor_result(result, {"AA", "00"});
+        }
+
+        SECTION(tag + ": Multi-value table: throw_notfound=true") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMultiMap};
+            const auto result = mutation_cursor.to_first(/*throw_notfound=*/true);
+            check_cursor_result(result, {"AA", "00"});
+        }
+
+        SECTION(tag + ": Single-value table: throw_notfound=false") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMultiMap};
+            const auto result = mutation_cursor.to_first(/*throw_notfound=*/false);
+            check_cursor_result(result, {"AA", "00"});
+        }
+
+        SECTION(tag + ": Single-value table: operation is idempotent") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMap};
+            auto result = mutation_cursor.to_first();
+            check_cursor_result(result, {"AA", "00"});
+            result = mutation_cursor.to_first();
+            check_cursor_result(result, {"AA", "00"});
+        }
+
+        SECTION(tag + ": Multi-value table: operation is idempotent") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMultiMap};
+            auto result = mutation_cursor.to_first();
+            check_cursor_result(result, {"AA", "00"});
+            result = mutation_cursor.to_first();
+            check_cursor_result(result, {"AA", "00"});
+        }
     }
 }
+
+TEST_CASE("MemoryMutationCursor: to_last", "[silkworm][node][db][memory_mutation_cursor]") {
+    MemoryMutationCursorTest test1;
+    test1.fill_main_tables();
+
+    MemoryMutationCursorTest test2;
+    test2.fill_main_tables();
+    test2.fill_mutation_tables();
+
+    std::map<std::string, MemoryMutationCursorTest*> mutation_tests = {
+        {"Empty overlay", &test1},
+        {"Nonempty overlay", &test2},
+    };
+    for (auto [tag, test] : mutation_tests) {
+        SECTION(tag + ": Nonexistent single-value table") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMap};
+            CHECK_THROWS_AS(mutation_cursor.to_last(), mdbx::not_found);
+        }
+
+        SECTION(tag + ": Nonexistent single-value table: throw_notfound=true") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMap};
+            CHECK_THROWS_AS(mutation_cursor.to_last(/*throw_notfound=*/true), mdbx::not_found);
+        }
+
+        SECTION(tag + ": Nonexistent multi-value table: throw_notfound=false") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMap};
+            CHECK(!mutation_cursor.to_last(/*throw_notfound=*/false));
+        }
+
+        SECTION(tag + ": Nonexistent multi-value table") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMultiMap};
+            CHECK_THROWS_AS(mutation_cursor.to_last(), mdbx::not_found);
+        }
+
+        SECTION(tag + ": Nonexistent multi-value table: throw_notfound=true") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMultiMap};
+            CHECK_THROWS_AS(mutation_cursor.to_last(/*throw_notfound=*/true), mdbx::not_found);
+        }
+
+        SECTION(tag + ": Nonexistent single-value table: throw_notfound=false") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMultiMap};
+            CHECK(!mutation_cursor.to_last(/*throw_notfound=*/false));
+        }
+
+        SECTION(tag + ": Single-value table") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMap};
+            const auto result = mutation_cursor.to_last();
+            check_cursor_result(result, {"BB", "11"});
+        }
+
+        SECTION(tag + ": Single-value table: throw_notfound=true") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMap};
+            const auto result = mutation_cursor.to_last(/*throw_notfound=*/true);
+            check_cursor_result(result, {"BB", "11"});
+        }
+
+        SECTION(tag + ": Multi-value table: throw_notfound=false") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMap};
+            const auto result = mutation_cursor.to_last(/*throw_notfound=*/false);
+            check_cursor_result(result, {"BB", "11"});
+        }
+
+        SECTION(tag + ": Multi-value table") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMultiMap};
+            const auto result = mutation_cursor.to_last();
+            check_cursor_result(result, {"BB", "22"});
+        }
+
+        SECTION(tag + ": Multi-value table: throw_notfound=true") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMultiMap};
+            const auto result = mutation_cursor.to_last(/*throw_notfound=*/true);
+            check_cursor_result(result, {"BB", "22"});
+        }
+
+        SECTION(tag + ": Multi-value table: throw_notfound=false") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMultiMap};
+            const auto result = mutation_cursor.to_last(/*throw_notfound=*/false);
+            check_cursor_result(result, {"BB", "22"});
+        }
+
+        SECTION(tag + ": Single-value table: operation is idempotent") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMap};
+            auto result = mutation_cursor.to_last();
+            check_cursor_result(result, {"BB", "11"});
+            result = mutation_cursor.to_last();
+            check_cursor_result(result, {"BB", "11"});
+        }
+
+        SECTION(tag + ": Multi-value table: operation is idempotent") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMultiMap};
+            auto result = mutation_cursor.to_last();
+            check_cursor_result(result, {"BB", "22"});
+            /*result = mutation_cursor.to_last();
+            check_cursor_result(result, {"BB", "22"});*/
+        }
+    }
+}
+
+TEST_CASE("MemoryMutationCursor: current", "[silkworm][node][db][memory_mutation_cursor]") {
+    MemoryMutationCursorTest test1;
+    test1.fill_main_tables();
+
+    MemoryMutationCursorTest test2;
+    test2.fill_main_tables();
+    test2.fill_mutation_tables();
+
+    std::map<std::string, MemoryMutationCursorTest*> mutation_tests = {
+        {"Empty overlay", &test1},
+        {"Nonempty overlay", &test2},
+    };
+    for (auto [tag, test] : mutation_tests) {
+        SECTION(tag + ": Nonexistent single-value table: MDBX_ENODATA") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMap};
+            CHECK_THROWS_AS(mutation_cursor.current(), mdbx::no_data);
+        }
+
+        SECTION(tag + ": Nonexistent single-value table (throw_notfound=true): MDBX_ENODATA") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMap};
+            CHECK_THROWS_AS(mutation_cursor.current(/*throw_notfound=*/true), mdbx::no_data);
+        }
+
+        SECTION(tag + ": Nonexistent multi-value table (throw_notfound=false): MDBX_ENODATA") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMap};
+            CHECK_THROWS_AS(mutation_cursor.current(/*throw_notfound=*/false), mdbx::no_data);
+        }
+
+        SECTION(tag + ": Nonexistent multi-value table: MDBX_ENODATA") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMultiMap};
+            CHECK_THROWS_AS(mutation_cursor.current(), mdbx::no_data);
+        }
+
+        SECTION(tag + ": Nonexistent multi-value table (throw_notfound=true): MDBX_ENODATA") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMultiMap};
+            CHECK_THROWS_AS(mutation_cursor.current(/*throw_notfound=*/true), mdbx::no_data);
+        }
+
+        SECTION(tag + ": Nonexistent single-value table (throw_notfound=false): MDBX_ENODATA") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMultiMap};
+            CHECK_THROWS_AS(mutation_cursor.current(/*throw_notfound=*/false), mdbx::no_data);
+        }
+
+        SECTION(tag + ": Single-value table after positioning: OK") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMap};
+            REQUIRE(mutation_cursor.to_first());
+            const auto result = mutation_cursor.current();
+            check_cursor_result(result, {"AA", "00"});
+        }
+
+        SECTION(tag + ": Single-value table (throw_notfound=true) after positioning: OK") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMap};
+            REQUIRE(mutation_cursor.to_first());
+            const auto result = mutation_cursor.current(/*throw_notfound=*/true);
+            check_cursor_result(result, {"AA", "00"});
+        }
+
+        SECTION(tag + ": Multi-value table (throw_notfound=false) after positioning: OK") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMap};
+            REQUIRE(mutation_cursor.to_first());
+            const auto result = mutation_cursor.current(/*throw_notfound=*/false);
+            check_cursor_result(result, {"AA", "00"});
+        }
+
+        SECTION(tag + ": Multi-value table after positioning: OK") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMultiMap};
+            REQUIRE(mutation_cursor.to_first());
+            const auto result = mutation_cursor.current();
+            check_cursor_result(result, {"AA", "00"});
+        }
+
+        SECTION(tag + ": Multi-value table (throw_notfound=true) after positioning: OK") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMultiMap};
+            REQUIRE(mutation_cursor.to_first());
+            const auto result = mutation_cursor.current(/*throw_notfound=*/true);
+            check_cursor_result(result, {"AA", "00"});
+        }
+
+        SECTION(tag + ": Multi-value table (throw_notfound=false) after positioning: OK") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMultiMap};
+            REQUIRE(mutation_cursor.to_first());
+            const auto result = mutation_cursor.current(/*throw_notfound=*/false);
+            check_cursor_result(result, {"AA", "00"});
+        }
+
+        SECTION(tag + ": Single-value table: operation is idempotent") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMap};
+            REQUIRE(mutation_cursor.to_first());
+            auto result = mutation_cursor.current();
+            check_cursor_result(result, {"AA", "00"});
+            result = mutation_cursor.current();
+            check_cursor_result(result, {"AA", "00"});
+            REQUIRE(mutation_cursor.to_last());
+            result = mutation_cursor.current();
+            check_cursor_result(result, {"AA", "00"});
+            result = mutation_cursor.current();
+            check_cursor_result(result, {"AA", "00"});
+        }
+
+        SECTION(tag + ": Multi-value table: operation is idempotent") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMultiMap};
+            REQUIRE(mutation_cursor.to_first());
+            auto result = mutation_cursor.current();
+            check_cursor_result(result, {"AA", "00"});
+            result = mutation_cursor.current();
+            check_cursor_result(result, {"AA", "00"});
+            /*REQUIRE(mutation_cursor.to_last());
+            result = mutation_cursor.current();
+            check_cursor_result(result, {"BB", "22"});
+            result = mutation_cursor.current();
+            check_cursor_result(result, {"BB", "22"});*/
+        }
+    }
+}
+
 #endif  // SILKWORM_SANITIZE
 
 }  // namespace silkworm::db

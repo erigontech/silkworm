@@ -80,7 +80,7 @@ CursorResult MemoryMutationCursor::to_previous() {
 }
 
 CursorResult MemoryMutationCursor::to_previous(bool throw_notfound) {
-    return CursorResult{::mdbx::cursor{}, throw_notfound};
+    return CursorResult{{}, {}, throw_notfound};
 }
 
 CursorResult MemoryMutationCursor::current() const {
@@ -199,24 +199,24 @@ CursorResult MemoryMutationCursor::find(const Slice& key) {
     return find(key, /*.throw_notfound=*/true);
 }
 
-CursorResult MemoryMutationCursor::find(const Slice& /*key*/, bool throw_notfound) {
-    return CursorResult{::mdbx::cursor{}, throw_notfound};
+CursorResult MemoryMutationCursor::find(const Slice& key, bool throw_notfound) {
+    return CursorResult{key, {}, throw_notfound};
 }
 
 CursorResult MemoryMutationCursor::lower_bound(const Slice& key) {
     return lower_bound(key, /*.throw_notfound=*/true);
 }
 
-CursorResult MemoryMutationCursor::lower_bound(const Slice& /*key*/, bool throw_notfound) {
-    return CursorResult{::mdbx::cursor{}, throw_notfound};
+CursorResult MemoryMutationCursor::lower_bound(const Slice& key, bool throw_notfound) {
+    return CursorResult{key, {}, throw_notfound};
 }
 
-CursorResult MemoryMutationCursor::move(MoveOperation /*operation*/, bool throw_notfound) {
-    return CursorResult{::mdbx::cursor{}, throw_notfound};
+MoveResult MemoryMutationCursor::move(MoveOperation /*operation*/, bool throw_notfound) {
+    return MoveResult{::mdbx::cursor{}, throw_notfound};
 }
 
-CursorResult MemoryMutationCursor::move(MoveOperation /*operation*/, const Slice& /*key*/, bool throw_notfound) {
-    return CursorResult{::mdbx::cursor{}, throw_notfound};
+MoveResult MemoryMutationCursor::move(MoveOperation /*operation*/, const Slice& /*key*/, bool throw_notfound) {
+    return MoveResult{::mdbx::cursor{}, throw_notfound};
 }
 
 bool MemoryMutationCursor::seek(const Slice& /*key*/) {
@@ -240,7 +240,7 @@ CursorResult MemoryMutationCursor::to_previous_last_multi() {
 }
 
 CursorResult MemoryMutationCursor::to_previous_last_multi(bool throw_notfound) {
-    return CursorResult{::mdbx::cursor{}, throw_notfound};
+    return CursorResult{{}, {}, throw_notfound};
 }
 
 CursorResult MemoryMutationCursor::to_current_first_multi() {
@@ -248,7 +248,7 @@ CursorResult MemoryMutationCursor::to_current_first_multi() {
 }
 
 CursorResult MemoryMutationCursor::to_current_first_multi(bool throw_notfound) {
-    return CursorResult{::mdbx::cursor{}, throw_notfound};
+    return CursorResult{{}, {}, throw_notfound};
 }
 
 CursorResult MemoryMutationCursor::to_current_prev_multi() {
@@ -256,7 +256,7 @@ CursorResult MemoryMutationCursor::to_current_prev_multi() {
 }
 
 CursorResult MemoryMutationCursor::to_current_prev_multi(bool throw_notfound) {
-    return CursorResult{::mdbx::cursor{}, throw_notfound};
+    return CursorResult{{}, {}, throw_notfound};
 }
 
 CursorResult MemoryMutationCursor::to_current_next_multi() {
@@ -264,7 +264,7 @@ CursorResult MemoryMutationCursor::to_current_next_multi() {
 }
 
 CursorResult MemoryMutationCursor::to_current_next_multi(bool throw_notfound) {
-    return CursorResult{::mdbx::cursor{}, throw_notfound};
+    return CursorResult{{}, {}, throw_notfound};
 }
 
 CursorResult MemoryMutationCursor::to_current_last_multi() {
@@ -272,7 +272,7 @@ CursorResult MemoryMutationCursor::to_current_last_multi() {
 }
 
 CursorResult MemoryMutationCursor::to_current_last_multi(bool throw_notfound) {
-    return CursorResult{::mdbx::cursor{}, throw_notfound};
+    return CursorResult{{}, {}, throw_notfound};
 }
 
 CursorResult MemoryMutationCursor::to_next_first_multi() {
@@ -280,27 +280,27 @@ CursorResult MemoryMutationCursor::to_next_first_multi() {
 }
 
 CursorResult MemoryMutationCursor::to_next_first_multi(bool throw_notfound) {
-    return CursorResult{::mdbx::cursor{}, throw_notfound};
+    return CursorResult{{}, {}, throw_notfound};
 }
 
 CursorResult MemoryMutationCursor::find_multivalue(const Slice& key, const Slice& value) {
     return find_multivalue(key, value, /*.throw_notfound=*/true);
 }
 
-CursorResult MemoryMutationCursor::find_multivalue(const Slice& /*key*/, const Slice& /*value*/, bool throw_notfound) {
-    return CursorResult{::mdbx::cursor{}, throw_notfound};
+CursorResult MemoryMutationCursor::find_multivalue(const Slice& key, const Slice& value, bool throw_notfound) {
+    return CursorResult{key, value, throw_notfound};
 }
 
 CursorResult MemoryMutationCursor::lower_bound_multivalue(const Slice& key, const Slice& value) {
     return lower_bound_multivalue(key, value, /*.throw_notfound=*/false);
 }
 
-CursorResult MemoryMutationCursor::lower_bound_multivalue(const Slice& /*key*/, const Slice& /*value*/, bool throw_notfound) {
-    return CursorResult{::mdbx::cursor{}, throw_notfound};
+CursorResult MemoryMutationCursor::lower_bound_multivalue(const Slice& key, const Slice& value, bool throw_notfound) {
+    return CursorResult{key, value, throw_notfound};
 }
 
-CursorResult MemoryMutationCursor::move(MoveOperation /*operation*/, const Slice& /*key*/, const Slice& /*value*/, bool throw_notfound) {
-    return CursorResult{::mdbx::cursor{}, throw_notfound};
+MoveResult MemoryMutationCursor::move(MoveOperation /*operation*/, const Slice& /*key*/, const Slice& /*value*/, bool throw_notfound) {
+    return MoveResult{::mdbx::cursor{}, throw_notfound};
 }
 
 std::size_t MemoryMutationCursor::count_multivalue() const {
@@ -364,7 +364,7 @@ CursorResult MemoryMutationCursor::next_by_type(MemoryMutationCursor::NextType t
             return cursor_->to_next_first_multi(throw_notfound);
         }
         default: {
-            return CursorResult{::mdbx::cursor{}, throw_notfound};
+            return CursorResult{{}, {}, throw_notfound};
         }
     }
 }

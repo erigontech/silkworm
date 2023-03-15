@@ -26,7 +26,7 @@ namespace silkworm::db {
 //! provided direction if the cursor is not positioned.
 //! \param [in] c : A reference to an open cursor
 //! \param [in] d : Direction cursor should have \return ::mdbx::cursor::move_result
-static inline ::mdbx::cursor::move_result adjust_cursor_position_if_unpositioned(
+static inline CursorResult adjust_cursor_position_if_unpositioned(
     ROCursor& c, CursorMoveDirection d) {
     // Warning: eof() is not exactly what we need here since it returns true not only for cursors
     // that are not positioned, but also for those pointing to the end of data.
@@ -39,7 +39,7 @@ static inline ::mdbx::cursor::move_result adjust_cursor_position_if_unpositioned
 }
 
 // Last entry whose key is strictly less than the given key
-static inline mdbx::cursor::move_result strict_lower_bound(ROCursor& cursor, const ByteView key) {
+static inline CursorResult strict_lower_bound(ROCursor& cursor, const ByteView key) {
     if (!cursor.lower_bound(key, /*throw_notfound=*/false)) {
         // all DB keys are less than the given key
         return cursor.to_last(/*throw_notfound=*/false);
@@ -384,11 +384,11 @@ CursorResult PooledCursor::lower_bound(const Slice& key, bool throw_notfound) {
     return ::mdbx::cursor::lower_bound(key, throw_notfound);
 }
 
-CursorResult PooledCursor::move(MoveOperation operation, bool throw_notfound) {
+MoveResult PooledCursor::move(MoveOperation operation, bool throw_notfound) {
     return ::mdbx::cursor::move(operation, throw_notfound);
 }
 
-CursorResult PooledCursor::move(MoveOperation operation, const Slice& key, bool throw_notfound) {
+MoveResult PooledCursor::move(MoveOperation operation, const Slice& key, bool throw_notfound) {
     return ::mdbx::cursor::move(operation, key, throw_notfound);
 }
 
@@ -472,7 +472,7 @@ CursorResult PooledCursor::lower_bound_multivalue(const Slice& key, const Slice&
     return ::mdbx::cursor::lower_bound_multivalue(key, value, throw_notfound);
 }
 
-CursorResult PooledCursor::move(MoveOperation operation, const Slice& key, const Slice& value, bool throw_notfound) {
+MoveResult PooledCursor::move(MoveOperation operation, const Slice& key, const Slice& value, bool throw_notfound) {
     return ::mdbx::cursor::move(operation, key, value, throw_notfound);
 }
 
@@ -581,9 +581,10 @@ size_t cursor_for_count(ROCursor& cursor, WalkFuncRef walker, size_t count,
 }
 
 size_t cursor_erase(RWCursor& cursor, const ByteView set_key, const CursorMoveDirection direction) {
-    mdbx::cursor::move_result data{direction == CursorMoveDirection::Forward
-                                       ? cursor.lower_bound(set_key, /*throw_notfound=*/false)
-                                       : strict_lower_bound(cursor, set_key)};
+    CursorResult data{
+        direction == CursorMoveDirection::Forward
+            ? cursor.lower_bound(set_key, /*throw_notfound=*/false)
+            : strict_lower_bound(cursor, set_key)};
 
     size_t ret{0};
     while (data) {

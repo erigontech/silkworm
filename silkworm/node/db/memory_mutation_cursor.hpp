@@ -56,8 +56,8 @@ class MemoryMutationCursor : public RWCursorDupSort {
     CursorResult find(const Slice& key, bool throw_notfound) override;
     CursorResult lower_bound(const Slice& key) override;
     CursorResult lower_bound(const Slice& key, bool throw_notfound) override;
-    CursorResult move(MoveOperation operation, bool throw_notfound) override;
-    CursorResult move(MoveOperation operation, const Slice& key, bool throw_notfound) override;
+    MoveResult move(MoveOperation operation, bool throw_notfound) override;
+    MoveResult move(MoveOperation operation, const Slice& key, bool throw_notfound) override;
     bool seek(const Slice& key) override;
     [[nodiscard]] bool eof() const override;
     [[nodiscard]] bool on_first() const override;
@@ -78,7 +78,7 @@ class MemoryMutationCursor : public RWCursorDupSort {
     CursorResult find_multivalue(const Slice& key, const Slice& value, bool throw_notfound) override;
     CursorResult lower_bound_multivalue(const Slice& key, const Slice& value) override;
     CursorResult lower_bound_multivalue(const Slice& key, const Slice& value, bool throw_notfound) override;
-    CursorResult move(MoveOperation operation, const Slice& key, const Slice& value, bool throw_notfound) override;
+    MoveResult move(MoveOperation operation, const Slice& key, const Slice& value, bool throw_notfound) override;
     [[nodiscard]] std::size_t count_multivalue() const override;
     MDBX_error_t put(const Slice& key, Slice* value, MDBX_put_flags_t flags) noexcept override;
     void insert(const Slice& key, Slice value) override;

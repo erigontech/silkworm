@@ -326,9 +326,9 @@ std::optional<BlockBody> BodySequence::AnnouncedBlocks::remove(BlockNum bn) {
     if (b == blocks_.end())
         return std::nullopt;
 
-    std::optional<BlockBody> body = std::move(b->second);
+    auto block = std::move(b->second);
     blocks_.erase(b);
-    return body;
+    return block;
 }
 
 size_t BodySequence::AnnouncedBlocks::size() {

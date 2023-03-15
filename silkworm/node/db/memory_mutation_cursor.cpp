@@ -93,7 +93,7 @@ CursorResult MemoryMutationCursor::current(bool throw_notfound) const {
     }
 
     // We need to copy result because creating CursorResult requires a mdbx::cursor instance
-    auto result = cursor_->current(/*throw_notfound=*/false);
+    auto result = cursor_->current(/*.throw_notfound=*/false);
     result.done = current_pair_.key;
     result.key = current_pair_.key;
     result.value = current_pair_.value;
@@ -107,34 +107,36 @@ CursorResult MemoryMutationCursor::to_next() {
 
 CursorResult MemoryMutationCursor::to_next(bool throw_notfound) {
     if (is_table_cleared()) {
-        return memory_cursor_->to_next(throw_notfound);
+        return memory_cursor_->to_next(false);
     }
 
     if (is_previous_from_db_) {
-        const auto db_result = next_on_db(NextType::kNormal, throw_notfound);
-        if (!db_result.done) return db_result;
+        auto db_result = next_on_db(NextType::kNormal, false);
 
         // We need to copy result because creating CursorResult requires a mdbx::cursor instance
         auto current_memory_result = db_result;
         current_memory_result.done = true;
         current_memory_result.key = current_memory_entry_.key;
         current_memory_result.value = current_memory_entry_.value;
-        return resolve_priority(current_memory_result, db_result, NextType::kNormal);
+        const auto result = resolve_priority(current_memory_result, db_result, NextType::kNormal);
+        if (!result.done && throw_notfound) throw_error_notfound();
+        return result;
     } else {
-        const auto memory_result = memory_cursor_->to_next(throw_notfound);
-        if (!memory_result.done) return memory_result;
+        auto memory_result = memory_cursor_->to_next(false);
 
         // We need to copy result because creating CursorResult requires a mdbx::cursor instance
         auto current_db_result = memory_result;
         current_db_result.done = true;
         current_db_result.key = current_db_entry_.key;
         current_db_result.value = current_db_entry_.value;
-        return resolve_priority(memory_result, current_db_result, NextType::kNormal);
+        const auto result = resolve_priority(memory_result, current_db_result, NextType::kNormal);
+        if (!result.done && throw_notfound) throw_error_notfound();
+        return result;
     }
 }
 
 CursorResult MemoryMutationCursor::to_last() {
-    return to_last(/*throw_notfound =*/true);
+    return to_last(/*.throw_notfound=*/true);
 }
 
 CursorResult MemoryMutationCursor::to_last(bool throw_notfound) {
@@ -194,7 +196,7 @@ CursorResult MemoryMutationCursor::to_last(bool throw_notfound) {
 }
 
 CursorResult MemoryMutationCursor::find(const Slice& key) {
-    return find(key, /*throw_notfound =*/true);
+    return find(key, /*.throw_notfound=*/true);
 }
 
 CursorResult MemoryMutationCursor::find(const Slice& /*key*/, bool throw_notfound) {
@@ -202,7 +204,7 @@ CursorResult MemoryMutationCursor::find(const Slice& /*key*/, bool throw_notfoun
 }
 
 CursorResult MemoryMutationCursor::lower_bound(const Slice& key) {
-    return lower_bound(key, /*throw_notfound =*/true);
+    return lower_bound(key, /*.throw_notfound=*/true);
 }
 
 CursorResult MemoryMutationCursor::lower_bound(const Slice& /*key*/, bool throw_notfound) {
@@ -234,7 +236,7 @@ bool MemoryMutationCursor::on_last() const {
 }
 
 CursorResult MemoryMutationCursor::to_previous_last_multi() {
-    return to_previous_last_multi(/*throw_notfound =*/true);
+    return to_previous_last_multi(/*.throw_notfound=*/true);
 }
 
 CursorResult MemoryMutationCursor::to_previous_last_multi(bool throw_notfound) {
@@ -242,7 +244,7 @@ CursorResult MemoryMutationCursor::to_previous_last_multi(bool throw_notfound) {
 }
 
 CursorResult MemoryMutationCursor::to_current_first_multi() {
-    return to_current_first_multi(/*throw_notfound =*/true);
+    return to_current_first_multi(/*.throw_notfound=*/true);
 }
 
 CursorResult MemoryMutationCursor::to_current_first_multi(bool throw_notfound) {
@@ -250,7 +252,7 @@ CursorResult MemoryMutationCursor::to_current_first_multi(bool throw_notfound) {
 }
 
 CursorResult MemoryMutationCursor::to_current_prev_multi() {
-    return to_current_prev_multi(/*throw_notfound =*/true);
+    return to_current_prev_multi(/*.throw_notfound=*/true);
 }
 
 CursorResult MemoryMutationCursor::to_current_prev_multi(bool throw_notfound) {
@@ -258,7 +260,7 @@ CursorResult MemoryMutationCursor::to_current_prev_multi(bool throw_notfound) {
 }
 
 CursorResult MemoryMutationCursor::to_current_next_multi() {
-    return to_current_next_multi(/*throw_notfound =*/true);
+    return to_current_next_multi(/*.throw_notfound=*/true);
 }
 
 CursorResult MemoryMutationCursor::to_current_next_multi(bool throw_notfound) {
@@ -266,7 +268,7 @@ CursorResult MemoryMutationCursor::to_current_next_multi(bool throw_notfound) {
 }
 
 CursorResult MemoryMutationCursor::to_current_last_multi() {
-    return to_current_last_multi(/*throw_notfound =*/true);
+    return to_current_last_multi(/*.throw_notfound=*/true);
 }
 
 CursorResult MemoryMutationCursor::to_current_last_multi(bool throw_notfound) {
@@ -274,7 +276,7 @@ CursorResult MemoryMutationCursor::to_current_last_multi(bool throw_notfound) {
 }
 
 CursorResult MemoryMutationCursor::to_next_first_multi() {
-    return to_next_first_multi(/*throw_notfound =*/true);
+    return to_next_first_multi(/*.throw_notfound=*/true);
 }
 
 CursorResult MemoryMutationCursor::to_next_first_multi(bool throw_notfound) {
@@ -282,7 +284,7 @@ CursorResult MemoryMutationCursor::to_next_first_multi(bool throw_notfound) {
 }
 
 CursorResult MemoryMutationCursor::find_multivalue(const Slice& key, const Slice& value) {
-    return find_multivalue(key, value, /*throw_notfound =*/true);
+    return find_multivalue(key, value, /*.throw_notfound=*/true);
 }
 
 CursorResult MemoryMutationCursor::find_multivalue(const Slice& /*key*/, const Slice& /*value*/, bool throw_notfound) {
@@ -290,7 +292,7 @@ CursorResult MemoryMutationCursor::find_multivalue(const Slice& /*key*/, const S
 }
 
 CursorResult MemoryMutationCursor::lower_bound_multivalue(const Slice& key, const Slice& value) {
-    return lower_bound_multivalue(key, value, /*throw_notfound =*/false);
+    return lower_bound_multivalue(key, value, /*.throw_notfound=*/false);
 }
 
 CursorResult MemoryMutationCursor::lower_bound_multivalue(const Slice& /*key*/, const Slice& /*value*/, bool throw_notfound) {
@@ -417,7 +419,7 @@ CursorResult MemoryMutationCursor::skip_intersection(CursorResult memory_result,
             skip = memory_result.value == db_result.value;
         }
         if (skip) {
-            const auto next_result = next_on_db(type, /*.throw_notfound*/ false);
+            const auto next_result = next_on_db(type, /*.throw_notfound=*/ false);
             if (next_result.done) {
                 new_db_key = next_result.key;
                 new_db_value = next_result.value;

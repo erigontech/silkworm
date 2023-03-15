@@ -29,13 +29,17 @@
 
 namespace silkworm::cl::sentinel {
 
+using boost::asio::awaitable;
+
 class RemoteClient : public Client {
   public:
     RemoteClient(agrpc::GrpcContext& grpc_context, const std::shared_ptr<grpc::Channel>& channel);
 
-    boost::asio::awaitable<void> start() override;
+    awaitable<void> start() override;
 
-    boost::asio::awaitable<std::shared_ptr<eth::LightClientBootstrap>> bootstrap_request_v1(const eth::Root& root) override;
+    awaitable<void> set_status(const Status& status) override;
+
+    awaitable<std::shared_ptr<eth::LightClientBootstrap>> bootstrap_request_v1(const eth::Root& root) override;
 
   private:
     agrpc::GrpcContext& grpc_context_;

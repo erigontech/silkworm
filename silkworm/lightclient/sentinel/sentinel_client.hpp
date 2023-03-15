@@ -23,6 +23,7 @@
 #include <boost/asio/awaitable.hpp>
 
 #include <silkworm/lightclient/sentinel/sentinel_server.hpp>
+#include <silkworm/lightclient/sentinel/types.hpp>
 #include <silkworm/lightclient/types/types.hpp>
 #include <silkworm/lightclient/ssz/common/bytes.hpp>
 #include <silkworm/lightclient/ssz/beacon-chain/light_client_bootstrap.hpp>
@@ -37,6 +38,8 @@ class Client {
 
     virtual awaitable<void> start() = 0;
 
+    virtual awaitable<void> set_status(const Status& status) = 0;
+
     virtual awaitable<std::shared_ptr<eth::LightClientBootstrap>> bootstrap_request_v1(const eth::Root& root) = 0;
 };
 
@@ -45,6 +48,8 @@ class LocalClient : public Client {
     explicit LocalClient(Server* local_server);
 
     awaitable<void> start() override;
+
+    awaitable<void> set_status(const Status& status) override;
 
     awaitable<std::shared_ptr<eth::LightClientBootstrap>> bootstrap_request_v1(const eth::Root& root) override;
 

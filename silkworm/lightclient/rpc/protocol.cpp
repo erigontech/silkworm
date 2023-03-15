@@ -20,7 +20,7 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/lightclient/rpc/varint.hpp>
-#include <silkworm/lightclient/snappy/snappy_codec.hpp>
+#include <silkworm/lightclient/snappy/stream_codec.hpp>
 #include <silkworm/node/common/log.hpp>
 
 namespace silkworm::cl::sentinel {
@@ -38,7 +38,7 @@ Bytes encode_and_write(const ::ssz::Container& object) {
 
     // Marshal object into message using SSZ and snap it
     const auto ssz_payload = object.serialize();
-    Bytes compressed_payload = snappy::compress({ssz_payload.data(), ssz_payload.size()});
+    Bytes compressed_payload = snappy::framing_compress({ssz_payload.data(), ssz_payload.size()});
 
     // Put together length + payload
     Bytes protocol_packet;
@@ -54,6 +54,7 @@ bool decode_and_read(ByteView data, ::ssz::Container& object) {
         log::Error() << "decode_and_read: data size too short: " << to_hex(data);
         return false;
     }
+    log::Critical() << "decode_and_read data: " << to_hex(data);
 
     Bytes fork_digest_buffer{kForkDigestSize, '\0'};
     std::copy(data.cbegin(), data.cbegin() + kForkDigestSize, fork_digest_buffer.begin());
@@ -63,6 +64,7 @@ bool decode_and_read(ByteView data, ::ssz::Container& object) {
 }
 
 bool decode_and_read_no_context(ByteView data, ::ssz::Container& object) {
+    log::Critical() << "decode_and_read_no_context data: " << to_hex(data);
     // Extract prefix for packet length
     std::size_t encoded_length;
     const std::size_t length_size = decode_varint(data, encoded_length);
@@ -73,8 +75,10 @@ bool decode_and_read_no_context(ByteView data, ::ssz::Container& object) {
         return false;
     }
 
+    log::Critical() << "compressed: " << to_hex(data.substr(length_size));
+
     // Unsnap the message and then unmarshall using SSZ
-    Bytes payload = snappy::decompress(data.substr(length_size));
+    Bytes payload = snappy::framing_uncompress(data.substr(length_size));
     const std::vector<uint8_t> object_payload{payload.cbegin(), payload.cend()};
     const bool ok = object.deserialize(object_payload.cbegin(), object_payload.cend());
     if (!ok) {

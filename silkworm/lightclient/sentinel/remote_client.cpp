@@ -16,11 +16,13 @@
 
 #include "remote_client.hpp"
 
+#include <silkworm/interfaces/p2psentinel/sentinel.grpc.pb.h>
 #include <silkworm/lightclient/rpc/protocol.hpp>
 #include <silkworm/lightclient/sentinel/topic.hpp>
 #include <silkworm/lightclient/snappy/snappy_codec.hpp>
 #include <silkworm/node/common/log.hpp>
 #include <silkworm/node/rpc/client/call.hpp>
+#include <silkworm/node/rpc/common/conversion.hpp>
 #include <silkworm/sentry/common/timeout.hpp>  // TODO(canepat) refactor
 
 namespace silkworm::cl::sentinel {
@@ -36,6 +38,21 @@ RemoteClient::RemoteClient(agrpc::GrpcContext& grpc_context, const std::shared_p
 awaitable<void> RemoteClient::start() {
     sentry::common::Timeout timeout{1'000'000s};
     co_await timeout();
+}
+
+awaitable<void> RemoteClient::set_status(const Status& status) {
+    ::sentinel::Status request;
+    request.set_fork_digest(status.fork_digest);
+    request.set_allocated_finalized_root(rpc::H256_from_bytes32(status.finalized_root).release());
+    request.set_finalized_epoch(status.finalized_epoch);
+    request.set_allocated_head_root(rpc::H256_from_bytes32(status.head_root).release());
+    request.set_head_slot(status.head_slot);
+    ::sentinel::EmptyMessage response;
+    const auto grpc_status = co_await rpc::unary_rpc(
+        &::sentinel::Sentinel::Stub::AsyncSetStatus, stub_, request, response, grpc_context_);
+    if (!grpc_status.ok()) {
+        log::Error() << "Set status error: " << grpc_status.error_message();
+    }
 }
 
 awaitable<LightClientBootstrapPtr> RemoteClient::bootstrap_request_v1(const eth::Root& root) {

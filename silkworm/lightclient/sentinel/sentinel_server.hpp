@@ -23,24 +23,17 @@
 #include <boost/asio/awaitable.hpp>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/lightclient/sentinel/types.hpp>
 
 namespace silkworm::cl::sentinel {
 
 using boost::asio::awaitable;
 
-struct RequestData {
-    Bytes data;  // SSZ encoded
-    std::string topic;
-};
-
-struct ResponseData {
-    Bytes data;  // SSZ encoded
-    bool error{false};
-};
-
 class Server {
   public:
     awaitable<void> start();
+
+    awaitable<void> set_status(const Status& status);
 
     awaitable<ResponseData> send_request(const RequestData& request);
 };

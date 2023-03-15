@@ -16,11 +16,19 @@
 
 #include "config.hpp"
 
+#include <algorithm>
 #include <random>
+#include <tuple>
 
 #include <silkworm/core/common/assert.hpp>
 
 namespace silkworm::cl {
+
+static const std::map<ChainId, const ConsensusConfig*> kKnownConsensusConfigs{
+    {kMainnetConfig.chain_id, &kMainnetConsensusConfig},
+    {kGoerliConfig.chain_id, &kGoerliConsensusConfig},
+    {kSepoliaConfig.chain_id, &kSepoliaConsensusConfig},
+};
 
 std::optional<std::string> get_checkpoint_sync_endpoint(uint64_t chain_id) noexcept {
     const auto endpoint_it = kCheckpointSyncEndpoints.find(chain_id);
@@ -37,6 +45,23 @@ std::optional<std::string> get_checkpoint_sync_endpoint(uint64_t chain_id) noexc
     SILKWORM_ASSERT(random_index < endpoints.size());
 
     return endpoints.at(random_index);
+}
+
+std::vector<Fork> BeaconChainConfig::sorted_fork_list() const {
+    std::vector<Fork> fork_list{
+        Fork{ genesis_epoch, genesis_fork_version },
+        Fork{ altair_fork_epoch, altair_fork_version },
+        Fork{ bellatrix_fork_epoch, bellatrix_fork_version },
+    };
+    std::sort(fork_list.begin(), fork_list.end(), [](auto& lhs, auto& rhs) -> bool { return lhs.epoch < rhs.epoch; });
+    return fork_list;
+}
+
+const ConsensusConfig* lookup_consensus_config(ChainId chain_id) noexcept {
+    if (!kKnownConsensusConfigs.contains(chain_id)) {
+        return nullptr;
+    }
+    return kKnownConsensusConfigs.at(chain_id);
 }
 
 }  // namespace silkworm::cl

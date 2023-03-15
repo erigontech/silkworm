@@ -78,7 +78,7 @@ constexpr unsigned int HYSTERESIS_QUOTIENT = 4;
 constexpr unsigned int HYSTERESIS_DOWNWARD_MULTIPLIER = 1;
 constexpr unsigned int HYSTERESIS_UPWARD_MULTIPLIER = 5;
 constexpr unsigned int SAFE_SLOTS_TO_UPDATE_JUSTIFIED = 8;
-constexpr unsigned int SLOTS_PER_EPOCH = 32;
+constexpr unsigned int kSlotsPerEpoch{32};
 constexpr unsigned int MIN_SEED_LOOKAHEAD = 1;
 constexpr unsigned int MAX_SEED_LOOKAHEAD = 4;
 constexpr unsigned int EPOCHS_PER_ETH1_VOTING_PERIOD = 64;

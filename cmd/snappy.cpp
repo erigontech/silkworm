@@ -119,7 +119,8 @@ int main(int argc, char* argv[]) {
                 output = snappy::framing_uncompress(compressed);
             }
         }
-        std::cout << to_hex(ByteView{reinterpret_cast<uint8_t*>(output.data()), output.size()}) << "\n" << std::flush;
+        std::cout << to_hex(ByteView{reinterpret_cast<uint8_t*>(output.data()), output.size()}) << "\n"
+                  << std::flush;
         return 0;
     } catch (const CLI::ParseError& pe) {
         return -1;

@@ -36,7 +36,7 @@ struct ExecutionPayload : public ssz::Container {
     Counter gas_used;
     UnixTime timestamp;
     ListFixedSizedParts<Byte> extra_data;
-    VectorFixedSizedParts<Byte, constants::SLOTS_PER_EPOCH> base_fee_per_gas;
+    VectorFixedSizedParts<Byte, constants::kSlotsPerEpoch> base_fee_per_gas;
     Hash32 block_hash;
     ListVariableSizedParts<ListFixedSizedParts<Byte>> transactions;
 

@@ -437,31 +437,10 @@ class FramingDecompressor : public boost::iostreams::multichar_input_filter {
                     } else if (traits_type::would_block(c)) {
                         break;
                     }
-                    magic_header_.process(c);
-                    if (magic_header_.done()) {
-                        if (magic_header_.chunk_type() != kChunkTypeStreamIdentifier) {
-                            throw FramingError{"bad stream identifier", FramingErrorCode::kMissingStreamIdentifier};
-                        }
-                        if (magic_header_.chunk_length() != kMagicBody.size()) {
-                            throw FramingError{"wrong size for magic body", FramingErrorCode::kMissingStreamIdentifier};
-                        }
-                        magic_body_.reset(magic_header_);
-                        state_ = kStreamBody;
-                    }
-                    break;
-                }
-                case kStreamBody: {
-                    const traits_type::int_type c = boost::iostreams::get(src);
-                    if (traits_type::is_eof(c)) {
-                        throw FramingError{"unexpected EOF in stream body", FramingErrorCode::kMissingStreamIdentifier};
-                    } else if (traits_type::would_block(c)) {
-                        break;
-                    }
-                    magic_body_.process(c);
-                    if (magic_body_.done()) {
-                        magic_header_.reset();
-                        magic_body_.reset(magic_header_);
-                        state_ = kChunkHeader;
+                    header_.process(c);
+                    if (header_.done()) {
+                        body_.reset(header_);
+                        state_ = kChunkBody;
                     }
                     break;
                 }
@@ -554,7 +533,6 @@ class FramingDecompressor : public boost::iostreams::multichar_input_filter {
     enum State {
         kStart,
         kStreamHeader,
-        kStreamBody,
         kChunkHeader,
         kChunkBody,
         kDone

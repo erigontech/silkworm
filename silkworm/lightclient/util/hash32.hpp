@@ -25,6 +25,8 @@
 
 namespace silkworm {
 
+using namespace evmc::literals;
+
 //! 32-byte hash value
 using Hash32 = evmc::bytes32;
 

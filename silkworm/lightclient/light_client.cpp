@@ -29,12 +29,14 @@
 #include <boost/asio/signal_set.hpp>
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/common/endian.hpp>
 #include <silkworm/lightclient/fork/fork.hpp>
 #include <silkworm/lightclient/params/config.hpp>
 #include <silkworm/lightclient/sentinel/sentinel_client.hpp>
 #include <silkworm/lightclient/sentinel/sentinel_server.hpp>
 #include <silkworm/lightclient/sentinel/remote_client.hpp>
 #include <silkworm/lightclient/ssz/beacon-chain/beacon_state.hpp>
+#include <silkworm/lightclient/ssz/constants.hpp>
 #include <silkworm/lightclient/state/checkpoint.hpp>
 #include <silkworm/lightclient/state/storage.hpp>
 #include <silkworm/node/common/log.hpp>
@@ -44,6 +46,8 @@ namespace silkworm::cl {
 
 using namespace boost::asio;
 using namespace std::chrono_literals;
+
+constexpr auto kSetStatusRetryInterval{10s};
 
 class LightClientImpl final {
   public:
@@ -61,11 +65,12 @@ class LightClientImpl final {
 
     awaitable<bool> bootstrap_checkpoint(const eth::Root& finalized_root);
 
+    awaitable<void> set_sentinel_status(const eth::Checkpoint& finalized);
+    awaitable<void> update_sentinel_status();
+
     Settings settings_;
 
-    GenesisConfig genesis_config_;
-
-    BeaconChainConfig beacon_config_;
+    ConsensusConfig config_;
 
     //! The highest Execution chain (aka ETH1) block seen by this LC
     // BlockNum highest_eth1_block_seen_{0};
@@ -166,10 +171,19 @@ awaitable<void> LightClientImpl::run_tasks() {
 
     log::Info() << "[LightClient] Waiting for bootstrap sequence...";
 
+    const auto consensus_config = lookup_consensus_config(settings_.chain_id);
+    if (!consensus_config) {
+        log::Critical() << "[Checkpoint Sync] Cannot lookup consensus config [chain_id: " << settings_.chain_id << "]";
+        co_return;
+    }
+    config_ = *consensus_config;
+
     auto checkpoint_uri = get_checkpoint_sync_endpoint(settings_.chain_id);
     SILKWORM_ASSERT(checkpoint_uri);
-    // TODO(canepat) hard-coded just for test, remove it
-    *checkpoint_uri = "https://sync.invis.tools/eth/v2/debug/beacon/states/finalized";
+    if (!checkpoint_uri) {
+        log::Critical() << "[Checkpoint Sync] Cannot lookup checkpoint sync ep [chain_id: " << settings_.chain_id << "]";
+        co_return;
+    }
 
     constexpr auto kRetryInterval{5s};
     sentry::common::Timeout timeout{kRetryInterval, /*no_throw*/true};
@@ -183,12 +197,13 @@ awaitable<void> LightClientImpl::run_tasks() {
     const auto finalized_root = beacon_state->finalized_checkpoint().root;
     log::Info() << "[Checkpoint Sync] Beacon state retrieved [root: " << to_hex(finalized_root.to_array()) << "]";
 
+    co_await set_sentinel_status(beacon_state->finalized_checkpoint());
+    log::Info() << "[Checkpoint Sync] Status set for sentinel [root: " << to_hex(finalized_root.to_array()) << "]";
+
     const bool result = co_await bootstrap_checkpoint(finalized_root);
     log::Info() << "[LightClient] Bootstrap sequence completed [result=" << result << "]";
 
-    const auto digest = compute_fork_digest(beacon_config_, genesis_config_);
-    (void)digest;  // TODO(canepat) pass digest
-    co_await (sentinel_server_->start() && sentinel_client_->start());
+    co_await (sentinel_server_->start() && sentinel_client_->start() && update_sentinel_status());
 }
 
 awaitable<bool> LightClientImpl::bootstrap_checkpoint(const eth::Root& finalized_root) {
@@ -198,8 +213,8 @@ awaitable<bool> LightClientImpl::bootstrap_checkpoint(const eth::Root& finalized
     sentry::common::Timeout timeout{kRetryInterval, /*no_throw*/true};
     std::shared_ptr<eth::LightClientBootstrap> bootstrap;
     do {
-        bootstrap = co_await sentinel_client_->bootstrap_request_v1(finalized_root);
-        if (!bootstrap) co_await timeout();
+        bootstrap = co_await sentinel_client_->bootstrap_request_v1(finalized_root); // TODO(canepat) || timeout(30s)
+        if (!bootstrap) co_await timeout();  // TODO(canepat) in case NOT timeout: co_await sleep(5s);
     } while (!bootstrap);
     log::Info() << "[Checkpoint Sync] Boostrap retrieved [header_root: " << to_hex(bootstrap->header().hash_tree_root()) << "]";
 
@@ -208,6 +223,49 @@ awaitable<bool> LightClientImpl::bootstrap_checkpoint(const eth::Root& finalized
                 << " root: " << to_hex(storage_->finalized_header().state_root.to_array()) << "]";
 
     co_return true;
+}
+
+awaitable<void> LightClientImpl::set_sentinel_status(const eth::Checkpoint& finalized) {
+    sentry::common::Timeout timeout{kSetStatusRetryInterval, /*no_throw*/true};
+    while (true) {
+        try {
+            const auto digest = compute_fork_digest(config_.beacon_chain_config, config_.genesis_config);
+            log::Info() << "[Checkpoint Sync] Computed fork digest [data: " << to_hex(digest) << "]";
+            const auto& finalized_root = finalized.hash_tree_root();
+            cl::sentinel::Status status{
+                .fork_digest = endian::load_big_u32(digest.data()),
+                .finalized_root = to_bytes32({finalized_root.data(), finalized_root.size()}),
+                .finalized_epoch = finalized.epoch,
+                .head_root = to_bytes32({finalized_root.data(), finalized_root.size()}),
+                .head_slot = finalized.epoch * constants::kSlotsPerEpoch,
+            };
+            co_await sentinel_client_->set_status(status);
+            break;
+        } catch (const std::exception& ex) {
+            log::Error() << "[Checkpoint Sync] Cannot set status for sentinel [" << ex.what() << "]";
+        }
+        co_await timeout();  // TODO(canepat) replace with sleep
+    };
+}
+
+awaitable<void> LightClientImpl::update_sentinel_status() {
+    sentry::common::Timeout timeout{kSetStatusRetryInterval, /*no_throw*/true};
+    while (true) {
+        const eth::BeaconBlockHeader& finalized_header = storage_->finalized_header();
+        const eth::BeaconBlockHeader& optimistic_header = storage_->optimistic_header();
+        const auto digest = compute_fork_digest(config_.beacon_chain_config, config_.genesis_config);
+        const auto& finalized_root = finalized_header.hash_tree_root();
+        const auto& head_root = optimistic_header.hash_tree_root();
+        cl::sentinel::Status status{
+            .fork_digest = endian::load_big_u32(digest.data()),
+            .finalized_root = to_bytes32({finalized_root.data(), finalized_root.size()}),
+            .finalized_epoch = finalized_header.slot / constants::kSlotsPerEpoch,
+            .head_root = to_bytes32({head_root.data(), head_root.size()}),
+            .head_slot = optimistic_header.slot,
+        };
+        co_await sentinel_client_->set_status(status);
+        co_await timeout();  // TODO(canepat) replace with sleep
+    }
 }
 
 LightClient::LightClient(Settings settings)

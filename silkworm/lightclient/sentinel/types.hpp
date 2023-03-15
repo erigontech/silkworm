@@ -14,32 +14,31 @@
    limitations under the License.
 */
 
-#include "sentinel_server.hpp"
+#pragma once
 
-#include <thread>
+#include <string>
 
-#include <silkworm/sentry/common/timeout.hpp>
+#include <silkworm/core/common/base.hpp>
+#include <silkworm/lightclient/util/hash32.hpp>
 
 namespace silkworm::cl::sentinel {
 
-using namespace std::chrono;
-using namespace boost::asio;
+struct Status {
+    uint32_t fork_digest{0};
+    Hash32 finalized_root;
+    uint64_t finalized_epoch{0};
+    Hash32 head_root;
+    uint64_t head_slot{0};
+};
 
-awaitable<void> Server::start() {
-    sentry::common::Timeout timeout{1'000'000s};
-    co_await timeout();
-}
+struct RequestData {
+    Bytes data;  // SSZ encoded
+    std::string topic;
+};
 
-awaitable<void> Server::set_status(const Status& /*status*/) {
-    using namespace std::chrono_literals;
-    std::this_thread::sleep_for(1s);
-    co_return;
-}
-
-awaitable<ResponseData> Server::send_request(const RequestData& /*request*/) {
-    using namespace std::chrono_literals;
-    std::this_thread::sleep_for(1s);
-    co_return ResponseData{};
-}
+struct ResponseData {
+    Bytes data;  // SSZ encoded
+    bool error{false};
+};
 
 }  // namespace silkworm::cl::sentinel

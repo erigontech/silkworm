@@ -101,8 +101,10 @@ class Bytes : public ssz::Container {
         return std::uint8_t(helpers::strhex2int(c));
     }
 
-    static constexpr auto bytes_from_str(const std::string_view &str) -> std::array<std::uint8_t, N> {
-        if (!str.starts_with("0x")) throw std::invalid_argument("string not prepended with 0x");
+    static constexpr auto bytes_from_str(std::string_view str) -> std::array<std::uint8_t, N> {
+        if (str.starts_with("0x")) {
+            str.remove_prefix(2);
+        }
 
         if (str.size() > 2 * N + 2) throw std::out_of_range("integer larger than bytes size");
 

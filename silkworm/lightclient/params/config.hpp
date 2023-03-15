@@ -16,14 +16,22 @@
 
 #pragma once
 
+#include <array>
 #include <map>
 #include <optional>
 #include <string>
 #include <vector>
 
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/core/common/util.hpp>
+#include <silkworm/lightclient/util/hash32.hpp>
 
 namespace silkworm::cl {
+
+constexpr std::size_t kForkVersionLength{4};
+
+using ChainId = uint64_t;
+using ForkVersion = std::array<uint8_t, kForkVersionLength>;
 
 //! Bootstrap nodes for Mainnet Beacon chain
 const std::vector<std::string> kMainnetBootstrapNodes = {
@@ -66,7 +74,7 @@ const std::vector<std::string> kSepoliaBootstrapNodes = {
 };
 
 //! Trusted checkpoint sync endpoints: https://eth-clients.github.io/checkpoint-sync-endpoints/
-const std::map<uint64_t, std::vector<std::string>> kCheckpointSyncEndpoints = {
+const std::map<ChainId, std::vector<std::string>> kCheckpointSyncEndpoints = {
     {kMainnetConfig.chain_id,
      {
          "https://beaconstate.ethstaker.cc/eth/v2/debug/beacon/states/finalized",
@@ -92,15 +100,146 @@ const std::map<uint64_t, std::vector<std::string>> kCheckpointSyncEndpoints = {
 };
 
 //! \brief Lookup a known checkpoint sync endpoint provided its chain ID
-std::optional<std::string> get_checkpoint_sync_endpoint(uint64_t chain_id) noexcept;
+std::optional<std::string> get_checkpoint_sync_endpoint(ChainId chain_id) noexcept;
 
+struct Fork {
+    uint64_t epoch;
+    ForkVersion version;
+};
+
+//! Configuration parameters for node to participate in beacon chain
 struct BeaconChainConfig {
+    uint64_t genesis_slot{0};   // The first canonical slot number of the beacon chain
+    uint64_t genesis_epoch{0};  // The first canonical epoch number of the beacon chain
+
+    // Time parameters constants
+    uint64_t seconds_per_slot{0};  // How many seconds are in a single slot
+    uint64_t slots_per_epoch{0};   // The number of slots in one epoch
+
+    // Fork-related values
+    ForkVersion genesis_fork_version;    // Used to track fork version between state transitions
+    ForkVersion altair_fork_version;     // Used to represent the fork version for Altair
+    uint64_t altair_fork_epoch{0};       // Used to represent the assigned fork epoch for Altair
+    ForkVersion bellatrix_fork_version;  // Used to represent the fork version for Bellatrix
+    uint64_t bellatrix_fork_epoch{0};    // Used to represent the assigned fork epoch for Bellatrix
+    ForkVersion capella_fork_version;    // Used to represent the fork version for Capella
+    uint64_t capella_fork_epoch{0};      // Used to represent the assigned fork epoch for Capella
+    ForkVersion sharding_fork_version;   // Used to represent the fork version for sharding
+    uint64_t sharding_fork_epoch{0};     // Used to represent the assigned fork epoch for sharding
+
+    [[nodiscard]] std::vector<Fork> sorted_fork_list() const;
 };
 
+inline constexpr BeaconChainConfig kMainnetBeaconConfig{
+    // Time parameters constants
+    .seconds_per_slot = 12,
+    .slots_per_epoch = 32,
+
+    // Fork-related values
+    .genesis_fork_version = {0x00, 0x00, 0x00, 0x00},
+    .altair_fork_version = {0x01, 0x00, 0x00, 0x00},
+    .altair_fork_epoch = 74240,
+    .bellatrix_fork_version = {0x02, 0x00, 0x00, 0x00},
+    .bellatrix_fork_epoch = 144869,
+    .capella_fork_version = {0x03, 0x00, 0x00, 0x00},
+    .capella_fork_epoch = std::numeric_limits<uint64_t>::max(),
+    .sharding_fork_version = {0x04, 0x00, 0x00, 0x00},
+    .sharding_fork_epoch = std::numeric_limits<uint64_t>::max(),
+};
+
+inline constexpr BeaconChainConfig kSepoliaBeaconConfig{
+    // Time parameters constants
+    .seconds_per_slot = 12,
+    .slots_per_epoch = 32,
+
+    // Fork-related values
+    .genesis_fork_version = {0x90, 0x00, 0x00, 0x69},
+    .altair_fork_version = {0x90, 0x00, 0x00, 0x70},
+    .altair_fork_epoch = 50,
+    .bellatrix_fork_version = {0x90, 0x00, 0x00, 0x71},
+    .bellatrix_fork_epoch = 100,
+    .capella_fork_version = {0x90, 0x00, 0x00, 0x72},
+    .capella_fork_epoch = std::numeric_limits<uint64_t>::max(),
+    .sharding_fork_version = {0x90, 0x00, 0x00, 0x73},
+    .sharding_fork_epoch = std::numeric_limits<uint64_t>::max(),
+};
+
+inline constexpr BeaconChainConfig kGoerliBeaconConfig{
+    // Time parameters constants
+    .seconds_per_slot = 12,
+    .slots_per_epoch = 32,
+
+    // Fork-related values
+    .genesis_fork_version = {0x00, 0x00, 0x10, 0x20},
+    .altair_fork_version = {0x01, 0x00, 0x10, 0x20},
+    .altair_fork_epoch = 36660,
+    .bellatrix_fork_version = {0x02, 0x00, 0x10, 0x20},
+    .bellatrix_fork_epoch = 112260,
+    .capella_fork_version = {0x03, 0x00, 0x10, 0x20},
+    .capella_fork_epoch = std::numeric_limits<uint64_t>::max(),
+    .sharding_fork_version = {0x04, 0x00, 0x10, 0x20},
+    .sharding_fork_epoch = std::numeric_limits<uint64_t>::max(),
+};
+
+//! Configuration parameters for node static genesis
 struct GenesisConfig {
+    Hash32 genesis_validator_root;  // Merkle root at genesis
+    uint64_t genesis_time{0};       // Unix time epoch at genesis
 };
 
+inline constexpr GenesisConfig kMainnetGenesisConfig{
+    .genesis_validator_root = 0x4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95_bytes32,
+    .genesis_time = 1606824023
+};
+
+inline constexpr GenesisConfig kSepoliaGenesisConfig{
+    .genesis_validator_root = 0xd8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b8078_bytes32,
+    .genesis_time = 1655733600
+};
+
+inline constexpr GenesisConfig kGoerliGenesisConfig{
+    .genesis_validator_root = 0x043db0d9a83813551ee2f33450d23797757d430911a9320530ad8a0eabc43efb_bytes32,
+    .genesis_time = 1616508000
+};
+
+//! Configuration parameters for node peer-to-peer networking
 struct NetworkConfig {
 };
+
+inline constexpr NetworkConfig kMainnetNetworkConfig{
+};
+
+inline constexpr NetworkConfig kSepoliaNetworkConfig{
+};
+
+inline constexpr NetworkConfig kGoerliNetworkConfig{
+};
+
+struct ConsensusConfig {
+    GenesisConfig genesis_config;
+    BeaconChainConfig beacon_chain_config;
+    NetworkConfig network_config;
+};
+
+inline constexpr ConsensusConfig kMainnetConsensusConfig{
+    .genesis_config = kMainnetGenesisConfig,
+    .beacon_chain_config = kMainnetBeaconConfig,
+    .network_config = kMainnetNetworkConfig,
+};
+
+inline constexpr ConsensusConfig kSepoliaConsensusConfig{
+    .genesis_config = kSepoliaGenesisConfig,
+    .beacon_chain_config = kSepoliaBeaconConfig,
+    .network_config = kSepoliaNetworkConfig,
+};
+
+inline constexpr ConsensusConfig kGoerliConsensusConfig{
+    .genesis_config = kGoerliGenesisConfig,
+    .beacon_chain_config = kGoerliBeaconConfig,
+    .network_config = kGoerliNetworkConfig,
+};
+
+//! \brief Lookup a known consensus config provided the chain identifier
+const ConsensusConfig* lookup_consensus_config(ChainId chain_id) noexcept;
 
 }  // namespace silkworm::cl

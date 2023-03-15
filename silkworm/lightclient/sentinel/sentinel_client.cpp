@@ -33,6 +33,10 @@ awaitable<void> LocalClient::start() {
     co_await timeout();
 }
 
+awaitable<void> LocalClient::set_status(const Status& status) {
+    co_await local_server_->set_status(status);
+}
+
 awaitable<LightClientBootstrapPtr> LocalClient::bootstrap_request_v1(const eth::Root& root) {
     const auto serialized_root = root.serialize();
     RequestData request{

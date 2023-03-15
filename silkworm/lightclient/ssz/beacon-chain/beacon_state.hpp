@@ -43,15 +43,15 @@ class BeaconStatePhase0 : public ssz::Container {
     ListFixedSizedParts<Root> historical_roots_{constants::HISTORICAL_ROOTS_LIMIT};
     Eth1Data eth1_data_;
     ListFixedSizedParts<Eth1Data> eth1_data_votes_{constants::EPOCHS_PER_ETH1_VOTING_PERIOD *
-                                                   constants::SLOTS_PER_EPOCH};
+                                                   constants::kSlotsPerEpoch};
     DepositIndex eth1_deposit_index_;
     ListFixedSizedParts<Validator> validators_{constants::VALIDATOR_REGISTRY_LIMIT};
     ListFixedSizedParts<Gwei> balances_{constants::VALIDATOR_REGISTRY_LIMIT};
     VectorFixedSizedParts<Bytes32, constants::EPOCHS_PER_HISTORICAL_VECTOR> randao_mixes_;
     VectorFixedSizedParts<Gwei, constants::EPOCHS_PER_SLASHINGS_VECTOR> slashings_;
     ListVariableSizedParts<PendingAttestation> previous_epoch_attestations_{constants::MAX_ATTESTATIONS *
-                                                                            constants::SLOTS_PER_EPOCH},
-        current_epoch_attestations_{constants::MAX_ATTESTATIONS * constants::SLOTS_PER_EPOCH};
+                                                                            constants::kSlotsPerEpoch},
+        current_epoch_attestations_{constants::MAX_ATTESTATIONS * constants::kSlotsPerEpoch};
     Bitvector<constants::JUSTIFICATION_BITS_LENGTH> justification_bits_;
     Checkpoint previous_justified_checkpoint_, current_justified_checkpoint_, finalized_checkpoint_;
 
@@ -237,7 +237,7 @@ class BeaconStateBellatrix : public ssz::Container {
     ListFixedSizedParts<Root> historical_roots_{constants::HISTORICAL_ROOTS_LIMIT};
     Eth1Data eth1_data_;
     ListFixedSizedParts<Eth1Data> eth1_data_votes_{constants::EPOCHS_PER_ETH1_VOTING_PERIOD *
-                                                   constants::SLOTS_PER_EPOCH};
+                                                   constants::kSlotsPerEpoch};
     DepositIndex eth1_deposit_index_;
     ListFixedSizedParts<Validator> validators_{constants::VALIDATOR_REGISTRY_LIMIT};
     ListFixedSizedParts<Gwei> balances_{constants::BALANCE_REGISTRY_LIMIT};

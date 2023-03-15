@@ -108,7 +108,7 @@ inline auto hash_of_transaction(const silkworm::Transaction& txn) {
     return ethash::keccak256(txn_rlp.data(), txn_rlp.length());
 }
 
-inline std::ostream& operator<<(std::ostream& out, const silkworm::ByteView& bytes) {
+inline std::ostream& operator<<(std::ostream& out, silkworm::ByteView bytes) {
     for (const auto& b : bytes) {
         out << std::hex << std::setw(2) << std::setfill('0') << int(b);
     }

@@ -23,10 +23,7 @@
 namespace silkrpc::test {
 
 ContextTestBase::ContextTestBase()
-    : init_dummy{[] {
-          SILKRPC_LOG_VERBOSITY(LogLevel::None);
-          return true;
-      }()},
+    : log_guard_{LogLevel::None},
       context_{[]() { return grpc::CreateChannel("localhost:12345", grpc::InsecureChannelCredentials()); },
                std::make_shared<BlockCache>(), std::make_shared<ethdb::kv::CoherentStateCache>()},
       io_context_{*context_.io_context()},

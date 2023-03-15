@@ -16,7 +16,7 @@
 
 #include "state_cache.hpp"
 
-#include <exception>
+#include <optional>
 
 #include <magic_enum.hpp>
 
@@ -160,9 +160,9 @@ void CoherentStateCache::process_storage_change(CoherentStateRoot* root, StateVi
 bool CoherentStateCache::add(KeyValue kv, CoherentStateRoot* root, StateViewId view_id) {
     auto [it, inserted] = root->cache.insert(kv);
     SILKRPC_DEBUG << "Data cache kv.key=" << silkworm::to_hex(kv.key) << " inserted=" << inserted << " view=" << view_id << "\n";
-    KeyValue* replaced{nullptr};
+    std::optional<KeyValue> replaced;
     if (!inserted) {
-        replaced = &*it;
+        replaced = *it;
         root->cache.erase(it);
         std::tie(it, inserted) = root->cache.insert(kv);
         SILKWORM_ASSERT(inserted);
@@ -170,13 +170,13 @@ bool CoherentStateCache::add(KeyValue kv, CoherentStateRoot* root, StateViewId v
     if (latest_state_view_id_ != view_id) {
         return inserted;
     }
-    if (replaced != nullptr) {
+    if (replaced) {
         state_evictions_.remove(*replaced);
         SILKRPC_DEBUG << "Data evictions removed replaced.key=" << silkworm::to_hex(replaced->key) << "\n";
     }
     state_evictions_.push_front(kv);
 
-    // Remove longest unused key-value pair when size exceeded
+    // Remove the longest unused key-value pair when size exceeded
     if (state_evictions_.size() > config_.max_state_keys) {
         const auto oldest = state_evictions_.back();
         SILKRPC_DEBUG << "Data cache resize oldest.key=" << silkworm::to_hex(oldest.key) << "\n";
@@ -190,9 +190,9 @@ bool CoherentStateCache::add(KeyValue kv, CoherentStateRoot* root, StateViewId v
 bool CoherentStateCache::add_code(KeyValue kv, CoherentStateRoot* root, StateViewId view_id) {
     auto [it, inserted] = root->code_cache.insert(kv);
     SILKRPC_DEBUG << "Code cache kv.key=" << silkworm::to_hex(kv.key) << " inserted=" << inserted << " view=" << view_id << "\n";
-    KeyValue* replaced{nullptr};
+    std::optional<KeyValue> replaced;
     if (!inserted) {
-        replaced = &*it;
+        replaced = *it;
         root->code_cache.erase(it);
         std::tie(it, inserted) = root->code_cache.insert(kv);
         SILKWORM_ASSERT(inserted);
@@ -200,7 +200,7 @@ bool CoherentStateCache::add_code(KeyValue kv, CoherentStateRoot* root, StateVie
     if (latest_state_view_id_ != view_id) {
         return inserted;
     }
-    if (replaced != nullptr) {
+    if (replaced) {
         code_evictions_.remove(*replaced);
         SILKRPC_DEBUG << "Code evictions removed replaced.key=" << silkworm::to_hex(replaced->key) << "\n";
     }

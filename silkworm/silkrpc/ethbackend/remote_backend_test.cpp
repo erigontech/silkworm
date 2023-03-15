@@ -65,6 +65,7 @@ using StrictMockEthBackendStub = testing::StrictMock<::remote::MockETHBACKENDStu
 
 using EthBackendTest = test::GrpcApiTestBase<ethbackend::RemoteBackEnd, StrictMockEthBackendStub>;
 
+#ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(EthBackendTest, "BackEnd::etherbase", "[silkrpc][ethbackend][backend]") {
     test::StrictMockAsyncResponseReader<::remote::EtherbaseReply> reader;
     EXPECT_CALL(*stub_, AsyncEtherbaseRaw).WillOnce(testing::Return(&reader));
@@ -394,5 +395,6 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_forkchoice_updated_v1", "[silk
         CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::engine_forkchoice_updated_v1>(forkchoice_request)), boost::system::system_error);
     }
 }
+#endif  // SILKWORM_SANITIZE
 
 } // namespace silkrpc

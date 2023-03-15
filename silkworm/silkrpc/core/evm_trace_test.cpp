@@ -21,18 +21,17 @@
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/thread_pool.hpp>
-#include <boost/asio/use_future.hpp>
 #include <catch2/catch.hpp>
+#include <evmc/instructions.h>
 #include <gmock/gmock.h>
 #include <silkpre/precompile.h>
-#include <silkworm/core/common/util.hpp>
-#include <silkworm/third_party/evmone/evmc/include/evmc/instructions.h>
 
+#include <silkworm/core/common/util.hpp>
+#include <silkworm/node/test/log.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
-#include <silkworm/silkrpc/core/rawdb/accessors.hpp>
-#include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/ethdb/tables.hpp>
+#include <silkworm/silkrpc/test/context_test_base.hpp>
 #include <silkworm/silkrpc/test/mock_database_reader.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
 
@@ -59,10 +58,11 @@ static silkworm::Bytes kConfigValue{*silkworm::from_hex(
     "223a302c22697374616e62756c426c6f636b223a313536313635312c226265726c696e426c6f636b223a343436303634342c226c6f6e646f6e"
     "426c6f636b223a353036323630352c22636c69717565223a7b22706572696f64223a31352c2265706f6368223a33303030307d7d")};
 
-TEST_CASE("TraceCallExecutor::trace_call precompiled") {
-    SILKRPC_LOG_STREAMS(null_stream(), null_stream());
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+struct TraceCallExecutorTest : public test::ContextTestBase {
+};
 
+#ifndef SILKWORM_SANITIZE
+TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call precompiled") {
     static silkworm::Bytes kAccountHistoryKey1{*silkworm::from_hex("0a6bb546b9208cfab9e8fa2b9b2c042b18df703000000000009db707")};
     static silkworm::Bytes kAccountHistoryKey2{*silkworm::from_hex("000000000000000000000000000000000000000900000000009db707")};
     static silkworm::Bytes kAccountHistoryKey3{*silkworm::from_hex("000000000000000000000000000000000000000000000000009db707")};
@@ -73,12 +73,6 @@ TEST_CASE("TraceCallExecutor::trace_call precompiled") {
 
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
-
-    ChannelFactory channel_factory = []() {
-        return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials());
-    };
-    ContextPool context_pool{1, channel_factory};
-    context_pool.start();
 
     SECTION("precompiled contract failure") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
@@ -126,15 +120,10 @@ TEST_CASE("TraceCallExecutor::trace_call precompiled") {
         silkworm::Block block{};
         block.header.number = 10'336'006;
 
-        boost::asio::io_context& io_context = context_pool.next_io_context();
         TraceConfig config{true, true, true};
         BlockCache block_cache;
-        TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-        auto execution_result = boost::asio::co_spawn(io_context, executor.trace_call(block, call, config), boost::asio::use_future);
-        const auto result = execution_result.get();
-
-        context_pool.stop();
-        context_pool.join();
+        TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
+        const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(!result.pre_check_error);
         CHECK(result.traces == R"({
@@ -174,10 +163,7 @@ TEST_CASE("TraceCallExecutor::trace_call precompiled") {
     }
 }
 
-TEST_CASE("TraceCallExecutor::trace_call 1") {
-    SILKRPC_LOG_STREAMS(null_stream(), null_stream());
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
-
+TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
     static silkworm::Bytes kAccountHistoryKey1{*silkworm::from_hex("e0a2bd4258d2768837baa26a28fe71dc079f84c700000000005279a8")};
     static silkworm::Bytes kAccountHistoryValue1{*silkworm::from_hex(
         "0100000000000000000000003a300000010000005200c003100000008a5e905e9c5ea55ead5eb25eb75ebf5ec95ed25ed75ee15eed5ef25efa"
@@ -272,12 +258,6 @@ TEST_CASE("TraceCallExecutor::trace_call 1") {
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
 
-    ChannelFactory channel_factory = []() {
-        return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials());
-    };
-    ContextPool context_pool{1, channel_factory};
-    auto pool_thread = std::thread([&]() { context_pool.run(); });
-
     SECTION("Call: failed with intrinsic gas too low") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
@@ -310,16 +290,10 @@ TEST_CASE("TraceCallExecutor::trace_call 1") {
         silkworm::Block block{};
         block.header.number = block_number;
 
-        boost::asio::io_context& io_context = context_pool.next_io_context();
         TraceConfig config{false, false, false};
         BlockCache block_cache;
-        TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-        auto execution_result = boost::asio::co_spawn(io_context, executor.trace_call(block, call, config), boost::asio::use_future);
-        auto result = execution_result.get();
-
-        context_pool.stop();
-        io_context.stop();
-        pool_thread.join();
+        TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
+        const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == true);
         CHECK(result.pre_check_error.value() == "intrinsic gas too low: have 50000, want 53072");
@@ -371,14 +345,8 @@ TEST_CASE("TraceCallExecutor::trace_call 1") {
 
         TraceConfig config{true, true, true};
         BlockCache block_cache;
-        TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-        boost::asio::io_context& io_context = context_pool.next_io_context();
-        auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.trace_call(block, call, config), boost::asio::use_future);
-        auto result = execution_result.get();
-
-        context_pool.stop();
-        io_context.stop();
-        pool_thread.join();
+        TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
+        const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
         CHECK(result.traces == R"({
@@ -559,14 +527,8 @@ TEST_CASE("TraceCallExecutor::trace_call 1") {
 
         TraceConfig config{false, true, true};
         BlockCache block_cache;
-        TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-        boost::asio::io_context& io_context = context_pool.next_io_context();
-        auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.trace_call(block, call, config), boost::asio::use_future);
-        auto result = execution_result.get();
-
-        context_pool.stop();
-        io_context.stop();
-        pool_thread.join();
+        TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
+        const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
         CHECK(result.traces == R"({
@@ -684,14 +646,8 @@ TEST_CASE("TraceCallExecutor::trace_call 1") {
 
         TraceConfig config{true, false, true};
         BlockCache block_cache;
-        TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-        boost::asio::io_context& io_context = context_pool.next_io_context();
-        auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.trace_call(block, call, config), boost::asio::use_future);
-        auto result = execution_result.get();
-
-        context_pool.stop();
-        io_context.stop();
-        pool_thread.join();
+        TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
+        const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
         CHECK(result.traces == R"({
@@ -855,14 +811,8 @@ TEST_CASE("TraceCallExecutor::trace_call 1") {
 
         TraceConfig config{true, true, false};
         BlockCache block_cache;
-        TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-        boost::asio::io_context& io_context = context_pool.next_io_context();
-        auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.trace_call(block, call, config), boost::asio::use_future);
-        auto result = execution_result.get();
-
-        context_pool.stop();
-        io_context.stop();
-        pool_thread.join();
+        TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
+        const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
         CHECK(result.traces == R"({
@@ -999,14 +949,8 @@ TEST_CASE("TraceCallExecutor::trace_call 1") {
 
         TraceConfig config{false, false, false};
         BlockCache block_cache;
-        TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-        boost::asio::io_context& io_context = context_pool.next_io_context();
-        auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.trace_call(block, call, config), boost::asio::use_future);
-        auto result = execution_result.get();
-
-        context_pool.stop();
-        io_context.stop();
-        pool_thread.join();
+        TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
+        const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
         CHECK(result.traces == R"({
@@ -1018,10 +962,7 @@ TEST_CASE("TraceCallExecutor::trace_call 1") {
     }
 }
 
-TEST_CASE("TraceCallExecutor::trace_call 2") {
-    SILKRPC_LOG_STREAMS(null_stream(), null_stream());
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
-
+TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 2") {
     static silkworm::Bytes kAccountHistoryKey1{*silkworm::from_hex("8ced5ad0d8da4ec211c17355ed3dbfec4cf0e5b900000000004366ad")};
     static silkworm::Bytes kAccountHistoryValue1{*silkworm::from_hex(
         "0100000000000000000000003a300000010000004300c00310000000d460da60de60f86008610d611161136125612d6149615c61626182"
@@ -1118,12 +1059,6 @@ TEST_CASE("TraceCallExecutor::trace_call 2") {
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
 
-    ChannelFactory channel_factory = []() {
-        return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials());
-    };
-    ContextPool context_pool{1, channel_factory};
-    auto pool_thread = std::thread([&]() { context_pool.run(); });
-
     SECTION("Call: TO present") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
@@ -1214,15 +1149,9 @@ TEST_CASE("TraceCallExecutor::trace_call 2") {
 
         TraceConfig config{true, true, true};
         BlockCache block_cache;
-        TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-        boost::asio::io_context& io_context = context_pool.next_io_context();
+        TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
 
-        auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.trace_call(block, call, config), boost::asio::use_future);
-        auto result = execution_result.get();
-
-        context_pool.stop();
-        io_context.stop();
-        pool_thread.join();
+        const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
         CHECK(result.traces == R"({
@@ -1295,10 +1224,7 @@ TEST_CASE("TraceCallExecutor::trace_call 2") {
     }
 }
 
-TEST_CASE("TraceCallExecutor::trace_call with error") {
-    SILKRPC_LOG_STREAMS(null_stream(), null_stream());
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
-
+TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with error") {
     static silkworm::Bytes kAccountHistoryKey1{*silkworm::from_hex("578f0a154b23be77fc2033197fbc775637648ad400000000005279a8")};
     static silkworm::Bytes kAccountHistoryValue1{*silkworm::from_hex(
         "0100000000000000000000003a300000010000005200650010000000a074f7740275247527752b75307549756d75787581758a75937598"
@@ -1368,12 +1294,6 @@ TEST_CASE("TraceCallExecutor::trace_call with error") {
 
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
-
-    ChannelFactory channel_factory = []() {
-        return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials());
-    };
-    ContextPool context_pool{1, channel_factory};
-    auto pool_thread = std::thread([&]() { context_pool.run(); });
 
     EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
         .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
@@ -1485,14 +1405,8 @@ TEST_CASE("TraceCallExecutor::trace_call with error") {
 
     TraceConfig config{true, true, true};
     BlockCache block_cache;
-    TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-    boost::asio::io_context& io_context = context_pool.next_io_context();
-    auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.trace_call(block, call, config), boost::asio::use_future);
-    auto result = execution_result.get();
-
-    context_pool.stop();
-    io_context.stop();
-    pool_thread.join();
+    TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
+    const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
     CHECK(result.pre_check_error.has_value() == false);
     CHECK(result.traces == R"({
@@ -1577,10 +1491,7 @@ TEST_CASE("TraceCallExecutor::trace_call with error") {
     })"_json);
 }
 
-TEST_CASE("TraceCallExecutor::trace_calls") {
-    SILKRPC_LOG_STREAMS(null_stream(), null_stream());
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
-
+TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
     static silkworm::Bytes kAccountHistoryKey1{*silkworm::from_hex("e0a2bd4258d2768837baa26a28fe71dc079f84c700000000005279a8")};
     static silkworm::Bytes kAccountHistoryValue1{*silkworm::from_hex(
         "0100000000000000000000003a300000010000005200c003100000008a5e905e9c5ea55ead5eb25eb75ebf5ec95ed25ed75ee15eed5ef25efa"
@@ -1675,12 +1586,6 @@ TEST_CASE("TraceCallExecutor::trace_calls") {
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
 
-    ChannelFactory channel_factory = []() {
-        return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials());
-    };
-    ContextPool context_pool{1, channel_factory};
-    context_pool.start();
-
     SECTION("callMany: failed with intrinsic gas too low") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
@@ -1718,14 +1623,9 @@ TEST_CASE("TraceCallExecutor::trace_calls") {
         silkworm::Block block{};
         block.header.number = block_number;
 
-        boost::asio::io_context& io_context = context_pool.next_io_context();
         BlockCache block_cache;
-        TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-        auto execution_result = boost::asio::co_spawn(io_context, executor.trace_calls(block, calls), boost::asio::use_future);
-        auto result = execution_result.get();
-
-        context_pool.stop();
-        context_pool.join();
+        TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
+        const auto result = spawn_and_wait(executor.trace_calls(block, calls));
 
         CHECK(result.pre_check_error.has_value() == true);
         CHECK(result.pre_check_error.value() == "first run for txIndex 0 error: intrinsic gas too low: have 50000, want 53072");
@@ -1780,13 +1680,8 @@ TEST_CASE("TraceCallExecutor::trace_calls") {
         block.header.number = block_number;
 
         BlockCache block_cache;
-        TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-        boost::asio::io_context& io_context = context_pool.next_io_context();
-        auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.trace_calls(block, calls), boost::asio::use_future);
-        auto result = execution_result.get();
-
-        context_pool.stop();
-        context_pool.join();
+        TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
+        const auto result = spawn_and_wait(executor.trace_calls(block, calls));
 
         CHECK(result.pre_check_error.has_value() == false);
         CHECK(result.traces == R"([
@@ -1924,10 +1819,7 @@ TEST_CASE("TraceCallExecutor::trace_calls") {
     }
 }
 
-TEST_CASE("TraceCallExecutor::trace_block_transactions") {
-    SILKRPC_LOG_STREAMS(null_stream(), null_stream());
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
-
+TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transactions") {
     // TransactionDatabase::get: TABLE AccountHistory
     static silkworm::Bytes kAccountHistoryKey1{*silkworm::from_hex("a85b4c37cd8f447848d49851a1bb06d10d410c1300000000000fa0a5")};
     static silkworm::Bytes kAccountHistoryValue1{*silkworm::from_hex("0100000000000000000000003a300000010000000f00000010000000a5a0")};
@@ -1996,12 +1888,6 @@ TEST_CASE("TraceCallExecutor::trace_block_transactions") {
 
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
-
-    ChannelFactory channel_factory = []() {
-        return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials());
-    };
-    ContextPool context_pool{1, channel_factory};
-    auto pool_thread = std::thread([&]() { context_pool.run(); });
 
     EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
         .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
@@ -2109,14 +1995,8 @@ TEST_CASE("TraceCallExecutor::trace_block_transactions") {
 
     TraceConfig config{true, true, true};
     BlockCache block_cache;
-    TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-    boost::asio::io_context& io_context = context_pool.next_io_context();
-    auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.trace_block_transactions(block, config), boost::asio::use_future);
-    auto result = execution_result.get();
-
-    context_pool.stop();
-    io_context.stop();
-    pool_thread.join();
+    TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
+    const auto result = spawn_and_wait(executor.trace_block_transactions(block, config));
 
     CHECK(result == R"([
         {
@@ -2488,10 +2368,7 @@ TEST_CASE("TraceCallExecutor::trace_block_transactions") {
     ])"_json);
 }
 
-TEST_CASE("TraceCallExecutor::trace_block") {
-    SILKRPC_LOG_STREAMS(null_stream(), null_stream());
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
-
+TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
     // TransactionDatabase::get: TABLE AccountHistory
     static silkworm::Bytes kAccountHistoryKey1{*silkworm::from_hex("a85b4c37cd8f447848d49851a1bb06d10d410c1300000000000fa0a5")};
     static silkworm::Bytes kAccountHistoryValue1{*silkworm::from_hex("0100000000000000000000003a300000010000000f00000010000000a5a0")};
@@ -2560,12 +2437,6 @@ TEST_CASE("TraceCallExecutor::trace_block") {
 
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
-
-    ChannelFactory channel_factory = []() {
-        return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials());
-    };
-    ContextPool context_pool{1, channel_factory};
-    auto pool_thread = std::thread([&]() { context_pool.run(); });
 
     EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
@@ -2674,16 +2545,10 @@ TEST_CASE("TraceCallExecutor::trace_block") {
     block_with_hash.block.transactions.push_back(transaction);
 
     BlockCache block_cache;
-    TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-    boost::asio::io_context& io_context = context_pool.next_io_context();
+    TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
 
     Filter filter;
-    auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.trace_block(block_with_hash, filter), boost::asio::use_future);
-    auto result = execution_result.get();
-
-    context_pool.stop();
-    io_context.stop();
-    pool_thread.join();
+    const auto result = spawn_and_wait(executor.trace_block(block_with_hash, filter));
 
     CHECK(result == R"([
         {
@@ -2722,10 +2587,7 @@ TEST_CASE("TraceCallExecutor::trace_block") {
     ])"_json);
 }
 
-TEST_CASE("TraceCallExecutor::trace_replayTransaction") {
-    SILKRPC_LOG_STREAMS(null_stream(), null_stream());
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
-
+TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransaction") {
     // TransactionDatabase::get: TABLE AccountHistory
     static silkworm::Bytes kAccountHistoryKey1{*silkworm::from_hex("a85b4c37cd8f447848d49851a1bb06d10d410c1300000000000fa0a5")};
     static silkworm::Bytes kAccountHistoryValue1{*silkworm::from_hex("0100000000000000000000003a300000010000000f00000010000000a5a0")};
@@ -2794,12 +2656,6 @@ TEST_CASE("TraceCallExecutor::trace_replayTransaction") {
 
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
-
-    ChannelFactory channel_factory = []() {
-        return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials());
-    };
-    ContextPool context_pool{1, channel_factory};
-    auto pool_thread = std::thread([&]() { context_pool.run(); });
 
     EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
@@ -2912,15 +2768,9 @@ TEST_CASE("TraceCallExecutor::trace_replayTransaction") {
 
     SECTION("Call: only vmTrace") {
         BlockCache block_cache;
-        TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-        boost::asio::io_context& io_context = context_pool.next_io_context();
-        auto execution_result = boost::asio::co_spawn(io_context.get_executor(),
-            executor.trace_transaction(block_with_hash.block, transaction, {true, false, false}), boost::asio::use_future);
-        auto result = execution_result.get();
-
-        context_pool.stop();
-        io_context.stop();
-        pool_thread.join();
+        TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
+        TraceConfig config{.vm_trace = true, .trace = false, .state_diff = false};
+        const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash.block, transaction, config));
 
         CHECK(result == R"({
             "output": "0x6080604052348015600f57600080fd5b506004361060325760003560e01c806360fe47b11460375780636d4ce63c146062575b600080fd5b606060048036036020811015604b57600080fd5b8101908080359060200190929190505050607e565b005b60686088565b6040518082815260200191505060405180910390f35b8060008190555050565b6000805490509056fea265627a7a72305820ca7603d2458ae7a9db8bde091d8ba88a4637b54a8cc213b73af865f97c60af2c64736f6c634300050a0032",
@@ -3234,15 +3084,9 @@ TEST_CASE("TraceCallExecutor::trace_replayTransaction") {
 
     SECTION("Call: only trace") {
         BlockCache block_cache;
-        TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-        boost::asio::io_context& io_context = context_pool.next_io_context();
-        auto execution_result = boost::asio::co_spawn(io_context.get_executor(),
-            executor.trace_transaction(block_with_hash.block, transaction, {false, true, false}), boost::asio::use_future);
-        auto result = execution_result.get();
-
-        context_pool.stop();
-        io_context.stop();
-        pool_thread.join();
+        TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
+        TraceConfig config{.vm_trace = false, .trace = true, .state_diff = false};
+        const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash.block, transaction, config));
 
         CHECK(result == R"({
             "output": "0x6080604052348015600f57600080fd5b506004361060325760003560e01c806360fe47b11460375780636d4ce63c146062575b600080fd5b606060048036036020811015604b57600080fd5b8101908080359060200190929190505050607e565b005b60686088565b6040518082815260200191505060405180910390f35b8060008190555050565b6000805490509056fea265627a7a72305820ca7603d2458ae7a9db8bde091d8ba88a4637b54a8cc213b73af865f97c60af2c64736f6c634300050a0032",
@@ -3270,15 +3114,9 @@ TEST_CASE("TraceCallExecutor::trace_replayTransaction") {
     }
     SECTION("Call: only stateDiff") {
         BlockCache block_cache;
-        TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-        boost::asio::io_context& io_context = context_pool.next_io_context();
-        auto execution_result = boost::asio::co_spawn(io_context.get_executor(),
-            executor.trace_transaction(block_with_hash.block, transaction, {false, false, true}), boost::asio::use_future);
-        auto result = execution_result.get();
-
-        context_pool.stop();
-        io_context.stop();
-        pool_thread.join();
+        TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
+        TraceConfig config{.vm_trace = false, .trace = false, .state_diff = true};
+        const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash.block, transaction, config));
 
         CHECK(result == R"({
             "output": "0x6080604052348015600f57600080fd5b506004361060325760003560e01c806360fe47b11460375780636d4ce63c146062575b600080fd5b606060048036036020811015604b57600080fd5b8101908080359060200190929190505050607e565b005b60686088565b6040518082815260200191505060405180910390f35b8060008190555050565b6000805490509056fea265627a7a72305820ca7603d2458ae7a9db8bde091d8ba88a4637b54a8cc213b73af865f97c60af2c64736f6c634300050a0032",
@@ -3329,14 +3167,9 @@ TEST_CASE("TraceCallExecutor::trace_replayTransaction") {
     }
     SECTION("Call: full output") {
         BlockCache block_cache;
-        TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-        boost::asio::io_context& io_context = context_pool.next_io_context();
-        auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.trace_transaction(block_with_hash.block, transaction, {true, true, true}), boost::asio::use_future);
-        auto result = execution_result.get();
-
-        context_pool.stop();
-        io_context.stop();
-        pool_thread.join();
+        TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
+        TraceConfig config{.vm_trace = true, .trace = true, .state_diff = true};
+        const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash.block, transaction, config));
 
         CHECK(result == R"({
             "output": "0x6080604052348015600f57600080fd5b506004361060325760003560e01c806360fe47b11460375780636d4ce63c146062575b600080fd5b606060048036036020811015604b57600080fd5b8101908080359060200190929190505050607e565b005b60686088565b6040518082815260200191505060405180910390f35b8060008190555050565b6000805490509056fea265627a7a72305820ca7603d2458ae7a9db8bde091d8ba88a4637b54a8cc213b73af865f97c60af2c64736f6c634300050a0032",
@@ -3706,10 +3539,7 @@ TEST_CASE("TraceCallExecutor::trace_replayTransaction") {
     }
 }
 
-TEST_CASE("TraceCallExecutor::trace_transaction") {
-    SILKRPC_LOG_STREAMS(null_stream(), null_stream());
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
-
+TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") {
     // TransactionDatabase::get: TABLE AccountHistory
     static silkworm::Bytes kAccountHistoryKey1{*silkworm::from_hex("a85b4c37cd8f447848d49851a1bb06d10d410c1300000000000fa0a5")};
     static silkworm::Bytes kAccountHistoryValue1{*silkworm::from_hex("0100000000000000000000003a300000010000000f00000010000000a5a0")};
@@ -3778,12 +3608,6 @@ TEST_CASE("TraceCallExecutor::trace_transaction") {
 
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
-
-    ChannelFactory channel_factory = []() {
-        return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials());
-    };
-    ContextPool context_pool{1, channel_factory};
-    auto pool_thread = std::thread([&]() { context_pool.run(); });
 
     EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
@@ -3895,14 +3719,8 @@ TEST_CASE("TraceCallExecutor::trace_transaction") {
     block_with_hash.block.transactions.push_back(transaction);
 
     BlockCache block_cache;
-    TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-    boost::asio::io_context& io_context = context_pool.next_io_context();
-    auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.trace_transaction(block_with_hash, transaction), boost::asio::use_future);
-    auto result = execution_result.get();
-
-    context_pool.stop();
-    io_context.stop();
-    pool_thread.join();
+    TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
+    const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash, transaction));
 
     CHECK(result == R"([
         {
@@ -3928,21 +3746,12 @@ TEST_CASE("TraceCallExecutor::trace_transaction") {
     ])"_json);
 }
 
-TEST_CASE("TraceCallExecutor::trace_filter") {
-    SILKRPC_LOG_STREAMS(null_stream(), null_stream());
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
-
+TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
     StringWriter string_writer(4096);
     json::Stream stream(string_writer);
 
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
-
-    ChannelFactory channel_factory = []() {
-        return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials());
-    };
-    ContextPool context_pool{1, channel_factory};
-    auto pool_thread = std::thread([&]() { context_pool.run(); });
 
     EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
@@ -5454,17 +5263,10 @@ TEST_CASE("TraceCallExecutor::trace_filter") {
         })"_json;
 
         BlockCache block_cache;
-        TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-        boost::asio::io_context& io_context = context_pool.next_io_context();
+        TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
 
         stream.open_object();
-        auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.trace_filter(trace_filter, &stream), boost::asio::use_future);
-        execution_result.get();
-
-        context_pool.stop();
-        io_context.stop();
-        pool_thread.join();
-
+        spawn_and_wait(executor.trace_filter(trace_filter, &stream));
         stream.close_object();
         stream.close();
 
@@ -5520,17 +5322,10 @@ TEST_CASE("TraceCallExecutor::trace_filter") {
             }));
 
         BlockCache block_cache;
-        TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-        boost::asio::io_context& io_context = context_pool.next_io_context();
+        TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
 
         stream.open_object();
-        auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.trace_filter(trace_filter, &stream), boost::asio::use_future);
-        execution_result.get();
-
-        context_pool.stop();
-        io_context.stop();
-        pool_thread.join();
-
+        spawn_and_wait(executor.trace_filter(trace_filter, &stream));
         stream.close_object();
         stream.close();
 
@@ -5609,17 +5404,10 @@ TEST_CASE("TraceCallExecutor::trace_filter") {
             }));
 
         BlockCache block_cache;
-        TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-        boost::asio::io_context& io_context = context_pool.next_io_context();
+        TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
 
         stream.open_object();
-        auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.trace_filter(trace_filter, &stream), boost::asio::use_future);
-        execution_result.get();
-
-        context_pool.stop();
-        io_context.stop();
-        pool_thread.join();
-
+        spawn_and_wait(executor.trace_filter(trace_filter, &stream));
         stream.close_object();
         stream.close();
 
@@ -5672,17 +5460,10 @@ TEST_CASE("TraceCallExecutor::trace_filter") {
             }));
 
         BlockCache block_cache;
-        TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-        boost::asio::io_context& io_context = context_pool.next_io_context();
+        TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
 
         stream.open_object();
-        auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.trace_filter(trace_filter, &stream), boost::asio::use_future);
-        execution_result.get();
-
-        context_pool.stop();
-        io_context.stop();
-        pool_thread.join();
-
+        spawn_and_wait(executor.trace_filter(trace_filter, &stream));
         stream.close_object();
         stream.close();
 
@@ -5699,17 +5480,10 @@ TEST_CASE("TraceCallExecutor::trace_filter") {
         })"_json;
 
         BlockCache block_cache;
-        TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-        boost::asio::io_context& io_context = context_pool.next_io_context();
+        TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
 
         stream.open_object();
-        auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.trace_filter(trace_filter, &stream), boost::asio::use_future);
-        execution_result.get();
-
-        context_pool.stop();
-        io_context.stop();
-        pool_thread.join();
-
+        spawn_and_wait(executor.trace_filter(trace_filter, &stream));
         stream.close_object();
         stream.close();
 
@@ -5726,17 +5500,10 @@ TEST_CASE("TraceCallExecutor::trace_filter") {
         })"_json;
 
         BlockCache block_cache;
-        TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-        boost::asio::io_context& io_context = context_pool.next_io_context();
+        TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
 
         stream.open_object();
-        auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.trace_filter(trace_filter, &stream), boost::asio::use_future);
-        execution_result.get();
-
-        context_pool.stop();
-        io_context.stop();
-        pool_thread.join();
-
+        spawn_and_wait(executor.trace_filter(trace_filter, &stream));
         stream.close_object();
         stream.close();
 
@@ -5802,17 +5569,10 @@ TEST_CASE("TraceCallExecutor::trace_filter") {
             }));
 
         BlockCache block_cache;
-        TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-        boost::asio::io_context& io_context = context_pool.next_io_context();
+        TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
 
         stream.open_object();
-        auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.trace_filter(trace_filter, &stream), boost::asio::use_future);
-        execution_result.get();
-
-        context_pool.stop();
-        io_context.stop();
-        pool_thread.join();
-
+        spawn_and_wait(executor.trace_filter(trace_filter, &stream));
         stream.close_object();
         stream.close();
 
@@ -5891,17 +5651,10 @@ TEST_CASE("TraceCallExecutor::trace_filter") {
             }));
 
         BlockCache block_cache;
-        TraceCallExecutor executor{context_pool.next_io_context(), block_cache, db_reader, workers};
-        boost::asio::io_context& io_context = context_pool.next_io_context();
+        TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
 
         stream.open_object();
-        auto execution_result = boost::asio::co_spawn(io_context.get_executor(), executor.trace_filter(trace_filter, &stream), boost::asio::use_future);
-        execution_result.get();
-
-        context_pool.stop();
-        io_context.stop();
-        pool_thread.join();
-
+        spawn_and_wait(executor.trace_filter(trace_filter, &stream));
         stream.close_object();
         stream.close();
 
@@ -5930,7 +5683,7 @@ TEST_CASE("VmTrace json serialization") {
 
     TraceEx trace_ex;
     trace_ex.used = 5000;
-    trace_ex.stack.push_back("0xdeadbeaf");
+    trace_ex.stack.emplace_back("0xdeadbeaf");
     trace_ex.memory = TraceMemory{10, 0, "data"};
     trace_ex.storage = TraceStorage{"key", "value"};
 
@@ -6419,7 +6172,7 @@ TEST_CASE("copy_stack") {
                 default:
                     copy_stack(op_code, top_stack, trace_stack);
 
-                    CHECK(trace_stack.size() == 0);
+                    CHECK(trace_stack.empty());
                     break;
             }
         }
@@ -6606,11 +6359,12 @@ TEST_CASE("push_memory_offset_len") {
                 })"_json);
                 break;
             default:
-                CHECK(tms.size() == 0);
+                CHECK(tms.empty());
                 break;
         }
     }
 }
+
 TEST_CASE("get_op_name") {
     SILKRPC_LOG_STREAMS(null_stream(), null_stream());
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
@@ -6627,10 +6381,10 @@ TEST_CASE("get_op_name") {
     /* 0x09 */ "MULMOD",
     /* 0x0a */ "EXP",
     /* 0x0b */ "SIGNEXTEND",
-    /* 0x0c */ NULL,
-    /* 0x0d */ NULL,
-    /* 0x0e */ NULL,
-    /* 0x0f */ NULL,
+    /* 0x0c */ nullptr,
+    /* 0x0d */ nullptr,
+    /* 0x0e */ nullptr,
+    /* 0x0f */ nullptr,
     /* 0x10 */ "LT",
     /* 0x11 */ "GT",
     /* 0x12 */ "SLT",
@@ -6736,8 +6490,8 @@ TEST_CASE("TraceFilter") {
         CHECK(config.from_block.number() == 0x6DDD00);
         CHECK(config.to_block.is_tag() == true);
         CHECK(config.to_block.tag() == "latest");
-        CHECK(config.from_addresses.size() == 0);
-        CHECK(config.to_addresses.size() == 0);
+        CHECK(config.from_addresses.empty());
+        CHECK(config.to_addresses.empty());
         CHECK(!config.mode);
     }
     SECTION("json deserialization: full") {
@@ -6902,4 +6656,6 @@ TEST_CASE("TraceManyCallResult: json serialization") {
         ])"_json);
     }
 }
+#endif  // SILKWORM_SANITIZE
+
 }  // namespace silkrpc::trace

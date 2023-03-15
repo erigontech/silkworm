@@ -67,7 +67,6 @@ TEST_CASE("CachedDatabase::get_one", "[silkrpc][ethdb][kv][cached_database]") {
     SECTION("cache miss: request unexpected table in latest block") {
         BlockNumberOrHash block_id{kTestBlockNumber};
         test::DummyTransaction fake_txn{0, mock_cursor};
-        test::MockStateView* mock_view = new test::MockStateView;
         CachedDatabase cached_db{block_id, fake_txn, mock_cache};
         // Mock cursor shall provide the value returned by get
         EXPECT_CALL(*mock_cursor, seek_exact(_)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {

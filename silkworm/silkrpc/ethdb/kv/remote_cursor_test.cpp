@@ -69,6 +69,7 @@ struct RemoteCursorTest : test::KVTestBase {
     RemoteCursor remote_cursor_{tx_rpc_};
 };
 
+#ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::open_cursor", "[silkrpc][ethdb][kv][remote_cursor]") {
     SECTION("success") {
         // Set the call expectations:
@@ -715,5 +716,6 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::seek_both_exact", "[silkrpc][e
             test::exception_has_cancelled_grpc_status_code());
     }
 }
+#endif  // SILKWORM_SANITIZE
 
 } // namespace silkrpc::ethdb::kv

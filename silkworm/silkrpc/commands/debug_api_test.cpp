@@ -197,6 +197,7 @@ private:
     const nlohmann::json& json_;
 };
 
+#ifndef SILKWORM_SANITIZE
 TEST_CASE("DebugRpcApi") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
     ChannelFactory create_channel = []() {
@@ -418,7 +419,9 @@ TEST_CASE("get_modified_accounts") {
         CHECK_THROWS_AS(result.get(), std::invalid_argument);
     }
 }
-#endif
+#endif  // !defined(__clang__)
+
+#endif  // SILKWORM_SANITIZE
 
 } // namespace silkrpc::commands
 

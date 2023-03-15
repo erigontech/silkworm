@@ -33,6 +33,9 @@ if(NOT SILKWORM_CORE_ONLY)
   find_package(Boost REQUIRED)
   find_package(CLI11 REQUIRED)
 
+  # Silkworm components
+  add_subdirectory(rpcdaemon)
+
   file(GLOB_RECURSE COMMON_SRC CONFIGURE_DEPENDS "common/*.cpp" "common/*.hpp")
 
   add_executable(silkworm "silkworm.cpp;${COMMON_SRC}")

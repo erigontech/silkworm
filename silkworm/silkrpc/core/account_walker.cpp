@@ -61,8 +61,6 @@ boost::asio::awaitable<void> AccountWalker::walk_of_accounts(uint64_t block_numb
             go_on = collector(ps_kv.key, ps_kv.value);
         } else {
             const auto bitmap = silkworm::db::bitmap::parse(s_kv.value);
-            uint64_t* ans = new uint64_t[bitmap.cardinality()];
-            bitmap.toUint64Array(ans);
 
             std::optional<silkworm::Account> result;
             const auto found = silkworm::db::bitmap::seek(bitmap, block_number);

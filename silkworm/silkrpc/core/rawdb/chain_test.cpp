@@ -29,10 +29,10 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/common/decoding_result.hpp>
 #include <silkworm/node/common/decoding_exception.hpp>
-
 #include <silkworm/silkrpc/common/block_cache.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/ethdb/tables.hpp>
+#include <silkworm/silkrpc/test/mock_database_reader.hpp>
 
 namespace silkrpc::core::rawdb {
 
@@ -86,15 +86,6 @@ static silkworm::Bytes kChainConfig{*silkworm::from_hex("7b226265726c696e426c6f6
     "30302c22697374616e62756c426c6f636b223a393036393030302c226c6f6e646f6e426c6f636b223a31323936353030302c226d75697"
     "2476c6163696572426c6f636b223a393230303030302c2270657465727362757267426c6f636b223a373238303030307d")};
 
-class MockDatabaseReader : public DatabaseReader {
-public:
-    MOCK_CONST_METHOD2(get, boost::asio::awaitable<KeyValue>(const std::string&, const silkworm::ByteView&));
-    MOCK_CONST_METHOD2(get_one, boost::asio::awaitable<silkworm::Bytes>(const std::string&, const silkworm::ByteView&));
-    MOCK_CONST_METHOD3(get_both_range, boost::asio::awaitable<std::optional<silkworm::Bytes>>(const std::string&, const silkworm::ByteView&, const silkworm::ByteView&));
-    MOCK_CONST_METHOD4(walk, boost::asio::awaitable<void>(const std::string&, const silkworm::ByteView&, uint32_t, Walker));
-    MOCK_CONST_METHOD3(for_prefix, boost::asio::awaitable<void>(const std::string&, const silkworm::ByteView&, Walker));
-};
-
 static void check_expected_block_header(const silkworm::BlockHeader& header) {
     CHECK(header.parent_hash == 0x209f062567c161c5f71b3f57a7de277b0e95c3455050b152d785ad7524ef8ee7_bytes32);
     CHECK(header.ommers_hash == 0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347_bytes32);
@@ -135,7 +126,7 @@ static void check_expected_block_with_hash(const silkworm::BlockWithHash& bwh) {
 
 TEST_CASE("read_header_number") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
 
     SECTION("existent hash") {
         EXPECT_CALL(db_reader, get_one(db::table::kHeaderNumbers, _)).WillOnce(InvokeWithoutArgs(
@@ -159,7 +150,7 @@ TEST_CASE("read_header_number") {
 
 TEST_CASE("read_chain_config") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
 
     SECTION("empty chain data") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, _)).WillOnce(InvokeWithoutArgs(
@@ -213,7 +204,7 @@ TEST_CASE("read_chain_config") {
 
 TEST_CASE("read_chain_id") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
 
     SECTION("missing chain identifier") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, _)).WillOnce(InvokeWithoutArgs(
@@ -252,7 +243,7 @@ TEST_CASE("read_chain_id") {
 
 TEST_CASE("read_canonical_block_hash") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
 
     SECTION("empty hash bytes") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, _)).WillOnce(InvokeWithoutArgs(
@@ -296,7 +287,7 @@ TEST_CASE("read_canonical_block_hash") {
 
 TEST_CASE("read_total_difficulty") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
 
     SECTION("empty RLP buffer") {
         EXPECT_CALL(db_reader, get_one(db::table::kDifficulty, _)).WillOnce(InvokeWithoutArgs(
@@ -332,7 +323,7 @@ TEST_CASE("read_total_difficulty") {
 
 TEST_CASE("read_block_by_hash") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
 
     SECTION("block header number not found") {
         const auto block_hash{0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32};
@@ -419,7 +410,7 @@ TEST_CASE("read_block_by_hash") {
 
 TEST_CASE("read_block_by_number") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
 
     SECTION("block canonical hash not found") {
         const uint64_t block_number{4'000'000};
@@ -506,7 +497,7 @@ TEST_CASE("read_block_by_number") {
 
 TEST_CASE("read_block_number_by_transaction_hash") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
 
     SECTION("block header number not found") {
         const auto transaction_hash{0x18dcb90e76b61fe6f37c9a9cd269a66188c05af5f7a62c50ff3246c6e207dc6d_bytes32};
@@ -539,7 +530,7 @@ TEST_CASE("read_block_number_by_transaction_hash") {
 
 TEST_CASE("read_block") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
 
     SECTION("block header not found") {
         const auto block_hash{0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32};
@@ -624,7 +615,7 @@ TEST_CASE("read_block") {
 
 TEST_CASE("read_header_by_hash") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
 
     SECTION("block header number not found") {
         const auto block_hash{0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32};
@@ -675,7 +666,7 @@ TEST_CASE("read_header_by_hash") {
 
 TEST_CASE("read_header_by_number") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
 
     SECTION("block canonical hash not found") {
         const uint64_t block_number{4'000'000};
@@ -726,7 +717,7 @@ TEST_CASE("read_header_by_number") {
 
 TEST_CASE("read_header") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
 
     SECTION("block header not found") {
         const auto block_hash{0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32};
@@ -762,7 +753,7 @@ TEST_CASE("read_header") {
 
 TEST_CASE("read_body") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
 
     SECTION("block body not found") {
         const auto block_hash{0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32};
@@ -869,7 +860,7 @@ TEST_CASE("read_body") {
 
 TEST_CASE("read_header_rlp") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
 
     SECTION("block header RLP not found") {
         const auto block_hash{0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32};
@@ -894,7 +885,7 @@ TEST_CASE("read_header_rlp") {
 
 TEST_CASE("read_body_rlp") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
 
     SECTION("block body RLP not found") {
         const auto block_hash{0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32};
@@ -919,7 +910,7 @@ TEST_CASE("read_body_rlp") {
 
 TEST_CASE("read_senders") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
 
     SECTION("zero senders") { // https://goerli.etherscan.io/block/20000
         const auto block_hash{0x96908d141b3c2727342b48696f97b50845240e3ceda0c86ac3dc2e197eb9675b_bytes32};
@@ -965,7 +956,7 @@ TEST_CASE("read_senders") {
 
 TEST_CASE("read_raw_receipts") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
 
     SECTION("zero receipts") {
         const auto block_hash{silkworm::kEmptyHash};
@@ -1120,7 +1111,7 @@ TEST_CASE("read_raw_receipts") {
 
 TEST_CASE("read_receipts") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
 
     SECTION("zero receipts w/ zero transactions") {
         const auto block_hash{silkworm::kEmptyHash};
@@ -1318,7 +1309,7 @@ TEST_CASE("read_receipts") {
 
 TEST_CASE("read_canonical_transactions") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
 
     SECTION("zero transactions when transaction count is zero") {
         uint64_t base_txn_id{0};  // don't care
@@ -1459,7 +1450,7 @@ TEST_CASE("read_canonical_transactions") {
 
 TEST_CASE("read_noncanonical_transactions") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
 
     SECTION("zero transactions when transaction count is zero") {
         uint64_t base_txn_id{0};  // don't care
@@ -1599,7 +1590,7 @@ TEST_CASE("read_noncanonical_transactions") {
 TEST_CASE("read_cumulative_transaction_count") {
     SECTION("block found and matching") {
         boost::asio::thread_pool pool{1};
-        MockDatabaseReader db_reader;
+        test::MockDatabaseReader db_reader;
         const uint64_t block_number{4'000'000};
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, _)).WillOnce(InvokeWithoutArgs(
             []() -> boost::asio::awaitable<silkworm::Bytes> { co_return *silkworm::from_hex("9816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff"); }
@@ -1613,7 +1604,7 @@ TEST_CASE("read_cumulative_transaction_count") {
 
     SECTION("block found empty") {
         boost::asio::thread_pool pool{1};
-        MockDatabaseReader db_reader;
+        test::MockDatabaseReader db_reader;
         const uint64_t block_number{4'000'000};
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, _)).WillOnce(InvokeWithoutArgs(
             []() -> boost::asio::awaitable<silkworm::Bytes> { co_return *silkworm::from_hex("9816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff"); }
@@ -1627,7 +1618,7 @@ TEST_CASE("read_cumulative_transaction_count") {
 
     SECTION("block invalid") {
         boost::asio::thread_pool pool{1};
-        MockDatabaseReader db_reader;
+        test::MockDatabaseReader db_reader;
         const uint64_t block_number{4'000'000};
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, _)).WillOnce(InvokeWithoutArgs(
             []() -> boost::asio::awaitable<silkworm::Bytes> { co_return *silkworm::from_hex("9816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff"); }
@@ -1642,7 +1633,7 @@ TEST_CASE("read_cumulative_transaction_count") {
 
 TEST_CASE("read_total_issued") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
 
     const auto block_hash{0x96908d141b3c2727342b48696f97b50845240e3ceda0c86ac3dc2e197eb9675b_bytes32};
     const uint64_t block_number{20'000};
@@ -1655,7 +1646,7 @@ TEST_CASE("read_total_issued") {
 
 TEST_CASE("read_total_burnt") {
     boost::asio::thread_pool pool{1};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
 
     const auto block_hash{0x96908d141b3c2727342b48696f97b50845240e3ceda0c86ac3dc2e197eb9675b_bytes32};
     const uint64_t block_number{20'000};
@@ -1669,7 +1660,7 @@ TEST_CASE("read_total_burnt") {
 TEST_CASE("read_cumulative_gas_used") {
     SECTION("read_cumulative_gas_used") {
         boost::asio::thread_pool pool{1};
-        MockDatabaseReader db_reader;
+        test::MockDatabaseReader db_reader;
 
         const auto block_hash{0x96908d141b3c2727342b48696f97b50845240e3ceda0c86ac3dc2e197eb9675b_bytes32};
         const uint64_t block_number{20'000};
@@ -1682,7 +1673,7 @@ TEST_CASE("read_cumulative_gas_used") {
 
     SECTION("read_cumulative_gas_used get_one return empty") {
         boost::asio::thread_pool pool{1};
-        MockDatabaseReader db_reader;
+        test::MockDatabaseReader db_reader;
 
         const auto block_hash{0x96908d141b3c2727342b48696f97b50845240e3ceda0c86ac3dc2e197eb9675b_bytes32};
         const uint64_t block_number{20'000};

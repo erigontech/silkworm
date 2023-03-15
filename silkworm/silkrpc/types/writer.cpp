@@ -35,9 +35,8 @@ const std::string chunck_sep{ '\r', '\n' }; // NOLINT(runtime/string)
 const std::string final_chunck{ '0', '\r', '\n', '\r', '\n' }; // NOLINT(runtime/string)
 
 ChunksWriter::ChunksWriter(Writer& writer, std::size_t chunck_size) :
-    writer_(writer), chunck_size_(chunck_size), available_(chunck_size) {
-    buffer_ = new char[chunck_size_];
-    memset(buffer_, 0, chunck_size_);
+    writer_(writer), chunck_size_(chunck_size), available_(chunck_size), buffer_{new char[chunck_size_]} {
+    std::memset(buffer_.get(), 0, chunck_size_);
 }
 
 void ChunksWriter::write(const std::string& content) {
@@ -48,7 +47,7 @@ void ChunksWriter::write(const std::string& content) {
         << " size: " << size
         << std::endl << std::flush;
 
-    char *buffer_start = buffer_  + (chunck_size_ - available_);
+    char *buffer_start = buffer_.get() + (chunck_size_ - available_);
     if (available_ > size) {
         std::strncpy(buffer_start, c_str, size);
         available_ -= size;
@@ -66,7 +65,7 @@ void ChunksWriter::write(const std::string& content) {
         }
         flush();
 
-        buffer_start = buffer_;
+        buffer_start = buffer_.get();
     }
 }
 
@@ -87,12 +86,12 @@ void ChunksWriter::flush() {
         stream << std::hex << size << "\r\n";
 
         writer_.write(stream.str());
-        std::string str{buffer_, size};
+        std::string str{buffer_.get(), size};
         writer_.write(str);
         writer_.write(chunck_sep);
     }
     available_ = chunck_size_;
-    memset(buffer_, 0, chunck_size_);
+    std::memset(buffer_.get(), 0, chunck_size_);
 }
 
 } // namespace silkrpc

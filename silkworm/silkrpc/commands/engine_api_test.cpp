@@ -192,6 +192,7 @@ static silkworm::Bytes kChainConfigNoTerminalBlockNumber{*silkworm::from_hex(
         "227465726d696e616c426c6f636b48617368223a223078"
         "30303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030227d")};
 
+#ifndef SILKWORM_SANITIZE
 TEST_CASE("handle_engine_get_payload_v1 succeeds if request is expected payload", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
@@ -1068,4 +1069,6 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect params",
     context_pool.stop();
     context_pool.join();
 }
+#endif  // SILKWORM_SANITIZE
+
 } // namespace silkrpc::commands

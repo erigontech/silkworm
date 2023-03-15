@@ -19,10 +19,8 @@
 #include <ostream>
 
 #include <boost/asio/experimental/as_tuple.hpp>
-#include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_future.hpp>
 #include <boost/system/error_code.hpp>
-#include <grpc/grpc.h>
 
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/grpc/util.hpp>
@@ -50,6 +48,7 @@ std::future<void> StateChangesStream::open() {
 }
 
 void StateChangesStream::close() {
+    std::lock_guard lock{cancellation_mutex_};
     SILKRPC_DEBUG << "Close state changes stream: emitting cancellation\n";
     cancellation_signal_.emit(boost::asio::cancellation_type::all);
     SILKRPC_WARN << "Close state changes stream: cancellation emitted\n";
@@ -64,13 +63,16 @@ boost::asio::awaitable<void> StateChangesStream::run() {
     while (!cancelled) {
         auto state_changes_rpc{std::make_shared<StateChangesRpc>(*stub_, grpc_context_)};
 
-        cancellation_slot.assign([&, state_changes_rpc](boost::asio::cancellation_type /*type*/) {
-            retry_timer_.cancel();
-            SILKRPC_DEBUG << "Retry timer cancelled\n";
+        {
+            std::lock_guard lock{cancellation_mutex_};
+            cancellation_slot.assign([&, state_changes_rpc](boost::asio::cancellation_type /*type*/) {
+                retry_timer_.cancel();
+                SILKRPC_DEBUG << "Retry timer cancelled\n";
 
-            state_changes_rpc->cancel();
-            SILKRPC_WARN << "State changes stream cancelled\n";
-        });
+                state_changes_rpc->cancel();
+                SILKRPC_WARN << "State changes stream cancelled\n";
+            });
+        }
 
         SILKRPC_INFO << "Registration for state changes started\n";
         const auto [req_ec] = co_await state_changes_rpc->request_on(scheduler_.get_executor(), request_, use_nothrow_awaitable);

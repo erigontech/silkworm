@@ -17,9 +17,9 @@
 #pragma once
 
 #include <deque>
+#include <memory>
 #include <string>
 
-//#include <boost/asio.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/bind/bind.hpp>
@@ -81,7 +81,7 @@ private:
     Writer& writer_;
     const std::size_t chunck_size_;
     std::size_t available_;
-    char *buffer_;
+    std::unique_ptr<char[]> buffer_;
 };
 
 } // namespace silkrpc

@@ -20,6 +20,7 @@
 #include <functional>
 #include <future>
 #include <memory>
+#include <mutex>
 
 #include <silkworm/silkrpc/config.hpp>
 
@@ -96,6 +97,9 @@ private:
 
     //! The timer to schedule retries for stream opening
     boost::asio::deadline_timer retry_timer_;
+
+    //! The mutual exclusion access to the cancellation signal
+    std::mutex cancellation_mutex_;
 };
 
 } // namespace silkrpc::ethdb::kv

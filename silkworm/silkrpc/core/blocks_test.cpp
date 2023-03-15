@@ -52,15 +52,6 @@ static silkworm::Bytes kHeader{*silkworm::from_hex("f9025ca0209f062567c161c5f71b
     "ddcab467d5db31d063f2d58f266fa86c4502aa169d17762090e92b821843de69b41adbb5d86f5d114ba7f01a000000000000000000000"
     "00000000000000000000000000000000000000000000880000000000000000")};
 
-class MockDatabaseReader : public core::rawdb::DatabaseReader {
-public:
-    MOCK_CONST_METHOD2(get, boost::asio::awaitable<KeyValue>(const std::string&, const silkworm::ByteView&));
-    MOCK_CONST_METHOD2(get_one, boost::asio::awaitable<silkworm::Bytes>(const std::string&, const silkworm::ByteView&));
-    MOCK_CONST_METHOD3(get_both_range, boost::asio::awaitable<std::optional<silkworm::Bytes>>(const std::string&, const silkworm::ByteView&, const silkworm::ByteView&));
-    MOCK_CONST_METHOD4(walk, boost::asio::awaitable<void>(const std::string&, const silkworm::ByteView&, uint32_t, core::rawdb::Walker));
-    MOCK_CONST_METHOD3(for_prefix, boost::asio::awaitable<void>(const std::string&, const silkworm::ByteView&, core::rawdb::Walker));
-};
-
 TEST_CASE("get_block_number latest_required", "[silkrpc][core][blocks]") {
     SILKRPC_LOG_STREAMS(null_stream(), null_stream());
     const silkworm::ByteView kExecutionStage{stages::kExecution};
@@ -374,7 +365,7 @@ TEST_CASE("get_latest_executed_block_number", "[silkrpc][core][blocks]") {
 
 TEST_CASE("get_latest_block_number with head forkchoice number", "[silkrpc][core][blocks]") {
     const silkworm::ByteView kExecutionStage{stages::kExecution};
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
     boost::asio::thread_pool pool{1};
 
     EXPECT_CALL(db_reader, get(db::table::kLastForkchoice, _)).WillOnce(InvokeWithoutArgs(
@@ -398,7 +389,7 @@ TEST_CASE("get_latest_block_number with head forkchoice number", "[silkrpc][core
 }
 
 TEST_CASE("get_finalized_forkchoice_number with no finalized block we return genesis number", "[silkrpc][core][blocks]") {
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
     boost::asio::thread_pool pool{1};
 
     EXPECT_CALL(db_reader, get(db::table::kLastForkchoice, _)).WillOnce(InvokeWithoutArgs(
@@ -412,7 +403,7 @@ TEST_CASE("get_finalized_forkchoice_number with no finalized block we return gen
 }
 
 TEST_CASE("get_safe_forkchoice_number with no safe block we return genesis number", "[silkrpc][core][blocks]") {
-    MockDatabaseReader db_reader;
+    test::MockDatabaseReader db_reader;
     boost::asio::thread_pool pool{1};
 
     EXPECT_CALL(db_reader, get(db::table::kLastForkchoice, _)).WillOnce(InvokeWithoutArgs(

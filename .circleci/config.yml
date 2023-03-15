@@ -87,14 +87,22 @@ commands:
           working_directory: ~/build
           command: cmd/test/node_test
       - run:
-          name: "Ethereum consensus tests"
+          name: "RpcDaemon unit tests"
           working_directory: ~/build
-          no_output_timeout: 30m
-          command: cmd/test/consensus --threads 4 # out of memory with 8 threads under thread sanitizer 
+          command: cmd/test/rpcdaemon_test
       - run:
           name: "Sentry unit tests"
           working_directory: ~/build
           command: cmd/test/sentry_test
+      - run:
+          name: "Sync unit tests"
+          working_directory: ~/build
+          command: cmd/test/sync_test
+      - run:
+          name: "Ethereum consensus tests"
+          working_directory: ~/build
+          no_output_timeout: 30m
+          command: cmd/test/consensus --threads 4 # out of memory with 8 threads under thread sanitizer
 
 jobs:
   linux-gcc-11-thread-sanitizer:

@@ -85,7 +85,7 @@ class Context {
     //! The work-tracking executor that keep the scheduler running.
     boost::asio::executor_work_guard<boost::asio::io_context::executor_type> io_context_work_;
 
-    std::unique_ptr<agrpc::GrpcContext> grpc_context_;
+    std::shared_ptr<agrpc::GrpcContext> grpc_context_;
 
     boost::asio::executor_work_guard<agrpc::GrpcContext::executor_type> grpc_context_work_;
 

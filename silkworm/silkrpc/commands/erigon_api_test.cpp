@@ -65,6 +65,7 @@ class ErigonRpcApi_ForTest : public ErigonRpcApi {
 
 using ErigonRpcApiTest = test::JsonApiTestBase<ErigonRpcApi_ForTest>;
 
+#ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_block_by_timestamp", "[silkrpc][erigon_api]") {
     nlohmann::json reply;
 
@@ -160,10 +161,10 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_watch_the_burn",
     }
 }
 
-
 TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_block_number", "[silkrpc][erigon_api]") {
     nlohmann::json reply;
 
+#ifndef _WIN32
     SECTION("request invalid params number") {
         CHECK_NOTHROW(run<&ErigonRpcApi_ForTest::handle_erigon_block_number>(R"({
             "jsonrpc":"2.0",
@@ -177,6 +178,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_block_number", "
             "error":{"code":100,"message":"invalid erigon_blockNumber params: [\"earliest\",\"3\"]"} 
         })"_json);
     }
+#endif  // _WIN32
 
     SECTION("request earlist") {
         CHECK_THROWS_AS(run<&ErigonRpcApi_ForTest::handle_erigon_block_number>(R"({
@@ -237,5 +239,6 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_node_info", "[si
         })"_json, reply));
     }
 }
+#endif  // SILKWORM_SANITIZE
 
 } // namespace silkrpc::commands

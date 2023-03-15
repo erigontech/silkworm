@@ -209,16 +209,18 @@ template<typename WorldState, typename VM>
 boost::asio::awaitable<ExecutionResult> EVMExecutor<WorldState, VM>::call(
     const silkworm::Block& block,
     const silkworm::Transaction& txn,
-    const Tracers& tracers,
+    Tracers tracers,
     bool refund,
     bool gas_bailout) {
     SILKRPC_DEBUG << "EVMExecutor::call: " << block.header.number << " gasLimit: " << txn.gas_limit << " refund: " << refund << " gasBailout: " << gas_bailout << "\n";
     SILKRPC_DEBUG << "EVMExecutor::call:Transaction: " << &txn << "Txn: " << txn << "\n";
 
+    const auto this_executor = co_await boost::asio::this_coro::executor;
+
     const auto exec_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(ExecutionResult)>(
-        [this, &block, &txn, &tracers, &refund, &gas_bailout](auto&& self) {
+        [this, this_executor, &block, &txn, &tracers, &refund, &gas_bailout](auto&& self) {
             SILKRPC_TRACE << "EVMExecutor::call post block: " << block.header.number << " txn: " << &txn << "\n";
-            boost::asio::post(workers_, [this, &block, &txn, &tracers, &refund, &gas_bailout, self = std::move(self)]() mutable {
+            boost::asio::post(workers_, [this, this_executor, &block, &txn, &tracers, &refund, &gas_bailout, self = std::move(self)]() mutable {
                 VM evm{block, state_, config_};
                 evm.beneficiary = consensus_engine_->get_beneficiary(block.header);
 
@@ -238,7 +240,7 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor<WorldState, VM>::call(
                 if (error) {
                     silkworm::Bytes data{};
                     ExecutionResult exec_result{1000, txn.gas_limit, data, *error};
-                    boost::asio::post(io_context_, [exec_result, self = std::move(self)]() mutable {
+                    boost::asio::post(this_executor, [exec_result, self = std::move(self)]() mutable {
                         self.complete(exec_result);
                     });
                     return;
@@ -259,7 +261,7 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor<WorldState, VM>::call(
                         std::string from = silkworm::to_hex(*txn.from);
                         std::string error = "insufficient funds for gas * price + value: address 0x" + from + " have " + intx::to_string(have) + " want " + intx::to_string(want+txn.value);
                         ExecutionResult exec_result{1000, txn.gas_limit, data, error};
-                        boost::asio::post(io_context_, [exec_result, self = std::move(self)]() mutable {
+                        boost::asio::post(this_executor, [exec_result, self = std::move(self)]() mutable {
                             self.complete(exec_result);
                         });
                         return;
@@ -302,7 +304,7 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor<WorldState, VM>::call(
                 state_.finalize_transaction();
 
                 ExecutionResult exec_result{result.status, gas_left, result.data};
-                boost::asio::post(io_context_, [exec_result, self = std::move(self)]() mutable {
+                boost::asio::post(this_executor, [exec_result, self = std::move(self)]() mutable {
                     self.complete(exec_result);
                 });
             });

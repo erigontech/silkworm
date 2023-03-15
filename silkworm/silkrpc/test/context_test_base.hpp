@@ -29,6 +29,18 @@
 
 namespace silkrpc::test {
 
+//! Temporary addition: this must be removed when refactoring logging to one unique framework
+class SetLogVerbosityGuard {
+  public:
+    explicit SetLogVerbosityGuard(LogLevel new_level) : current_level_(log_verbosity_) {
+        SILKRPC_LOG_VERBOSITY(new_level);
+    }
+    ~SetLogVerbosityGuard() { SILKRPC_LOG_VERBOSITY(current_level_); }
+
+  private:
+    LogLevel current_level_;
+};
+
 class ContextTestBase {
   public:
     ContextTestBase();
@@ -49,10 +61,8 @@ class ContextTestBase {
 
     ~ContextTestBase();
 
-  private:
-    bool init_dummy;
-
   public:
+    SetLogVerbosityGuard log_guard_;
     Context context_;
     boost::asio::io_context& io_context_;
     agrpc::GrpcContext& grpc_context_;

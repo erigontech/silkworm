@@ -101,7 +101,7 @@ static proto::MessageId proto_message_id_from_eth_id(eth::MessageId eth_id) {
     }
 }
 
-uint8_t message_id(proto::MessageId proto_id) {
+uint8_t message_id_from_proto_message_id(proto::MessageId proto_id) {
     auto eth_id = eth_message_id(proto_id);
     assert(eth_id.has_value());
     if (!eth_id)
@@ -110,7 +110,7 @@ uint8_t message_id(proto::MessageId proto_id) {
     return (static_cast<uint8_t>(eth_id.value()) + eth::StatusMessage::kId);
 }
 
-static proto::MessageId proto_message_id(uint8_t message_id) {
+proto::MessageId proto_message_id_from_message_id(uint8_t message_id) {
     assert(message_id >= eth::StatusMessage::kId);
     if (message_id < eth::StatusMessage::kId)
         return proto::STATUS_66;
@@ -124,15 +124,46 @@ static Bytes bytes_from_string(const std::string& s) {
 
 sentry::common::Message message_from_outbound_data(const proto::OutboundMessageData& message_data) {
     return {
-        message_id(message_data.id()),
+        message_id_from_proto_message_id(message_data.id()),
+        bytes_from_string(message_data.data()),
+    };
+}
+
+proto::OutboundMessageData outbound_data_from_message(const sentry::common::Message& message) {
+    proto::OutboundMessageData result;
+    result.set_id(proto_message_id_from_message_id(message.id));
+    result.set_data(message.data.data(), message.data.size());
+    return result;
+}
+
+sentry::common::Message message_from_inbound_message(const ::sentry::InboundMessage& message_data) {
+    return {
+        message_id_from_proto_message_id(message_data.id()),
         bytes_from_string(message_data.data()),
     };
 }
 
 proto::InboundMessage inbound_message_from_message(const sentry::common::Message& message) {
     proto::InboundMessage result;
-    result.set_id(proto_message_id(message.id));
+    result.set_id(proto_message_id_from_message_id(message.id));
     result.set_data(message.data.data(), message.data.size());
+    return result;
+}
+
+api::api_common::MessageIdSet message_id_set_from_messages_request(const proto::MessagesRequest& request) {
+    api::api_common::MessageIdSet filter;
+    for (int i = 0; i < request.ids_size(); i++) {
+        auto id = request.ids(i);
+        filter.insert(message_id_from_proto_message_id(id));
+    }
+    return filter;
+}
+
+proto::MessagesRequest messages_request_from_message_id_set(const api::api_common::MessageIdSet& message_ids) {
+    proto::MessagesRequest result;
+    for (auto id : message_ids) {
+        result.add_ids(proto_message_id_from_message_id(id));
+    }
     return result;
 }
 

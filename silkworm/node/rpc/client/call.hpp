@@ -17,6 +17,7 @@
 #pragma once
 
 #include <chrono>
+#include <functional>
 #include <memory>
 #include <stdexcept>
 
@@ -59,6 +60,41 @@ boost::asio::awaitable<void> unary_rpc(
 
     grpc::Status status;
     co_await agrpc::finish(reader, reply, status, boost::asio::bind_executor(grpc_context, boost::asio::use_awaitable));
+
+    if (!status.ok()) {
+        throw GrpcStatusError(std::move(status));
+    }
+}
+
+template <class Stub, class Request, class Response>
+boost::asio::awaitable<void> streaming_rpc(
+    agrpc::detail::PrepareAsyncClientServerStreamingRequest<Stub, Request, grpc::ClientAsyncReader<Response>> rpc,
+    std::unique_ptr<Stub>& stub,
+    Request request,
+    agrpc::GrpcContext& grpc_context,
+    std::function<boost::asio::awaitable<void>(Response)> consumer) {
+    grpc::ClientContext client_context;
+    client_context.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(10));
+
+    std::unique_ptr<grpc::ClientAsyncReader<Response>> reader;
+    bool ok = co_await agrpc::request(
+        rpc,
+        stub,
+        client_context,
+        std::move(request),
+        reader,
+        boost::asio::bind_executor(grpc_context, boost::asio::use_awaitable));
+
+    while (ok) {
+        Response response;
+        ok = co_await agrpc::read(reader, response, boost::asio::bind_executor(grpc_context, boost::asio::use_awaitable));
+        if (ok) {
+            co_await consumer(std::move(response));
+        }
+    }
+
+    grpc::Status status;
+    co_await agrpc::finish(reader, status, boost::asio::bind_executor(grpc_context, boost::asio::use_awaitable));
 
     if (!status.ok()) {
         throw GrpcStatusError(std::move(status));

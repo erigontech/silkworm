@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,21 +16,14 @@
 
 #pragma once
 
-#include <intx/intx.hpp>
-#include <types/types.pb.h>
+#include <vector>
 
-#include <silkworm/core/common/base.hpp>
-#include <silkworm/core/types/hash.hpp>
+#include <silkworm/interfaces/p2psentry/sentry.grpc.pb.h>
+#include <silkworm/sentry/common/ecc_public_key.hpp>
 
-namespace silkworm {
+namespace silkworm::sentry::rpc::interfaces {
 
-Bytes bytes_from_H512(const types::H512& orig);
-std::unique_ptr<types::H512> H512_from_bytes(ByteView orig);
+::sentry::SentPeers sent_peers_ids_from_peer_keys(const std::vector<sentry::common::EccPublicKey>& keys);
+std::vector<sentry::common::EccPublicKey> peer_keys_from_sent_peers_ids(const ::sentry::SentPeers& peer_ids);
 
-Hash hash_from_H256(const types::H256& orig);
-std::unique_ptr<types::H256> H256_from_hash(const Hash& orig);
-
-intx::uint256 uint256_from_H256(const types::H256& orig);
-std::unique_ptr<types::H256> H256_from_uint256(const intx::uint256& orig);
-
-}  // namespace silkworm
+}  // namespace silkworm::sentry::rpc::interfaces

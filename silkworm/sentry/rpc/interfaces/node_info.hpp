@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,21 +16,12 @@
 
 #pragma once
 
-#include <intx/intx.hpp>
-#include <types/types.pb.h>
+#include <silkworm/interfaces/types/types.pb.h>
+#include <silkworm/sentry/api/api_common/node_info.hpp>
 
-#include <silkworm/core/common/base.hpp>
-#include <silkworm/core/types/hash.hpp>
+namespace silkworm::sentry::rpc::interfaces {
 
-namespace silkworm {
+api::api_common::NodeInfo node_info_from_proto_node_info(const types::NodeInfoReply& info);
+types::NodeInfoReply proto_node_info_from_node_info(const api::api_common::NodeInfo& info);
 
-Bytes bytes_from_H512(const types::H512& orig);
-std::unique_ptr<types::H512> H512_from_bytes(ByteView orig);
-
-Hash hash_from_H256(const types::H256& orig);
-std::unique_ptr<types::H256> H256_from_hash(const Hash& orig);
-
-intx::uint256 uint256_from_H256(const types::H256& orig);
-std::unique_ptr<types::H256> H256_from_uint256(const intx::uint256& orig);
-
-}  // namespace silkworm
+}  // namespace silkworm::sentry::rpc::interfaces

@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,19 +14,20 @@
    limitations under the License.
 */
 
-#pragma once
-
-#include <string>
-
-#include <silkworm/interfaces/types/types.pb.h>
-#include <silkworm/sentry/common/ecc_public_key.hpp>
+#include "eth_version.hpp"
 
 namespace silkworm::sentry::rpc::interfaces {
 
-sentry::common::EccPublicKey peer_public_key_from_id(const ::types::H512& peer_id);
-::types::H512 peer_id_from_public_key(const sentry::common::EccPublicKey& key);
+namespace proto = ::sentry;
 
-sentry::common::EccPublicKey peer_public_key_from_id_string(const std::string& peer_id_str);
-std::string peer_id_string_from_public_key(const sentry::common::EccPublicKey& key);
+uint8_t eth_version_from_protocol(proto::Protocol protocol) {
+    assert(proto::Protocol_MIN == proto::Protocol::ETH65);
+    return static_cast<uint8_t>(protocol) + 65;
+}
+
+proto::Protocol protocol_from_eth_version(uint8_t version) {
+    assert(proto::Protocol_MIN == proto::Protocol::ETH65);
+    return static_cast<proto::Protocol>(version - 65);
+}
 
 }  // namespace silkworm::sentry::rpc::interfaces

@@ -23,6 +23,7 @@
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/this_coro.hpp>
+#include <grpcpp/grpcpp.h>
 #include <gsl/util>
 
 #include <silkworm/core/common/base.hpp>
@@ -41,8 +42,14 @@
 #include <silkworm/sentry/common/promise.hpp>
 #include <silkworm/sentry/eth/fork_id.hpp>
 
+#include "../interfaces/eth_version.hpp"
 #include "../interfaces/message.hpp"
+#include "../interfaces/node_info.hpp"
+#include "../interfaces/peer_event.hpp"
 #include "../interfaces/peer_id.hpp"
+#include "../interfaces/peer_info.hpp"
+#include "../interfaces/sent_peer_ids.hpp"
+#include "../interfaces/status_data.hpp"
 
 namespace silkworm::sentry::rpc::server {
 
@@ -61,33 +68,9 @@ class SetStatusCall : public sw_rpc::server::UnaryCall<proto::StatusData, proto:
     using Base::UnaryCall;
 
     awaitable<void> operator()(const ServiceRouter& router) {
-        auto status = make_status_data(request_, router.eth_version);
+        auto status = interfaces::status_data_from_proto(request_, router.eth_version);
         co_await router.status_channel.send(status);
         co_await agrpc::finish(responder_, proto::SetStatusReply{}, grpc::Status::OK);
-    }
-
-    static eth::StatusData make_status_data(const proto::StatusData& data, uint8_t eth_version) {
-        auto& data_forks = data.fork_data().height_forks();  // TODO handle time_forks
-        std::vector<BlockNum> fork_block_numbers;
-        fork_block_numbers.resize(static_cast<size_t>(data_forks.size()));
-        std::copy(data_forks.cbegin(), data_forks.cend(), fork_block_numbers.begin());
-
-        Bytes genesis_hash{hash_from_H256(data.fork_data().genesis())};
-
-        auto message = eth::StatusMessage{
-            eth_version,
-            data.network_id(),
-            uint256_from_H256(data.total_difficulty()),
-            Bytes{hash_from_H256(data.best_hash())},
-            genesis_hash,
-            eth::ForkId{genesis_hash, fork_block_numbers, data.max_block_height()},  // TODO handle max_block_time
-        };
-
-        return eth::StatusData{
-            std::move(fork_block_numbers),
-            data.max_block_height(),  // TODO handle max_block_time
-            std::move(message),
-        };
     }
 };
 
@@ -100,8 +83,8 @@ class HandshakeCall : public sw_rpc::server::UnaryCall<protobuf::Empty, proto::H
 
     awaitable<void> operator()(const ServiceRouter& router) {
         proto::HandShakeReply reply;
-        assert(proto::Protocol_MIN == proto::Protocol::ETH65);
-        reply.set_protocol(static_cast<proto::Protocol>(router.eth_version - 65));
+        auto protocol = interfaces::protocol_from_eth_version(router.eth_version);
+        reply.set_protocol(protocol);
         co_await agrpc::finish(responder_, reply, grpc::Status::OK);
     }
 };
@@ -113,29 +96,8 @@ class NodeInfoCall : public sw_rpc::server::UnaryCall<protobuf::Empty, proto_typ
     using Base::UnaryCall;
 
     awaitable<void> operator()(const ServiceRouter& router) {
-        auto reply = make_node_info_reply(router.node_info_provider());
+        auto reply = interfaces::proto_node_info_from_node_info(router.node_info_provider());
         co_await agrpc::finish(responder_, reply, grpc::Status::OK);
-    }
-
-    static proto_types::NodeInfoReply make_node_info_reply(const api::api_common::NodeInfo& info) {
-        proto_types::NodeInfoReply reply;
-        reply.set_id(interfaces::peer_id_string_from_public_key(info.node_public_key));
-        reply.set_name(info.client_id);
-        reply.set_enode(info.node_url.to_string());
-
-        // TODO: NodeInfo.enr
-        // reply.set_enr("TODO");
-
-        reply.mutable_ports()->set_listener(info.rlpx_server_port);
-
-        // TODO: NodeInfo.discovery_port
-        // reply.mutable_ports()->set_discovery(0);
-
-        std::ostringstream rlpx_server_listen_endpoint_str;
-        rlpx_server_listen_endpoint_str << info.rlpx_server_listen_endpoint;
-        reply.set_listeneraddr(rlpx_server_listen_endpoint_str.str());
-
-        return reply;
     }
 };
 
@@ -152,10 +114,7 @@ awaitable<proto::SentPeers> do_send_message_call(
 
     auto sent_peer_keys = co_await call.result();
 
-    proto::SentPeers reply;
-    for (auto& key : sent_peer_keys) {
-        reply.add_peers()->CopyFrom(interfaces::peer_id_from_public_key(key));
-    }
+    proto::SentPeers reply = interfaces::sent_peers_ids_from_peer_keys(sent_peer_keys);
     co_return reply;
 }
 
@@ -236,7 +195,7 @@ class MessagesCall : public sw_rpc::server::ServerStreamingCall<proto::MessagesR
     awaitable<void> operator()(const ServiceRouter& router) {
         auto executor = co_await boost::asio::this_coro::executor;
         api::router::MessagesCall call{
-            make_message_id_filter(request_),
+            interfaces::message_id_set_from_messages_request(request_),
             executor,
         };
 
@@ -260,43 +219,7 @@ class MessagesCall : public sw_rpc::server::ServerStreamingCall<proto::MessagesR
 
         co_await agrpc::finish(responder_, grpc::Status::OK);
     }
-
-    static api::api_common::MessageIdSet make_message_id_filter(const proto::MessagesRequest& request) {
-        api::api_common::MessageIdSet filter;
-        for (int i = 0; i < request.ids_size(); i++) {
-            auto id = request.ids(i);
-            filter.insert(interfaces::message_id(id));
-        }
-        return filter;
-    }
 };
-
-proto_types::PeerInfo make_peer_info(const api::api_common::PeerInfo& peer) {
-    proto_types::PeerInfo info;
-    info.set_id(interfaces::peer_id_string_from_public_key(peer.peer_public_key));
-    info.set_name(peer.client_id);
-    info.set_enode(peer.url.to_string());
-
-    // TODO: PeerInfo.enr
-    // info.set_enr("TODO");
-
-    for (auto& capability : peer.capabilities) {
-        info.add_caps(capability);
-    }
-
-    std::ostringstream local_endpoint_str;
-    local_endpoint_str << peer.local_endpoint;
-    info.set_connlocaladdr(local_endpoint_str.str());
-
-    std::ostringstream remote_endpoint_str;
-    remote_endpoint_str << peer.remote_endpoint;
-    info.set_connremoteaddr(remote_endpoint_str.str());
-
-    info.set_connisinbound(peer.is_inbound);
-    info.set_connistrusted(false);
-    info.set_connisstatic(peer.is_static);
-    return info;
-}
 
 // rpc Peers(google.protobuf.Empty) returns (PeersReply);
 class PeersCall : public sw_rpc::server::UnaryCall<protobuf::Empty, proto::PeersReply> {
@@ -310,10 +233,7 @@ class PeersCall : public sw_rpc::server::UnaryCall<protobuf::Empty, proto::Peers
         co_await router.peers_calls_channel.send(call);
         auto peers = co_await call->wait();
 
-        proto::PeersReply reply;
-        for (auto& peer : peers) {
-            reply.add_peers()->CopyFrom(make_peer_info(peer));
-        }
+        proto::PeersReply reply = interfaces::proto_peers_reply_from_peer_infos(peers);
 
         co_await agrpc::finish(responder_, reply, grpc::Status::OK);
     }
@@ -350,11 +270,7 @@ class PeerByIdCall : public sw_rpc::server::UnaryCall<proto::PeerByIdRequest, pr
         co_await router.peer_calls_channel.send(call);
         auto peer_opt = co_await call.result_promise->wait();
 
-        proto::PeerByIdReply reply;
-        if (peer_opt) {
-            reply.mutable_peer()->CopyFrom(make_peer_info(peer_opt.value()));
-        }
-
+        proto::PeerByIdReply reply = interfaces::proto_peer_reply_from_peer_info_opt(peer_opt);
         co_await agrpc::finish(responder_, reply, grpc::Status::OK);
     }
 };
@@ -406,20 +322,7 @@ class PeerEventsCall : public sw_rpc::server::ServerStreamingCall<proto::PeerEve
         bool write_ok = true;
         while (write_ok) {
             auto event = co_await events_channel->receive();
-
-            proto::PeerEvent reply;
-            if (event.peer_public_key) {
-                reply.mutable_peer_id()->CopyFrom(interfaces::peer_id_from_public_key(event.peer_public_key.value()));
-            }
-            switch (event.event_id) {
-                case api::api_common::PeerEventId::kAdded:
-                    reply.set_event_id(proto::PeerEvent_PeerEventId_Connect);
-                    break;
-                case api::api_common::PeerEventId::kRemoved:
-                    reply.set_event_id(proto::PeerEvent_PeerEventId_Disconnect);
-                    break;
-            }
-
+            proto::PeerEvent reply = interfaces::proto_peer_event_from_peer_event(event);
             write_ok = co_await agrpc::write(responder_, reply);
         }
 

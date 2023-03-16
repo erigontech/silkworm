@@ -200,7 +200,7 @@ PayloadStatus PoSSync::new_payload(const ExecutionPayload& payload, seconds_t /*
             // INVALID
             auto invalid_chain = std::get<InvalidChain>(verification);
             auto unwind_point_td = exec_engine_.get_header_td(invalid_chain.unwind_point, invalid_chain.unwind_head);
-            Hash latest_valid_hash = invalid_chain.unwind_point < terminal_total_difficulty
+            Hash latest_valid_hash = unwind_point_td < terminal_total_difficulty
                                          ? kZeroHash
                                          : invalid_chain.unwind_head;
             return {.status = PayloadStatus::kInvalid, .latest_valid_hash = latest_valid_hash};
@@ -267,7 +267,7 @@ ForkChoiceUpdateReply PoSSync::fork_choice_update(const ForkChoiceState& state,
             // INVALID
             auto invalid_chain = std::get<InvalidChain>(verification);
             auto unwind_point_td = exec_engine_.get_header_td(invalid_chain.unwind_point, invalid_chain.unwind_head);
-            Hash latest_valid_hash = invalid_chain.unwind_point < terminal_total_difficulty
+            Hash latest_valid_hash = unwind_point_td < terminal_total_difficulty
                                          ? kZeroHash
                                          : invalid_chain.unwind_head;
             return {{PayloadStatus::kInvalid, latest_valid_hash}, no_payload_id};
@@ -277,7 +277,7 @@ ForkChoiceUpdateReply PoSSync::fork_choice_update(const ForkChoiceState& state,
         }
 
         // VALID
-        auto valid_chain = std::get<ValidChain>(verification);
+        //auto valid_chain = std::get<ValidChain>(verification);
 
         bool valid = exec_engine_.notify_fork_choice_update(state.head_block_hash, state.finalized_block_hash);
         if (!valid) {

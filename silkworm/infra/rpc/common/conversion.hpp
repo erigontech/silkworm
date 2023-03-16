@@ -46,8 +46,14 @@ namespace silkworm::rpc {
 //! Convert internal RPC H512 type instance to std::string.
 std::string string_from_H512(const types::H512& orig);
 
+//! Convert internal RPC H2048 type instance to std::string.
+std::string string_from_H2048(const types::H2048& orig);
+
 //! Convert internal RPC H256 type instance to evmc::bytes32.
 evmc::bytes32 bytes32_from_H256(const types::H256& orig);
+
+//! Convert internal RPC H256 type instance to intx::uint256.
+intx::uint256 uint256_from_H256(const types::H256& orig);
 
 //! Convert internal RPC H160 type instance to evmc::address.
 evmc::address address_from_H160(const types::H160& orig);

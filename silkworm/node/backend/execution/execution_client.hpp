@@ -20,6 +20,7 @@
 
 #include <boost/asio/awaitable.hpp>
 
+#include <silkworm/core/types/block.hpp>
 #include <silkworm/node/backend/execution/types.hpp>
 
 namespace silkworm::execution {
@@ -31,6 +32,10 @@ class Client {
     virtual ~Client() = default;
 
     virtual awaitable<void> start() = 0;
+
+    virtual awaitable<void> get_header(BlockNum block_number, Hash block_hash, BlockHeader& header) = 0;
+
+    virtual awaitable<void> get_body(BlockNum block_number, Hash block_hash, BlockBody& body) = 0;
 
     virtual awaitable<void> insert_headers(const BlockVector& blocks) = 0;
 

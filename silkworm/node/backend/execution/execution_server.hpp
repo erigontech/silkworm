@@ -30,6 +30,10 @@ class Server {
   public:
     awaitable<void> start();
 
+    awaitable<void> get_header(BlockNum block_number, Hash block_hash, BlockHeader& header);
+
+    awaitable<void> get_body(BlockNum block_number, Hash block_hash, BlockBody& body);
+
     awaitable<void> insert_headers(const BlockVector& blocks);
 
     awaitable<void> insert_bodies(const BlockVector& blocks);

@@ -25,6 +25,14 @@ awaitable<void> Server::start() {
     throw std::runtime_error{"Server::start not implemented"};
 }
 
+awaitable<void> get_header(BlockNum /*block_number*/, Hash /*block_hash*/, BlockHeader& /*header*/) {
+    throw std::runtime_error{"Server::get_header not implemented"};
+}
+
+awaitable<void> get_body(BlockNum /*block_number*/, Hash /*block_hash*/, BlockBody& /*body*/) {
+    throw std::runtime_error{"Server::get_body not implemented"};
+}
+
 awaitable<void> Server::insert_headers(const BlockVector& /*blocks*/) {
     throw std::runtime_error{"Server::insert_headers not implemented"};
 }

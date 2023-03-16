@@ -68,6 +68,20 @@ std::string string_from_H512(const types::H512& orig) {
     return dest;
 }
 
+std::string string_from_H2048(const types::H2048& orig) {
+    const auto& hi_hi = orig.hi().hi();
+    const auto& hi_lo = orig.hi().lo();
+    const auto& lo_hi = orig.lo().hi();
+    const auto& lo_lo = orig.lo().lo();
+
+    std::string dest(256, 0);
+    dest.append(string_from_H512(hi_hi));
+    dest.append(string_from_H512(hi_lo));
+    dest.append(string_from_H512(lo_hi));
+    dest.append(string_from_H512(lo_lo));
+    return dest;
+}
+
 evmc::bytes32 bytes32_from_H256(const types::H256& orig) {
     uint64_t hi_hi = orig.hi().hi();
     uint64_t hi_lo = orig.hi().lo();
@@ -81,6 +95,15 @@ evmc::bytes32 bytes32_from_H256(const types::H256& orig) {
     endian::store_big_u64(dest.bytes + 24, lo_lo);
 
     return dest;
+}
+
+intx::uint256 uint256_from_H256(const types::H256& orig) {
+    uint64_t hi_hi = orig.hi().hi();
+    uint64_t hi_lo = orig.hi().lo();
+    uint64_t lo_hi = orig.lo().hi();
+    uint64_t lo_lo = orig.lo().lo();
+
+    return {lo_lo, lo_hi, hi_lo, hi_hi};
 }
 
 evmc::address address_from_H160(const types::H160& orig) {

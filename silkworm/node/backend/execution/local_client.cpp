@@ -27,6 +27,14 @@ awaitable<void> LocalClient::start() {
     throw std::runtime_error{"LocalClient::start not implemented"};
 }
 
+awaitable<void> LocalClient::get_header(BlockNum block_number, Hash block_hash, BlockHeader& header) {
+    co_await local_server_->get_header(block_number, block_hash, header);
+}
+
+awaitable<void> LocalClient::get_body(BlockNum block_number, Hash block_hash, BlockBody& body) {
+    co_await local_server_->get_body(block_number, block_hash, body);
+}
+
 awaitable<void> LocalClient::insert_headers(const BlockVector& blocks) {
     co_await local_server_->insert_headers(blocks);
 }

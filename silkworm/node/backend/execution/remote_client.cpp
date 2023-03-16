@@ -28,7 +28,7 @@ namespace silkworm::execution {
 using namespace std::chrono;
 using namespace boost::asio;
 
-static void fill_header(const BlockHeader& bh, ::execution::Header* header) {
+static void serialize_header(const BlockHeader& bh, ::execution::Header* header) {
     header->set_allocated_parenthash(rpc::H256_from_bytes32(bh.parent_hash).release());
     header->set_allocated_coinbase(rpc::H160_from_address(bh.beneficiary).release());
     header->set_allocated_stateroot(rpc::H256_from_bytes32(bh.state_root).release());
@@ -53,6 +53,54 @@ static void fill_header(const BlockHeader& bh, ::execution::Header* header) {
     }
 }
 
+static void deserialize_header(const ::execution::Header& received_header, BlockHeader& header) {
+    header.parent_hash = rpc::bytes32_from_H256(received_header.parenthash());
+    header.beneficiary = rpc::address_from_H160(received_header.coinbase());
+    header.state_root = rpc::bytes32_from_H256(received_header.stateroot());
+    header.receipts_root = rpc::bytes32_from_H256(received_header.receiptroot());
+    const auto& logs_bloom = rpc::string_from_H2048(received_header.logsbloom());
+    std::copy(logs_bloom.cbegin(), logs_bloom.cend(), header.logs_bloom.begin());
+    header.mix_hash = rpc::bytes32_from_H256(received_header.mixdigest());
+    header.number = received_header.blocknumber();
+    header.gas_limit = received_header.gaslimit();
+    header.gas_used = received_header.gasused();
+    header.timestamp = received_header.timestamp();
+    endian::store_big_u64(header.nonce.data(), received_header.nonce());
+    std::copy(received_header.extradata().cbegin(), received_header.extradata().cend(), header.extra_data.begin());
+    header.difficulty = rpc::uint256_from_H256(received_header.difficulty());
+    header.ommers_hash = rpc::bytes32_from_H256(received_header.ommerhash());
+    header.transactions_root = rpc::bytes32_from_H256(received_header.transactionhash());
+    if (received_header.has_basefeepergas()) {
+        header.base_fee_per_gas = rpc::uint256_from_H256(received_header.basefeepergas());
+    }
+    if (received_header.has_withdrawalhash()) {
+        header.withdrawals_root = rpc::bytes32_from_H256(received_header.withdrawalhash());
+    }
+}
+
+static void match_or_throw(const Hash& block_hash, const types::H256& received_hash) {
+    const auto& received_block_hash = rpc::bytes32_from_H256(received_hash);
+    if (received_block_hash != block_hash) {
+        const auto msg =
+            "Hash mismatch in received header:"
+            " got=" +
+            to_hex(received_block_hash) + " expected=" + to_hex(block_hash);
+        log::Error() << msg;
+        throw std::logic_error{msg};
+    }
+}
+
+static void match_or_throw(BlockNum block_number, uint64_t received_number) {
+    if (block_number != received_number) {
+        const auto msg =
+            "Number mismatch in received header:"
+            " got=" +
+            std::to_string(received_number) + " expected=" + std::to_string(block_number);
+        log::Error() << msg;
+        throw std::logic_error{msg};
+    }
+}
+
 RemoteClient::RemoteClient(agrpc::GrpcContext& grpc_context, const std::shared_ptr<grpc::Channel>& channel)
     : grpc_context_(grpc_context), stub_(::execution::Execution::NewStub(channel)) {}
 
@@ -60,11 +108,72 @@ awaitable<void> RemoteClient::start() {
     throw std::runtime_error{"RemoteClient::start not implemented"};
 }
 
+awaitable<void> RemoteClient::get_header(BlockNum block_number, Hash block_hash, BlockHeader& header) {
+    ::execution::GetSegmentRequest request;
+    request.set_blocknumber(block_number);
+    request.set_allocated_blockhash(rpc::H256_from_bytes32(block_hash).release());
+    ::execution::GetHeaderResponse response;
+    const auto grpc_status = co_await rpc::unary_rpc(
+        &::execution::Execution::Stub::AsyncGetHeader, stub_, request, response, grpc_context_);
+    if (!grpc_status.ok()) {
+        log::Error() << "Get header error:" << grpc_status.error_message();
+        throw std::logic_error{"Get header error:" + grpc_status.error_message()};
+    }
+    const auto& received_header = response.header();
+    match_or_throw(block_hash, received_header.blockhash());
+    match_or_throw(block_number, received_header.blocknumber());
+
+    deserialize_header(received_header, header);
+}
+
+awaitable<void> RemoteClient::get_body(BlockNum block_number, Hash block_hash, BlockBody& body) {
+    ::execution::GetSegmentRequest request;
+    request.set_blocknumber(block_number);
+    request.set_allocated_blockhash(rpc::H256_from_bytes32(block_hash).release());
+    ::execution::GetBodyResponse response;
+    const auto grpc_status = co_await rpc::unary_rpc(
+        &::execution::Execution::Stub::AsyncGetBody, stub_, request, response, grpc_context_);
+    if (!grpc_status.ok()) {
+        log::Error() << "Get body error:" << grpc_status.error_message();
+        throw std::logic_error{"Get body error:" + grpc_status.error_message()};
+    }
+    const auto& received_body = response.body();
+    match_or_throw(block_hash, received_body.blockhash());
+    match_or_throw(block_number, received_body.blocknumber());
+
+    body.transactions.reserve(static_cast<std::size_t>(received_body.transactions_size()));
+    for (const auto& execution_tx : received_body.transactions()) {
+        ByteView raw_tx_rlp{reinterpret_cast<const uint8_t*>(execution_tx.data()), execution_tx.size()};
+        Transaction tx;
+        rlp::decode(raw_tx_rlp, tx);
+        body.transactions.push_back(std::move(tx));
+    }
+    body.ommers.reserve(static_cast<std::size_t>(received_body.uncles_size()));
+    for (const auto& execution_ommer : received_body.uncles()) {
+        BlockHeader ommer;
+        deserialize_header(execution_ommer, ommer);
+        body.ommers.push_back(std::move(ommer));
+    }
+    if (received_body.withdrawals_size() > 0) {
+        std::vector<Withdrawal> withdrawals;
+        withdrawals.reserve(static_cast<std::size_t>(received_body.withdrawals_size()));
+        body.withdrawals = std::move(withdrawals);
+    }
+    for (const auto& execution_withdrawal : received_body.withdrawals()) {
+        body.withdrawals->emplace_back(Withdrawal{
+            .index = execution_withdrawal.index(),
+            .validator_index = execution_withdrawal.validatorindex(),
+            .address = rpc::address_from_H160(execution_withdrawal.address()),
+            .amount = uint64_t(rpc::uint256_from_H256(execution_withdrawal.amount())),
+        });
+    }
+}
+
 awaitable<void> RemoteClient::insert_headers(const BlockVector& blocks) {
     ::execution::InsertHeadersRequest request;
     for (const auto& b : blocks) {
         ::execution::Header* header = request.add_headers();
-        fill_header(b.header, header);
+        serialize_header(b.header, header);
     }
     ::execution::EmptyMessage response;
     const auto grpc_status = co_await rpc::unary_rpc(
@@ -87,7 +196,7 @@ awaitable<void> RemoteClient::insert_bodies(const BlockVector& blocks) {
         }
         for (const auto& ommer : b.ommers) {
             ::execution::Header* uncle = body->add_uncles();
-            fill_header(ommer, uncle);
+            serialize_header(ommer, uncle);
         }
         if (b.withdrawals) {
             for (const auto& withdrawal : *b.withdrawals) {

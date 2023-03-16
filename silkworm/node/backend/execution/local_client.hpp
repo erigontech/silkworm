@@ -27,6 +27,10 @@ class LocalClient : public Client {
 
     awaitable<void> start() override;
 
+    awaitable<void> get_header(BlockNum block_number, Hash block_hash, BlockHeader& header) override;
+
+    awaitable<void> get_body(BlockNum block_number, Hash block_hash, BlockBody& body) override;
+
     awaitable<void> insert_headers(const BlockVector& blocks) override;
 
     awaitable<void> insert_bodies(const BlockVector& blocks) override;

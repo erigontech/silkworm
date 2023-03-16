@@ -41,10 +41,10 @@
 #include <silkworm/sentry/common/promise.hpp>
 #include <silkworm/sentry/eth/fork_id.hpp>
 
-#include "interfaces/message.hpp"
-#include "interfaces/peer_id.hpp"
+#include "../interfaces/message.hpp"
+#include "../interfaces/peer_id.hpp"
 
-namespace silkworm::sentry::rpc {
+namespace silkworm::sentry::rpc::server {
 
 using boost::asio::awaitable;
 using boost::asio::io_context;
@@ -427,4 +427,4 @@ class PeerEventsCall : public sw_rpc::server::ServerStreamingCall<proto::PeerEve
     }
 };
 
-}  // namespace silkworm::sentry::rpc
+}  // namespace silkworm::sentry::rpc::server

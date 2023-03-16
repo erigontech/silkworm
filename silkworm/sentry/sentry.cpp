@@ -37,7 +37,7 @@
 #include "rlpx/client.hpp"
 #include "rlpx/protocol.hpp"
 #include "rlpx/server.hpp"
-#include "rpc/server.hpp"
+#include "rpc/server/server.hpp"
 #include "status_manager.hpp"
 
 namespace silkworm::sentry {
@@ -87,7 +87,7 @@ class SentryImpl final {
     std::shared_ptr<MessageReceiver> message_receiver_;
     std::shared_ptr<PeerManagerApi> peer_manager_api_;
 
-    rpc::Server rpc_server_;
+    rpc::server::Server rpc_server_;
 };
 
 static silkworm::rpc::ServerConfig make_server_config(const Settings& settings) {

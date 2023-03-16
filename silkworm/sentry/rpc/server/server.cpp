@@ -30,7 +30,7 @@
 
 #include "server_calls.hpp"
 
-namespace silkworm::sentry::rpc {
+namespace silkworm::sentry::rpc::server {
 
 using namespace silkworm::log;
 using AsyncService = ::sentry::Sentry::AsyncService;
@@ -115,11 +115,11 @@ Server::Server(
     : p_impl_(std::make_unique<ServerImpl>(config, std::move(router))) {}
 
 Server::~Server() {
-    log::Trace() << "silkworm::sentry::rpc::Server::~Server";
+    log::Trace() << "silkworm::sentry::rpc::server::Server::~Server";
 }
 
 boost::asio::awaitable<void> Server::async_run() {
     return p_impl_->async_run();
 }
 
-}  // namespace silkworm::sentry::rpc
+}  // namespace silkworm::sentry::rpc::server

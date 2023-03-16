@@ -248,7 +248,7 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
     return verify_result;
 }
 
-bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
+bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, [[maybe_unused]] std::optional<Hash> finalized_block_hash) {
     if (canonical_chain_.current_head().hash != head_block_hash) {
         // usually update_fork_choice must follow verify_chain with the same header
         // except when verify_chain returned InvalidChain, in which case we expect

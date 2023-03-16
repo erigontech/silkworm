@@ -277,7 +277,7 @@ ForkChoiceUpdateReply PoSSync::fork_choice_update(const ForkChoiceState& state,
         }
 
         // VALID
-        //auto valid_chain = std::get<ValidChain>(verification);
+        // auto valid_chain = std::get<ValidChain>(verification);
 
         bool valid = exec_engine_.notify_fork_choice_update(state.head_block_hash, state.finalized_block_hash);
         if (!valid) {

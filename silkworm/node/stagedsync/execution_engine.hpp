@@ -52,29 +52,20 @@ class ExecutionEngine : public Stoppable {
 
     // actions
     template <std::derived_from<Block> BLOCK>
-    void insert_blocks(std::vector<std::shared_ptr<BLOCK>>& blocks) {
-        SILK_TRACE << "ExecutionEngine: inserting " << blocks.size() << " blocks";
-        if (blocks.empty()) return;
-
-        as_range::for_each(blocks, [&, this](const auto& block) {
-            insert_header(block->header);
-            insert_body(*block);
-        });
-
-        if (is_first_sync_) tx_.commit_and_renew();
-    }
+    void insert_blocks(std::vector<std::shared_ptr<BLOCK>>& blocks);
     void insert_block(const Block& block);
 
     auto verify_chain(Hash head_block_hash) -> VerificationResult;
 
-    bool notify_fork_choice_update(Hash head_block_hash);
+    bool notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
 
     // state
     auto current_status() -> VerificationResult;
     auto last_fork_choice() -> BlockId;
-    auto get_canonical_head() -> ChainHead;
-    auto get_block_progress() -> BlockNum;
 
+    auto get_canonical_head() -> ChainHead;  // todo: must return the last FCU
+
+    auto get_block_progress() -> BlockNum;
     auto get_header(Hash) -> std::optional<BlockHeader>;
     auto get_header(BlockNum, Hash) -> std::optional<BlockHeader>;
     auto get_canonical_hash(BlockNum) -> std::optional<Hash>;
@@ -82,6 +73,9 @@ class ExecutionEngine : public Stoppable {
     auto get_body(Hash) -> std::optional<BlockBody>;
     auto get_last_headers(BlockNum limit) -> std::vector<BlockHeader>;
     auto extends_last_fork_choice(BlockNum, Hash) -> bool;
+    auto extends(BlockId block, BlockId supposed_parent) -> bool;
+    auto is_ancestor(BlockId supposed_parent, BlockId block) -> bool;
+    auto is_ancestor(Hash supposed_parent, BlockId block) -> bool;
 
   protected:
     void insert_header(const BlockHeader&);
@@ -125,4 +119,18 @@ class ExecutionEngine : public Stoppable {
     VerificationResult canonical_status_;
     BlockId last_fork_choice_;
 };
+
+template <std::derived_from<Block> BLOCK>
+void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<BLOCK>>& blocks) {
+    SILK_TRACE << "ExecutionEngine: inserting " << blocks.size() << " blocks";
+    if (blocks.empty()) return;
+
+    as_range::for_each(blocks, [&, this](const auto& block) {
+        insert_header(block->header);
+        insert_body(*block);
+    });
+
+    if (is_first_sync_) tx_.commit_and_renew();
+}
+
 }  // namespace silkworm::stagedsync

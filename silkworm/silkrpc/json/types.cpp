@@ -318,6 +318,40 @@ void to_json(nlohmann::json& json, const Block& b) {
     json["uncles"] = ommer_hashes;
 }
 
+void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
+    const auto block_number = silkrpc::to_quantity(b.block.header.number);
+    json["block"]["number"] = block_number;
+    json["block"]["difficulty"] = silkrpc::to_quantity(silkworm::endian::to_big_compact(b.block.header.difficulty));
+    json["block"]["extraData"] = "0x" + silkworm::to_hex(b.block.header.extra_data);
+    json["block"]["gasLimit"] = silkrpc::to_quantity(b.block.header.gas_limit);
+    json["block"]["gasUsed"] = silkrpc::to_quantity(b.block.header.gas_used);
+    json["block"]["hash"] = b.block.hash;
+    json["block"]["logsBloom"] = "0x" + silkworm::to_hex(full_view(b.block.header.logs_bloom));
+    json["block"]["miner"] = b.block.header.beneficiary;
+    json["block"]["mixHash"]= b.block.header.mix_hash;
+    json["block"]["nonce"] = "0x" + silkworm::to_hex({b.block.header.nonce.data(), b.block.header.nonce.size()});
+    json["block"]["parentHash"] = b.block.header.parent_hash;
+    json["block"]["receiptsRoot"] = b.block.header.receipts_root;
+    json["block"]["sha3Uncles"] = b.block.header.ommers_hash;
+    json["block"]["size"] = silkrpc::to_quantity(b.block.get_block_size());
+    json["block"]["stateRoot"] = b.block.header.state_root;
+    json["block"]["timestamp"] = silkrpc::to_quantity(b.block.header.timestamp);
+    json["block"]["totalDifficulty"] = silkrpc::to_quantity(silkworm::endian::to_big_compact(b.block.total_difficulty));
+    json["block"]["transactionCount"] = silkrpc::to_quantity(b.block.transaction_count);
+    json["block"]["transactionsRoot"] = b.block.header.transactions_root;
+
+    std::vector<evmc::bytes32> ommer_hashes;
+    ommer_hashes.reserve(b.block.ommers.size());
+    for (auto i{0}; i < b.block.ommers.size(); i++) {
+        ommer_hashes.emplace(ommer_hashes.end(), std::move(b.block.ommers[i].hash()));
+        SILKRPC_DEBUG << "ommer_hashes[" << i << "]: " << silkworm::to_hex({ommer_hashes[i].bytes, silkworm::kHashLength}) << "\n";
+    }
+    json["block"]["uncles"] = ommer_hashes;
+
+    json["issuance"] = silkrpc::to_quantity(b.issuance);
+    json["totalFees"] = silkrpc::to_quantity(b.total_fees);
+}
+
 void to_json(nlohmann::json& json, const Transaction& transaction) {
     to_json(json, silkworm::Transaction(transaction));
 

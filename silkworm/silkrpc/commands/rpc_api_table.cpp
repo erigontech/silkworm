@@ -199,6 +199,8 @@ void RpcApiTable::add_txpool_handlers() {
 void RpcApiTable::add_ots_handlers() {
     method_handlers_[http::method::k_ots_getApiLevel] = &commands::RpcApi::handle_ots_get_api_level;
     method_handlers_[http::method::k_ots_hasCode] = &commands::RpcApi::handle_ots_has_code;
+    method_handlers_[http::method::k_ots_getBlockDetails] = &commands::RpcApi::handle_ots_getBlockDetails;
+    method_handlers_[http::method::k_ots_getBlockDetailsByHash] = &commands::RpcApi::handle_ots_getBlockDetailsByHash;
 }
 
 } // namespace silkrpc::commands

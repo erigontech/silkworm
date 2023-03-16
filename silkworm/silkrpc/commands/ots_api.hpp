@@ -48,6 +48,8 @@ public:
 protected:
     boost::asio::awaitable<void> handle_ots_get_api_level(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_ots_has_code(const nlohmann::json& request, nlohmann::json& reply);
+    boost::asio::awaitable<void> handle_ots_getBlockDetails(const nlohmann::json& request, nlohmann::json& reply);
+    boost::asio::awaitable<void> handle_ots_getBlockDetailsByHash(const nlohmann::json& request, nlohmann::json& reply);
 
     std::unique_ptr<ethdb::Database>& database_;
     std::shared_ptr<ethdb::kv::StateCache>& state_cache_;

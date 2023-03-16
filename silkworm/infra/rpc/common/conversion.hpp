@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
@@ -52,7 +53,7 @@ evmc::bytes32 bytes32_from_H256(const types::H256& orig);
 evmc::address address_from_H160(const types::H160& orig);
 
 //! Convert evmc::address to internal RPC H160 type instance.
-std::unique_ptr<types::H512> H512_from_string(const std::string& orig);
+std::unique_ptr<types::H512> H512_from_string(std::string_view orig);
 
 //! Convert evmc::bytes32 to internal RPC H256 type instance.
 std::unique_ptr<types::H256> H256_from_bytes32(const evmc::bytes32& orig);
@@ -62,5 +63,8 @@ std::unique_ptr<types::H256> H256_from_uint256(const intx::uint256& orig);
 
 //! Convert evmc::address to internal RPC H160 type instance.
 std::unique_ptr<types::H160> H160_from_address(const evmc::address& orig);
+
+//! Convert std::array to internal RPC H2048 type instance.
+std::unique_ptr<types::H2048> H2048_from_string(std::string_view orig);
 
 }  // namespace silkworm::rpc

@@ -14,31 +14,25 @@
    limitations under the License.
 */
 
-#pragma once
+#include "local_client.hpp"
 
-#include <array>
-#include <cstddef>
-#include <cstdint>
-#include <vector>
+namespace silkworm::execution {
 
-#include <silkworm/core/types/log.hpp>
+using namespace std::chrono;
+using namespace boost::asio;
 
-namespace silkworm {
+LocalClient::LocalClient(Server* local_server) : local_server_(local_server) {}
 
-inline constexpr size_t kBloomByteLength{256};
-
-using Bloom = std::array<uint8_t, kBloomByteLength>;
-
-Bloom logs_bloom(const std::vector<Log>& logs);
-
-inline void join(Bloom& sum, const Bloom& addend) {
-    for (size_t i{0}; i < kBloomByteLength; ++i) {
-        sum[i] |= addend[i];
-    }
+awaitable<void> LocalClient::start() {
+    throw std::runtime_error{"LocalClient::start not implemented"};
 }
 
-inline std::string_view to_string(const Bloom& bloom) {
-    return {reinterpret_cast<const char*>(bloom.data()), bloom.size()};
+awaitable<void> LocalClient::insert_headers(const BlockVector& blocks) {
+    co_await local_server_->insert_headers(blocks);
 }
 
-}  // namespace silkworm
+awaitable<void> LocalClient::insert_bodies(const BlockVector& blocks) {
+    co_await local_server_->insert_bodies(blocks);
+}
+
+}  // namespace silkworm::execution

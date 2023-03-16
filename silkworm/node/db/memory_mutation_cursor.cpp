@@ -21,9 +21,9 @@ namespace silkworm::db {
 MemoryMutationCursor::MemoryMutationCursor(MemoryMutation& memory_mutation, const MapConfig& config)
     : memory_mutation_(memory_mutation),
       config_(config),
-      current_db_entry_({}, {}),
-      current_memory_entry_({}, {}),
-      current_pair_({}, {}) {
+      current_db_entry_({}, {}, false),
+      current_memory_entry_({}, {}, false),
+      current_pair_({}, {}, false) {
     cursor_ = memory_mutation_.external_txn()->ro_cursor_dup_sort(config);
     memory_cursor_ = std::make_unique<PooledCursor>(memory_mutation_, config);
 }
@@ -92,13 +92,12 @@ CursorResult MemoryMutationCursor::current(bool throw_notfound) const {
         return memory_cursor_->current(throw_notfound);
     }
 
-    // We need to copy result because creating CursorResult requires a mdbx::cursor instance
-    auto result = cursor_->current(/*.throw_notfound=*/false);
-    result.done = current_pair_.key;
-    result.key = current_pair_.key;
-    result.value = current_pair_.value;
-    if (!result && throw_notfound) throw_error_notfound();
-    return result;
+    if (!memory_mutation_.has_map(config_.name)) {
+        throw_error_nodata();
+    }
+
+    if (!current_pair_.done && throw_notfound) throw_error_notfound();
+    return current_pair_;
 }
 
 CursorResult MemoryMutationCursor::to_next() {
@@ -113,23 +112,13 @@ CursorResult MemoryMutationCursor::to_next(bool throw_notfound) {
     if (is_previous_from_db_) {
         auto db_result = next_on_db(NextType::kNormal, false);
 
-        // We need to copy result because creating CursorResult requires a mdbx::cursor instance
-        auto current_memory_result = db_result;
-        current_memory_result.done = true;
-        current_memory_result.key = current_memory_entry_.key;
-        current_memory_result.value = current_memory_entry_.value;
-        const auto result = resolve_priority(current_memory_result, db_result, NextType::kNormal);
+        const auto result = resolve_priority(current_memory_entry_, db_result, NextType::kNormal);
         if (!result.done && throw_notfound) throw_error_notfound();
         return result;
     } else {
         auto memory_result = memory_cursor_->to_next(false);
 
-        // We need to copy result because creating CursorResult requires a mdbx::cursor instance
-        auto current_db_result = memory_result;
-        current_db_result.done = true;
-        current_db_result.key = current_db_entry_.key;
-        current_db_result.value = current_db_entry_.value;
-        const auto result = resolve_priority(memory_result, current_db_result, NextType::kNormal);
+        const auto result = resolve_priority(memory_result, current_db_entry_, NextType::kNormal);
         if (!result.done && throw_notfound) throw_error_notfound();
         return result;
     }
@@ -150,11 +139,15 @@ CursorResult MemoryMutationCursor::to_last(bool throw_notfound) {
     db_result = skip_intersection(memory_result, db_result, NextType::kNormal);
 
     // Basic checks
-    current_db_entry_ = db_result.done && db_result.value ? db_result : Pair{{}, {}};
-    current_memory_entry_ = memory_result.done && memory_result.value ? memory_result : Pair{{}, {}};
+    if (db_result.done && db_result.value) {
+        current_db_entry_ = db_result;
+    }
+    if (memory_result.done && memory_result.value) {
+        current_memory_entry_ = memory_result;
+    }
 
     if (db_result.done && db_result.key && is_entry_deleted(db_result.key)) {
-        current_db_entry_ = Pair{{}, {}};
+        current_db_entry_ = CursorResult{{}, {}, true};
         is_previous_from_db_ = true;
         if (!memory_result.done && throw_notfound) throw_error_notfound();
         return memory_result;
@@ -176,20 +169,20 @@ CursorResult MemoryMutationCursor::to_last(bool throw_notfound) {
     const auto key_diff = Slice::compare_fast(memory_result.key, db_result.key);
     if (key_diff == 0) {
         if (memory_result.value > db_result.value) {
-            current_db_entry_ = Pair{{}, {}};
+            current_db_entry_ = CursorResult{{}, {}, true};
             is_previous_from_db_ = false;
             return memory_result;
         } else {
-            current_memory_entry_ = Pair{{}, {}};
+            current_memory_entry_ = CursorResult{{}, {}, true};
             is_previous_from_db_ = true;
             return db_result;
         }
     } else if (key_diff > 0) {
-        current_db_entry_ = Pair{{}, {}};
+        current_db_entry_ = CursorResult{{}, {}, true};
         is_previous_from_db_ = false;
         return memory_result;
     } else {  // key_diff < 0
-        current_memory_entry_ = Pair{{}, {}};
+        current_memory_entry_ = CursorResult{{}, {}, true};
         is_previous_from_db_ = true;
         return db_result;
     }
@@ -379,8 +372,12 @@ CursorResult MemoryMutationCursor::resolve_priority(CursorResult memory_result, 
         return db_result;
     }
 
-    current_db_entry_ = db_result.value ? db_result : Pair{{}, {}};
-    current_memory_entry_ = memory_result.done && memory_result.value ? memory_result : Pair{{}, {}};
+    if (db_result.value) {
+        current_db_entry_ = db_result;
+    }
+    if (memory_result.done && memory_result.value) {
+        current_memory_entry_ = memory_result;
+    }
 
     if (memory_result.done) {
         if (memory_result.key == db_result.key) {
@@ -398,17 +395,11 @@ CursorResult MemoryMutationCursor::resolve_priority(CursorResult memory_result, 
         current_pair_ = current_memory_entry_;
     }
 
-    // We need to copy result because creating CursorResult requires a mdbx::cursor instance
-    auto result = is_previous_from_db_ ? db_result : memory_result;
-    result.key = current_pair_.key;
-    result.value = current_pair_.value;
-    result.done = true;
-    return result;
+    return current_pair_;
 }
 
 CursorResult MemoryMutationCursor::skip_intersection(CursorResult memory_result, CursorResult db_result, NextType type) {
-    auto new_db_key = db_result.key;
-    auto new_db_value = db_result.value;
+    CursorResult new_db_result = db_result;
 
     // Check for duplicates
     if (memory_result.done && db_result.done && memory_result.key == db_result.key) {
@@ -419,19 +410,15 @@ CursorResult MemoryMutationCursor::skip_intersection(CursorResult memory_result,
             skip = memory_result.value == db_result.value;
         }
         if (skip) {
-            const auto next_result = next_on_db(type, /*.throw_notfound=*/ false);
-            if (next_result.done) {
-                new_db_key = next_result.key;
-                new_db_value = next_result.value;
-            }
+            new_db_result = next_on_db(type, /*.throw_notfound=*/ false);
         }
     }
 
-    // We need to copy result because creating CursorResult requires a mdbx::cursor instance
-    auto result = db_result;
-    result.key = new_db_key;
-    result.value = new_db_value;
-    return result;
+    return new_db_result;
+}
+
+void MemoryMutationCursor::throw_error_nodata() {
+    mdbx::error::throw_exception(MDBX_error_t::MDBX_ENODATA);
 }
 
 void MemoryMutationCursor::throw_error_notfound() {

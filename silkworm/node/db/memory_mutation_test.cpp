@@ -22,6 +22,11 @@
 
 namespace silkworm::db {
 
+const MapConfig kTestMap{"TestTable"};
+const MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
+
+const MapConfig kTestNonexistentMap{"NonexistentTable"};
+
 TEST_CASE("MemoryOverlay", "[silkworm][node][db][memory_mutation]") {
     const TemporaryDirectory tmp_dir;
 
@@ -82,6 +87,31 @@ TEST_CASE("MemoryMutation", "[silkworm][node][db][memory_mutation]") {
         MemoryMutation mutation{overlay, &main_rw_txn};
         CHECK_NOTHROW(mutation.rollback());
         CHECK_NOTHROW(mutation.rollback());
+    }
+
+    SECTION("Check map presence in empty mutation") {
+        MemoryMutation mutation{overlay, &main_rw_txn};
+        CHECK_NOTHROW(!mutation.has_map(kTestMap.name));
+        CHECK_NOTHROW(!mutation.has_map(kTestMultiMap.name));
+        CHECK_NOTHROW(!mutation.has_map(kTestNonexistentMap.name));
+    }
+
+    SECTION("Check map presence in nonempty main db") {
+        MemoryMutation mutation{overlay, &main_rw_txn};
+        open_map(main_rw_txn, kTestMap);
+        open_map(main_rw_txn, kTestMultiMap);
+        CHECK_NOTHROW(mutation.has_map(kTestMap.name));
+        CHECK_NOTHROW(mutation.has_map(kTestMultiMap.name));
+        CHECK_NOTHROW(!mutation.has_map(kTestNonexistentMap.name));
+    }
+
+    SECTION("Check map presence in nonempty mutation") {
+        MemoryMutation mutation{overlay, &main_rw_txn};
+        open_map(mutation, kTestMap);
+        open_map(mutation, kTestMultiMap);
+        CHECK_NOTHROW(mutation.has_map(kTestMap.name));
+        CHECK_NOTHROW(mutation.has_map(kTestMultiMap.name));
+        CHECK_NOTHROW(!mutation.has_map(kTestNonexistentMap.name));
     }
 }
 

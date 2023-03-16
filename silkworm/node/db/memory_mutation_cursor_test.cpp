@@ -98,6 +98,8 @@ struct MemoryMutationCursorTest {
 const MapConfig kNonexistentTestMap{"NonexistentTable"};
 const MapConfig kNonexistentTestMultiMap{"NonexistentMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
 
+using Pair = mdbx::pair;
+
 static void check_cursor_result(CursorResult result, Pair kv_pair) {
     CHECK(result);
     if (result) {
@@ -364,34 +366,34 @@ TEST_CASE("MemoryMutationCursor: current", "[silkworm][node][db][memory_mutation
         {"Nonempty overlay", &test2},
     };
     for (auto [tag, test] : mutation_tests) {
-        SECTION(tag + ": Nonexistent single-value table: MDBX_ENODATA") {
+        SECTION(tag + ": Nonexistent single-value table: MDBX_NOTFOUND") {
             MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMap};
-            CHECK_THROWS_AS(mutation_cursor.current(), mdbx::no_data);
+            CHECK_THROWS_AS(mutation_cursor.current(), mdbx::not_found);
         }
 
-        SECTION(tag + ": Nonexistent single-value table (throw_notfound=true): MDBX_ENODATA") {
+        SECTION(tag + ": Nonexistent single-value table (throw_notfound=true): MDBX_NOTFOUND") {
             MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMap};
-            CHECK_THROWS_AS(mutation_cursor.current(/*throw_notfound=*/true), mdbx::no_data);
+            CHECK_THROWS_AS(mutation_cursor.current(/*throw_notfound=*/true), mdbx::not_found);
         }
 
-        SECTION(tag + ": Nonexistent multi-value table (throw_notfound=false): MDBX_ENODATA") {
+        SECTION(tag + ": Nonexistent multi-value table (throw_notfound=false)") {
             MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMap};
-            CHECK_THROWS_AS(mutation_cursor.current(/*throw_notfound=*/false), mdbx::no_data);
+            CHECK(!mutation_cursor.current(/*throw_notfound=*/false));
         }
 
-        SECTION(tag + ": Nonexistent multi-value table: MDBX_ENODATA") {
+        SECTION(tag + ": Nonexistent multi-value table: MDBX_NOTFOUND") {
             MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMultiMap};
-            CHECK_THROWS_AS(mutation_cursor.current(), mdbx::no_data);
+            CHECK_THROWS_AS(mutation_cursor.current(), mdbx::not_found);
         }
 
-        SECTION(tag + ": Nonexistent multi-value table (throw_notfound=true): MDBX_ENODATA") {
+        SECTION(tag + ": Nonexistent multi-value table (throw_notfound=true): MDBX_NOTFOUND") {
             MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMultiMap};
-            CHECK_THROWS_AS(mutation_cursor.current(/*throw_notfound=*/true), mdbx::no_data);
+            CHECK_THROWS_AS(mutation_cursor.current(/*throw_notfound=*/true), mdbx::not_found);
         }
 
-        SECTION(tag + ": Nonexistent single-value table (throw_notfound=false): MDBX_ENODATA") {
+        SECTION(tag + ": Nonexistent single-value table (throw_notfound=false)") {
             MemoryMutationCursor mutation_cursor{test->mutation, kNonexistentTestMultiMap};
-            CHECK_THROWS_AS(mutation_cursor.current(/*throw_notfound=*/false), mdbx::no_data);
+            CHECK(!mutation_cursor.current(/*throw_notfound=*/false));
         }
 
         SECTION(tag + ": Single-value table after positioning: OK") {

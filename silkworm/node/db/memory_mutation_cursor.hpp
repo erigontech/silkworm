@@ -24,8 +24,6 @@
 
 namespace silkworm::db {
 
-using Pair = ::mdbx::pair;
-
 class MemoryMutationCursor : public RWCursorDupSort {
   public:
     MemoryMutationCursor(MemoryMutation& memory_mutation, const MapConfig& config);
@@ -91,7 +89,8 @@ class MemoryMutationCursor : public RWCursorDupSort {
     bool erase(const Slice& key, const Slice& value) override;
 
   private:
-    static void throw_error_notfound();
+    static inline void throw_error_nodata();
+    static inline void throw_error_notfound();
 
     enum class NextType {
         kNormal,
@@ -108,9 +107,9 @@ class MemoryMutationCursor : public RWCursorDupSort {
     const MapConfig& config_;
     std::unique_ptr<ROCursorDupSort> cursor_;
     std::unique_ptr<RWCursorDupSort> memory_cursor_;
-    Pair current_db_entry_;
-    Pair current_memory_entry_;
-    Pair current_pair_;
+    CursorResult current_db_entry_;
+    CursorResult current_memory_entry_;
+    CursorResult current_pair_;
     bool is_previous_from_db_{false};
 };
 

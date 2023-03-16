@@ -75,9 +75,12 @@ bool MemoryMutation::is_entry_deleted(const std::string& bucket_name, const Slic
     return deleted_entries_.at(bucket_name) == key;
 }
 
+bool MemoryMutation::has_map(const std::string& bucket_name) const {
+    return db::has_map(*txn_, bucket_name.c_str());
+}
+
 void MemoryMutation::update_txn(ROTxn* txn) {
     txn_ = txn;
-    stateless_cursors_.clear();
 }
 
 std::unique_ptr<ROCursor> MemoryMutation::ro_cursor(const MapConfig& config) {
@@ -101,7 +104,6 @@ void MemoryMutation::rollback() {
     if (managed_txn_) {
         managed_txn_.abort();
     }
-    stateless_cursors_.clear();
 }
 
 std::unique_ptr<MemoryMutationCursor> MemoryMutation::make_cursor(const MapConfig& config) {

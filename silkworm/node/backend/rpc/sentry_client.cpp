@@ -40,18 +40,18 @@ boost::asio::awaitable<PeerCountResult> RemoteSentryClient::peer_count() {
     SILK_TRACE << "RemoteSentryClient::peer_count START address: " << address_uri_;
     sentry::PeerCountRequest request;
     sentry::PeerCountReply reply;
-    const auto status = co_await unary_rpc(&sentry::Sentry::Stub::AsyncPeerCount, stub_, request, reply, grpc_context_);
-    SILK_TRACE << "RemoteSentryClient::peer_count END address: " << address_uri_ << " " << status;
-    co_return PeerCountResult{status, reply};
+    co_await unary_rpc(&sentry::Sentry::Stub::AsyncPeerCount, stub_, request, reply, grpc_context_);
+    SILK_TRACE << "RemoteSentryClient::peer_count END address: " << address_uri_;
+    co_return reply;
 }
 
 boost::asio::awaitable<NodeInfoResult> RemoteSentryClient::node_info() {
     SILK_TRACE << "RemoteSentryClient::node_info START address: " << address_uri_;
     google::protobuf::Empty request;
     types::NodeInfoReply reply;
-    const auto status = co_await unary_rpc(&sentry::Sentry::Stub::AsyncNodeInfo, stub_, request, reply, grpc_context_);
-    SILK_TRACE << "RemoteSentryClient::node_info END address: " << address_uri_ << " " << status;
-    co_return NodeInfoResult{status, reply};
+    co_await unary_rpc(&sentry::Sentry::Stub::AsyncNodeInfo, stub_, request, reply, grpc_context_);
+    SILK_TRACE << "RemoteSentryClient::node_info END address: " << address_uri_;
+    co_return reply;
 }
 
 boost::asio::awaitable<SetStatusResult> RemoteSentryClient::set_status(SentryStatus sentry_status) {
@@ -70,9 +70,9 @@ boost::asio::awaitable<SetStatusResult> RemoteSentryClient::set_status(SentrySta
     }
     request.set_allocated_fork_data(forks);
     sentry::SetStatusReply reply;
-    const auto status = co_await unary_rpc(&sentry::Sentry::Stub::AsyncSetStatus, stub_, request, reply, grpc_context_);
-    SILK_TRACE << "RemoteSentryClient::set_status END address: " << address_uri_ << " " << status;
-    co_return SetStatusResult{status, reply};
+    co_await unary_rpc(&sentry::Sentry::Stub::AsyncSetStatus, stub_, request, reply, grpc_context_);
+    SILK_TRACE << "RemoteSentryClient::set_status END address: " << address_uri_;
+    co_return reply;
 }
 
 std::unique_ptr<SentryClient> RemoteSentryClientFactory::make_sentry_client(const std::string& address_uri) {

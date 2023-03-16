@@ -22,6 +22,7 @@
 
 #include <silkworm/interfaces/types/types.pb.h>
 #include <silkworm/node/common/log.hpp>
+#include <silkworm/node/rpc/client/call.hpp>
 #include <silkworm/node/rpc/common/conversion.hpp>
 #include <silkworm/node/rpc/common/util.hpp>
 
@@ -85,13 +86,13 @@ awaitable<void> NetPeerCountCall::operator()() {
     uint64_t total_peer_count{0};
     grpc::Status result_status{grpc::Status::OK};
     for (const auto& sentry : sentries_) {
-        const auto [status, reply] = co_await sentry->peer_count();
-        if (status.ok()) {
+        try {
+            const auto reply = co_await sentry->peer_count();
             const uint64_t count = reply.count();
             total_peer_count += count;
             SILK_DEBUG << "Reply OK peer count: partial=" << count << " total=" << total_peer_count;
-        } else {
-            result_status = status;
+        } catch (const GrpcStatusError& status_error) {
+            result_status = status_error.status();
             SILK_DEBUG << "Reply KO result: " << result_status;
         }
     }
@@ -179,13 +180,13 @@ awaitable<void> NodeInfoCall::operator()() {
     remote::NodesInfoReply response;
     grpc::Status result_status{grpc::Status::OK};
     for (const auto& sentry : sentries_) {
-        const auto [status, reply] = co_await sentry->node_info();
-        if (status.ok()) {
+        try {
+            const auto reply = co_await sentry->node_info();
             types::NodeInfoReply* nodes_info = response.add_nodesinfo();
             *nodes_info = reply;
             SILK_DEBUG << "Reply OK node info: name=" << reply.name();
-        } else {
-            result_status = status;
+        } catch (const GrpcStatusError& status_error) {
+            result_status = status_error.status();
             SILK_DEBUG << "Reply KO result: " << result_status;
         }
     }

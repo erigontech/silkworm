@@ -19,7 +19,6 @@
 #include <chrono>
 #include <functional>
 #include <memory>
-#include <tuple>
 #include <unordered_set>
 
 #include <silkworm/node/concurrency/coroutine.hpp>
@@ -51,9 +50,9 @@ struct SentryStatus {
 
 class SentryClient {
   public:
-    using SetStatusResult = std::pair<grpc::Status, sentry::SetStatusReply>;
-    using PeerCountResult = std::pair<grpc::Status, sentry::PeerCountReply>;
-    using NodeInfoResult = std::pair<grpc::Status, types::NodeInfoReply>;
+    using SetStatusResult = sentry::SetStatusReply;
+    using PeerCountResult = sentry::PeerCountReply;
+    using NodeInfoResult = types::NodeInfoReply;
 
     virtual ~SentryClient() = default;
 

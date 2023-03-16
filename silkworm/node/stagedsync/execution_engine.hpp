@@ -57,7 +57,7 @@ class ExecutionEngine : public Stoppable {
 
     auto verify_chain(Hash head_block_hash) -> VerificationResult;
 
-    bool notify_fork_choice_update(Hash head_block_hash, Hash finalized_block_hash);
+    bool notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
 
     // state
     auto current_status() -> VerificationResult;

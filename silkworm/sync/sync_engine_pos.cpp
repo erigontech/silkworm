@@ -138,8 +138,8 @@ void PoSSync::do_sanity_checks(const BlockHeader& pos_header, const BlockHeader&
     if (parent_td < terminal_total_difficulty) throw PayloadValidationError("ignoring pre-merge payload");
 
     // here Geth checks parent.Difficulty().BitLen() > 0 && gptd != nil && gptd.Cmp(ttd) >= 0 todo: understand
-    //auto grand_parent_td = exec_engine_.get_header_td(parent.number - 1, parent.parent_hash);
-    //if (parent.difficulty != 0 && grand_parent_td && grand_parent_td >= terminal_total_difficulty)
+    // auto grand_parent_td = exec_engine_.get_header_td(parent.number - 1, parent.parent_hash);
+    // if (parent.difficulty != 0 && grand_parent_td && grand_parent_td >= terminal_total_difficulty)
     //    throw PayloadValidationError("ignoring pre-merge parent block");
 
     if (pos_header.timestamp <= parent.timestamp) throw PayloadValidationError("invalid timestamp");
@@ -151,7 +151,7 @@ bool PoSSync::extends_canonical(const Block& block, Hash block_hash) {
     return exec_engine_.extends_last_fork_choice(block.header.number, block_hash);
 }
 
-auto PoSSync::has_bad_ancestor(const Hash& block_hash) -> std::tuple<bool, Hash> {
+auto PoSSync::has_bad_ancestor(const Hash&) -> std::tuple<bool, Hash> {
     return {false, Hash()};  // todo: implement, return if it is valid or the first valid ancestor
 }
 
@@ -239,7 +239,7 @@ ForkChoiceUpdateReply PoSSync::fork_choice_update(const ForkChoiceState& state,
             if (!valid) return {{PayloadStatus::kInvalid, last_valid, "bad ancestor"}, no_payload_id};
 
             // send payload to the block exchange to extend the chain up to it
-            block_exchange_.new_target_block(head_header_hash);  // todo: implement
+            // block_exchange_.new_target_block(head_header_hash);  // todo: implement #############
             return {{.status = PayloadStatus::kSyncing}, no_payload_id};
         }
 
@@ -300,7 +300,7 @@ ForkChoiceUpdateReply PoSSync::fork_choice_update(const ForkChoiceState& state,
                 // in this case spec states that forkchoiceState update MUST NOT be rolled back
             }
 
-            buildProcessId = exec_engine_.build_payload(head_header_hash, attributes);  // todo: use timeout here
+            // buildProcessId = exec_engine_.build_payload(head_header_hash, attributes);  // todo: use timeout here
         }
 
         return {{PayloadStatus::kValid, state.head_block_hash}, buildProcessId};

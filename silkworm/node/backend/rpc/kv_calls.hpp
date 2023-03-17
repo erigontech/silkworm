@@ -173,7 +173,7 @@ class KvService {
 
 namespace detail {
 
-    std::string dump_mdbx_result(const mdbx::cursor::move_result& result);
+    std::string dump_mdbx_result(const db::CursorResult& result);
 
 }  // namespace detail
 

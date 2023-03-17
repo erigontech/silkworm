@@ -31,7 +31,7 @@ namespace silkworm::rpc {
 
 namespace detail {
 
-    std::string dump_mdbx_result(const mdbx::cursor::move_result& result) {
+    std::string dump_mdbx_result(const db::CursorResult& result) {
         std::string dump{"done="};
         dump.append(std::to_string(result.done));
         dump.append(" bool(key)=");

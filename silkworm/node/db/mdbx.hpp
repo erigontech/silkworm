@@ -49,7 +49,8 @@ namespace detail {
 }  // namespace detail
 
 using MoveOperation = ::mdbx::cursor::move_operation;
-using CursorResult = ::mdbx::cursor::move_result;
+using CursorResult = ::mdbx::pair_result;
+using MoveResult = ::mdbx::cursor::move_result;
 using Slice = ::mdbx::slice;
 
 class ROTxn;
@@ -86,8 +87,8 @@ class ROCursor {
     virtual CursorResult find(const Slice& key, bool throw_notfound) = 0;
     virtual CursorResult lower_bound(const Slice& key) = 0;
     virtual CursorResult lower_bound(const Slice& key, bool throw_notfound) = 0;
-    virtual CursorResult move(MoveOperation operation, bool throw_notfound) = 0;
-    virtual CursorResult move(MoveOperation operation, const Slice& key, bool throw_notfound) = 0;
+    virtual MoveResult move(MoveOperation operation, bool throw_notfound) = 0;
+    virtual MoveResult move(MoveOperation operation, const Slice& key, bool throw_notfound) = 0;
     virtual bool seek(const Slice& key) = 0;
     virtual bool eof() const = 0;
     virtual bool on_first() const = 0;
@@ -115,9 +116,9 @@ class ROCursorDupSort : public virtual ROCursor {
     virtual CursorResult find_multivalue(const Slice& key, const Slice& value, bool throw_notfound) = 0;
     virtual CursorResult lower_bound_multivalue(const Slice& key, const Slice& value) = 0;
     virtual CursorResult lower_bound_multivalue(const Slice& key, const Slice& value, bool throw_notfound) = 0;
-    virtual CursorResult move(MoveOperation operation, bool throw_notfound) = 0;
-    virtual CursorResult move(MoveOperation operation, const Slice& key, bool throw_notfound) = 0;
-    virtual CursorResult move(MoveOperation operation, const Slice& key, const Slice& value, bool throw_notfound) = 0;
+    virtual MoveResult move(MoveOperation operation, bool throw_notfound) = 0;
+    virtual MoveResult move(MoveOperation operation, const Slice& key, bool throw_notfound) = 0;
+    virtual MoveResult move(MoveOperation operation, const Slice& key, const Slice& value, bool throw_notfound) = 0;
     virtual std::size_t count_multivalue() const = 0;
 };
 
@@ -395,8 +396,8 @@ class PooledCursor : public RWCursorDupSort, protected ::mdbx::cursor {
     CursorResult find(const Slice& key, bool throw_notfound) override;
     CursorResult lower_bound(const Slice& key) override;
     CursorResult lower_bound(const Slice& key, bool throw_notfound) override;
-    CursorResult move(MoveOperation operation, bool throw_notfound) override;
-    CursorResult move(MoveOperation operation, const Slice& key, bool throw_notfound) override;
+    MoveResult move(MoveOperation operation, bool throw_notfound) override;
+    MoveResult move(MoveOperation operation, const Slice& key, bool throw_notfound) override;
     bool seek(const Slice& key) override;
     [[nodiscard]] bool eof() const override;
     [[nodiscard]] bool on_first() const override;
@@ -417,7 +418,7 @@ class PooledCursor : public RWCursorDupSort, protected ::mdbx::cursor {
     CursorResult find_multivalue(const Slice& key, const Slice& value, bool throw_notfound) override;
     CursorResult lower_bound_multivalue(const Slice& key, const Slice& value) override;
     CursorResult lower_bound_multivalue(const Slice& key, const Slice& value, bool throw_notfound) override;
-    CursorResult move(MoveOperation operation, const Slice& key, const Slice& value, bool throw_notfound) override;
+    MoveResult move(MoveOperation operation, const Slice& key, const Slice& value, bool throw_notfound) override;
     [[nodiscard]] std::size_t count_multivalue() const override;
     MDBX_error_t put(const Slice& key, Slice* value, MDBX_put_flags_t flags) noexcept override;
     void insert(const Slice& key, Slice value) override;

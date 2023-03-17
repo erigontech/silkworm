@@ -23,7 +23,7 @@ else()
 endif()
 find_package(intx REQUIRED)
 find_package(jwt-cpp REQUIRED)
-if(SILKRPC_USE_MIMALLOC)
+if(SILKWORM_USE_MIMALLOC)
     find_package(mimalloc 2.0 REQUIRED)
 endif()
 find_package(nlohmann_json REQUIRED)
@@ -71,7 +71,7 @@ set(SILKRPC_LIBRARIES
     protobuf::libprotobuf
     silkworm_core
     silkworm_node)
-if(SILKRPC_USE_MIMALLOC)
+if(SILKWORM_USE_MIMALLOC)
     list(APPEND SILKRPC_LIBRARIES mimalloc)
 endif()
 

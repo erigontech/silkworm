@@ -112,6 +112,7 @@ option(SILKWORM_WASM_API "Build WebAssembly API" OFF)
 option(SILKWORM_CORE_ONLY "Only build Silkworm Core" OFF)
 option(SILKWORM_CLANG_COVERAGE "Clang instrumentation for code coverage reports" OFF)
 option(SILKWORM_SANITIZE "Build instrumentation for sanitizers" OFF)
+option(SILKWORM_USE_MIMALLOC "Enable using mimalloc for dynamic memory management" ON)
 
 get_filename_component(SILKWORM_MAIN_DIR . ABSOLUTE)
 set(SILKWORM_MAIN_SRC_DIR "${SILKWORM_MAIN_DIR}/silkworm")

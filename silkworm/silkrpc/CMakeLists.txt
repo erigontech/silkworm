@@ -23,6 +23,9 @@ else()
 endif()
 find_package(intx REQUIRED)
 find_package(jwt-cpp REQUIRED)
+if(SILKRPC_USE_MIMALLOC)
+    find_package(mimalloc 2.0 REQUIRED)
+endif()
 find_package(nlohmann_json REQUIRED)
 
 # Silkrpc library
@@ -44,6 +47,9 @@ set(SILKRPC_LIBRARIES
     silkworm_core
     silkworm_interfaces
     silkworm_node)
+if(SILKRPC_USE_MIMALLOC)
+    list(APPEND SILKRPC_LIBRARIES mimalloc)
+endif()
 
 add_library(silkrpc "${SILKRPC_SRC}")
 

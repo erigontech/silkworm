@@ -410,7 +410,7 @@ CursorResult MemoryMutationCursor::skip_intersection(CursorResult memory_result,
             skip = memory_result.value == db_result.value;
         }
         if (skip) {
-            new_db_result = next_on_db(type, /*.throw_notfound=*/ false);
+            new_db_result = next_on_db(type, /*.throw_notfound=*/false);
         }
     }
 

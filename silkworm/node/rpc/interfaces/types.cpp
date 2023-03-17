@@ -24,7 +24,7 @@
 
 namespace silkworm {
 
-std::unique_ptr<types::H512> to_H512(const Bytes& orig) {
+std::unique_ptr<types::H512> H512_from_bytes(ByteView orig) {
     using types::H128, types::H256, types::H512, evmc::load64be;
 
     Bytes bytes(64, 0);

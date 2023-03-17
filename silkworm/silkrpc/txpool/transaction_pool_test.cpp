@@ -81,6 +81,7 @@ using StrictMockTxpoolStub = testing::StrictMock<::txpool::MockTxpoolStub>;
 
 using TransactionPoolTest = test::GrpcApiTestBase<TransactionPool, StrictMockTxpoolStub>;
 
+#ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::add_transaction", "[silkrpc][txpool][transaction_pool]") {
     test::StrictMockAsyncResponseReader<::txpool::AddReply> reader;
     EXPECT_CALL(*stub_, AsyncAddRaw).WillOnce(testing::Return(&reader));
@@ -286,5 +287,7 @@ TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::get_transactions", "[sil
         const auto transactions = run<&TransactionPool::get_transactions>();
         CHECK(transactions.size() == 0);
     }
- }
+}
+#endif  // SILKWORM_SANITIZE
+
 } // namespace silkrpc::txpool

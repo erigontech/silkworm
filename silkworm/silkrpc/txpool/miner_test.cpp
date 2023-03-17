@@ -47,6 +47,7 @@ using StrictMockMiningStub = testing::StrictMock<::txpool::MockMiningStub>;
 
 using MinerTest = test::GrpcApiTestBase<Miner, StrictMockMiningStub>;
 
+#ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(MinerTest, "Miner::get_work", "[silkrpc][txpool][miner]") {
     test::StrictMockAsyncResponseReader<::txpool::GetWorkReply> reader;
     EXPECT_CALL(*stub_, AsyncGetWorkRaw).WillOnce(testing::Return(&reader));
@@ -201,5 +202,6 @@ TEST_CASE_METHOD(MinerTest, "Miner::submit_hash_rate", "[silkrpc][txpool][miner]
         CHECK_THROWS_AS((run<&Miner::submit_hash_rate>(rate, id)), boost::system::system_error);
     }
 }
+#endif  // SILKWORM_SANITIZE
 
 } // namespace silkrpc::txpool

@@ -48,6 +48,16 @@ commands:
           command: |
             sudo apt-get update
             sudo apt-get install -y m4 texinfo bison
+      - run:
+          name: "Install mimalloc"
+          command: |
+            git clone https://github.com/microsoft/mimalloc
+            cd mimalloc
+            mkdir -p out/release
+            cd out/release
+            cmake ../..
+            make 
+            sudo make install
       - restore_cache:
           name: "Restore Hunter cache"
           key: &hunter-cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/toolchain/base.cmake"}}-{{checksum "cmake/toolchain/cxx20.cmake"}}-{{checksum "cmake/toolchain/clang_libcxx.cmake"}}-{{checksum "cmake/toolchain/wasi.cmake"}}
@@ -278,6 +288,16 @@ jobs:
           command: |
             sudo apt-get update
             sudo apt-get install -y m4 texinfo bison
+      - run:
+          name: "Install mimalloc"
+          command: |
+            git clone https://github.com/microsoft/mimalloc
+            cd mimalloc
+            mkdir -p out/release
+            cd out/release
+            cmake ../..
+            make 
+            sudo make install
       - restore_cache:
           name: "Restore Hunter cache"
           key: &cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/toolchain/base.cmake"}}-{{checksum "cmake/toolchain/cxx20.cmake"}}

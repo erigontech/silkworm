@@ -24,7 +24,7 @@ find_package(absl REQUIRED)
 find_package(CLI11 REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(Protobuf REQUIRED)
-if(SILKRPC_USE_MIMALLOC)
+if(SILKWORM_USE_MIMALLOC)
     find_package(mimalloc 2.0 REQUIRED)
 endif()
 
@@ -62,7 +62,7 @@ set(SILKRPC_DAEMON_LIBRARIES
     silkrpc
     absl::flags_parse
     CLI11::CLI11)
-if(SILKRPC_USE_MIMALLOC)
+if(SILKWORM_USE_MIMALLOC)
     list(APPEND SILKRPC_DAEMON_LIBRARIES mimalloc)
 endif()
 

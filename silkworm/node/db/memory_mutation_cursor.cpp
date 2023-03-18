@@ -16,6 +16,8 @@
 
 #include "memory_mutation_cursor.hpp"
 
+#include <stdexcept>
+
 namespace silkworm::db {
 
 MemoryMutationCursor::MemoryMutationCursor(MemoryMutation& memory_mutation, const MapConfig& config)
@@ -79,8 +81,8 @@ CursorResult MemoryMutationCursor::to_previous() {
     return to_previous(/*throw_notfound =*/true);
 }
 
-CursorResult MemoryMutationCursor::to_previous(bool throw_notfound) {
-    return CursorResult{{}, {}, throw_notfound};
+CursorResult MemoryMutationCursor::to_previous(bool /*throw_notfound*/) {
+    throw std::logic_error{"not implemented"};
 }
 
 CursorResult MemoryMutationCursor::current() const {
@@ -257,7 +259,23 @@ CursorResult MemoryMutationCursor::to_current_next_multi() {
 }
 
 CursorResult MemoryMutationCursor::to_current_next_multi(bool throw_notfound) {
-    return CursorResult{{}, {}, throw_notfound};
+    if (is_table_cleared()) {
+        return memory_cursor_->to_current_next_multi(false);
+    }
+
+    if (is_previous_from_db_) {
+        auto db_result = next_on_db(NextType::kDup, false);
+
+        const auto result = resolve_priority(current_memory_entry_, db_result, NextType::kDup);
+        if (!result.done && throw_notfound) throw_error_notfound();
+        return result;
+    } else {
+        auto memory_result = memory_cursor_->to_current_next_multi(false);
+
+        const auto result = resolve_priority(memory_result, current_db_entry_, NextType::kDup);
+        if (!result.done && throw_notfound) throw_error_notfound();
+        return result;
+    }
 }
 
 CursorResult MemoryMutationCursor::to_current_last_multi() {
@@ -273,7 +291,23 @@ CursorResult MemoryMutationCursor::to_next_first_multi() {
 }
 
 CursorResult MemoryMutationCursor::to_next_first_multi(bool throw_notfound) {
-    return CursorResult{{}, {}, throw_notfound};
+    if (is_table_cleared()) {
+        return memory_cursor_->to_next_first_multi(false);
+    }
+
+    if (is_previous_from_db_) {
+        auto db_result = next_on_db(NextType::kNoDup, false);
+
+        const auto result = resolve_priority(current_memory_entry_, db_result, NextType::kNoDup);
+        if (!result.done && throw_notfound) throw_error_notfound();
+        return result;
+    } else {
+        auto memory_result = memory_cursor_->to_next_first_multi(false);
+
+        const auto result = resolve_priority(memory_result, current_db_entry_, NextType::kNoDup);
+        if (!result.done && throw_notfound) throw_error_notfound();
+        return result;
+    }
 }
 
 CursorResult MemoryMutationCursor::find_multivalue(const Slice& key, const Slice& value) {
@@ -368,11 +402,11 @@ CursorResult MemoryMutationCursor::resolve_priority(CursorResult memory_result, 
     }
 
     db_result = skip_intersection(memory_result, db_result, type);
-    if (!db_result.done) {
+    /*if (!db_result.done) {
         return db_result;
-    }
+    }*/
 
-    if (db_result.value) {
+    if (db_result.done && db_result.value) {
         current_db_entry_ = db_result;
     }
     if (memory_result.done && memory_result.value) {

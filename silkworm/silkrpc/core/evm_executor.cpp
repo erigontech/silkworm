@@ -177,7 +177,7 @@ void EVMExecutor<WorldState, VM>::reset() {
     state_.clear_journal_and_substate();
 }
 template<typename WorldState, typename VM>
-std::optional<std::string> EVMExecutor<WorldState, VM>::pre_check(const VM& evm, const silkworm::Transaction& txn, const intx::uint256 base_fee_per_gas, const intx::uint128 g0) {
+std::optional<std::string> EVMExecutor<WorldState, VM>::pre_check(const VM& evm, const silkworm::Transaction& txn, const intx::uint256& base_fee_per_gas, const intx::uint128& g0) {
     const evmc_revision rev{evm.revision()};
 
     if (rev >= EVMC_LONDON) {
@@ -259,8 +259,8 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor<WorldState, VM>::call(
                     if (!gas_bailout) {
                         silkworm::Bytes data{};
                         std::string from = silkworm::to_hex(*txn.from);
-                        std::string error = "insufficient funds for gas * price + value: address 0x" + from + " have " + intx::to_string(have) + " want " + intx::to_string(want+txn.value);
-                        ExecutionResult exec_result{1000, txn.gas_limit, data, error};
+                        std::string msg = "insufficient funds for gas * price + value: address 0x" + from + " have " + intx::to_string(have) + " want " + intx::to_string(want+txn.value);
+                        ExecutionResult exec_result{1000, txn.gas_limit, data, msg};
                         boost::asio::post(this_executor, [exec_result, self = std::move(self)]() mutable {
                             self.complete(exec_result);
                         });

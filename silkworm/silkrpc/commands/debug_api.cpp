@@ -360,7 +360,8 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_trace_call(const nlohmann
 
         const auto block_with_hash = co_await core::read_block_by_number_or_hash(*context_.block_cache(), tx_database, block_number_or_hash);
         const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash.block.header.number, tx_database);
-        core::rawdb::DatabaseReader& db_reader = is_latest_block ? (core::rawdb::DatabaseReader&)cached_database : (core::rawdb::DatabaseReader&)tx_database;
+        const core::rawdb::DatabaseReader& db_reader =
+            is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
         debug::DebugExecutor executor{*context_.io_context(), db_reader, workers_, config};
 
         stream.write_field("result");
@@ -489,7 +490,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_trace_block_by_hash(const
 
         stream.write_field("result");
         stream.open_array();
-        const auto debug_traces = co_await executor.execute(block_with_hash.block, &stream);
+        co_await executor.execute(block_with_hash.block, &stream);
         stream.close_array();
     } catch (const std::invalid_argument& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
@@ -529,7 +530,7 @@ boost::asio::awaitable<std::set<evmc::address>> get_modified_accounts(ethdb::Tra
         throw std::invalid_argument(msg.str());
     } else if (start_block_number <= end_block_number) {
         core::rawdb::Walker walker = [&](const silkworm::Bytes& key, const silkworm::Bytes& value) {
-            auto block_number = std::stol(silkworm::to_hex(key), 0, 16);
+            auto block_number = static_cast<uint64_t>(std::stol(silkworm::to_hex(key), nullptr, 16));
             if (block_number <= end_block_number) {
                 auto address = silkworm::to_evmc_address(value.substr(0, silkworm::kAddressLength));
 

@@ -22,7 +22,6 @@
 
 #include "server.hpp"
 
-#include <cstring>
 #include <memory>
 #include <string>
 #include <utility>
@@ -35,7 +34,6 @@
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/http/connection.hpp>
-#include <silkworm/silkrpc/http/methods.hpp>
 
 namespace silkrpc::http {
 #ifdef WIN32
@@ -51,7 +49,7 @@ std::tuple<std::string, std::string> Server::parse_endpoint(const std::string& t
 }
 
 Server::Server(const std::string& end_point, const std::string& api_spec, Context& context, boost::asio::thread_pool& workers, std::optional<std::string> jwt_secret)
-: context_(context), workers_(workers), acceptor_{*context.io_context()}, handler_table_{api_spec}, jwt_secret_(jwt_secret) {
+: handler_table_{api_spec}, context_(context), acceptor_{*context.io_context()}, workers_(workers), jwt_secret_(std::move(jwt_secret)) {
     const auto [host, port] = parse_endpoint(end_point);
 
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).

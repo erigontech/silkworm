@@ -39,7 +39,6 @@ using evmc::literals::operator""_bytes32;
 
 static const nlohmann::json empty;
 static const std::string zeros = "00000000000000000000000000000000000000000000000000000000000000000000000000000000"; // NOLINT
-static const evmc::bytes32 zero_hash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
 
 class DummyCursor : public silkrpc::ethdb::CursorDupSort {
 public:

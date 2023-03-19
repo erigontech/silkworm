@@ -185,7 +185,7 @@ public:
 
     template<typename CompletionToken = agrpc::DefaultCompletionToken>
     auto write_and_read(const Request& request, CompletionToken&& token = {}) {
-        return boost::asio::async_compose<CompletionToken, void(boost::system::error_code, Reply&)>(WriteAndRead{*this, request}, token);
+        return boost::asio::async_compose<CompletionToken, void(boost::system::error_code, Reply&)>(WriteAndRead{{*this}, request}, token);
     }
 
     template<typename CompletionToken = agrpc::DefaultCompletionToken>

@@ -71,22 +71,6 @@ set(SILKRPC_LIBRARIES
 
 add_library(silkrpc ${SILKRPC_SRC} ${SILKWORM_INTERFACE_SRC})
 
-# TO BE REMOVED: START: temporarily disable warnings entirely to make silkrpc compile as it is
-get_target_property(SILKRPC_COMPILE_OPTIONS silkrpc COMPILE_OPTIONS)
-list(REMOVE_ITEM SILKRPC_COMPILE_OPTIONS "-Wall")
-list(REMOVE_ITEM SILKRPC_COMPILE_OPTIONS "-Werror")
-list(REMOVE_ITEM SILKRPC_COMPILE_OPTIONS "-Wextra")
-list(REMOVE_ITEM SILKRPC_COMPILE_OPTIONS "-Wshadow")
-list(REMOVE_ITEM SILKRPC_COMPILE_OPTIONS "-Wimplicit-fallthrough")
-list(REMOVE_ITEM SILKRPC_COMPILE_OPTIONS "-Wsign-conversion")
-list(REMOVE_ITEM SILKRPC_COMPILE_OPTIONS "$<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>")
-list(REMOVE_ITEM SILKRPC_COMPILE_OPTIONS "-Wno-missing-field-initializers")
-list(REMOVE_ITEM SILKRPC_COMPILE_OPTIONS "-Wnon-virtual-dtor")
-list(REMOVE_ITEM SILKRPC_COMPILE_OPTIONS "-Wthread-safety")
-list(REMOVE_ITEM SILKRPC_COMPILE_OPTIONS "-pedantic")
-set_property(TARGET silkrpc PROPERTY COMPILE_OPTIONS ${SILKRPC_COMPILE_OPTIONS})
-# TO BE REMOVED: END: temporarily disable warnings entirely to make silkrpc compile as it is
-
 add_dependencies(silkrpc generate_ethbackend_grpc generate_kv_grpc generate_mining_grpc generate_txpool_grpc)
 target_include_directories(silkrpc PUBLIC
         ${SILKWORM_MAIN_DIR}

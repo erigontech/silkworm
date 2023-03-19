@@ -40,11 +40,11 @@
 namespace silkrpc::commands {
 
 ErigonRpcApi::ErigonRpcApi(Context& context)
-    : database_(context.database()),
+    : context_(context),
       backend_(context.backend()),
-      context_(context),
       block_cache_(context.block_cache()),
-      state_cache_(context.state_cache()) {}
+      state_cache_(context.state_cache()),
+      database_(context.database()) {}
 
 // https://eth.wiki/json-rpc/API#erigon_getBlockByTimestamp
 boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::json& request, nlohmann::json& reply) {
@@ -62,7 +62,7 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(
 
     const std::string::size_type begin = block_timestamp.find_first_not_of(" \"");
     const std::string::size_type end = block_timestamp.find_last_not_of(" \"");
-    const uint64_t timestamp = std::stol(block_timestamp.substr(begin, end - begin + 1), 0, 0);
+    const auto timestamp = static_cast<uint64_t>(std::stol(block_timestamp.substr(begin, end - begin + 1), nullptr, 0));
 
     // Open a new remote database transaction (no need to close if code throws before the end)
     auto tx = co_await database_->begin();
@@ -211,7 +211,7 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const 
         SILKRPC_DEBUG << "receipts.size(): " << receipts.size() << "\n";
         std::vector<Logs> logs{};
         logs.reserve(receipts.size());
-        for (const auto receipt : receipts) {
+        for (const auto& receipt : receipts) {
             SILKRPC_DEBUG << "receipt.logs.size(): " << receipt.logs.size() << "\n";
             logs.push_back(receipt.logs);
         }

@@ -22,7 +22,7 @@ std::ostream& operator<<(std::ostream& out, const std::optional<silkrpc::FilterA
     if (addresses.has_value()) {
         auto address_vector = addresses.value();
         out << "[";
-        for (auto i{0}; i < address_vector.size(); i++) {
+        for (std::size_t i{0}; i < address_vector.size(); i++) {
             out << "0x" << address_vector[i];
             if (i != address_vector.size() - 1) {
                 out << " ";
@@ -37,7 +37,7 @@ std::ostream& operator<<(std::ostream& out, const std::optional<silkrpc::FilterA
 
 std::ostream& operator<<(std::ostream& out, const silkrpc::FilterSubTopics& subtopics) {
     out << "[";
-    for (auto i{0}; i < subtopics.size(); i++) {
+    for (std::size_t i{0}; i < subtopics.size(); i++) {
         out << "0x" << subtopics[i];
         if (i != subtopics.size() - 1) {
             out << " ";
@@ -51,7 +51,7 @@ std::ostream& operator<<(std::ostream& out, const std::optional<silkrpc::FilterT
     if (topics.has_value()) {
         auto topic_vector = topics.value();
         out << "[";
-        for (auto i{0}; i < topic_vector.size(); i++) {
+        for (std::size_t i{0}; i < topic_vector.size(); i++) {
             out << topic_vector[i];
             if (i != topic_vector.size() - 1) {
                 out << " ";

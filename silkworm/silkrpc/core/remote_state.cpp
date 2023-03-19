@@ -30,7 +30,7 @@
 
 namespace silkrpc::state {
 
-static std::unordered_map<evmc::bytes32, silkworm::Bytes> code;
+std::unordered_map<evmc::bytes32, silkworm::Bytes> AsyncRemoteState::code_;
 
 boost::asio::awaitable<std::optional<silkworm::Account>> AsyncRemoteState::read_account(const evmc::address& address) const noexcept {
     co_return co_await state_reader_.read_account(address, block_number_ + 1);
@@ -39,8 +39,8 @@ boost::asio::awaitable<std::optional<silkworm::Account>> AsyncRemoteState::read_
 boost::asio::awaitable<silkworm::ByteView> AsyncRemoteState::read_code(const evmc::bytes32& code_hash) const noexcept {
     const auto optional_code{co_await state_reader_.read_code(code_hash)};
     if (optional_code) {
-        code[code_hash] = std::move(*optional_code);
-        co_return code[code_hash]; // NOLINT(runtime/arrays)
+        code_[code_hash] = std::move(*optional_code);
+        co_return code_[code_hash]; // NOLINT(runtime/arrays)
     }
     co_return silkworm::ByteView{};
 }

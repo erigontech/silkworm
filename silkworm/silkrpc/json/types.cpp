@@ -175,7 +175,7 @@ void to_json(nlohmann::json& json, const Transaction& transaction) {
     } else {
         json["to"] =  nullptr;
     }
-    json["type"] = silkrpc::to_quantity((uint64_t)transaction.type);
+    json["type"] = silkrpc::to_quantity(uint64_t(transaction.type));
 
     if (transaction.type == silkworm::Transaction::Type::kEip1559) {
        json["maxPriorityFeePerGas"] = silkrpc::to_quantity(transaction.max_priority_fee_per_gas);
@@ -183,7 +183,7 @@ void to_json(nlohmann::json& json, const Transaction& transaction) {
     }
     if (transaction.type != silkworm::Transaction::Type::kLegacy) {
        json["chainId"] = silkrpc::to_quantity(*transaction.chain_id);
-       json["v"] = silkrpc::to_quantity((uint64_t)transaction.odd_y_parity);
+       json["v"] = silkrpc::to_quantity(uint64_t(transaction.odd_y_parity));
        json["accessList"] = transaction.access_list; // EIP2930
     } else if (transaction.chain_id) {
        json["chainId"] = silkrpc::to_quantity(*transaction.chain_id);
@@ -246,7 +246,7 @@ void to_json(nlohmann::json& json, const NodeInfo& node_info) {
 void to_json(nlohmann::json& json, const struct CallBundleTxInfo& tx_info) {
     json["gasUsed"] = tx_info.gas_used;
     json["txHash"] = silkworm::to_bytes32({tx_info.hash.bytes, silkworm::kHashLength});
-    if (tx_info.error_message.size() != 0)
+    if (!tx_info.error_message.empty())
        json["error"] = tx_info.error_message;
     else
        json["value"] = silkworm::to_bytes32({tx_info.value.bytes, silkworm::kHashLength});
@@ -291,7 +291,7 @@ void to_json(nlohmann::json& json, const Block& b) {
     json["timestamp"] = silkrpc::to_quantity(b.block.header.timestamp);
     if (b.full_tx) {
         json["transactions"] = b.block.transactions;
-        for (auto i{0}; i < json["transactions"].size(); i++) {
+        for (std::size_t i{0}; i < json["transactions"].size(); i++) {
             auto& json_txn = json["transactions"][i];
             json_txn["transactionIndex"] = silkrpc::to_quantity(i);
             json_txn["blockHash"] = b.hash;
@@ -301,25 +301,25 @@ void to_json(nlohmann::json& json, const Block& b) {
     } else {
         std::vector<evmc::bytes32> transaction_hashes;
         transaction_hashes.reserve(b.block.transactions.size());
-        for (auto i{0}; i < b.block.transactions.size(); i++) {
+        for (std::size_t i{0}; i < b.block.transactions.size(); i++) {
             auto ethash_hash{hash_of_transaction(b.block.transactions[i])};
             auto bytes32_hash = silkworm::to_bytes32({ethash_hash.bytes, silkworm::kHashLength});
-            transaction_hashes.emplace(transaction_hashes.end(), std::move(bytes32_hash));
+            transaction_hashes.emplace(transaction_hashes.end(), bytes32_hash);
             SILKRPC_DEBUG << "transaction_hashes[" << i << "]: " << silkworm::to_hex({transaction_hashes[i].bytes, silkworm::kHashLength}) << "\n";
         }
         json["transactions"] = transaction_hashes;
     }
     std::vector<evmc::bytes32> ommer_hashes;
     ommer_hashes.reserve(b.block.ommers.size());
-    for (auto i{0}; i < b.block.ommers.size(); i++) {
-        ommer_hashes.emplace(ommer_hashes.end(), std::move(b.block.ommers[i].hash()));
+    for (std::size_t i{0}; i < b.block.ommers.size(); i++) {
+        ommer_hashes.emplace(ommer_hashes.end(), b.block.ommers[i].hash());
         SILKRPC_DEBUG << "ommer_hashes[" << i << "]: " << silkworm::to_hex({ommer_hashes[i].bytes, silkworm::kHashLength}) << "\n";
     }
     json["uncles"] = ommer_hashes;
 }
 
 void to_json(nlohmann::json& json, const Transaction& transaction) {
-    to_json(json, silkworm::Transaction(transaction));
+    to_json(json, static_cast<const silkworm::Transaction&>(transaction));
 
     json["gasPrice"] = silkrpc::to_quantity(transaction.effective_gas_price());
     if (transaction.queued_in_pool) {

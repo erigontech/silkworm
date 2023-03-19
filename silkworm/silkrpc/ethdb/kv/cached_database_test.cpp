@@ -43,14 +43,11 @@ using testing::InvokeWithoutArgs;
 using testing::Return;
 
 static constexpr auto kTestBlockNumber{1'000'000};
-static const auto kTestBlockNumberBytes{*silkworm::from_hex("00000000000F4240")};
 
 static const auto kTestData{*silkworm::from_hex("600035600055")};
 static const silkworm::Bytes kZeroBytes{};
 static silkworm::Bytes key1{*silkworm::from_hex("68656164426c6f636b48617368")};
-static silkworm::ByteView forkChoiceKey = key1;
 static silkworm::Bytes key2{*silkworm::from_hex("457865637574696f6e")};
-static silkworm::ByteView stageSyncKey = key2;
 
 TEST_CASE("CachedDatabase::CachedDatabase", "[silkrpc][ethdb][kv][cached_database]") {
     BlockNumberOrHash block_id{0};
@@ -81,7 +78,7 @@ TEST_CASE("CachedDatabase::get_one", "[silkrpc][ethdb][kv][cached_database]") {
     SECTION("cache hit: empty key from PlainState in latest block return nullopt") {
         BlockNumberOrHash block_id{kTestBlockNumber};
         test::DummyTransaction fake_txn{0, mock_cursor};
-        test::MockStateView* mock_view = new test::MockStateView;
+        auto* mock_view = new test::MockStateView;
         CachedDatabase cached_db{block_id, fake_txn, mock_cache};
         // Mock cache shall return the mock view instance
         EXPECT_CALL(mock_cache, get_view(_)).WillOnce(InvokeWithoutArgs([=]() -> std::unique_ptr<StateView> {
@@ -100,7 +97,7 @@ TEST_CASE("CachedDatabase::get_one", "[silkrpc][ethdb][kv][cached_database]") {
     SECTION("cache hit: empty key from PlainState in latest block") {
         BlockNumberOrHash block_id{kTestBlockNumber};
         test::DummyTransaction fake_txn{0, mock_cursor};
-        test::MockStateView* mock_view = new test::MockStateView;
+        auto* mock_view = new test::MockStateView;
         CachedDatabase cached_db{block_id, fake_txn, mock_cache};
         // Mock cache shall return the mock view instance
         EXPECT_CALL(mock_cache, get_view(_)).WillOnce(InvokeWithoutArgs([=]() -> std::unique_ptr<StateView> {
@@ -119,7 +116,7 @@ TEST_CASE("CachedDatabase::get_one", "[silkrpc][ethdb][kv][cached_database]") {
     SECTION("cache hit: empty key from Code in latest block") {
         BlockNumberOrHash block_id{kTestBlockNumber};
         test::DummyTransaction fake_txn{0, mock_cursor};
-        test::MockStateView* mock_view = new test::MockStateView;
+        auto* mock_view = new test::MockStateView;
         CachedDatabase cached_db{block_id, fake_txn, mock_cache};
         // Mock cache shall return the mock view instance
         EXPECT_CALL(mock_cache, get_view(_)).WillOnce(InvokeWithoutArgs([=]() -> std::unique_ptr<StateView> {
@@ -182,7 +179,7 @@ TEST_CASE("CachedDatabase::walk", "[silkrpc][ethdb][kv][cached_database]") {
     EXPECT_CALL(*mock_cursor, seek(_)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
         co_return KeyValue{*silkworm::from_hex("00"), kZeroBytes};
     }));
-    core::rawdb::Walker walker = [&](const silkworm::Bytes& k, const silkworm::Bytes& v) -> bool {
+    core::rawdb::Walker walker = [&](const silkworm::Bytes& /*k*/, const silkworm::Bytes& /*v*/) -> bool {
         return false;
     };
     auto result = boost::asio::co_spawn(pool, cached_db.walk(db::table::kCode, kZeroBytes, 0, walker), boost::asio::use_future);
@@ -200,7 +197,7 @@ TEST_CASE("CachedDatabase::for_prefix", "[silkrpc][ethdb][kv][cached_database]")
     EXPECT_CALL(*mock_cursor, seek(_)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
         co_return KeyValue{*silkworm::from_hex("00"), kZeroBytes};
     }));
-    core::rawdb::Walker walker = [&](const silkworm::Bytes& k, const silkworm::Bytes& v) -> bool {
+    core::rawdb::Walker walker = [&](const silkworm::Bytes& /*k*/, const silkworm::Bytes& /*v*/) -> bool {
         return false;
     };
     auto result = boost::asio::co_spawn(pool, cached_db.for_prefix(db::table::kCode, kZeroBytes, walker), boost::asio::use_future);

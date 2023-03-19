@@ -57,7 +57,7 @@ BlockReward compute_reward(const ChainConfig& config, const silkworm::Block& blo
 
 std::ostream& operator<<(std::ostream& out, const BlockReward& reward) {
     out << "miner_reward: " << intx::to_string(reward.miner_reward) << " ommer_rewards: [";
-    for (auto i{0}; i < reward.ommer_rewards.size(); i++) {
+    for (std::size_t i{0}; i < reward.ommer_rewards.size(); i++) {
         out << intx::to_string(reward.ommer_rewards[i]);
         if (i != reward.ommer_rewards.size() - 1) {
             out << " ";

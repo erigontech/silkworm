@@ -35,7 +35,7 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
             std::array<char, 1> buffer{c};
             std::size_t bytes_read{1};
             const auto result{parser.parse(req, buffer.data(), buffer.data() + bytes_read)};
-            CHECK(result == RequestParser::bad);
+            CHECK(result == RequestParser::ResultType::bad);
         }
     }
 
@@ -47,17 +47,17 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
             std::array<char, 1> buffer{c};
             std::size_t bytes_read{1};
             const auto result{parser.parse(req, buffer.data(), buffer.data() + bytes_read)};
-            CHECK(result == RequestParser::bad);
+            CHECK(result == RequestParser::ResultType::bad);
         }
     }
 
     SECTION("empty request") {
         silkrpc::http::RequestParser parser;
         silkrpc::http::Request req;
-        std::array<char, 0> buffer;
+        std::array<char, 0> buffer{};
         std::size_t bytes_read{0};
         const auto result{parser.parse(req, buffer.data(), buffer.data() + bytes_read)};
-        CHECK(result == RequestParser::indeterminate);
+        CHECK(result == RequestParser::ResultType::indeterminate);
     }
 
     SECTION("continue requests") {
@@ -69,7 +69,7 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
             silkrpc::http::RequestParser parser;
             silkrpc::http::Request req;
             const auto result{parser.parse(req, s.data(), s.data() + s.size())};
-            CHECK(result == RequestParser::processing_continue);
+            CHECK(result == RequestParser::ResultType::processing_continue);
         }
     }
 
@@ -99,7 +99,7 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
             silkrpc::http::RequestParser parser;
             silkrpc::http::Request req;
             const auto result{parser.parse(req, s.data(), s.data() + s.size())};
-            CHECK(result == RequestParser::bad);
+            CHECK(result == RequestParser::ResultType::bad);
         }
     }
 
@@ -108,7 +108,7 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
             "POST / HTTP/1.1\r\nHost: localhost:8545",
             "POST / HTTP/1.1\r\nHost: localhost:8545\r\nUser-Agent: curl/7.68.0",
             "POST / HTTP/1.1\r\nHost: localhost:8545\r\nUser-Agent: curl/7.68.0\r\nAccept: */*",
-            "POST / HTTP/1.1\r\nHost: localhost:8545\r\nUser-Agent: curl/7.68.0\r\nAccept: */*\r\nContent-Type: application/json"
+            "POST / HTTP/1.1\r\nHost: localhost:8545\r\nUser-Agent: curl/7.68.0\r\nAccept: */*\r\nContent-Type: application/json",
             "POST / HTTP/1.1\r\nHost: localhost:8545\r\nUser-Agent: curl/7.68.0\r\nAccept: */*\r\nContent-Type: application/json\r\nContent-Length: 0",
             "POST / HTTP/11.1\r\nHost: localhost:8545",
             "POST / HTTP/1.10\r\nHost: localhost:8545",
@@ -119,7 +119,7 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
             silkrpc::http::RequestParser parser;
             silkrpc::http::Request req;
             const auto result{parser.parse(req, s.data(), s.data() + s.size())};
-            CHECK(result == RequestParser::indeterminate);
+            CHECK(result == RequestParser::ResultType::indeterminate);
         }
     }
 
@@ -136,7 +136,7 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
             silkrpc::http::RequestParser parser;
             silkrpc::http::Request req;
             const auto result{parser.parse(req, s.data(), s.data() + s.size())};
-            CHECK(result == RequestParser::good);
+            CHECK(result == RequestParser::ResultType::good);
         }
     }
 }

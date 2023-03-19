@@ -36,8 +36,8 @@ namespace silkrpc::state {
 
 class AsyncRemoteState {
 public:
-    explicit AsyncRemoteState(boost::asio::io_context& io_context, const core::rawdb::DatabaseReader& db_reader, uint64_t block_number)
-    : io_context_(io_context), db_reader_(db_reader), block_number_(block_number), state_reader_{db_reader} {}
+    explicit AsyncRemoteState(const core::rawdb::DatabaseReader& db_reader, uint64_t block_number)
+    : db_reader_(db_reader), block_number_(block_number), state_reader_{db_reader} {}
 
     boost::asio::awaitable<std::optional<silkworm::Account>> read_account(const evmc::address& address) const noexcept;
 
@@ -60,7 +60,8 @@ public:
     boost::asio::awaitable<std::optional<evmc::bytes32>> canonical_hash(uint64_t block_number) const;
 
 private:
-    boost::asio::io_context& io_context_;
+    static std::unordered_map<evmc::bytes32, silkworm::Bytes> code_;
+
     const core::rawdb::DatabaseReader& db_reader_;
     uint64_t block_number_;
     StateReader state_reader_;
@@ -69,7 +70,7 @@ private:
 class RemoteState : public silkworm::State {
 public:
     explicit RemoteState(boost::asio::io_context& io_context, const core::rawdb::DatabaseReader& db_reader, uint64_t block_number)
-    : io_context_(io_context), async_state_{io_context, db_reader, block_number} {}
+    : io_context_(io_context), async_state_{db_reader, block_number} {}
 
     std::optional<silkworm::Account> read_account(const evmc::address& address) const noexcept override;
 
@@ -91,35 +92,35 @@ public:
 
     std::optional<evmc::bytes32> canonical_hash(uint64_t block_number) const override;
 
-    void insert_block(const silkworm::Block& block, const evmc::bytes32& hash) override {}
+    void insert_block(const silkworm::Block& /*block*/, const evmc::bytes32& /*hash*/) override {}
 
-    void canonize_block(uint64_t block_number, const evmc::bytes32& block_hash) override {}
+    void canonize_block(uint64_t /*block_number*/, const evmc::bytes32& /*block_hash*/) override {}
 
-    void decanonize_block(uint64_t block_number) override {}
+    void decanonize_block(uint64_t /*block_number*/) override {}
 
-    void insert_receipts(uint64_t block_number, const std::vector<silkworm::Receipt>& receipts) override {}
+    void insert_receipts(uint64_t /*block_number*/, const std::vector<silkworm::Receipt>& /*receipts*/) override {}
 
-    void begin_block(uint64_t block_number) override {}
+    void begin_block(uint64_t /*block_number*/) override {}
 
     void update_account(
-        const evmc::address& address,
-        std::optional<silkworm::Account> initial,
-        std::optional<silkworm::Account> current) override {}
+        const evmc::address& /*address*/,
+        std::optional<silkworm::Account> /*initial*/,
+        std::optional<silkworm::Account> /*current*/) override {}
 
     void update_account_code(
-        const evmc::address& address,
-        uint64_t incarnation,
-        const evmc::bytes32& code_hash,
-        silkworm::ByteView code) override {}
+        const evmc::address& /*address*/,
+        uint64_t /*incarnation*/,
+        const evmc::bytes32& /*code_hash*/,
+        silkworm::ByteView /*code*/) override {}
 
     void update_storage(
-        const evmc::address& address,
-        uint64_t incarnation,
-        const evmc::bytes32& location,
-        const evmc::bytes32& initial,
-        const evmc::bytes32& current) override {}
+        const evmc::address& /*address*/,
+        uint64_t /*incarnation*/,
+        const evmc::bytes32& /*location*/,
+        const evmc::bytes32& /*initial*/,
+        const evmc::bytes32& /*current*/) override {}
 
-    void unwind_state_changes(uint64_t block_number) override {}
+    void unwind_state_changes(uint64_t /*block_number*/) override {}
 
 private:
     boost::asio::io_context& io_context_;

@@ -117,7 +117,7 @@ TEST_CASE("ETHBACKEND protocol version match", "[silkrpc][protocol][wait_for_eth
 TEST_CASE("ETHBACKEND protocol version with server stub", "[silkrpc][protocol][wait_for_ethbackend_protocol_check]") {
     class TestService : public ::remote::ETHBACKEND::Service {
     public:
-        ::grpc::Status Version(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::types::VersionReply* response) override {
+        ::grpc::Status Version(::grpc::ServerContext*, const ::google::protobuf::Empty*, ::types::VersionReply* response) override {
             response->set_major(3);
             response->set_minor(1);
             response->set_patch(0);
@@ -198,7 +198,7 @@ TEST_CASE("KV protocol version match", "[silkrpc][protocol][wait_for_kv_protocol
 TEST_CASE("KV protocol version with server stub", "[silkrpc][protocol][wait_for_kv_protocol_check]") {
     class TestService : public ::remote::KV::Service {
     public:
-        ::grpc::Status Version(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::types::VersionReply* response) override {
+        ::grpc::Status Version(::grpc::ServerContext*, const ::google::protobuf::Empty*, ::types::VersionReply* response) override {
             response->set_major(6);
             response->set_minor(0);
             response->set_patch(0);
@@ -279,7 +279,7 @@ TEST_CASE("MINING protocol version match", "[silkrpc][protocol][wait_for_mining_
 TEST_CASE("MINING protocol version with server stub", "[silkrpc][protocol][wait_for_mining_protocol_check]") {
     class TestService : public ::txpool::Mining::Service {
     public:
-        ::grpc::Status Version(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::types::VersionReply* response) override {
+        ::grpc::Status Version(::grpc::ServerContext*, const ::google::protobuf::Empty*, ::types::VersionReply* response) override {
             response->set_major(1);
             response->set_minor(0);
             response->set_patch(0);
@@ -360,7 +360,7 @@ TEST_CASE("TXPOOL protocol version match", "[silkrpc][protocol][wait_for_txpool_
 TEST_CASE("TXPOOL protocol version with server stub", "[silkrpc][protocol][wait_for_txpool_protocol_check]") {
     class TestService : public ::txpool::Txpool::Service {
     public:
-        ::grpc::Status Version(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::types::VersionReply* response) override {
+        ::grpc::Status Version(::grpc::ServerContext*, const ::google::protobuf::Empty*, ::types::VersionReply* response) override {
             response->set_major(1);
             response->set_minor(0);
             response->set_patch(0);

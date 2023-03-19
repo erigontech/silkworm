@@ -41,11 +41,12 @@ class RpcApi : protected EthereumRpcApi, NetRpcApi, Web3RpcApi, DebugRpcApi, Par
 public:
     explicit RpcApi(Context& context, boost::asio::thread_pool& workers) :
         EthereumRpcApi{context, workers}, NetRpcApi{context.backend()}, Web3RpcApi{context}, DebugRpcApi{context, workers},
-        ParityRpcApi{context}, ErigonRpcApi{context}, TraceRpcApi{context, workers}, OtsRpcApi{context},
+        ParityRpcApi{context}, ErigonRpcApi{context}, TraceRpcApi{context, workers},
         EngineRpcApi(context.database(), context.backend()),
-        TxPoolRpcApi(context) {}
+        TxPoolRpcApi(context),
+        OtsRpcApi{context} {}
 
-    virtual ~RpcApi() {}
+    ~RpcApi() override = default;
 
     RpcApi(const RpcApi&) = delete;
     RpcApi& operator=(const RpcApi&) = delete;

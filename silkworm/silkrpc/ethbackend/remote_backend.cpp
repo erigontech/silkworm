@@ -27,7 +27,6 @@
 #include <silkworm/silkrpc/common/clock_time.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
-#include <silkworm/silkrpc/config.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkrpc::ethbackend {

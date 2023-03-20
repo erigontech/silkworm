@@ -123,6 +123,7 @@ inline constexpr ChainConfig kMainnetConfig{
     .arrow_glacier_block = 13'773'000,
     .gray_glacier_block = 15'050'000,
     .terminal_total_difficulty = intx::from_string<intx::uint256>("58750000000000000000000"),
+    .shanghai_time = 1681338455,
 };
 
 inline constexpr evmc::bytes32 kRinkebyGenesisHash{0x6341fd3daf94b748c72ced5a5b26028f2474f5f00d824504e4fa37a75767e177_bytes32};
@@ -154,6 +155,7 @@ inline constexpr ChainConfig kGoerliConfig{
     .berlin_block = 4'460'644,
     .london_block = 5'062'605,
     .terminal_total_difficulty = 10790000,
+    .shanghai_time = 1678832736,
 };
 
 inline constexpr evmc::bytes32 kSepoliaGenesisHash{0x25a5cc106eea7138acab33231d7160d69cb777ee0c2c553fcddf5138993e6dd9_bytes32};
@@ -171,7 +173,8 @@ inline constexpr ChainConfig kSepoliaConfig{
     .berlin_block = 0,
     .london_block = 0,
     .terminal_total_difficulty = 17000000000000000,
-    .merge_netsplit_block = 1735371,
+    .merge_netsplit_block = 1'735'371,
+    .shanghai_time = 1677557088,
 };
 
 //! \brief Looks up a known chain config provided its chain ID

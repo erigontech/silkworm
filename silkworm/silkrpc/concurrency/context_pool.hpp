@@ -32,6 +32,7 @@
 
 #include <silkworm/silkrpc/common/block_cache.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/silkrpc/core/filter_storage.hpp>
 #include <silkworm/silkrpc/concurrency/wait_strategy.hpp>
 #include <silkworm/silkrpc/ethbackend/backend.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
@@ -50,6 +51,7 @@ class Context {
         ChannelFactory create_channel,
         std::shared_ptr<BlockCache> block_cache,
         std::shared_ptr<ethdb::kv::StateCache> state_cache,
+        filter::FilterStorage& filter_storage,
         std::shared_ptr<mdbx::env_managed> chaindata_env = {},
         WaitMode wait_mode = WaitMode::blocking);
 
@@ -62,6 +64,7 @@ class Context {
     std::unique_ptr<txpool::TransactionPool>& tx_pool() noexcept { return tx_pool_; }
     std::shared_ptr<BlockCache>& block_cache() noexcept { return block_cache_; }
     std::shared_ptr<ethdb::kv::StateCache>& state_cache() noexcept { return state_cache_; }
+    filter::FilterStorage& filter_storage() noexcept { return filter_storage_; }
 
     //! Execute the scheduler loop until stopped.
     void execute_loop();
@@ -97,6 +100,9 @@ class Context {
     std::shared_ptr<BlockCache> block_cache_;
     std::shared_ptr<ethdb::kv::StateCache> state_cache_;
     std::shared_ptr<mdbx::env_managed> chaindata_env_;
+
+    filter::FilterStorage& filter_storage_;
+
     WaitMode wait_mode_;
 };
 
@@ -125,6 +131,8 @@ public:
     boost::asio::io_context& next_io_context();
 
 private:
+    static const std::size_t DEFAULT_POOL_STORAGE_SIZE = 0x400;
+
     // The pool of contexts
     std::vector<Context> contexts_;
 
@@ -136,6 +144,8 @@ private:
 
     //! Flag indicating if pool has been stopped.
     bool stopped_{false};
+
+    filter::FilterStorage filter_storage_;
 };
 
 } // namespace silkrpc

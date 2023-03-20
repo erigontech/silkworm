@@ -217,7 +217,7 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor<WorldState, VM>::call(
 
     const auto this_executor = co_await boost::asio::this_coro::executor;
 
-    const auto exec_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(ExecutionResult)>(
+    const auto call_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(ExecutionResult)>(
         [this, this_executor, &block, &txn, &tracers, &refund, &gas_bailout](auto&& self) {
             SILKRPC_TRACE << "EVMExecutor::call post block: " << block.header.number << " txn: " << &txn << "\n";
             boost::asio::post(workers_, [this, this_executor, &block, &txn, &tracers, &refund, &gas_bailout, self = std::move(self)]() mutable {
@@ -311,9 +311,9 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor<WorldState, VM>::call(
         },
         boost::asio::use_awaitable);
 
-    SILKRPC_DEBUG << "EVMExecutor::call exec_result: " << exec_result.error_code << " #data: " << exec_result.data.size() << " end\n";
+    SILKRPC_DEBUG << "EVMExecutor::call call_result: " << call_result.error_code << " #data: " << call_result.data.size() << " end\n";
 
-    co_return exec_result;
+    co_return call_result;
 }
 
 template class EVMExecutor<silkworm::IntraBlockState, silkworm::EVM>;

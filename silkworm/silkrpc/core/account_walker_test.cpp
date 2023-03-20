@@ -16,7 +16,6 @@
 
 #include "account_walker.hpp"
 
-#include <iterator>
 #include <memory>
 #include <string>
 #include <vector>
@@ -49,7 +48,7 @@ public:
         return 0;
     }
 
-    boost::asio::awaitable<void> open_cursor(const std::string& table_name, bool is_dup_sorted) override {
+    boost::asio::awaitable<void> open_cursor(const std::string& table_name, bool /*is_dup_sorted*/) override {
         table_name_ = table_name;
         table_ = json_.value(table_name_, empty);
         itr_ = table_.end();

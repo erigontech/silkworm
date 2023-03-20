@@ -70,7 +70,7 @@ template <typename WaitStrategy>
 void Context::execute_loop_single_threaded(WaitStrategy&& wait_strategy) {
     SILKRPC_DEBUG << "Single-thread execution loop start [" << this << "]\n";
     while (!io_context_->stopped()) {
-        int work_count = grpc_context_->poll_completion_queue();
+        std::size_t work_count = grpc_context_->poll_completion_queue();
         work_count += io_context_->poll();
         wait_strategy.idle(work_count);
     }
@@ -208,9 +208,9 @@ void ContextPool::run() {
 
 Context& ContextPool::next_context() {
     // Use a round-robin scheme to choose the next context to use
-    auto& context = contexts_[next_index_];
-    next_index_ = ++next_index_ % contexts_.size();
-    return context;
+    // Increment the next index first to make sure that different calling threads get different contexts
+    const std::size_t index = next_index_.fetch_add(1) % contexts_.size();
+    return contexts_[index];
 }
 
 boost::asio::io_context& ContextPool::next_io_context() {

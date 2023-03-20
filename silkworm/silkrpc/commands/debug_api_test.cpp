@@ -44,11 +44,11 @@ class DummyCursor : public silkrpc::ethdb::CursorDupSort {
 public:
     explicit DummyCursor(const nlohmann::json& json) : json_{json} {};
 
-    uint32_t cursor_id() const override {
+    [[nodiscard]] uint32_t cursor_id() const override {
         return 0;
     }
 
-    boost::asio::awaitable<void> open_cursor(const std::string& table_name, bool is_dup_sorted) override {
+    boost::asio::awaitable<void> open_cursor(const std::string& table_name, bool /*is_dup_sorted*/) override {
         table_name_ = table_name;
         table_ = json_.value(table_name_, empty);
         itr_ = table_.end();
@@ -152,7 +152,7 @@ class DummyTransaction: public silkrpc::ethdb::Transaction {
 public:
     explicit DummyTransaction(const nlohmann::json& json) : json_{json}, tx_id_{next_tx_id++} {};
 
-    uint64_t tx_id() const override {
+    [[nodiscard]] uint64_t tx_id() const override {
         return tx_id_;
     }
 
@@ -306,8 +306,8 @@ TEST_CASE("get_modified_accounts") {
 
         CHECK(accounts.size() == 1);
 
-        nlohmann::json json = accounts;
-        CHECK(json == R"([
+        nlohmann::json j = accounts;
+        CHECK(j == R"([
             "0x07aaec0b237ccf56b03a7c43c1c7a783da560642"
         ])"_json);
     }
@@ -318,8 +318,8 @@ TEST_CASE("get_modified_accounts") {
 
         CHECK(accounts.size() == 2);
 
-        nlohmann::json json = accounts;
-        CHECK(json == R"([
+        nlohmann::json j = accounts;
+        CHECK(j == R"([
             "0x07aaec0b237ccf56b03a7c43c1c7a783da560642",
             "0x0c7b6617b9bc0d20f4030ee079d355246246ef70"
         ])"_json);
@@ -331,8 +331,8 @@ TEST_CASE("get_modified_accounts") {
 
         CHECK(accounts.size() == 70);
 
-        nlohmann::json json = accounts;
-        CHECK(json == R"([
+        nlohmann::json j = accounts;
+        CHECK(j == R"([
             "0x053eafe07f12033715d31e1599bbf27dd1c05fb2",
             "0x07aaec0b237ccf56b03a7c43c1c7a783da560642",
             "0x0c7b6617b9bc0d20f4030ee079d355246246ef70",
@@ -410,7 +410,7 @@ TEST_CASE("get_modified_accounts") {
         auto result = boost::asio::co_spawn(pool, get_modified_accounts(tx_database, 0x52a011, 0x52a010), boost::asio::use_future);
         auto accounts = result.get();
 
-        CHECK(accounts.size() == 0);
+        CHECK(accounts.empty());
     }
 
     SECTION("start > last block") {

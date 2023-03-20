@@ -49,7 +49,7 @@ boost::asio::awaitable<evmc::bytes32> AsyncRemoteState::read_storage(const evmc:
     co_return co_await state_reader_.read_storage(address, incarnation, location, block_number_ + 1);
 }
 
-boost::asio::awaitable<uint64_t> AsyncRemoteState::previous_incarnation(const evmc::address& address) const noexcept {
+boost::asio::awaitable<uint64_t> AsyncRemoteState::previous_incarnation(const evmc::address& /*address*/) const noexcept {
     co_return 0;
 }
 

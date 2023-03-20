@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <cstddef>
 #include <functional>
 #include <iostream>
@@ -131,7 +132,7 @@ private:
     boost::asio::detail::thread_group context_threads_;
 
     // The next index to use for a context
-    std::size_t next_index_;
+    std::atomic_size_t next_index_;
 
     //! Flag indicating if pool has been stopped.
     bool stopped_{false};

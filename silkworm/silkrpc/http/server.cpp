@@ -86,9 +86,9 @@ boost::asio::awaitable<void> Server::run() {
             new_connection->socket().set_option(boost::asio::ip::tcp::socket::keep_alive(true));
 
             SILKRPC_TRACE << "Server::run starting connection for socket: " << &new_connection->socket() << "\n";
-            auto new_connection_starter = [=]() -> boost::asio::awaitable<void> { co_await new_connection->start(); };
+            auto read_loop = [=]() -> boost::asio::awaitable<void> { co_await new_connection->read_loop(); };
 
-            boost::asio::co_spawn(*io_context, new_connection_starter, [&](std::exception_ptr eptr) {
+            boost::asio::co_spawn(*io_context, read_loop, [&](std::exception_ptr eptr) {
                 if (eptr) std::rethrow_exception(eptr);
             });
         }

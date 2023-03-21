@@ -589,7 +589,7 @@ TEST_CASE("MemoryMutationCursor: multi-value interleaved", "[silkworm][node][db]
     CHECK(db_result.key == "key3");
     CHECK(db_result.value == "value3.1");
     mem_result = mem_cursor->to_current_next_multi(/*throw_notfound=*/false);
-    //CHECK(!mem_result.done);
+    // CHECK(!mem_result.done);
 
     db_result = db_cursor->to_current_next_multi(/*throw_notfound=*/false);
     CHECK(db_result.done);
@@ -597,18 +597,18 @@ TEST_CASE("MemoryMutationCursor: multi-value interleaved", "[silkworm][node][db]
     CHECK(db_result.value == "value3.3");
     mem_result = mem_cursor->to_next_first_multi(/*throw_notfound=*/false);
     CHECK(mem_result.done);
-    //CHECK(mem_result.key == "key3");
-    //CHECK(mem_result.value == "value3.1");
+    // CHECK(mem_result.key == "key3");
+    // CHECK(mem_result.value == "value3.1");
 
     db_result = db_cursor->to_current_next_multi(/*throw_notfound=*/false);
     CHECK(!db_result.done);
     mem_result = mem_cursor->to_current_next_multi(/*throw_notfound=*/false);
     CHECK(mem_result.done);
-    //CHECK(mem_result.key == "key3");
-    //CHECK(mem_result.value == "value3.3");
+    // CHECK(mem_result.key == "key3");
+    // CHECK(mem_result.value == "value3.3");
 
     mem_result = mem_cursor->to_current_next_multi(/*throw_notfound=*/false);
-    //CHECK(!mem_result.done);
+    // CHECK(!mem_result.done);
 }
 
 #endif  // SILKWORM_SANITIZE

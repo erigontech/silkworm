@@ -32,6 +32,7 @@ api::api_common::PeerEvent peer_event_from_proto_peer_event(const proto::PeerEve
             event_id = api::api_common::PeerEventId::kRemoved;
             break;
         default:
+            event_id = api::api_common::PeerEventId::kRemoved;  // Avoid -Wsometimes-uninitialized
             assert(false);
     }
 

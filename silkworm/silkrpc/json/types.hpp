@@ -136,8 +136,213 @@ std::string to_quantity(uint64_t number);
 std::string to_quantity(intx::uint256 number);
 std::string to_quantity(silkworm::ByteView bytes);
 
+
+struct json_buffer {
+
+  json_buffer(json_buffer&& o) : buffer_(o.buffer_), curr_(o.curr_) {
+  }
+
+  json_buffer(char *buffer, int max_len) : buffer_(buffer), curr_(buffer), max_len_(max_len) {
+     *curr_++ = '{'; 
+  }
+
+  inline void set_data(const char *data, int len) {
+       std::memcpy (buffer_, data, len);
+       curr_+=len; 
+  }
+
+  inline void set_curr(char *curr) {
+     curr_=curr;
+  }
+
+  inline void reset() {
+      curr_ = &buffer_[1];
+      first_element = 1;
+      first_attribute = 1;
+  }
+
+  inline void end() {
+     *curr_++ = '}'; 
+  }
+
+  inline void add_attribute_name(const char *name, int len) {
+    auto ptr = curr_;
+    if (first_attribute) { 
+       first_attribute = 0; 
+    } 
+    else { \
+       *ptr++ = ','; 
+    }
+    *ptr++ = '\"'; 
+    memcpy(ptr, name, len); 
+    ptr+=len;
+    *ptr++ = '\"'; 
+    *ptr++ = ':'; 
+    *ptr++ = '\"'; \
+    curr_ = ptr;
+  }
+
+  inline void add_attribute_name_list(const char *name, int len) {
+    auto ptr = curr_;
+    if (first_attribute) { 
+       first_attribute = 0; 
+    } 
+    else { \
+       *ptr++ = ','; 
+    }
+    *ptr++ = '\"'; 
+    memcpy(ptr, name, len); 
+    ptr+=len;
+    *ptr++ = '\"'; 
+    *ptr++ = ':'; 
+    *ptr++ = '['; 
+    curr_ = ptr;
+    first_attribute = 1;
+  }
+
+  // XXX
+  inline void add_attribute_name2(const char *name, int len) {
+    auto ptr = curr_;
+    if (first_attribute) { 
+       first_attribute = 0; 
+    } 
+    else { \
+       *ptr++ = ','; 
+    }
+    *ptr++ = '\"'; 
+    memcpy(ptr, name, len); 
+    ptr+=len;
+    *ptr++ = '\"'; 
+    *ptr++ = ':'; 
+    curr_ = ptr;
+  }
+
+  inline char *get_addr() {
+    return curr_;
+  }
+
+  void dump() {
+     int len = curr_-buffer_;
+     printf ("BufferLen: %d\n",len);
+     for (auto i = 0; i < len; i++) {
+        printf ("%x ",buffer_[i]);
+     }
+  }
+
+  inline void add_attribute_value(int len) {
+       curr_+=len; 
+       *curr_++ = '\"'; 
+  }
+
+  // XXX
+  inline void add_attribute_value2(int len) {
+       curr_+=len; 
+  }
+
+  inline void start_object(const char *name, int len) {
+    auto ptr = curr_;
+    if (first_attribute) {
+       first_attribute = 0;
+    }
+    else { \
+       *ptr++ = ',';
+    }
+    *ptr++ = '\"';
+    memcpy(ptr, name, len);
+    ptr+=len;
+    *ptr++ = '\"';
+    *ptr++ = ':';
+    *ptr++ = '{';
+    curr_ = ptr;
+    first_attribute = 1;
+  }
+
+  inline void end_object() {
+     *curr_++ = '}';
+  }
+
+
+  inline void add_attribute_value(const char *value) {
+       int len = strlen(value);
+       memcpy(curr_, value, len); 
+       curr_+=len; 
+       *curr_++ = '\"'; 
+  }
+
+  inline void add_attribute_value_list(const char *value, int len) {
+       auto ptr = curr_;
+       if (first_attribute) {
+          first_attribute = 0;
+       }
+       else { \
+          *ptr++ = ',';
+       }
+       *ptr++ = '\"';
+       memcpy(ptr, value, len);
+       ptr+=len;
+       *ptr++ = '\"';
+       curr_ = ptr;
+  }
+
+
+  inline void start_vector(const char *name, int len) {
+       auto ptr = curr_;
+       *ptr++ = ','; 
+       *ptr++ = '\"'; 
+       memcpy(ptr, name, len); 
+       ptr+=len;
+       *ptr++ = '\"'; 
+       *ptr++ = ':'; 
+       *ptr++ = '[';
+       first_element = 1; 
+       curr_ = ptr;
+  }
+
+  inline void end_vector() {
+       *curr_++ = ']';
+  }
+
+  inline void start_vector_element() {
+       if (first_element) { 
+          first_element = 0; 
+       } 
+       else 
+          *curr_++ = ','; 
+       *curr_++ = '{'; 
+       first_attribute = 1; 
+  }
+
+  inline void end_vector_element() {
+       *curr_++ = '}';
+  }
+
+  inline void add_end_attribute_list() {
+     *curr_++ = ']';
+  }
+
+  std::string_view to_string_view() { 
+       //std::cout << "\n to_string_view::Message-Len: " << (int)(curr_ - buffer_ - 1) << "\n"; 
+       return std::string_view(buffer_, curr_ - buffer_ - 1 );
+  }
+
+  char *buffer_;
+  char *curr_;
+  int max_len_;
+  int first_element = 1; 
+  int first_attribute = 1; 
+};
+
+void make_json_error(json_buffer& out, uint32_t id, int32_t code, const std::string& message);
+void make_json_content(json_buffer& out, uint32_t id, const silkrpc::Logs& logs);
+
 nlohmann::json make_json_content(uint32_t id);
 nlohmann::json make_json_content(uint32_t id, const nlohmann::json& result);
+
+void make_json_content2(json_buffer& out, uint32_t id, const silkrpc::Logs& logs);
+
+void make_json_content4(std::string& out, uint32_t id, const silkrpc::Logs& logs);
+void make_json_error(std::string& buffer, uint32_t id, int32_t code, const std::string& message);
+
 nlohmann::json make_json_error(uint32_t id, int32_t code, const std::string& message);
 nlohmann::json make_json_error(uint32_t id, const RevertError& error);
 

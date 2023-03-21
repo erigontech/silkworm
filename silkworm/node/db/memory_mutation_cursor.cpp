@@ -392,7 +392,7 @@ CursorResult MemoryMutationCursor::next_by_type(MemoryMutationCursor::NextType t
             return cursor_->to_next_first_multi(throw_notfound);
         }
         default: {
-            SILKWORM_ASSERT(false);
+            return CursorResult{{}, {}, false};
         }
     }
 }

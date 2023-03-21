@@ -367,11 +367,11 @@ TEST_CASE("MemoryMutationCursor: to_current_next_multi", "[silkworm][node][db][m
             REQUIRE(mutation_cursor1.to_first(/*throw_notfound=*/false));
             auto result1 = mutation_cursor1.to_current_next_multi(/*throw_notfound=*/false);
             check_cursor_result(result1, {"BB", "11"});
-            // result1 = mutation_cursor1.to_current_next_multi(/*throw_notfound=*/false);
-            // check_cursor_result(result1, {"BB", "11"});
+            result1 = mutation_cursor1.to_current_next_multi(/*throw_notfound=*/false);
+            check_cursor_result(result1, {"BB", "11"});
             REQUIRE(mutation_cursor1.to_last(/*throw_notfound=*/false));
-            // result1 = mutation_cursor1.to_current_next_multi(/*throw_notfound=*/false);
-            // check_cursor_result(result1, {"BB", "11"});
+            result1 = mutation_cursor1.to_current_next_multi(/*throw_notfound=*/false);
+            check_cursor_result(result1, {"BB", "11"});
 
             MemoryMutationCursor mutation_cursor2{test->mutation, kTestMultiMap};
             REQUIRE(mutation_cursor2.to_first(/*throw_notfound=*/false));
@@ -542,7 +542,7 @@ TEST_CASE("MemoryMutationCursor: current", "[silkworm][node][db][memory_mutation
     }
 }
 
-TEST_CASE("MemoryMutationCursor: TestNext", "[silkworm][node][db][memory_mutation_cursor]") {
+TEST_CASE("MemoryMutationCursor: multi-value interleaved", "[silkworm][node][db][memory_mutation_cursor]") {
     MemoryMutationCursorTest test;
 
     auto rw_db_cursor = test.main_txn.rw_cursor_dup_sort(db::table::kAccountChangeSet);
@@ -556,37 +556,59 @@ TEST_CASE("MemoryMutationCursor: TestNext", "[silkworm][node][db][memory_mutatio
     rw_mem_cursor->upsert(mdbx::slice{"key1"}, mdbx::slice{"value1.2"});
     test.mutation.commit_and_renew();
 
-    auto cursor = test.mutation.ro_cursor_dup_sort(db::table::kAccountChangeSet);
+    auto db_cursor = test.main_txn.ro_cursor_dup_sort(db::table::kAccountChangeSet);
+    auto mem_cursor = test.mutation.ro_cursor_dup_sort(db::table::kAccountChangeSet);
 
-    auto result = cursor->to_first(/*throw_notfound=*/false);
-    CHECK(result.done);
-    CHECK(result.key == "key1");
-    CHECK(result.value == "value1.1");
+    auto db_result = db_cursor->to_first(/*throw_notfound=*/false);
+    CHECK(db_result.done);
+    CHECK(db_result.key == "key1");
+    CHECK(db_result.value == "value1.1");
+    auto mem_result = mem_cursor->to_first(/*throw_notfound=*/false);
+    CHECK(mem_result.done);
+    CHECK(mem_result.key == "key1");
+    CHECK(mem_result.value == "value1.1");
 
-    result = cursor->to_next(/*throw_notfound=*/false);
-    CHECK(result.done);
-    CHECK(result.key == "key1");
-    CHECK(result.value == "value1.2");
+    db_result = db_cursor->to_current_next_multi(/*throw_notfound=*/false);
+    CHECK(db_result.done);
+    CHECK(db_result.key == "key1");
+    CHECK(db_result.value == "value1.3");
+    mem_result = mem_cursor->to_current_next_multi(/*throw_notfound=*/false);
+    CHECK(mem_result.done);
+    CHECK(mem_result.key == "key1");
+    CHECK(mem_result.value == "value1.2");
 
-    result = cursor->to_next(/*throw_notfound=*/false);
-    CHECK(result.done);
-    CHECK(result.key == "key1");
-    CHECK(result.value == "value1.3");
+    db_result = db_cursor->to_current_next_multi(/*throw_notfound=*/false);
+    CHECK(!db_result.done);
+    mem_result = mem_cursor->to_current_next_multi(/*throw_notfound=*/false);
+    CHECK(mem_result.done);
+    CHECK(mem_result.key == "key1");
+    CHECK(mem_result.value == "value1.3");
 
-    result = cursor->to_next(/*throw_notfound=*/false);
-    CHECK(result.done);
-    //CHECK(result.key == "key3");
-    //CHECK(result.value == "value3.1");
+    db_result = db_cursor->to_next_first_multi(/*throw_notfound=*/false);
+    CHECK(db_result.done);
+    CHECK(db_result.key == "key3");
+    CHECK(db_result.value == "value3.1");
+    mem_result = mem_cursor->to_current_next_multi(/*throw_notfound=*/false);
+    //CHECK(!mem_result.done);
 
-    result = cursor->to_next(/*throw_notfound=*/false);
-    CHECK(result.done);
-    //CHECK(result.key == "key3");
-    //CHECK(result.value == "value3.3");
+    db_result = db_cursor->to_current_next_multi(/*throw_notfound=*/false);
+    CHECK(db_result.done);
+    CHECK(db_result.key == "key3");
+    CHECK(db_result.value == "value3.3");
+    mem_result = mem_cursor->to_next_first_multi(/*throw_notfound=*/false);
+    CHECK(mem_result.done);
+    //CHECK(mem_result.key == "key3");
+    //CHECK(mem_result.value == "value3.1");
 
-    result = cursor->to_next(/*throw_notfound=*/false);
-    //CHECK(!result.done);
-    //CHECK(result.key.empty());
-    //CHECK(result.value.empty());
+    db_result = db_cursor->to_current_next_multi(/*throw_notfound=*/false);
+    CHECK(!db_result.done);
+    mem_result = mem_cursor->to_current_next_multi(/*throw_notfound=*/false);
+    CHECK(mem_result.done);
+    //CHECK(mem_result.key == "key3");
+    //CHECK(mem_result.value == "value3.3");
+
+    mem_result = mem_cursor->to_current_next_multi(/*throw_notfound=*/false);
+    //CHECK(!mem_result.done);
 }
 
 #endif  // SILKWORM_SANITIZE

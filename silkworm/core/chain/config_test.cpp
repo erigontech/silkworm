@@ -147,6 +147,7 @@ TEST_CASE("JSON serialization") {
             "arrowGlacierBlock":13773000,
             "grayGlacierBlock":15050000,
             "terminalTotalDifficulty":"58750000000000000000000",
+            "shanghaiTime":1681338455,
             "ethash":{}
         })");
 
@@ -197,6 +198,7 @@ TEST_CASE("terminalTotalDifficulty as JSON number (Erigon compatibility)") {
             "arrowGlacierBlock":13773000,
             "grayGlacierBlock":15050000,
             "terminalTotalDifficulty":58750000000000000000000,
+            "shanghaiTime":1681338455,
             "ethash":{}
         })");
 
@@ -219,6 +221,7 @@ TEST_CASE("terminalTotalDifficulty as JSON number (Erigon compatibility)") {
             "berlinBlock":4460644,
             "londonBlock":5062605,
             "terminalTotalDifficulty":10790000,
+            "shanghaiTime":1678832736,
             "clique":{}
         })");
 
@@ -243,6 +246,7 @@ TEST_CASE("terminalTotalDifficulty as JSON number (Erigon compatibility)") {
             "londonBlock":0,
             "terminalTotalDifficulty":17000000000000000,
             "mergeNetsplitBlock":1735371,
+            "shanghaiTime":1677557088,
             "ethash":{}
         })");
 

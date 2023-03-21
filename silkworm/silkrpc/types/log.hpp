@@ -86,8 +86,8 @@ struct eth_log_item {
     std::string from_block;
     std::string to_block;
     std::string address;
-    std::vector<std::vector<std::string>> topics;
-    //std::vector<std::string> topics1;
+    //std::vector<std::vector<std::string>> topics;
+    std::vector<std::string> topics;
     std::string block_hash;
 
         //"topics", &T::topics1,

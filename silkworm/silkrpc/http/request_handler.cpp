@@ -81,14 +81,17 @@ boost::asio::awaitable<void> RequestHandler::handle_request(const http::Request&
 #endif
         char buffer[20000000]; // 30000000
         json_buffer out{buffer, sizeof(buffer)};
-        std::cout << request.content << "\n";
+        //std::cout << request.content << "\n";
         const auto request_json = nlohmann::json::parse(request.content);
         co_await rpc_api_.handle_eth_get_logs2(request_json, out);
         reply.status = http::StatusType::ok;
         reply.content = out.to_string_view();
         reply.content += "\n";
+#ifdef notdef
+#endif
 
 #ifdef notdef
+        const auto request_json = nlohmann::json::parse(request.content);
         if (request_json.is_object()) {
             if (!request_json.contains("id")) {
                 reply.content = "\n";
@@ -185,8 +188,8 @@ boost::asio::awaitable<void> RequestHandler::handle_request(silkrpc::commands::R
         json_buffer out{buffer, sizeof(buffer)};
 
 
-        //if (method == "xxx" ) {
-        if (method == http::method::k_eth_getLogs) {
+        //if (method == http::method::k_eth_getLogs) {
+        if (method == "xxx" ) {
            co_await rpc_api_.handle_eth_get_logs2(request_json, out);
            reply.status = http::StatusType::ok;
            reply.content = out.to_string_view();

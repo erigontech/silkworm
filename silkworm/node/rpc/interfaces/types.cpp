@@ -21,10 +21,11 @@
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/node/rpc/common/conversion.hpp>
 
 namespace silkworm {
 
-std::unique_ptr<types::H512> to_H512(const Bytes& orig) {
+std::unique_ptr<types::H512> H512_from_bytes(ByteView orig) {
     using types::H128, types::H256, types::H512, evmc::load64be;
 
     Bytes bytes(64, 0);
@@ -98,6 +99,10 @@ Hash hash_from_H256(const types::H256& orig) {
     return dest;
 }
 
+std::unique_ptr<types::H256> H256_from_hash(const Hash& orig) {
+    return rpc::H256_from_bytes32(orig);
+}
+
 constexpr uint64_t& lo_lo(intx::uint256& x) { return x[0]; }
 constexpr uint64_t& lo_hi(intx::uint256& x) { return x[1]; }
 constexpr uint64_t& hi_lo(intx::uint256& x) { return x[2]; }
@@ -113,6 +118,10 @@ intx::uint256 uint256_from_H256(const types::H256& orig) {
     lo_lo(dest) = orig.lo().lo();
 
     return dest;
+}
+
+std::unique_ptr<types::H256> H256_from_uint256(const intx::uint256& orig) {
+    return rpc::H256_from_uint256(orig);
 }
 
 }  // namespace silkworm

@@ -20,7 +20,7 @@ namespace silkworm::rpc {
 
 PeerById::PeerById(const PeerId& peerId)
     : UnaryCall("PeerById", &sentry::Sentry::Stub::PeerById, {}) {
-    request_.set_allocated_peer_id(to_H512(peerId).release());
+    request_.set_allocated_peer_id(H512_from_bytes(peerId).release());
 }
 
 }  // namespace silkworm::rpc

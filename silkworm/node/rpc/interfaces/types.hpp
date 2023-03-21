@@ -24,10 +24,13 @@
 
 namespace silkworm {
 
-std::unique_ptr<types::H512> to_H512(const Bytes& orig);
 Bytes bytes_from_H512(const types::H512& orig);
+std::unique_ptr<types::H512> H512_from_bytes(ByteView orig);
 
 Hash hash_from_H256(const types::H256& orig);
+std::unique_ptr<types::H256> H256_from_hash(const Hash& orig);
+
 intx::uint256 uint256_from_H256(const types::H256& orig);
+std::unique_ptr<types::H256> H256_from_uint256(const intx::uint256& orig);
 
 }  // namespace silkworm

@@ -37,14 +37,16 @@ class DirectService : api_common::Service {
     boost::asio::awaitable<PeerKeys> send_message_to_all(common::Message message) override;
     boost::asio::awaitable<PeerKeys> send_message_by_min_block(common::Message message, size_t max_peers) override;
     boost::asio::awaitable<void> peer_min_block(common::EccPublicKey public_key) override;
-    boost::asio::awaitable<std::shared_ptr<concurrency::Channel<api_common::MessageFromPeer>>> messages(api_common::MessageIdSet message_id_filter) override;
+    boost::asio::awaitable<void> messages(
+        api_common::MessageIdSet message_id_filter,
+        std::function<boost::asio::awaitable<void>(api_common::MessageFromPeer)> consumer) override;
 
     boost::asio::awaitable<api_common::PeerInfos> peers() override;
     boost::asio::awaitable<size_t> peer_count() override;
     boost::asio::awaitable<std::optional<api_common::PeerInfo>> peer_by_id(common::EccPublicKey public_key) override;
     boost::asio::awaitable<void> penalize_peer(common::EccPublicKey public_key) override;
     boost::asio::awaitable<void> peer_useless(common::EccPublicKey public_key) override;
-    boost::asio::awaitable<std::shared_ptr<concurrency::Channel<api_common::PeerEvent>>> peer_events() override;
+    boost::asio::awaitable<void> peer_events(std::function<boost::asio::awaitable<void>(api_common::PeerEvent)> consumer) override;
 
   private:
     ServiceRouter router_;

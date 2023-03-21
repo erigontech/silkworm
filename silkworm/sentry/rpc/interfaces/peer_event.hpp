@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,14 +14,14 @@
    limitations under the License.
 */
 
-#include "peer_min_block.hpp"
+#pragma once
 
-namespace silkworm::rpc {
+#include <silkworm/interfaces/p2psentry/sentry.grpc.pb.h>
+#include <silkworm/sentry/api/api_common/peer_event.hpp>
 
-PeerMinBlock::PeerMinBlock(const PeerId& peerId, BlockNum minBlock)
-    : UnaryCall("PeerMinBlock", &sentry::Sentry::Stub::PeerMinBlock, {}) {
-    request_.set_allocated_peer_id(H512_from_bytes(peerId).release());
-    request_.set_min_block(minBlock);  // take ownership
-}
+namespace silkworm::sentry::rpc::interfaces {
 
-}  // namespace silkworm::rpc
+api::api_common::PeerEvent peer_event_from_proto_peer_event(const ::sentry::PeerEvent& event);
+::sentry::PeerEvent proto_peer_event_from_peer_event(const api::api_common::PeerEvent& event);
+
+}  // namespace silkworm::sentry::rpc::interfaces

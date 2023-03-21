@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,14 +14,20 @@
    limitations under the License.
 */
 
-#include "peer_min_block.hpp"
+#include "eth_version.hpp"
 
-namespace silkworm::rpc {
+namespace silkworm::sentry::rpc::interfaces {
 
-PeerMinBlock::PeerMinBlock(const PeerId& peerId, BlockNum minBlock)
-    : UnaryCall("PeerMinBlock", &sentry::Sentry::Stub::PeerMinBlock, {}) {
-    request_.set_allocated_peer_id(H512_from_bytes(peerId).release());
-    request_.set_min_block(minBlock);  // take ownership
+namespace proto = ::sentry;
+
+uint8_t eth_version_from_protocol(proto::Protocol protocol) {
+    assert(proto::Protocol_MIN == proto::Protocol::ETH65);
+    return static_cast<uint8_t>(protocol) + 65;
 }
 
-}  // namespace silkworm::rpc
+proto::Protocol protocol_from_eth_version(uint8_t version) {
+    assert(proto::Protocol_MIN == proto::Protocol::ETH65);
+    return static_cast<proto::Protocol>(version - 65);
+}
+
+}  // namespace silkworm::sentry::rpc::interfaces

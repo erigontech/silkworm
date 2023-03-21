@@ -47,3 +47,4 @@
 [submodule "third_party/libff"]
 	path = third_party/libff
 	url = https://github.com/torquem-ch/libff.git
+	branch = win

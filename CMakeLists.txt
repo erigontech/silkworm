@@ -18,6 +18,7 @@
 cmake_minimum_required(VERSION 3.16.2)
 
 option(CONAN_PACKAGE_MANAGER "Use Conan.io as package manager" OFF)
+option(SILKRPC_USE_MIMALLOC "Enable using mimalloc for dynamic memory management" ON)
 
 if(CONAN_PACKAGE_MANAGER) # CMAKE CONAN START
   message("Package manager: Conan")
@@ -146,7 +147,10 @@ if(NOT SILKWORM_CORE_ONLY)
   # CBOR
   add_subdirectory(third_party/cbor-cpp)
     
+
 endif()
+
+add_subdirectory(third_party/glaze)
 
 # evmone with dependencies
 if(SILKWORM_WASM_API)

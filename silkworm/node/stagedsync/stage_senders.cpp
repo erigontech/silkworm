@@ -21,9 +21,10 @@
 #include <thread>
 
 #include <gsl/util>
-#include <silkpre/secp256k1n.hpp>
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/crypto/ecdsa.h>
+#include <silkworm/core/crypto/secp256k1n.hpp>
 #include <silkworm/node/common/stopwatch.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 
@@ -476,7 +477,7 @@ Stage::Result Senders::add_to_batch(BlockNum block_num, std::vector<Transaction>
                 break;
         }
 
-        if (!silkpre::is_valid_signature(transaction.r, transaction.s, has_homestead)) {
+        if (!is_valid_signature(transaction.r, transaction.s, has_homestead)) {
             log::Error(log_prefix_) << "Got invalid signature for transaction #" << tx_id << " in block #" << block_num;
             return Stage::Result::kInvalidTransaction;
         }
@@ -527,7 +528,7 @@ void Senders::recover_batch(thread_pool& worker_pool, secp256k1_context* context
     auto batch_result = worker_pool.submit([=]() {
         std::for_each(ready_batch->begin(), ready_batch->end(), [&](auto& package) {
             const auto tx_hash{keccak256(package.rlp)};
-            const bool ok = silkpre_recover_address(package.tx_from.bytes, tx_hash.bytes, package.tx_signature, package.odd_y_parity, context);
+            const bool ok = silkworm_recover_address(package.tx_from.bytes, tx_hash.bytes, package.tx_signature, package.odd_y_parity, context);
             if (!ok) {
                 throw std::runtime_error("Unable to recover from address in block " + std::to_string(package.block_num));
             }

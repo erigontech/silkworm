@@ -16,7 +16,7 @@
 
 #include "engine.hpp"
 
-#include <silkpre/ecdsa.h>
+#include <silkworm/core/crypto/ecdsa.h>
 
 namespace silkworm::consensus {
 
@@ -31,8 +31,8 @@ static evmc::address ecrecover(const BlockHeader& header) {
     Bytes signature = header.extra_data.substr(header.extra_data.length() - kExtraSealSize, kExtraSealSize - 1);
     bool odd_y_parity = header.extra_data[header.extra_data.length() - 1] != 0;
 
-    static secp256k1_context* context{secp256k1_context_create(SILKPRE_SECP256K1_CONTEXT_FLAGS)};
-    if (!silkpre_recover_address(beneficiary.bytes, seal_hash.bytes, signature.c_str(), odd_y_parity, context)) {
+    static secp256k1_context* context{secp256k1_context_create(SILKWORM_SECP256K1_CONTEXT_FLAGS)};
+    if (!silkworm_recover_address(beneficiary.bytes, seal_hash.bytes, signature.c_str(), odd_y_parity, context)) {
         return header.beneficiary;
     }
     return beneficiary;

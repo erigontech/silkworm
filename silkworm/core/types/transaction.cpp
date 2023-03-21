@@ -19,9 +19,9 @@
 #include <cassert>
 
 #include <ethash/keccak.hpp>
-#include <silkpre/ecdsa.h>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/crypto/ecdsa.h>
 #include <silkworm/core/rlp/encode_vector.hpp>
 
 #include "y_parity_and_chain_id.hpp"
@@ -434,8 +434,8 @@ void Transaction::recover_sender() {
     intx::be::unsafe::store(signature + kHashLength, s);
 
     from = evmc::address{};
-    static secp256k1_context* context{secp256k1_context_create(SILKPRE_SECP256K1_CONTEXT_FLAGS)};
-    if (!silkpre_recover_address(from->bytes, hash.bytes, signature, odd_y_parity, context)) {
+    static secp256k1_context* context{secp256k1_context_create(SILKWORM_SECP256K1_CONTEXT_FLAGS)};
+    if (!silkworm_recover_address(from->bytes, hash.bytes, signature, odd_y_parity, context)) {
         from = std::nullopt;
     }
 }

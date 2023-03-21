@@ -14,16 +14,22 @@
    limitations under the License.
 */
 
-#include "sha256.hpp"
+#include "secp256k1n.hpp"
 
-#include <silkworm/core/crypto/sha256.h>
+namespace silkworm {
 
-namespace silkworm::sentry::rlpx::crypto {
-
-Bytes sha256(ByteView data) {
-    Bytes hash(32, 0);
-    silkworm_sha256(hash.data(), data.data(), data.size(), /* use_cpu_extensions = */ false);
-    return hash;
+bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool homestead) noexcept {
+    if (!r || !s) {
+        return false;
+    }
+    if (r >= kSecp256k1n && s >= kSecp256k1n) {
+        return false;
+    }
+    // https://eips.ethereum.org/EIPS/eip-2
+    if (homestead && s > kSecp256k1Halfn) {
+        return false;
+    }
+    return true;
 }
 
-}  // namespace silkworm::sentry::rlpx::crypto
+}  // namespace silkworm

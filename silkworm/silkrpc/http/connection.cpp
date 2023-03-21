@@ -50,12 +50,43 @@ Connection::~Connection() {
     SILKRPC_DEBUG << "Connection::~Connection socket " << &socket_ << " deleted\n";
 }
 
-boost::asio::awaitable<void> Connection::read_loop() {
+boost::asio::awaitable<void> Connection::start() {
+    co_await do_read();
+}
+
+#if defined(__clang__)
+#pragma clang diagnostic ignored "-Winfinite-recursion"
+#elif defined(__GNUC__)
+#if __GNUC__ > 11
+#pragma GCC diagnostic ignored "-Winfinite-recursion"
+#endif
+#else
+#pragma warning disable "infinite-recursion"
+#endif
+boost::asio::awaitable<void> Connection::do_read() {
     try {
-        // Read next request or next chunk (result == RequestParser::indeterminate) until closed or error
-        while (true) {
-            co_await do_read();
+        SILKRPC_DEBUG << "Connection::do_read going to read...\n" << std::flush;
+        std::size_t bytes_read = co_await socket_.async_read_some(boost::asio::buffer(buffer_), boost::asio::use_awaitable);
+        SILKRPC_DEBUG << "Connection::do_read bytes_read: " << bytes_read << "\n";
+        SILKRPC_TRACE << "Connection::do_read buffer: " << std::string_view{static_cast<const char*>(buffer_.data()), bytes_read} << "\n";
+
+        RequestParser::ResultType result = request_parser_.parse(request_, buffer_.data(), buffer_.data() + bytes_read);
+
+        if (result == RequestParser::ResultType::good) {
+            co_await request_handler_.handle_request(request_);
+            clean();
+        } else if (result == RequestParser::ResultType::bad) {
+            reply_ = Reply::stock_reply(StatusType::bad_request);
+            co_await do_write();
+            clean();
+        } else if (result == RequestParser::ResultType::processing_continue) {
+            reply_ = Reply::stock_reply(StatusType::processing_continue);
+            co_await do_write();
+            reply_.reset();
         }
+
+        // Read next chunk (result == RequestParser::indeterminate) or next request
+        co_await do_read();
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::asio::error::eof || se.code() == boost::asio::error::connection_reset || se.code() == boost::asio::error::broken_pipe) {
             SILKRPC_DEBUG << "Connection::read_loop close from client with code: " << se.code() << "\n" << std::flush;
@@ -70,28 +101,15 @@ boost::asio::awaitable<void> Connection::read_loop() {
         std::rethrow_exception(std::make_exception_ptr(e));
     }
 }
-
-boost::asio::awaitable<void> Connection::do_read() {
-    SILKRPC_DEBUG << "Connection::do_read going to read...\n" << std::flush;
-    std::size_t bytes_read = co_await socket_.async_read_some(boost::asio::buffer(buffer_), boost::asio::use_awaitable);
-    SILKRPC_DEBUG << "Connection::do_read bytes_read: " << bytes_read << "\n";
-    SILKRPC_TRACE << "Connection::do_read buffer: " << std::string_view{static_cast<const char*>(buffer_.data()), bytes_read} << "\n";
-
-    RequestParser::ResultType result = request_parser_.parse(request_, buffer_.data(), buffer_.data() + bytes_read);
-
-    if (result == RequestParser::ResultType::good) {
-        co_await request_handler_.handle_request(request_);
-        clean();
-    } else if (result == RequestParser::ResultType::bad) {
-        reply_ = Reply::stock_reply(StatusType::bad_request);
-        co_await do_write();
-        clean();
-    } else if (result == RequestParser::ResultType::processing_continue) {
-        reply_ = Reply::stock_reply(StatusType::processing_continue);
-        co_await do_write();
-        reply_.reset();
-    }
-}
+#if defined(__clang__)
+#pragma clang diagnostic error "-Winfinite-recursion"
+#elif defined(__GNUC__)
+#if __GNUC__ > 11
+#pragma GCC diagnostic error "-Winfinite-recursion"
+#endif
+#else
+#pragma warning enable "infinite-recursion"
+#endif
 
 boost::asio::awaitable<void> Connection::do_write() {
     SILKRPC_DEBUG << "Connection::do_write reply: " << reply_.content << "\n" << std::flush;

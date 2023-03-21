@@ -54,8 +54,8 @@ public:
 
     boost::asio::ip::tcp::socket& socket() { return socket_; }
 
-    /// Execute the asynchronous read loop for the connection.
-    boost::asio::awaitable<void> read_loop();
+    /// Start the asynchronous read loop for the connection.
+    boost::asio::awaitable<void> start();
 
 private:
     /// Reset connection data

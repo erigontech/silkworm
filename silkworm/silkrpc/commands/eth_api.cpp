@@ -1547,6 +1547,334 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann:
     co_return;
 }
 
+// https://eth.wiki/json-rpc/API#eth_getlogs
+boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_logs2(const nlohmann::json& request, json_buffer& buffer) {
+    auto params = request["params"];
+    if (params.size() != 1) {
+        auto error_msg = "invalid eth_getLogs params: " + params.dump();
+        SILKRPC_ERROR << error_msg << "\n";
+        make_json_error(buffer, request["id"], 100, error_msg);
+        co_return;
+    }
+    auto filter = params[0].get<Filter>();
+    SILKRPC_LOG << "filter: " << filter << "\n";
+
+    std::vector<Log> logs;
+
+    auto tx = co_await database_->begin();
+
+    try {
+        ethdb::TransactionDatabase tx_database{*tx};
+
+        uint64_t start{}, end{};
+        if (filter.block_hash.has_value()) {
+            auto block_hash_bytes = silkworm::from_hex(filter.block_hash.value());
+            if (!block_hash_bytes.has_value()) {
+                auto error_msg = "invalid eth_getLogs filter block_hash: " + filter.block_hash.value();
+                SILKRPC_ERROR << error_msg << "\n";
+                make_json_error(buffer,request["id"], 100, error_msg);
+                co_await tx->close(); // RAII not (yet) available with coroutines
+                co_return;
+            }
+            auto block_hash = silkworm::to_bytes32(block_hash_bytes.value());
+            auto block_number = co_await core::rawdb::read_header_number(tx_database, block_hash);
+            start = end = block_number;
+        } else {
+            uint64_t last_executed_block_number = std::numeric_limits<std::uint64_t>::max();
+            if (filter.from_block.has_value()) {
+               start = co_await core::get_block_number(filter.from_block.value(), tx_database);
+            } else {
+               last_executed_block_number = co_await core::get_latest_executed_block_number(tx_database);
+               start = last_executed_block_number;
+            }
+            if (filter.to_block.has_value()) {
+               end = co_await core::get_block_number(filter.to_block.value(), tx_database);
+            } else {
+               if (last_executed_block_number == std::numeric_limits<std::uint64_t>::max()) {
+                  last_executed_block_number = co_await core::get_latest_executed_block_number(tx_database);
+               }
+               end = last_executed_block_number;
+            }
+        }
+        SILKRPC_INFO << "start block: " << start << " end block: " << end << "\n";
+
+        roaring::Roaring block_numbers;
+        block_numbers.addRange(start, end + 1); // [min, max)
+
+        SILKRPC_DEBUG << "block_numbers.cardinality(): " << block_numbers.cardinality() << "\n";
+
+        if (filter.topics.has_value()) {
+            auto topics_bitmap = co_await get_topics_bitmap(tx_database, filter.topics.value(), start, end);
+            SILKRPC_TRACE << "topics_bitmap: " << topics_bitmap.toString() << "\n";
+            if (topics_bitmap.isEmpty()) {
+                block_numbers = topics_bitmap;
+            } else {
+                block_numbers &= topics_bitmap;
+            }
+        }
+        SILKRPC_DEBUG << "block_numbers.cardinality(): " << block_numbers.cardinality() << "\n";
+        SILKRPC_TRACE << "block_numbers: " << block_numbers.toString() << "\n";
+
+        if (filter.addresses.has_value()) {
+            auto addresses_bitmap = co_await get_addresses_bitmap(tx_database, filter.addresses.value(), start, end);
+            if (addresses_bitmap.isEmpty()) {
+                block_numbers = addresses_bitmap;
+            } else {
+                block_numbers &= addresses_bitmap;
+            }
+        }
+        SILKRPC_DEBUG << "block_numbers.cardinality(): " << block_numbers.cardinality() << "\n";
+        SILKRPC_TRACE << "block_numbers: " << block_numbers.toString() << "\n";
+
+        if (block_numbers.cardinality() == 0) {
+            make_json_content2(buffer, request["id"], logs);
+            co_await tx->close(); // RAII not (yet) available with coroutines
+            co_return;
+        }
+
+        for (auto block_to_match : block_numbers) {
+            uint64_t log_index{0};
+
+            Logs filtered_block_logs{};
+            const auto block_key = silkworm::db::block_key(block_to_match);
+            SILKRPC_TRACE << "block_to_match: " << block_to_match << " block_key: " << silkworm::to_hex(block_key) << "\n";
+            co_await tx_database.for_prefix(db::table::kLogs, block_key, [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
+                Logs chunck_logs{};
+                const bool decoding_ok{cbor_decode(v, chunck_logs)};
+                if (!decoding_ok) {
+                    return false;
+                }
+                for (auto& log : chunck_logs) {
+                    log.index = log_index++;
+                }
+                SILKRPC_DEBUG << "chunck_logs.size(): " << chunck_logs.size() << "\n";
+                auto filtered_chunck_logs = filter_logs(chunck_logs, filter);
+                SILKRPC_DEBUG << "filtered_chunck_logs.size(): " << filtered_chunck_logs.size() << "\n";
+                if (filtered_chunck_logs.size() > 0) {
+                    const auto tx_id = boost::endian::load_big_u32(&k[sizeof(uint64_t)]);
+                    SILKRPC_DEBUG << "tx_id: " << tx_id << "\n";
+                    for (auto& log : filtered_chunck_logs) {
+                        log.tx_index = tx_id;
+                    }
+                    filtered_block_logs.insert(filtered_block_logs.end(), filtered_chunck_logs.begin(), filtered_chunck_logs.end());
+                }
+                return true;
+            });
+            SILKRPC_DEBUG << "filtered_block_logs.size(): " << filtered_block_logs.size() << "\n";
+
+            if (filtered_block_logs.size() > 0) {
+                const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_to_match);
+                SILKRPC_DEBUG << "block_hash: " << silkworm::to_hex(block_with_hash.hash) << "\n";
+                for (auto& log : filtered_block_logs) {
+                    const auto tx_hash{hash_of_transaction(block_with_hash.block.transactions[log.tx_index])};
+                    log.block_number = block_to_match;
+                    log.block_hash = block_with_hash.hash;
+                    log.tx_hash = silkworm::to_bytes32({tx_hash.bytes, silkworm::kHashLength});
+                }
+                logs.insert(logs.end(), filtered_block_logs.begin(), filtered_block_logs.end());
+            }
+        }
+        SILKRPC_INFO << "logs.size(): " << logs.size() << "\n";
+
+        make_json_content2(buffer, request["id"], logs);
+        //make_json_content(buffer, request["id"], logs);
+    } catch (const std::invalid_argument& iv) {
+        SILKRPC_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump() << "\n";
+        make_json_content2(buffer, request["id"], logs);
+    } catch (const std::exception& e) {
+        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        make_json_error(buffer, request["id"], 100, e.what());
+    } catch (...) {
+        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        make_json_error(buffer, request["id"], 100, "unexpected exception");
+    }
+
+    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_return;
+}
+
+// https://eth.wiki/json-rpc/API#eth_getlogs
+boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_logs3(eth_getLogs_request_json& request, std::string& json_buffer) {
+#ifdef notdef
+    auto params = request["params"];
+    if (params.size() != 1) {
+        auto error_msg = "invalid eth_getLogs params: " + params.dump();
+        SILKRPC_ERROR << error_msg << "\n";
+        make_json_error(buffer, request["id"], 100, error_msg);
+        co_return;
+    }
+    auto filter = params[0].get<Filter>();
+#endif
+
+    Filter filter;
+    if (!request.params[0].from_block.empty()) {
+       filter.from_block = request.params[0].from_block;
+    }
+    if (!request.params[0].to_block.empty()) {
+        filter.to_block = request.params[0].to_block;
+    }
+
+    if (!request.params[0].address.empty()) {
+        FilterAddresses address_list;
+        const auto address_bytes = silkworm::from_hex(request.params[0].address);
+        auto addr = silkworm::to_evmc_address(address_bytes.value_or(silkworm::Bytes{}));
+        address_list.push_back(addr);
+        filter.addresses = address_list;
+    }
+
+    FilterTopics topic_address_list;
+    if (request.params[0].topics.size() != 0)  {
+        FilterSubTopics subtopic_address_list;
+        for (const auto& t : request.params[0].topics) {
+           for (const auto& s : t) {
+              const auto b32_bytes = silkworm::from_hex(s);
+              auto b32 = silkworm::to_bytes32(b32_bytes.value_or(silkworm::Bytes{}));
+              subtopic_address_list.push_back(b32);
+           }
+           topic_address_list.push_back(subtopic_address_list);
+        }
+        filter.topics = topic_address_list;
+    }
+    if (!request.params[0].block_hash.empty())  {
+        filter.block_hash = request.params[0].block_hash;
+    }
+    
+    SILKRPC_LOG << "filter: " << filter << "\n";
+
+    std::vector<Log> logs;
+
+    auto tx = co_await database_->begin();
+
+    try {
+        ethdb::TransactionDatabase tx_database{*tx};
+
+        uint64_t start{}, end{};
+        if (filter.block_hash.has_value()) {
+            auto block_hash_bytes = silkworm::from_hex(filter.block_hash.value());
+            if (!block_hash_bytes.has_value()) {
+                auto error_msg = "invalid eth_getLogs filter block_hash: " + filter.block_hash.value();
+                SILKRPC_ERROR << error_msg << "\n";
+                //make_json_error(json_buffer,request.id, 100, error_msg);
+                co_await tx->close(); // RAII not (yet) available with coroutines
+                co_return;
+            }
+            auto block_hash = silkworm::to_bytes32(block_hash_bytes.value());
+            auto block_number = co_await core::rawdb::read_header_number(tx_database, block_hash);
+            start = end = block_number;
+        } else {
+            uint64_t last_executed_block_number = std::numeric_limits<std::uint64_t>::max();
+            if (filter.from_block.has_value()) {
+               start = co_await core::get_block_number(filter.from_block.value(), tx_database);
+            } else {
+               last_executed_block_number = co_await core::get_latest_executed_block_number(tx_database);
+               start = last_executed_block_number;
+            }
+            if (filter.to_block.has_value()) {
+               end = co_await core::get_block_number(filter.to_block.value(), tx_database);
+            } else {
+               if (last_executed_block_number == std::numeric_limits<std::uint64_t>::max()) {
+                  last_executed_block_number = co_await core::get_latest_executed_block_number(tx_database);
+               }
+               end = last_executed_block_number;
+            }
+        }
+        SILKRPC_INFO << "start block: " << start << " end block: " << end << "\n";
+
+        roaring::Roaring block_numbers;
+        block_numbers.addRange(start, end + 1); // [min, max)
+
+        SILKRPC_DEBUG << "block_numbers.cardinality(): " << block_numbers.cardinality() << "\n";
+
+        if (filter.topics.has_value()) {
+            auto topics_bitmap = co_await get_topics_bitmap(tx_database, filter.topics.value(), start, end);
+            SILKRPC_TRACE << "topics_bitmap: " << topics_bitmap.toString() << "\n";
+            if (topics_bitmap.isEmpty()) {
+                block_numbers = topics_bitmap;
+            } else {
+                block_numbers &= topics_bitmap;
+            }
+        }
+        SILKRPC_DEBUG << "block_numbers.cardinality(): " << block_numbers.cardinality() << "\n";
+        SILKRPC_TRACE << "block_numbers: " << block_numbers.toString() << "\n";
+
+        if (filter.addresses.has_value()) {
+            auto addresses_bitmap = co_await get_addresses_bitmap(tx_database, filter.addresses.value(), start, end);
+            if (addresses_bitmap.isEmpty()) {
+                block_numbers = addresses_bitmap;
+            } else {
+                block_numbers &= addresses_bitmap;
+            }
+        }
+        SILKRPC_DEBUG << "block_numbers.cardinality(): " << block_numbers.cardinality() << "\n";
+        SILKRPC_TRACE << "block_numbers: " << block_numbers.toString() << "\n";
+
+        if (block_numbers.cardinality() == 0) {
+            make_json_content4(json_buffer, request.id, logs);
+            co_await tx->close(); // RAII not (yet) available with coroutines
+            co_return;
+        }
+
+        for (auto block_to_match : block_numbers) {
+            uint64_t log_index{0};
+
+            Logs filtered_block_logs{};
+            const auto block_key = silkworm::db::block_key(block_to_match);
+            SILKRPC_TRACE << "block_to_match: " << block_to_match << " block_key: " << silkworm::to_hex(block_key) << "\n";
+            co_await tx_database.for_prefix(db::table::kLogs, block_key, [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
+                Logs chunck_logs{};
+                const bool decoding_ok{cbor_decode(v, chunck_logs)};
+                if (!decoding_ok) {
+                    return false;
+                }
+                for (auto& log : chunck_logs) {
+                    log.index = log_index++;
+                }
+                SILKRPC_DEBUG << "chunck_logs.size(): " << chunck_logs.size() << "\n";
+                auto filtered_chunck_logs = filter_logs(chunck_logs, filter);
+                SILKRPC_DEBUG << "filtered_chunck_logs.size(): " << filtered_chunck_logs.size() << "\n";
+                if (filtered_chunck_logs.size() > 0) {
+                    const auto tx_id = boost::endian::load_big_u32(&k[sizeof(uint64_t)]);
+                    SILKRPC_DEBUG << "tx_id: " << tx_id << "\n";
+                    for (auto& log : filtered_chunck_logs) {
+                        log.tx_index = tx_id;
+                    }
+                    filtered_block_logs.insert(filtered_block_logs.end(), filtered_chunck_logs.begin(), filtered_chunck_logs.end());
+                }
+                return true;
+            });
+            SILKRPC_DEBUG << "filtered_block_logs.size(): " << filtered_block_logs.size() << "\n";
+
+            if (filtered_block_logs.size() > 0) {
+                const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_to_match);
+                SILKRPC_DEBUG << "block_hash: " << silkworm::to_hex(block_with_hash.hash) << "\n";
+                for (auto& log : filtered_block_logs) {
+                    const auto tx_hash{hash_of_transaction(block_with_hash.block.transactions[log.tx_index])};
+                    log.block_number = block_to_match;
+                    log.block_hash = block_with_hash.hash;
+                    log.tx_hash = silkworm::to_bytes32({tx_hash.bytes, silkworm::kHashLength});
+                }
+                logs.insert(logs.end(), filtered_block_logs.begin(), filtered_block_logs.end());
+            }
+        }
+        SILKRPC_INFO << "logs.size(): " << logs.size() << "\n";
+
+        make_json_content4(json_buffer, request.id, logs);
+        //make_json_content(buffer, request["id"], logs);
+    } catch (const std::invalid_argument& iv) {
+        //SILKRPC_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump() << "\n";
+        make_json_content4(json_buffer, request.id, logs);
+    } catch (const std::exception& e) {
+        //SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        //make_json_error(json_buffer, request.id, 100, e.what());
+    } catch (...) {
+        //SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        //make_json_error(json_buffer, request.id, 100, "unexpected exception");
+    }
+
+    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_return;
+}
+
 // https://eth.wiki/json-rpc/API#eth_sendrawtransaction
 boost::asio::awaitable<void> EthereumRpcApi::handle_eth_send_raw_transaction(const nlohmann::json& request, nlohmann::json& reply) {
     const auto params = request["params"];

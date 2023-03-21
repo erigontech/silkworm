@@ -98,6 +98,8 @@ protected:
     boost::asio::awaitable<void> handle_eth_get_filter_changes(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_uninstall_filter(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_get_logs(const nlohmann::json& request, nlohmann::json& reply);
+    boost::asio::awaitable<void> handle_eth_get_logs2(const nlohmann::json& request, json_buffer& out);
+    boost::asio::awaitable<void> handle_eth_get_logs3(eth_getLogs_request_json& request, std::string& json_buffer);
     boost::asio::awaitable<void> handle_eth_send_raw_transaction(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_send_transaction(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_sign_transaction(const nlohmann::json& request, nlohmann::json& reply);

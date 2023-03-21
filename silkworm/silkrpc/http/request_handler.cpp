@@ -30,13 +30,29 @@
 #include <jwt-cpp/jwt.h>
 #include <jwt-cpp/traits/nlohmann-json/defaults.h>
 #include <nlohmann/json.hpp>
+#include <glaze/glaze.hpp>
+
 
 #include <silkworm/silkrpc/common/clock_time.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/http/header.hpp>
 #include <silkworm/silkrpc/types/writer.hpp>
+#include <silkworm/silkrpc/http/methods.hpp>
 
 namespace silkrpc::http {
+
+struct eth_header {
+    std::string jsonrpc;
+    std::string method;
+    struct glaze {
+     using T = eth_header;
+     static constexpr auto value = glz::object(
+        "jsonrpc", &T::jsonrpc,
+        "method", &T::method
+     );
+   };
+};
+
 
 boost::asio::awaitable<void> RequestHandler::handle_request(const http::Request& request) {
     auto start = clock_time::now();
@@ -48,8 +64,31 @@ boost::asio::awaitable<void> RequestHandler::handle_request(const http::Request&
     } else {
         SILKRPC_DEBUG << "handle_request content: " << request.content << "\n";
 
+#ifdef notdef
+        eth_getLogs_request_json eth_get_log_request{};
+        auto ec = glz::read_json(eth_get_log_request, request.content);
+        if (ec) {
+            std::cout << "glz_read failed\n";
+            reply.content = "";
+            reply.status = http::StatusType::unauthorized;
+        } else {
+            // populates s from JSON
+            std::string json_buffer;
+            co_await rpc_api_.handle_eth_get_logs3(eth_get_log_request, json_buffer);
+            reply.status = http::StatusType::ok;
+            reply.content = json_buffer + "\n";
+        }
+#endif
+        char buffer[20000000]; // 30000000
+        json_buffer out{buffer, sizeof(buffer)};
+        std::cout << request.content << "\n";
         const auto request_json = nlohmann::json::parse(request.content);
+        co_await rpc_api_.handle_eth_get_logs2(request_json, out);
+        reply.status = http::StatusType::ok;
+        reply.content = out.to_string_view();
+        reply.content += "\n";
 
+#ifdef notdef
         if (request_json.is_object()) {
             if (!request_json.contains("id")) {
                 reply.content = "\n";
@@ -93,6 +132,7 @@ boost::asio::awaitable<void> RequestHandler::handle_request(const http::Request&
            batch_reply_content += "]\n";
            reply.content = batch_reply_content;
        }
+#endif
     }
 
     co_await do_write(reply);
@@ -118,7 +158,7 @@ boost::asio::awaitable<void> RequestHandler::handle_request(const nlohmann::json
     if (json_handler_opt) {
         const auto json_handler = json_handler_opt.value();
 
-        co_await handle_request(json_handler, request_json, reply);
+        co_await handle_request(json_handler, request_json, reply, method);
 
         co_return;
     }
@@ -138,15 +178,29 @@ boost::asio::awaitable<void> RequestHandler::handle_request(const nlohmann::json
     co_return;
 }
 
-boost::asio::awaitable<void> RequestHandler::handle_request(silkrpc::commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, http::Reply& reply) {
+boost::asio::awaitable<void> RequestHandler::handle_request(silkrpc::commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, http::Reply& reply, const std::string& method) {
     auto request_id = request_json["id"].get<uint32_t>();
     try {
-        nlohmann::json reply_json;
-        co_await (rpc_api_.*handler)(request_json, reply_json);
+        char buffer[20000000]; // 30000000
+        json_buffer out{buffer, sizeof(buffer)};
 
-        reply.content = reply_json.dump(
-            /*indent=*/-1, /*indent_char=*/' ', /*ensure_ascii=*/false, nlohmann::json::error_handler_t::replace);
-        reply.status = http::StatusType::ok;
+
+        //if (method == "xxx" ) {
+        if (method == http::method::k_eth_getLogs) {
+           co_await rpc_api_.handle_eth_get_logs2(request_json, out);
+           reply.status = http::StatusType::ok;
+           reply.content = out.to_string_view();
+           //std::cout << "reply: " << reply.content << "\n";
+        }
+        else {
+           nlohmann::json reply_json;
+           co_await (rpc_api_.*handler)(request_json, reply_json);
+
+           reply.content = reply_json.dump(
+               /*indent=*/-1, /*indent_char=*/' ', /*ensure_ascii=*/false, nlohmann::json::error_handler_t::replace);
+           reply.status = http::StatusType::ok;
+           //std::cout << "reply: " << reply.content << "\n";
+        }
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << "\n";
         reply.content = make_json_error(request_id, 100, e.what()).dump();

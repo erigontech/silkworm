@@ -50,7 +50,7 @@ private:
     boost::asio::awaitable<std::optional<std::string>> is_request_authorized(uint32_t request_id, const http::Request& request);
 
     boost::asio::awaitable<void> handle_request(const nlohmann::json& request_json, http::Reply& reply);
-    boost::asio::awaitable<void> handle_request(silkrpc::commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, http::Reply& reply);
+    boost::asio::awaitable<void> handle_request(silkrpc::commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, http::Reply& reply, const std::string& method);
     boost::asio::awaitable<void> handle_request(silkrpc::commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json);
 
     boost::asio::awaitable<void> do_write(http::Reply& reply);

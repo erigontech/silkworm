@@ -20,18 +20,15 @@
 #include <utility>
 
 #include <silkworm/core/common/decoding_result.hpp>
-#include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/node/common/decoding_exception.hpp>
-#include <silkworm/node/db/bitmap.hpp>
 #include <silkworm/node/db/util.hpp>
 
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/account_walker.hpp>
-#include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/core/state_reader.hpp>
 #include <silkworm/silkrpc/core/storage_walker.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
@@ -42,7 +39,7 @@
 namespace silkrpc {
 
 boost::asio::awaitable<DumpAccounts> AccountDumper::dump_accounts(BlockCache& cache, const BlockNumberOrHash& bnoh, const evmc::address& start_address, int16_t max_result,
-                                                           bool exclude_code, bool exclude_storage) {
+                                                                  bool exclude_code, bool exclude_storage) {
     DumpAccounts dump_accounts;
     ethdb::TransactionDatabase tx_database{transaction_};
 
@@ -54,7 +51,7 @@ boost::asio::awaitable<DumpAccounts> AccountDumper::dump_accounts(BlockCache& ca
     std::vector<silkrpc::KeyValue> collected_data;
 
     AccountWalker::Collector collector = [&](silkworm::ByteView k, silkworm::ByteView v) {
-        if (max_result > 0 && collected_data.size() >= max_result) {
+        if (max_result > 0 && collected_data.size() >= static_cast<std::size_t>(max_result)) {
             dump_accounts.next = silkworm::to_evmc_address(k);
             return false;
         }
@@ -85,7 +82,7 @@ boost::asio::awaitable<void> AccountDumper::load_accounts(ethdb::TransactionData
     const std::vector<silkrpc::KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code) {
 
     StateReader state_reader{tx_database};
-    for (auto kv : collected_data) {
+    for (const auto& kv : collected_data) {
         const auto address = silkworm::to_evmc_address(kv.key);
 
         auto account{silkworm::Account::from_encoded_storage(kv.value)};
@@ -118,12 +115,12 @@ boost::asio::awaitable<void> AccountDumper::load_storage(uint64_t block_number, 
     SILKRPC_TRACE << "block_number " << block_number << " START\n";
     StorageWalker storage_walker{transaction_};
     evmc::bytes32 start_location{};
-    for (AccountsMap::iterator itr = dump_accounts.accounts.begin(); itr != dump_accounts.accounts.end(); itr++) {
-        auto& address = itr->first;
-        auto& account = itr->second;
+    for (auto& it : dump_accounts.accounts) {
+        auto& address = it.first;
+        auto& account = it.second;
 
         std::map<silkworm::Bytes, silkworm::Bytes> collected_entries;
-        StorageWalker::AccountCollector collector = [&](const evmc::address& address, silkworm::ByteView loc, silkworm::ByteView data) {
+        StorageWalker::AccountCollector collector = [&](const evmc::address& /*address*/, silkworm::ByteView loc, silkworm::ByteView data) {
             if (!account.storage.has_value()) {
                 account.storage = Storage{};
             }

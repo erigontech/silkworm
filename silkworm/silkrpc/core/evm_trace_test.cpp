@@ -6018,7 +6018,7 @@ TEST_CASE("copy_stack") {
 
             std::uint8_t size = op_code - evmc_opcode::OP_SWAP1 + 2;
             CHECK(trace_stack.size() == size);
-            for (auto idx = 0; idx < size; idx++) {
+            for (std::size_t idx = 0; idx < size; idx++) {
                 CHECK(trace_stack[idx] == "0x" + intx::to_string(stack[stack_size-size+idx], 16));
             }
         }
@@ -6031,7 +6031,7 @@ TEST_CASE("copy_stack") {
 
             std::uint8_t size = op_code - evmc_opcode::OP_DUP1 + 2;
             CHECK(trace_stack.size() == size);
-            for (auto idx = 0; idx < size; idx++) {
+            for (std::size_t idx = 0; idx < size; idx++) {
                 CHECK(trace_stack[idx] == "0x" + intx::to_string(stack[stack_size-size+idx], 16));
             }
         }
@@ -6184,7 +6184,7 @@ TEST_CASE("copy_memory") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
     evmone::Memory memory;
-    for (auto idx = 0; idx < 16; idx++) {
+    for (std::size_t idx = 0; idx < 16; idx++) {
         memory[idx] = idx;
     }
 

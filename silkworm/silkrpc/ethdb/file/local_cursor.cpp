@@ -35,7 +35,6 @@ boost::asio::awaitable<void> LocalCursor::open_cursor(const std::string& table_n
 }
 
 boost::asio::awaitable<KeyValue> LocalCursor::seek(silkworm::ByteView key) {
-    const auto start_time = clock_time::now();
     SILKRPC_DEBUG << "LocalCursor::seek cursor: " << cursor_id_ << " key: " << key << "\n";
     mdbx::slice mdbx_key{key};
 
@@ -52,7 +51,6 @@ boost::asio::awaitable<KeyValue> LocalCursor::seek(silkworm::ByteView key) {
 }
 
 boost::asio::awaitable<KeyValue> LocalCursor::seek_exact(silkworm::ByteView key) {
-    const auto start_time = clock_time::now();
     SILKRPC_DEBUG << "LocalCursor::seek_exact cursor: " << cursor_id_ << " key: " << key << "\n";
 
     const bool found = db_cursor_.seek(key);
@@ -69,7 +67,6 @@ boost::asio::awaitable<KeyValue> LocalCursor::seek_exact(silkworm::ByteView key)
 }
 
 boost::asio::awaitable<KeyValue> LocalCursor::next() {
-    const auto start_time = clock_time::now();
     SILKRPC_DEBUG << "LocalCursor::next: " << cursor_id_ << "\n";
 
     const auto result = db_cursor_.to_next(/*throw_notfound=*/false);
@@ -85,7 +82,6 @@ boost::asio::awaitable<KeyValue> LocalCursor::next() {
 }
 
 boost::asio::awaitable<KeyValue> LocalCursor::next_dup() {
-    const auto start_time = clock_time::now();
     SILKRPC_DEBUG << "LocalCursor::next_dup: " << cursor_id_ << "\n";
 
     const auto result = db_cursor_.to_current_next_multi(/*throw_notfound=*/false);
@@ -102,7 +98,6 @@ boost::asio::awaitable<KeyValue> LocalCursor::next_dup() {
 }
 
 boost::asio::awaitable<silkworm::Bytes> LocalCursor::seek_both(silkworm::ByteView key, silkworm::ByteView value) {
-    const auto start_time = clock_time::now();
     SILKRPC_DEBUG << "LocalCursor::seek_both cursor: " << cursor_id_ << " key: " << key << " subkey: " << value << "\n";
     mdbx::slice mdbx_key{key};
     mdbx::slice mdbx_value{value};
@@ -119,7 +114,6 @@ boost::asio::awaitable<silkworm::Bytes> LocalCursor::seek_both(silkworm::ByteVie
 }
 
 boost::asio::awaitable<KeyValue> LocalCursor::seek_both_exact(silkworm::ByteView key, silkworm::ByteView value) {
-    const auto start_time = clock_time::now();
     SILKRPC_DEBUG << "LocalCursor::seek_both_exact cursor: " << cursor_id_ << " key: " << key << " subkey: " << value << "\n";
     mdbx::slice mdbx_key{key};
     mdbx::slice mdbx_value{value};
@@ -138,8 +132,7 @@ boost::asio::awaitable<KeyValue> LocalCursor::seek_both_exact(silkworm::ByteView
 }
 
 boost::asio::awaitable<void> LocalCursor::close_cursor() {
-    const auto start_time = clock_time::now();
-    SILKRPC_DEBUG << "LocalCursor::close_cursor c=" << cursor_id_ << " t=" << clock_time::since(start_time) << "\n";
+    SILKRPC_DEBUG << "LocalCursor::close_cursor c=" << cursor_id_ << "\n";
     cursor_id_ = 0;
     co_return;
 }

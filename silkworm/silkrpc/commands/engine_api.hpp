@@ -34,8 +34,9 @@ namespace silkrpc::commands {
 
 class EngineRpcApi {
 public:
-    explicit EngineRpcApi(std::unique_ptr<ethdb::Database>& database, std::unique_ptr<ethbackend::BackEnd>& backend): database_(database), backend_(backend) {}
-    virtual ~EngineRpcApi() {}
+    explicit EngineRpcApi(std::unique_ptr<ethdb::Database>& database, std::unique_ptr<ethbackend::BackEnd>& backend)
+      : backend_(backend), database_(database) {}
+    virtual ~EngineRpcApi() = default;
 
     EngineRpcApi(const EngineRpcApi&) = delete;
     EngineRpcApi& operator=(const EngineRpcApi&) = delete;

@@ -94,7 +94,7 @@ public:
     template<typename Executor, typename CompletionToken = agrpc::DefaultCompletionToken>
     auto finish_on(const Executor& executor, const Request& request, CompletionToken&& token = {}) {
         return boost::asio::async_compose<CompletionToken, void(boost::system::error_code, Reply)>(
-            Call<detail::ExecutorDispatcher<Executor>>{*this, request, executor}, token, executor);
+            Call<detail::ExecutorDispatcher<Executor>>{*this, request, {executor}}, token, executor);
     }
 
     auto get_executor() const noexcept {

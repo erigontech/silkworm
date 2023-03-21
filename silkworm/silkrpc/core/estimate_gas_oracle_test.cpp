@@ -69,17 +69,17 @@ TEST_CASE("estimate gas") {
 
     silkworm::Account kAccount{0, kBalance};
 
-    Executor executor = [&steps, &count](const silkworm::Transaction& transaction) -> boost::asio::awaitable<silkrpc::ExecutionResult> {
+    Executor executor = [&steps, &count](const silkworm::Transaction& /*transaction*/) -> boost::asio::awaitable<silkrpc::ExecutionResult> {
         bool success = steps[count++];
         silkrpc::ExecutionResult result{success ? evmc_status_code::EVMC_SUCCESS : evmc_status_code::EVMC_INSUFFICIENT_BALANCE};
         co_return result;
     };
 
-    BlockHeaderProvider block_header_provider = [&kBlockHeader](uint64_t block_number) -> boost::asio::awaitable<silkworm::BlockHeader> {
+    BlockHeaderProvider block_header_provider = [&kBlockHeader](uint64_t /*block_number*/) -> boost::asio::awaitable<silkworm::BlockHeader> {
         co_return kBlockHeader;
     };
 
-    AccountReader account_reader = [&kAccount](const evmc::address& address, uint64_t block_number) -> boost::asio::awaitable<std::optional<silkworm::Account>> {
+    AccountReader account_reader = [&kAccount](const evmc::address& /*address*/, uint64_t /*block_number*/) -> boost::asio::awaitable<std::optional<silkworm::Account>> {
         co_return kAccount;
     };
 
@@ -109,7 +109,7 @@ TEST_CASE("estimate gas") {
     SECTION("Call empty, alternatively fails and succeeds") {
         int current = false;
         auto generate = [&current]() -> bool {
-            return ++current % 2 == 0;;
+            return ++current % 2 == 0;
         };
         steps.resize(16);
         std::generate_n(steps.begin(), steps.size(), generate);
@@ -123,7 +123,7 @@ TEST_CASE("estimate gas") {
     SECTION("Call empty, alternatively succeeds and fails") {
         int current = false;
         auto generate = [&current]() -> bool {
-            return current++ % 2 == 0;;
+            return current++ % 2 == 0;
         };
         steps.resize(16);
         std::generate_n(steps.begin(), steps.size(), generate);

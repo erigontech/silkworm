@@ -14,10 +14,7 @@
    limitations under the License.
 */
 
-
 #include "account_walker.hpp"
-
-#include <sstream>
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/node/db/util.hpp>
@@ -25,12 +22,8 @@
 
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
-#include <silkworm/silkrpc/core/rawdb/chain.hpp>
-#include <silkworm/silkrpc/core/state_reader.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 #include <silkworm/silkrpc/ethdb/tables.hpp>
-#include <silkworm/silkrpc/ethdb/transaction_database.hpp>
-#include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkrpc {
 
@@ -62,7 +55,6 @@ boost::asio::awaitable<void> AccountWalker::walk_of_accounts(uint64_t block_numb
         } else {
             const auto bitmap = silkworm::db::bitmap::parse(s_kv.value);
 
-            std::optional<silkworm::Account> result;
             const auto found = silkworm::db::bitmap::seek(bitmap, block_number);
             if (found) {
                 const auto block_key{silkworm::db::block_key(found.value())};

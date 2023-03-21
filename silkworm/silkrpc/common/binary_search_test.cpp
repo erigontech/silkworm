@@ -16,7 +16,6 @@
 
 #include "binary_search.hpp"
 
-#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -50,7 +49,7 @@ std::vector<BinaryTestData> kTestData = {
     {{1, 2, 6, 6, 7}, 9, 5},
 };
 
-boost::asio::awaitable<std::size_t> binary_search_in_vector(std::vector<std::size_t> sequence, int value) {
+boost::asio::awaitable<std::size_t> binary_search_in_vector(std::vector<std::size_t> sequence, std::size_t value) {
     co_return co_await binary_search(sequence.size(), [&, value](uint64_t i) -> boost::asio::awaitable<bool> {
         co_return i < sequence.size() && sequence[i] >= value;
     });
@@ -58,7 +57,7 @@ boost::asio::awaitable<std::size_t> binary_search_in_vector(std::vector<std::siz
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(BinarySearchTest, "binary_search", "[silkrpc][common][binary_search]") {
-    for (int i{0}; i < kTestData.size(); ++i) {
+    for (std::size_t i{0}; i < kTestData.size(); ++i) {
         const auto [s, v, r] = kTestData[i];
         SECTION("search" + std::to_string(i)) {
             CHECK_NOTHROW(spawn_and_wait(binary_search_in_vector(s, v)) == r);

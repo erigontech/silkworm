@@ -24,22 +24,16 @@
 #include <boost/asio/use_future.hpp>
 #include <evmc/evmc.hpp>
 #include <gmock/gmock.h>
-#include <nlohmann/json.hpp>
 
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/core/chain/config.hpp>
-#include <silkworm/node/common/log.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
-#include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/test/mock_database_reader.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
-#include <silkworm/silkrpc/types/chain_config.hpp>
 #include <silkworm/silkrpc/types/receipt.hpp>
 
 #include "cached_chain.hpp"
@@ -140,8 +134,6 @@ TEST_CASE("read_block_by_number_or_hash") {
 
     SECTION("using valid hash") {
         BlockNumberOrHash bnoh{"0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff"};
-        BlockCache cache(10, true);
-
         EXPECT_CALL(db_reader, get_one(db::table::kHeaderNumbers, _)).WillOnce(InvokeWithoutArgs(
             []() -> boost::asio::awaitable<silkworm::Bytes> { co_return kNumber; }
         ));
@@ -161,8 +153,6 @@ TEST_CASE("read_block_by_number_or_hash") {
 
     SECTION("using tag kEarliestBlockId") {
         BlockNumberOrHash bnoh{kEarliestBlockId};
-        BlockCache cache(10, true);
-
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, _)).WillOnce(InvokeWithoutArgs(
             []() -> boost::asio::awaitable<silkworm::Bytes> { co_return kBlockHash; }
         ));
@@ -206,7 +196,6 @@ TEST_CASE("silkrpc::core::read_block_by_number") {
     }
 
     SECTION("using valid block_number and hit cache") {
-        BlockCache cache(10, true);
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, _)).WillOnce(InvokeWithoutArgs(
             []() -> boost::asio::awaitable<silkworm::Bytes> { co_return kBlockHash; }
         ));
@@ -244,7 +233,6 @@ TEST_CASE("silkrpc::core::read_block_by_number") {
     }
 
     SECTION("using valid block_number and empty txs (miss cache)") {
-        BlockCache cache(10, true);
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, _)).WillOnce(InvokeWithoutArgs(
             []() -> boost::asio::awaitable<silkworm::Bytes> { co_return kBlockHash; }
         ));

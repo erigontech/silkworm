@@ -16,8 +16,6 @@
 
 #include "account_walker.hpp"
 
-#include <algorithm>
-#include <iterator>
 #include <memory>
 #include <string>
 #include <vector>
@@ -29,7 +27,6 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/rlp/encode.hpp>
-#include <silkworm/node/common/log.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
@@ -42,17 +39,16 @@ using evmc::literals::operator""_bytes32;
 
 static const nlohmann::json empty;
 static const std::string zeros = "00000000000000000000000000000000000000000000000000000000000000000000000000000000"; // NOLINT
-static const evmc::bytes32 zero_hash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
 
 class DummyCursor : public silkrpc::ethdb::CursorDupSort {
 public:
     explicit DummyCursor(const nlohmann::json& json) : json_{json} {}
 
-    uint32_t cursor_id() const override {
+    [[nodiscard]] uint32_t cursor_id() const override {
         return 0;
     }
 
-    boost::asio::awaitable<void> open_cursor(const std::string& table_name, bool is_dup_sorted) override {
+    boost::asio::awaitable<void> open_cursor(const std::string& table_name, bool /*is_dup_sorted*/) override {
         table_name_ = table_name;
         table_ = json_.value(table_name_, empty);
         itr_ = table_.end();
@@ -154,7 +150,7 @@ class DummyTransaction: public silkrpc::ethdb::Transaction {
 public:
     explicit DummyTransaction(const nlohmann::json& json) : json_{json} {}
 
-    uint64_t tx_id() const override { return 0; }
+    [[nodiscard]] uint64_t tx_id() const override { return 0; }
 
     boost::asio::awaitable<void> open() override {
         co_return;
@@ -225,7 +221,7 @@ TEST_CASE("AccountWalker::walk_of_accounts") {
     const uint64_t block_number{0x52a0b3};
     const evmc::address start_address{0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address};
 
-    int16_t max_result = 1;
+    uint64_t max_result = 1;
     std::vector<silkrpc::KeyValue> collected_data;
     AccountWalker::Collector collector = [&](const silkworm::ByteView k, const silkworm::ByteView v) {
         if (collected_data.size() >= max_result) {
@@ -246,8 +242,8 @@ TEST_CASE("AccountWalker::walk_of_accounts") {
     SECTION("collect 1 account") {
         max_result = 1;
 
-        auto result = boost::asio::co_spawn(pool, walker.walk_of_accounts(block_number, start_address, collector), boost::asio::use_future);
-        result.get();
+        auto result1 = boost::asio::co_spawn(pool, walker.walk_of_accounts(block_number, start_address, collector), boost::asio::use_future);
+        result1.get();
 
         CHECK(collected_data.size() == max_result);
         auto& kv = collected_data[0];
@@ -258,8 +254,8 @@ TEST_CASE("AccountWalker::walk_of_accounts") {
     SECTION("collect 2 account") {
         max_result = 2;
 
-        auto result = boost::asio::co_spawn(pool, walker.walk_of_accounts(block_number, start_address, collector), boost::asio::use_future);
-        result.get();
+        auto result2 = boost::asio::co_spawn(pool, walker.walk_of_accounts(block_number, start_address, collector), boost::asio::use_future);
+        result2.get();
 
         CHECK(collected_data.size() == max_result);
         auto& kv = collected_data[0];
@@ -274,8 +270,8 @@ TEST_CASE("AccountWalker::walk_of_accounts") {
     SECTION("collect 3 account") {
         max_result = 3;
 
-        auto result = boost::asio::co_spawn(pool, walker.walk_of_accounts(block_number, start_address, collector), boost::asio::use_future);
-        result.get();
+        auto result3 = boost::asio::co_spawn(pool, walker.walk_of_accounts(block_number, start_address, collector), boost::asio::use_future);
+        result3.get();
 
         CHECK(collected_data.size() == max_result);
         auto& kv = collected_data[0];

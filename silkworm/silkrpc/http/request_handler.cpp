@@ -56,7 +56,7 @@ boost::asio::awaitable<void> RequestHandler::handle_request(const http::Request&
                 reply.status = http::StatusType::ok;
             } else {
                 const auto request_id = request_json["id"].get<uint32_t>();
-                const auto error = co_await is_request_authorized(request_id, request);
+                const auto error = co_await is_request_authorized(request);
                 if (error.has_value()) {
                     reply.content = make_json_error(request_id, 403, error.value()).dump() + "\n";
                     reply.status = http::StatusType::unauthorized;
@@ -75,7 +75,7 @@ boost::asio::awaitable<void> RequestHandler::handle_request(const http::Request&
                     reply.status = http::StatusType::ok;
                 } else {
                     auto request_id = item_json["id"].get<uint32_t>();
-                    const auto error = co_await is_request_authorized(request_id, request);
+                    const auto error = co_await is_request_authorized(request);
                     if (error.has_value()) {
                         reply.content = make_json_error(request_id, 403, error.value()).dump() + "\n";
                         reply.status = http::StatusType::unauthorized;
@@ -179,7 +179,7 @@ boost::asio::awaitable<void> RequestHandler::handle_request(silkrpc::commands::R
     co_return;
 }
 
-boost::asio::awaitable<std::optional<std::string>> RequestHandler::is_request_authorized(uint32_t request_id, const http::Request& request) {
+boost::asio::awaitable<std::optional<std::string>> RequestHandler::is_request_authorized(const http::Request& request) {
     if (!jwt_secret_.has_value()) {
         co_return std::nullopt;
     }

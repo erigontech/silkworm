@@ -22,7 +22,6 @@
 
 #include "server.hpp"
 
-#include <cstring>
 #include <memory>
 #include <string>
 #include <utility>
@@ -35,7 +34,6 @@
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/http/connection.hpp>
-#include <silkworm/silkrpc/http/methods.hpp>
 
 namespace silkrpc::http {
 #ifdef WIN32
@@ -51,7 +49,7 @@ std::tuple<std::string, std::string> Server::parse_endpoint(const std::string& t
 }
 
 Server::Server(const std::string& end_point, const std::string& api_spec, Context& context, boost::asio::thread_pool& workers, std::optional<std::string> jwt_secret)
-: context_(context), workers_(workers), acceptor_{*context.io_context()}, handler_table_{api_spec}, jwt_secret_(jwt_secret) {
+: handler_table_{api_spec}, context_(context), acceptor_{*context.io_context()}, workers_(workers), jwt_secret_(std::move(jwt_secret)) {
     const auto [host, port] = parse_endpoint(end_point);
 
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
@@ -88,9 +86,9 @@ boost::asio::awaitable<void> Server::run() {
             new_connection->socket().set_option(boost::asio::ip::tcp::socket::keep_alive(true));
 
             SILKRPC_TRACE << "Server::run starting connection for socket: " << &new_connection->socket() << "\n";
-            auto new_connection_starter = [=]() -> boost::asio::awaitable<void> { co_await new_connection->start(); };
+            auto connection_loop = [=]() -> boost::asio::awaitable<void> { co_await new_connection->read_loop(); };
 
-            boost::asio::co_spawn(*io_context, new_connection_starter, [&](std::exception_ptr eptr) {
+            boost::asio::co_spawn(*io_context, connection_loop, [&](std::exception_ptr eptr) {
                 if (eptr) std::rethrow_exception(eptr);
             });
         }

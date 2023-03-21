@@ -39,8 +39,8 @@ void StateChangesStream::set_registration_interval(boost::posix_time::millisecon
 StateChangesStream::StateChangesStream(Context& context, remote::KV::StubInterface* stub)
     : scheduler_(*context.io_context()),
       grpc_context_(*context.grpc_context()),
-      cache_(context.state_cache().get()),
       stub_(stub),
+      cache_(context.state_cache().get()),
       retry_timer_{scheduler_} {}
 
 std::future<void> StateChangesStream::open() {

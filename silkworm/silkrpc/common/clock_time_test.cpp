@@ -27,9 +27,9 @@ using std::chrono::nanoseconds;
 using std::chrono::steady_clock;
 
 TEST_CASE("check current time", "[silkrpc][common][clock_time]") {
-    const auto now_before{duration_cast<nanoseconds>(steady_clock::now().time_since_epoch()).count()};
+    const auto now_before{uint64_t(duration_cast<nanoseconds>(steady_clock::now().time_since_epoch()).count())};
     const auto now{clock_time::now()};
-    const auto now_after{duration_cast<nanoseconds>(steady_clock::now().time_since_epoch()).count()};
+    const auto now_after{uint64_t(duration_cast<nanoseconds>(steady_clock::now().time_since_epoch()).count())};
     CHECK(now_before <= now);
     CHECK(now <= now_after);
 }

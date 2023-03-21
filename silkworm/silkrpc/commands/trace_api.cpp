@@ -58,7 +58,8 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_call(const nlohmann::json
         ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *context_.state_cache()};
         const auto block_with_hash = co_await core::read_block_by_number_or_hash(*context_.block_cache(), tx_database, block_number_or_hash);
         const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash.block.header.number, tx_database);
-        core::rawdb::DatabaseReader& db_reader = is_latest_block ? (core::rawdb::DatabaseReader&)cached_database : (core::rawdb::DatabaseReader&)tx_database;
+        const core::rawdb::DatabaseReader& db_reader =
+            is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
         trace::TraceCallExecutor executor{*context_.io_context(), *context_.block_cache(), db_reader, workers_};
         const auto result = co_await executor.trace_call(block_with_hash.block, call, config);
 
@@ -81,7 +82,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_call(const nlohmann::json
 
 // https://eth.wiki/json-rpc/API#trace_callmany
 boost::asio::awaitable<void> TraceRpcApi::handle_trace_call_many(const nlohmann::json& request, nlohmann::json& reply) {
-    const auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() < 2) {
         auto error_msg = "invalid trace_callMany params: " + params.dump();
         SILKRPC_ERROR << error_msg << "\n";
@@ -101,7 +102,8 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_call_many(const nlohmann:
         const auto block_with_hash = co_await core::read_block_by_number_or_hash(*context_.block_cache(), tx_database, block_number_or_hash);
         const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash.block.header.number, tx_database);
 
-        core::rawdb::DatabaseReader& db_reader = is_latest_block ? (core::rawdb::DatabaseReader&)cached_database : (core::rawdb::DatabaseReader&)tx_database;
+        const core::rawdb::DatabaseReader& db_reader =
+            is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
         trace::TraceCallExecutor executor{*context_.io_context(), *context_.block_cache(), db_reader, workers_};
         const auto result = co_await executor.trace_calls(block_with_hash.block, trace_calls);
 
@@ -124,7 +126,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_call_many(const nlohmann:
 
 // https://eth.wiki/json-rpc/API#trace_rawtransaction
 boost::asio::awaitable<void> TraceRpcApi::handle_trace_raw_transaction(const nlohmann::json& request, nlohmann::json& reply) {
-    const auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() < 2) {
         const auto error_msg = "invalid trace_rawTransaction params: " + params.dump();
         SILKRPC_ERROR << error_msg << "\n";
@@ -370,7 +372,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_filter(const nlohmann::js
 
 // https://eth.wiki/json-rpc/API#trace_get
 boost::asio::awaitable<void> TraceRpcApi::handle_trace_get(const nlohmann::json& request, nlohmann::json& reply) {
-    const auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() < 2) {
         auto error_msg = "invalid trace_get params: " + params.dump();
         SILKRPC_ERROR << error_msg << "\n";
@@ -380,7 +382,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_get(const nlohmann::json&
     const auto transaction_hash = params[0].get<evmc::bytes32>();
     const auto str_indices = params[1].get<std::vector<std::string>>();
 
-    std::vector<std::uint16_t> indices;
+    std::vector<uint16_t> indices;
     std::transform(str_indices.begin(), str_indices.end(), std::back_inserter(indices),
                [](const std::string& str) { return std::stoi(str, nullptr, 16); });
     SILKRPC_INFO << "transaction_hash: " << transaction_hash << ", #indices: " << indices.size() << "\n";
@@ -405,7 +407,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_get(const nlohmann::json&
             const auto result = co_await executor.trace_transaction(tx_with_block->block_with_hash, tx_with_block->transaction);
 
             // TODO(sixtysixter) for RPCDAEMON compatibility
-            auto index = indices[0] + 1;
+            uint16_t index = indices[0] + 1;
             if (result.size() > index) {
                 reply = make_json_content(request["id"], result[index]);
             } else {

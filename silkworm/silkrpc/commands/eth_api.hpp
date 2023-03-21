@@ -48,7 +48,7 @@ namespace silkrpc::commands {
 
 class EthereumRpcApi {
 public:
-    explicit EthereumRpcApi(Context& context, boost::asio::thread_pool& workers)
+    EthereumRpcApi(Context& context, boost::asio::thread_pool& workers)
         : context_(context),
           block_cache_(context.block_cache()),
           state_cache_(context.state_cache()),
@@ -58,12 +58,16 @@ public:
           tx_pool_{context.tx_pool()},
           workers_{workers} {}
 
-    virtual ~EthereumRpcApi() {}
+    virtual ~EthereumRpcApi() = default;
 
     EthereumRpcApi(const EthereumRpcApi&) = delete;
     EthereumRpcApi& operator=(const EthereumRpcApi&) = delete;
 
 protected:
+    static std::vector<Log> filter_logs(std::vector<Log>& logs, const Filter& filter);
+    static boost::asio::awaitable<roaring::Roaring> get_topics_bitmap(core::rawdb::DatabaseReader& db_reader, FilterTopics& topics, uint64_t start, uint64_t end);
+    static boost::asio::awaitable<roaring::Roaring> get_addresses_bitmap(core::rawdb::DatabaseReader& db_reader, FilterAddresses& addresses, uint64_t start, uint64_t end);
+
     boost::asio::awaitable<void> handle_eth_block_number(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_chain_id(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_protocol_version(const nlohmann::json& request, nlohmann::json& reply);
@@ -110,10 +114,6 @@ protected:
     boost::asio::awaitable<void> handle_eth_submit_work(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_subscribe(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_unsubscribe(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<roaring::Roaring> get_topics_bitmap(core::rawdb::DatabaseReader& db_reader, FilterTopics& topics, uint64_t start, uint64_t end);
-    boost::asio::awaitable<roaring::Roaring> get_addresses_bitmap(core::rawdb::DatabaseReader& db_reader, FilterAddresses& addresses, uint64_t start, uint64_t end);
-
-    std::vector<Log> filter_logs(std::vector<Log>& logs, const Filter& filter);
 
     Context& context_;
     std::shared_ptr<BlockCache>& block_cache_;

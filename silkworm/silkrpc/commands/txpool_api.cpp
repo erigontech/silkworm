@@ -49,7 +49,7 @@ boost::asio::awaitable<void> TxPoolRpcApi::handle_txpool_content(const nlohmann:
         transactions_content["baseFee"];
 
         bool error = false;
-        for (int i = 0; i < txpool_transactions.size(); i++) {
+        for (std::size_t i{0}; i < txpool_transactions.size(); i++) {
             silkworm::ByteView from{txpool_transactions[i].rlp};
             std::string sender = silkworm::to_hex(txpool_transactions[i].sender, true);
             Transaction txn{};

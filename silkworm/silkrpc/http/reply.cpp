@@ -61,7 +61,6 @@ namespace misc_strings {
 
 const char name_value_separator[] = { ':', ' ' };
 const char crlf[] = { '\r', '\n' };
-const char lf[] = { '\n' };
 
 } // namespace misc_strings
 
@@ -276,7 +275,7 @@ Reply Reply::stock_reply(StatusType status) {
     rep.status = status;
     rep.content = stock_replies::to_string(status);
 
-    if (status != processing_continue) {
+    if (status != StatusType::processing_continue) {
        rep.headers.reserve(2);
        rep.headers.emplace_back(Header{"Content-Length", std::to_string(rep.content.size())});
        rep.headers.emplace_back(Header{"Content-Type", "text/html"});

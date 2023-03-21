@@ -28,7 +28,6 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/common/decoding_result.hpp>
-#include <silkworm/node/common/decoding_exception.hpp>
 #include <silkworm/silkrpc/common/block_cache.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/ethdb/tables.hpp>
@@ -103,8 +102,8 @@ static void check_expected_block_header(const silkworm::BlockHeader& header) {
 }
 
 static void check_expected_block_body(const silkworm::BlockBody& body) {
-    CHECK(body.transactions.size() == 0);
-    CHECK(body.ommers.size() == 0);
+    CHECK(body.transactions.empty());
+    CHECK(body.ommers.empty());
 }
 
 static void check_expected_block_with_hash(const silkworm::BlockWithHash& bwh) {
@@ -592,7 +591,7 @@ TEST_CASE("read_block") {
         ));
         auto result = boost::asio::co_spawn(pool, read_block(db_reader, block_hash, block_number), boost::asio::use_future);
         const silkworm::BlockWithHash bwh = result.get();
-        CHECK(bwh.block.transactions.size() == 0);
+        CHECK(bwh.block.transactions.empty());
     }
 
     SECTION("block found and matching") {
@@ -814,7 +813,7 @@ TEST_CASE("read_body") {
         auto result = boost::asio::co_spawn(pool, read_body(db_reader, block_hash, block_number), boost::asio::use_future);
         const silkworm::BlockBody body = result.get();
         CHECK(body.transactions.size() == 1);
-        if (body.transactions.size() > 0) {
+        if (!body.transactions.empty()) {
             const auto first_transaction = body.transactions[0];
             CHECK(first_transaction.from.has_value());
             if (first_transaction.from) {
@@ -852,7 +851,7 @@ TEST_CASE("read_body") {
         auto result = boost::asio::co_spawn(pool, read_body(db_reader, block_hash, block_number), boost::asio::use_future);
         const silkworm::BlockBody body = result.get();
         CHECK(body.transactions.size() == 1);
-        if (body.transactions.size() > 0) {
+        if (!body.transactions.empty()) {
             CHECK(!body.transactions[0].from.has_value());
         }
     }
@@ -869,7 +868,7 @@ TEST_CASE("read_header_rlp") {
             []() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }
         ));
         auto result = boost::asio::co_spawn(pool, read_header_rlp(db_reader, block_hash, block_number), boost::asio::use_future);
-        CHECK(result.get() == silkworm::Bytes{});
+        CHECK(result.get().empty());
     }
 
     SECTION("block header RLP found and matching") {
@@ -894,7 +893,7 @@ TEST_CASE("read_body_rlp") {
             []() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }
         ));
         auto result = boost::asio::co_spawn(pool, read_body_rlp(db_reader, block_hash, block_number), boost::asio::use_future);
-        CHECK(result.get() == silkworm::Bytes{});
+        CHECK(result.get().empty());
     }
 
     SECTION("block body RLP found and matching") {
@@ -919,7 +918,7 @@ TEST_CASE("read_senders") {
             []() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }
         ));
         auto result = boost::asio::co_spawn(pool, read_senders(db_reader, block_hash, block_number), boost::asio::use_future);
-        CHECK(result.get() == Addresses{});
+        CHECK(result.get().empty());
     }
 
     SECTION("one sender") { // https://goerli.etherscan.io/block/3529603
@@ -959,18 +958,16 @@ TEST_CASE("read_raw_receipts") {
     test::MockDatabaseReader db_reader;
 
     SECTION("zero receipts") {
-        const auto block_hash{silkworm::kEmptyHash};
         const uint64_t block_number{0};
         EXPECT_CALL(db_reader, get_one(db::table::kBlockReceipts, _)).WillOnce(InvokeWithoutArgs(
             []() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }
         ));
-        auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_hash, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_number), boost::asio::use_future);
         //CHECK(result.get() == Receipts{}); // TODO(canepat): provide operator== and operator!= for Receipt type
-        CHECK(result.get().size() == 0);
+        CHECK(result.get().empty());
     }
 
     SECTION("one receipt") { // https://goerli.etherscan.io/block/3529600
-        const auto block_hash{0x22de8ed177a7b8485d9e26e90dbf523f70cc4a9fa4299bc1daf68791a4386bf3_bytes32};
         const uint64_t block_number{3'529'600};
         EXPECT_CALL(db_reader, get_one(db::table::kBlockReceipts, _)).WillOnce(InvokeWithoutArgs(
             []() -> boost::asio::awaitable<silkworm::Bytes> { co_return *silkworm::from_hex("818400f6011a0004a0c8"); }
@@ -1005,13 +1002,12 @@ TEST_CASE("read_raw_receipts") {
                 co_return;
             }
         ));
-        auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_hash, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_number), boost::asio::use_future);
         //CHECK(result.get() == Receipts{Receipt{...}}); // TODO(canepat): provide operator== and operator!= for Receipt type
         CHECK(result.get().size() == Receipts{Receipt{}}.size());
     }
 
     SECTION("many receipts") { // https://goerli.etherscan.io/block/3529600
-        const auto block_hash{0xc9e65d063911aa583e17bbb7070893482203217caf6d9fbb50265c72e7bf73e5_bytes32};
         const uint64_t block_number{3'529'604};
         EXPECT_CALL(db_reader, get_one(db::table::kBlockReceipts, _)).WillOnce(InvokeWithoutArgs(
             []() -> boost::asio::awaitable<silkworm::Bytes> { co_return *silkworm::from_hex("828400f6011a0003be508400f6011a0008b89a"); }
@@ -1060,13 +1056,12 @@ TEST_CASE("read_raw_receipts") {
                 co_return;
             }
         ));
-        auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_hash, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_number), boost::asio::use_future);
         //CHECK(result.get() == Receipts{Receipt{...}, Receipt{...}}); // TODO(canepat): provide operator== and operator!= for Receipt type
         CHECK(result.get().size() == Receipts{Receipt{}, Receipt{}}.size());
     }
 
     SECTION("invalid receipt log") { // https://goerli.etherscan.io/block/3529600
-        const auto block_hash{0x22de8ed177a7b8485d9e26e90dbf523f70cc4a9fa4299bc1daf68791a4386bf3_bytes32};
         const uint64_t block_number{3'529'600};
         EXPECT_CALL(db_reader, get_one(db::table::kBlockReceipts, _)).WillOnce(InvokeWithoutArgs(
             []() -> boost::asio::awaitable<silkworm::Bytes> { co_return *silkworm::from_hex("818400f6011a0004a0c8"); }
@@ -1101,11 +1096,11 @@ TEST_CASE("read_raw_receipts") {
                 co_return;
             }
         ));
-        auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_hash, block_number), boost::asio::use_future);
+        auto result = boost::asio::co_spawn(pool, read_raw_receipts(db_reader, block_number), boost::asio::use_future);
         // TODO(canepat): this case should fail instead of providing 1 receipt with 0 logs
         const Receipts receipts = result.get();
         CHECK(receipts.size() == 1);
-        CHECK(receipts[0].logs.size() == 0);
+        CHECK(receipts[0].logs.empty());
     }
 }
 
@@ -1114,20 +1109,17 @@ TEST_CASE("read_receipts") {
     test::MockDatabaseReader db_reader;
 
     SECTION("zero receipts w/ zero transactions") {
-        const auto block_hash{silkworm::kEmptyHash};
-        const uint64_t block_number{0};
         const silkworm::BlockWithHash block_with_hash{};
         EXPECT_CALL(db_reader, get_one(db::table::kBlockReceipts, _)).WillOnce(InvokeWithoutArgs(
             []() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }
         ));
         auto result = boost::asio::co_spawn(pool, read_receipts(db_reader, block_with_hash), boost::asio::use_future);
         //CHECK(result.get() == Receipts{}); // TODO(canepat): provide operator== and operator!= for Receipt type
-        CHECK(result.get().size() == 0);
+        CHECK(result.get().empty());
     }
 
     SECTION("zero receipts w/ non-zero transactions") {
         const auto block_hash{silkworm::kEmptyHash};
-        const uint64_t block_number{0};
         EXPECT_CALL(db_reader, get_one(db::table::kHeaderNumbers, _)).WillOnce(InvokeWithoutArgs(
             []() -> boost::asio::awaitable<silkworm::Bytes> { co_return kNumber; }
         ));
@@ -1165,7 +1157,6 @@ TEST_CASE("read_receipts") {
 
     SECTION("one receipt") { // https://goerli.etherscan.io/block/3529600
         const auto block_hash{silkworm::kEmptyHash};
-        const uint64_t block_number{0};
         EXPECT_CALL(db_reader, get_one(db::table::kHeaderNumbers, _)).WillOnce(InvokeWithoutArgs(
             []() -> boost::asio::awaitable<silkworm::Bytes> { co_return kNumber; }
         ));
@@ -1238,7 +1229,6 @@ TEST_CASE("read_receipts") {
 
     SECTION("many receipts") { // https://goerli.etherscan.io/block/469011
         const auto block_hash{0x608e7102f689c99c027c9f49860212348000eb2e13bff37aa4453605a0a2b9e7_bytes32};
-        const uint64_t block_number{469011};
         EXPECT_CALL(db_reader, get_one(db::table::kHeaderNumbers, _)).WillOnce(InvokeWithoutArgs(
             []() -> boost::asio::awaitable<silkworm::Bytes> { co_return kNumber; }
         ));
@@ -1315,7 +1305,7 @@ TEST_CASE("read_canonical_transactions") {
         uint64_t base_txn_id{0};  // don't care
         const uint64_t txn_count{0};
         auto result = boost::asio::co_spawn(pool, read_canonical_transactions(db_reader, base_txn_id, txn_count), boost::asio::use_future);
-        CHECK(result.get() == Transactions{});
+        CHECK(result.get().empty());
     }
 
     SECTION("one transaction") {
@@ -1456,7 +1446,7 @@ TEST_CASE("read_noncanonical_transactions") {
         uint64_t base_txn_id{0};  // don't care
         const uint64_t txn_count{0};
         auto result = boost::asio::co_spawn(pool, read_noncanonical_transactions(db_reader, base_txn_id, txn_count), boost::asio::use_future);
-        CHECK(result.get() == Transactions{});
+        CHECK(result.get().empty());
     }
 
     SECTION("one transaction") {
@@ -1635,7 +1625,6 @@ TEST_CASE("read_total_issued") {
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
-    const auto block_hash{0x96908d141b3c2727342b48696f97b50845240e3ceda0c86ac3dc2e197eb9675b_bytes32};
     const uint64_t block_number{20'000};
     EXPECT_CALL(db_reader, get_one(_, _)).WillOnce(InvokeWithoutArgs(
         []() -> boost::asio::awaitable<silkworm::Bytes> { co_return kTotalIssued; }
@@ -1648,7 +1637,6 @@ TEST_CASE("read_total_burnt") {
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
 
-    const auto block_hash{0x96908d141b3c2727342b48696f97b50845240e3ceda0c86ac3dc2e197eb9675b_bytes32};
     const uint64_t block_number{20'000};
     EXPECT_CALL(db_reader, get_one(_, _)).WillOnce(InvokeWithoutArgs(
         []() -> boost::asio::awaitable<silkworm::Bytes> { co_return kTotalBurnt; }
@@ -1662,7 +1650,6 @@ TEST_CASE("read_cumulative_gas_used") {
         boost::asio::thread_pool pool{1};
         test::MockDatabaseReader db_reader;
 
-        const auto block_hash{0x96908d141b3c2727342b48696f97b50845240e3ceda0c86ac3dc2e197eb9675b_bytes32};
         const uint64_t block_number{20'000};
         EXPECT_CALL(db_reader, get_one(_, _)).WillOnce(InvokeWithoutArgs(
             []() -> boost::asio::awaitable<silkworm::Bytes> { co_return kCumulativeGasUsed; }
@@ -1675,7 +1662,6 @@ TEST_CASE("read_cumulative_gas_used") {
         boost::asio::thread_pool pool{1};
         test::MockDatabaseReader db_reader;
 
-        const auto block_hash{0x96908d141b3c2727342b48696f97b50845240e3ceda0c86ac3dc2e197eb9675b_bytes32};
         const uint64_t block_number{20'000};
         EXPECT_CALL(db_reader, get_one(_, _)).WillOnce(InvokeWithoutArgs(
             []() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }

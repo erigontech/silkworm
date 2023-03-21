@@ -31,6 +31,7 @@
 namespace silkrpc {
 
 using Catch::Matchers::Message;
+using boost::asio::awaitable;
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 
 #ifndef SILKWORM_SANITIZE
@@ -38,24 +39,24 @@ TEST_CASE("EVMExecutor") {
     SILKRPC_LOG_STREAMS(null_stream(), null_stream());
 
     class StubDatabase : public core::rawdb::DatabaseReader {
-        [[nodiscard]] boost::asio::awaitable<KeyValue> get(const std::string& table, silkworm::ByteView key) const override {
+        [[nodiscard]] awaitable<KeyValue> get(const std::string& /*table*/, silkworm::ByteView /*key*/) const override {
             co_return KeyValue{};
         }
-        [[nodiscard]] boost::asio::awaitable<silkworm::Bytes> get_one(const std::string& table, silkworm::ByteView key) const override {
+        [[nodiscard]] awaitable<silkworm::Bytes> get_one(const std::string& /*table*/, silkworm::ByteView /*key*/) const override {
             co_return silkworm::Bytes{};
         }
-        [[nodiscard]] boost::asio::awaitable<std::optional<silkworm::Bytes>> get_both_range(const std::string& table, silkworm::ByteView key, silkworm::ByteView subkey) const override {
+        [[nodiscard]] awaitable<std::optional<silkworm::Bytes>> get_both_range(const std::string& /*table*/, silkworm::ByteView /*key*/, silkworm::ByteView /*subkey*/) const override {
             co_return silkworm::Bytes{};
         }
-        [[nodiscard]] boost::asio::awaitable<void> walk(const std::string& table, silkworm::ByteView start_key, uint32_t fixed_bits, core::rawdb::Walker w) const override {
+        [[nodiscard]] awaitable<void> walk(const std::string& /*table*/, silkworm::ByteView /*start_key*/, uint32_t /*fixed_bits*/, core::rawdb::Walker /*w*/) const override {
             co_return;
         }
-        [[nodiscard]] boost::asio::awaitable<void> for_prefix(const std::string& table, silkworm::ByteView prefix, core::rawdb::Walker w) const override {
+        [[nodiscard]] awaitable<void> for_prefix(const std::string& /*table*/, silkworm::ByteView /*prefix*/, core::rawdb::Walker /*w*/) const override {
             co_return;
         }
     };
 
-    SECTION("failed if gas_limit < intrisic_gas") {
+    SECTION("failed if gas_limit < intrinsic_gas") {
         StubDatabase tx_database;
         const uint64_t chain_id = 5;
         const auto chain_config_ptr = lookup_chain_config(chain_id);
@@ -73,7 +74,7 @@ TEST_CASE("EVMExecutor") {
         boost::asio::io_context& io_context = my_pool.next_io_context();
 
         state::RemoteState remote_state{io_context, tx_database, block_number};
-        EVMExecutor executor{io_context, tx_database, *chain_config_ptr, workers, block_number, remote_state};
+        EVMExecutor executor{io_context, tx_database, *chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}), boost::asio::use_future);
         auto result = execution_result.get();
         my_pool.stop();
@@ -102,7 +103,7 @@ TEST_CASE("EVMExecutor") {
 
         boost::asio::io_context& io_context = my_pool.next_io_context();
         state::RemoteState remote_state{io_context, tx_database, block_number};
-        EVMExecutor executor{io_context, tx_database, *chain_config_ptr, workers, block_number, remote_state};
+        EVMExecutor executor{io_context, tx_database, *chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}), boost::asio::use_future);
         auto result = execution_result.get();
         my_pool.stop();
@@ -132,7 +133,7 @@ TEST_CASE("EVMExecutor") {
 
         boost::asio::io_context& io_context = my_pool.next_io_context();
         state::RemoteState remote_state{io_context, tx_database, block_number};
-        EVMExecutor executor{io_context, tx_database, *chain_config_ptr, workers, block_number, remote_state};
+        EVMExecutor executor{io_context, tx_database, *chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}), boost::asio::use_future);
         auto result = execution_result.get();
         my_pool.stop();
@@ -162,7 +163,7 @@ TEST_CASE("EVMExecutor") {
 
         boost::asio::io_context& io_context = my_pool.next_io_context();
         state::RemoteState remote_state{io_context, tx_database, block_number};
-        EVMExecutor executor{io_context, tx_database, *chain_config_ptr, workers, block_number, remote_state};
+        EVMExecutor executor{io_context, tx_database, *chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}), boost::asio::use_future);
         auto result = execution_result.get();
         my_pool.stop();
@@ -192,7 +193,7 @@ TEST_CASE("EVMExecutor") {
 
         boost::asio::io_context& io_context = my_pool.next_io_context();
         state::RemoteState remote_state{io_context, tx_database, block_number};
-        EVMExecutor executor{io_context, tx_database, *chain_config_ptr, workers, block_number, remote_state};
+        EVMExecutor executor{io_context, tx_database, *chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}, false, /* gasBailout */true), boost::asio::use_future);
         auto result = execution_result.get();
         executor.reset();
@@ -231,7 +232,7 @@ TEST_CASE("EVMExecutor") {
 
         boost::asio::io_context& io_context = my_pool.next_io_context();
         state::RemoteState remote_state{io_context, tx_database, block_number};
-        EVMExecutor executor{io_context, tx_database, *chain_config_ptr, workers, block_number, remote_state};
+        EVMExecutor executor{io_context, tx_database, *chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}, true, true), boost::asio::use_future);
         auto result = execution_result.get();
         my_pool.stop();

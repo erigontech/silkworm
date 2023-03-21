@@ -18,7 +18,6 @@
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/use_future.hpp>
-#include <boost/asio/thread_pool.hpp>
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 #include <silkworm/core/common/base.hpp>
@@ -27,6 +26,7 @@
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/test/context_test_base.hpp>
 #include <silkworm/silkrpc/test/mock_database_reader.hpp>
+#include <utility>
 
 namespace silkrpc::state {
 
@@ -40,60 +40,35 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
     class MockDatabaseReader : public core::rawdb::DatabaseReader {
     public:
         MockDatabaseReader() = default;
-        explicit MockDatabaseReader(const silkworm::Bytes& value) : value_(value) {}
+        explicit MockDatabaseReader(silkworm::Bytes  value) : value_(std::move(value)) {}
 
-        boost::asio::awaitable<KeyValue> get(const std::string& table, silkworm::ByteView key) const override {
+        [[nodiscard]] boost::asio::awaitable<KeyValue> get(const std::string& /*table*/, silkworm::ByteView /*key*/) const override {
             co_return KeyValue{};
         }
-        boost::asio::awaitable<silkworm::Bytes> get_one(const std::string& table, silkworm::ByteView key) const override {
+        [[nodiscard]] boost::asio::awaitable<silkworm::Bytes> get_one(const std::string& /*table*/, silkworm::ByteView /*key*/) const override {
             co_return value_;
         }
-        boost::asio::awaitable<std::optional<silkworm::Bytes>> get_both_range(const std::string& table, silkworm::ByteView key, silkworm::ByteView subkey) const override {
+        [[nodiscard]] boost::asio::awaitable<std::optional<silkworm::Bytes>> get_both_range(const std::string& /*table*/, silkworm::ByteView /*key*/, silkworm::ByteView /*subkey*/) const override {
             co_return silkworm::Bytes{};
         }
-        boost::asio::awaitable<void> walk(const std::string& table, silkworm::ByteView start_key, uint32_t fixed_bits, core::rawdb::Walker w) const override {
+        [[nodiscard]] boost::asio::awaitable<void> walk(const std::string& /*table*/, silkworm::ByteView /*start_key*/, uint32_t /*fixed_bits*/, core::rawdb::Walker /*w*/) const override {
             co_return;
         }
-        boost::asio::awaitable<void> for_prefix(const std::string& table, silkworm::ByteView prefix, core::rawdb::Walker w) const override {
+        [[nodiscard]] boost::asio::awaitable<void> for_prefix(const std::string& /*table*/, silkworm::ByteView /*prefix*/, core::rawdb::Walker /*w*/) const override {
             co_return;
         }
     private:
         silkworm::Bytes value_;
     };
-
-    class MockDatabaseFailingReader : public core::rawdb::DatabaseReader {
-    public:
-        MockDatabaseFailingReader() = default;
-        explicit MockDatabaseFailingReader(const silkworm::Bytes& value) : value_(value) {}
-
-        boost::asio::awaitable<KeyValue> get(const std::string& table, silkworm::ByteView key) const override {
-            co_return KeyValue{};
-        }
-        boost::asio::awaitable<silkworm::Bytes> get_one(const std::string& table, silkworm::ByteView key) const override {
-            throw new std::exception;
-        }
-        boost::asio::awaitable<std::optional<silkworm::Bytes>> get_both_range(const std::string& table, silkworm::ByteView key, silkworm::ByteView subkey) const override {
-            co_return silkworm::Bytes{};
-        }
-        boost::asio::awaitable<void> walk(const std::string& table, silkworm::ByteView start_key, uint32_t fixed_bits, core::rawdb::Walker w) const override {
-            co_return;
-        }
-        boost::asio::awaitable<void> for_prefix(const std::string& table, silkworm::ByteView prefix, core::rawdb::Walker w) const override {
-            co_return;
-        }
-    private:
-        silkworm::Bytes value_;
-    };
-
 
     SECTION("read_code for empty hash") {
         boost::asio::io_context io_context;
         MockDatabaseReader db_reader;
         const uint64_t block_number = 1'000'000;
-        AsyncRemoteState state{io_context, db_reader, block_number};
+        AsyncRemoteState state{db_reader, block_number};
         auto future_code{boost::asio::co_spawn(io_context, state.read_code(silkworm::kEmptyHash), boost::asio::use_future)};
         io_context.run();
-        CHECK(future_code.get() == silkworm::ByteView{});
+        CHECK(future_code.get().empty());
     }
 
     SECTION("read_code for non-empty hash") {
@@ -101,7 +76,7 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         silkworm::Bytes code{*silkworm::from_hex("0x0608")};
         MockDatabaseReader db_reader{code};
         const uint64_t block_number = 1'000'000;
-        AsyncRemoteState state{io_context, db_reader, block_number};
+        AsyncRemoteState state{db_reader, block_number};
         const auto code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         auto future_code{boost::asio::co_spawn(io_context, state.read_code(code_hash), boost::asio::use_future)};
         io_context.run();
@@ -164,7 +139,6 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         MockDatabaseReader db_reader;
         const uint64_t block_number = 1'000'000;
         const auto block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        evmc::address address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
         RemoteState remote_state(io_context, db_reader, block_number);
         auto header = remote_state.read_header(block_number, block_hash);
         CHECK(header == std::nullopt);
@@ -180,10 +154,7 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         MockDatabaseReader db_reader;
         const uint64_t block_number = 1'000'000;
         silkworm::BlockBody body;
-        const auto block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        evmc::address address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
         RemoteState remote_state(io_context, db_reader, block_number);
-        auto header = remote_state.read_body(block_number, block_hash, body);
         CHECK(body == silkworm::BlockBody{});
         io_context.stop();
         io_context_thread.join();
@@ -197,7 +168,6 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         MockDatabaseReader db_reader;
         const uint64_t block_number = 1'000'000;
         const auto block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        evmc::address address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
         RemoteState remote_state(io_context, db_reader, block_number);
         auto header = remote_state.total_difficulty(block_number, block_hash);
         CHECK(header == std::nullopt);
@@ -316,7 +286,7 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         boost::asio::io_context io_context;
         MockDatabaseReader db_reader;
         const uint64_t block_number = 1'000'000;
-        AsyncRemoteState state{io_context, db_reader, block_number};
+        AsyncRemoteState state{db_reader, block_number};
         evmc::address address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
         auto future_code{boost::asio::co_spawn(io_context, state.read_account(address), boost::asio::use_future)};
         io_context.run();
@@ -327,18 +297,18 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         boost::asio::io_context io_context;
         MockDatabaseReader db_reader;
         const uint64_t block_number = 1'000'000;
-        AsyncRemoteState state{io_context, db_reader, block_number};
+        AsyncRemoteState state{db_reader, block_number};
         const auto code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         auto future_code{boost::asio::co_spawn(io_context, state.read_code(code_hash), boost::asio::use_future)};
         io_context.run();
-        CHECK(future_code.get() == silkworm::ByteView{});
+        CHECK(future_code.get().empty());
     }
 
     SECTION("AsyncRemoteState::read_storage with empty response from db") {
         boost::asio::io_context io_context;
         MockDatabaseReader db_reader;
         const uint64_t block_number = 1'000'000;
-        AsyncRemoteState state{io_context, db_reader, block_number};
+        AsyncRemoteState state{db_reader, block_number};
         evmc::address address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
         const auto location{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
         auto future_code{boost::asio::co_spawn(io_context, state.read_storage(address, 0, location), boost::asio::use_future)};
@@ -350,7 +320,7 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         boost::asio::io_context io_context;
         MockDatabaseReader db_reader;
         const uint64_t block_number = 1'000'000;
-        AsyncRemoteState state{io_context, db_reader, block_number};
+        AsyncRemoteState state{db_reader, block_number};
         evmc::address address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
         auto future_code{boost::asio::co_spawn(io_context, state.previous_incarnation(address), boost::asio::use_future)};
         io_context.run();
@@ -361,7 +331,7 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         boost::asio::io_context io_context;
         MockDatabaseReader db_reader;
         const uint64_t block_number = 1'000'000;
-        AsyncRemoteState state{io_context, db_reader, block_number};
+        AsyncRemoteState state{db_reader, block_number};
         auto future_code{boost::asio::co_spawn(io_context, state.state_root_hash(), boost::asio::use_future)};
         io_context.run();
         CHECK(future_code.get() == evmc::bytes32{});
@@ -371,7 +341,7 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         boost::asio::io_context io_context;
         MockDatabaseReader db_reader;
         const uint64_t block_number = 1'000'000;
-        AsyncRemoteState state{io_context, db_reader, block_number};
+        AsyncRemoteState state{db_reader, block_number};
         auto future_code{boost::asio::co_spawn(io_context, state.current_canonical_block(), boost::asio::use_future)};
         io_context.run();
         CHECK(future_code.get() == 0);
@@ -382,7 +352,7 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         MockDatabaseReader db_reader;
         const uint64_t block_number = 1'000'000;
         const auto block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        AsyncRemoteState state{io_context, db_reader, block_number};
+        AsyncRemoteState state{db_reader, block_number};
         auto future_code{boost::asio::co_spawn(io_context, state.total_difficulty(block_number, block_hash), boost::asio::use_future)};
         io_context.run();
         CHECK_THROWS_AS(future_code.get(), std::exception);
@@ -393,7 +363,7 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         MockDatabaseReader db_reader;
         const uint64_t block_number = 1'000'000;
         const auto block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        AsyncRemoteState state{io_context, db_reader, block_number};
+        AsyncRemoteState state{db_reader, block_number};
         auto future_code{boost::asio::co_spawn(io_context, state.read_header(block_number, block_hash), boost::asio::use_future)};
         io_context.run();
         CHECK_THROWS_AS(future_code.get(), std::exception);
@@ -404,7 +374,7 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         MockDatabaseReader db_reader;
         const uint64_t block_number = 1'000'000;
         const auto block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        AsyncRemoteState state{io_context, db_reader, block_number};
+        AsyncRemoteState state{db_reader, block_number};
         silkworm::BlockBody body;
         auto future_code{boost::asio::co_spawn(io_context, state.read_body(block_number, block_hash, body), boost::asio::use_future)};
         io_context.run();
@@ -415,8 +385,7 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         boost::asio::io_context io_context;
         MockDatabaseReader db_reader;
         const uint64_t block_number = 1'000'000;
-        const auto block_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        AsyncRemoteState state{io_context, db_reader, block_number};
+        AsyncRemoteState state{db_reader, block_number};
         auto future_code{boost::asio::co_spawn(io_context, state.canonical_hash(block_number), boost::asio::use_future)};
         io_context.run();
         CHECK_THROWS_AS(future_code.get(), std::exception);

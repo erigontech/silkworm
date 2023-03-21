@@ -33,6 +33,7 @@ using evmc::literals::operator""_bytes32;
 using testing::InvokeWithoutArgs;
 using testing::_;
 
+#ifndef SILKWORM_SANITIZE
 static const evmc::address kZeroAddress{};
 static const silkworm::Bytes kEncodedAccount{*silkworm::from_hex(
     "0f01020203e8010520f1885eda54b7a053318cd41e2093220dab15d65381b1157a3633a83bfd5c9239")};
@@ -59,7 +60,6 @@ struct StateReaderTest : public test::ContextTestBase {
     StateReader state_reader_{database_reader_};
 };
 
-#ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
     SECTION("no account for history empty and current state empty") {
         // Set the call expectations:

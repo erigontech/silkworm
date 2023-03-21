@@ -19,7 +19,9 @@
 namespace silkrpc::clock_time {
 
 uint64_t now() {
-    return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+    return static_cast<uint64_t>(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()).count());
 }
 
 uint64_t since(uint64_t start) {

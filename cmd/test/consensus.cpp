@@ -770,7 +770,7 @@ int main(int argc, char* argv[]) {
             if (exclude_test(*i, root_dir, include_slow_tests)) {
                 ++total_skipped;
                 i.disable_recursion_pending();
-            } else if (fs::is_regular_file(i->path())) {
+            } else if (fs::is_regular_file(i->path()) && i->path().extension() == ".json") {
                 const fs::path path{*i};
                 thread_pool.push_task([path, runner]() { run_test_file(path, runner); });
             }

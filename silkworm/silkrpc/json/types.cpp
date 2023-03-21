@@ -348,7 +348,14 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
     }
     json["block"]["uncles"] = ommer_hashes;
 
-    json["issuance"] = silkrpc::to_quantity(b.issuance);
+    if(b.issuance.total_reward > 0){
+        json["issuance"]["minerReward"] = silkrpc::to_quantity(b.issuance.miner_reward);
+        json["issuance"]["ommersReward"] = silkrpc::to_quantity(b.issuance.ommers_reward);
+        json["issuance"]["totalReward"] = silkrpc::to_quantity(b.issuance.total_reward);
+    } else {
+        json["issuance"] = {};
+    }
+
     json["totalFees"] = silkrpc::to_quantity(b.total_fees);
 }
 

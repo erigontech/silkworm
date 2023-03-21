@@ -94,9 +94,15 @@ struct BlockDetails {
     [[nodiscard]] uint64_t get_block_size() const;
 };
 
+struct IssuanceDetails {
+    intx::uint256 miner_reward{0};
+    intx::uint256 ommers_reward{0};
+    intx::uint256 total_reward{0};
+};
+
 struct BlockDetailsResponse {
     BlockDetails block;
-    intx::uint256 issuance{0};
+    IssuanceDetails issuance{};
     intx::uint256 total_fees{0};
 };
 

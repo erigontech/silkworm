@@ -54,6 +54,12 @@ protected:
     std::unique_ptr<ethdb::Database>& database_;
     std::shared_ptr<ethdb::kv::StateCache>& state_cache_;
     friend class silkrpc::http::RequestHandler;
+
+  private:
+
+    IssuanceDetails get_issuance(const ChainConfig& chain_config, const silkworm::BlockWithHash& block);
+    intx::uint256 delegate_blockFees(const ChainConfig& chain_config, const silkworm::BlockWithHash& block, std::vector<Receipt> & receipts, const unsigned long block_number);
+
 };
 } // namespace silkrpc::commands
 

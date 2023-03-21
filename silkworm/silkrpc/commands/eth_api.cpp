@@ -1416,6 +1416,13 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann:
 
     std::vector<Log> logs;
 
+#ifdef notdef
+    if (filter.topics) {
+       reply = make_json_content(request["id"], logs);
+       co_return;
+    }
+#endif
+
     auto tx = co_await database_->begin();
 
     try {
@@ -1557,9 +1564,15 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_logs2(const nlohmann
         co_return;
     }
     auto filter = params[0].get<Filter>();
-    SILKRPC_LOG << "filter: " << filter << "\n";
+    SILKRPC_DEBUG << "filter: " << filter << "\n";
 
     std::vector<Log> logs;
+#ifdef notdef
+    if (filter.topics) {
+       make_json_content2(buffer, request["id"], logs);
+       co_return;
+    }
+#endif
 
     auto tx = co_await database_->begin();
 
@@ -1722,6 +1735,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_logs3(eth_getLogs_re
         filter.addresses = address_list;
     }
 
+#ifdef notdef
     FilterTopics topic_address_list;
     if (request.params[0].topics.size() != 0)  {
         FilterSubTopics subtopic_address_list;
@@ -1735,13 +1749,18 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_logs3(eth_getLogs_re
         }
         filter.topics = topic_address_list;
     }
+#endif
     if (!request.params[0].block_hash.empty())  {
         filter.block_hash = request.params[0].block_hash;
     }
     
-    SILKRPC_LOG << "filter: " << filter << "\n";
+    SILKRPC_DEBUG << "filter: " << filter << "\n";
 
     std::vector<Log> logs;
+    if (request.params[0].topics.size() != 0) {
+        make_json_content4(json_buffer, request.id, logs);
+        co_return;
+    }
 
     auto tx = co_await database_->begin();
 

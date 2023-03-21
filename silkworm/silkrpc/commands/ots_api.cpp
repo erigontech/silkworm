@@ -33,193 +33,190 @@
 
 namespace silkrpc::commands {
 
-    constexpr int kCurrentApiLevel{8};
+constexpr int kCurrentApiLevel{8};
 
-    boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_api_level(const nlohmann::json& request, nlohmann::json& reply) {
-        reply = make_json_content(request["id"], kCurrentApiLevel);
+boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_api_level(const nlohmann::json& request, nlohmann::json& reply) {
+    reply = make_json_content(request["id"], kCurrentApiLevel);
+    co_return;
+}
+
+boost::asio::awaitable<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto params = request["params"];
+    if (params.size() != 2) {
+        const auto error_msg = "invalid ots_hasCode params: " + params.dump();
+        SILKRPC_ERROR << error_msg << "\n";
+        reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
+    const auto address = params[0].get<evmc::address>();
+    const auto block_id = params[1].get<std::string>();
 
-    boost::asio::awaitable<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohmann::json& reply) {
-        const auto params = request["params"];
-        if (params.size() != 2) {
-            const auto error_msg = "invalid ots_hasCode params: " + params.dump();
-            SILKRPC_ERROR << error_msg << "\n";
-            reply = make_json_error(request["id"], 100, error_msg);
-            co_return;
+    SILKRPC_DEBUG << "address: " << silkworm::to_hex(address) << " block_id: " << block_id << "\n";
+
+    auto tx = co_await database_->begin();
+
+    try {
+        ethdb::TransactionDatabase tx_database{*tx};
+        ethdb::kv::CachedDatabase cached_database{BlockNumberOrHash{block_id}, *tx, *state_cache_};
+        // Check if target block is latest one: use local state cache (if any) for target transaction
+        const bool is_latest_block = co_await core::is_latest_block_number(BlockNumberOrHash{block_id}, tx_database);
+        StateReader state_reader(is_latest_block ? (core::rawdb::DatabaseReader&)cached_database : (core::rawdb::DatabaseReader&)tx_database);
+
+        const auto block_number = co_await core::get_block_number(block_id, tx_database);
+        std::optional<silkworm::Account> account{co_await state_reader.read_account(address, block_number + 1)};
+
+        if (account) {
+            auto code{co_await state_reader.read_code(account->code_hash)};
+            reply = make_json_content(request["id"], code.has_value());
+        } else {
+            reply = make_json_content(request["id"], false);
         }
-        const auto address = params[0].get<evmc::address>();
-        const auto block_id = params[1].get<std::string>();
+    } catch (const std::exception& e) {
+        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, "unexpected exception");
+    }
 
-        SILKRPC_DEBUG << "address: " << silkworm::to_hex(address) << " block_id: " << block_id << "\n";
+    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_return;
+}
 
-        auto tx = co_await database_->begin();
-
-        try {
-            ethdb::TransactionDatabase tx_database{*tx};
-            ethdb::kv::CachedDatabase cached_database{BlockNumberOrHash{block_id}, *tx, *state_cache_};
-            // Check if target block is latest one: use local state cache (if any) for target transaction
-            const bool is_latest_block = co_await core::is_latest_block_number(BlockNumberOrHash{block_id}, tx_database);
-            StateReader state_reader(is_latest_block ? (core::rawdb::DatabaseReader&)cached_database : (core::rawdb::DatabaseReader&)tx_database);
-
-            const auto block_number = co_await core::get_block_number(block_id, tx_database);
-            std::optional<silkworm::Account> account{co_await state_reader.read_account(address, block_number + 1)};
-
-            if (account) {
-                auto code{co_await state_reader.read_code(account->code_hash)};
-                reply = make_json_content(request["id"], code.has_value());
-            } else {
-                reply = make_json_content(request["id"], false);
-            }
-        } catch (const std::exception& e) {
-            SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
-            reply = make_json_error(request["id"], 100, e.what());
-        } catch (...) {
-            SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
-            reply = make_json_error(request["id"], 100, "unexpected exception");
-        }
-
-        co_await tx->close(); // RAII not (yet) available with coroutines
+boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetails(const nlohmann::json& request, nlohmann::json& reply) {
+    auto params = request["params"];
+    if (params.size() != 1) {
+        auto error_msg = "invalid handle_ots_getBlockDetails params: " + params.dump();
+        SILKRPC_ERROR << error_msg << "\n";
+        reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
+    const auto block_id = params[0].get<std::string>();
 
-    boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetails(const nlohmann::json& request, nlohmann::json& reply) {
-        auto params = request["params"];
-        if (params.size() != 1) {
-            auto error_msg = "invalid handle_ots_getBlockDetails params: " + params.dump();
-            SILKRPC_ERROR << error_msg << "\n";
-            reply = make_json_error(request["id"], 100, error_msg);
-            co_return;
-        }
-        const auto block_id = params[0].get<std::string>();
+    SILKRPC_DEBUG << "block_id: " << block_id << "\n";
 
-        SILKRPC_DEBUG << "block_id: " << block_id << "\n";
+    auto tx = co_await database_->begin();
 
-        auto tx = co_await database_->begin();
+    try {
+        ethdb::TransactionDatabase tx_database{*tx};
 
-        try {
-            ethdb::TransactionDatabase tx_database{*tx};
+        const auto block_number = co_await core::get_block_number(block_id, tx_database);
+        const auto block_hash = co_await core::rawdb::read_canonical_block_hash(tx_database, block_number);
+        const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_hash, block_number);
+        const auto block_with_hash = co_await core::rawdb::read_block_by_hash(tx_database, block_hash);
+        const BlockDetails block_details{block_hash, block_with_hash.block.header, total_difficulty, block_with_hash.block.transactions.size() - 2, block_with_hash.block.ommers};
 
-            const auto block_number = co_await core::get_block_number(block_id, tx_database);
-            const auto block_hash = co_await core::rawdb::read_canonical_block_hash(tx_database, block_number);
-            const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_hash, block_number);
-            const auto block_with_hash = co_await core::rawdb::read_block_by_hash(tx_database, block_hash);
-            const BlockDetails block_details{block_hash, block_with_hash.block.header, total_difficulty, block_with_hash.block.transactions.size() -2, block_with_hash.block.ommers};
+        auto receipts = co_await core::get_receipts(tx_database, block_with_hash);
+        auto chain_config = co_await core::rawdb::read_chain_config(tx_database);
 
-            auto receipts = co_await core::get_receipts(tx_database, block_with_hash);
-            auto chain_config = co_await core::rawdb::read_chain_config(tx_database);
+        IssuanceDetails issuance = this->get_issuance(chain_config, block_with_hash);
+        intx::uint256 total_fees = this->delegate_blockFees(chain_config, block_with_hash, receipts, block_number);
 
-            IssuanceDetails issuance = this->get_issuance(chain_config, block_with_hash);
-            intx::uint256 total_fees = this->delegate_blockFees(chain_config, block_with_hash, receipts, block_number);
+        const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
 
-            const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
+        reply = make_json_content(request["id"], block_details_response);
+    } catch (const std::invalid_argument& iv) {
+        SILKRPC_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump() << "\n";
+        reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+    } catch (const std::exception& e) {
+        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, "unexpected exception");
+    }
 
-            reply = make_json_content(request["id"], block_details_response);
-        } catch (const std::invalid_argument& iv) {
-            SILKRPC_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump() << "\n";
-            reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
-        } catch (const std::exception& e) {
-            SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
-            reply = make_json_error(request["id"], 100, e.what());
-        } catch (...) {
-            SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
-            reply = make_json_error(request["id"], 100, "unexpected exception");
-        }
+    co_await tx->close();
+    co_return;
+}
 
-        co_await tx->close();
+boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetailsByHash(const nlohmann::json& request, nlohmann::json& reply) {
+    auto params = request["params"];
+    if (params.size() != 1) {
+        auto error_msg = "invalid ots_getBlockDetailsByHash params: " + params.dump();
+        SILKRPC_ERROR << error_msg << "\n";
+        reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
+    auto block_hash = params[0].get<evmc::bytes32>();
 
-    boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetailsByHash(const nlohmann::json& request, nlohmann::json& reply) {
-        auto params = request["params"];
-        if (params.size() != 1) {
-            auto error_msg = "invalid ots_getBlockDetailsByHash params: " + params.dump();
-            SILKRPC_ERROR << error_msg << "\n";
-            reply = make_json_error(request["id"], 100, error_msg);
-            co_return;
-        }
-        auto block_hash = params[0].get<evmc::bytes32>();
+    SILKRPC_DEBUG << "block_hash: " << block_hash << "\n";
 
-        SILKRPC_DEBUG << "block_hash: " << block_hash << "\n";
+    auto tx = co_await database_->begin();
 
-        auto tx = co_await database_->begin();
+    try {
+        ethdb::TransactionDatabase tx_database{*tx};
 
-        try {
-            ethdb::TransactionDatabase tx_database{*tx};
+        const auto block_number = co_await read_header_number(tx_database, block_hash);
+        const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_hash, block_number);
+        const auto block_with_hash = co_await core::rawdb::read_block_by_hash(tx_database, block_hash);
+        const BlockDetails block_details{block_hash, block_with_hash.block.header, total_difficulty, block_with_hash.block.transactions.size() - 2, block_with_hash.block.ommers};
 
-            const auto block_number = co_await read_header_number(tx_database, block_hash);
-            const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_hash, block_number);
-            const auto block_with_hash = co_await core::rawdb::read_block_by_hash(tx_database, block_hash);
-            const BlockDetails block_details{block_hash, block_with_hash.block.header, total_difficulty, block_with_hash.block.transactions.size() -2, block_with_hash.block.ommers};
+        auto receipts = co_await core::get_receipts(tx_database, block_with_hash);
+        auto chain_config = co_await core::rawdb::read_chain_config(tx_database);
 
-            auto receipts = co_await core::get_receipts(tx_database, block_with_hash);
-            auto chain_config = co_await core::rawdb::read_chain_config(tx_database);
+        IssuanceDetails issuance = this->get_issuance(chain_config, block_with_hash);
+        intx::uint256 total_fees = this->delegate_blockFees(chain_config, block_with_hash, receipts, block_number);
 
-            IssuanceDetails issuance = this->get_issuance(chain_config, block_with_hash);
-            intx::uint256 total_fees = this->delegate_blockFees(chain_config, block_with_hash, receipts, block_number);
+        const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
 
-            const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
-
-            reply = make_json_content(request["id"], block_details_response);
-        } catch (const std::invalid_argument& iv) {
-            SILKRPC_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump() << "\n";
-            reply = make_json_content(request["id"], {});
-        } catch (const std::exception& e) {
-            SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
-            reply = make_json_error(request["id"], 100, e.what());
-        } catch (...) {
-            SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
-            reply = make_json_error(request["id"], 100, "unexpected exception");
-        }
-
-        co_await tx->close(); // RAII not (yet) available with coroutines
-        co_return;
+        reply = make_json_content(request["id"], block_details_response);
+    } catch (const std::invalid_argument& iv) {
+        SILKRPC_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump() << "\n";
+        reply = make_json_content(request["id"], {});
+    } catch (const std::exception& e) {
+        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    IssuanceDetails OtsRpcApi::get_issuance(const ChainConfig& chain_config, const silkworm::BlockWithHash& block) {
+    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_return;
+}
 
-        auto config = silkworm::ChainConfig::from_json(chain_config.config).value();
+IssuanceDetails OtsRpcApi::get_issuance(const ChainConfig& chain_config, const silkworm::BlockWithHash& block) {
+    auto config = silkworm::ChainConfig::from_json(chain_config.config).value();
 
-        if (config.seal_engine != silkworm::SealEngineType::kEthash){
-            return IssuanceDetails{};
-        }
-
-        auto block_reward = ethash::compute_reward(chain_config, block.block);
-
-        intx::uint256 ommers_reward = std::accumulate(block_reward.ommer_rewards.begin(), block_reward.ommer_rewards.end(), intx::uint256{0});
-
-        IssuanceDetails issuance{
-            .miner_reward = block_reward.miner_reward,
-            .ommers_reward = ommers_reward,
-            .total_reward = block_reward.miner_reward + ommers_reward
-        };
-
-        return issuance;
+    if (config.seal_engine != silkworm::SealEngineType::kEthash) {
+        return IssuanceDetails{};
     }
 
-    intx::uint256 OtsRpcApi::delegate_blockFees(const ChainConfig& chain_config, const silkworm::BlockWithHash& block, std::vector<Receipt> & receipts, const unsigned long block_number) {
+    auto block_reward = ethash::compute_reward(chain_config, block.block);
 
-        auto config = silkworm::ChainConfig::from_json(chain_config.config).value();
-        intx::uint256 fees = 0;
-        for (int i = 0; i < receipts.size(); i++){
+    intx::uint256 ommers_reward = std::accumulate(block_reward.ommer_rewards.begin(), block_reward.ommer_rewards.end(), intx::uint256{0});
 
-            auto txn = block.block.transactions[receipts[i].tx_index];
-            intx::uint256 effective_gas_price = {0};
+    IssuanceDetails issuance{
+        .miner_reward = block_reward.miner_reward,
+        .ommers_reward = ommers_reward,
+        .total_reward = block_reward.miner_reward + ommers_reward
+    };
 
-            if (config.london_block && block_number >= config.london_block.value()){
+    return issuance;
+}
 
-                intx::uint256 base_fee = block.block.header.base_fee_per_gas.value();
-                intx::uint256 gas_price = txn.effective_gas_price(base_fee);
-                effective_gas_price = base_fee + gas_price;
+intx::uint256 OtsRpcApi::delegate_blockFees(const ChainConfig& chain_config, const silkworm::BlockWithHash& block, std::vector<Receipt> & receipts, const unsigned long block_number) {
+    auto config = silkworm::ChainConfig::from_json(chain_config.config).value();
+    intx::uint256 fees = 0;
+    for (int i = 0; i < receipts.size(); i++){
 
-            } else {
-                intx::uint256 base_fee = block.block.header.base_fee_per_gas.value();
-                effective_gas_price = txn.effective_gas_price(base_fee);
-            }
+        auto txn = block.block.transactions[receipts[i].tx_index];
+        intx::uint256 effective_gas_price = {0};
 
-            fees += effective_gas_price * receipts[i].gas_used;
+        if (config.london_block && block_number >= config.london_block.value()) {
+            intx::uint256 base_fee = block.block.header.base_fee_per_gas.value();
+            intx::uint256 gas_price = txn.effective_gas_price(base_fee);
+            effective_gas_price = base_fee + gas_price;
+
+        } else {
+            intx::uint256 base_fee = block.block.header.base_fee_per_gas.value();
+            effective_gas_price = txn.effective_gas_price(base_fee);
         }
-        return fees;
+
+        fees += effective_gas_price * receipts[i].gas_used;
     }
+    return fees;
+}
 
     } // namespace silkrpc::commands

@@ -61,13 +61,13 @@ CursorResult MemoryMutationCursor::to_first() {
 }
 
 CursorResult MemoryMutationCursor::to_first(bool throw_notfound) {
-    const auto memory_result = memory_cursor_->to_first(false);
     if (is_table_cleared()) {
-        return memory_result;
+        return memory_cursor_->to_first(throw_notfound);
     }
 
-    auto db_result = cursor_->to_first(false);
+    const auto memory_result = memory_cursor_->to_first(false);
 
+    auto db_result = cursor_->to_first(false);
     if (db_result.key && is_entry_deleted(db_result.key)) {
         db_result = next_on_db(NextType::kNormal, throw_notfound);
     }
@@ -108,7 +108,7 @@ CursorResult MemoryMutationCursor::to_next() {
 
 CursorResult MemoryMutationCursor::to_next(bool throw_notfound) {
     if (is_table_cleared()) {
-        return memory_cursor_->to_next(false);
+        return memory_cursor_->to_next(throw_notfound);
     }
 
     if (is_previous_from_db_) {
@@ -131,11 +131,11 @@ CursorResult MemoryMutationCursor::to_last() {
 }
 
 CursorResult MemoryMutationCursor::to_last(bool throw_notfound) {
-    auto memory_result = memory_cursor_->to_last(false);
     if (is_table_cleared()) {
-        return memory_result;
+        return memory_cursor_->to_last(throw_notfound);
     }
 
+    const auto memory_result = memory_cursor_->to_last(false);
     auto db_result = cursor_->to_last(false);
 
     db_result = skip_intersection(memory_result, db_result, NextType::kNormal);
@@ -260,7 +260,7 @@ CursorResult MemoryMutationCursor::to_current_next_multi() {
 
 CursorResult MemoryMutationCursor::to_current_next_multi(bool throw_notfound) {
     if (is_table_cleared()) {
-        return memory_cursor_->to_current_next_multi(false);
+        return memory_cursor_->to_current_next_multi(throw_notfound);
     }
 
     if (is_previous_from_db_) {
@@ -292,7 +292,7 @@ CursorResult MemoryMutationCursor::to_next_first_multi() {
 
 CursorResult MemoryMutationCursor::to_next_first_multi(bool throw_notfound) {
     if (is_table_cleared()) {
-        return memory_cursor_->to_next_first_multi(false);
+        return memory_cursor_->to_next_first_multi(throw_notfound);
     }
 
     if (is_previous_from_db_) {
@@ -341,7 +341,8 @@ MDBX_error_t MemoryMutationCursor::put(const Slice& /*key*/, Slice* /*value*/, M
 void MemoryMutationCursor::insert(const Slice& /*key*/, Slice /*value*/) {
 }
 
-void MemoryMutationCursor::upsert(const Slice& /*key*/, const Slice& /*value*/) {
+void MemoryMutationCursor::upsert(const Slice& key, const Slice& value) {
+    memory_mutation_->upsert(db::open_map(memory_mutation_, config_), key, value);
 }
 
 void MemoryMutationCursor::update(const Slice& /*key*/, const Slice& /*value*/) {
@@ -390,9 +391,6 @@ CursorResult MemoryMutationCursor::next_by_type(MemoryMutationCursor::NextType t
         case NextType::kNoDup: {
             return cursor_->to_next_first_multi(throw_notfound);
         }
-        default: {
-            return CursorResult{{}, {}, throw_notfound};
-        }
     }
 }
 
@@ -402,14 +400,11 @@ CursorResult MemoryMutationCursor::resolve_priority(CursorResult memory_result, 
     }
 
     db_result = skip_intersection(memory_result, db_result, type);
-    /*if (!db_result.done) {
-        return db_result;
-    }*/
 
-    if (db_result.done && db_result.value) {
+    if (db_result.done /*&& db_result.value*/) {
         current_db_entry_ = db_result;
     }
-    if (memory_result.done && memory_result.value) {
+    if (memory_result.done /*&& memory_result.value*/) {
         current_memory_entry_ = memory_result;
     }
 
@@ -437,7 +432,7 @@ CursorResult MemoryMutationCursor::skip_intersection(CursorResult memory_result,
 
     // Check for duplicates
     if (memory_result.done && db_result.done && memory_result.key == db_result.key) {
-        bool skip{false};
+        bool skip;
         if (type == NextType::kNormal) {
             skip = !cursor_->is_multi_value() || memory_result.value == db_result.value;
         } else {

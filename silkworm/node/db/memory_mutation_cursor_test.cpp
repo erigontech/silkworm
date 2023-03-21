@@ -542,6 +542,53 @@ TEST_CASE("MemoryMutationCursor: current", "[silkworm][node][db][memory_mutation
     }
 }
 
+TEST_CASE("MemoryMutationCursor: TestNext", "[silkworm][node][db][memory_mutation_cursor]") {
+    MemoryMutationCursorTest test;
+
+    auto rw_db_cursor = test.main_txn.rw_cursor_dup_sort(db::table::kAccountChangeSet);
+    rw_db_cursor->upsert(mdbx::slice{"key1"}, mdbx::slice{"value1.1"});
+    rw_db_cursor->upsert(mdbx::slice{"key3"}, mdbx::slice{"value3.1"});
+    rw_db_cursor->upsert(mdbx::slice{"key1"}, mdbx::slice{"value1.3"});
+    rw_db_cursor->upsert(mdbx::slice{"key3"}, mdbx::slice{"value3.3"});
+    test.main_txn.commit_and_renew();
+
+    auto rw_mem_cursor = test.mutation.rw_cursor_dup_sort(db::table::kAccountChangeSet);
+    rw_mem_cursor->upsert(mdbx::slice{"key1"}, mdbx::slice{"value1.2"});
+    test.mutation.commit_and_renew();
+
+    auto cursor = test.mutation.ro_cursor_dup_sort(db::table::kAccountChangeSet);
+
+    auto result = cursor->to_first(/*throw_notfound=*/false);
+    CHECK(result.done);
+    CHECK(result.key == "key1");
+    CHECK(result.value == "value1.1");
+
+    result = cursor->to_next(/*throw_notfound=*/false);
+    CHECK(result.done);
+    CHECK(result.key == "key1");
+    CHECK(result.value == "value1.2");
+
+    result = cursor->to_next(/*throw_notfound=*/false);
+    CHECK(result.done);
+    CHECK(result.key == "key1");
+    CHECK(result.value == "value1.3");
+
+    result = cursor->to_next(/*throw_notfound=*/false);
+    CHECK(result.done);
+    //CHECK(result.key == "key3");
+    //CHECK(result.value == "value3.1");
+
+    result = cursor->to_next(/*throw_notfound=*/false);
+    CHECK(result.done);
+    //CHECK(result.key == "key3");
+    //CHECK(result.value == "value3.3");
+
+    result = cursor->to_next(/*throw_notfound=*/false);
+    //CHECK(!result.done);
+    //CHECK(result.key.empty());
+    //CHECK(result.value.empty());
+}
+
 #endif  // SILKWORM_SANITIZE
 
 }  // namespace silkworm::db

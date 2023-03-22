@@ -18,6 +18,8 @@
 
 #include <stdexcept>
 
+#include <silkworm/node/common/log.hpp>
+
 namespace silkworm::db {
 
 MemoryMutationCursor::MemoryMutationCursor(MemoryMutation& memory_mutation, const MapConfig& config)
@@ -112,13 +114,13 @@ CursorResult MemoryMutationCursor::to_next(bool throw_notfound) {
     }
 
     if (is_previous_from_db_) {
-        auto db_result = next_on_db(NextType::kNormal, false);
+        const auto db_result = next_on_db(NextType::kNormal, false);
 
         const auto result = resolve_priority(current_memory_entry_, db_result, NextType::kNormal);
         if (!result.done && throw_notfound) throw_error_notfound();
         return result;
     } else {
-        auto memory_result = memory_cursor_->to_next(false);
+        const auto memory_result = memory_cursor_->to_next(false);
 
         const auto result = resolve_priority(memory_result, current_db_entry_, NextType::kNormal);
         if (!result.done && throw_notfound) throw_error_notfound();
@@ -264,16 +266,16 @@ CursorResult MemoryMutationCursor::to_current_next_multi(bool throw_notfound) {
     }
 
     if (is_previous_from_db_) {
-        auto db_result = next_on_db(NextType::kDup, false);
+        const auto db_result = next_on_db(NextType::kDup, false);
 
         const auto result = resolve_priority(current_memory_entry_, db_result, NextType::kDup);
-        if (!result.done && throw_notfound) throw_error_notfound();
+        if (!result.done) return throw_or_error_result(throw_notfound);
         return result;
     } else {
-        auto memory_result = memory_cursor_->to_current_next_multi(false);
+        const auto memory_result = memory_cursor_->to_current_next_multi(false);
 
         const auto result = resolve_priority(memory_result, current_db_entry_, NextType::kDup);
-        if (!result.done && throw_notfound) throw_error_notfound();
+        if (!result.done) return throw_or_error_result(throw_notfound);
         return result;
     }
 }
@@ -296,16 +298,16 @@ CursorResult MemoryMutationCursor::to_next_first_multi(bool throw_notfound) {
     }
 
     if (is_previous_from_db_) {
-        auto db_result = next_on_db(NextType::kNoDup, false);
+        const auto db_result = next_on_db(NextType::kNoDup, false);
 
         const auto result = resolve_priority(current_memory_entry_, db_result, NextType::kNoDup);
-        if (!result.done && throw_notfound) throw_error_notfound();
+        if (!result.done) return throw_or_error_result(throw_notfound);
         return result;
     } else {
-        auto memory_result = memory_cursor_->to_next_first_multi(false);
+        const auto memory_result = memory_cursor_->to_next_first_multi(false);
 
         const auto result = resolve_priority(memory_result, current_db_entry_, NextType::kNoDup);
-        if (!result.done && throw_notfound) throw_error_notfound();
+        if (!result.done) return throw_or_error_result(throw_notfound);
         return result;
     }
 }
@@ -398,27 +400,36 @@ CursorResult MemoryMutationCursor::next_by_type(MemoryMutationCursor::NextType t
 }
 
 CursorResult MemoryMutationCursor::resolve_priority(CursorResult memory_result, CursorResult db_result, NextType type) {
-    if (memory_result.done && memory_result.value.empty() && db_result.value.empty()) {
-        return memory_result;
+    SILK_DEBUG << "resolve_priority: memory_result.done=" << memory_result.done << " db_result.done=" << db_result.done;
+
+    if (!memory_result.done && !db_result.done) {
+        return CursorResult{{}, {}, false};
     }
 
     db_result = skip_intersection(memory_result, db_result, type);
 
-    if (db_result.done /*&& db_result.value*/) {
-        current_db_entry_ = db_result;
-    }
-    if (memory_result.done /*&& memory_result.value*/) {
-        current_memory_entry_ = memory_result;
-    }
+    current_db_entry_ = db_result.done ? db_result : CursorResult{{}, {}, false};
+    current_memory_entry_ = memory_result.done ? memory_result : CursorResult{{}, {}, false};
 
     if (memory_result.done) {
+        const auto mem_key = memory_result.key.as_string();
+        const auto mem_value = memory_result.value.as_string();
+        SILK_DEBUG << " memory_result.key=" << mem_key << " memory_result.value=" << mem_value;
+    }
+    if (db_result.done) {
+        const auto db_key = db_result.key.as_string();
+        const auto db_value = db_result.value.as_string();
+        SILK_DEBUG << " db_result.key=" << db_key << " db_result.value=" << db_value;
+    }
+
+    if (memory_result.done && db_result.done) {
         if (memory_result.key == db_result.key) {
             is_previous_from_db_ = db_result.value && (!memory_result.value || memory_result.value > db_result.value);
         } else {
             is_previous_from_db_ = db_result.value && (!memory_result.key || memory_result.key > db_result.key);
         }
     } else {
-        is_previous_from_db_ = db_result.value;
+        is_previous_from_db_ = db_result.done;
     }
 
     if (is_previous_from_db_) {
@@ -455,6 +466,13 @@ void MemoryMutationCursor::throw_error_nodata() {
 
 void MemoryMutationCursor::throw_error_notfound() {
     mdbx::error::throw_exception(MDBX_error_t::MDBX_NOTFOUND);
+}
+
+CursorResult MemoryMutationCursor::throw_or_error_result(bool throw_notfound) {
+    if (throw_notfound) {
+        throw_error_notfound();
+    }
+    return CursorResult{{}, {}, false};
 }
 
 }  // namespace silkworm::db

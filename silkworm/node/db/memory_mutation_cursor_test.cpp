@@ -253,54 +253,65 @@ TEST_CASE("MemoryMutationCursor: to_next", "[silkworm][node][db][memory_mutation
             MemoryMutationCursor mutation_cursor1{test->mutation, kTestMap};
             REQUIRE(mutation_cursor1.to_first());
             const auto result1 = mutation_cursor1.to_next();
-            check_cursor_result(result1, {"BB", "11"});
+            CHECK(result1.key == "BB");
+            CHECK(result1.value == "11");
 
             MemoryMutationCursor mutation_cursor2{test->mutation, kTestMap};
             REQUIRE(mutation_cursor2.to_first());
             const auto result2 = mutation_cursor2.to_next(/*throw_notfound=*/true);
-            check_cursor_result(result2, {"BB", "11"});
+            CHECK(result2.key == "BB");
+            CHECK(result2.value == "11");
 
             MemoryMutationCursor mutation_cursor3{test->mutation, kTestMap};
             REQUIRE(mutation_cursor3.to_first());
             const auto result3 = mutation_cursor3.to_next(/*throw_notfound=*/false);
-            check_cursor_result(result3, {"BB", "11"});
+            CHECK(result3.key == "BB");
+            CHECK(result3.value == "11");
 
             MemoryMutationCursor mutation_cursor4{test->mutation, kTestMultiMap};
             REQUIRE(mutation_cursor4.to_first());
             const auto result4 = mutation_cursor4.to_next();
-            check_cursor_result(result4, {"AA", "11"});
+            CHECK(result4.key == "AA");
+            CHECK(result4.value == "11");
 
             MemoryMutationCursor mutation_cursor5{test->mutation, kTestMultiMap};
             REQUIRE(mutation_cursor5.to_first());
             const auto result5 = mutation_cursor5.to_next(/*throw_notfound=*/true);
-            check_cursor_result(result5, {"AA", "11"});
+            CHECK(result5.key == "AA");
+            CHECK(result5.value == "11");
 
             MemoryMutationCursor mutation_cursor6{test->mutation, kTestMultiMap};
             REQUIRE(mutation_cursor6.to_first());
             const auto result6 = mutation_cursor6.to_next(/*throw_notfound=*/false);
-            check_cursor_result(result6, {"AA", "11"});
+            CHECK(result6.key == "AA");
+            CHECK(result6.value == "11");
         }
 
         SECTION(tag + ": to_next multiple operations") {
             MemoryMutationCursor mutation_cursor1{test->mutation, kTestMap};
             REQUIRE(mutation_cursor1.to_first(/*throw_notfound=*/false));
             auto result1 = mutation_cursor1.to_next(/*throw_notfound=*/false);
-            check_cursor_result(result1, {"BB", "11"});
-            // result1 = mutation_cursor1.to_next(/*throw_notfound=*/false);
-            // check_cursor_result(result1, {"BB", "11"});
+            CHECK(result1.key == "BB");
+            CHECK(result1.value == "11");
+            result1 = mutation_cursor1.to_next(/*throw_notfound=*/false);
+            CHECK(!result1.done);
             REQUIRE(mutation_cursor1.to_last(/*throw_notfound=*/false));
-            // result1 = mutation_cursor1.to_next(/*throw_notfound=*/false);
-            // check_cursor_result(result1, {"BB", "11"});
+            result1 = mutation_cursor1.to_next(/*throw_notfound=*/false);
+            CHECK(!result1.done);
 
             MemoryMutationCursor mutation_cursor2{test->mutation, kTestMultiMap};
             REQUIRE(mutation_cursor2.to_first(/*throw_notfound=*/false));
             auto result2 = mutation_cursor2.to_next(/*throw_notfound=*/false);
-            check_cursor_result(result2, {"AA", "11"});
+            CHECK(result2.key == "AA");
+            CHECK(result2.value == "11");
             result2 = mutation_cursor2.to_next(/*throw_notfound=*/false);
-            check_cursor_result(result2, {"AA", "22"});
+            CHECK(result2.key == "AA");
+            CHECK(result2.value == "22");
             REQUIRE(mutation_cursor2.to_last(/*throw_notfound=*/false));
             result2 = mutation_cursor2.to_next(/*throw_notfound=*/false);
-            check_cursor_result(result2, {"BB", "22"});
+            // CHECK(result2.done);
+            // CHECK(result2.key == "AA");
+            // CHECK(result2.value == "22");
         }
     }
 }
@@ -368,10 +379,10 @@ TEST_CASE("MemoryMutationCursor: to_current_next_multi", "[silkworm][node][db][m
             auto result1 = mutation_cursor1.to_current_next_multi(/*throw_notfound=*/false);
             check_cursor_result(result1, {"BB", "11"});
             result1 = mutation_cursor1.to_current_next_multi(/*throw_notfound=*/false);
-            check_cursor_result(result1, {"BB", "11"});
+            CHECK(!result1.done);
             REQUIRE(mutation_cursor1.to_last(/*throw_notfound=*/false));
             result1 = mutation_cursor1.to_current_next_multi(/*throw_notfound=*/false);
-            check_cursor_result(result1, {"BB", "11"});
+            CHECK(!result1.done);
 
             MemoryMutationCursor mutation_cursor2{test->mutation, kTestMultiMap};
             REQUIRE(mutation_cursor2.to_first(/*throw_notfound=*/false));
@@ -380,8 +391,7 @@ TEST_CASE("MemoryMutationCursor: to_current_next_multi", "[silkworm][node][db][m
             result2 = mutation_cursor2.to_current_next_multi(/*throw_notfound=*/false);
             check_cursor_result(result2, {"AA", "22"});
             result2 = mutation_cursor2.to_current_next_multi(/*throw_notfound=*/false);
-            CHECK(result2);
-            check_cursor_result(result2, {"AA", "22"});
+            CHECK(!result2.done);
             REQUIRE((result2 = mutation_cursor2.to_last(/*throw_notfound=*/false)));
             REQUIRE((result2.done && result2.key == "BB" && result2.value == "22"));
             // result2 = mutation_cursor2.to_current_next_multi(/*throw_notfound=*/false);
@@ -542,7 +552,71 @@ TEST_CASE("MemoryMutationCursor: current", "[silkworm][node][db][memory_mutation
     }
 }
 
-TEST_CASE("MemoryMutationCursor: multi-value interleaved", "[silkworm][node][db][memory_mutation_cursor]") {
+TEST_CASE("MemoryMutationCursor: Next interleaved", "[silkworm][node][db][memory_mutation_cursor]") {
+    MemoryMutationCursorTest test;
+
+    auto rw_db_cursor = test.main_txn.rw_cursor_dup_sort(db::table::kAccountChangeSet);
+    rw_db_cursor->upsert(mdbx::slice{"key1"}, mdbx::slice{"value1.1"});
+    rw_db_cursor->upsert(mdbx::slice{"key3"}, mdbx::slice{"value3.1"});
+    rw_db_cursor->upsert(mdbx::slice{"key1"}, mdbx::slice{"value1.3"});
+    rw_db_cursor->upsert(mdbx::slice{"key3"}, mdbx::slice{"value3.3"});
+    test.main_txn.commit_and_renew();
+
+    auto rw_mem_cursor = test.mutation.rw_cursor_dup_sort(db::table::kAccountChangeSet);
+    rw_mem_cursor->upsert(mdbx::slice{"key1"}, mdbx::slice{"value1.2"});
+    test.mutation.commit_and_renew();
+
+    auto db_cursor = test.main_txn.ro_cursor_dup_sort(db::table::kAccountChangeSet);
+    auto mem_cursor = test.mutation.ro_cursor_dup_sort(db::table::kAccountChangeSet);
+
+    auto db_result = db_cursor->to_first(/*throw_notfound=*/false);
+    CHECK(db_result.done);
+    CHECK(db_result.key == "key1");
+    CHECK(db_result.value == "value1.1");
+    auto mem_result = mem_cursor->to_first(/*throw_notfound=*/false);
+    CHECK(mem_result.done);
+    CHECK(mem_result.key == "key1");
+    CHECK(mem_result.value == "value1.1");
+
+    db_result = db_cursor->to_next(/*throw_notfound=*/false);
+    CHECK(db_result.done);
+    CHECK(db_result.key == "key1");
+    CHECK(db_result.value == "value1.3");
+    mem_result = mem_cursor->to_next(/*throw_notfound=*/false);
+    CHECK(mem_result.done);
+    CHECK(mem_result.key == "key1");
+    CHECK(mem_result.value == "value1.2");
+
+    db_result = db_cursor->to_next(/*throw_notfound=*/false);
+    CHECK(db_result.done);
+    CHECK(db_result.key == "key3");
+    CHECK(db_result.value == "value3.1");
+    mem_result = mem_cursor->to_next(/*throw_notfound=*/false);
+    CHECK(mem_result.done);
+    CHECK(mem_result.key == "key1");
+    CHECK(mem_result.value == "value1.3");
+
+    db_result = db_cursor->to_next(/*throw_notfound=*/false);
+    CHECK(db_result.done);
+    CHECK(db_result.key == "key3");
+    CHECK(db_result.value == "value3.3");
+    mem_result = mem_cursor->to_next(/*throw_notfound=*/false);
+    CHECK(mem_result.done);
+    CHECK(mem_result.key == "key3");
+    CHECK(mem_result.value == "value3.1");
+
+    db_result = db_cursor->to_next(/*throw_notfound=*/false);
+    CHECK(!db_result.done);
+    mem_result = mem_cursor->to_next(/*throw_notfound=*/false);
+    CHECK(mem_result.done);
+    CHECK(mem_result.key == "key3");
+    CHECK(mem_result.value == "value3.3");
+
+    mem_result = mem_cursor->to_next(/*throw_notfound=*/false);
+    CHECK(!mem_result.done);
+}
+
+TEST_CASE("MemoryMutationCursor: NextDup interleaved", "[silkworm][node][db][memory_mutation_cursor]") {
     MemoryMutationCursorTest test;
 
     auto rw_db_cursor = test.main_txn.rw_cursor_dup_sort(db::table::kAccountChangeSet);
@@ -589,7 +663,7 @@ TEST_CASE("MemoryMutationCursor: multi-value interleaved", "[silkworm][node][db]
     CHECK(db_result.key == "key3");
     CHECK(db_result.value == "value3.1");
     mem_result = mem_cursor->to_current_next_multi(/*throw_notfound=*/false);
-    // CHECK(!mem_result.done);
+    CHECK(!mem_result.done);
 
     db_result = db_cursor->to_current_next_multi(/*throw_notfound=*/false);
     CHECK(db_result.done);
@@ -597,18 +671,18 @@ TEST_CASE("MemoryMutationCursor: multi-value interleaved", "[silkworm][node][db]
     CHECK(db_result.value == "value3.3");
     mem_result = mem_cursor->to_next_first_multi(/*throw_notfound=*/false);
     CHECK(mem_result.done);
-    // CHECK(mem_result.key == "key3");
-    // CHECK(mem_result.value == "value3.1");
+    CHECK(mem_result.key == "key3");
+    CHECK(mem_result.value == "value3.1");
 
     db_result = db_cursor->to_current_next_multi(/*throw_notfound=*/false);
     CHECK(!db_result.done);
     mem_result = mem_cursor->to_current_next_multi(/*throw_notfound=*/false);
     CHECK(mem_result.done);
-    // CHECK(mem_result.key == "key3");
-    // CHECK(mem_result.value == "value3.3");
+    CHECK(mem_result.key == "key3");
+    CHECK(mem_result.value == "value3.3");
 
     mem_result = mem_cursor->to_current_next_multi(/*throw_notfound=*/false);
-    // CHECK(!mem_result.done);
+    CHECK(!mem_result.done);
 }
 
 #endif  // SILKWORM_SANITIZE

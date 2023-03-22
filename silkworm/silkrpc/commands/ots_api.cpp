@@ -110,8 +110,8 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetails(const nlohman
         auto receipts = co_await core::get_receipts(tx_database, block_with_hash);
         auto chain_config = co_await core::rawdb::read_chain_config(tx_database);
 
-        IssuanceDetails issuance = this->get_issuance(chain_config, block_with_hash);
-        intx::uint256 total_fees = this->delegate_blockFees(chain_config, block_with_hash, receipts, block_number);
+        IssuanceDetails issuance = get_issuance(chain_config, block_with_hash);
+        intx::uint256 total_fees = get_block_fees(chain_config, block_with_hash, receipts, block_number);
 
         const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
 
@@ -127,7 +127,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetails(const nlohman
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close();
+    co_await tx->close(); // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -156,8 +156,8 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetailsByHash(const n
         auto receipts = co_await core::get_receipts(tx_database, block_with_hash);
         auto chain_config = co_await core::rawdb::read_chain_config(tx_database);
 
-        IssuanceDetails issuance = this->get_issuance(chain_config, block_with_hash);
-        intx::uint256 total_fees = this->delegate_blockFees(chain_config, block_with_hash, receipts, block_number);
+        IssuanceDetails issuance = get_issuance(chain_config, block_with_hash);
+        intx::uint256 total_fees = get_block_fees(chain_config, block_with_hash, receipts, block_number);
 
         const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
 
@@ -197,12 +197,11 @@ IssuanceDetails OtsRpcApi::get_issuance(const ChainConfig& chain_config, const s
     return issuance;
 }
 
-intx::uint256 OtsRpcApi::delegate_blockFees(const ChainConfig& chain_config, const silkworm::BlockWithHash& block, std::vector<Receipt> & receipts, const unsigned long block_number) {
+intx::uint256 OtsRpcApi::get_block_fees(const ChainConfig& chain_config, const silkworm::BlockWithHash& block, std::vector<Receipt> & receipts, silkworm::BlockNum block_number) {
     auto config = silkworm::ChainConfig::from_json(chain_config.config).value();
     intx::uint256 fees = 0;
-    for (int i = 0; i < receipts.size(); i++){
-
-        auto txn = block.block.transactions[receipts[i].tx_index];
+    for (const auto & receipt : receipts) {
+        auto txn = block.block.transactions[receipt.tx_index];
         intx::uint256 effective_gas_price = {0};
 
         if (config.london_block && block_number >= config.london_block.value()) {
@@ -215,9 +214,9 @@ intx::uint256 OtsRpcApi::delegate_blockFees(const ChainConfig& chain_config, con
             effective_gas_price = txn.effective_gas_price(base_fee);
         }
 
-        fees += effective_gas_price * receipts[i].gas_used;
+        fees += effective_gas_price * receipt.gas_used;
     }
     return fees;
 }
 
-    } // namespace silkrpc::commands
+} // namespace silkrpc::commands

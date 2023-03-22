@@ -342,13 +342,13 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
 
     std::vector<evmc::bytes32> ommer_hashes;
     ommer_hashes.reserve(b.block.ommers.size());
-    for (auto i{0}; i < b.block.ommers.size(); i++) {
-        ommer_hashes.emplace(ommer_hashes.end(), std::move(b.block.ommers[i].hash()));
+    for (std::size_t i{0}; i < b.block.ommers.size(); i++) {
+        ommer_hashes.emplace(ommer_hashes.end(), b.block.ommers[i].hash());
         SILKRPC_DEBUG << "ommer_hashes[" << i << "]: " << silkworm::to_hex({ommer_hashes[i].bytes, silkworm::kHashLength}) << "\n";
     }
     json["block"]["uncles"] = ommer_hashes;
 
-    if(b.issuance.total_reward > 0){
+    if (b.issuance.total_reward > 0){
         json["issuance"]["minerReward"] = silkrpc::to_quantity(b.issuance.miner_reward);
         json["issuance"]["ommersReward"] = silkrpc::to_quantity(b.issuance.ommers_reward);
         json["issuance"]["totalReward"] = silkrpc::to_quantity(b.issuance.total_reward);

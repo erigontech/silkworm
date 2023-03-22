@@ -25,6 +25,7 @@
 #include <boost/asio/awaitable.hpp>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/types/log.hpp>
@@ -38,14 +39,14 @@ namespace silkrpc::http { class RequestHandler; }
 namespace silkrpc::commands {
 
 class OtsRpcApi {
-public:
+  public:
     explicit OtsRpcApi(Context& context): database_(context.database()), state_cache_(context.state_cache()) {}
     virtual ~OtsRpcApi() = default;
 
     OtsRpcApi(const OtsRpcApi&) = delete;
     OtsRpcApi& operator=(const OtsRpcApi&) = delete;
 
-protected:
+  protected:
     boost::asio::awaitable<void> handle_ots_get_api_level(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_ots_has_code(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_ots_getBlockDetails(const nlohmann::json& request, nlohmann::json& reply);
@@ -56,10 +57,9 @@ protected:
     friend class silkrpc::http::RequestHandler;
 
   private:
-
-    IssuanceDetails get_issuance(const ChainConfig& chain_config, const silkworm::BlockWithHash& block);
-    intx::uint256 delegate_blockFees(const ChainConfig& chain_config, const silkworm::BlockWithHash& block, std::vector<Receipt> & receipts, const unsigned long block_number);
-
+    static IssuanceDetails get_issuance(const ChainConfig& chain_config, const silkworm::BlockWithHash& block);
+    static intx::uint256 get_block_fees(const ChainConfig& chain_config, const silkworm::BlockWithHash& block, std::vector<Receipt>& receipts, silkworm::BlockNum block_number);
 };
+
 } // namespace silkrpc::commands
 

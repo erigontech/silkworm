@@ -56,7 +56,7 @@ boost::asio::awaitable<void> kv_seek(silkrpc::ethdb::Database& kv_db, const std:
     co_return;
 }
 
-int kv_seek_async_coroutines(const std::string& target, const std::string& table_name, const silkworm::Bytes& key, uint32_t timeout) {
+int kv_seek_async_coroutines(const std::string& target, const std::string& table_name, const silkworm::Bytes& key, uint32_t /*timeout*/) {
     try {
         // TODO(canepat): handle also secure channel for remote
         silkrpc::ChannelFactory create_channel = [&]() {
@@ -68,7 +68,7 @@ int kv_seek_async_coroutines(const std::string& target, const std::string& table
         auto io_context = context.io_context();
         auto& database = context.database();
 
-        boost::asio::co_spawn(*io_context, kv_seek(*database, table_name, key), [&](std::exception_ptr exptr) {
+        boost::asio::co_spawn(*io_context, kv_seek(*database, table_name, key), [&](std::exception_ptr) {
             context_pool.stop();
         });
 

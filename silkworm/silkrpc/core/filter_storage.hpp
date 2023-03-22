@@ -75,11 +75,11 @@ private:
 
     void clean_up();
 
+    Generator& generator_;
     std::size_t max_size_;
     std::chrono::duration<double> max_filter_age_;
     std::mutex mutex_;
     std::map<std::string, FilterEntry> storage_;
-    Generator& generator_;
 };
 
 } // namespace silkrpc::filter

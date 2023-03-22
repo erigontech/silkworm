@@ -99,9 +99,8 @@ class Context {
     std::unique_ptr<txpool::TransactionPool> tx_pool_;
     std::shared_ptr<BlockCache> block_cache_;
     std::shared_ptr<ethdb::kv::StateCache> state_cache_;
-    std::shared_ptr<mdbx::env_managed> chaindata_env_;
-
     filter::FilterStorage& filter_storage_;
+    std::shared_ptr<mdbx::env_managed> chaindata_env_;
 
     WaitMode wait_mode_;
 };

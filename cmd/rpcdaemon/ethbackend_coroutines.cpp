@@ -77,7 +77,7 @@ int ethbackend_coroutines(const std::string& target) {
 
         // Etherbase
         silkrpc::ethbackend::RemoteBackEnd eth_backend{*io_context, channel, *grpc_context};
-        boost::asio::co_spawn(*io_context, ethbackend_etherbase(eth_backend), [&](std::exception_ptr exptr) {
+        boost::asio::co_spawn(*io_context, ethbackend_etherbase(eth_backend), [&](std::exception_ptr) {
             context_pool.stop();
         });
 

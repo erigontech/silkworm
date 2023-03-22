@@ -100,11 +100,6 @@ int kv_seek_async_callback() {
     }
 
     auto timeout{absl::GetFlag(FLAGS_timeout)};
-    if (timeout < 0) {
-        std::cerr << "Parameter timeout is invalid: [" << timeout << "]\n";
-        std::cerr << "Use --timeout flag to specify the timeout in msecs for Erigon KV gRPC calls\n";
-        return -1;
-    }
 
     return kv_seek_async_callback(target, table_name, key_bytes.value(), timeout);
 }
@@ -133,11 +128,6 @@ int kv_seek_async_coroutines() {
     }
 
     auto timeout{absl::GetFlag(FLAGS_timeout)};
-    if (timeout < 0) {
-        std::cerr << "Parameter timeout is invalid: [" << timeout << "]\n";
-        std::cerr << "Use --timeout flag to specify the timeout in msecs for Erigon KV gRPC calls\n";
-        return -1;
-    }
 
     return kv_seek_async_coroutines(target, table_name, key_bytes.value(), timeout);
 }
@@ -166,11 +156,6 @@ int kv_seek_async() {
     }
 
     auto timeout{absl::GetFlag(FLAGS_timeout)};
-    if (timeout < 0) {
-        std::cerr << "Parameter timeout is invalid: [" << timeout << "]\n";
-        std::cerr << "Use --timeout flag to specify the timeout in msecs for Erigon KV gRPC calls\n";
-        return -1;
-    }
 
     return kv_seek_async(target, table_name, key_bytes.value(), timeout);
 }

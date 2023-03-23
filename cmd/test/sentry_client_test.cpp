@@ -33,22 +33,18 @@ class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
 
 boost::asio::awaitable<void> run(ISentryClient& client) {
     auto service = client.service();
-    while (true) {
-        try {
-            auto eth_version = co_await service->handshake();
-            log::Info() << "handshake success!";
-            log::Info() << "protocol: eth/" << int(eth_version);
+    try {
+        auto eth_version = co_await service->handshake();
+        log::Info() << "handshake success!";
+        log::Info() << "protocol: eth/" << int(eth_version);
 
-            auto node_info = co_await service->node_info();
-            log::Info() << "client_id: " << node_info.client_id;
+        auto node_info = co_await service->node_info();
+        log::Info() << "client_id: " << node_info.client_id;
 
-            auto peer_count = co_await service->peer_count();
-            log::Info() << "peer_count: " << peer_count;
-
-            break;
-        } catch (const rpc::GrpcStatusError& ex) {
-            log::Error() << ex.what();
-        }
+        auto peer_count = co_await service->peer_count();
+        log::Info() << "peer_count: " << peer_count;
+    } catch (const rpc::GrpcStatusError& ex) {
+        log::Error() << ex.what();
     }
 }
 

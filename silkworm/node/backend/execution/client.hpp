@@ -22,6 +22,7 @@
 
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/node/backend/execution/types.hpp>
+#include <silkworm/node/stagedsync/execution_engine.hpp>
 
 namespace silkworm::execution {
 
@@ -31,15 +32,23 @@ class Client {
   public:
     virtual ~Client() = default;
 
-    virtual awaitable<void> start() = 0;
+    virtual auto start() -> awaitable<void> = 0;
 
-    virtual awaitable<void> get_header(BlockNum block_number, Hash block_hash, BlockHeader& header) = 0;
+    virtual auto get_header(BlockNum block_number, Hash block_hash) -> awaitable<BlockHeader> = 0;
 
-    virtual awaitable<void> get_body(BlockNum block_number, Hash block_hash, BlockBody& body) = 0;
+    virtual auto get_body(BlockNum block_number, Hash block_hash) -> awaitable<BlockBody> = 0;
 
-    virtual awaitable<void> insert_headers(const BlockVector& blocks) = 0;
+    virtual auto is_canonical(Hash block_hash) -> awaitable<bool> = 0;
 
-    virtual awaitable<void> insert_bodies(const BlockVector& blocks) = 0;
+    virtual auto get_block_num(Hash block_hash) -> awaitable<BlockNum> = 0;
+
+    virtual auto insert_headers(const BlockVector& blocks) -> awaitable<void> = 0;
+
+    virtual auto insert_bodies(const BlockVector& blocks) -> awaitable<void> = 0;
+
+    virtual auto verify_chain(Hash head_block_hash) -> awaitable<stagedsync::ExecutionEngine::VerificationResult> = 0;
+
+    virtual auto notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt) -> awaitable<bool> = 0;
 };
 
 }  // namespace silkworm::execution

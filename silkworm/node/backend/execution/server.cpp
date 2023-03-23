@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "execution_server.hpp"
+#include "server.hpp"
 
 namespace silkworm::execution {
 
@@ -25,12 +25,20 @@ awaitable<void> Server::start() {
     throw std::runtime_error{"Server::start not implemented"};
 }
 
-awaitable<void> get_header(BlockNum /*block_number*/, Hash /*block_hash*/, BlockHeader& /*header*/) {
+awaitable<BlockHeader> get_header(BlockNum /*block_number*/, Hash /*block_hash*/) {
     throw std::runtime_error{"Server::get_header not implemented"};
 }
 
-awaitable<void> get_body(BlockNum /*block_number*/, Hash /*block_hash*/, BlockBody& /*body*/) {
+awaitable<BlockBody> get_body(BlockNum /*block_number*/, Hash /*block_hash*/) {
     throw std::runtime_error{"Server::get_body not implemented"};
+}
+
+awaitable<bool> is_canonical(Hash /*block_hash*/) {
+    throw std::runtime_error{"Server::is_canonical not implemented"};
+}
+
+awaitable<BlockNum> get_block_num(Hash /*block_hash*/) {
+    throw std::runtime_error{"Server::get_block_num not implemented"};
 }
 
 awaitable<void> Server::insert_headers(const BlockVector& /*blocks*/) {
@@ -39,6 +47,14 @@ awaitable<void> Server::insert_headers(const BlockVector& /*blocks*/) {
 
 awaitable<void> Server::insert_bodies(const BlockVector& /*blocks*/) {
     throw std::runtime_error{"Server::insert_bodies not implemented"};
+}
+
+auto verify_chain(Hash /*head_block_hash*/) -> awaitable<stagedsync::ExecutionEngine::VerificationResult> {
+    throw std::runtime_error{"Server::verify_chain not implemented"};
+}
+
+awaitable<bool> notify_fork_choice_update(Hash /*head_block_hash*/, std::optional<Hash> /*finalized_block_hash*/) {
+    throw std::runtime_error{"Server::notify_fork_choice_update not implemented"};
 }
 
 }  // namespace silkworm::execution

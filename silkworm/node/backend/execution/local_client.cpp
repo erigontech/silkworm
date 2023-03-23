@@ -27,12 +27,20 @@ awaitable<void> LocalClient::start() {
     throw std::runtime_error{"LocalClient::start not implemented"};
 }
 
-awaitable<void> LocalClient::get_header(BlockNum block_number, Hash block_hash, BlockHeader& header) {
-    co_await local_server_->get_header(block_number, block_hash, header);
+awaitable<BlockHeader> LocalClient::get_header(BlockNum block_number, Hash block_hash) {
+    co_return co_await local_server_->get_header(block_number, block_hash);
 }
 
-awaitable<void> LocalClient::get_body(BlockNum block_number, Hash block_hash, BlockBody& body) {
-    co_await local_server_->get_body(block_number, block_hash, body);
+awaitable<BlockBody> LocalClient::get_body(BlockNum block_number, Hash block_hash) {
+    co_return co_await local_server_->get_body(block_number, block_hash);
+}
+
+awaitable<bool> LocalClient::is_canonical(Hash block_hash) {
+    co_return co_await local_server_->is_canonical(block_hash);
+}
+
+awaitable<BlockNum> LocalClient::get_block_num(Hash block_hash) {
+    co_return co_await local_server_->get_block_num(block_hash);
 }
 
 awaitable<void> LocalClient::insert_headers(const BlockVector& blocks) {
@@ -41,6 +49,14 @@ awaitable<void> LocalClient::insert_headers(const BlockVector& blocks) {
 
 awaitable<void> LocalClient::insert_bodies(const BlockVector& blocks) {
     co_await local_server_->insert_bodies(blocks);
+}
+
+awaitable<stagedsync::ExecutionEngine::VerificationResult> LocalClient::verify_chain(Hash head_block_hash) {
+    co_return co_await local_server_->verify_chain(head_block_hash);
+}
+
+awaitable<bool> LocalClient::notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
+    co_return co_await local_server_->notify_fork_choice_update(head_block_hash, finalized_block_hash);
 }
 
 }  // namespace silkworm::execution

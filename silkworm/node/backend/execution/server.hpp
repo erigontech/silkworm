@@ -21,6 +21,7 @@
 #include <boost/asio/awaitable.hpp>
 
 #include <silkworm/node/backend/execution/types.hpp>
+#include <silkworm/node/stagedsync/execution_engine.hpp>
 
 namespace silkworm::execution {
 
@@ -28,15 +29,23 @@ using boost::asio::awaitable;
 
 class Server {
   public:
-    awaitable<void> start();
+    auto start() -> awaitable<void>;
 
-    awaitable<void> get_header(BlockNum block_number, Hash block_hash, BlockHeader& header);
+    auto get_header(BlockNum block_number, Hash block_hash) -> awaitable<BlockHeader>;
 
-    awaitable<void> get_body(BlockNum block_number, Hash block_hash, BlockBody& body);
+    auto get_body(BlockNum block_number, Hash block_hash) -> awaitable<BlockBody>;
 
-    awaitable<void> insert_headers(const BlockVector& blocks);
+    auto is_canonical(Hash block_hash) -> awaitable<bool>;
 
-    awaitable<void> insert_bodies(const BlockVector& blocks);
+    auto get_block_num(Hash block_hash) -> awaitable<BlockNum>;
+
+    auto insert_headers(const BlockVector& blocks) -> awaitable<void>;
+
+    auto insert_bodies(const BlockVector& blocks) -> awaitable<void>;
+
+    auto verify_chain(Hash head_block_hash) -> awaitable<stagedsync::ExecutionEngine::VerificationResult>;
+
+    auto notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt) -> awaitable<bool>;
 };
 
 }  // namespace silkworm::execution

@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <silkworm/node/backend/execution/execution_client.hpp>
-#include <silkworm/node/backend/execution/execution_server.hpp>
+#include <silkworm/node/backend/execution/client.hpp>
+#include <silkworm/node/backend/execution/server.hpp>
 
 namespace silkworm::execution {
 
@@ -25,15 +25,23 @@ class LocalClient : public Client {
   public:
     explicit LocalClient(Server* local_server);
 
-    awaitable<void> start() override;
+    auto start() -> awaitable<void> override;
 
-    awaitable<void> get_header(BlockNum block_number, Hash block_hash, BlockHeader& header) override;
+    auto get_header(BlockNum block_number, Hash block_hash) -> awaitable<BlockHeader> override;
 
-    awaitable<void> get_body(BlockNum block_number, Hash block_hash, BlockBody& body) override;
+    auto get_body(BlockNum block_number, Hash block_hash) -> awaitable<BlockBody> override;
 
-    awaitable<void> insert_headers(const BlockVector& blocks) override;
+    auto is_canonical(Hash block_hash) -> awaitable<bool> override;
 
-    awaitable<void> insert_bodies(const BlockVector& blocks) override;
+    auto get_block_num(Hash block_hash) -> awaitable<BlockNum> override;
+
+    auto insert_headers(const BlockVector& blocks) -> awaitable<void> override;
+
+    auto insert_bodies(const BlockVector& blocks) -> awaitable<void> override;
+
+    auto verify_chain(Hash head_block_hash) -> awaitable<stagedsync::ExecutionEngine::VerificationResult> override;
+
+    auto notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt) -> awaitable<bool> override;
 
   private:
     Server* local_server_;

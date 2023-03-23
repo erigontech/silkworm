@@ -25,7 +25,7 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/interfaces/execution/execution.grpc.pb.h>
-#include <silkworm/node/backend/execution/execution_client.hpp>
+#include <silkworm/node/backend/execution/client.hpp>
 
 namespace silkworm::execution {
 

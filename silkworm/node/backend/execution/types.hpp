@@ -16,12 +16,15 @@
 
 #pragma once
 
+#include <variant>
 #include <vector>
+#include <set>
 
 #include <silkworm/core/types/block.hpp>
 
 namespace silkworm::execution {
 
 using BlockVector = std::vector<Block>;
+
 
 }  // namespace silkworm::execution

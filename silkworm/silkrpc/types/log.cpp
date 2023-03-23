@@ -24,7 +24,16 @@ namespace silkrpc {
 
 std::ostream& operator<<(std::ostream& out, const Log& log) {
     out << "#topics: " << log.topics.size();
+    for (const auto& t : log.topics) {
+        for (const auto& b : t.bytes) {
+            out << std::hex << std::setw(2) << std::setfill('0') << int(b);
+        }
+        std::cout << " ";
+    }
     out << " #data: " << log.data.size();
+    for (const auto& b : log.data) {
+         out << std::hex << std::setw(2) << std::setfill('0') << int(b);
+    }
     out << " block_number: " << uint32_t(log.block_number);
     out << " tx_hash: " << log.tx_hash;
     out << " tx_index: " << log.tx_index;

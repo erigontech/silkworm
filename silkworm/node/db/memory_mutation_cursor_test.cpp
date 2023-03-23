@@ -290,28 +290,26 @@ TEST_CASE("MemoryMutationCursor: to_next", "[silkworm][node][db][memory_mutation
         SECTION(tag + ": to_next multiple operations") {
             MemoryMutationCursor mutation_cursor1{test->mutation, kTestMap};
             REQUIRE(mutation_cursor1.to_first(/*throw_notfound=*/false));
-            auto result1 = mutation_cursor1.to_next(/*throw_notfound=*/false);
+            const auto result1 = mutation_cursor1.to_next(/*throw_notfound=*/false);
             CHECK(result1.key == "BB");
             CHECK(result1.value == "11");
-            result1 = mutation_cursor1.to_next(/*throw_notfound=*/false);
-            CHECK(!result1.done);
+            const auto result2 = mutation_cursor1.to_next(/*throw_notfound=*/false);
+            CHECK(!result2.done);
             REQUIRE(mutation_cursor1.to_last(/*throw_notfound=*/false));
-            result1 = mutation_cursor1.to_next(/*throw_notfound=*/false);
-            CHECK(!result1.done);
+            const auto result3 = mutation_cursor1.to_next(/*throw_notfound=*/false);
+            CHECK(!result3.done);
 
             MemoryMutationCursor mutation_cursor2{test->mutation, kTestMultiMap};
             REQUIRE(mutation_cursor2.to_first(/*throw_notfound=*/false));
-            auto result2 = mutation_cursor2.to_next(/*throw_notfound=*/false);
-            CHECK(result2.key == "AA");
-            CHECK(result2.value == "11");
-            result2 = mutation_cursor2.to_next(/*throw_notfound=*/false);
-            CHECK(result2.key == "AA");
-            CHECK(result2.value == "22");
+            const auto result4 = mutation_cursor2.to_next(/*throw_notfound=*/false);
+            CHECK(result4.key == "AA");
+            CHECK(result4.value == "11");
+            const auto result5 = mutation_cursor2.to_next(/*throw_notfound=*/false);
+            CHECK(result5.key == "AA");
+            CHECK(result5.value == "22");
             REQUIRE(mutation_cursor2.to_last(/*throw_notfound=*/false));
-            result2 = mutation_cursor2.to_next(/*throw_notfound=*/false);
-            // CHECK(result2.done);
-            // CHECK(result2.key == "AA");
-            // CHECK(result2.value == "22");
+            const auto result6 = mutation_cursor2.to_next(/*throw_notfound=*/false);
+            CHECK(!result6.done);
         }
     }
 }
@@ -394,8 +392,8 @@ TEST_CASE("MemoryMutationCursor: to_current_next_multi", "[silkworm][node][db][m
             CHECK(!result2.done);
             REQUIRE((result2 = mutation_cursor2.to_last(/*throw_notfound=*/false)));
             REQUIRE((result2.done && result2.key == "BB" && result2.value == "22"));
-            // result2 = mutation_cursor2.to_current_next_multi(/*throw_notfound=*/false);
-            // check_cursor_result(result2, {"BB", "22"});
+            result2 = mutation_cursor2.to_current_next_multi(/*throw_notfound=*/false);
+            CHECK(!result2.done);
         }
     }
 }
@@ -461,8 +459,8 @@ TEST_CASE("MemoryMutationCursor: to_last", "[silkworm][node][db][memory_mutation
             MemoryMutationCursor mutation_cursor2{test->mutation, kTestMultiMap};
             auto result2 = mutation_cursor2.to_last();
             check_cursor_result(result2, {"BB", "22"});
-            /*result2 = mutation_cursor2.to_last();
-            check_cursor_result(result2, {"BB", "22"});*/
+            result2 = mutation_cursor2.to_last();
+            check_cursor_result(result2, {"BB", "22"});
         }
     }
 }

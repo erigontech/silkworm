@@ -143,11 +143,18 @@ CursorResult MemoryMutationCursor::to_last(bool throw_notfound) {
     db_result = skip_intersection(memory_result, db_result, NextType::kNormal);
 
     // Basic checks
-    if (db_result.done && db_result.value) {
-        current_db_entry_ = db_result;
+    current_db_entry_ = db_result.done ? db_result : CursorResult{{}, {}, false};
+    current_memory_entry_ = memory_result.done ? memory_result : CursorResult{{}, {}, false};
+
+    if (memory_result.done) {
+        const auto mem_key = memory_result.key.as_string();
+        const auto mem_value = memory_result.value.as_string();
+        SILK_DEBUG << " to_last: memory_result.key=" << mem_key << " memory_result.value=" << mem_value;
     }
-    if (memory_result.done && memory_result.value) {
-        current_memory_entry_ = memory_result;
+    if (db_result.done) {
+        const auto db_key = db_result.key.as_string();
+        const auto db_value = db_result.value.as_string();
+        SILK_DEBUG << " to_last: db_result.key=" << db_key << " db_result.value=" << db_value;
     }
 
     if (db_result.done && db_result.key && is_entry_deleted(db_result.key)) {
@@ -173,20 +180,20 @@ CursorResult MemoryMutationCursor::to_last(bool throw_notfound) {
     const auto key_diff = Slice::compare_fast(memory_result.key, db_result.key);
     if (key_diff == 0) {
         if (memory_result.value > db_result.value) {
-            current_db_entry_ = CursorResult{{}, {}, true};
+            current_db_entry_ = CursorResult{{}, {}, false};
             is_previous_from_db_ = false;
             return memory_result;
         } else {
-            current_memory_entry_ = CursorResult{{}, {}, true};
+            current_memory_entry_ = CursorResult{{}, {}, false};
             is_previous_from_db_ = true;
             return db_result;
         }
     } else if (key_diff > 0) {
-        current_db_entry_ = CursorResult{{}, {}, true};
+        current_db_entry_ = CursorResult{{}, {}, false};
         is_previous_from_db_ = false;
         return memory_result;
     } else {  // key_diff < 0
-        current_memory_entry_ = CursorResult{{}, {}, true};
+        current_memory_entry_ = CursorResult{{}, {}, false};
         is_previous_from_db_ = true;
         return db_result;
     }

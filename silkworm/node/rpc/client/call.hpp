@@ -46,11 +46,10 @@ class GrpcStatusError : public std::runtime_error {
 };
 
 template <class Stub, class Request, class Response>
-boost::asio::awaitable<void> unary_rpc(
+boost::asio::awaitable<Response> unary_rpc(
     agrpc::detail::ClientUnaryRequest<Stub, Request, grpc::ClientAsyncResponseReader<Response>> rpc,
     std::unique_ptr<Stub>& stub,
-    const Request& request,
-    Response& reply,
+    Request request,
     agrpc::GrpcContext& grpc_context) {
     grpc::ClientContext client_context;
     client_context.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(10));
@@ -58,12 +57,15 @@ boost::asio::awaitable<void> unary_rpc(
     std::unique_ptr<grpc::ClientAsyncResponseReader<Response>> reader =
         agrpc::request(rpc, stub, client_context, request, grpc_context);
 
+    Response reply;
     grpc::Status status;
     co_await agrpc::finish(reader, reply, status, boost::asio::bind_executor(grpc_context, boost::asio::use_awaitable));
 
     if (!status.ok()) {
         throw GrpcStatusError(std::move(status));
     }
+
+    co_return reply;
 }
 
 template <class Stub, class Request, class Response>

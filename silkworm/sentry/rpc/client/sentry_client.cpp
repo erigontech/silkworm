@@ -65,15 +65,13 @@ class SentryClientImpl final : public api::api_common::Service {
     // rpc SetStatus(StatusData) returns (SetStatusReply);
     awaitable<void> set_status(eth::StatusData status_data) override {
         proto::StatusData request = interfaces::proto_status_data_from_status_data(status_data);
-        proto::SetStatusReply reply;
-        co_await sw_rpc::unary_rpc(&Stub::AsyncSetStatus, stub_, request, reply, grpc_context_);
+        co_await sw_rpc::unary_rpc(&Stub::AsyncSetStatus, stub_, std::move(request), grpc_context_);
     }
 
     // rpc HandShake(google.protobuf.Empty) returns (HandShakeReply);
     awaitable<uint8_t> handshake() override {
         google::protobuf::Empty request;
-        proto::HandShakeReply reply;
-        co_await sw_rpc::unary_rpc(&Stub::AsyncHandShake, stub_, request, reply, grpc_context_);
+        proto::HandShakeReply reply = co_await sw_rpc::unary_rpc(&Stub::AsyncHandShake, stub_, std::move(request), grpc_context_);
         uint8_t result = interfaces::eth_version_from_protocol(reply.protocol());
         co_return result;
     }
@@ -81,8 +79,7 @@ class SentryClientImpl final : public api::api_common::Service {
     // rpc NodeInfo(google.protobuf.Empty) returns(types.NodeInfoReply);
     awaitable<NodeInfo> node_info() override {
         google::protobuf::Empty request;
-        types::NodeInfoReply reply;
-        co_await sw_rpc::unary_rpc(&Stub::AsyncNodeInfo, stub_, request, reply, grpc_context_);
+        types::NodeInfoReply reply = co_await sw_rpc::unary_rpc(&Stub::AsyncNodeInfo, stub_, std::move(request), grpc_context_);
         auto result = interfaces::node_info_from_proto_node_info(reply);
         co_return result;
     }
@@ -93,8 +90,7 @@ class SentryClientImpl final : public api::api_common::Service {
         request.mutable_data()->CopyFrom(interfaces::outbound_data_from_message(message));
         request.mutable_peer_id()->CopyFrom(interfaces::peer_id_from_public_key(public_key));
 
-        proto::SentPeers reply;
-        co_await sw_rpc::unary_rpc(&Stub::AsyncSendMessageById, stub_, request, reply, grpc_context_);
+        proto::SentPeers reply = co_await sw_rpc::unary_rpc(&Stub::AsyncSendMessageById, stub_, std::move(request), grpc_context_);
         auto result = interfaces::peer_keys_from_sent_peers_ids(reply);
         co_return result;
     }
@@ -105,8 +101,7 @@ class SentryClientImpl final : public api::api_common::Service {
         request.mutable_data()->CopyFrom(interfaces::outbound_data_from_message(message));
         request.set_max_peers(max_peers);
 
-        proto::SentPeers reply;
-        co_await sw_rpc::unary_rpc(&Stub::AsyncSendMessageToRandomPeers, stub_, request, reply, grpc_context_);
+        proto::SentPeers reply = co_await sw_rpc::unary_rpc(&Stub::AsyncSendMessageToRandomPeers, stub_, std::move(request), grpc_context_);
         auto result = interfaces::peer_keys_from_sent_peers_ids(reply);
         co_return result;
     }
@@ -114,8 +109,7 @@ class SentryClientImpl final : public api::api_common::Service {
     // rpc SendMessageToAll(OutboundMessageData) returns (SentPeers);
     awaitable<PeerKeys> send_message_to_all(common::Message message) override {
         proto::OutboundMessageData request = interfaces::outbound_data_from_message(message);
-        proto::SentPeers reply;
-        co_await sw_rpc::unary_rpc(&Stub::AsyncSendMessageToAll, stub_, request, reply, grpc_context_);
+        proto::SentPeers reply = co_await sw_rpc::unary_rpc(&Stub::AsyncSendMessageToAll, stub_, std::move(request), grpc_context_);
         auto result = interfaces::peer_keys_from_sent_peers_ids(reply);
         co_return result;
     }
@@ -128,8 +122,7 @@ class SentryClientImpl final : public api::api_common::Service {
         // request.set_min_block()
         request.set_max_peers(max_peers);
 
-        proto::SentPeers reply;
-        co_await sw_rpc::unary_rpc(&Stub::AsyncSendMessageByMinBlock, stub_, request, reply, grpc_context_);
+        proto::SentPeers reply = co_await sw_rpc::unary_rpc(&Stub::AsyncSendMessageByMinBlock, stub_, std::move(request), grpc_context_);
         auto result = interfaces::peer_keys_from_sent_peers_ids(reply);
         co_return result;
     }
@@ -140,8 +133,7 @@ class SentryClientImpl final : public api::api_common::Service {
         request.mutable_peer_id()->CopyFrom(interfaces::peer_id_from_public_key(public_key));
         // TODO: set_min_block
         // request.set_min_block()
-        google::protobuf::Empty reply;
-        co_await sw_rpc::unary_rpc(&Stub::AsyncPeerMinBlock, stub_, request, reply, grpc_context_);
+        co_await sw_rpc::unary_rpc(&Stub::AsyncPeerMinBlock, stub_, std::move(request), grpc_context_);
     }
 
     // rpc Messages(MessagesRequest) returns (stream InboundMessage);
@@ -170,8 +162,7 @@ class SentryClientImpl final : public api::api_common::Service {
     // rpc Peers(google.protobuf.Empty) returns (PeersReply);
     awaitable<PeerInfos> peers() override {
         google::protobuf::Empty request;
-        proto::PeersReply reply;
-        co_await sw_rpc::unary_rpc(&Stub::AsyncPeers, stub_, request, reply, grpc_context_);
+        proto::PeersReply reply = co_await sw_rpc::unary_rpc(&Stub::AsyncPeers, stub_, std::move(request), grpc_context_);
         auto result = interfaces::peer_infos_from_proto_peers_reply(reply);
         co_return result;
     }
@@ -179,8 +170,7 @@ class SentryClientImpl final : public api::api_common::Service {
     // rpc PeerCount(PeerCountRequest) returns (PeerCountReply);
     awaitable<size_t> peer_count() override {
         proto::PeerCountRequest request;
-        proto::PeerCountReply reply;
-        co_await sw_rpc::unary_rpc(&Stub::AsyncPeerCount, stub_, request, reply, grpc_context_);
+        proto::PeerCountReply reply = co_await sw_rpc::unary_rpc(&Stub::AsyncPeerCount, stub_, std::move(request), grpc_context_);
         auto result = static_cast<size_t>(reply.count());
         co_return result;
     }
@@ -189,8 +179,7 @@ class SentryClientImpl final : public api::api_common::Service {
     awaitable<std::optional<PeerInfo>> peer_by_id(common::EccPublicKey public_key) override {
         proto::PeerByIdRequest request;
         request.mutable_peer_id()->CopyFrom(interfaces::peer_id_from_public_key(public_key));
-        proto::PeerByIdReply reply;
-        co_await sw_rpc::unary_rpc(&Stub::AsyncPeerById, stub_, request, reply, grpc_context_);
+        proto::PeerByIdReply reply = co_await sw_rpc::unary_rpc(&Stub::AsyncPeerById, stub_, std::move(request), grpc_context_);
         auto result = interfaces::peer_info_opt_from_proto_peer_reply(reply);
         co_return result;
     }
@@ -200,16 +189,14 @@ class SentryClientImpl final : public api::api_common::Service {
         proto::PenalizePeerRequest request;
         request.mutable_peer_id()->CopyFrom(interfaces::peer_id_from_public_key(public_key));
         request.set_penalty(proto::PenaltyKind::Kick);
-        google::protobuf::Empty reply;
-        co_await sw_rpc::unary_rpc(&Stub::AsyncPenalizePeer, stub_, request, reply, grpc_context_);
+        co_await sw_rpc::unary_rpc(&Stub::AsyncPenalizePeer, stub_, std::move(request), grpc_context_);
     }
 
     // rpc PeerUseless(PeerUselessRequest) returns (google.protobuf.Empty);
     awaitable<void> peer_useless(common::EccPublicKey public_key) override {
         proto::PeerUselessRequest request;
         request.mutable_peer_id()->CopyFrom(interfaces::peer_id_from_public_key(public_key));
-        google::protobuf::Empty reply;
-        co_await sw_rpc::unary_rpc(&Stub::AsyncPeerUseless, stub_, request, reply, grpc_context_);
+        co_await sw_rpc::unary_rpc(&Stub::AsyncPeerUseless, stub_, std::move(request), grpc_context_);
     }
 
     // rpc PeerEvents(PeerEventsRequest) returns (stream PeerEvent);

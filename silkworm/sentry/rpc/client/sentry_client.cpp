@@ -16,8 +16,12 @@
 
 #include "sentry_client.hpp"
 
+#include <functional>
 #include <stdexcept>
 
+#include <silkworm/node/concurrency/coroutine.hpp>
+
+#include <boost/asio/awaitable.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <grpcpp/grpcpp.h>
 #include <p2psentry/sentry.grpc.pb.h>
@@ -46,7 +50,7 @@ static std::shared_ptr<grpc::Channel> make_grpc_channel(const std::string& addre
     return grpc::CreateChannel(address_uri, grpc::InsecureChannelCredentials());
 }
 
-class SentryClientImpl final : public ISentryClient, private api::api_common::Service {
+class SentryClientImpl final : public api::api_common::Service {
   public:
     explicit SentryClientImpl(const std::string& address_uri, agrpc::GrpcContext& grpc_context)
         : stub_(proto::Sentry::NewStub(make_grpc_channel(address_uri))),
@@ -56,10 +60,6 @@ class SentryClientImpl final : public ISentryClient, private api::api_common::Se
 
     SentryClientImpl(const SentryClientImpl&) = delete;
     SentryClientImpl& operator=(const SentryClientImpl&) = delete;
-
-    awaitable<void> service(std::function<awaitable<void>(api::api_common::Service&)> consumer) override {
-        return consumer(*this);
-    }
 
   private:
     // rpc SetStatus(StatusData) returns (SetStatusReply);
@@ -235,14 +235,14 @@ class SentryClientImpl final : public ISentryClient, private api::api_common::Se
 };
 
 SentryClient::SentryClient(const std::string& address_uri, agrpc::GrpcContext& grpc_context)
-    : p_impl_(std::make_unique<SentryClientImpl>(address_uri, grpc_context)) {}
+    : p_impl_(std::make_shared<SentryClientImpl>(address_uri, grpc_context)) {}
 
 SentryClient::~SentryClient() {
     log::Trace() << "silkworm::sentry::rpc::client::SentryClient::~SentryClient";
 }
 
-awaitable<void> SentryClient::service(std::function<awaitable<void>(api::api_common::Service&)> consumer) {
-    return p_impl_->service(std::move(consumer));
+std::shared_ptr<api::api_common::Service> SentryClient::service() {
+    return p_impl_;
 }
 
 }  // namespace silkworm::sentry::rpc::client

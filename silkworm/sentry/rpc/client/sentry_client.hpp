@@ -16,15 +16,10 @@
 
 #pragma once
 
-#include <functional>
 #include <memory>
-#include <optional>
 #include <string>
 
-#include <silkworm/node/concurrency/coroutine.hpp>
-
 #include <agrpc/detail/forward.hpp>
-#include <boost/asio/awaitable.hpp>
 
 #include <silkworm/sentry/api/api_common/service.hpp>
 
@@ -32,18 +27,9 @@ namespace silkworm::sentry::rpc::client {
 
 // TODO: move to a common place for all clients
 struct ISentryClient {
-    virtual ~ISentryClient() = 0;
+    virtual ~ISentryClient() = default;
 
-    virtual boost::asio::awaitable<void> service(std::function<boost::asio::awaitable<void>(api::api_common::Service&)> consumer) = 0;
-
-    template <typename TResult>
-    boost::asio::awaitable<TResult> service(std::function<boost::asio::awaitable<TResult>(api::api_common::Service&)> consumer) {
-        std::optional<TResult> result;
-        co_await service([consumer = std::move(consumer), &result](api::api_common::Service& service) -> boost::asio::awaitable<void> {
-            *result = co_await consumer(service);
-        });
-        co_return std::move(*result);
-    }
+    virtual std::shared_ptr<api::api_common::Service> service() = 0;
 };
 
 class SentryClientImpl;
@@ -53,13 +39,13 @@ class SentryClient : public ISentryClient {
     explicit SentryClient(const std::string& address_uri, agrpc::GrpcContext& grpc_context);
     ~SentryClient() override;
 
-    SentryClient(const SentryClient&) = delete;
-    SentryClient& operator=(const SentryClient&) = delete;
+    SentryClient(SentryClient&&) = default;
+    SentryClient& operator=(SentryClient&&) = default;
 
-    boost::asio::awaitable<void> service(std::function<boost::asio::awaitable<void>(api::api_common::Service&)> consumer) override;
+    std::shared_ptr<api::api_common::Service> service() override;
 
   private:
-    std::unique_ptr<SentryClientImpl> p_impl_;
+    std::shared_ptr<SentryClientImpl> p_impl_;
 };
 
 }  // namespace silkworm::sentry::rpc::client

@@ -2257,6 +2257,7 @@ boost::asio::awaitable<roaring::Roaring> EthereumRpcApi::get_addresses_bitmap(co
 
 std::vector<Log> EthereumRpcApi::filter_logs(std::vector<Log>& logs, const Filter& filter) {
     std::vector<Log> filtered_logs;
+    filtered_logs.reserve(128);
 
     auto addresses = filter.addresses;
     auto topics = filter.topics;

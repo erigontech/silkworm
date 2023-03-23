@@ -604,12 +604,12 @@ TEST_CASE("MemoryMutationCursor: current", "[silkworm][node][db][memory_mutation
             REQUIRE(mutation_cursor1.to_last());
             const auto result3 = mutation_cursor1.current();
             CHECK(result3.done);
-            CHECK(result3.key == "AA");
-            CHECK(result3.value == "00");
+            CHECK(result3.key == "BB");
+            CHECK(result3.value == "11");
             const auto result4 = mutation_cursor1.current();
             CHECK(result4.done);
-            CHECK(result4.key == "AA");
-            CHECK(result4.value == "00");
+            CHECK(result4.key == "BB");
+            CHECK(result4.value == "11");
 
             MemoryMutationCursor mutation_cursor2{test->mutation, kTestMultiMap};
             REQUIRE(mutation_cursor2.to_first());
@@ -621,11 +621,15 @@ TEST_CASE("MemoryMutationCursor: current", "[silkworm][node][db][memory_mutation
             CHECK(result6.done);
             CHECK(result6.key == "AA");
             CHECK(result6.value == "00");
-            /*REQUIRE(mutation_cursor2.to_last());
-            result2 = mutation_cursor2.current();
-            check_cursor_result(result2, {"BB", "22"});
-            result2 = mutation_cursor2.current();
-            check_cursor_result(result2, {"BB", "22"});*/
+            REQUIRE(mutation_cursor2.to_last());
+            const auto result7 = mutation_cursor2.current();
+            CHECK(result7.done);
+            CHECK(result7.key == "BB");
+            CHECK(result7.value == "22");
+            const auto result8 = mutation_cursor2.current();
+            CHECK(result8.done);
+            CHECK(result8.key == "BB");
+            CHECK(result8.value == "22");
         }
     }
 }

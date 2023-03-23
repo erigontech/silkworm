@@ -158,21 +158,25 @@ CursorResult MemoryMutationCursor::to_last(bool throw_notfound) {
     }
 
     if (db_result.done && db_result.key && is_entry_deleted(db_result.key)) {
+        current_pair_ = current_memory_entry_;
         current_db_entry_ = CursorResult{{}, {}, true};
-        is_previous_from_db_ = true;
+        is_previous_from_db_ = false;
         if (!memory_result.done && throw_notfound) throw_error_notfound();
         return memory_result;
     }
 
     if (!db_result.done || (db_result.done && !db_result.value)) {
+        current_pair_ = current_memory_entry_;
         is_previous_from_db_ = false;
         if (!memory_result.done && throw_notfound) throw_error_notfound();
         return memory_result;
     }
 
     if (!memory_result.done || (memory_result.done && !memory_result.value)) {
+        current_pair_ = current_db_entry_;
         is_previous_from_db_ = true;
         if (!db_result.done && throw_notfound) throw_error_notfound();
+        SILK_DEBUG << " to_last: db_key=" << db_result.key.as_string() << " db_value=" << db_result.value.as_string();
         return db_result;
     }
 
@@ -180,19 +184,23 @@ CursorResult MemoryMutationCursor::to_last(bool throw_notfound) {
     const auto key_diff = Slice::compare_fast(memory_result.key, db_result.key);
     if (key_diff == 0) {
         if (memory_result.value > db_result.value) {
+            current_pair_ = current_memory_entry_;
             current_db_entry_ = CursorResult{{}, {}, false};
             is_previous_from_db_ = false;
             return memory_result;
         } else {
+            current_pair_ = current_db_entry_;
             current_memory_entry_ = CursorResult{{}, {}, false};
             is_previous_from_db_ = true;
             return db_result;
         }
     } else if (key_diff > 0) {
+        current_pair_ = current_memory_entry_;
         current_db_entry_ = CursorResult{{}, {}, false};
         is_previous_from_db_ = false;
         return memory_result;
     } else {  // key_diff < 0
+        current_pair_ = current_db_entry_;
         current_memory_entry_ = CursorResult{{}, {}, false};
         is_previous_from_db_ = true;
         return db_result;

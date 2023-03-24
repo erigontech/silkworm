@@ -151,7 +151,6 @@ if(NOT SILKWORM_CORE_ONLY)
   add_subdirectory(third_party/glaze)
 endif()
 
-
 # evmone with dependencies
 if(SILKWORM_WASM_API)
   add_compile_definitions(EVMC_LOADER_MOCK)

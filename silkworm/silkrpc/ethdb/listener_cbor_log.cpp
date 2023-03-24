@@ -1,5 +1,6 @@
+
 /*
-   Copyright 2014-2015 Stanislav Ovsyannikov
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -7,11 +8,11 @@
 
        http://www.apache.org/licenses/LICENSE-2.0
 
-	   Unless required by applicable law or agreed to in writing, software
-	   distributed under the License is distributed on an "AS IS" BASIS,
-	   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-	   See the License for the specific language governing permissions and
-	   limitations under the License.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
 
 #include <iostream>
@@ -34,7 +35,7 @@ namespace silkrpc {
 
     void listener_cbor_log::on_bytes(unsigned char *data, int size) {
         if (state_ == WAIT_ADDRESS) {
-           curr_log_.address = std::move(silkworm::to_evmc_address(silkworm::Bytes{data, static_cast<long unsigned int>(size)}));
+           curr_log_.address = silkworm::to_evmc_address(silkworm::Bytes{data, static_cast<long unsigned int>(size)});
            state_ = WAIT_NTOPICS;
         } else if (state_ == WAIT_TOPICS) {
            evmc::bytes32 out;
@@ -44,7 +45,7 @@ namespace silkrpc {
               state_ = WAIT_DATA;
            }
         } else if (state_ == WAIT_DATA) {
-           curr_log_.data = std::move(silkworm::Bytes{data, static_cast<long unsigned int>(size)});
+           curr_log_.data = silkworm::Bytes{data, static_cast<long unsigned int>(size)};
            logs_.emplace_back(std::move(curr_log_));
            curr_log_.topics.clear();
            state_ = WAIT_NFIELDS;
@@ -78,7 +79,7 @@ namespace silkrpc {
     }
 
     void listener_cbor_log::on_null() {
-        curr_log_.data = std::move(silkworm::Bytes{});
+        curr_log_.data = silkworm::Bytes{};
         logs_.emplace_back(std::move(curr_log_));
         curr_log_.topics.clear();
            

@@ -36,7 +36,7 @@ std::ostream& operator<<(std::ostream& out, Context& c) {
 }
 
 Context::Context(
-    ChannelFactory create_channel,
+    std::shared_ptr<grpc::Channel> channel,
     std::shared_ptr<BlockCache> block_cache,
     std::shared_ptr<ethdb::kv::StateCache> state_cache,
     std::shared_ptr<mdbx::env_managed> chaindata_env,
@@ -49,7 +49,6 @@ Context::Context(
       state_cache_(state_cache),
       chaindata_env_(chaindata_env),
       wait_mode_(wait_mode) {
-    std::shared_ptr<grpc::Channel> channel = create_channel();
     if (chaindata_env) {
         database_ = std::make_unique<ethdb::file::LocalDatabase>(chaindata_env);
     } else {
@@ -146,7 +145,7 @@ ContextPool::ContextPool(std::size_t pool_size, ChannelFactory create_channel, s
 
     // Create as many execution contexts as required by the pool size
     for (std::size_t i{0}; i < pool_size; ++i) {
-        contexts_.emplace_back(Context{create_channel, block_cache, state_cache, chain_env, wait_mode});
+        contexts_.emplace_back(Context{create_channel(), block_cache, state_cache, chain_env, wait_mode});
         SILKRPC_DEBUG << "ContextPool::ContextPool context[" << i << "] " << contexts_[i] << "\n";
     }
 }

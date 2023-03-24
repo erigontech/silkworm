@@ -27,10 +27,8 @@ using Catch::Matchers::Message;
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("TraceRpcApi") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
-    ChannelFactory create_channel = []() {
-        return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials());
-    };
-    Context context{create_channel, std::make_shared<BlockCache>(), std::make_shared<ethdb::kv::CoherentStateCache>()};
+    auto channel = grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials());
+    Context context{channel, std::make_shared<BlockCache>(), std::make_shared<ethdb::kv::CoherentStateCache>()};
     boost::asio::thread_pool workers{1};
 
     SECTION("CTOR") {

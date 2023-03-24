@@ -41,3 +41,6 @@
 [submodule "third_party/expected"]
 	path = third_party/expected
 	url = https://github.com/TartanLlama/expected.git
+[submodule "third_party/glaze"]
+	path = third_party/glaze
+	url = https://github.com/stephenberry/glaze

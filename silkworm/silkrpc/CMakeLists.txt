@@ -75,5 +75,6 @@ add_dependencies(silkrpc generate_ethbackend_grpc generate_kv_grpc generate_mini
 target_include_directories(silkrpc PUBLIC
         ${SILKWORM_MAIN_DIR}
         ${SILKWORM_MAIN_SRC_DIR}/interfaces
+        ${SILKWORM_MAIN_DIR}/third_party/glaze/include
         ${SILKWORM_MAIN_DIR}/third_party/evmone/lib)
 target_link_libraries(silkrpc PUBLIC ${SILKRPC_LIBRARIES})

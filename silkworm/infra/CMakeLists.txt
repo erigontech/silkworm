@@ -50,10 +50,12 @@ set(LIBS_PUBLIC
   silkworm_interfaces
 )
 
+# cmake-format: off
 set(LIBS_PRIVATE
-  absl::time
-  Boost::container # required for asio-grpc
+    absl::time
+    Boost::container # required for asio-grpc
 )
+# cmake-format: on
 if(MSVC)
     list(APPEND LIBS_PRIVATE ntdll.lib)
 endif(MSVC)

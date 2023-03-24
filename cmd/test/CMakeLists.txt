@@ -32,18 +32,18 @@ find_package(Microsoft.GSL REQUIRED)
 file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/core/*_test.cpp")
 add_executable(core_test unit_test.cpp ${SILKWORM_CORE_TESTS})
 
+# cmake-format: off
 set(CORE_TEST_LIBS
-  silkworm_core
-  Catch2::Catch2
-  evmone
+    silkworm_core
+    Catch2::Catch2
+    evmone
 )
+# cmake-format: on
 
 if(CORE_TEST_ABSEIL_ENABLED)
-  list(APPEND CORE_TEST_LIBS
-    absl::flat_hash_map
-    absl::flat_hash_set
-    absl::node_hash_map
-  )
+  list(APPEND CORE_TEST_LIBS absl::flat_hash_map)
+  list(APPEND CORE_TEST_LIBS absl::flat_hash_set)
+  list(APPEND CORE_TEST_LIBS absl::node_hash_map)
 endif()
 
 target_link_libraries(core_test ${CORE_TEST_LIBS})

@@ -41,11 +41,14 @@ target_include_directories(silkrpc_toolbox PRIVATE ${CMAKE_SOURCE_DIR})
 target_link_libraries(silkrpc_toolbox absl::flags_parse gRPC::grpc++ protobuf::libprotobuf silkrpc)
 
 # Silkrpc daemon
+# cmake-format: off
 set(SILKRPC_DAEMON_LIBRARIES
     silkworm-buildinfo
     silkrpc
     absl::flags_parse
-    CLI11::CLI11)
+    CLI11::CLI11
+)
+# cmake-format: on
 if(SILKWORM_USE_MIMALLOC)
     list(APPEND SILKRPC_DAEMON_LIBRARIES mimalloc)
 endif()

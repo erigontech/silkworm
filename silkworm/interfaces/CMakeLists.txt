@@ -28,12 +28,15 @@ list(APPEND SILKWORM_INTERFACE_SRC "${TXPOOL_SOURCES_SYMLINK}")
 
 add_library(silkworm_interfaces "${SILKWORM_INTERFACE_SRC}")
 
-add_dependencies(silkworm_interfaces
+# cmake-format: off
+add_dependencies(
+  silkworm_interfaces
   generate_types_proto_symlink
   generate_sentry_grpc_symlink
   generate_remote_grpc_symlink
   generate_txpool_grpc_symlink
 )
+# cmake-format: on
 
 if(NOT MSVC)
     target_compile_options(silkworm_interfaces PRIVATE -Wno-sign-conversion)

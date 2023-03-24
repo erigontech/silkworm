@@ -74,11 +74,15 @@ if(SILKWORM_SANITIZE)
   target_compile_definitions(silkworm_node PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
 endif()
 
-target_include_directories(silkworm_node PUBLIC
-        ${SILKWORM_MAIN_DIR}
-        ${SILKWORM_MAIN_DIR}/third_party/magic_enum/include
-        ${SILKWORM_MAIN_DIR}/third_party/libtorrent/include
-        ${SILKWORM_MAIN_DIR}/third_party/tomlplusplus)
+# cmake-format: off
+target_include_directories(
+  silkworm_node
+  PUBLIC "${SILKWORM_MAIN_DIR}"
+         "${SILKWORM_MAIN_DIR}/third_party/magic_enum/include"
+         "${SILKWORM_MAIN_DIR}/third_party/libtorrent/include"
+         "${SILKWORM_MAIN_DIR}/third_party/tomlplusplus"
+)
+# cmake-format: on
 
 set(SILKWORM_NODE_PUBLIC_LIBS
   absl::btree
@@ -97,11 +101,13 @@ set(SILKWORM_NODE_PUBLIC_LIBS
   torrent-rasterbar
 )
 
+# cmake-format: off
 set(SILKWORM_NODE_PRIVATE_LIBS
-  cborcpp
-  evmone
-  silkworm_interfaces
+    cborcpp
+    evmone
+    silkworm_interfaces
 )
+# cmake-format: on
 if(MSVC)
   list(APPEND SILKWORM_NODE_PRIVATE_LIBS ntdll.lib)
 endif(MSVC)

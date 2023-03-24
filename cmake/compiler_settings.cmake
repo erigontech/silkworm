@@ -14,7 +14,9 @@
    limitations under the License.
 ]]
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+# cmake-format: off
+
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
   message("MSVC_VERSION = ${MSVC_VERSION}")
   message("MSVC_CXX_ARCHITECTURE_ID = ${MSVC_CXX_ARCHITECTURE_ID}")
@@ -113,8 +115,10 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
     link_libraries(c++abi)
   endif()
 
-else ()
+else()
 
- message(WARNING "${CMAKE_CXX_COMPILER_ID} is not tested. Should you stumble into any issue please report at https://github.com/torquem-ch/silkworm/issues")
+  message(WARNING "${CMAKE_CXX_COMPILER_ID} is not tested. Should you stumble into any issue please report at https://github.com/torquem-ch/silkworm/issues")
 
 endif()
+
+# cmake-format: on

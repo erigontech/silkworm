@@ -46,11 +46,14 @@ if(SILKWORM_SANITIZE)
     target_compile_definitions(${TARGET} PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
 endif()
 
-target_include_directories(${TARGET} PUBLIC
-  "${SILKWORM_MAIN_DIR}"
-  "${SILKWORM_MAIN_DIR}/third_party/stbrumme-keccak"
-  "${SILKWORM_MAIN_DIR}/third_party/stbrumme-crc32"
+# cmake-format: off
+target_include_directories(
+  ${TARGET}
+  PUBLIC "${SILKWORM_MAIN_DIR}"
+         "${SILKWORM_MAIN_DIR}/third_party/stbrumme-keccak"
+         "${SILKWORM_MAIN_DIR}/third_party/stbrumme-crc32"
 )
+# cmake-format: on
 
 set(LIBS_PRIVATE
   gRPC::grpc++
@@ -68,9 +71,11 @@ if(MSVC)
     list(APPEND LIBS_PRIVATE ntdll.lib)
 endif(MSVC)
 
+# cmake-format: off
 set(LIBS_PUBLIC
-  Boost::thread
-  silkworm_infra
+    Boost::thread
+    silkworm_infra
 )
+# cmake-format: on
 
 target_link_libraries(${TARGET} PUBLIC "${LIBS_PUBLIC}" PRIVATE "${LIBS_PRIVATE}")

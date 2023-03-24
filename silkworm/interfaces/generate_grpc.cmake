@@ -51,6 +51,7 @@ set(PROTO_PATH "${CMAKE_CURRENT_SOURCE_DIR}/proto")
 set(OUT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${PROTOC_VERSION}")
 set(OUT_PATH_SYMLINK "${CMAKE_CURRENT_SOURCE_DIR}")
 
+# cmake-format: off
 set(PROTOC_ARGS
     --cpp_out "${OUT_PATH}"
     -I "${PROTO_PATH}"
@@ -61,6 +62,7 @@ set(PROTOC_ARGS_GRPC
     --grpc_out generate_mock_code=true:"${OUT_PATH}"
     "--plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN_EXECUTABLE}"
 )
+# cmake-format: on
 
 macro(create_symlink_target target link_path target_path)
     add_custom_command(
@@ -102,6 +104,7 @@ add_custom_target(
 # gRPC protocol interface file
 set(SENTRY_PROTO "${PROTO_PATH}/p2psentry/sentry.proto")
 
+# cmake-format: off
 set(SENTRY_SOURCES_OUT
     "${OUT_PATH}/p2psentry/sentry.grpc.pb.cc"
     "${OUT_PATH}/p2psentry/sentry.grpc.pb.h"
@@ -116,6 +119,7 @@ set(SENTRY_SOURCES_SYMLINK
     "${OUT_PATH_SYMLINK}/p2psentry/sentry.pb.h"
     "${OUT_PATH_SYMLINK}/p2psentry/sentry_mock.grpc.pb.h"
 )
+# cmake-format: on
 
 add_custom_command(
     OUTPUT ${SENTRY_SOURCES_OUT}
@@ -141,6 +145,7 @@ add_custom_target(
 # gRPC protocol interface file
 set(KV_PROTO "${PROTO_PATH}/remote/kv.proto")
 
+# cmake-format: off
 set(KV_SOURCES_OUT
     "${OUT_PATH}/remote/kv.grpc.pb.cc"
     "${OUT_PATH}/remote/kv.grpc.pb.h"
@@ -155,6 +160,7 @@ set(KV_SOURCES_SYMLINK
     "${OUT_PATH_SYMLINK}/remote/kv.pb.h"
     "${OUT_PATH_SYMLINK}/remote/kv_mock.grpc.pb.h"
 )
+# cmake-format: on
 
 add_custom_command(
     OUTPUT ${KV_SOURCES_OUT}
@@ -180,6 +186,7 @@ add_custom_target(
 # gRPC protocol interface file
 set(ETHBACKEND_PROTO "${PROTO_PATH}/remote/ethbackend.proto")
 
+# cmake-format: off
 set(ETHBACKEND_SOURCES_OUT
     "${OUT_PATH}/remote/ethbackend.grpc.pb.cc"
     "${OUT_PATH}/remote/ethbackend.grpc.pb.h"
@@ -194,6 +201,7 @@ set(ETHBACKEND_SOURCES_SYMLINK
     "${OUT_PATH_SYMLINK}/remote/ethbackend.pb.h"
     "${OUT_PATH_SYMLINK}/remote/ethbackend_mock.grpc.pb.h"
 )
+# cmake-format: on
 
 add_custom_command(
     OUTPUT ${ETHBACKEND_SOURCES_OUT}
@@ -217,6 +225,7 @@ add_custom_target(
 # gRPC protocol interface file
 set(MINING_PROTO "${PROTO_PATH}/txpool/mining.proto")
 
+# cmake-format: off
 set(MINING_SOURCES_OUT
     "${OUT_PATH}/txpool/mining.grpc.pb.cc"
     "${OUT_PATH}/txpool/mining.grpc.pb.h"
@@ -231,6 +240,7 @@ set(MINING_SOURCES_SYMLINK
     "${OUT_PATH_SYMLINK}/txpool/mining.pb.h"
     "${OUT_PATH_SYMLINK}/txpool/mining_mock.grpc.pb.h"
 )
+# cmake-format: on
 
 add_custom_command(
         OUTPUT ${MINING_SOURCES_OUT}
@@ -256,6 +266,7 @@ add_custom_target(
 # gRPC protocol interface file
 set(TXPOOL_PROTO "${PROTO_PATH}/txpool/txpool.proto")
 
+# cmake-format: off
 set(TXPOOL_SOURCES_OUT
     "${OUT_PATH}/txpool/txpool.grpc.pb.cc"
     "${OUT_PATH}/txpool/txpool.grpc.pb.h"
@@ -270,6 +281,7 @@ set(TXPOOL_SOURCES_SYMLINK
     "${OUT_PATH_SYMLINK}/txpool/txpool.pb.h"
     "${OUT_PATH_SYMLINK}/txpool/txpool_mock.grpc.pb.h"
 )
+# cmake-format: on
 
 add_custom_command(
         OUTPUT ${TXPOOL_SOURCES_OUT}

@@ -33,18 +33,24 @@ if(SILKWORM_SANITIZE)
   target_compile_definitions(silkworm_sync PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
 endif()
 
-target_include_directories(silkworm_sync PUBLIC
-        ${SILKWORM_MAIN_DIR}
-        ${SILKWORM_MAIN_DIR}/third_party/magic_enum/include)
+# cmake-format: off
+target_include_directories(
+  silkworm_sync
+  PUBLIC "${SILKWORM_MAIN_DIR}"
+         "${SILKWORM_MAIN_DIR}/third_party/magic_enum/include"
+)
+# cmake-format: on
 
 set(SILKWORM_SYNC_PUBLIC_LIBS silkworm_node silkworm_core mdbx-static absl::flat_hash_map absl::flat_hash_set absl::btree
         gRPC::grpc++ protobuf::libprotobuf)
 
+# cmake-format: off
 set(SILKWORM_SYNC_PRIVATE_LIBS
-  cborcpp
-  evmone
-  silkworm_interfaces
+    cborcpp
+    evmone
+    silkworm_interfaces
 )
+# cmake-format: on
 if(MSVC)
   list(APPEND SILKWORM_SYNC_PRIVATE_LIBS ntdll.lib)
 endif(MSVC)

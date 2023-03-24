@@ -22,7 +22,7 @@
 #include <silkworm/core/common/decoding_result.hpp>
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
-#include <silkworm/node/common/decoding_exception.hpp>
+#include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/node/db/util.hpp>
 
 #include <silkworm/silkrpc/common/log.hpp>

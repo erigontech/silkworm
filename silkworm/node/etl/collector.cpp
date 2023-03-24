@@ -21,10 +21,10 @@
 #include <queue>
 #include <stdexcept>
 
-#include <silkworm/node/common/directories.hpp>
-#include <silkworm/node/common/log.hpp>
-#include <silkworm/node/common/stopwatch.hpp>
-#include <silkworm/node/concurrency/signal_handler.hpp>
+#include <silkworm/infra/common/directories.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/common/stopwatch.hpp>
+#include <silkworm/infra/concurrency/signal_handler.hpp>
 
 namespace silkworm::etl {
 

@@ -25,8 +25,8 @@
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/node/common/asio_timer.hpp>
-#include <silkworm/node/common/stopwatch.hpp>
+#include <silkworm/infra/common/asio_timer.hpp>
+#include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 #include <silkworm/node/stagedsync/stage.hpp>
 

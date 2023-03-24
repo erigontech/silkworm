@@ -18,8 +18,8 @@
 
 #include <chrono>
 
-#include <silkworm/node/common/decoding_exception.hpp>
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/decoding_exception.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/sync/internals/random_number.hpp>
 #include <silkworm/sync/messages/inbound_message.hpp>

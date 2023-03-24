@@ -23,7 +23,7 @@
 #include <toml.hpp>
 
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/snapshot/config_toml.hpp>
 #include <silkworm/node/snapshot/path.hpp>
 

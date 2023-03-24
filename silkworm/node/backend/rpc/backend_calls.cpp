@@ -16,15 +16,15 @@
 
 #include "backend_calls.hpp"
 
-#include <silkworm/node/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/rpc/client/call.hpp>
+#include <silkworm/infra/rpc/common/conversion.hpp>
+#include <silkworm/infra/rpc/common/util.hpp>
 #include <silkworm/interfaces/types/types.pb.h>
-#include <silkworm/node/common/log.hpp>
-#include <silkworm/node/rpc/client/call.hpp>
-#include <silkworm/node/rpc/common/conversion.hpp>
-#include <silkworm/node/rpc/common/util.hpp>
 
 namespace silkworm::rpc {
 

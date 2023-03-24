@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/node/test/log.hpp>
+#include <silkworm/infra/test/log.hpp>
 
 namespace silkworm::rpc {
 

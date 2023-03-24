@@ -18,11 +18,11 @@
 
 #include <memory>
 
-#include <silkworm/node/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 
-#include <silkworm/node/rpc/server/server_context_pool.hpp>
+#include <silkworm/infra/rpc/server/server_context_pool.hpp>
 
 #include "settings.hpp"
 

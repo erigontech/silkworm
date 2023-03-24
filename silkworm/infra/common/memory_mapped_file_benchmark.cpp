@@ -21,7 +21,7 @@
 #include <benchmark/benchmark.h>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/node/common/directories.hpp>
+#include <silkworm/infra/common/directories.hpp>
 
 #include "memory_mapped_file.hpp"
 

@@ -21,8 +21,8 @@
 
 #include <boost/signals2.hpp>
 
+#include <silkworm/infra/concurrency/active_component.hpp>
 #include <silkworm/interfaces/p2psentry/sentry.grpc.pb.h>
-#include <silkworm/node/concurrency/active_component.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/sync/internals/grpc_sync_client.hpp>
 #include <silkworm/sync/internals/sentry_type_casts.hpp>

@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/node/concurrency/signal_handler.hpp>
+#include <silkworm/infra/concurrency/signal_handler.hpp>
 
 namespace silkworm {
 

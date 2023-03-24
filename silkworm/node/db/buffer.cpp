@@ -22,8 +22,8 @@
 #include <absl/container/btree_set.h>
 
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/node/common/log.hpp>
-#include <silkworm/node/common/stopwatch.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/types/log_cbor.hpp>

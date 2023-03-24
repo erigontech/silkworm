@@ -17,10 +17,10 @@
 #pragma once
 
 #include <intx/intx.hpp>
-#include <types/types.pb.h>
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/hash.hpp>
+#include <silkworm/interfaces/types/types.pb.h>
 
 namespace silkworm {
 

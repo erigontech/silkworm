@@ -17,7 +17,7 @@
 #include "outbound_new_block_hashes.hpp"
 
 #include <silkworm/core/rlp/encode_vector.hpp>
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/sync/internals/body_sequence.hpp>
 #include <silkworm/sync/internals/header_chain.hpp>
 #include <silkworm/sync/rpc/send_message_to_all.hpp>

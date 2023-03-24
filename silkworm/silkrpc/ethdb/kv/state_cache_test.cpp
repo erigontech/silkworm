@@ -37,7 +37,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/util.hpp>
 
-#include <silkworm/node/rpc/common/conversion.hpp>
+#include <silkworm/infra/rpc/common/conversion.hpp>
 
 namespace silkrpc::ethdb::kv {
 

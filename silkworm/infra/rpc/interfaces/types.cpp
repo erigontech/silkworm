@@ -21,7 +21,7 @@
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/node/rpc/common/conversion.hpp>
+#include <silkworm/infra/rpc/common/conversion.hpp>
 
 namespace silkworm {
 

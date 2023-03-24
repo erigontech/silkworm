@@ -24,7 +24,7 @@
 
 #include <absl/time/clock.h>
 
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::log {
 

@@ -21,7 +21,7 @@
 #include <memory>
 #include <stdexcept>
 
-#include <silkworm/node/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <agrpc/detail/rpc.hpp>
 #include <agrpc/grpc_context.hpp>
@@ -31,7 +31,7 @@
 #include <boost/asio/use_awaitable.hpp>
 #include <grpcpp/grpcpp.h>
 
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::rpc {
 

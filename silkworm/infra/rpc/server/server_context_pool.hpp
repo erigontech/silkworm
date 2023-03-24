@@ -28,7 +28,7 @@
 #include <boost/asio/io_context.hpp>
 #include <grpcpp/grpcpp.h>
 
-#include <silkworm/node/rpc/server/wait_strategy.hpp>
+#include <silkworm/infra/rpc/server/wait_strategy.hpp>
 
 namespace silkworm::rpc {
 

@@ -20,7 +20,7 @@
 
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/consensus/base/engine.hpp>
-#include <silkworm/node/common/measure.hpp>
+#include <silkworm/infra/common/measure.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
 
 namespace silkworm::chainsync::pos {

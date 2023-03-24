@@ -16,12 +16,12 @@
 
 #pragma once
 
-#include <silkworm/node/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 
-#include <silkworm/node/concurrency/channel.hpp>
+#include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/sentry/common/atomic_value.hpp>
 
 #include "eth/status_data.hpp"

@@ -23,7 +23,7 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 
 namespace grpc {
 

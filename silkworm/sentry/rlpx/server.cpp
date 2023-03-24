@@ -20,7 +20,7 @@
 #include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 #include <silkworm/sentry/common/socket_stream.hpp>
 

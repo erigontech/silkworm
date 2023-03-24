@@ -20,11 +20,11 @@
 #include <vector>
 
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/infra/rpc/server/server.hpp>
 #include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
 #include <silkworm/node/backend/rpc/backend_calls.hpp>
 #include <silkworm/node/backend/rpc/kv_calls.hpp>
-#include <silkworm/node/rpc/server/server.hpp>
 
 namespace silkworm::rpc {
 

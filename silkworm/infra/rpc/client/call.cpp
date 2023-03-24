@@ -16,7 +16,7 @@
 
 #include "call.hpp"
 
-#include <silkworm/node/concurrency/async_thread.hpp>
+#include <silkworm/infra/concurrency/async_thread.hpp>
 
 namespace silkworm::rpc::detail {
 

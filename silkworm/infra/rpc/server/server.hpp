@@ -20,15 +20,15 @@
 #include <stdexcept>
 #include <vector>
 
-#include <silkworm/node/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #include <grpcpp/grpcpp.h>
 
-#include <silkworm/node/common/log.hpp>
-#include <silkworm/node/concurrency/async_thread.hpp>
-#include <silkworm/node/rpc/server/server_config.hpp>
-#include <silkworm/node/rpc/server/server_context_pool.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/async_thread.hpp>
+#include <silkworm/infra/rpc/server/server_config.hpp>
+#include <silkworm/infra/rpc/server/server_context_pool.hpp>
 
 namespace silkworm::rpc {
 

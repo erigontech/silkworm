@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/active_component.hpp>
 #include <silkworm/node/common/settings.hpp>
-#include <silkworm/node/concurrency/active_component.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/sync/engine_apis/structs.hpp>
 #include <silkworm/sync/internals/chain_fork_view.hpp>

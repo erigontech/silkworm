@@ -22,7 +22,7 @@
 #include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
 
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 
 #include "event_notifier.hpp"
 

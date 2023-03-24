@@ -22,8 +22,8 @@
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/node/common/log.hpp>
-#include <silkworm/node/concurrency/thread_pool.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/snapshot/index.hpp>
 
 namespace silkworm {

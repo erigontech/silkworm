@@ -16,7 +16,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/node/concurrency/stoppable.hpp>
+#include <silkworm/infra/concurrency/stoppable.hpp>
 
 namespace silkworm {
 

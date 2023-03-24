@@ -30,7 +30,7 @@
 #include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/util.hpp>
-#include <silkworm/node/common/decoding_exception.hpp>
+#include <silkworm/infra/common/decoding_exception.hpp>
 
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>

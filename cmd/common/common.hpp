@@ -21,10 +21,10 @@
 #include <CLI/CLI.hpp>
 
 #include <silkworm/buildinfo.h>
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/rpc/server/server_config.hpp>
+#include <silkworm/infra/rpc/server/wait_strategy.hpp>
 #include <silkworm/node/common/settings.hpp>
-#include <silkworm/node/rpc/server/server_config.hpp>
-#include <silkworm/node/rpc/server/wait_strategy.hpp>
 #include <silkworm/node/snapshot/settings.hpp>
 
 namespace silkworm::cmd::common {

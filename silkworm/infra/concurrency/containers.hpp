@@ -20,7 +20,7 @@
  * Decisions about concurrent containers
  */
 
-#include <silkworm/node/concurrency/thread_safe_queue.hpp>
+#include <silkworm/infra/concurrency/thread_safe_queue.hpp>
 
 template <typename T>
 using ConcurrentQueue =

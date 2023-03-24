@@ -55,7 +55,7 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/recsplit/encoding/sequence.hpp>
 #include <silkworm/node/recsplit/support/common.hpp>
 

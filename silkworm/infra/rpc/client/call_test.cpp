@@ -20,8 +20,9 @@
 
 #include <catch2/catch.hpp>
 #include <grpc/grpc.h>
-#include <remote/ethbackend.grpc.pb.h>
-#include <remote/kv.grpc.pb.h>
+
+#include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>
+#include <silkworm/interfaces/remote/kv.grpc.pb.h>
 
 namespace silkworm::rpc {
 

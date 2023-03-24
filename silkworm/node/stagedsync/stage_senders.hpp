@@ -25,7 +25,7 @@
 #include <silkpre/ecdsa.h>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/node/concurrency/thread_pool.hpp>
+#include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/etl/collector.hpp>
 #include <silkworm/node/stagedsync/stage.hpp>
 

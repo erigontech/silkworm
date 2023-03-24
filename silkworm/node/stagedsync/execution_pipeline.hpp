@@ -21,8 +21,8 @@
 #include <vector>
 
 #include <silkworm/core/types/hash.hpp>
-#include <silkworm/node/common/asio_timer.hpp>
-#include <silkworm/node/common/stopwatch.hpp>
+#include <silkworm/infra/common/asio_timer.hpp>
+#include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/node/stagedsync/stage.hpp>
 
 namespace silkworm::stagedsync {

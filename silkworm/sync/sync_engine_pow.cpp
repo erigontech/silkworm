@@ -17,7 +17,7 @@
 #include "sync_engine_pow.hpp"
 
 #include <silkworm/core/common/as_range.hpp>
-#include <silkworm/node/common/measure.hpp>
+#include <silkworm/infra/common/measure.hpp>
 #include <silkworm/sync/messages/outbound_new_block.hpp>
 #include <silkworm/sync/messages/outbound_new_block_hashes.hpp>
 

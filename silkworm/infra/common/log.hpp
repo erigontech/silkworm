@@ -20,7 +20,7 @@
 #include <sstream>
 #include <vector>
 
-#include <silkworm/node/common/terminal.hpp>
+#include <silkworm/infra/common/terminal.hpp>
 
 namespace silkworm::log {
 

@@ -27,7 +27,7 @@
 #include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
 
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
 #include <silkworm/sentry/rlpx/rlpx_common/disconnect_reason.hpp>
 

@@ -17,7 +17,7 @@
 #include "stage_finish.hpp"
 
 #include <silkworm/core/common/cast.hpp>
-#include <silkworm/node/common/environment.hpp>
+#include <silkworm/infra/common/environment.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 
 namespace silkworm::stagedsync {

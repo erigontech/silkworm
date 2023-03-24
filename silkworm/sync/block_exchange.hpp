@@ -19,8 +19,8 @@
 #include <variant>
 
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/node/concurrency/active_component.hpp>
-#include <silkworm/node/concurrency/containers.hpp>
+#include <silkworm/infra/concurrency/active_component.hpp>
+#include <silkworm/infra/concurrency/containers.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/sync/internals/body_sequence.hpp>
 #include <silkworm/sync/internals/header_chain.hpp>

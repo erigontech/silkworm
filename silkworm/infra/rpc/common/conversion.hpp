@@ -21,10 +21,10 @@
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
-#include <types/types.pb.h>
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/interfaces/types/types.pb.h>
 
 // operator== overloading is *NOT* present in gRPC generated sources
 namespace types {

@@ -18,11 +18,11 @@
 
 #include <atomic>
 
-#include <silkworm/node/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 
-#include <silkworm/node/concurrency/stoppable.hpp>
+#include <silkworm/infra/concurrency/stoppable.hpp>
 
 #include "async_thread.hpp"
 

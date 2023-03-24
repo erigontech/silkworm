@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-#include "silkworm/node/common/test_context.hpp"
+#include <silkworm/node/common/test_context.hpp>
 
 namespace silkworm {
 

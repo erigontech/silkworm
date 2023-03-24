@@ -27,7 +27,7 @@
 #include <silkpre/precompile.h>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/node/test/log.hpp>
+#include <silkworm/infra/test/log.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/ethdb/tables.hpp>

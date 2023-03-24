@@ -15,6 +15,8 @@
 */
 
 #include "cbor.hpp"
+#include <cbor/cbor.h>
+#include "listener_cbor_log.h"
 
 #include <nlohmann/json.hpp>
 
@@ -27,15 +29,16 @@ bool cbor_decode(const silkworm::Bytes& bytes, std::vector<Log>& logs) {
     if (bytes.size() == 0) {
         return false;
     }
-    auto json = nlohmann::json::from_cbor(bytes);
-    SILKRPC_TRACE << "cbor_decode<std::vector<Log>> json: " << json.dump() << "\n";
-    if (json.is_array()) {
-        logs = json.get<std::vector<Log>>();
-        return true;
-    } else {
-        SILKRPC_ERROR << "cbor_decode<std::vector<Log>> unexpected json: " << json.dump() << "\n";
+    const void * data = static_cast<const void *>(bytes.data());
+    cbor::input input(const_cast<void *>(data), bytes.size());
+    listener_cbor_log listener(logs);
+    cbor::decoder decoder(input, listener);
+    decoder.run();
+    if (!listener.is_processing_terminated_successfully()) {
+        SILKRPC_ERROR << "cbor_decode<std::vector<Log>> unexpected cbor" << "\n";
         return false;
     }
+    return true;
 }
 
 bool cbor_decode(const silkworm::Bytes& bytes, std::vector<Receipt>& receipts) {

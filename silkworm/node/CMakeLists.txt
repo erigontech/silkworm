@@ -80,9 +80,22 @@ target_include_directories(silkworm_node PUBLIC
         ${SILKWORM_MAIN_DIR}/third_party/libtorrent/include
         ${SILKWORM_MAIN_DIR}/third_party/tomlplusplus)
 
-set(SILKWORM_NODE_PUBLIC_LIBS silkworm_core mdbx-static absl::flat_hash_map absl::flat_hash_set absl::btree roaring
-        nlohmann_json::nlohmann_json gRPC::grpc++ protobuf::libprotobuf Boost::container Boost::thread asio-grpc::asio-grpc
-        torrent-rasterbar)
+set(SILKWORM_NODE_PUBLIC_LIBS
+  absl::btree
+  absl::flat_hash_map
+  absl::flat_hash_set
+  asio-grpc::asio-grpc
+  Boost::container
+  Boost::thread
+  gRPC::grpc++
+  mdbx-static
+  nlohmann_json::nlohmann_json
+  protobuf::libprotobuf
+  roaring
+  silkworm_core
+  silkworm_infra
+  torrent-rasterbar
+)
 
 set(SILKWORM_NODE_PRIVATE_LIBS
   cborcpp

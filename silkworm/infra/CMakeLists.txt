@@ -21,41 +21,41 @@ if(CONAN_PACKAGE_MANAGER)
 else()
     find_package(Boost CONFIG REQUIRED container thread)
 endif()
-find_package(intx REQUIRED)
-find_package(jwt-cpp REQUIRED)
-find_package(nlohmann_json REQUIRED)
+find_package(gRPC REQUIRED)
 
-# Silkrpc library
-file(GLOB_RECURSE SILKRPC_SRC CONFIGURE_DEPENDS "*.cpp" "*.cc" "*.hpp" "*.c" "*.h")
-list(FILTER SILKRPC_SRC EXCLUDE REGEX "main\\.cpp$|_test\\.cpp$|\\.pb\\.cc|\\.pb\\.h")
+file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
+list(FILTER SRC EXCLUDE REGEX "_test\\.cpp$")
+list(FILTER SRC EXCLUDE REGEX "_benchmark\\.cpp$")
 
-set(SILKRPC_LIBRARIES
-    absl::flat_hash_map
-    absl::flat_hash_set
-    absl::btree
-    asio-grpc::asio-grpc
-    Boost::container
-    Boost::thread
-    intx::intx
-    jwt-cpp::jwt-cpp
-    gRPC::grpc++
-    nlohmann_json::nlohmann_json
-    protobuf::libprotobuf
-    silkworm_core
-    silkworm_interfaces
-    silkworm_node)
-
-add_library(silkrpc "${SILKRPC_SRC}")
+add_library(silkworm_infra "${SRC}")
 
 # Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers
 # See https://github.com/grpc/grpc/issues/19224
 if(SILKWORM_SANITIZE)
-  target_compile_definitions(silkrpc PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
+    target_compile_definitions(silkworm_infra PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
 endif()
 
-target_include_directories(silkrpc PUBLIC
-        ${SILKWORM_MAIN_DIR}
-        ${SILKWORM_MAIN_DIR}/third_party/glaze/include
-        ${SILKWORM_MAIN_DIR}/third_party/evmone/lib)
+target_include_directories(silkworm_infra PUBLIC
+  "${SILKWORM_MAIN_DIR}"
+  "${SILKWORM_MAIN_DIR}/third_party/magic_enum/include"
+)
 
-target_link_libraries(silkrpc PUBLIC ${SILKRPC_LIBRARIES})
+set(LIBS_PUBLIC
+  absl::strings
+  asio-grpc::asio-grpc
+  Boost::headers
+  Boost::thread
+  gRPC::grpc++
+  silkworm_core
+  silkworm_interfaces
+)
+
+set(LIBS_PRIVATE
+  absl::time
+  Boost::container # required for asio-grpc
+)
+if(MSVC)
+    list(APPEND LIBS_PRIVATE ntdll.lib)
+endif(MSVC)
+
+target_link_libraries(silkworm_infra PUBLIC "${LIBS_PUBLIC}" PRIVATE "${LIBS_PRIVATE}")

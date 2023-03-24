@@ -40,8 +40,6 @@ list(PREPEND SRC "${SILKWORM_MAIN_DIR}/third_party/stbrumme-crc32/Crc32.cpp")
 
 add_library(${TARGET} ${SRC})
 
-add_dependencies(${TARGET} silkworm_node)
-
 # Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers
 # See https://github.com/grpc/grpc/issues/19224
 if(SILKWORM_SANITIZE)
@@ -54,8 +52,7 @@ target_include_directories(${TARGET} PUBLIC
   "${SILKWORM_MAIN_DIR}/third_party/stbrumme-crc32"
 )
 
-set(LIBS
-  Boost::thread
+set(LIBS_PRIVATE
   gRPC::grpc++
   Microsoft.GSL::GSL
   protobuf::libprotobuf
@@ -65,17 +62,15 @@ set(LIBS
   silkpre
   silkworm_core
   silkworm_interfaces
-  silkworm_node
   silkworm-buildinfo
 )
-
-set(LIBS_INTERFACE
-  Boost::thread
-  silkworm_node
-)
-
 if(MSVC)
-  list(APPEND LIBS ntdll.lib)
+    list(APPEND LIBS_PRIVATE ntdll.lib)
 endif(MSVC)
 
-target_link_libraries(${TARGET} PRIVATE ${LIBS} INTERFACE ${LIBS_INTERFACE})
+set(LIBS_PUBLIC
+  Boost::thread
+  silkworm_infra
+)
+
+target_link_libraries(${TARGET} PUBLIC "${LIBS_PUBLIC}" PRIVATE "${LIBS_PRIVATE}")

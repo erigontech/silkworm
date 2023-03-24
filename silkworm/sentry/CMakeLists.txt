@@ -35,24 +35,12 @@ set(SRC "")
 file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h" "*.cc")
 list(FILTER SRC EXCLUDE REGEX "_test\\.cpp$")
 
-set(GRPC_SRC "")
-set(GRPC_SRC_DIR "${SILKWORM_MAIN_SRC_DIR}/interfaces/p2psentry")
-file(GLOB GRPC_SRC CONFIGURE_DEPENDS "${GRPC_SRC_DIR}/*.h" "${GRPC_SRC_DIR}/*.cc")
-list(PREPEND GRPC_SRC "${SILKWORM_MAIN_SRC_DIR}/interfaces/types/types.pb.cc")
-list(PREPEND GRPC_SRC "${SILKWORM_MAIN_SRC_DIR}/interfaces/types/types.pb.h")
-list(PREPEND SRC ${GRPC_SRC})
-
 list(PREPEND SRC "${SILKWORM_MAIN_DIR}/third_party/stbrumme-keccak/keccak.cpp")
 list(PREPEND SRC "${SILKWORM_MAIN_DIR}/third_party/stbrumme-crc32/Crc32.cpp")
 
 add_library(${TARGET} ${SRC})
 
-add_dependencies(${TARGET} silkworm_node generate_sentry_grpc)
-
-set_source_files_properties(${GRPC_SRC} PROPERTIES GENERATED TRUE)
-if(NOT MSVC)
-  set_source_files_properties(${GRPC_SRC} PROPERTIES COMPILE_FLAGS -Wno-sign-conversion)
-endif(NOT MSVC)
+add_dependencies(${TARGET} silkworm_node)
 
 # Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers
 # See https://github.com/grpc/grpc/issues/19224
@@ -61,8 +49,7 @@ if(SILKWORM_SANITIZE)
 endif()
 
 target_include_directories(${TARGET} PUBLIC
-  ${SILKWORM_MAIN_DIR}
-  "${SILKWORM_MAIN_SRC_DIR}/interfaces"
+  "${SILKWORM_MAIN_DIR}"
   "${SILKWORM_MAIN_DIR}/third_party/stbrumme-keccak"
   "${SILKWORM_MAIN_DIR}/third_party/stbrumme-crc32"
 )
@@ -77,6 +64,7 @@ set(LIBS
 
   silkpre
   silkworm_core
+  silkworm_interfaces
   silkworm_node
   silkworm-buildinfo
 )

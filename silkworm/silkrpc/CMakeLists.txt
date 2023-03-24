@@ -25,33 +25,6 @@ find_package(intx REQUIRED)
 find_package(jwt-cpp REQUIRED)
 find_package(nlohmann_json REQUIRED)
 
-set(SILKWORM_INTERFACE_SRC
-    ${SILKWORM_MAIN_SRC_DIR}/interfaces/remote/ethbackend.grpc.pb.cc
-    ${SILKWORM_MAIN_SRC_DIR}/interfaces/remote/ethbackend.grpc.pb.h
-    ${SILKWORM_MAIN_SRC_DIR}/interfaces/remote/ethbackend.pb.cc
-    ${SILKWORM_MAIN_SRC_DIR}/interfaces/remote/ethbackend.pb.h
-    ${SILKWORM_MAIN_SRC_DIR}/interfaces/remote/kv.grpc.pb.cc
-    ${SILKWORM_MAIN_SRC_DIR}/interfaces/remote/kv.grpc.pb.h
-    ${SILKWORM_MAIN_SRC_DIR}/interfaces/remote/kv.pb.cc
-    ${SILKWORM_MAIN_SRC_DIR}/interfaces/remote/kv.pb.h
-    ${SILKWORM_MAIN_SRC_DIR}/interfaces/txpool/mining.grpc.pb.cc
-    ${SILKWORM_MAIN_SRC_DIR}/interfaces/txpool/mining.grpc.pb.h
-    ${SILKWORM_MAIN_SRC_DIR}/interfaces/txpool/mining.pb.cc
-    ${SILKWORM_MAIN_SRC_DIR}/interfaces/txpool/mining.pb.h
-    ${SILKWORM_MAIN_SRC_DIR}/interfaces/txpool/mining_mock.grpc.pb.h
-    ${SILKWORM_MAIN_SRC_DIR}/interfaces/txpool/txpool.grpc.pb.cc
-    ${SILKWORM_MAIN_SRC_DIR}/interfaces/txpool/txpool.grpc.pb.h
-    ${SILKWORM_MAIN_SRC_DIR}/interfaces/txpool/txpool.pb.cc
-    ${SILKWORM_MAIN_SRC_DIR}/interfaces/txpool/txpool.pb.h
-    ${SILKWORM_MAIN_SRC_DIR}/interfaces/txpool/txpool_mock.grpc.pb.h
-    ${SILKWORM_MAIN_SRC_DIR}/interfaces/types/types.pb.cc
-    ${SILKWORM_MAIN_SRC_DIR}/interfaces/types/types.pb.h)
-
-set_source_files_properties(${SILKWORM_INTERFACE_SRC} PROPERTIES GENERATED TRUE)
-if(NOT MSVC)
-    set_source_files_properties(${SILKWORM_INTERFACE_SRC} PROPERTIES COMPILE_FLAGS -Wno-sign-conversion)
-endif(NOT MSVC)
-
 # Silkrpc library
 file(GLOB_RECURSE SILKRPC_SRC CONFIGURE_DEPENDS "*.cpp" "*.cc" "*.hpp" "*.c" "*.h")
 list(FILTER SILKRPC_SRC EXCLUDE REGEX "main\\.cpp$|_test\\.cpp$|\\.pb\\.cc|\\.pb\\.h")
@@ -67,14 +40,14 @@ set(SILKRPC_LIBRARIES
     nlohmann_json::nlohmann_json
     protobuf::libprotobuf
     silkworm_core
+    silkworm_interfaces
     silkworm_node)
 
-add_library(silkrpc ${SILKRPC_SRC} ${SILKWORM_INTERFACE_SRC})
+add_library(silkrpc "${SILKRPC_SRC}")
 
-add_dependencies(silkrpc generate_ethbackend_grpc generate_kv_grpc generate_mining_grpc generate_txpool_grpc)
 target_include_directories(silkrpc PUBLIC
         ${SILKWORM_MAIN_DIR}
-        ${SILKWORM_MAIN_SRC_DIR}/interfaces
         ${SILKWORM_MAIN_DIR}/third_party/glaze/include
         ${SILKWORM_MAIN_DIR}/third_party/evmone/lib)
+
 target_link_libraries(silkrpc PUBLIC ${SILKRPC_LIBRARIES})

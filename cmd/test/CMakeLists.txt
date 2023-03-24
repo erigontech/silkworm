@@ -74,7 +74,6 @@ if(NOT SILKWORM_CORE_ONLY)
   endif()
   target_include_directories(rpcdaemon_test PRIVATE
           ${SILKWORM_MAIN_DIR}
-          ${SILKWORM_MAIN_SRC_DIR}/interfaces
           ${SILKWORM_MAIN_DIR}/third_party/evmone/evmc/include)
   target_link_libraries(rpcdaemon_test silkworm_node silkrpc asio-grpc::asio-grpc Catch2::Catch2 GTest::gmock)
 

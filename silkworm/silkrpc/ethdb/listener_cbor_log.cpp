@@ -23,15 +23,6 @@
 
 namespace silkrpc {
 
-    evmc::bytes32 to_my_bytes32(evmc::bytes32& out, silkworm::ByteView bytes) {
-       if (!bytes.empty()) {
-          size_t n{std::min(bytes.length(), silkworm::kHashLength)};
-          std::memcpy(out.bytes + silkworm::kHashLength - n, bytes.data(), n);
-       }
-       return out;
-    }
-
-
     void listener_cbor_log::on_bytes(unsigned char *data, int size) {
         if (state_ == WAIT_ADDRESS) {
            curr_log_.address = silkworm::to_evmc_address(silkworm::Bytes{data, static_cast<long unsigned int>(size)});
@@ -86,6 +77,9 @@ namespace silkrpc {
     }
 
     bool listener_cbor_log::is_processing_terminated_successfully() {
-       return (static_cast<int>(logs_.size())  == nlogs_);
+       if (static_cast<int>(logs_.size())  != nlogs_) {
+           throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Log CBOR: wrong number of logs)"};
+       }
+       return true;
     }
 }

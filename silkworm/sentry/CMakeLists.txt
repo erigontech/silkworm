@@ -81,8 +81,13 @@ set(LIBS
   silkworm-buildinfo
 )
 
+set(LIBS_INTERFACE
+  Boost::thread
+  silkworm_node
+)
+
 if(MSVC)
   list(APPEND LIBS ntdll.lib)
 endif(MSVC)
 
-target_link_libraries(${TARGET} PRIVATE ${LIBS})
+target_link_libraries(${TARGET} PRIVATE ${LIBS} INTERFACE ${LIBS_INTERFACE})

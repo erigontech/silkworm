@@ -147,6 +147,8 @@ if(NOT SILKWORM_CORE_ONLY)
   # CBOR
   add_subdirectory(third_party/cbor-cpp)
     
+  # GLAZE
+  add_subdirectory(third_party/glaze)
 endif()
 
 # evmone with dependencies

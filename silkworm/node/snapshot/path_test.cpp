@@ -19,7 +19,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/node/common/directories.hpp>
+#include <silkworm/infra/common/directories.hpp>
 
 namespace silkworm {
 

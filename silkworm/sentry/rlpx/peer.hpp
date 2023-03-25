@@ -20,7 +20,7 @@
 #include <optional>
 #include <string>
 
-#include <silkworm/node/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
@@ -28,7 +28,7 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/strand.hpp>
 
-#include <silkworm/node/concurrency/channel.hpp>
+#include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/sentry/common/atomic_value.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>

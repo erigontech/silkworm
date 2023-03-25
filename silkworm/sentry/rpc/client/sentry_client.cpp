@@ -19,15 +19,15 @@
 #include <functional>
 #include <stdexcept>
 
-#include <silkworm/node/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <grpcpp/grpcpp.h>
-#include <p2psentry/sentry.grpc.pb.h>
 
-#include <silkworm/node/common/log.hpp>
-#include <silkworm/node/rpc/client/call.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/rpc/client/call.hpp>
+#include <silkworm/interfaces/p2psentry/sentry.grpc.pb.h>
 
 #include "../interfaces/eth_version.hpp"
 #include "../interfaces/message.hpp"

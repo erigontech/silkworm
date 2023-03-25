@@ -26,12 +26,12 @@
 #include <boost/system/error_code.hpp>
 
 #include <silkworm/buildinfo.h>
+#include <silkworm/infra/common/directories.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/rpc/common/util.hpp>
 #include <silkworm/node/backend/backend_kv_server.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
-#include <silkworm/node/common/directories.hpp>
-#include <silkworm/node/common/log.hpp>
 #include <silkworm/node/db/mdbx.hpp>
-#include <silkworm/node/rpc/common/util.hpp>
 #include <silkworm/sync/sentry_client.hpp>
 
 #include "common/common.hpp"

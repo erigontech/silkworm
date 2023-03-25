@@ -28,7 +28,7 @@
 #include <absl/functional/function_ref.h>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/node/common/memory_mapped_file.hpp>
+#include <silkworm/infra/common/memory_mapped_file.hpp>
 
 namespace silkworm {
 

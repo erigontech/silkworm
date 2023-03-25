@@ -93,6 +93,10 @@ commands:
             ulimit -s unlimited
             cmd/test/core_test
       - run:
+          name: "Infra unit tests"
+          working_directory: ~/build
+          command: cmd/test/infra_test
+      - run:
           name: "Node unit tests"
           working_directory: ~/build
           command: cmd/test/node_test

@@ -16,7 +16,7 @@
 
 #include "sentry_client.hpp"
 
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/sync/internals/header_retrieval.hpp>
 #include <silkworm/sync/rpc/hand_shake.hpp>
 #include <silkworm/sync/rpc/peer_by_id.hpp>

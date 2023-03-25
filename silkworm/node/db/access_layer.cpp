@@ -21,7 +21,7 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/node/common/decoding_exception.hpp>
+#include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/node/db/bitmap.hpp>
 #include <silkworm/node/db/tables.hpp>
 

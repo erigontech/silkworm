@@ -23,8 +23,8 @@
 #include <vector>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/node/common/log.hpp>
-#include <silkworm/node/rpc/server/wait_strategy.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/rpc/server/wait_strategy.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 
 #include "nat_option.hpp"

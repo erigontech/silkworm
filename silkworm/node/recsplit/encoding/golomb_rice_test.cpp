@@ -21,8 +21,8 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/infra/test/log.hpp>
 #include <silkworm/node/recsplit/encoding/sequence.hpp>
-#include <silkworm/node/test/log.hpp>
 
 namespace silkworm::succinct {
 

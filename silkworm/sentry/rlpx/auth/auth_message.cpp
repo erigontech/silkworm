@@ -21,8 +21,8 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/rlp/decode.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
-#include <silkworm/node/common/decoding_exception.hpp>
-#include <silkworm/node/common/secp256k1_context.hpp>
+#include <silkworm/infra/common/decoding_exception.hpp>
+#include <silkworm/infra/common/secp256k1_context.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/random.hpp>
 #include <silkworm/sentry/rlpx/crypto/xor.hpp>

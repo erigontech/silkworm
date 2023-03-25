@@ -21,8 +21,8 @@
 #include <string>
 
 #include <silkworm/buildinfo.h>
-#include <silkworm/node/common/directories.hpp>
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/directories.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 

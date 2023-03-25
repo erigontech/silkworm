@@ -19,6 +19,7 @@ add_subdirectory(core)
 
 if(NOT SILKWORM_CORE_ONLY)
     add_subdirectory(interfaces)
+    add_subdirectory(infra)
     add_subdirectory(node)
     add_subdirectory(sentry)
     add_subdirectory(silkrpc)

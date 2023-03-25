@@ -18,15 +18,15 @@
 
 #include <utility>
 
-#include <silkworm/node/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <agrpc/grpc_context.hpp>
 #include <boost/asio/awaitable.hpp>
-#include <p2psentry/sentry.grpc.pb.h>
 
-#include <silkworm/node/common/log.hpp>
-#include <silkworm/node/rpc/server/call.hpp>
-#include <silkworm/node/rpc/server/server.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/rpc/server/call.hpp>
+#include <silkworm/infra/rpc/server/server.hpp>
+#include <silkworm/interfaces/p2psentry/sentry.grpc.pb.h>
 
 #include "server_calls.hpp"
 

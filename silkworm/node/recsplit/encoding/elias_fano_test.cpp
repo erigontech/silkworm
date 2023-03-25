@@ -23,7 +23,7 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/node/test/log.hpp>
+#include <silkworm/infra/test/log.hpp>
 
 namespace silkworm::succinct {
 

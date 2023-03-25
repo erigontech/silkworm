@@ -29,8 +29,8 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/node/common/directories.hpp>
-#include <silkworm/node/test/log.hpp>
+#include <silkworm/infra/common/directories.hpp>
+#include <silkworm/infra/test/log.hpp>
 #include <silkworm/node/test/snapshots.hpp>
 
 using Catch::Matchers::Message;

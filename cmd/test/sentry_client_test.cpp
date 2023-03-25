@@ -18,10 +18,10 @@
 #include <boost/asio/use_future.hpp>
 #include <grpcpp/grpcpp.h>
 
-#include <silkworm/node/common/log.hpp>
-#include <silkworm/node/rpc/client/call.hpp>
-#include <silkworm/node/rpc/common/util.hpp>
-#include <silkworm/node/rpc/server/server_context_pool.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/rpc/client/call.hpp>
+#include <silkworm/infra/rpc/common/util.hpp>
+#include <silkworm/infra/rpc/server/server_context_pool.hpp>
 #include <silkworm/sentry/rpc/client/sentry_client.hpp>
 #include <silkworm/sentry/sentry.hpp>
 

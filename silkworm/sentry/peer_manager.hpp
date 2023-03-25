@@ -24,15 +24,15 @@
 #include <set>
 #include <vector>
 
-#include <silkworm/node/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/strand.hpp>
 
-#include <silkworm/node/concurrency/channel.hpp>
-#include <silkworm/node/concurrency/event_notifier.hpp>
-#include <silkworm/node/rpc/server/server_context_pool.hpp>
+#include <silkworm/infra/concurrency/channel.hpp>
+#include <silkworm/infra/concurrency/event_notifier.hpp>
+#include <silkworm/infra/rpc/server/server_context_pool.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 #include <silkworm/sentry/common/task_group.hpp>
 #include <silkworm/sentry/discovery/discovery.hpp>

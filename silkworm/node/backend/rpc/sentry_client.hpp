@@ -21,7 +21,7 @@
 #include <memory>
 #include <unordered_set>
 
-#include <silkworm/node/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <agrpc/asio_grpc.hpp>
 #include <boost/asio/awaitable.hpp>
@@ -29,13 +29,13 @@
 #include <grpcpp/grpcpp.h>
 #include <gsl/pointers>
 #include <intx/intx.hpp>
-#include <p2psentry/sentry.grpc.pb.h>
-#include <types/types.pb.h>
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/rpc/client/call.hpp>
+#include <silkworm/interfaces/p2psentry/sentry.grpc.pb.h>
+#include <silkworm/interfaces/types/types.pb.h>
 #include <silkworm/node/backend/ethereum_backend.hpp>
-#include <silkworm/node/rpc/client/call.hpp>
 
 namespace silkworm::rpc {
 

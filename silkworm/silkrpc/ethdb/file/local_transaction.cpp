@@ -18,7 +18,7 @@
 
 #include <utility>
 
-#include "silkworm/node/db/mdbx.hpp"
+#include <silkworm/node/db/mdbx.hpp>
 
 #include <silkworm/silkrpc/config.hpp>
 #include <silkworm/silkrpc/common/log.hpp>

@@ -26,8 +26,8 @@
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/bittorrent/client.hpp>
-#include <silkworm/node/common/log.hpp>
 #include <silkworm/node/snapshot/index.hpp>
 #include <silkworm/node/snapshot/repository.hpp>
 #include <silkworm/node/snapshot/snapshot.hpp>

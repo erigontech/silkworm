@@ -21,7 +21,7 @@
 
 #include <silkworm/core/rlp/decode.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
-#include <silkworm/node/common/decoding_exception.hpp>
+#include <silkworm/infra/common/decoding_exception.hpp>
 
 namespace silkworm::sentry::rlpx::rlpx_common {
 

@@ -18,7 +18,7 @@
 
 #include <boost/format.hpp>
 
-#include <silkworm/node/common/environment.hpp>
+#include <silkworm/infra/common/environment.hpp>
 #include <silkworm/node/stagedsync/stage_blockhashes.hpp>
 #include <silkworm/node/stagedsync/stage_bodies.hpp>
 #include <silkworm/node/stagedsync/stage_execution.hpp>

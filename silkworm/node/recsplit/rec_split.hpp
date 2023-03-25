@@ -68,7 +68,7 @@
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/etl/collector.hpp>
 
 #pragma GCC diagnostic push

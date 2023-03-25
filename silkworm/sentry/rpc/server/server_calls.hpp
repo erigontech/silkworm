@@ -19,7 +19,7 @@
 #include <sstream>
 #include <vector>
 
-#include <silkworm/node/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/this_coro.hpp>
@@ -27,9 +27,9 @@
 #include <gsl/util>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/node/common/log.hpp>
-#include <silkworm/node/rpc/interfaces/types.hpp>
-#include <silkworm/node/rpc/server/call.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/rpc/interfaces/types.hpp>
+#include <silkworm/infra/rpc/server/call.hpp>
 #include <silkworm/sentry/api/api_common/message_id_set.hpp>
 #include <silkworm/sentry/api/api_common/node_info.hpp>
 #include <silkworm/sentry/api/api_common/peer_event.hpp>

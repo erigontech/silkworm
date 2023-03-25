@@ -18,8 +18,8 @@
 
 #include <memory>
 
+#include <silkworm/infra/rpc/interfaces/types.hpp>
 #include <silkworm/interfaces/types/types.pb.h>
-#include <silkworm/node/rpc/interfaces/types.hpp>
 
 #include "types.hpp"
 

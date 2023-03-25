@@ -19,7 +19,7 @@
 #include <stdexcept>
 
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/node/common/decoding_exception.hpp>
+#include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 
 namespace silkworm::stagedsync {

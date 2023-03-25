@@ -36,9 +36,9 @@
 #include <silkworm/core/consensus/blockchain.hpp>
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
-#include <silkworm/node/common/stopwatch.hpp>
-#include <silkworm/node/common/terminal.hpp>
-#include <silkworm/node/concurrency/thread_pool.hpp>
+#include <silkworm/infra/common/stopwatch.hpp>
+#include <silkworm/infra/common/terminal.hpp>
+#include <silkworm/infra/concurrency/thread_pool.hpp>
 
 // See https://ethereum-tests.readthedocs.io
 

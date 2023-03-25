@@ -47,7 +47,7 @@ using ChannelFactory = std::function<std::shared_ptr<grpc::Channel>()>;
 class Context {
   public:
     explicit Context(
-        ChannelFactory create_channel,
+        std::shared_ptr<grpc::Channel> channel,
         std::shared_ptr<BlockCache> block_cache,
         std::shared_ptr<ethdb::kv::StateCache> state_cache,
         std::shared_ptr<mdbx::env_managed> chaindata_env = {},

@@ -16,7 +16,7 @@
 
 #include "preverified_hashes.hpp"
 
-#include <silkworm/node/common/environment.hpp>
+#include <silkworm/infra/common/environment.hpp>
 
 extern const uint64_t* preverified_hashes_mainnet_data();
 extern size_t sizeof_preverified_hashes_mainnet_data();

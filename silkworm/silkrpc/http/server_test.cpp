@@ -29,9 +29,8 @@ using Catch::Matchers::Message;
 TEST_CASE("server creation", "[silkrpc][http][server]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    ChannelFactory create_channel = []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); };
-
     SECTION("localhost successful") {
+        ChannelFactory create_channel = []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); };
         ContextPool context_pool{1, create_channel};
         context_pool.start();
         // Uncommenting the following lines you got stuck into llvm-cov problem:

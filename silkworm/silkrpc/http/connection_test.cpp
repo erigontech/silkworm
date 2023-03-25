@@ -29,9 +29,8 @@ using Catch::Matchers::Message;
 TEST_CASE("connection creation", "[silkrpc][http][connection]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    ChannelFactory create_channel = []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); };
-
     SECTION("field initialization") {
+        ChannelFactory create_channel = []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); };
         ContextPool context_pool{1, create_channel};
         context_pool.start();
         boost::asio::thread_pool workers;

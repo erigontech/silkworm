@@ -18,7 +18,7 @@
 #include <atomic>
 
 #include <silkworm/core/types/hash.hpp>
-#include <silkworm/node/common/measure.hpp>
+#include <silkworm/infra/common/measure.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/stagedsync/stage.hpp>
 

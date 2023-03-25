@@ -18,7 +18,7 @@
 
 #include <sstream>
 
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/sync/internals/body_sequence.hpp>
 #include <silkworm/sync/internals/header_chain.hpp>
 #include <silkworm/sync/rpc/penalize_peer.hpp>

@@ -16,8 +16,8 @@
 
 #include "header_retrieval.hpp"
 
-#include "silkworm/node/common/log.hpp"
-#include "silkworm/node/db/stages.hpp"
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/node/db/stages.hpp>
 
 namespace silkworm {
 

@@ -18,7 +18,7 @@
 
 #include <silkworm/core/chain/difficulty.hpp>
 #include <silkworm/core/consensus/base/engine.hpp>
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/sync/sentry_client.hpp>
 
 #include "random_number.hpp"

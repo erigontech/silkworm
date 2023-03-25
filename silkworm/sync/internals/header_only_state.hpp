@@ -16,8 +16,9 @@
 
 #pragma once
 
+#include <silkworm/core/state/block_state.hpp>
+
 #include "chain_elements.hpp"
-#include "silkworm/core/state/block_state.hpp"
 #include "types.hpp"
 
 namespace silkworm {

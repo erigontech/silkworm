@@ -26,13 +26,13 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/infra/rpc/server/call.hpp>
+#include <silkworm/infra/rpc/server/server.hpp>
+#include <silkworm/infra/rpc/server/server_context_pool.hpp>
 #include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>
 #include <silkworm/interfaces/remote/ethbackend.pb.h>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/rpc/sentry_client.hpp>
-#include <silkworm/node/rpc/server/call.hpp>
-#include <silkworm/node/rpc/server/server.hpp>
-#include <silkworm/node/rpc/server/server_context_pool.hpp>
 
 // ETHBACKEND API protocol versions
 // 2.2.0 - first issue

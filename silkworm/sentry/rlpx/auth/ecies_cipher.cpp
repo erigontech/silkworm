@@ -21,7 +21,7 @@
 #include <stdexcept>
 
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/node/common/secp256k1_context.hpp>
+#include <silkworm/infra/common/secp256k1_context.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/rlpx/crypto/aes.hpp>
 #include <silkworm/sentry/rlpx/crypto/hmac.hpp>

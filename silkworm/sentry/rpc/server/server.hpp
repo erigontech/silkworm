@@ -18,11 +18,11 @@
 
 #include <memory>
 
-#include <silkworm/node/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 
-#include <silkworm/node/rpc/server/server_config.hpp>
+#include <silkworm/infra/rpc/server/server_config.hpp>
 #include <silkworm/sentry/api/router/service_router.hpp>
 
 namespace silkworm::sentry::rpc::server {

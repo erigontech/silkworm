@@ -16,7 +16,7 @@
 
 #include "handshake.hpp"
 
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/sentry/common/awaitable_wait_for_one.hpp>
 #include <silkworm/sentry/common/timeout.hpp>
 #include <silkworm/sentry/rlpx/framing/framing_cipher.hpp>

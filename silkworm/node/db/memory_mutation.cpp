@@ -16,7 +16,7 @@
 
 #include "memory_mutation.hpp"
 
-#include <silkworm/node/common/directories.hpp>
+#include <silkworm/infra/common/directories.hpp>
 #include <silkworm/node/db/tables.hpp>
 
 #include "memory_mutation_cursor.hpp"

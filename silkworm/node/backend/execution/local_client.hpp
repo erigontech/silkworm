@@ -39,9 +39,10 @@ class LocalClient : public Client {
 
     auto insert_bodies(const BlockVector& blocks) -> awaitable<void> override;
 
-    auto verify_chain(Hash head_block_hash) -> awaitable<stagedsync::ExecutionEngine::VerificationResult> override;
+    auto validate_chain(Hash head_block_hash) -> awaitable<ValidationResult> override;
 
-    auto notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt) -> awaitable<bool> override;
+    auto update_fork_choice(Hash head_block_hash,
+                            std::optional<Hash> finalized_block_hash = std::nullopt) -> awaitable<ForkChoiceApplication> override;
 
   private:
     Server* local_server_;

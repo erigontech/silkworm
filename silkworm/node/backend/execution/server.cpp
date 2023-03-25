@@ -49,11 +49,11 @@ awaitable<void> Server::insert_bodies(const BlockVector& /*blocks*/) {
     throw std::runtime_error{"Server::insert_bodies not implemented"};
 }
 
-auto verify_chain(Hash /*head_block_hash*/) -> awaitable<stagedsync::ExecutionEngine::VerificationResult> {
+awaitable<ValidationResult> validate_chain(Hash /*head_block_hash*/) {
     throw std::runtime_error{"Server::verify_chain not implemented"};
 }
 
-awaitable<bool> notify_fork_choice_update(Hash /*head_block_hash*/, std::optional<Hash> /*finalized_block_hash*/) {
+awaitable<ForkChoiceApplication> update_fork_choice(Hash /*head_block_hash*/, std::optional<Hash> /*finalized_block_hash*/) {
     throw std::runtime_error{"Server::notify_fork_choice_update not implemented"};
 }
 

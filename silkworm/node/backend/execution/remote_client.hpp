@@ -33,15 +33,23 @@ class RemoteClient : public Client {
   public:
     RemoteClient(agrpc::GrpcContext& grpc_context, const std::shared_ptr<grpc::Channel>& channel);
 
-    awaitable<void> start() override;
+    auto start() -> awaitable<void> override;
 
-    awaitable<void> get_header(BlockNum block_number, Hash block_hash, BlockHeader& header) override;
+    auto get_header(BlockNum block_number, Hash block_hash) -> awaitable<BlockHeader> override;
 
-    awaitable<void> get_body(BlockNum block_number, Hash block_hash, BlockBody& body) override;
+    auto get_body(BlockNum block_number, Hash block_hash) -> awaitable<BlockBody> override;
 
-    awaitable<void> insert_headers(const BlockVector& blocks) override;
+    auto is_canonical(Hash block_hash) -> awaitable<bool> override;
 
-    awaitable<void> insert_bodies(const BlockVector& blocks) override;
+    auto get_block_num(Hash block_hash) -> awaitable<BlockNum> override;
+
+    auto insert_headers(const BlockVector& blocks) -> awaitable<void> override;
+
+    auto insert_bodies(const BlockVector& blocks) -> awaitable<void> override;
+
+    auto validate_chain(Hash head_block_hash) -> awaitable<ValidationResult> override;
+
+    auto update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt) -> awaitable<ForkChoiceApplication> override;
 
   private:
     agrpc::GrpcContext& grpc_context_;

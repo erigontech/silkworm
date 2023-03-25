@@ -51,12 +51,12 @@ awaitable<void> LocalClient::insert_bodies(const BlockVector& blocks) {
     co_await local_server_->insert_bodies(blocks);
 }
 
-awaitable<stagedsync::ExecutionEngine::VerificationResult> LocalClient::verify_chain(Hash head_block_hash) {
-    co_return co_await local_server_->verify_chain(head_block_hash);
+awaitable<ValidationResult> LocalClient::validate_chain(Hash head_block_hash) {
+    return local_server_->validate_chain(head_block_hash);
 }
 
-awaitable<bool> LocalClient::notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
-    co_return co_await local_server_->notify_fork_choice_update(head_block_hash, finalized_block_hash);
+awaitable<ForkChoiceApplication> LocalClient::update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
+    return local_server_->update_fork_choice(head_block_hash, finalized_block_hash);
 }
 
 }  // namespace silkworm::execution

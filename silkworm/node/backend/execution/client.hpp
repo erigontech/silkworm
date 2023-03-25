@@ -46,9 +46,10 @@ class Client {
 
     virtual auto insert_bodies(const BlockVector& blocks) -> awaitable<void> = 0;
 
-    virtual auto verify_chain(Hash head_block_hash) -> awaitable<stagedsync::ExecutionEngine::VerificationResult> = 0;
+    virtual auto validate_chain(Hash head_block_hash) -> awaitable<ValidationResult> = 0;
 
-    virtual auto notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt) -> awaitable<bool> = 0;
+    virtual auto update_fork_choice(Hash head_block_hash,
+                                    std::optional<Hash> finalized_block_hash = std::nullopt) -> awaitable<ForkChoiceApplication> = 0;
 };
 
 }  // namespace silkworm::execution

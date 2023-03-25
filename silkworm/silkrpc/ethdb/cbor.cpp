@@ -14,9 +14,9 @@
    limitations under the License.
 */
 
-#include <vector>
-
 #include "cbor.hpp"
+
+#include <vector>
 
 #include <cbor/cbor.h>
 #include <cbor/listener.h>
@@ -31,7 +31,7 @@ namespace silkrpc {
 
 class LogCborListener : public cbor::listener {
 
-private:
+  private:
     enum class ProcessingState { 
         kWaitNLogs,  
         kWaitNFields, 
@@ -41,8 +41,8 @@ private:
         kWaitData
     };
 
-public:
-    LogCborListener (std::vector<Log>& logs): state_(ProcessingState::kWaitNLogs), nlogs_(0), ntopics_(0), logs_(logs), current_log_({}), current_topic_(0) {}
+  public:
+    LogCborListener(std::vector<Log>& logs): state_(ProcessingState::kWaitNLogs), nlogs_(0), ntopics_(0), logs_(logs), current_log_({}), current_topic_(0) {}
 
     void on_integer(int ) { 
         throw std::invalid_argument("Log CBOR: unexpected format(on_integer)");
@@ -155,7 +155,7 @@ public:
        return true;
     }
 
-    private:
+  private:
         ProcessingState state_;
         int nlogs_;
         int ntopics_;
@@ -170,8 +170,8 @@ bool cbor_decode(const silkworm::Bytes& bytes, std::vector<Log>& logs) {
     if (bytes.size() == 0) {
         return false;
     }
-    const void * data = static_cast<const void *>(bytes.data());
-    cbor::input input(const_cast<void *>(data), bytes.size());
+    const void* data = static_cast<const void*>(bytes.data());
+    cbor::input input(const_cast<void*>(data), bytes.size());
     LogCborListener listener(logs);
     cbor::decoder decoder(input, listener);
     decoder.run();
@@ -197,4 +197,4 @@ bool cbor_decode(const silkworm::Bytes& bytes, std::vector<Receipt>& receipts) {
     }
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

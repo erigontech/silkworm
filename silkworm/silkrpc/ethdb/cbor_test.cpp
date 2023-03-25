@@ -109,7 +109,7 @@ TEST_CASE("decode logs from incorrect bytes", "[silkrpc][ethdb][cbor]") {
     const auto b1 = *silkworm::from_hex("81");
     CHECK_THROWS(cbor_decode(b1, logs));
     const auto b2 = *silkworm::from_hex("83808040");
-    CHECK_THROWS_MATCHES(cbor_decode(b2, logs), std::system_error, Message("Log CBOR: unexpected format(on_array bad not 3 fields): "s + invalidArgumentMessage));
+    CHECK_THROWS_MATCHES(cbor_decode(b2, logs), std::invalid_argument, Message("Log CBOR: unexpected format(on_array wrong number of fields)"));
 }
 
 TEST_CASE("decode receipts from empty bytes", "[silkrpc][ethdb][cbor]") {

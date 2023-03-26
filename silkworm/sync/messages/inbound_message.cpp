@@ -18,13 +18,14 @@
 
 #include <iostream>
 
+#include <silkworm/infra/common/log.hpp>
+
 #include "inbound_block_bodies.hpp"
 #include "inbound_block_headers.hpp"
 #include "inbound_get_block_bodies.hpp"
 #include "inbound_get_block_headers.hpp"
 #include "inbound_new_block.hpp"
 #include "inbound_new_block_hashes.hpp"
-#include "silkworm/node/common/log.hpp"
 
 namespace silkworm {
 

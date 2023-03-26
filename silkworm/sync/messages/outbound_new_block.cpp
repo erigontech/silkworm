@@ -16,7 +16,7 @@
 
 #include "outbound_new_block.hpp"
 
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/sync/internals/body_sequence.hpp>
 #include <silkworm/sync/internals/header_chain.hpp>
 #include <silkworm/sync/rpc/send_message_to_random_peers.hpp>

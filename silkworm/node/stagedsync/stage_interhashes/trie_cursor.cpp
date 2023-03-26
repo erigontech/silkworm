@@ -19,7 +19,7 @@
 #include <bit>
 
 #include <silkworm/core/trie/nibbles.hpp>
-#include <silkworm/node/common/decoding_exception.hpp>
+#include <silkworm/infra/common/decoding_exception.hpp>
 
 namespace silkworm::trie {
 

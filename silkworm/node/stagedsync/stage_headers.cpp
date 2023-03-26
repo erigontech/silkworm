@@ -19,10 +19,10 @@
 #include <set>
 #include <thread>
 
-#include <silkworm/node/common/environment.hpp>
-#include <silkworm/node/common/log.hpp>
-#include <silkworm/node/common/measure.hpp>
-#include <silkworm/node/common/stopwatch.hpp>
+#include <silkworm/infra/common/environment.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/common/measure.hpp>
+#include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/node/db/db_utils.hpp>
 #include <silkworm/node/db/stages.hpp>
 

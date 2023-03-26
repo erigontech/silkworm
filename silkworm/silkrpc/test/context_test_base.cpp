@@ -26,8 +26,12 @@ filter::FilterStorage filter_storage{0x400};
 
 ContextTestBase::ContextTestBase()
     : log_guard_{LogLevel::None},
-      context_{[]() { return grpc::CreateChannel("localhost:12345", grpc::InsecureChannelCredentials()); },
-               std::make_shared<BlockCache>(), std::make_shared<ethdb::kv::CoherentStateCache>(), filter_storage},
+      context_{
+          grpc::CreateChannel("localhost:12345", grpc::InsecureChannelCredentials()),
+          std::make_shared<BlockCache>(),
+          std::make_shared<ethdb::kv::CoherentStateCache>(),
+          filter_storage,
+      },
       io_context_{*context_.io_context()},
       grpc_context_{*context_.grpc_context()},
       context_thread_{[&]() { context_.execute_loop(); }} {

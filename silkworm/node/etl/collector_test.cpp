@@ -23,10 +23,10 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/test/log.hpp>
 #include <silkworm/node/common/test_context.hpp>
 #include <silkworm/node/db/tables.hpp>
-#include <silkworm/node/test/log.hpp>
 
 namespace silkworm::etl {
 

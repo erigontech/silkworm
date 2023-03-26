@@ -21,10 +21,10 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/node/common/decoding_exception.hpp>
-#include <silkworm/node/common/directories.hpp>
-#include <silkworm/node/common/log.hpp>
-#include <silkworm/node/concurrency/signal_handler.hpp>
+#include <silkworm/infra/common/decoding_exception.hpp>
+#include <silkworm/infra/common/directories.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/etl/collector.hpp>
 

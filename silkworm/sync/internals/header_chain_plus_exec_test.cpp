@@ -22,11 +22,11 @@
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/consensus/engine.hpp>
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/node/common/environment.hpp>
+#include <silkworm/infra/common/environment.hpp>
+#include <silkworm/infra/test/log.hpp>
 #include <silkworm/node/common/test_context.hpp>
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
-#include <silkworm/node/test/log.hpp>
 
 #include "chain_fork_view.hpp"
 #include "header_chain.hpp"

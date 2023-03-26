@@ -38,11 +38,11 @@
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/core/trie/prefix_set.hpp>
-#include <silkworm/node/common/decoding_exception.hpp>
-#include <silkworm/node/common/directories.hpp>
-#include <silkworm/node/common/log.hpp>
-#include <silkworm/node/common/stopwatch.hpp>
-#include <silkworm/node/concurrency/signal_handler.hpp>
+#include <silkworm/infra/common/decoding_exception.hpp>
+#include <silkworm/infra/common/directories.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/common/stopwatch.hpp>
+#include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/db/prune_mode.hpp>

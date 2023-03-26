@@ -22,6 +22,7 @@
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
+#include <silkworm/infra/test/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/db/genesis.hpp>
@@ -29,7 +30,6 @@
 #include <silkworm/node/stagedsync/stage_execution.hpp>
 #include <silkworm/node/stagedsync/stage_hashstate.hpp>
 #include <silkworm/node/stagedsync/stage_senders.hpp>
-#include <silkworm/node/test/log.hpp>
 
 using namespace silkworm;
 using namespace evmc::literals;

@@ -36,7 +36,7 @@ std::ostream& operator<<(std::ostream& out, Context& c) {
 }
 
 Context::Context(
-    ChannelFactory create_channel,
+    std::shared_ptr<grpc::Channel> channel,
     std::shared_ptr<BlockCache> block_cache,
     std::shared_ptr<ethdb::kv::StateCache> state_cache,
     filter::FilterStorage& filter_storage,
@@ -51,7 +51,6 @@ Context::Context(
       filter_storage_{filter_storage},
       chaindata_env_(chaindata_env),
       wait_mode_(wait_mode) {
-    std::shared_ptr<grpc::Channel> channel = create_channel();
     if (chaindata_env) {
         database_ = std::make_unique<ethdb::file::LocalDatabase>(chaindata_env);
     } else {

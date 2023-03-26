@@ -18,9 +18,10 @@
 
 #include <memory>
 
+#include <silkworm/core/rlp/decode.hpp>
+#include <silkworm/core/rlp/encode.hpp>
+
 #include "message.hpp"
-#include "silkworm/core/rlp/decode.hpp"
-#include "silkworm/core/rlp/encode.hpp"
 
 namespace silkworm {
 

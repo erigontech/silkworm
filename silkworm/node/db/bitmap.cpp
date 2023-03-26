@@ -19,8 +19,8 @@
 #include <stdexcept>
 
 #include <silkworm/core/common/cast.hpp>
-#include <silkworm/node/common/binary_search.hpp>
-#include <silkworm/node/concurrency/signal_handler.hpp>
+#include <silkworm/infra/common/binary_search.hpp>
+#include <silkworm/infra/concurrency/signal_handler.hpp>
 
 namespace silkworm::db::bitmap {
 

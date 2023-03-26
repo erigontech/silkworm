@@ -28,15 +28,15 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/infra/common/directories.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/rpc/common/conversion.hpp>
+#include <silkworm/infra/rpc/common/util.hpp>
+#include <silkworm/infra/test/log.hpp>
 #include <silkworm/interfaces/types/types.pb.h>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/state_change_collection.hpp>
-#include <silkworm/node/common/directories.hpp>
-#include <silkworm/node/common/log.hpp>
 #include <silkworm/node/db/mdbx.hpp>
-#include <silkworm/node/rpc/common/conversion.hpp>
-#include <silkworm/node/rpc/common/util.hpp>
-#include <silkworm/node/test/log.hpp>
 #include <silkworm/node/test/os.hpp>
 
 using namespace std::chrono_literals;

@@ -22,9 +22,9 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/node/common/directories.hpp>
-#include <silkworm/node/common/log.hpp>
-#include <silkworm/node/test/log.hpp>
+#include <silkworm/infra/common/directories.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/test/log.hpp>
 #include <silkworm/node/test/snapshots.hpp>
 
 namespace silkworm {

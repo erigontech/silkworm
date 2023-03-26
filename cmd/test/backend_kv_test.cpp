@@ -32,12 +32,12 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/rpc/common/conversion.hpp>
+#include <silkworm/infra/rpc/common/util.hpp>
 #include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
-#include <silkworm/node/common/log.hpp>
 #include <silkworm/node/db/tables.hpp>
-#include <silkworm/node/rpc/common/conversion.hpp>
-#include <silkworm/node/rpc/common/util.hpp>
 
 #include "../common/shutdown_signal.hpp"
 

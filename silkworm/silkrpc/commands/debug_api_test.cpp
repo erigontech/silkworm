@@ -200,12 +200,9 @@ private:
 TEST_CASE("DebugRpcApi") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
+    auto channel = grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials());
     filter::FilterStorage filter_storage{0x400};
-
-    ChannelFactory create_channel = []() {
-        return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials());
-    };
-    Context context{create_channel, std::make_shared<BlockCache>(), std::make_shared<ethdb::kv::CoherentStateCache>(), filter_storage};
+    Context context{channel, std::make_shared<BlockCache>(), std::make_shared<ethdb::kv::CoherentStateCache>(), filter_storage};
     boost::asio::thread_pool workers{1};
 
     SECTION("CTOR") {

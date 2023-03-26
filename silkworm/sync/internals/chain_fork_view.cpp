@@ -17,7 +17,7 @@
 #include "chain_fork_view.hpp"
 
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/stages.hpp>
 
 namespace silkworm::chainsync {

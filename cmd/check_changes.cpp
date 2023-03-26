@@ -20,8 +20,8 @@
 #include <absl/container/flat_hash_set.h>
 
 #include <silkworm/core/execution/processor.hpp>
-#include <silkworm/node/common/directories.hpp>
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/directories.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
 

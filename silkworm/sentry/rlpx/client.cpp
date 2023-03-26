@@ -22,7 +22,7 @@
 #include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
 
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/sentry/common/sleep.hpp>
 #include <silkworm/sentry/common/socket_stream.hpp>
 
@@ -55,11 +55,11 @@ awaitable<std::unique_ptr<Peer>> Client::connect(
         } catch (const boost::system::system_error& ex) {
             if (ex.code() == boost::system::errc::operation_canceled)
                 throw;
-            log::Debug() << "RLPx client connect exception: " << ex.what();
+            log::Warning() << "RLPx client connect exception: " << ex.what();
         }
         if (!is_connected) {
             stream = common::SocketStream{client_context};
-            log::Warning() << "Failed to connect to " << peer_url.to_string() << ", reconnecting...";
+            log::Info() << "Failed to connect to " << peer_url.to_string() << ", reconnecting...";
             co_await common::sleep(10s);
         }
     }

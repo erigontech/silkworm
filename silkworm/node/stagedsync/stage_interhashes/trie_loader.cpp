@@ -20,8 +20,8 @@
 
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/core/types/account.hpp>
-#include <silkworm/node/common/decoding_exception.hpp>
-#include <silkworm/node/concurrency/signal_handler.hpp>
+#include <silkworm/infra/common/decoding_exception.hpp>
+#include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/node/db/tables.hpp>
 
 namespace silkworm::trie {

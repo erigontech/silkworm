@@ -20,11 +20,11 @@
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/common/mem_usage.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/common/stopwatch.hpp>
+#include <silkworm/infra/concurrency/signal_handler.hpp>
 #include <silkworm/node/backend/backend_kv_server.hpp>
-#include <silkworm/node/common/log.hpp>
 #include <silkworm/node/common/settings.hpp>
-#include <silkworm/node/common/stopwatch.hpp>
-#include <silkworm/node/concurrency/signal_handler.hpp>
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/snapshot/sync.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>

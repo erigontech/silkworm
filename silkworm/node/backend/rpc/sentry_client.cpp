@@ -22,9 +22,9 @@
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
 
-#include <silkworm/node/common/log.hpp>
-#include <silkworm/node/rpc/common/conversion.hpp>
-#include <silkworm/node/rpc/common/util.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/rpc/common/conversion.hpp>
+#include <silkworm/infra/rpc/common/util.hpp>
 
 namespace silkworm::rpc {
 
@@ -39,8 +39,7 @@ RemoteSentryClient::RemoteSentryClient(agrpc::GrpcContext& grpc_context, const s
 boost::asio::awaitable<PeerCountResult> RemoteSentryClient::peer_count() {
     SILK_TRACE << "RemoteSentryClient::peer_count START address: " << address_uri_;
     sentry::PeerCountRequest request;
-    sentry::PeerCountReply reply;
-    co_await unary_rpc(&sentry::Sentry::Stub::AsyncPeerCount, stub_, request, reply, grpc_context_);
+    sentry::PeerCountReply reply = co_await unary_rpc(&sentry::Sentry::Stub::AsyncPeerCount, stub_, std::move(request), grpc_context_);
     SILK_TRACE << "RemoteSentryClient::peer_count END address: " << address_uri_;
     co_return reply;
 }
@@ -48,8 +47,7 @@ boost::asio::awaitable<PeerCountResult> RemoteSentryClient::peer_count() {
 boost::asio::awaitable<NodeInfoResult> RemoteSentryClient::node_info() {
     SILK_TRACE << "RemoteSentryClient::node_info START address: " << address_uri_;
     google::protobuf::Empty request;
-    types::NodeInfoReply reply;
-    co_await unary_rpc(&sentry::Sentry::Stub::AsyncNodeInfo, stub_, request, reply, grpc_context_);
+    types::NodeInfoReply reply = co_await unary_rpc(&sentry::Sentry::Stub::AsyncNodeInfo, stub_, std::move(request), grpc_context_);
     SILK_TRACE << "RemoteSentryClient::node_info END address: " << address_uri_;
     co_return reply;
 }
@@ -69,8 +67,7 @@ boost::asio::awaitable<SetStatusResult> RemoteSentryClient::set_status(SentrySta
         forks->add_time_forks(block);
     }
     request.set_allocated_fork_data(forks);
-    sentry::SetStatusReply reply;
-    co_await unary_rpc(&sentry::Sentry::Stub::AsyncSetStatus, stub_, request, reply, grpc_context_);
+    sentry::SetStatusReply reply = co_await unary_rpc(&sentry::Sentry::Stub::AsyncSetStatus, stub_, std::move(request), grpc_context_);
     SILK_TRACE << "RemoteSentryClient::set_status END address: " << address_uri_;
     co_return reply;
 }

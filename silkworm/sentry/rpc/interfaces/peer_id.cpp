@@ -16,7 +16,7 @@
 
 #include "peer_id.hpp"
 
-#include <silkworm/node/rpc/interfaces/types.hpp>
+#include <silkworm/infra/rpc/interfaces/types.hpp>
 
 namespace silkworm::sentry::rpc::interfaces {
 

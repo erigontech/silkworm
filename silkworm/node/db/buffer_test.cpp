@@ -18,10 +18,10 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/infra/test/log.hpp>
 #include <silkworm/node/common/test_context.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/db/tables.hpp>
-#include <silkworm/node/test/log.hpp>
 
 namespace silkworm::db {
 

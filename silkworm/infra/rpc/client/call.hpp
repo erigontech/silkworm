@@ -20,6 +20,7 @@
 #include <functional>
 #include <memory>
 #include <stdexcept>
+#include <string>
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
@@ -32,14 +33,17 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/infra/common/log.hpp>
+#include <utility>
 
 namespace silkworm::rpc {
 
 class GrpcStatusError : public std::runtime_error {
   public:
-    explicit GrpcStatusError(grpc::Status status)
-        : std::runtime_error(status.error_message()),
+    explicit GrpcStatusError(grpc::Status status, const std::string& message)
+        : std::runtime_error(message.empty() ? status.error_message() : message + ": " + status.error_message()),
           status_(std::move(status)) {}
+    explicit GrpcStatusError(grpc::Status status)
+        : GrpcStatusError(std::move(status), "") {}
 
     [[nodiscard]] const grpc::Status& status() const { return status_; }
 
@@ -52,7 +56,8 @@ boost::asio::awaitable<Response> unary_rpc(
     agrpc::detail::ClientUnaryRequest<Stub, Request, grpc::ClientAsyncResponseReader<Response>> rpc,
     std::unique_ptr<Stub>& stub,
     Request request,
-    agrpc::GrpcContext& grpc_context) {
+    agrpc::GrpcContext& grpc_context,
+    const std::string& error_message = "") {
     grpc::ClientContext client_context;
     client_context.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(10));
 
@@ -64,7 +69,7 @@ boost::asio::awaitable<Response> unary_rpc(
     co_await agrpc::finish(reader, reply, status, boost::asio::bind_executor(grpc_context, boost::asio::use_awaitable));
 
     if (!status.ok()) {
-        throw GrpcStatusError(std::move(status));
+        throw GrpcStatusError(std::move(status), error_message);
     }
 
     co_return reply;
@@ -76,7 +81,8 @@ boost::asio::awaitable<void> streaming_rpc(
     std::unique_ptr<Stub>& stub,
     Request request,
     agrpc::GrpcContext& grpc_context,
-    std::function<boost::asio::awaitable<void>(Response)> consumer) {
+    std::function<boost::asio::awaitable<void>(Response)> consumer,
+    const std::string& error_message = "") {
     grpc::ClientContext client_context;
     client_context.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(10));
 
@@ -101,7 +107,7 @@ boost::asio::awaitable<void> streaming_rpc(
     co_await agrpc::finish(reader, status, boost::asio::bind_executor(grpc_context, boost::asio::use_awaitable));
 
     if (!status.ok()) {
-        throw GrpcStatusError(std::move(status));
+        throw GrpcStatusError(std::move(status), error_message);
     }
 }
 

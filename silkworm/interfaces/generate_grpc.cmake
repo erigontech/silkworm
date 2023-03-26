@@ -97,6 +97,35 @@ add_custom_target(
 )
 
 # ---------------------------------------------------------------------------------------------------------------------
+# Execution
+# ---------------------------------------------------------------------------------------------------------------------
+# gRPC protocol interface file
+set(EXECUTION_PROTO "${PROTO_PATH}/execution/execution.proto")
+
+# Generate sources
+set(EXECUTION_PROTO_SOURCES "${OUT_PATH}/execution/execution.pb.cc")
+set(EXECUTION_PROTO_HEADERS "${OUT_PATH}/execution/execution.pb.h")
+set(EXECUTION_GRPC_SOURCES "${OUT_PATH}/execution/execution.grpc.pb.cc")
+set(EXECUTION_GRPC_HEADERS "${OUT_PATH}/execution/execution.grpc.pb.h")
+
+add_custom_command(
+        OUTPUT "${EXECUTION_PROTO_SOURCES}" "${EXECUTION_PROTO_HEADERS}" "${EXECUTION_GRPC_SOURCES}" "${EXECUTION_GRPC_HEADERS}"
+        COMMAND ${PROTOBUF_PROTOC}
+        ARGS ${PROTOC_ARGS_GRPC} "${EXECUTION_PROTO}"
+        DEPENDS "${EXECUTION_PROTO}"
+        COMMENT "Running C++ gRPC compiler on ${EXECUTION_PROTO}"
+)
+
+create_symlink_target(generate_execution_grpc_symlink "${OUT_PATH_SYMLINK}/execution" "${OUT_PATH}/execution")
+
+add_custom_target(
+        generate_execution_grpc
+        DEPENDS "${EXECUTION_PROTO_SOURCES}" "${EXECUTION_PROTO_HEADERS}" "${EXECUTION_GRPC_SOURCES}" "${EXECUTION_GRPC_HEADERS}"
+        generate_types_proto
+        generate_execution_grpc_symlink
+)
+
+# ---------------------------------------------------------------------------------------------------------------------
 # Sentry
 # ---------------------------------------------------------------------------------------------------------------------
 # gRPC protocol interface file

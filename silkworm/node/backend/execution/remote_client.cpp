@@ -18,11 +18,11 @@
 
 #include <silkworm/core/types/bloom.hpp>
 #include <silkworm/core/types/transaction.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/rpc/client/call.hpp>
+#include <silkworm/infra/rpc/common/conversion.hpp>
+#include <silkworm/infra/rpc/interfaces/types.hpp>
 #include <silkworm/interfaces/execution/execution.grpc.pb.h>
-#include <silkworm/node/common/log.hpp>
-#include <silkworm/node/rpc/client/call.hpp>
-#include <silkworm/node/rpc/common/conversion.hpp>
-#include <silkworm/node/rpc/interfaces/types.hpp>
 
 namespace silkworm::execution {
 
@@ -102,11 +102,6 @@ static void match_or_throw(BlockNum block_number, uint64_t received_number) {
     }
 }
 
-void stop_if_error(const grpc::Status& status, std::string error_message) {
-    if (status.ok()) return;
-    throw std::runtime_error{"RemoteClient, " + error_message + ", cause: " + status.error_message()};
-}
-
 RemoteClient::RemoteClient(agrpc::GrpcContext& grpc_context, const std::shared_ptr<grpc::Channel>& channel)
     : grpc_context_(grpc_context), stub_(::execution::Execution::NewStub(channel)) {}
 
@@ -119,10 +114,9 @@ awaitable<BlockHeader> RemoteClient::get_header(BlockNum block_number, Hash bloc
     ::execution::GetSegmentRequest request;
     request.set_blocknumber(block_number);
     request.set_allocated_blockhash(rpc::H256_from_bytes32(block_hash).release());
-    ::execution::GetHeaderResponse response;
-    const auto grpc_status = co_await rpc::unary_rpc(&::execution::Execution::Stub::AsyncGetHeader,
-                                                     stub_, request, response, grpc_context_);
-    stop_if_error(grpc_status, "failed getting header");
+
+    const auto response = co_await rpc::unary_rpc(
+        &::execution::Execution::Stub::AsyncGetHeader, stub_, request, grpc_context_, "failure getting header");
 
     const auto& received_header = response.header();
     match_or_throw(block_hash, received_header.blockhash());
@@ -138,10 +132,9 @@ awaitable<BlockBody> RemoteClient::get_body(BlockNum block_number, Hash block_ha
     ::execution::GetSegmentRequest request;
     request.set_blocknumber(block_number);
     request.set_allocated_blockhash(rpc::H256_from_bytes32(block_hash).release());
-    ::execution::GetBodyResponse response;
-    const auto grpc_status = co_await rpc::unary_rpc(&::execution::Execution::Stub::AsyncGetBody,
-                                                     stub_, request, response, grpc_context_);
-    stop_if_error(grpc_status, "failed getting body");
+
+    const auto response = co_await rpc::unary_rpc(
+        &::execution::Execution::Stub::AsyncGetBody, stub_, request, grpc_context_, "failure getting body");
 
     const auto& received_body = response.body();
     match_or_throw(block_hash, received_body.blockhash());
@@ -182,10 +175,8 @@ awaitable<void> RemoteClient::insert_headers(const BlockVector& blocks) {
         ::execution::Header* header = request.add_headers();
         serialize_header(b.header, header);
     }
-    ::execution::EmptyMessage response;
-    const auto grpc_status = co_await rpc::unary_rpc(&::execution::Execution::Stub::AsyncInsertHeaders,
-                                                     stub_, request, response, grpc_context_);
-    stop_if_error(grpc_status, "failed inserting headers");
+    co_await rpc::unary_rpc(
+        &::execution::Execution::Stub::AsyncInsertHeaders, stub_, request, grpc_context_, "failure inserting headers");
 }
 
 awaitable<void> RemoteClient::insert_bodies(const BlockVector& blocks) {
@@ -213,47 +204,44 @@ awaitable<void> RemoteClient::insert_bodies(const BlockVector& blocks) {
             }
         }
     }
-    ::execution::EmptyMessage response;
-    const auto grpc_status = co_await rpc::unary_rpc(&::execution::Execution::Stub::AsyncInsertBodies,
-                                                     stub_, request, response, grpc_context_);
-    stop_if_error(grpc_status, "failed inserting bodies");
+    co_await rpc::unary_rpc(
+        &::execution::Execution::Stub::AsyncInsertBodies, stub_, request, grpc_context_, "failure inserting bodies");
 }
 
 awaitable<bool> RemoteClient::is_canonical(Hash block_hash) {
     std::unique_ptr<types::H256> request = rpc::H256_from_bytes32(block_hash);
-    ::execution::IsCanonicalResponse response;
-    const auto grpc_status = co_await rpc::unary_rpc(&::execution::Execution::Stub::AsyncIsCanonicalHash,
-                                                     stub_, *request, response, grpc_context_);
-    stop_if_error(grpc_status, "failed checking canonical hash");
+    const auto response = co_await rpc::unary_rpc(
+        &::execution::Execution::Stub::AsyncIsCanonicalHash, stub_, *request, grpc_context_, "failure checking canonical hash");
+
     co_return response.canonical();
 }
 
 awaitable<BlockNum> RemoteClient::get_block_num(Hash block_hash) {
     std::unique_ptr<types::H256> request = rpc::H256_from_bytes32(block_hash);
-    ::execution::GetHeaderHashNumberResponse response;
-    const auto grpc_status = co_await rpc::unary_rpc(&::execution::Execution::Stub::AsyncGetHeaderHashNumber,
-                                                     stub_, *request, response, grpc_context_);
-    stop_if_error(grpc_status, "failed getting block number");
+    const auto response = co_await rpc::unary_rpc(
+        &::execution::Execution::Stub::AsyncGetHeaderHashNumber, stub_, *request, grpc_context_, "failure getting block number");
+
     co_return response.blocknumber();
 }
 
 awaitable<ValidationResult> RemoteClient::validate_chain(Hash head_block_hash) {
     std::unique_ptr<types::H256> request = rpc::H256_from_bytes32(head_block_hash);
-    ::execution::ValidationReceipt response;
-    const auto grpc_status = co_await rpc::unary_rpc(&::execution::Execution::Stub::AsyncValidateChain,
-                                                     stub_, *request, response, grpc_context_);
-    stop_if_error(grpc_status, "failed verifying chain");
+    const auto response = co_await rpc::unary_rpc(
+        &::execution::Execution::Stub::AsyncValidateChain, stub_, *request, grpc_context_, "failure verifying chain");
 
     ValidationResult result;
     switch (response.validationstatus()) {
         case ::execution::ValidationStatus::Success:
             result = ValidChain{.current_head = hash_from_H256(response.latestvalidhash())};
+            break;
         case ::execution::ValidationStatus::InvalidChain:
             result = InvalidChain{.latest_valid_head = hash_from_H256(response.latestvalidhash())};
+            break;
         case ::execution::ValidationStatus::TooFarAway:
         case ::execution::ValidationStatus::MissingSegment:
             result = ValidationError{.latest_valid_head = hash_from_H256(response.latestvalidhash()),
                                      .missing_block = hash_from_H256(response.missinghash())};
+            break;
         default:
             throw std::runtime_error("unknown validation status");
     }
@@ -263,10 +251,8 @@ awaitable<ValidationResult> RemoteClient::validate_chain(Hash head_block_hash) {
 
 awaitable<ForkChoiceApplication> RemoteClient::update_fork_choice(Hash head_block_hash, std::optional<Hash> /*finalized_block_hash*/) {
     std::unique_ptr<types::H256> request = rpc::H256_from_bytes32(head_block_hash);
-    ::execution::ForkChoiceReceipt response;
-    const auto grpc_status = co_await rpc::unary_rpc(&::execution::Execution::Stub::AsyncUpdateForkChoice,
-                                                     stub_, *request, response, grpc_context_);
-    stop_if_error(grpc_status, "failed updating fork choice");
+    const auto response = co_await rpc::unary_rpc(
+        &::execution::Execution::Stub::AsyncUpdateForkChoice, stub_, *request, grpc_context_, "failure updating fork choice");
 
     ForkChoiceApplication result{.success = response.success(), .current_head = hash_from_H256(response.latestvalidhash())};
 

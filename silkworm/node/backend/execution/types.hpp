@@ -27,19 +27,21 @@ namespace silkworm::execution {
 using BlockVector = std::vector<Block>;
 
 struct ForkChoiceApplication {
-    bool success;       // Forkchoice is either successful or unsuccessful.
-    Hash current_head;  // Return latest valid hash in case of halt of execution.
+    bool success{false};         // Fork choice is either successful or unsuccessful.
+    Hash current_head;           // Return latest valid hash in case of halt of execution.
     BlockNum current_height{0};
 };
 
 struct ValidChain {
     Hash current_head;
 };
+
 struct InvalidChain {
     Hash latest_valid_head;
     std::optional<Hash> bad_block;
     std::set<Hash> bad_headers;
 };
+
 struct ValidationError {
     Hash latest_valid_head;
     Hash missing_block;

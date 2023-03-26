@@ -52,11 +52,12 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | eth_callBundle                             | Yes          |                                            |
 | eth_createAccessList                       | Yes          |                                            |
 |                                            |              |                                            |
-| eth_newFilter                              | -            | not yet implemented (see Erigon PR #4253)  |
+| eth_newFilter                              | Yes          |                                            |
 | eth_newBlockFilter                         | -            | not yet implemented                        |
 | eth_newPendingTransactionFilter            | -            | not yet implemented                        |
-| eth_getFilterChanges                       | -            | not yet implemented                        |
-| eth_uninstallFilter                        | -            | not yet implemented                        |
+| eth_getFilterChanges                       | Yes          |                                            |
+| eth_getFilterLogs                          | Yes          |                                            |
+| eth_uninstallFilter                        | Yes          |                                            |
 | eth_getLogs                                | Yes          |                                            |
 |                                            |              |                                            |
 | eth_getAccount                             | -            | not yet implemented                        |

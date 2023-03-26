@@ -30,6 +30,7 @@ add_library(silkworm_interfaces "${SILKWORM_INTERFACE_SRC}")
 
 add_dependencies(silkworm_interfaces
   generate_types_proto_symlink
+  generate_execution_grpc_symlink
   generate_sentry_grpc_symlink
   generate_remote_grpc_symlink
   generate_txpool_grpc_symlink

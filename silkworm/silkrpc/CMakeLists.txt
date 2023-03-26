@@ -55,6 +55,7 @@ endif()
 
 target_include_directories(silkrpc PUBLIC
         ${SILKWORM_MAIN_DIR}
+        ${SILKWORM_MAIN_DIR}/third_party/cbor-cpp
         ${SILKWORM_MAIN_DIR}/third_party/glaze/include
         ${SILKWORM_MAIN_DIR}/third_party/evmone/lib)
 

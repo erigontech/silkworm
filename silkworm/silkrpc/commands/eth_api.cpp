@@ -1494,15 +1494,19 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann:
 
         std::vector<Log> filtered_logs;
         filtered_logs.reserve(128);
+        std::vector<Log> chunk_logs;
+        chunk_logs.reserve(512);
+        Logs filtered_block_logs{};
+        filtered_block_logs.reserve(64);
 
         for (auto block_to_match : block_numbers) {
             uint64_t log_index{0};
 
-            Logs filtered_block_logs{};
+            filtered_block_logs.clear();
             const auto block_key = silkworm::db::block_key(block_to_match);
             SILKRPC_TRACE << "block_to_match: " << block_to_match << " block_key: " << silkworm::to_hex(block_key) << "\n";
             co_await tx_database.for_prefix(db::table::kLogs, block_key, [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
-                Logs chunk_logs{};
+                chunk_logs.clear();
                 const bool decoding_ok{cbor_decode(v, chunk_logs)};
                 if (!decoding_ok) {
                     return false;

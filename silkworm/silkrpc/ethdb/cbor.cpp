@@ -42,7 +42,8 @@ class LogCborListener : public cbor::listener {
     };
 
   public:
-    LogCborListener(std::vector<Log>& logs): state_(ProcessingState::kWaitNLogs), nlogs_(0), ntopics_(0), logs_(logs), current_log_({}), current_topic_(0) {}
+    LogCborListener(std::vector<Log>& logs)
+        : state_(ProcessingState::kWaitNLogs), nlogs_(0), ntopics_(0), logs_(logs), current_log_({}), current_topic_(0) {}
 
     void on_integer(int ) { 
         throw std::invalid_argument("Log CBOR: unexpected format(on_integer)");
@@ -149,7 +150,7 @@ class LogCborListener : public cbor::listener {
     }
 
     bool success() {
-       if (static_cast<int>(logs_.size())  != nlogs_) {
+       if (static_cast<int>(logs_.size()) != nlogs_) {
            throw std::invalid_argument("Log CBOR: wrong number of logs");
        }
        return true;
@@ -164,7 +165,6 @@ class LogCborListener : public cbor::listener {
         Log current_log_;
         int current_topic_;
 };
-
 
 bool cbor_decode(const silkworm::Bytes& bytes, std::vector<Log>& logs) {
     if (bytes.size() == 0) {

@@ -21,6 +21,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
@@ -33,7 +34,6 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/infra/common/log.hpp>
-#include <utility>
 
 namespace silkworm::rpc {
 

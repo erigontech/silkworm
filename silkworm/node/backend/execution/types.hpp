@@ -27,8 +27,8 @@ namespace silkworm::execution {
 using BlockVector = std::vector<Block>;
 
 struct ForkChoiceApplication {
-    bool success{false};         // Fork choice is either successful or unsuccessful.
-    Hash current_head;           // Return latest valid hash in case of halt of execution.
+    bool success{false};  // Fork choice is either successful or unsuccessful.
+    Hash current_head;    // Return latest valid hash in case of halt of execution.
     BlockNum current_height{0};
 };
 

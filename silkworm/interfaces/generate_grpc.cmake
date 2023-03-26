@@ -129,7 +129,7 @@ create_symlink_target(generate_execution_grpc_symlink "${OUT_PATH_SYMLINK}/execu
 
 add_custom_target(
         generate_execution_grpc
-        DEPENDS "${ETHBACKEND_SOURCES_OUT}"
+        DEPENDS "${EXECUTION_SOURCES_OUT}"
         generate_types_proto
         generate_execution_grpc_symlink
 )

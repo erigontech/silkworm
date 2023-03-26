@@ -520,15 +520,15 @@ void to_json(nlohmann::json& json, const Filter& filter) {
     if (filter.to_block != std::nullopt) {
         json["toBlock"] = filter.to_block.value();
     }
-    if (filter.addresses != std::nullopt) {
-        if (filter.addresses.value().size() == 1) {
-            json["address"] = filter.addresses.value()[0];
+    if (!filter.addresses.empty()) {
+        if (filter.addresses.size() == 1) {
+            json["address"] = filter.addresses[0];
         } else {
-            json["address"] = filter.addresses.value();
+            json["address"] = filter.addresses;
         }
     }
-    if (filter.topics != std::nullopt) {
-        json["topics"] = filter.topics.value();
+    if (!filter.topics.empty()) {
+        json["topics"] = filter.topics;
     }
     if (filter.block_hash != std::nullopt) {
         json["blockHash"] = filter.block_hash.value();

@@ -1260,7 +1260,7 @@ TEST_CASE("serialize receipt", "[silkrpc::json][to_json]") {
 TEST_CASE("serialize empty filter", "[silkrpc::json][to_json]") {
     Filter f{"0", "0", FilterAddresses{}, FilterTopics(2), ""};
     nlohmann::json j = f;
-    CHECK(j == R"({"address":[],"blockHash":"","fromBlock":"0","toBlock":"0","topics":[[], []]})"_json);
+    CHECK(j == R"({"blockHash":"","fromBlock":"0","toBlock":"0","topics":[[], []]})"_json);
 }
 
 TEST_CASE("serialize filter with one address", "[silkrpc::json][to_json]") {
@@ -1273,7 +1273,7 @@ TEST_CASE("serialize filter with one address", "[silkrpc::json][to_json]") {
 TEST_CASE("serialize filter with fromBlock and toBlock", "[silkrpc::json][to_json]") {
     Filter f{"1000", "2000", FilterAddresses{}, FilterTopics(2), ""};
     nlohmann::json j = f;
-    CHECK(j == R"({"address":[],"blockHash":"","fromBlock":"1000","toBlock":"2000","topics":[[], []]})"_json);
+    CHECK(j == R"({"blockHash":"","fromBlock":"1000","toBlock":"2000","topics":[[], []]})"_json);
 }
 
 TEST_CASE("deserialize null filter", "[silkrpc::json][from_json]") {

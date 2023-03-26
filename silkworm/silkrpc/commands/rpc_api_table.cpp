@@ -125,6 +125,7 @@ void RpcApiTable::add_eth_handlers() {
     method_handlers_[http::method::k_eth_newFilter] = &commands::RpcApi::handle_eth_new_filter;
     method_handlers_[http::method::k_eth_newBlockFilter] = &commands::RpcApi::handle_eth_new_block_filter;
     method_handlers_[http::method::k_eth_newPendingTransactionFilter] = &commands::RpcApi::handle_eth_new_pending_transaction_filter;
+    method_handlers_[http::method::k_eth_getFilterLogs] = &commands::RpcApi::handle_eth_get_filter_logs;
     method_handlers_[http::method::k_eth_getFilterChanges] = &commands::RpcApi::handle_eth_get_filter_changes;
     method_handlers_[http::method::k_eth_uninstallFilter] = &commands::RpcApi::handle_eth_uninstall_filter;
     method_handlers_[http::method::k_eth_getLogs] = &commands::RpcApi::handle_eth_get_logs;

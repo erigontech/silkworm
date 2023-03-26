@@ -39,6 +39,7 @@ Context::Context(
     std::shared_ptr<grpc::Channel> channel,
     std::shared_ptr<BlockCache> block_cache,
     std::shared_ptr<ethdb::kv::StateCache> state_cache,
+    filter::FilterStorage& filter_storage,
     std::shared_ptr<mdbx::env_managed> chaindata_env,
     WaitMode wait_mode)
     : io_context_{std::make_shared<boost::asio::io_context>()},
@@ -47,6 +48,7 @@ Context::Context(
       grpc_context_work_{boost::asio::make_work_guard(grpc_context_->get_executor())},
       block_cache_(block_cache),
       state_cache_(state_cache),
+      filter_storage_{filter_storage},
       chaindata_env_(chaindata_env),
       wait_mode_(wait_mode) {
     if (chaindata_env) {
@@ -117,7 +119,8 @@ void Context::stop() {
     SILKRPC_DEBUG << "Context::stop io_context " << io_context_ << " [" << this << "]\n";
 }
 
-ContextPool::ContextPool(std::size_t pool_size, ChannelFactory create_channel, std::optional<std::string> datadir, WaitMode wait_mode) : next_index_{0} {
+ContextPool::ContextPool(std::size_t pool_size, ChannelFactory create_channel, std::optional<std::string> datadir, WaitMode wait_mode)
+    : next_index_{0}, filter_storage_{pool_size * DEFAULT_POOL_STORAGE_SIZE} {
     if (pool_size == 0) {
         throw std::logic_error("ContextPool::ContextPool pool_size is 0");
     }
@@ -145,7 +148,7 @@ ContextPool::ContextPool(std::size_t pool_size, ChannelFactory create_channel, s
 
     // Create as many execution contexts as required by the pool size
     for (std::size_t i{0}; i < pool_size; ++i) {
-        contexts_.emplace_back(Context{create_channel(), block_cache, state_cache, chain_env, wait_mode});
+        contexts_.emplace_back(Context{create_channel(), block_cache, state_cache, filter_storage_, chain_env, wait_mode});
         SILKRPC_DEBUG << "ContextPool::ContextPool context[" << i << "] " << contexts_[i] << "\n";
     }
 }

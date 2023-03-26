@@ -51,7 +51,7 @@ TEST_CASE("Context", "[silkrpc][context_pool]") {
     };
     for (auto wait_mode : all_wait_modes) {
         SECTION(std::string("Context::Context wait_mode=") + std::to_string(static_cast<int>(wait_mode))) {
-            Context context{create_channel, block_cache, state_cache, filter_storage, {}, wait_mode};
+            Context context{create_channel(), block_cache, state_cache, filter_storage, {}, wait_mode};
             CHECK_NOTHROW(context.io_context() != nullptr);
             CHECK_NOTHROW(context.grpc_context() != nullptr);
             CHECK_NOTHROW(context.backend() != nullptr);
@@ -60,7 +60,7 @@ TEST_CASE("Context", "[silkrpc][context_pool]") {
         }
 
         SECTION(std::string("Context::execute_loop wait_mode=") + std::to_string(static_cast<int>(wait_mode))) {
-            Context context{create_channel, block_cache, state_cache, filter_storage,  /* env */{}, wait_mode};
+            Context context{create_channel(), block_cache, state_cache, filter_storage,  /* env */{}, wait_mode};
             std::atomic_bool processed{false};
             auto* io_context = context.io_context();
             boost::asio::post(*io_context, [&]() {
@@ -73,7 +73,7 @@ TEST_CASE("Context", "[silkrpc][context_pool]") {
         }
 
         SECTION(std::string("Context::stop wait_mode=") + std::to_string(static_cast<int>(wait_mode))) {
-            Context context{create_channel, block_cache, state_cache, filter_storage, /* env */{}, wait_mode};
+            Context context{create_channel(), block_cache, state_cache, filter_storage, /* env */{}, wait_mode};
             std::atomic_bool processed{false};
             auto* io_context = context.io_context();
             boost::asio::post(*io_context, [&]() {
@@ -92,7 +92,7 @@ TEST_CASE("Context with chain_env", "[silkrpc][context_pool]") {
     auto state_cache = std::make_shared<ethdb::kv::CoherentStateCache>();
     filter::FilterStorage filter_storage{0x400};
 
-    Context context{create_channel, block_cache, state_cache, filter_storage, chain_env};
+    Context context{create_channel(), block_cache, state_cache, filter_storage, chain_env};
     std::atomic_bool processed{false};
     auto* io_context = context.io_context();
     boost::asio::post(*io_context, [&]() {

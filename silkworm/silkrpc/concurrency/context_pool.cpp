@@ -148,7 +148,7 @@ ContextPool::ContextPool(std::size_t pool_size, ChannelFactory create_channel, s
 
     // Create as many execution contexts as required by the pool size
     for (std::size_t i{0}; i < pool_size; ++i) {
-        contexts_.emplace_back(Context{create_channel, block_cache, state_cache, filter_storage_, chain_env, wait_mode});
+        contexts_.emplace_back(Context{create_channel(), block_cache, state_cache, filter_storage_, chain_env, wait_mode});
         SILKRPC_DEBUG << "ContextPool::ContextPool context[" << i << "] " << contexts_[i] << "\n";
     }
 }

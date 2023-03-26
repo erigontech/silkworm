@@ -1492,6 +1492,9 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann:
             co_return;
         }
 
+        std::vector<Log> filtered_logs;
+        filtered_logs.reserve(128);
+
         for (auto block_to_match : block_numbers) {
             uint64_t log_index{0};
 
@@ -1508,15 +1511,15 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann:
                     log.index = log_index++;
                 }
                 SILKRPC_DEBUG << "chunk_logs.size(): " << chunk_logs.size() << "\n";
-                auto filtered_chunk_logs = filter_logs(chunk_logs, filter);
-                SILKRPC_DEBUG << "filtered_chunk_logs.size(): " << filtered_chunk_logs.size() << "\n";
-                if (filtered_chunk_logs.size() > 0) {
+                filter_logs(std::move(chunk_logs), filter, filtered_logs);
+                SILKRPC_DEBUG << "filtered_logs.size(): " << filtered_logs.size() << "\n";
+                if (filtered_logs.size() > 0) {
                     const auto tx_id = boost::endian::load_big_u32(&k[sizeof(uint64_t)]);
                     SILKRPC_DEBUG << "tx_id: " << tx_id << "\n";
-                    for (auto& log : filtered_chunk_logs) {
+                    for (auto& log : filtered_logs) {
                         log.tx_index = tx_id;
                     }
-                    filtered_block_logs.insert(filtered_block_logs.end(), filtered_chunk_logs.begin(), filtered_chunk_logs.end());
+                    filtered_block_logs.insert(filtered_block_logs.end(), filtered_logs.begin(), filtered_logs.end());
                 }
                 return true;
             });
@@ -1913,13 +1916,13 @@ boost::asio::awaitable<roaring::Roaring> EthereumRpcApi::get_addresses_bitmap(co
     co_return result_bitmap;
 }
 
-std::vector<Log> EthereumRpcApi::filter_logs(std::vector<Log>& logs, const Filter& filter) {
-    std::vector<Log> filtered_logs;
+void EthereumRpcApi::filter_logs(std::vector<Log>&& logs, const Filter& filter, std::vector<Log>& filtered_logs) {
+    filtered_logs.clear();
 
-    const auto addresses = filter.addresses;
-    const auto topics = filter.topics;
+    const auto addresses = std::move(filter.addresses);
+    const auto topics = std::move(filter.topics);
     SILKRPC_DEBUG << "filter.addresses: " << filter.addresses << "\n";
-    for (auto log : logs) {
+    for (auto & log : logs) {
         SILKRPC_DEBUG << "log: " << log << "\n";
         if (addresses && std::find(addresses->begin(), addresses->end(), log.address) == addresses->end()) {
             SILKRPC_DEBUG << "skipped log for address: 0x" << silkworm::to_hex(log.address) << "\n";
@@ -1933,10 +1936,10 @@ std::vector<Log> EthereumRpcApi::filter_logs(std::vector<Log>& logs, const Filte
             }
             for (size_t i{0}; i < topics->size(); i++) {
                 SILKRPC_DEBUG << "log.topics[i]: " << log.topics[i] << "\n";
-                auto subtopics = topics->at(i);
+                auto subtopics = std::move(topics->at(i));
                 auto matches_subtopics = subtopics.empty(); // empty rule set == wildcard
                 SILKRPC_TRACE << "matches_subtopics: " << std::boolalpha << matches_subtopics << "\n";
-                for (auto topic : subtopics) {
+                for (auto& topic : subtopics) {
                     SILKRPC_DEBUG << "topic: " << topic << "\n";
                     if (log.topics[i] == topic) {
                         matches_subtopics = true;
@@ -1953,10 +1956,9 @@ std::vector<Log> EthereumRpcApi::filter_logs(std::vector<Log>& logs, const Filte
         }
         SILKRPC_DEBUG << "matches: " << matches << "\n";
         if (matches) {
-            filtered_logs.push_back(log);
+            filtered_logs.push_back(std::move(log));
         }
     }
-    return filtered_logs;
 }
 
 } // namespace silkrpc::commands

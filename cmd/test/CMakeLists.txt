@@ -55,8 +55,6 @@ else()
 endif()
 
 if(NOT SILKWORM_CORE_ONLY)
-  find_package(asio-grpc REQUIRED)
-  find_package(Protobuf REQUIRED)
   find_package(GTest REQUIRED)
 
   # Silkworm Infra Tests
@@ -84,7 +82,7 @@ if(NOT SILKWORM_CORE_ONLY)
   target_include_directories(rpcdaemon_test PRIVATE
           ${SILKWORM_MAIN_DIR}
           ${SILKWORM_MAIN_DIR}/third_party/evmone/evmc/include)
-  target_link_libraries(rpcdaemon_test silkworm_node silkrpc asio-grpc::asio-grpc protobuf::libprotobuf Catch2::Catch2 GTest::gmock)
+  target_link_libraries(rpcdaemon_test silkrpc Catch2::Catch2 GTest::gmock)
 
   # Silkworm Sentry Tests
   file(GLOB_RECURSE SENTRY_TEST_FILES CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/sentry/*_test.cpp")

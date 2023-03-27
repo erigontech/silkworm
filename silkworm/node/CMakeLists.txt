@@ -23,6 +23,7 @@ else()
 endif()
 find_package(nlohmann_json REQUIRED)
 find_package(gRPC REQUIRED)
+find_package(Protobuf REQUIRED)
 
 # Generate source files containing snapshot TOML files as binary data
 set(SILKWORM_EMBED embed)

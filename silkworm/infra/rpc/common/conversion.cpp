@@ -68,6 +68,20 @@ std::string string_from_H512(const types::H512& orig) {
     return dest;
 }
 
+std::string string_from_H2048(const types::H2048& orig) {
+    const auto& hi_hi = orig.hi().hi();
+    const auto& hi_lo = orig.hi().lo();
+    const auto& lo_hi = orig.lo().hi();
+    const auto& lo_lo = orig.lo().lo();
+
+    std::string dest(256, 0);
+    dest.append(string_from_H512(hi_hi));
+    dest.append(string_from_H512(hi_lo));
+    dest.append(string_from_H512(lo_hi));
+    dest.append(string_from_H512(lo_lo));
+    return dest;
+}
+
 evmc::bytes32 bytes32_from_H256(const types::H256& orig) {
     uint64_t hi_hi = orig.hi().hi();
     uint64_t hi_lo = orig.hi().lo();
@@ -83,6 +97,15 @@ evmc::bytes32 bytes32_from_H256(const types::H256& orig) {
     return dest;
 }
 
+intx::uint256 uint256_from_H256(const types::H256& orig) {
+    uint64_t hi_hi = orig.hi().hi();
+    uint64_t hi_lo = orig.hi().lo();
+    uint64_t lo_hi = orig.lo().hi();
+    uint64_t lo_lo = orig.lo().lo();
+
+    return {lo_lo, lo_hi, hi_lo, hi_hi};
+}
+
 evmc::address address_from_H160(const types::H160& orig) {
     uint64_t hi_hi = orig.hi().hi();
     uint64_t hi_lo = orig.hi().lo();
@@ -96,15 +119,15 @@ evmc::address address_from_H160(const types::H160& orig) {
     return dest;
 }
 
-std::unique_ptr<types::H512> H512_from_string(const std::string& orig) {
+std::unique_ptr<types::H512> H512_from_string(std::string_view orig) {
     Bytes bytes(64, 0);
     uint8_t* data = bytes.data();
     std::memcpy(data, orig.data(), orig.length() < 64 ? orig.length() : 64);
 
-    types::H128* hi_hi = new types::H128{};
-    types::H128* hi_lo = new types::H128{};
-    types::H128* lo_hi = new types::H128{};
-    types::H128* lo_lo = new types::H128{};
+    auto hi_hi = new types::H128{};
+    auto hi_lo = new types::H128{};
+    auto lo_hi = new types::H128{};
+    auto lo_lo = new types::H128{};
     hi_hi->set_hi(endian::load_big_u64(data + 0));
     hi_hi->set_lo(endian::load_big_u64(data + 8));
     hi_lo->set_hi(endian::load_big_u64(data + 16));
@@ -114,8 +137,8 @@ std::unique_ptr<types::H512> H512_from_string(const std::string& orig) {
     lo_lo->set_hi(endian::load_big_u64(data + 48));
     lo_lo->set_lo(endian::load_big_u64(data + 56));
 
-    types::H256* hi = new types::H256{};
-    types::H256* lo = new types::H256{};
+    auto hi = new types::H256{};
+    auto lo = new types::H256{};
     hi->set_allocated_hi(hi_hi);  // takes ownership
     hi->set_allocated_lo(hi_lo);  // takes ownership
     lo->set_allocated_hi(lo_hi);  // takes ownership
@@ -129,8 +152,8 @@ std::unique_ptr<types::H512> H512_from_string(const std::string& orig) {
 }
 
 std::unique_ptr<types::H256> H256_from_bytes32(const evmc::bytes32& orig) {
-    types::H128* hi = new types::H128{};
-    types::H128* lo = new types::H128{};
+    auto hi = new types::H128{};
+    auto lo = new types::H128{};
     hi->set_hi(endian::load_big_u64(orig.bytes + 0));
     hi->set_lo(endian::load_big_u64(orig.bytes + 8));
     lo->set_hi(endian::load_big_u64(orig.bytes + 16));
@@ -161,13 +184,34 @@ std::unique_ptr<types::H256> H256_from_uint256(const intx::uint256& orig) {
 }
 
 std::unique_ptr<types::H160> H160_from_address(const evmc::address& orig) {
-    types::H128* hi = new types::H128{};
+    auto hi = new types::H128{};
     hi->set_hi(endian::load_big_u64(orig.bytes));
     hi->set_lo(endian::load_big_u64(orig.bytes + 8));
 
     auto dest = std::make_unique<types::H160>();
     dest->set_allocated_hi(hi);  // takes ownership
     dest->set_lo(endian::load_big_u32(orig.bytes + 16));
+
+    return dest;
+}
+
+std::unique_ptr<types::H2048> H2048_from_string(std::string_view orig) {
+    auto lo_lo = H512_from_string(orig);
+    auto lo_hi = H512_from_string(orig.substr(512));
+    auto hi_lo = H512_from_string(orig.substr(1024));
+    auto hi_hi = H512_from_string(orig.substr(1536));
+
+    auto hi = new types::H1024{};
+    auto lo = new types::H1024{};
+
+    hi->set_allocated_hi(hi_hi.release());
+    hi->set_allocated_lo(hi_lo.release());
+    lo->set_allocated_hi(lo_hi.release());
+    lo->set_allocated_lo(lo_lo.release());
+
+    auto dest = std::make_unique<types::H2048>();
+    dest->set_allocated_hi(hi);  // takes ownership
+    dest->set_allocated_lo(lo);  // takes ownership
 
     return dest;
 }

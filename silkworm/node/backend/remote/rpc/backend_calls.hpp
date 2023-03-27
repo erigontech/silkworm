@@ -19,7 +19,6 @@
 #include <memory>
 #include <set>
 #include <tuple>
-#include <utility>  // for std::exchange in Boost 1.78, fixed in Boost 1.79
 #include <vector>
 
 #include <agrpc/asio_grpc.hpp>
@@ -32,7 +31,7 @@
 #include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>
 #include <silkworm/interfaces/remote/ethbackend.pb.h>
 #include <silkworm/node/backend/ethereum_backend.hpp>
-#include <silkworm/node/backend/rpc/sentry_client.hpp>
+#include <silkworm/node/backend/remote/rpc/sentry_client.hpp>
 
 // ETHBACKEND API protocol versions
 // 2.2.0 - first issue

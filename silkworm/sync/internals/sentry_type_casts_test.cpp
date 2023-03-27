@@ -16,6 +16,8 @@
 
 #include "sentry_type_casts.hpp"
 
+#include <string>
+
 #include <catch2/catch.hpp>
 
 namespace silkworm {
@@ -38,7 +40,7 @@ TEST_CASE("H256/512 to/from conversions") {
     }
 
     for (size_t len : {64u, 64u, 64u, 64u, 64u, 60u, 70u}) {
-        SECTION("H512 to/from string, len=" + to_string(len)) {
+        SECTION("H512 to/from string, len=" + std::to_string(len)) {
             Bytes orig_string(len, 0);
             generate_n(orig_string.begin(), len, [] { return static_cast<char>(rand() % 255); });
 

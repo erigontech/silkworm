@@ -17,7 +17,7 @@
 #include "local_cursor.hpp"
 
 #include <silkworm/silkrpc/common/clock_time.hpp>
-#include <silkworm/node/backend/rpc/kv_calls.hpp>
+#include <silkworm/node/backend/remote/rpc/kv_calls.hpp>
 
 namespace silkrpc::ethdb::file {
 

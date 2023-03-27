@@ -30,10 +30,12 @@ commands:
           name: "Format"
           working_directory: ~/project
           command: |
-            cmake -P cmake/format.cmake
+            pip install --user cmake-format==0.6.13
+            export "PATH=$HOME/.local/bin:$PATH"
+            make fmt
             if ! git diff --exit-code
             then
-              echo "The formatting style is not compliant. Try to run: cmake -P cmake/format.cmake locally and push the changes"
+              echo "The formatting style is not compliant. Try to run: 'make fmt' locally and push the changes"
               exit 1
             fi
       - run:

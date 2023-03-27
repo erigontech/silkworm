@@ -32,7 +32,16 @@ find_package(OpenSSL REQUIRED)
 find_package(Snappy REQUIRED)
 
 set(SRC "")
-file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h" "*.cc")
+file(
+  GLOB_RECURSE
+  SRC
+  CONFIGURE_DEPENDS
+  "*.cpp"
+  "*.hpp"
+  "*.c"
+  "*.h"
+  "*.cc"
+)
 list(FILTER SRC EXCLUDE REGEX "_test\\.cpp$")
 
 list(PREPEND SRC "${SILKWORM_MAIN_DIR}/third_party/stbrumme-keccak/keccak.cpp")
@@ -40,37 +49,45 @@ list(PREPEND SRC "${SILKWORM_MAIN_DIR}/third_party/stbrumme-crc32/Crc32.cpp")
 
 add_library(${TARGET} ${SRC})
 
-# Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers
-# See https://github.com/grpc/grpc/issues/19224
+# Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers See
+# https://github.com/grpc/grpc/issues/19224
 if(SILKWORM_SANITIZE)
-    target_compile_definitions(${TARGET} PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
+  target_compile_definitions(${TARGET} PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
 endif()
 
-target_include_directories(${TARGET} PUBLIC
-  "${SILKWORM_MAIN_DIR}"
-  "${SILKWORM_MAIN_DIR}/third_party/stbrumme-keccak"
-  "${SILKWORM_MAIN_DIR}/third_party/stbrumme-crc32"
+# cmake-format: off
+target_include_directories(
+  ${TARGET}
+  PUBLIC "${SILKWORM_MAIN_DIR}"
+         "${SILKWORM_MAIN_DIR}/third_party/stbrumme-keccak"
+         "${SILKWORM_MAIN_DIR}/third_party/stbrumme-crc32"
 )
+# cmake-format: on
 
 set(LIBS_PRIVATE
-  gRPC::grpc++
-  Microsoft.GSL::GSL
-  protobuf::libprotobuf
-  OpenSSL::Crypto
-  Snappy::snappy
-
-  silkpre
-  silkworm_core
-  silkworm_interfaces
-  silkworm-buildinfo
+    gRPC::grpc++
+    Microsoft.GSL::GSL
+    protobuf::libprotobuf
+    OpenSSL::Crypto
+    Snappy::snappy
+    silkpre
+    silkworm_core
+    silkworm_interfaces
+    silkworm-buildinfo
 )
 if(MSVC)
-    list(APPEND LIBS_PRIVATE ntdll.lib)
+  list(APPEND LIBS_PRIVATE ntdll.lib)
 endif(MSVC)
 
+# cmake-format: off
 set(LIBS_PUBLIC
-  Boost::thread
-  silkworm_infra
+    Boost::thread
+    silkworm_infra
 )
+# cmake-format: on
 
-target_link_libraries(${TARGET} PUBLIC "${LIBS_PUBLIC}" PRIVATE "${LIBS_PRIVATE}")
+target_link_libraries(
+  ${TARGET}
+  PUBLIC "${LIBS_PUBLIC}"
+  PRIVATE "${LIBS_PRIVATE}"
+)

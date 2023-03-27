@@ -20,6 +20,7 @@ find_package(gRPC REQUIRED)
 
 set(SILKWORM_INTERFACE_SRC "")
 list(APPEND SILKWORM_INTERFACE_SRC "${TYPES_SOURCES_SYMLINK}")
+list(APPEND SILKWORM_INTERFACE_SRC "${EXECUTION_SOURCES_SYMLINK}")
 list(APPEND SILKWORM_INTERFACE_SRC "${SENTRY_SOURCES_SYMLINK}")
 list(APPEND SILKWORM_INTERFACE_SRC "${KV_SOURCES_SYMLINK}")
 list(APPEND SILKWORM_INTERFACE_SRC "${ETHBACKEND_SOURCES_SYMLINK}")
@@ -30,6 +31,7 @@ add_library(silkworm_interfaces "${SILKWORM_INTERFACE_SRC}")
 
 add_dependencies(silkworm_interfaces
   generate_types_proto_symlink
+  generate_execution_grpc_symlink
   generate_sentry_grpc_symlink
   generate_remote_grpc_symlink
   generate_txpool_grpc_symlink

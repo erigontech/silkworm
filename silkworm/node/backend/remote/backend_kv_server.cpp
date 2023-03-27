@@ -17,7 +17,7 @@
 #include "backend_kv_server.hpp"
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/backend/rpc/sentry_client.hpp>
+#include <silkworm/node/backend/remote/rpc/sentry_client.hpp>
 
 namespace silkworm::rpc {
 

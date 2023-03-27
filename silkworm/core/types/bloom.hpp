@@ -37,4 +37,8 @@ inline void join(Bloom& sum, const Bloom& addend) {
     }
 }
 
+inline std::string_view to_string(const Bloom& bloom) {
+    return {reinterpret_cast<const char*>(bloom.data()), bloom.size()};
+}
+
 }  // namespace silkworm

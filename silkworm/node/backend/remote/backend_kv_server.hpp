@@ -23,8 +23,8 @@
 #include <silkworm/infra/rpc/server/server.hpp>
 #include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
-#include <silkworm/node/backend/rpc/backend_calls.hpp>
-#include <silkworm/node/backend/rpc/kv_calls.hpp>
+#include <silkworm/node/backend/remote/rpc/backend_calls.hpp>
+#include <silkworm/node/backend/remote/rpc/kv_calls.hpp>
 
 namespace silkworm::rpc {
 

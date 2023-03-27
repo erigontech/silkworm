@@ -18,7 +18,7 @@
 
 #include <utility>
 
-#include <silkworm/silkrpc/config.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <grpcpp/grpcpp.h>
 

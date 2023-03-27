@@ -21,7 +21,7 @@
 #include <string>
 #include <type_traits>
 
-#include <silkworm/silkrpc/config.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <agrpc/grpc_context.hpp>
 #include <boost/asio/awaitable.hpp>

@@ -20,14 +20,14 @@
 #include <map>
 #include <vector>
 
-#include <nlohmann/json.hpp>
-#include <silkworm/silkrpc/config.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #include <evmc/evmc.hpp>
+#include <nlohmann/json.hpp>
+
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
-
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>

@@ -23,7 +23,7 @@
 #include <optional>
 #include <shared_mutex>
 
-#include <silkworm/silkrpc/config.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <absl/container/btree_set.h>
 #include <boost/asio/awaitable.hpp>

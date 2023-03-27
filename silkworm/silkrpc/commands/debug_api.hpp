@@ -19,7 +19,7 @@
 #include <memory>
 #include <set>
 
-#include <silkworm/silkrpc/config.hpp> // NOLINT(build/include_order)
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>

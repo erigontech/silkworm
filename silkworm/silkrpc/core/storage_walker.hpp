@@ -20,7 +20,7 @@
 #include <map>
 
 #include <nlohmann/json.hpp>
-#include <silkworm/silkrpc/config.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #include <evmc/evmc.hpp>

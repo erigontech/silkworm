@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <silkworm/silkrpc/config.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <memory>
 #include <optional>

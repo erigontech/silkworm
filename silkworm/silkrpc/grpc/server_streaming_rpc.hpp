@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include <silkworm/silkrpc/config.hpp>
-
 #include <memory>
 #include <system_error>
 #include <utility>
+
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <agrpc/rpc.hpp>
 #include <boost/asio/compose.hpp>

@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include <silkworm/silkrpc/config.hpp>
-
 #include <memory>
 #include <string>
+
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #include <silkworm/core/common/util.hpp>

@@ -21,15 +21,14 @@
 #include <string>
 #include <type_traits>
 
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 
 #include <silkworm/silkrpc/common/log.hpp>
-#include <silkworm/silkrpc/config.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
 #include <silkworm/silkrpc/ethdb/file/local_cursor.hpp>
-
 #include <silkworm/node/db/mdbx.hpp>
 
 namespace silkrpc::ethdb::file {

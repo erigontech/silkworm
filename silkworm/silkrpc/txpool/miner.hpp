@@ -19,7 +19,7 @@
 #include <memory>
 #include <utility>
 
-#include <silkworm/silkrpc/config.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <agrpc/grpc_context.hpp>
 #include <boost/asio/io_context.hpp>

@@ -22,7 +22,7 @@
 #include <memory>
 #include <mutex>
 
-#include <silkworm/silkrpc/config.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #ifndef BOOST_ASIO_HAS_BOOST_DATE_TIME

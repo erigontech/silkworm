@@ -18,7 +18,7 @@
 
 #include <cstddef>
 
-#include <silkworm/silkrpc/config.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <absl/functional/function_ref.h>
 #include <boost/asio/awaitable.hpp>

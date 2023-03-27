@@ -108,7 +108,7 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
 
   # coroutines support
   if(NOT SILKWORM_WASM_API)
-    add_compile_options(-stdlib=libc++)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-stdlib=libc++>)
     link_libraries(c++)
     link_libraries(c++abi)
   endif()

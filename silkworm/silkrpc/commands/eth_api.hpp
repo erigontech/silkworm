@@ -68,7 +68,7 @@ public:
     EthereumRpcApi& operator=(const EthereumRpcApi&) = delete;
 
 protected:
-    static std::vector<Log> filter_logs(std::vector<Log>& logs, FilterAddresses& addresses, FilterTopics& topics);
+    static void filter_logs(std::vector<Log>&& logs, FilterAddresses& addresses, FilterTopics& topics, std::vector<Log>& filtered_logs);
     static boost::asio::awaitable<roaring::Roaring> get_topics_bitmap(core::rawdb::DatabaseReader& db_reader, FilterTopics& topics, uint64_t start, uint64_t end);
     static boost::asio::awaitable<roaring::Roaring> get_addresses_bitmap(core::rawdb::DatabaseReader& db_reader, FilterAddresses& addresses, uint64_t start, uint64_t end);
 

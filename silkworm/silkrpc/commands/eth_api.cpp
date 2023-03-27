@@ -2000,12 +2000,12 @@ boost::asio::awaitable<void> EthereumRpcApi::get_logs(ethdb::TransactionDatabase
         co_return;
     }
 
-    std::vector<Log> filtered_logs;
-    filtered_logs.reserve(128);
     std::vector<Log> chunk_logs;
-    chunk_logs.reserve(512);
+    std::vector<Log> filtered_chunck_logs;
     Logs filtered_block_logs{};
-    filtered_block_logs.reserve(64);
+    chunk_logs.reserve(512);
+    filtered_chunck_logs.reserve(64);
+    filtered_block_logs.reserve(256);
 
     for (const auto& block_to_match : block_numbers) {
         uint64_t log_index{0};
@@ -2023,16 +2023,16 @@ boost::asio::awaitable<void> EthereumRpcApi::get_logs(ethdb::TransactionDatabase
                 log.index = log_index++;
             }
             SILKRPC_DEBUG << "chunk_logs.size(): " << chunk_logs.size() << "\n";
-            filtered_logs.clear();
-            filter_logs(std::move(chunk_logs), addresses, topics, filtered_logs);
-            SILKRPC_DEBUG << "filtered_logs.size(): " << filtered_logs.size() << "\n";
-            if (filtered_logs.size() > 0) {
+            filtered_chunck_logs.clear();
+            filter_logs(std::move(chunk_logs), addresses, topics, filtered_chunck_logs);
+            SILKRPC_DEBUG << "filtered_chunck_logs.size(): " << filtered_chunck_logs.size() << "\n";
+            if (filtered_chunck_logs.size() > 0) {
                 const auto tx_id = boost::endian::load_big_u32(&k[sizeof(uint64_t)]);
                 SILKRPC_DEBUG << "tx_id: " << tx_id << "\n";
-                for (auto& log : filtered_logs) {
+                for (auto& log : filtered_chunck_logs) {
                     log.tx_index = tx_id;
                 }
-                filtered_block_logs.insert(filtered_block_logs.end(), filtered_logs.begin(), filtered_logs.end());
+                filtered_block_logs.insert(filtered_block_logs.end(), filtered_chunck_logs.begin(), filtered_chunck_logs.end());
             }
             return true;
         });

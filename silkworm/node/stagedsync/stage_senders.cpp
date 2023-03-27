@@ -256,7 +256,7 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
         log::Info(log_prefix_, {"op", "parallel_recover",
                                 "num_threads", std::to_string(std::thread::hardware_concurrency()), "max_batch_size", std::to_string(max_batch_size_)});
 
-        secp256k1_context* context = secp256k1_context_create(SILKPRE_SECP256K1_CONTEXT_FLAGS);
+        secp256k1_context* context = secp256k1_context_create(SILKWORM_SECP256K1_CONTEXT_FLAGS);
         if (!context) throw std::runtime_error("Could not create elliptic curve context");
         auto _ = gsl::finally([&]() { if (context) std::free(context); });
 

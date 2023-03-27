@@ -22,7 +22,6 @@
 
 #include <gsl/pointers>
 #include <secp256k1_recovery.h>
-#include <silkpre/ecdsa.h>
 
 #include <silkworm/core/common/base.hpp>
 

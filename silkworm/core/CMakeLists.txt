@@ -32,7 +32,7 @@ target_include_directories(silkworm_core PUBLIC ${SILKWORM_MAIN_DIR})
 target_include_directories(silkworm_core SYSTEM PUBLIC ${SILKWORM_MAIN_DIR}/third_party/expected/include)
 
 set(SILKWORM_CORE_PUBLIC_LIBS ethash::ethash evmc evmone intx::intx Microsoft.GSL::GSL nlohmann_json::nlohmann_json silkpre)
-set(SILKWORM_CORE_PRIVATE_LIBS "")
+set(SILKWORM_CORE_PRIVATE_LIBS gmp2 ff)
 
 if(NOT SILKWORM_WASM_API)
   if(NOT CONAN_PACKAGE_MANAGER)

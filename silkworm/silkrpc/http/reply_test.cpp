@@ -156,8 +156,7 @@ TEST_CASE("Reply", "[silkrpc][http][reply]") {
     Reply reply{
         StatusType::ok,
         std::vector<Header>{{"Accept", "*/*"}},
-        "{\"json\": \"2.0\"}"
-    };
+        "{\"json\": \"2.0\"}"};
 
     SECTION("check reset method") {
         CHECK(reply.status == StatusType::ok);
@@ -268,4 +267,4 @@ TEST_CASE("Reply stock_reply", "[silkrpc][http][reply]") {
     }
 }
 
-} // namespace silkrpc::http
+}  // namespace silkrpc::http

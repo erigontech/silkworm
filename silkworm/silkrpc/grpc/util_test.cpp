@@ -27,4 +27,4 @@ TEST_CASE("print grpc::Status", "[silkrpc][grpc][util]") {
     CHECK_NOTHROW(null_stream() << grpc::Status::CANCELLED);
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

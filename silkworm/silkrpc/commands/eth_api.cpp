@@ -27,22 +27,22 @@
 
 #include <boost/endian/conversion.hpp>
 #include <evmc/evmc.hpp>
+
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/core/common/util.hpp>
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/db/util.hpp>
-
 #include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
-#include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
-#include <silkworm/silkrpc/core/evm_executor.hpp>
-#include <silkworm/silkrpc/core/evm_access_list_tracer.hpp>
+#include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/estimate_gas_oracle.hpp>
+#include <silkworm/silkrpc/core/evm_access_list_tracer.hpp>
+#include <silkworm/silkrpc/core/evm_executor.hpp>
 #include <silkworm/silkrpc/core/gas_price_oracle.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/core/receipts.hpp>
@@ -50,9 +50,9 @@
 #include <silkworm/silkrpc/core/state_reader.hpp>
 #include <silkworm/silkrpc/ethdb/bitmap.hpp>
 #include <silkworm/silkrpc/ethdb/cbor.hpp>
+#include <silkworm/silkrpc/ethdb/kv/cached_database.hpp>
 #include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
-#include <silkworm/silkrpc/ethdb/kv/cached_database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/stagedsync/stages.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
@@ -110,7 +110,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_block_number(const nlohm
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -130,7 +130,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_chain_id(const nlohmann:
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -161,11 +161,11 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_syncing(const nlohmann::
         if (current_block_height >= highest_block_height) {
             reply = make_json_content(request["id"], false);
         } else {
-            SyncingData syncing_data {};
+            SyncingData syncing_data{};
 
             syncing_data.current_block = to_quantity(current_block_height);
             syncing_data.highest_block = to_quantity(highest_block_height);
-            for (std::size_t i{0}; i < sizeof(silkworm::db::stages::kAllStages)/sizeof(char *) - 1; i++) { // no unWind
+            for (std::size_t i{0}; i < sizeof(silkworm::db::stages::kAllStages) / sizeof(char*) - 1; i++) {  // no unWind
                 StageData current_stage;
                 current_stage.stage_name = silkworm::db::stages::kAllStages[i];
                 current_stage.block_number = to_quantity(co_await stages::get_sync_stage_progress(tx_database, silkworm::bytes_of_string(current_stage.stage_name)));
@@ -181,7 +181,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_syncing(const nlohmann::
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -198,7 +198,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_gas_price(const nlohmann
             return core::read_block_by_number(*block_cache_, tx_database, block_number);
         };
 
-        GasPriceOracle gas_price_oracle{ block_provider};
+        GasPriceOracle gas_price_oracle{block_provider};
         auto gas_price = co_await gas_price_oracle.suggested_price(latest_block_number);
 
         const auto block_with_hash = co_await block_provider(latest_block_number);
@@ -213,7 +213,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_gas_price(const nlohmann
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -252,7 +252,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_block_by_hash(const 
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -291,7 +291,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_block_by_number(cons
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -324,7 +324,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_block_transaction_co
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -357,7 +357,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_block_transaction_co
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -404,7 +404,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_uncle_by_block_hash_
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -451,7 +451,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_uncle_by_block_numbe
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -484,7 +484,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -518,7 +518,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -572,7 +572,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_transaction_by_hash(
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -619,7 +619,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_h
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -661,7 +661,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_transaction_by_block
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -707,7 +707,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_b
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -750,7 +750,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_transaction_by_block
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -797,7 +797,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_b
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -833,7 +833,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_transaction_receipt(
                 tx_index = idx;
                 const intx::uint256 base_fee_per_gas{block_with_hash.block.header.base_fee_per_gas.value_or(0)};
                 const intx::uint256 effective_gas_price{transactions[idx].max_fee_per_gas >= base_fee_per_gas ? transactions[idx].effective_gas_price(base_fee_per_gas)
-                                                        : transactions[idx].max_priority_fee_per_gas};
+                                                                                                              : transactions[idx].max_priority_fee_per_gas};
                 receipts[idx].effective_gas_price = effective_gas_price;
                 break;
             }
@@ -853,7 +853,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_transaction_receipt(
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -889,14 +889,13 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohm
         Tracers tracers;
         EVMExecutor evm_executor{*context_.io_context(), cached_database, *chain_config_ptr, workers_, remote_state};
 
-        ego::Executor executor = [&latest_block, &evm_executor, &tracers](const silkworm::Transaction &transaction) {
+        ego::Executor executor = [&latest_block, &evm_executor, &tracers](const silkworm::Transaction& transaction) {
             return evm_executor.call(latest_block, transaction, tracers);
         };
 
         ego::BlockHeaderProvider block_header_provider = [&cached_database](uint64_t block_number) {
             return core::rawdb::read_header_by_number(cached_database, block_number);
         };
-
 
         ego::AccountReader account_reader = [&state_reader](const evmc::address& address, uint64_t block_number) {
             return state_reader.read_account(address, block_number + 1);
@@ -922,7 +921,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohm
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -959,7 +958,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_balance(const nlohma
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -1001,10 +1000,9 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_code(const nlohmann:
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
-
 
 // https://eth.wiki/json-rpc/API#eth_gettransactioncount
 boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_transaction_count(const nlohmann::json& request, nlohmann::json& reply) {
@@ -1043,10 +1041,9 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_transaction_count(co
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
-
 
 // https://eth.wiki/json-rpc/API#eth_getstorageat
 boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_storage_at(const nlohmann::json& request, nlohmann::json& reply) {
@@ -1073,10 +1070,10 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_storage_at(const nlo
         std::optional<silkworm::Account> account{co_await state_reader.read_account(address, block_number + 1)};
 
         if (account) {
-           auto storage{co_await state_reader.read_storage(address, account->incarnation, location, block_number + 1)};
-           reply = make_json_content(request["id"], "0x" + silkworm::to_hex(storage));
+            auto storage{co_await state_reader.read_storage(address, account->incarnation, location, block_number + 1)};
+            reply = make_json_content(request["id"], "0x" + silkworm::to_hex(storage));
         } else {
-           reply = make_json_content(request["id"], "0x0000000000000000000000000000000000000000000000000000000000000000");
+            reply = make_json_content(request["id"], "0x0000000000000000000000000000000000000000000000000000000000000000");
         }
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
@@ -1086,7 +1083,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_storage_at(const nlo
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -1141,7 +1138,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::jso
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -1184,7 +1181,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const
                 // Retrieve nonce by txpool
                 auto nonce_option = co_await tx_pool_->nonce(*call.from);
                 if (!nonce_option) {
-                    std::optional<silkworm::Account> account{co_await state_reader.read_account(*call.from,  block_with_hash.block.header.number + 1)};
+                    std::optional<silkworm::Account> account{co_await state_reader.read_account(*call.from, block_with_hash.block.header.number + 1)};
                     if (account) {
                         nonce = (*account).nonce;
                     }
@@ -1206,7 +1203,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const
             EVMExecutor executor{*context_.io_context(), tx_database, *chain_config_ptr, workers_, remote_state};
             const auto txn = call.to_transaction();
             tracer->reset_access_list();
-            const auto execution_result = co_await executor.call(block_with_hash.block, txn, tracers, /* refund */true, /* gasBailout */false);
+            const auto execution_result = co_await executor.call(block_with_hash.block, txn, tracers, /* refund */ true, /* gasBailout */ false);
             if (execution_result.pre_check_error) {
                 reply = make_json_error(request["id"], -32000, execution_result.pre_check_error.value());
                 break;
@@ -1234,11 +1231,11 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
-//https://docs.flashbots.net/flashbots-auction/miners/mev-geth-spec/v06-rpc/eth_callBundle
+// https://docs.flashbots.net/flashbots-auction/miners/mev-geth-spec/v06-rpc/eth_callBundle
 boost::asio::awaitable<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 3) {
@@ -1279,13 +1276,13 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_call_bundle(const nlohma
 
         const auto start_time = clock_time::now();
 
-        struct CallBundleInfo bundle_info{};
+        struct CallBundleInfo bundle_info {};
         bool error{false};
 
         silkworm::Bytes hash_data{};
 
         for (std::size_t i{0}; i < tx_hash_list.size(); i++) {
-            struct CallBundleTxInfo tx_info{};
+            struct CallBundleTxInfo tx_info {};
             const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, tx_database, tx_hash_list[i]);
             if (!tx_with_block) {
                 const auto error_msg = "invalid transaction hash";
@@ -1334,7 +1331,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_call_bundle(const nlohma
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -1384,7 +1381,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_new_filter(const nlohman
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
 
     co_return;
 }
@@ -1405,7 +1402,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_new_block_filter(const n
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -1425,7 +1422,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_new_pending_transaction_
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -1480,7 +1477,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_filter_logs(const nl
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
 
     co_return;
 }
@@ -1533,7 +1530,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_filter_changes(const
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -1580,7 +1577,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann:
             auto error_msg = "invalid eth_getLogs filter block_hash: " + filter.block_hash.value();
             SILKRPC_ERROR << error_msg << "\n";
             reply = make_json_error(request["id"], 100, error_msg);
-            co_await tx->close(); // RAII not (yet) available with coroutines
+            co_await tx->close();  // RAII not (yet) available with coroutines
             co_return;
         }
 
@@ -1599,7 +1596,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann:
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -1631,7 +1628,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_send_raw_transaction(con
         co_return;
     }
 
-    const float kTxFeeCap = 1; // 1 ether
+    const float kTxFeeCap = 1;  // 1 ether
 
     if (!check_tx_fee_less_cap(kTxFeeCap, txn.max_fee_per_gas, txn.gas_limit)) {
         const auto error_msg = "tx fee exceeds the configured cap";
@@ -1667,10 +1664,9 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_send_raw_transaction(con
     const auto hash = silkworm::to_bytes32({ethash_hash.bytes, silkworm::kHashLength});
     if (!txn.to.has_value()) {
         const auto contract_address = silkworm::create_address(*txn.from, txn.nonce);
-        SILKRPC_DEBUG << "submitted contract creation hash: " << hash << " from: " << *txn.from <<  " nonce: " << txn.nonce << " contract: " << contract_address <<
-                         " value: " << txn.value << "\n";
+        SILKRPC_DEBUG << "submitted contract creation hash: " << hash << " from: " << *txn.from << " nonce: " << txn.nonce << " contract: " << contract_address << " value: " << txn.value << "\n";
     } else {
-        SILKRPC_DEBUG << "submitted transaction hash: " << hash << " from: " << *txn.from <<  " nonce: " << txn.nonce << " recipient: " << *txn.to << " value: " << txn.value << "\n";
+        SILKRPC_DEBUG << "submitted transaction hash: " << hash << " from: " << *txn.from << " nonce: " << txn.nonce << " recipient: " << *txn.to << " value: " << txn.value << "\n";
     }
 
     reply = make_json_content(request["id"], hash);
@@ -1694,7 +1690,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_send_transaction(const n
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -1714,7 +1710,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_sign_transaction(const n
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -1734,7 +1730,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_proof(const nlohmann
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -1832,8 +1828,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_work(const nlohmann:
             silkworm::to_hex(work.header_hash),
             silkworm::to_hex(work.seed_hash),
             silkworm::to_hex(work.target),
-            silkworm::to_hex(work.block_number)
-        };
+            silkworm::to_hex(work.block_number)};
         reply = make_json_content(request["id"], current_work);
     } catch (const boost::system::system_error& se) {
         SILKRPC_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump() << "\n";
@@ -1901,7 +1896,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_subscribe(const nlohmann
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -1921,7 +1916,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_unsubscribe(const nlohma
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -1933,7 +1928,7 @@ boost::asio::awaitable<roaring::Roaring> EthereumRpcApi::get_topics_bitmap(core:
         roaring::Roaring subtopic_bitmap;
         for (auto topic : subtopics) {
             silkworm::Bytes topic_key{std::begin(topic.bytes), std::end(topic.bytes)};
-            SILKRPC_TRACE << "topic: " << topic << " topic_key: " << silkworm::to_hex(topic) <<"\n";
+            SILKRPC_TRACE << "topic: " << topic << " topic_key: " << silkworm::to_hex(topic) << "\n";
             auto bitmap = co_await ethdb::bitmap::get(db_reader, db::table::kLogTopicIndex, topic_key, start, end);
             SILKRPC_TRACE << "bitmap: " << bitmap.toString() << "\n";
             subtopic_bitmap |= bitmap;
@@ -1965,11 +1960,11 @@ boost::asio::awaitable<roaring::Roaring> EthereumRpcApi::get_addresses_bitmap(co
 }
 
 boost::asio::awaitable<void> EthereumRpcApi::get_logs(ethdb::TransactionDatabase& tx_database, std::uint64_t start, std::uint64_t end,
-        FilterAddresses& addresses, FilterTopics& topics, std::vector<Log>& logs) {
+                                                      FilterAddresses& addresses, FilterTopics& topics, std::vector<Log>& logs) {
     SILKRPC_INFO << "start block: " << start << " end block: " << end << "\n";
 
     roaring::Roaring block_numbers;
-    block_numbers.addRange(start, end + 1); // [min, max)
+    block_numbers.addRange(start, end + 1);  // [min, max)
 
     SILKRPC_DEBUG << "block_numbers.cardinality(): " << block_numbers.cardinality() << "\n";
 
@@ -2072,9 +2067,9 @@ void EthereumRpcApi::filter_logs(std::vector<Log>&& logs, FilterAddresses& addre
             for (size_t i{0}; i < topics.size(); i++) {
                 SILKRPC_DEBUG << "log.topics[i]: " << log.topics[i] << "\n";
                 auto subtopics = topics[i];
-                auto matches_subtopics = subtopics.empty(); // empty rule set == wildcard
+                auto matches_subtopics = subtopics.empty();  // empty rule set == wildcard
                 SILKRPC_TRACE << "matches_subtopics: " << std::boolalpha << matches_subtopics << "\n";
-                for (auto & topic : subtopics) {
+                for (auto& topic : subtopics) {
                     SILKRPC_DEBUG << "topic: " << topic << "\n";
                     if (log.topics[i] == topic) {
                         matches_subtopics = true;
@@ -2096,4 +2091,4 @@ void EthereumRpcApi::filter_logs(std::vector<Log>&& logs, FilterAddresses& addre
     }
 }
 
-} // namespace silkrpc::commands
+}  // namespace silkrpc::commands

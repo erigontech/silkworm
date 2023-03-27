@@ -25,11 +25,11 @@
 #include <catch2/catch.hpp>
 #include <gmock/gmock.h>
 #include <nlohmann/json.hpp>
-#include <silkworm/core/common/base.hpp>
 
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
-#include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/ethdb/tables.hpp>
+#include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/http/methods.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
@@ -39,168 +39,167 @@ using Catch::Matchers::Message;
 using evmc::literals::operator""_bytes32;
 
 namespace {
-class BackEndMock : public ethbackend::BackEnd {
-public:
-    MOCK_METHOD((boost::asio::awaitable<evmc::address>), etherbase, ());
-    MOCK_METHOD((boost::asio::awaitable<uint64_t>), protocol_version, ());
-    MOCK_METHOD((boost::asio::awaitable<uint64_t>), net_version, ());
-    MOCK_METHOD((boost::asio::awaitable<std::string>), client_version, ());
-    MOCK_METHOD((boost::asio::awaitable<uint64_t>), net_peer_count, ());
-    MOCK_METHOD((boost::asio::awaitable<ExecutionPayload>), engine_get_payload_v1, (uint64_t));
-    MOCK_METHOD((boost::asio::awaitable<PayloadStatus>), engine_new_payload_v1, (ExecutionPayload));
-    MOCK_METHOD((boost::asio::awaitable<ForkChoiceUpdatedReply>), engine_forkchoice_updated_v1, (ForkChoiceUpdatedRequest));
-    MOCK_METHOD((boost::asio::awaitable<std::vector<NodeInfo>>), engine_node_info, ());
-};
+    class BackEndMock : public ethbackend::BackEnd {
+      public:
+        MOCK_METHOD((boost::asio::awaitable<evmc::address>), etherbase, ());
+        MOCK_METHOD((boost::asio::awaitable<uint64_t>), protocol_version, ());
+        MOCK_METHOD((boost::asio::awaitable<uint64_t>), net_version, ());
+        MOCK_METHOD((boost::asio::awaitable<std::string>), client_version, ());
+        MOCK_METHOD((boost::asio::awaitable<uint64_t>), net_peer_count, ());
+        MOCK_METHOD((boost::asio::awaitable<ExecutionPayload>), engine_get_payload_v1, (uint64_t));
+        MOCK_METHOD((boost::asio::awaitable<PayloadStatus>), engine_new_payload_v1, (ExecutionPayload));
+        MOCK_METHOD((boost::asio::awaitable<ForkChoiceUpdatedReply>), engine_forkchoice_updated_v1, (ForkChoiceUpdatedRequest));
+        MOCK_METHOD((boost::asio::awaitable<std::vector<NodeInfo>>), engine_node_info, ());
+    };
 
-class MockCursor : public ethdb::Cursor {
-public:
-    uint32_t cursor_id() const override { return 0; }
+    class MockCursor : public ethdb::Cursor {
+      public:
+        uint32_t cursor_id() const override { return 0; }
 
-    MOCK_METHOD((boost::asio::awaitable<void>), open_cursor, (const std::string&, bool));
-    MOCK_METHOD((boost::asio::awaitable<KeyValue>), seek, (silkworm::ByteView));
-    MOCK_METHOD((boost::asio::awaitable<KeyValue>), seek_exact, (silkworm::ByteView));
-    MOCK_METHOD((boost::asio::awaitable<KeyValue>), next, ());
-    MOCK_METHOD((boost::asio::awaitable<void>), close_cursor, ());
-};
+        MOCK_METHOD((boost::asio::awaitable<void>), open_cursor, (const std::string&, bool));
+        MOCK_METHOD((boost::asio::awaitable<KeyValue>), seek, (silkworm::ByteView));
+        MOCK_METHOD((boost::asio::awaitable<KeyValue>), seek_exact, (silkworm::ByteView));
+        MOCK_METHOD((boost::asio::awaitable<KeyValue>), next, ());
+        MOCK_METHOD((boost::asio::awaitable<void>), close_cursor, ());
+    };
 
-//! This dummy transaction just gives you the same cursor over and over again.
-class DummyTransaction : public ethdb::Transaction {
-public:
-    explicit DummyTransaction(std::shared_ptr<ethdb::Cursor> cursor) : cursor_(cursor) {}
+    //! This dummy transaction just gives you the same cursor over and over again.
+    class DummyTransaction : public ethdb::Transaction {
+      public:
+        explicit DummyTransaction(std::shared_ptr<ethdb::Cursor> cursor) : cursor_(cursor) {}
 
-    uint64_t tx_id() const override { return 0; }
+        uint64_t tx_id() const override { return 0; }
 
-    boost::asio::awaitable<void> open() override { co_return; }
+        boost::asio::awaitable<void> open() override { co_return; }
 
-    boost::asio::awaitable<std::shared_ptr<ethdb::Cursor>> cursor(const std::string& /*table*/) override {
-        co_return cursor_;
-    }
+        boost::asio::awaitable<std::shared_ptr<ethdb::Cursor>> cursor(const std::string& /*table*/) override {
+            co_return cursor_;
+        }
 
-    boost::asio::awaitable<std::shared_ptr<ethdb::CursorDupSort>> cursor_dup_sort(const std::string& /*table*/) override {
-        co_return nullptr;
-    }
+        boost::asio::awaitable<std::shared_ptr<ethdb::CursorDupSort>> cursor_dup_sort(const std::string& /*table*/) override {
+            co_return nullptr;
+        }
 
-    boost::asio::awaitable<void> close() override { co_return; }
+        boost::asio::awaitable<void> close() override { co_return; }
 
-private:
-    std::shared_ptr<ethdb::Cursor> cursor_;
-};
+      private:
+        std::shared_ptr<ethdb::Cursor> cursor_;
+    };
 
-//! This dummy database acts as a factory for dummy transactions using the same cursor.
-class DummyDatabase : public ethdb::Database {
-public:
-    explicit DummyDatabase(std::shared_ptr<ethdb::Cursor> cursor) : cursor_(cursor) {}
+    //! This dummy database acts as a factory for dummy transactions using the same cursor.
+    class DummyDatabase : public ethdb::Database {
+      public:
+        explicit DummyDatabase(std::shared_ptr<ethdb::Cursor> cursor) : cursor_(cursor) {}
 
-    boost::asio::awaitable<std::unique_ptr<ethdb::Transaction>> begin() override {
-        co_return std::make_unique<DummyTransaction>(cursor_);
-    }
-private:
-    std::shared_ptr<ethdb::Cursor> cursor_;
-};
+        boost::asio::awaitable<std::unique_ptr<ethdb::Transaction>> begin() override {
+            co_return std::make_unique<DummyTransaction>(cursor_);
+        }
 
-} // namespace
+      private:
+        std::shared_ptr<ethdb::Cursor> cursor_;
+    };
 
-class EngineRpcApiTest : public EngineRpcApi{
-public:
-    explicit EngineRpcApiTest(std::unique_ptr<ethdb::Database>& database, std::unique_ptr<ethbackend::BackEnd>& backend): EngineRpcApi(database, backend) {}
+}  // namespace
 
+class EngineRpcApiTest : public EngineRpcApi {
+  public:
+    explicit EngineRpcApiTest(std::unique_ptr<ethdb::Database>& database, std::unique_ptr<ethbackend::BackEnd>& backend) : EngineRpcApi(database, backend) {}
+
+    using EngineRpcApi::handle_engine_exchange_transition_configuration_v1;
+    using EngineRpcApi::handle_engine_forkchoice_updated_v1;
     using EngineRpcApi::handle_engine_get_payload_v1;
     using EngineRpcApi::handle_engine_new_payload_v1;
-    using EngineRpcApi::handle_engine_forkchoice_updated_v1;
-    using EngineRpcApi::handle_engine_exchange_transition_configuration_v1;
 };
 
 using testing::InvokeWithoutArgs;
 
 static silkworm::Bytes kBlockHash(32, '\0');
 static silkworm::Bytes kChainConfig{*silkworm::from_hex(
-        "7b22436861696e4e616d65223a22676f65726c69222c"
-        "22636861696e4964223a352c"
-        "22636f6e73656e737573223a22636c69717565222c"
-        "22686f6d657374656164426c6f636b223a302c"
-        "2264616f466f726b537570706f7274223a747275652c"
-        "22656970313530426c6f636b223a302c"
-        "2265697031353048617368223a22307830303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030222c"
-        "22656970313535426c6f636b223a302c"
-        "2262797a616e7469756d426c6f636b223a302c"
-        "22636f6e7374616e74696e6f706c65426c6f636b223a302c"
-        "2270657465727362757267426c6f636b223a302c"
-        "22697374616e62756c426c6f636b223a313536313635312c"
-        "226265726c696e426c6f636b223a343436303634342c"
-        "226c6f6e646f6e426c6f636b223a353036323630352c"
-        "227465726d696e616c546f74616c446966666963756c7479223a31303739303030302c"
-        "227465726d696e616c546f74616c446966666963756c7479506173736564223a747275652c"
-        "227465726d696e616c426c6f636b48617368223a22307830303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030222c"
-        "22636c69717565223a7b22706572696f64223a31352c"
-        "2265706f6368223a33303030307d7d")};
+    "7b22436861696e4e616d65223a22676f65726c69222c"
+    "22636861696e4964223a352c"
+    "22636f6e73656e737573223a22636c69717565222c"
+    "22686f6d657374656164426c6f636b223a302c"
+    "2264616f466f726b537570706f7274223a747275652c"
+    "22656970313530426c6f636b223a302c"
+    "2265697031353048617368223a22307830303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030222c"
+    "22656970313535426c6f636b223a302c"
+    "2262797a616e7469756d426c6f636b223a302c"
+    "22636f6e7374616e74696e6f706c65426c6f636b223a302c"
+    "2270657465727362757267426c6f636b223a302c"
+    "22697374616e62756c426c6f636b223a313536313635312c"
+    "226265726c696e426c6f636b223a343436303634342c"
+    "226c6f6e646f6e426c6f636b223a353036323630352c"
+    "227465726d696e616c546f74616c446966666963756c7479223a31303739303030302c"
+    "227465726d696e616c546f74616c446966666963756c7479506173736564223a747275652c"
+    "227465726d696e616c426c6f636b48617368223a22307830303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030222c"
+    "22636c69717565223a7b22706572696f64223a31352c"
+    "2265706f6368223a33303030307d7d")};
 static silkworm::Bytes kChainConfigNoTerminalTotalDifficulty{*silkworm::from_hex(
-        "7b22436861696e4e616d65223a22676f65726c69222c"
-        "22636861696e4964223a352c"
-        "22636f6e73656e737573223a22636c69717565222c"
-        "22686f6d657374656164426c6f636b223a302c"
-        "2264616f466f726b537570706f7274223a747275652c"
-        "22656970313530426c6f636b223a302c"
-        "2265697031353048617368223a22307830303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030222c"
-        "22656970313535426c6f636b223a302c"
-        "2262797a616e7469756d426c6f636b223a302c"
-        "22636f6e7374616e74696e6f706c65426c6f636b223a302c"
-        "2270657465727362757267426c6f636b223a302c"
-        "22697374616e62756c426c6f636b223a313536313635312c"
-        "226265726c696e426c6f636b223a343436303634342c"
-        "226c6f6e646f6e426c6f636b223a353036323630352c"
-        "227465726d696e616c546f74616c446966666963756c7479506173736564223a747275652c"
-        "227465726d696e616c426c6f636b48617368223a22307830303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030222c"
-        "22636c69717565223a7b22706572696f64223a31352c"
-        "2265706f6368223a33303030307d7d")};
+    "7b22436861696e4e616d65223a22676f65726c69222c"
+    "22636861696e4964223a352c"
+    "22636f6e73656e737573223a22636c69717565222c"
+    "22686f6d657374656164426c6f636b223a302c"
+    "2264616f466f726b537570706f7274223a747275652c"
+    "22656970313530426c6f636b223a302c"
+    "2265697031353048617368223a22307830303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030222c"
+    "22656970313535426c6f636b223a302c"
+    "2262797a616e7469756d426c6f636b223a302c"
+    "22636f6e7374616e74696e6f706c65426c6f636b223a302c"
+    "2270657465727362757267426c6f636b223a302c"
+    "22697374616e62756c426c6f636b223a313536313635312c"
+    "226265726c696e426c6f636b223a343436303634342c"
+    "226c6f6e646f6e426c6f636b223a353036323630352c"
+    "227465726d696e616c546f74616c446966666963756c7479506173736564223a747275652c"
+    "227465726d696e616c426c6f636b48617368223a22307830303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030222c"
+    "22636c69717565223a7b22706572696f64223a31352c"
+    "2265706f6368223a33303030307d7d")};
 static silkworm::Bytes kChainConfigNoTerminalBlockHash{*silkworm::from_hex(
-        "7b22436861696e4e616d65223a22676f65726c69222c"
-        "22636861696e4964223a352c"
-        "22636f6e73656e737573223a22636c69717565222c"
-        "22686f6d657374656164426c6f636b223a302c"
-        "2264616f466f726b537570706f7274223a747275652c"
-        "22656970313530426c6f636b223a302c"
-        "2265697031353048617368223a22307830303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030222c"
-        "22656970313535426c6f636b223a302c"
-        "2262797a616e7469756d426c6f636b223a302c"
-        "22636f6e7374616e74696e6f706c65426c6f636b223a302c"
-        "2270657465727362757267426c6f636b223a302c"
-        "22697374616e62756c426c6f636b223a313536313635312c"
-        "226265726c696e426c6f636b223a343436303634342c"
-        "226c6f6e646f6e426c6f636b223a353036323630352c"
-        "227465726d696e616c546f74616c446966666963756c7479223a31303739303030302c"
-        "227465726d696e616c546f74616c446966666963756c7479506173736564223a747275652c"
-        "22636c69717565223a7b22706572696f64223a31352c"
-        "2265706f6368223a33303030307d7d")};
+    "7b22436861696e4e616d65223a22676f65726c69222c"
+    "22636861696e4964223a352c"
+    "22636f6e73656e737573223a22636c69717565222c"
+    "22686f6d657374656164426c6f636b223a302c"
+    "2264616f466f726b537570706f7274223a747275652c"
+    "22656970313530426c6f636b223a302c"
+    "2265697031353048617368223a22307830303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030222c"
+    "22656970313535426c6f636b223a302c"
+    "2262797a616e7469756d426c6f636b223a302c"
+    "22636f6e7374616e74696e6f706c65426c6f636b223a302c"
+    "2270657465727362757267426c6f636b223a302c"
+    "22697374616e62756c426c6f636b223a313536313635312c"
+    "226265726c696e426c6f636b223a343436303634342c"
+    "226c6f6e646f6e426c6f636b223a353036323630352c"
+    "227465726d696e616c546f74616c446966666963756c7479223a31303739303030302c"
+    "227465726d696e616c546f74616c446966666963756c7479506173736564223a747275652c"
+    "22636c69717565223a7b22706572696f64223a31352c"
+    "2265706f6368223a33303030307d7d")};
 static silkworm::Bytes kChainConfigNoTerminalBlockNumber{*silkworm::from_hex(
-        "7b22436861696e4e616d65223a22676f65726c69222c"
-        "22636861696e4964223a352c"
-        "22636f6e73656e737573223a22636c69717565222c"
-        "22686f6d657374656164426c6f636b223a302c"
-        "2264616f466f726b537570706f7274223a747275652c"
-        "22656970313530426c6f636b223a302c"
-        "2265697031353048617368223a22307830303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030222c"
-        "22656970313535426c6f636b223a302c"
-        "2262797a616e7469756d426c6f636b223a302c"
-        "22636f6e7374616e74696e6f706c65426c6f636b223a302c"
-        "2270657465727362757267426c6f636b223a302c"
-        "22697374616e62756c426c6f636b223a313536313635312c"
-        "226265726c696e426c6f636b223a343436303634342c"
-        "226c6f6e646f6e426c6f636b223a353036323630352c"
-        "227465726d696e616c546f74616c446966666963756c7479223a31303739303030302c"
-        "227465726d696e616c546f74616c446966666963756c7479506173736564223a747275652c"
-        "227465726d696e616c426c6f636b48617368223a223078"
-        "30303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030227d")};
+    "7b22436861696e4e616d65223a22676f65726c69222c"
+    "22636861696e4964223a352c"
+    "22636f6e73656e737573223a22636c69717565222c"
+    "22686f6d657374656164426c6f636b223a302c"
+    "2264616f466f726b537570706f7274223a747275652c"
+    "22656970313530426c6f636b223a302c"
+    "2265697031353048617368223a22307830303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030222c"
+    "22656970313535426c6f636b223a302c"
+    "2262797a616e7469756d426c6f636b223a302c"
+    "22636f6e7374616e74696e6f706c65426c6f636b223a302c"
+    "2270657465727362757267426c6f636b223a302c"
+    "22697374616e62756c426c6f636b223a313536313635312c"
+    "226265726c696e426c6f636b223a343436303634342c"
+    "226c6f6e646f6e426c6f636b223a353036323630352c"
+    "227465726d696e616c546f74616c446966666963756c7479223a31303739303030302c"
+    "227465726d696e616c546f74616c446966666963756c7479506173736564223a747275652c"
+    "227465726d696e616c426c6f636b48617368223a223078"
+    "30303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030227d")};
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("handle_engine_get_payload_v1 succeeds if request is expected payload", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
     BackEndMock backend;
-    EXPECT_CALL(backend, engine_get_payload_v1(1)).WillOnce(InvokeWithoutArgs(
-        []() -> boost::asio::awaitable<ExecutionPayload> {
-            co_return ExecutionPayload{1};
-        }
-    ));
+    EXPECT_CALL(backend, engine_get_payload_v1(1)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<ExecutionPayload> {
+        co_return ExecutionPayload{1};
+    }));
 
     std::unique_ptr<ethbackend::BackEnd> backend_ptr(&backend);
 
@@ -219,16 +218,16 @@ TEST_CASE("handle_engine_get_payload_v1 succeeds if request is expected payload"
     EngineRpcApiTest rpc(database, backend_ptr);
 
     // spawn routine
-    auto result{boost::asio::co_spawn(cp.next_io_context(), [&rpc, &reply, &request]() {
-        return rpc.handle_engine_get_payload_v1(
-            request,
-            reply
-        );
-    }, boost::asio::use_future)};
+    auto result{boost::asio::co_spawn(
+        cp.next_io_context(), [&rpc, &reply, &request]() {
+            return rpc.handle_engine_get_payload_v1(
+                request,
+                reply);
+        },
+        boost::asio::use_future)};
     result.get();
 
-
-    CHECK(reply ==  R"({
+    CHECK(reply == R"({
         "id":1,
         "jsonrpc":"2.0",
         "result":{
@@ -275,15 +274,16 @@ TEST_CASE("handle_engine_get_payload_v1 fails with invalid amount of params", "[
     EngineRpcApiTest rpc(database, backend_ptr);
 
     // spawn routine
-    auto result{boost::asio::co_spawn(cp.next_io_context(), [&rpc, &reply, &request]() {
-        return rpc.handle_engine_get_payload_v1(
-            request,
-            reply
-        );
-    }, boost::asio::use_future)};
+    auto result{boost::asio::co_spawn(
+        cp.next_io_context(), [&rpc, &reply, &request]() {
+            return rpc.handle_engine_get_payload_v1(
+                request,
+                reply);
+        },
+        boost::asio::use_future)};
     result.get();
 
-    CHECK(reply ==  R"({
+    CHECK(reply == R"({
         "error":{
             "code":100,
             "message":"invalid engine_getPayloadV1 params: []"
@@ -300,15 +300,12 @@ TEST_CASE("handle_engine_new_payload_v1 succeeds if request is expected payload 
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
     BackEndMock backend;
-    EXPECT_CALL(backend, engine_new_payload_v1(testing::_)).WillOnce(InvokeWithoutArgs(
-        []() -> boost::asio::awaitable<PayloadStatus> {
-            co_return PayloadStatus{
-                .status = "INVALID",
-                .latest_valid_hash = 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32,
-                .validation_error = "some error"
-            };
-        }
-    ));
+    EXPECT_CALL(backend, engine_new_payload_v1(testing::_)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<PayloadStatus> {
+        co_return PayloadStatus{
+            .status = "INVALID",
+            .latest_valid_hash = 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32,
+            .validation_error = "some error"};
+    }));
 
     std::unique_ptr<ethbackend::BackEnd> backend_ptr(&backend);
 
@@ -342,15 +339,16 @@ TEST_CASE("handle_engine_new_payload_v1 succeeds if request is expected payload 
     EngineRpcApiTest rpc(database, backend_ptr);
 
     // spawn routine
-    auto result{boost::asio::co_spawn(cp.next_io_context(), [&rpc, &reply, &request]() {
-        return rpc.handle_engine_new_payload_v1(
-            request,
-            reply
-        );
-    }, boost::asio::use_future)};
+    auto result{boost::asio::co_spawn(
+        cp.next_io_context(), [&rpc, &reply, &request]() {
+            return rpc.handle_engine_new_payload_v1(
+                request,
+                reply);
+        },
+        boost::asio::use_future)};
     result.get();
 
-    CHECK(reply ==  R"({
+    CHECK(reply == R"({
         "id":1,
         "jsonrpc":"2.0",
         "result": {
@@ -384,15 +382,16 @@ TEST_CASE("handle_engine_new_payload_v1 fails with invalid amount of params", "[
     EngineRpcApiTest rpc(database, backend_ptr);
 
     // spawn routine
-    auto result{boost::asio::co_spawn(cp.next_io_context(), [&rpc, &reply, &request]() {
-        return rpc.handle_engine_new_payload_v1(
-            request,
-            reply
-        );
-    }, boost::asio::use_future)};
+    auto result{boost::asio::co_spawn(
+        cp.next_io_context(), [&rpc, &reply, &request]() {
+            return rpc.handle_engine_new_payload_v1(
+                request,
+                reply);
+        },
+        boost::asio::use_future)};
     result.get();
 
-    CHECK(reply ==  R"({
+    CHECK(reply == R"({
         "error":{
             "code":100,
             "message":"invalid engine_newPayloadV1 params: []"
@@ -408,19 +407,15 @@ TEST_CASE("handle_engine_new_payload_v1 fails with invalid amount of params", "[
 TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds only with forkchoiceState", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    BackEndMock *backend = new BackEndMock;
-    EXPECT_CALL(*backend, engine_forkchoice_updated_v1(testing::_)).WillOnce(InvokeWithoutArgs(
-        []() -> boost::asio::awaitable<ForkChoiceUpdatedReply> {
-            co_return ForkChoiceUpdatedReply{
-                .payload_status = PayloadStatus{
-                    .status = "INVALID",
-                    .latest_valid_hash = 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32,
-                    .validation_error = "some error"
-                },
-                .payload_id = std::nullopt
-            };
-        }
-    ));
+    BackEndMock* backend = new BackEndMock;
+    EXPECT_CALL(*backend, engine_forkchoice_updated_v1(testing::_)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<ForkChoiceUpdatedReply> {
+        co_return ForkChoiceUpdatedReply{
+            .payload_status = PayloadStatus{
+                .status = "INVALID",
+                .latest_valid_hash = 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32,
+                .validation_error = "some error"},
+            .payload_id = std::nullopt};
+    }));
 
     nlohmann::json reply;
     nlohmann::json request = R"({
@@ -444,14 +439,15 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds only with forkchoiceStat
     EngineRpcApiTest rpc(database, backend_ptr);
 
     // spawn routine
-    auto result{boost::asio::co_spawn(cp.next_io_context(), [&rpc, &reply, &request]() {
-        return rpc.handle_engine_forkchoice_updated_v1(
-            request,
-            reply
-        );
-    }, boost::asio::use_future)};
+    auto result{boost::asio::co_spawn(
+        cp.next_io_context(), [&rpc, &reply, &request]() {
+            return rpc.handle_engine_forkchoice_updated_v1(
+                request,
+                reply);
+        },
+        boost::asio::use_future)};
     result.get();
-    CHECK(reply ==  R"({
+    CHECK(reply == R"({
         "jsonrpc":"2.0",
         "id":1,
         "result": {
@@ -469,19 +465,15 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds only with forkchoiceStat
 TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    BackEndMock *backend = new BackEndMock;
-    EXPECT_CALL(*backend, engine_forkchoice_updated_v1(testing::_)).WillOnce(InvokeWithoutArgs(
-        []() -> boost::asio::awaitable<ForkChoiceUpdatedReply> {
-            co_return ForkChoiceUpdatedReply{
-                .payload_status = PayloadStatus{
-                    .status = "INVALID",
-                    .latest_valid_hash = 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32,
-                    .validation_error = "some error"
-                },
-                .payload_id = std::nullopt
-            };
-        }
-    ));
+    BackEndMock* backend = new BackEndMock;
+    EXPECT_CALL(*backend, engine_forkchoice_updated_v1(testing::_)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<ForkChoiceUpdatedReply> {
+        co_return ForkChoiceUpdatedReply{
+            .payload_status = PayloadStatus{
+                .status = "INVALID",
+                .latest_valid_hash = 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32,
+                .validation_error = "some error"},
+            .payload_id = std::nullopt};
+    }));
 
     nlohmann::json reply;
     nlohmann::json request = R"({
@@ -510,14 +502,15 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params", "[sil
     EngineRpcApiTest rpc(database, backend_ptr);
 
     // spawn routine
-    auto result{boost::asio::co_spawn(cp.next_io_context(), [&rpc, &reply, &request]() {
-        return rpc.handle_engine_forkchoice_updated_v1(
-            request,
-            reply
-        );
-    }, boost::asio::use_future)};
+    auto result{boost::asio::co_spawn(
+        cp.next_io_context(), [&rpc, &reply, &request]() {
+            return rpc.handle_engine_forkchoice_updated_v1(
+                request,
+                reply);
+        },
+        boost::asio::use_future)};
     result.get();
-    CHECK(reply ==  R"({
+    CHECK(reply == R"({
         "jsonrpc":"2.0",
         "id":1,
         "result": {
@@ -535,19 +528,15 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params", "[sil
 TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params and second set to null", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    BackEndMock *backend = new BackEndMock;
-    EXPECT_CALL(*backend, engine_forkchoice_updated_v1(testing::_)).WillOnce(InvokeWithoutArgs(
-        []() -> boost::asio::awaitable<ForkChoiceUpdatedReply> {
-            co_return ForkChoiceUpdatedReply{
-                .payload_status = PayloadStatus{
-                    .status = "INVALID",
-                    .latest_valid_hash = 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32,
-                    .validation_error = "some error"
-                },
-                .payload_id = std::nullopt
-            };
-        }
-    ));
+    BackEndMock* backend = new BackEndMock;
+    EXPECT_CALL(*backend, engine_forkchoice_updated_v1(testing::_)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<ForkChoiceUpdatedReply> {
+        co_return ForkChoiceUpdatedReply{
+            .payload_status = PayloadStatus{
+                .status = "INVALID",
+                .latest_valid_hash = 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32,
+                .validation_error = "some error"},
+            .payload_id = std::nullopt};
+    }));
 
     nlohmann::json reply;
     nlohmann::json request = R"({
@@ -572,14 +561,15 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params and sec
     EngineRpcApiTest rpc(database, backend_ptr);
 
     // spawn routine
-    auto result{boost::asio::co_spawn(cp.next_io_context(), [&rpc, &reply, &request]() {
-        return rpc.handle_engine_forkchoice_updated_v1(
-            request,
-            reply
-        );
-    }, boost::asio::use_future)};
+    auto result{boost::asio::co_spawn(
+        cp.next_io_context(), [&rpc, &reply, &request]() {
+            return rpc.handle_engine_forkchoice_updated_v1(
+                request,
+                reply);
+        },
+        boost::asio::use_future)};
     result.get();
-    CHECK(reply ==  R"({
+    CHECK(reply == R"({
         "jsonrpc":"2.0",
         "id":1,
         "result": {
@@ -613,15 +603,16 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with invalid amount of para
     EngineRpcApiTest rpc(database, backend_ptr);
 
     // spawn routine
-    auto result{boost::asio::co_spawn(cp.next_io_context(), [&rpc, &reply, &request]() {
-        return rpc.handle_engine_forkchoice_updated_v1(
-            request,
-            reply
-        );
-    }, boost::asio::use_future)};
+    auto result{boost::asio::co_spawn(
+        cp.next_io_context(), [&rpc, &reply, &request]() {
+            return rpc.handle_engine_forkchoice_updated_v1(
+                request,
+                reply);
+        },
+        boost::asio::use_future)};
     result.get();
 
-    CHECK(reply ==  R"({
+    CHECK(reply == R"({
         "error":{
             "code":100,
             "message":"invalid engine_forkchoiceUpdatedV1 params: []"
@@ -637,7 +628,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with invalid amount of para
 TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty finalized block hash", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    BackEndMock *backend = new BackEndMock();
+    BackEndMock* backend = new BackEndMock();
     nlohmann::json reply;
     nlohmann::json request = R"({
         "jsonrpc":"2.0",
@@ -660,14 +651,15 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty finalized block 
     EngineRpcApiTest rpc(database, backend_ptr);
 
     // spawn routine
-    auto result{boost::asio::co_spawn(cp.next_io_context(), [&rpc, &reply, &request]() {
-        return rpc.handle_engine_forkchoice_updated_v1(
-            request,
-            reply
-        );
-    }, boost::asio::use_future)};
+    auto result{boost::asio::co_spawn(
+        cp.next_io_context(), [&rpc, &reply, &request]() {
+            return rpc.handle_engine_forkchoice_updated_v1(
+                request,
+                reply);
+        },
+        boost::asio::use_future)};
     result.get();
-    CHECK(reply ==  R"({
+    CHECK(reply == R"({
         "error":{
             "code":100,
             "message":"finalized block hash is empty"
@@ -682,7 +674,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty finalized block 
 TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty safe block hash", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    BackEndMock *backend = new BackEndMock();
+    BackEndMock* backend = new BackEndMock();
     nlohmann::json reply;
     nlohmann::json request = R"({
         "jsonrpc":"2.0",
@@ -705,14 +697,15 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty safe block hash"
     EngineRpcApiTest rpc(database, backend_ptr);
 
     // spawn routine
-    auto result{boost::asio::co_spawn(cp.next_io_context(), [&rpc, &reply, &request]() {
-        return rpc.handle_engine_forkchoice_updated_v1(
-            request,
-            reply
-        );
-    }, boost::asio::use_future)};
+    auto result{boost::asio::co_spawn(
+        cp.next_io_context(), [&rpc, &reply, &request]() {
+            return rpc.handle_engine_forkchoice_updated_v1(
+                request,
+                reply);
+        },
+        boost::asio::use_future)};
     result.get();
-    CHECK(reply ==  R"({
+    CHECK(reply == R"({
         "error":{
             "code":100,
             "message":"safe block hash is empty"
@@ -733,20 +726,16 @@ TEST_CASE("handle_engine_transition_configuration_v1 succeeds if EL configuratio
     std::shared_ptr<MockCursor> mock_cursor = std::make_shared<MockCursor>();
 
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
-    const silkworm::ByteView block_key {block_number};
-    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs(
-        [&]() -> boost::asio::awaitable<KeyValue> {
-            co_return KeyValue{silkworm::Bytes{}, kBlockHash};
-        }
-    ));
+    const silkworm::ByteView block_key{block_number};
+    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> boost::asio::awaitable<KeyValue> {
+        co_return KeyValue{silkworm::Bytes{}, kBlockHash};
+    }));
 
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
-    const silkworm::ByteView genesis_block_key {genesis_block_hash};
-    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs(
-        [&]() -> boost::asio::awaitable<KeyValue> {
-            co_return KeyValue{silkworm::Bytes{}, kChainConfig};
-        }
-    ));
+    const silkworm::ByteView genesis_block_key{genesis_block_hash};
+    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> boost::asio::awaitable<KeyValue> {
+        co_return KeyValue{silkworm::Bytes{}, kChainConfig};
+    }));
 
     std::unique_ptr<ethdb::Database> database_ptr = std::make_unique<DummyDatabase>(mock_cursor);
     std::unique_ptr<ethbackend::BackEnd> backend_ptr;
@@ -764,15 +753,16 @@ TEST_CASE("handle_engine_transition_configuration_v1 succeeds if EL configuratio
         }]
     })"_json;
 
-    auto result{boost::asio::co_spawn(context_pool.next_io_context(), [&rpc, &reply, &request]() {
-        return rpc.handle_engine_exchange_transition_configuration_v1(
-            request,
-            reply
-        );
-    }, boost::asio::use_future)};
+    auto result{boost::asio::co_spawn(
+        context_pool.next_io_context(), [&rpc, &reply, &request]() {
+            return rpc.handle_engine_exchange_transition_configuration_v1(
+                request,
+                reply);
+        },
+        boost::asio::use_future)};
     result.get();
 
-    CHECK(reply ==  R"({
+    CHECK(reply == R"({
         "id":1,
         "jsonrpc":"2.0",
         "result":{
@@ -795,20 +785,16 @@ TEST_CASE("handle_engine_transition_configuration_v1 succeeds and default termin
     std::shared_ptr<MockCursor> mock_cursor = std::make_shared<MockCursor>();
 
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
-    const silkworm::ByteView block_key {block_number};
-    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs(
-        [&]() -> boost::asio::awaitable<KeyValue> {
-            co_return KeyValue{silkworm::Bytes{}, kBlockHash};
-        }
-    ));
+    const silkworm::ByteView block_key{block_number};
+    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> boost::asio::awaitable<KeyValue> {
+        co_return KeyValue{silkworm::Bytes{}, kBlockHash};
+    }));
 
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
-    const silkworm::ByteView genesis_block_key {genesis_block_hash};
-    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs(
-        [&]() -> boost::asio::awaitable<KeyValue> {
-            co_return KeyValue{silkworm::Bytes{}, kChainConfigNoTerminalBlockNumber};
-        }
-    ));
+    const silkworm::ByteView genesis_block_key{genesis_block_hash};
+    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> boost::asio::awaitable<KeyValue> {
+        co_return KeyValue{silkworm::Bytes{}, kChainConfigNoTerminalBlockNumber};
+    }));
 
     std::unique_ptr<ethdb::Database> database_ptr = std::make_unique<DummyDatabase>(mock_cursor);
     std::unique_ptr<ethbackend::BackEnd> backend_ptr;
@@ -826,15 +812,16 @@ TEST_CASE("handle_engine_transition_configuration_v1 succeeds and default termin
         }]
     })"_json;
 
-    auto result{boost::asio::co_spawn(context_pool.next_io_context(), [&rpc, &reply, &request]() {
-        return rpc.handle_engine_exchange_transition_configuration_v1(
-            request,
-            reply
-        );
-    }, boost::asio::use_future)};
+    auto result{boost::asio::co_spawn(
+        context_pool.next_io_context(), [&rpc, &reply, &request]() {
+            return rpc.handle_engine_exchange_transition_configuration_v1(
+                request,
+                reply);
+        },
+        boost::asio::use_future)};
     result.get();
 
-    CHECK(reply ==  R"({
+    CHECK(reply == R"({
         "id":1,
         "jsonrpc":"2.0",
         "result":{
@@ -857,20 +844,16 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect terminal
     std::shared_ptr<MockCursor> mock_cursor = std::make_shared<MockCursor>();
 
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
-    const silkworm::ByteView block_key {block_number};
-    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs(
-        [&]() -> boost::asio::awaitable<KeyValue> {
-            co_return KeyValue{silkworm::Bytes{}, kBlockHash};
-        }
-    ));
+    const silkworm::ByteView block_key{block_number};
+    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> boost::asio::awaitable<KeyValue> {
+        co_return KeyValue{silkworm::Bytes{}, kBlockHash};
+    }));
 
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
-    const silkworm::ByteView genesis_block_key {genesis_block_hash};
-    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs(
-        [&]() -> boost::asio::awaitable<KeyValue> {
-            co_return KeyValue{silkworm::Bytes{}, kChainConfig};
-        }
-    ));
+    const silkworm::ByteView genesis_block_key{genesis_block_hash};
+    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> boost::asio::awaitable<KeyValue> {
+        co_return KeyValue{silkworm::Bytes{}, kChainConfig};
+    }));
 
     std::unique_ptr<ethdb::Database> database_ptr = std::make_unique<DummyDatabase>(mock_cursor);
     std::unique_ptr<ethbackend::BackEnd> backend_ptr;
@@ -888,12 +871,13 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect terminal
         }]
     })"_json;
 
-    auto result{boost::asio::co_spawn(context_pool.next_io_context(), [&rpc, &reply, &request]() {
-        return rpc.handle_engine_exchange_transition_configuration_v1(
-            request,
-            reply
-        );
-    }, boost::asio::use_future)};
+    auto result{boost::asio::co_spawn(
+        context_pool.next_io_context(), [&rpc, &reply, &request]() {
+            return rpc.handle_engine_exchange_transition_configuration_v1(
+                request,
+                reply);
+        },
+        boost::asio::use_future)};
     result.get();
 
     CHECK(reply == R"({
@@ -908,7 +892,6 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect terminal
     context_pool.join();
 }
 
-
 TEST_CASE("handle_engine_transition_configuration_v1 fails if execution layer does not have terminal total difficulty", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
@@ -918,20 +901,16 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if execution layer do
     std::shared_ptr<MockCursor> mock_cursor = std::make_shared<MockCursor>();
 
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
-    const silkworm::ByteView block_key {block_number};
-    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs(
-        [&]() -> boost::asio::awaitable<KeyValue> {
-            co_return KeyValue{silkworm::Bytes{}, kBlockHash};
-        }
-    ));
+    const silkworm::ByteView block_key{block_number};
+    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> boost::asio::awaitable<KeyValue> {
+        co_return KeyValue{silkworm::Bytes{}, kBlockHash};
+    }));
 
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
-    const silkworm::ByteView genesis_block_key {genesis_block_hash};
-    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs(
-        [&]() -> boost::asio::awaitable<KeyValue> {
-            co_return KeyValue{silkworm::Bytes{}, kChainConfigNoTerminalTotalDifficulty};
-        }
-    ));
+    const silkworm::ByteView genesis_block_key{genesis_block_hash};
+    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> boost::asio::awaitable<KeyValue> {
+        co_return KeyValue{silkworm::Bytes{}, kChainConfigNoTerminalTotalDifficulty};
+    }));
 
     std::unique_ptr<ethdb::Database> database_ptr = std::make_unique<DummyDatabase>(mock_cursor);
     std::unique_ptr<ethbackend::BackEnd> backend_ptr;
@@ -949,12 +928,13 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if execution layer do
         }]
     })"_json;
 
-    auto result{boost::asio::co_spawn(context_pool.next_io_context(), [&rpc, &reply, &request]() {
-        return rpc.handle_engine_exchange_transition_configuration_v1(
-            request,
-            reply
-        );
-    }, boost::asio::use_future)};
+    auto result{boost::asio::co_spawn(
+        context_pool.next_io_context(), [&rpc, &reply, &request]() {
+            return rpc.handle_engine_exchange_transition_configuration_v1(
+                request,
+                reply);
+        },
+        boost::asio::use_future)};
     result.get();
 
     CHECK(reply == R"({
@@ -978,20 +958,16 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer se
     std::shared_ptr<MockCursor> mock_cursor = std::make_shared<MockCursor>();
 
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
-    const silkworm::ByteView block_key {block_number};
-    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs(
-        [&]() -> boost::asio::awaitable<KeyValue> {
-            co_return KeyValue{silkworm::Bytes{}, kBlockHash};
-        }
-    ));
+    const silkworm::ByteView block_key{block_number};
+    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> boost::asio::awaitable<KeyValue> {
+        co_return KeyValue{silkworm::Bytes{}, kBlockHash};
+    }));
 
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
-    const silkworm::ByteView genesis_block_key {genesis_block_hash};
-    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs(
-        [&]() -> boost::asio::awaitable<KeyValue> {
-            co_return KeyValue{silkworm::Bytes{}, kChainConfig};
-        }
-    ));
+    const silkworm::ByteView genesis_block_key{genesis_block_hash};
+    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> boost::asio::awaitable<KeyValue> {
+        co_return KeyValue{silkworm::Bytes{}, kChainConfig};
+    }));
 
     std::unique_ptr<ethdb::Database> database_ptr = std::make_unique<DummyDatabase>(mock_cursor);
     std::unique_ptr<ethbackend::BackEnd> backend_ptr;
@@ -1009,12 +985,13 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer se
         }]
     })"_json;
 
-    auto result{boost::asio::co_spawn(context_pool.next_io_context(), [&rpc, &reply, &request]() {
-        return rpc.handle_engine_exchange_transition_configuration_v1(
-            request,
-            reply
-        );
-    }, boost::asio::use_future)};
+    auto result{boost::asio::co_spawn(
+        context_pool.next_io_context(), [&rpc, &reply, &request]() {
+            return rpc.handle_engine_exchange_transition_configuration_v1(
+                request,
+                reply);
+        },
+        boost::asio::use_future)};
     result.get();
 
     CHECK(reply == R"({
@@ -1049,12 +1026,13 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect params",
         "params":[]
     })"_json;
 
-    auto result{boost::asio::co_spawn(context_pool.next_io_context(), [&rpc, &reply, &request]() {
-        return rpc.handle_engine_exchange_transition_configuration_v1(
-            request,
-            reply
-        );
-    }, boost::asio::use_future)};
+    auto result{boost::asio::co_spawn(
+        context_pool.next_io_context(), [&rpc, &reply, &request]() {
+            return rpc.handle_engine_exchange_transition_configuration_v1(
+                request,
+                reply);
+        },
+        boost::asio::use_future)};
     result.get();
 
     CHECK(reply == R"({
@@ -1070,4 +1048,4 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect params",
 }
 #endif  // SILKWORM_SANITIZE
 
-} // namespace silkrpc::commands
+}  // namespace silkrpc::commands

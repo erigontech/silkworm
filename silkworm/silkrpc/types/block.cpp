@@ -18,11 +18,11 @@
 
 #include <string>
 
-#include <silkworm/silkrpc/common/util.hpp>
-#include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
+#include <silkworm/silkrpc/common/util.hpp>
+#include <silkworm/silkrpc/core/blocks.hpp>
 
 namespace silkrpc {
 
@@ -55,12 +55,12 @@ std::ostream& operator<<(std::ostream& out, const Block& b) {
 }
 
 uint64_t Block::get_block_size() const {
-   silkworm::rlp::Header rlp_head{true, 0};
-   rlp_head.payload_length = silkworm::rlp::length(block.header);
-   rlp_head.payload_length += silkworm::rlp::length(block.transactions);
-   rlp_head.payload_length += silkworm::rlp::length(block.ommers);
-   rlp_head.payload_length += silkworm::rlp::length_of_length(rlp_head.payload_length);
-   return rlp_head.payload_length;
+    silkworm::rlp::Header rlp_head{true, 0};
+    rlp_head.payload_length = silkworm::rlp::length(block.header);
+    rlp_head.payload_length += silkworm::rlp::length(block.transactions);
+    rlp_head.payload_length += silkworm::rlp::length(block.ommers);
+    rlp_head.payload_length += silkworm::rlp::length_of_length(rlp_head.payload_length);
+    return rlp_head.payload_length;
 }
 
 std::ostream& operator<<(std::ostream& out, const BlockNumberOrHash& bnoh) {
@@ -103,4 +103,4 @@ uint64_t BlockDetails::get_block_size() const {
     return rlp_head.payload_length;
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

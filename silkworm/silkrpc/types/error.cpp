@@ -32,4 +32,4 @@ std::ostream& operator<<(std::ostream& out, const RevertError& error) {
     return out;
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

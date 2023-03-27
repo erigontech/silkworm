@@ -75,4 +75,4 @@ std::ostream& operator<<(std::ostream& out, const Filter& filter) {
     return out;
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

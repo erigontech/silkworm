@@ -72,4 +72,3 @@ struct KVTestBase : test::ContextTestBase {
 };
 
 }  // namespace silkrpc::test
-

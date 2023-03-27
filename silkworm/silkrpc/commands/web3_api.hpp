@@ -24,33 +24,34 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
-#include <silkworm/silkrpc/ethbackend/backend.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
-#include <silkworm/silkrpc/json/types.hpp>
+#include <silkworm/silkrpc/ethbackend/backend.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
+#include <silkworm/silkrpc/json/types.hpp>
 
-namespace silkrpc::http { class RequestHandler; }
+namespace silkrpc::http {
+class RequestHandler;
+}
 
 namespace silkrpc::commands {
 
 class Web3RpcApi {
-public:
+  public:
     explicit Web3RpcApi(Context& context) : database_(context.database()), backend_(context.backend()) {}
     virtual ~Web3RpcApi() {}
 
     Web3RpcApi(const Web3RpcApi&) = delete;
     Web3RpcApi& operator=(const Web3RpcApi&) = delete;
 
-protected:
+  protected:
     boost::asio::awaitable<void> handle_web3_client_version(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_web3_sha3(const nlohmann::json& request, nlohmann::json& reply);
 
-private:
+  private:
     std::unique_ptr<ethdb::Database>& database_;
     std::unique_ptr<ethbackend::BackEnd>& backend_;
 
     friend class silkrpc::http::RequestHandler;
 };
 
-} // namespace silkrpc::commands
-
+}  // namespace silkrpc::commands

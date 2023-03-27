@@ -21,17 +21,16 @@
 #include <vector>
 
 #include <silkworm/core/common/util.hpp>
-
 #include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
+#include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/core/receipts.hpp>
 #include <silkworm/silkrpc/core/state_reader.hpp>
-#include <silkworm/silkrpc/core/rawdb/chain.hpp>
-#include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/ethdb/tables.hpp>
+#include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/types/log.hpp>
 #include <silkworm/silkrpc/types/receipt.hpp>
@@ -77,7 +76,7 @@ boost::asio::awaitable<void> ParityRpcApi::handle_parity_get_block_receipts(cons
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -102,8 +101,8 @@ boost::asio::awaitable<void> ParityRpcApi::handle_parity_list_storage_keys(const
     }
 
     SILKRPC_DEBUG << "address: 0x" << silkworm::to_hex(address)
-        << " quantity: " << quantity
-        << " offset: 0x" << (offset ? silkworm::to_hex(offset.value()) : silkworm::to_hex(silkworm::Bytes{})) << "\n";
+                  << " quantity: " << quantity
+                  << " offset: 0x" << (offset ? silkworm::to_hex(offset.value()) : silkworm::to_hex(silkworm::Bytes{})) << "\n";
 
     auto tx = co_await database_->begin();
 
@@ -146,7 +145,7 @@ boost::asio::awaitable<void> ParityRpcApi::handle_parity_list_storage_keys(const
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
-} // namespace silkrpc::commands
+}  // namespace silkrpc::commands

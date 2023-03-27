@@ -28,16 +28,15 @@
 #include <evmc/evmc.hpp>
 #include <gmock/gmock.h>
 
+#include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/rpc/common/conversion.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/core/rawdb/util.hpp>
 #include <silkworm/silkrpc/test/dummy_transaction.hpp>
 #include <silkworm/silkrpc/test/mock_cursor.hpp>
 #include <silkworm/silkrpc/test/mock_transaction.hpp>
-#include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/common/base.hpp>
-#include <silkworm/core/common/util.hpp>
-
-#include <silkworm/infra/rpc/common/conversion.hpp>
 
 namespace silkrpc::ethdb::kv {
 
@@ -590,7 +589,7 @@ TEST_CASE("CoherentStateCache::on_new_block clear the cache on view ID wrapping"
 
     // Create as many state views as the maximum allowed number *up to the max view ID*
     const uint64_t max_view_id = std::numeric_limits<uint64_t>::max();
-    std::vector<uint64_t> wrapping_view_ids{max_view_id - 4, max_view_id - 3, max_view_id -2, max_view_id -1, max_view_id};
+    std::vector<uint64_t> wrapping_view_ids{max_view_id - 4, max_view_id - 3, max_view_id - 2, max_view_id - 1, max_view_id};
     SILKWORM_ASSERT(wrapping_view_ids.size() == kMaxViews);
     for (uint64_t i{0}; i < wrapping_view_ids.size(); ++i) {
         uint64_t view_id = wrapping_view_ids[i];

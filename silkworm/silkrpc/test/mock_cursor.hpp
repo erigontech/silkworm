@@ -20,15 +20,15 @@
 
 #include <boost/asio/awaitable.hpp>
 #include <gmock/gmock.h>
-#include <silkworm/core/common/base.hpp>
 
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 
 namespace silkrpc::test {
 
 class MockCursor : public ethdb::Cursor {
-public:
+  public:
     MOCK_METHOD((uint32_t), cursor_id, (), (const));
     MOCK_METHOD((boost::asio::awaitable<void>), open_cursor, (const std::string& table_name, bool is_dup_sorted));
     MOCK_METHOD((boost::asio::awaitable<KeyValue>), seek, (silkworm::ByteView key));
@@ -38,7 +38,7 @@ public:
 };
 
 class MockCursorDupSort : public ethdb::CursorDupSort {
-public:
+  public:
     MOCK_METHOD((uint32_t), cursor_id, (), (const));
     MOCK_METHOD((boost::asio::awaitable<void>), open_cursor, (const std::string& table_name, bool is_dup_sorted));
     MOCK_METHOD((boost::asio::awaitable<KeyValue>), seek, (silkworm::ByteView key));
@@ -51,4 +51,3 @@ public:
 };
 
 }  // namespace silkrpc::test
-

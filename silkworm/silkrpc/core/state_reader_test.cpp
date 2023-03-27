@@ -17,6 +17,7 @@
 #include "state_reader.hpp"
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
+
 #include <boost/asio/awaitable.hpp>
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
@@ -30,8 +31,8 @@
 namespace silkrpc {
 
 using evmc::literals::operator""_bytes32;
-using testing::InvokeWithoutArgs;
 using testing::_;
+using testing::InvokeWithoutArgs;
 
 #ifndef SILKWORM_SANITIZE
 static const evmc::address kZeroAddress{};
@@ -64,13 +65,9 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
     SECTION("no account for history empty and current state empty") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kAccountHistory returns empty key-value
-        EXPECT_CALL(database_reader_, get(db::table::kAccountHistory, _)).WillOnce(InvokeWithoutArgs(
-            []() -> boost::asio::awaitable<KeyValue> { co_return KeyValue{}; }
-        ));
+        EXPECT_CALL(database_reader_, get(db::table::kAccountHistory, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> { co_return KeyValue{}; }));
         // 2. DatabaseReader::get_one call on kPlainState returns empty value
-        EXPECT_CALL(database_reader_, get_one(db::table::kPlainState, full_view(kZeroAddress))).WillOnce(InvokeWithoutArgs(
-            []() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }
-        ));
+        EXPECT_CALL(database_reader_, get_one(db::table::kPlainState, full_view(kZeroAddress))).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
 
         // Execute the test: calling read_account should return no account
         std::optional<silkworm::Account> account;
@@ -81,13 +78,9 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
     SECTION("account found in current state") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kAccountHistory returns empty key-value
-        EXPECT_CALL(database_reader_, get(db::table::kAccountHistory, _)).WillOnce(InvokeWithoutArgs(
-            []() -> boost::asio::awaitable<KeyValue> { co_return KeyValue{}; }
-        ));
+        EXPECT_CALL(database_reader_, get(db::table::kAccountHistory, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> { co_return KeyValue{}; }));
         // 2. DatabaseReader::get_one call on kPlainState returns account data
-        EXPECT_CALL(database_reader_, get_one(db::table::kPlainState, full_view(kZeroAddress))).WillOnce(InvokeWithoutArgs(
-            []() -> boost::asio::awaitable<silkworm::Bytes> { co_return kEncodedAccount; }
-        ));
+        EXPECT_CALL(database_reader_, get_one(db::table::kPlainState, full_view(kZeroAddress))).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return kEncodedAccount; }));
 
         // Execute the test: calling read_account should return the expected account
         std::optional<silkworm::Account> account;
@@ -104,15 +97,11 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
     SECTION("account found in history") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kAccountHistory returns the account bitmap
-        EXPECT_CALL(database_reader_, get(db::table::kAccountHistory, _)).WillOnce(InvokeWithoutArgs(
-            []() -> boost::asio::awaitable<KeyValue> {
-                co_return KeyValue{silkworm::Bytes{full_view(kZeroAddress)}, kEncodedAccountHistory};
-            }
-        ));
+        EXPECT_CALL(database_reader_, get(db::table::kAccountHistory, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
+            co_return KeyValue{silkworm::Bytes{full_view(kZeroAddress)}, kEncodedAccountHistory};
+        }));
         // 2. DatabaseReader::get_both_range call on kPlainAccountChangeSet returns the account data
-        EXPECT_CALL(database_reader_, get_both_range(db::table::kPlainAccountChangeSet, _, _)).WillOnce(InvokeWithoutArgs(
-            []() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> { co_return kEncodedAccount; }
-        ));
+        EXPECT_CALL(database_reader_, get_both_range(db::table::kPlainAccountChangeSet, _, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> { co_return kEncodedAccount; }));
 
         // Execute the test: calling read_account should return expected account
         std::optional<silkworm::Account> account;
@@ -129,17 +118,11 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_account") {
     SECTION("account w/o code hash found current state") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kAccountHistory returns empty key-value
-        EXPECT_CALL(database_reader_, get(db::table::kAccountHistory, _)).WillOnce(InvokeWithoutArgs(
-            []() -> boost::asio::awaitable<KeyValue> { co_return KeyValue{}; }
-        ));
+        EXPECT_CALL(database_reader_, get(db::table::kAccountHistory, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> { co_return KeyValue{}; }));
         // 2. DatabaseReader::get_one call on kPlainState returns account data
-        EXPECT_CALL(database_reader_, get_one(db::table::kPlainState, full_view(kZeroAddress))).WillOnce(InvokeWithoutArgs(
-            []() -> boost::asio::awaitable<silkworm::Bytes> { co_return kEncodedAccountWithoutCodeHash; }
-        ));
+        EXPECT_CALL(database_reader_, get_one(db::table::kPlainState, full_view(kZeroAddress))).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return kEncodedAccountWithoutCodeHash; }));
         // 3. DatabaseReader::get_one call on kPlainContractCode returns account code hash
-        EXPECT_CALL(database_reader_, get_one(db::table::kPlainContractCode, _)).WillOnce(InvokeWithoutArgs(
-            []() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{kCodeHash.bytes, silkworm::kHashLength}; }
-        ));
+        EXPECT_CALL(database_reader_, get_one(db::table::kPlainContractCode, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{kCodeHash.bytes, silkworm::kHashLength}; }));
 
         // Execute the test: calling read_account should return the expected account
         std::optional<silkworm::Account> account;
@@ -158,13 +141,9 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
     SECTION("empty storage for history empty and current state empty") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kStorageHistory returns empty key-value
-        EXPECT_CALL(database_reader_, get(db::table::kStorageHistory, _)).WillOnce(InvokeWithoutArgs(
-            []() -> boost::asio::awaitable<KeyValue> { co_return KeyValue{}; }
-        ));
+        EXPECT_CALL(database_reader_, get(db::table::kStorageHistory, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> { co_return KeyValue{}; }));
         // 2. DatabaseReader::get_both_range call on kPlainState returns empty value
-        EXPECT_CALL(database_reader_, get_both_range(db::table::kPlainState, _, _)).WillOnce(InvokeWithoutArgs(
-            []() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> { co_return silkworm::Bytes{}; }
-        ));
+        EXPECT_CALL(database_reader_, get_both_range(db::table::kPlainState, _, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> { co_return silkworm::Bytes{}; }));
 
         // Execute the test: calling read_storage should return empty storage value
         evmc::bytes32 location;
@@ -175,13 +154,9 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
     SECTION("storage found in current state") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kStorageHistory returns empty key-value
-        EXPECT_CALL(database_reader_, get(db::table::kStorageHistory, _)).WillOnce(InvokeWithoutArgs(
-            []() -> boost::asio::awaitable<KeyValue> { co_return KeyValue{}; }
-        ));
+        EXPECT_CALL(database_reader_, get(db::table::kStorageHistory, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> { co_return KeyValue{}; }));
         // 2. DatabaseReader::get_both_range call on kPlainState returns empty value
-        EXPECT_CALL(database_reader_, get_both_range(db::table::kPlainState, _, _)).WillOnce(InvokeWithoutArgs(
-            []() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> { co_return kStorageLocation; }
-        ));
+        EXPECT_CALL(database_reader_, get_both_range(db::table::kPlainState, _, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> { co_return kStorageLocation; }));
 
         // Execute the test: calling read_storage should return expected storage location
         evmc::bytes32 location;
@@ -192,18 +167,13 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_storage") {
     SECTION("storage found in history") {
         // Set the call expectations:
         // 1. DatabaseReader::get call on kStorageHistory returns the storage bitmap
-        EXPECT_CALL(database_reader_, get(db::table::kStorageHistory, _)).WillOnce(InvokeWithoutArgs(
-            []() -> boost::asio::awaitable<KeyValue> {
-                co_return KeyValue{
-                    silkworm::db::storage_history_key(kZeroAddress, kLocationHash, core::kEarliestBlockNumber),
-                    kEncodedStorageHistory
-                };
-            }
-        ));
+        EXPECT_CALL(database_reader_, get(db::table::kStorageHistory, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
+            co_return KeyValue{
+                silkworm::db::storage_history_key(kZeroAddress, kLocationHash, core::kEarliestBlockNumber),
+                kEncodedStorageHistory};
+        }));
         // 2. DatabaseReader::get_both_range call on kPlainAccountChangeSet the storage location value
-        EXPECT_CALL(database_reader_, get_both_range(db::table::kPlainStorageChangeSet, _, _)).WillOnce(InvokeWithoutArgs(
-            []() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> { co_return kStorageLocation; }
-        ));
+        EXPECT_CALL(database_reader_, get_both_range(db::table::kPlainStorageChangeSet, _, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> { co_return kStorageLocation; }));
 
         // Execute the test: calling read_storage should return expected storage location
         evmc::bytes32 location;
@@ -223,9 +193,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
     SECTION("empty code found for code hash") {
         // Set the call expectations:
         // 1. DatabaseReader::get_one call on kCode returns the binary code
-        EXPECT_CALL(database_reader_, get_one(db::table::kCode, _)).WillOnce(InvokeWithoutArgs(
-            []() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }
-        ));
+        EXPECT_CALL(database_reader_, get_one(db::table::kCode, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
 
         // Execute the test: calling read_code should return an empty code
         std::optional<silkworm::Bytes> code;
@@ -239,9 +207,7 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
     SECTION("non-empty code found for code hash") {
         // Set the call expectations:
         // 1. DatabaseReader::get_one call on kCode returns the binary code
-        EXPECT_CALL(database_reader_, get_one(db::table::kCode, _)).WillOnce(InvokeWithoutArgs(
-            []() -> boost::asio::awaitable<silkworm::Bytes> { co_return kBinaryCode; }
-        ));
+        EXPECT_CALL(database_reader_, get_one(db::table::kCode, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return kBinaryCode; }));
 
         // Execute the test: calling read_code should return a non-empty code
         std::optional<silkworm::Bytes> code;
@@ -254,5 +220,4 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
 }
 #endif  // SILKWORM_SANITIZE
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

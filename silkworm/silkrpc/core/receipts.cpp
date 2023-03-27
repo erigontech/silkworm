@@ -28,10 +28,10 @@ boost::asio::awaitable<Receipts> get_receipts(const core::rawdb::DatabaseReader&
     }
 
     // If not already present, retrieve receipts by executing transactions
-    //auto block = co_await core::rawdb::read_block(db_reader, hash, number);
+    // auto block = co_await core::rawdb::read_block(db_reader, hash, number);
     // TODO(canepat): implement
     SILKRPC_WARN << "retrieve receipts by executing transactions NOT YET IMPLEMENTED\n";
     co_return Receipts{};
 }
 
-} // namespace silkrpc::core
+}  // namespace silkrpc::core

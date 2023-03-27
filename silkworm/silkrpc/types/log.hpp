@@ -44,5 +44,4 @@ typedef std::vector<Log> Logs;
 
 std::ostream& operator<<(std::ostream& out, const Log& log);
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

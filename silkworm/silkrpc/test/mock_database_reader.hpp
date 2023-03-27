@@ -22,14 +22,14 @@
 #include <boost/asio/awaitable.hpp>
 #include <gmock/gmock.h>
 
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
-#include <silkworm/core/common/base.hpp>
 
 namespace silkrpc::test {
 
 class MockDatabaseReader : public core::rawdb::DatabaseReader {
-public:
+  public:
     MOCK_METHOD((boost::asio::awaitable<KeyValue>), get, (const std::string&, silkworm::ByteView), (const));
     MOCK_METHOD((boost::asio::awaitable<silkworm::Bytes>), get_one, (const std::string&, silkworm::ByteView), (const));
     MOCK_METHOD((boost::asio::awaitable<std::optional<silkworm::Bytes>>), get_both_range,
@@ -41,4 +41,3 @@ public:
 };
 
 }  // namespace silkrpc::test
-

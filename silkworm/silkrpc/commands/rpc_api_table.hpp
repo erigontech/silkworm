@@ -31,7 +31,7 @@
 namespace silkrpc::commands {
 
 class RpcApiTable {
-public:
+  public:
     typedef boost::asio::awaitable<void> (RpcApi::*HandleMethod)(const nlohmann::json&, nlohmann::json&);
     typedef boost::asio::awaitable<void> (RpcApi::*HandleStream)(const nlohmann::json&, json::Stream&);
 
@@ -43,7 +43,7 @@ public:
     std::optional<HandleMethod> find_json_handler(const std::string& method) const;
     std::optional<HandleStream> find_stream_handler(const std::string& method) const;
 
-private:
+  private:
     void build_handlers(const std::string& api_spec);
     void add_handlers(const std::string& api_namespace);
     void add_debug_handlers();
@@ -61,5 +61,4 @@ private:
     std::map<std::string, HandleStream> stream_handlers_;
 };
 
-} // namespace silkrpc::commands
-
+}  // namespace silkrpc::commands

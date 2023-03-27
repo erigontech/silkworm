@@ -21,10 +21,12 @@
 #include <string>
 #include <vector>
 
-#include <intx/intx.hpp>
 #include <evmc/evmc.hpp>
+#include <intx/intx.hpp>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/core/types/block.hpp>
+#include <silkworm/core/types/transaction.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/call.hpp>
 #include <silkworm/silkrpc/types/chain_config.hpp>
@@ -35,11 +37,9 @@
 #include <silkworm/silkrpc/types/issuance.hpp>
 #include <silkworm/silkrpc/types/log.hpp>
 #include <silkworm/silkrpc/types/node_info.hpp>
-#include <silkworm/silkrpc/types/syncing_data.hpp>
 #include <silkworm/silkrpc/types/receipt.hpp>
+#include <silkworm/silkrpc/types/syncing_data.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
-#include <silkworm/core/types/block.hpp>
-#include <silkworm/core/types/transaction.hpp>
 
 namespace evmc {
 
@@ -49,13 +49,13 @@ void from_json(const nlohmann::json& json, address& addr);
 void to_json(nlohmann::json& json, const bytes32& b32);
 void from_json(const nlohmann::json& json, bytes32& b32);
 
-} // namespace evmc
+}  // namespace evmc
 
 namespace intx {
 
 void from_json(const nlohmann::json& json, uint256& ui256);
 
-} // namespace intx
+}  // namespace intx
 
 namespace silkworm {
 
@@ -65,7 +65,7 @@ void to_json(nlohmann::json& json, const Transaction& transaction);
 
 void from_json(const nlohmann::json& json, AccessListEntry& entry);
 
-} // namespace silkworm
+}  // namespace silkworm
 
 namespace silkrpc {
 
@@ -143,7 +143,7 @@ nlohmann::json make_json_content(uint32_t id, const nlohmann::json& result);
 nlohmann::json make_json_error(uint32_t id, int32_t code, const std::string& message);
 nlohmann::json make_json_error(uint32_t id, const RevertError& error);
 
-} // namespace silkrpc
+}  // namespace silkrpc
 
 namespace nlohmann {
 
@@ -159,5 +159,4 @@ struct adl_serializer<silkrpc::BlockNumberOrHash> {
     }
 };
 
-} // namespace nlohmann
-
+}  // namespace nlohmann

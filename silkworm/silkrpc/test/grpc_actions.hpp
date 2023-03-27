@@ -18,10 +18,9 @@
 
 #include <utility>
 
-#include <grpcpp/grpcpp.h>
-
 #include <agrpc/grpc_context.hpp>
 #include <agrpc/test.hpp>
+#include <grpcpp/grpcpp.h>
 
 namespace silkrpc::test {
 
@@ -105,4 +104,3 @@ inline auto read_failure(agrpc::GrpcContext& grpc_context) {
 }
 
 }  // namespace silkrpc::test
-

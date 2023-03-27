@@ -26,4 +26,4 @@ std::ostream& operator<<(std::ostream& out, const ChainConfig& chain_config) {
     return out;
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

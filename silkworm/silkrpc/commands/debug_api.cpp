@@ -16,33 +16,32 @@
 
 #include "debug_api.hpp"
 
-#include <set>
-#include <stdexcept>
-#include <string>
-#include <ostream>
-#include <sstream>
-#include <vector>
-#include <utility>
-
 #include <chrono>
 #include <ctime>
+#include <ostream>
+#include <set>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <evmc/evmc.hpp>
-#include <silkworm/core/common/util.hpp>
+
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/core/consensus/ethash/engine.hpp>
 #include <silkworm/core/state/intra_block_state.hpp>
 #include <silkworm/node/db/util.hpp>
-
 #include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
-#include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/account_dumper.hpp>
 #include <silkworm/silkrpc/core/account_walker.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
-#include <silkworm/silkrpc/core/evm_executor.hpp>
+#include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/evm_debug.hpp>
+#include <silkworm/silkrpc/core/evm_executor.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/core/state_reader.hpp>
 #include <silkworm/silkrpc/core/storage_walker.hpp>
@@ -79,11 +78,11 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_account_range(const nlohm
     }
 
     SILKRPC_INFO << "block_number_or_hash: " << block_number_or_hash
-        << " start_address: 0x" << silkworm::to_hex(start_address)
-        << " max_result: " << max_result
-        << " exclude_code: " << exclude_code
-        << " exclude_storage: " << exclude_storage
-        << "\n";
+                 << " start_address: 0x" << silkworm::to_hex(start_address)
+                 << " max_result: " << max_result
+                 << " exclude_code: " << exclude_code
+                 << " exclude_storage: " << exclude_storage
+                 << "\n";
 
     auto tx = co_await database_->begin();
 
@@ -104,7 +103,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_account_range(const nlohm
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -121,7 +120,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_get_modified_accounts_by_
     auto start_block_id = params[0].get<std::string>();
     auto end_block_id = start_block_id;
     if (params.size() == 2) {
-       end_block_id = params[1].get<std::string>();
+        end_block_id = params[1].get<std::string>();
     }
     SILKRPC_DEBUG << "start_block_id: " << start_block_id << " end_block_id: " << end_block_id << "\n";
 
@@ -145,7 +144,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_get_modified_accounts_by_
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -162,7 +161,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_get_modified_accounts_by_
     auto start_hash = params[0].get<evmc::bytes32>();
     auto end_hash = start_hash;
     if (params.size() == 2) {
-       end_hash = params[1].get<evmc::bytes32>();
+        end_hash = params[1].get<evmc::bytes32>();
     }
     SILKRPC_DEBUG << "start_hash: " << start_hash << " end_hash: " << end_hash << "\n";
 
@@ -186,7 +185,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_get_modified_accounts_by_
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -207,11 +206,11 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_storage_range_at(const nl
     auto max_result = params[4].get<std::uint64_t>();
 
     SILKRPC_DEBUG << "block_hash: 0x" << silkworm::to_hex(block_hash)
-        << " tx_index: " << tx_index
-        << " address: 0x" << silkworm::to_hex(address)
-        << " start_key: 0x" << silkworm::to_hex(start_key)
-        << " max_result: " << max_result
-        << "\n";
+                  << " tx_index: " << tx_index
+                  << " address: 0x" << silkworm::to_hex(address)
+                  << " start_key: 0x" << silkworm::to_hex(start_key)
+                  << " max_result: " << max_result
+                  << "\n";
 
     auto tx = co_await database_->begin();
 
@@ -227,10 +226,10 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_storage_range_at(const nl
 
         silkrpc::StorageWalker::StorageCollector collector = [&](const silkworm::ByteView key, silkworm::ByteView sec_key, silkworm::ByteView value) {
             SILKRPC_TRACE << "StorageCollector: suitable for result"
-                <<  " key: 0x" << silkworm::to_hex(key)
-                <<  " sec_key: 0x" << silkworm::to_hex(sec_key)
-                <<  " value: " << silkworm::to_hex(value)
-                << "\n";
+                          << " key: 0x" << silkworm::to_hex(key)
+                          << " sec_key: 0x" << silkworm::to_hex(sec_key)
+                          << " value: " << silkworm::to_hex(value)
+                          << "\n";
 
             auto val = silkworm::to_hex(value);
             val.insert(0, 64 - val.length(), '0');
@@ -261,7 +260,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_storage_range_at(const nl
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -324,7 +323,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_trace_transaction(const n
 
     stream.close_object();
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -390,7 +389,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_trace_call(const nlohmann
 
     stream.close_object();
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -452,7 +451,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_trace_block_by_number(con
 
     stream.close_object();
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -514,7 +513,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_trace_block_by_hash(const
 
     stream.close_object();
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -549,4 +548,4 @@ boost::asio::awaitable<std::set<evmc::address>> get_modified_accounts(ethdb::Tra
     co_return addresses;
 }
 
-} // namespace silkrpc::commands
+}  // namespace silkrpc::commands

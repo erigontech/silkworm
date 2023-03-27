@@ -221,7 +221,6 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::node_info", "[silkrpc][ethbackend][ba
     }
 }
 
-
 TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_get_payload_v1", "[silkrpc][ethbackend][backend]") {
     test::StrictMockAsyncResponseReader<::types::ExecutionPayload> reader;
     EXPECT_CALL(*stub_, AsyncEngineGetPayloadV1Raw).WillOnce(testing::Return(&reader));
@@ -318,8 +317,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_new_payload_v1", "[silkrpc][et
         ::remote::EngineStatus::INVALID,
         ::remote::EngineStatus::SYNCING,
         ::remote::EngineStatus::ACCEPTED,
-        ::remote::EngineStatus::INVALID_BLOCK_HASH
-    };
+        ::remote::EngineStatus::INVALID_BLOCK_HASH};
     for (const auto engine_status : all_engine_statuses) {
         const auto engine_status_name{::remote::EngineStatus_Name(engine_status)};
         SECTION(std::string("call engine_new_payload_v1 and get ") + engine_status_name + std::string(" status")) {
@@ -334,7 +332,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_new_payload_v1", "[silkrpc][et
     SECTION("call engine_new_payload_v1 and get empty payload") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_ok(grpc_context_));
         const auto payload_status = run<&ethbackend::RemoteBackEnd::engine_new_payload_v1>(execution_payload);
-        CHECK(payload_status.status == "VALID"); // Default value in interfaces is Valid
+        CHECK(payload_status.status == "VALID");  // Default value in interfaces is Valid
         CHECK(payload_status.latest_valid_hash == std::nullopt);
         CHECK(payload_status.validation_error == std::nullopt);
     }
@@ -352,17 +350,14 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_forkchoice_updated_v1", "[silk
     const ForkChoiceUpdatedRequest forkchoice_request{
         .fork_choice_state =
             ForkChoiceState{
-            .head_block_hash = 0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a_bytes32,
-            .safe_block_hash = 0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a_bytes32,
-            .finalized_block_hash = 0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a_bytes32
-        },
-         .payload_attributes =
+                .head_block_hash = 0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a_bytes32,
+                .safe_block_hash = 0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a_bytes32,
+                .finalized_block_hash = 0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a_bytes32},
+        .payload_attributes =
             PayloadAttributes{
-            .timestamp = 0x1,
-            .prev_randao = 0x0000000000000000000000000000000000000000000000000000000000000001_bytes32,
-            .suggested_fee_recipient = 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address
-        }
-    };
+                .timestamp = 0x1,
+                .prev_randao = 0x0000000000000000000000000000000000000000000000000000000000000001_bytes32,
+                .suggested_fee_recipient = 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address}};
     SECTION("call engine_forkchoice_updated_v1 and get VALID status") {
         ::remote::EngineForkChoiceUpdatedReply response;
         auto* engine_payload_status = new ::remote::EnginePayloadStatus();
@@ -383,7 +378,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_forkchoice_updated_v1", "[silk
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_ok(grpc_context_));
         const auto forkchoice_reply = run<&ethbackend::RemoteBackEnd::engine_forkchoice_updated_v1>(forkchoice_request);
         const PayloadStatus payload_status = forkchoice_reply.payload_status;
-        CHECK(payload_status.status == "VALID"); // Default value in interfaces is Valid
+        CHECK(payload_status.status == "VALID");  // Default value in interfaces is Valid
         CHECK(payload_status.latest_valid_hash == std::nullopt);
         CHECK(payload_status.validation_error == std::nullopt);
     }
@@ -395,4 +390,4 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_forkchoice_updated_v1", "[silk
 }
 #endif  // SILKWORM_SANITIZE
 
-} // namespace silkrpc
+}  // namespace silkrpc

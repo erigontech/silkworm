@@ -22,4 +22,4 @@ namespace silkrpc::http::method {
 
 using Catch::Matchers::Message;
 
-} // namespace silkrpc::http::method
+}  // namespace silkrpc::http::method

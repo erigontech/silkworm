@@ -20,7 +20,6 @@
 
 #include <cbor/cbor.h>
 #include <cbor/listener.h>
-
 #include <nlohmann/json.hpp>
 
 #include <silkworm/silkrpc/common/log.hpp>
@@ -30,14 +29,13 @@
 namespace silkrpc {
 
 class LogCborListener : public cbor::listener {
-
   private:
-    enum class ProcessingState { 
-        kWaitNLogs,  
-        kWaitNFields, 
-        kWaitAddress, 
-        kWaitNTopics, 
-        kWaitTopics, 
+    enum class ProcessingState {
+        kWaitNLogs,
+        kWaitNFields,
+        kWaitAddress,
+        kWaitNTopics,
+        kWaitTopics,
         kWaitData
     };
 
@@ -45,59 +43,59 @@ class LogCborListener : public cbor::listener {
     LogCborListener(std::vector<Log>& logs)
         : state_(ProcessingState::kWaitNLogs), nlogs_(0), ntopics_(0), logs_(logs), current_log_({}), current_topic_(0) {}
 
-    void on_integer(int ) { 
+    void on_integer(int) {
         throw std::invalid_argument("Log CBOR: unexpected format(on_integer)");
     }
 
-    void on_map(int ) { 
+    void on_map(int) {
         throw std::invalid_argument("Log CBOR: unexpected format(on_map)");
     }
-        
-    void on_string(std::string &) { 
+
+    void on_string(std::string&) {
         throw std::invalid_argument("Log CBOR: unexpected format(on_string)");
     }
 
-    void on_tag(unsigned int) { 
+    void on_tag(unsigned int) {
         throw std::invalid_argument("Log CBOR: unexpected format(on_tag)");
     }
 
-    void on_undefined() { 
+    void on_undefined() {
         throw std::invalid_argument("Log CBOR: unexpected format(on_undefined)");
     }
 
-    void on_extra_integer(unsigned long long , int ) { 
+    void on_extra_integer(unsigned long long, int) {
         throw std::invalid_argument("Log CBOR: unexpected format(on_extra_integer)");
     }
 
-    void on_bool(bool ) { 
+    void on_bool(bool) {
         throw std::invalid_argument("Log CBOR: unexpected format(on_bool)");
     }
 
-    void on_extra_tag(unsigned long long ) { 
+    void on_extra_tag(unsigned long long) {
         throw std::invalid_argument("Log CBOR: unexpected format(on_extra_tag)");
     }
 
-    void on_float32(float ) { 
+    void on_float32(float) {
         throw std::invalid_argument("Log CBOR: unexpected format(on_float)");
     }
 
-    void on_double(double ) { 
+    void on_double(double) {
         throw std::invalid_argument("Log CBOR: unexpected format(on_double)");
     }
 
-    void on_extra_special(unsigned long long ) { 
+    void on_extra_special(unsigned long long) {
         throw std::invalid_argument("Log CBOR: unexpected format(on_extra_special)");
     }
 
-    void on_error(const char *) { 
+    void on_error(const char*) {
         throw std::invalid_argument("Log CBOR: unexpected format(on_error)");
     }
 
-    void on_special(unsigned int) { 
+    void on_special(unsigned int) {
         throw std::invalid_argument("Log CBOR: unexpected format(on_special)");
     }
 
-    void on_bytes(unsigned char *data, int size) {
+    void on_bytes(unsigned char* data, int size) {
         if (state_ == ProcessingState::kWaitAddress) {
             current_log_.address = silkworm::to_evmc_address(silkworm::Bytes{data, static_cast<long unsigned int>(size)});
             state_ = ProcessingState::kWaitNTopics;
@@ -141,7 +139,7 @@ class LogCborListener : public cbor::listener {
             throw std::invalid_argument("Log CBOR: unexpected format(on_array bad state)");
         }
     }
-    
+
     void on_null() {
         current_log_.data = silkworm::Bytes{};
         logs_.emplace_back(std::move(current_log_));
@@ -150,20 +148,20 @@ class LogCborListener : public cbor::listener {
     }
 
     bool success() {
-       if (static_cast<int>(logs_.size()) != nlogs_) {
-           throw std::invalid_argument("Log CBOR: wrong number of logs");
-       }
-       return true;
+        if (static_cast<int>(logs_.size()) != nlogs_) {
+            throw std::invalid_argument("Log CBOR: wrong number of logs");
+        }
+        return true;
     }
 
   private:
-        ProcessingState state_;
-        int nlogs_;
-        int ntopics_;
-        std::vector<Log>& logs_;
+    ProcessingState state_;
+    int nlogs_;
+    int ntopics_;
+    std::vector<Log>& logs_;
 
-        Log current_log_;
-        int current_topic_;
+    Log current_log_;
+    int current_topic_;
 };
 
 bool cbor_decode(const silkworm::Bytes& bytes, std::vector<Log>& logs) {
@@ -176,7 +174,8 @@ bool cbor_decode(const silkworm::Bytes& bytes, std::vector<Log>& logs) {
     cbor::decoder decoder(input, listener);
     decoder.run();
     if (!listener.success()) {
-        SILKRPC_ERROR << "cbor_decode<std::vector<Log>> unexpected cbor" << "\n";
+        SILKRPC_ERROR << "cbor_decode<std::vector<Log>> unexpected cbor"
+                      << "\n";
         return false;
     }
     return true;

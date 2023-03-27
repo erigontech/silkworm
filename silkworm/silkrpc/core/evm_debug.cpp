@@ -21,10 +21,9 @@
 
 #include <evmc/hex.hpp>
 #include <evmc/instructions.h>
-#include <intx/intx.hpp>
 #include <evmone/execution_state.hpp>
 #include <evmone/instructions.hpp>
-
+#include <intx/intx.hpp>
 
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
@@ -81,7 +80,7 @@ void to_json(nlohmann::json& json, const DebugTrace& debug_trace) {
 
 std::string get_opcode_name(const char* const* names, std::uint8_t opcode) {
     const auto name = names[opcode];
-    return (name != nullptr) ?name : "opcode 0x" + evmc::hex(opcode) + " not defined";
+    return (name != nullptr) ? name : "opcode 0x" + evmc::hex(opcode) + " not defined";
 }
 
 static std::string EMPTY_MEMORY(64, '0');
@@ -105,15 +104,15 @@ void output_memory(std::vector<std::string>& vect, const evmone::Memory& memory)
 }
 
 void insert_error(DebugLog& log, evmc_status_code status_code) {
-    switch(status_code) {
-    case evmc_status_code::EVMC_FAILURE:
-    case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
-    case evmc_status_code::EVMC_OUT_OF_GAS:
-        log.error = true;
-        break;
-    default:
-        log.error = false;
-        break;
+    switch (status_code) {
+        case evmc_status_code::EVMC_FAILURE:
+        case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
+        case evmc_status_code::EVMC_OUT_OF_GAS:
+            log.error = true;
+            break;
+        default:
+            log.error = false;
+            break;
     }
 }
 
@@ -125,14 +124,14 @@ void DebugTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
     evmc::address recipient(msg.recipient);
     evmc::address sender(msg.sender);
     SILKRPC_DEBUG << "on_execution_start: gas: " << std::dec << msg.gas
-        << " depth: " << msg.depth
-        << " recipient: " << recipient
-        << " sender: " << sender
-        << " code: " << silkworm::to_hex(code)
-        << "\n";
+                  << " depth: " << msg.depth
+                  << " recipient: " << recipient
+                  << " sender: " << sender
+                  << " code: " << silkworm::to_hex(code)
+                  << "\n";
 }
 
-void DebugTracer::on_instruction_start(uint32_t pc , const intx::uint256* stack_top, const int stack_height,
+void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int stack_height,
                                        const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept {
     assert(execution_state.msg);
     evmc::address recipient(execution_state.msg->recipient);
@@ -142,17 +141,17 @@ void DebugTracer::on_instruction_start(uint32_t pc , const intx::uint256* stack_
     auto opcode_name = get_opcode_name(opcode_names_, opcode);
 
     SILKRPC_DEBUG << "on_instruction_start:"
-        << " pc: " << std::dec << pc
-        << " opcode: 0x" << std::hex << evmc::hex(opcode)
-        << " opcode_name: " << opcode_name
-        << " recipient: " << recipient
-        << " sender: " << sender
-        << " execution_state: {"
-        << "   gas_left: " << std::dec << execution_state.gas_left
-        << "   status: " << execution_state.status
-        << "   msg.gas: " << std::dec << execution_state.msg->gas
-        << "   msg.depth: " << std::dec << execution_state.msg->depth
-        << "}\n";
+                  << " pc: " << std::dec << pc
+                  << " opcode: 0x" << std::hex << evmc::hex(opcode)
+                  << " opcode_name: " << opcode_name
+                  << " recipient: " << recipient
+                  << " sender: " << sender
+                  << " execution_state: {"
+                  << "   gas_left: " << std::dec << execution_state.gas_left
+                  << "   status: " << execution_state.status
+                  << "   msg.gas: " << std::dec << execution_state.msg->gas
+                  << "   msg.depth: " << std::dec << execution_state.msg->depth
+                  << "}\n";
 
     bool output_storage = false;
     if (!config_.disableStorage) {
@@ -179,10 +178,10 @@ void DebugTracer::on_instruction_start(uint32_t pc , const intx::uint256* stack_
         const auto depth = log.depth;
         if (depth == execution_state.msg->depth + 1) {
             if (gas_on_precompiled_) {
-               log.gas_cost = log.gas - gas_on_precompiled_;
-               gas_on_precompiled_ = 0;
+                log.gas_cost = log.gas - gas_on_precompiled_;
+                gas_on_precompiled_ = 0;
             } else {
-               log.gas_cost = log.gas - execution_state.gas_left;
+                log.gas_cost = log.gas - execution_state.gas_left;
             }
             if (!config_.disableMemory) {
                 auto& memory = log.memory;
@@ -213,7 +212,7 @@ void DebugTracer::on_instruction_start(uint32_t pc , const intx::uint256* stack_
         log.memory = current_memory;
     }
     if (output_storage) {
-        for (const auto &entry : storage_[recipient]) {
+        for (const auto& entry : storage_[recipient]) {
             log.storage[entry.first] = entry.second;
         }
     }
@@ -224,9 +223,9 @@ void DebugTracer::on_instruction_start(uint32_t pc , const intx::uint256* stack_
 
 void DebugTracer::on_precompiled_run(const evmc_result& result, int64_t gas, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
     SILKRPC_DEBUG << "DebugTracer::on_precompiled_run:"
-        << " status: " << result.status_code
-        << ", gas: " << std::dec << gas
-        << "\n";
+                  << " status: " << result.status_code
+                  << ", gas: " << std::dec << gas
+                  << "\n";
 
     gas_on_precompiled_ = gas;
 }
@@ -238,15 +237,15 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
         insert_error(log, result.status_code);
 
         switch (result.status_code) {
-        case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
-            log.gas_cost = start_gas_ - log.gas;
-            break;
+            case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
+                log.gas_cost = start_gas_ - log.gas;
+                break;
 
-        case evmc_status_code::EVMC_REVERT:
-        case evmc_status_code::EVMC_OUT_OF_GAS:
-        default:
-            log.gas_cost = log.gas - result.gas_left;
-            break;
+            case evmc_status_code::EVMC_REVERT:
+            case evmc_status_code::EVMC_OUT_OF_GAS:
+            default:
+                log.gas_cost = log.gas - result.gas_left;
+                break;
         }
     }
 
@@ -257,10 +256,10 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
     }
 
     SILKRPC_DEBUG << "on_execution_end:"
-        << " result.status_code: " << result.status_code
-        << " start_gas: " << std::dec << start_gas_
-        << " gas_left: " << std::dec << result.gas_left
-        << "\n";
+                  << " result.status_code: " << result.status_code
+                  << " start_gas: " << std::dec << start_gas_
+                  << " gas_left: " << std::dec << result.gas_left
+                  << "\n";
 }
 
 void DebugTracer::flush_logs() {
@@ -293,7 +292,7 @@ void DebugTracer::write_log(const DebugLog& log) {
     stream_->write_json(json);
 }
 
-template<typename WorldState, typename VM>
+template <typename WorldState, typename VM>
 boost::asio::awaitable<std::vector<DebugTrace>> DebugExecutor<WorldState, VM>::execute(const silkworm::Block& block, json::Stream* stream) {
     auto block_number = block.header.number;
     const auto& transactions = block.transactions;
@@ -302,7 +301,7 @@ boost::asio::awaitable<std::vector<DebugTrace>> DebugExecutor<WorldState, VM>::e
 
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     const auto chain_config_ptr = lookup_chain_config(chain_id);
-    state::RemoteState remote_state{io_context_, database_reader_, block_number-1};
+    state::RemoteState remote_state{io_context_, database_reader_, block_number - 1};
     EVMExecutor<WorldState, VM> executor{io_context_, database_reader_, *chain_config_ptr, workers_, remote_state};
 
     std::vector<DebugTrace> debug_traces(transactions.size());
@@ -327,7 +326,7 @@ boost::asio::awaitable<std::vector<DebugTrace>> DebugExecutor<WorldState, VM>::e
         }
 
         silkrpc::Tracers tracers{debug_tracer};
-        const auto execution_result = co_await executor.call(block, txn, tracers, /* refund */false, /* gasBailout */false);
+        const auto execution_result = co_await executor.call(block, txn, tracers, /* refund */ false, /* gasBailout */ false);
 
         if (stream) {
             debug_tracer->flush_logs();
@@ -360,22 +359,22 @@ boost::asio::awaitable<std::vector<DebugTrace>> DebugExecutor<WorldState, VM>::e
     co_return debug_traces;
 }
 
-template<typename WorldState, typename VM>
+template <typename WorldState, typename VM>
 boost::asio::awaitable<DebugExecutorResult> DebugExecutor<WorldState, VM>::execute(const silkworm::Block& block, const silkrpc::Call& call, json::Stream* stream) {
     silkrpc::Transaction transaction{call.to_transaction()};
     auto result = co_await execute(block.header.number, block, transaction, -1, stream);
     co_return result;
 }
 
-template<typename WorldState, typename VM>
+template <typename WorldState, typename VM>
 boost::asio::awaitable<DebugExecutorResult> DebugExecutor<WorldState, VM>::execute(uint64_t block_number, const silkworm::Block& block,
                                                                                    const silkrpc::Transaction& transaction, int32_t index, json::Stream* stream) {
     SILKRPC_INFO << "DebugExecutor::execute: "
-        << " block_number: " << block_number
-        << " transaction: {" << transaction << "}"
-        << " index: " << std::dec << index
-        << " config: " << config_
-        << "\n";
+                 << " block_number: " << block_number
+                 << " transaction: {" << transaction << "}"
+                 << " index: " << std::dec << index
+                 << " config: " << config_
+                 << "\n";
 
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     const auto chain_config_ptr = lookup_chain_config(chain_id);
@@ -430,4 +429,4 @@ boost::asio::awaitable<DebugExecutorResult> DebugExecutor<WorldState, VM>::execu
 
 template class DebugExecutor<>;
 
-} // namespace silkrpc::debug
+}  // namespace silkrpc::debug

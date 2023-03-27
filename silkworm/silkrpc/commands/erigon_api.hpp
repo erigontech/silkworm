@@ -25,23 +25,25 @@
 
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
-#include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
+#include <silkworm/silkrpc/json/types.hpp>
 
-namespace silkrpc::http { class RequestHandler; }
+namespace silkrpc::http {
+class RequestHandler;
+}
 
 namespace silkrpc::commands {
 
 class ErigonRpcApi {
-public:
+  public:
     explicit ErigonRpcApi(Context& context);
     virtual ~ErigonRpcApi() {}
 
     ErigonRpcApi(const ErigonRpcApi&) = delete;
     ErigonRpcApi& operator=(const ErigonRpcApi&) = delete;
 
-protected:
+  protected:
     boost::asio::awaitable<void> handle_erigon_block_number(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_erigon_get_block_by_timestamp(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_erigon_get_header_by_hash(const nlohmann::json& request, nlohmann::json& reply);
@@ -52,7 +54,7 @@ protected:
     boost::asio::awaitable<void> handle_erigon_cumulative_chain_traffic(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_erigon_node_info(const nlohmann::json& request, nlohmann::json& reply);
 
-private:
+  private:
     Context& context_;
     std::unique_ptr<ethbackend::BackEnd>& backend_;
     std::shared_ptr<BlockCache>& block_cache_;
@@ -62,5 +64,4 @@ private:
     friend class silkrpc::http::RequestHandler;
 };
 
-} // namespace silkrpc::commands
-
+}  // namespace silkrpc::commands

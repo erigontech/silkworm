@@ -17,7 +17,6 @@
 #include "dump_account.hpp"
 
 #include <silkworm/core/common/util.hpp>
-
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
@@ -43,8 +42,7 @@ void to_json(nlohmann::json& json, const DumpAccounts& dump) {
     json = {
         {"root", dump.root},
         {"accounts", accounts},
-        {"next", encoded}
-    };
+        {"next", encoded}};
 }
 
 void to_json(nlohmann::json& json, const DumpAccount& dump_account) {
@@ -64,4 +62,4 @@ void to_json(nlohmann::json& json, const DumpAccount& dump_account) {
     }
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

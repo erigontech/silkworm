@@ -26,12 +26,13 @@
 #include <boost/asio/signal_set.hpp>
 #include <boost/process/environment.hpp>
 #include <grpcpp/grpcpp.h>
+
 #include <silkworm/silkrpc/http/jwt.hpp>
 
 namespace silkrpc {
 
 // The maximum receive message in bytes for gRPC channels.
-constexpr auto kRpcMaxReceiveMessageSize{64 * 1024 * 1024}; // 64 MiB
+constexpr auto kRpcMaxReceiveMessageSize{64 * 1024 * 1024};  // 64 MiB
 
 void DaemonChecklist::success_or_throw() const {
     for (const auto& protocol_check : protocol_checklist) {
@@ -119,10 +120,12 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
         // Start execution context dedicated to handling termination signals
         boost::asio::io_context signal_context;
         boost::asio::signal_set signals{signal_context, SIGINT, SIGTERM};
-        SILKRPC_DEBUG << "Signals registered on signal_context " << &signal_context << "\n" << std::flush;
+        SILKRPC_DEBUG << "Signals registered on signal_context " << &signal_context << "\n"
+                      << std::flush;
         signals.async_wait([&](const boost::system::error_code& error, int signal_number) {
             if (signal_number == SIGINT) std::cout << "\n";
-            SILKRPC_INFO << "Signal number: " << signal_number << " caught, error: " << error.message() << "\n" << std::flush;
+            SILKRPC_INFO << "Signal number: " << signal_number << " caught, error: " << error.message() << "\n"
+                         << std::flush;
             rpc_daemon.stop();
         });
 
@@ -136,12 +139,15 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
 
         rpc_daemon.join();
     } catch (const std::exception& e) {
-        SILKRPC_CRIT << "Exception: " << e.what() << "\n" << std::flush;
+        SILKRPC_CRIT << "Exception: " << e.what() << "\n"
+                     << std::flush;
     } catch (...) {
-        SILKRPC_CRIT << "Unexpected exception: " << current_exception_name() << "\n" << std::flush;
+        SILKRPC_CRIT << "Unexpected exception: " << current_exception_name() << "\n"
+                     << std::flush;
     }
 
-    SILKRPC_LOG << "Silkrpc exiting [pid=" << pid << ", main thread=" << tid << "]\n" << std::flush;
+    SILKRPC_LOG << "Silkrpc exiting [pid=" << pid << ", main thread=" << tid << "]\n"
+                << std::flush;
 
     return 0;
 }
@@ -267,4 +273,4 @@ void Daemon::join() {
     context_pool_.join();
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

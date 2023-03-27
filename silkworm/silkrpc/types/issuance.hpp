@@ -34,5 +34,4 @@ struct Issuance {
 
 std::ostream& operator<<(std::ostream& out, const Issuance& issuance);
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

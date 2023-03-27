@@ -37,7 +37,6 @@ constexpr const char* kLatestExecutedBlockId{"latestExecuted"};
 
 constexpr uint64_t kEarliestBlockNumber{0ul};
 
-
 boost::asio::awaitable<bool> is_latest_block_number(uint64_t block_number, const core::rawdb::DatabaseReader& db_reader);
 
 boost::asio::awaitable<uint64_t> get_block_number_by_tag(const std::string& block_id, const core::rawdb::DatabaseReader& reader);
@@ -61,4 +60,3 @@ boost::asio::awaitable<uint64_t> get_forkchoice_safe_block_number(const core::ra
 boost::asio::awaitable<bool> is_latest_block_number(const BlockNumberOrHash& bnoh, const core::rawdb::DatabaseReader& reader);
 
 }  // namespace silkrpc::core
-

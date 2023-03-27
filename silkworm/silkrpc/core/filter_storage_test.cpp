@@ -16,9 +16,10 @@
 
 #include "filter_storage.hpp"
 
+#include <thread>
+
 #include <catch2/catch.hpp>
 #include <nlohmann/json.hpp>
-#include <thread>
 
 #include "silkworm/silkrpc/json/types.hpp"
 
@@ -110,7 +111,7 @@ TEST_CASE("FilterStorage base") {
 TEST_CASE("FilterStorage enhanced") {
     std::uint64_t count = 0;
     std::uint64_t max_keys = 3;
-    Generator default_generator = [&]() {return count++ % max_keys;};
+    Generator default_generator = [&]() { return count++ % max_keys; };
 
     FilterStorage filter_storage{default_generator, 2 * max_keys, 1};
     SECTION("keys OK") {
@@ -134,5 +135,4 @@ TEST_CASE("FilterStorage enhanced") {
     }
 }
 
-} // namespace silkrpc::filter
-
+}  // namespace silkrpc::filter

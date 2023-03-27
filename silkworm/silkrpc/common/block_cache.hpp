@@ -19,25 +19,25 @@
 #include <cstddef>
 #include <mutex>
 
+#include <boost/compute/detail/lru_cache.hpp>
 #include <evmc/evmc.hpp>
+
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/core/common/util.hpp>
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/types/receipt.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/node/db/util.hpp>
 
-#include <boost/compute/detail/lru_cache.hpp>
-
 namespace silkrpc {
 
 class BlockCache {
-public:
+  public:
     explicit BlockCache(std::size_t capacity = 1024, bool shared_cache = true)
         : block_cache_(capacity), shared_cache_(shared_cache) {}
 
-    boost::optional <silkworm::BlockWithHash> get(const evmc::bytes32& key) {
+    boost::optional<silkworm::BlockWithHash> get(const evmc::bytes32& key) {
         if (shared_cache_) {
             const std::lock_guard<std::mutex> lock(access_);
             return block_cache_.get(key);
@@ -45,7 +45,7 @@ public:
         return block_cache_.get(key);
     }
 
-    void insert(const evmc::bytes32 &key, const silkworm::BlockWithHash& block) {
+    void insert(const evmc::bytes32& key, const silkworm::BlockWithHash& block) {
         if (shared_cache_) {
             const std::lock_guard<std::mutex> lock(access_);
             return block_cache_.insert(key, block);
@@ -53,11 +53,10 @@ public:
         block_cache_.insert(key, block);
     }
 
-private:
+  private:
     mutable std::mutex access_;
     boost::compute::detail::lru_cache<evmc::bytes32, silkworm::BlockWithHash> block_cache_;
     bool shared_cache_;
 };
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

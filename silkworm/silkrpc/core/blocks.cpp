@@ -16,11 +16,11 @@
 
 #include "blocks.hpp"
 
+#include <silkworm/core/common/assert.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
-#include <silkworm/silkrpc/stagedsync/stages.hpp>
 #include <silkworm/silkrpc/ethdb/tables.hpp>
-#include <silkworm/core/common/assert.hpp>
+#include <silkworm/silkrpc/stagedsync/stages.hpp>
 
 namespace silkrpc::core {
 
@@ -28,14 +28,13 @@ constexpr const char* kHeadBlockHash = "headBlockHash";
 constexpr const char* kFinalizedBlockHash = "finalizedBlockHash";
 constexpr const char* kSafeBlockHash = "safeBlockHash";
 
-
 boost::asio::awaitable<bool> is_latest_block_number(uint64_t block_number, const core::rawdb::DatabaseReader& db_reader) {
     const auto last_executed_block_number = co_await core::get_latest_executed_block_number(db_reader);
     co_return last_executed_block_number == block_number;
 }
 
 boost::asio::awaitable<uint64_t> get_block_number_by_tag(const std::string& block_id, const core::rawdb::DatabaseReader& reader) {
-    uint64_t  block_number;
+    uint64_t block_number;
     if (block_id == kEarliestBlockId) {
         block_number = kEarliestBlockNumber;
     } else if (block_id == kLatestBlockId || block_id == kPendingBlockId) {
@@ -81,8 +80,8 @@ boost::asio::awaitable<std::pair<uint64_t, bool>> get_block_number(const std::st
 }
 
 boost::asio::awaitable<uint64_t> get_block_number(const std::string& block_id, const core::rawdb::DatabaseReader& reader) {
-   const auto [block_number, _] = co_await get_block_number(block_id, reader, /*latest_required=*/false);
-   co_return block_number;
+    const auto [block_number, _] = co_await get_block_number(block_id, reader, /*latest_required=*/false);
+    co_return block_number;
 }
 
 boost::asio::awaitable<uint64_t> get_current_block_number(const core::rawdb::DatabaseReader& reader) {

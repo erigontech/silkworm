@@ -20,31 +20,28 @@
 
 #include <boost/asio/thread_pool.hpp>
 
-#include <silkworm/silkrpc/commands/eth_api.hpp>
 #include <silkworm/silkrpc/commands/debug_api.hpp>
-#include <silkworm/silkrpc/commands/net_api.hpp>
-#include <silkworm/silkrpc/commands/parity_api.hpp>
-#include <silkworm/silkrpc/commands/erigon_api.hpp>
-#include <silkworm/silkrpc/commands/trace_api.hpp>
-#include <silkworm/silkrpc/commands/web3_api.hpp>
 #include <silkworm/silkrpc/commands/engine_api.hpp>
-#include <silkworm/silkrpc/commands/txpool_api.hpp>
+#include <silkworm/silkrpc/commands/erigon_api.hpp>
+#include <silkworm/silkrpc/commands/eth_api.hpp>
+#include <silkworm/silkrpc/commands/net_api.hpp>
 #include <silkworm/silkrpc/commands/ots_api.hpp>
+#include <silkworm/silkrpc/commands/parity_api.hpp>
+#include <silkworm/silkrpc/commands/trace_api.hpp>
+#include <silkworm/silkrpc/commands/txpool_api.hpp>
+#include <silkworm/silkrpc/commands/web3_api.hpp>
 
-namespace silkrpc::http { class RequestHandler; }
+namespace silkrpc::http {
+class RequestHandler;
+}
 
 namespace silkrpc::commands {
 
 class RpcApiTable;
 
 class RpcApi : protected EthereumRpcApi, NetRpcApi, Web3RpcApi, DebugRpcApi, ParityRpcApi, ErigonRpcApi, TraceRpcApi, EngineRpcApi, TxPoolRpcApi, OtsRpcApi {
-public:
-    explicit RpcApi(Context& context, boost::asio::thread_pool& workers) :
-        EthereumRpcApi{context, workers}, NetRpcApi{context.backend()}, Web3RpcApi{context}, DebugRpcApi{context, workers},
-        ParityRpcApi{context}, ErigonRpcApi{context}, TraceRpcApi{context, workers},
-        EngineRpcApi(context.database(), context.backend()),
-        TxPoolRpcApi(context),
-        OtsRpcApi{context} {}
+  public:
+    explicit RpcApi(Context& context, boost::asio::thread_pool& workers) : EthereumRpcApi{context, workers}, NetRpcApi{context.backend()}, Web3RpcApi{context}, DebugRpcApi{context, workers}, ParityRpcApi{context}, ErigonRpcApi{context}, TraceRpcApi{context, workers}, EngineRpcApi(context.database(), context.backend()), TxPoolRpcApi(context), OtsRpcApi{context} {}
 
     ~RpcApi() override = default;
 
@@ -55,5 +52,4 @@ public:
     friend class silkrpc::http::RequestHandler;
 };
 
-} // namespace silkrpc::commands
-
+}  // namespace silkrpc::commands

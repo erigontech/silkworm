@@ -29,11 +29,11 @@ static std::uint8_t kArrayOpen = 2;
 static std::uint8_t kFieldWritten = 3;
 static std::uint8_t kEntryWritten = 4;
 
-static std::string kOpenBrace{"{"}; // NOLINT(runtime/string)
-static std::string kCloseBrace{"}"}; // NOLINT(runtime/string)
-static std::string kOpenBracket{"["}; // NOLINT(runtime/string)
-static std::string kCloseBracket{"]"}; // NOLINT(runtime/string)
-static std::string kFieldSeparator{","}; // NOLINT(runtime/string)
+static std::string kOpenBrace{"{"};       // NOLINT(runtime/string)
+static std::string kCloseBrace{"}"};      // NOLINT(runtime/string)
+static std::string kOpenBracket{"["};     // NOLINT(runtime/string)
+static std::string kCloseBracket{"]"};    // NOLINT(runtime/string)
+static std::string kFieldSeparator{","};  // NOLINT(runtime/string)
 
 void Stream::open_object() {
     bool isEntry = !stack_.empty() && (stack_.top() == kArrayOpen || stack_.top() == kEntryWritten);
@@ -101,7 +101,7 @@ void Stream::write_field(const std::string& name, const nlohmann::json& value) {
 }
 
 void Stream::write_string(const std::string& str) {
-   writer_.write("\"" + str + "\"");
+    writer_.write("\"" + str + "\"");
 }
 
 void Stream::ensure_separator() {
@@ -114,4 +114,4 @@ void Stream::ensure_separator() {
     }
 }
 
-} // namespace json
+}  // namespace json

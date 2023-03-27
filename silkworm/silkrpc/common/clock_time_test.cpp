@@ -42,4 +42,4 @@ TEST_CASE("check elapsed time", "[silkrpc][common][clock_time]") {
     CHECK(elapsed <= window);
 }
 
-} // namespace silkrpc::clock_time
+}  // namespace silkrpc::clock_time

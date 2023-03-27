@@ -25,4 +25,4 @@ std::ostream& operator<<(std::ostream& out, const Issuance& issuance) {
     return out;
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

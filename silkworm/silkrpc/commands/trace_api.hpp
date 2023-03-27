@@ -27,17 +27,19 @@
 
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
-#include <silkworm/silkrpc/json/stream.hpp>
-#include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
+#include <silkworm/silkrpc/json/stream.hpp>
+#include <silkworm/silkrpc/json/types.hpp>
 
-namespace silkrpc::http { class RequestHandler; }
+namespace silkrpc::http {
+class RequestHandler;
+}
 
 namespace silkrpc::commands {
 
 class TraceRpcApi {
-public:
+  public:
     explicit TraceRpcApi(Context& context, boost::asio::thread_pool& workers)
         : context_(context), database_(context.database()), tx_pool_{context.tx_pool()}, workers_{workers} {}
     virtual ~TraceRpcApi() = default;
@@ -45,7 +47,7 @@ public:
     TraceRpcApi(const TraceRpcApi&) = delete;
     TraceRpcApi& operator=(const TraceRpcApi&) = delete;
 
-protected:
+  protected:
     boost::asio::awaitable<void> handle_trace_call(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_trace_call_many(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_trace_raw_transaction(const nlohmann::json& request, nlohmann::json& reply);
@@ -57,7 +59,7 @@ protected:
 
     boost::asio::awaitable<void> handle_trace_filter(const nlohmann::json& request, json::Stream& stream);
 
-private:
+  private:
     Context& context_;
     std::unique_ptr<ethdb::Database>& database_;
     std::unique_ptr<txpool::TransactionPool>& tx_pool_;
@@ -66,5 +68,4 @@ private:
     friend class silkrpc::http::RequestHandler;
 };
 
-} // namespace silkrpc::commands
-
+}  // namespace silkrpc::commands

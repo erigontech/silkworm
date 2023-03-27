@@ -65,7 +65,7 @@ boost::asio::awaitable<void> RequestHandler::handle_request(const http::Request&
                     reply.content += "\n";
                 }
             }
-       } else {
+        } else {
             std::string batch_reply_content = "[";
             bool first_element = true;
             for (auto& item : request_json.items()) {
@@ -81,7 +81,7 @@ boost::asio::awaitable<void> RequestHandler::handle_request(const http::Request&
                         reply.status = http::StatusType::unauthorized;
                     } else {
                         if (first_element) {
-                            first_element =  false;
+                            first_element = false;
                         } else {
                             batch_reply_content += ",";
                         }
@@ -89,10 +89,10 @@ boost::asio::awaitable<void> RequestHandler::handle_request(const http::Request&
                         batch_reply_content += reply.content;
                     }
                 }
-           }
-           batch_reply_content += "]\n";
-           reply.content = batch_reply_content;
-       }
+            }
+            batch_reply_content += "]\n";
+            reply.content = batch_reply_content;
+        }
     }
 
     co_await do_write(reply);
@@ -184,7 +184,7 @@ boost::asio::awaitable<std::optional<std::string>> RequestHandler::is_request_au
         co_return std::nullopt;
     }
 
-    const auto it = std::find_if(request.headers.begin(), request.headers.end(), [&](const Header& h){
+    const auto it = std::find_if(request.headers.begin(), request.headers.end(), [&](const Header& h) {
         return h.name == "Authorization";
     });
 
@@ -223,16 +223,18 @@ boost::asio::awaitable<std::optional<std::string>> RequestHandler::is_request_au
     co_return std::nullopt;
 }
 
-boost::asio::awaitable<void> RequestHandler::do_write(Reply &reply) {
+boost::asio::awaitable<void> RequestHandler::do_write(Reply& reply) {
     try {
-        SILKRPC_DEBUG << "RequestHandler::do_write reply: " << reply.content << "\n" << std::flush;
+        SILKRPC_DEBUG << "RequestHandler::do_write reply: " << reply.content << "\n"
+                      << std::flush;
 
         reply.headers.reserve(2);
         reply.headers.emplace_back(http::Header{"Content-Length", std::to_string(reply.content.size())});
         reply.headers.emplace_back(http::Header{"Content-Type", "application/json"});
 
         const auto bytes_transferred = co_await boost::asio::async_write(socket_, reply.to_buffers(), boost::asio::use_awaitable);
-        SILKRPC_TRACE << "RequestHandler::do_write bytes_transferred: " << bytes_transferred << "\n" << std::flush;
+        SILKRPC_TRACE << "RequestHandler::do_write bytes_transferred: " << bytes_transferred << "\n"
+                      << std::flush;
     } catch (const boost::system::system_error& se) {
         std::rethrow_exception(std::make_exception_ptr(se));
     } catch (const std::exception& e) {
@@ -251,7 +253,8 @@ boost::asio::awaitable<void> RequestHandler::write_headers() {
 
         const auto bytes_transferred = co_await boost::asio::async_write(socket_, buffers, boost::asio::use_awaitable);
 
-        SILKRPC_TRACE << "RequestHandler::write_headers bytes_transferred: " << bytes_transferred << "\n" << std::flush;
+        SILKRPC_TRACE << "RequestHandler::write_headers bytes_transferred: " << bytes_transferred << "\n"
+                      << std::flush;
     } catch (const std::system_error& se) {
         std::rethrow_exception(std::make_exception_ptr(se));
     } catch (const std::exception& e) {
@@ -259,4 +262,4 @@ boost::asio::awaitable<void> RequestHandler::write_headers() {
     }
 }
 
-} // namespace silkrpc::http
+}  // namespace silkrpc::http

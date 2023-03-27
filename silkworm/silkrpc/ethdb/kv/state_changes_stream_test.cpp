@@ -27,7 +27,7 @@
 
 namespace silkrpc::ethdb::kv {
 
-using namespace std::chrono_literals; // NOLINT(build/namespaces)
+using namespace std::chrono_literals;  // NOLINT(build/namespaces)
 using testing::InvokeWithoutArgs;
 using testing::Return;
 
@@ -233,4 +233,4 @@ TEST_CASE_METHOD(StateChangesStreamTest, "StateChangesStream::close", "[silkrpc]
 }
 #endif  // SILKWORM_SANITIZE
 
-} // namespace silkrpc::ethdb::kv
+}  // namespace silkrpc::ethdb::kv

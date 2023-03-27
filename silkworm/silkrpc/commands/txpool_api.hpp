@@ -28,24 +28,26 @@
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
-namespace silkrpc::http { class RequestHandler; }
+namespace silkrpc::http {
+class RequestHandler;
+}
 
 namespace silkrpc::commands {
 
 class TxPoolRpcApi {
-public:
+  public:
     explicit TxPoolRpcApi(Context& context)
-    : context_(context), database_(context.database()), tx_pool_{context.tx_pool()} {}
+        : context_(context), database_(context.database()), tx_pool_{context.tx_pool()} {}
     virtual ~TxPoolRpcApi() {}
 
     TxPoolRpcApi(const TxPoolRpcApi&) = delete;
     TxPoolRpcApi& operator=(const TxPoolRpcApi&) = delete;
 
-protected:
+  protected:
     boost::asio::awaitable<void> handle_txpool_status(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_txpool_content(const nlohmann::json& request, nlohmann::json& reply);
 
-private:
+  private:
     Context& context_;
     std::unique_ptr<ethdb::Database>& database_;
     std::unique_ptr<txpool::TransactionPool>& tx_pool_;
@@ -53,5 +55,4 @@ private:
     friend class silkrpc::http::RequestHandler;
 };
 
-} // namespace silkrpc::commands
-
+}  // namespace silkrpc::commands

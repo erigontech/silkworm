@@ -23,19 +23,18 @@
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
-#include <boost/asio/write.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/use_future.hpp>
+#include <boost/asio/write.hpp>
 
 #include <silkworm/silkrpc/common/log.hpp>
 
 namespace silkrpc {
 
-const std::string chunck_sep{ '\r', '\n' }; // NOLINT(runtime/string)
-const std::string final_chunck{ '0', '\r', '\n', '\r', '\n' }; // NOLINT(runtime/string)
+const std::string chunck_sep{'\r', '\n'};                     // NOLINT(runtime/string)
+const std::string final_chunck{'0', '\r', '\n', '\r', '\n'};  // NOLINT(runtime/string)
 
-ChunksWriter::ChunksWriter(Writer& writer, std::size_t chunck_size) :
-    writer_(writer), chunck_size_(chunck_size), available_(chunck_size), buffer_{new char[chunck_size_]} {
+ChunksWriter::ChunksWriter(Writer& writer, std::size_t chunck_size) : writer_(writer), chunck_size_(chunck_size), available_(chunck_size), buffer_{new char[chunck_size_]} {
     std::memset(buffer_.get(), 0, chunck_size_);
 }
 
@@ -44,10 +43,11 @@ void ChunksWriter::write(const std::string& content) {
     auto size = content.size();
 
     SILKRPC_DEBUG << "ChunksWriter::write available_: " << available_
-        << " size: " << size
-        << std::endl << std::flush;
+                  << " size: " << size
+                  << std::endl
+                  << std::flush;
 
-    char *buffer_start = buffer_.get() + (chunck_size_ - available_);
+    char* buffer_start = buffer_.get() + (chunck_size_ - available_);
     if (available_ > size) {
         std::strncpy(buffer_start, c_str, size);
         available_ -= size;
@@ -78,8 +78,9 @@ void ChunksWriter::close() {
 void ChunksWriter::flush() {
     auto size = chunck_size_ - available_;
     SILKRPC_DEBUG << "ChunksWriter::flush available_: " << available_
-        << " size: " << size
-        << std::endl << std::flush;
+                  << " size: " << size
+                  << std::endl
+                  << std::flush;
 
     if (size > 0) {
         std::stringstream stream;
@@ -94,4 +95,4 @@ void ChunksWriter::flush() {
     std::memset(buffer_.get(), 0, chunck_size_);
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

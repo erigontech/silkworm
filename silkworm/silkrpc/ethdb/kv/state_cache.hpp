@@ -28,10 +28,10 @@
 #include <absl/container/btree_set.h>
 #include <boost/asio/awaitable.hpp>
 
+#include <silkworm/core/common/base.hpp>
+#include <silkworm/interfaces/remote/kv.pb.h>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
-#include <silkworm/interfaces/remote/kv.pb.h>
-#include <silkworm/core/common/base.hpp>
 
 namespace silkrpc::ethdb::kv {
 
@@ -98,7 +98,7 @@ class CoherentStateView : public StateView {
 
     boost::asio::awaitable<std::optional<silkworm::Bytes>> get_code(const silkworm::Bytes& key) override;
 
-private:
+  private:
     Transaction& txn_;
     CoherentStateCache* cache_;
 };
@@ -161,4 +161,3 @@ class CoherentStateCache : public StateCache {
 };
 
 }  // namespace silkrpc::ethdb::kv
-

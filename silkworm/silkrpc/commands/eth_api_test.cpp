@@ -33,7 +33,7 @@ using Catch::Matchers::Message;
 
 //! Utility class to expose handle hooks publicly just for tests
 class EthereumRpcApi_ForTest : public EthereumRpcApi {
-public:
+  public:
     explicit EthereumRpcApi_ForTest(Context& context, boost::asio::thread_pool& workers) : EthereumRpcApi{context, workers} {}
 
     // MSVC doesn't support using access declarations properly, so explicitly forward these public accessors
@@ -57,7 +57,9 @@ TEST_CASE_METHOD(EthereumRpcApiTest, "handle_eth_block_number succeeds if reques
         "id": 1,
         "method":"eth_blockNumber",
         "params":[]
-    })"_json, reply), std::exception);
+    })"_json,
+                                                                   reply),
+                    std::exception);
     /*CHECK(reply == R"({
             "jsonrpc":"2.0",
             "id":1,
@@ -85,7 +87,8 @@ TEST_CASE_METHOD(EthereumRpcApiTest, "handle_eth_send_raw_transaction fails rlp 
         "id": 1,
         "method": "eth_sendRawTransaction",
         "params": ["0xd46ed67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f0724456"]
-    })"_json, reply);
+    })"_json,
+                                                           reply);
     CHECK(reply == R"({
         "error":{"code":-32000,"message":"rlp: element is larger than containing list"},"id":1,"jsonrpc":"2.0"
     })"_json);
@@ -99,11 +102,12 @@ TEST_CASE_METHOD(EthereumRpcApiTest, "handle_eth_send_raw_transaction fails wron
         "id": 1,
         "method": "eth_sendRawTransaction",
         "params": ["0xd46ed67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445"]
-    })"_json, reply);
+    })"_json,
+                                                           reply);
     CHECK(reply == R"({
         "error":{"code":-32000,"message":"rlp: unexpected EIP-2178 serialization"},"id":1,"jsonrpc":"2.0"
     })"_json);
 }
 #endif  // SILKWORM_SANITIZE
 
-} // namespace silkrpc::commands
+}  // namespace silkrpc::commands

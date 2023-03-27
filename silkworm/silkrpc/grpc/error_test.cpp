@@ -36,5 +36,4 @@ TEST_CASE("make error code with non-empty message", "[silkrpc][grpc][error]") {
     CHECK(error_code.category().name() == std::string("grpc"));
 }
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

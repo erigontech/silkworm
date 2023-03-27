@@ -29,12 +29,12 @@ static const nlohmann::json EMPTY_OBJECT = nlohmann::json::value_t::object;
 static const nlohmann::json EMPTY_ARRAY = nlohmann::json::value_t::array;
 
 class Stream {
-public:
+  public:
     explicit Stream(silkrpc::Writer& writer) : writer_(writer) {}
     Stream(const Stream& stream) = delete;
     Stream& operator=(const Stream&) = delete;
 
-    void close() {writer_.close();}
+    void close() { writer_.close(); }
 
     void open_object();
     void close_object();
@@ -47,7 +47,7 @@ public:
     void write_field(const std::string& name);
     void write_field(const std::string& name, const nlohmann::json& value);
 
-private:
+  private:
     void write_string(const std::string& str);
     void ensure_separator();
 
@@ -55,5 +55,4 @@ private:
     std::stack<std::uint8_t> stack_;
 };
 
-} // namespace json
-
+}  // namespace json

@@ -36,5 +36,4 @@ TEST_CASE("print empty issuance", "[silkrpc][types][issuance]") {
     CHECK_NOTHROW(null_stream() << i);
 }
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

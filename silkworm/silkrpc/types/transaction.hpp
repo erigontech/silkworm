@@ -19,8 +19,8 @@
 #include <iostream>
 #include <map>
 #include <optional>
-#include <vector>
 #include <string>
+#include <vector>
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
@@ -38,11 +38,11 @@ struct Transaction : public silkworm::Transaction {
     uint64_t transaction_index{0};
     bool queued_in_pool{false};
 
-    [[nodiscard]] intx::uint256 effective_gas_price() const; // EIP-1559
+    [[nodiscard]] intx::uint256 effective_gas_price() const;  // EIP-1559
 };
 
-struct Rlp  {
-   silkworm::Bytes buffer;
+struct Rlp {
+    silkworm::Bytes buffer;
 };
 
 struct TransactionWithBlock {
@@ -58,29 +58,27 @@ struct AccessListResult {
     uint64_t gas_used;
 };
 
-
 struct TxPoolStatusInfo {
-   unsigned int base_fee;
-   unsigned int pending;
-   unsigned int queued;
+    unsigned int base_fee;
+    unsigned int pending;
+    unsigned int queued;
 };
 
 struct CallBundleTxInfo {
-   ethash_hash256 hash;
-   uint64_t gas_used;
-   evmc::bytes32 value;
-   std::string error_message;
+    ethash_hash256 hash;
+    uint64_t gas_used;
+    evmc::bytes32 value;
+    std::string error_message;
 };
 
 struct CallBundleInfo {
-   ethash_hash256 bundle_hash;
-   std::vector<CallBundleTxInfo> txs_info;
+    ethash_hash256 bundle_hash;
+    std::vector<CallBundleTxInfo> txs_info;
 };
 
-using TransactionContent = std::map <std::string, std::map<std::string, std::map<std::string, Transaction>>>;
+using TransactionContent = std::map<std::string, std::map<std::string, std::map<std::string, Transaction>>>;
 
 std::ostream& operator<<(std::ostream& out, const Transaction& t);
 std::ostream& operator<<(std::ostream& out, const silkworm::Transaction& t);
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

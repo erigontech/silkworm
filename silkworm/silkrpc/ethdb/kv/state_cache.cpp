@@ -20,14 +20,14 @@
 
 #include <magic_enum.hpp>
 
+#include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/rpc/common/conversion.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/rawdb/util.hpp>
 #include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
-#include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/common/util.hpp>
-#include <silkworm/infra/rpc/common/conversion.hpp>
 
 namespace silkrpc::ethdb::kv {
 

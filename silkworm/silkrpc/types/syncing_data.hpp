@@ -16,21 +16,20 @@
 
 #pragma once
 
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace silkrpc {
 
 struct StageData {
-     std::string stage_name;
-     std::string block_number;
+    std::string stage_name;
+    std::string block_number;
 };
 
 struct SyncingData {
-     std::string current_block;
-     std::string highest_block;
-     std::vector<StageData> stages;
+    std::string current_block;
+    std::string highest_block;
+    std::vector<StageData> stages;
 };
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

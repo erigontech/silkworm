@@ -16,12 +16,13 @@
 
 #pragma once
 
-#include <stdexcept>
 #include <iostream>
+#include <stdexcept>
 #include <vector>
 
 #include <evmc/evmc.hpp>
 #include <nlohmann/json.hpp>
+
 #include <silkworm/core/chain/config.hpp>
 
 namespace silkrpc {
@@ -50,5 +51,4 @@ struct Forks {
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& chain_config);
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

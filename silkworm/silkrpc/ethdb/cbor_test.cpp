@@ -20,8 +20,8 @@
 
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
-#include <silkworm/core/common/util.hpp>
 
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/types/log.hpp>
 #include <silkworm/silkrpc/types/receipt.hpp>
 
@@ -31,7 +31,7 @@ const auto invalidArgumentMessage = "invalid argument";
 #else
 const auto invalidArgumentMessage = "Invalid argument";
 #endif
-}
+}  // namespace
 
 namespace silkrpc {
 
@@ -63,9 +63,10 @@ TEST_CASE("decode logs from CBOR 1", "[silkrpc][ethdb][cbor]") {
 TEST_CASE("decode logs from CBOR 2", "[silkrpc][ethdb][cbor]") {
     Logs logs{};
     CHECK_NOTHROW(cbor_decode(*silkworm::from_hex(
-        "82"
-        "83540715a7794a1dc8e42615f059dd6e406a6594651a80f6"
-        "8354007fb8417eb9ad4d958b050fc3720d5b46a2c053805000110011001100110011001100110011"), logs));
+                                  "82"
+                                  "83540715a7794a1dc8e42615f059dd6e406a6594651a80f6"
+                                  "8354007fb8417eb9ad4d958b050fc3720d5b46a2c053805000110011001100110011001100110011"),
+                              logs));
     CHECK(logs.size() == 2);
     CHECK(logs[0].address == 0x0715a7794a1dc8e42615f059dd6e406a6594651a_address);
     CHECK(logs[0].topics == std::vector<evmc::bytes32>{});
@@ -97,10 +98,10 @@ TEST_CASE("decode logs from CBOR 4", "[silkrpc][ethdb][cbor]") {
     CHECK(logs[0].address == 0x56c0369e002852c2570ca0cc3442e26df98e01a2_address);
     CHECK(logs[0].topics.size() == 3);
     CHECK(logs[0].topics == std::vector<evmc::bytes32>{
-        0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef_bytes32,
-        0x000000000000000000000000a2e1ffe3aa9cbcde1955b04d22e2cc092c373878_bytes32,
-        0x000000000000000000000000520d849db6e4bf7e0c58a45fc513a6d633baf77e_bytes32,
-    });
+                                0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef_bytes32,
+                                0x000000000000000000000000a2e1ffe3aa9cbcde1955b04d22e2cc092c373878_bytes32,
+                                0x000000000000000000000000520d849db6e4bf7e0c58a45fc513a6d633baf77e_bytes32,
+                            });
     CHECK(silkworm::to_hex(logs[0].data) == "000000000000000000000000000000000000000000084595161401484a000000");
 }
 
@@ -136,9 +137,10 @@ TEST_CASE("decode receipts from CBOR 1", "[silkrpc][ethdb][cbor]") {
 TEST_CASE("decode receipts from CBOR 2", "[silkrpc][ethdb][cbor]") {
     Receipts receipts{};
     CHECK_NOTHROW(cbor_decode(*silkworm::from_hex(
-        "82"
-        "8400f60101"
-        "8400f60101"), receipts));
+                                  "82"
+                                  "8400f60101"
+                                  "8400f60101"),
+                              receipts));
     CHECK(receipts.size() == 2);
     CHECK(receipts[0].type == 0);
     CHECK(receipts[0].success == 1);
@@ -169,5 +171,4 @@ TEST_CASE("decode receipts from incorrect bytes", "[silkrpc][ethdb][cbor]") {
     CHECK_THROWS_MATCHES(cbor_decode(b2, receipts), std::system_error, Message("Receipt CBOR: missing entries: "s + invalidArgumentMessage));
 }
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

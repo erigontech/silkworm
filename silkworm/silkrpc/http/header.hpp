@@ -31,5 +31,4 @@ inline bool operator==(const Header& lhs, const Header& rhs) {
     return lhs.name == rhs.name && lhs.value == rhs.value;
 }
 
-} // namespace silkrpc::http
-
+}  // namespace silkrpc::http

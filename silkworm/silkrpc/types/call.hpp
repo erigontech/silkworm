@@ -25,7 +25,6 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/transaction.hpp>
-
 #include <silkworm/silkrpc/types/transaction.hpp>
 
 namespace silkrpc {
@@ -78,5 +77,4 @@ struct Call {
 
 std::ostream& operator<<(std::ostream& out, const Call& call);
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

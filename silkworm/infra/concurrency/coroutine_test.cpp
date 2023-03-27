@@ -36,13 +36,13 @@ TEST_CASE("check configuration", "[silkworm][infra][concurrency]") {
     CHECK(true);
 #else
     CHECK(false);
-#endif // BOOST_ASIO_HAS_CO_AWAIT
+#endif  // BOOST_ASIO_HAS_CO_AWAIT
 #ifdef BOOST_ASIO_HAS_STD_COROUTINE
     CHECK(true);
 #else
     CHECK(false);
-#endif // BOOST_ASIO_HAS_STD_COROUTINE
-#endif // __has_include(<coroutine>)
+#endif  // BOOST_ASIO_HAS_STD_COROUTINE
+#endif  // __has_include(<coroutine>)
     CHECK(&typeid(std::coroutine_handle<void>) != nullptr);
     CHECK(&typeid(std::suspend_always) != nullptr);
     CHECK(&typeid(std::suspend_never) != nullptr);

@@ -32,7 +32,7 @@ using roaring_bitmap_t = roaring::api::roaring_bitmap_t;
 using Roaring = roaring::Roaring;
 
 static Roaring fast_or(size_t n, const std::vector<std::unique_ptr<Roaring>>& inputs) {
-    const auto **x = static_cast<const roaring_bitmap_t **>(malloc(n * sizeof(roaring_bitmap_t *)));
+    const auto** x = static_cast<const roaring_bitmap_t**>(malloc(n * sizeof(roaring_bitmap_t*)));
     if (x == nullptr) {
         throw std::runtime_error("failed memory alloc in fast_or");
     }
@@ -40,7 +40,7 @@ static Roaring fast_or(size_t n, const std::vector<std::unique_ptr<Roaring>>& in
         x[k] = &inputs[k]->roaring;
     }
 
-    roaring_bitmap_t *c_ans = roaring_bitmap_or_many(n, x);
+    roaring_bitmap_t* c_ans = roaring_bitmap_or_many(n, x);
     if (c_ans == nullptr) {
         free(x);
         throw std::runtime_error("failed memory alloc in fast_or");
@@ -73,4 +73,4 @@ boost::asio::awaitable<Roaring> get(core::rawdb::DatabaseReader& db_reader, cons
     co_return result;
 }
 
-} // namespace silkrpc::ethdb::bitmap
+}  // namespace silkrpc::ethdb::bitmap

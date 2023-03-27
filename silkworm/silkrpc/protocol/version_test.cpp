@@ -30,7 +30,6 @@
 #include <silkworm/interfaces/txpool/mining.grpc.pb.h>
 #include <silkworm/interfaces/txpool/txpool.grpc.pb.h>
 #include <silkworm/interfaces/types/types.pb.h>
-
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/test/interfaces/ethbackend_mock_fix24351.grpc.pb.h>
 #include <silkworm/silkrpc/test/interfaces/kv_mock_fix24351.grpc.pb.h>
@@ -40,10 +39,10 @@
 namespace silkrpc {
 
 using Catch::Matchers::Message;
+using testing::_;
 using testing::DoAll;
 using testing::Return;
 using testing::SetArgPointee;
-using testing::_;
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("write protocol version to ostream", "[silkrpc][protocol][version]") {
@@ -54,8 +53,7 @@ TEST_CASE("write protocol version to ostream", "[silkrpc][protocol][version]") {
 TEST_CASE("ETHBACKEND protocol version error", "[silkrpc][protocol][wait_for_ethbackend_protocol_check]") {
     std::unique_ptr<::remote::ETHBACKEND::StubInterface> stub{std::make_unique<::remote::FixIssue24351_MockETHBACKENDStub>()};
 
-    EXPECT_CALL(*dynamic_cast<::remote::FixIssue24351_MockETHBACKENDStub*>(stub.get()), Version(_, _, _)).WillOnce(
-        Return(grpc::Status::CANCELLED));
+    EXPECT_CALL(*dynamic_cast<::remote::FixIssue24351_MockETHBACKENDStub*>(stub.get()), Version(_, _, _)).WillOnce(Return(grpc::Status::CANCELLED));
     const auto version_result{wait_for_ethbackend_protocol_check(stub)};
     CHECK(version_result.compatible == false);
     CHECK(version_result.result.find("incompatible") != std::string::npos);
@@ -66,15 +64,13 @@ TEST_CASE("ETHBACKEND protocol version major mismatch", "[silkrpc][protocol][wai
     types::VersionReply reply;
 
     reply.set_major(1);
-    EXPECT_CALL(*dynamic_cast<::remote::FixIssue24351_MockETHBACKENDStub*>(stub.get()), Version(_, _, _)).WillOnce(
-        DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
+    EXPECT_CALL(*dynamic_cast<::remote::FixIssue24351_MockETHBACKENDStub*>(stub.get()), Version(_, _, _)).WillOnce(DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
     const auto version_result1{wait_for_ethbackend_protocol_check(stub)};
     CHECK(version_result1.compatible == false);
     CHECK(version_result1.result.find("incompatible") != std::string::npos);
 
     reply.set_major(3);
-    EXPECT_CALL(*dynamic_cast<::remote::FixIssue24351_MockETHBACKENDStub*>(stub.get()), Version(_, _, _)).WillOnce(
-        DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
+    EXPECT_CALL(*dynamic_cast<::remote::FixIssue24351_MockETHBACKENDStub*>(stub.get()), Version(_, _, _)).WillOnce(DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
     const auto version_result2{wait_for_ethbackend_protocol_check(stub)};
     CHECK(version_result2.compatible == false);
     CHECK(version_result2.result.find("incompatible") != std::string::npos);
@@ -86,15 +82,13 @@ TEST_CASE("ETHBACKEND protocol version minor mismatch", "[silkrpc][protocol][wai
     reply.set_major(2);
 
     reply.set_minor(2);
-    EXPECT_CALL(*dynamic_cast<::remote::FixIssue24351_MockETHBACKENDStub*>(stub.get()), Version(_, _, _)).WillOnce(
-        DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
+    EXPECT_CALL(*dynamic_cast<::remote::FixIssue24351_MockETHBACKENDStub*>(stub.get()), Version(_, _, _)).WillOnce(DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
     const auto version_result1{wait_for_ethbackend_protocol_check(stub)};
     CHECK(version_result1.compatible == false);
     CHECK(version_result1.result.find("incompatible") != std::string::npos);
 
     reply.set_minor(4);
-    EXPECT_CALL(*dynamic_cast<::remote::FixIssue24351_MockETHBACKENDStub*>(stub.get()), Version(_, _, _)).WillOnce(
-        DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
+    EXPECT_CALL(*dynamic_cast<::remote::FixIssue24351_MockETHBACKENDStub*>(stub.get()), Version(_, _, _)).WillOnce(DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
     const auto version_result2{wait_for_ethbackend_protocol_check(stub)};
     CHECK(version_result2.compatible == false);
     CHECK(version_result2.result.find("incompatible") != std::string::npos);
@@ -106,8 +100,7 @@ TEST_CASE("ETHBACKEND protocol version match", "[silkrpc][protocol][wait_for_eth
     reply.set_major(3);
     reply.set_minor(1);
 
-    EXPECT_CALL(*dynamic_cast<::remote::FixIssue24351_MockETHBACKENDStub*>(stub.get()), Version(_, _, _)).WillOnce(
-        DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
+    EXPECT_CALL(*dynamic_cast<::remote::FixIssue24351_MockETHBACKENDStub*>(stub.get()), Version(_, _, _)).WillOnce(DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
     const auto version_result{wait_for_ethbackend_protocol_check(stub)};
     CHECK(version_result.compatible == true);
     CHECK(version_result.result.find("incompatible") == std::string::npos);
@@ -116,7 +109,7 @@ TEST_CASE("ETHBACKEND protocol version match", "[silkrpc][protocol][wait_for_eth
 
 TEST_CASE("ETHBACKEND protocol version with server stub", "[silkrpc][protocol][wait_for_ethbackend_protocol_check]") {
     class TestService : public ::remote::ETHBACKEND::Service {
-    public:
+      public:
         ::grpc::Status Version(::grpc::ServerContext*, const ::google::protobuf::Empty*, ::types::VersionReply* response) override {
             response->set_major(3);
             response->set_minor(1);
@@ -126,7 +119,7 @@ TEST_CASE("ETHBACKEND protocol version with server stub", "[silkrpc][protocol][w
     };
     TestService service;
     std::ostringstream server_address;
-    server_address << "localhost:" << 12345; // TODO(canepat): grpc_pick_unused_port_or_die
+    server_address << "localhost:" << 12345;  // TODO(canepat): grpc_pick_unused_port_or_die
     grpc::ServerBuilder builder;
     builder.AddListeningPort(server_address.str(), grpc::InsecureServerCredentials());
     builder.RegisterService(&service);
@@ -142,8 +135,7 @@ TEST_CASE("ETHBACKEND protocol version with server stub", "[silkrpc][protocol][w
 TEST_CASE("KV protocol version error", "[silkrpc][protocol][wait_for_kv_protocol_check]") {
     std::unique_ptr<::remote::KV::StubInterface> stub{std::make_unique<::remote::FixIssue24351_MockKVStub>()};
 
-    EXPECT_CALL(*dynamic_cast<::remote::FixIssue24351_MockKVStub*>(stub.get()), Version(_, _, _)).WillOnce(
-        Return(grpc::Status::CANCELLED));
+    EXPECT_CALL(*dynamic_cast<::remote::FixIssue24351_MockKVStub*>(stub.get()), Version(_, _, _)).WillOnce(Return(grpc::Status::CANCELLED));
     const auto version_result{wait_for_kv_protocol_check(stub)};
     CHECK(version_result.compatible == false);
     CHECK(version_result.result.find("incompatible") != std::string::npos);
@@ -154,15 +146,13 @@ TEST_CASE("KV protocol version major mismatch", "[silkrpc][protocol][wait_for_kv
     types::VersionReply reply;
 
     reply.set_major(KV_SERVICE_API_VERSION.major - 1);
-    EXPECT_CALL(*dynamic_cast<::remote::FixIssue24351_MockKVStub*>(stub.get()), Version(_, _, _)).WillOnce(
-        DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
+    EXPECT_CALL(*dynamic_cast<::remote::FixIssue24351_MockKVStub*>(stub.get()), Version(_, _, _)).WillOnce(DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
     const auto version_result1{wait_for_kv_protocol_check(stub)};
     CHECK(version_result1.compatible == false);
     CHECK(version_result1.result.find("incompatible") != std::string::npos);
 
     reply.set_major(KV_SERVICE_API_VERSION.major + 1);
-    EXPECT_CALL(*dynamic_cast<::remote::FixIssue24351_MockKVStub*>(stub.get()), Version(_, _, _)).WillOnce(
-        DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
+    EXPECT_CALL(*dynamic_cast<::remote::FixIssue24351_MockKVStub*>(stub.get()), Version(_, _, _)).WillOnce(DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
     const auto version_result2{wait_for_kv_protocol_check(stub)};
     CHECK(version_result2.compatible == false);
     CHECK(version_result2.result.find("incompatible") != std::string::npos);
@@ -171,11 +161,10 @@ TEST_CASE("KV protocol version major mismatch", "[silkrpc][protocol][wait_for_kv
 TEST_CASE("KV protocol version minor mismatch", "[silkrpc][protocol][wait_for_kv_protocol_check]") {
     std::unique_ptr<::remote::KV::StubInterface> stub{std::make_unique<::remote::FixIssue24351_MockKVStub>()};
     types::VersionReply reply;
-    reply.set_major(KV_SERVICE_API_VERSION.major); // Major is unchanged
-    reply.set_minor(KV_SERVICE_API_VERSION.minor + 1); // Minor is different
+    reply.set_major(KV_SERVICE_API_VERSION.major);      // Major is unchanged
+    reply.set_minor(KV_SERVICE_API_VERSION.minor + 1);  // Minor is different
 
-    EXPECT_CALL(*dynamic_cast<::remote::FixIssue24351_MockKVStub*>(stub.get()), Version(_, _, _)).WillOnce(
-        DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
+    EXPECT_CALL(*dynamic_cast<::remote::FixIssue24351_MockKVStub*>(stub.get()), Version(_, _, _)).WillOnce(DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
     const auto version_result{wait_for_kv_protocol_check(stub)};
     CHECK(version_result.compatible == false);
     CHECK(version_result.result.find("incompatible") != std::string::npos);
@@ -187,8 +176,7 @@ TEST_CASE("KV protocol version match", "[silkrpc][protocol][wait_for_kv_protocol
     reply.set_major(6);
     reply.set_minor(0);
 
-    EXPECT_CALL(*dynamic_cast<::remote::FixIssue24351_MockKVStub*>(stub.get()), Version(_, _, _)).WillOnce(
-        DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
+    EXPECT_CALL(*dynamic_cast<::remote::FixIssue24351_MockKVStub*>(stub.get()), Version(_, _, _)).WillOnce(DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
     const auto version_result{wait_for_kv_protocol_check(stub)};
     CHECK(version_result.compatible == true);
     CHECK(version_result.result.find("incompatible") == std::string::npos);
@@ -197,7 +185,7 @@ TEST_CASE("KV protocol version match", "[silkrpc][protocol][wait_for_kv_protocol
 
 TEST_CASE("KV protocol version with server stub", "[silkrpc][protocol][wait_for_kv_protocol_check]") {
     class TestService : public ::remote::KV::Service {
-    public:
+      public:
         ::grpc::Status Version(::grpc::ServerContext*, const ::google::protobuf::Empty*, ::types::VersionReply* response) override {
             response->set_major(6);
             response->set_minor(0);
@@ -207,7 +195,7 @@ TEST_CASE("KV protocol version with server stub", "[silkrpc][protocol][wait_for_
     };
     TestService service;
     std::ostringstream server_address;
-    server_address << "localhost:" << 12345; // TODO(canepat): grpc_pick_unused_port_or_die
+    server_address << "localhost:" << 12345;  // TODO(canepat): grpc_pick_unused_port_or_die
     grpc::ServerBuilder builder;
     builder.AddListeningPort(server_address.str(), grpc::InsecureServerCredentials());
     builder.RegisterService(&service);
@@ -223,8 +211,7 @@ TEST_CASE("KV protocol version with server stub", "[silkrpc][protocol][wait_for_
 TEST_CASE("MINING protocol version error", "[silkrpc][protocol][wait_for_mining_protocol_check]") {
     std::unique_ptr<::txpool::Mining::StubInterface> stub{std::make_unique<::txpool::FixIssue24351_MockMiningStub>()};
 
-    EXPECT_CALL(*dynamic_cast<::txpool::FixIssue24351_MockMiningStub*>(stub.get()), Version(_, _, _)).WillOnce(
-        Return(grpc::Status::CANCELLED));
+    EXPECT_CALL(*dynamic_cast<::txpool::FixIssue24351_MockMiningStub*>(stub.get()), Version(_, _, _)).WillOnce(Return(grpc::Status::CANCELLED));
     const auto version_result{wait_for_mining_protocol_check(stub)};
     CHECK(version_result.compatible == false);
     CHECK(version_result.result.find("incompatible") != std::string::npos);
@@ -235,15 +222,13 @@ TEST_CASE("MINING protocol version major mismatch", "[silkrpc][protocol][wait_fo
     types::VersionReply reply;
 
     reply.set_major(0);
-    EXPECT_CALL(*dynamic_cast<::txpool::FixIssue24351_MockMiningStub*>(stub.get()), Version(_, _, _)).WillOnce(
-        DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
+    EXPECT_CALL(*dynamic_cast<::txpool::FixIssue24351_MockMiningStub*>(stub.get()), Version(_, _, _)).WillOnce(DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
     const auto version_result1{wait_for_mining_protocol_check(stub)};
     CHECK(version_result1.compatible == false);
     CHECK(version_result1.result.find("incompatible") != std::string::npos);
 
     reply.set_major(2);
-    EXPECT_CALL(*dynamic_cast<::txpool::FixIssue24351_MockMiningStub*>(stub.get()), Version(_, _, _)).WillOnce(
-        DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
+    EXPECT_CALL(*dynamic_cast<::txpool::FixIssue24351_MockMiningStub*>(stub.get()), Version(_, _, _)).WillOnce(DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
     const auto version_result2{wait_for_mining_protocol_check(stub)};
     CHECK(version_result2.compatible == false);
     CHECK(version_result2.result.find("incompatible") != std::string::npos);
@@ -255,8 +240,7 @@ TEST_CASE("MINING protocol version minor mismatch", "[silkrpc][protocol][wait_fo
     reply.set_major(1);
 
     reply.set_minor(1);
-    EXPECT_CALL(*dynamic_cast<::txpool::FixIssue24351_MockMiningStub*>(stub.get()), Version(_, _, _)).WillOnce(
-        DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
+    EXPECT_CALL(*dynamic_cast<::txpool::FixIssue24351_MockMiningStub*>(stub.get()), Version(_, _, _)).WillOnce(DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
     const auto version_result{wait_for_mining_protocol_check(stub)};
     CHECK(version_result.compatible == false);
     CHECK(version_result.result.find("incompatible") != std::string::npos);
@@ -268,8 +252,7 @@ TEST_CASE("MINING protocol version match", "[silkrpc][protocol][wait_for_mining_
     reply.set_major(1);
     reply.set_minor(0);
 
-    EXPECT_CALL(*dynamic_cast<::txpool::FixIssue24351_MockMiningStub*>(stub.get()), Version(_, _, _)).WillOnce(
-        DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
+    EXPECT_CALL(*dynamic_cast<::txpool::FixIssue24351_MockMiningStub*>(stub.get()), Version(_, _, _)).WillOnce(DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
     const auto version_result{wait_for_mining_protocol_check(stub)};
     CHECK(version_result.compatible == true);
     CHECK(version_result.result.find("incompatible") == std::string::npos);
@@ -278,7 +261,7 @@ TEST_CASE("MINING protocol version match", "[silkrpc][protocol][wait_for_mining_
 
 TEST_CASE("MINING protocol version with server stub", "[silkrpc][protocol][wait_for_mining_protocol_check]") {
     class TestService : public ::txpool::Mining::Service {
-    public:
+      public:
         ::grpc::Status Version(::grpc::ServerContext*, const ::google::protobuf::Empty*, ::types::VersionReply* response) override {
             response->set_major(1);
             response->set_minor(0);
@@ -288,7 +271,7 @@ TEST_CASE("MINING protocol version with server stub", "[silkrpc][protocol][wait_
     };
     TestService service;
     std::ostringstream server_address;
-    server_address << "localhost:" << 12345; // TODO(canepat): grpc_pick_unused_port_or_die
+    server_address << "localhost:" << 12345;  // TODO(canepat): grpc_pick_unused_port_or_die
     grpc::ServerBuilder builder;
     builder.AddListeningPort(server_address.str(), grpc::InsecureServerCredentials());
     builder.RegisterService(&service);
@@ -304,8 +287,7 @@ TEST_CASE("MINING protocol version with server stub", "[silkrpc][protocol][wait_
 TEST_CASE("TXPOOL protocol version error", "[silkrpc][protocol][wait_for_txpool_protocol_check]") {
     std::unique_ptr<::txpool::Txpool::StubInterface> stub{std::make_unique<::txpool::FixIssue24351_MockTxpoolStub>()};
 
-    EXPECT_CALL(*dynamic_cast<::txpool::FixIssue24351_MockTxpoolStub*>(stub.get()), Version(_, _, _)).WillOnce(
-        Return(grpc::Status::CANCELLED));
+    EXPECT_CALL(*dynamic_cast<::txpool::FixIssue24351_MockTxpoolStub*>(stub.get()), Version(_, _, _)).WillOnce(Return(grpc::Status::CANCELLED));
     const auto version_result{wait_for_txpool_protocol_check(stub)};
     CHECK(version_result.compatible == false);
     CHECK(version_result.result.find("incompatible") != std::string::npos);
@@ -316,15 +298,13 @@ TEST_CASE("TXPOOL protocol version major mismatch", "[silkrpc][protocol][wait_fo
     types::VersionReply reply;
 
     reply.set_major(0);
-    EXPECT_CALL(*dynamic_cast<::txpool::FixIssue24351_MockTxpoolStub*>(stub.get()), Version(_, _, _)).WillOnce(
-        DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
+    EXPECT_CALL(*dynamic_cast<::txpool::FixIssue24351_MockTxpoolStub*>(stub.get()), Version(_, _, _)).WillOnce(DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
     const auto version_result1{wait_for_txpool_protocol_check(stub)};
     CHECK(version_result1.compatible == false);
     CHECK(version_result1.result.find("incompatible") != std::string::npos);
 
     reply.set_major(2);
-    EXPECT_CALL(*dynamic_cast<::txpool::FixIssue24351_MockTxpoolStub*>(stub.get()), Version(_, _, _)).WillOnce(
-        DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
+    EXPECT_CALL(*dynamic_cast<::txpool::FixIssue24351_MockTxpoolStub*>(stub.get()), Version(_, _, _)).WillOnce(DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
     const auto version_result2{wait_for_txpool_protocol_check(stub)};
     CHECK(version_result2.compatible == false);
     CHECK(version_result2.result.find("incompatible") != std::string::npos);
@@ -336,8 +316,7 @@ TEST_CASE("TXPOOL protocol version minor mismatch", "[silkrpc][protocol][wait_fo
     reply.set_major(1);
 
     reply.set_minor(1);
-    EXPECT_CALL(*dynamic_cast<::txpool::FixIssue24351_MockTxpoolStub*>(stub.get()), Version(_, _, _)).WillOnce(
-        DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
+    EXPECT_CALL(*dynamic_cast<::txpool::FixIssue24351_MockTxpoolStub*>(stub.get()), Version(_, _, _)).WillOnce(DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
     const auto version_result{wait_for_txpool_protocol_check(stub)};
     CHECK(version_result.compatible == false);
     CHECK(version_result.result.find("incompatible") != std::string::npos);
@@ -349,8 +328,7 @@ TEST_CASE("TXPOOL protocol version match", "[silkrpc][protocol][wait_for_txpool_
     reply.set_major(1);
     reply.set_minor(0);
 
-    EXPECT_CALL(*dynamic_cast<::txpool::FixIssue24351_MockTxpoolStub*>(stub.get()), Version(_, _, _)).WillOnce(
-        DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
+    EXPECT_CALL(*dynamic_cast<::txpool::FixIssue24351_MockTxpoolStub*>(stub.get()), Version(_, _, _)).WillOnce(DoAll(SetArgPointee<2>(reply), Return(grpc::Status::OK)));
     const auto version_result{wait_for_txpool_protocol_check(stub)};
     CHECK(version_result.compatible == true);
     CHECK(version_result.result.find("incompatible") == std::string::npos);
@@ -359,7 +337,7 @@ TEST_CASE("TXPOOL protocol version match", "[silkrpc][protocol][wait_for_txpool_
 
 TEST_CASE("TXPOOL protocol version with server stub", "[silkrpc][protocol][wait_for_txpool_protocol_check]") {
     class TestService : public ::txpool::Txpool::Service {
-    public:
+      public:
         ::grpc::Status Version(::grpc::ServerContext*, const ::google::protobuf::Empty*, ::types::VersionReply* response) override {
             response->set_major(1);
             response->set_minor(0);
@@ -369,7 +347,7 @@ TEST_CASE("TXPOOL protocol version with server stub", "[silkrpc][protocol][wait_
     };
     TestService service;
     std::ostringstream server_address;
-    server_address << "localhost:" << 12345; // TODO(canepat): grpc_pick_unused_port_or_die
+    server_address << "localhost:" << 12345;  // TODO(canepat): grpc_pick_unused_port_or_die
     grpc::ServerBuilder builder;
     builder.AddListeningPort(server_address.str(), grpc::InsecureServerCredentials());
     builder.RegisterService(&service);
@@ -383,5 +361,4 @@ TEST_CASE("TXPOOL protocol version with server stub", "[silkrpc][protocol][wait_
 }
 #endif  // SILKWORM_SANITIZE
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

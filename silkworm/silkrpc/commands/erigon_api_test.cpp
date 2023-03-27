@@ -18,6 +18,7 @@
 
 #include <catch2/catch.hpp>
 #include <nlohmann/json.hpp>
+
 #include <silkworm/silkrpc/test/api_test_base.hpp>
 
 namespace silkrpc::commands {
@@ -28,7 +29,6 @@ using Catch::Matchers::Message;
 class ErigonRpcApi_ForTest : public ErigonRpcApi {
   public:
     explicit ErigonRpcApi_ForTest(Context& context) : ErigonRpcApi{context} {}
-
 
     // MSVC doesn't support using access declarations properly, so explicitly forward these public accessors
     boost::asio::awaitable<void> handle_erigon_get_block_by_timestamp(const nlohmann::json& request,
@@ -75,7 +75,8 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_block_by_tim
             "id":1,
             "method":"erigon_getBlockByTimestamp",
             "params":[]
-        })"_json, reply));
+        })"_json,
+                                                                                       reply));
         CHECK(reply == R"({
             "jsonrpc":"2.0",
             "id":1,
@@ -88,7 +89,8 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_block_by_tim
             "id":1,
             "method":"erigon_getBlockByTimestamp",
             "params":["1658865942"]
-        })"_json, reply));
+        })"_json,
+                                                                                       reply));
 
         auto expectedReply = R"({
             "jsonrpc":"2.0",
@@ -103,7 +105,9 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_block_by_tim
             "id":1,
             "method":"erigon_getBlockByTimestamp",
             "params":[true, true]
-        })"_json, reply), nlohmann::json::exception);
+        })"_json,
+                                                                                         reply),
+                        nlohmann::json::exception);
     }
     SECTION("request 2nd param is invalid: return error") {
         CHECK_THROWS_AS(run<&ErigonRpcApi_ForTest::handle_erigon_get_block_by_timestamp>(R"({
@@ -111,7 +115,9 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_block_by_tim
             "id":1,
             "method":"erigon_getBlockByTimestamp",
             "params":["1658865942", "abc"]
-        })"_json, reply), nlohmann::json::exception);
+        })"_json,
+                                                                                         reply),
+                        nlohmann::json::exception);
     }
     // TODO(canepat) we need to mock silkrpc::core functions properly, then we must change this check
     SECTION("request params are valid: return block w/ full transactions") {
@@ -120,7 +126,9 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_block_by_tim
             "id":1,
             "method":"erigon_getBlockByTimestamp",
             "params":["1658865942", true]
-        })"_json, reply), std::exception);
+        })"_json,
+                                                                                         reply),
+                        std::exception);
     }
 }
 
@@ -133,7 +141,8 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_header_by_ha
             "id":1,
             "method":"erigon_getHeaderByHash",
             "params":[]
-        })"_json, reply));
+        })"_json,
+                                                                                   reply));
         CHECK(reply == R"({
             "jsonrpc":"2.0",
             "id":1,
@@ -151,7 +160,8 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_watch_the_burn",
             "id":1,
             "method":"erigon_watchTheBurn",
             "params":["0x49BDEF", "0x2"]
-        })"_json, reply));
+        })"_json,
+                                                                               reply));
         auto expectedReply = R"({
             "jsonrpc":"2.0",
             "id":1,
@@ -171,7 +181,8 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_block_number", "
             "id":1,
             "method":"erigon_blockNumber",
             "params":["earliest", "3"]
-        })"_json, reply));
+        })"_json,
+                                                                             reply));
         CHECK(reply == R"({
             "jsonrpc":"2.0",
             "id":1,
@@ -186,7 +197,9 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_block_number", "
             "id":1,
             "method":"erigon_blockNumber",
             "params":["earliest"]
-        })"_json, reply), std::exception);
+        })"_json,
+                                                                               reply),
+                        std::exception);
     }
 
     SECTION("request empty param") {
@@ -195,10 +208,11 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_block_number", "
             "id":1,
             "method":"erigon_blockNumber",
             "params":[]
-        })"_json, reply), std::exception);
+        })"_json,
+                                                                               reply),
+                        std::exception);
     }
 }
-
 
 TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_cumulative_chain_traffic", "[silkrpc][erigon_api]") {
     nlohmann::json reply;
@@ -209,7 +223,8 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_cumulative_chain
             "id":1,
             "method":"erigon_cumulativeChainTraffic",
             "params":[]
-        })"_json, reply));
+        })"_json,
+                                                                                         reply));
         CHECK(reply == R"({
             "jsonrpc":"2.0",
             "id":1,
@@ -223,7 +238,9 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_cumulative_chain
             "id":1,
             "method":"erigon_cumulativeChainTraffic",
             "params":["100"]
-        })"_json, reply), std::exception);
+        })"_json,
+                                                                                           reply),
+                        std::exception);
     }
 }
 
@@ -236,9 +253,10 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_node_info", "[si
             "id":1,
             "method":"erigon_nodeInfo",
             "params":[]
-        })"_json, reply));
+        })"_json,
+                                                                          reply));
     }
 }
 #endif  // SILKWORM_SANITIZE
 
-} // namespace silkrpc::commands
+}  // namespace silkrpc::commands

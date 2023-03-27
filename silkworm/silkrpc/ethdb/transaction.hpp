@@ -30,7 +30,7 @@
 namespace silkrpc::ethdb {
 
 class Transaction {
-public:
+  public:
     Transaction() = default;
 
     Transaction(const Transaction&) = delete;
@@ -49,4 +49,4 @@ public:
     virtual boost::asio::awaitable<void> close() = 0;
 };
 
-} // namespace silkrpc::ethdb
+}  // namespace silkrpc::ethdb

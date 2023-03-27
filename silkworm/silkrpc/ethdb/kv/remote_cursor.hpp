@@ -26,16 +26,16 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 #include <silkworm/silkrpc/ethdb/kv/rpc.hpp>
-#include <silkworm/core/common/util.hpp>
 
 namespace silkrpc::ethdb::kv {
 
 class RemoteCursor : public CursorDupSort {
-public:
+  public:
     explicit RemoteCursor(TxRpc& tx_rpc) : tx_rpc_(tx_rpc), cursor_id_{0} {}
 
     uint32_t cursor_id() const override { return cursor_id_; };
@@ -56,10 +56,9 @@ public:
 
     boost::asio::awaitable<KeyValue> seek_both_exact(silkworm::ByteView key, silkworm::ByteView value) override;
 
-private:
+  private:
     TxRpc& tx_rpc_;
     uint32_t cursor_id_;
 };
 
-} // namespace silkrpc::ethdb::kv
-
+}  // namespace silkrpc::ethdb::kv

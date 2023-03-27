@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <optional>
 #include <map>
+#include <optional>
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
@@ -36,7 +36,7 @@
 namespace silkrpc {
 
 class AccountWalker {
-public:
+  public:
     using Collector = std::function<bool(silkworm::ByteView, silkworm::ByteView)>;
 
     explicit AccountWalker(silkrpc::ethdb::Transaction& transaction) : transaction_(transaction) {}
@@ -46,7 +46,7 @@ public:
 
     boost::asio::awaitable<void> walk_of_accounts(uint64_t block_number, const evmc::address& start_address, Collector& collector);
 
-private:
+  private:
     boost::asio::awaitable<KeyValue> next(silkrpc::ethdb::Cursor& cursor, uint64_t len);
     boost::asio::awaitable<KeyValue> seek(silkrpc::ethdb::Cursor& cursor, const silkworm::ByteView key, uint64_t len);
     boost::asio::awaitable<silkrpc::ethdb::SplittedKeyValue> next(silkrpc::ethdb::SplitCursor& cursor, uint64_t number, uint64_t block, silkworm::Bytes addr);
@@ -55,5 +55,4 @@ private:
     silkrpc::ethdb::Transaction& transaction_;
 };
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

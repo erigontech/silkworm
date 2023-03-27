@@ -25,14 +25,14 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <evmc/evmc.hpp>
-#include <intx/intx.hpp>
 #include <grpcpp/grpcpp.h>
+#include <intx/intx.hpp>
 
-#include <silkworm/silkrpc/common/log.hpp>
-#include <silkworm/silkrpc/common/util.hpp>
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/interfaces/txpool/mining.grpc.pb.h>
 #include <silkworm/interfaces/types/types.pb.h>
-#include <silkworm/core/common/base.hpp>
+#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkrpc::txpool {
 
@@ -49,10 +49,10 @@ struct MiningResult {
 };
 
 class Miner final {
-public:
+  public:
     explicit Miner(boost::asio::io_context& context, std::shared_ptr<grpc::Channel> channel, agrpc::GrpcContext& grpc_context);
     explicit Miner(boost::asio::io_context::executor_type executor, std::unique_ptr<::txpool::Mining::StubInterface> stub,
-        agrpc::GrpcContext& grpc_context);
+                   agrpc::GrpcContext& grpc_context);
 
     ~Miner();
 
@@ -66,11 +66,10 @@ public:
 
     boost::asio::awaitable<MiningResult> get_mining();
 
-private:
+  private:
     boost::asio::io_context::executor_type executor_;
     std::unique_ptr<::txpool::Mining::StubInterface> stub_;
     agrpc::GrpcContext& grpc_context_;
 };
 
-} // namespace silkrpc::txpool
-
+}  // namespace silkrpc::txpool

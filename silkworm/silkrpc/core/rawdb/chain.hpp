@@ -89,5 +89,4 @@ boost::asio::awaitable<intx::uint256> read_total_burnt(const core::rawdb::Databa
 
 boost::asio::awaitable<intx::uint256> read_cumulative_gas_used(const core::rawdb::DatabaseReader& reader, uint64_t block_number);
 
-} // namespace silkrpc::core::rawdb
-
+}  // namespace silkrpc::core::rawdb

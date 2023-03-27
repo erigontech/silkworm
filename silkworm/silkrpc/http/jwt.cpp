@@ -14,21 +14,21 @@
    limitations under the License.
 */
 
+#include <filesystem>
 #include <fstream>
 #include <string>
-#include <filesystem>
-
-#include <silkworm/silkrpc/common/log.hpp>
-#include <silkworm/silkrpc/http/jwt.hpp>
 
 #include <evmc/evmc.hpp>
+
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/silkrpc/http/jwt.hpp>
 
 namespace silkrpc {
 
 // generates jwt token
 void generate_jwt_token(const std::string& file_path, std::string& jwt_token) {
-    const char hex_characters[]={'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+    const char hex_characters[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
     // if file doesn't exist we generate one
     if (!std::filesystem::exists(file_path)) {
         std::ofstream{file_path};
@@ -39,10 +39,11 @@ void generate_jwt_token(const std::string& file_path, std::string& jwt_token) {
 
     srand(time(0));
     // Generates a random 32 bytes hex token ( not including prefix )
-    for(int i = 0; i < 64; ++i) {
-        jwt_token += hex_characters[rand()%16];
+    for (int i = 0; i < 64; ++i) {
+        jwt_token += hex_characters[rand() % 16];
     }
-    SILKRPC_LOG << "JWT token created: " << "0x" << jwt_token << "\n";
+    SILKRPC_LOG << "JWT token created: "
+                << "0x" << jwt_token << "\n";
     write_file << "0x" << jwt_token << "\n";
     write_file.close();
 }
@@ -52,7 +53,7 @@ void generate_jwt_token(const std::string& file_path, std::string& jwt_token) {
 bool load_jwt_token(const std::string& file_path, std::string& jwt_token) {
     std::ifstream read_file;
     read_file.open(file_path);
-    SILKRPC_LOG << "Reading JWT secret: " <<  file_path << "\n";
+    SILKRPC_LOG << "Reading JWT secret: " << file_path << "\n";
 
     std::getline(read_file, jwt_token);
     read_file.close();
@@ -62,7 +63,8 @@ bool load_jwt_token(const std::string& file_path, std::string& jwt_token) {
     }
 
     if (jwt_token.length() == 64) {
-        SILKRPC_LOG << "JWT secret: " <<  "0x" << jwt_token << "\n";
+        SILKRPC_LOG << "JWT secret: "
+                    << "0x" << jwt_token << "\n";
         return true;
     }
     // if token is of an incorrect size then we return an empty string
@@ -74,4 +76,4 @@ bool load_jwt_token(const std::string& file_path, std::string& jwt_token) {
     return true;
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

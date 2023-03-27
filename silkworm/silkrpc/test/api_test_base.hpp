@@ -64,4 +64,3 @@ class GrpcApiTestBase : public ContextTestBase {
 };
 
 }  // namespace silkrpc::test
-

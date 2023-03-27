@@ -19,7 +19,7 @@
 namespace silkrpc::ethdb {
 
 SplitCursor::SplitCursor(Cursor& inner_cursor, silkworm::ByteView key, uint64_t match_bits, uint64_t part1_end, uint64_t part2_start, uint64_t part3_start)
-: inner_cursor_{inner_cursor}, key_{key} {
+    : inner_cursor_{inner_cursor}, key_{key} {
     part1_end_ = part1_end;
     part2_start_ = part2_start;
     part3_start_ = part3_start;
@@ -89,10 +89,9 @@ SplittedKeyValue SplitCursor::split_key_value(const KeyValue& kv) {
     return skv;
 }
 
-
 SplitCursorDupSort::SplitCursorDupSort(CursorDupSort& inner_cursor, silkworm::ByteView key, silkworm::ByteView subkey, uint64_t match_bits,
                                        uint64_t part1_end, uint64_t part2_start, uint64_t value_offset)
-: inner_cursor_{inner_cursor}, key_{key}, subkey_{subkey} {
+    : inner_cursor_{inner_cursor}, key_{key}, subkey_{subkey} {
     part1_end_ = part1_end;
     part2_start_ = part2_start;
     value_offset_ = value_offset;
@@ -150,12 +149,12 @@ SplittedKeyValue SplitCursorDupSort::split_key_value(const KeyValue& kv) {
 
     SplittedKeyValue skv{};
     if (kv.value.size() >= value_offset_) {
-       skv.key1 = key.substr(0, part1_end_);
-       skv.key2 = kv.value.substr(0, value_offset_);
-       skv.value =  kv.value.substr(value_offset_);
+        skv.key1 = key.substr(0, part1_end_);
+        skv.key2 = kv.value.substr(0, value_offset_);
+        skv.value = kv.value.substr(value_offset_);
     }
 
     return skv;
 }
 
-} // namespace silkrpc::ethdb
+}  // namespace silkrpc::ethdb

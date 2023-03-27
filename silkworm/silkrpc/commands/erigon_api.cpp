@@ -22,6 +22,8 @@
 
 #include <intx/intx.hpp>
 
+#include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/common/binary_search.hpp>
 #include <silkworm/silkrpc/common/binary_search.hpp>
 #include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
@@ -29,13 +31,11 @@
 #include <silkworm/silkrpc/consensus/ethash.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
-#include <silkworm/silkrpc/core/receipts.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
+#include <silkworm/silkrpc/core/receipts.hpp>
 #include <silkworm/silkrpc/ethdb/kv/cached_database.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
-#include <silkworm/core/common/util.hpp>
-#include <silkworm/infra/common/binary_search.hpp>
 
 namespace silkrpc::commands {
 
@@ -143,7 +143,7 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_get_header_by_hash(cons
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -184,7 +184,7 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_get_header_by_number(co
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -226,7 +226,7 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const 
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -251,7 +251,7 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_forks(const nlohmann::j
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -275,13 +275,13 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nl
         const auto chain_config{co_await silkrpc::core::rawdb::read_chain_config(tx_database)};
         SILKRPC_DEBUG << "chain config: " << chain_config << "\n";
 
-        Issuance issuance{}; // default is empty: no PoW => no issuance
+        Issuance issuance{};  // default is empty: no PoW => no issuance
         if (chain_config.config.count("ethash") != 0) {
             const auto block_number = co_await core::get_block_number(block_id, tx_database);
             const auto block_with_hash{co_await core::rawdb::read_block_by_number(tx_database, block_number)};
             const auto block_reward{ethash::compute_reward(chain_config, block_with_hash.block)};
             intx::uint256 total_ommer_reward = 0;
-            for (const auto ommer_reward :  block_reward.ommer_rewards) {
+            for (const auto ommer_reward : block_reward.ommer_rewards) {
                 total_ommer_reward += ommer_reward;
             }
             intx::uint256 block_issuance = block_reward.miner_reward + total_ommer_reward;
@@ -290,9 +290,9 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nl
             issuance.issuance = "0x" + intx::hex(block_issuance);
             intx::uint256 burnt;
             if (block_with_hash.block.header.base_fee_per_gas) {
-               burnt = *block_with_hash.block.header.base_fee_per_gas * block_with_hash.block.header.gas_used;
+                burnt = *block_with_hash.block.header.base_fee_per_gas * block_with_hash.block.header.gas_used;
             } else {
-               burnt = 0;
+                burnt = 0;
             }
             issuance.burnt = "0x" + intx::hex(burnt);
 
@@ -303,12 +303,12 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nl
             issuance.total_burnt = "0x" + intx::hex(total_burnt);
             intx::uint256 tips = 0;
             if (block_with_hash.block.header.base_fee_per_gas) {
-               const auto receipts{co_await core::get_receipts(tx_database, block_with_hash)};
-               const auto block{block_with_hash.block};
-               for (size_t i{0}; i < block.transactions.size(); i++) {
-                  auto tip = block.transactions[i].effective_gas_price(block.header.base_fee_per_gas.value_or(0));
-                  tips += tip * receipts[i].gas_used;
-               }
+                const auto receipts{co_await core::get_receipts(tx_database, block_with_hash)};
+                const auto block{block_with_hash.block};
+                for (size_t i{0}; i < block.transactions.size(); i++) {
+                    auto tip = block.transactions[i].effective_gas_price(block.header.base_fee_per_gas.value_or(0));
+                    tips += tip * receipts[i].gas_used;
+                }
             }
             issuance.tips = "0x" + intx::hex(tips);
         }
@@ -321,10 +321,9 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nl
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
-
 
 // https://eth.wiki/json-rpc/API#erigon_blockNumber
 boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_block_number(const nlohmann::json& request, nlohmann::json& reply) {
@@ -347,7 +346,7 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_block_number(const nloh
     try {
         ethdb::TransactionDatabase tx_database{*tx};
         const auto block_number{co_await core::get_block_number_by_tag(block_id, tx_database)};
-        reply = make_json_content(request["id"], to_quantity (block_number));
+        reply = make_json_content(request["id"], to_quantity(block_number));
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
         reply = make_json_error(request["id"], 100, e.what());
@@ -356,7 +355,7 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_block_number(const nloh
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -382,7 +381,7 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_cumulative_chain_traffi
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         chain_traffic.cumulative_transactions_count = co_await core::rawdb::read_cumulative_transaction_count(tx_database, block_number);
-        chain_traffic.cumulative_gas_used  = co_await core::rawdb::read_cumulative_gas_used(tx_database, block_number);
+        chain_traffic.cumulative_gas_used = co_await core::rawdb::read_cumulative_gas_used(tx_database, block_number);
 
         reply = make_json_content(request["id"], chain_traffic);
     } catch (const std::exception& e) {
@@ -393,7 +392,7 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_cumulative_chain_traffi
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -414,4 +413,4 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_node_info(const nlohman
     co_return;
 }
 
-} // namespace silkrpc::commands
+}  // namespace silkrpc::commands

@@ -22,13 +22,14 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <evmc/evmc.hpp>
-#include <silkworm/silkrpc/types/node_info.hpp>
+
 #include <silkworm/silkrpc/types/execution_payload.hpp>
+#include <silkworm/silkrpc/types/node_info.hpp>
 
 namespace silkrpc::ethbackend {
 
 class BackEnd {
-public:
+  public:
     virtual ~BackEnd() = default;
     virtual boost::asio::awaitable<evmc::address> etherbase() = 0;
     virtual boost::asio::awaitable<uint64_t> protocol_version() = 0;
@@ -41,5 +42,4 @@ public:
     virtual boost::asio::awaitable<std::vector<NodeInfo>> engine_node_info() = 0;
 };
 
-} // namespace silkrpc::ethbackend
-
+}  // namespace silkrpc::ethbackend

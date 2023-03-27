@@ -43,4 +43,4 @@ boost::asio::awaitable<std::unique_ptr<Transaction>> RemoteDatabase::begin() {
     co_return txn;
 }
 
-} // namespace silkrpc::ethdb::kv
+}  // namespace silkrpc::ethdb::kv

@@ -28,7 +28,7 @@
 namespace silkrpc::ethdb {
 
 class Database {
-public:
+  public:
     Database() = default;
     virtual ~Database() = default;
 
@@ -38,5 +38,4 @@ public:
     virtual boost::asio::awaitable<std::unique_ptr<Transaction>> begin() = 0;
 };
 
-} // namespace silkrpc::ethdb
-
+}  // namespace silkrpc::ethdb

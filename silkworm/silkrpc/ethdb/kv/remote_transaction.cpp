@@ -53,24 +53,24 @@ boost::asio::awaitable<void> RemoteTransaction::close() {
 
 boost::asio::awaitable<std::shared_ptr<CursorDupSort>> RemoteTransaction::get_cursor(const std::string& table, bool is_cursor_sorted) {
     if (is_cursor_sorted) {
-       auto cursor_it = dup_cursors_.find(table);
-       if (cursor_it != dup_cursors_.end()) {
-           co_return cursor_it->second;
-       }
+        auto cursor_it = dup_cursors_.find(table);
+        if (cursor_it != dup_cursors_.end()) {
+            co_return cursor_it->second;
+        }
     } else {
-       auto cursor_it = cursors_.find(table);
-       if (cursor_it != cursors_.end()) {
-           co_return cursor_it->second;
-       }
+        auto cursor_it = cursors_.find(table);
+        if (cursor_it != cursors_.end()) {
+            co_return cursor_it->second;
+        }
     }
     auto cursor = std::make_shared<RemoteCursor>(tx_rpc_);
     co_await cursor->open_cursor(table, is_cursor_sorted);
     if (is_cursor_sorted) {
-       dup_cursors_[table] = cursor;
+        dup_cursors_[table] = cursor;
     } else {
-       cursors_[table] = cursor;
+        cursors_[table] = cursor;
     }
     co_return cursor;
 }
 
-} // namespace silkrpc::ethdb::kv
+}  // namespace silkrpc::ethdb::kv

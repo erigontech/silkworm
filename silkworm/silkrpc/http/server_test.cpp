@@ -43,4 +43,4 @@ TEST_CASE("server creation", "[silkrpc][http][server]") {
 }
 #endif  // SILKWORM_SANITIZE
 
-} // namespace silkrpc::http
+}  // namespace silkrpc::http

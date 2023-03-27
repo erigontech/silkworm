@@ -45,4 +45,4 @@ TEST_CASE("connection creation", "[silkrpc][http][connection]") {
     }
 }
 
-} // namespace silkrpc::http
+}  // namespace silkrpc::http

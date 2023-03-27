@@ -19,9 +19,9 @@
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
+
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/node/db/stages.hpp>
-
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 
 namespace silkrpc::stages {
@@ -32,5 +32,4 @@ const silkworm::Bytes kFinish = silkworm::bytes_of_string(silkworm::db::stages::
 
 boost::asio::awaitable<uint64_t> get_sync_stage_progress(const core::rawdb::DatabaseReader& database, const silkworm::Bytes& stake_key);
 
-} // namespace silkrpc::stages
-
+}  // namespace silkrpc::stages

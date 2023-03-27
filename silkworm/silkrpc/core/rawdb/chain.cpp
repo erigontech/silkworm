@@ -16,9 +16,9 @@
 
 #include "chain.hpp"
 
-#include <iterator>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
+#include <iterator>
 #include <string>
 #include <utility>
 
@@ -28,10 +28,9 @@
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/rlp/decode.hpp>
 #include <silkworm/core/rlp/encode.hpp>
+#include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/util.hpp>
-#include <silkworm/infra/common/decoding_exception.hpp>
-
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
@@ -134,10 +133,8 @@ boost::asio::awaitable<silkworm::BlockWithHash> read_block(const DatabaseReader&
                 .transactions = body.transactions,
                 .ommers = body.ommers,
             },
-            header
-        },
-        .hash = block_hash
-    };
+            header},
+        .hash = block_hash};
     co_return block;
 }
 
@@ -213,8 +210,8 @@ boost::asio::awaitable<silkworm::BlockBody> read_body(const DatabaseReader& read
         silkworm::ByteView data_view{data};
         auto stored_body{silkworm::db::detail::decode_stored_block_body(data_view)};
         // 1 system txn in the begining of block, and 1 at the end
-        SILKRPC_DEBUG << "base_txn_id: " << stored_body.base_txn_id + 1 << " txn_count: " << stored_body.txn_count -2 << "\n";
-        auto transactions = co_await read_canonical_transactions(reader, stored_body.base_txn_id+1, stored_body.txn_count-2);
+        SILKRPC_DEBUG << "base_txn_id: " << stored_body.base_txn_id + 1 << " txn_count: " << stored_body.txn_count - 2 << "\n";
+        auto transactions = co_await read_canonical_transactions(reader, stored_body.base_txn_id + 1, stored_body.txn_count - 2);
         if (transactions.size() != 0) {
             const auto senders = co_await read_senders(reader, block_hash, block_number);
             if (senders.size() == transactions.size()) {
@@ -261,7 +258,7 @@ boost::asio::awaitable<Receipts> read_raw_receipts(const DatabaseReader& reader,
     const auto data = co_await reader.get_one(db::table::kBlockReceipts, block_key);
     SILKRPC_TRACE << "read_raw_receipts data: " << silkworm::to_hex(data) << "\n";
     if (data.empty()) {
-        co_return Receipts{}; // TODO(canepat): use std::null_opt with boost::asio::awaitable<std::optional<Receipts>>?
+        co_return Receipts{};  // TODO(canepat): use std::null_opt with boost::asio::awaitable<std::optional<Receipts>>?
     }
     Receipts receipts{};
     const bool decoding_ok{cbor_decode(data, receipts)};
@@ -322,7 +319,7 @@ boost::asio::awaitable<Receipts> read_receipts(const DatabaseReader& reader, con
         if (i == 0) {
             receipts[i].gas_used = receipts[i].cumulative_gas_used;
         } else {
-            receipts[i].gas_used = receipts[i].cumulative_gas_used - receipts[i-1].cumulative_gas_used;
+            receipts[i].gas_used = receipts[i].cumulative_gas_used - receipts[i - 1].cumulative_gas_used;
         }
 
         receipts[i].from = transactions[i].from;
@@ -443,6 +440,4 @@ boost::asio::awaitable<intx::uint256> read_cumulative_gas_used(const core::rawdb
     co_return cumulative_gas_index;
 }
 
-
-
-} // namespace silkrpc::core::rawdb
+}  // namespace silkrpc::core::rawdb

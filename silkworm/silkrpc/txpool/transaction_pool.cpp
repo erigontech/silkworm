@@ -106,8 +106,7 @@ boost::asio::awaitable<std::optional<uint64_t>> TransactionPool::nonce(const evm
     request.set_allocated_address(H160_from_address(address));
     UnaryRpc<&::txpool::Txpool::StubInterface::AsyncNonce> nonce_rpc{*stub_, grpc_context_};
     const auto reply = co_await nonce_rpc.finish_on(executor_, request);
-    SILKRPC_DEBUG << "TransactionPool::nonce found:" << reply.found() << " nonce: " << reply.nonce() <<
-                        " t=" << clock_time::since(start_time) << "\n";
+    SILKRPC_DEBUG << "TransactionPool::nonce found:" << reply.found() << " nonce: " << reply.nonce() << " t=" << clock_time::since(start_time) << "\n";
     co_return reply.found() ? std::optional<uint64_t>{reply.nonce()} : std::nullopt;
 }
 
@@ -120,8 +119,7 @@ boost::asio::awaitable<StatusInfo> TransactionPool::get_status() {
     StatusInfo status_info{
         .queued_count = reply.queuedcount(),
         .pending_count = reply.pendingcount(),
-        .base_fee_count = reply.basefeecount()
-    };
+        .base_fee_count = reply.basefeecount()};
     SILKRPC_DEBUG << "TransactionPool::get_status t=" << clock_time::since(start_time) << "\n";
     co_return status_info;
 }
@@ -158,8 +156,8 @@ evmc::address TransactionPool::address_from_H160(const types::H160& h160) {
     uint64_t hi_lo = h160.hi().lo();
     uint32_t lo = h160.lo();
     evmc::address address{};
-    boost::endian::store_big_u64(address.bytes +  0, hi_hi);
-    boost::endian::store_big_u64(address.bytes +  8, hi_lo);
+    boost::endian::store_big_u64(address.bytes + 0, hi_hi);
+    boost::endian::store_big_u64(address.bytes + 8, hi_lo);
     boost::endian::store_big_u32(address.bytes + 16, lo);
     return address;
 }
@@ -179,4 +177,4 @@ types::H128* TransactionPool::H128_from_bytes(const uint8_t* bytes) {
     return h128;
 }
 
-} // namespace silkrpc::txpool
+}  // namespace silkrpc::txpool

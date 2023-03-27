@@ -26,5 +26,4 @@ using TxRpc = BidiStreamingRpc<&remote::KV::StubInterface::PrepareAsyncTx>;
 
 using StateChangesRpc = ServerStreamingRpc<&remote::KV::StubInterface::PrepareAsyncStateChanges>;
 
-} // namespace silkrpc::ethdb::kv
-
+}  // namespace silkrpc::ethdb::kv

@@ -32,10 +32,10 @@
 #include <boost/asio/deadline_timer.hpp>
 #include <boost/asio/io_context.hpp>
 
+#include <silkworm/interfaces/remote/kv.grpc.pb.h>
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/ethdb/kv/rpc.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
-#include <silkworm/interfaces/remote/kv.grpc.pb.h>
 
 //! Unfortunately gRPC does not define operator<< for generated data types
 namespace remote {
@@ -46,7 +46,7 @@ inline std::ostream& operator<<(std::ostream& out, const remote::StateChangeBatc
     return out;
 }
 
-} // namespace remote
+}  // namespace remote
 
 namespace silkrpc::ethdb::kv {
 
@@ -55,7 +55,7 @@ constexpr boost::posix_time::milliseconds kDefaultRegistrationInterval{10'000};
 
 //! End-point of the stream of state changes coming from the node Core component
 class StateChangesStream {
-public:
+  public:
     //! Return the retry interval between successive registration attempts
     static boost::posix_time::milliseconds registration_interval() { return registration_interval_; }
 
@@ -73,7 +73,7 @@ public:
     // The register-and-receive asynchronous loop
     boost::asio::awaitable<void> run();
 
-private:
+  private:
     //! The retry interval between successive registration attempts
     static boost::posix_time::milliseconds registration_interval_;
 
@@ -102,5 +102,4 @@ private:
     std::mutex cancellation_mutex_;
 };
 
-} // namespace silkrpc::ethdb::kv
-
+}  // namespace silkrpc::ethdb::kv

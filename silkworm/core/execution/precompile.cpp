@@ -22,11 +22,16 @@
 #include <cstring>
 #include <limits>
 
-#include <intx/intx.hpp>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pairing.hpp>
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pp.hpp>
 #include <libff/common/profiling.hpp>
+#pragma GCC diagnostic pop
 
+#include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/crypto/blake2b.h>
 #include <silkworm/core/crypto/ecdsa.h>
 #include <silkworm/core/crypto/rmd160.h>
@@ -41,7 +46,7 @@ static void right_pad(Bytes& str, const size_t min_size) noexcept {
     }
 }
 
-uint64_t ecrec_gas(ByteView) noexcept { return 3'000; }
+uint64_t ecrec_gas(ByteView, evmc_revision) noexcept { return 3'000; }
 
 std::optional<Bytes> ecrec_run(ByteView input) noexcept {
     Bytes d{input};
@@ -180,13 +185,13 @@ std::optional<Bytes> expmod_run(ByteView input_view) noexcept {
     Bytes input{input_view};
     right_pad(input, 3 * 32);
 
-    const uint64_t base_len{intx::be::unsafe::load<uint64_t>(&input[24])};
+    uint64_t base_len{endian::load_big_u64(&input[24])};
     input.erase(0, 32);
 
-    const uint64_t exponent_len{intx::be::unsafe::load<uint64_t>(&input[24])};
+    uint64_t exponent_len{endian::load_big_u64(&input[24])};
     input.erase(0, 32);
 
-    const uint64_t modulus_len{intx::be::unsafe::load<uint64_t>(&input[24])};
+    uint64_t modulus_len{endian::load_big_u64(&input[24])};
     input.erase(0, 32);
 
     if (modulus_len == 0) {
@@ -409,11 +414,11 @@ uint64_t snarkv_gas(ByteView input, evmc_revision rev) noexcept {
     return rev >= EVMC_ISTANBUL ? 34'000 * k + 45'000 : 80'000 * k + 100'000;
 }
 
-std::optional<Bytes> snarkv_run(const uint8_t* input, size_t len) noexcept {
-    if (len % kSnarkvStride != 0) {
+std::optional<Bytes> snarkv_run(ByteView input) noexcept {
+    if (input.length() % kSnarkvStride != 0) {
         return std::nullopt;
     }
-    size_t k{len / kSnarkvStride};
+    size_t k{input.length() / kSnarkvStride};
 
     init_libff();
     using namespace libff;
@@ -450,7 +455,7 @@ uint64_t blake2_f_gas(ByteView input, evmc_revision) noexcept {
         // blake2_f_run will fail anyway
         return 0;
     }
-    return intx::be::unsafe::load<uint32_t>(input.data());
+    return endian::load_big_u32(input.data());
 }
 
 std::optional<Bytes> blake2_f_run(ByteView input) noexcept {
@@ -476,7 +481,7 @@ std::optional<Bytes> blake2_f_run(ByteView input) noexcept {
 
     std::memcpy(&state.t, &input[196], 8 * 2);
 
-    uint32_t r{intx::be::unsafe::load<uint32_t>(input.data())};
+    uint32_t r{endian::load_big_u32(input.data())};
     silkworm_blake2b_compress(&state, block, r);
 
     Bytes out(8 * 8, 0);

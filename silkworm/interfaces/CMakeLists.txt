@@ -39,13 +39,13 @@ add_dependencies(
 # cmake-format: on
 
 if(NOT MSVC)
-    target_compile_options(silkworm_interfaces PRIVATE -Wno-sign-conversion)
+  target_compile_options(silkworm_interfaces PRIVATE -Wno-sign-conversion)
 endif(NOT MSVC)
 
-# Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers
-# See https://github.com/grpc/grpc/issues/19224
+# Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers See
+# https://github.com/grpc/grpc/issues/19224
 if(SILKWORM_SANITIZE)
-    target_compile_definitions(silkworm_interfaces PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
+  target_compile_definitions(silkworm_interfaces PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
 endif()
 
 target_include_directories(silkworm_interfaces PUBLIC "${SILKWORM_MAIN_DIR};${CMAKE_CURRENT_SOURCE_DIR}")
@@ -53,7 +53,11 @@ target_include_directories(silkworm_interfaces PUBLIC "${SILKWORM_MAIN_DIR};${CM
 set(LIBS_PUBLIC gRPC::grpc++ protobuf::libprotobuf)
 set(LIBS_PRIVATE "")
 if(MSVC)
-    list(APPEND LIBS_PRIVATE ntdll.lib)
+  list(APPEND LIBS_PRIVATE ntdll.lib)
 endif(MSVC)
 
-target_link_libraries(silkworm_interfaces PUBLIC "${LIBS_PUBLIC}" PRIVATE "${LIBS_PRIVATE}")
+target_link_libraries(
+  silkworm_interfaces
+  PUBLIC "${LIBS_PUBLIC}"
+  PRIVATE "${LIBS_PRIVATE}"
+)

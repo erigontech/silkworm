@@ -17,16 +17,25 @@
 find_package(absl REQUIRED)
 find_package(asio-grpc REQUIRED)
 if(CONAN_PACKAGE_MANAGER)
-    find_package(Boost REQUIRED container thread)
+  find_package(Boost REQUIRED container thread)
 else()
-    find_package(Boost CONFIG REQUIRED container thread)
+  find_package(Boost CONFIG REQUIRED container thread)
 endif()
 find_package(intx REQUIRED)
 find_package(jwt-cpp REQUIRED)
 find_package(nlohmann_json REQUIRED)
 
 # Silkrpc library
-file(GLOB_RECURSE SILKRPC_SRC CONFIGURE_DEPENDS "*.cpp" "*.cc" "*.hpp" "*.c" "*.h")
+file(
+  GLOB_RECURSE
+  SILKRPC_SRC
+  CONFIGURE_DEPENDS
+  "*.cpp"
+  "*.cc"
+  "*.hpp"
+  "*.c"
+  "*.h"
+)
 list(FILTER SILKRPC_SRC EXCLUDE REGEX "main\\.cpp$|_test\\.cpp$|\\.pb\\.cc|\\.pb\\.h")
 
 set(SILKRPC_LIBRARIES
@@ -43,12 +52,13 @@ set(SILKRPC_LIBRARIES
     protobuf::libprotobuf
     silkworm_core
     silkworm_interfaces
-    silkworm_node)
+    silkworm_node
+)
 
 add_library(silkrpc "${SILKRPC_SRC}")
 
-# Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers
-# See https://github.com/grpc/grpc/issues/19224
+# Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers See
+# https://github.com/grpc/grpc/issues/19224
 if(SILKWORM_SANITIZE)
   target_compile_definitions(silkrpc PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
 endif()

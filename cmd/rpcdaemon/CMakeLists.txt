@@ -15,9 +15,9 @@
 ]]
 
 if(MSVC)
-    add_link_options(/STACK:10000000)
-elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    add_link_options(-Wl,-stack_size -Wl,0x1000000)
+  add_link_options(/STACK:10000000)
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  add_link_options(-Wl,-stack_size -Wl,0x1000000)
 endif()
 
 find_package(absl REQUIRED)
@@ -25,18 +25,26 @@ find_package(CLI11 REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(Protobuf REQUIRED)
 if(SILKWORM_USE_MIMALLOC)
-    find_package(mimalloc 2.0 REQUIRED)
+  find_package(mimalloc 2.0 REQUIRED)
 endif()
 
 if(MSVC)
-    add_compile_options(/bigobj)
+  add_compile_options(/bigobj)
 endif()
 
 # Silkrpc toolbox
-add_executable(silkrpc_toolbox
-    silkrpc_toolbox.cpp
-    ethbackend_async.cpp ethbackend_coroutines.cpp ethbackend.cpp
-    kv_seek_async_callback.cpp kv_seek_async_coroutines.cpp kv_seek_async.cpp kv_seek.cpp kv_seek_both.cpp)
+add_executable(
+  silkrpc_toolbox
+  silkrpc_toolbox.cpp
+  ethbackend_async.cpp
+  ethbackend_coroutines.cpp
+  ethbackend.cpp
+  kv_seek_async_callback.cpp
+  kv_seek_async_coroutines.cpp
+  kv_seek_async.cpp
+  kv_seek.cpp
+  kv_seek_both.cpp
+)
 target_include_directories(silkrpc_toolbox PRIVATE ${CMAKE_SOURCE_DIR})
 target_link_libraries(silkrpc_toolbox absl::flags_parse gRPC::grpc++ protobuf::libprotobuf silkrpc)
 
@@ -50,7 +58,7 @@ set(SILKRPC_DAEMON_LIBRARIES
 )
 # cmake-format: on
 if(SILKWORM_USE_MIMALLOC)
-    list(APPEND SILKRPC_DAEMON_LIBRARIES mimalloc)
+  list(APPEND SILKRPC_DAEMON_LIBRARIES mimalloc)
 endif()
 
 add_executable(silkrpcdaemon silkrpc_daemon.cpp ../common/common.cpp)

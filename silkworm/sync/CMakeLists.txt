@@ -22,13 +22,22 @@ else()
 endif()
 find_package(gRPC REQUIRED)
 
-file(GLOB_RECURSE SILKWORM_SYNC_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h" "*.cc")
+file(
+  GLOB_RECURSE
+  SILKWORM_SYNC_SRC
+  CONFIGURE_DEPENDS
+  "*.cpp"
+  "*.hpp"
+  "*.c"
+  "*.h"
+  "*.cc"
+)
 list(FILTER SILKWORM_SYNC_SRC EXCLUDE REGEX "_test\\.cpp$")
 
 add_library(silkworm_sync "${SILKWORM_SYNC_SRC}")
 
-# Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers
-# See https://github.com/grpc/grpc/issues/19224
+# Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers See
+# https://github.com/grpc/grpc/issues/19224
 if(SILKWORM_SANITIZE)
   target_compile_definitions(silkworm_sync PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
 endif()
@@ -41,8 +50,16 @@ target_include_directories(
 )
 # cmake-format: on
 
-set(SILKWORM_SYNC_PUBLIC_LIBS silkworm_node silkworm_core mdbx-static absl::flat_hash_map absl::flat_hash_set absl::btree
-        gRPC::grpc++ protobuf::libprotobuf)
+set(SILKWORM_SYNC_PUBLIC_LIBS
+    silkworm_node
+    silkworm_core
+    mdbx-static
+    absl::flat_hash_map
+    absl::flat_hash_set
+    absl::btree
+    gRPC::grpc++
+    protobuf::libprotobuf
+)
 
 # cmake-format: off
 set(SILKWORM_SYNC_PRIVATE_LIBS
@@ -55,4 +72,8 @@ if(MSVC)
   list(APPEND SILKWORM_SYNC_PRIVATE_LIBS ntdll.lib)
 endif(MSVC)
 
-target_link_libraries(silkworm_sync PUBLIC ${SILKWORM_SYNC_PUBLIC_LIBS} PRIVATE ${SILKWORM_SYNC_PRIVATE_LIBS})
+target_link_libraries(
+  silkworm_sync
+  PUBLIC ${SILKWORM_SYNC_PUBLIC_LIBS}
+  PRIVATE ${SILKWORM_SYNC_PRIVATE_LIBS}
+)

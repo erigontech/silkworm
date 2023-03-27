@@ -23,7 +23,15 @@ else()
   add_compile_options(-fno-exceptions)
 endif()
 
-file(GLOB_RECURSE SILKWORM_CORE_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h")
+file(
+  GLOB_RECURSE
+  SILKWORM_CORE_SRC
+  CONFIGURE_DEPENDS
+  "*.cpp"
+  "*.hpp"
+  "*.c"
+  "*.h"
+)
 list(FILTER SILKWORM_CORE_SRC EXCLUDE REGEX "_test\\.cpp$")
 list(FILTER SILKWORM_CORE_SRC EXCLUDE REGEX "_benchmark\\.cpp$")
 
@@ -31,7 +39,15 @@ add_library(silkworm_core ${SILKWORM_CORE_SRC})
 target_include_directories(silkworm_core PUBLIC ${SILKWORM_MAIN_DIR})
 target_include_directories(silkworm_core SYSTEM PUBLIC ${SILKWORM_MAIN_DIR}/third_party/expected/include)
 
-set(SILKWORM_CORE_PUBLIC_LIBS ethash::ethash evmc evmone intx::intx Microsoft.GSL::GSL nlohmann_json::nlohmann_json silkpre)
+set(SILKWORM_CORE_PUBLIC_LIBS
+    ethash::ethash
+    evmc
+    evmone
+    intx::intx
+    Microsoft.GSL::GSL
+    nlohmann_json::nlohmann_json
+    silkpre
+)
 set(SILKWORM_CORE_PRIVATE_LIBS "")
 
 if(NOT SILKWORM_WASM_API)
@@ -42,4 +58,8 @@ if(NOT SILKWORM_WASM_API)
   list(APPEND SILKWORM_CORE_PRIVATE_LIBS absl::flat_hash_map absl::flat_hash_set absl::node_hash_map)
 endif()
 
-target_link_libraries(silkworm_core PUBLIC ${SILKWORM_CORE_PUBLIC_LIBS} PRIVATE ${SILKWORM_CORE_PRIVATE_LIBS})
+target_link_libraries(
+  silkworm_core
+  PUBLIC ${SILKWORM_CORE_PUBLIC_LIBS}
+  PRIVATE ${SILKWORM_CORE_PRIVATE_LIBS}
+)

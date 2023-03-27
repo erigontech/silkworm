@@ -22,7 +22,7 @@
 #include <catch2/catch.hpp>
 #include <gsl/util>
 
-#include <silkworm/node/common/directories.hpp>
+#include <silkworm/infra/common/directories.hpp>
 
 namespace silkworm::sentry {
 

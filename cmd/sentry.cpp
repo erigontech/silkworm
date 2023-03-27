@@ -21,11 +21,13 @@
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/use_future.hpp>
 #include <boost/process/environment.hpp>
+#include <grpcpp/grpcpp.h>
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/node/rpc/common/util.hpp>
-#include <silkworm/node/rpc/server/server_context_pool.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/rpc/common/util.hpp>
+#include <silkworm/infra/rpc/server/server_context_pool.hpp>
 #include <silkworm/sentry/common/awaitable_wait_for_one.hpp>
 #include <silkworm/sentry/sentry.hpp>
 #include <silkworm/sentry/settings.hpp>

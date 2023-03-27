@@ -86,9 +86,12 @@ jobs:
       shell: bash
       run: |
         cmd/test/core_test
+        cmd/test/infra_test
         cmd/test/node_test
-        cmd/test/consensus --threads 4
+        cmd/test/rpcdaemon_test
         cmd/test/sentry_test
+        cmd/test/sync_test
+        cmd/test/consensus --threads 4
 
   osx:
     runs-on: macOS-latest
@@ -141,9 +144,12 @@ jobs:
       shell: bash
       run: |
         cmd/test/core_test
+        cmd/test/infra_test
         cmd/test/node_test
-        cmd/test/consensus --threads 4
+        cmd/test/rpcdaemon_test
         cmd/test/sentry_test
+        cmd/test/sync_test
+        cmd/test/consensus --threads 4
 
   windows:
     runs-on: windows-latest
@@ -192,6 +198,9 @@ jobs:
       working-directory: C:\build
       run: |
         cmd/test/${{ matrix.config.build_type }}/core_test
+        cmd/test/${{ matrix.config.build_type }}/infra_test
         cmd/test/${{ matrix.config.build_type }}/node_test
-        cmd/test/${{ matrix.config.build_type }}/consensus --threads 4
+        cmd/test/${{ matrix.config.build_type }}/rpcdaemon_test
         cmd/test/${{ matrix.config.build_type }}/sentry_test
+        cmd/test/${{ matrix.config.build_type }}/sync_test
+        cmd/test/${{ matrix.config.build_type }}/consensus --threads 4

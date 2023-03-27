@@ -48,3 +48,6 @@
 	path = third_party/libff
 	url = https://github.com/torquem-ch/libff.git
 	branch = win
+[submodule "third_party/glaze"]
+	path = third_party/glaze
+	url = https://github.com/stephenberry/glaze

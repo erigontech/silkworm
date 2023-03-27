@@ -19,7 +19,7 @@
 #include <stdexcept>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/node/common/secp256k1_context.hpp>
+#include <silkworm/infra/common/secp256k1_context.hpp>
 #include <silkworm/sentry/common/random.hpp>
 
 namespace silkworm::sentry::common {

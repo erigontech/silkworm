@@ -20,8 +20,8 @@
 
 #include <boost/asio/any_io_executor.hpp>
 
-#include <silkworm/node/concurrency/channel.hpp>
-#include <silkworm/node/concurrency/event_notifier.hpp>
+#include <silkworm/infra/concurrency/channel.hpp>
+#include <silkworm/infra/concurrency/event_notifier.hpp>
 #include <silkworm/sentry/api/api_common/peer_event.hpp>
 #include <silkworm/sentry/common/promise.hpp>
 

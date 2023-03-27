@@ -16,7 +16,6 @@
 
 #include "account_dumper.hpp"
 
-#include <algorithm>
 #include <iterator>
 #include <memory>
 #include <string>
@@ -26,7 +25,6 @@
 #include <boost/asio/use_future.hpp>
 #include <catch2/catch.hpp>
 
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
@@ -46,11 +44,11 @@ class DummyCursor : public silkrpc::ethdb::CursorDupSort {
 public:
     explicit DummyCursor(const nlohmann::json& json) : json_{json} {}
 
-    uint32_t cursor_id() const override {
+    [[nodiscard]] uint32_t cursor_id() const override {
         return 0;
     }
 
-    boost::asio::awaitable<void> open_cursor(const std::string& table_name, bool is_dup_sorted) override {
+    boost::asio::awaitable<void> open_cursor(const std::string& table_name, bool /*is_dup_sorted*/) override {
         table_name_ = table_name;
         table_ = json_.value(table_name_, empty);
         itr_ = table_.end();
@@ -152,7 +150,7 @@ class DummyTransaction: public silkrpc::ethdb::Transaction {
 public:
     explicit DummyTransaction(const nlohmann::json& json) : json_{json} {}
 
-    uint64_t tx_id() const override { return 0; }
+    [[nodiscard]] uint64_t tx_id() const override { return 0; }
 
     boost::asio::awaitable<void> open() override {
         co_return;
@@ -193,11 +191,9 @@ private:
     const nlohmann::json& json_;
 };
 
-    const evmc::address start_address{0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address};
-#ifdef notdef
-TEST_CASE("account dumper") {
-    SILKRPC_LOG_STREAMS(null_stream(), null_stream());
+// const evmc::address start_address{0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address};
 
+TEST_CASE("account dumper") {
     boost::asio::thread_pool pool{1};
     nlohmann::json json;
     BlockCache block_cache(100, true);
@@ -268,8 +264,8 @@ TEST_CASE("account dumper") {
     };
 
     auto database = DummyDatabase{json};
-    auto result = boost::asio::co_spawn(pool, database.begin(), boost::asio::use_future);
-    auto tx = result.get();
+    auto begin_result = boost::asio::co_spawn(pool, database.begin(), boost::asio::use_future);
+    auto tx = begin_result.get();
     AccountDumper ad{*tx};
 
     const BlockNumberOrHash bnoh{0x52a0b3};
@@ -282,15 +278,15 @@ TEST_CASE("account dumper") {
     evmc::address address_3 = 0x79a4d706e4bc7fd8ff9d0593a1311386a7a981ea_address;
 
     evmc::bytes32 root_1 = 0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421_bytes32;
-    evmc::bytes32 root_2 = 0xd0e669fbe330badbad9746ffbe0eded2c37d0044b71984204ec3d42b7ed405f5_bytes32;
-    evmc::bytes32 root_3 = 0xf88d7fd6659bcd2fdd4c62038f86cdea902d401c5d4d682288027310e5cca24e_bytes32;
+    //evmc::bytes32 root_2 = 0xd0e669fbe330badbad9746ffbe0eded2c37d0044b71984204ec3d42b7ed405f5_bytes32;
+    //evmc::bytes32 root_3 = 0xf88d7fd6659bcd2fdd4c62038f86cdea902d401c5d4d682288027310e5cca24e_bytes32;
 
     evmc::bytes32 code_hash_1 = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470_bytes32;
     evmc::bytes32 code_hash_2 = 0xd6ea9698de278dad2f31566cd744dd75c4e09925b4bb8f041d265012a940797c_bytes32;
     evmc::bytes32 code_hash_3 = 0x925fa7384049febb1eddca32821f1f1d709687628c1cf77ef40ca5013d04bdef_bytes32;
 
     SECTION("1 result, exclude code and storage") {
-        int16_t max_result = 1;
+        uint64_t max_result = 1;
         bool exclude_code = true;
         bool exclude_storage = true;
         auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
@@ -312,7 +308,7 @@ TEST_CASE("account dumper") {
     }
 
     SECTION("2 result, exclude code and storage") {
-        int16_t max_result = 2;
+        uint64_t max_result = 2;
         bool exclude_code = true;
         bool exclude_storage = true;
         auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
@@ -343,7 +339,7 @@ TEST_CASE("account dumper") {
     }
 
     SECTION("3 result, exclude code and storage") {
-        int16_t max_result = 3;
+        uint64_t max_result = 3;
         bool exclude_code = true;
         bool exclude_storage = true;
         auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
@@ -384,7 +380,7 @@ TEST_CASE("account dumper") {
     }
 
     SECTION("1 result, include code exclude storage") {
-        int16_t max_result = 1;
+        uint64_t max_result = 1;
         bool exclude_code = false;
         bool exclude_storage = true;
         auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
@@ -406,7 +402,7 @@ TEST_CASE("account dumper") {
     }
 
     SECTION("2 result, include code exclude storage") {
-        int16_t max_result = 2;
+        uint64_t max_result = 2;
         bool exclude_code = false;
         bool exclude_storage = true;
         auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
@@ -438,7 +434,7 @@ TEST_CASE("account dumper") {
     }
 
     SECTION("3 result, include code exclude storage") {
-        int16_t max_result = 3;
+        uint64_t max_result = 3;
         bool exclude_code = false;
         bool exclude_storage = true;
         auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
@@ -480,7 +476,7 @@ TEST_CASE("account dumper") {
     }
 
     SECTION("1 result, include code and storage") {
-        int16_t max_result = 1;
+        uint64_t max_result = 1;
         bool exclude_code = false;
         bool exclude_storage = false;
         auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
@@ -501,8 +497,8 @@ TEST_CASE("account dumper") {
         CHECK(!account.storage.has_value());
     }
 
-    SECTION("2 result, include code and storage") {
-        int16_t max_result = 2;
+    /*SECTION("2 result, include code and storage") {
+        uint64_t max_result = 2;
         bool exclude_code = false;
         bool exclude_storage = false;
         auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
@@ -538,7 +534,7 @@ TEST_CASE("account dumper") {
     }
 
     SECTION("3 result, include code and storage") {
-        int16_t max_result = 3;
+        uint64_t max_result = 3;
         bool exclude_code = false;
         bool exclude_storage = false;
         auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
@@ -588,8 +584,8 @@ TEST_CASE("account dumper") {
         CHECK(storage[0x0000000000000000000000000000000000000000000000000000000000000006_bytes32] == *silkworm::from_hex("9d5a08e7551951a3ca73cd84a6409ef1e77f5abe"));
         CHECK(storage[0x0178b166a1bcfd299a6ce6918f016c8d0c52788988d89f65f5727c2fa97be6e9_bytes32] == *silkworm::from_hex("1e80355e00"));
         CHECK(storage[0xb797965b738ad51ddbf643b315d0421c26972862ca2e64304783dc8930a2b6e8_bytes32] == *silkworm::from_hex("ee6b2800"));
-    }
+    }*/
 }
-#endif
+
 
 }  // namespace silkrpc

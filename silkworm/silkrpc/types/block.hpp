@@ -84,5 +84,27 @@ private:
 
 std::ostream& operator<<(std::ostream& out, const BlockNumberOrHash& b);
 
+struct BlockDetails {
+    evmc::bytes32 hash;
+    silkworm::BlockHeader header;
+    intx::uint256 total_difficulty{0};
+    uint64_t transaction_count{0};
+    std::vector<silkworm::BlockHeader> ommers;
+
+    [[nodiscard]] uint64_t get_block_size() const;
+};
+
+struct IssuanceDetails {
+    intx::uint256 miner_reward{0};
+    intx::uint256 ommers_reward{0};
+    intx::uint256 total_reward{0};
+};
+
+struct BlockDetailsResponse {
+    BlockDetails block;
+    IssuanceDetails issuance{};
+    intx::uint256 total_fees{0};
+};
+
 } // namespace silkrpc
 

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <cstddef>
 #include <functional>
 #include <iostream>
@@ -31,6 +32,7 @@
 
 #include <silkworm/silkrpc/common/block_cache.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/silkrpc/core/filter_storage.hpp>
 #include <silkworm/silkrpc/concurrency/wait_strategy.hpp>
 #include <silkworm/silkrpc/ethbackend/backend.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
@@ -46,9 +48,10 @@ using ChannelFactory = std::function<std::shared_ptr<grpc::Channel>()>;
 class Context {
   public:
     explicit Context(
-        ChannelFactory create_channel,
+        std::shared_ptr<grpc::Channel> channel,
         std::shared_ptr<BlockCache> block_cache,
         std::shared_ptr<ethdb::kv::StateCache> state_cache,
+        filter::FilterStorage& filter_storage,
         std::shared_ptr<mdbx::env_managed> chaindata_env = {},
         WaitMode wait_mode = WaitMode::blocking);
 
@@ -61,6 +64,7 @@ class Context {
     std::unique_ptr<txpool::TransactionPool>& tx_pool() noexcept { return tx_pool_; }
     std::shared_ptr<BlockCache>& block_cache() noexcept { return block_cache_; }
     std::shared_ptr<ethdb::kv::StateCache>& state_cache() noexcept { return state_cache_; }
+    filter::FilterStorage& filter_storage() noexcept { return filter_storage_; }
 
     //! Execute the scheduler loop until stopped.
     void execute_loop();
@@ -95,7 +99,9 @@ class Context {
     std::unique_ptr<txpool::TransactionPool> tx_pool_;
     std::shared_ptr<BlockCache> block_cache_;
     std::shared_ptr<ethdb::kv::StateCache> state_cache_;
+    filter::FilterStorage& filter_storage_;
     std::shared_ptr<mdbx::env_managed> chaindata_env_;
+
     WaitMode wait_mode_;
 };
 
@@ -124,6 +130,8 @@ public:
     boost::asio::io_context& next_io_context();
 
 private:
+    static const std::size_t DEFAULT_POOL_STORAGE_SIZE = 0x400;
+
     // The pool of contexts
     std::vector<Context> contexts_;
 
@@ -131,10 +139,12 @@ private:
     boost::asio::detail::thread_group context_threads_;
 
     // The next index to use for a context
-    std::size_t next_index_;
+    std::atomic_size_t next_index_;
 
     //! Flag indicating if pool has been stopped.
     bool stopped_{false};
+
+    filter::FilterStorage filter_storage_;
 };
 
 } // namespace silkrpc

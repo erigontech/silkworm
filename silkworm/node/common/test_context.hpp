@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <silkworm/node/common/directories.hpp>
+#include <silkworm/infra/common/directories.hpp>
 #include <silkworm/node/common/settings.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 

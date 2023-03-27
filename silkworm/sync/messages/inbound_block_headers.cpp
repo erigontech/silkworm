@@ -17,8 +17,8 @@
 #include "inbound_block_headers.hpp"
 
 #include <silkworm/core/common/cast.hpp>
-#include <silkworm/node/common/decoding_exception.hpp>
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/decoding_exception.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/sync/internals/body_sequence.hpp>
 #include <silkworm/sync/internals/header_chain.hpp>
 #include <silkworm/sync/messages/outbound_get_block_headers.hpp>

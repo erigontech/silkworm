@@ -21,12 +21,12 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/node/common/environment.hpp>
+#include <silkworm/infra/common/environment.hpp>
+#include <silkworm/infra/test/log.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/common/test_context.hpp>
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/db/stages.hpp>
-#include <silkworm/node/test/log.hpp>
 
 namespace silkworm {
 

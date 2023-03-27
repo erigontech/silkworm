@@ -64,7 +64,6 @@ TEST_CASE("bloom from one empty log", "[silkrpc][types][receipt]") {
     Logs logs{
         Log{}
     };
-    auto bloom = bloom_from_logs(logs);
     silkworm::Bloom expected_bloom{};
     expected_bloom[9] = uint8_t(128);
     expected_bloom[47] = uint8_t(2);

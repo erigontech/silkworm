@@ -33,8 +33,8 @@ namespace silkrpc::ego {
 boost::asio::awaitable<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, uint64_t block_number) {
     SILKRPC_DEBUG << "EstimateGasOracle::estimate_gas called\n";
 
-    std::uint64_t hi;
-    std::uint64_t lo = kTxGas - 1;
+    uint64_t hi;
+    uint64_t lo = kTxGas - 1;
 
     if (call.gas.value_or(0) >= kTxGas) {
         SILKRPC_DEBUG << "Set HI with gas in args: " << call.gas.value_or(0) << "\n";
@@ -58,16 +58,16 @@ boost::asio::awaitable<intx::uint256> EstimateGasOracle::estimate_gas(const Call
             throw EstimateGasException{-1, "insufficient funds for transfer"};
         }
         auto available = balance - call.value.value_or(0);
-        int64_t allowance = int64_t(available / gas_price);
+        auto allowance = available / gas_price;
         SILKRPC_DEBUG << "allowance: " << allowance << ", available: 0x" << intx::hex(available) << ", balance: 0x" << intx::hex(balance)  << "\n";
         if (hi > allowance) {
             SILKRPC_WARN << "gas estimation capped by limited funds: original " << hi
                 << ", balance 0x" << intx::hex(balance)
-                << ", sent" << intx::hex(call.value.value_or(0))
-                << ", gasprice" << intx::hex(gas_price)
-                << ", fundable" << allowance
+                << ", sent " << intx::hex(call.value.value_or(0))
+                << ", gasprice " << intx::hex(gas_price)
+                << ", allowance " << allowance
                 << "\n";
-            hi = allowance;
+            hi = uint64_t(allowance);
         }
     }
 

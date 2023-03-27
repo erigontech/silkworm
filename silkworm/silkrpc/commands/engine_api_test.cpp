@@ -95,7 +95,6 @@ public:
         co_return std::make_unique<DummyTransaction>(cursor_);
     }
 private:
-    ethdb::Transaction* transaction_;
     std::shared_ptr<ethdb::Cursor> cursor_;
 };
 

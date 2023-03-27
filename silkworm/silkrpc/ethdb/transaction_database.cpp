@@ -69,7 +69,7 @@ boost::asio::awaitable<void> TransactionDatabase::walk(const std::string& table,
     while (
         !k.empty() &&
         k.size() >= fixed_bytes &&
-        (fixed_bits == 0 || k.compare(0, fixed_bytes-1, start_key, 0, fixed_bytes-1) == 0 && (k[fixed_bytes-1]&mask) == (start_key[fixed_bytes-1]&mask))
+        (fixed_bits == 0 || (k.compare(0, fixed_bytes-1, start_key, 0, fixed_bytes-1) == 0 && (k[fixed_bytes-1]&mask) == (start_key[fixed_bytes-1]&mask)))
     ) {
         const auto go_on = w(k, v);
         if (!go_on) {

@@ -34,11 +34,14 @@
 #include <silkworm/core/types/receipt.hpp>
 #include <silkworm/silkrpc/txpool/transaction_pool.hpp>
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
+#include <silkworm/silkrpc/core/filter_storage.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/ethbackend/backend.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
+#include <silkworm/silkrpc/ethdb/transaction_database.hpp>
+#include <silkworm/silkrpc/types/filter.hpp>
 #include <silkworm/silkrpc/types/log.hpp>
 #include <silkworm/silkrpc/types/receipt.hpp>
 
@@ -48,7 +51,7 @@ namespace silkrpc::commands {
 
 class EthereumRpcApi {
 public:
-    explicit EthereumRpcApi(Context& context, boost::asio::thread_pool& workers)
+    EthereumRpcApi(Context& context, boost::asio::thread_pool& workers)
         : context_(context),
           block_cache_(context.block_cache()),
           state_cache_(context.state_cache()),
@@ -56,14 +59,19 @@ public:
           backend_(context.backend()),
           miner_{context.miner()},
           tx_pool_{context.tx_pool()},
-          workers_{workers} {}
+          workers_{workers},
+          filter_storage_{context.filter_storage()} {}
 
-    virtual ~EthereumRpcApi() {}
+    virtual ~EthereumRpcApi() = default;
 
     EthereumRpcApi(const EthereumRpcApi&) = delete;
     EthereumRpcApi& operator=(const EthereumRpcApi&) = delete;
 
 protected:
+    static std::vector<Log> filter_logs(std::vector<Log>& logs, FilterAddresses& addresses, FilterTopics& topics);
+    static boost::asio::awaitable<roaring::Roaring> get_topics_bitmap(core::rawdb::DatabaseReader& db_reader, FilterTopics& topics, uint64_t start, uint64_t end);
+    static boost::asio::awaitable<roaring::Roaring> get_addresses_bitmap(core::rawdb::DatabaseReader& db_reader, FilterAddresses& addresses, uint64_t start, uint64_t end);
+
     boost::asio::awaitable<void> handle_eth_block_number(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_chain_id(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_protocol_version(const nlohmann::json& request, nlohmann::json& reply);
@@ -95,6 +103,7 @@ protected:
     boost::asio::awaitable<void> handle_eth_new_filter(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_new_block_filter(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_new_pending_transaction_filter(const nlohmann::json& request, nlohmann::json& reply);
+    boost::asio::awaitable<void> handle_eth_get_filter_logs(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_get_filter_changes(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_uninstall_filter(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_get_logs(const nlohmann::json& request, nlohmann::json& reply);
@@ -110,10 +119,9 @@ protected:
     boost::asio::awaitable<void> handle_eth_submit_work(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_subscribe(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_unsubscribe(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<roaring::Roaring> get_topics_bitmap(core::rawdb::DatabaseReader& db_reader, FilterTopics& topics, uint64_t start, uint64_t end);
-    boost::asio::awaitable<roaring::Roaring> get_addresses_bitmap(core::rawdb::DatabaseReader& db_reader, FilterAddresses& addresses, uint64_t start, uint64_t end);
 
-    std::vector<Log> filter_logs(std::vector<Log>& logs, const Filter& filter);
+    boost::asio::awaitable<void> get_logs(ethdb::TransactionDatabase& tx_database, std::uint64_t start, std::uint64_t end,
+        FilterAddresses& addresses, FilterTopics& topics, std::vector<Log>& logs);
 
     Context& context_;
     std::shared_ptr<BlockCache>& block_cache_;
@@ -123,6 +131,8 @@ protected:
     std::unique_ptr<txpool::Miner>& miner_;
     std::unique_ptr<txpool::TransactionPool>& tx_pool_;
     boost::asio::thread_pool& workers_;
+
+    filter::FilterStorage& filter_storage_;
 
     friend class silkrpc::http::RequestHandler;
 };

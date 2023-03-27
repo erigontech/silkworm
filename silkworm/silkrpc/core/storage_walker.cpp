@@ -22,16 +22,13 @@
 
 #include <boost/endian/conversion.hpp>
 
-#include <silkworm/core/common/decoding_result.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/node/db/bitmap.hpp>
-#include <silkworm/node/common/decoding_exception.hpp>
+#include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/node/db/util.hpp>
 
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
-#include <silkworm/silkrpc/core/rawdb/chain.hpp>
-#include <silkworm/silkrpc/core/state_reader.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 #include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
@@ -141,8 +138,8 @@ boost::asio::awaitable<void> StorageWalker::walk_of_storages(uint64_t block_numb
             cmp = ps_skv.key2.compare(h_loc);
         }
         if (cmp < 0) {
-            auto address = silkworm::to_evmc_address(ps_skv.key1);
-            go_on = collector(address, ps_skv.key2, ps_skv.value);
+            const auto ps_address = silkworm::to_evmc_address(ps_skv.key1);
+            go_on = collector(ps_address, ps_skv.key2, ps_skv.value);
         } else {
             std::optional<uint64_t> found;
 
@@ -156,12 +153,12 @@ boost::asio::awaitable<void> StorageWalker::walk_of_storages(uint64_t block_numb
                 auto data = co_await cs_cursor->seek_both(dup_key, h_loc);
                 if (data.length() > silkworm::kHashLength) { // Skip deleted entries
                     data = data.substr(silkworm::kHashLength);
-                    auto address = silkworm::to_evmc_address(ps_skv.key1);
-                    go_on = collector(address, ps_skv.key2, data);
+                    const auto ps_address = silkworm::to_evmc_address(ps_skv.key1);
+                    go_on = collector(ps_address, ps_skv.key2, data);
                 }
             } else if (cmp == 0) {
-                auto address = silkworm::to_evmc_address(ps_skv.key1);
-                go_on = collector(address, ps_skv.key2, ps_skv.value);
+                const auto ps_address = silkworm::to_evmc_address(ps_skv.key1);
+                go_on = collector(ps_address, ps_skv.key2, ps_skv.value);
             }
         }
         if (go_on) {
@@ -169,8 +166,8 @@ boost::asio::awaitable<void> StorageWalker::walk_of_storages(uint64_t block_numb
                 ps_skv = co_await ps_split_cursor.next_dup();
             }
             if (cmp >= 0) {
-                auto block = silkworm::endian::load_big_u64(sh_skv.key3.data());
-                sh_skv = co_await next(sh_split_cursor, block_number, block, h_loc);
+                const auto sh_block = silkworm::endian::load_big_u64(sh_skv.key3.data());
+                sh_skv = co_await next(sh_split_cursor, block_number, sh_block, h_loc);
                 h_loc = sh_skv.key2;
             }
         }
@@ -192,7 +189,7 @@ boost::asio::awaitable<void> StorageWalker::storage_range_at(uint64_t block_numb
         if (addr != address) {
             return false;
         }
-        if (data.size() == 0) {
+        if (data.empty()) {
             return true;
         }
 
@@ -208,13 +205,13 @@ boost::asio::awaitable<void> StorageWalker::storage_range_at(uint64_t block_numb
         }
 
         storage.insert(storage_item);
-        return storage.size() <= max_result;
+        return storage.size() <= static_cast<std::size_t>(max_result);
     };
 
     StorageWalker storage_walker{transaction_};
     co_await storage_walker.walk_of_storages(block_number + 1, address, start_location, account->incarnation, walker);
 
-    for (auto item : storage) {
+    for (const auto& item : storage) {
         collector(item.key, item.sec_key, item.value);
     }
     co_return;

@@ -16,7 +16,7 @@
 
 #include "status_manager.hpp"
 
-#include <silkworm/node/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::sentry {
 

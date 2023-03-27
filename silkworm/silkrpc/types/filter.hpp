@@ -32,8 +32,8 @@ typedef std::vector<FilterSubTopics> FilterTopics;
 struct Filter {
     std::optional<std::string> from_block;
     std::optional<std::string> to_block;
-    std::optional<FilterAddresses> addresses;
-    std::optional<FilterTopics> topics;
+    FilterAddresses addresses;
+    FilterTopics topics;
     std::optional<std::string> block_hash;
 };
 

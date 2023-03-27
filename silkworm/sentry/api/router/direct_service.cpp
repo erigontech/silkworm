@@ -19,6 +19,7 @@
 #include <memory>
 
 #include <boost/asio/this_coro.hpp>
+#include <gsl/util>
 
 #include <silkworm/sentry/api/api_common/peer_filter.hpp>
 #include <silkworm/sentry/common/promise.hpp>
@@ -75,11 +76,23 @@ awaitable<void> DirectService::peer_min_block(common::EccPublicKey /*public_key*
     co_return;
 }
 
-awaitable<std::shared_ptr<concurrency::Channel<api_common::MessageFromPeer>>> DirectService::messages(api_common::MessageIdSet message_id_filter) {
+awaitable<void> DirectService::messages(
+    api_common::MessageIdSet message_id_filter,
+    std::function<boost::asio::awaitable<void>(api_common::MessageFromPeer)> consumer) {
     auto executor = co_await this_coro::executor;
     MessagesCall call{std::move(message_id_filter), executor};
+
+    auto unsubscribe_signal = call.unsubscribe_signal();
+    auto _ = gsl::finally([=]() { unsubscribe_signal->notify(); });
+
     co_await router_.message_calls_channel.send(call);
-    co_return (co_await call.result());
+    auto channel = co_await call.result();
+
+    // loop until a cancelled exception
+    while (true) {
+        auto message = co_await channel->receive();
+        co_await consumer(std::move(message));
+    }
 }
 
 awaitable<api_common::PeerInfos> DirectService::peers() {
@@ -111,11 +124,22 @@ awaitable<void> DirectService::peer_useless(common::EccPublicKey public_key) {
     co_await router_.peer_penalize_calls_channel.send({std::move(public_key)});
 }
 
-awaitable<std::shared_ptr<concurrency::Channel<api_common::PeerEvent>>> DirectService::peer_events() {
+awaitable<void> DirectService::peer_events(
+    std::function<boost::asio::awaitable<void>(api_common::PeerEvent)> consumer) {
     auto executor = co_await this_coro::executor;
     PeerEventsCall call{executor};
+
+    auto unsubscribe_signal = call.unsubscribe_signal;
+    auto _ = gsl::finally([=]() { unsubscribe_signal->notify(); });
+
     co_await router_.peer_events_calls_channel.send(call);
-    co_return (co_await call.result_promise->wait());
+    auto channel = co_await call.result_promise->wait();
+
+    // loop until a cancelled exception
+    while (true) {
+        auto event = co_await channel->receive();
+        co_await consumer(std::move(event));
+    }
 }
 
 }  // namespace silkworm::sentry::api::router

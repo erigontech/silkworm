@@ -36,9 +36,9 @@
 #include <silkworm/core/consensus/blockchain.hpp>
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
-#include <silkworm/node/common/stopwatch.hpp>
-#include <silkworm/node/common/terminal.hpp>
-#include <silkworm/node/concurrency/thread_pool.hpp>
+#include <silkworm/infra/common/stopwatch.hpp>
+#include <silkworm/infra/common/terminal.hpp>
+#include <silkworm/infra/concurrency/thread_pool.hpp>
 
 // See https://ethereum-tests.readthedocs.io
 
@@ -59,11 +59,6 @@ static const std::vector<fs::path> kSlowTests{
 };
 
 static const std::vector<fs::path> kFailingTests{
-    // Gas limit >= 2^64 is not supported; see EIP-1985.
-    // Geth excludes this test as well:
-    // https://github.com/ethereum/go-ethereum/blob/v1.10.18/tests/transaction_test.go#L31
-    kTransactionDir / "ttGasLimit" / "TransactionWithGasLimitxPriceOverflow.json",
-
     // EOF is not implemented yet
     kBlockchainDir / "GeneralStateTests" / "EIPTests" / "stEOF",
 };
@@ -770,7 +765,7 @@ int main(int argc, char* argv[]) {
             if (exclude_test(*i, root_dir, include_slow_tests)) {
                 ++total_skipped;
                 i.disable_recursion_pending();
-            } else if (fs::is_regular_file(i->path())) {
+            } else if (fs::is_regular_file(i->path()) && i->path().extension() == ".json") {
                 const fs::path path{*i};
                 thread_pool.push_task([path, runner]() { run_test_file(path, runner); });
             }

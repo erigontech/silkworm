@@ -16,8 +16,6 @@
 
 #include "storage_walker.hpp"
 
-#include <algorithm>
-#include <iterator>
 #include <memory>
 #include <string>
 
@@ -28,7 +26,6 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/rlp/encode.hpp>
-#include <silkworm/node/common/log.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
@@ -40,17 +37,16 @@ using evmc::literals::operator""_bytes32;
 
 const nlohmann::json empty;
 const std::string zeros = "00000000000000000000000000000000000000000000000000000000000000000000000000000000"; // NOLINT
-const evmc::bytes32 zero_hash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
 
 class DummyCursor : public silkrpc::ethdb::CursorDupSort {
 public:
     explicit DummyCursor(const nlohmann::json& json) : json_{json} {}
 
-    uint32_t cursor_id() const override {
+    [[nodiscard]] uint32_t cursor_id() const override {
         return 0;
     }
 
-    boost::asio::awaitable<void> open_cursor(const std::string& table_name, bool is_dup_cursor) override {
+    boost::asio::awaitable<void> open_cursor(const std::string& table_name, bool /*is_dup_cursor*/) override {
         table_name_ = table_name;
         table_ = json_.value(table_name_, empty);
         itr_ = table_.end();
@@ -152,7 +148,7 @@ class DummyTransaction: public silkrpc::ethdb::Transaction {
 public:
     explicit DummyTransaction(const nlohmann::json& json) : json_{json} {}
 
-    uint64_t tx_id() const override { return 0; }
+    [[nodiscard]] uint64_t tx_id() const override { return 0; }
 
     boost::asio::awaitable<void> open() override {
         co_return;
@@ -241,10 +237,10 @@ TEST_CASE("StorageWalker::walk_of_storages") {
         const evmc::address start_address{0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address};
         const uint64_t incarnation{0};
 
-        auto result = boost::asio::co_spawn(pool, walker.walk_of_storages(block_number, start_address, start_location, incarnation, collector), boost::asio::use_future);
-        result.get();
+        auto result1 = boost::asio::co_spawn(pool, walker.walk_of_storages(block_number, start_address, start_location, incarnation, collector), boost::asio::use_future);
+        result1.get();
 
-        CHECK(storage.size() == 0);
+        CHECK(storage.empty());
     }
 
 #ifdef notdef
@@ -354,10 +350,10 @@ TEST_CASE("StorageWalker::storage_range_at") {
     SECTION("storage range 1") {
         const evmc::address start_address{0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address};
 
-        auto result = boost::asio::co_spawn(pool, walker.storage_range_at(block_number, start_address, start_location, 1, collector), boost::asio::use_future);
-        result.get();
+        auto result1 = boost::asio::co_spawn(pool, walker.storage_range_at(block_number, start_address, start_location, 1, collector), boost::asio::use_future);
+        result1.get();
 
-        CHECK(storage.size() == 0);
+        CHECK(storage.empty());
     }
 
 #ifdef notdef

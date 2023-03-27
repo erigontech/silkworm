@@ -115,7 +115,7 @@ TEST_CASE_METHOD(MinerTest, "Miner::get_mining", "[silkrpc][txpool][miner]") {
         {true, false},
         {true, true},
     };
-    for (const auto [enabled, running] : enabled_running_pairs) {
+    for (const auto& [enabled, running] : enabled_running_pairs) {
         SECTION(std::string("call get_mining and get [") + std::to_string(enabled) + "," + std::to_string(running) + std::string("] result")) {
             ::txpool::MiningReply response;
             response.set_enabled(true);

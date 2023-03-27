@@ -20,14 +20,14 @@
 #include <memory>
 #include <optional>
 
-#include <silkworm/node/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/strand.hpp>
 
-#include <silkworm/node/concurrency/channel.hpp>
-#include <silkworm/node/concurrency/event_notifier.hpp>
+#include <silkworm/infra/concurrency/channel.hpp>
+#include <silkworm/infra/concurrency/event_notifier.hpp>
 #include <silkworm/sentry/api/api_common/peer_event.hpp>
 #include <silkworm/sentry/api/api_common/peer_info.hpp>
 #include <silkworm/sentry/api/router/peer_call.hpp>

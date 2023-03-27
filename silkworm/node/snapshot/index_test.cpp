@@ -18,8 +18,8 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/node/common/decoding_exception.hpp>
-#include <silkworm/node/test/log.hpp>
+#include <silkworm/infra/common/decoding_exception.hpp>
+#include <silkworm/infra/test/log.hpp>
 #include <silkworm/node/test/snapshots.hpp>
 
 namespace silkworm {

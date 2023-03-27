@@ -58,6 +58,14 @@ if(NOT SILKWORM_CORE_ONLY)
   find_package(asio-grpc REQUIRED)
   find_package(GTest REQUIRED)
 
+  # Silkworm Infra Tests
+  file(GLOB_RECURSE SILKWORM_INFRA_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/infra/*_test.cpp")
+  add_executable(infra_test "unit_test.cpp;${SILKWORM_INFRA_TESTS}")
+  if(SILKWORM_SANITIZE)
+    target_compile_definitions(infra_test PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
+  endif()
+  target_link_libraries(infra_test silkworm_infra Catch2::Catch2)
+
   # Silkworm Node Tests
   file(GLOB_RECURSE SILKWORM_NODE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/node/*_test.cpp")
   add_executable(node_test unit_test.cpp ${SILKWORM_NODE_TESTS})
@@ -74,25 +82,8 @@ if(NOT SILKWORM_CORE_ONLY)
   endif()
   target_include_directories(rpcdaemon_test PRIVATE
           ${SILKWORM_MAIN_DIR}
-          ${SILKWORM_MAIN_SRC_DIR}/interfaces
           ${SILKWORM_MAIN_DIR}/third_party/evmone/evmc/include)
   target_link_libraries(rpcdaemon_test silkworm_node silkrpc asio-grpc::asio-grpc Catch2::Catch2 GTest::gmock)
-
-  # TO BE REMOVED: START: temporarily disable warnings entirely to make rpcdaemon_test compile as it is
-  get_target_property(RPCDAEMON_TEST_COMPILE_OPTIONS rpcdaemon_test COMPILE_OPTIONS)
-  list(REMOVE_ITEM RPCDAEMON_TEST_COMPILE_OPTIONS "-Wall")
-  list(REMOVE_ITEM RPCDAEMON_TEST_COMPILE_OPTIONS "-Werror")
-  list(REMOVE_ITEM RPCDAEMON_TEST_COMPILE_OPTIONS "-Wextra")
-  list(REMOVE_ITEM RPCDAEMON_TEST_COMPILE_OPTIONS "-Wshadow")
-  list(REMOVE_ITEM RPCDAEMON_TEST_COMPILE_OPTIONS "-Wimplicit-fallthrough")
-  list(REMOVE_ITEM RPCDAEMON_TEST_COMPILE_OPTIONS "-Wsign-conversion")
-  list(REMOVE_ITEM RPCDAEMON_TEST_COMPILE_OPTIONS "$<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>")
-  list(REMOVE_ITEM RPCDAEMON_TEST_COMPILE_OPTIONS "-Wno-missing-field-initializers")
-  list(REMOVE_ITEM RPCDAEMON_TEST_COMPILE_OPTIONS "-Wnon-virtual-dtor")
-  list(REMOVE_ITEM RPCDAEMON_TEST_COMPILE_OPTIONS "-Wthread-safety")
-  list(REMOVE_ITEM RPCDAEMON_TEST_COMPILE_OPTIONS "-pedantic")
-  set_property(TARGET rpcdaemon_test PROPERTY COMPILE_OPTIONS ${RPCDAEMON_TEST_COMPILE_OPTIONS})
-  # TO BE REMOVED: END: temporarily disable warnings entirely to make rpcdaemon_test compile as it is
 
   # Silkworm Sentry Tests
   file(GLOB_RECURSE SENTRY_TEST_FILES CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/sentry/*_test.cpp")
@@ -100,7 +91,7 @@ if(NOT SILKWORM_CORE_ONLY)
   if(SILKWORM_SANITIZE)
     target_compile_definitions(sentry_test PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
   endif()
-  target_link_libraries(sentry_test silkworm_node silkworm_sentry Catch2::Catch2 Microsoft.GSL::GSL)
+  target_link_libraries(sentry_test silkworm_sentry Catch2::Catch2 Microsoft.GSL::GSL)
 
   # Silkworm Sync Tests
   file(GLOB_RECURSE SILKWORM_SYNC_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/sync/*_test.cpp")
@@ -127,4 +118,7 @@ if(NOT SILKWORM_CORE_ONLY)
   # BE&KV Tests
   add_executable(backend_kv_test "backend_kv_test.cpp;${CMD_COMMON_SRC}")
   target_link_libraries(backend_kv_test PRIVATE silkworm_node CLI11::CLI11)
+
+  add_executable(sentry_client_test "sentry_client_test.cpp")
+  target_link_libraries(sentry_client_test PRIVATE silkworm_sentry)
 endif()

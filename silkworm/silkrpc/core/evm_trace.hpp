@@ -85,8 +85,8 @@ struct TraceStorage {
 };
 
 struct TraceMemory {
-    std::uint64_t offset{0};
-    std::uint64_t len{0};
+    uint64_t offset{0};
+    uint64_t len{0};
     std::string data;
 };
 
@@ -94,21 +94,21 @@ struct TraceEx {
     std::optional<TraceMemory> memory;
     std::vector<std::string> stack;
     std::optional<TraceStorage> storage;
-    std::uint64_t used{0};
+    int64_t used{0};
 };
 
 struct VmTrace;
 
 struct TraceOp {
-    std::uint64_t gas_cost{0};
-    std::optional<std::uint64_t> precompiled_call_gas;
-    std::optional<std::uint64_t> call_gas_cap;
+    int64_t gas_cost{0};
+    std::optional<int64_t> precompiled_call_gas;
+    std::optional<int64_t> call_gas_cap;
     TraceEx trace_ex;
     std::string idx;
-    std::uint32_t depth{0};
-    std::uint8_t op_code;
+    int32_t depth{0};
+    uint8_t op_code;
     std::string op_name;
-    std::uint32_t pc;
+    uint32_t pc;
     std::shared_ptr<VmTrace> sub;
 };
 
@@ -141,8 +141,8 @@ public:
             const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_precompiled_run(const evmc_result& result, int64_t gas, const silkworm::IntraBlockState& intra_block_state) noexcept override;
-    void on_reward_granted(const silkworm::CallResult& result, const silkworm::IntraBlockState& intra_block_state) noexcept override {};
-    void on_creation_completed(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override {};
+    void on_reward_granted(const silkworm::CallResult& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_creation_completed(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
 
 private:
     VmTrace& vm_trace_;
@@ -150,7 +150,7 @@ private:
     std::stack<std::string> index_prefix_;
     std::stack<std::reference_wrapper<VmTrace>> traces_stack_;
     const char* const* opcode_names_ = nullptr;
-    std::stack<std::uint64_t> start_gas_;
+    std::stack<int64_t> start_gas_;
     std::stack<TraceMemory> trace_memory_stack_;
 };
 
@@ -158,7 +158,7 @@ struct TraceAction {
     std::optional<std::string> call_type;
     evmc::address from;
     std::optional<evmc::address> to;
-    std::uint64_t gas{0};
+    int64_t gas{0};
     std::optional<silkworm::Bytes> input;
     std::optional<silkworm::Bytes> init;
     intx::uint256 value{0};
@@ -176,14 +176,14 @@ struct TraceResult {
     std::optional<evmc::address> address;
     std::optional<silkworm::Bytes> code;
     std::optional<silkworm::Bytes> output;
-    std::uint64_t gas_used{0};
+    int64_t gas_used{0};
 };
 
 struct Trace {
     Action action;
     std::optional<TraceResult> trace_result;
     std::int32_t sub_traces{0};
-    std::vector<std::uint32_t> trace_address;
+    std::vector<int32_t> trace_address;
     std::optional<std::string> error;
     std::string type;
     std::optional<evmc::bytes32> block_hash;
@@ -204,8 +204,8 @@ class iterable_stack: public std::stack<T, Container> {
 public:
     using const_iterator = typename Container::const_iterator;
 
-    const_iterator begin() const { return c.begin(); }
-    const_iterator end() const { return std::end(c); }
+    [[nodiscard]] const_iterator begin() const { return c.begin(); }
+    [[nodiscard]] const_iterator end() const { return std::end(c); }
 };
 
 class TraceTracer : public silkworm::EvmTracer {
@@ -220,7 +220,7 @@ public:
     void on_instruction_start(uint32_t pc , const intx::uint256 *stack_top, const int stack_height,
             const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
-    void on_precompiled_run(const evmc_result& result, int64_t gas, const silkworm::IntraBlockState& intra_block_state) noexcept override {};
+    void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_reward_granted(const silkworm::CallResult& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_creation_completed(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
 
@@ -228,11 +228,11 @@ private:
     std::vector<Trace>& traces_;
     silkworm::IntraBlockState& initial_ibs_;
     const char* const* opcode_names_ = nullptr;
-    std::uint64_t initial_gas_;
-    std::int32_t current_depth_{-1};
+    int64_t initial_gas_;
+    int32_t current_depth_{-1};
     std::set<evmc::address> created_address_;
-    iterable_stack<std::uint32_t> index_stack_;
-    std::stack<std::uint64_t> start_gas_;
+    iterable_stack<uint32_t> index_stack_;
+    std::stack<int64_t> start_gas_;
 };
 
 struct DiffValue {
@@ -301,9 +301,9 @@ public:
     void on_instruction_start(uint32_t pc , const intx::uint256 *stack_top, const int stack_height,
             const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
-    void on_precompiled_run(const evmc_result& result, int64_t gas, const silkworm::IntraBlockState& intra_block_state) noexcept override {};
+    void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_reward_granted(const silkworm::CallResult& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
-    void on_creation_completed(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override {};
+    void on_creation_completed(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
 
 private:
     StateDiff& state_diff_;
@@ -343,13 +343,13 @@ public:
     IntraBlockStateTracer(const IntraBlockStateTracer&) = delete;
     IntraBlockStateTracer& operator=(const IntraBlockStateTracer&) = delete;
 
-    void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override {};
-    void on_instruction_start(uint32_t pc , const intx::uint256 *stack_top, const int stack_height,
-            const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept override {};
-    void on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override {};
-    void on_precompiled_run(const evmc_result& result, int64_t gas, const silkworm::IntraBlockState& intra_block_state) noexcept override {};
+    void on_execution_start(evmc_revision /*rev*/, const evmc_message& /*msg*/, evmone::bytes_view /*code*/) noexcept override {}
+    void on_instruction_start(uint32_t /*pc*/, const intx::uint256* /*stack_top*/, int /*stack_height*/,
+            const evmone::ExecutionState& /*execution_state*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_execution_end(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_reward_granted(const silkworm::CallResult& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
-    void on_creation_completed(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override {};
+    void on_creation_completed(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
 
 private:
     StateAddresses& state_addresses_;
@@ -371,7 +371,7 @@ public:
         const core::rawdb::DatabaseReader& database_reader,
         boost::asio::thread_pool& workers)
     : io_context_(io_context), block_cache_(block_cache), database_reader_(database_reader), workers_{workers} {}
-    virtual ~TraceCallExecutor() {}
+    virtual ~TraceCallExecutor() = default;
 
     TraceCallExecutor(const TraceCallExecutor&) = delete;
     TraceCallExecutor& operator=(const TraceCallExecutor&) = delete;

@@ -21,7 +21,7 @@
 
 #include <silkworm/core/consensus/engine.hpp>
 #include <silkworm/core/execution/execution.hpp>
-#include <silkworm/node/common/directories.hpp>
+#include <silkworm/infra/common/directories.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
 

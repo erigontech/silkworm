@@ -21,14 +21,14 @@
 #include <mutex>
 #include <stdexcept>
 
-#include <silkworm/node/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/cancellation_signal.hpp>
 #include <boost/asio/io_context.hpp>
 
-#include <silkworm/node/concurrency/channel.hpp>
+#include <silkworm/infra/concurrency/channel.hpp>
 
 namespace silkworm::sentry::common {
 

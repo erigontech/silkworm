@@ -45,7 +45,7 @@ TEST_CASE("parse wait mode", "[silkrpc][common][log]") {
         WaitMode::spin_wait,
         WaitMode::busy_spin,
     };
-    for (auto i{0}; i < input_texts.size(); i++) {
+    for (auto i{0u}; i < input_texts.size(); i++) {
         WaitMode wait_mode;
         std::string error;
         const auto success{AbslParseFlag(input_texts[i], &wait_mode, &error)};
@@ -75,14 +75,14 @@ TEST_CASE("unparse wait mode", "[silkrpc][common][log]") {
     std::vector<absl::string_view> expected_texts{
         "backoff", "blocking", "sleeping", "yielding", "spin_wait", "busy_spin"
     };
-    for (auto i{0}; i < input_wait_modes.size(); i++) {
+    for (auto i{0u}; i < input_wait_modes.size(); i++) {
         const auto text{AbslUnparseFlag(input_wait_modes[i])};
         CHECK(text == expected_texts[i]);
     }
 }
 
 template<typename W, typename R, typename P>
-inline void sleep_then_check_wait(W& w, const std::chrono::duration<R, P>& t, uint32_t executed_count) {
+inline void sleep_then_check_wait(W& w, const std::chrono::duration<R, P>& t, int executed_count) {
     std::this_thread::sleep_for(t);
     CHECK_NOTHROW(w.idle(executed_count));
 }

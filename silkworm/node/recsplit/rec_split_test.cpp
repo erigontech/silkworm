@@ -21,8 +21,8 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/infra/test/log.hpp>
 #include <silkworm/node/test/files.hpp>
-#include <silkworm/node/test/log.hpp>
 #include <silkworm/node/test/xoroshiro128pp.hpp>
 
 namespace silkworm::succinct {

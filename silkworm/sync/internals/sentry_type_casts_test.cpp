@@ -42,7 +42,7 @@ TEST_CASE("H256/512 to/from conversions") {
             Bytes orig_string(len, 0);
             generate_n(orig_string.begin(), len, [] { return static_cast<char>(rand() % 255); });
 
-            Bytes transf_string = bytes_from_H512(*to_H512(orig_string));
+            Bytes transf_string = bytes_from_H512(*H512_from_bytes(orig_string));
 
             orig_string.resize(64, 0);  // transf_string is always of 64 bytes with trailing zeros if needed
             REQUIRE(orig_string == transf_string);

@@ -34,7 +34,7 @@
 namespace silkrpc::http {
 
 /// The status of the reply.
-enum StatusType {
+enum class StatusType {
     processing_continue = 100,
     ok = 200,
     created = 201,

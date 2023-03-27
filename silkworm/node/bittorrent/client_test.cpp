@@ -33,9 +33,9 @@
 #include <libtorrent/magnet_uri.hpp>
 #include <libtorrent/stack_allocator.hpp>
 
-#include <silkworm/node/common/directories.hpp>
-#include <silkworm/node/common/log.hpp>
-#include <silkworm/node/test/log.hpp>
+#include <silkworm/infra/common/directories.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/test/log.hpp>
 
 namespace silkworm {
 

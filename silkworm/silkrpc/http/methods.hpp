@@ -62,6 +62,7 @@ constexpr const char* k_eth_createAccessList{"eth_createAccessList"};
 constexpr const char* k_eth_newFilter{"eth_newFilter"};
 constexpr const char* k_eth_newBlockFilter{"eth_newBlockFilter"};
 constexpr const char* k_eth_newPendingTransactionFilter{"eth_newPendingTransactionFilter"};
+constexpr const char* k_eth_getFilterLogs{"eth_getFilterLogs"};
 constexpr const char* k_eth_getFilterChanges{"eth_getFilterChanges"};
 constexpr const char* k_eth_uninstallFilter{"eth_uninstallFilter"};
 constexpr const char* k_eth_getLogs{"eth_getLogs"};
@@ -125,6 +126,9 @@ constexpr const char* k_txpool_content{"txpool_content"};
 
 constexpr const char* k_ots_getApiLevel{"ots_getApiLevel"};
 constexpr const char* k_ots_hasCode{"ots_hasCode"};
+
+constexpr const char* k_ots_getBlockDetails{"ots_getBlockDetails"};
+constexpr const char* k_ots_getBlockDetailsByHash{"ots_getBlockDetailsByHash"};
 
 } // namespace silkrpc::http::method
 

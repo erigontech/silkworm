@@ -25,7 +25,7 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/crypto/ecdsa.h>
 #include <silkworm/core/crypto/secp256k1n.hpp>
-#include <silkworm/node/common/stopwatch.hpp>
+#include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 
 namespace silkworm::stagedsync {

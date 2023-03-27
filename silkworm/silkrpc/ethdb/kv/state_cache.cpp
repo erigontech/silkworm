@@ -27,7 +27,7 @@
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/node/rpc/common/conversion.hpp>
+#include <silkworm/infra/rpc/common/conversion.hpp>
 
 namespace silkrpc::ethdb::kv {
 
@@ -59,7 +59,7 @@ std::size_t CoherentStateCache::latest_data_size() {
     if (latest_state_view_ == nullptr) {
         return 0;
     }
-    return latest_state_view_->cache.size();
+    return static_cast<std::size_t>(latest_state_view_->cache.size());
 }
 
 std::size_t CoherentStateCache::latest_code_size() {
@@ -67,7 +67,7 @@ std::size_t CoherentStateCache::latest_code_size() {
     if (latest_state_view_ == nullptr) {
         return 0;
     }
-    return latest_state_view_->code_cache.size();
+    return static_cast<std::size_t>(latest_state_view_->code_cache.size());
 }
 
 void CoherentStateCache::on_new_block(const remote::StateChangeBatch& state_changes) {
@@ -113,8 +113,8 @@ void CoherentStateCache::on_new_block(const remote::StateChangeBatch& state_chan
         }
     }
 
-    state_key_count_ = latest_state_view_->cache.size();
-    code_key_count_ = latest_state_view_->code_cache.size();
+    state_key_count_ = static_cast<std::size_t>(latest_state_view_->cache.size());
+    code_key_count_ = static_cast<std::size_t>(latest_state_view_->code_cache.size());
 
     root->ready = true;
 }

@@ -54,20 +54,19 @@ using Tracers = std::vector<std::shared_ptr<silkworm::EvmTracer>>;
 template<typename WorldState = silkworm::IntraBlockState, typename VM = silkworm::EVM>
 class EVMExecutor {
 public:
-    static std::string get_error_message(int64_t error_code, const silkworm::Bytes& error_data, const bool full_error = true);
+    static std::string get_error_message(int64_t error_code, const silkworm::Bytes& error_data, bool full_error = true);
 
     explicit EVMExecutor(
         boost::asio::io_context& io_context,
         const core::rawdb::DatabaseReader& db_reader,
         const silkworm::ChainConfig& config,
         boost::asio::thread_pool& workers,
-        uint64_t block_number,
         state::RemoteState& remote_state)
         : io_context_(io_context), db_reader_(db_reader), config_(config), workers_{workers}, remote_state_{remote_state}, state_{remote_state_} {
              consensus_engine_ = silkworm::consensus::engine_factory(config);
-             SILKWORM_ASSERT(consensus_engine_ != NULL);
+             SILKWORM_ASSERT(consensus_engine_ != nullptr);
     }
-    virtual ~EVMExecutor() {}
+    virtual ~EVMExecutor() = default;
 
     EVMExecutor(const EVMExecutor&) = delete;
     EVMExecutor& operator=(const EVMExecutor&) = delete;
@@ -76,7 +75,7 @@ public:
     void reset();
 
 private:
-    std::optional<std::string> pre_check(const VM& evm, const silkworm::Transaction& txn, const intx::uint256 base_fee_per_gas, const intx::uint128 g0);
+    std::optional<std::string> pre_check(const VM& evm, const silkworm::Transaction& txn, const intx::uint256& base_fee_per_gas, const intx::uint128& g0);
     uint64_t refund_gas(const VM& evm, const silkworm::Transaction& txn, uint64_t gas_left, uint64_t gas_refund);
 
     boost::asio::io_context& io_context_;

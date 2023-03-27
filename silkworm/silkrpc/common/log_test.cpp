@@ -40,7 +40,7 @@ TEST_CASE("parse log level", "[silkrpc][common][log]") {
         LogLevel::Debug,
         LogLevel::Trace,
     };
-    for (auto i{0}; i < input_texts.size(); i++) {
+    for (auto i{0u}; i < input_texts.size(); i++) {
         LogLevel level;
         std::string error;
         const auto success{AbslParseFlag(input_texts[i], &level, &error)};
@@ -71,7 +71,7 @@ TEST_CASE("unparse log level", "[silkrpc][common][log]") {
     std::vector<absl::string_view> expected_texts{
         "n", "c", "e", "w", "i", "d", "t"
     };
-    for (auto i{0}; i < input_levels.size(); i++) {
+    for (auto i{0u}; i < input_levels.size(); i++) {
         const auto text{AbslUnparseFlag(input_levels[i])};
         CHECK(text == expected_texts[i]);
     }

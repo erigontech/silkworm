@@ -45,7 +45,7 @@ static const char* kBase64Chars[2] = {
 std::string base64_encode(const uint8_t* bytes_to_encode, size_t len, bool url) {
     size_t len_encoded = (len +2) / 3 * 4;
 
-    unsigned char trailing_char = url ? '.' : '=';
+    char trailing_char = url ? '.' : '=';
     const char* base64_chars_ = kBase64Chars[url ? 1 : 0];
 
     std::string ret;
@@ -81,7 +81,7 @@ static const uint64_t kMask = 0x8000000000000000;
 
 std::string to_dec(intx::uint256 number) {
     uint64_t n[4];
-    for (auto idx = 0; idx < intx::uint256::num_words; idx++) {
+    for (std::size_t idx{0}; idx < intx::uint256::num_words; idx++) {
         n[idx] = number[idx];
     }
     char s[256 / 3 + 1 + 1];

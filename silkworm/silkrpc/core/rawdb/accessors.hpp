@@ -33,7 +33,9 @@ namespace silkrpc::core::rawdb {
 using Walker = std::function<bool(silkworm::Bytes&, silkworm::Bytes&)>;
 
 class DatabaseReader {
-public:
+  public:
+    virtual ~DatabaseReader() = default;
+
     virtual boost::asio::awaitable<KeyValue> get(const std::string& table, silkworm::ByteView key) const = 0;
 
     virtual boost::asio::awaitable<silkworm::Bytes> get_one(const std::string& table, silkworm::ByteView key) const = 0;

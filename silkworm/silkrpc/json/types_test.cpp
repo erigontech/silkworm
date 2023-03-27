@@ -306,7 +306,7 @@ TEST_CASE("serialize block with baseFeePerGas", "[silkrpc][to_json]") {
     body.transactions[0].to = 0xe5ef458d37212a06e3f59d40c454e76150ae7c32_address;
     body.transactions[0].value = 1'027'501'080 * kGiga;
     body.transactions[0].data = {};
-    auto ret = body.transactions[0].set_v(27);
+    REQUIRE(body.transactions[0].set_v(27));
     body.transactions[0].r =
         intx::from_string<intx::uint256>("0x48b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353");
     body.transactions[0].s =
@@ -320,7 +320,7 @@ TEST_CASE("serialize block with baseFeePerGas", "[silkrpc][to_json]") {
     body.transactions[1].to = {};
     body.transactions[1].value = 0;
     body.transactions[1].data = *silkworm::from_hex("602a6000556101c960015560068060166000396000f3600035600055");
-    ret = body.transactions[1].set_v(37);
+    REQUIRE(body.transactions[1].set_v(37));
     body.transactions[1].r =
         intx::from_string<intx::uint256>("0x52f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afb");
     body.transactions[1].s =
@@ -779,20 +779,22 @@ TEST_CASE("serialize legacy transaction (type=0)", "[silkrpc][to_json]") {
     })"_json);
 
     silkrpc::Transaction txn2{
-        silkworm::Transaction::Type::kLegacy,               // type
-        0,                                                  // nonce
-        50'000 * kGiga,                                     // max_priority_fee_per_gas
-        50'000 * kGiga,                                     // max_fee_per_gas
-        21'000,                                             // gas_limit
-        0x5df9b87991262f6ba471f09758cde1c0fc1de734_address, // to
-        31337,                                              // value
-        {},                                                 // data
-        true,                                               // odd_y_parity
-        std::nullopt,                                       // chain_id
-        intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"), // r
-        intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"), // s
-        std::vector<silkworm::AccessListEntry>{},                                    // access_list
-        0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address,                          // from
+        {
+            silkworm::Transaction::Type::kLegacy,                                                                    // type
+            0,                                                                                                       // nonce
+            50'000 * kGiga,                                                                                          // max_priority_fee_per_gas
+            50'000 * kGiga,                                                                                          // max_fee_per_gas
+            21'000,                                                                                                  // gas_limit
+            0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,                                                      // to
+            31337,                                                                                                   // value
+            {},                                                                                                      // data
+            true,                                                                                                    // odd_y_parity
+            std::nullopt,                                                                                            // chain_id
+            intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),  // r
+            intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),  // s
+            std::vector<silkworm::AccessListEntry>{},                                                                // access_list
+            0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address,                                                      // from
+        },
         0x4e3a3754410177e6937ef1f84bba68ea139e8d1a2258c5f85db9f1cd715a1bdd_bytes32,  // block_hash
         46147,                                                                       // block_number
         intx::uint256{0},                                                            // block_base_fee_per_gas
@@ -817,20 +819,22 @@ TEST_CASE("serialize legacy transaction (type=0)", "[silkrpc][to_json]") {
         "value":"0x7a69"
     })"_json);
     silkrpc::Transaction txn3{
-        silkworm::Transaction::Type::kLegacy,               // type
-        0,                                                  // nonce
-        50'000 * kGiga,                                     // max_priority_fee_per_gas
-        50'000 * kGiga,                                     // max_fee_per_gas
-        21'000,                                             // gas_limit
-        0x5df9b87991262f6ba471f09758cde1c0fc1de734_address, // to
-        31337,                                              // value
-        {},                                                 // data
-        true,                                               // odd_y_parity
-        std::nullopt,                                       // chain_id
-        intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"), // r
-        intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"), // s
-        std::vector<silkworm::AccessListEntry>{},                                    // access_list
-        0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address,                          // from
+        {
+            silkworm::Transaction::Type::kLegacy,                                                                    // type
+            0,                                                                                                       // nonce
+            50'000 * kGiga,                                                                                          // max_priority_fee_per_gas
+            50'000 * kGiga,                                                                                          // max_fee_per_gas
+            21'000,                                                                                                  // gas_limit
+            0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,                                                      // to
+            31337,                                                                                                   // value
+            {},                                                                                                      // data
+            true,                                                                                                    // odd_y_parity
+            std::nullopt,                                                                                            // chain_id
+            intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),  // r
+            intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),  // s
+            std::vector<silkworm::AccessListEntry>{},                                                                // access_list
+            0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address,                                                      // from
+        },
         0x4e3a3754410177e6937ef1f84bba68ea139e8d1a2258c5f85db9f1cd715a1bdd_bytes32,  // block_hash
         46147,                                                                       // block_number
         intx::uint256{0},                                                            // block_base_fee_per_gas
@@ -901,20 +905,22 @@ TEST_CASE("serialize EIP-2930 transaction (type=1)", "[silkrpc][to_json]") {
     };
 
     silkrpc::Transaction txn2{
-        silkworm::Transaction::Type::kEip2930,
-        0,
-        20000000000,
-        30000000000,
-        uint64_t{0},
-        0x0715a7794a1dc8e42615f059dd6e406a6594651a_address,
-        intx::uint256{0},
-        *silkworm::from_hex("001122aabbcc"),
-        false,
-        intx::uint256{1},
-        intx::uint256{18},
-        intx::uint256{36},
-        access_list,
-        0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address,
+        {
+            silkworm::Transaction::Type::kEip2930,
+            0,
+            20000000000,
+            30000000000,
+            uint64_t{0},
+            0x0715a7794a1dc8e42615f059dd6e406a6594651a_address,
+            intx::uint256{0},
+            *silkworm::from_hex("001122aabbcc"),
+            false,
+            intx::uint256{1},
+            intx::uint256{18},
+            intx::uint256{36},
+            access_list,
+            0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address,
+        },
         0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32,
         123123,
         intx::uint256{12},
@@ -1254,7 +1260,7 @@ TEST_CASE("serialize receipt", "[silkrpc::json][to_json]") {
 TEST_CASE("serialize empty filter", "[silkrpc::json][to_json]") {
     Filter f{"0", "0", FilterAddresses{}, FilterTopics(2), ""};
     nlohmann::json j = f;
-    CHECK(j == R"({"address":[],"blockHash":"","fromBlock":"0","toBlock":"0","topics":[[], []]})"_json);
+    CHECK(j == R"({"blockHash":"","fromBlock":"0","toBlock":"0","topics":[[], []]})"_json);
 }
 
 TEST_CASE("serialize filter with one address", "[silkrpc::json][to_json]") {
@@ -1267,7 +1273,7 @@ TEST_CASE("serialize filter with one address", "[silkrpc::json][to_json]") {
 TEST_CASE("serialize filter with fromBlock and toBlock", "[silkrpc::json][to_json]") {
     Filter f{"1000", "2000", FilterAddresses{}, FilterTopics(2), ""};
     nlohmann::json j = f;
-    CHECK(j == R"({"address":[],"blockHash":"","fromBlock":"1000","toBlock":"2000","topics":[[], []]})"_json);
+    CHECK(j == R"({"blockHash":"","fromBlock":"1000","toBlock":"2000","topics":[[], []]})"_json);
 }
 
 TEST_CASE("deserialize null filter", "[silkrpc::json][from_json]") {
@@ -1788,7 +1794,7 @@ TEST_CASE("make empty json error", "[silkrpc::json][make_json_error]") {
 }
 
 TEST_CASE("make empty json revert error", "[silkrpc::json][make_json_error]") {
-    const auto j = silkrpc::make_json_error(0, {0, "", silkworm::Bytes{}});
+    const auto j = silkrpc::make_json_error(0, {{0, ""}, silkworm::Bytes{}});
     CHECK(j == R"({
         "jsonrpc":"2.0",
         "id":0,
@@ -1806,7 +1812,7 @@ TEST_CASE("make json error", "[silkrpc::json][make_json_error]") {
 }
 
 TEST_CASE("make json revert error", "[silkrpc::json][make_json_error]") {
-    const auto j = silkrpc::make_json_error(123, {3, "execution reverted: Ownable: caller is not the owner", *silkworm::from_hex("0x00010203")});
+    const auto j = silkrpc::make_json_error(123, {{3, "execution reverted: Ownable: caller is not the owner"}, *silkworm::from_hex("0x00010203")});
     CHECK(j == R"({
         "jsonrpc":"2.0",
         "id":123,

@@ -174,7 +174,7 @@ public:
     template<typename Executor, typename CompletionToken = agrpc::DefaultCompletionToken>
     auto request_on(const Executor& executor, const Request& request, CompletionToken&& token = {}) {
         return boost::asio::async_compose<CompletionToken, void(boost::system::error_code)>(
-            StartRequest<detail::ExecutorDispatcher<Executor>>{*this, request, executor}, token);
+            StartRequest<detail::ExecutorDispatcher<Executor>>{*this, request, {executor}}, token);
     }
 
     template<typename CompletionToken = agrpc::DefaultCompletionToken>
@@ -186,7 +186,7 @@ public:
     template<typename Executor, typename CompletionToken = agrpc::DefaultCompletionToken>
     auto read_on(const Executor& executor, CompletionToken&& token = {}) {
         return boost::asio::async_compose<CompletionToken, void(boost::system::error_code, Reply)>(
-            Read<detail::ExecutorDispatcher<Executor>>{*this, executor}, token);
+            Read<detail::ExecutorDispatcher<Executor>>{*this, {executor}}, token);
     }
 
     void cancel() {

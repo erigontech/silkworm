@@ -36,7 +36,7 @@
 namespace silkrpc::ethdb::kv {
 
 class StateView {
-public:
+  public:
     virtual ~StateView() = default;
 
     virtual boost::asio::awaitable<std::optional<silkworm::Bytes>> get(const silkworm::Bytes& key) = 0;
@@ -45,7 +45,9 @@ public:
 };
 
 class StateCache {
-public:
+  public:
+    virtual ~StateCache() = default;
+
     virtual std::unique_ptr<StateView> get_view(Transaction& txn) = 0;
 
     virtual void on_new_block(const remote::StateChangeBatch& state_changes) = 0;
@@ -86,7 +88,7 @@ struct CoherentCacheConfig {
 class CoherentStateCache;
 
 class CoherentStateView : public StateView {
-public:
+  public:
     explicit CoherentStateView(Transaction& txn, CoherentStateCache* cache);
 
     CoherentStateView(const CoherentStateView&) = delete;
@@ -102,7 +104,7 @@ private:
 };
 
 class CoherentStateCache : public StateCache {
-public:
+  public:
     explicit CoherentStateCache(CoherentCacheConfig config = {});
 
     CoherentStateCache(const CoherentStateCache&) = delete;
@@ -124,7 +126,7 @@ public:
     uint64_t code_key_count() const override { return code_key_count_; }
     uint64_t code_eviction_count() const override { return code_eviction_count_; }
 
-private:
+  private:
     friend class CoherentStateView;
 
     void process_upsert_change(CoherentStateRoot* root, StateViewId view_id, const remote::AccountChange& change);

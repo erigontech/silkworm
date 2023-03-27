@@ -19,7 +19,6 @@
 #include <limits>
 #include <memory>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include <boost/asio/co_spawn.hpp>
@@ -38,7 +37,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/util.hpp>
 
-#include <silkworm/node/rpc/common/conversion.hpp>
+#include <silkworm/infra/rpc/common/conversion.hpp>
 
 namespace silkrpc::ethdb::kv {
 
@@ -132,13 +131,13 @@ remote::StateChangeBatch new_batch_with_upsert(uint64_t view_id, silkworm::Block
 
 remote::StateChangeBatch new_batch_with_upsert_code(uint64_t view_id, silkworm::BlockNum block_height,
                                                     const evmc::bytes32& block_hash, const std::vector<silkworm::Bytes>& tx_rlps,
-                                                    bool unwind, int num_changes, int offset = 0) {
+                                                    bool unwind, uint64_t num_changes, uint64_t offset = 0) {
     remote::StateChangeBatch state_changes = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
     remote::StateChange* latest_change = state_changes.mutable_changebatch(0);
 
     SILKWORM_ASSERT(num_changes <= kTestAddresses.size());
     SILKWORM_ASSERT(num_changes <= kTestCodes.size());
-    for (int i{offset}; i < num_changes; ++i) {
+    for (auto i{offset}; i < num_changes; ++i) {
         remote::AccountChange* account_change = latest_change->add_changes();
         account_change->set_allocated_address(silkworm::rpc::H160_from_address(kTestAddresses[i]).release());
         account_change->set_action(remote::Action::UPSERT_CODE);
@@ -164,7 +163,7 @@ remote::StateChangeBatch new_batch_with_delete(uint64_t view_id, silkworm::Block
 
 remote::StateChangeBatch new_batch_with_storage(uint64_t view_id, silkworm::BlockNum block_height,
                                                 const evmc::bytes32& block_hash, const std::vector<silkworm::Bytes>& tx_rlps,
-                                                bool unwind, int num_storage_changes) {
+                                                bool unwind, uint64_t num_storage_changes) {
     remote::StateChangeBatch state_changes = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
     remote::StateChange* latest_change = state_changes.mutable_changebatch(0);
 
@@ -174,7 +173,7 @@ remote::StateChangeBatch new_batch_with_storage(uint64_t view_id, silkworm::Bloc
     account_change->set_incarnation(kTestIncarnation);
     SILKWORM_ASSERT(num_storage_changes <= kTestHashedLocations.size());
     SILKWORM_ASSERT(num_storage_changes <= kTestStorageData.size());
-    for (int i{0}; i < num_storage_changes; ++i) {
+    for (auto i{0u}; i < num_storage_changes; ++i) {
         remote::StorageChange* storage_change = account_change->add_storagechanges();
         storage_change->set_allocated_location(silkworm::rpc::H256_from_bytes32(kTestHashedLocations[i]).release());
         storage_change->set_data(kTestStorageData[i].data(), kTestStorageData[i].size());
@@ -184,12 +183,12 @@ remote::StateChangeBatch new_batch_with_storage(uint64_t view_id, silkworm::Bloc
 }
 
 remote::StateChangeBatch new_batch_with_code(uint64_t view_id, silkworm::BlockNum block_height, const evmc::bytes32& block_hash,
-                                             const std::vector<silkworm::Bytes>& tx_rlps, bool unwind, int num_code_changes) {
+                                             const std::vector<silkworm::Bytes>& tx_rlps, bool unwind, uint64_t num_code_changes) {
     remote::StateChangeBatch state_changes = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
     remote::StateChange* latest_change = state_changes.mutable_changebatch(0);
 
     SILKWORM_ASSERT(num_code_changes <= kTestCodes.size());
-    for (int i{0}; i < num_code_changes; ++i) {
+    for (auto i{0u}; i < num_code_changes; ++i) {
         remote::AccountChange* account_change = latest_change->add_changes();
         account_change->set_allocated_address(silkworm::rpc::H160_from_address(kTestAddress1).release());
         account_change->set_action(remote::Action::CODE);
@@ -548,7 +547,6 @@ TEST_CASE("CoherentStateCache::on_new_block exceed max views", "[silkrpc][ethdb]
     }
 
     // Next incoming batch with progressive view ID overflows the state views
-    uint64_t view_id = kTestViewId0 + kMaxViews;
     cache.on_new_block(
         new_batch_with_upsert(kTestViewId0 + kMaxViews, kTestBlockNumber, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
     test::MockTransaction txn;

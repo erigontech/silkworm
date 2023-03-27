@@ -78,8 +78,8 @@ int kv_seek_async_callback(const std::string& target, const std::string& table_n
     GrpcKvCallbackReactor reactor{*stub, std::chrono::milliseconds{timeout}};
 
     std::cout << "KV Tx START\n";
-    reactor.read_start([&](bool ok, remote::Pair txid_pair) {
-        if (!ok) {
+    reactor.read_start([&](bool txid_read_ok, const remote::Pair& txid_pair) {
+        if (!txid_read_ok) {
             std::cout << "KV Tx error reading TXID" << std::flush;
             return;
         }
@@ -88,14 +88,14 @@ int kv_seek_async_callback(const std::string& target, const std::string& table_n
         auto open_message = remote::Cursor{};
         open_message.set_op(remote::Op::OPEN);
         open_message.set_bucketname(table_name);
-        reactor.write_start(&open_message, [&](bool ok) {
-            if (!ok) {
+        reactor.write_start(&open_message, [&](bool open_write_ok) {
+            if (!open_write_ok) {
                 std::cout << "error writing OPEN gRPC" << std::flush;
                 return;
             }
             std::cout << "KV Tx OPEN -> table_name: " << table_name << "\n";
-            reactor.read_start([&](bool ok, remote::Pair open_pair) {
-                if (!ok) {
+            reactor.read_start([&](bool open_read_ok, const remote::Pair& open_pair) {
+                if (!open_read_ok) {
                     std::cout << "error reading OPEN gRPC" << std::flush;
                     return;
                 }
@@ -105,14 +105,14 @@ int kv_seek_async_callback(const std::string& target, const std::string& table_n
                 seek_message.set_op(remote::Op::SEEK);
                 seek_message.set_cursor(cursor_id);
                 seek_message.set_k(key.c_str(), key.length());
-                reactor.write_start(&seek_message, [&, cursor_id](bool ok) {
-                    if (!ok) {
+                reactor.write_start(&seek_message, [&, cursor_id](bool seek_write_ok) {
+                    if (!seek_write_ok) {
                         std::cout << "error writing SEEK gRPC" << std::flush;
                         return;
                     }
                     std::cout << "KV Tx SEEK -> cursor: " << cursor_id << " key: " << key << "\n";
-                    reactor.read_start([&, cursor_id](bool ok, remote::Pair seek_pair) {
-                        if (!ok) {
+                    reactor.read_start([&, cursor_id](bool seek_read_ok, const remote::Pair& seek_pair) {
+                        if (!seek_read_ok) {
                             std::cout << "error reading SEEK gRPC" << std::flush;
                             return;
                         }
@@ -122,14 +122,14 @@ int kv_seek_async_callback(const std::string& target, const std::string& table_n
                         auto close_message = remote::Cursor{};
                         close_message.set_op(remote::Op::CLOSE);
                         close_message.set_cursor(cursor_id);
-                        reactor.write_start(&close_message, [&, cursor_id](bool ok) {
-                            if (!ok) {
+                        reactor.write_start(&close_message, [&, cursor_id](bool close_write_ok) {
+                            if (!close_write_ok) {
                                 std::cout << "error writing CLOSE gRPC" << std::flush;
                                 return;
                             }
                             std::cout << "KV Tx CLOSE -> cursor: " << cursor_id << "\n";
-                            reactor.read_start([&](bool ok, remote::Pair close_pair) {
-                                if (!ok) {
+                            reactor.read_start([&](bool close_read_ok, const remote::Pair& close_pair) {
+                                if (!close_read_ok) {
                                     std::cout << "error reading CLOSE gRPC" << std::flush;
                                     return;
                                 }

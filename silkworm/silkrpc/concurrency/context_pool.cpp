@@ -36,9 +36,10 @@ std::ostream& operator<<(std::ostream& out, Context& c) {
 }
 
 Context::Context(
-    ChannelFactory create_channel,
+    std::shared_ptr<grpc::Channel> channel,
     std::shared_ptr<BlockCache> block_cache,
     std::shared_ptr<ethdb::kv::StateCache> state_cache,
+    filter::FilterStorage& filter_storage,
     std::shared_ptr<mdbx::env_managed> chaindata_env,
     WaitMode wait_mode)
     : io_context_{std::make_shared<boost::asio::io_context>()},
@@ -47,9 +48,9 @@ Context::Context(
       grpc_context_work_{boost::asio::make_work_guard(grpc_context_->get_executor())},
       block_cache_(block_cache),
       state_cache_(state_cache),
+      filter_storage_{filter_storage},
       chaindata_env_(chaindata_env),
       wait_mode_(wait_mode) {
-    std::shared_ptr<grpc::Channel> channel = create_channel();
     if (chaindata_env) {
         database_ = std::make_unique<ethdb::file::LocalDatabase>(chaindata_env);
     } else {
@@ -70,7 +71,7 @@ template <typename WaitStrategy>
 void Context::execute_loop_single_threaded(WaitStrategy&& wait_strategy) {
     SILKRPC_DEBUG << "Single-thread execution loop start [" << this << "]\n";
     while (!io_context_->stopped()) {
-        int work_count = grpc_context_->poll_completion_queue();
+        std::size_t work_count = grpc_context_->poll_completion_queue();
         work_count += io_context_->poll();
         wait_strategy.idle(work_count);
     }
@@ -118,7 +119,8 @@ void Context::stop() {
     SILKRPC_DEBUG << "Context::stop io_context " << io_context_ << " [" << this << "]\n";
 }
 
-ContextPool::ContextPool(std::size_t pool_size, ChannelFactory create_channel, std::optional<std::string> datadir, WaitMode wait_mode) : next_index_{0} {
+ContextPool::ContextPool(std::size_t pool_size, ChannelFactory create_channel, std::optional<std::string> datadir, WaitMode wait_mode)
+    : next_index_{0}, filter_storage_{pool_size * DEFAULT_POOL_STORAGE_SIZE} {
     if (pool_size == 0) {
         throw std::logic_error("ContextPool::ContextPool pool_size is 0");
     }
@@ -146,7 +148,7 @@ ContextPool::ContextPool(std::size_t pool_size, ChannelFactory create_channel, s
 
     // Create as many execution contexts as required by the pool size
     for (std::size_t i{0}; i < pool_size; ++i) {
-        contexts_.emplace_back(Context{create_channel, block_cache, state_cache, chain_env, wait_mode});
+        contexts_.emplace_back(Context{create_channel(), block_cache, state_cache, filter_storage_, chain_env, wait_mode});
         SILKRPC_DEBUG << "ContextPool::ContextPool context[" << i << "] " << contexts_[i] << "\n";
     }
 }
@@ -208,9 +210,9 @@ void ContextPool::run() {
 
 Context& ContextPool::next_context() {
     // Use a round-robin scheme to choose the next context to use
-    auto& context = contexts_[next_index_];
-    next_index_ = ++next_index_ % contexts_.size();
-    return context;
+    // Increment the next index first to make sure that different calling threads get different contexts
+    const std::size_t index = next_index_.fetch_add(1) % contexts_.size();
+    return contexts_[index];
 }
 
 boost::asio::io_context& ContextPool::next_io_context() {

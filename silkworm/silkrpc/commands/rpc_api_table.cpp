@@ -125,6 +125,7 @@ void RpcApiTable::add_eth_handlers() {
     method_handlers_[http::method::k_eth_newFilter] = &commands::RpcApi::handle_eth_new_filter;
     method_handlers_[http::method::k_eth_newBlockFilter] = &commands::RpcApi::handle_eth_new_block_filter;
     method_handlers_[http::method::k_eth_newPendingTransactionFilter] = &commands::RpcApi::handle_eth_new_pending_transaction_filter;
+    method_handlers_[http::method::k_eth_getFilterLogs] = &commands::RpcApi::handle_eth_get_filter_logs;
     method_handlers_[http::method::k_eth_getFilterChanges] = &commands::RpcApi::handle_eth_get_filter_changes;
     method_handlers_[http::method::k_eth_uninstallFilter] = &commands::RpcApi::handle_eth_uninstall_filter;
     method_handlers_[http::method::k_eth_getLogs] = &commands::RpcApi::handle_eth_get_logs;
@@ -199,6 +200,8 @@ void RpcApiTable::add_txpool_handlers() {
 void RpcApiTable::add_ots_handlers() {
     method_handlers_[http::method::k_ots_getApiLevel] = &commands::RpcApi::handle_ots_get_api_level;
     method_handlers_[http::method::k_ots_hasCode] = &commands::RpcApi::handle_ots_has_code;
+    method_handlers_[http::method::k_ots_getBlockDetails] = &commands::RpcApi::handle_ots_getBlockDetails;
+    method_handlers_[http::method::k_ots_getBlockDetailsByHash] = &commands::RpcApi::handle_ots_getBlockDetailsByHash;
 }
 
 } // namespace silkrpc::commands

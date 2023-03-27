@@ -39,8 +39,8 @@ namespace silkrpc::commands {
 class TraceRpcApi {
 public:
     explicit TraceRpcApi(Context& context, boost::asio::thread_pool& workers)
-        : context_(context), database_(context.database()), workers_{workers}, tx_pool_{context.tx_pool()} {}
-    virtual ~TraceRpcApi() {}
+        : context_(context), database_(context.database()), tx_pool_{context.tx_pool()}, workers_{workers} {}
+    virtual ~TraceRpcApi() = default;
 
     TraceRpcApi(const TraceRpcApi&) = delete;
     TraceRpcApi& operator=(const TraceRpcApi&) = delete;

@@ -36,7 +36,8 @@ namespace silkrpc::ethdb::file {
 
 class LocalTransaction : public Transaction {
 public:
-    explicit LocalTransaction(std::shared_ptr<mdbx::env_managed> chaindata_env) : tx_id_{0}, last_cursor_id_{0}, chaindata_env_{chaindata_env} {}
+    explicit LocalTransaction(std::shared_ptr<mdbx::env_managed> chaindata_env)
+      : tx_id_{0}, chaindata_env_{chaindata_env}, last_cursor_id_{0} {}
 
     ~LocalTransaction() {}
 

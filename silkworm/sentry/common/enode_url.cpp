@@ -18,6 +18,7 @@
 
 #include <regex>
 #include <sstream>
+#include <stdexcept>
 
 #include <boost/lexical_cast.hpp>
 

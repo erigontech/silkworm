@@ -17,8 +17,6 @@
 #include "remote_backend.hpp"
 
 #include <string>
-#include <system_error>
-#include <thread>
 #include <utility>
 
 #include <agrpc/test.hpp>
@@ -203,12 +201,12 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::node_info", "[silkrpc][ethbackend][ba
         ports_ref->set_discovery(32);
         ports_ref->set_listener(30000);
         reply->set_allocated_ports(ports_ref);
-        std::string protocols = std::string("{\"eth\": {\"network\":5, \"difficulty\":10790000, \"genesis\":\"0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a\",");
-        protocols += " \"config\": {\"ChainName\":\"goerli\", \"chainId\":5, \"consensus\":\"clique\", \"homesteadBlock\":0, \"daoForkSupport\":true, \"eip150Block\":0,";
-        protocols += " \"eip150Hash\":\"0x0000000000000000000000000000000000000000000000000000000000000000\", \"eip155Block\":0, \"byzantiumBlock\":0, \"constantinopleBlock\":0,";
-        protocols += "\"petersburgBlock\":0, \"istanbulBlock\":1561651, \"berlinBlock\":4460644, \"londonBlock\":5062605, \"terminalTotalDifficulty\":10790000,";
-        protocols += "\"terminalTotalDifficultyPassed\":true, \"clique\": {\"period\":15, \"epoch\":30000}},";
-        protocols += "\"head\":\"0x11fce21bdebbcf09e1e2e37b874729c17518cd342fcf0959659e650fa45f9768\"}}";
+        std::string protocols = std::string(R"({"eth": {"network":5, "difficulty":10790000, "genesis":"0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a",)");
+        protocols += R"( "config": {"ChainName":"goerli", "chainId":5, "consensus":"clique", "homesteadBlock":0, "daoForkSupport":true, "eip150Block":0,)";
+        protocols += R"( "eip150Hash":"0x0000000000000000000000000000000000000000000000000000000000000000", "eip155Block":0, "byzantiumBlock":0, "constantinopleBlock":0,)";
+        protocols += R"("petersburgBlock":0, "istanbulBlock":1561651, "berlinBlock":4460644, "londonBlock":5062605, "terminalTotalDifficulty":10790000,)";
+        protocols += R"("terminalTotalDifficultyPassed":true, "clique": {"period":15, "epoch":30000}},)";
+        protocols += R"("head":"0x11fce21bdebbcf09e1e2e37b874729c17518cd342fcf0959659e650fa45f9768"}})";
         reply->set_protocols(protocols);
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
         const auto node_info = run<&ethbackend::RemoteBackEnd::engine_node_info>();
@@ -251,7 +249,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_get_payload_v1", "[silkrpc][et
         logsbloom->set_allocated_hi(hi_logsbloom);
         response.set_allocated_logsbloom(logsbloom);
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
-        const auto payload = run<&ethbackend::RemoteBackEnd::engine_get_payload_v1>(0);
+        const auto payload = run<&ethbackend::RemoteBackEnd::engine_get_payload_v1>(0u);
         CHECK(payload.number == 0x1);
         CHECK(payload.gas_limit == 0x1c9c380);
         CHECK(payload.suggested_fee_recipient == 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address);
@@ -270,13 +268,13 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_get_payload_v1", "[silkrpc][et
 
     SECTION("call engine_get_payload_v1 and get empty payload") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_ok(grpc_context_));
-        const auto payload = run<&ethbackend::RemoteBackEnd::engine_get_payload_v1>(0);
+        const auto payload = run<&ethbackend::RemoteBackEnd::engine_get_payload_v1>(0u);
         CHECK(payload.number == 0);
     }
 
     SECTION("call engine_get_payload_v1 and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::engine_get_payload_v1>(0)), boost::system::system_error);
+        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::engine_get_payload_v1>(0u)), boost::system::system_error);
     }
 }
 
@@ -367,7 +365,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_forkchoice_updated_v1", "[silk
     };
     SECTION("call engine_forkchoice_updated_v1 and get VALID status") {
         ::remote::EngineForkChoiceUpdatedReply response;
-        ::remote::EnginePayloadStatus* engine_payload_status = new ::remote::EnginePayloadStatus();
+        auto* engine_payload_status = new ::remote::EnginePayloadStatus();
         engine_payload_status->set_allocated_latestvalidhash(make_h256(0, 0, 0, 0x40));
         engine_payload_status->set_validationerror("some error");
         engine_payload_status->set_status(::remote::EngineStatus::VALID);

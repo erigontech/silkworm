@@ -20,8 +20,8 @@
 
 #include <catch2/catch.hpp>
 
-#include "silkworm/core/common/cast.hpp"
-#include "silkworm/node/test/log.hpp"
+#include <silkworm/core/common/cast.hpp>
+#include <silkworm/infra/test/log.hpp>
 
 namespace silkworm {
 // Useful definitions

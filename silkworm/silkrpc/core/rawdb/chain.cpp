@@ -30,7 +30,7 @@
 #include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/util.hpp>
-#include <silkworm/node/common/decoding_exception.hpp>
+#include <silkworm/infra/common/decoding_exception.hpp>
 
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
@@ -193,10 +193,10 @@ boost::asio::awaitable<uint64_t> read_cumulative_transaction_count(const Databas
     try {
         silkworm::ByteView data_view{data};
         auto stored_body{silkworm::db::detail::decode_stored_block_body(data_view)};
-        // 1 system txn in the begining of block, and 1 at the end
+        // 1 system txn in the beginning of block, and 1 at the end
         SILKRPC_DEBUG << "base_txn_id: " << stored_body.base_txn_id + 1 << " txn_count: " << stored_body.txn_count - 2 << "\n";
         co_return stored_body.base_txn_id + stored_body.txn_count - 1;
-    } catch (silkworm::DecodingException error) {
+    } catch (const silkworm::DecodingException& error) {
         SILKRPC_ERROR << "RLP decoding error for block body #" << block_number << " [" << error.what() << "]\n";
         throw std::runtime_error{"RLP decoding error for block body [" + std::string(error.what()) + "]"};
     }
@@ -229,7 +229,7 @@ boost::asio::awaitable<silkworm::BlockBody> read_body(const DatabaseReader& read
         }
         silkworm::BlockBody body{transactions, stored_body.ommers};
         co_return body;
-    } catch (silkworm::DecodingException error) {
+    } catch (const silkworm::DecodingException& error) {
         SILKRPC_ERROR << "RLP decoding error for block body #" << block_number << " [" << error.what() << "]\n";
         throw std::runtime_error{"RLP decoding error for block body [" + std::string(error.what()) + "]"};
     }
@@ -256,7 +256,7 @@ boost::asio::awaitable<Addresses> read_senders(const DatabaseReader& reader, con
     co_return senders;
 }
 
-boost::asio::awaitable<Receipts> read_raw_receipts(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number) {
+boost::asio::awaitable<Receipts> read_raw_receipts(const DatabaseReader& reader, uint64_t block_number) {
     const auto block_key = silkworm::db::block_key(block_number);
     const auto data = co_await reader.get_one(db::table::kBlockReceipts, block_key);
     SILKRPC_TRACE << "read_raw_receipts data: " << silkworm::to_hex(data) << "\n";
@@ -278,8 +278,8 @@ boost::asio::awaitable<Receipts> read_raw_receipts(const DatabaseReader& reader,
             return false;
         }
         auto tx_id = boost::endian::load_big_u32(&k[sizeof(uint64_t)]);
-        const bool decoding_ok{cbor_decode(v, receipts[tx_id].logs)};
-        if (!decoding_ok) {
+        const bool decode_ok{cbor_decode(v, receipts[tx_id].logs)};
+        if (!decode_ok) {
             SILKRPC_WARN << "cannot decode logs for receipt: " << tx_id << " in block: " << block_number << "\n";
             return false;
         }
@@ -295,7 +295,7 @@ boost::asio::awaitable<Receipts> read_raw_receipts(const DatabaseReader& reader,
 boost::asio::awaitable<Receipts> read_receipts(const DatabaseReader& reader, const silkworm::BlockWithHash& block_with_hash) {
     const evmc::bytes32 block_hash = block_with_hash.hash;
     uint64_t block_number = block_with_hash.block.header.number;
-    auto receipts = co_await read_raw_receipts(reader, block_hash, block_number);
+    auto receipts = co_await read_raw_receipts(reader, block_number);
 
     // Add derived fields to the receipts
     auto transactions = block_with_hash.block.transactions;

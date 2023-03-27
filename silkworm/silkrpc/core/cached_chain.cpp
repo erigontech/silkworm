@@ -78,7 +78,9 @@ boost::asio::awaitable<std::optional<silkrpc::TransactionWithBlock>> read_transa
         silkworm::ByteView hash_view{ethash_hash.bytes, silkworm::kHashLength};
         if (tx_hash == hash_view) {
             const auto block_header = block_with_hash.block.header;
-            co_return TransactionWithBlock{block_with_hash, transactions[idx], block_with_hash.hash, block_header.number, block_header.base_fee_per_gas, idx};
+            co_return TransactionWithBlock{
+                block_with_hash,
+                {transactions[idx], block_with_hash.hash, block_header.number, block_header.base_fee_per_gas, idx}};
         }
     }
     co_return std::nullopt;

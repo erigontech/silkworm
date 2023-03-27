@@ -17,7 +17,6 @@
 #include "evm_debug.hpp"
 
 #include <memory>
-#include <stack>
 #include <string>
 
 #include <evmc/hex.hpp>
@@ -89,7 +88,7 @@ static std::string EMPTY_MEMORY(64, '0');
 
 void output_stack(std::vector<std::string>& vect, const evmone::uint256* stack, uint32_t stack_size) {
     vect.reserve(stack_size);
-    for (int i = stack_size -1 ; i >= 0; --i) {
+    for (int i = int(stack_size - 1); i >= 0; --i) {
         vect.push_back("0x" + intx::to_string(stack[-i], 16));
     }
 }
@@ -133,8 +132,8 @@ void DebugTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
         << "\n";
 }
 
-void DebugTracer::on_instruction_start(uint32_t pc , const intx::uint256 *stack_top, const int stack_height,
-              const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept {
+void DebugTracer::on_instruction_start(uint32_t pc , const intx::uint256* stack_top, const int stack_height,
+                                       const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept {
     assert(execution_state.msg);
     evmc::address recipient(execution_state.msg->recipient);
     evmc::address sender(execution_state.msg->sender);
@@ -175,9 +174,9 @@ void DebugTracer::on_instruction_start(uint32_t pc , const intx::uint256 *stack_
         output_memory(current_memory, execution_state.memory);
     }
 
-    if (logs_.size() > 0) {
+    if (!logs_.empty()) {
         auto& log = logs_[logs_.size() - 1];
-        auto depth = log.depth;
+        const auto depth = log.depth;
         if (depth == execution_state.msg->depth + 1) {
             if (gas_on_precompiled_) {
                log.gas_cost = log.gas - gas_on_precompiled_;
@@ -187,7 +186,7 @@ void DebugTracer::on_instruction_start(uint32_t pc , const intx::uint256 *stack_
             }
             if (!config_.disableMemory) {
                 auto& memory = log.memory;
-                for (int idx = memory.size(); idx < current_memory.size(); idx++) {
+                for (std::size_t idx = memory.size(); idx < current_memory.size(); idx++) {
                     memory.push_back(EMPTY_MEMORY);
                 }
             }
@@ -208,7 +207,7 @@ void DebugTracer::on_instruction_start(uint32_t pc , const intx::uint256 *stack_
     log.depth = execution_state.msg->depth + 1;
 
     if (!config_.disableStack) {
-        output_stack(log.stack, stack_top, stack_height);
+        output_stack(log.stack, stack_top, uint32_t(stack_height));
     }
     if (!config_.disableMemory) {
         log.memory = current_memory;
@@ -223,7 +222,7 @@ void DebugTracer::on_instruction_start(uint32_t pc , const intx::uint256 *stack_
     logs_.push_back(log);
 }
 
-void DebugTracer::on_precompiled_run(const evmc_result& result, int64_t gas, const silkworm::IntraBlockState& intra_block_state) noexcept {
+void DebugTracer::on_precompiled_run(const evmc_result& result, int64_t gas, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
     SILKRPC_DEBUG << "DebugTracer::on_precompiled_run:"
         << " status: " << result.status_code
         << ", gas: " << std::dec << gas
@@ -232,8 +231,8 @@ void DebugTracer::on_precompiled_run(const evmc_result& result, int64_t gas, con
     gas_on_precompiled_ = gas;
 }
 
-void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept {
-    if (logs_.size() > 0) {
+void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
+    if (!logs_.empty()) {
         auto& log = logs_[logs_.size() - 1];
 
         insert_error(log, result.status_code);
@@ -304,7 +303,7 @@ boost::asio::awaitable<std::vector<DebugTrace>> DebugExecutor<WorldState, VM>::e
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     const auto chain_config_ptr = lookup_chain_config(chain_id);
     state::RemoteState remote_state{io_context_, database_reader_, block_number-1};
-    EVMExecutor<WorldState, VM> executor{io_context_, database_reader_, *chain_config_ptr, workers_, block_number-1, remote_state};
+    EVMExecutor<WorldState, VM> executor{io_context_, database_reader_, *chain_config_ptr, workers_, remote_state};
 
     std::vector<DebugTrace> debug_traces(transactions.size());
     for (std::uint64_t idx = 0; idx < transactions.size(); idx++) {
@@ -369,8 +368,8 @@ boost::asio::awaitable<DebugExecutorResult> DebugExecutor<WorldState, VM>::execu
 }
 
 template<typename WorldState, typename VM>
-boost::asio::awaitable<DebugExecutorResult> DebugExecutor<WorldState, VM>::execute(std::uint64_t block_number, const silkworm::Block& block,
-        const silkrpc::Transaction& transaction, std::int32_t index, json::Stream* stream) {
+boost::asio::awaitable<DebugExecutorResult> DebugExecutor<WorldState, VM>::execute(uint64_t block_number, const silkworm::Block& block,
+                                                                                   const silkrpc::Transaction& transaction, int32_t index, json::Stream* stream) {
     SILKRPC_INFO << "DebugExecutor::execute: "
         << " block_number: " << block_number
         << " transaction: {" << transaction << "}"
@@ -381,15 +380,15 @@ boost::asio::awaitable<DebugExecutorResult> DebugExecutor<WorldState, VM>::execu
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     const auto chain_config_ptr = lookup_chain_config(chain_id);
     state::RemoteState remote_state{io_context_, database_reader_, block_number};
-    EVMExecutor<WorldState, VM> executor{io_context_, database_reader_, *chain_config_ptr, workers_, block_number, remote_state};
+    EVMExecutor<WorldState, VM> executor{io_context_, database_reader_, *chain_config_ptr, workers_, remote_state};
 
-    for (auto idx = 0; idx < index; idx++) {
-        silkrpc::Transaction txn{block.transactions[idx]};
+    for (auto idx{0}; idx < index; idx++) {
+        silkrpc::Transaction txn{block.transactions[std::size_t(idx)]};
 
         if (!txn.from) {
             txn.recover_sender();
         }
-        const auto execution_result = co_await executor.call(block, txn);
+        co_await executor.call(block, txn);
     }
     executor.reset();
 

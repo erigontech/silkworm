@@ -64,30 +64,9 @@ file(GLOB_RECURSE SILKWORM_NODE_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp" "*.c" "*.h
 list(FILTER SILKWORM_NODE_SRC EXCLUDE REGEX "_test\\.cpp$")
 list(FILTER SILKWORM_NODE_SRC EXCLUDE REGEX "_benchmark\\.cpp$")
 
-set(SILKWORM_INTERFACE_SRC
-        ${SILKWORM_MAIN_SRC_DIR}/interfaces/p2psentry/sentry.grpc.pb.cc
-        ${SILKWORM_MAIN_SRC_DIR}/interfaces/p2psentry/sentry.grpc.pb.h
-        ${SILKWORM_MAIN_SRC_DIR}/interfaces/p2psentry/sentry.pb.cc
-        ${SILKWORM_MAIN_SRC_DIR}/interfaces/p2psentry/sentry.pb.h
-        ${SILKWORM_MAIN_SRC_DIR}/interfaces/remote/ethbackend.grpc.pb.cc
-        ${SILKWORM_MAIN_SRC_DIR}/interfaces/remote/ethbackend.grpc.pb.h
-        ${SILKWORM_MAIN_SRC_DIR}/interfaces/remote/ethbackend.pb.cc
-        ${SILKWORM_MAIN_SRC_DIR}/interfaces/remote/ethbackend.pb.h
-        ${SILKWORM_MAIN_SRC_DIR}/interfaces/remote/kv.grpc.pb.cc
-        ${SILKWORM_MAIN_SRC_DIR}/interfaces/remote/kv.grpc.pb.h
-        ${SILKWORM_MAIN_SRC_DIR}/interfaces/remote/kv.pb.cc
-        ${SILKWORM_MAIN_SRC_DIR}/interfaces/remote/kv.pb.h
-        ${SILKWORM_MAIN_SRC_DIR}/interfaces/types/types.pb.cc
-        ${SILKWORM_MAIN_SRC_DIR}/interfaces/types/types.pb.h)
+add_library(silkworm_node "${SILKWORM_NODE_SRC}" "${SILKWORM_TOML_CPP_SRC}")
 
-add_library(silkworm_node ${SILKWORM_NODE_SRC} ${SILKWORM_INTERFACE_SRC} ${SILKWORM_TOML_CPP_SRC})
-
-add_dependencies(silkworm_node generate_ethbackend_grpc generate_kv_grpc generate_sentry_grpc generate_toml)
-
-set_source_files_properties(${SILKWORM_INTERFACE_SRC} PROPERTIES GENERATED TRUE)
-if(NOT MSVC)
-  set_source_files_properties(${SILKWORM_INTERFACE_SRC} PROPERTIES COMPILE_FLAGS -Wno-sign-conversion)
-endif(NOT MSVC)
+add_dependencies(silkworm_node generate_toml)
 
 # Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers
 # See https://github.com/grpc/grpc/issues/19224
@@ -97,16 +76,32 @@ endif()
 
 target_include_directories(silkworm_node PUBLIC
         ${SILKWORM_MAIN_DIR}
-        ${SILKWORM_MAIN_SRC_DIR}/interfaces
         ${SILKWORM_MAIN_DIR}/third_party/magic_enum/include
         ${SILKWORM_MAIN_DIR}/third_party/libtorrent/include
         ${SILKWORM_MAIN_DIR}/third_party/tomlplusplus)
 
-set(SILKWORM_NODE_PUBLIC_LIBS silkworm_core mdbx-static absl::flat_hash_map absl::flat_hash_set absl::btree roaring
-        nlohmann_json::nlohmann_json gRPC::grpc++ protobuf::libprotobuf Boost::container Boost::thread asio-grpc::asio-grpc
-        torrent-rasterbar)
-set(SILKWORM_NODE_PRIVATE_LIBS cborcpp evmone)
+set(SILKWORM_NODE_PUBLIC_LIBS
+  absl::btree
+  absl::flat_hash_map
+  absl::flat_hash_set
+  asio-grpc::asio-grpc
+  Boost::container
+  Boost::thread
+  gRPC::grpc++
+  mdbx-static
+  nlohmann_json::nlohmann_json
+  protobuf::libprotobuf
+  roaring
+  silkworm_core
+  silkworm_infra
+  torrent-rasterbar
+)
 
+set(SILKWORM_NODE_PRIVATE_LIBS
+  cborcpp
+  evmone
+  silkworm_interfaces
+)
 if(MSVC)
   list(APPEND SILKWORM_NODE_PRIVATE_LIBS ntdll.lib)
 endif(MSVC)

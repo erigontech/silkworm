@@ -2000,8 +2000,8 @@ boost::asio::awaitable<void> EthereumRpcApi::get_logs(ethdb::TransactionDatabase
         co_return;
     }
 
-    std::vector<Log> chunk_logs;
-    std::vector<Log> filtered_chunck_logs;
+    Logs chunk_logs;
+    Logs filtered_chunck_logs;
     Logs filtered_block_logs{};
     chunk_logs.reserve(512);
     filtered_chunck_logs.reserve(64);

@@ -452,7 +452,9 @@ __attribute__((target("sha,sse4.1"))) static void sha_256_x86_sha(uint32_t h[8],
 #pragma GCC diagnostic pop
 
 // https://stackoverflow.com/questions/6121792/how-to-check-if-a-cpu-supports-the-sse3-instruction-set
-void cpuid(int info[4], int InfoType) { __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]); }
+static void cpuid(int info[4], int InfoType) {
+    __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
+}
 
 __attribute__((constructor)) static void select_sha256_implementation() {
     int info[4];

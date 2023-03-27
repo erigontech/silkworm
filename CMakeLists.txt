@@ -244,14 +244,15 @@ if(NOT MSVC)
   add_compile_options(-Werror -Wall -Wextra -pedantic)
   add_compile_options(-Wshadow -Wimplicit-fallthrough -Wsign-conversion)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>)
-  add_compile_options(-Wno-missing-field-initializers -Wnon-virtual-dtor)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wnon-virtual-dtor>)
+  add_compile_options(-Wno-missing-field-initializers)
 
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_compile_options(-Wno-attributes)
 
     # coroutines support
-    if((CMAKE_CXX_STANDARD GREATER_EQUAL 20) AND (NOT SILKWORM_WASM_API))
-      add_compile_options(-fcoroutines)
+    if(NOT SILKWORM_WASM_API)
+      add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fcoroutines>)
     endif()
   endif()
 

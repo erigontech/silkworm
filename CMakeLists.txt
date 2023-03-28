@@ -239,27 +239,6 @@ if(NOT MSVC)
     BUILD_BYPRODUCTS "${GMP_LIBRARY}"
   )
 endif()
-find_path(GMP_INCLUDE_DIR NAMES gmp.h)
-if(MSVC)
-  find_library(GMP_LIBRARY mpir)
-else()
-  find_library(GMP_LIBRARY gmp)
-endif()
-if(GMP_LIBRARY MATCHES ${CMAKE_SHARED_LIBRARY_SUFFIX})
-  set(gmp_library_type SHARED)
-else()
-  set(gmp_library_type STATIC)
-endif()
-message(STATUS "GMP: ${GMP_LIBRARY}, ${GMP_INCLUDE_DIR}")
-add_library(gmp ${gmp_library_type} IMPORTED)
-set_target_properties(
-    gmp PROPERTIES
-    IMPORTED_LOCATION ${GMP_LIBRARY}
-    INTERFACE_INCLUDE_DIRECTORIES ${GMP_INCLUDE_DIR}
-)
-if(NOT MSVC)
-  add_dependencies(gmp gmplib)
-endif()
 
 # secp256k1
 add_library(secp256k1 third_party/secp256k1/src/secp256k1.c)
@@ -285,6 +264,9 @@ if(MSVC)
     option(MPIR_INSTEAD_OF_GMP "" ON)
 endif()
 add_subdirectory(third_party/libff)
+if(NOT MSVC)
+  add_dependencies(ff gmplib)
+endif()
 
 # libtorrent
 if(NOT SILKWORM_CORE_ONLY)

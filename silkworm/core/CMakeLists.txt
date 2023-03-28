@@ -48,10 +48,7 @@ set(SILKWORM_CORE_PUBLIC_LIBS
     nlohmann_json::nlohmann_json
     secp256k1
 )
-set(SILKWORM_CORE_PRIVATE_LIBS
-    gmp
-    ff
-)
+set(SILKWORM_CORE_PRIVATE_LIBS ff)
 
 if(NOT SILKWORM_WASM_API)
   if(NOT CONAN_PACKAGE_MANAGER)

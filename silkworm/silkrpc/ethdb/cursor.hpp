@@ -36,7 +36,7 @@ class Cursor {
     Cursor(const Cursor&) = delete;
     Cursor& operator=(const Cursor&) = delete;
 
-    virtual uint32_t cursor_id() const = 0;
+    [[nodiscard]] virtual uint32_t cursor_id() const = 0;
 
     virtual boost::asio::awaitable<void> open_cursor(const std::string& table_name, bool is_dup_sorted) = 0;
 
@@ -91,7 +91,7 @@ class SplitCursor {
 
 class SplitCursorDupSort {
   public:
-    SplitCursorDupSort(CursorDupSort& inner_cursor, silkworm::ByteView key, silkworm::ByteView subkey, uint64_t match_bits, uint64_t part1_end, uint64_t part2_start, uint64_t value_offset);
+    SplitCursorDupSort(CursorDupSort& inner_cursor, silkworm::ByteView key, silkworm::ByteView subkey, uint64_t match_bits, uint64_t part1_end, uint64_t value_offset);
     SplitCursorDupSort& operator=(const SplitCursorDupSort&) = delete;
 
     boost::asio::awaitable<SplittedKeyValue> seek_both();
@@ -105,10 +105,9 @@ class SplitCursorDupSort {
     silkworm::Bytes first_bytes_;
     uint8_t last_bits_;
     uint64_t part1_end_;
-    uint64_t part2_start_;
     uint64_t match_bytes_;
     uint8_t mask_;
-    uint8_t value_offset_;
+    uint64_t value_offset_;
 
     bool match_key(const silkworm::ByteView& key);
     SplittedKeyValue split_key_value(const KeyValue& kv);

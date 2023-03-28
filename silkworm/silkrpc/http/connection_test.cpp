@@ -26,6 +26,11 @@ namespace silkrpc::http {
 
 using Catch::Matchers::Message;
 
+// Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
+// SUMMARY: ThreadSanitizer: data race /usr/include/c++/11/bits/stl_algobase.h:431
+// - write of size 1 thread T8 'grpc_global_tim' created by main thread
+// - previous write of size 1 by main thread
+#ifndef SILKWORM_SANITIZE
 TEST_CASE("connection creation", "[silkrpc][http][connection]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
@@ -44,5 +49,6 @@ TEST_CASE("connection creation", "[silkrpc][http][connection]") {
         context_pool.join();
     }
 }
+#endif  // SILKWORM_SANITIZE
 
 }  // namespace silkrpc::http

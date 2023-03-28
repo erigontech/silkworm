@@ -21,9 +21,6 @@
 	path = silkworm/interfaces/proto
 	url = https://github.com/ledgerwatch/interfaces.git
 	branch = stable
-[submodule "silkpre"]
-	path = third_party/silkpre
-	url = https://github.com/torquem-ch/silkpre.git
 [submodule "third_party/libtorrent"]
 	path = third_party/libtorrent
 	url = https://github.com/arvidn/libtorrent

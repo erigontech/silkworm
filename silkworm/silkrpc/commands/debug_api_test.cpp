@@ -21,12 +21,18 @@
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/thread_pool.hpp>
+#if !defined(__clang__)
+#include <boost/asio/use_future.hpp>
+#endif  // !defined(__clang__)
 #include <catch2/catch.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
+#if !defined(__clang__)
+#include <silkworm/silkrpc/stagedsync/stages.hpp>
+#endif  // !defined(__clang__)
 
 namespace silkrpc::commands {
 

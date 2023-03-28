@@ -21,7 +21,6 @@
 #include <boost/endian/conversion.hpp>
 
 #include <silkworm/node/db/tables.hpp>
-
 #include <silkworm/silkrpc/ethdb/tables.hpp>
 
 namespace silkrpc::stages {
@@ -39,4 +38,4 @@ boost::asio::awaitable<uint64_t> get_sync_stage_progress(const core::rawdb::Data
     co_return block_height;
 }
 
-} // namespace silkrpc::stages
+}  // namespace silkrpc::stages

@@ -16,10 +16,9 @@
 
 #pragma once
 
-#include <grpcpp/grpcpp.h>
-
 #include <boost/system/system_error.hpp>
 #include <catch2/catch.hpp>
+#include <grpcpp/grpcpp.h>
 
 namespace silkrpc::test {
 

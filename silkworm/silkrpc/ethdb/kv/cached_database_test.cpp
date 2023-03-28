@@ -25,6 +25,7 @@
 #include <catch2/catch.hpp>
 #include <gmock/gmock.h>
 
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
 #include <silkworm/silkrpc/ethdb/tables.hpp>
@@ -33,7 +34,6 @@
 #include <silkworm/silkrpc/test/mock_state_cache.hpp>
 #include <silkworm/silkrpc/test/mock_transaction.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
-#include <silkworm/core/common/util.hpp>
 
 namespace silkrpc::ethdb::kv {
 

@@ -16,17 +16,18 @@
 
 #include "remote_state.hpp"
 
+#include <utility>
+
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/use_future.hpp>
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
-#include <silkworm/core/common/base.hpp>
 
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/test/context_test_base.hpp>
 #include <silkworm/silkrpc/test/mock_database_reader.hpp>
-#include <utility>
 
 namespace silkrpc::state {
 
@@ -38,9 +39,9 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
     class MockDatabaseReader : public core::rawdb::DatabaseReader {
-    public:
+      public:
         MockDatabaseReader() = default;
-        explicit MockDatabaseReader(silkworm::Bytes  value) : value_(std::move(value)) {}
+        explicit MockDatabaseReader(silkworm::Bytes value) : value_(std::move(value)) {}
 
         [[nodiscard]] boost::asio::awaitable<KeyValue> get(const std::string& /*table*/, silkworm::ByteView /*key*/) const override {
             co_return KeyValue{};
@@ -57,7 +58,8 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         [[nodiscard]] boost::asio::awaitable<void> for_prefix(const std::string& /*table*/, silkworm::ByteView /*prefix*/, core::rawdb::Walker /*w*/) const override {
             co_return;
         }
-    private:
+
+      private:
         silkworm::Bytes value_;
     };
 
@@ -232,55 +234,55 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         io_context_thread.join();
     }
 
-/*
-    SECTION("read_code with exception") {
-        boost::asio::io_context io_context;
-        boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{io_context.get_executor()};
-        std::thread io_context_thread{[&io_context]() { io_context.run(); }};
+    /*
+        SECTION("read_code with exception") {
+            boost::asio::io_context io_context;
+            boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{io_context.get_executor()};
+            std::thread io_context_thread{[&io_context]() { io_context.run(); }};
 
-        silkworm::Bytes code{*silkworm::from_hex("0x0608")};
-        MockDatabaseFailingReader db_reader{code};
-        const uint64_t block_number = 1'000'000;
-        const auto code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        RemoteState remote_state(io_context, db_reader, block_number);
-        auto ret_code = remote_state.read_code(code_hash);
-        CHECK(ret_code == silkworm::ByteView{});
-        io_context.stop();
-        io_context_thread.join();
-    }
+            silkworm::Bytes code{*silkworm::from_hex("0x0608")};
+            MockDatabaseFailingReader db_reader{code};
+            const uint64_t block_number = 1'000'000;
+            const auto code_hash{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
+            RemoteState remote_state(io_context, db_reader, block_number);
+            auto ret_code = remote_state.read_code(code_hash);
+            CHECK(ret_code == silkworm::ByteView{});
+            io_context.stop();
+            io_context_thread.join();
+        }
 
-    SECTION("read_storage with exception") {
-        boost::asio::io_context io_context;
-        boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{io_context.get_executor()};
-        std::thread io_context_thread{[&io_context]() { io_context.run(); }};
+        SECTION("read_storage with exception") {
+            boost::asio::io_context io_context;
+            boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{io_context.get_executor()};
+            std::thread io_context_thread{[&io_context]() { io_context.run(); }};
 
-        silkworm::Bytes storage{*silkworm::from_hex("0x0608")};
-        MockDatabaseFailingReader db_reader{storage};
-        const uint64_t block_number = 1'000'000;
-        evmc::address address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
-        const auto location{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
-        RemoteState remote_state(io_context, db_reader, block_number);
-        auto ret_storage = remote_state.read_storage(address, 0, location);
-        CHECK(ret_storage == evmc::bytes32{});
-        io_context.stop();
-        io_context_thread.join();
-    }
+            silkworm::Bytes storage{*silkworm::from_hex("0x0608")};
+            MockDatabaseFailingReader db_reader{storage};
+            const uint64_t block_number = 1'000'000;
+            evmc::address address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
+            const auto location{0x04491edcd115127caedbd478e2e7895ed80c7847e903431f94f9cfa579cad47f_bytes32};
+            RemoteState remote_state(io_context, db_reader, block_number);
+            auto ret_storage = remote_state.read_storage(address, 0, location);
+            CHECK(ret_storage == evmc::bytes32{});
+            io_context.stop();
+            io_context_thread.join();
+        }
 
-    SECTION("read_account with exception") {
-        boost::asio::io_context io_context;
-        boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{io_context.get_executor()};
-        std::thread io_context_thread{[&io_context]() { io_context.run(); }};
+        SECTION("read_account with exception") {
+            boost::asio::io_context io_context;
+            boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{io_context.get_executor()};
+            std::thread io_context_thread{[&io_context]() { io_context.run(); }};
 
-        MockDatabaseFailingReader db_reader;
-        const uint64_t block_number = 1'000'000;
-        evmc::address address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
-        RemoteState remote_state(io_context, db_reader, block_number);
-        auto account = remote_state.read_account(address);
-        CHECK(account == std::nullopt);
-        io_context.stop();
-        io_context_thread.join();
-    }
-*/
+            MockDatabaseFailingReader db_reader;
+            const uint64_t block_number = 1'000'000;
+            evmc::address address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address};
+            RemoteState remote_state(io_context, db_reader, block_number);
+            auto account = remote_state.read_account(address);
+            CHECK(account == std::nullopt);
+            io_context.stop();
+            io_context_thread.join();
+        }
+    */
 
     SECTION("AsyncRemoteState::read_account for empty response from db") {
         boost::asio::io_context io_context;
@@ -411,4 +413,4 @@ TEST_CASE_METHOD(RemoteStateTest, "RemoteState") {
     }
 }
 
-} // namespace silkrpc::state
+}  // namespace silkrpc::state

@@ -23,7 +23,8 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/signal_handler.hpp>
-#include <silkworm/node/backend/backend_kv_server.hpp>
+#include <silkworm/node/backend/ethereum_backend.hpp>
+#include <silkworm/node/backend/remote/backend_kv_server.hpp>
 #include <silkworm/node/common/settings.hpp>
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/snapshot/sync.hpp>
@@ -42,7 +43,7 @@ class ResourceUsageLog : public ActiveComponent {
     NodeSettings& node_settings_;
 
   public:
-    ResourceUsageLog(NodeSettings& settings) : node_settings_{settings} {}
+    explicit ResourceUsageLog(NodeSettings& settings) : node_settings_{settings} {}
 
     void execution_loop() override {  // todo: this is only a trick, instead use asio timers
         using namespace std::chrono;

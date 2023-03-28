@@ -38,13 +38,13 @@ struct Block : public silkworm::BlockWithHash {
 std::ostream& operator<<(std::ostream& out, const Block& b);
 
 class BlockNumberOrHash {
-public:
+  public:
     explicit BlockNumberOrHash(std::string const& bnoh) { build(bnoh); }
     explicit BlockNumberOrHash(uint64_t number) noexcept : value_{number} {}
 
     virtual ~BlockNumberOrHash() noexcept = default;
 
-    BlockNumberOrHash(BlockNumberOrHash &&bnoh) = default;
+    BlockNumberOrHash(BlockNumberOrHash&& bnoh) = default;
     BlockNumberOrHash(BlockNumberOrHash const& bnoh) noexcept = default;
 
     BlockNumberOrHash& operator=(BlockNumberOrHash const& bnoh) {
@@ -76,7 +76,7 @@ public:
         return is_tag() ? *std::get_if<std::string>(&value_) : "";
     }
 
-private:
+  private:
     void build(std::string const& bnoh);
 
     std::variant<uint64_t, evmc::bytes32, std::string> value_;
@@ -106,5 +106,4 @@ struct BlockDetailsResponse {
     intx::uint256 total_fees{0};
 };
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

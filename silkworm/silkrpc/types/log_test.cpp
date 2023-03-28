@@ -37,4 +37,4 @@ TEST_CASE("print empty log", "[silkrpc][types][log]") {
     CHECK_NOTHROW(null_stream() << l);
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

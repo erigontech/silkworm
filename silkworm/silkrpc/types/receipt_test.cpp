@@ -17,8 +17,8 @@
 #include "receipt.hpp"
 
 #include <catch2/catch.hpp>
-#include <silkworm/core/common/util.hpp>
 
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/types/log.hpp>
@@ -47,8 +47,7 @@ TEST_CASE("print receipt", "[silkrpc][types][receipt]") {
         true,
         210000,
         bloom_from_logs(logs),
-        logs
-    };
+        logs};
     r.from = 0x0715a7794a1dc8e42615f059dd6e406a6594651a_address;
     r.to = 0x0715a7794a1dc8e42615f059dd6e406a6594651a_address;
     r.type = 2;
@@ -62,8 +61,7 @@ TEST_CASE("bloom from empty logs", "[silkrpc][types][receipt]") {
 
 TEST_CASE("bloom from one empty log", "[silkrpc][types][receipt]") {
     Logs logs{
-        Log{}
-    };
+        Log{}};
     silkworm::Bloom expected_bloom{};
     expected_bloom[9] = uint8_t(128);
     expected_bloom[47] = uint8_t(2);
@@ -82,18 +80,18 @@ TEST_CASE("bloom from more than one log", "[silkrpc][types][receipt]") {
             {
                 0x7f1fef85c4b037150d3675218e0cdb7cf38fea354759471e309f3354918a442f_bytes32,
                 0xd85629c7eaae9ea4a10234fed31bc0aeda29b2683ebe0c1882499d272621f6b6_bytes32,
-            },                                                                            // topics
+            },                                                                                      // topics
             *silkworm::from_hex("0x2d690516512020171c1ec870f6ff45398cc8609250326be89915fb538e7b"),  // data
         },
     };
     silkworm::Bloom bloom{bloom_from_logs(logs)};
     CHECK(silkworm::to_hex(full_view(bloom)) ==
-        "000000000000000000810000000000000000000000000000000000020000000000000000000000000000008000"
-        "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-        "000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000"
-        "000000000000000000000000000000000000000000000000000000280000000000400000800000004000000000"
-        "000000000000000000000000000000000000000000000000000000000000100000100000000000000000000000"
-        "00000000001400000000000000008000000000000000000000000000000000");
+          "000000000000000000810000000000000000000000000000000000020000000000000000000000000000008000"
+          "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+          "000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000"
+          "000000000000000000000000000000000000000000000000000000280000000000400000800000004000000000"
+          "000000000000000000000000000000000000000000000000000000000000100000100000000000000000000000"
+          "00000000001400000000000000008000000000000000000000000000000000");
 }
 
 TEST_CASE("receipt with empty bloom", "[silkrpc][types][receipt]") {
@@ -102,13 +100,11 @@ TEST_CASE("receipt with empty bloom", "[silkrpc][types][receipt]") {
         true,
         210000,
         bloom_from_logs(logs),
-        logs
-    };
+        logs};
     CHECK(r.success == true);
     CHECK(r.cumulative_gas_used == 210000);
     CHECK(r.bloom == silkworm::Bloom{});
     CHECK(r.logs.empty());
 }
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

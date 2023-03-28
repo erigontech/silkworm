@@ -75,7 +75,25 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
 
     SECTION("bad requests") {
         std::vector<std::string> bad_requests{
-            "(", ")", "<", ">", "@", ",", ";", ":", "\\", "\"", "/", "[", "]", "?", "=", "{", "}", " ", "\t", // special character strings
+            "(",
+            ")",
+            "<",
+            ">",
+            "@",
+            ",",
+            ";",
+            ":",
+            "\\",
+            "\"",
+            "/",
+            "[",
+            "]",
+            "?",
+            "=",
+            "{",
+            "}",
+            " ",
+            "\t",  // special character strings
             "P@",
             "POST \t",
             "POST / *",
@@ -91,8 +109,8 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
             "POST / HTTP/1.1\r\n\r\n",
             "POST / HTTP/1.1\r\nHost:*",
             "POST / HTTP/1.1\r\nHost: localhost:8545\r*",
-            "POST / HTTP/1.1\r\nHost: localhost:8545\r\nUser-Agent: curl/7.68.0\r\nAccept: */*\r\nContent-Type: application/json\r\nContent-Length: 0\r\n\r\t", // invalid char instead of \n
-            "POST / HTTP/1.1\r\nHost: localhost:8545\r\nUser-Agent: curl/7.68.0\r\nAccept: */*\r\nContent-Type: application/json\r\nContent-Length: 0\r\n{", // missing \r\n
+            "POST / HTTP/1.1\r\nHost: localhost:8545\r\nUser-Agent: curl/7.68.0\r\nAccept: */*\r\nContent-Type: application/json\r\nContent-Length: 0\r\n\r\t",  // invalid char instead of \n
+            "POST / HTTP/1.1\r\nHost: localhost:8545\r\nUser-Agent: curl/7.68.0\r\nAccept: */*\r\nContent-Type: application/json\r\nContent-Length: 0\r\n{",     // missing \r\n
             "POST / HTTP/1.1\r\nExpect: 100-continue\r\n\r\n",
         };
         for (const auto& s : bad_requests) {
@@ -154,5 +172,4 @@ TEST_CASE("reset", "[silkrpc][http][request_parser]") {
     }
 }
 
-} // namespace silkrpc::http
-
+}  // namespace silkrpc::http

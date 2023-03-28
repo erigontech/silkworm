@@ -52,5 +52,4 @@ constexpr const std::size_t kRequestHeadersInitialCapacity{8};
 constexpr const std::size_t kRequestMethodInitialCapacity{64};
 constexpr const std::size_t kRequestUriInitialCapacity{64};
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

@@ -23,7 +23,7 @@
 
 namespace silkrpc {
 
-struct NodeInfoPorts{
+struct NodeInfoPorts {
     uint64_t discovery;
     uint64_t listener;
 };
@@ -38,5 +38,4 @@ struct NodeInfo {
     NodeInfoPorts ports;
 };
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

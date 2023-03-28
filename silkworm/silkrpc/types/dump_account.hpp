@@ -25,6 +25,7 @@
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <nlohmann/json.hpp>
+
 #include <silkworm/core/common/base.hpp>
 
 namespace silkrpc {
@@ -54,5 +55,4 @@ std::ostream& operator<<(std::ostream& out, const DumpAccounts& dump);
 void to_json(nlohmann::json& json, const DumpAccounts& dump);
 void to_json(nlohmann::json& json, const DumpAccount& dump_account);
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

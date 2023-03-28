@@ -26,10 +26,10 @@ using Catch::Matchers::Message;
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("Web3RpcApi::Web3RpcApi", "[silkrpc][erigon_api]") {
     ContextPool context_pool{1, []() {
-        return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials());
-    }};
+                                 return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials());
+                             }};
     CHECK_NOTHROW(Web3RpcApi{context_pool.next_context()});
 }
 #endif  // SILKWORM_SANITIZE
 
-} // namespace silkrpc::commands
+}  // namespace silkrpc::commands

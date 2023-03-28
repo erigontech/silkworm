@@ -25,14 +25,14 @@ if(CONAN_PACKAGE_MANAGER) # CMAKE CONAN START
   set(CONAN_BINARY_DIR "${CMAKE_BINARY_DIR}/conan")
   list(APPEND CMAKE_MODULE_PATH ${CONAN_BINARY_DIR})
   list(APPEND CMAKE_PREFIX_PATH ${CONAN_BINARY_DIR})
-  
+
   if(NOT EXISTS "${CONAN_BINARY_DIR}/conan.cmake")
     message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
     file(DOWNLOAD "https://raw.githubusercontent.com/conan-io/cmake-conan/0.18.1/conan.cmake"
-            "${CONAN_BINARY_DIR}/conan.cmake"
-            TLS_VERIFY ON)
+         "${CONAN_BINARY_DIR}/conan.cmake" TLS_VERIFY ON
+    )
   endif()
-  
+
   include(${CONAN_BINARY_DIR}/conan.cmake)
 
   # provide a static conanfile.txt instead of generating it with conan_cmake_configure()
@@ -42,10 +42,12 @@ if(CONAN_PACKAGE_MANAGER) # CMAKE CONAN START
     message(FATAL_ERROR "CONAN_PROFILE is not defined")
   else()
     message(STATUS "CONAN_PROFILE: ${CONAN_PROFILE}")
-    conan_cmake_install(PATH_OR_REFERENCE "${CONAN_BINARY_DIR}"
-          INSTALL_FOLDER "${CONAN_BINARY_DIR}"
-          BUILD missing
-          PROFILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/profiles/${CONAN_PROFILE})
+    conan_cmake_install(
+      PATH_OR_REFERENCE "${CONAN_BINARY_DIR}"
+      INSTALL_FOLDER "${CONAN_BINARY_DIR}"
+      BUILD missing
+      PROFILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/profiles/${CONAN_PROFILE}
+    )
   endif()
 endif() # CMAKE CONAN END
 
@@ -60,7 +62,10 @@ if(NOT SILKWORM_HAS_PARENT)
   cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Release Debug)
 
   if(NOT CMAKE_TOOLCHAIN_FILE)
-    set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchain/cxx20.cmake CACHE FILEPATH "" FORCE)
+    set(CMAKE_TOOLCHAIN_FILE
+        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/toolchain/cxx20.cmake
+        CACHE FILEPATH "" FORCE
+    )
   endif()
 
   if(CONAN_PACKAGE_MANAGER)
@@ -71,7 +76,7 @@ if(NOT SILKWORM_HAS_PARENT)
 
   include(third_party/evmone/cmake/cable/HunterGate.cmake)
   # https://github.com/cpp-pm/hunter/releases/
-  HunterGate(
+  huntergate(
     URL "https://github.com/cpp-pm/hunter/archive/v0.24.15.tar.gz"
     SHA1 "8010d63d5ae611c564889d5fe12d3cb7a45703ac"
     FILEPATH "${HUNTER_CONFIG_PATH}"
@@ -146,7 +151,7 @@ if(NOT SILKWORM_CORE_ONLY)
 
   # CBOR
   add_subdirectory(third_party/cbor-cpp)
-    
+
   # GLAZE
   add_subdirectory(third_party/glaze)
 endif()
@@ -156,37 +161,46 @@ if(SILKWORM_WASM_API)
   add_compile_definitions(EVMC_LOADER_MOCK)
 endif()
 
-find_package(intx REQUIRED)   # Required from here below
+find_package(intx REQUIRED) # Required from here below
 find_package(ethash REQUIRED) # Required from here below
 
 add_subdirectory(third_party/evmone/evmc)
 
-add_library(evmone third_party/evmone/lib/evmone/advanced_analysis.cpp
-                   third_party/evmone/lib/evmone/advanced_analysis.hpp
-                   third_party/evmone/lib/evmone/advanced_execution.cpp
-                   third_party/evmone/lib/evmone/advanced_execution.hpp
-                   third_party/evmone/lib/evmone/advanced_instructions.cpp
-                   third_party/evmone/lib/evmone/baseline_instruction_table.cpp
-                   third_party/evmone/lib/evmone/baseline_instruction_table.hpp
-                   third_party/evmone/lib/evmone/baseline.cpp
-                   third_party/evmone/lib/evmone/baseline.hpp
-                   third_party/evmone/lib/evmone/eof.cpp
-                   third_party/evmone/lib/evmone/eof.hpp
-                   third_party/evmone/lib/evmone/execution_state.hpp
-                   third_party/evmone/lib/evmone/instructions_calls.cpp
-                   third_party/evmone/lib/evmone/instructions_opcodes.hpp
-                   third_party/evmone/lib/evmone/instructions_storage.cpp
-                   third_party/evmone/lib/evmone/instructions_traits.hpp
-                   third_party/evmone/lib/evmone/instructions_xmacro.hpp
-                   third_party/evmone/lib/evmone/instructions.hpp
-                   third_party/evmone/lib/evmone/opcodes_helpers.h
-                   third_party/evmone/lib/evmone/tracing.cpp
-                   third_party/evmone/lib/evmone/tracing.hpp
-                   third_party/evmone/lib/evmone/vm.cpp
-                   third_party/evmone/lib/evmone/vm.hpp)
-set_source_files_properties(third_party/evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.10.0-dev")
+add_library(
+  evmone
+  third_party/evmone/lib/evmone/advanced_analysis.cpp
+  third_party/evmone/lib/evmone/advanced_analysis.hpp
+  third_party/evmone/lib/evmone/advanced_execution.cpp
+  third_party/evmone/lib/evmone/advanced_execution.hpp
+  third_party/evmone/lib/evmone/advanced_instructions.cpp
+  third_party/evmone/lib/evmone/baseline_instruction_table.cpp
+  third_party/evmone/lib/evmone/baseline_instruction_table.hpp
+  third_party/evmone/lib/evmone/baseline.cpp
+  third_party/evmone/lib/evmone/baseline.hpp
+  third_party/evmone/lib/evmone/eof.cpp
+  third_party/evmone/lib/evmone/eof.hpp
+  third_party/evmone/lib/evmone/execution_state.hpp
+  third_party/evmone/lib/evmone/instructions_calls.cpp
+  third_party/evmone/lib/evmone/instructions_opcodes.hpp
+  third_party/evmone/lib/evmone/instructions_storage.cpp
+  third_party/evmone/lib/evmone/instructions_traits.hpp
+  third_party/evmone/lib/evmone/instructions_xmacro.hpp
+  third_party/evmone/lib/evmone/instructions.hpp
+  third_party/evmone/lib/evmone/opcodes_helpers.h
+  third_party/evmone/lib/evmone/tracing.cpp
+  third_party/evmone/lib/evmone/tracing.hpp
+  third_party/evmone/lib/evmone/vm.cpp
+  third_party/evmone/lib/evmone/vm.hpp
+)
+set_source_files_properties(
+  third_party/evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.10.0-dev"
+)
 target_include_directories(evmone PUBLIC third_party/evmone/include third_party/evmone/lib)
-target_link_libraries(evmone PUBLIC evmc intx::intx PRIVATE evmc::instructions)
+target_link_libraries(
+  evmone
+  PUBLIC evmc intx::intx
+  PRIVATE evmc::instructions
+)
 
 if(MSVC)
   target_compile_options(evmone PRIVATE /EHsc /w)
@@ -206,17 +220,21 @@ if(NOT MSVC)
   set(GMP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/gmplib")
   set(GMP_INSTALL_DIR "${CMAKE_BINARY_DIR}/third_party/gmplib")
 
-  set(GMP_INCLUDE_DIR "${GMP_INSTALL_DIR}" CACHE PATH "")
-  set(GMP_LIBRARY "${GMP_INSTALL_DIR}/lib/libgmp.a" CACHE FILEPATH "")
+  set(GMP_INCLUDE_DIR
+      "${GMP_INSTALL_DIR}"
+      CACHE PATH ""
+  )
+  set(GMP_LIBRARY
+      "${GMP_INSTALL_DIR}/lib/libgmp.a"
+      CACHE FILEPATH ""
+  )
 
   include(ExternalProject)
   ExternalProject_Add(
     gmplib
     SOURCE_DIR "${GMP_SOURCE_DIR}"
     BINARY_DIR "${GMP_INSTALL_DIR}"
-    CONFIGURE_COMMAND "${GMP_SOURCE_DIR}/configure"
-      "--prefix=${GMP_INSTALL_DIR}"
-      --with-pic=yes
+    CONFIGURE_COMMAND "${GMP_SOURCE_DIR}/configure" "--prefix=${GMP_INSTALL_DIR}" --with-pic=yes
     PREFIX "${GMP_INSTALL_DIR}"
     BUILD_BYPRODUCTS "${GMP_LIBRARY}"
   )

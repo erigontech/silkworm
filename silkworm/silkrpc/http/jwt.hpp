@@ -27,5 +27,4 @@ void generate_jwt_token(const std::string& file_path, std::string& jwt_token);
 // if the file doesn't contain the jwt secret token then we generate one
 bool load_jwt_token(const std::string& file_path, std::string& jwt_token);
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

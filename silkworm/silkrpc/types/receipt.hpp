@@ -21,8 +21,8 @@
 
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
-#include <silkworm/core/types/bloom.hpp>
 
+#include <silkworm/core/types/bloom.hpp>
 #include <silkworm/silkrpc/types/log.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
 
@@ -54,5 +54,4 @@ silkworm::Bloom bloom_from_logs(const Logs& logs);
 
 typedef std::vector<Receipt> Receipts;
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

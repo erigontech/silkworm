@@ -21,8 +21,8 @@
 #include <vector>
 
 #include <intx/intx.hpp>
-#include <silkworm/core/types/block.hpp>
 
+#include <silkworm/core/types/block.hpp>
 #include <silkworm/silkrpc/types/chain_config.hpp>
 
 namespace silkrpc::ethash {
@@ -36,5 +36,4 @@ BlockReward compute_reward(const ChainConfig& config, const silkworm::Block& blo
 
 std::ostream& operator<<(std::ostream& out, const BlockReward& reward);
 
-} // namespace silkrpc::ethash
-
+}  // namespace silkrpc::ethash

@@ -18,7 +18,7 @@
 
 #include <string>
 
-#include <silkworm/silkrpc/config.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #pragma GCC diagnostic push
@@ -34,5 +34,4 @@ namespace silkrpc::ethdb::bitmap {
 
 boost::asio::awaitable<roaring::Roaring> get(core::rawdb::DatabaseReader& db_reader, const std::string& table, silkworm::Bytes& key, uint32_t from_block, uint32_t to_block);
 
-} // silkrpc::ethdb::bitmap
-
+}  // namespace silkrpc::ethdb::bitmap

@@ -19,9 +19,7 @@
 #include <iostream>
 #include <utility>
 
-// clang-format off
-#include <silkworm/silkrpc/config.hpp>
-// clang-format on
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/co_spawn.hpp>
 #include <grpcpp/grpcpp.h>

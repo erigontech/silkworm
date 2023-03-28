@@ -22,8 +22,8 @@
 
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/ethbackend/remote_backend.hpp>
-#include <silkworm/silkrpc/ethdb/kv/remote_database.hpp>
 #include <silkworm/silkrpc/ethdb/file/local_database.hpp>
+#include <silkworm/silkrpc/ethdb/kv/remote_database.hpp>
 
 static const char kChaindataRelativePath[] = "/chaindata";
 static const int kMaxReaders = 32000;
@@ -95,22 +95,22 @@ void Context::execute_loop() {
     switch (wait_mode_) {
         case WaitMode::backoff:
             execute_loop_agrpc();
-        break;
+            break;
         case WaitMode::blocking:
             execute_loop_multi_threaded();
-        break;
+            break;
         case WaitMode::yielding:
             execute_loop_single_threaded(YieldingWaitStrategy{});
-        break;
+            break;
         case WaitMode::sleeping:
             execute_loop_single_threaded(SleepingWaitStrategy{});
-        break;
+            break;
         case WaitMode::spin_wait:
             execute_loop_single_threaded(SpinWaitWaitStrategy{});
-        break;
+            break;
         case WaitMode::busy_spin:
             execute_loop_single_threaded(BusySpinWaitStrategy{});
-        break;
+            break;
     }
 }
 
@@ -129,15 +129,14 @@ ContextPool::ContextPool(std::size_t pool_size, ChannelFactory create_channel, s
     std::shared_ptr<mdbx::env_managed> chain_env = nullptr;
 
     if (datadir) {
-       chain_env = std::make_shared<mdbx::env_managed>();
-       std::string db_path = *datadir + kChaindataRelativePath;
-       silkworm::db::EnvConfig db_config{
-           .path = db_path,
-           .in_memory = true,
-           .shared = true,
-           .max_readers = kMaxReaders
-       };
-       *chain_env = silkworm::db::open_env(db_config);
+        chain_env = std::make_shared<mdbx::env_managed>();
+        std::string db_path = *datadir + kChaindataRelativePath;
+        silkworm::db::EnvConfig db_config{
+            .path = db_path,
+            .in_memory = true,
+            .shared = true,
+            .max_readers = kMaxReaders};
+        *chain_env = silkworm::db::open_env(db_config);
     }
 
     // Create the unique block cache to be shared among the execution contexts
@@ -220,4 +219,4 @@ boost::asio::io_context& ContextPool::next_io_context() {
     return *client_context.io_context();
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

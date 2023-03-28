@@ -22,14 +22,14 @@
 #include <agrpc/grpc_context.hpp>
 #include <grpcpp/grpcpp.h>
 
+#include <silkworm/interfaces/remote/kv.grpc.pb.h>
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
-#include <silkworm/interfaces/remote/kv.grpc.pb.h>
 
 namespace silkrpc::ethdb::kv {
 
-class RemoteDatabase: public Database {
-public:
+class RemoteDatabase : public Database {
+  public:
     RemoteDatabase(agrpc::GrpcContext& grpc_context, std::shared_ptr<grpc::Channel> channel);
     RemoteDatabase(agrpc::GrpcContext& grpc_context, std::unique_ptr<remote::KV::StubInterface>&& stub);
 
@@ -40,10 +40,9 @@ public:
 
     boost::asio::awaitable<std::unique_ptr<Transaction>> begin() override;
 
-private:
+  private:
     agrpc::GrpcContext& grpc_context_;
     std::unique_ptr<remote::KV::StubInterface> stub_;
 };
 
-} // namespace silkrpc::ethdb::kv
-
+}  // namespace silkrpc::ethdb::kv

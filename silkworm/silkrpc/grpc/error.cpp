@@ -19,7 +19,7 @@
 #include <utility>
 
 class generic_error_category : public std::error_category {
-public:
+  public:
     const char* name() const noexcept override;
     std::string message(int ev) const override;
 
@@ -28,7 +28,7 @@ public:
         error_message_ = error_message;
     }
 
-private:
+  private:
     int error_code_;
     std::string error_message_;
 };

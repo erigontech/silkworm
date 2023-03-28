@@ -21,7 +21,6 @@
 #include <vector>
 
 #include <silkworm/core/common/util.hpp>
-
 #include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
@@ -76,7 +75,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_call(const nlohmann::json
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -120,7 +119,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_call_many(const nlohmann:
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -152,7 +151,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_raw_transaction(const nlo
         co_return;
     }
 
-    const float kTxFeeCap = 1; // 1 ether
+    const float kTxFeeCap = 1;  // 1 ether
 
     if (!check_tx_fee_less_cap(kTxFeeCap, transaction.max_fee_per_gas, transaction.gas_limit)) {
         const auto error_msg = "tx fee exceeds the configured cap";
@@ -204,7 +203,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_raw_transaction(const nlo
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -240,7 +239,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_replay_block_transactions
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -285,7 +284,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_replay_transaction(const 
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -321,7 +320,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_block(const nlohmann::jso
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -366,7 +365,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_filter(const nlohmann::js
 
     stream.close_object();
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -384,7 +383,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_get(const nlohmann::json&
 
     std::vector<uint16_t> indices;
     std::transform(str_indices.begin(), str_indices.end(), std::back_inserter(indices),
-               [](const std::string& str) { return std::stoi(str, nullptr, 16); });
+                   [](const std::string& str) { return std::stoi(str, nullptr, 16); });
     SILKRPC_INFO << "transaction_hash: " << transaction_hash << ", #indices: " << indices.size() << "\n";
 
     // TODO(sixtysixter) for RPCDAEMON compatibility
@@ -421,7 +420,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_get(const nlohmann::json&
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -457,8 +456,8 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_transaction(const nlohman
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
-} // namespace silkrpc::commands
+}  // namespace silkrpc::commands

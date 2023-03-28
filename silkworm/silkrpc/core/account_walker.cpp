@@ -17,9 +17,8 @@
 #include "account_walker.hpp"
 
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/node/db/util.hpp>
 #include <silkworm/node/db/bitmap.hpp>
-
+#include <silkworm/node/db/util.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
@@ -38,7 +37,7 @@ boost::asio::awaitable<void> AccountWalker::walk_of_accounts(uint64_t block_numb
 
     auto ah_cursor = co_await transaction_.cursor(db::table::kAccountHistory);
     silkrpc::ethdb::SplitCursor split_cursor{*ah_cursor, start_key, 0, silkworm::kAddressLength,
-        silkworm::kAddressLength, silkworm::kAddressLength + 8};
+                                             silkworm::kAddressLength, silkworm::kAddressLength + 8};
 
     auto s_kv = co_await seek(split_cursor, block_number);
 
@@ -131,4 +130,4 @@ boost::asio::awaitable<silkrpc::ethdb::SplittedKeyValue> AccountWalker::seek(sil
     co_return kv;
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

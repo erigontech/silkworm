@@ -60,5 +60,4 @@ ProtocolVersionResult wait_for_mining_protocol_check(const std::shared_ptr<grpc:
 ProtocolVersionResult wait_for_txpool_protocol_check(const std::unique_ptr<::txpool::Txpool::StubInterface>& stub);
 ProtocolVersionResult wait_for_txpool_protocol_check(const std::shared_ptr<grpc::Channel>& channel);
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

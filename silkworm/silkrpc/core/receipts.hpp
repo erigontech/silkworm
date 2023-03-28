@@ -16,19 +16,17 @@
 
 #pragma once
 
-#include <silkworm/silkrpc/config.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #include <evmc/evmc.hpp>
 
+#include <silkworm/core/types/block.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/types/receipt.hpp>
-
-#include <silkworm/core/types/block.hpp>
 
 namespace silkrpc::core {
 
 boost::asio::awaitable<Receipts> get_receipts(const rawdb::DatabaseReader& db_reader, const silkworm::BlockWithHash& block_with_hash);
 
-} // namespace silkrpc::core
-
+}  // namespace silkrpc::core

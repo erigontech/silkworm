@@ -211,7 +211,7 @@ RequestParser::ResultType RequestParser::consume(Request& req, char input) {
                 state_ = content_start;
                 // Look for Content-Length header to get content size
                 if (req.content_length == 0) {
-                    const auto it = std::find_if(req.headers.begin(), req.headers.end(), [&](const Header& h){
+                    const auto it = std::find_if(req.headers.begin(), req.headers.end(), [&](const Header& h) {
                         return h.name == "Content-Length";
                     });
                     if (it == req.headers.end()) {
@@ -227,7 +227,7 @@ RequestParser::ResultType RequestParser::consume(Request& req, char input) {
                     return ResultType::good;
                 }
                 // Look for Expect header to handle continuation request
-                const auto it = std::find_if(req.headers.begin(), req.headers.end(), [&](const Header& h){
+                const auto it = std::find_if(req.headers.begin(), req.headers.end(), [&](const Header& h) {
                     return h == kExpectRequestHeader;
                 });
                 if (it != req.headers.end()) {
@@ -258,10 +258,25 @@ inline bool RequestParser::is_ctl(int c) {
 
 inline bool RequestParser::is_tspecial(int c) {
     switch (c) {
-        case '(': case ')': case '<': case '>': case '@':
-        case ',': case ';': case ':': case '\\': case '"':
-        case '/': case '[': case ']': case '?': case '=':
-        case '{': case '}': case ' ': case '\t':
+        case '(':
+        case ')':
+        case '<':
+        case '>':
+        case '@':
+        case ',':
+        case ';':
+        case ':':
+        case '\\':
+        case '"':
+        case '/':
+        case '[':
+        case ']':
+        case '?':
+        case '=':
+        case '{':
+        case '}':
+        case ' ':
+        case '\t':
             return true;
         default:
             return false;
@@ -272,4 +287,4 @@ inline bool RequestParser::is_digit(int c) {
     return c >= '0' && c <= '9';
 }
 
-} // namespace silkrpc::http
+}  // namespace silkrpc::http

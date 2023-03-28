@@ -27,5 +27,8 @@ cmake_policy(SET CMP0063 NEW)
 cmake_policy(SET CMP0074 NEW)
 
 if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
-  set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "")
+  set(CMAKE_OSX_ARCHITECTURES
+      "arm64"
+      CACHE STRING ""
+  )
 endif()

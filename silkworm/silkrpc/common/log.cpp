@@ -27,7 +27,13 @@
 namespace silkrpc {
 
 constexpr char const kLogTags_[7][6] = {
-    "TRACE", "DEBUG", "INFO ", "WARN ", "ERROR", "CRIT ", "NONE ",
+    "TRACE",
+    "DEBUG",
+    "INFO ",
+    "WARN ",
+    "ERROR",
+    "CRIT ",
+    "NONE ",
 };
 
 teestream log_streams_{std::cerr, null_stream()};
@@ -94,15 +100,23 @@ bool AbslParseFlag(absl::string_view text, LogLevel* level, std::string* error) 
 
 std::string AbslUnparseFlag(LogLevel level) {
     switch (level) {
-        case LogLevel::None: return "n";
-        case LogLevel::Critical: return "c";
-        case LogLevel::Error: return "e";
-        case LogLevel::Warn: return "w";
-        case LogLevel::Info: return "i";
-        case LogLevel::Debug: return "d";
-        case LogLevel::Trace: return "t";
-        default: return absl::StrCat(level);
+        case LogLevel::None:
+            return "n";
+        case LogLevel::Critical:
+            return "c";
+        case LogLevel::Error:
+            return "e";
+        case LogLevel::Warn:
+            return "w";
+        case LogLevel::Info:
+            return "i";
+        case LogLevel::Debug:
+            return "d";
+        case LogLevel::Trace:
+            return "t";
+        default:
+            return absl::StrCat(level);
     }
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

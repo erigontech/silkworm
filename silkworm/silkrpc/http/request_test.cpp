@@ -49,4 +49,4 @@ TEST_CASE("check reset method", "[silkrpc][http][request]") {
     CHECK(req.content_length == 0);
 }
 
-} // namespace silkrpc::http
+}  // namespace silkrpc::http

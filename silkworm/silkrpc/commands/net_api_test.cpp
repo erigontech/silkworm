@@ -33,10 +33,9 @@ TEST_CASE("NetRpcApi::NetRpcApi", "[silkrpc][erigon_api]") {
     auto channel{grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials())};
     agrpc::GrpcContext grpc_context;
     std::unique_ptr<ethbackend::BackEnd> backend{
-        std::make_unique<ethbackend::RemoteBackEnd>(io_context, channel, grpc_context)
-    };
+        std::make_unique<ethbackend::RemoteBackEnd>(io_context, channel, grpc_context)};
     CHECK_NOTHROW(NetRpcApi{backend});
 }
 #endif  // SILKWORM_SANITIZE
 
-} // namespace silkrpc::commands
+}  // namespace silkrpc::commands

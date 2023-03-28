@@ -24,34 +24,35 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
-#include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/ethbackend/backend.hpp>
+#include <silkworm/silkrpc/json/types.hpp>
 
-
-namespace silkrpc::http { class RequestHandler; }
+namespace silkrpc::http {
+class RequestHandler;
+}
 
 namespace silkrpc::commands {
 
 class EngineRpcApi {
-public:
+  public:
     explicit EngineRpcApi(std::unique_ptr<ethdb::Database>& database, std::unique_ptr<ethbackend::BackEnd>& backend)
-      : backend_(backend), database_(database) {}
+        : backend_(backend), database_(database) {}
     virtual ~EngineRpcApi() = default;
 
     EngineRpcApi(const EngineRpcApi&) = delete;
     EngineRpcApi& operator=(const EngineRpcApi&) = delete;
 
-protected:
+  protected:
     boost::asio::awaitable<void> handle_engine_get_payload_v1(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_engine_new_payload_v1(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_engine_forkchoice_updated_v1(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_engine_exchange_transition_configuration_v1(const nlohmann::json& request, nlohmann::json& reply);
-private:
+
+  private:
     std::unique_ptr<ethbackend::BackEnd>& backend_;
     std::unique_ptr<ethdb::Database>& database_;
 
     friend class silkrpc::http::RequestHandler;
 };
 
-} // namespace silkrpc::commands
-
+}  // namespace silkrpc::commands

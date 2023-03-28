@@ -39,5 +39,4 @@ TEST_CASE("TraceRpcApi") {
 }
 #endif  // SILKWORM_SANITIZE
 
-} // namespace silkrpc::commands
-
+}  // namespace silkrpc::commands

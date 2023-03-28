@@ -15,6 +15,7 @@
 */
 
 #include "block_cache.hpp"
+
 #include <catch2/catch.hpp>
 
 namespace silkrpc {
@@ -44,7 +45,7 @@ TEST_CASE("insert entry in cache(lock)", "[silkrpc][commands][block_cache]") {
     auto ret_block_option = block_cache.get(bh1);
     CHECK(!ret_block_option);
 
-    const silkworm::BlockWithHash block1 {};
+    const silkworm::BlockWithHash block1{};
     block_cache.insert(bh1, block1);
 
     ret_block_option = block_cache.get(bh1);
@@ -57,12 +58,11 @@ TEST_CASE("insert entry in cache(no-lock)", "[silkrpc][commands][block_cache]") 
     auto ret_block_option = block_cache.get(bh1);
     CHECK(!ret_block_option);
 
-    const silkworm::BlockWithHash block1 {};
+    const silkworm::BlockWithHash block1{};
     block_cache.insert(bh1, block1);
 
     ret_block_option = block_cache.get(bh1);
     CHECK((*ret_block_option).hash == block1.hash);
 }
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

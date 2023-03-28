@@ -24,7 +24,6 @@
 #include <silkworm/core/execution/evm.hpp>
 #pragma GCC diagnostic pop
 #include <silkworm/core/state/intra_block_state.hpp>
-
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
@@ -34,8 +33,8 @@
 namespace silkrpc {
 
 class AccessListTracer : public silkworm::EvmTracer {
-public:
-    explicit AccessListTracer(const evmc::address& from, const evmc::address& to): from_{from}, to_{to} {
+  public:
+    explicit AccessListTracer(const evmc::address& from, const evmc::address& to) : from_{from}, to_{to} {
     }
     AccessListTracer(const AccessListTracer&) = delete;
     AccessListTracer& operator=(const AccessListTracer&) = delete;
@@ -43,29 +42,26 @@ public:
     const AccessList& get_access_list() { return access_list_; }
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
-    void on_instruction_start(uint32_t pc, const intx::uint256 *stack_top, int stack_height,
-            const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept override;
+    void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height,
+                              const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_execution_end(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_reward_granted(const silkworm::CallResult& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_creation_completed(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
 
-
-
-    void reset_access_list() {access_list_.clear();}
+    void reset_access_list() { access_list_.clear(); }
     static void dump(const std::string& str, const AccessList& acl);
     static bool compare(const AccessList& acl1, const AccessList& acl2);
 
-private:
+  private:
     inline bool exclude(const evmc::address& address);
     inline evmc::address address_from_hex_string(const std::string& s);
-    inline bool is_storage_opcode(const std::string & opcode_name);
-    inline bool is_contract_opcode(const std::string & opcode_name);
-    inline bool is_call_opcode(const std::string & opcode_name);
+    inline bool is_storage_opcode(const std::string& opcode_name);
+    inline bool is_contract_opcode(const std::string& opcode_name);
+    inline bool is_call_opcode(const std::string& opcode_name);
 
     void add_storage(const evmc::address& address, const evmc::bytes32& storage);
     void add_address(const evmc::address& address);
-
 
     AccessList access_list_;
     evmc::address from_;
@@ -82,6 +78,4 @@ inline bool operator==(const AccessList& acl1, const AccessList& acl2) {
     return AccessListTracer::compare(acl1, acl2);
 }
 
-
-} // namespace silkrpc
-
+}  // namespace silkrpc

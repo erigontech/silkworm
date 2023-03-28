@@ -60,4 +60,3 @@ template <typename Request, typename Reply>
 using StrictMockAsyncReaderWriter = testing::StrictMock<MockAsyncReaderWriter<Request, Reply>>;
 
 }  // namespace silkrpc::test
-

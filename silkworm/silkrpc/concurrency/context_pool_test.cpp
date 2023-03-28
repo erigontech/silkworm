@@ -25,8 +25,8 @@
 #include <catch2/catch.hpp>
 #include <grpcpp/grpcpp.h>
 
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/silkrpc/common/log.hpp>
 
 namespace silkrpc {
 
@@ -47,8 +47,7 @@ TEST_CASE("Context", "[silkrpc][context_pool]") {
     filter::FilterStorage filter_storage{0x400};
 
     WaitMode all_wait_modes[] = {
-        WaitMode::backoff, WaitMode::blocking, WaitMode::sleeping, WaitMode::yielding, WaitMode::spin_wait, WaitMode::busy_spin
-    };
+        WaitMode::backoff, WaitMode::blocking, WaitMode::sleeping, WaitMode::yielding, WaitMode::spin_wait, WaitMode::busy_spin};
     for (auto wait_mode : all_wait_modes) {
         SECTION(std::string("Context::Context wait_mode=") + std::to_string(static_cast<int>(wait_mode))) {
             Context context{create_channel(), block_cache, state_cache, filter_storage, {}, wait_mode};
@@ -60,7 +59,7 @@ TEST_CASE("Context", "[silkrpc][context_pool]") {
         }
 
         SECTION(std::string("Context::execute_loop wait_mode=") + std::to_string(static_cast<int>(wait_mode))) {
-            Context context{create_channel(), block_cache, state_cache, filter_storage,  /* env */{}, wait_mode};
+            Context context{create_channel(), block_cache, state_cache, filter_storage, /* env */ {}, wait_mode};
             std::atomic_bool processed{false};
             auto* io_context = context.io_context();
             boost::asio::post(*io_context, [&]() {
@@ -73,7 +72,7 @@ TEST_CASE("Context", "[silkrpc][context_pool]") {
         }
 
         SECTION(std::string("Context::stop wait_mode=") + std::to_string(static_cast<int>(wait_mode))) {
-            Context context{create_channel(), block_cache, state_cache, filter_storage, /* env */{}, wait_mode};
+            Context context{create_channel(), block_cache, state_cache, filter_storage, /* env */ {}, wait_mode};
             std::atomic_bool processed{false};
             auto* io_context = context.io_context();
             boost::asio::post(*io_context, [&]() {
@@ -246,4 +245,4 @@ TEST_CASE("print context pool", "[silkrpc][context_pool]") {
 
 #endif  // SILKWORM_SANITIZE
 
-} // namespace silkrpc
+}  // namespace silkrpc

@@ -28,5 +28,4 @@ silkworm::Bytes composite_storage_key(const evmc::address& address, uint64_t inc
 
 silkworm::Bytes composite_storage_key_without_hash_lookup(const evmc::address& address, uint64_t incarnation);
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

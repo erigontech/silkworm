@@ -25,7 +25,7 @@
 #include <array>
 #include <string>
 
-#include <silkworm/silkrpc/config.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -43,7 +43,7 @@ namespace silkrpc::http {
 
 /// Represents a single connection from a client.
 class Connection {
-public:
+  public:
     Connection(const Connection&) = delete;
     Connection& operator=(const Connection&) = delete;
 
@@ -57,7 +57,7 @@ public:
     /// Start the asynchronous read loop for the connection.
     boost::asio::awaitable<void> read_loop();
 
-private:
+  private:
     /// Reset connection data
     void clean();
 
@@ -86,5 +86,4 @@ private:
     Reply reply_;
 };
 
-} // namespace silkrpc::http
-
+}  // namespace silkrpc::http

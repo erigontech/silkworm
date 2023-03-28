@@ -22,7 +22,7 @@
 #include <utility>
 #include <vector>
 
-#include <silkworm/silkrpc/config.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <agrpc/grpc_context.hpp>
 #include <boost/asio/io_context.hpp>
@@ -30,12 +30,12 @@
 #include <evmc/evmc.hpp>
 #include <grpcpp/grpcpp.h>
 
-#include <silkworm/silkrpc/common/clock_time.hpp>
-#include <silkworm/silkrpc/common/util.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/interfaces/txpool/txpool.grpc.pb.h>
 #include <silkworm/interfaces/types/types.pb.h>
-#include <silkworm/core/common/base.hpp>
+#include <silkworm/silkrpc/common/clock_time.hpp>
+#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkrpc::txpool {
 
@@ -65,11 +65,11 @@ struct TransactionInfo {
 using TransactionsInPool = std::vector<TransactionInfo>;
 
 class TransactionPool final {
-public:
+  public:
     explicit TransactionPool(boost::asio::io_context& context, std::shared_ptr<grpc::Channel> channel, agrpc::GrpcContext& grpc_context);
 
     explicit TransactionPool(boost::asio::io_context::executor_type executor, std::unique_ptr<::txpool::Txpool::StubInterface> stub,
-        agrpc::GrpcContext& grpc_context);
+                             agrpc::GrpcContext& grpc_context);
 
     ~TransactionPool();
 
@@ -83,7 +83,7 @@ public:
 
     boost::asio::awaitable<TransactionsInPool> get_transactions();
 
-private:
+  private:
     evmc::address address_from_H160(const types::H160& h160);
     types::H160* H160_from_address(const evmc::address& address);
     types::H128* H128_from_bytes(const uint8_t* bytes);
@@ -93,5 +93,4 @@ private:
     agrpc::GrpcContext& grpc_context_;
 };
 
-} // namespace silkrpc::txpool
-
+}  // namespace silkrpc::txpool

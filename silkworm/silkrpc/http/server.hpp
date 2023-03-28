@@ -26,22 +26,21 @@
 #include <tuple>
 #include <vector>
 
-#include <silkworm/silkrpc/config.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/thread_pool.hpp>
 
+#include <silkworm/silkrpc/commands/rpc_api_table.hpp>
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/http/request_handler.hpp>
-
-#include <silkworm/silkrpc/commands/rpc_api_table.hpp>
 
 namespace silkrpc::http {
 
 /// The top-level class of the HTTP server.
 class Server {
-public:
+  public:
     Server(const Server&) = delete;
     Server& operator=(const Server&) = delete;
 
@@ -52,7 +51,7 @@ public:
 
     void stop();
 
-private:
+  private:
     static std::tuple<std::string, std::string> parse_endpoint(const std::string& tcp_end_point);
 
     boost::asio::awaitable<void> run();
@@ -70,5 +69,4 @@ private:
     std::optional<std::string> jwt_secret_;
 };
 
-} // namespace silkrpc::http
-
+}  // namespace silkrpc::http

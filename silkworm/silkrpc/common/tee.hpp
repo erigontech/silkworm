@@ -71,4 +71,3 @@ class teestream : public std::ostream {
 };
 
 }  // namespace silkrpc
-

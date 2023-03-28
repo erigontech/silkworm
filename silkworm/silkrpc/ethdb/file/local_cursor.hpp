@@ -20,25 +20,25 @@
 #include <string>
 #include <utility>
 
+#include <silkworm/infra/concurrency/coroutine.hpp>
+
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
-#include <silkworm/silkrpc/common/log.hpp>
-#include <silkworm/silkrpc/common/util.hpp>
-#include <silkworm/silkrpc/config.hpp>
-#include <silkworm/silkrpc/ethdb/cursor.hpp>
-
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/node/db/mdbx.hpp>
-
+#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/silkrpc/common/util.hpp>
+#include <silkworm/silkrpc/ethdb/cursor.hpp>
 
 namespace silkrpc::ethdb::file {
 
 class LocalCursor : public CursorDupSort {
-public:
+  public:
     explicit LocalCursor(mdbx::txn_managed& read_only_txn, uint32_t cursor_id, std::string table_name) : cursor_id_{cursor_id},
-                    db_cursor_{read_only_txn, silkworm::db::MapConfig{table_name.c_str()}}, read_only_txn_{read_only_txn} {}
+                                                                                                         db_cursor_{read_only_txn, silkworm::db::MapConfig{table_name.c_str()}},
+                                                                                                         read_only_txn_{read_only_txn} {}
 
     uint32_t cursor_id() const override { return cursor_id_; };
 
@@ -58,11 +58,10 @@ public:
 
     boost::asio::awaitable<KeyValue> seek_both_exact(silkworm::ByteView key, silkworm::ByteView value) override;
 
-private:
+  private:
     uint32_t cursor_id_;
     silkworm::db::PooledCursor db_cursor_;
     mdbx::txn_managed& read_only_txn_;
 };
 
-} // namespace silkrpc::ethdb::file
-
+}  // namespace silkrpc::ethdb::file

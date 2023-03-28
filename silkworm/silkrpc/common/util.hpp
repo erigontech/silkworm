@@ -25,12 +25,12 @@
 #include <ethash/keccak.hpp>
 #include <evmc/evmc.hpp>
 
+#include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/types/transaction.hpp>
 #include <silkworm/core/types/account.hpp>
-#include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/types/bloom.hpp>
+#include <silkworm/core/types/transaction.hpp>
 
 namespace silkrpc {
 
@@ -72,7 +72,7 @@ inline silkworm::ByteView full_view(const ethash::hash256& hash) { return {hash.
 
 const silkworm::ChainConfig* lookup_chain_config(uint64_t chain_id);
 
-} // namespace silkrpc
+}  // namespace silkrpc
 
 namespace silkworm {
 
@@ -96,7 +96,7 @@ inline std::ostream& operator<<(std::ostream& out, const Bytes& bytes) {
 
 std::ostream& operator<<(std::ostream& out, const Account& account);
 
-} // namespace silkworm
+}  // namespace silkworm
 
 inline auto hash_of(const silkworm::ByteView& bytes) {
     return ethash::keccak256(bytes.data(), bytes.length());
@@ -128,7 +128,7 @@ inline std::ostream& operator<<(std::ostream& out, const bytes32& b32) {
     return out;
 }
 
-} // namespace evmc
+}  // namespace evmc
 
 namespace intx {
 template <unsigned N>
@@ -136,7 +136,7 @@ inline std::ostream& operator<<(std::ostream& out, const uint<N>& value) {
     out << "0x" << intx::hex(value);
     return out;
 }
-} // namespace intx
+}  // namespace intx
 
 inline std::ostream& operator<<(std::ostream& out, const boost::asio::const_buffer& buffer) {
     out << std::string{static_cast<const char*>(buffer.data()), buffer.size()};
@@ -149,4 +149,3 @@ inline std::ostream& operator<<(std::ostream& out, const std::vector<boost::asio
     }
     return out;
 }
-

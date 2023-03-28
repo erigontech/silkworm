@@ -23,10 +23,10 @@
 #include <grpcpp/grpcpp.h>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/silkrpc/grpc/unary_rpc.hpp>
 #include <silkworm/silkrpc/common/clock_time.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
+#include <silkworm/silkrpc/grpc/unary_rpc.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkrpc::ethbackend {
@@ -35,7 +35,7 @@ RemoteBackEnd::RemoteBackEnd(boost::asio::io_context& context, std::shared_ptr<g
     : RemoteBackEnd(context.get_executor(), ::remote::ETHBACKEND::NewStub(channel), grpc_context) {}
 
 RemoteBackEnd::RemoteBackEnd(boost::asio::io_context::executor_type executor, std::unique_ptr<::remote::ETHBACKEND::StubInterface> stub,
-    agrpc::GrpcContext& grpc_context) : executor_(executor), stub_(std::move(stub)), grpc_context_(grpc_context) {
+                             agrpc::GrpcContext& grpc_context) : executor_(executor), stub_(std::move(stub)), grpc_context_(grpc_context) {
     SILKRPC_TRACE << "RemoteBackEnd::ctor " << this << "\n";
 }
 
@@ -107,9 +107,9 @@ boost::asio::awaitable<std::vector<NodeInfo>> RemoteBackEnd::engine_node_info() 
         node_info.listener_addr = backend_node_info.listeneraddr();
         node_info.protocols = backend_node_info.protocols();
         if (backend_node_info.has_ports()) {
-           const auto ports = backend_node_info.ports();
-           node_info.ports.discovery = ports.discovery();
-           node_info.ports.listener = ports.listener();
+            const auto ports = backend_node_info.ports();
+            node_info.ports.discovery = ports.discovery();
+            node_info.ports.listener = ports.listener();
         }
         node_info_list.push_back(node_info);
     }
@@ -147,8 +147,7 @@ boost::asio::awaitable<ForkChoiceUpdatedReply> RemoteBackEnd::engine_forkchoice_
     PayloadStatus payload_status = decode_payload_status(reply.payloadstatus());
     ForkChoiceUpdatedReply forkchoice_updated_reply{
         .payload_status = payload_status,
-        .payload_id = std::nullopt
-    };
+        .payload_id = std::nullopt};
     // set payload id (if there is one)
     if (reply.payloadid() != 0) {
         forkchoice_updated_reply.payload_id = reply.payloadid();
@@ -162,8 +161,8 @@ evmc::address RemoteBackEnd::address_from_H160(const types::H160& h160) {
     uint64_t hi_lo = h160.hi().lo();
     uint32_t lo = h160.lo();
     evmc::address address{};
-    boost::endian::store_big_u64(address.bytes +  0, hi_hi);
-    boost::endian::store_big_u64(address.bytes +  8, hi_lo);
+    boost::endian::store_big_u64(address.bytes + 0, hi_hi);
+    boost::endian::store_big_u64(address.bytes + 8, hi_lo);
     boost::endian::store_big_u32(address.bytes + 16, lo);
     return address;
 }
@@ -300,7 +299,7 @@ ExecutionPayload RemoteBackEnd::decode_execution_payload(const types::ExecutionP
     auto prev_randao_h256{execution_payload_grpc.prevrandao()};
     auto base_fee_h256{execution_payload_grpc.basefeepergas()};
     auto logs_bloom_h2048{execution_payload_grpc.logsbloom()};
-    auto extra_data_string{execution_payload_grpc.extradata()}; // []byte becomes std::string in silkrpc protobuf
+    auto extra_data_string{execution_payload_grpc.extradata()};  // []byte becomes std::string in silkrpc protobuf
     // Convert h2048 to a bloom
     silkworm::Bloom bloom;
     std::memcpy(&bloom[0], bytes_from_H2048(logs_bloom_h2048).data(), 256);
@@ -325,8 +324,7 @@ ExecutionPayload RemoteBackEnd::decode_execution_payload(const types::ExecutionP
         .base_fee = uint256_from_H256(base_fee_h256),
         .logs_bloom = bloom,
         .extra_data = silkworm::bytes_of_string(extra_data_string),
-        .transactions = transactions
-    };
+        .transactions = transactions};
 }
 
 types::ExecutionPayload RemoteBackEnd::encode_execution_payload(const ExecutionPayload& execution_payload) {
@@ -356,7 +354,7 @@ types::ExecutionPayload RemoteBackEnd::encode_execution_payload(const ExecutionP
 }
 
 remote::EngineForkChoiceState* RemoteBackEnd::encode_forkchoice_state(const ForkChoiceState& forkchoice_state) {
-    remote::EngineForkChoiceState *forkchoice_state_grpc = new remote::EngineForkChoiceState();
+    remote::EngineForkChoiceState* forkchoice_state_grpc = new remote::EngineForkChoiceState();
     // 32-bytes parameters
     forkchoice_state_grpc->set_allocated_headblockhash(H256_from_bytes(forkchoice_state.head_block_hash.bytes));
     forkchoice_state_grpc->set_allocated_safeblockhash(H256_from_bytes(forkchoice_state.safe_block_hash.bytes));
@@ -365,10 +363,10 @@ remote::EngineForkChoiceState* RemoteBackEnd::encode_forkchoice_state(const Fork
 }
 
 remote::EnginePayloadAttributes* RemoteBackEnd::encode_payload_attributes(const PayloadAttributes& payload_attributes) {
-    remote::EnginePayloadAttributes *payload_attributes_grpc = new remote::EnginePayloadAttributes();
+    remote::EnginePayloadAttributes* payload_attributes_grpc = new remote::EnginePayloadAttributes();
     // Numerical parameters
     payload_attributes_grpc->set_timestamp(payload_attributes.timestamp);
-    //32-bytes parameters
+    // 32-bytes parameters
     payload_attributes_grpc->set_allocated_prevrandao(H256_from_bytes(payload_attributes.prev_randao.bytes));
     // Address parameters
     payload_attributes_grpc->set_allocated_suggestedfeerecipient(H160_from_address(payload_attributes.suggested_fee_recipient));
@@ -378,11 +376,11 @@ remote::EnginePayloadAttributes* RemoteBackEnd::encode_payload_attributes(const 
 
 remote::EngineForkChoiceUpdatedRequest RemoteBackEnd::encode_forkchoice_updated_request(const ForkChoiceUpdatedRequest& forkchoice_updated_request) {
     remote::EngineForkChoiceUpdatedRequest forkchoice_updated_request_grpc;
-    remote::EngineForkChoiceState *forkchoice_state_grpc = RemoteBackEnd::encode_forkchoice_state(forkchoice_updated_request.fork_choice_state);
+    remote::EngineForkChoiceState* forkchoice_state_grpc = RemoteBackEnd::encode_forkchoice_state(forkchoice_updated_request.fork_choice_state);
 
     forkchoice_updated_request_grpc.set_allocated_forkchoicestate(forkchoice_state_grpc);
     if (forkchoice_updated_request.payload_attributes != std::nullopt) {
-        remote::EnginePayloadAttributes *payload_attributes_grpc =
+        remote::EnginePayloadAttributes* payload_attributes_grpc =
             RemoteBackEnd::encode_payload_attributes(forkchoice_updated_request.payload_attributes.value());
         forkchoice_updated_request_grpc.set_allocated_payloadattributes(payload_attributes_grpc);
     }
@@ -419,4 +417,4 @@ std::string RemoteBackEnd::decode_status_message(const remote::EngineStatus& sta
     }
 }
 
-} // namespace silkrpc::ethbackend
+}  // namespace silkrpc::ethbackend

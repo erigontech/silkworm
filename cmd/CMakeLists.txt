@@ -16,7 +16,7 @@
 
 if(MSVC)
   add_link_options(/STACK:0x1000000)
-elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   add_link_options(-Wl,-stack_size -Wl,0x1000000)
 else()
   add_link_options(-Wl,-z,stack-size=0x1000000)
@@ -39,7 +39,9 @@ if(NOT SILKWORM_CORE_ONLY)
   file(GLOB_RECURSE COMMON_SRC CONFIGURE_DEPENDS "common/*.cpp" "common/*.hpp")
 
   add_executable(silkworm "silkworm.cpp;${COMMON_SRC}")
-  target_link_libraries(silkworm PRIVATE silkworm_node silkworm_sync silkworm-buildinfo CLI11::CLI11 $<$<BOOL:${MSVC}>:Kernel32.lib>)
+  target_link_libraries(
+    silkworm PRIVATE silkworm_node silkworm_sync silkworm-buildinfo CLI11::CLI11 $<$<BOOL:${MSVC}>:Kernel32.lib>
+  )
 
   add_executable(check_changes check_changes.cpp)
   target_link_libraries(check_changes PRIVATE silkworm_node CLI11::CLI11 absl::time)

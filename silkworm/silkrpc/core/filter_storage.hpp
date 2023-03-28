@@ -37,7 +37,7 @@ enum FilterType {
     block
 };
 
-struct StoredFilter: public Filter {
+struct StoredFilter : public Filter {
     FilterType type = FilterType::logs;
     uint64_t start = std::numeric_limits<std::uint64_t>::max();
     uint64_t end = std::numeric_limits<std::uint64_t>::max();
@@ -45,8 +45,8 @@ struct StoredFilter: public Filter {
 };
 
 struct FilterEntry {
-    void renew() {last_access = std::chrono::system_clock::now();}
-    std::chrono::duration<double> age() { return std::chrono::system_clock::now() - last_access;}
+    void renew() { last_access = std::chrono::system_clock::now(); }
+    std::chrono::duration<double> age() { return std::chrono::system_clock::now() - last_access; }
 
     StoredFilter filter;
     std::chrono::system_clock::time_point last_access = std::chrono::system_clock::now();
@@ -55,7 +55,7 @@ struct FilterEntry {
 typedef std::function<std::uint64_t()> Generator;
 
 class FilterStorage {
-public:
+  public:
     explicit FilterStorage(std::size_t max_size, double max_filter_age = DEFAULT_MAX_FILTER_AGE);
     explicit FilterStorage(Generator& generator, std::size_t max_size, double max_filter_age = DEFAULT_MAX_FILTER_AGE);
 
@@ -70,7 +70,7 @@ public:
         return storage_.size();
     }
 
-private:
+  private:
     static const std::size_t DEFAULT_MAX_FILTER_AGE = 0x800;
 
     void clean_up();
@@ -82,5 +82,4 @@ private:
     std::map<std::string, FilterEntry> storage_;
 };
 
-} // namespace silkrpc::filter
-
+}  // namespace silkrpc::filter

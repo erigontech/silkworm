@@ -148,9 +148,9 @@ class BusySpinWaitStrategy {
 };
 
 enum class WaitMode {
-    backoff,    /* Wait strategy implemented in asio-grpc's agrpc::run */
-    blocking,   /* Custom multi-thread wait strategy implemented here */
-    sleeping,   /* Custom single-thread wait strategies implemented here */
+    backoff,  /* Wait strategy implemented in asio-grpc's agrpc::run */
+    blocking, /* Custom multi-thread wait strategy implemented here */
+    sleeping, /* Custom single-thread wait strategies implemented here */
     yielding,
     spin_wait,
     busy_spin
@@ -159,5 +159,4 @@ enum class WaitMode {
 bool AbslParseFlag(absl::string_view text, WaitMode* wait_mode, std::string* error);
 std::string AbslUnparseFlag(WaitMode wait_mode);
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

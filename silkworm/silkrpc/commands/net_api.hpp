@@ -19,37 +19,38 @@
 #include <memory>
 #include <vector>
 
-#include <silkworm/silkrpc/config.hpp> // NOLINT(build/include_order)
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/silkrpc/ethbackend/backend.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/types/log.hpp>
-#include <silkworm/silkrpc/ethbackend/backend.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 
-namespace silkrpc::http { class RequestHandler; }
+namespace silkrpc::http {
+class RequestHandler;
+}
 
 namespace silkrpc::commands {
 
 class NetRpcApi {
-public:
+  public:
     explicit NetRpcApi(std::unique_ptr<ethbackend::BackEnd>& backend) : backend_(backend) {}
     virtual ~NetRpcApi() = default;
 
     NetRpcApi(const NetRpcApi&) = delete;
     NetRpcApi& operator=(const NetRpcApi&) = delete;
 
-protected:
+  protected:
     boost::asio::awaitable<void> handle_net_listening(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_net_peer_count(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_net_version(const nlohmann::json& request, nlohmann::json& reply);
 
-private:
+  private:
     friend class silkrpc::http::RequestHandler;
 
     std::unique_ptr<ethbackend::BackEnd>& backend_;
 };
-} // namespace silkrpc::commands
-
+}  // namespace silkrpc::commands

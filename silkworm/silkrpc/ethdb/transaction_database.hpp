@@ -26,7 +26,7 @@
 namespace silkrpc::ethdb {
 
 class TransactionDatabase : public core::rawdb::DatabaseReader {
-public:
+  public:
     explicit TransactionDatabase(Transaction& tx) : tx_(tx) {}
 
     TransactionDatabase(const TransactionDatabase&) = delete;
@@ -42,9 +42,8 @@ public:
 
     boost::asio::awaitable<void> for_prefix(const std::string& table, silkworm::ByteView prefix, core::rawdb::Walker w) const override;
 
-private:
+  private:
     Transaction& tx_;
 };
 
-} // namespace silkrpc::ethdb
-
+}  // namespace silkrpc::ethdb

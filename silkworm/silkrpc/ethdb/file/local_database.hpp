@@ -17,18 +17,17 @@
 #pragma once
 
 #include <memory>
-#include <utility>
 #include <string>
+#include <utility>
 
+#include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
 
-#include <silkworm/node/db/mdbx.hpp>
-
 namespace silkrpc::ethdb::file {
 
-class LocalDatabase: public Database {
-public:
+class LocalDatabase : public Database {
+  public:
     explicit LocalDatabase(std::shared_ptr<mdbx::env_managed> chaindata_env);
 
     ~LocalDatabase();
@@ -38,9 +37,8 @@ public:
 
     boost::asio::awaitable<std::unique_ptr<Transaction>> begin() override;
 
-private:
+  private:
     std::shared_ptr<mdbx::env_managed> chaindata_env_;
 };
 
-} // namespace silkrpc::ethdb::file
-
+}  // namespace silkrpc::ethdb::file

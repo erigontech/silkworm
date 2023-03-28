@@ -14,14 +14,14 @@
    limitations under the License.
 */
 
-#include <sstream>
-
 #include "block.hpp"
 
+#include <sstream>
+
 #include <catch2/catch.hpp>
+
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/transaction.hpp>
-
 #include <silkworm/silkrpc/common/log.hpp>
 
 namespace silkrpc {
@@ -216,5 +216,4 @@ TEST_CASE("check size of EIP-2718 block from RLP", "[silkrpc][types][block]") {
     CHECK_NOTHROW(null_stream() << rpc_block_with_hash);
 }
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

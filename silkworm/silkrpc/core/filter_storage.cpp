@@ -21,24 +21,23 @@
 
 namespace silkrpc::filter {
 
-std::mt19937_64 random_engine {std::random_device {}() };
-Generator default_generator = []() {return random_engine();};
+std::mt19937_64 random_engine{std::random_device{}()};
+Generator default_generator = []() { return random_engine(); };
 
-FilterStorage::FilterStorage(std::size_t max_size, double max_filter_age) :
-       generator_{default_generator}, max_size_{max_size}, max_filter_age_{max_filter_age} {}
+FilterStorage::FilterStorage(std::size_t max_size, double max_filter_age) : generator_{default_generator}, max_size_{max_size}, max_filter_age_{max_filter_age} {}
 
-FilterStorage::FilterStorage(Generator& generator, std::size_t max_size, double max_filter_age) :
-       generator_{generator}, max_size_{max_size}, max_filter_age_{max_filter_age} {}
+FilterStorage::FilterStorage(Generator& generator, std::size_t max_size, double max_filter_age) : generator_{generator}, max_size_{max_size}, max_filter_age_{max_filter_age} {}
 
 std::optional<std::string> FilterStorage::add_filter(const StoredFilter& filter) {
-    std::lock_guard<std::mutex> lock (mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);
 
     if (storage_.size() >= max_size_) {
         clean_up();
     }
 
     if (storage_.size() >= max_size_) {
-        SILKRPC_INFO << "No room avaliable in storage, max size " << max_size_ << " reached" << std::endl << std::flush;
+        SILKRPC_INFO << "No room avaliable in storage, max size " << max_size_ << " reached" << std::endl
+                     << std::flush;
         return std::nullopt;
     }
 
@@ -54,7 +53,8 @@ std::optional<std::string> FilterStorage::add_filter(const StoredFilter& filter)
         }
     }
     if (!slot_found) {
-        SILKRPC_INFO << "Unable to generate a new filter_id without clashing" << std::endl << std::flush;
+        SILKRPC_INFO << "Unable to generate a new filter_id without clashing" << std::endl
+                     << std::flush;
         return std::nullopt;
     }
 
@@ -63,7 +63,7 @@ std::optional<std::string> FilterStorage::add_filter(const StoredFilter& filter)
 }
 
 bool FilterStorage::remove_filter(const std::string& filter_id) {
-    std::lock_guard<std::mutex> lock (mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);
 
     const auto itr = storage_.find(filter_id);
     if (itr == storage_.end()) {
@@ -75,7 +75,7 @@ bool FilterStorage::remove_filter(const std::string& filter_id) {
 }
 
 std::optional<std::reference_wrapper<StoredFilter>> FilterStorage::get_filter(const std::string& filter_id) {
-    std::lock_guard<std::mutex> lock (mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);
 
     clean_up();
 
@@ -86,7 +86,8 @@ std::optional<std::reference_wrapper<StoredFilter>> FilterStorage::get_filter(co
 
     auto age = itr->second.age();
     if (age > max_filter_age_) {
-        SILKRPC_INFO << "Filter  " << filter_id << " exhausted: removed" << std::endl << std::flush;
+        SILKRPC_INFO << "Filter  " << filter_id << " exhausted: removed" << std::endl
+                     << std::flush;
         storage_.erase(itr);
         return std::nullopt;
     }
@@ -100,11 +101,12 @@ void FilterStorage::clean_up() {
     while (itr != storage_.end()) {
         auto age = itr->second.age();
         if (age > max_filter_age_) {
-            SILKRPC_INFO << "Filter  " << itr->first << " exhausted: removed" << std::endl << std::flush;
+            SILKRPC_INFO << "Filter  " << itr->first << " exhausted: removed" << std::endl
+                         << std::flush;
             itr = storage_.erase(itr);
         } else {
             ++itr;
         }
     }
 }
-} // namespace silkrpc::filter
+}  // namespace silkrpc::filter

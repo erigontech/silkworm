@@ -14,6 +14,8 @@
    limitations under the License.
 ]]
 
+# cmake-format: off
+
 include(hunter_cmake_args)
 
 hunter_cmake_args(
@@ -82,3 +84,5 @@ hunter_config(
   VERSION 0.6.0
   CMAKE_ARGS JWT_DISABLE_PICOJSON=ON JWT_BUILD_EXAMPLES=OFF
 )
+
+# cmake-format: on

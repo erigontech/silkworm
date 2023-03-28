@@ -33,10 +33,10 @@ namespace silkrpc {
 
 struct DaemonSettings {
     std::optional<std::string> datadir;
-    std::string http_port; // eth_end_point
-    std::string engine_port; // engine_end_point
-    std::string api_spec; // eth_api_spec
-    std::string target; // backend_kv_address
+    std::string http_port;    // eth_end_point
+    std::string engine_port;  // engine_end_point
+    std::string api_spec;     // eth_api_spec
+    std::string target;       // backend_kv_address
     uint32_t num_contexts;
     uint32_t num_workers;
     LogLevel log_verbosity;
@@ -99,5 +99,4 @@ class Daemon {
     const std::string& jwt_secret_;
 };
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

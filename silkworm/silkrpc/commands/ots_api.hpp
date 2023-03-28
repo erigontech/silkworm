@@ -19,28 +19,29 @@
 #include <memory>
 #include <vector>
 
-
-#include <silkworm/silkrpc/config.hpp> // NOLINT(build/include_order)
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
-#include <silkworm/silkrpc/json/types.hpp>
-#include <silkworm/silkrpc/types/log.hpp>
-#include <silkworm/silkrpc/ethbackend/backend.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/silkrpc/concurrency/context_pool.hpp>
+#include <silkworm/silkrpc/ethbackend/backend.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
+#include <silkworm/silkrpc/json/types.hpp>
+#include <silkworm/silkrpc/types/log.hpp>
 
-namespace silkrpc::http { class RequestHandler; }
+namespace silkrpc::http {
+class RequestHandler;
+}
 
 namespace silkrpc::commands {
 
 class OtsRpcApi {
   public:
-    explicit OtsRpcApi(Context& context): database_(context.database()), state_cache_(context.state_cache()) {}
+    explicit OtsRpcApi(Context& context) : database_(context.database()), state_cache_(context.state_cache()) {}
     virtual ~OtsRpcApi() = default;
 
     OtsRpcApi(const OtsRpcApi&) = delete;
@@ -61,5 +62,4 @@ class OtsRpcApi {
     static intx::uint256 get_block_fees(const ChainConfig& chain_config, const silkworm::BlockWithHash& block, std::vector<Receipt>& receipts, silkworm::BlockNum block_number);
 };
 
-} // namespace silkrpc::commands
-
+}  // namespace silkrpc::commands

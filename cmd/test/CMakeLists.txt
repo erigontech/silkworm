@@ -32,18 +32,18 @@ find_package(Microsoft.GSL REQUIRED)
 file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/core/*_test.cpp")
 add_executable(core_test unit_test.cpp ${SILKWORM_CORE_TESTS})
 
+# cmake-format: off
 set(CORE_TEST_LIBS
-  silkworm_core
-  Catch2::Catch2
-  evmone
+    silkworm_core
+    Catch2::Catch2
+    evmone
 )
+# cmake-format: on
 
 if(CORE_TEST_ABSEIL_ENABLED)
-  list(APPEND CORE_TEST_LIBS
-    absl::flat_hash_map
-    absl::flat_hash_set
-    absl::node_hash_map
-  )
+  list(APPEND CORE_TEST_LIBS absl::flat_hash_map)
+  list(APPEND CORE_TEST_LIBS absl::flat_hash_set)
+  list(APPEND CORE_TEST_LIBS absl::node_hash_map)
 endif()
 
 target_link_libraries(core_test ${CORE_TEST_LIBS})
@@ -55,7 +55,6 @@ else()
 endif()
 
 if(NOT SILKWORM_CORE_ONLY)
-  find_package(asio-grpc REQUIRED)
   find_package(GTest REQUIRED)
 
   # Silkworm Infra Tests
@@ -80,10 +79,10 @@ if(NOT SILKWORM_CORE_ONLY)
   if(SILKWORM_SANITIZE)
     target_compile_definitions(rpcdaemon_test PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
   endif()
-  target_include_directories(rpcdaemon_test PRIVATE
-          ${SILKWORM_MAIN_DIR}
-          ${SILKWORM_MAIN_DIR}/third_party/evmone/evmc/include)
-  target_link_libraries(rpcdaemon_test silkworm_node silkrpc asio-grpc::asio-grpc Catch2::Catch2 GTest::gmock)
+  target_include_directories(
+    rpcdaemon_test PRIVATE ${SILKWORM_MAIN_DIR} ${SILKWORM_MAIN_DIR}/third_party/evmone/evmc/include
+  )
+  target_link_libraries(rpcdaemon_test silkrpc Catch2::Catch2 GTest::gmock)
 
   # Silkworm Sentry Tests
   file(GLOB_RECURSE SENTRY_TEST_FILES CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/sentry/*_test.cpp")
@@ -110,10 +109,7 @@ if(NOT SILKWORM_CORE_ONLY)
   target_compile_definitions(consensus PRIVATE SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/third_party/tests")
   target_link_libraries(consensus PRIVATE silkworm_node evmc::loader CLI11::CLI11)
 
-  file(GLOB_RECURSE CMD_COMMON_SRC CONFIGURE_DEPENDS
-    "../common/shutdown_signal.hpp"
-    "../common/shutdown_signal.cpp"
-  )
+  file(GLOB_RECURSE CMD_COMMON_SRC CONFIGURE_DEPENDS "../common/shutdown_signal.hpp" "../common/shutdown_signal.cpp")
 
   # BE&KV Tests
   add_executable(backend_kv_test "backend_kv_test.cpp;${CMD_COMMON_SRC}")

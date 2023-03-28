@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "filter.cpp" // NOLINT(build/include)
+#include "filter.cpp"  // NOLINT(build/include)
 
 #include <sstream>
 
@@ -50,8 +50,7 @@ TEST_CASE("write 1-sized filter addresses to ostream", "[silkrpc][types][filter]
 TEST_CASE("write 2-sized filter addresses to ostream", "[silkrpc][types][filter]") {
     FilterAddresses addresses{
         0x6090a6e47849629b7245dfa1ca21d94cd15878ef_address,
-        0x702a999710cfd011b475505335d4f437d8132fae_address
-    };
+        0x702a999710cfd011b475505335d4f437d8132fae_address};
     std::ostringstream oss;
     oss << addresses;
     CHECK(oss.str() == "[0x6090a6e47849629b7245dfa1ca21d94cd15878ef 0x702a999710cfd011b475505335d4f437d8132fae]");
@@ -74,8 +73,7 @@ TEST_CASE("write 1-sized filter subtopics to ostream", "[silkrpc][types][filter]
 TEST_CASE("write 2-sized filter subtopics to ostream", "[silkrpc][types][filter]") {
     FilterSubTopics subtopics{
         0x0000000000000000000000000000000000000000000000000000000000000000_bytes32,
-        0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32
-    };
+        0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32};
     std::ostringstream oss;
     oss << subtopics;
     CHECK(oss.str() == R"([0x0000000000000000000000000000000000000000000000000000000000000000 0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c])");
@@ -117,9 +115,10 @@ TEST_CASE("write filter to ostream", "[silkrpc][types][filter]") {
     };
     std::ostringstream oss;
     oss << filter;
-    CHECK(oss.str() == "from_block: 0 to_block: 10000000 address: "
-        "[0x6090a6e47849629b7245dfa1ca21d94cd15878ef] topics: [[0x0000000000000000000000000000000000000000000000000000000000000000] "
-        "[0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c]] block_hash: null");
+    CHECK(oss.str() ==
+          "from_block: 0 to_block: 10000000 address: "
+          "[0x6090a6e47849629b7245dfa1ca21d94cd15878ef] topics: [[0x0000000000000000000000000000000000000000000000000000000000000000] "
+          "[0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c]] block_hash: null");
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

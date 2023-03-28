@@ -204,4 +204,4 @@ void RpcApiTable::add_ots_handlers() {
     method_handlers_[http::method::k_ots_getBlockDetailsByHash] = &commands::RpcApi::handle_ots_getBlockDetailsByHash;
 }
 
-} // namespace silkrpc::commands
+}  // namespace silkrpc::commands

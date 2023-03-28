@@ -19,9 +19,10 @@
 #include <memory>
 #include <utility>
 
+#include <silkworm/infra/concurrency/coroutine.hpp>
+
 #include <boost/asio/thread_pool.hpp>
 
-#include <silkworm/silkrpc/config.hpp> // NOLINT(build/include_order)
 #include <silkworm/silkrpc/test/context_test_base.hpp>
 
 namespace silkrpc::test {
@@ -63,4 +64,3 @@ class GrpcApiTestBase : public ContextTestBase {
 };
 
 }  // namespace silkrpc::test
-

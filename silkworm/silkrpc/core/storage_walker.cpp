@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-
 #include "storage_walker.hpp"
 
 #include <set>
@@ -23,10 +22,9 @@
 #include <boost/endian/conversion.hpp>
 
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/node/db/bitmap.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
+#include <silkworm/node/db/bitmap.hpp>
 #include <silkworm/node/db/util.hpp>
-
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
@@ -92,27 +90,27 @@ boost::asio::awaitable<silkrpc::ethdb::SplittedKeyValue> next(silkrpc::ethdb::Sp
 }
 
 boost::asio::awaitable<void> StorageWalker::walk_of_storages(uint64_t block_number, const evmc::address& address,
-        const evmc::bytes32& location_hash, uint64_t incarnation, AccountCollector& collector) {
+                                                             const evmc::bytes32& location_hash, uint64_t incarnation, AccountCollector& collector) {
     SILKRPC_TRACE << "block_number=" << block_number << " address=" << address << " START\n";
 
     auto ps_cursor = co_await transaction_.cursor_dup_sort(db::table::kPlainState);
     auto ps_key{make_key(address, incarnation)};
     silkrpc::ethdb::SplitCursorDupSort ps_split_cursor{*ps_cursor,
-        ps_key,
-        location_hash,                      /* subkey */
-        8 * (silkworm::kAddressLength + 8), /* match_bits */
-        silkworm::kAddressLength,           /* part1_end */
-        silkworm::kAddressLength + 8,       /* part_2_start */
-        silkworm::kHashLength};             /* value_offset */
+                                                       ps_key,
+                                                       location_hash,                      /* subkey */
+                                                       8 * (silkworm::kAddressLength + 8), /* match_bits */
+                                                       silkworm::kAddressLength,           /* part1_end */
+                                                       silkworm::kAddressLength + 8,       /* part_2_start */
+                                                       silkworm::kHashLength};             /* value_offset */
 
     auto sh_cursor = co_await transaction_.cursor(db::table::kStorageHistory);
     auto sh_key{make_key(address, location_hash)};
     silkrpc::ethdb::SplitCursor sh_split_cursor{*sh_cursor,
-        sh_key,
-        8 * silkworm::kAddressLength,                         /* match_bits */
-        silkworm::kAddressLength,                             /* part1_end */
-        silkworm::kAddressLength,                             /* part2_start */
-        silkworm::kAddressLength + silkworm::kHashLength};    /* part3_start */
+                                                sh_key,
+                                                8 * silkworm::kAddressLength,                      /* match_bits */
+                                                silkworm::kAddressLength,                          /* part1_end */
+                                                silkworm::kAddressLength,                          /* part2_start */
+                                                silkworm::kAddressLength + silkworm::kHashLength}; /* part3_start */
 
     auto ps_skv = co_await ps_split_cursor.seek_both();
     auto sh_skv = co_await sh_split_cursor.seek();
@@ -151,7 +149,7 @@ boost::asio::awaitable<void> StorageWalker::walk_of_storages(uint64_t block_numb
                 auto dup_key{silkworm::db::storage_change_key(found.value(), address, incarnation)};
 
                 auto data = co_await cs_cursor->seek_both(dup_key, h_loc);
-                if (data.length() > silkworm::kHashLength) { // Skip deleted entries
+                if (data.length() > silkworm::kHashLength) {  // Skip deleted entries
                     data = data.substr(silkworm::kHashLength);
                     const auto ps_address = silkworm::to_evmc_address(ps_skv.key1);
                     go_on = collector(ps_address, ps_skv.key2, data);
@@ -177,7 +175,7 @@ boost::asio::awaitable<void> StorageWalker::walk_of_storages(uint64_t block_numb
 }
 
 boost::asio::awaitable<void> StorageWalker::storage_range_at(uint64_t block_number, const evmc::address& address,
-        const evmc::bytes32& start_location, int16_t max_result, StorageCollector& collector) {
+                                                             const evmc::bytes32& start_location, int16_t max_result, StorageCollector& collector) {
     ethdb::TransactionDatabase tx_database{transaction_};
     auto account_data = co_await tx_database.get_one(db::table::kPlainState, full_view(address));
 
@@ -217,4 +215,4 @@ boost::asio::awaitable<void> StorageWalker::storage_range_at(uint64_t block_numb
     co_return;
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

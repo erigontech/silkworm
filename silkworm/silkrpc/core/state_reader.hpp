@@ -18,20 +18,20 @@
 
 #include <optional>
 
-#include <silkworm/silkrpc/config.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #include <evmc/evmc.hpp>
+
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
-
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 
 namespace silkrpc {
 
 class StateReader {
-public:
+  public:
     explicit StateReader(const core::rawdb::DatabaseReader& db_reader) : db_reader_(db_reader) {}
 
     StateReader(const StateReader&) = delete;
@@ -40,18 +40,17 @@ public:
     boost::asio::awaitable<std::optional<silkworm::Account>> read_account(const evmc::address& address, uint64_t block_number) const;
 
     boost::asio::awaitable<evmc::bytes32> read_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location_hash,
-        uint64_t block_number) const;
+                                                       uint64_t block_number) const;
 
     boost::asio::awaitable<std::optional<silkworm::Bytes>> read_code(const evmc::bytes32& code_hash) const;
 
     boost::asio::awaitable<std::optional<silkworm::Bytes>> read_historical_account(const evmc::address& address, uint64_t block_number) const;
 
     boost::asio::awaitable<std::optional<silkworm::Bytes>> read_historical_storage(const evmc::address& address, uint64_t incarnation,
-        const evmc::bytes32& location_hash, uint64_t block_number) const;
+                                                                                   const evmc::bytes32& location_hash, uint64_t block_number) const;
 
-private:
+  private:
     const core::rawdb::DatabaseReader& db_reader_;
 };
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

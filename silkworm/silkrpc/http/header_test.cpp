@@ -28,4 +28,4 @@ TEST_CASE("header comparison", "[silkrpc][http][header]") {
     CHECK(h1 == h2);
 }
 
-} // namespace silkrpc::http
+}  // namespace silkrpc::http

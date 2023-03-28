@@ -24,11 +24,11 @@
 #include <evmc/evmc.hpp>
 #include <gmock/gmock.h>
 #include <grpcpp/grpcpp.h>
-#include <silkworm/core/common/base.hpp>
 
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/interfaces/txpool/txpool.grpc.pb.h>
+#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/test/api_test_base.hpp>
 #include <silkworm/silkrpc/test/grpc_actions.hpp>
 #include <silkworm/silkrpc/test/grpc_responder.hpp>
@@ -38,8 +38,8 @@ namespace grpc {
 
 inline bool operator==(const Status& lhs, const Status& rhs) {
     return lhs.error_code() == rhs.error_code() &&
-        lhs.error_message() == rhs.error_message() &&
-        lhs.error_details() == rhs.error_details();
+           lhs.error_message() == rhs.error_message() &&
+           lhs.error_details() == rhs.error_details();
 }
 
 ::types::H160* make_h160(uint64_t hi_hi, uint64_t hi_lo, uint32_t lo) {
@@ -51,7 +51,7 @@ inline bool operator==(const Status& lhs, const Status& rhs) {
     h160_ptr->set_lo(lo);
     return h160_ptr;
 }
-} // namespace grpc
+}  // namespace grpc
 
 namespace txpool {
 
@@ -66,15 +66,15 @@ inline bool operator==(const AddReply& lhs, const AddReply& rhs) {
     }
     return true;
 }
-} // namespace txpool
+}  // namespace txpool
 
 namespace silkrpc::txpool {
 
 using Catch::Matchers::Message;
+using testing::_;
 using testing::AtLeast;
 using testing::MockFunction;
 using testing::Return;
-using testing::_;
 
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 using StrictMockTxpoolStub = testing::StrictMock<::txpool::MockTxpoolStub>;
@@ -290,4 +290,4 @@ TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::get_transactions", "[sil
 }
 #endif  // SILKWORM_SANITIZE
 
-} // namespace silkrpc::txpool
+}  // namespace silkrpc::txpool

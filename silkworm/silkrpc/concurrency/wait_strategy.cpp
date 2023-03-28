@@ -53,14 +53,21 @@ bool AbslParseFlag(absl::string_view text, WaitMode* wait_mode, std::string* err
 
 std::string AbslUnparseFlag(WaitMode wait_mode) {
     switch (wait_mode) {
-        case WaitMode::backoff: return "backoff";
-        case WaitMode::blocking: return "blocking";
-        case WaitMode::sleeping: return "sleeping";
-        case WaitMode::yielding: return "yielding";
-        case WaitMode::spin_wait: return "spin_wait";
-        case WaitMode::busy_spin: return "busy_spin";
-        default: return absl::StrCat(wait_mode);
+        case WaitMode::backoff:
+            return "backoff";
+        case WaitMode::blocking:
+            return "blocking";
+        case WaitMode::sleeping:
+            return "sleeping";
+        case WaitMode::yielding:
+            return "yielding";
+        case WaitMode::spin_wait:
+            return "spin_wait";
+        case WaitMode::busy_spin:
+            return "busy_spin";
+        default:
+            return absl::StrCat(wait_mode);
     }
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

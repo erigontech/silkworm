@@ -16,17 +16,17 @@
 
 #pragma once
 
-#include <optional>
 #include <map>
+#include <optional>
 
-#include <nlohmann/json.hpp>
-#include <silkworm/silkrpc/config.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #include <evmc/evmc.hpp>
+#include <nlohmann/json.hpp>
+
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
-
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
@@ -39,7 +39,7 @@ silkworm::Bytes make_key(const evmc::address& address, const evmc::bytes32& loca
 silkworm::Bytes make_key(const evmc::address& address, uint64_t incarnation);
 
 class StorageWalker {
-public:
+  public:
     using AccountCollector = std::function<bool(const evmc::address&, silkworm::ByteView, silkworm::ByteView)>;
     using StorageCollector = std::function<bool(const silkworm::ByteView, silkworm::ByteView, silkworm::ByteView)>;
 
@@ -49,14 +49,13 @@ public:
     StorageWalker& operator=(const StorageWalker&) = delete;
 
     boost::asio::awaitable<void> walk_of_storages(uint64_t block_number,
-        const evmc::address& start_address, const evmc::bytes32& start_location, uint64_t incarnation, AccountCollector& collector);
+                                                  const evmc::address& start_address, const evmc::bytes32& start_location, uint64_t incarnation, AccountCollector& collector);
 
     boost::asio::awaitable<void> storage_range_at(uint64_t block_number,
-        const evmc::address& start_address, const evmc::bytes32& start_location, int16_t max_result, StorageCollector& collector);
+                                                  const evmc::address& start_address, const evmc::bytes32& start_location, int16_t max_result, StorageCollector& collector);
 
-private:
+  private:
     silkrpc::ethdb::Transaction& transaction_;
 };
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

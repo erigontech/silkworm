@@ -20,8 +20,8 @@
 #include <system_error>
 
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/use_future.hpp>
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/use_future.hpp>
 #include <catch2/catch.hpp>
 
 #include <silkworm/silkrpc/test/grpc_actions.hpp>
@@ -238,12 +238,12 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[silkrpc][
 
         // Execute the test: opening a cursor should raise an exception w/ expected gRPC status code
         CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.cursor("table1")), boost::system::system_error,
-            test::exception_has_cancelled_grpc_status_code());
+                             test::exception_has_cancelled_grpc_status_code());
 
         // Execute the test postconditions:
         // close the transaction raises an exception w/ expected gRPC status code
         CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.close()), boost::system::system_error,
-            test::exception_has_cancelled_grpc_status_code());
+                             test::exception_has_cancelled_grpc_status_code());
     }
     SECTION("failure in write") {
         // Set the call expectations:
@@ -265,12 +265,12 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[silkrpc][
 
         // Execute the test: opening a cursor should raise an exception w/ expected gRPC status code
         CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.cursor("table1")), boost::system::system_error,
-            test::exception_has_cancelled_grpc_status_code());
+                             test::exception_has_cancelled_grpc_status_code());
 
         // Execute the test postconditions:
         // close the transaction raises an exception w/ expected gRPC status code
         CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.close()), boost::system::system_error,
-            test::exception_has_cancelled_grpc_status_code());
+                             test::exception_has_cancelled_grpc_status_code());
     }
 }
 
@@ -345,12 +345,12 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
 
         // Execute the test: opening a cursor should raise an exception w/ expected gRPC status code
         CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.cursor_dup_sort("table1")), boost::system::system_error,
-            test::exception_has_cancelled_grpc_status_code());
+                             test::exception_has_cancelled_grpc_status_code());
 
         // Execute the test postconditions:
         // close the transaction raises an exception w/ expected gRPC status code
         CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.close()), boost::system::system_error,
-            test::exception_has_cancelled_grpc_status_code());
+                             test::exception_has_cancelled_grpc_status_code());
     }
     SECTION("failure in write") {
         // Set the call expectations:
@@ -372,14 +372,14 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
 
         // Execute the test: opening a cursor should raise an exception w/ expected gRPC status code
         CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.cursor_dup_sort("table1")), boost::system::system_error,
-            test::exception_has_cancelled_grpc_status_code());
+                             test::exception_has_cancelled_grpc_status_code());
 
         // Execute the test postconditions:
         // close the transaction raises an exception w/ expected gRPC status code
         CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.close()), boost::system::system_error,
-            test::exception_has_cancelled_grpc_status_code());
+                             test::exception_has_cancelled_grpc_status_code());
     }
 }
 #endif  // SILKWORM_SANITIZE
 
-} // namespace silkrpc::ethdb::kv
+}  // namespace silkrpc::ethdb::kv

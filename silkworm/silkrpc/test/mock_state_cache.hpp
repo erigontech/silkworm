@@ -23,10 +23,10 @@
 #include <boost/asio/awaitable.hpp>
 #include <gmock/gmock.h>
 
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
-#include <silkworm/core/common/util.hpp>
 
 namespace silkrpc::test {
 
@@ -53,4 +53,3 @@ class MockStateCache : public ethdb::kv::StateCache {
 };
 
 }  // namespace silkrpc::test
-

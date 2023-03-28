@@ -20,14 +20,14 @@
 #include <string>
 #include <vector>
 
-#include <silkworm/silkrpc/config.hpp> // NOLINT(build/include_order)
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
+
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
-
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 
@@ -48,7 +48,7 @@ const std::uint8_t kPercentile = 60;
 typedef std::function<boost::asio::awaitable<silkworm::BlockWithHash>(uint64_t)> BlockProvider;
 
 class GasPriceOracle {
-public:
+  public:
     explicit GasPriceOracle(const BlockProvider& block_provider) : block_provider_(block_provider) {}
     virtual ~GasPriceOracle() {}
 
@@ -57,11 +57,10 @@ public:
 
     boost::asio::awaitable<intx::uint256> suggested_price(uint64_t block_number);
 
-private:
+  private:
     boost::asio::awaitable<void> load_block_prices(uint64_t block_number, uint64_t limit, std::vector<intx::uint256>& tx_prices);
 
     const BlockProvider& block_provider_;
 };
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

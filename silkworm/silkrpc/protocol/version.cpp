@@ -26,7 +26,7 @@ std::ostream& operator<<(std::ostream& out, const ProtocolVersion& v) {
     return out;
 }
 
-template<typename StubInterface>
+template <typename StubInterface>
 ProtocolVersionResult wait_for_protocol_check(const std::unique_ptr<StubInterface>& stub, const ProtocolVersion& version, const std::string& name) {
     grpc::ClientContext context;
     context.set_wait_for_ready(true);
@@ -49,7 +49,7 @@ ProtocolVersionResult wait_for_protocol_check(const std::unique_ptr<StubInterfac
     }
 }
 
-template<auto Func, typename StubInterface>
+template <auto Func, typename StubInterface>
 struct NewStubFactory final {
     auto operator()(const std::shared_ptr<grpc::ChannelInterface>& channel, const grpc::StubOptions& options = grpc::StubOptions()) -> std::unique_ptr<StubInterface> {
         return std::invoke(Func, channel, options);
@@ -92,4 +92,4 @@ ProtocolVersionResult wait_for_txpool_protocol_check(const std::shared_ptr<grpc:
     return wait_for_protocol_check(new_stub_factory(channel), TXPOOL_SERVICE_API_VERSION, "TXPOOL");
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

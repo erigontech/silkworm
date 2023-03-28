@@ -18,8 +18,8 @@
 
 #include <iomanip>
 
-#include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkrpc {
 
@@ -98,4 +98,4 @@ std::ostream& operator<<(std::ostream& out, const silkworm::Transaction& t) {
     return out;
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

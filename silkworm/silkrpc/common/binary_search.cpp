@@ -33,4 +33,4 @@ boost::asio::awaitable<std::size_t> binary_search(std::size_t n, BinaryPredicate
     co_return i;
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

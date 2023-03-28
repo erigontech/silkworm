@@ -130,5 +130,4 @@ constexpr const char* k_ots_hasCode{"ots_hasCode"};
 constexpr const char* k_ots_getBlockDetails{"ots_getBlockDetails"};
 constexpr const char* k_ots_getBlockDetailsByHash{"ots_getBlockDetailsByHash"};
 
-} // namespace silkrpc::http::method
-
+}  // namespace silkrpc::http::method

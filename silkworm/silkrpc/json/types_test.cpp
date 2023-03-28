@@ -24,6 +24,7 @@
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 #include <nlohmann/json.hpp>
+
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/prune_mode.hpp>
@@ -34,7 +35,7 @@ const auto invalidArgumentMessage = "invalid argument";
 #else
 const auto invalidArgumentMessage = "Invalid argument";
 #endif
-}
+}  // namespace
 
 namespace silkrpc {
 
@@ -153,12 +154,12 @@ TEST_CASE("serialize empty block header", "[silkrpc][to_json]") {
         "transactionsRoot":"0x0000000000000000000000000000000000000000000000000000000000000000",
         "receiptsRoot":"0x0000000000000000000000000000000000000000000000000000000000000000",
         "logsBloom":"0x000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(00000000000000000000000000000000000000000000000000000000000000000000000000000000",
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(00000000000000000000000000000000000000000000000000000000000000000000000000000000",
         "difficulty":"0x0",
         "nonce":"0x0000000000000000",
         "number":"0x0",
@@ -187,8 +188,7 @@ TEST_CASE("serialize block header", "[silkrpc][to_json]") {
         uint64_t(5405021),
         *silkworm::from_hex("0001FF0100"),
         0x0000000000000000000000000000000000000000000000000000000000000001_bytes32,
-        {0, 0, 0, 0, 0, 0, 0, 255}
-    };
+        {0, 0, 0, 0, 0, 0, 0, 255}};
     nlohmann::json j = header;
     CHECK(j == R"({
         "baseFeePerGas":null,
@@ -200,12 +200,12 @@ TEST_CASE("serialize block header", "[silkrpc][to_json]") {
         "transactionsRoot":"0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126e",
         "receiptsRoot":"0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126f",
         "logsBloom":"0x000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(00000000000000000000000000000000000000000000000000000000000000000000000000000000",
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(00000000000000000000000000000000000000000000000000000000000000000000000000000000",
         "difficulty":"0x0",
         "number":"0x5",
         "gasLimit":"0xf4240",
@@ -232,10 +232,10 @@ TEST_CASE("serialize block header with baseFeePerGas", "[silkrpc][to_json]") {
         uint64_t(1000000),
         uint64_t(1000000),
         uint64_t(5405021),
-        *silkworm::from_hex("0001FF0100"),                                          // extradata
-        0x0000000000000000000000000000000000000000000000000000000000000001_bytes32, // mixhash
-        {1, 2, 3, 4, 5, 6, 7, 8},                                                   // nonce
-        std::optional<intx::uint256>(1000),                                         // base_fee_per_gas
+        *silkworm::from_hex("0001FF0100"),                                           // extradata
+        0x0000000000000000000000000000000000000000000000000000000000000001_bytes32,  // mixhash
+        {1, 2, 3, 4, 5, 6, 7, 8},                                                    // nonce
+        std::optional<intx::uint256>(1000),                                          // base_fee_per_gas
     };
     nlohmann::json j = header;
     CHECK(j == R"({
@@ -248,12 +248,12 @@ TEST_CASE("serialize block header with baseFeePerGas", "[silkrpc][to_json]") {
         "transactionsRoot":"0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126e",
         "receiptsRoot":"0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126f",
         "logsBloom":"0x000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(00000000000000000000000000000000000000000000000000000000000000000000000000000000",
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(00000000000000000000000000000000000000000000000000000000000000000000000000000000",
         "difficulty":"0x0",
         "number":"0x5",
         "gasLimit":"0xf4240",
@@ -269,34 +269,33 @@ TEST_CASE("serialize block header with baseFeePerGas", "[silkrpc][to_json]") {
 
 TEST_CASE("serialize block with baseFeePerGas", "[silkrpc][to_json]") {
     silkrpc::Block rpc_block{
-        {  /* BlockWithHash */
-            {  /* Block */
-                {  /* BlockBody */
-                    .transactions = std::vector<silkworm::Transaction>{},
-                    .ommers =  std::vector<silkworm::BlockHeader>{},
-                    .withdrawals = std::nullopt,
-                },
-                {  /* BlockHeader */
-                    .parent_hash = 0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32,
-                    .ommers_hash = 0x474f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126d_bytes32,
-                    .beneficiary = 0x0715a7794a1dc8e42615f059dd6e406a6594651a_address,
-                    .state_root = 0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126d_bytes32,
-                    .transactions_root = 0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126e_bytes32,
-                    .receipts_root = 0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126f_bytes32,
-                    .logs_bloom = silkworm::Bloom{},
-                    .difficulty = intx::uint256{0},
-                    .number = uint64_t(5),
-                    .gas_limit = uint64_t(1000000),
-                    .gas_used = uint64_t(1000000),
-                    .timestamp = uint64_t(5405021),
-                    .extra_data = *silkworm::from_hex("0001FF0100"),
-                    .mix_hash = 0x0000000000000000000000000000000000000000000000000000000000000001_bytes32,
-                    .nonce = {0, 0, 0, 0, 0, 0, 0, 255},
-                    .base_fee_per_gas = std::optional<intx::uint256>(0x244428),
-                }
-            }
-        }
-    };
+        { /* BlockWithHash */
+         {/* Block */
+          {
+              /* BlockBody */
+              .transactions = std::vector<silkworm::Transaction>{},
+              .ommers = std::vector<silkworm::BlockHeader>{},
+              .withdrawals = std::nullopt,
+          },
+          {
+              /* BlockHeader */
+              .parent_hash = 0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32,
+              .ommers_hash = 0x474f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126d_bytes32,
+              .beneficiary = 0x0715a7794a1dc8e42615f059dd6e406a6594651a_address,
+              .state_root = 0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126d_bytes32,
+              .transactions_root = 0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126e_bytes32,
+              .receipts_root = 0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126f_bytes32,
+              .logs_bloom = silkworm::Bloom{},
+              .difficulty = intx::uint256{0},
+              .number = uint64_t(5),
+              .gas_limit = uint64_t(1000000),
+              .gas_used = uint64_t(1000000),
+              .timestamp = uint64_t(5405021),
+              .extra_data = *silkworm::from_hex("0001FF0100"),
+              .mix_hash = 0x0000000000000000000000000000000000000000000000000000000000000001_bytes32,
+              .nonce = {0, 0, 0, 0, 0, 0, 0, 255},
+              .base_fee_per_gas = std::optional<intx::uint256>(0x244428),
+          }}}};
     auto body = rpc_block.block;
     body.transactions.resize(2);
     body.transactions[0].nonce = 172339;
@@ -350,12 +349,12 @@ TEST_CASE("serialize block with baseFeePerGas", "[silkrpc][to_json]") {
         "transactionsRoot":"0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126e",
         "receiptsRoot":"0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126f",
         "logsBloom":"0x000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(00000000000000000000000000000000000000000000000000000000000000000000000000000000",
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(00000000000000000000000000000000000000000000000000000000000000000000000000000000",
         "difficulty":"0x0",
         "number":"0x5",
         "hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -384,12 +383,12 @@ TEST_CASE("serialize empty block", "[silkrpc][to_json]") {
         "transactionsRoot":"0x0000000000000000000000000000000000000000000000000000000000000000",
         "receiptsRoot":"0x0000000000000000000000000000000000000000000000000000000000000000",
         "logsBloom":"0x000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(00000000000000000000000000000000000000000000000000000000000000000000000000000000",
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(00000000000000000000000000000000000000000000000000000000000000000000000000000000",
         "difficulty":"0x0",
         "nonce":"0x0000000000000000",
         "number":"0x0",
@@ -437,12 +436,12 @@ TEST_CASE("serialize EIP-2718 block", "[silkrpc][to_json]") {
         "gasUsed":"0xa410",
         "hash":"0x0000000000000000000000000000000000000000000000000000000000000000",
         "logsBloom":"0x000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(00000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                            R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+                            R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+                            R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+                            R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+                            R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+                            R"(00000000000000000000000000000000000000000000000000000000000000000000000000000000",
         "miner":"0x8888f1f195afa192cfee860698584c030f4c9db1",
         "mixHash":"0xbd4472abb6659ebe3ee06ee4d7b72a00a9f4d001caca51342001075469aff498",
         "nonce":"0xa13a5a8c8f2bb1c4",
@@ -515,41 +514,43 @@ TEST_CASE("serialize block with hydrated transactions", "[silkrpc][to_json]") {
     silkworm::Transaction tx2;
     REQUIRE(silkworm::rlp::decode(tx2_view, tx2));
 
-
     // 1.4) build the full block
     silkrpc::Block rpc_block{
-        {  // BlockWithHash
-            /*.block =*/ {  // Block
-                {  // BlockBody
+        {
+            // BlockWithHash
+            /*.block =*/{
+                // Block
+                {
+                    // BlockBody
                     .transactions = std::vector<silkworm::Transaction>{tx1, tx2},
                     .ommers = std::vector<silkworm::BlockHeader>{},
                     .withdrawals = std::nullopt,
                 },
-                /*.header =*/ header,
+                /*.header =*/header,
             },
-            /*.hash =*/ 0xc9e65d063911aa583e17bbb7070893482203217caf6d9fbb50265c72e7bf73e5_bytes32,
+            /*.hash =*/0xc9e65d063911aa583e17bbb7070893482203217caf6d9fbb50265c72e7bf73e5_bytes32,
         },
-        /*.total_difficulty =*/ intx::uint256{0x4e33ae},
-        /*.full_tx =*/ true,
+        /*.total_difficulty =*/intx::uint256{0x4e33ae},
+        /*.full_tx =*/true,
     };
 
     nlohmann::json rpc_block_json = rpc_block;
     CHECK(rpc_block_json == R"({
         "difficulty":"0x1",
         "extraData":"0x476f65726c6920496e697469617469766520417574686f7269747900000000001f3070be3)"
-                R"(668d4e3bdd1d08969becd5b06ab0ae4224873453d827a67b3a089ee03c69941418ac300e2c3c)"
-                R"(a9b5597c7a3795932a7ff2f907db605a93a88c5b4a800",
+                            R"(668d4e3bdd1d08969becd5b06ab0ae4224873453d827a67b3a089ee03c69941418ac300e2c3c)"
+                            R"(a9b5597c7a3795932a7ff2f907db605a93a88c5b4a800",
         "gasLimit":"0x7a1200",
         "gasUsed":"0x8b89a",
         "hash":"0xc9e65d063911aa583e17bbb7070893482203217caf6d9fbb50265c72e7bf73e5",
         "logsBloom":"0x040000000000000000000000000400100010004020000000000000000000000800002000)"
-                    R"(100000000100000000008000000000001000000000080000000000000000000000000000)"
-                    R"(000000000000000000000010100000000000000000000008000008000000000000000000)"
-                    R"(000000002000000000000000000000000000040000000000000010000000000000000000)"
-                    R"(000000000000000000000000004000000000000000000000000201804400200000000800)"
-                    R"(000000000000000000000000000000000000000000000000000000000002000000000000)"
-                    R"(000000000000000000000000000000000018000000200000401000088080000002004000)"
-                    R"(00000000",
+                            R"(100000000100000000008000000000001000000000080000000000000000000000000000)"
+                            R"(000000000000000000000010100000000000000000000008000008000000000000000000)"
+                            R"(000000002000000000000000000000000000040000000000000010000000000000000000)"
+                            R"(000000000000000000000000004000000000000000000000000201804400200000000800)"
+                            R"(000000000000000000000000000000000000000000000000000000000002000000000000)"
+                            R"(000000000000000000000000000000000018000000200000401000088080000002004000)"
+                            R"(00000000",
         "miner":"0x0000000000000000000000000000000000000000",
         "mixHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
         "nonce":"0x0000000000000000",
@@ -588,14 +589,14 @@ TEST_CASE("serialize block with hydrated transactions", "[silkrpc][to_json]") {
                 "gasPrice":"0x3b9aca00",
                 "hash":"0x81d69137fe27a549e957c2dd3d54f374a019bf12409ca44fb9e01dc82ac7e925",
                 "input":"0x9b4e463400000000000000000000000000000000000000000000000000000000000000600)"
-                    R"(0000000000000000000000000000000000000000000000000000000000000c081c2ac5bba256)"
-                    R"(c88daa744c9caa7d6c99c32c1bc0c07bdca87bd2a054118c47b0000000000000000000000000)"
-                    R"(000000000000000000000000000000000000030a5a151a2320abaab98cfa8366fc326fb6f45c)"
-                    R"(f1c93697191ec1370e1caca0fc6237e3bc5328755ae66bc5ddb141f0cb100000000000000000)"
-                    R"(0000000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(060a4dcd35675e049ea5b58d9567f8029669d4cdbe72511d330d96a578e2714f1c9db00f6a9b)"
-                    R"(abc217b250fc7f217b0261506727657b420d9e05adc73675390ce2eb1e1aef3bac7d1b4b424c)"
-                    R"(9dc07cdcac2729eabdb81c857325e20202ea2476160",
+                            R"(0000000000000000000000000000000000000000000000000000000000000c081c2ac5bba256)"
+                            R"(c88daa744c9caa7d6c99c32c1bc0c07bdca87bd2a054118c47b0000000000000000000000000)"
+                            R"(000000000000000000000000000000000000030a5a151a2320abaab98cfa8366fc326fb6f45c)"
+                            R"(f1c93697191ec1370e1caca0fc6237e3bc5328755ae66bc5ddb141f0cb100000000000000000)"
+                            R"(0000000000000000000000000000000000000000000000000000000000000000000000000000)"
+                            R"(060a4dcd35675e049ea5b58d9567f8029669d4cdbe72511d330d96a578e2714f1c9db00f6a9b)"
+                            R"(abc217b250fc7f217b0261506727657b420d9e05adc73675390ce2eb1e1aef3bac7d1b4b424c)"
+                            R"(9dc07cdcac2729eabdb81c857325e20202ea2476160",
                 "nonce":"0x2",
                 "r":"0x1d8e665abc1278a9526aaf4c604f75b293e43ccf9dc72918a633af584b73425b",
                 "s":"0x7f8913ecd5db0e98d48097abefd7b2fa954d7cf1514496b870b8a1335034df4d",
@@ -647,12 +648,12 @@ TEST_CASE("serialize block body with ommers", "[silkrpc][to_json]") {
         "gasUsed":"0x0",
         "hash":"0x0000000000000000000000000000000000000000000000000000000000000000",
         "logsBloom":"0x000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(00000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                            R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+                            R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+                            R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+                            R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+                            R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+                            R"(00000000000000000000000000000000000000000000000000000000000000000000000000000000",
         "miner":"0x0000000000000000000000000000000000000000",
         "mixHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
         "nonce":"0x0000000000000000",
@@ -688,7 +689,7 @@ TEST_CASE("serialize empty transaction", "[silkrpc][to_json]") {
 }
 
 TEST_CASE("serialize empty call_bundle", "[silkrpc][to_json]") {
-    struct CallBundleInfo bundle_info{};
+    struct CallBundleInfo bundle_info {};
 
     nlohmann::json j = bundle_info;
     CHECK(j == R"({
@@ -698,8 +699,8 @@ TEST_CASE("serialize empty call_bundle", "[silkrpc][to_json]") {
 }
 
 TEST_CASE("serialize call_bundle with error", "[silkrpc][to_json]") {
-    struct CallBundleInfo bundle_info{};
-    struct CallBundleTxInfo tx_info{};
+    struct CallBundleInfo bundle_info {};
+    struct CallBundleTxInfo tx_info {};
     tx_info.gas_used = 0x234;
     tx_info.error_message = "operation reverted";
     bundle_info.txs_info.push_back(tx_info);
@@ -713,8 +714,8 @@ TEST_CASE("serialize call_bundle with error", "[silkrpc][to_json]") {
 }
 
 TEST_CASE("serialize call_bundle with value", "[silkrpc][to_json]") {
-    struct CallBundleInfo bundle_info{};
-    struct CallBundleTxInfo tx_info{};
+    struct CallBundleInfo bundle_info {};
+    struct CallBundleTxInfo tx_info {};
     tx_info.gas_used = 0x234;
     tx_info.value = 0x1230000000000000000000000000000000000000000000000000000000000321_bytes32;
     bundle_info.txs_info.push_back(tx_info);
@@ -750,18 +751,18 @@ TEST_CASE("serialize legacy transaction (type=0)", "[silkrpc][to_json]") {
     // https://etherscan.io/tx/0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060
     // Block 46147
     silkworm::Transaction txn1{
-        silkworm::Transaction::Type::kLegacy,               // type
-        0,                                                  // nonce
-        50'000 * kGiga,                                     // max_priority_fee_per_gas
-        50'000 * kGiga,                                     // max_fee_per_gas
-        21'000,                                             // gas_limit
-        0x5df9b87991262f6ba471f09758cde1c0fc1de734_address, // to
-        31337,                                              // value
-        {},                                                 // data
-        true,                                               // odd_y_parity
-        std::nullopt,                                       // chain_id
-        intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"), // r
-        intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"), // s
+        silkworm::Transaction::Type::kLegacy,                                                                    // type
+        0,                                                                                                       // nonce
+        50'000 * kGiga,                                                                                          // max_priority_fee_per_gas
+        50'000 * kGiga,                                                                                          // max_fee_per_gas
+        21'000,                                                                                                  // gas_limit
+        0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,                                                      // to
+        31337,                                                                                                   // value
+        {},                                                                                                      // data
+        true,                                                                                                    // odd_y_parity
+        std::nullopt,                                                                                            // chain_id
+        intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),  // r
+        intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),  // s
     };
     nlohmann::json j1 = txn1;
     CHECK(j1 == R"({
@@ -876,8 +877,7 @@ TEST_CASE("serialize EIP-2930 transaction (type=1)", "[silkrpc][to_json]") {
         intx::uint256{18},
         intx::uint256{36},
         std::vector<silkworm::AccessListEntry>{},
-        0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address
-    };
+        0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address};
     nlohmann::json j1 = txn1;
     CHECK(j1 == R"({
         "nonce":"0x0",
@@ -924,8 +924,7 @@ TEST_CASE("serialize EIP-2930 transaction (type=1)", "[silkrpc][to_json]") {
         0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32,
         123123,
         intx::uint256{12},
-        3
-    };
+        3};
     nlohmann::json j2 = txn2;
     CHECK(j2 == R"({
         "nonce":"0x0",
@@ -962,20 +961,20 @@ TEST_CASE("serialize EIP-2930 transaction (type=1)", "[silkrpc][to_json]") {
 
 TEST_CASE("serialize EIP-1559 transaction (type=2)", "[silkrpc][to_json]") {
     silkworm::Transaction txn1{
-        silkworm::Transaction::Type::kEip1559,                      // type
-        0,                                                          // nonce
-        50'000 * kGiga,                                             // max_priority_fee_per_gas
-        50'000 * kGiga,                                             // max_fee_per_gas
-        21'000,                                                     // gas_limit
-        0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,         // to
-        31337,                                                      // value
-        *silkworm::from_hex("001122aabbcc"),                        // data
-        true,                                                       // odd_y_parity
-        intx::uint256{1},                                           // chainId
-        intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"), // r
-        intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"), // s
+        silkworm::Transaction::Type::kEip1559,                                                                   // type
+        0,                                                                                                       // nonce
+        50'000 * kGiga,                                                                                          // max_priority_fee_per_gas
+        50'000 * kGiga,                                                                                          // max_fee_per_gas
+        21'000,                                                                                                  // gas_limit
+        0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,                                                      // to
+        31337,                                                                                                   // value
+        *silkworm::from_hex("001122aabbcc"),                                                                     // data
+        true,                                                                                                    // odd_y_parity
+        intx::uint256{1},                                                                                        // chainId
+        intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),  // r
+        intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),  // s
         std::vector<silkworm::AccessListEntry>{},
-        0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address                                                      //
+        0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address  //
     };
     nlohmann::json j1 = txn1;
     CHECK(j1 == R"({
@@ -996,7 +995,6 @@ TEST_CASE("serialize EIP-1559 transaction (type=2)", "[silkrpc][to_json]") {
         "maxFeePerGas":"0x2d79883d2000"
     })"_json);
 }
-
 
 TEST_CASE("serialize error", "[silkrpc][to_json]") {
     Error err{100, {"generic error"}};
@@ -1123,7 +1121,7 @@ TEST_CASE("deserialize wrong size receipt", "[silkrpc][from_json]") {
     const auto j2 = nlohmann::json::from_cbor(*silkworm::from_hex("8100"));
     CHECK_THROWS_MATCHES(j2.get<Receipt>(), std::system_error, Message("Receipt CBOR: missing entries: "s + invalidArgumentMessage));
     const auto j3 = nlohmann::json::from_cbor(*silkworm::from_hex("8200f6"));
-   CHECK_THROWS_MATCHES(j3.get<Receipt>(), std::system_error, Message("Receipt CBOR: missing entries: "s + invalidArgumentMessage));
+    CHECK_THROWS_MATCHES(j3.get<Receipt>(), std::system_error, Message("Receipt CBOR: missing entries: "s + invalidArgumentMessage));
     const auto j4 = nlohmann::json::from_cbor(*silkworm::from_hex("8300f600"));
     CHECK_THROWS_MATCHES(j4.get<Receipt>(), std::system_error, Message("Receipt CBOR: missing entries: "s + invalidArgumentMessage));
     const auto j5 = nlohmann::json::from_cbor(*silkworm::from_hex("84f4f60000"));
@@ -1200,12 +1198,12 @@ TEST_CASE("serialize empty receipt", "[silkrpc::json][to_json]") {
         "gasUsed":"0x0",
         "logs":[],
         "logsBloom":"0x000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(00000000000000000000000000000000000000000000000000000000000000000000000000000000",
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(00000000000000000000000000000000000000000000000000000000000000000000000000000000",
         "status":"0x0",
         "to":"0x0000000000000000000000000000000000000000",
         "transactionHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -1229,8 +1227,7 @@ TEST_CASE("serialize receipt", "[silkrpc::json][to_json]") {
         0x22ea9f6b28db76a7162054c05ed812deb2f519cd_address,
         0x22ea9f6b28db76a7162054c05ed812deb2f519cd_address,
         1,
-        2000000000
-    };
+        2000000000};
     nlohmann::json j = r;
     CHECK(j == R"({
         "blockHash":"0xb02a3b0ee16c858afaa34bcd6770b3c20ee56aa2f75858733eb0e927b5b7126f",
@@ -1242,12 +1239,12 @@ TEST_CASE("serialize receipt", "[silkrpc::json][to_json]") {
         "gasUsed":"0xa",
         "logs":[],
         "logsBloom":"0x000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
-                    R"(00000000000000000000000000000000000000000000000000000000000000000000000000000000",
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(000000000000000000000000000000000000000000000000000000000000000000000000)"
+               R"(00000000000000000000000000000000000000000000000000000000000000000000000000000000",
         "status":"0x0",
         "status":"0x1",
         "to":"0x22ea9f6b28db76a7162054c05ed812deb2f519cd",
@@ -1305,9 +1302,8 @@ TEST_CASE("deserialize filter with topic", "[silkrpc::json][from_json]") {
     CHECK(f.to_block == "0x3d2600");
     CHECK(f.addresses == std::vector<evmc::address>{0x6090a6e47849629b7245dfa1ca21d94cd15878ef_address});
     CHECK(f.topics == std::vector<std::vector<evmc::bytes32>>{
-        {},
-        {0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32}
-    });
+                          {},
+                          {0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32}});
     CHECK(f.block_hash == std::nullopt);
 }
 
@@ -1451,8 +1447,7 @@ TEST_CASE("deserialize block_number_or_hash", "[silkrpc::json][from_json]") {
 TEST_CASE("serialize zero forks", "[silkrpc::json][to_json]") {
     silkrpc::ChainConfig cc{
         0x0000000000000000000000000000000000000000000000000000000000000000_bytes32,
-        R"({"chainId":1,"ethash":{}})"_json
-    };
+        R"({"chainId":1,"ethash":{}})"_json};
     silkrpc::Forks f{cc};
     nlohmann::json j = f;
     CHECK(j == R"({
@@ -1478,8 +1473,7 @@ TEST_CASE("serialize forks", "[silkrpc::json][to_json]") {
             "londonBlock":12965000,
             "muirGlacierBlock":9200000,
             "petersburgBlock":7280000
-        })"_json
-    };
+        })"_json};
     silkrpc::Forks f{cc};
     nlohmann::json j = f;
     CHECK(j == R"({
@@ -1523,7 +1517,7 @@ TEST_CASE("serialize NodeInfoPorts", "[silkrpc::json][to_json]") {
 
 TEST_CASE("serialize NodeInfo", "[silkrpc::json][to_json]") {
     silkrpc::NodeInfo node_info{"340", "erigon", "enode", "enr", "[::]:30303", "{\"eth\": {\"network\":5, \"difficulty\":10790000}}"};
-    nlohmann::json j =  node_info;
+    nlohmann::json j = node_info;
     CHECK(j == R"( {
               "enode":"enode",
               "enr":"enr",
@@ -1536,7 +1530,6 @@ TEST_CASE("serialize NodeInfo", "[silkrpc::json][to_json]") {
     })"_json);
 }
 
-
 TEST_CASE("serialize issuance", "[silkrpc::json][to_json]") {
     silkrpc::Issuance issuance{
         "0x0",
@@ -1545,8 +1538,7 @@ TEST_CASE("serialize issuance", "[silkrpc::json][to_json]") {
         "0x0",
         "0x0",
         "0x0",
-        "0x0"
-    };
+        "0x0"};
     nlohmann::json j = issuance;
     CHECK(j == R"({
         "blockReward":"0x0",
@@ -1644,8 +1636,7 @@ TEST_CASE("serialize forkchoice state", "[silkrpc::json][to_json]") {
     silkrpc::ForkChoiceState forkchoice_state{
         .head_block_hash = 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32,
         .safe_block_hash = 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32,
-        .finalized_block_hash = 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32
-    };
+        .finalized_block_hash = 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32};
 
     nlohmann::json j = forkchoice_state;
     CHECK(j == R"({
@@ -1672,8 +1663,7 @@ TEST_CASE("serialize payload attributes", "[silkrpc::json][to_json]") {
     silkrpc::PayloadAttributes payload_attributes{
         .timestamp = 0x1,
         .prev_randao = 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32,
-        .suggested_fee_recipient = 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address
-    };
+        .suggested_fee_recipient = 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address};
 
     nlohmann::json j = payload_attributes;
     CHECK(j == R"({
@@ -1701,12 +1691,10 @@ TEST_CASE("serialize forkchoice updated reply", "[silkrpc::json][to_json]") {
     silkrpc::PayloadStatus payload_status{
         .status = "VALID",
         .latest_valid_hash = 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32,
-        .validation_error = "some error"
-    };
+        .validation_error = "some error"};
     silkrpc::ForkChoiceUpdatedReply forkchoice_update_reply{
         .payload_status = payload_status,
-        .payload_id = 0x1
-    };
+        .payload_id = 0x1};
 
     nlohmann::json j = forkchoice_update_reply;
     CHECK(j == R"({
@@ -1723,8 +1711,7 @@ TEST_CASE("serialize payload status", "[silkrpc::json][to_json]") {
     silkrpc::PayloadStatus payload_status{
         .status = "VALID",
         .latest_valid_hash = 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32,
-        .validation_error = "some error"
-    };
+        .validation_error = "some error"};
     nlohmann::json j = payload_status;
     CHECK(j == R"({
         "status":"VALID",
@@ -1737,8 +1724,7 @@ TEST_CASE("serialize transition configuration", "[silkrpc::json][to_json]") {
     silkrpc::TransitionConfiguration transition_configuration{
         .terminal_total_difficulty = 0xf4240,
         .terminal_block_hash = 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32,
-        .terminal_block_number = 0x0
-    };
+        .terminal_block_number = 0x0};
 
     nlohmann::json j = transition_configuration;
     CHECK(j["terminalTotalDifficulty"] == "0xf4240");
@@ -1753,12 +1739,10 @@ TEST_CASE("deserialize transition configuration", "[silkrpc::json][from_json]") 
         "terminalBlockNumber":"0x0"
     })"_json;
 
-
     silkrpc::TransitionConfiguration expected_transition_configuration{
         .terminal_total_difficulty = 0xf4240,
         .terminal_block_hash = 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32,
-        .terminal_block_number = 0x0
-    };
+        .terminal_block_number = 0x0};
 
     CHECK(actual_transition_configuration.terminal_total_difficulty == expected_transition_configuration.terminal_total_difficulty);
     CHECK(actual_transition_configuration.terminal_block_hash == expected_transition_configuration.terminal_block_hash);
@@ -1820,4 +1804,4 @@ TEST_CASE("make json revert error", "[silkrpc::json][make_json_error]") {
     })"_json);
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

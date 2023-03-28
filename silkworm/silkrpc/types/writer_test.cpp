@@ -103,4 +103,4 @@ TEST_CASE("ChunksWriter", "[silkrpc]") {
         CHECK(s_writer.get_content() == "0\r\n\r\n");
     }
 }
-} // namespace silkrpc
+}  // namespace silkrpc

@@ -30,7 +30,7 @@ namespace silkrpc::http {
 
 /// Parser for incoming requests.
 class RequestParser {
-public:
+  public:
     /// Construct ready to parse the request method.
     RequestParser();
 
@@ -38,7 +38,12 @@ public:
     void reset();
 
     /// Result of parse.
-    enum class ResultType { good, bad, indeterminate, processing_continue };
+    enum class ResultType {
+        good,
+        bad,
+        indeterminate,
+        processing_continue
+    };
 
     /// Parse some data. The enum return value is good when a complete request has
     /// been parsed, bad if the data is invalid, indeterminate when more data is
@@ -56,7 +61,7 @@ public:
         return ResultType::indeterminate;
     }
 
-private:
+  private:
     /// Handle the next character of input.
     ResultType consume(Request& req, char input);
 
@@ -98,5 +103,4 @@ private:
     } state_;
 };
 
-} // namespace silkrpc::http
-
+}  // namespace silkrpc::http

@@ -18,9 +18,9 @@
 
 #include <iomanip>
 
+#include <silkworm/core/types/bloom.cpp>  // NOLINT(build/include) m3_2048 not exported
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
-#include <silkworm/core/types/bloom.cpp> // NOLINT(build/include) m3_2048 not exported
 
 namespace silkrpc {
 
@@ -68,4 +68,4 @@ silkworm::Bloom bloom_from_logs(const Logs& logs) {
     return bloom;
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

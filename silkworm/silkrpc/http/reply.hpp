@@ -27,6 +27,7 @@
 
 #include <string>
 #include <vector>
+
 #include <boost/asio/buffer.hpp>
 
 #include "header.hpp"
@@ -84,5 +85,4 @@ struct Reply {
     }
 };
 
-} // namespace silkrpc::http
-
+}  // namespace silkrpc::http

@@ -102,4 +102,4 @@ boost::asio::awaitable<MiningResult> Miner::get_mining() {
     co_return result;
 }
 
-} // namespace silkrpc::txpool
+}  // namespace silkrpc::txpool

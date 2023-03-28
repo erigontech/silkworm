@@ -21,23 +21,22 @@
 #include <string>
 #include <type_traits>
 
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 
-#include <silkworm/silkrpc/common/log.hpp>
-#include <silkworm/silkrpc/config.hpp>
-#include <silkworm/silkrpc/ethdb/cursor.hpp>
-#include <silkworm/silkrpc/ethdb/transaction.hpp>
-#include <silkworm/silkrpc/ethdb/file/local_cursor.hpp>
-
 #include <silkworm/node/db/mdbx.hpp>
+#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/silkrpc/ethdb/cursor.hpp>
+#include <silkworm/silkrpc/ethdb/file/local_cursor.hpp>
+#include <silkworm/silkrpc/ethdb/transaction.hpp>
 
 namespace silkrpc::ethdb::file {
 
 class LocalTransaction : public Transaction {
-public:
+  public:
     explicit LocalTransaction(std::shared_ptr<mdbx::env_managed> chaindata_env)
-      : tx_id_{0}, chaindata_env_{chaindata_env}, last_cursor_id_{0} {}
+        : tx_id_{0}, chaindata_env_{chaindata_env}, last_cursor_id_{0} {}
 
     ~LocalTransaction() {}
 
@@ -51,7 +50,7 @@ public:
 
     boost::asio::awaitable<void> close() override;
 
-private:
+  private:
     boost::asio::awaitable<std::shared_ptr<CursorDupSort>> get_cursor(const std::string& table, bool is_cursor_dup_sort);
 
     std::map<std::string, std::shared_ptr<CursorDupSort>> cursors_;
@@ -63,5 +62,4 @@ private:
     uint32_t last_cursor_id_;
 };
 
-} // namespace silkrpc::ethdb::file
-
+}  // namespace silkrpc::ethdb::file

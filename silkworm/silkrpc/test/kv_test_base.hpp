@@ -18,11 +18,11 @@
 
 #include <memory>
 
+#include <silkworm/infra/concurrency/coroutine.hpp>
+
 #include <agrpc/test.hpp>
 
 #include <silkworm/interfaces/remote/kv_mock.grpc.pb.h>
-
-#include <silkworm/silkrpc/config.hpp>
 #include <silkworm/silkrpc/test/context_test_base.hpp>
 #include <silkworm/silkrpc/test/grpc_responder.hpp>
 
@@ -72,4 +72,3 @@ struct KVTestBase : test::ContextTestBase {
 };
 
 }  // namespace silkrpc::test
-

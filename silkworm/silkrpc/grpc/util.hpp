@@ -32,5 +32,4 @@ inline std::ostream& operator<<(std::ostream& out, const grpc::Status& status) {
     return out;
 }
 
-} // namespace grpc
-
+}  // namespace grpc

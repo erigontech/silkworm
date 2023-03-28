@@ -16,16 +16,15 @@
 
 #pragma once
 
-#include <silkworm/silkrpc/config.hpp>
-
 #include <memory>
 #include <optional>
 #include <string>
 
+#include <silkworm/infra/concurrency/coroutine.hpp>
+
 #include <boost/asio/awaitable.hpp>
 
 #include <silkworm/core/common/util.hpp>
-
 #include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkrpc::core::rawdb {
@@ -47,5 +46,4 @@ class DatabaseReader {
     virtual boost::asio::awaitable<void> for_prefix(const std::string& table, silkworm::ByteView prefix, Walker w) const = 0;
 };
 
-} // namespace silkrpc::core::rawdb
-
+}  // namespace silkrpc::core::rawdb

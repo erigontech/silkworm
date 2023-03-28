@@ -18,7 +18,7 @@
 
 #include <cstddef>
 
-#include <silkworm/silkrpc/config.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <absl/functional/function_ref.h>
 #include <boost/asio/awaitable.hpp>
@@ -29,5 +29,4 @@ using BinaryPredicate = absl::FunctionRef<boost::asio::awaitable<bool>(std::size
 
 boost::asio::awaitable<std::size_t> binary_search(std::size_t n, BinaryPredicate pred);
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

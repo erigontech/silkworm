@@ -16,6 +16,8 @@
 
 #include <string>
 
+#include <silkworm/infra/concurrency/coroutine.hpp>
+
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
 #include <absl/flags/usage.h>
@@ -26,7 +28,6 @@
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/silkrpc/common/log.hpp>
-#include <silkworm/silkrpc/config.hpp>
 #include <silkworm/silkrpc/daemon.hpp>
 
 #include "../common/common.hpp"

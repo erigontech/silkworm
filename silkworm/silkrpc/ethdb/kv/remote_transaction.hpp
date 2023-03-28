@@ -21,7 +21,7 @@
 #include <string>
 #include <type_traits>
 
-#include <silkworm/silkrpc/config.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <agrpc/grpc_context.hpp>
 #include <boost/asio/awaitable.hpp>
@@ -36,7 +36,7 @@
 namespace silkrpc::ethdb::kv {
 
 class RemoteTransaction : public Transaction {
-public:
+  public:
     explicit RemoteTransaction(remote::KV::StubInterface& stub, agrpc::GrpcContext& grpc_context);
 
     ~RemoteTransaction();
@@ -51,7 +51,7 @@ public:
 
     boost::asio::awaitable<void> close() override;
 
-private:
+  private:
     boost::asio::awaitable<std::shared_ptr<CursorDupSort>> get_cursor(const std::string& table, bool is_cursor_dup_sort);
 
     std::map<std::string, std::shared_ptr<CursorDupSort>> cursors_;
@@ -60,5 +60,4 @@ private:
     uint64_t tx_id_;
 };
 
-} // namespace silkrpc::ethdb::kv
-
+}  // namespace silkrpc::ethdb::kv

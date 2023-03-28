@@ -14,16 +14,15 @@
    limitations under the License.
 */
 
-#include <memory>
-
 #include "evm_access_list_tracer.hpp"
+
+#include <memory>
 
 #include <evmc/hex.hpp>
 #include <evmc/instructions.h>
-#include <intx/intx.hpp>
 #include <evmone/execution_state.hpp>
 #include <evmone/instructions.hpp>
-
+#include <intx/intx.hpp>
 
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
@@ -59,8 +58,8 @@ void AccessListTracer::on_execution_start(evmc_revision rev, const evmc_message&
     }
 }
 
-void AccessListTracer::on_instruction_start(uint32_t pc, const intx::uint256 *stack_top, const int stack_height,
-                 const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
+void AccessListTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int stack_height,
+                                            const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
     assert(execution_state.msg);
     evmc::address recipient(execution_state.msg->recipient);
 
@@ -68,26 +67,26 @@ void AccessListTracer::on_instruction_start(uint32_t pc, const intx::uint256 *st
     const auto opcode_name = get_opcode_name(opcode_names_, opcode);
 
     SILKRPC_DEBUG << "on_instruction_start:"
-        << " pc: " << std::dec << pc
-        << " opcode: 0x" << std::hex << evmc::hex(opcode)
-        << " opcode_name: " << opcode_name
-        << " recipient: " << recipient
-        << " execution_state: {"
-        << "   gas_left: " << std::dec << execution_state.gas_left
-        << "   status: " << execution_state.status
-        << "   msg.gas: " << std::dec << execution_state.msg->gas
-        << "   msg.depth: " << std::dec << execution_state.msg->depth
-        << "}\n";
+                  << " pc: " << std::dec << pc
+                  << " opcode: 0x" << std::hex << evmc::hex(opcode)
+                  << " opcode_name: " << opcode_name
+                  << " recipient: " << recipient
+                  << " execution_state: {"
+                  << "   gas_left: " << std::dec << execution_state.gas_left
+                  << "   status: " << execution_state.status
+                  << "   msg.gas: " << std::dec << execution_state.msg->gas
+                  << "   msg.depth: " << std::dec << execution_state.msg->depth
+                  << "}\n";
 
-    if (is_storage_opcode(opcode_name) && stack_height >= 1 ) {
+    if (is_storage_opcode(opcode_name) && stack_height >= 1) {
         const auto address = silkworm::bytes32_from_hex(intx::hex(stack_top[0]));
         add_storage(recipient, address);
-    } else if (is_contract_opcode(opcode_name) && stack_height >= 1 ) {
+    } else if (is_contract_opcode(opcode_name) && stack_height >= 1) {
         const auto address = address_from_hex_string(intx::hex(stack_top[0]));
         if (!exclude(address)) {
             add_address(address);
         }
-    } else if (is_call_opcode(opcode_name) && stack_height  >= 5) {
+    } else if (is_call_opcode(opcode_name) && stack_height >= 5) {
         const auto address = address_from_hex_string(intx::hex(stack_top[-1]));
         if (!exclude(address)) {
             add_address(address);
@@ -95,19 +94,18 @@ void AccessListTracer::on_instruction_start(uint32_t pc, const intx::uint256 *st
     }
 }
 
-inline bool AccessListTracer::is_storage_opcode(const std::string & opcode_name) {
+inline bool AccessListTracer::is_storage_opcode(const std::string& opcode_name) {
     return (opcode_name == SLOAD || opcode_name == SSTORE);
 }
 
-inline bool AccessListTracer::is_contract_opcode(const std::string & opcode_name) {
+inline bool AccessListTracer::is_contract_opcode(const std::string& opcode_name) {
     return (opcode_name == EXTCODECOPY || opcode_name == EXTCODEHASH || opcode_name == EXTCODESIZE ||
             opcode_name == BALANCE || opcode_name == SELFDESTRUCT);
 }
 
-inline bool AccessListTracer::is_call_opcode(const std::string & opcode_name) {
+inline bool AccessListTracer::is_call_opcode(const std::string& opcode_name) {
     return (opcode_name == DELEGATECALL || opcode_name == CALL || opcode_name == STATICCALL || opcode_name == CALLCODE);
 }
-
 
 inline bool AccessListTracer::exclude(const evmc::address& address) {
     // return (address == from_ || address == to_ || is_precompiled(address)); // ADD check on precompiled when available from silkworm
@@ -189,4 +187,4 @@ bool AccessListTracer::compare(const AccessList& acl1, const AccessList& acl2) {
     return true;
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

@@ -14,13 +14,13 @@
    limitations under the License.
 */
 
-#include <silkworm/silkrpc/config.hpp>
-
 #include <functional>
 #include <future>
 #include <iomanip>
 #include <iostream>
 #include <utility>
+
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>

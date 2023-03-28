@@ -16,18 +16,18 @@
 
 #pragma once
 
-#include <optional>
 #include <map>
+#include <optional>
 #include <vector>
 
-#include <nlohmann/json.hpp>
-#include <silkworm/silkrpc/config.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #include <evmc/evmc.hpp>
+#include <nlohmann/json.hpp>
+
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
-
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
@@ -40,21 +40,20 @@
 namespace silkrpc {
 
 class AccountDumper {
-public:
+  public:
     explicit AccountDumper(silkrpc::ethdb::Transaction& transaction) : transaction_(transaction) {}
 
     AccountDumper(const AccountDumper&) = delete;
     AccountDumper& operator=(const AccountDumper&) = delete;
 
     boost::asio::awaitable<DumpAccounts> dump_accounts(BlockCache& cache, const BlockNumberOrHash& bnoh, const evmc::address& start_address, int16_t max_result,
-                                                bool exclude_code, bool exclude_storage);
+                                                       bool exclude_code, bool exclude_storage);
 
-private:
+  private:
     boost::asio::awaitable<void> load_accounts(ethdb::TransactionDatabase& tx_database, const std::vector<silkrpc::KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code);
     boost::asio::awaitable<void> load_storage(uint64_t block_number, DumpAccounts& dump_accounts);
 
     silkrpc::ethdb::Transaction& transaction_;
 };
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

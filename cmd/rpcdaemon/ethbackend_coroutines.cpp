@@ -18,9 +18,7 @@
 #include <iomanip>
 #include <iostream>
 
-// clang-format off
-#include <silkworm/silkrpc/config.hpp>
-// clang-format on
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/signal_set.hpp>

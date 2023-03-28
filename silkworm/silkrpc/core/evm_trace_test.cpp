@@ -280,7 +280,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
                 co_return silkworm::Bytes{};
             }));
 
-        const auto block_number = 5'405'095; // 0x5279A7
+        const auto block_number = 5'405'095;  // 0x5279A7
         silkrpc::Call call;
         call.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
         call.gas = 50'000;
@@ -333,7 +333,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
                 co_return silkworm::Bytes{};
             }));
 
-        const auto block_number = 5'405'095; // 0x5279A7
+        const auto block_number = 5'405'095;  // 0x5279A7
         silkrpc::Call call;
         call.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
         call.gas = 118'936;
@@ -515,7 +515,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
                 co_return silkworm::Bytes{};
             }));
 
-        const auto block_number = 5'405'095; // 0x5279A7
+        const auto block_number = 5'405'095;  // 0x5279A7
         silkrpc::Call call;
         call.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
         call.gas = 118'936;
@@ -634,7 +634,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
                 co_return silkworm::Bytes{};
             }));
 
-        const auto block_number = 5'405'095; // 0x5279A7
+        const auto block_number = 5'405'095;  // 0x5279A7
         silkrpc::Call call;
         call.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
         call.gas = 118'936;
@@ -799,7 +799,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
                 co_return silkworm::Bytes{};
             }));
 
-        const auto block_number = 5'405'095; // 0x5279A7
+        const auto block_number = 5'405'095;  // 0x5279A7
         silkrpc::Call call;
         call.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
         call.gas = 118'936;
@@ -937,7 +937,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
                 co_return silkworm::Bytes{};
             }));
 
-        const auto block_number = 5'405'095; // 0x5279A7
+        const auto block_number = 5'405'095;  // 0x5279A7
         silkrpc::Call call;
         call.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
         call.gas = 118'936;
@@ -1004,8 +1004,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 2") {
 
     static silkworm::Bytes kAccountHistoryKey2{*silkworm::from_hex("5e1f0c9ddbe3cb57b80c933fab5151627d7966fa00000000004366ad")};
     static silkworm::Bytes kAccountHistoryValue2{*silkworm::from_hex(
-            "0100000000000000000000003a300000020000004000020043000c00180000001e0000005e8d618d628d826688668d668f66a466ac"
-            "66b866bb66cf66db6623678e67d167")};
+        "0100000000000000000000003a300000020000004000020043000c00180000001e0000005e8d618d628d826688668d668f66a466ac"
+        "66b866bb66cf66db6623678e67d167")};
 
     static silkworm::Bytes kAccountHistoryKey3{*silkworm::from_hex("000000000000000000000000000000000000000000000000004366ad")};
     static silkworm::Bytes kAccountHistoryValue3{*silkworm::from_hex(
@@ -1063,71 +1063,71 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 2") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
                 SILKRPC_LOG << "EXPECT_CALL::get "
-                    << " table: " << db::table::kCanonicalHashes
-                    << " key: " << silkworm::to_hex(kZeroKey)
-                    << " value: " << silkworm::to_hex(kZeroHeader)
-                    << "\n";
+                            << " table: " << db::table::kCanonicalHashes
+                            << " key: " << silkworm::to_hex(kZeroKey)
+                            << " value: " << silkworm::to_hex(kZeroHeader)
+                            << "\n";
                 co_return kZeroHeader;
             }));
         EXPECT_CALL(db_reader, get_one(db::table::kConfig, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
                 SILKRPC_LOG << "EXPECT_CALL::get "
-                    << " table: " << db::table::kConfig
-                    << " key: " << silkworm::to_hex(kConfigKey)
-                    << " value: " << silkworm::to_hex(kConfigValue)
-                    << "\n";
+                            << " table: " << db::table::kConfig
+                            << " key: " << silkworm::to_hex(kConfigKey)
+                            << " value: " << silkworm::to_hex(kConfigValue)
+                            << "\n";
                 co_return kConfigValue;
             }));
         EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey1}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 SILKRPC_LOG << "EXPECT_CALL::get "
-                    << " table: " << db::table::kAccountHistory
-                    << " key: " << silkworm::to_hex(kAccountHistoryKey1)
-                    << " value: " << silkworm::to_hex(kAccountHistoryValue1)
-                    << "\n";
+                            << " table: " << db::table::kAccountHistory
+                            << " key: " << silkworm::to_hex(kAccountHistoryKey1)
+                            << " value: " << silkworm::to_hex(kAccountHistoryValue1)
+                            << "\n";
                 co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
             }));
         EXPECT_CALL(db_reader,
-                get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey1},
-                                silkworm::ByteView{kAccountChangeSetSubkey1}))
+                    get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey1},
+                                   silkworm::ByteView{kAccountChangeSetSubkey1}))
             .WillRepeatedly(InvokeWithoutArgs(
                 []() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
                     SILKRPC_LOG << "EXPECT_CALL::get_both_range "
-                        << " table: " << db::table::kPlainAccountChangeSet
-                        << " key: " << silkworm::to_hex(kAccountChangeSetKey1)
-                        << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey1)
-                        << " value: " << silkworm::to_hex(kAccountChangeSetValue1)
-                        << "\n";
+                                << " table: " << db::table::kPlainAccountChangeSet
+                                << " key: " << silkworm::to_hex(kAccountChangeSetKey1)
+                                << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey1)
+                                << " value: " << silkworm::to_hex(kAccountChangeSetValue1)
+                                << "\n";
                     co_return kAccountChangeSetValue1;
                 }));
         EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 SILKRPC_LOG << "EXPECT_CALL::get "
-                    << " table: " << db::table::kAccountHistory
-                    << " key: " << silkworm::to_hex(kAccountHistoryKey2)
-                    << " value: " << silkworm::to_hex(kAccountHistoryValue2)
-                    << "\n";
+                            << " table: " << db::table::kAccountHistory
+                            << " key: " << silkworm::to_hex(kAccountHistoryKey2)
+                            << " value: " << silkworm::to_hex(kAccountHistoryValue2)
+                            << "\n";
                 co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
             }));
         EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey3}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 SILKRPC_LOG << "EXPECT_CALL::get "
-                    << " table: " << db::table::kAccountHistory
-                    << " key: " << silkworm::to_hex(kAccountHistoryKey3)
-                    << " value: " << silkworm::to_hex(kAccountHistoryValue3)
-                    << "\n";
+                            << " table: " << db::table::kAccountHistory
+                            << " key: " << silkworm::to_hex(kAccountHistoryKey3)
+                            << " value: " << silkworm::to_hex(kAccountHistoryValue3)
+                            << "\n";
                 co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue3};
             }));
         EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey2},
-                                silkworm::ByteView{kAccountChangeSetSubkey2}))
+                                              silkworm::ByteView{kAccountChangeSetSubkey2}))
             .WillRepeatedly(InvokeWithoutArgs(
                 []() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
                     SILKRPC_LOG << "EXPECT_CALL::get_both_range "
-                        << " table: " << db::table::kPlainAccountChangeSet
-                        << " key: " << silkworm::to_hex(kAccountChangeSetKey2)
-                        << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey2)
-                        << " value: " << silkworm::to_hex(kAccountChangeSetValue2)
-                        << "\n";
+                                << " table: " << db::table::kPlainAccountChangeSet
+                                << " key: " << silkworm::to_hex(kAccountChangeSetKey2)
+                                << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey2)
+                                << " value: " << silkworm::to_hex(kAccountChangeSetValue2)
+                                << "\n";
                     co_return kAccountChangeSetValue2;
                 }));
         EXPECT_CALL(db_reader, get_one(db::table::kPlainState, silkworm::ByteView{kPlainStateKey}))
@@ -1298,91 +1298,91 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with erro
     EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
         .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
             SILKRPC_LOG << "EXPECT_CALL::get_one "
-                << " table: " << db::table::kCanonicalHashes
-                << " key: " << silkworm::to_hex(kZeroKey)
-                << " value: " << silkworm::to_hex(kZeroHeader)
-                << "\n";
+                        << " table: " << db::table::kCanonicalHashes
+                        << " key: " << silkworm::to_hex(kZeroKey)
+                        << " value: " << silkworm::to_hex(kZeroHeader)
+                        << "\n";
             co_return kZeroHeader;
         }));
     EXPECT_CALL(db_reader, get_one(db::table::kConfig, silkworm::ByteView{kConfigKey}))
         .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
             SILKRPC_LOG << "EXPECT_CALL::get "
-                << " table: " << db::table::kConfig
-                << " key: " << silkworm::to_hex(kConfigKey)
-                << " value: " << silkworm::to_hex(kConfigValue)
-                << "\n";
+                        << " table: " << db::table::kConfig
+                        << " key: " << silkworm::to_hex(kConfigKey)
+                        << " value: " << silkworm::to_hex(kConfigValue)
+                        << "\n";
             co_return kConfigValue;
         }));
     EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey1}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
             SILKRPC_LOG << "EXPECT_CALL::get "
-                << " table: " << db::table::kAccountHistory
-                << " key: " << silkworm::to_hex(kAccountHistoryKey1)
-                << " value: " << silkworm::to_hex(kAccountHistoryValue1)
-                << "\n";
+                        << " table: " << db::table::kAccountHistory
+                        << " key: " << silkworm::to_hex(kAccountHistoryKey1)
+                        << " value: " << silkworm::to_hex(kAccountHistoryValue1)
+                        << "\n";
             co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
         }));
     EXPECT_CALL(db_reader,
-            get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey},
-                            silkworm::ByteView{kAccountChangeSetSubkey}))
+                get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey},
+                               silkworm::ByteView{kAccountChangeSetSubkey}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             SILKRPC_LOG << "EXPECT_CALL::get_both_range "
-                << " table: " << db::table::kPlainAccountChangeSet
-                << " key: " << silkworm::to_hex(kAccountChangeSetKey)
-                << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey)
-                << " value: " << silkworm::to_hex(kAccountChangeSetValue)
-                << "\n";
+                        << " table: " << db::table::kPlainAccountChangeSet
+                        << " key: " << silkworm::to_hex(kAccountChangeSetKey)
+                        << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey)
+                        << " value: " << silkworm::to_hex(kAccountChangeSetValue)
+                        << "\n";
             co_return kAccountChangeSetValue;
         }));
     EXPECT_CALL(db_reader,
-            get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey1},
-                            silkworm::ByteView{kAccountChangeSetSubkey1}))
+                get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey1},
+                               silkworm::ByteView{kAccountChangeSetSubkey1}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             SILKRPC_LOG << "EXPECT_CALL::get_both_range "
-                << " table: " << db::table::kPlainAccountChangeSet
-                << " key: " << silkworm::to_hex(kAccountChangeSetKey1)
-                << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey1)
-                << " value: " << silkworm::to_hex(kAccountChangeSetValue1)
-                << "\n";
+                        << " table: " << db::table::kPlainAccountChangeSet
+                        << " key: " << silkworm::to_hex(kAccountChangeSetKey1)
+                        << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey1)
+                        << " value: " << silkworm::to_hex(kAccountChangeSetValue1)
+                        << "\n";
             co_return kAccountChangeSetValue1;
         }));
     EXPECT_CALL(db_reader,
-            get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey2},
-                            silkworm::ByteView{kAccountChangeSetSubkey2}))
+                get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey2},
+                               silkworm::ByteView{kAccountChangeSetSubkey2}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             SILKRPC_LOG << "EXPECT_CALL::get_both_range "
-                << " table: " << db::table::kPlainAccountChangeSet
-                << " key: " << silkworm::to_hex(kAccountChangeSetKey2)
-                << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey2)
-                << " value: " << silkworm::to_hex(kAccountChangeSetValue2)
-                << "\n";
+                        << " table: " << db::table::kPlainAccountChangeSet
+                        << " key: " << silkworm::to_hex(kAccountChangeSetKey2)
+                        << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey2)
+                        << " value: " << silkworm::to_hex(kAccountChangeSetValue2)
+                        << "\n";
             co_return kAccountChangeSetValue2;
         }));
     EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey2}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
             SILKRPC_LOG << "EXPECT_CALL::get "
-                << " table: " << db::table::kAccountHistory
-                << " key: " << silkworm::to_hex(kAccountHistoryKey2)
-                << " value: " << silkworm::to_hex(kAccountHistoryValue2)
-                << "\n";
+                        << " table: " << db::table::kAccountHistory
+                        << " key: " << silkworm::to_hex(kAccountHistoryKey2)
+                        << " value: " << silkworm::to_hex(kAccountHistoryValue2)
+                        << "\n";
             co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
         }));
     EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey3}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
             SILKRPC_LOG << "EXPECT_CALL::get "
-                << " table: " << db::table::kAccountHistory
-                << " key: " << silkworm::to_hex(kAccountHistoryKey3)
-                << " value: " << silkworm::to_hex(kAccountHistoryValue3)
-                << "\n";
+                        << " table: " << db::table::kAccountHistory
+                        << " key: " << silkworm::to_hex(kAccountHistoryKey3)
+                        << " value: " << silkworm::to_hex(kAccountHistoryValue3)
+                        << "\n";
             co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
         }));
     EXPECT_CALL(db_reader, get_one(db::table::kPlainState, silkworm::ByteView{kPlainStateKey}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
             SILKRPC_LOG << "EXPECT_CALL::get "
-                << " table: " << db::table::kPlainState
-                << " key: " << silkworm::to_hex(kPlainStateKey)
-                << " value: "
-                << "\n";
+                        << " table: " << db::table::kPlainState
+                        << " key: " << silkworm::to_hex(kPlainStateKey)
+                        << " value: "
+                        << "\n";
             co_return silkworm::Bytes{};
         }));
 
@@ -1608,7 +1608,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
                 co_return silkworm::Bytes{};
             }));
 
-        const auto block_number = 5'405'095; // 0x5279A7
+        const auto block_number = 5'405'095;  // 0x5279A7
 
         TraceCall trace_call;
         trace_call.call.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
@@ -1665,7 +1665,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
                 co_return silkworm::Bytes{};
             }));
 
-        const auto block_number = 5'405'095; // 0x5279A7
+        const auto block_number = 5'405'095;  // 0x5279A7
         TraceCall trace_call;
         trace_call.call.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
         trace_call.call.gas = 118'936;
@@ -1892,82 +1892,82 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
     EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
         .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
             SILKRPC_LOG << "EXPECT_CALL::get_one "
-                << " table: " << db::table::kCanonicalHashes
-                << " key: " << silkworm::to_hex(kZeroKey)
-                << " value: " << silkworm::to_hex(kZeroHeader)
-                << "\n";
+                        << " table: " << db::table::kCanonicalHashes
+                        << " key: " << silkworm::to_hex(kZeroKey)
+                        << " value: " << silkworm::to_hex(kZeroHeader)
+                        << "\n";
             co_return kZeroHeader;
         }));
     EXPECT_CALL(db_reader, get_one(db::table::kConfig, silkworm::ByteView{kConfigKey}))
         .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
             SILKRPC_LOG << "EXPECT_CALL::get "
-                << " table: " << db::table::kConfig
-                << " key: " << silkworm::to_hex(kConfigKey)
-                << " value: " << silkworm::to_hex(kConfigValue)
-                << "\n";
+                        << " table: " << db::table::kConfig
+                        << " key: " << silkworm::to_hex(kConfigKey)
+                        << " value: " << silkworm::to_hex(kConfigValue)
+                        << "\n";
             co_return kConfigValue;
         }));
     EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey1}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
             SILKRPC_LOG << "EXPECT_CALL::get "
-                << " table: " << db::table::kAccountHistory
-                << " key: " << silkworm::to_hex(kAccountHistoryKey1)
-                << " value: " << silkworm::to_hex(kAccountHistoryValue1)
-                << "\n";
+                        << " table: " << db::table::kAccountHistory
+                        << " key: " << silkworm::to_hex(kAccountHistoryKey1)
+                        << " value: " << silkworm::to_hex(kAccountHistoryValue1)
+                        << "\n";
             co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
         }));
     EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey2}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
             SILKRPC_LOG << "EXPECT_CALL::get "
-                << " table: " << db::table::kAccountHistory
-                << " key: " << silkworm::to_hex(kAccountHistoryKey2)
-                << " value: " << silkworm::to_hex(kAccountHistoryValue2)
-                << "\n";
+                        << " table: " << db::table::kAccountHistory
+                        << " key: " << silkworm::to_hex(kAccountHistoryKey2)
+                        << " value: " << silkworm::to_hex(kAccountHistoryValue2)
+                        << "\n";
             co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
         }));
     EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey3}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
             SILKRPC_LOG << "EXPECT_CALL::get "
-                << " table: " << db::table::kAccountHistory
-                << " key: " << silkworm::to_hex(kAccountHistoryKey3)
-                << " value: " << silkworm::to_hex(kAccountHistoryValue3)
-                << "\n";
+                        << " table: " << db::table::kAccountHistory
+                        << " key: " << silkworm::to_hex(kAccountHistoryKey3)
+                        << " value: " << silkworm::to_hex(kAccountHistoryValue3)
+                        << "\n";
             co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
         }));
     EXPECT_CALL(db_reader,
-            get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey1},
-                            silkworm::ByteView{kAccountChangeSetSubkey1}))
+                get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey1},
+                               silkworm::ByteView{kAccountChangeSetSubkey1}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             SILKRPC_LOG << "EXPECT_CALL::get_both_range "
-                << " table: " << db::table::kPlainAccountChangeSet
-                << " key: " << silkworm::to_hex(kAccountChangeSetKey1)
-                << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey1)
-                << " value: " << silkworm::to_hex(kAccountChangeSetValue1)
-                << "\n";
+                        << " table: " << db::table::kPlainAccountChangeSet
+                        << " key: " << silkworm::to_hex(kAccountChangeSetKey1)
+                        << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey1)
+                        << " value: " << silkworm::to_hex(kAccountChangeSetValue1)
+                        << "\n";
             co_return kAccountChangeSetValue1;
         }));
     EXPECT_CALL(db_reader,
-            get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey2},
-                            silkworm::ByteView{kAccountChangeSetSubkey2}))
+                get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey2},
+                               silkworm::ByteView{kAccountChangeSetSubkey2}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             SILKRPC_LOG << "EXPECT_CALL::get_both_range "
-                << " table: " << db::table::kPlainAccountChangeSet
-                << " key: " << silkworm::to_hex(kAccountChangeSetKey2)
-                << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey2)
-                << " value: " << silkworm::to_hex(kAccountChangeSetValue2)
-                << "\n";
+                        << " table: " << db::table::kPlainAccountChangeSet
+                        << " key: " << silkworm::to_hex(kAccountChangeSetKey2)
+                        << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey2)
+                        << " value: " << silkworm::to_hex(kAccountChangeSetValue2)
+                        << "\n";
             co_return kAccountChangeSetValue2;
         }));
     EXPECT_CALL(db_reader,
-            get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey3},
-                            silkworm::ByteView{kAccountChangeSetSubkey3}))
+                get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey3},
+                               silkworm::ByteView{kAccountChangeSetSubkey3}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             SILKRPC_LOG << "EXPECT_CALL::get_both_range "
-                << " table: " << db::table::kPlainAccountChangeSet
-                << " key: " << silkworm::to_hex(kAccountChangeSetKey3)
-                << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey3)
-                << " value: " << silkworm::to_hex(kAccountChangeSetValue3)
-                << "\n";
+                        << " table: " << db::table::kPlainAccountChangeSet
+                        << " key: " << silkworm::to_hex(kAccountChangeSetKey3)
+                        << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey3)
+                        << " value: " << silkworm::to_hex(kAccountChangeSetValue3)
+                        << "\n";
             co_return kAccountChangeSetValue3;
         }));
 
@@ -2441,83 +2441,83 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
     EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
             SILKRPC_LOG << "EXPECT_CALL::get_one "
-                << " table: " << db::table::kCanonicalHashes
-                << " key: " << silkworm::to_hex(kZeroKey)
-                << " value: " << silkworm::to_hex(kZeroHeader)
-                << "\n";
+                        << " table: " << db::table::kCanonicalHashes
+                        << " key: " << silkworm::to_hex(kZeroKey)
+                        << " value: " << silkworm::to_hex(kZeroHeader)
+                        << "\n";
             co_return kZeroHeader;
         }));
     EXPECT_CALL(db_reader, get_one(db::table::kConfig, silkworm::ByteView{kConfigKey}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
             SILKRPC_LOG << "EXPECT_CALL::get "
-                << " table: " << db::table::kConfig
-                << " key: " << silkworm::to_hex(kConfigKey)
-                << " value: " << silkworm::to_hex(kConfigValue)
-                << "\n";
+                        << " table: " << db::table::kConfig
+                        << " key: " << silkworm::to_hex(kConfigKey)
+                        << " value: " << silkworm::to_hex(kConfigValue)
+                        << "\n";
             co_return kConfigValue;
         }));
 
     EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey1}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
             SILKRPC_LOG << "EXPECT_CALL::get "
-                << " table: " << db::table::kAccountHistory
-                << " key: " << silkworm::to_hex(kAccountHistoryKey1)
-                << " value: " << silkworm::to_hex(kAccountHistoryValue1)
-                << "\n";
+                        << " table: " << db::table::kAccountHistory
+                        << " key: " << silkworm::to_hex(kAccountHistoryKey1)
+                        << " value: " << silkworm::to_hex(kAccountHistoryValue1)
+                        << "\n";
             co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
         }));
     EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey2}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
             SILKRPC_LOG << "EXPECT_CALL::get "
-                << " table: " << db::table::kAccountHistory
-                << " key: " << silkworm::to_hex(kAccountHistoryKey2)
-                << " value: " << silkworm::to_hex(kAccountHistoryValue2)
-                << "\n";
+                        << " table: " << db::table::kAccountHistory
+                        << " key: " << silkworm::to_hex(kAccountHistoryKey2)
+                        << " value: " << silkworm::to_hex(kAccountHistoryValue2)
+                        << "\n";
             co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
         }));
     EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey3}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
             SILKRPC_LOG << "EXPECT_CALL::get "
-                << " table: " << db::table::kAccountHistory
-                << " key: " << silkworm::to_hex(kAccountHistoryKey3)
-                << " value: " << silkworm::to_hex(kAccountHistoryValue3)
-                << "\n";
+                        << " table: " << db::table::kAccountHistory
+                        << " key: " << silkworm::to_hex(kAccountHistoryKey3)
+                        << " value: " << silkworm::to_hex(kAccountHistoryValue3)
+                        << "\n";
             co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
         }));
     EXPECT_CALL(db_reader,
-            get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey1},
-                            silkworm::ByteView{kAccountChangeSetSubkey1}))
+                get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey1},
+                               silkworm::ByteView{kAccountChangeSetSubkey1}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             SILKRPC_LOG << "EXPECT_CALL::get_both_range "
-                << " table: " << db::table::kPlainAccountChangeSet
-                << " key: " << silkworm::to_hex(kAccountChangeSetKey1)
-                << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey1)
-                << " value: " << silkworm::to_hex(kAccountChangeSetValue1)
-                << "\n";
+                        << " table: " << db::table::kPlainAccountChangeSet
+                        << " key: " << silkworm::to_hex(kAccountChangeSetKey1)
+                        << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey1)
+                        << " value: " << silkworm::to_hex(kAccountChangeSetValue1)
+                        << "\n";
             co_return kAccountChangeSetValue1;
         }));
     EXPECT_CALL(db_reader,
-            get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey2},
-                            silkworm::ByteView{kAccountChangeSetSubkey2}))
+                get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey2},
+                               silkworm::ByteView{kAccountChangeSetSubkey2}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             SILKRPC_LOG << "EXPECT_CALL::get_both_range "
-                << " table: " << db::table::kPlainAccountChangeSet
-                << " key: " << silkworm::to_hex(kAccountChangeSetKey2)
-                << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey2)
-                << " value: " << silkworm::to_hex(kAccountChangeSetValue2)
-                << "\n";
+                        << " table: " << db::table::kPlainAccountChangeSet
+                        << " key: " << silkworm::to_hex(kAccountChangeSetKey2)
+                        << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey2)
+                        << " value: " << silkworm::to_hex(kAccountChangeSetValue2)
+                        << "\n";
             co_return kAccountChangeSetValue2;
         }));
     EXPECT_CALL(db_reader,
-            get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey3},
-                            silkworm::ByteView{kAccountChangeSetSubkey3}))
+                get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey3},
+                               silkworm::ByteView{kAccountChangeSetSubkey3}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             SILKRPC_LOG << "EXPECT_CALL::get_both_range "
-                << " table: " << db::table::kPlainAccountChangeSet
-                << " key: " << silkworm::to_hex(kAccountChangeSetKey3)
-                << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey3)
-                << " value: " << silkworm::to_hex(kAccountChangeSetValue3)
-                << "\n";
+                        << " table: " << db::table::kPlainAccountChangeSet
+                        << " key: " << silkworm::to_hex(kAccountChangeSetKey3)
+                        << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey3)
+                        << " value: " << silkworm::to_hex(kAccountChangeSetValue3)
+                        << "\n";
             co_return kAccountChangeSetValue3;
         }));
 
@@ -2660,83 +2660,83 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
     EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
             SILKRPC_LOG << "EXPECT_CALL::get_one "
-                << " table: " << db::table::kCanonicalHashes
-                << " key: " << silkworm::to_hex(kZeroKey)
-                << " value: " << silkworm::to_hex(kZeroHeader)
-                << "\n";
+                        << " table: " << db::table::kCanonicalHashes
+                        << " key: " << silkworm::to_hex(kZeroKey)
+                        << " value: " << silkworm::to_hex(kZeroHeader)
+                        << "\n";
             co_return kZeroHeader;
         }));
     EXPECT_CALL(db_reader, get_one(db::table::kConfig, silkworm::ByteView{kConfigKey}))
         .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
             SILKRPC_LOG << "EXPECT_CALL::get "
-                << " table: " << db::table::kConfig
-                << " key: " << silkworm::to_hex(kConfigKey)
-                << " value: " << silkworm::to_hex(kConfigValue)
-                << "\n";
+                        << " table: " << db::table::kConfig
+                        << " key: " << silkworm::to_hex(kConfigKey)
+                        << " value: " << silkworm::to_hex(kConfigValue)
+                        << "\n";
             co_return kConfigValue;
         }));
 
     EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey1}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
             SILKRPC_LOG << "EXPECT_CALL::get "
-                << " table: " << db::table::kAccountHistory
-                << " key: " << silkworm::to_hex(kAccountHistoryKey1)
-                << " value: " << silkworm::to_hex(kAccountHistoryValue1)
-                << "\n";
+                        << " table: " << db::table::kAccountHistory
+                        << " key: " << silkworm::to_hex(kAccountHistoryKey1)
+                        << " value: " << silkworm::to_hex(kAccountHistoryValue1)
+                        << "\n";
             co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
         }));
     EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey2}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
             SILKRPC_LOG << "EXPECT_CALL::get "
-                << " table: " << db::table::kAccountHistory
-                << " key: " << silkworm::to_hex(kAccountHistoryKey2)
-                << " value: " << silkworm::to_hex(kAccountHistoryValue2)
-                << "\n";
+                        << " table: " << db::table::kAccountHistory
+                        << " key: " << silkworm::to_hex(kAccountHistoryKey2)
+                        << " value: " << silkworm::to_hex(kAccountHistoryValue2)
+                        << "\n";
             co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
         }));
     EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey3}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
             SILKRPC_LOG << "EXPECT_CALL::get "
-                << " table: " << db::table::kAccountHistory
-                << " key: " << silkworm::to_hex(kAccountHistoryKey3)
-                << " value: " << silkworm::to_hex(kAccountHistoryValue3)
-                << "\n";
+                        << " table: " << db::table::kAccountHistory
+                        << " key: " << silkworm::to_hex(kAccountHistoryKey3)
+                        << " value: " << silkworm::to_hex(kAccountHistoryValue3)
+                        << "\n";
             co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
         }));
     EXPECT_CALL(db_reader,
-            get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey1},
-                            silkworm::ByteView{kAccountChangeSetSubkey1}))
+                get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey1},
+                               silkworm::ByteView{kAccountChangeSetSubkey1}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             SILKRPC_LOG << "EXPECT_CALL::get_both_range "
-                << " table: " << db::table::kPlainAccountChangeSet
-                << " key: " << silkworm::to_hex(kAccountChangeSetKey1)
-                << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey1)
-                << " value: " << silkworm::to_hex(kAccountChangeSetValue1)
-                << "\n";
+                        << " table: " << db::table::kPlainAccountChangeSet
+                        << " key: " << silkworm::to_hex(kAccountChangeSetKey1)
+                        << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey1)
+                        << " value: " << silkworm::to_hex(kAccountChangeSetValue1)
+                        << "\n";
             co_return kAccountChangeSetValue1;
         }));
     EXPECT_CALL(db_reader,
-            get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey2},
-                            silkworm::ByteView{kAccountChangeSetSubkey2}))
+                get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey2},
+                               silkworm::ByteView{kAccountChangeSetSubkey2}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             SILKRPC_LOG << "EXPECT_CALL::get_both_range "
-                << " table: " << db::table::kPlainAccountChangeSet
-                << " key: " << silkworm::to_hex(kAccountChangeSetKey2)
-                << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey2)
-                << " value: " << silkworm::to_hex(kAccountChangeSetValue2)
-                << "\n";
+                        << " table: " << db::table::kPlainAccountChangeSet
+                        << " key: " << silkworm::to_hex(kAccountChangeSetKey2)
+                        << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey2)
+                        << " value: " << silkworm::to_hex(kAccountChangeSetValue2)
+                        << "\n";
             co_return kAccountChangeSetValue2;
         }));
     EXPECT_CALL(db_reader,
-            get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey3},
-                            silkworm::ByteView{kAccountChangeSetSubkey3}))
+                get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey3},
+                               silkworm::ByteView{kAccountChangeSetSubkey3}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             SILKRPC_LOG << "EXPECT_CALL::get_both_range "
-                << " table: " << db::table::kPlainAccountChangeSet
-                << " key: " << silkworm::to_hex(kAccountChangeSetKey3)
-                << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey3)
-                << " value: " << silkworm::to_hex(kAccountChangeSetValue3)
-                << "\n";
+                        << " table: " << db::table::kPlainAccountChangeSet
+                        << " key: " << silkworm::to_hex(kAccountChangeSetKey3)
+                        << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey3)
+                        << " value: " << silkworm::to_hex(kAccountChangeSetValue3)
+                        << "\n";
             co_return kAccountChangeSetValue3;
         }));
 
@@ -3612,83 +3612,83 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
     EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
             SILKRPC_LOG << "EXPECT_CALL::get_one "
-                << " table: " << db::table::kCanonicalHashes
-                << " key: " << silkworm::to_hex(kZeroKey)
-                << " value: " << silkworm::to_hex(kZeroHeader)
-                << "\n";
+                        << " table: " << db::table::kCanonicalHashes
+                        << " key: " << silkworm::to_hex(kZeroKey)
+                        << " value: " << silkworm::to_hex(kZeroHeader)
+                        << "\n";
             co_return kZeroHeader;
         }));
     EXPECT_CALL(db_reader, get_one(db::table::kConfig, silkworm::ByteView{kConfigKey}))
         .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
             SILKRPC_LOG << "EXPECT_CALL::get "
-                << " table: " << db::table::kConfig
-                << " key: " << silkworm::to_hex(kConfigKey)
-                << " value: " << silkworm::to_hex(kConfigValue)
-                << "\n";
+                        << " table: " << db::table::kConfig
+                        << " key: " << silkworm::to_hex(kConfigKey)
+                        << " value: " << silkworm::to_hex(kConfigValue)
+                        << "\n";
             co_return kConfigValue;
         }));
 
     EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey1}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
             SILKRPC_LOG << "EXPECT_CALL::get "
-                << " table: " << db::table::kAccountHistory
-                << " key: " << silkworm::to_hex(kAccountHistoryKey1)
-                << " value: " << silkworm::to_hex(kAccountHistoryValue1)
-                << "\n";
+                        << " table: " << db::table::kAccountHistory
+                        << " key: " << silkworm::to_hex(kAccountHistoryKey1)
+                        << " value: " << silkworm::to_hex(kAccountHistoryValue1)
+                        << "\n";
             co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
         }));
     EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey2}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
             SILKRPC_LOG << "EXPECT_CALL::get "
-                << " table: " << db::table::kAccountHistory
-                << " key: " << silkworm::to_hex(kAccountHistoryKey2)
-                << " value: " << silkworm::to_hex(kAccountHistoryValue2)
-                << "\n";
+                        << " table: " << db::table::kAccountHistory
+                        << " key: " << silkworm::to_hex(kAccountHistoryKey2)
+                        << " value: " << silkworm::to_hex(kAccountHistoryValue2)
+                        << "\n";
             co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
         }));
     EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey3}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
             SILKRPC_LOG << "EXPECT_CALL::get "
-                << " table: " << db::table::kAccountHistory
-                << " key: " << silkworm::to_hex(kAccountHistoryKey3)
-                << " value: " << silkworm::to_hex(kAccountHistoryValue3)
-                << "\n";
+                        << " table: " << db::table::kAccountHistory
+                        << " key: " << silkworm::to_hex(kAccountHistoryKey3)
+                        << " value: " << silkworm::to_hex(kAccountHistoryValue3)
+                        << "\n";
             co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
         }));
     EXPECT_CALL(db_reader,
-            get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey1},
-                            silkworm::ByteView{kAccountChangeSetSubkey1}))
+                get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey1},
+                               silkworm::ByteView{kAccountChangeSetSubkey1}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             SILKRPC_LOG << "EXPECT_CALL::get_both_range "
-                << " table: " << db::table::kPlainAccountChangeSet
-                << " key: " << silkworm::to_hex(kAccountChangeSetKey1)
-                << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey1)
-                << " value: " << silkworm::to_hex(kAccountChangeSetValue1)
-                << "\n";
+                        << " table: " << db::table::kPlainAccountChangeSet
+                        << " key: " << silkworm::to_hex(kAccountChangeSetKey1)
+                        << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey1)
+                        << " value: " << silkworm::to_hex(kAccountChangeSetValue1)
+                        << "\n";
             co_return kAccountChangeSetValue1;
         }));
     EXPECT_CALL(db_reader,
-            get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey2},
-                            silkworm::ByteView{kAccountChangeSetSubkey2}))
+                get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey2},
+                               silkworm::ByteView{kAccountChangeSetSubkey2}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             SILKRPC_LOG << "EXPECT_CALL::get_both_range "
-                << " table: " << db::table::kPlainAccountChangeSet
-                << " key: " << silkworm::to_hex(kAccountChangeSetKey2)
-                << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey2)
-                << " value: " << silkworm::to_hex(kAccountChangeSetValue2)
-                << "\n";
+                        << " table: " << db::table::kPlainAccountChangeSet
+                        << " key: " << silkworm::to_hex(kAccountChangeSetKey2)
+                        << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey2)
+                        << " value: " << silkworm::to_hex(kAccountChangeSetValue2)
+                        << "\n";
             co_return kAccountChangeSetValue2;
         }));
     EXPECT_CALL(db_reader,
-            get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey3},
-                            silkworm::ByteView{kAccountChangeSetSubkey3}))
+                get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey3},
+                               silkworm::ByteView{kAccountChangeSetSubkey3}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             SILKRPC_LOG << "EXPECT_CALL::get_both_range "
-                << " table: " << db::table::kPlainAccountChangeSet
-                << " key: " << silkworm::to_hex(kAccountChangeSetKey3)
-                << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey3)
-                << " value: " << silkworm::to_hex(kAccountChangeSetValue3)
-                << "\n";
+                        << " table: " << db::table::kPlainAccountChangeSet
+                        << " key: " << silkworm::to_hex(kAccountChangeSetKey3)
+                        << " subkey: " << silkworm::to_hex(kAccountChangeSetSubkey3)
+                        << " value: " << silkworm::to_hex(kAccountChangeSetValue3)
+                        << "\n";
             co_return kAccountChangeSetValue3;
         }));
 
@@ -4208,8 +4208,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
     static silkworm::Bytes kAccountChangeSetSubkey2{*silkworm::from_hex("560f0b51eca3f4c6e5873de9091c8f4c200e8ac1")};
     static silkworm::Bytes kAccountChangeSetValue2{*silkworm::from_hex("03010607733498fc7960b0")};
     EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet,
-            silkworm::ByteView{kAccountChangeSetKey2},
-            silkworm::ByteView{kAccountChangeSetSubkey2}))
+                                          silkworm::ByteView{kAccountChangeSetKey2},
+                                          silkworm::ByteView{kAccountChangeSetSubkey2}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             co_return kAccountChangeSetValue2;
         }));
@@ -4219,8 +4219,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
     static silkworm::Bytes kAccountChangeSetSubkey3{*silkworm::from_hex("0000000000000000000000000000000000000000")};
     static silkworm::Bytes kAccountChangeSetValue3{*silkworm::from_hex("020949aaae4f54eea7ac03")};
     EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet,
-            silkworm::ByteView{kAccountChangeSetKey3},
-            silkworm::ByteView{kAccountChangeSetSubkey3}))
+                                          silkworm::ByteView{kAccountChangeSetKey3},
+                                          silkworm::ByteView{kAccountChangeSetSubkey3}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             co_return kAccountChangeSetValue3;
         }));
@@ -4230,8 +4230,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
     static silkworm::Bytes kAccountChangeSetSubkey4{*silkworm::from_hex("2031832e54a2200bf678286f560f49a950db2ad5")};
     static silkworm::Bytes kAccountChangeSetValue4{*silkworm::from_hex("030273620a017d326f5579b49dd278")};
     EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet,
-            silkworm::ByteView{kAccountChangeSetKey4},
-            silkworm::ByteView{kAccountChangeSetSubkey4}))
+                                          silkworm::ByteView{kAccountChangeSetKey4},
+                                          silkworm::ByteView{kAccountChangeSetSubkey4}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             co_return kAccountChangeSetValue4;
         }));
@@ -4241,8 +4241,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
     static silkworm::Bytes kAccountChangeSetSubkey5{*silkworm::from_hex("259c334871a9d75d3364e17316299e72bd97b049")};
     static silkworm::Bytes kAccountChangeSetValue5{*silkworm::from_hex("0301100806c817f6b3d517ea")};
     EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet,
-            silkworm::ByteView{kAccountChangeSetKey5},
-            silkworm::ByteView{kAccountChangeSetSubkey5}))
+                                          silkworm::ByteView{kAccountChangeSetKey5},
+                                          silkworm::ByteView{kAccountChangeSetSubkey5}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             co_return kAccountChangeSetValue5;
         }));
@@ -4252,8 +4252,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
     static silkworm::Bytes kAccountChangeSetSubkey6{*silkworm::from_hex("5aa6b79a8ea7c240c8de59a83765ac984912a8f3")};
     static silkworm::Bytes kAccountChangeSetValue6{*silkworm::from_hex("0501720101")};
     EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet,
-            silkworm::ByteView{kAccountChangeSetKey6},
-            silkworm::ByteView{kAccountChangeSetSubkey6}))
+                                          silkworm::ByteView{kAccountChangeSetKey6},
+                                          silkworm::ByteView{kAccountChangeSetSubkey6}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             co_return kAccountChangeSetValue6;
         }));
@@ -4263,8 +4263,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
     static silkworm::Bytes kAccountChangeSetSubkey7{*silkworm::from_hex("1e8ab45d1519aa26cee0c24476689e215db7955b")};
     static silkworm::Bytes kAccountChangeSetValue7{*silkworm::from_hex("0501010101")};
     EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet,
-            silkworm::ByteView{kAccountChangeSetKey7},
-            silkworm::ByteView{kAccountChangeSetSubkey7}))
+                                          silkworm::ByteView{kAccountChangeSetKey7},
+                                          silkworm::ByteView{kAccountChangeSetSubkey7}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             co_return kAccountChangeSetValue7;
         }));
@@ -4274,8 +4274,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
     static silkworm::Bytes kAccountChangeSetSubkey8{*silkworm::from_hex("0000000000000000000000000000000000000007")};
     static silkworm::Bytes kAccountChangeSetValue8{*silkworm::from_hex("020101")};
     EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet,
-            silkworm::ByteView{kAccountChangeSetKey8},
-            silkworm::ByteView{kAccountChangeSetSubkey8}))
+                                          silkworm::ByteView{kAccountChangeSetKey8},
+                                          silkworm::ByteView{kAccountChangeSetSubkey8}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             co_return kAccountChangeSetValue8;
         }));
@@ -4285,8 +4285,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
     static silkworm::Bytes kAccountChangeSetSubkey9{*silkworm::from_hex("8aa50579a254382ddbca33b0729f84090d9dcb74")};
     static silkworm::Bytes kAccountChangeSetValue9{*silkworm::from_hex("030119080de7343b9e519164")};
     EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet,
-            silkworm::ByteView{kAccountChangeSetKey9},
-            silkworm::ByteView{kAccountChangeSetSubkey9}))
+                                          silkworm::ByteView{kAccountChangeSetKey9},
+                                          silkworm::ByteView{kAccountChangeSetSubkey9}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             co_return kAccountChangeSetValue9;
         }));
@@ -4296,8 +4296,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
     static silkworm::Bytes kAccountChangeSetSubkey10{*silkworm::from_hex("cbebcd41ceabbc85da9bb67527f58d69ad4dfff5")};
     static silkworm::Bytes kAccountChangeSetValue10{*silkworm::from_hex("0701010a01ca5b1969fd8b69924a0101")};
     EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet,
-            silkworm::ByteView{kAccountChangeSetKey10},
-            silkworm::ByteView{kAccountChangeSetSubkey10}))
+                                          silkworm::ByteView{kAccountChangeSetKey10},
+                                          silkworm::ByteView{kAccountChangeSetSubkey10}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             co_return kAccountChangeSetValue10;
         }));
@@ -4307,8 +4307,8 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
     static silkworm::Bytes kAccountChangeSetSubkey11{*silkworm::from_hex("a0f968eba6bbd08f28dc061c7856c15725983395")};
     static silkworm::Bytes kAccountChangeSetValue11{*silkworm::from_hex("0701010301d4c00101")};
     EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet,
-            silkworm::ByteView{kAccountChangeSetKey11},
-            silkworm::ByteView{kAccountChangeSetSubkey11}))
+                                          silkworm::ByteView{kAccountChangeSetKey11},
+                                          silkworm::ByteView{kAccountChangeSetSubkey11}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<silkworm::Bytes>> {
             co_return kAccountChangeSetValue11;
         }));
@@ -5577,7 +5577,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
         stream.close();
 
         nlohmann::json json = nlohmann::json::parse(string_writer.get_content());
-        CHECK(json["result"]  == R"([
+        CHECK(json["result"] == R"([
             {
                 "action": {
                     "author": "0x0000000000000000000000000000000000000000",
@@ -5994,11 +5994,7 @@ TEST_CASE("copy_stack") {
 
     const std::size_t stack_size{32};
     evmone::uint256 stack[stack_size] = {
-        {0x00}, {0x01}, {0x02}, {0x03}, {0x04}, {0x05}, {0x06}, {0x07},
-        {0x08}, {0x09}, {0x0A}, {0x0B}, {0x0C}, {0x0D}, {0x0E}, {0x0F},
-        {0x10}, {0x11}, {0x12}, {0x13}, {0x14}, {0x15}, {0x16}, {0x17},
-        {0x18}, {0x19}, {0x1A}, {0x1B}, {0x1C}, {0x1D}, {0x1E}, {0x1F}
-    };
+        {0x00}, {0x01}, {0x02}, {0x03}, {0x04}, {0x05}, {0x06}, {0x07}, {0x08}, {0x09}, {0x0A}, {0x0B}, {0x0C}, {0x0D}, {0x0E}, {0x0F}, {0x10}, {0x11}, {0x12}, {0x13}, {0x14}, {0x15}, {0x16}, {0x17}, {0x18}, {0x19}, {0x1A}, {0x1B}, {0x1C}, {0x1D}, {0x1E}, {0x1F}};
     evmone::uint256* top_stack = &stack[stack_size - 1];
 
     SECTION("PUSHX") {
@@ -6019,7 +6015,7 @@ TEST_CASE("copy_stack") {
             std::uint8_t size = op_code - evmc_opcode::OP_SWAP1 + 2;
             CHECK(trace_stack.size() == size);
             for (std::size_t idx = 0; idx < size; idx++) {
-                CHECK(trace_stack[idx] == "0x" + intx::to_string(stack[stack_size-size+idx], 16));
+                CHECK(trace_stack[idx] == "0x" + intx::to_string(stack[stack_size - size + idx], 16));
             }
         }
     }
@@ -6032,7 +6028,7 @@ TEST_CASE("copy_stack") {
             std::uint8_t size = op_code - evmc_opcode::OP_DUP1 + 2;
             CHECK(trace_stack.size() == size);
             for (std::size_t idx = 0; idx < size; idx++) {
-                CHECK(trace_stack[idx] == "0x" + intx::to_string(stack[stack_size-size+idx], 16));
+                CHECK(trace_stack[idx] == "0x" + intx::to_string(stack[stack_size - size + idx], 16));
             }
         }
     }
@@ -6218,11 +6214,7 @@ TEST_CASE("copy_store") {
 
     const std::size_t stack_size{32};
     evmone::uint256 stack[stack_size] = {
-        {0x00}, {0x01}, {0x02}, {0x03}, {0x04}, {0x05}, {0x06}, {0x07},
-        {0x08}, {0x09}, {0x0A}, {0x0B}, {0x0C}, {0x0D}, {0x0E}, {0x0F},
-        {0x10}, {0x11}, {0x12}, {0x13}, {0x14}, {0x15}, {0x16}, {0x17},
-        {0x18}, {0x19}, {0x1A}, {0x1B}, {0x1C}, {0x1D}, {0x1E}, {0x1F}
-    };
+        {0x00}, {0x01}, {0x02}, {0x03}, {0x04}, {0x05}, {0x06}, {0x07}, {0x08}, {0x09}, {0x0A}, {0x0B}, {0x0C}, {0x0D}, {0x0E}, {0x0F}, {0x10}, {0x11}, {0x12}, {0x13}, {0x14}, {0x15}, {0x16}, {0x17}, {0x18}, {0x19}, {0x1A}, {0x1B}, {0x1C}, {0x1D}, {0x1E}, {0x1F}};
     evmone::uint256* top_stack = &stack[stack_size - 1];
 
     SECTION("op_code == OP_SSTORE") {
@@ -6249,11 +6241,7 @@ TEST_CASE("copy_memory_offset_len") {
 
     const std::size_t stack_size{32};
     evmone::uint256 stack[stack_size] = {
-        {0x00}, {0x01}, {0x02}, {0x03}, {0x04}, {0x05}, {0x06}, {0x07},
-        {0x08}, {0x09}, {0x0A}, {0x0B}, {0x0C}, {0x0D}, {0x0E}, {0x0F},
-        {0x10}, {0x11}, {0x12}, {0x13}, {0x14}, {0x15}, {0x16}, {0x17},
-        {0x18}, {0x19}, {0x1A}, {0x1B}, {0x1C}, {0x1D}, {0x1E}, {0x1F}
-    };
+        {0x00}, {0x01}, {0x02}, {0x03}, {0x04}, {0x05}, {0x06}, {0x07}, {0x08}, {0x09}, {0x0A}, {0x0B}, {0x0C}, {0x0D}, {0x0E}, {0x0F}, {0x10}, {0x11}, {0x12}, {0x13}, {0x14}, {0x15}, {0x16}, {0x17}, {0x18}, {0x19}, {0x1A}, {0x1B}, {0x1C}, {0x1D}, {0x1E}, {0x1F}};
     evmone::uint256* top_stack = &stack[stack_size - 1];
 
     for (std::uint8_t op_code = evmc_opcode::OP_STOP; op_code < evmc_opcode::OP_SELFDESTRUCT; op_code++) {
@@ -6322,11 +6310,7 @@ TEST_CASE("push_memory_offset_len") {
 
     const std::size_t stack_size{32};
     evmone::uint256 stack[stack_size] = {
-        {0x00}, {0x01}, {0x02}, {0x03}, {0x04}, {0x05}, {0x06}, {0x07},
-        {0x08}, {0x09}, {0x0A}, {0x0B}, {0x0C}, {0x0D}, {0x0E}, {0x0F},
-        {0x10}, {0x11}, {0x12}, {0x13}, {0x14}, {0x15}, {0x16}, {0x17},
-        {0x18}, {0x19}, {0x1A}, {0x1B}, {0x1C}, {0x1D}, {0x1E}, {0x1F}
-    };
+        {0x00}, {0x01}, {0x02}, {0x03}, {0x04}, {0x05}, {0x06}, {0x07}, {0x08}, {0x09}, {0x0A}, {0x0B}, {0x0C}, {0x0D}, {0x0E}, {0x0F}, {0x10}, {0x11}, {0x12}, {0x13}, {0x14}, {0x15}, {0x16}, {0x17}, {0x18}, {0x19}, {0x1A}, {0x1B}, {0x1C}, {0x1D}, {0x1E}, {0x1F}};
     evmone::uint256* top_stack = &stack[stack_size - 1];
 
     for (std::uint8_t op_code = evmc_opcode::OP_STOP; op_code < evmc_opcode::OP_SELFDESTRUCT; op_code++) {
@@ -6369,30 +6353,29 @@ TEST_CASE("get_op_name") {
     SILKRPC_LOG_STREAMS(null_stream(), null_stream());
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
     const char* names[256] = {
-    /* 0x00 */ "STOP",
-    /* 0x01 */ "ADD",
-    /* 0x02 */ "MUL",
-    /* 0x03 */ "SUB",
-    /* 0x04 */ "DIV",
-    /* 0x05 */ "SDIV",
-    /* 0x06 */ "MOD",
-    /* 0x07 */ "SMOD",
-    /* 0x08 */ "ADDMOD",
-    /* 0x09 */ "MULMOD",
-    /* 0x0a */ "EXP",
-    /* 0x0b */ "SIGNEXTEND",
-    /* 0x0c */ nullptr,
-    /* 0x0d */ nullptr,
-    /* 0x0e */ nullptr,
-    /* 0x0f */ nullptr,
-    /* 0x10 */ "LT",
-    /* 0x11 */ "GT",
-    /* 0x12 */ "SLT",
-    /* 0x13 */ "SGT",
-    /* 0x14 */ "EQ",
-    /* 0x15 */ "ISZERO",
-    /* 0x16 */ "AND"
-    };
+        /* 0x00 */ "STOP",
+        /* 0x01 */ "ADD",
+        /* 0x02 */ "MUL",
+        /* 0x03 */ "SUB",
+        /* 0x04 */ "DIV",
+        /* 0x05 */ "SDIV",
+        /* 0x06 */ "MOD",
+        /* 0x07 */ "SMOD",
+        /* 0x08 */ "ADDMOD",
+        /* 0x09 */ "MULMOD",
+        /* 0x0a */ "EXP",
+        /* 0x0b */ "SIGNEXTEND",
+        /* 0x0c */ nullptr,
+        /* 0x0d */ nullptr,
+        /* 0x0e */ nullptr,
+        /* 0x0f */ nullptr,
+        /* 0x10 */ "LT",
+        /* 0x11 */ "GT",
+        /* 0x12 */ "SLT",
+        /* 0x13 */ "SGT",
+        /* 0x14 */ "EQ",
+        /* 0x15 */ "ISZERO",
+        /* 0x16 */ "AND"};
 
     SECTION("valid op_code") {
         auto op_code_name = get_op_name(names, 0x00);

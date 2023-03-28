@@ -26,9 +26,9 @@ boost::asio::awaitable<void> RemoteCursor::open_cursor(const std::string& table_
         SILKRPC_DEBUG << "RemoteCursor::open_cursor opening new cursor for table: " << table_name << "\n";
         auto open_message = remote::Cursor{};
         if (is_dup_sorted) {
-           open_message.set_op(remote::Op::OPEN_DUP_SORT);
+            open_message.set_op(remote::Op::OPEN_DUP_SORT);
         } else {
-           open_message.set_op(remote::Op::OPEN);
+            open_message.set_op(remote::Op::OPEN);
         }
         open_message.set_bucketname(table_name);
         cursor_id_ = (co_await tx_rpc_.write_and_read(open_message)).cursorid();
@@ -136,4 +136,4 @@ boost::asio::awaitable<void> RemoteCursor::close_cursor() {
     co_return;
 }
 
-} // namespace silkrpc::ethdb::kv
+}  // namespace silkrpc::ethdb::kv

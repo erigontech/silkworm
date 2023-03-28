@@ -19,17 +19,17 @@
 #include <optional>
 #include <string>
 
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
-#include <silkworm/core/common/util.hpp>
 
 namespace silkrpc::ethdb::kv {
 
 class CachedDatabase : public core::rawdb::DatabaseReader {
-public:
+  public:
     explicit CachedDatabase(const BlockNumberOrHash& block_id, Transaction& txn, kv::StateCache& state_cache);
 
     CachedDatabase(const CachedDatabase&) = delete;
@@ -48,7 +48,7 @@ public:
     boost::asio::awaitable<void> for_prefix(const std::string& table, silkworm::ByteView prefix,
                                             core::rawdb::Walker w) const override;
 
-private:
+  private:
     BlockNumberOrHash block_id_;
     Transaction& txn_;
     kv::StateCache& state_cache_;
@@ -56,4 +56,3 @@ private:
 };
 
 }  // namespace silkrpc::ethdb::kv
-

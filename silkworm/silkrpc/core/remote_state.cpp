@@ -22,8 +22,8 @@
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/use_future.hpp>
-#include <silkworm/core/common/util.hpp>
 
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
@@ -40,7 +40,7 @@ boost::asio::awaitable<silkworm::ByteView> AsyncRemoteState::read_code(const evm
     const auto optional_code{co_await state_reader_.read_code(code_hash)};
     if (optional_code) {
         code_[code_hash] = std::move(*optional_code);
-        co_return code_[code_hash]; // NOLINT(runtime/arrays)
+        co_return code_[code_hash];  // NOLINT(runtime/arrays)
     }
     co_return silkworm::ByteView{};
 }
@@ -113,8 +113,8 @@ evmc::bytes32 RemoteState::read_storage(const evmc::address& address, uint64_t i
         SILKRPC_DEBUG << "RemoteState::read_storage storage_value=" << storage_value << " end\n";
         return storage_value;
     } catch (const std::exception& e) {
-       SILKRPC_ERROR << "RemoteState::read_storage exception: " << e.what() << "\n";
-       return evmc::bytes32{};
+        SILKRPC_ERROR << "RemoteState::read_storage exception: " << e.what() << "\n";
+        return evmc::bytes32{};
     }
 }
 
@@ -176,4 +176,4 @@ std::optional<evmc::bytes32> RemoteState::canonical_hash(uint64_t block_number) 
     return std::nullopt;
 }
 
-} // namespace silkrpc::state
+}  // namespace silkrpc::state

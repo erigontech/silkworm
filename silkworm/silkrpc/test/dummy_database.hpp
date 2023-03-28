@@ -31,15 +31,15 @@ namespace silkrpc::test {
 
 //! This dummy database acts as a factory for dummy transactions using the same cursor.
 class DummyDatabase : public ethdb::Database {
-public:
+  public:
     explicit DummyDatabase(std::shared_ptr<ethdb::Cursor> cursor) : cursor_(cursor) {}
 
     boost::asio::awaitable<std::unique_ptr<ethdb::Transaction>> begin() override {
         co_return std::make_unique<DummyTransaction>(cursor_);
     }
-private:
+
+  private:
     std::shared_ptr<ethdb::Cursor> cursor_;
 };
 
 }  // namespace silkrpc::test
-

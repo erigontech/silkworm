@@ -27,8 +27,8 @@
 #include <string_view>
 #include <utility>
 
-#include <boost/asio/write.hpp>
 #include <boost/asio/use_awaitable.hpp>
+#include <boost/asio/write.hpp>
 #include <boost/system/error_code.hpp>
 
 #include <silkworm/silkrpc/common/log.hpp>
@@ -37,7 +37,7 @@
 namespace silkrpc::http {
 
 Connection::Connection(Context& context, boost::asio::thread_pool& workers, commands::RpcApiTable& handler_table, std::optional<std::string> jwt_secret)
-        : socket_{*context.io_context()}, request_handler_{context, workers, socket_, handler_table, std::move(jwt_secret)}, buffer_{} {
+    : socket_{*context.io_context()}, request_handler_{context, workers, socket_, handler_table, std::move(jwt_secret)}, buffer_{} {
     request_.content.reserve(kRequestContentInitialCapacity);
     request_.headers.reserve(kRequestHeadersInitialCapacity);
     request_.method.reserve(kRequestMethodInitialCapacity);
@@ -58,21 +58,26 @@ boost::asio::awaitable<void> Connection::read_loop() {
         }
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::asio::error::eof || se.code() == boost::asio::error::connection_reset || se.code() == boost::asio::error::broken_pipe) {
-            SILKRPC_DEBUG << "Connection::read_loop close from client with code: " << se.code() << "\n" << std::flush;
+            SILKRPC_DEBUG << "Connection::read_loop close from client with code: " << se.code() << "\n"
+                          << std::flush;
         } else if (se.code() != boost::asio::error::operation_aborted) {
-            SILKRPC_ERROR << "Connection::read_loop system_error: " << se.what() << "\n" << std::flush;
+            SILKRPC_ERROR << "Connection::read_loop system_error: " << se.what() << "\n"
+                          << std::flush;
             std::rethrow_exception(std::make_exception_ptr(se));
         } else {
-            SILKRPC_DEBUG << "Connection::read_loop operation_aborted: " << se.what() << "\n" << std::flush;
+            SILKRPC_DEBUG << "Connection::read_loop operation_aborted: " << se.what() << "\n"
+                          << std::flush;
         }
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "Connection::read_loop exception: " << e.what() << "\n" << std::flush;
+        SILKRPC_ERROR << "Connection::read_loop exception: " << e.what() << "\n"
+                      << std::flush;
         std::rethrow_exception(std::make_exception_ptr(e));
     }
 }
 
 boost::asio::awaitable<void> Connection::do_read() {
-    SILKRPC_DEBUG << "Connection::do_read going to read...\n" << std::flush;
+    SILKRPC_DEBUG << "Connection::do_read going to read...\n"
+                  << std::flush;
     std::size_t bytes_read = co_await socket_.async_read_some(boost::asio::buffer(buffer_), boost::asio::use_awaitable);
     SILKRPC_DEBUG << "Connection::do_read bytes_read: " << bytes_read << "\n";
     SILKRPC_TRACE << "Connection::do_read buffer: " << std::string_view{static_cast<const char*>(buffer_.data()), bytes_read} << "\n";
@@ -94,9 +99,11 @@ boost::asio::awaitable<void> Connection::do_read() {
 }
 
 boost::asio::awaitable<void> Connection::do_write() {
-    SILKRPC_DEBUG << "Connection::do_write reply: " << reply_.content << "\n" << std::flush;
+    SILKRPC_DEBUG << "Connection::do_write reply: " << reply_.content << "\n"
+                  << std::flush;
     const auto bytes_transferred = co_await boost::asio::async_write(socket_, reply_.to_buffers(), boost::asio::use_awaitable);
-    SILKRPC_TRACE << "Connection::do_write bytes_transferred: " << bytes_transferred << "\n" << std::flush;
+    SILKRPC_TRACE << "Connection::do_write bytes_transferred: " << bytes_transferred << "\n"
+                  << std::flush;
 }
 
 void Connection::clean() {
@@ -105,4 +112,4 @@ void Connection::clean() {
     reply_.reset();
 }
 
-} // namespace silkrpc::http
+}  // namespace silkrpc::http

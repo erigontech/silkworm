@@ -19,7 +19,6 @@
 #include <string>
 
 #include <silkworm/core/common/util.hpp>
-
 #include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
@@ -65,4 +64,4 @@ boost::asio::awaitable<void> Web3RpcApi::handle_web3_sha3(const nlohmann::json& 
     co_return;
 }
 
-} // namespace silkrpc::commands
+}  // namespace silkrpc::commands

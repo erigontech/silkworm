@@ -57,4 +57,4 @@ boost::asio::awaitable<void> NetRpcApi::handle_net_version(const nlohmann::json&
     }
 }
 
-} // namespace silkrpc::commands
+}  // namespace silkrpc::commands

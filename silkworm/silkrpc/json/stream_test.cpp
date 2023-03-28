@@ -251,31 +251,31 @@ TEST_CASE("JsonStream calls") {
     }
     SECTION("complex object 8") {
         stream.open_object();
-            stream.write_field("result");
+        stream.write_field("result");
 
-            stream.open_array();
+        stream.open_array();
 
-                stream.open_object();
-                    stream.write_field("item", 1);
-                    stream.write_field("logs");
-                    stream.open_array();
-                        stream.open_object();
-                            stream.write_field("item", 1.1);
-                        stream.close_object();
-                    stream.close_array();
-                stream.close_object();
+        stream.open_object();
+        stream.write_field("item", 1);
+        stream.write_field("logs");
+        stream.open_array();
+        stream.open_object();
+        stream.write_field("item", 1.1);
+        stream.close_object();
+        stream.close_array();
+        stream.close_object();
 
-                stream.open_object();
-                    stream.write_field("item", 2);
-                    stream.write_field("logs");
-                    stream.open_array();
-                        stream.open_object();
-                            stream.write_field("item", 2.1);
-                        stream.close_object();
-                    stream.close_array();
-                stream.close_object();
+        stream.open_object();
+        stream.write_field("item", 2);
+        stream.write_field("logs");
+        stream.open_array();
+        stream.open_object();
+        stream.write_field("item", 2.1);
+        stream.close_object();
+        stream.close_array();
+        stream.close_object();
 
-            stream.close_array();
+        stream.close_array();
         stream.close_object();
         stream.close();
 
@@ -318,4 +318,4 @@ TEST_CASE("JsonStream calls") {
         CHECK(string_writer.get_content() == "[10,10.3,true]");
     }
 }
-} // namespace json
+}  // namespace json

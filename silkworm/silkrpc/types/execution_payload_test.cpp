@@ -14,10 +14,11 @@
    limitations under the License.
 */
 
-#include "execution_payload.hpp" // NOLINT(build/include)
+#include "execution_payload.hpp"  // NOLINT(build/include)
 
-#include <evmc/evmc.hpp>
 #include <catch2/catch.hpp>
+#include <evmc/evmc.hpp>
+
 #include <silkworm/silkrpc/common/log.hpp>
 
 namespace silkrpc {
@@ -30,9 +31,8 @@ TEST_CASE("print empty execution payload", "[silkrpc][types][execution_payload]"
 TEST_CASE("print empty payload status", "[silkrpc][types][execution_payload]") {
     PayloadStatus p{
         .latest_valid_hash = evmc::bytes32{},
-        .validation_error = ""
-    };
+        .validation_error = ""};
     CHECK_NOTHROW(null_stream() << p);
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

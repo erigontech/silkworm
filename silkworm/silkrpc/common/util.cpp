@@ -26,7 +26,7 @@ std::ostream& operator<<(std::ostream& out, const Account& account) {
     return out;
 }
 
-} // namespace silkworm
+}  // namespace silkworm
 
 namespace silkrpc {
 
@@ -39,11 +39,10 @@ static const char* kBase64Chars[2] = {
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     "abcdefghijklmnopqrstuvwxyz"
     "0123456789"
-    "-_"
-};
+    "-_"};
 
 std::string base64_encode(const uint8_t* bytes_to_encode, size_t len, bool url) {
-    size_t len_encoded = (len +2) / 3 * 4;
+    size_t len_encoded = (len + 2) / 3 * 4;
 
     char trailing_char = url ? '.' : '=';
     const char* base64_chars_ = kBase64Chars[url ? 1 : 0];
@@ -60,7 +59,7 @@ std::string base64_encode(const uint8_t* bytes_to_encode, size_t len, bool url) 
 
             if (pos + 2 < len) {
                 ret.push_back(base64_chars_[((bytes_to_encode[pos + 1] & 0x0f) << 2) + ((bytes_to_encode[pos + 2] & 0xc0) >> 6)]);
-                ret.push_back(base64_chars_[  bytes_to_encode[pos + 2] & 0x3f]);
+                ret.push_back(base64_chars_[bytes_to_encode[pos + 2] & 0x3f]);
             } else {
                 ret.push_back(base64_chars_[(bytes_to_encode[pos + 1] & 0x0f) << 2]);
                 ret.push_back(trailing_char);
@@ -131,7 +130,6 @@ std::string to_dec(intx::uint256 number) {
     return std::string{p};
 }
 
-
 // check whether the fee of the given transaction is reasonable (under the cap)
 bool check_tx_fee_less_cap(float cap, intx::uint256 max_fee_per_gas, uint64_t gas_limit) {
     // Short circuit if there is no cap for transaction fee at all
@@ -175,7 +173,7 @@ std::string decoding_result_to_string(silkworm::DecodingError decode_result) {
             return "rlp: element is larger than containing list";
         case silkworm::DecodingError::kListLengthMismatch:
             return "rlp: list Length Mismatch";
-        case silkworm::DecodingError::kInvalidVInSignature: // v != 27 && v != 28 && v < 35, see EIP-155
+        case silkworm::DecodingError::kInvalidVInSignature:  // v != 27 && v != 28 && v < 35, see EIP-155
             return "rlp: invalid V in signature";
         case silkworm::DecodingError::kUnsupportedTransactionType:
             return "rlp: unknown tx type prefix";
@@ -199,4 +197,4 @@ const silkworm::ChainConfig* lookup_chain_config(uint64_t chain_id) {
     return chain_info->second;
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

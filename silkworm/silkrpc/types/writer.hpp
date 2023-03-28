@@ -20,23 +20,23 @@
 #include <memory>
 #include <string>
 
-#include <boost/asio/write.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/write.hpp>
 #include <boost/bind/bind.hpp>
 #include <boost/thread/thread.hpp>
 
 namespace silkrpc {
 
 class Writer {
-public:
+  public:
     virtual ~Writer() = default;
 
     virtual void write(const std::string& content) = 0;
     virtual void close() {}
 };
 
-class StringWriter: public Writer {
-public:
+class StringWriter : public Writer {
+  public:
     StringWriter() {}
 
     explicit StringWriter(std::size_t initial_capacity) {
@@ -50,30 +50,31 @@ public:
     const std::string& get_content() {
         return content_;
     }
-private:
+
+  private:
     std::string content_;
 };
 
-class SocketWriter: public Writer {
-public:
+class SocketWriter : public Writer {
+  public:
     explicit SocketWriter(boost::asio::ip::tcp::socket& socket) : socket_(socket) {}
 
     void write(const std::string& content) override {
         boost::asio::write(socket_, boost::asio::buffer(content));
     }
 
-private:
+  private:
     boost::asio::ip::tcp::socket& socket_;
 };
 
-class ChunksWriter: public Writer {
-public:
+class ChunksWriter : public Writer {
+  public:
     explicit ChunksWriter(Writer& writer, std::size_t chunck_size = DEFAULT_CHUNCK_SIZE);
 
     void write(const std::string& content) override;
     void close() override;
 
-private:
+  private:
     static const std::size_t DEFAULT_CHUNCK_SIZE = 0x800;
 
     void flush();
@@ -84,5 +85,4 @@ private:
     std::unique_ptr<char[]> buffer_;
 };
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

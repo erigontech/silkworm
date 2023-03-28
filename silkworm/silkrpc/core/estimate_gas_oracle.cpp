@@ -23,10 +23,10 @@
 #include <boost/asio/compose.hpp>
 #include <boost/asio/post.hpp>
 #include <boost/asio/use_awaitable.hpp>
-#include <silkworm/silkrpc/core/blocks.hpp>
-#include <silkworm/silkrpc/core/rawdb/chain.hpp>
 
 #include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/silkrpc/core/blocks.hpp>
+#include <silkworm/silkrpc/core/rawdb/chain.hpp>
 
 namespace silkrpc::ego {
 
@@ -59,14 +59,14 @@ boost::asio::awaitable<intx::uint256> EstimateGasOracle::estimate_gas(const Call
         }
         auto available = balance - call.value.value_or(0);
         auto allowance = available / gas_price;
-        SILKRPC_DEBUG << "allowance: " << allowance << ", available: 0x" << intx::hex(available) << ", balance: 0x" << intx::hex(balance)  << "\n";
+        SILKRPC_DEBUG << "allowance: " << allowance << ", available: 0x" << intx::hex(available) << ", balance: 0x" << intx::hex(balance) << "\n";
         if (hi > allowance) {
             SILKRPC_WARN << "gas estimation capped by limited funds: original " << hi
-                << ", balance 0x" << intx::hex(balance)
-                << ", sent " << intx::hex(call.value.value_or(0))
-                << ", gasprice " << intx::hex(gas_price)
-                << ", allowance " << allowance
-                << "\n";
+                         << ", balance 0x" << intx::hex(balance)
+                         << ", sent " << intx::hex(call.value.value_or(0))
+                         << ", gasprice " << intx::hex(gas_price)
+                         << ", allowance " << allowance
+                         << "\n";
             hi = uint64_t(allowance);
         }
     }
@@ -131,4 +131,4 @@ boost::asio::awaitable<bool> EstimateGasOracle::try_execution(const silkworm::Tr
     co_return failed;
 }
 
-} // namespace silkrpc::ego
+}  // namespace silkrpc::ego

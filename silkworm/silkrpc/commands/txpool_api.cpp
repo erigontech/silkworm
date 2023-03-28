@@ -85,4 +85,4 @@ boost::asio::awaitable<void> TxPoolRpcApi::handle_txpool_content(const nlohmann:
     co_return;
 }
 
-} // namespace silkrpc::commands
+}  // namespace silkrpc::commands

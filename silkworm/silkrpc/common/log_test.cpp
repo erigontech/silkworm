@@ -29,8 +29,7 @@ using Catch::Matchers::Message;
 
 TEST_CASE("parse log level", "[silkrpc][common][log]") {
     std::vector<absl::string_view> input_texts{
-        "n", "c", "e", "w", "i", "d", "t"
-    };
+        "n", "c", "e", "w", "i", "d", "t"};
     std::vector<LogLevel> expected_levels{
         LogLevel::None,
         LogLevel::Critical,
@@ -69,8 +68,7 @@ TEST_CASE("unparse log level", "[silkrpc][common][log]") {
         LogLevel::Trace,
     };
     std::vector<absl::string_view> expected_texts{
-        "n", "c", "e", "w", "i", "d", "t"
-    };
+        "n", "c", "e", "w", "i", "d", "t"};
     for (auto i{0u}; i < input_levels.size(); i++) {
         const auto text{AbslUnparseFlag(input_levels[i])};
         CHECK(text == expected_texts[i]);
@@ -171,5 +169,4 @@ TEST_CASE("SILKRPC_LOG_THREAD macro enables/disables thread tracing", "[silkrpc]
     CHECK(ss2.str().find(thread_id_stream.str()) == std::string::npos);
 }
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

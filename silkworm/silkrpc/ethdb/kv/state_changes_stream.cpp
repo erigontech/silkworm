@@ -120,4 +120,4 @@ boost::asio::awaitable<void> StateChangesStream::run() {
     SILKRPC_TRACE << "StateChangesStream::run state stream END\n";
 }
 
-} // namespace silkrpc::ethdb::kv
+}  // namespace silkrpc::ethdb::kv

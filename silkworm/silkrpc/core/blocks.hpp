@@ -19,7 +19,7 @@
 #include <string>
 #include <utility>
 
-#include <silkworm/silkrpc/config.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 
@@ -36,7 +36,6 @@ constexpr const char* kSafeBlockId{"safe"};
 constexpr const char* kLatestExecutedBlockId{"latestExecuted"};
 
 constexpr uint64_t kEarliestBlockNumber{0ul};
-
 
 boost::asio::awaitable<bool> is_latest_block_number(uint64_t block_number, const core::rawdb::DatabaseReader& db_reader);
 
@@ -61,4 +60,3 @@ boost::asio::awaitable<uint64_t> get_forkchoice_safe_block_number(const core::ra
 boost::asio::awaitable<bool> is_latest_block_number(const BlockNumberOrHash& bnoh, const core::rawdb::DatabaseReader& reader);
 
 }  // namespace silkrpc::core
-

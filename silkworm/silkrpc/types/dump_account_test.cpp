@@ -19,8 +19,8 @@
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 #include <nlohmann/json.hpp>
-#include <silkworm/core/common/util.hpp>
 
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 
 namespace silkrpc {
@@ -64,15 +64,12 @@ TEST_CASE("Filled DumpAccounts", "[silkrpc][types][dump_account]") {
         20,
         30,
         0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6_bytes32,
-        0xc10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6_bytes32
-    };
+        0xc10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6_bytes32};
     DumpAccounts das{
         0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6_bytes32,
         0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address,
         AccountsMap{
-            {0x0000000000000000000000000000000000000000_address, da}
-        }
-    };
+            {0x0000000000000000000000000000000000000000_address, da}}};
 
     SECTION("check fields") {
         CHECK(das.root == 0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6_bytes32);
@@ -105,8 +102,7 @@ TEST_CASE("Filled DumpAccounts", "[silkrpc][types][dump_account]") {
 TEST_CASE("Filled zero-account DumpAccounts", "[silkrpc][types][dump_account]") {
     DumpAccounts da{
         0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6_bytes32,
-        0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address
-    };
+        0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address};
 
     SECTION("check fields") {
         CHECK(da.root == 0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6_bytes32);
@@ -160,8 +156,7 @@ TEST_CASE("Filled externally-owned DumpAccount", "[silkrpc][types][dump_account]
         20,
         30,
         0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6_bytes32,
-        0xc10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6_bytes32
-    };
+        0xc10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6_bytes32};
 
     SECTION("check fields") {
         CHECK(da.balance == 10);
@@ -194,12 +189,8 @@ TEST_CASE("Filled contract DumpAccount", "[silkrpc][types][dump_account]") {
         0xc10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6_bytes32,
         silkworm::from_hex("0x0608"),
         Storage{
-            {
-                0x209f062567c161c5f71b3f57a7de277b0e95c3455050b152d785ad7524ef8ee7_bytes32,
-                *silkworm::from_hex("0x0000000000000000000000000000000000000000000000000000000000000000")
-            }
-        }
-    };
+            {0x209f062567c161c5f71b3f57a7de277b0e95c3455050b152d785ad7524ef8ee7_bytes32,
+             *silkworm::from_hex("0x0000000000000000000000000000000000000000000000000000000000000000")}}};
 
     SECTION("check fields") {
         CHECK(da.balance == 10);
@@ -208,10 +199,8 @@ TEST_CASE("Filled contract DumpAccount", "[silkrpc][types][dump_account]") {
         CHECK(da.root == 0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6_bytes32);
         CHECK(da.code_hash == 0xc10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6_bytes32);
         CHECK(da.code == silkworm::Bytes{0x06, 0x08});
-        CHECK(da.storage == Storage{{
-            0x209f062567c161c5f71b3f57a7de277b0e95c3455050b152d785ad7524ef8ee7_bytes32,
-            *silkworm::from_hex("0x0000000000000000000000000000000000000000000000000000000000000000")
-        }});
+        CHECK(da.storage == Storage{{0x209f062567c161c5f71b3f57a7de277b0e95c3455050b152d785ad7524ef8ee7_bytes32,
+                                     *silkworm::from_hex("0x0000000000000000000000000000000000000000000000000000000000000000")}});
     }
 
     SECTION("json") {
@@ -231,4 +220,4 @@ TEST_CASE("Filled contract DumpAccount", "[silkrpc][types][dump_account]") {
     }
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

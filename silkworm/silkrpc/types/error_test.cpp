@@ -47,5 +47,4 @@ TEST_CASE("print empty revert error", "[silkrpc][types][error]") {
     CHECK_NOTHROW(null_stream() << err);
 }
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

@@ -30,6 +30,4 @@ struct ChainTraffic {
     uint64_t cumulative_transactions_count;
 };
 
-
-} // namespace silkrpc
-
+}  // namespace silkrpc

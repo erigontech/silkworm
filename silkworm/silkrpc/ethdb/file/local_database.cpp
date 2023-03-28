@@ -38,4 +38,4 @@ boost::asio::awaitable<std::unique_ptr<Transaction>> LocalDatabase::begin() {
     co_return txn;
 }
 
-} // namespace silkrpc::ethdb::file
+}  // namespace silkrpc::ethdb::file

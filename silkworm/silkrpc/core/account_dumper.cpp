@@ -24,11 +24,10 @@
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/node/db/util.hpp>
-
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
-#include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/account_walker.hpp>
+#include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/state_reader.hpp>
 #include <silkworm/silkrpc/core/storage_walker.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
@@ -79,8 +78,7 @@ boost::asio::awaitable<DumpAccounts> AccountDumper::dump_accounts(BlockCache& ca
 }
 
 boost::asio::awaitable<void> AccountDumper::load_accounts(ethdb::TransactionDatabase& tx_database,
-    const std::vector<silkrpc::KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code) {
-
+                                                          const std::vector<silkrpc::KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code) {
     StateReader state_reader{tx_database};
     for (const auto& kv : collected_data) {
         const auto address = silkworm::to_evmc_address(kv.key);
@@ -150,4 +148,4 @@ boost::asio::awaitable<void> AccountDumper::load_storage(uint64_t block_number, 
     co_return;
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

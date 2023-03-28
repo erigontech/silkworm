@@ -39,9 +39,8 @@ struct Filter {
 
 std::ostream& operator<<(std::ostream& out, const Filter& filter);
 
-} // namespace silkrpc
+}  // namespace silkrpc
 
 std::ostream& operator<<(std::ostream& out, const std::optional<silkrpc::FilterAddresses>& addresses);
 
 std::ostream& operator<<(std::ostream& out, const std::optional<silkrpc::FilterTopics>& topics);
-

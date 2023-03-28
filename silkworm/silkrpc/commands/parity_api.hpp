@@ -18,38 +18,39 @@
 
 #include <memory>
 
-#include <silkworm/silkrpc/config.hpp> // NOLINT(build/include_order)
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
-#include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
+#include <silkworm/silkrpc/json/types.hpp>
 
-namespace silkrpc::http { class RequestHandler; }
+namespace silkrpc::http {
+class RequestHandler;
+}
 
 namespace silkrpc::commands {
 
 class ParityRpcApi {
-public:
+  public:
     explicit ParityRpcApi(Context& context) : database_(context.database()), context_(context) {}
     virtual ~ParityRpcApi() {}
 
     ParityRpcApi(const ParityRpcApi&) = delete;
     ParityRpcApi& operator=(const ParityRpcApi&) = delete;
 
-protected:
+  protected:
     boost::asio::awaitable<void> handle_parity_get_block_receipts(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_parity_list_storage_keys(const nlohmann::json& request, nlohmann::json& reply);
 
-private:
+  private:
     std::unique_ptr<ethdb::Database>& database_;
     Context& context_;
 
     friend class silkrpc::http::RequestHandler;
 };
 
-} // namespace silkrpc::commands
-
+}  // namespace silkrpc::commands

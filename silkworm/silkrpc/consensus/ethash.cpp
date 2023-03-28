@@ -67,4 +67,4 @@ std::ostream& operator<<(std::ostream& out, const BlockReward& reward) {
     return out;
 }
 
-} // namespace silkrpc::ethash
+}  // namespace silkrpc::ethash

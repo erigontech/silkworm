@@ -19,17 +19,16 @@
 #include <numeric>
 #include <string>
 
-#include <silkworm/silkrpc/json/types.hpp>
-
+#include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/silkrpc/consensus/ethash.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
-#include <silkworm/silkrpc/core/state_reader.hpp>
 #include <silkworm/silkrpc/core/receipts.hpp>
+#include <silkworm/silkrpc/core/state_reader.hpp>
 #include <silkworm/silkrpc/ethdb/kv/cached_database.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
-#include <silkworm/silkrpc/consensus/ethash.hpp>
-#include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkrpc::commands {
 
@@ -60,8 +59,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json
         ethdb::kv::CachedDatabase cached_database{BlockNumberOrHash{block_id}, *tx, *state_cache_};
         // Check if target block is latest one: use local state cache (if any) for target transaction
         const bool is_latest_block = co_await core::is_latest_block_number(BlockNumberOrHash{block_id}, tx_database);
-        StateReader state_reader{is_latest_block ?
-            static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database)};
+        StateReader state_reader{is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database)};
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         std::optional<silkworm::Account> account{co_await state_reader.read_account(address, block_number + 1)};
@@ -80,7 +78,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -127,7 +125,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetails(const nlohman
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -173,7 +171,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetailsByHash(const n
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
-    co_await tx->close(); // RAII not (yet) available with coroutines
+    co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
 
@@ -191,16 +189,15 @@ IssuanceDetails OtsRpcApi::get_issuance(const ChainConfig& chain_config, const s
     IssuanceDetails issuance{
         .miner_reward = block_reward.miner_reward,
         .ommers_reward = ommers_reward,
-        .total_reward = block_reward.miner_reward + ommers_reward
-    };
+        .total_reward = block_reward.miner_reward + ommers_reward};
 
     return issuance;
 }
 
-intx::uint256 OtsRpcApi::get_block_fees(const ChainConfig& chain_config, const silkworm::BlockWithHash& block, std::vector<Receipt> & receipts, silkworm::BlockNum block_number) {
+intx::uint256 OtsRpcApi::get_block_fees(const ChainConfig& chain_config, const silkworm::BlockWithHash& block, std::vector<Receipt>& receipts, silkworm::BlockNum block_number) {
     auto config = silkworm::ChainConfig::from_json(chain_config.config).value();
     intx::uint256 fees = 0;
-    for (const auto & receipt : receipts) {
+    for (const auto& receipt : receipts) {
         auto txn = block.block.transactions[receipt.tx_index];
         intx::uint256 effective_gas_price = {0};
 
@@ -219,4 +216,4 @@ intx::uint256 OtsRpcApi::get_block_fees(const ChainConfig& chain_config, const s
     return fees;
 }
 
-} // namespace silkrpc::commands
+}  // namespace silkrpc::commands

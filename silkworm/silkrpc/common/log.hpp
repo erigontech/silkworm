@@ -24,7 +24,15 @@
 namespace silkrpc {
 
 // available verbosity levels
-enum class LogLevel { Trace, Debug, Info, Warn, Error, Critical, None };
+enum class LogLevel {
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+    Critical,
+    None
+};
 
 // silence
 std::ostream& null_stream();
@@ -56,21 +64,23 @@ using Logger = log_;
 bool AbslParseFlag(absl::string_view text, LogLevel* level, std::string* error);
 std::string AbslUnparseFlag(LogLevel level);
 
-} // namespace silkrpc
+}  // namespace silkrpc
 
-#define LOG(level_) if ((level_) < silkrpc::log_verbosity_) {} else silkrpc::log_(level_) << " " // NOLINT
+#define LOG(level_)                           \
+    if ((level_) < silkrpc::log_verbosity_) { \
+    } else                                    \
+        silkrpc::log_(level_) << " "  // NOLINT
 
 #define SILKRPC_TRACE LOG(silkrpc::LogLevel::Trace)
 #define SILKRPC_DEBUG LOG(silkrpc::LogLevel::Debug)
-#define SILKRPC_INFO  LOG(silkrpc::LogLevel::Info)
-#define SILKRPC_WARN  LOG(silkrpc::LogLevel::Warn)
+#define SILKRPC_INFO LOG(silkrpc::LogLevel::Info)
+#define SILKRPC_WARN LOG(silkrpc::LogLevel::Warn)
 #define SILKRPC_ERROR LOG(silkrpc::LogLevel::Error)
-#define SILKRPC_CRIT  LOG(silkrpc::LogLevel::Critical)
-#define SILKRPC_LOG   LOG(silkrpc::LogLevel::None)
+#define SILKRPC_CRIT LOG(silkrpc::LogLevel::Critical)
+#define SILKRPC_LOG LOG(silkrpc::LogLevel::None)
 
 #define SILKRPC_LOG_VERBOSITY(level_) (silkrpc::log_verbosity_ = (level_))
 
 #define SILKRPC_LOG_THREAD(log_thread_) (silkrpc::log_thread_enabled_ = (log_thread_))
 
 #define SILKRPC_LOG_STREAMS(stream1_, stream2_) silkrpc::log_set_streams_((stream1_), (stream2_))
-

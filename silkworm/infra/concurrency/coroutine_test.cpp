@@ -30,7 +30,25 @@ awaitable<int> coroutine_return_123() {
     co_return 123;
 }
 
-TEST_CASE("coroutine co_return") {
+TEST_CASE("check configuration", "[silkworm][infra][concurrency]") {
+#if __has_include(<coroutine>)
+#ifdef BOOST_ASIO_HAS_CO_AWAIT
+    CHECK(true);
+#else
+    CHECK(false);
+#endif  // BOOST_ASIO_HAS_CO_AWAIT
+#ifdef BOOST_ASIO_HAS_STD_COROUTINE
+    CHECK(true);
+#else
+    CHECK(false);
+#endif  // BOOST_ASIO_HAS_STD_COROUTINE
+#endif  // __has_include(<coroutine>)
+    CHECK(&typeid(std::coroutine_handle<void>) != nullptr);
+    CHECK(&typeid(std::suspend_always) != nullptr);
+    CHECK(&typeid(std::suspend_never) != nullptr);
+}
+
+TEST_CASE("coroutine co_return", "[silkworm][infra][concurrency]") {
     io_context context;
     auto task = co_spawn(
         context,

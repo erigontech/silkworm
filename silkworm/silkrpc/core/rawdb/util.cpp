@@ -43,4 +43,4 @@ silkworm::Bytes composite_storage_key_without_hash_lookup(const evmc::address& a
     return res;
 }
 
-} // namespace silkrpc
+}  // namespace silkrpc

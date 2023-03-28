@@ -21,10 +21,10 @@
 #include <boost/system/system_error.hpp>
 #include <catch2/catch.hpp>
 
-#include <silkworm/silkrpc/test/kv_test_base.hpp>
-#include <silkworm/silkrpc/test/grpc_responder.hpp>
 #include <silkworm/silkrpc/test/grpc_actions.hpp>
 #include <silkworm/silkrpc/test/grpc_matcher.hpp>
+#include <silkworm/silkrpc/test/grpc_responder.hpp>
+#include <silkworm/silkrpc/test/kv_test_base.hpp>
 
 namespace silkrpc::ethdb::kv {
 
@@ -61,8 +61,8 @@ TEST_CASE_METHOD(RemoteDatabaseTest, "RemoteDatabase::begin", "[silkrpc][ethdb][
 
         // Execute the test: RemoteDatabase::begin should raise an exception w/ expected gRPC status code
         CHECK_THROWS_MATCHES(spawn_and_wait(remote_db_.begin()),
-            boost::system::system_error,
-            test::exception_has_cancelled_grpc_status_code());
+                             boost::system::system_error,
+                             test::exception_has_cancelled_grpc_status_code());
     }
 
     SECTION("read failure") {
@@ -70,7 +70,7 @@ TEST_CASE_METHOD(RemoteDatabaseTest, "RemoteDatabase::begin", "[silkrpc][ethdb][
         // 1. remote::KV::StubInterface::PrepareAsyncTxRaw call succeeds
         expect_request_async_tx(*kv_stub_, true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call fails
-        EXPECT_CALL(reader_writer_, Read).WillOnce([&](auto* , void* tag) {
+        EXPECT_CALL(reader_writer_, Read).WillOnce([&](auto*, void* tag) {
             agrpc::process_grpc_tag(grpc_context_, tag, /*ok=*/false);
         });
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
@@ -78,10 +78,10 @@ TEST_CASE_METHOD(RemoteDatabaseTest, "RemoteDatabase::begin", "[silkrpc][ethdb][
 
         // Execute the test: RemoteDatabase::begin should raise an exception w/ expected gRPC status code
         CHECK_THROWS_MATCHES(spawn_and_wait(remote_db_.begin()),
-            boost::system::system_error,
-            test::exception_has_cancelled_grpc_status_code());
+                             boost::system::system_error,
+                             test::exception_has_cancelled_grpc_status_code());
     }
 }
 #endif  // SILKWORM_SANITIZE
 
-} // namespace silkrpc::ethdb::kv
+}  // namespace silkrpc::ethdb::kv

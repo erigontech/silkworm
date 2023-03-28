@@ -32,8 +32,8 @@
 
 #include <silkworm/silkrpc/common/block_cache.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
-#include <silkworm/silkrpc/core/filter_storage.hpp>
 #include <silkworm/silkrpc/concurrency/wait_strategy.hpp>
+#include <silkworm/silkrpc/core/filter_storage.hpp>
 #include <silkworm/silkrpc/ethbackend/backend.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
@@ -110,7 +110,7 @@ std::ostream& operator<<(std::ostream& out, Context& c);
 //! Pool of asynchronous client schedulers.
 // [currently cannot start/stop more than once because grpc::CompletionQueue cannot be used after shutdown]
 class ContextPool {
-public:
+  public:
     explicit ContextPool(std::size_t pool_size, ChannelFactory create_channel, std::optional<std::string> datadir = {}, WaitMode wait_mode = WaitMode::blocking);
     ~ContextPool();
 
@@ -129,7 +129,7 @@ public:
 
     boost::asio::io_context& next_io_context();
 
-private:
+  private:
     static const std::size_t DEFAULT_POOL_STORAGE_SIZE = 0x400;
 
     // The pool of contexts
@@ -147,5 +147,4 @@ private:
     filter::FilterStorage filter_storage_;
 };
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

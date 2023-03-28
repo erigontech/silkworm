@@ -29,17 +29,17 @@
 
 #include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>
 #include <silkworm/interfaces/types/types.pb.h>
-#include <silkworm/silkrpc/types/execution_payload.hpp>
 #include <silkworm/silkrpc/ethbackend/backend.hpp>
+#include <silkworm/silkrpc/types/execution_payload.hpp>
 
 namespace silkrpc::ethbackend {
 
-class RemoteBackEnd final: public BackEnd {
-public:
+class RemoteBackEnd final : public BackEnd {
+  public:
     explicit RemoteBackEnd(boost::asio::io_context& context, std::shared_ptr<grpc::Channel> channel, agrpc::GrpcContext& grpc_context);
 
     explicit RemoteBackEnd(boost::asio::io_context::executor_type executor, std::unique_ptr<::remote::ETHBACKEND::StubInterface> stub,
-        agrpc::GrpcContext& grpc_context);
+                           agrpc::GrpcContext& grpc_context);
 
     ~RemoteBackEnd();
 
@@ -50,10 +50,10 @@ public:
     boost::asio::awaitable<uint64_t> net_peer_count();
     boost::asio::awaitable<ExecutionPayload> engine_get_payload_v1(uint64_t payload_id);
     boost::asio::awaitable<PayloadStatus> engine_new_payload_v1(ExecutionPayload payload);
-    boost::asio::awaitable<ForkChoiceUpdatedReply> engine_forkchoice_updated_v1( ForkChoiceUpdatedRequest forkchoice_updated_request);
+    boost::asio::awaitable<ForkChoiceUpdatedReply> engine_forkchoice_updated_v1(ForkChoiceUpdatedRequest forkchoice_updated_request);
     boost::asio::awaitable<std::vector<NodeInfo>> engine_node_info();
 
-private:
+  private:
     evmc::address address_from_H160(const types::H160& h160);
     silkworm::Bytes bytes_from_H128(const types::H128& h128);
     types::H128* H128_from_bytes(const uint8_t* bytes);
@@ -83,5 +83,4 @@ private:
     agrpc::GrpcContext& grpc_context_;
 };
 
-} // namespace silkrpc::ethbackend
-
+}  // namespace silkrpc::ethbackend

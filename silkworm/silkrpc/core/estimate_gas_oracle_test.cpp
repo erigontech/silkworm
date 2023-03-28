@@ -91,7 +91,7 @@ TEST_CASE("estimate gas") {
         std::fill_n(steps.begin(), steps.size(), false);
         steps[15] = true;
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, 0), boost::asio::use_future);
-        const intx::uint256 &estimate_gas = result.get();
+        const intx::uint256& estimate_gas = result.get();
 
         CHECK(estimate_gas == kTxGas * 2);
     }
@@ -101,7 +101,7 @@ TEST_CASE("estimate gas") {
         std::fill_n(steps.begin(), steps.size(), true);
 
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, 0), boost::asio::use_future);
-        const intx::uint256 &estimate_gas = result.get();
+        const intx::uint256& estimate_gas = result.get();
 
         CHECK(estimate_gas == kTxGas);
     }
@@ -115,7 +115,7 @@ TEST_CASE("estimate gas") {
         std::generate_n(steps.begin(), steps.size(), generate);
 
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, 0), boost::asio::use_future);
-        const intx::uint256 &estimate_gas = result.get();
+        const intx::uint256& estimate_gas = result.get();
 
         CHECK(estimate_gas == 0x88b6);
     }
@@ -129,7 +129,7 @@ TEST_CASE("estimate gas") {
         std::generate_n(steps.begin(), steps.size(), generate);
 
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, 0), boost::asio::use_future);
-        const intx::uint256 &estimate_gas = result.get();
+        const intx::uint256& estimate_gas = result.get();
 
         CHECK(estimate_gas == 0x6d5e);
     }
@@ -140,7 +140,7 @@ TEST_CASE("estimate gas") {
         std::fill_n(steps.begin(), steps.size(), false);
         steps[16] = true;
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, 0), boost::asio::use_future);
-        const intx::uint256 &estimate_gas = result.get();
+        const intx::uint256& estimate_gas = result.get();
 
         CHECK(estimate_gas == kTxGas * 4);
     }
@@ -150,7 +150,7 @@ TEST_CASE("estimate gas") {
         steps.resize(17);
         std::fill_n(steps.begin(), steps.size(), true);
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, 0), boost::asio::use_future);
-        const intx::uint256 &estimate_gas = result.get();
+        const intx::uint256& estimate_gas = result.get();
 
         CHECK(estimate_gas == kTxGas);
     }
@@ -162,7 +162,7 @@ TEST_CASE("estimate gas") {
         std::fill_n(steps.begin(), steps.size(), false);
         steps[15] = true;
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, 0), boost::asio::use_future);
-        const intx::uint256 &estimate_gas = result.get();
+        const intx::uint256& estimate_gas = result.get();
 
         CHECK(estimate_gas == kTxGas * 2);
     }
@@ -174,7 +174,7 @@ TEST_CASE("estimate gas") {
         std::fill_n(steps.begin(), steps.size(), false);
         steps[12] = true;
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, 0), boost::asio::use_future);
-        const intx::uint256 &estimate_gas = result.get();
+        const intx::uint256& estimate_gas = result.get();
 
         CHECK(estimate_gas == 0x61a8);
     }
@@ -187,7 +187,7 @@ TEST_CASE("estimate gas") {
         std::fill_n(steps.begin(), steps.size(), false);
         steps[15] = true;
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, 0), boost::asio::use_future);
-        const intx::uint256 &estimate_gas = result.get();
+        const intx::uint256& estimate_gas = result.get();
 
         CHECK(estimate_gas == kTxGas * 2);
     }
@@ -200,7 +200,7 @@ TEST_CASE("estimate gas") {
         std::fill_n(steps.begin(), steps.size(), false);
         steps[12] = true;
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, 0), boost::asio::use_future);
-        const intx::uint256 &estimate_gas = result.get();
+        const intx::uint256& estimate_gas = result.get();
 
         CHECK(estimate_gas == 0x61a8);
     }
@@ -210,7 +210,7 @@ TEST_CASE("estimate gas") {
         steps.resize(26);
         std::fill_n(steps.begin(), steps.size(), true);
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, 0), boost::asio::use_future);
-        const intx::uint256 &estimate_gas = result.get();
+        const intx::uint256& estimate_gas = result.get();
 
         CHECK(estimate_gas == kTxGas);
     }
@@ -221,7 +221,7 @@ TEST_CASE("estimate gas") {
         steps.resize(26);
         std::fill_n(steps.begin(), steps.size(), true);
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, 0), boost::asio::use_future);
-        const intx::uint256 &estimate_gas = result.get();
+        const intx::uint256& estimate_gas = result.get();
 
         CHECK(estimate_gas == kTxGas);
     }
@@ -241,4 +241,4 @@ TEST_CASE("estimate gas") {
     }
 }
 
-} // namespace silkrpc::ego
+}  // namespace silkrpc::ego

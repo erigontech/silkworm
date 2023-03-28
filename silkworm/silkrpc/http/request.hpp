@@ -50,5 +50,4 @@ struct Request {
     }
 };
 
-} // namespace silkrpc::http
-
+}  // namespace silkrpc::http

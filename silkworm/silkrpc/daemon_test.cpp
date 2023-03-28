@@ -35,6 +35,6 @@ TEST_CASE("DaemonChecklist::success_or_throw", "[silkrpc]") {
         CHECK_THROWS_AS(checklist.success_or_throw(), std::runtime_error);
     }
 }
-#endif // BUILD_COVERAGE
+#endif  // BUILD_COVERAGE
 
-} // namespace silkrpc
+}  // namespace silkrpc

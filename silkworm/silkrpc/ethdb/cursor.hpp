@@ -16,20 +16,20 @@
 
 #pragma once
 
-#include <silkworm/silkrpc/config.hpp>
-
 #include <memory>
 #include <string>
 
-#include <boost/asio/awaitable.hpp>
-#include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
+#include <boost/asio/awaitable.hpp>
+
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkrpc::ethdb {
 
 class Cursor {
-public:
+  public:
     Cursor() = default;
     virtual ~Cursor() = default;
 
@@ -50,7 +50,7 @@ public:
 };
 
 class CursorDupSort : public Cursor {
-public:
+  public:
     virtual boost::asio::awaitable<silkworm::Bytes> seek_both(silkworm::ByteView key, silkworm::ByteView value) = 0;
 
     virtual boost::asio::awaitable<KeyValue> seek_both_exact(silkworm::ByteView key, silkworm::ByteView value) = 0;
@@ -66,7 +66,7 @@ struct SplittedKeyValue {
 };
 
 class SplitCursor {
-public:
+  public:
     SplitCursor(Cursor& inner_cursor, silkworm::ByteView key, uint64_t match_bits, uint64_t part1_end, uint64_t part2_start, uint64_t part3_start);
     SplitCursor& operator=(const SplitCursor&) = delete;
 
@@ -74,7 +74,7 @@ public:
 
     boost::asio::awaitable<SplittedKeyValue> next();
 
-private:
+  private:
     Cursor& inner_cursor_;
     silkworm::Bytes key_;
     silkworm::Bytes first_bytes_;
@@ -90,7 +90,7 @@ private:
 };
 
 class SplitCursorDupSort {
-public:
+  public:
     SplitCursorDupSort(CursorDupSort& inner_cursor, silkworm::ByteView key, silkworm::ByteView subkey, uint64_t match_bits, uint64_t part1_end, uint64_t part2_start, uint64_t value_offset);
     SplitCursorDupSort& operator=(const SplitCursorDupSort&) = delete;
 
@@ -98,7 +98,7 @@ public:
 
     boost::asio::awaitable<SplittedKeyValue> next_dup();
 
-private:
+  private:
     CursorDupSort& inner_cursor_;
     silkworm::Bytes key_;
     silkworm::Bytes subkey_;
@@ -114,5 +114,4 @@ private:
     SplittedKeyValue split_key_value(const KeyValue& kv);
 };
 
-} // namespace silkrpc::ethdb
-
+}  // namespace silkrpc::ethdb

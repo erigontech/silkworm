@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <silkworm/silkrpc/config.hpp>
-
 #include <utility>
+
+#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/compose.hpp>
@@ -29,25 +29,24 @@ namespace silkrpc {
 
 namespace detail {
 
-template<typename Executor>
-struct ExecutorDispatcher {
-    Executor executor_;
+    template <typename Executor>
+    struct ExecutorDispatcher {
+        Executor executor_;
 
-    template<typename CompletionToken, typename... Args>
-    void dispatch(CompletionToken&& token, Args&&... args) {
-        boost::asio::dispatch(
-            boost::asio::bind_executor(executor_,
-                boost::asio::append(std::forward<CompletionToken>(token), std::forward<Args>(args)...)));
-    }
-};
+        template <typename CompletionToken, typename... Args>
+        void dispatch(CompletionToken&& token, Args&&... args) {
+            boost::asio::dispatch(
+                boost::asio::bind_executor(executor_,
+                                           boost::asio::append(std::forward<CompletionToken>(token), std::forward<Args>(args)...)));
+        }
+    };
 
-struct InlineDispatcher {
-    template<typename CompletionToken, typename... Args>
-    void dispatch(CompletionToken&& token, Args&&... args) {
-        std::forward<CompletionToken>(token)(std::forward<Args>(args)...);
-    }
-};
-} // namespace detail
+    struct InlineDispatcher {
+        template <typename CompletionToken, typename... Args>
+        void dispatch(CompletionToken&& token, Args&&... args) {
+            std::forward<CompletionToken>(token)(std::forward<Args>(args)...);
+        }
+    };
+}  // namespace detail
 
-} // namespace silkrpc
-
+}  // namespace silkrpc

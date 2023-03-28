@@ -254,14 +254,21 @@ endif()
 target_compile_definitions(secp256k1 PUBLIC ECMULT_WINDOW_SIZE=15 ECMULT_GEN_PREC_BITS=4 USE_ENDOMORPHISM)
 target_compile_definitions(secp256k1 PUBLIC ENABLE_MODULE_ECDH)
 target_compile_definitions(secp256k1 PUBLIC ENABLE_MODULE_RECOVERY)
-target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE third_party/secp256k1/include)
+target_include_directories(
+  secp256k1
+  PRIVATE secp256k1
+  INTERFACE third_party/secp256k1/include
+)
 
 # libff
-set(CURVE "ALT_BN128" CACHE STRING "" FORCE)
+set(CURVE
+    "ALT_BN128"
+    CACHE STRING "" FORCE
+)
 option(WITH_PROCPS "" OFF)
 option(IS_LIBFF_PARENT "" OFF)
 if(MSVC)
-    option(MPIR_INSTEAD_OF_GMP "" ON)
+  option(MPIR_INSTEAD_OF_GMP "" ON)
 endif()
 add_subdirectory(third_party/libff)
 if(NOT MSVC)

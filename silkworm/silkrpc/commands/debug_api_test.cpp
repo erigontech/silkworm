@@ -21,14 +21,12 @@
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/thread_pool.hpp>
-#include <boost/asio/use_future.hpp>
 #include <catch2/catch.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
-#include <silkworm/silkrpc/stagedsync/stages.hpp>
 
 namespace silkrpc::commands {
 
@@ -184,7 +182,7 @@ class DummyTransaction : public silkrpc::ethdb::Transaction {
 
 class DummyDatabase : public silkrpc::ethdb::Database {
   public:
-    explicit DummyDatabase(const nlohmann::json& json) : json_{json} {};
+    explicit DummyDatabase(const nlohmann::json& json) : json_{json} {}
 
     boost::asio::awaitable<std::unique_ptr<silkrpc::ethdb::Transaction>> begin() override {
         auto txn = std::make_unique<DummyTransaction>(json_);

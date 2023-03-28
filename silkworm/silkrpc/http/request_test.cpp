@@ -30,7 +30,7 @@ TEST_CASE("check reset method", "[silkrpc][http][request]") {
         1,
         {{"Accept", "*/*"}},
         15,
-        "{\"json\": \"2.0\"}",
+        R"({"json": "2.0"})",
     };
     CHECK(req.method == "eth_call");
     CHECK(req.uri == "http://localhost:8545");
@@ -40,12 +40,12 @@ TEST_CASE("check reset method", "[silkrpc][http][request]") {
     CHECK(req.content == "{\"json\": \"2.0\"}");
     CHECK(req.content_length == 15);
     req.reset();
-    CHECK(req.method == "");
-    CHECK(req.uri == "");
+    CHECK(req.method.empty());
+    CHECK(req.uri.empty());
     CHECK(req.http_version_major == 0);
     CHECK(req.http_version_minor == 0);
-    CHECK(req.headers == std::vector<Header>{});
-    CHECK(req.content == "");
+    CHECK(req.headers.empty());
+    CHECK(req.content.empty());
     CHECK(req.content_length == 0);
 }
 

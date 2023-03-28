@@ -30,7 +30,7 @@ class LocalDatabase : public Database {
   public:
     explicit LocalDatabase(std::shared_ptr<mdbx::env_managed> chaindata_env);
 
-    ~LocalDatabase();
+    ~LocalDatabase() override;
 
     LocalDatabase(const LocalDatabase&) = delete;
     LocalDatabase& operator=(const LocalDatabase&) = delete;

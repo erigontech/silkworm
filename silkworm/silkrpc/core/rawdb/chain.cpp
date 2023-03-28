@@ -16,7 +16,6 @@
 
 #include "chain.hpp"
 
-#include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <string>
@@ -27,9 +26,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/rlp/decode.hpp>
-#include <silkworm/core/rlp/encode.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/util.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
@@ -37,7 +34,6 @@
 #include <silkworm/silkrpc/ethdb/cbor.hpp>
 #include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
-#include <silkworm/silkrpc/types/log.hpp>
 #include <silkworm/silkrpc/types/receipt.hpp>
 
 namespace silkrpc::core::rawdb {

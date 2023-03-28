@@ -27,7 +27,6 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/db/prune_mode.hpp>
 
 namespace {
 #ifdef _WIN32

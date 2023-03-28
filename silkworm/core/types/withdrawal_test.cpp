@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/core/common/util.cpp>
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
 
 namespace silkworm {

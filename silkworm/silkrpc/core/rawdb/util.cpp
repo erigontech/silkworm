@@ -20,10 +20,8 @@
 #include <cstring>
 
 #include <boost/endian/conversion.hpp>
-#include <intx/intx.hpp>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/core/common/util.hpp>
 #include <silkworm/node/db/util.hpp>
 
 namespace silkrpc {

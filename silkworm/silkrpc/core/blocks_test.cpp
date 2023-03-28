@@ -171,7 +171,6 @@ TEST_CASE("get_block_number latest_required", "[silkrpc][core][blocks]") {
 
 TEST_CASE("get_block_number ", "[silkrpc][core][blocks]") {
     SILKRPC_LOG_STREAMS(null_stream(), null_stream());
-    const silkworm::ByteView kExecutionStage{stages::kExecution};
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool pool{1};
 
@@ -312,7 +311,6 @@ TEST_CASE("get_latest_executed_block_number", "[silkrpc][core][blocks]") {
 }
 
 TEST_CASE("get_latest_block_number with head forkchoice number", "[silkrpc][core][blocks]") {
-    const silkworm::ByteView kExecutionStage{stages::kExecution};
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool pool{1};
 
@@ -373,7 +371,7 @@ TEST_CASE("is_latest_block_number", "[silkrpc][core][blocks]") {
 
     SECTION("number: latest") {
         BlockNumberOrHash bnoh{1'000'000};
-        // Mock reader shall be used to read latest block from Execution stage in table SyncStageProgress
+        // Mock reader shall be used to read the latest block from Execution stage in table SyncStageProgress
         EXPECT_CALL(db_reader, get(db::table::kLastForkchoice, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> { co_return KeyValue{silkworm::Bytes{}, silkworm::Bytes{}}; }));
 
         EXPECT_CALL(db_reader, get(db::table::kSyncStageProgress, kExecutionStage))
@@ -386,7 +384,7 @@ TEST_CASE("is_latest_block_number", "[silkrpc][core][blocks]") {
 
     SECTION("number: not latest") {
         BlockNumberOrHash bnoh{1'000'000};
-        // Mock reader shall be used to read latest block from Execution stage in table SyncStageProgress
+        // Mock reader shall be used to read the latest block from Execution stage in table SyncStageProgress
         EXPECT_CALL(db_reader, get(db::table::kLastForkchoice, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> { co_return KeyValue{silkworm::Bytes{}, silkworm::Bytes{}}; }));
 
         EXPECT_CALL(db_reader, get(db::table::kSyncStageProgress, kExecutionStage))

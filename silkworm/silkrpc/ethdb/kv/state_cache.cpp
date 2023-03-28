@@ -206,7 +206,7 @@ bool CoherentStateCache::add_code(KeyValue kv, CoherentStateRoot* root, StateVie
     }
     code_evictions_.push_front(kv);
 
-    // Remove longest unused key-value pair when size exceeded
+    // Remove the longest unused key-value pair when size exceeded
     if (code_evictions_.size() > config_.max_code_keys) {
         const auto oldest = code_evictions_.back();
         SILKRPC_DEBUG << "Code cache resize oldest.key=" << silkworm::to_hex(oldest.key) << "\n";

@@ -23,9 +23,6 @@
 #include <vector>
 
 #include <catch2/catch.hpp>
-#include <grpcpp/grpcpp.h>
-
-#include <silkworm/silkrpc/common/log.hpp>
 
 using namespace std::chrono_literals;  // NOLINT(build/namespaces)
 

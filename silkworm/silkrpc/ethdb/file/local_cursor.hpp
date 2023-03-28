@@ -36,11 +36,12 @@ namespace silkrpc::ethdb::file {
 
 class LocalCursor : public CursorDupSort {
   public:
-    explicit LocalCursor(mdbx::txn_managed& read_only_txn, uint32_t cursor_id, std::string table_name) : cursor_id_{cursor_id},
-                                                                                                         db_cursor_{read_only_txn, silkworm::db::MapConfig{table_name.c_str()}},
-                                                                                                         read_only_txn_{read_only_txn} {}
+    explicit LocalCursor(mdbx::txn_managed& read_only_txn, uint32_t cursor_id, const std::string& table_name)
+        : cursor_id_{cursor_id},
+          db_cursor_{read_only_txn, silkworm::db::MapConfig{table_name.c_str()}},
+          read_only_txn_{read_only_txn} {}
 
-    uint32_t cursor_id() const override { return cursor_id_; };
+    [[nodiscard]] uint32_t cursor_id() const override { return cursor_id_; };
 
     boost::asio::awaitable<void> open_cursor(const std::string& table_name, bool is_dup_sorted) override;
 

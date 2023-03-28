@@ -16,6 +16,8 @@
 
 #include "local_database.hpp"
 
+#include <utility>
+
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/ethdb/file/local_transaction.hpp>
 
@@ -23,7 +25,7 @@ namespace silkrpc::ethdb::file {
 
 LocalDatabase::LocalDatabase(std::shared_ptr<mdbx::env_managed> chaindata_env) {
     SILKRPC_TRACE << "LocalDatabase::ctor " << this << "\n";
-    chaindata_env_ = chaindata_env;
+    chaindata_env_ = std::move(chaindata_env);
 }
 
 LocalDatabase::~LocalDatabase() {

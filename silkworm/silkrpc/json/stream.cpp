@@ -18,9 +18,6 @@
 
 #include <algorithm>
 #include <string>
-#include <vector>
-
-#include <boost/asio/write.hpp>
 
 namespace json {
 

@@ -16,19 +16,8 @@
 
 #include "request_handler.hpp"
 
-#include <memory>
-#include <thread>
-#include <vector>
-
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/thread_pool.hpp>
-#include <boost/asio/use_future.hpp>
 #include <catch2/catch.hpp>
 
-#include <silkworm/core/common/util.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
-#include <silkworm/silkrpc/http/header.hpp>
 #include <silkworm/silkrpc/http/reply.hpp>
 #include <silkworm/silkrpc/http/request.hpp>
 
@@ -79,7 +68,7 @@ TEST_CASE("check handle_request no method", "[silkrpc][handle_request]") {
         3,
         {{"v", "1"}},
         24,
-        "{\"jsonrpc\":\"2.0\",\"id\":3 }"};
+        R"({"jsonrpc":"2.0","id":3 })"};
     silkrpc::http::Reply reply{};
 
     /*
@@ -114,7 +103,7 @@ TEST_CASE("check handle_request invalid method", "[silkrpc][handle_request]") {
         3,
         {{"v", "1"}},
         24,
-        "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"eth_AAA\"}"};
+        R"({"jsonrpc":"2.0","id":3,"method":"eth_AAA"})"};
     silkrpc::http::Reply reply{};
 
     /*
@@ -149,7 +138,7 @@ TEST_CASE("check handle_request method return failed", "[silkrpc][handle_request
         3,
         {{"v", "1"}},
         70,
-        "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"eth_getBlockByNumber\",\"params\":[]}"};
+        R"({"jsonrpc":"2.0","id":3,"method":"eth_getBlockByNumber","params":[]})"};
     silkrpc::http::Reply reply{};
 
     /*

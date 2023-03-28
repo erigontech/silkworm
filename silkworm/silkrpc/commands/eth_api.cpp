@@ -887,7 +887,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohm
         state::RemoteState remote_state{*context_.io_context(), cached_database, latest_block.header.number};
 
         Tracers tracers;
-        EVMExecutor evm_executor{*context_.io_context(), cached_database, *chain_config_ptr, workers_, remote_state};
+        EVMExecutor evm_executor{*context_.io_context(), *chain_config_ptr, workers_, remote_state};
 
         ego::Executor executor = [&latest_block, &evm_executor, &tracers](const silkworm::Transaction& transaction) {
             return evm_executor.call(latest_block, transaction, tracers);
@@ -1113,7 +1113,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::jso
         state::RemoteState remote_state{*context_.io_context(),
                                         is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database),
                                         block_number};
-        EVMExecutor executor{*context_.io_context(), tx_database, *chain_config_ptr, workers_, remote_state};
+        EVMExecutor executor{*context_.io_context(), *chain_config_ptr, workers_, remote_state};
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
         silkworm::Transaction txn{call.to_transaction()};
         const auto execution_result = co_await executor.call(block_with_hash.block, txn);
@@ -1200,7 +1200,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const
         Tracers tracers{tracer};
         bool access_lists_match{false};
         do {
-            EVMExecutor executor{*context_.io_context(), tx_database, *chain_config_ptr, workers_, remote_state};
+            EVMExecutor executor{*context_.io_context(), *chain_config_ptr, workers_, remote_state};
             const auto txn = call.to_transaction();
             tracer->reset_access_list();
             const auto execution_result = co_await executor.call(block_with_hash.block, txn, tracers, /* refund */ true, /* gasBailout */ false);
@@ -1291,7 +1291,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_call_bundle(const nlohma
                 break;
             }
 
-            EVMExecutor executor{*context_.io_context(), tx_database, *chain_config_ptr, workers_, remote_state};
+            EVMExecutor executor{*context_.io_context(), *chain_config_ptr, workers_, remote_state};
             const auto execution_result = co_await executor.call(block_with_hash.block, tx_with_block->transaction);
             if (execution_result.pre_check_error) {
                 reply = make_json_error(request["id"], -32000, execution_result.pre_check_error.value());

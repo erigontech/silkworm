@@ -48,18 +48,20 @@ class log_ {
   public:
     explicit log_(LogLevel level) : level_(level) { log_mtx_.lock(); }
     ~log_() { log_mtx_.unlock(); }
-    std::ostream& header_(LogLevel);
+
     template <class T>
     std::ostream& operator<<(const T& message) {
-        return header_(level_) << message;
+        return header(level_) << message;
     }
 
   private:
+    static std::ostream& header(LogLevel);
+
     LogLevel level_;
     static std::mutex log_mtx_;
 };
 
-using Logger = log_;
+using Logger [[maybe_unused]] = log_;
 
 bool AbslParseFlag(absl::string_view text, LogLevel* level, std::string* error);
 std::string AbslUnparseFlag(LogLevel level);

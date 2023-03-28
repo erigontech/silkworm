@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "chain.hpp"  // NOLINT(build/include)
+#include "chain.hpp"
 
 #include <string>
 

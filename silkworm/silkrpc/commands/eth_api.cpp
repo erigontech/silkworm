@@ -1600,6 +1600,51 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann:
     co_return;
 }
 
+// https://eth.wiki/json-rpc/API#eth_getlogs
+boost::asio::awaitable<void> EthereumRpcApi::handle_eth_glaze_get_logs(const nlohmann::json& request, std::string& reply) {
+    auto params = request["params"];
+    if (params.size() != 1) {
+        auto error_msg = "invalid eth_getLogs params: " + params.dump();
+        SILKRPC_ERROR << error_msg << "\n";
+        reply = make_json_error(request["id"], 100, error_msg);
+        co_return;
+    }
+    auto filter = params[0].get<Filter>();
+    SILKRPC_DEBUG << "filter: " << filter << "\n";
+
+    auto tx = co_await database_->begin();
+
+    try {
+        ethdb::TransactionDatabase tx_database{*tx};
+
+        const auto [start, end] = co_await get_block_numbers(filter, tx_database);
+        if (start == end && start == std::numeric_limits<std::uint64_t>::max()) {
+            auto error_msg = "invalid eth_getLogs filter block_hash: " + filter.block_hash.value();
+            SILKRPC_ERROR << error_msg << "\n";
+            reply = make_json_error(request["id"], 100, error_msg);
+            co_await tx->close();  // RAII not (yet) available with coroutines
+            co_return;
+        }
+
+        std::vector<Log> logs;
+        co_await get_logs(tx_database, start, end, filter.addresses, filter.topics, logs);
+
+        make_glaze_json_content(reply, request["id"], logs);
+    } catch (const std::invalid_argument& iv) {
+        SILKRPC_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump() << "\n";
+        reply = make_json_content(request["id"], {});
+    } catch (const std::exception& e) {
+        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+    co_return;
+}
+
 // https://eth.wiki/json-rpc/API#eth_sendrawtransaction
 boost::asio::awaitable<void> EthereumRpcApi::handle_eth_send_raw_transaction(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];

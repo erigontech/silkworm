@@ -143,6 +143,10 @@ nlohmann::json make_json_content(uint32_t id, const nlohmann::json& result);
 nlohmann::json make_json_error(uint32_t id, int32_t code, const std::string& message);
 nlohmann::json make_json_error(uint32_t id, const RevertError& error);
 
+// GLAZE
+void make_glaze_json_content(std::string& reply, uint32_t id, const silkrpc::Logs& logs);
+
+
 }  // namespace silkrpc
 
 namespace nlohmann {

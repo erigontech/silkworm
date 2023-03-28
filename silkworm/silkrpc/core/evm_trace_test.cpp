@@ -24,9 +24,9 @@
 #include <catch2/catch.hpp>
 #include <evmc/instructions.h>
 #include <gmock/gmock.h>
-#include <silkpre/precompile.h>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/execution/precompile.hpp>
 #include <silkworm/infra/test/log.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
@@ -109,7 +109,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call precompil
             }));
 
         evmc::address max_precompiled{};
-        max_precompiled.bytes[silkworm::kAddressLength - 1] = SILKPRE_NUMBER_OF_ISTANBUL_CONTRACTS;
+        max_precompiled.bytes[silkworm::kAddressLength - 1] = silkworm::precompile::kNumOfIstanbulContracts;
 
         Call call;
         call.from = 0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address;

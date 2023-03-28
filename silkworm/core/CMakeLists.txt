@@ -46,10 +46,10 @@ set(SILKWORM_CORE_PUBLIC_LIBS
     intx::intx
     Microsoft.GSL::GSL
     nlohmann_json::nlohmann_json
-    silkpre
+    secp256k1
 )
 set(SILKWORM_CORE_PRIVATE_LIBS
-    gmp2
+    gmp
     ff
 )
 

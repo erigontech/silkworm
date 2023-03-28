@@ -241,23 +241,50 @@ if(NOT MSVC)
 endif()
 find_path(GMP_INCLUDE_DIR NAMES gmp.h)
 if(MSVC)
-    find_library(GMP_LIBRARY mpir)
+  find_library(GMP_LIBRARY mpir)
 else()
-    find_library(GMP_LIBRARY gmp)
+  find_library(GMP_LIBRARY gmp)
 endif()
 if(GMP_LIBRARY MATCHES ${CMAKE_SHARED_LIBRARY_SUFFIX})
-    set(gmp_library_type SHARED)
+  set(gmp_library_type SHARED)
 else()
-    set(gmp_library_type STATIC)
+  set(gmp_library_type STATIC)
 endif()
 message(STATUS "GMP: ${GMP_LIBRARY}, ${GMP_INCLUDE_DIR}")
-add_library(gmp2 ${gmp_library_type} IMPORTED)
+add_library(gmp ${gmp_library_type} IMPORTED)
 set_target_properties(
-    gmp2 PROPERTIES
+    gmp PROPERTIES
     IMPORTED_LOCATION ${GMP_LIBRARY}
     INTERFACE_INCLUDE_DIRECTORIES ${GMP_INCLUDE_DIR}
 )
-add_dependencies(gmp2 gmplib)
+if(NOT MSVC)
+  add_dependencies(gmp gmplib)
+endif()
+
+# secp256k1
+add_library(secp256k1 third_party/secp256k1/src/secp256k1.c)
+if(MSVC)
+  target_link_libraries(secp256k1 PRIVATE gmp)
+  target_compile_definitions(secp256k1 PUBLIC USE_NUM_GMP USE_FIELD_INV_NUM USE_SCALAR_INV_NUM)
+  target_compile_definitions(secp256k1 PUBLIC USE_FIELD_10X26 USE_SCALAR_8X32)
+  target_compile_options(secp256k1 PRIVATE /w) # Not much we can do about warnings
+else()
+  target_compile_definitions(secp256k1 PUBLIC USE_NUM_NONE USE_FIELD_INV_BUILTIN USE_SCALAR_INV_BUILTIN)
+  target_compile_definitions(secp256k1 PUBLIC USE_FIELD_5X52 USE_SCALAR_4X64 HAVE___INT128)
+endif()
+target_compile_definitions(secp256k1 PUBLIC ECMULT_WINDOW_SIZE=15 ECMULT_GEN_PREC_BITS=4 USE_ENDOMORPHISM)
+target_compile_definitions(secp256k1 PUBLIC ENABLE_MODULE_ECDH)
+target_compile_definitions(secp256k1 PUBLIC ENABLE_MODULE_RECOVERY)
+target_include_directories(secp256k1 PRIVATE secp256k1 INTERFACE third_party/secp256k1/include)
+
+# libff
+set(CURVE "ALT_BN128" CACHE STRING "" FORCE)
+option(WITH_PROCPS "" OFF)
+option(IS_LIBFF_PARENT "" OFF)
+if(MSVC)
+    option(MPIR_INSTEAD_OF_GMP "" ON)
+endif()
+add_subdirectory(third_party/libff)
 
 # libtorrent
 if(NOT SILKWORM_CORE_ONLY)
@@ -271,13 +298,7 @@ if(NOT SILKWORM_CORE_ONLY)
   target_compile_options(torrent-rasterbar PRIVATE -w)
 endif()
 
-add_subdirectory(third_party/silkpre)
 add_subdirectory(third_party/tomlplusplus)
-
-if(NOT MSVC)
-  add_dependencies(silkpre gmplib)
-  add_dependencies(ff gmplib)
-endif()
 
 # Compiler enforcements on Silkworm
 if(NOT MSVC)

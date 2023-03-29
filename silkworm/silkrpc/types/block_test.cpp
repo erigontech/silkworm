@@ -21,7 +21,6 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/core/types/transaction.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 
 namespace silkrpc {

@@ -100,7 +100,6 @@ boost::asio::awaitable<void> StorageWalker::walk_of_storages(uint64_t block_numb
                                                        location_hash,                      /* subkey */
                                                        8 * (silkworm::kAddressLength + 8), /* match_bits */
                                                        silkworm::kAddressLength,           /* part1_end */
-                                                       silkworm::kAddressLength + 8,       /* part_2_start */
                                                        silkworm::kHashLength};             /* value_offset */
 
     auto sh_cursor = co_await transaction_.cursor(db::table::kStorageHistory);

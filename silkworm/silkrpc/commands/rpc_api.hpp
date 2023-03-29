@@ -41,7 +41,17 @@ class RpcApiTable;
 
 class RpcApi : protected EthereumRpcApi, NetRpcApi, Web3RpcApi, DebugRpcApi, ParityRpcApi, ErigonRpcApi, TraceRpcApi, EngineRpcApi, TxPoolRpcApi, OtsRpcApi {
   public:
-    explicit RpcApi(Context& context, boost::asio::thread_pool& workers) : EthereumRpcApi{context, workers}, NetRpcApi{context.backend()}, Web3RpcApi{context}, DebugRpcApi{context, workers}, ParityRpcApi{context}, ErigonRpcApi{context}, TraceRpcApi{context, workers}, EngineRpcApi(context.database(), context.backend()), TxPoolRpcApi(context), OtsRpcApi{context} {}
+    explicit RpcApi(Context& context, boost::asio::thread_pool& workers)
+        : EthereumRpcApi{context, workers},
+          NetRpcApi{context.backend()},
+          Web3RpcApi{context},
+          DebugRpcApi{context, workers},
+          ParityRpcApi{context},
+          ErigonRpcApi{context},
+          TraceRpcApi{context, workers},
+          EngineRpcApi(context.database(), context.backend()),
+          TxPoolRpcApi(context),
+          OtsRpcApi{context} {}
 
     ~RpcApi() override = default;
 

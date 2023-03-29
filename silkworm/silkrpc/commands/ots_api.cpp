@@ -22,7 +22,6 @@
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/silkrpc/consensus/ethash.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
-#include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/core/receipts.hpp>
 #include <silkworm/silkrpc/core/state_reader.hpp>
@@ -40,7 +39,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_api_level(const nlohmann:
 }
 
 boost::asio::awaitable<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json& request, nlohmann::json& reply) {
-    const auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 2) {
         const auto error_msg = "invalid ots_hasCode params: " + params.dump();
         SILKRPC_ERROR << error_msg << "\n";
@@ -196,11 +195,12 @@ IssuanceDetails OtsRpcApi::get_issuance(const ChainConfig& chain_config, const s
 
 intx::uint256 OtsRpcApi::get_block_fees(const ChainConfig& chain_config, const silkworm::BlockWithHash& block, std::vector<Receipt>& receipts, silkworm::BlockNum block_number) {
     auto config = silkworm::ChainConfig::from_json(chain_config.config).value();
+
     intx::uint256 fees = 0;
     for (const auto& receipt : receipts) {
         auto txn = block.block.transactions[receipt.tx_index];
-        intx::uint256 effective_gas_price = {0};
 
+        intx::uint256 effective_gas_price;
         if (config.london_block && block_number >= config.london_block.value()) {
             intx::uint256 base_fee = block.block.header.base_fee_per_gas.value();
             intx::uint256 gas_price = txn.effective_gas_price(base_fee);

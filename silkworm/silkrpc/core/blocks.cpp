@@ -37,7 +37,7 @@ boost::asio::awaitable<uint64_t> get_block_number_by_tag(const std::string& bloc
     uint64_t block_number;
     if (block_id == kEarliestBlockId) {
         block_number = kEarliestBlockNumber;
-    } else if (block_id == kLatestBlockId || block_id == kPendingBlockId) {
+    } else if (block_id == kLatestBlockId || block_id == kPendingBlockId) {  // NOLINT(bugprone-branch-clone)
         block_number = co_await get_latest_block_number(reader);
     } else if (block_id == kFinalizedBlockId) {
         block_number = co_await get_forkchoice_finalized_block_number(reader);
@@ -56,10 +56,10 @@ boost::asio::awaitable<std::pair<uint64_t, bool>> get_block_number(const std::st
     bool check_if_latest = false;
     if (block_id == kEarliestBlockId) {
         block_number = kEarliestBlockNumber;
-    } else if (block_id == kLatestBlockId || block_id == kPendingBlockId) {
+    } else if (block_id == kLatestBlockId || block_id == kPendingBlockId) {  // NOLINT(bugprone-branch-clone)
         block_number = co_await get_latest_block_number(reader);
         is_latest_block = true;
-    } else if (block_id == kFinalizedBlockId) {
+    } else if (block_id == kFinalizedBlockId) {  // NOLINT(bugprone-branch-clone)
         block_number = co_await get_forkchoice_finalized_block_number(reader);
         check_if_latest = latest_required;
     } else if (block_id == kSafeBlockId) {

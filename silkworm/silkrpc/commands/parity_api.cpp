@@ -26,7 +26,6 @@
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
-#include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/core/receipts.hpp>
 #include <silkworm/silkrpc/core/state_reader.hpp>
 #include <silkworm/silkrpc/ethdb/tables.hpp>

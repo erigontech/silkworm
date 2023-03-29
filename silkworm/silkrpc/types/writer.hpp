@@ -37,7 +37,7 @@ class Writer {
 
 class StringWriter : public Writer {
   public:
-    StringWriter() {}
+    StringWriter() = default;
 
     explicit StringWriter(std::size_t initial_capacity) {
         content_.reserve(initial_capacity);
@@ -69,18 +69,18 @@ class SocketWriter : public Writer {
 
 class ChunksWriter : public Writer {
   public:
-    explicit ChunksWriter(Writer& writer, std::size_t chunck_size = DEFAULT_CHUNCK_SIZE);
+    explicit ChunksWriter(Writer& writer, std::size_t chunk_size = kDefaultChunkSize);
 
     void write(const std::string& content) override;
     void close() override;
 
   private:
-    static const std::size_t DEFAULT_CHUNCK_SIZE = 0x800;
+    static const std::size_t kDefaultChunkSize = 0x800;
 
     void flush();
 
     Writer& writer_;
-    const std::size_t chunck_size_;
+    const std::size_t chunk_size_;
     std::size_t available_;
     std::unique_ptr<char[]> buffer_;
 };

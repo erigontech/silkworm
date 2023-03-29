@@ -16,8 +16,6 @@
 
 #include "state_reader.hpp"
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
 #include <boost/asio/awaitable.hpp>
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>

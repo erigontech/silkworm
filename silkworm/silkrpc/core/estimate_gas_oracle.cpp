@@ -18,15 +18,12 @@
 
 #include <algorithm>
 #include <string>
-#include <utility>
 
-#include <boost/asio/compose.hpp>
 #include <boost/asio/post.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
-#include <silkworm/silkrpc/core/rawdb/chain.hpp>
 
 namespace silkrpc::ego {
 

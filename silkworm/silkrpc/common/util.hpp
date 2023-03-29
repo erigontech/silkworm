@@ -81,7 +81,7 @@ inline ByteView byte_view_of_string(const std::string& s) {
 }
 
 inline Bytes bytes_of_string(const std::string& s) {
-    return Bytes(s.begin(), s.end());
+    return {s.begin(), s.end()};
 }
 
 inline evmc::bytes32 bytes32_from_hex(const std::string& s) {
@@ -104,7 +104,7 @@ inline auto hash_of(const silkworm::ByteView& bytes) {
 
 inline auto hash_of_transaction(const silkworm::Transaction& txn) {
     silkworm::Bytes txn_rlp{};
-    silkworm::rlp::encode(txn_rlp, txn, /*for_signing=*/false, /*wrap_eip2718_as_array=*/false);
+    silkworm::rlp::encode(txn_rlp, txn, /*for_signing=*/false, /*wrap_eip2718_into_string=*/false);
     return ethash::keccak256(txn_rlp.data(), txn_rlp.length());
 }
 

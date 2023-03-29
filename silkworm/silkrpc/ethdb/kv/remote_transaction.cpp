@@ -22,16 +22,7 @@
 
 #include <grpcpp/grpcpp.h>
 
-#include <silkworm/silkrpc/common/log.hpp>
-
 namespace silkrpc::ethdb::kv {
-
-RemoteTransaction::RemoteTransaction(remote::KV::StubInterface& stub, agrpc::GrpcContext& grpc_context)
-    : tx_rpc_{stub, grpc_context} {
-}
-
-RemoteTransaction::~RemoteTransaction() {
-}
 
 boost::asio::awaitable<void> RemoteTransaction::open() {
     tx_id_ = (co_await tx_rpc_.request_and_read()).txid();

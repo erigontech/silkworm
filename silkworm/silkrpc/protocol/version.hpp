@@ -36,10 +36,10 @@ struct ProtocolVersion {
     uint32_t patch;
 };
 
-constexpr auto KV_SERVICE_API_VERSION = ProtocolVersion{6, 0, 0};
-constexpr auto ETHBACKEND_SERVICE_API_VERSION = ProtocolVersion{3, 1, 0};
-constexpr auto MINING_SERVICE_API_VERSION = ProtocolVersion{1, 0, 0};
-constexpr auto TXPOOL_SERVICE_API_VERSION = ProtocolVersion{1, 0, 0};
+constexpr auto kKvServiceApiVersion = ProtocolVersion{6, 0, 0};
+constexpr auto kEthBackEndServiceApiVersion = ProtocolVersion{3, 1, 0};
+constexpr auto kMiningServiceApiVersion = ProtocolVersion{1, 0, 0};
+constexpr auto kTxPoolServiceApiVersion = ProtocolVersion{1, 0, 0};
 
 std::ostream& operator<<(std::ostream& out, const ProtocolVersion& v);
 

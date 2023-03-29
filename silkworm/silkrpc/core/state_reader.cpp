@@ -19,7 +19,6 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/bitmap.hpp>
 #include <silkworm/node/db/util.hpp>
 #include <silkworm/silkrpc/common/log.hpp>

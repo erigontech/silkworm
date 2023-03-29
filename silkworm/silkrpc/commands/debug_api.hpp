@@ -45,7 +45,7 @@ class DebugRpcApi {
   public:
     explicit DebugRpcApi(Context& context, boost::asio::thread_pool& workers)
         : context_(context), database_(context.database()), tx_pool_{context.tx_pool()}, workers_{workers} {}
-    virtual ~DebugRpcApi() {}
+    virtual ~DebugRpcApi() = default;
 
     DebugRpcApi(const DebugRpcApi&) = delete;
     DebugRpcApi& operator=(const DebugRpcApi&) = delete;

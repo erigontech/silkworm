@@ -215,6 +215,7 @@ if(NOT SILKWORM_CORE_ONLY)
   target_include_directories(mdbx-static INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libmdbx)
 endif()
 
+# GMP
 if(NOT MSVC)
   set(GMP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/gmplib")
   set(GMP_INSTALL_DIR "${CMAKE_BINARY_DIR}/third_party/gmplib")
@@ -239,6 +240,41 @@ if(NOT MSVC)
   )
 endif()
 
+# secp256k1
+add_library(secp256k1 third_party/secp256k1/src/secp256k1.c)
+if(MSVC)
+  target_link_libraries(secp256k1 PRIVATE gmp)
+  target_compile_definitions(secp256k1 PUBLIC USE_NUM_GMP USE_FIELD_INV_NUM USE_SCALAR_INV_NUM)
+  target_compile_definitions(secp256k1 PUBLIC USE_FIELD_10X26 USE_SCALAR_8X32)
+  target_compile_options(secp256k1 PRIVATE /w) # Not much we can do about warnings
+else()
+  target_compile_definitions(secp256k1 PUBLIC USE_NUM_NONE USE_FIELD_INV_BUILTIN USE_SCALAR_INV_BUILTIN)
+  target_compile_definitions(secp256k1 PUBLIC USE_FIELD_5X52 USE_SCALAR_4X64 HAVE___INT128)
+endif()
+target_compile_definitions(secp256k1 PUBLIC ECMULT_WINDOW_SIZE=15 ECMULT_GEN_PREC_BITS=4 USE_ENDOMORPHISM)
+target_compile_definitions(secp256k1 PUBLIC ENABLE_MODULE_ECDH)
+target_compile_definitions(secp256k1 PUBLIC ENABLE_MODULE_RECOVERY)
+target_include_directories(
+  secp256k1
+  PRIVATE secp256k1
+  INTERFACE third_party/secp256k1/include
+)
+
+# libff
+set(CURVE
+    "ALT_BN128"
+    CACHE STRING "" FORCE
+)
+option(WITH_PROCPS "" OFF)
+option(IS_LIBFF_PARENT "" OFF)
+if(MSVC)
+  option(MPIR_INSTEAD_OF_GMP "" ON)
+endif()
+add_subdirectory(third_party/libff)
+if(NOT MSVC)
+  add_dependencies(ff gmplib)
+endif()
+
 # libtorrent
 if(NOT SILKWORM_CORE_ONLY)
   find_package(Boost REQUIRED)
@@ -251,27 +287,22 @@ if(NOT SILKWORM_CORE_ONLY)
   target_compile_options(torrent-rasterbar PRIVATE -w)
 endif()
 
-add_subdirectory(third_party/silkpre)
 add_subdirectory(third_party/tomlplusplus)
-
-if(NOT MSVC)
-  add_dependencies(silkpre gmplib)
-  add_dependencies(ff gmplib)
-endif()
 
 # Compiler enforcements on Silkworm
 if(NOT MSVC)
   add_compile_options(-Werror -Wall -Wextra -pedantic)
   add_compile_options(-Wshadow -Wimplicit-fallthrough -Wsign-conversion)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>)
-  add_compile_options(-Wno-missing-field-initializers -Wnon-virtual-dtor)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wnon-virtual-dtor>)
+  add_compile_options(-Wno-missing-field-initializers)
 
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_compile_options(-Wno-attributes)
 
     # coroutines support
-    if((CMAKE_CXX_STANDARD GREATER_EQUAL 20) AND (NOT SILKWORM_WASM_API))
-      add_compile_options(-fcoroutines)
+    if(NOT SILKWORM_WASM_API)
+      add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fcoroutines>)
     endif()
   endif()
 

@@ -16,13 +16,14 @@
 
 #pragma once
 
+#include <secp256k1.h>
+
 #include <future>
 #include <memory>
 #include <mutex>
 #include <vector>
 
 #include <evmc/evmc.h>
-#include <silkpre/ecdsa.h>
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>

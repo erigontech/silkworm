@@ -22,8 +22,8 @@
 #include <boost/asio/thread_pool.hpp>
 #include <catch2/catch.hpp>
 #include <gmock/gmock.h>
-#include <silkpre/precompile.h>
 
+#include <silkworm/core/execution/precompile.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/test/context_test_base.hpp>
@@ -106,7 +106,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
             }));
 
         evmc::address max_precompiled{};
-        max_precompiled.bytes[silkworm::kAddressLength - 1] = SILKPRE_NUMBER_OF_ISTANBUL_CONTRACTS;
+        max_precompiled.bytes[silkworm::kAddressLength - 1] = silkworm::precompile::kNumOfIstanbulContracts;
 
         Call call;
         call.from = 0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address;

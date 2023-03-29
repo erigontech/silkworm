@@ -14,16 +14,18 @@
    limitations under the License.
 */
 
-#include "sha256.hpp"
+#pragma once
 
-#include <silkworm/core/crypto/sha256.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
-namespace silkworm::sentry::rlpx::crypto {
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
-Bytes sha256(ByteView data) {
-    Bytes hash(32, 0);
-    silkworm_sha256(hash.data(), data.data(), data.size(), /* use_cpu_extensions = */ false);
-    return hash;
+void silkworm_sha256(uint8_t hash[32], const uint8_t* input, size_t len, bool use_cpu_extensions);
+
+#if defined(__cplusplus)
 }
-
-}  // namespace silkworm::sentry::rlpx::crypto
+#endif

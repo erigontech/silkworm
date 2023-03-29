@@ -1,6 +1,7 @@
 [submodule "evmone"]
 	path = third_party/evmone
-	url = https://github.com/ethereum/evmone.git
+	url = https://github.com/torquem-ch/evmone.git
+	branch = public_result
 [submodule "tests"]
 	path = third_party/tests
 	url = https://github.com/ethereum/tests.git
@@ -20,9 +21,6 @@
 	path = silkworm/interfaces/proto
 	url = https://github.com/ledgerwatch/interfaces.git
 	branch = stable
-[submodule "silkpre"]
-	path = third_party/silkpre
-	url = https://github.com/torquem-ch/silkpre.git
 [submodule "third_party/libtorrent"]
 	path = third_party/libtorrent
 	url = https://github.com/arvidn/libtorrent
@@ -41,6 +39,13 @@
 [submodule "third_party/expected"]
 	path = third_party/expected
 	url = https://github.com/TartanLlama/expected.git
+[submodule "third_party/secp256k1"]
+	path = third_party/secp256k1
+	url = https://github.com/bitcoin-core/secp256k1.git
+[submodule "third_party/libff"]
+	path = third_party/libff
+	url = https://github.com/torquem-ch/libff.git
+	branch = win
 [submodule "third_party/glaze"]
 	path = third_party/glaze
 	url = https://github.com/stephenberry/glaze

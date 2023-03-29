@@ -49,3 +49,6 @@
 [submodule "third_party/glaze"]
 	path = third_party/glaze
 	url = https://github.com/stephenberry/glaze
+[submodule "third_party/intx"]
+	path = third_party/intx
+	url = https://github.com/chfast/intx.git

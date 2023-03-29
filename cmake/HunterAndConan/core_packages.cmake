@@ -14,5 +14,4 @@
    limitations under the License.
 ]]
 
-hunter_add_package(intx)
 hunter_add_package(ethash)

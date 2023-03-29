@@ -157,13 +157,12 @@ if(NOT SILKWORM_CORE_ONLY)
 endif()
 
 # evmone with dependencies
+add_subdirectory(third_party/intx)
+find_package(ethash REQUIRED) # Required from here below
+
 if(SILKWORM_WASM_API)
   add_compile_definitions(EVMC_LOADER_MOCK)
 endif()
-
-find_package(intx REQUIRED) # Required from here below
-find_package(ethash REQUIRED) # Required from here below
-
 add_subdirectory(third_party/evmone/evmc)
 
 add_library(
@@ -199,7 +198,7 @@ target_include_directories(evmone PUBLIC third_party/evmone/include third_party/
 target_link_libraries(
   evmone
   PUBLIC evmc intx::intx
-  PRIVATE evmc::instructions
+  PRIVATE evmc::instructions ethash::keccak
 )
 
 if(MSVC)

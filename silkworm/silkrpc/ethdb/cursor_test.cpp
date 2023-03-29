@@ -26,7 +26,7 @@
 
 #include <silkworm/silkrpc/test/mock_cursor.hpp>
 
-namespace silkrpc::ethdb {
+namespace silkworm::rpc::ethdb {
 
 using Catch::Matchers::Message;
 using evmc::literals::operator""_bytes32;
@@ -314,4 +314,4 @@ TEST_CASE("split cursor") {
         CHECK(silkworm::to_hex(skv.value).empty());
     }
 }
-}  // namespace silkrpc::ethdb
+}  // namespace silkworm::rpc::ethdb

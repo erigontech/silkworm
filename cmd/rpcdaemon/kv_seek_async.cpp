@@ -24,7 +24,7 @@
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
 #include <silkworm/silkrpc/common/util.hpp>
 
-int kv_seek_async(const std::string& target, const std::string& table_name, const silkworm::Bytes& key, uint32_t timeout) {
+int kv_seek_async(const std::string& target, const std::string& table_name, silkworm::ByteView key, uint32_t timeout) {
     // Create KV stub using insecure channel to target
     grpc::ClientContext context;
     grpc::CompletionQueue queue;
@@ -90,7 +90,7 @@ int kv_seek_async(const std::string& target, const std::string& table_name, cons
     auto seek_message = remote::Cursor{};
     seek_message.set_op(remote::Op::SEEK);
     seek_message.set_cursor(cursor_id);
-    seek_message.set_k(key.c_str(), key.length());
+    seek_message.set_k(key.data(), key.length());
     reader_writer->Write(seek_message, SEEK_TAG);
     has_event = queue.Next(&got_tag, &ok);
     if (!has_event || got_tag != SEEK_TAG) {

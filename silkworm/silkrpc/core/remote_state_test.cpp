@@ -29,7 +29,7 @@
 #include <silkworm/silkrpc/test/context_test_base.hpp>
 #include <silkworm/silkrpc/test/mock_database_reader.hpp>
 
-namespace silkrpc::state {
+namespace silkworm::rpc::state {
 
 using Catch::Matchers::Message;
 using evmc::literals::operator""_bytes32;
@@ -413,4 +413,4 @@ TEST_CASE_METHOD(RemoteStateTest, "RemoteState") {
     }
 }
 
-}  // namespace silkrpc::state
+}  // namespace silkworm::rpc::state

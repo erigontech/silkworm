@@ -26,7 +26,7 @@
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
-namespace silkrpc::ethdb::bitmap {
+namespace silkworm::rpc::ethdb::bitmap {
 
 using roaring_bitmap_t = roaring::api::roaring_bitmap_t;
 using Roaring = roaring::Roaring;
@@ -73,4 +73,4 @@ boost::asio::awaitable<Roaring> get(core::rawdb::DatabaseReader& db_reader, cons
     co_return result;
 }
 
-}  // namespace silkrpc::ethdb::bitmap
+}  // namespace silkworm::rpc::ethdb::bitmap

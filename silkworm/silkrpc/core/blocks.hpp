@@ -26,7 +26,7 @@
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 
-namespace silkrpc::core {
+namespace silkworm::rpc::core {
 
 constexpr const char* kEarliestBlockId{"earliest"};
 constexpr const char* kLatestBlockId{"latest"};
@@ -37,26 +37,26 @@ constexpr const char* kLatestExecutedBlockId{"latestExecuted"};
 
 constexpr uint64_t kEarliestBlockNumber{0ul};
 
-boost::asio::awaitable<bool> is_latest_block_number(uint64_t block_number, const core::rawdb::DatabaseReader& db_reader);
+boost::asio::awaitable<bool> is_latest_block_number(uint64_t block_number, const rawdb::DatabaseReader& db_reader);
 
-boost::asio::awaitable<uint64_t> get_block_number_by_tag(const std::string& block_id, const core::rawdb::DatabaseReader& reader);
+boost::asio::awaitable<uint64_t> get_block_number_by_tag(const std::string& block_id, const rawdb::DatabaseReader& reader);
 
-boost::asio::awaitable<std::pair<uint64_t, bool>> get_block_number(const std::string& block_id, const core::rawdb::DatabaseReader& reader, bool latest_is_required);
+boost::asio::awaitable<std::pair<uint64_t, bool>> get_block_number(const std::string& block_id, const rawdb::DatabaseReader& reader, bool latest_is_required);
 
-boost::asio::awaitable<uint64_t> get_block_number(const std::string& block_id, const core::rawdb::DatabaseReader& reader);
+boost::asio::awaitable<uint64_t> get_block_number(const std::string& block_id, const rawdb::DatabaseReader& reader);
 
-boost::asio::awaitable<uint64_t> get_current_block_number(const core::rawdb::DatabaseReader& reader);
+boost::asio::awaitable<uint64_t> get_current_block_number(const rawdb::DatabaseReader& reader);
 
-boost::asio::awaitable<uint64_t> get_highest_block_number(const core::rawdb::DatabaseReader& reader);
+boost::asio::awaitable<uint64_t> get_highest_block_number(const rawdb::DatabaseReader& reader);
 
-boost::asio::awaitable<uint64_t> get_latest_block_number(const core::rawdb::DatabaseReader& reader);
+boost::asio::awaitable<uint64_t> get_latest_block_number(const rawdb::DatabaseReader& reader);
 
-boost::asio::awaitable<uint64_t> get_latest_executed_block_number(const core::rawdb::DatabaseReader& reader);
+boost::asio::awaitable<uint64_t> get_latest_executed_block_number(const rawdb::DatabaseReader& reader);
 
-boost::asio::awaitable<uint64_t> get_forkchoice_finalized_block_number(const core::rawdb::DatabaseReader& reader);
+boost::asio::awaitable<uint64_t> get_forkchoice_finalized_block_number(const rawdb::DatabaseReader& reader);
 
-boost::asio::awaitable<uint64_t> get_forkchoice_safe_block_number(const core::rawdb::DatabaseReader& reader);
+boost::asio::awaitable<uint64_t> get_forkchoice_safe_block_number(const rawdb::DatabaseReader& reader);
 
-boost::asio::awaitable<bool> is_latest_block_number(const BlockNumberOrHash& bnoh, const core::rawdb::DatabaseReader& reader);
+boost::asio::awaitable<bool> is_latest_block_number(const BlockNumberOrHash& bnoh, const rawdb::DatabaseReader& reader);
 
-}  // namespace silkrpc::core
+}  // namespace silkworm::rpc::core

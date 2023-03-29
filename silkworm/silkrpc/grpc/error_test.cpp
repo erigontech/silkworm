@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-namespace silkrpc {
+namespace silkworm {
 
 using Catch::Matchers::Message;
 
@@ -36,4 +36,4 @@ TEST_CASE("make error code with non-empty message", "[silkrpc][grpc][error]") {
     CHECK(error_code.category().name() == std::string("grpc"));
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm

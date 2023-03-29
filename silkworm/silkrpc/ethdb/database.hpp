@@ -25,7 +25,7 @@
 
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
 
-namespace silkrpc::ethdb {
+namespace silkworm::rpc::ethdb {
 
 class Database {
   public:
@@ -38,4 +38,4 @@ class Database {
     virtual boost::asio::awaitable<std::unique_ptr<Transaction>> begin() = 0;
 };
 
-}  // namespace silkrpc::ethdb
+}  // namespace silkworm::rpc::ethdb

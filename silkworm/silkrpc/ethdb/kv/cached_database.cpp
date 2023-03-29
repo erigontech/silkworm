@@ -21,7 +21,7 @@
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/ethdb/tables.hpp>
 
-namespace silkrpc::ethdb::kv {
+namespace silkworm::rpc::ethdb::kv {
 
 CachedDatabase::CachedDatabase(const BlockNumberOrHash& block_id, Transaction& txn, kv::StateCache& state_cache)
     : block_id_(block_id), txn_(txn), state_cache_{state_cache}, txn_database_{txn_} {}
@@ -68,4 +68,4 @@ boost::asio::awaitable<void> CachedDatabase::for_prefix(const std::string& table
     co_await txn_database_.for_prefix(table, prefix, w);
 }
 
-}  // namespace silkrpc::ethdb::kv
+}  // namespace silkworm::rpc::ethdb::kv

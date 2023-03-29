@@ -18,7 +18,7 @@
 
 #include <silkworm/silkrpc/common/clock_time.hpp>
 
-namespace silkrpc::ethdb::kv {
+namespace silkworm::rpc::ethdb::kv {
 
 boost::asio::awaitable<void> RemoteCursor::open_cursor(const std::string& table_name, bool is_dup_sorted) {
     const auto start_time = clock_time::now();
@@ -136,4 +136,4 @@ boost::asio::awaitable<void> RemoteCursor::close_cursor() {
     co_return;
 }
 
-}  // namespace silkrpc::ethdb::kv
+}  // namespace silkworm::rpc::ethdb::kv

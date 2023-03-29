@@ -24,7 +24,7 @@
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/types/execution_payload.hpp>
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 using evmc::literals::operator""_bytes32;
 
 // Format for params is a list which includes a payloadId ie. [payloadId]
@@ -203,4 +203,4 @@ boost::asio::awaitable<void> EngineRpcApi::handle_engine_exchange_transition_con
 #endif
     co_await tx->close();  // RAII not (yet) available with coroutines
 }
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

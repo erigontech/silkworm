@@ -18,7 +18,7 @@
 
 #include <silkworm/silkrpc/common/util.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& chain_config) {
     out << "genesis: " << chain_config.genesis_hash << " "
@@ -26,4 +26,4 @@ std::ostream& operator<<(std::ostream& out, const ChainConfig& chain_config) {
     return out;
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

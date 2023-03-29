@@ -31,7 +31,7 @@
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using evmc::literals::operator""_address;
 using evmc::literals::operator""_bytes32;
@@ -39,7 +39,7 @@ using evmc::literals::operator""_bytes32;
 static const nlohmann::json empty;
 static const std::string zeros = "00000000000000000000000000000000000000000000000000000000000000000000000000000000";  // NOLINT
 
-class DummyCursor : public silkrpc::ethdb::CursorDupSort {
+class DummyCursor : public ethdb::CursorDupSort {
   public:
     explicit DummyCursor(const nlohmann::json& json) : json_{json} {}
 
@@ -145,7 +145,7 @@ class DummyCursor : public silkrpc::ethdb::CursorDupSort {
     nlohmann::json::iterator itr_;
 };
 
-class DummyTransaction : public silkrpc::ethdb::Transaction {
+class DummyTransaction : public ethdb::Transaction {
   public:
     explicit DummyTransaction(const nlohmann::json& json) : json_{json} {}
 
@@ -155,14 +155,14 @@ class DummyTransaction : public silkrpc::ethdb::Transaction {
         co_return;
     }
 
-    boost::asio::awaitable<std::shared_ptr<silkrpc::ethdb::Cursor>> cursor(const std::string& table) override {
+    boost::asio::awaitable<std::shared_ptr<ethdb::Cursor>> cursor(const std::string& table) override {
         auto cursor = std::make_unique<DummyCursor>(json_);
         co_await cursor->open_cursor(table, false);
 
         co_return cursor;
     }
 
-    boost::asio::awaitable<std::shared_ptr<silkrpc::ethdb::CursorDupSort>> cursor_dup_sort(const std::string& table) override {
+    boost::asio::awaitable<std::shared_ptr<ethdb::CursorDupSort>> cursor_dup_sort(const std::string& table) override {
         auto cursor = std::make_unique<DummyCursor>(json_);
         co_await cursor->open_cursor(table, true);
 
@@ -177,11 +177,11 @@ class DummyTransaction : public silkrpc::ethdb::Transaction {
     const nlohmann::json& json_;
 };
 
-class DummyDatabase : public silkrpc::ethdb::Database {
+class DummyDatabase : public ethdb::Database {
   public:
     explicit DummyDatabase(const nlohmann::json& json) : json_{json} {}
 
-    boost::asio::awaitable<std::unique_ptr<silkrpc::ethdb::Transaction>> begin() override {
+    boost::asio::awaitable<std::unique_ptr<ethdb::Transaction>> begin() override {
         auto txn = std::make_unique<DummyTransaction>(json_);
         co_return txn;
     }
@@ -219,7 +219,7 @@ TEST_CASE("AccountWalker::walk_of_accounts") {
     const evmc::address start_address{0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address};
 
     uint64_t max_result = 1;
-    std::vector<silkrpc::KeyValue> collected_data;
+    std::vector<silkworm::KeyValue> collected_data;
     AccountWalker::Collector collector = [&](const silkworm::ByteView k, const silkworm::ByteView v) {
         if (collected_data.size() >= max_result) {
             return false;
@@ -229,7 +229,7 @@ TEST_CASE("AccountWalker::walk_of_accounts") {
             return true;
         }
 
-        silkrpc::KeyValue kv;
+        silkworm::KeyValue kv;
         kv.key = k;
         kv.value = v;
         collected_data.push_back(kv);
@@ -285,4 +285,4 @@ TEST_CASE("AccountWalker::walk_of_accounts") {
     }
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

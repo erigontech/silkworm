@@ -35,7 +35,7 @@
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 ErigonRpcApi::ErigonRpcApi(Context& context)
     : context_(context),
@@ -234,7 +234,7 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_forks(const nlohmann::j
     try {
         ethdb::TransactionDatabase tx_database{*tx};
 
-        const auto chain_config{co_await silkrpc::core::rawdb::read_chain_config(tx_database)};
+        const auto chain_config{co_await core::rawdb::read_chain_config(tx_database)};
         SILKRPC_DEBUG << "chain config: " << chain_config << "\n";
 
         Forks forks{chain_config};
@@ -269,7 +269,7 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nl
     try {
         ethdb::TransactionDatabase tx_database{*tx};
 
-        const auto chain_config{co_await silkrpc::core::rawdb::read_chain_config(tx_database)};
+        const auto chain_config{co_await core::rawdb::read_chain_config(tx_database)};
         SILKRPC_DEBUG << "chain config: " << chain_config << "\n";
 
         Issuance issuance{};  // default is empty: no PoW => no issuance
@@ -410,4 +410,4 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_node_info(const nlohman
     co_return;
 }
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

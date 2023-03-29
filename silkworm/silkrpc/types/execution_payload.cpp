@@ -18,7 +18,7 @@
 
 #include <silkworm/silkrpc/common/util.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 std::ostream& operator<<(std::ostream& out, const ExecutionPayload& payload) {
     auto bloom_bytes{silkworm::ByteView(&payload.logs_bloom[0], 256)};
     out << "number: " << payload.number
@@ -50,4 +50,4 @@ std::ostream& operator<<(std::ostream& out, const PayloadStatus& payload_status)
 
     return out;
 }
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

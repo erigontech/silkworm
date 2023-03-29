@@ -19,7 +19,7 @@
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/ethdb/kv/remote_transaction.hpp>
 
-namespace silkrpc::ethdb::kv {
+namespace silkworm::rpc::ethdb::kv {
 
 RemoteDatabase::RemoteDatabase(agrpc::GrpcContext& grpc_context, std::shared_ptr<grpc::Channel> channel)
     : grpc_context_(grpc_context), stub_{remote::KV::NewStub(channel)} {
@@ -43,4 +43,4 @@ boost::asio::awaitable<std::unique_ptr<Transaction>> RemoteDatabase::begin() {
     co_return txn;
 }
 
-}  // namespace silkrpc::ethdb::kv
+}  // namespace silkworm::rpc::ethdb::kv

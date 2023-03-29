@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::rpc::http {
 
 using Catch::Matchers::Message;
 
@@ -49,4 +49,4 @@ TEST_CASE("check reset method", "[silkrpc][http][request]") {
     CHECK(req.content_length == 0);
 }
 
-}  // namespace silkrpc::http
+}  // namespace silkworm::rpc::http

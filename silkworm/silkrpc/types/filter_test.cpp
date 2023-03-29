@@ -14,15 +14,13 @@
    limitations under the License.
 */
 
-#include "filter.cpp"  // NOLINT(build/include)
+#include "filter.hpp"
 
 #include <sstream>
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/silkrpc/common/util.hpp>
-
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 
@@ -121,4 +119,4 @@ TEST_CASE("write filter to ostream", "[silkrpc][types][filter]") {
           "[0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c]] block_hash: null");
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

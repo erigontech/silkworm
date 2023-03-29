@@ -47,7 +47,7 @@
 #include <silkworm/silkrpc/types/call.hpp>
 #include <silkworm/silkrpc/types/dump_account.hpp>
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_accountrange
 boost::asio::awaitable<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& request, nlohmann::json& reply) {
@@ -82,7 +82,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_account_range(const nlohm
 
     try {
         auto start = std::chrono::system_clock::now();
-        AccountDumper dumper{*tx};
+        core::AccountDumper dumper{*tx};
         DumpAccounts dump_accounts = co_await dumper.dump_accounts(*context_.block_cache(), block_number_or_hash, start_address, max_result, exclude_code, exclude_storage);
         auto end = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = end - start;
@@ -218,7 +218,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_storage_range_at(const nl
         silkworm::Bytes next_key;
         std::uint16_t count{0};
 
-        silkrpc::StorageWalker::StorageCollector collector = [&](const silkworm::ByteView key, silkworm::ByteView sec_key, silkworm::ByteView value) {
+        StorageWalker::StorageCollector collector = [&](const silkworm::ByteView key, silkworm::ByteView sec_key, silkworm::ByteView value) {
             SILKRPC_TRACE << "StorageCollector: suitable for result"
                           << " key: 0x" << silkworm::to_hex(key)
                           << " sec_key: 0x" << silkworm::to_hex(sec_key)
@@ -542,4 +542,4 @@ boost::asio::awaitable<std::set<evmc::address>> get_modified_accounts(ethdb::Tra
     co_return addresses;
 }
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

@@ -33,7 +33,7 @@
 #include <silkworm/silkrpc/ethdb/kv/rpc.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
 
-namespace silkrpc::ethdb::kv {
+namespace silkworm::rpc::ethdb::kv {
 
 class RemoteTransaction : public Transaction {
   public:
@@ -61,4 +61,4 @@ class RemoteTransaction : public Transaction {
     uint64_t tx_id_{0};
 };
 
-}  // namespace silkrpc::ethdb::kv
+}  // namespace silkworm::rpc::ethdb::kv

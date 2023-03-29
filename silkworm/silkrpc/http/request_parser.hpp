@@ -26,7 +26,7 @@
 
 #include "request.hpp"
 
-namespace silkrpc::http {
+namespace silkworm::rpc::http {
 
 /// Parser for incoming requests.
 class RequestParser {
@@ -103,4 +103,4 @@ class RequestParser {
     } state_;
 };
 
-}  // namespace silkrpc::http
+}  // namespace silkworm::rpc::http

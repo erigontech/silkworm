@@ -33,7 +33,7 @@
 #include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/test/mock_database_reader.hpp>
 
-namespace silkrpc::core::rawdb {
+namespace silkworm::rpc::core::rawdb {
 
 using Catch::Matchers::Message;
 using testing::_;
@@ -1390,4 +1390,4 @@ TEST_CASE("read_cumulative_gas_used") {
     }
 }
 
-}  // namespace silkrpc::core::rawdb
+}  // namespace silkworm::rpc::core::rawdb

@@ -25,8 +25,8 @@
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/types/receipt.hpp>
 
-namespace silkrpc::core {
+namespace silkworm::rpc::core {
 
 boost::asio::awaitable<Receipts> get_receipts(const rawdb::DatabaseReader& db_reader, const silkworm::BlockWithHash& block_with_hash);
 
-}  // namespace silkrpc::core
+}  // namespace silkworm::rpc::core

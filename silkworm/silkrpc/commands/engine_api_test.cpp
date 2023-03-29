@@ -29,13 +29,14 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
+#include <silkworm/silkrpc/test/mock_cursor.hpp>
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 using Catch::Matchers::Message;
 using evmc::literals::operator""_bytes32;
 
-class BackEndMock : public ethbackend::BackEnd {
+class BackEndMock : public ethbackend::BackEnd {  // NOLINT
   public:
     MOCK_METHOD((boost::asio::awaitable<evmc::address>), etherbase, ());
     MOCK_METHOD((boost::asio::awaitable<uint64_t>), protocol_version, ());
@@ -46,17 +47,6 @@ class BackEndMock : public ethbackend::BackEnd {
     MOCK_METHOD((boost::asio::awaitable<PayloadStatus>), engine_new_payload_v1, (ExecutionPayload));
     MOCK_METHOD((boost::asio::awaitable<ForkChoiceUpdatedReply>), engine_forkchoice_updated_v1, (ForkChoiceUpdatedRequest));
     MOCK_METHOD((boost::asio::awaitable<std::vector<NodeInfo>>), engine_node_info, ());
-};
-
-class MockCursor : public ethdb::Cursor {
-  public:
-    [[nodiscard]] uint32_t cursor_id() const override { return 0; }
-
-    MOCK_METHOD((boost::asio::awaitable<void>), open_cursor, (const std::string&, bool));
-    MOCK_METHOD((boost::asio::awaitable<KeyValue>), seek, (silkworm::ByteView));
-    MOCK_METHOD((boost::asio::awaitable<KeyValue>), seek_exact, (silkworm::ByteView));
-    MOCK_METHOD((boost::asio::awaitable<KeyValue>), next, ());
-    MOCK_METHOD((boost::asio::awaitable<void>), close_cursor, ());
 };
 
 namespace {
@@ -694,10 +684,10 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty safe block hash"
 TEST_CASE("handle_engine_transition_configuration_v1 succeeds if EL configurations has the same request configuration", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    silkrpc::ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
     context_pool.start();
 
-    std::shared_ptr<MockCursor> mock_cursor = std::make_shared<MockCursor>();
+    std::shared_ptr<test::MockCursor> mock_cursor = std::make_shared<test::MockCursor>();
 
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
@@ -753,10 +743,10 @@ TEST_CASE("handle_engine_transition_configuration_v1 succeeds if EL configuratio
 TEST_CASE("handle_engine_transition_configuration_v1 succeeds and default terminal block number to zero if chain config doesn't specify it", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    silkrpc::ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
     context_pool.start();
 
-    std::shared_ptr<MockCursor> mock_cursor = std::make_shared<MockCursor>();
+    std::shared_ptr<test::MockCursor> mock_cursor = std::make_shared<test::MockCursor>();
 
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
@@ -812,10 +802,10 @@ TEST_CASE("handle_engine_transition_configuration_v1 succeeds and default termin
 TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect terminal total difficulty", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    silkrpc::ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
     context_pool.start();
 
-    std::shared_ptr<MockCursor> mock_cursor = std::make_shared<MockCursor>();
+    std::shared_ptr<test::MockCursor> mock_cursor = std::make_shared<test::MockCursor>();
 
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
@@ -869,10 +859,10 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect terminal
 TEST_CASE("handle_engine_transition_configuration_v1 fails if execution layer does not have terminal total difficulty", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    silkrpc::ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
     context_pool.start();
 
-    std::shared_ptr<MockCursor> mock_cursor = std::make_shared<MockCursor>();
+    std::shared_ptr<test::MockCursor> mock_cursor = std::make_shared<test::MockCursor>();
 
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
@@ -926,10 +916,10 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if execution layer do
 TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer sends block number different from zero", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    silkrpc::ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
     context_pool.start();
 
-    std::shared_ptr<MockCursor> mock_cursor = std::make_shared<MockCursor>();
+    std::shared_ptr<test::MockCursor> mock_cursor = std::make_shared<test::MockCursor>();
 
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
@@ -983,10 +973,10 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer se
 TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect params", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    silkrpc::ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
     context_pool.start();
 
-    std::shared_ptr<MockCursor> mock_cursor = std::make_shared<MockCursor>();
+    std::shared_ptr<test::MockCursor> mock_cursor = std::make_shared<test::MockCursor>();
 
     std::unique_ptr<ethdb::Database> database_ptr = std::make_unique<DummyDatabase>(mock_cursor);
     std::unique_ptr<ethbackend::BackEnd> backend_ptr;
@@ -1022,4 +1012,4 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect params",
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

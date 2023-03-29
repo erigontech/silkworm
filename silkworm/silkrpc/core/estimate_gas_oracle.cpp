@@ -25,7 +25,7 @@
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 
-namespace silkrpc::ego {
+namespace silkworm::rpc {
 
 boost::asio::awaitable<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, uint64_t block_number) {
     SILKRPC_DEBUG << "EstimateGasOracle::estimate_gas called\n";
@@ -128,4 +128,4 @@ boost::asio::awaitable<bool> EstimateGasOracle::try_execution(const silkworm::Tr
     co_return failed;
 }
 
-}  // namespace silkrpc::ego
+}  // namespace silkworm::rpc

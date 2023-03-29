@@ -31,7 +31,7 @@
 #include <silkworm/silkrpc/test/grpc_responder.hpp>
 #include <silkworm/silkrpc/test/interfaces/mining_mock_fix24351.grpc.pb.h>
 
-namespace silkrpc::txpool {
+namespace silkworm::rpc::txpool {
 
 using Catch::Matchers::Message;
 using testing::_;
@@ -200,4 +200,4 @@ TEST_CASE_METHOD(MinerTest, "Miner::submit_hash_rate", "[silkrpc][txpool][miner]
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc::txpool
+}  // namespace silkworm::rpc::txpool

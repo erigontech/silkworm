@@ -26,7 +26,7 @@
 #include <silkworm/silkrpc/types/execution_payload.hpp>
 #include <silkworm/silkrpc/types/node_info.hpp>
 
-namespace silkrpc::ethbackend {
+namespace silkworm::rpc::ethbackend {
 
 class BackEnd {
   public:
@@ -42,4 +42,4 @@ class BackEnd {
     virtual boost::asio::awaitable<std::vector<NodeInfo>> engine_node_info() = 0;
 };
 
-}  // namespace silkrpc::ethbackend
+}  // namespace silkworm::rpc::ethbackend

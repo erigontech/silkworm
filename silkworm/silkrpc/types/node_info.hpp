@@ -21,7 +21,7 @@
 
 #include <evmc/evmc.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 struct NodeInfoPorts {
     uint64_t discovery;
@@ -38,4 +38,4 @@ struct NodeInfo {
     NodeInfoPorts ports;
 };
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

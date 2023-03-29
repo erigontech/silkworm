@@ -33,7 +33,7 @@
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::rpc::http {
 
 namespace status_strings {
 
@@ -283,4 +283,4 @@ Reply Reply::stock_reply(StatusType status) {
     return rep;
 }
 
-}  // namespace silkrpc::http
+}  // namespace silkworm::rpc::http

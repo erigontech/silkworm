@@ -22,7 +22,7 @@
 #include <iostream>
 #include <streambuf>
 
-namespace silkrpc {
+namespace silkworm {
 
 // Tee code adapted from http://wordaligned.org/articles/cpp-streambufs
 class teebuf : public std::streambuf {
@@ -70,4 +70,4 @@ class teestream : public std::ostream {
     teebuf tbuf;
 };
 
-}  // namespace silkrpc
+}  // namespace silkworm

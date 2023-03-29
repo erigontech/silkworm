@@ -16,8 +16,6 @@
 
 #include "stream.hpp"
 
-#include <iostream>
-
 #include <catch2/catch.hpp>
 
 #include <silkworm/silkrpc/common/log.hpp>

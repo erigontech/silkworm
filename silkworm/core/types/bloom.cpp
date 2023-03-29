@@ -22,8 +22,7 @@
 
 namespace silkworm {
 
-// See Section 4.3.1 "Transaction Receipt" of the Yellow Paper
-static void m3_2048(Bloom& bloom, ByteView x) {
+void m3_2048(Bloom& bloom, ByteView x) {
     ethash::hash256 hash{keccak256(x)};
     for (unsigned i{0}; i < 6; i += 2) {
         unsigned bit{static_cast<unsigned>(hash.bytes[i + 1] + (hash.bytes[i] << 8)) & 0x7FFu};

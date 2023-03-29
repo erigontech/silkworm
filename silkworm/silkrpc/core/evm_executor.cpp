@@ -16,10 +16,8 @@
 
 #include "evm_executor.hpp"
 
-#include <array>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <utility>
 
 #include <boost/asio/compose.hpp>

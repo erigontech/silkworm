@@ -51,7 +51,7 @@ boost::asio::awaitable<silkworm::BlockWithHash> read_block_by_hash(BlockCache& c
 }
 
 boost::asio::awaitable<silkworm::BlockWithHash> read_block_by_number_or_hash(BlockCache& cache, const rawdb::DatabaseReader& reader, const silkrpc::BlockNumberOrHash& bnoh) {
-    if (bnoh.is_number()) {
+    if (bnoh.is_number()) {  // NOLINT(bugprone-branch-clone)
         co_return co_await read_block_by_number(cache, reader, bnoh.number());
     } else if (bnoh.is_hash()) {
         co_return co_await read_block_by_hash(cache, reader, bnoh.hash());

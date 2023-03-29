@@ -23,12 +23,9 @@
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 #include <gmock/gmock.h>
-#include <grpcpp/grpcpp.h>
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/interfaces/txpool/mining.grpc.pb.h>
-#include <silkworm/silkrpc/common/log.hpp>
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/test/api_test_base.hpp>
 #include <silkworm/silkrpc/test/grpc_actions.hpp>
 #include <silkworm/silkrpc/test/grpc_responder.hpp>

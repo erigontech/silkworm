@@ -104,10 +104,8 @@ boost::asio::awaitable<KeyValue> LocalCursor::next_dup() {
 
 boost::asio::awaitable<silkworm::Bytes> LocalCursor::seek_both(silkworm::ByteView key, silkworm::ByteView value) {
     SILKRPC_DEBUG << "LocalCursor::seek_both cursor: " << cursor_id_ << " key: " << key << " subkey: " << value << "\n";
-    mdbx::slice mdbx_key{key};
-    mdbx::slice mdbx_value{value};
 
-    const auto result = db_cursor_.lower_bound_multivalue(mdbx_key, mdbx_value, /*throw_notfound=*/false);
+    const auto result = db_cursor_.lower_bound_multivalue(key, value, /*throw_notfound=*/false);
     SILKRPC_DEBUG << "LocalCursor::seek_both result: " << silkworm::rpc::detail::dump_mdbx_result(result) << "\n";
 
     if (result) {
@@ -119,8 +117,6 @@ boost::asio::awaitable<silkworm::Bytes> LocalCursor::seek_both(silkworm::ByteVie
 
 boost::asio::awaitable<KeyValue> LocalCursor::seek_both_exact(silkworm::ByteView key, silkworm::ByteView value) {
     SILKRPC_DEBUG << "LocalCursor::seek_both_exact cursor: " << cursor_id_ << " key: " << key << " subkey: " << value << "\n";
-    mdbx::slice mdbx_key{key};
-    mdbx::slice mdbx_value{value};
 
     const auto result = db_cursor_.find_multivalue(key, value, /*throw_notfound=*/false);
     SILKRPC_DEBUG << "LocalCursor::seek_both_exact result: " << silkworm::rpc::detail::dump_mdbx_result(result) << "\n";

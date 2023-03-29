@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 #include <type_traits>
+#include <utility>
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
@@ -36,11 +37,11 @@ namespace silkrpc::ethdb::file {
 class LocalTransaction : public Transaction {
   public:
     explicit LocalTransaction(std::shared_ptr<mdbx::env_managed> chaindata_env)
-        : tx_id_{0}, chaindata_env_{chaindata_env}, last_cursor_id_{0} {}
+        : tx_id_{0}, chaindata_env_{std::move(chaindata_env)}, last_cursor_id_{0} {}
 
-    ~LocalTransaction() {}
+    ~LocalTransaction() override = default;
 
-    uint64_t tx_id() const override { return tx_id_; }
+    [[nodiscard]] uint64_t tx_id() const override { return tx_id_; }
 
     boost::asio::awaitable<void> open() override;
 

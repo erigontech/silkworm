@@ -1210,7 +1210,7 @@ boost::asio::awaitable<std::vector<TraceCallResult>> TraceCallExecutor<WorldStat
     std::shared_ptr<silkworm::EvmTracer> ibsTracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
 
     state::RemoteState curr_remote_state{io_context_, database_reader_, block_number - 1};
-    EVMExecutor<WorldState, VM> executor{io_context_, database_reader_, *chain_config_ptr, workers_, curr_remote_state};
+    EVMExecutor<WorldState, VM> executor{io_context_, *chain_config_ptr, workers_, curr_remote_state};
 
     std::vector<TraceCallResult> trace_call_result(transactions.size());
     for (std::uint64_t index = 0; index < transactions.size(); index++) {
@@ -1277,7 +1277,7 @@ boost::asio::awaitable<TraceManyCallResult> TraceCallExecutor<WorldState, VM>::t
     StateAddresses state_addresses(initial_ibs);
 
     state::RemoteState curr_remote_state{io_context_, database_reader_, block_number};
-    EVMExecutor<WorldState, VM> executor{io_context_, database_reader_, *chain_config_ptr, workers_, remote_state};
+    EVMExecutor<WorldState, VM> executor{io_context_, *chain_config_ptr, workers_, remote_state};
 
     std::shared_ptr<silkworm::EvmTracer> ibsTracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
 
@@ -1419,7 +1419,7 @@ boost::asio::awaitable<TraceCallResult> TraceCallExecutor<WorldState, VM>::execu
     tracers.push_back(tracer);
 
     state::RemoteState curr_remote_state{io_context_, database_reader_, block_number};
-    EVMExecutor<WorldState, VM> executor{io_context_, database_reader_, *chain_config_ptr, workers_, curr_remote_state};
+    EVMExecutor<WorldState, VM> executor{io_context_, *chain_config_ptr, workers_, curr_remote_state};
     for (std::size_t idx{0}; idx < transaction.transaction_index; idx++) {
         silkrpc::Transaction txn{block.transactions[idx]};
 

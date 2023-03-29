@@ -79,15 +79,14 @@ std::string base64_encode(const uint8_t* bytes_to_encode, size_t len, bool url) 
 static const uint64_t kMask = 0x8000000000000000;
 
 std::string to_dec(intx::uint256 number) {
-    uint64_t n[4];
+    uint64_t n[intx::uint256::num_words];
     for (std::size_t idx{0}; idx < intx::uint256::num_words; idx++) {
         n[idx] = number[idx];
     }
     char s[256 / 3 + 1 + 1];
     char* p = s;
-    int i;
 
-    memset(s, '0', sizeof(s) - 1);
+    std::memset(s, '0', sizeof(s) - 1);
     s[sizeof(s) - 1] = '\0';
 
     auto count = 256;
@@ -101,8 +100,8 @@ std::string to_dec(intx::uint256 number) {
         count -= 64;
     }
 
-    for (i = 0; i < count; i++) {
-        int j, carry;
+    for (int i{0}; i < count; i++) {
+        int carry;
 
         carry = (n[3] >= kMask);
         // Shift n[] left, doubling it
@@ -112,7 +111,7 @@ std::string to_dec(intx::uint256 number) {
         n[0] = (n[0] << 1);
 
         // Add s[] to itself in decimal, doubling it
-        for (j = sizeof(s) - 2; j >= 0; j--) {
+        for (int j = sizeof(s) - 2; j >= 0; j--) {
             s[j] += s[j] - '0' + carry;
 
             carry = (s[j] > '9');

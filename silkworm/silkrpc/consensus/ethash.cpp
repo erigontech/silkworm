@@ -17,7 +17,6 @@
 #include "ethash.hpp"
 
 #include <silkworm/core/chain/protocol_param.hpp>
-#include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkrpc::ethash {
 

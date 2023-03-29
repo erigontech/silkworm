@@ -17,7 +17,6 @@
 #include "version.hpp"
 
 #include <sstream>
-#include <type_traits>
 
 namespace silkrpc {
 
@@ -40,7 +39,7 @@ ProtocolVersionResult wait_for_protocol_check(const std::unique_ptr<StubInterfac
 
     std::stringstream vv_stream;
     vv_stream << "client=" << version << " server=" << server_version;
-    if (version.major != server_version.major) {
+    if (version.major != server_version.major) {  // NOLINT(bugprone-branch-clone)
         return ProtocolVersionResult{false, name + " incompatible interface: " + vv_stream.str()};
     } else if (version.minor != server_version.minor) {
         return ProtocolVersionResult{false, name + " incompatible interface: " + vv_stream.str()};
@@ -57,39 +56,39 @@ struct NewStubFactory final {
 };
 
 ProtocolVersionResult wait_for_kv_protocol_check(const std::unique_ptr<::remote::KV::StubInterface>& stub) {
-    return wait_for_protocol_check(stub, KV_SERVICE_API_VERSION, "KV");
+    return wait_for_protocol_check(stub, kKvServiceApiVersion, "KV");
 }
 
 ProtocolVersionResult wait_for_kv_protocol_check(const std::shared_ptr<grpc::Channel>& channel) {
     NewStubFactory<::remote::KV::NewStub, ::remote::KV::StubInterface> new_stub_factory;
-    return wait_for_protocol_check(new_stub_factory(channel), KV_SERVICE_API_VERSION, "KV");
+    return wait_for_protocol_check(new_stub_factory(channel), kKvServiceApiVersion, "KV");
 }
 
 ProtocolVersionResult wait_for_ethbackend_protocol_check(const std::unique_ptr<::remote::ETHBACKEND::StubInterface>& stub) {
-    return wait_for_protocol_check(stub, ETHBACKEND_SERVICE_API_VERSION, "ETHBACKEND");
+    return wait_for_protocol_check(stub, kEthBackEndServiceApiVersion, "ETHBACKEND");
 }
 
 ProtocolVersionResult wait_for_ethbackend_protocol_check(const std::shared_ptr<grpc::Channel>& channel) {
     NewStubFactory<::remote::ETHBACKEND::NewStub, ::remote::ETHBACKEND::StubInterface> new_stub_factory;
-    return wait_for_protocol_check(new_stub_factory(channel), ETHBACKEND_SERVICE_API_VERSION, "ETHBACKEND");
+    return wait_for_protocol_check(new_stub_factory(channel), kEthBackEndServiceApiVersion, "ETHBACKEND");
 }
 
 ProtocolVersionResult wait_for_mining_protocol_check(const std::unique_ptr<::txpool::Mining::StubInterface>& stub) {
-    return wait_for_protocol_check(stub, MINING_SERVICE_API_VERSION, "MINING");
+    return wait_for_protocol_check(stub, kMiningServiceApiVersion, "MINING");
 }
 
 ProtocolVersionResult wait_for_mining_protocol_check(const std::shared_ptr<grpc::Channel>& channel) {
     NewStubFactory<::txpool::Mining::NewStub, ::txpool::Mining::StubInterface> new_stub_factory;
-    return wait_for_protocol_check(new_stub_factory(channel), MINING_SERVICE_API_VERSION, "MINING");
+    return wait_for_protocol_check(new_stub_factory(channel), kMiningServiceApiVersion, "MINING");
 }
 
 ProtocolVersionResult wait_for_txpool_protocol_check(const std::unique_ptr<::txpool::Txpool::StubInterface>& stub) {
-    return wait_for_protocol_check(stub, TXPOOL_SERVICE_API_VERSION, "TXPOOL");
+    return wait_for_protocol_check(stub, kTxPoolServiceApiVersion, "TXPOOL");
 }
 
 ProtocolVersionResult wait_for_txpool_protocol_check(const std::shared_ptr<grpc::Channel>& channel) {
     NewStubFactory<::txpool::Txpool::NewStub, ::txpool::Txpool::StubInterface> new_stub_factory;
-    return wait_for_protocol_check(new_stub_factory(channel), TXPOOL_SERVICE_API_VERSION, "TXPOOL");
+    return wait_for_protocol_check(new_stub_factory(channel), kTxPoolServiceApiVersion, "TXPOOL");
 }
 
 }  // namespace silkrpc

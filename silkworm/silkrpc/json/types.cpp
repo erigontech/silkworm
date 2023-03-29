@@ -16,7 +16,6 @@
 
 #include "types.hpp"
 
-#include <algorithm>
 #include <cstring>
 #include <utility>
 
@@ -377,23 +376,23 @@ void from_json(const nlohmann::json& json, Call& call) {
         call.from = json.at("from").get<evmc::address>();
     }
     if (json.count("to") != 0) {
-        const auto to = json.at("to");
+        const auto& to = json.at("to");
         if (!to.is_null()) {
             call.to = json.at("to").get<evmc::address>();
         }
     }
     if (json.count("nonce") != 0) {
-        const auto json_nonce = json.at("nonce");
+        const auto& json_nonce = json.at("nonce");
         if (json_nonce.is_string()) {
-            call.nonce = std::stol(json_nonce.get<std::string>(), 0, 16);
+            call.nonce = std::stol(json_nonce.get<std::string>(), nullptr, 16);
         } else {
             call.nonce = json_nonce.get<uint64_t>();
         }
     }
     if (json.count("gas") != 0) {
-        auto json_gas = json.at("gas");
+        const auto& json_gas = json.at("gas");
         if (json_gas.is_string()) {
-            call.gas = std::stol(json_gas.get<std::string>(), 0, 16);
+            call.gas = std::stol(json_gas.get<std::string>(), nullptr, 16);
         } else {
             call.gas = json_gas.get<uint64_t>();
         }
@@ -535,7 +534,7 @@ void to_json(nlohmann::json& json, const Filter& filter) {
 
 void from_json(const nlohmann::json& json, Filter& filter) {
     if (json.count("fromBlock") != 0) {
-        auto json_from_block = json.at("fromBlock");
+        const auto& json_from_block = json.at("fromBlock");
         if (json_from_block.is_string()) {
             filter.from_block = json_from_block.get<std::string>();
         } else {
@@ -543,7 +542,7 @@ void from_json(const nlohmann::json& json, Filter& filter) {
         }
     }
     if (json.count("toBlock") != 0) {
-        auto json_to_block = json.at("toBlock");
+        const auto& json_to_block = json.at("toBlock");
         if (json_to_block.is_string()) {
             filter.to_block = json_to_block.get<std::string>();
         } else {
@@ -611,10 +610,10 @@ void from_json(const nlohmann::json& json, ExecutionPayload& execution_payload) 
     }
 
     execution_payload = ExecutionPayload{
-        .number = static_cast<uint64_t>(std::stol(json.at("blockNumber").get<std::string>(), 0, 16)),
-        .timestamp = static_cast<uint64_t>(std::stol(json.at("timestamp").get<std::string>(), 0, 16)),
-        .gas_limit = static_cast<uint64_t>(std::stol(json.at("gasLimit").get<std::string>(), 0, 16)),
-        .gas_used = static_cast<uint64_t>(std::stol(json.at("gasUsed").get<std::string>(), 0, 16)),
+        .number = static_cast<uint64_t>(std::stol(json.at("blockNumber").get<std::string>(), nullptr, 16)),
+        .timestamp = static_cast<uint64_t>(std::stol(json.at("timestamp").get<std::string>(), nullptr, 16)),
+        .gas_limit = static_cast<uint64_t>(std::stol(json.at("gasLimit").get<std::string>(), nullptr, 16)),
+        .gas_used = static_cast<uint64_t>(std::stol(json.at("gasUsed").get<std::string>(), nullptr, 16)),
         .suggested_fee_recipient = json.at("feeRecipient").get<evmc::address>(),
         .state_root = json.at("stateRoot").get<evmc::bytes32>(),
         .receipts_root = json.at("receiptsRoot").get<evmc::bytes32>(),
@@ -648,7 +647,7 @@ void to_json(nlohmann::json& json, const PayloadAttributes& payload_attributes) 
 
 void from_json(const nlohmann::json& json, PayloadAttributes& payload_attributes) {
     payload_attributes = PayloadAttributes{
-        .timestamp = static_cast<uint64_t>(std::stol(json.at("timestamp").get<std::string>(), 0, 16)),
+        .timestamp = static_cast<uint64_t>(std::stol(json.at("timestamp").get<std::string>(), nullptr, 16)),
         .prev_randao = json.at("prevRandao").get<evmc::bytes32>(),
         .suggested_fee_recipient = json.at("feeRecipient").get<evmc::address>(),
     };
@@ -683,7 +682,7 @@ void from_json(const nlohmann::json& json, TransitionConfiguration& transition_c
     transition_configuration = TransitionConfiguration{
         .terminal_total_difficulty = json.at("terminalTotalDifficulty").get<intx::uint256>(),
         .terminal_block_hash = json.at("terminalBlockHash").get<evmc::bytes32>(),
-        .terminal_block_number = static_cast<uint64_t>(std::stol(json.at("terminalBlockNumber").get<std::string>(), 0, 16))};
+        .terminal_block_number = static_cast<uint64_t>(std::stol(json.at("terminalBlockNumber").get<std::string>(), nullptr, 16))};
 }
 
 void to_json(nlohmann::json& json, const Forks& forks) {

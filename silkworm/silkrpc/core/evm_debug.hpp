@@ -46,8 +46,6 @@ struct DebugConfig {
     bool disableStack{false};
 };
 
-static const DebugConfig DEFAULT_DEBUG_CONFIG{false, false, false};
-
 void from_json(const nlohmann::json& json, DebugConfig& tc);
 std::ostream& operator<<(std::ostream& out, const DebugConfig& tc);
 
@@ -96,22 +94,6 @@ class DebugTracer : public silkworm::EvmTracer {
     std::int64_t gas_on_precompiled_{0};
 };
 
-class NullTracer : public silkworm::EvmTracer {
-  public:
-    NullTracer() = default;
-
-    NullTracer(const NullTracer&) = delete;
-    NullTracer& operator=(const NullTracer&) = delete;
-
-    void on_execution_start(evmc_revision /*rev*/, const evmc_message& /*msg*/, evmone::bytes_view /*code*/) noexcept override {}
-    void on_instruction_start(uint32_t /*pc*/, const intx::uint256* /*stack_top*/, const int /*stack_size*/,
-                              const evmone::ExecutionState& /*execution_state*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_execution_end(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_reward_granted(const silkworm::CallResult& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_creation_completed(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-};
-
 struct DebugTrace {
     bool failed;
     uint64_t gas{0};
@@ -135,7 +117,7 @@ class DebugExecutor {
         boost::asio::io_context& io_context,
         const core::rawdb::DatabaseReader& database_reader,
         boost::asio::thread_pool& workers,
-        const DebugConfig& config = DEFAULT_DEBUG_CONFIG)
+        DebugConfig config = {})
         : io_context_(io_context), database_reader_(database_reader), workers_{workers}, config_{config} {}
     virtual ~DebugExecutor() = default;
 
@@ -156,6 +138,6 @@ class DebugExecutor {
     boost::asio::io_context& io_context_;
     const core::rawdb::DatabaseReader& database_reader_;
     boost::asio::thread_pool& workers_;
-    const DebugConfig& config_;
+    DebugConfig config_;
 };
 }  // namespace silkrpc::debug

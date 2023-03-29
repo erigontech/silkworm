@@ -68,38 +68,18 @@ if(NOT SILKWORM_HAS_PARENT)
     )
   endif()
 
-  if(CONAN_PACKAGE_MANAGER)
-    set(HUNTER_CONFIG_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/HunterAndConan/config.cmake")
-  else()
+  if(NOT CONAN_PACKAGE_MANAGER)
     set(HUNTER_CONFIG_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/config.cmake")
+
+    include(third_party/evmone/cmake/cable/HunterGate.cmake)
+    # https://github.com/cpp-pm/hunter/releases/
+    huntergate(
+      URL "https://github.com/cpp-pm/hunter/archive/v0.24.15.tar.gz"
+      SHA1 "8010d63d5ae611c564889d5fe12d3cb7a45703ac"
+      FILEPATH "${HUNTER_CONFIG_PATH}"
+    )
   endif()
-
-  include(third_party/evmone/cmake/cable/HunterGate.cmake)
-  # https://github.com/cpp-pm/hunter/releases/
-  huntergate(
-    URL "https://github.com/cpp-pm/hunter/archive/v0.24.15.tar.gz"
-    SHA1 "8010d63d5ae611c564889d5fe12d3cb7a45703ac"
-    FILEPATH "${HUNTER_CONFIG_PATH}"
-  )
 endif()
-
-#[[
-If you want to include Silkworm into your CMake project,
-add the following lines before the project command of your root CMakeLists.txt:
-
------------------------------------------------------------------------------------------------------
-include(silkworm/third_party/evmone/cmake/cable/bootstrap.cmake)
-include(silkworm/third_party/evmone/cmake/cable/HunterGate.cmake)
-HunterGate(
-  URL "https://github.com/cpp-pm/hunter/archive/v0.24.15.tar.gz"
-  SHA1 "8010d63d5ae611c564889d5fe12d3cb7a45703ac"
-  FILEPATH "${CMAKE_SOURCE_DIR}/silkworm/cmake/Hunter/config.cmake"
-)
-
------------------------------------------------------------------------------------------------------
-
-(You can update the Hunter version, but keep the FILEPATH option.)
-]]
 
 project(silkworm)
 set(PROJECT_VERSION 0.1.0-dev)
@@ -125,9 +105,7 @@ set(SILKWORM_MAIN_SRC_DIR "${SILKWORM_MAIN_DIR}/silkworm")
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler_settings.cmake)
 
 # Include dependencies handled by Hunter package manager
-if(CONAN_PACKAGE_MANAGER)
-  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/HunterAndConan/core_packages.cmake)
-else()
+if(NOT CONAN_PACKAGE_MANAGER)
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/core_packages.cmake)
   if(NOT SILKWORM_CORE_ONLY)
     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/extra_packages.cmake)
@@ -158,7 +136,7 @@ endif()
 
 # evmone with dependencies
 add_subdirectory(third_party/intx)
-find_package(ethash REQUIRED) # Required from here below
+add_subdirectory(third_party/ethash)
 
 if(SILKWORM_WASM_API)
   add_compile_definitions(EVMC_LOADER_MOCK)

@@ -17,4 +17,3 @@
 hunter_add_package(Catch)
 hunter_add_package(Microsoft.GSL)
 hunter_add_package(nlohmann_json)
-hunter_add_package(ethash)

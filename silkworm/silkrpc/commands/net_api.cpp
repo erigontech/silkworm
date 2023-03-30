@@ -20,7 +20,7 @@
 
 #include <silkworm/silkrpc/json/types.hpp>
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 // https://eth.wiki/json-rpc/API#net_listening
 boost::asio::awaitable<void> NetRpcApi::handle_net_listening(const nlohmann::json& request, nlohmann::json& reply) {
@@ -57,4 +57,4 @@ boost::asio::awaitable<void> NetRpcApi::handle_net_version(const nlohmann::json&
     }
 }
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

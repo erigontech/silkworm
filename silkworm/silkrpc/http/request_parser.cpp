@@ -25,7 +25,7 @@
 #include <algorithm>
 #include <cstdlib>
 
-namespace silkrpc::http {
+namespace silkworm::rpc::http {
 
 RequestParser::RequestParser() : state_(method_start) {
 }
@@ -287,4 +287,4 @@ inline bool RequestParser::is_digit(int c) {
     return c >= '0' && c <= '9';
 }
 
-}  // namespace silkrpc::http
+}  // namespace silkworm::rpc::http

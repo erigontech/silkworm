@@ -35,7 +35,7 @@
 #include <silkworm/silkrpc/test/mock_transaction.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 
-namespace silkrpc::ethdb::kv {
+namespace silkworm::rpc::ethdb::kv {
 
 using Catch::Matchers::Message;
 using testing::_;
@@ -204,4 +204,4 @@ TEST_CASE("CachedDatabase::for_prefix", "[silkrpc][ethdb][kv][cached_database]")
     CHECK_NOTHROW(result.get());
 }
 
-}  // namespace silkrpc::ethdb::kv
+}  // namespace silkworm::rpc::ethdb::kv

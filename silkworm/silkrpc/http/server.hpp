@@ -36,7 +36,7 @@
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/http/request_handler.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::rpc::http {
 
 /// The top-level class of the HTTP server.
 class Server {
@@ -69,4 +69,4 @@ class Server {
     std::optional<std::string> jwt_secret_;
 };
 
-}  // namespace silkrpc::http
+}  // namespace silkworm::rpc::http

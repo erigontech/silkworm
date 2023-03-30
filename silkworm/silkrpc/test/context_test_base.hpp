@@ -28,7 +28,7 @@
 
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
 
-namespace silkrpc::test {
+namespace silkworm::rpc::test {
 
 //! Temporary addition: this must be removed when refactoring logging to one unique framework
 class SetLogVerbosityGuard {
@@ -62,7 +62,6 @@ class ContextTestBase {
 
     ~ContextTestBase();
 
-  public:
     SetLogVerbosityGuard log_guard_;
     Context context_;
     boost::asio::io_context& io_context_;
@@ -70,4 +69,4 @@ class ContextTestBase {
     std::thread context_thread_;
 };
 
-}  // namespace silkrpc::test
+}  // namespace silkworm::rpc::test

@@ -44,7 +44,7 @@
 
 #include <absl/strings/string_view.h>
 
-namespace silkrpc {
+namespace silkworm::strategy {
 
 // These wait strategies are experimental for performance tests and not yet production-ready.
 
@@ -159,4 +159,4 @@ enum class WaitMode {
 bool AbslParseFlag(absl::string_view text, WaitMode* wait_mode, std::string* error);
 std::string AbslUnparseFlag(WaitMode wait_mode);
 
-}  // namespace silkrpc
+}  // namespace silkworm::strategy

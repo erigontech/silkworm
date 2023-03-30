@@ -26,11 +26,11 @@
 #include <silkworm/silkrpc/test/context_test_base.hpp>
 #include <silkworm/silkrpc/test/grpc_responder.hpp>
 
-namespace silkrpc::test {
+namespace silkworm::rpc::test {
 
 using testing::Return;
 
-struct KVTestBase : test::ContextTestBase {
+struct KVTestBase : ContextTestBase {
     testing::Expectation expect_request_async_tx(bool ok) {
         return expect_request_async_tx(*stub_, ok);
     }
@@ -71,4 +71,4 @@ struct KVTestBase : test::ContextTestBase {
     StrictMockKVStateChangesAsyncReader* statechanges_reader_{statechanges_reader_ptr_.get()};
 };
 
-}  // namespace silkrpc::test
+}  // namespace silkworm::rpc::test

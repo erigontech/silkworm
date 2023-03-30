@@ -33,11 +33,11 @@
 #include <silkworm/silkrpc/json/stream.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::http {
 class RequestHandler;
 }
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 const int16_t kAccountRangeMaxResults = 256;
 
@@ -67,9 +67,9 @@ class DebugRpcApi {
     std::unique_ptr<txpool::TransactionPool>& tx_pool_;
     boost::asio::thread_pool& workers_;
 
-    friend class silkrpc::http::RequestHandler;
+    friend class silkworm::http::RequestHandler;
 };
 
 boost::asio::awaitable<std::set<evmc::address>> get_modified_accounts(ethdb::TransactionDatabase& tx_database, uint64_t start_block_number, uint64_t end_block_number);
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

@@ -18,7 +18,7 @@
 
 #include <sstream>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const ProtocolVersion& v) {
     out << v.major << "." << v.minor << "." << v.patch;
@@ -91,4 +91,4 @@ ProtocolVersionResult wait_for_txpool_protocol_check(const std::shared_ptr<grpc:
     return wait_for_protocol_check(new_stub_factory(channel), kTxPoolServiceApiVersion, "TXPOOL");
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

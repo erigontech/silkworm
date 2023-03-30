@@ -28,7 +28,7 @@ std::ostream& operator<<(std::ostream& out, const Account& account) {
 
 }  // namespace silkworm
 
-namespace silkrpc {
+namespace silkworm {
 
 static const char* kBase64Chars[2] = {
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -196,4 +196,4 @@ const silkworm::ChainConfig* lookup_chain_config(uint64_t chain_id) {
     return chain_info->second;
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm

@@ -26,7 +26,7 @@
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 
-namespace silkrpc::test {
+namespace silkworm::rpc::test {
 
 class MockDatabaseReader : public core::rawdb::DatabaseReader {
   public:
@@ -40,4 +40,4 @@ class MockDatabaseReader : public core::rawdb::DatabaseReader {
                 (const));
 };
 
-}  // namespace silkrpc::test
+}  // namespace silkworm::rpc::test

@@ -33,7 +33,7 @@
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 silkworm::Bytes make_key(const evmc::address& address, const evmc::bytes32& location);
 silkworm::Bytes make_key(const evmc::address& address, uint64_t incarnation);
@@ -43,7 +43,7 @@ class StorageWalker {
     using AccountCollector = std::function<bool(const evmc::address&, silkworm::ByteView, silkworm::ByteView)>;
     using StorageCollector = std::function<bool(const silkworm::ByteView, silkworm::ByteView, silkworm::ByteView)>;
 
-    explicit StorageWalker(silkrpc::ethdb::Transaction& transaction) : transaction_(transaction) {}
+    explicit StorageWalker(ethdb::Transaction& transaction) : transaction_(transaction) {}
 
     StorageWalker(const StorageWalker&) = delete;
     StorageWalker& operator=(const StorageWalker&) = delete;
@@ -55,7 +55,7 @@ class StorageWalker {
                                                   const evmc::bytes32& start_location, int16_t max_result, StorageCollector& collector);
 
   private:
-    silkrpc::ethdb::Transaction& transaction_;
+    ethdb::Transaction& transaction_;
 };
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

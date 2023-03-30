@@ -26,7 +26,7 @@
 #include <silkworm/silkrpc/test/grpc_responder.hpp>
 #include <silkworm/silkrpc/test/kv_test_base.hpp>
 
-namespace silkrpc::ethdb::kv {
+namespace silkworm::rpc::ethdb::kv {
 
 struct RemoteDatabaseTest : test::KVTestBase {
     // RemoteDatabase holds the KV stub by std::unique_ptr so we cannot rely on mock stub from base class
@@ -84,4 +84,4 @@ TEST_CASE_METHOD(RemoteDatabaseTest, "RemoteDatabase::begin", "[silkrpc][ethdb][
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc::ethdb::kv
+}  // namespace silkworm::rpc::ethdb::kv

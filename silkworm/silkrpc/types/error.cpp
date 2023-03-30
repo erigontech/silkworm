@@ -20,7 +20,7 @@
 
 #include <silkworm/core/common/util.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const Error& error) {
     out << " code: " << error.code << " message: " << error.message;
@@ -32,4 +32,4 @@ std::ostream& operator<<(std::ostream& out, const RevertError& error) {
     return out;
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

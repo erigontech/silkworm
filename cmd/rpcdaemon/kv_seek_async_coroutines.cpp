@@ -26,14 +26,14 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/common/constants.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/ethdb/kv/remote_database.hpp>
 
-using silkrpc::LogLevel;
+using namespace silkworm;
+using namespace silkworm::rpc;
 
-boost::asio::awaitable<void> kv_seek(silkrpc::ethdb::Database& kv_db, const std::string& table_name, const silkworm::Bytes& key) {
+boost::asio::awaitable<void> kv_seek(ethdb::Database& kv_db, const std::string& table_name, ByteView key) {
     const auto kv_transaction = co_await kv_db.begin();
     std::cout << "KV Tx OPEN -> table_name: " << table_name << "\n"
               << std::flush;
@@ -54,14 +54,14 @@ boost::asio::awaitable<void> kv_seek(silkrpc::ethdb::Database& kv_db, const std:
     co_return;
 }
 
-int kv_seek_async_coroutines(const std::string& target, const std::string& table_name, const silkworm::Bytes& key, uint32_t /*timeout*/) {
+int kv_seek_async_coroutines(const std::string& target, const std::string& table_name, ByteView key, uint32_t /*timeout*/) {
     try {
         // TODO(canepat): handle also secure channel for remote
-        silkrpc::ChannelFactory create_channel = [&]() {
+        ChannelFactory create_channel = [&]() {
             return grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
         };
         // TODO(canepat): handle also local (shared-memory) database
-        silkrpc::ContextPool context_pool{1, create_channel};
+        ContextPool context_pool{1, create_channel};
         auto& context = context_pool.next_context();
         auto io_context = context.io_context();
         auto& database = context.database();

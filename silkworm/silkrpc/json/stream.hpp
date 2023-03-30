@@ -23,14 +23,14 @@
 
 #include <silkworm/silkrpc/types/writer.hpp>
 
-namespace json {
+namespace silkworm::rpc::json {
 static const nlohmann::json JSON_NULL = nlohmann::json::value_t::null;
 static const nlohmann::json EMPTY_OBJECT = nlohmann::json::value_t::object;
 static const nlohmann::json EMPTY_ARRAY = nlohmann::json::value_t::array;
 
 class Stream {
   public:
-    explicit Stream(silkrpc::Writer& writer) : writer_(writer) {}
+    explicit Stream(Writer& writer) : writer_(writer) {}
     Stream(const Stream& stream) = delete;
     Stream& operator=(const Stream&) = delete;
 
@@ -51,8 +51,8 @@ class Stream {
     void write_string(const std::string& str);
     void ensure_separator();
 
-    silkrpc::Writer& writer_;
+    Writer& writer_;
     std::stack<std::uint8_t> stack_;
 };
 
-}  // namespace json
+}  // namespace silkworm::rpc::json

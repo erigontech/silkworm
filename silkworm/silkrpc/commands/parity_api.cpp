@@ -34,7 +34,7 @@
 #include <silkworm/silkrpc/types/log.hpp>
 #include <silkworm/silkrpc/types/receipt.hpp>
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 // https://eth.wiki/json-rpc/API#parity_getblockreceipts
 boost::asio::awaitable<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::json& request, nlohmann::json& reply) {
@@ -81,7 +81,7 @@ boost::asio::awaitable<void> ParityRpcApi::handle_parity_get_block_receipts(cons
 
 // TODO(canepat) will raise error until Silkrpc implements Erigon2u1 https://github.com/ledgerwatch/erigon-lib/pull/559
 boost::asio::awaitable<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::json& request, nlohmann::json& reply) {
-    const auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() < 2) {
         auto error_msg = "invalid parity_listStorageKeys params: " + params.dump();
         SILKRPC_ERROR << error_msg << "\n";
@@ -107,9 +107,9 @@ boost::asio::awaitable<void> ParityRpcApi::handle_parity_list_storage_keys(const
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-        silkrpc::StateReader state_reader{tx_database};
+        StateReader state_reader{tx_database};
 
-        const auto block_number = co_await silkrpc::core::get_block_number(block_id, tx_database);
+        const auto block_number = co_await core::get_block_number(block_id, tx_database);
         SILKRPC_DEBUG << "read account with address: " << silkworm::to_hex(address) << " block number: " << block_number << "\n";
         std::optional<silkworm::Account> account = co_await state_reader.read_account(address, block_number);
         if (!account) throw std::domain_error{"account not found"};
@@ -147,4 +147,4 @@ boost::asio::awaitable<void> ParityRpcApi::handle_parity_list_storage_keys(const
     co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

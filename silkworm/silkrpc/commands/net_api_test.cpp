@@ -22,7 +22,7 @@
 
 #include <silkworm/silkrpc/ethbackend/remote_backend.hpp>
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 using Catch::Matchers::Message;
 
@@ -37,4 +37,4 @@ TEST_CASE("NetRpcApi::NetRpcApi", "[silkrpc][erigon_api]") {
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

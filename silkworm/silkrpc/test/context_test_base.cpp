@@ -20,9 +20,9 @@
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
 
-namespace silkrpc::test {
+namespace silkworm::rpc::test {
 
-filter::FilterStorage filter_storage{0x400};
+FilterStorage filter_storage{0x400};
 
 ContextTestBase::ContextTestBase()
     : log_guard_{LogLevel::None},
@@ -44,4 +44,4 @@ ContextTestBase::~ContextTestBase() {
     }
 }
 
-}  // namespace silkrpc::test
+}  // namespace silkworm::rpc::test

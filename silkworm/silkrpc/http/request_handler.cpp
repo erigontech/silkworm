@@ -36,7 +36,7 @@
 #include <silkworm/silkrpc/http/header.hpp>
 #include <silkworm/silkrpc/types/writer.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::rpc::http {
 
 boost::asio::awaitable<void> RequestHandler::handle_request(const http::Request& request) {
     auto start = clock_time::now();
@@ -138,7 +138,7 @@ boost::asio::awaitable<void> RequestHandler::handle_request(const nlohmann::json
     co_return;
 }
 
-boost::asio::awaitable<void> RequestHandler::handle_request(silkrpc::commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, http::Reply& reply) {
+boost::asio::awaitable<void> RequestHandler::handle_request(commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, http::Reply& reply) {
     auto request_id = request_json["id"].get<uint32_t>();
     try {
         nlohmann::json reply_json;
@@ -160,7 +160,7 @@ boost::asio::awaitable<void> RequestHandler::handle_request(silkrpc::commands::R
     co_return;
 }
 
-boost::asio::awaitable<void> RequestHandler::handle_request(silkrpc::commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json) {
+boost::asio::awaitable<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json) {
     try {
         SocketWriter socket_writer(socket_);
         ChunksWriter chunks_writer(socket_writer);
@@ -262,4 +262,4 @@ boost::asio::awaitable<void> RequestHandler::write_headers() {
     }
 }
 
-}  // namespace silkrpc::http
+}  // namespace silkworm::rpc::http

@@ -26,12 +26,12 @@ namespace silkworm {
 
 TEST_CASE("print Bytes", "[silkrpc][common][util]") {
     silkworm::Bytes b{};
-    CHECK_NOTHROW(silkrpc::null_stream() << b);
+    CHECK_NOTHROW(silkworm::null_stream() << b);
 }
 
 }  // namespace silkworm
 
-namespace silkrpc {
+namespace silkworm {
 
 using Catch::Matchers::Message;
 
@@ -260,4 +260,4 @@ TEST_CASE("lookup_chain_config", "[silkrpc][common][util]") {
     }
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm

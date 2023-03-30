@@ -28,7 +28,7 @@
 
 #include <silkworm/core/common/base.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using Storage = std::map<evmc::bytes32, silkworm::Bytes>;
 
@@ -55,4 +55,4 @@ std::ostream& operator<<(std::ostream& out, const DumpAccounts& dump);
 void to_json(nlohmann::json& json, const DumpAccounts& dump);
 void to_json(nlohmann::json& json, const DumpAccount& dump_account);
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

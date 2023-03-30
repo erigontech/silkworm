@@ -25,7 +25,7 @@
 
 #include <silkworm/silkrpc/test/context_test_base.hpp>
 
-namespace silkrpc::test {
+namespace silkworm::rpc::test {
 
 template <typename JsonApi>
 class JsonApiTestBase : public ContextTestBase {
@@ -63,4 +63,4 @@ class GrpcApiTestBase : public ContextTestBase {
     std::unique_ptr<Stub> stub_{std::make_unique<Stub>()};
 };
 
-}  // namespace silkrpc::test
+}  // namespace silkworm::rpc::test

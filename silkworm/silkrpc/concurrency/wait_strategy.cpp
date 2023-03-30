@@ -20,7 +20,7 @@
 
 #include <absl/strings/str_cat.h>
 
-namespace silkrpc {
+namespace silkworm::strategy {
 
 bool AbslParseFlag(absl::string_view text, WaitMode* wait_mode, std::string* error) {
     if (text == "backoff") {
@@ -70,4 +70,4 @@ std::string AbslUnparseFlag(WaitMode wait_mode) {
     }
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::strategy

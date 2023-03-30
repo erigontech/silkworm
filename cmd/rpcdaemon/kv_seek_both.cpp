@@ -25,7 +25,7 @@
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/grpc/util.hpp>
 
-int kv_seek_both(const std::string& target, const std::string& table_name, const silkworm::Bytes& key, const silkworm::Bytes& subkey) {
+int kv_seek_both(const std::string& target, const std::string& table_name, silkworm::ByteView key, silkworm::ByteView subkey) {
     // Create KV stub using insecure channel to target
     grpc::ClientContext context;
 
@@ -70,8 +70,8 @@ int kv_seek_both(const std::string& target, const std::string& table_name, const
     auto seek_both_message = remote::Cursor{};
     seek_both_message.set_op(remote::Op::SEEK_BOTH);
     seek_both_message.set_cursor(cursor_id);
-    seek_both_message.set_k(key.c_str(), key.length());
-    seek_both_message.set_v(subkey.c_str(), subkey.length());
+    seek_both_message.set_k(key.data(), key.length());
+    seek_both_message.set_v(subkey.data(), subkey.length());
     success = reader_writer->Write(seek_both_message);
     if (!success) {
         std::cerr << "KV stream closed sending SEEK_BOTH operation req\n";

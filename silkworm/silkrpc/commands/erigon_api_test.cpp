@@ -21,7 +21,7 @@
 
 #include <silkworm/silkrpc/test/api_test_base.hpp>
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 using Catch::Matchers::Message;
 
@@ -115,7 +115,7 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_get_block_by_tim
                                                                                   reply),
                         nlohmann::json::exception);
     }
-    // TODO(canepat) we need to mock silkrpc::core functions properly, then we must change this check
+    // TODO(canepat) we need to mock silkworm::core functions properly, then we must change this check
     SECTION("request params are valid: return block w/ full transactions") {
         CHECK_THROWS_AS(run<&ErigonRpcApi_ForTest::erigon_get_block_by_timestamp>(R"({
             "jsonrpc":"2.0",
@@ -308,4 +308,4 @@ TEST_CASE_METHOD(ErigonRpcApiTest, "ErigonRpcApi::handle_erigon_node_info", "[si
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

@@ -22,7 +22,7 @@
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/http/methods.hpp>
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 RpcApiTable::RpcApiTable(const std::string& api_spec) {
     build_handlers(api_spec);
@@ -204,4 +204,4 @@ void RpcApiTable::add_ots_handlers() {
     method_handlers_[http::method::k_ots_getBlockDetailsByHash] = &commands::RpcApi::handle_ots_getBlockDetailsByHash;
 }
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

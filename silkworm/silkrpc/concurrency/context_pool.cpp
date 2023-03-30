@@ -28,7 +28,13 @@
 static const char kChaindataRelativePath[] = "/chaindata";
 static const int kMaxReaders = 32000;
 
-namespace silkrpc {
+namespace silkworm::rpc {
+
+using strategy::BusySpinWaitStrategy;
+using strategy::SleepingWaitStrategy;
+using strategy::SpinWaitWaitStrategy;
+using strategy::WaitMode;
+using strategy::YieldingWaitStrategy;
 
 std::ostream& operator<<(std::ostream& out, Context& c) {
     out << "io_context: " << c.io_context() << " queue: " << c.grpc_queue();
@@ -39,7 +45,7 @@ Context::Context(
     std::shared_ptr<grpc::Channel> channel,
     std::shared_ptr<BlockCache> block_cache,
     std::shared_ptr<ethdb::kv::StateCache> state_cache,
-    filter::FilterStorage& filter_storage,
+    FilterStorage& filter_storage,
     std::shared_ptr<mdbx::env_managed> chaindata_env,
     WaitMode wait_mode)
     : io_context_{std::make_shared<boost::asio::io_context>()},
@@ -56,7 +62,7 @@ Context::Context(
     } else {
         database_ = std::make_unique<ethdb::kv::RemoteDatabase>(*grpc_context_, channel);
     }
-    backend_ = std::make_unique<ethbackend::RemoteBackEnd>(*io_context_, channel, *grpc_context_);
+    backend_ = std::make_unique<rpc::ethbackend::RemoteBackEnd>(*io_context_, channel, *grpc_context_);
     miner_ = std::make_unique<txpool::Miner>(*io_context_, channel, *grpc_context_);
     tx_pool_ = std::make_unique<txpool::TransactionPool>(*io_context_, channel, *grpc_context_);
 }
@@ -219,4 +225,4 @@ boost::asio::io_context& ContextPool::next_io_context() {
     return *client_context.io_context();
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

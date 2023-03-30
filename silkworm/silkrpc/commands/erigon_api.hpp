@@ -29,11 +29,11 @@
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::http {
 class RequestHandler;
 }
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 class ErigonRpcApi {
   public:
@@ -60,7 +60,7 @@ class ErigonRpcApi {
     std::shared_ptr<BlockCache>& block_cache_;
     std::unique_ptr<ethdb::Database>& database_;
 
-    friend class silkrpc::http::RequestHandler;
+    friend class silkworm::http::RequestHandler;
 };
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

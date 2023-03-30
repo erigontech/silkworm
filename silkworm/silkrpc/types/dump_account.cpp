@@ -21,7 +21,7 @@
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const DumpAccounts& dump) {
     out << "root: 0x" << dump.root
@@ -62,4 +62,4 @@ void to_json(nlohmann::json& json, const DumpAccount& dump_account) {
     }
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

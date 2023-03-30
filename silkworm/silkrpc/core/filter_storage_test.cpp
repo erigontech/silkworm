@@ -23,7 +23,7 @@
 
 #include "silkworm/silkrpc/json/types.hpp"
 
-namespace silkrpc::filter {
+namespace silkworm::rpc {
 
 using Catch::Matchers::Message;
 
@@ -135,4 +135,4 @@ TEST_CASE("FilterStorage enhanced") {
     }
 }
 
-}  // namespace silkrpc::filter
+}  // namespace silkworm::rpc

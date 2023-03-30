@@ -29,6 +29,9 @@
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/ethbackend/remote_backend.hpp>
 
+using namespace silkworm;
+using namespace silkworm::rpc;
+
 inline std::ostream& operator<<(std::ostream& out, const types::H160& address) {
     out << "address=" << address.has_hi();
     if (address.has_hi()) {
@@ -42,7 +45,7 @@ inline std::ostream& operator<<(std::ostream& out, const types::H160& address) {
     return out;
 }
 
-boost::asio::awaitable<void> ethbackend_etherbase(silkrpc::ethbackend::BackEnd& backend) {
+boost::asio::awaitable<void> ethbackend_etherbase(ethbackend::BackEnd& backend) {
     try {
         std::cout << "ETHBACKEND Etherbase ->\n";
         const auto address = co_await backend.etherbase();
@@ -55,11 +58,11 @@ boost::asio::awaitable<void> ethbackend_etherbase(silkrpc::ethbackend::BackEnd& 
 int ethbackend_coroutines(const std::string& target) {
     try {
         // TODO(canepat): handle also secure channel for remote
-        silkrpc::ChannelFactory create_channel = [&]() {
+        ChannelFactory create_channel = [&]() {
             return grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
         };
         // TODO(canepat): handle also local (shared-memory) database
-        silkrpc::ContextPool context_pool{1, create_channel};
+        ContextPool context_pool{1, create_channel};
         auto& context = context_pool.next_context();
         auto io_context = context.io_context();
         auto grpc_context = context.grpc_context();
@@ -74,7 +77,7 @@ int ethbackend_coroutines(const std::string& target) {
         const auto channel = grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
 
         // Etherbase
-        silkrpc::ethbackend::RemoteBackEnd eth_backend{*io_context, channel, *grpc_context};
+        ethbackend::RemoteBackEnd eth_backend{*io_context, channel, *grpc_context};
         boost::asio::co_spawn(*io_context, ethbackend_etherbase(eth_backend), [&](std::exception_ptr) {
             context_pool.stop();
         });

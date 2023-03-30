@@ -34,14 +34,14 @@
 #include <silkworm/silkrpc/types/call.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
 
-namespace silkrpc::ego {
+namespace silkworm::rpc {
 
 const std::uint64_t kTxGas = 21'000;
 const std::uint64_t kGasCap = 25'000'000;
 
 using BlockHeaderProvider = std::function<boost::asio::awaitable<silkworm::BlockHeader>(uint64_t)>;
 using AccountReader = std::function<boost::asio::awaitable<std::optional<silkworm::Account>>(const evmc::address&, uint64_t)>;
-using Executor = std::function<boost::asio::awaitable<silkrpc::ExecutionResult>(const silkworm::Transaction&)>;
+using Executor = std::function<boost::asio::awaitable<ExecutionResult>(const silkworm::Transaction&)>;
 
 struct EstimateGasException : public std::exception {
   public:
@@ -94,4 +94,4 @@ class EstimateGasOracle {
     const Executor& executor_;
 };
 
-}  // namespace silkrpc::ego
+}  // namespace silkworm::rpc

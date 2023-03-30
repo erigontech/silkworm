@@ -40,7 +40,7 @@
 #include <silkworm/silkrpc/txpool/miner.hpp>
 #include <silkworm/silkrpc/txpool/transaction_pool.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using ChannelFactory = std::function<std::shared_ptr<grpc::Channel>()>;
 
@@ -51,20 +51,20 @@ class Context {
         std::shared_ptr<grpc::Channel> channel,
         std::shared_ptr<BlockCache> block_cache,
         std::shared_ptr<ethdb::kv::StateCache> state_cache,
-        filter::FilterStorage& filter_storage,
+        FilterStorage& filter_storage,
         std::shared_ptr<mdbx::env_managed> chaindata_env = {},
-        WaitMode wait_mode = WaitMode::blocking);
+        strategy::WaitMode wait_mode = strategy::WaitMode::blocking);
 
-    boost::asio::io_context* io_context() const noexcept { return io_context_.get(); }
-    grpc::CompletionQueue* grpc_queue() const noexcept { return grpc_context_->get_completion_queue(); }
-    agrpc::GrpcContext* grpc_context() const noexcept { return grpc_context_.get(); }
+    [[nodiscard]] boost::asio::io_context* io_context() const noexcept { return io_context_.get(); }
+    [[nodiscard]] grpc::CompletionQueue* grpc_queue() const noexcept { return grpc_context_->get_completion_queue(); }
+    [[nodiscard]] agrpc::GrpcContext* grpc_context() const noexcept { return grpc_context_.get(); }
     std::unique_ptr<ethdb::Database>& database() noexcept { return database_; }
-    std::unique_ptr<ethbackend::BackEnd>& backend() noexcept { return backend_; }
+    std::unique_ptr<rpc::ethbackend::BackEnd>& backend() noexcept { return backend_; }
     std::unique_ptr<txpool::Miner>& miner() noexcept { return miner_; }
     std::unique_ptr<txpool::TransactionPool>& tx_pool() noexcept { return tx_pool_; }
     std::shared_ptr<BlockCache>& block_cache() noexcept { return block_cache_; }
     std::shared_ptr<ethdb::kv::StateCache>& state_cache() noexcept { return state_cache_; }
-    filter::FilterStorage& filter_storage() noexcept { return filter_storage_; }
+    FilterStorage& filter_storage() noexcept { return filter_storage_; }
 
     //! Execute the scheduler loop until stopped.
     void execute_loop();
@@ -94,15 +94,15 @@ class Context {
     boost::asio::executor_work_guard<agrpc::GrpcContext::executor_type> grpc_context_work_;
 
     std::unique_ptr<ethdb::Database> database_;
-    std::unique_ptr<ethbackend::BackEnd> backend_;
+    std::unique_ptr<rpc::ethbackend::BackEnd> backend_;
     std::unique_ptr<txpool::Miner> miner_;
     std::unique_ptr<txpool::TransactionPool> tx_pool_;
     std::shared_ptr<BlockCache> block_cache_;
     std::shared_ptr<ethdb::kv::StateCache> state_cache_;
-    filter::FilterStorage& filter_storage_;
+    FilterStorage& filter_storage_;
     std::shared_ptr<mdbx::env_managed> chaindata_env_;
 
-    WaitMode wait_mode_;
+    strategy::WaitMode wait_mode_;
 };
 
 std::ostream& operator<<(std::ostream& out, Context& c);
@@ -111,7 +111,7 @@ std::ostream& operator<<(std::ostream& out, Context& c);
 // [currently cannot start/stop more than once because grpc::CompletionQueue cannot be used after shutdown]
 class ContextPool {
   public:
-    explicit ContextPool(std::size_t pool_size, ChannelFactory create_channel, std::optional<std::string> datadir = {}, WaitMode wait_mode = WaitMode::blocking);
+    explicit ContextPool(std::size_t pool_size, ChannelFactory create_channel, std::optional<std::string> datadir = {}, strategy::WaitMode wait_mode = strategy::WaitMode::blocking);
     ~ContextPool();
 
     ContextPool(const ContextPool&) = delete;
@@ -144,7 +144,7 @@ class ContextPool {
     //! Flag indicating if pool has been stopped.
     bool stopped_{false};
 
-    filter::FilterStorage filter_storage_;
+    FilterStorage filter_storage_;
 };
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

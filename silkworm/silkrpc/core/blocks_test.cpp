@@ -30,7 +30,7 @@
 #include <silkworm/silkrpc/stagedsync/stages.hpp>
 #include <silkworm/silkrpc/test/mock_database_reader.hpp>
 
-namespace silkrpc::core {
+namespace silkworm::rpc::core {
 
 using Catch::Matchers::Message;
 using testing::_;
@@ -396,4 +396,4 @@ TEST_CASE("is_latest_block_number", "[silkrpc][core][blocks]") {
     }
 }
 
-}  // namespace silkrpc::core
+}  // namespace silkworm::rpc::core

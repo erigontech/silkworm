@@ -34,7 +34,7 @@
 #include <silkworm/silkrpc/stagedsync/stages.hpp>
 #endif  // !defined(__clang__)
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 using Catch::Matchers::Message;
 
@@ -44,7 +44,7 @@ using evmc::literals::operator""_bytes32;
 static const nlohmann::json empty;
 static const std::string zeros = "00000000000000000000000000000000000000000000000000000000000000000000000000000000";  // NOLINT
 
-class DummyCursor : public silkrpc::ethdb::CursorDupSort {
+class DummyCursor : public ethdb::CursorDupSort {
   public:
     explicit DummyCursor(const nlohmann::json& json) : json_{json} {};
 
@@ -151,7 +151,7 @@ class DummyCursor : public silkrpc::ethdb::CursorDupSort {
 };
 
 static uint64_t next_tx_id{0};
-class DummyTransaction : public silkrpc::ethdb::Transaction {
+class DummyTransaction : public ethdb::Transaction {
   public:
     explicit DummyTransaction(const nlohmann::json& json) : json_{json}, tx_id_{next_tx_id++} {};
 
@@ -163,14 +163,14 @@ class DummyTransaction : public silkrpc::ethdb::Transaction {
         co_return;
     }
 
-    boost::asio::awaitable<std::shared_ptr<silkrpc::ethdb::Cursor>> cursor(const std::string& table) override {
+    boost::asio::awaitable<std::shared_ptr<ethdb::Cursor>> cursor(const std::string& table) override {
         auto cursor = std::make_unique<DummyCursor>(json_);
         co_await cursor->open_cursor(table, false);
 
         co_return cursor;
     }
 
-    boost::asio::awaitable<std::shared_ptr<silkrpc::ethdb::CursorDupSort>> cursor_dup_sort(const std::string& table) override {
+    boost::asio::awaitable<std::shared_ptr<ethdb::CursorDupSort>> cursor_dup_sort(const std::string& table) override {
         auto cursor = std::make_unique<DummyCursor>(json_);
         co_await cursor->open_cursor(table, true);
 
@@ -186,11 +186,11 @@ class DummyTransaction : public silkrpc::ethdb::Transaction {
     const uint64_t tx_id_;
 };
 
-class DummyDatabase : public silkrpc::ethdb::Database {
+class DummyDatabase : public ethdb::Database {
   public:
     explicit DummyDatabase(const nlohmann::json& json) : json_{json} {}
 
-    boost::asio::awaitable<std::unique_ptr<silkrpc::ethdb::Transaction>> begin() override {
+    boost::asio::awaitable<std::unique_ptr<ethdb::Transaction>> begin() override {
         auto txn = std::make_unique<DummyTransaction>(json_);
         co_return txn;
     }
@@ -204,7 +204,7 @@ TEST_CASE("DebugRpcApi") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
     auto channel = grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials());
-    filter::FilterStorage filter_storage{0x400};
+    FilterStorage filter_storage{0x400};
     Context context{channel, std::make_shared<BlockCache>(), std::make_shared<ethdb::kv::CoherentStateCache>(), filter_storage};
     boost::asio::thread_pool workers{1};
 
@@ -219,7 +219,7 @@ TEST_CASE("get_modified_accounts") {
     nlohmann::json json;
 
     json["SyncStage"] = {
-        {silkworm::to_hex(silkrpc::stages::kExecution), "000000000052a060"}};
+        {silkworm::to_hex(rpc::stages::kExecution), "000000000052a060"}};
     json["AccountChangeSet"] = {
         {"000000000052a010", "07aaec0b237ccf56b03a7c43c1c7a783da5606420501010101"},                        // NOLINT
         {"000000000052a011", "0c7b6617b9bc0d20f4030ee079d355246246ef7003010307057ffbb8f2ec00"},            // NOLINT
@@ -424,4 +424,4 @@ TEST_CASE("get_modified_accounts") {
 
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

@@ -39,7 +39,7 @@
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/core/remote_state.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 struct ExecutionResult {
     int64_t error_code;
@@ -84,4 +84,4 @@ class EVMExecutor {
     std::unique_ptr<silkworm::consensus::IEngine> consensus_engine_;
 };
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

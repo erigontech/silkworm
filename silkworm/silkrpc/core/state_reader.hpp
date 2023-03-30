@@ -28,7 +28,7 @@
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using boost::asio::awaitable;
 
@@ -55,4 +55,4 @@ class StateReader {
     const core::rawdb::DatabaseReader& db_reader_;
 };
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

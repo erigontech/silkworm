@@ -23,7 +23,7 @@
 
 #include <silkworm/core/common/base.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 struct Log {
     /* raw fields */
@@ -44,4 +44,4 @@ typedef std::vector<Log> Logs;
 
 std::ostream& operator<<(std::ostream& out, const Log& log);
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

@@ -24,7 +24,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using Catch::Matchers::Message;
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
@@ -146,4 +146,4 @@ TEST_CASE("create legacy silkworm::transaction", "[silkrpc][types][silkworm::tra
     CHECK_NOTHROW(null_stream() << txn);
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

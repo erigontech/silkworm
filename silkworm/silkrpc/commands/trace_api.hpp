@@ -32,11 +32,11 @@
 #include <silkworm/silkrpc/json/stream.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::http {
 class RequestHandler;
 }
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 class TraceRpcApi {
   public:
@@ -65,7 +65,7 @@ class TraceRpcApi {
     std::unique_ptr<txpool::TransactionPool>& tx_pool_;
     boost::asio::thread_pool& workers_;
 
-    friend class silkrpc::http::RequestHandler;
+    friend class silkworm::http::RequestHandler;
 };
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

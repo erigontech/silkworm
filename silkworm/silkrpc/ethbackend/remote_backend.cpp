@@ -29,7 +29,7 @@
 #include <silkworm/silkrpc/grpc/unary_rpc.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
-namespace silkrpc::ethbackend {
+namespace silkworm::rpc::ethbackend {
 
 RemoteBackEnd::RemoteBackEnd(boost::asio::io_context& context, std::shared_ptr<grpc::Channel> channel, agrpc::GrpcContext& grpc_context)
     : RemoteBackEnd(context.get_executor(), ::remote::ETHBACKEND::NewStub(channel), grpc_context) {}
@@ -417,4 +417,4 @@ std::string RemoteBackEnd::decode_status_message(const remote::EngineStatus& sta
     }
 }
 
-}  // namespace silkrpc::ethbackend
+}  // namespace silkworm::rpc::ethbackend

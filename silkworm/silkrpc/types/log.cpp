@@ -20,7 +20,7 @@
 
 #include <silkworm/silkrpc/common/util.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const Log& log) {
     out << "#topics: " << log.topics.size();
@@ -39,4 +39,4 @@ std::ostream& operator<<(std::ostream& out, const Log& log) {
     return out;
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

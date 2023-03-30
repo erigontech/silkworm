@@ -30,7 +30,7 @@
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/node/db/util.hpp>
 
-namespace silkrpc {
+namespace silkworm {
 
 class BlockCache {
   public:
@@ -59,4 +59,4 @@ class BlockCache {
     bool shared_cache_;
 };
 
-}  // namespace silkrpc
+}  // namespace silkworm

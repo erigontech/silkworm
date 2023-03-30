@@ -29,7 +29,7 @@
 #include <silkworm/silkrpc/test/context_test_base.hpp>
 #include <silkworm/silkrpc/test/mock_database_reader.hpp>
 
-namespace silkrpc::state {
+namespace silkworm::rpc::state {
 
 using Catch::Matchers::Message;
 using evmc::literals::operator""_bytes32;
@@ -399,6 +399,8 @@ struct RemoteStateTest : public test::ContextTestBase {
     RemoteState remote_state_{io_context_, database_reader_, 0};
 };
 
+// Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
+#ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(RemoteStateTest, "RemoteState") {
     SECTION("overridden write methods do nothing") {
         CHECK_NOTHROW(remote_state_.insert_block(silkworm::Block{}, evmc::bytes32{}));
@@ -412,5 +414,6 @@ TEST_CASE_METHOD(RemoteStateTest, "RemoteState") {
         CHECK_NOTHROW(remote_state_.unwind_state_changes(0));
     }
 }
+#endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc::state
+}  // namespace silkworm::rpc::state

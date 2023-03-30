@@ -33,7 +33,7 @@
 #include <silkworm/silkrpc/http/reply.hpp>
 #include <silkworm/silkrpc/http/request.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::rpc::http {
 
 class RequestHandler {
   public:
@@ -55,8 +55,8 @@ class RequestHandler {
     boost::asio::awaitable<std::optional<std::string>> is_request_authorized(const http::Request& request);
 
     boost::asio::awaitable<void> handle_request(const nlohmann::json& request_json, http::Reply& reply);
-    boost::asio::awaitable<void> handle_request(silkrpc::commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, http::Reply& reply);
-    boost::asio::awaitable<void> handle_request(silkrpc::commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json);
+    boost::asio::awaitable<void> handle_request(commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, http::Reply& reply);
+    boost::asio::awaitable<void> handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json);
 
     boost::asio::awaitable<void> do_write(http::Reply& reply);
     boost::asio::awaitable<void> write_headers();
@@ -68,4 +68,4 @@ class RequestHandler {
     const std::optional<std::string> jwt_secret_;
 };
 
-}  // namespace silkrpc::http
+}  // namespace silkworm::rpc::http

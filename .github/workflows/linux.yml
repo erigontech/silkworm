@@ -12,7 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-name: CI
+name: Linux
 
 on: [ push, pull_request ]
 
@@ -46,7 +46,7 @@ jobs:
       run: |
         git clone https://github.com/microsoft/mimalloc
         cd mimalloc
-        git checkout tags/v1.4.0 -b v1.4.0
+        git checkout tags/v2.0.9 -b v2.0.9
         mkdir -p out
         cd out
         cmake .. -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }}

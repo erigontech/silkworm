@@ -3,7 +3,9 @@
 C++ implementation of the Ethereum Execution Layer (EL) protocol based on the [Erigon Thorax architecture].
 
 [![CircleCI](https://circleci.com/gh/torquem-ch/silkworm.svg?style=shield)](https://circleci.com/gh/torquem-ch/silkworm)
-[![Continuous integration](https://github.com/torquem-ch/silkworm/actions/workflows/ci.yml/badge.svg)](https://github.com/torquem-ch/silkworm/actions/workflows/ci.yml)
+[![Linux](https://github.com/torquem-ch/silkworm/actions/workflows/linux.yml/badge.svg)](https://github.com/torquem-ch/silkworm/actions/workflows/linux.yml)
+[![macOS](https://github.com/torquem-ch/silkworm/actions/workflows/macOS.yml/badge.svg)](https://github.com/torquem-ch/silkworm/actions/workflows/macOS.yml)
+[![Windows](https://github.com/torquem-ch/silkworm/actions/workflows/windows.yml/badge.svg)](https://github.com/torquem-ch/silkworm/actions/workflows/windows.yml)
 [![CodeCov](https://codecov.io/gh/torquem-ch/silkworm/branch/master/graph/badge.svg)](https://codecov.io/gh/torquem-ch/silkworm)
 [![GitHub](https://img.shields.io/github/license/torquem-ch/silkworm.svg)](https://github.com/torquem-ch/silkworm/blob/master/LICENSE)
 ![semver](https://img.shields.io/badge/semver-2.0.0-blue)

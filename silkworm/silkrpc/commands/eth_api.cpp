@@ -1604,9 +1604,9 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann:
 boost::asio::awaitable<void> EthereumRpcApi::handle_eth_glaze_get_logs(const nlohmann::json& request, std::string& reply) {
     auto params = request["params"];
     if (params.size() != 1) {
-        auto error_msg = "invalid eth_getLogs params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
-        reply = make_json_error(request["id"], 100, error_msg);
+        auto error_msg = "missing value for required argument 0";
+        SILKRPC_ERROR << error_msg << request.dump() << "\n";
+        make_glaze_json_error(reply, request["id"], -32602, error_msg);
         co_return;
     }
     auto filter = params[0].get<Filter>();
@@ -1632,13 +1632,13 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_glaze_get_logs(const nlo
         make_glaze_json_content(reply, request["id"], logs);
     } catch (const std::invalid_argument& iv) {
         SILKRPC_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump() << "\n";
-        reply = make_json_content(request["id"], {});
+        make_glaze_json_content(reply, request["id"], {});
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
-        reply = make_json_error(request["id"], 100, e.what());
+        make_glaze_json_error(reply, request["id"], 100, e.what());
     } catch (...) {
         SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        make_glaze_json_error(reply, request["id"], 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines

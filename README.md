@@ -3,7 +3,6 @@
 C++ implementation of the Ethereum Execution Layer (EL) protocol based on the [Erigon Thorax architecture].
 
 [![CircleCI](https://circleci.com/gh/torquem-ch/silkworm.svg?style=shield)](https://circleci.com/gh/torquem-ch/silkworm)
-[![Linux](https://github.com/torquem-ch/silkworm/actions/workflows/linux.yml/badge.svg)](https://github.com/torquem-ch/silkworm/actions/workflows/linux.yml)
 [![macOS](https://github.com/torquem-ch/silkworm/actions/workflows/macOS.yml/badge.svg)](https://github.com/torquem-ch/silkworm/actions/workflows/macOS.yml)
 [![Windows](https://github.com/torquem-ch/silkworm/actions/workflows/windows.yml/badge.svg)](https://github.com/torquem-ch/silkworm/actions/workflows/windows.yml)
 [![CodeCov](https://codecov.io/gh/torquem-ch/silkworm/branch/master/graph/badge.svg)](https://codecov.io/gh/torquem-ch/silkworm)

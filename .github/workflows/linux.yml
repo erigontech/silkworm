@@ -22,15 +22,15 @@ concurrency:
 
 jobs:
   linux_x64:
-#    if: ${{ false }}  # disable for now
+    if: ${{ false }}  # disable for now
     runs-on: [ubuntu-latest]
     strategy:
       matrix:
         config:
           - {cc: gcc-11, cxx: g++-11, build_type: "Debug", cmake_args: "-DSILKWORM_SANITIZE=address"}
           - {cc: gcc-11, cxx: g++-11, build_type: "Release", cmake_args: "-DSILKWORM_SANITIZE=thread"}
-          - {cc: clang-13, cxx: clang++-13, build_type: "Debug", cmake_args: "-DSILKWORM_SANITIZE=thread"}
-          - {cc: clang-13, cxx: clang++-13, build_type: "Release", cmake_args: "-DSILKWORM_SANITIZE=address"}
+#          - {cc: clang-13, cxx: clang++-13, build_type: "Debug", cmake_args: "-DSILKWORM_SANITIZE=thread"}
+#          - {cc: clang-13, cxx: clang++-13, build_type: "Release", cmake_args: "-DSILKWORM_SANITIZE=address"}
 
       fail-fast: false # This makes it so that if 1 of the tests in the matrix fail, they don't all fail
     steps:

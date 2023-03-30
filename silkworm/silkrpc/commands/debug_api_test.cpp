@@ -219,7 +219,7 @@ TEST_CASE("get_modified_accounts") {
     nlohmann::json json;
 
     json["SyncStage"] = {
-        {silkworm::to_hex(silkworm::stages::kExecution), "000000000052a060"}};
+        {silkworm::to_hex(rpc::stages::kExecution), "000000000052a060"}};
     json["AccountChangeSet"] = {
         {"000000000052a010", "07aaec0b237ccf56b03a7c43c1c7a783da5606420501010101"},                        // NOLINT
         {"000000000052a011", "0c7b6617b9bc0d20f4030ee079d355246246ef7003010307057ffbb8f2ec00"},            // NOLINT

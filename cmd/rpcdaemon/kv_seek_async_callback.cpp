@@ -18,6 +18,7 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <utility>
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/signal_set.hpp>
@@ -26,7 +27,6 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
 #include <silkworm/silkrpc/common/util.hpp>
-#include <utility>
 
 class GrpcKvCallbackReactor final : public grpc::ClientBidiReactor<remote::Cursor, remote::Pair> {
   public:

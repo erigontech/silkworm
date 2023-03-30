@@ -68,9 +68,9 @@ std::string AbslUnparseFlag(LogLevel level);
 
 }  // namespace silkworm
 
-#define LOG(level_)                           \
+#define LOG(level_)                            \
     if ((level_) < silkworm::log_verbosity_) { \
-    } else                                    \
+    } else                                     \
         silkworm::log_(level_) << " "  // NOLINT
 
 #define SILKRPC_TRACE LOG(silkworm::LogLevel::Trace)

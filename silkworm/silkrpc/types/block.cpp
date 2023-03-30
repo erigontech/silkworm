@@ -103,4 +103,4 @@ uint64_t BlockDetails::get_block_size() const {
     return rlp_head.payload_length;
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::rpc

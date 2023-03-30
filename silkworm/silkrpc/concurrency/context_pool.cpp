@@ -31,10 +31,10 @@ static const int kMaxReaders = 32000;
 namespace silkworm::rpc {
 
 using strategy::BusySpinWaitStrategy;
-using strategy::YieldingWaitStrategy;
 using strategy::SleepingWaitStrategy;
 using strategy::SpinWaitWaitStrategy;
 using strategy::WaitMode;
+using strategy::YieldingWaitStrategy;
 
 std::ostream& operator<<(std::ostream& out, Context& c) {
     out << "io_context: " << c.io_context() << " queue: " << c.grpc_queue();

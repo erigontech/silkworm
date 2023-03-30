@@ -26,7 +26,6 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/execution/precompile.hpp>
 #include <silkworm/infra/test/log.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>

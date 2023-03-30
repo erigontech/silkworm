@@ -23,7 +23,6 @@
 #include <catch2/catch.hpp>
 #include <gmock/gmock.h>
 
-#include <silkworm/core/execution/precompile.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/test/context_test_base.hpp>

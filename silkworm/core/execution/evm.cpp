@@ -215,13 +215,13 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
     if (precompile::is_precompile(message.code_address, rev)) {
         static_assert(std::size(precompile::kContracts) < 256);
         const uint8_t num{message.code_address.bytes[kAddressLength - 1]};
-        const auto contract{precompile::kContracts[num]};
+        const precompile::Contract& contract{precompile::kContracts[num]->contract};
         const ByteView input{message.input_data, message.input_size};
-        const int64_t gas{static_cast<int64_t>(contract->gas(input, rev))};
+        const int64_t gas{static_cast<int64_t>(contract.gas(input, rev))};
         if (gas < 0 || gas > message.gas) {
             res.status_code = EVMC_OUT_OF_GAS;
         } else {
-            const std::optional<Bytes> output{contract->run(input)};
+            const std::optional<Bytes> output{contract.run(input)};
             if (output) {
                 res = evmc::Result{EVMC_SUCCESS, message.gas - gas, 0, output->data(), output->size()};
             } else {

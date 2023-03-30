@@ -105,8 +105,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
                 co_return silkworm::Bytes{};
             }));
 
-        evmc::address blake2f_precompile{};
-        blake2f_precompile.bytes[silkworm::kAddressLength - 1] = silkworm::precompile::kBlake2fAddress;
+        evmc::address blake2f_precompile{0x0000000000000000000000000000000000000009_address};
 
         Call call;
         call.from = 0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address;

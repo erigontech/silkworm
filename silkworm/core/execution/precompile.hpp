@@ -70,37 +70,35 @@ std::optional<Bytes> blake2_f_run(ByteView input) noexcept;
 uint64_t point_evaluation_gas(ByteView input, evmc_revision) noexcept;
 std::optional<Bytes> point_evaluation_run(ByteView input) noexcept;
 
-inline constexpr std::optional<Contract> kContracts[]{
-    std::nullopt,                                          // 0x00
-    Contract{ecrec_gas, ecrec_run},                        // 0x01
-    Contract{sha256_gas, sha256_run},                      // 0x02
-    Contract{rip160_gas, rip160_run},                      // 0x03
-    Contract{id_gas, id_run},                              // 0x04
-    Contract{expmod_gas, expmod_run},                      // 0x05
-    Contract{bn_add_gas, bn_add_run},                      // 0x06
-    Contract{bn_mul_gas, bn_mul_run},                      // 0x07
-    Contract{snarkv_gas, snarkv_run},                      // 0x08
-    Contract{blake2_f_gas, blake2_f_run},                  // 0x09
-    std::nullopt,                                          // 0x0a
-    std::nullopt,                                          // 0x0b
-    std::nullopt,                                          // 0x0c
-    std::nullopt,                                          // 0x0d
-    std::nullopt,                                          // 0x0e
-    std::nullopt,                                          // 0x0f
-    std::nullopt,                                          // 0x10
-    std::nullopt,                                          // 0x11
-    std::nullopt,                                          // 0x12
-    std::nullopt,                                          // 0x13
-    Contract{point_evaluation_gas, point_evaluation_run},  // 0x14
+struct SupportedContract {
+    Contract contract;
+    evmc_revision added_in;
+};
+
+inline constexpr std::optional<SupportedContract> kContracts[]{
+    std::nullopt,                                                                  // 0x00
+    SupportedContract{{ecrec_gas, ecrec_run}, EVMC_FRONTIER},                      // 0x01
+    SupportedContract{{sha256_gas, sha256_run}, EVMC_FRONTIER},                    // 0x02
+    SupportedContract{{rip160_gas, rip160_run}, EVMC_FRONTIER},                    // 0x03
+    SupportedContract{{id_gas, id_run}, EVMC_FRONTIER},                            // 0x04
+    SupportedContract{{expmod_gas, expmod_run}, EVMC_BYZANTIUM},                   // 0x05
+    SupportedContract{{bn_add_gas, bn_add_run}, EVMC_BYZANTIUM},                   // 0x06
+    SupportedContract{{bn_mul_gas, bn_mul_run}, EVMC_BYZANTIUM},                   // 0x07
+    SupportedContract{{snarkv_gas, snarkv_run}, EVMC_BYZANTIUM},                   // 0x08
+    SupportedContract{{blake2_f_gas, blake2_f_run}, EVMC_ISTANBUL},                // 0x09
+    std::nullopt,                                                                  // 0x0a
+    std::nullopt,                                                                  // 0x0b
+    std::nullopt,                                                                  // 0x0c
+    std::nullopt,                                                                  // 0x0d
+    std::nullopt,                                                                  // 0x0e
+    std::nullopt,                                                                  // 0x0f
+    std::nullopt,                                                                  // 0x10
+    std::nullopt,                                                                  // 0x11
+    std::nullopt,                                                                  // 0x12
+    std::nullopt,                                                                  // 0x13
+    SupportedContract{{point_evaluation_gas, point_evaluation_run}, EVMC_CANCUN},  // 0x14
 };
 
 [[nodiscard]] bool is_precompile(const evmc::address&, evmc_revision) noexcept;
-
-inline constexpr uint8_t kIdAddress{0x4};
-inline constexpr uint8_t kSnarkvAddress{0x8};
-inline constexpr uint8_t kBlake2fAddress{0x9};
-inline constexpr uint8_t kPointEvaluationPrecompileAddress{0x14};
-
-static_assert(std::size(kContracts) == kPointEvaluationPrecompileAddress + 1);
 
 }  // namespace silkworm::precompile

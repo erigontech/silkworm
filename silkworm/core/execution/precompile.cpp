@@ -510,15 +510,7 @@ bool is_precompile(const evmc::address& address, evmc_revision rev) noexcept {
         return false;
     }
 
-    if (rev >= EVMC_CANCUN) {
-        return true;
-    } else if (rev >= EVMC_ISTANBUL) {
-        return num <= kBlake2fAddress;
-    } else if (rev >= EVMC_BYZANTIUM) {
-        return num <= kSnarkvAddress;
-    } else {
-        return num <= kIdAddress;
-    }
+    return kContracts[num]->added_in <= rev;
 }
 
 }  // namespace silkworm::precompile

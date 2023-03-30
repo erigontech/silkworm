@@ -647,12 +647,12 @@ TEST_CASE("Tracing precompiled contract failure") {
     // Execute transaction Deploy contract without code
     evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
 
-    evmc::address max_precompiled{};
-    max_precompiled.bytes[kAddressLength - 1] = precompile::kNumOfIstanbulContracts;
+    evmc::address blake2f_precompile{};
+    blake2f_precompile.bytes[kAddressLength - 1] = precompile::kBlake2fAddress;
 
     Transaction txn{};
     txn.from = caller;
-    txn.to = max_precompiled;
+    txn.to = blake2f_precompile;
     uint64_t gas{50'000};
 
     CallResult res{evm.execute(txn, gas)};

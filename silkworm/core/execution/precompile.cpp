@@ -489,4 +489,36 @@ std::optional<Bytes> blake2_f_run(ByteView input) noexcept {
     return out;
 }
 
+uint64_t point_evaluation_gas(ByteView, evmc_revision) noexcept {
+    return 50000;
+}
+
+std::optional<Bytes> point_evaluation_run(ByteView) noexcept {
+    // TODO(yperbasis) implement
+    return std::nullopt;
+}
+
+bool is_precompile(const evmc::address& address, evmc_revision rev) noexcept {
+    static_assert(std::size(kContracts) < 256);
+    static constexpr evmc::address kMaxOneByteAddress{0x00000000000000000000000000000000000000ff_address};
+    if (address > kMaxOneByteAddress) {
+        return false;
+    }
+
+    const uint8_t num{address.bytes[kAddressLength - 1]};
+    if (num >= std::size(kContracts) || !kContracts[num]) {
+        return false;
+    }
+
+    if (rev >= EVMC_CANCUN) {
+        return true;
+    } else if (rev >= EVMC_ISTANBUL) {
+        return num <= kBlake2fAddress;
+    } else if (rev >= EVMC_BYZANTIUM) {
+        return num <= kSnarkvAddress;
+    } else {
+        return num <= kIdAddress;
+    }
+}
+
 }  // namespace silkworm::precompile

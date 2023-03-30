@@ -210,15 +210,18 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
         }
     }
 
-    if (is_precompiled(message.code_address)) {
+    const evmc_revision rev{revision()};
+
+    if (precompile::is_precompile(message.code_address, rev)) {
+        static_assert(std::size(precompile::kContracts) < 256);
         const uint8_t num{message.code_address.bytes[kAddressLength - 1]};
-        precompile::Contract contract{precompile::kContracts[num - 1]};
+        const auto contract{precompile::kContracts[num]};
         const ByteView input{message.input_data, message.input_size};
-        const int64_t gas{static_cast<int64_t>(contract.gas(input, revision()))};
+        const int64_t gas{static_cast<int64_t>(contract->gas(input, rev))};
         if (gas < 0 || gas > message.gas) {
             res.status_code = EVMC_OUT_OF_GAS;
         } else {
-            const std::optional<Bytes> output{contract.run(input)};
+            const std::optional<Bytes> output{contract->run(input)};
             if (output) {
                 res = evmc::Result{EVMC_SUCCESS, message.gas - gas, 0, output->data(), output->size()};
             } else {
@@ -345,27 +348,6 @@ void EVM::add_tracer(EvmTracer& tracer) noexcept {
     tracers_.push_back(std::ref(tracer));
 }
 
-uint8_t EVM::number_of_precompiles() const noexcept {
-    const evmc_revision rev{revision()};
-
-    if (rev >= EVMC_ISTANBUL) {
-        return precompile::kNumOfIstanbulContracts;
-    } else if (rev >= EVMC_BYZANTIUM) {
-        return precompile::kNumOfByzantiumContracts;
-    } else {
-        return precompile::kNumOfFrontierContracts;
-    }
-}
-
-bool EVM::is_precompiled(const evmc::address& contract) const noexcept {
-    if (is_zero(contract)) {
-        return false;
-    }
-    evmc::address max_precompiled{};
-    max_precompiled.bytes[kAddressLength - 1] = number_of_precompiles();
-    return contract <= max_precompiled;
-}
-
 bool EvmHost::account_exists(const evmc::address& address) const noexcept {
     const evmc_revision rev{evm_.revision()};
 
@@ -377,7 +359,9 @@ bool EvmHost::account_exists(const evmc::address& address) const noexcept {
 }
 
 evmc_access_status EvmHost::access_account(const evmc::address& address) noexcept {
-    if (evm_.is_precompiled(address)) {
+    const evmc_revision rev{evm_.revision()};
+
+    if (precompile::is_precompile(address, rev)) {
         return EVMC_ACCESS_WARM;
     }
     return evm_.state().access_account(address);

@@ -177,6 +177,55 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetailsByHash(const n
     co_return;
 }
 
+boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockTransactions(const nlohmann::json& request, nlohmann::json& reply) {
+
+    auto params = request["params"];
+    if (params.size() != 3) {
+        auto error_msg = "invalid ots_getBlockTransactions params: " + params.dump();
+        SILKRPC_ERROR << error_msg << "\n";
+        reply = make_json_error(request["id"], 100, error_msg);
+        co_return;
+    }
+
+    const auto block_id = params[0].get<std::string>();
+    const auto page_number = params[1].get<uint8_t>();
+    const auto page_size = params[2].get<uint8_t>();
+
+    SILKRPC_DEBUG << "block_id: " << block_id << " page_number: " << page_number << " page_size: " << page_size << "\n";
+
+    auto tx = co_await database_->begin();
+
+    try {
+        ethdb::TransactionDatabase tx_database{*tx};
+
+        const auto block_number = co_await core::get_block_number(block_id, tx_database);
+        auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
+        const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_with_hash.hash, block_number);
+        auto receipts = co_await core::get_receipts(tx_database, block_with_hash);
+
+        auto transaction_count = block_with_hash.block.transactions.size() - 2;
+        BlockTransactionsResponse block_transactions{block_with_hash.hash, block_with_hash.block.header, total_difficulty, transaction_count};
+
+        // TODO: add transactions and receipts to the response
+
+        reply = make_json_content(request["id"], block_transactions);
+
+    } catch (const std::invalid_argument& iv) {
+        SILKRPC_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump() << "\n";
+        reply = make_json_content(request["id"], {});
+    } catch (const std::exception& e) {
+        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+    co_return;
+
+}
+
 IssuanceDetails OtsRpcApi::get_issuance(const ChainConfig& chain_config, const silkworm::BlockWithHash& block) {
     auto config = silkworm::ChainConfig::from_json(chain_config.config).value();
 

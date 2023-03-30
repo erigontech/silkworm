@@ -356,6 +356,38 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
     json["totalFees"] = to_quantity(b.total_fees);
 }
 
+void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {
+
+    // TODO: populante json response
+
+    json["fullblock"]["difficulty"] = to_quantity(silkworm::endian::to_big_compact(b.header.difficulty));
+    json["fullblock"]["extraData"] = "";
+    json["fullblock"]["gasLimit"] = "";
+    json["fullblock"]["gasUsed"] = "";
+    json["fullblock"]["hash"] = "";
+    json["fullblock"]["logsBloom"]; // null
+    json["fullblock"]["miner"] = "";
+    json["fullblock"]["mixHash"] = "";
+    json["fullblock"]["nonce"] = "";
+    json["fullblock"]["number"] = "";
+    json["fullblock"]["parentHash"] = "";
+    json["fullblock"]["receiptsRoot"] = "";
+    json["fullblock"]["sha3Uncles"] = "";
+    json["fullblock"]["size"] = "";
+    json["fullblock"]["stateRoot"] = "";
+    json["fullblock"]["timestamp"] = "";
+    json["fullblock"]["totalDifficulty"] = "";
+    json["fullblock"]["transactionCount"] = "";
+
+    //for (const auto& item : b.transactions){
+    //    json["fullblock"]["transactions"] = "";
+    //}
+    //for (const auto& item : b.receipts){
+    //    json["receipts"] = "";
+    //}
+
+}
+
 void to_json(nlohmann::json& json, const Transaction& transaction) {
     to_json(json, static_cast<const silkworm::Transaction&>(transaction));
 

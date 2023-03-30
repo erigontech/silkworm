@@ -41,7 +41,7 @@ namespace silkworm::rpc::commands {
 
 class OtsRpcApi {
   public:
-    explicit OtsRpcApi(Context& context) : database_(context.database()), state_cache_(context.state_cache()) {}
+    explicit OtsRpcApi(Context& context) : database_(context.database()), state_cache_(context.state_cache()), block_cache_(context.block_cache()) {}
     virtual ~OtsRpcApi() = default;
 
     OtsRpcApi(const OtsRpcApi&) = delete;
@@ -55,6 +55,7 @@ class OtsRpcApi {
 
     std::unique_ptr<ethdb::Database>& database_;
     std::shared_ptr<ethdb::kv::StateCache>& state_cache_;
+    std::shared_ptr<BlockCache>& block_cache_;
     friend class silkworm::http::RequestHandler;
 
   private:

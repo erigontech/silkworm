@@ -23,6 +23,7 @@
 #include <silkworm/silkrpc/consensus/ethash.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
+#include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/receipts.hpp>
 #include <silkworm/silkrpc/core/state_reader.hpp>
 #include <silkworm/silkrpc/ethdb/kv/cached_database.hpp>
@@ -101,7 +102,8 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetails(const nlohman
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto block_hash = co_await core::rawdb::read_canonical_block_hash(tx_database, block_number);
         const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_hash, block_number);
-        const auto block_with_hash = co_await core::rawdb::read_block_by_hash(tx_database, block_hash);
+        //const auto block_with_hash = co_await core::rawdb::read_block_by_hash(tx_database, block_hash);
+        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
         const BlockDetails block_details{block_hash, block_with_hash.block.header, total_difficulty, block_with_hash.block.transactions.size() - 2, block_with_hash.block.ommers};
 
         auto receipts = co_await core::get_receipts(tx_database, block_with_hash);
@@ -147,7 +149,8 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetailsByHash(const n
 
         const auto block_number = co_await read_header_number(tx_database, block_hash);
         const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_hash, block_number);
-        const auto block_with_hash = co_await core::rawdb::read_block_by_hash(tx_database, block_hash);
+        //const auto block_with_hash = co_await core::rawdb::read_block_by_hash(tx_database, block_hash);
+        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
         const BlockDetails block_details{block_hash, block_with_hash.block.header, total_difficulty, block_with_hash.block.transactions.size() - 2, block_with_hash.block.ommers};
 
         auto receipts = co_await core::get_receipts(tx_database, block_with_hash);

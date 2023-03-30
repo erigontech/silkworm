@@ -145,6 +145,7 @@ nlohmann::json make_json_error(uint32_t id, const RevertError& error);
 
 // GLAZE
 void make_glaze_json_content(std::string& reply, uint32_t id, const silkrpc::Logs& logs);
+void make_glaze_json_error(std::string& reply, uint32_t id, const int error_id, const std::string & message);
 
 
 }  // namespace silkrpc

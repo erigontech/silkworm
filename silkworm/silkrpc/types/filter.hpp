@@ -23,11 +23,11 @@
 
 #include <evmc/evmc.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
-typedef std::vector<evmc::address> FilterAddresses;
-typedef std::vector<evmc::bytes32> FilterSubTopics;
-typedef std::vector<FilterSubTopics> FilterTopics;
+using FilterAddresses = std::vector<evmc::address>;
+using FilterSubTopics = std::vector<evmc::bytes32>;
+using FilterTopics = std::vector<FilterSubTopics>;
 
 struct Filter {
     std::optional<std::string> from_block;
@@ -39,8 +39,8 @@ struct Filter {
 
 std::ostream& operator<<(std::ostream& out, const Filter& filter);
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc
 
-std::ostream& operator<<(std::ostream& out, const std::optional<silkrpc::FilterAddresses>& addresses);
-
-std::ostream& operator<<(std::ostream& out, const std::optional<silkrpc::FilterTopics>& topics);
+std::ostream& operator<<(std::ostream& out, const std::optional<silkworm::rpc::FilterAddresses>& addresses);
+std::ostream& operator<<(std::ostream& out, const silkworm::rpc::FilterSubTopics& subtopics);
+std::ostream& operator<<(std::ostream& out, const std::optional<silkworm::rpc::FilterTopics>& topics);

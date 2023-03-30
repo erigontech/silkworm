@@ -26,9 +26,8 @@
 
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
-#include <silkworm/silkrpc/core/evm_executor.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 const char* SLOAD = evmone::instr::traits[evmc_opcode::OP_SLOAD].name;
 const char* SSTORE = evmone::instr::traits[evmc_opcode::OP_SSTORE].name;
@@ -187,4 +186,4 @@ bool AccessListTracer::compare(const AccessList& acl1, const AccessList& acl2) {
     return true;
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

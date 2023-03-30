@@ -29,7 +29,7 @@
 #include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 
-namespace silkrpc::ethdb::kv {
+namespace silkworm::rpc::ethdb::kv {
 
 CoherentStateView::CoherentStateView(Transaction& txn, CoherentStateCache* cache) : txn_(txn), cache_(cache) {}
 
@@ -206,7 +206,7 @@ bool CoherentStateCache::add_code(KeyValue kv, CoherentStateRoot* root, StateVie
     }
     code_evictions_.push_front(kv);
 
-    // Remove longest unused key-value pair when size exceeded
+    // Remove the longest unused key-value pair when size exceeded
     if (code_evictions_.size() > config_.max_code_keys) {
         const auto oldest = code_evictions_.back();
         SILKRPC_DEBUG << "Code cache resize oldest.key=" << silkworm::to_hex(oldest.key) << "\n";
@@ -366,4 +366,4 @@ void CoherentStateCache::evict_roots(StateViewId next_view_id) {
     });
 }
 
-}  // namespace silkrpc::ethdb::kv
+}  // namespace silkworm::rpc::ethdb::kv

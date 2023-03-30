@@ -24,7 +24,7 @@
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 
-namespace silkrpc {
+namespace silkworm {
 
 struct PriceComparator {
     bool operator()(const intx::uint256& p1, const intx::uint256& p2) const {
@@ -54,9 +54,9 @@ boost::asio::awaitable<intx::uint256> GasPriceOracle::suggested_price(uint64_t b
         }
     }
 
-    if (price > silkrpc::kDefaultMaxPrice) {
+    if (price > silkworm::kDefaultMaxPrice) {
         SILKRPC_TRACE << "GasPriceOracle::suggested_price price to high: set to 0x" << intx::hex(kDefaultMaxPrice) << "\n";
-        price = silkrpc::kDefaultMaxPrice;
+        price = silkworm::kDefaultMaxPrice;
     }
 
     SILKRPC_INFO << "GasPriceOracle::suggested_price price: 0x" << intx::hex(price) << "\n";
@@ -107,4 +107,4 @@ boost::asio::awaitable<void> GasPriceOracle::load_block_prices(uint64_t block_nu
         }
     }
 }
-}  // namespace silkrpc
+}  // namespace silkworm

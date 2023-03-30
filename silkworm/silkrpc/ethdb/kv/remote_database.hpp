@@ -26,7 +26,7 @@
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
 
-namespace silkrpc::ethdb::kv {
+namespace silkworm::rpc::ethdb::kv {
 
 class RemoteDatabase : public Database {
   public:
@@ -45,4 +45,4 @@ class RemoteDatabase : public Database {
     std::unique_ptr<remote::KV::StubInterface> stub_;
 };
 
-}  // namespace silkrpc::ethdb::kv
+}  // namespace silkworm::rpc::ethdb::kv

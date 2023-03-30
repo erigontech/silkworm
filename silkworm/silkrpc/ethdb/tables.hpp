@@ -16,7 +16,7 @@
 
 #pragma once
 
-namespace silkrpc::db::table {
+namespace silkworm::rpc::db::table {
 
 constexpr const char* kAccountHistory{"AccountHistory"};
 constexpr const char* kBlockBodies{"BlockBody"};
@@ -67,4 +67,4 @@ constexpr const char* kTxLookup{"BlockTransactionLookup"};
 constexpr const char* kIssuance{"Issuance"};
 constexpr const char* kCumulativeGasIndex{"CumulativeGasIndex"};
 
-}  // namespace silkrpc::db::table
+}  // namespace silkworm::rpc::db::table

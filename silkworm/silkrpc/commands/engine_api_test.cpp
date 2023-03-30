@@ -27,48 +27,35 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/silkrpc/core/rawdb/chain.hpp>
-#include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
-#include <silkworm/silkrpc/http/methods.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
+#include <silkworm/silkrpc/test/mock_cursor.hpp>
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 using Catch::Matchers::Message;
 using evmc::literals::operator""_bytes32;
 
+class BackEndMock : public ethbackend::BackEnd {  // NOLINT
+  public:
+    MOCK_METHOD((boost::asio::awaitable<evmc::address>), etherbase, ());
+    MOCK_METHOD((boost::asio::awaitable<uint64_t>), protocol_version, ());
+    MOCK_METHOD((boost::asio::awaitable<uint64_t>), net_version, ());
+    MOCK_METHOD((boost::asio::awaitable<std::string>), client_version, ());
+    MOCK_METHOD((boost::asio::awaitable<uint64_t>), net_peer_count, ());
+    MOCK_METHOD((boost::asio::awaitable<ExecutionPayload>), engine_get_payload_v1, (uint64_t));
+    MOCK_METHOD((boost::asio::awaitable<PayloadStatus>), engine_new_payload_v1, (ExecutionPayload));
+    MOCK_METHOD((boost::asio::awaitable<ForkChoiceUpdatedReply>), engine_forkchoice_updated_v1, (ForkChoiceUpdatedRequest));
+    MOCK_METHOD((boost::asio::awaitable<std::vector<NodeInfo>>), engine_node_info, ());
+};
+
 namespace {
-    class BackEndMock : public ethbackend::BackEnd {
-      public:
-        MOCK_METHOD((boost::asio::awaitable<evmc::address>), etherbase, ());
-        MOCK_METHOD((boost::asio::awaitable<uint64_t>), protocol_version, ());
-        MOCK_METHOD((boost::asio::awaitable<uint64_t>), net_version, ());
-        MOCK_METHOD((boost::asio::awaitable<std::string>), client_version, ());
-        MOCK_METHOD((boost::asio::awaitable<uint64_t>), net_peer_count, ());
-        MOCK_METHOD((boost::asio::awaitable<ExecutionPayload>), engine_get_payload_v1, (uint64_t));
-        MOCK_METHOD((boost::asio::awaitable<PayloadStatus>), engine_new_payload_v1, (ExecutionPayload));
-        MOCK_METHOD((boost::asio::awaitable<ForkChoiceUpdatedReply>), engine_forkchoice_updated_v1, (ForkChoiceUpdatedRequest));
-        MOCK_METHOD((boost::asio::awaitable<std::vector<NodeInfo>>), engine_node_info, ());
-    };
-
-    class MockCursor : public ethdb::Cursor {
-      public:
-        uint32_t cursor_id() const override { return 0; }
-
-        MOCK_METHOD((boost::asio::awaitable<void>), open_cursor, (const std::string&, bool));
-        MOCK_METHOD((boost::asio::awaitable<KeyValue>), seek, (silkworm::ByteView));
-        MOCK_METHOD((boost::asio::awaitable<KeyValue>), seek_exact, (silkworm::ByteView));
-        MOCK_METHOD((boost::asio::awaitable<KeyValue>), next, ());
-        MOCK_METHOD((boost::asio::awaitable<void>), close_cursor, ());
-    };
-
     //! This dummy transaction just gives you the same cursor over and over again.
     class DummyTransaction : public ethdb::Transaction {
       public:
-        explicit DummyTransaction(std::shared_ptr<ethdb::Cursor> cursor) : cursor_(cursor) {}
+        explicit DummyTransaction(std::shared_ptr<ethdb::Cursor> cursor) : cursor_(std::move(cursor)) {}
 
-        uint64_t tx_id() const override { return 0; }
+        [[nodiscard]] uint64_t tx_id() const override { return 0; }
 
         boost::asio::awaitable<void> open() override { co_return; }
 
@@ -89,7 +76,7 @@ namespace {
     //! This dummy database acts as a factory for dummy transactions using the same cursor.
     class DummyDatabase : public ethdb::Database {
       public:
-        explicit DummyDatabase(std::shared_ptr<ethdb::Cursor> cursor) : cursor_(cursor) {}
+        explicit DummyDatabase(std::shared_ptr<ethdb::Cursor> cursor) : cursor_(std::move(cursor)) {}
 
         boost::asio::awaitable<std::unique_ptr<ethdb::Transaction>> begin() override {
             co_return std::make_unique<DummyTransaction>(cursor_);
@@ -153,25 +140,6 @@ static silkworm::Bytes kChainConfigNoTerminalTotalDifficulty{*silkworm::from_hex
     "227465726d696e616c426c6f636b48617368223a22307830303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030222c"
     "22636c69717565223a7b22706572696f64223a31352c"
     "2265706f6368223a33303030307d7d")};
-static silkworm::Bytes kChainConfigNoTerminalBlockHash{*silkworm::from_hex(
-    "7b22436861696e4e616d65223a22676f65726c69222c"
-    "22636861696e4964223a352c"
-    "22636f6e73656e737573223a22636c69717565222c"
-    "22686f6d657374656164426c6f636b223a302c"
-    "2264616f466f726b537570706f7274223a747275652c"
-    "22656970313530426c6f636b223a302c"
-    "2265697031353048617368223a22307830303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030222c"
-    "22656970313535426c6f636b223a302c"
-    "2262797a616e7469756d426c6f636b223a302c"
-    "22636f6e7374616e74696e6f706c65426c6f636b223a302c"
-    "2270657465727362757267426c6f636b223a302c"
-    "22697374616e62756c426c6f636b223a313536313635312c"
-    "226265726c696e426c6f636b223a343436303634342c"
-    "226c6f6e646f6e426c6f636b223a353036323630352c"
-    "227465726d696e616c546f74616c446966666963756c7479223a31303739303030302c"
-    "227465726d696e616c546f74616c446966666963756c7479506173736564223a747275652c"
-    "22636c69717565223a7b22706572696f64223a31352c"
-    "2265706f6368223a33303030307d7d")};
 static silkworm::Bytes kChainConfigNoTerminalBlockNumber{*silkworm::from_hex(
     "7b22436861696e4e616d65223a22676f65726c69222c"
     "22636861696e4964223a352c"
@@ -196,12 +164,12 @@ static silkworm::Bytes kChainConfigNoTerminalBlockNumber{*silkworm::from_hex(
 TEST_CASE("handle_engine_get_payload_v1 succeeds if request is expected payload", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    BackEndMock backend;
-    EXPECT_CALL(backend, engine_get_payload_v1(1)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<ExecutionPayload> {
+    auto* backend = new BackEndMock;
+    EXPECT_CALL(*backend, engine_get_payload_v1(1)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<ExecutionPayload> {
         co_return ExecutionPayload{1};
     }));
 
-    std::unique_ptr<ethbackend::BackEnd> backend_ptr(&backend);
+    std::unique_ptr<ethbackend::BackEnd> backend_ptr(backend);
 
     nlohmann::json reply;
     nlohmann::json request = R"({
@@ -249,10 +217,7 @@ TEST_CASE("handle_engine_get_payload_v1 succeeds if request is expected payload"
     })"_json);
 
     cp.stop();
-
-    cp.stop();
     cp.join();
-    backend_ptr.release();
 }
 
 TEST_CASE("handle_engine_get_payload_v1 fails with invalid amount of params", "[silkrpc][engine_api]") {
@@ -299,15 +264,15 @@ TEST_CASE("handle_engine_get_payload_v1 fails with invalid amount of params", "[
 TEST_CASE("handle_engine_new_payload_v1 succeeds if request is expected payload status", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    BackEndMock backend;
-    EXPECT_CALL(backend, engine_new_payload_v1(testing::_)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<PayloadStatus> {
+    auto* backend = new BackEndMock;
+    EXPECT_CALL(*backend, engine_new_payload_v1(testing::_)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<PayloadStatus> {
         co_return PayloadStatus{
             .status = "INVALID",
             .latest_valid_hash = 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32,
             .validation_error = "some error"};
     }));
 
-    std::unique_ptr<ethbackend::BackEnd> backend_ptr(&backend);
+    std::unique_ptr<ethbackend::BackEnd> backend_ptr(backend);
 
     nlohmann::json reply;
     nlohmann::json request = R"({
@@ -360,7 +325,6 @@ TEST_CASE("handle_engine_new_payload_v1 succeeds if request is expected payload 
 
     cp.stop();
     cp.join();
-    backend_ptr.release();
 }
 
 TEST_CASE("handle_engine_new_payload_v1 fails with invalid amount of params", "[silkrpc][engine_api]") {
@@ -407,7 +371,7 @@ TEST_CASE("handle_engine_new_payload_v1 fails with invalid amount of params", "[
 TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds only with forkchoiceState", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    BackEndMock* backend = new BackEndMock;
+    auto* backend = new BackEndMock;
     EXPECT_CALL(*backend, engine_forkchoice_updated_v1(testing::_)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<ForkChoiceUpdatedReply> {
         co_return ForkChoiceUpdatedReply{
             .payload_status = PayloadStatus{
@@ -465,7 +429,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds only with forkchoiceStat
 TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    BackEndMock* backend = new BackEndMock;
+    auto* backend = new BackEndMock;
     EXPECT_CALL(*backend, engine_forkchoice_updated_v1(testing::_)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<ForkChoiceUpdatedReply> {
         co_return ForkChoiceUpdatedReply{
             .payload_status = PayloadStatus{
@@ -528,7 +492,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params", "[sil
 TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params and second set to null", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    BackEndMock* backend = new BackEndMock;
+    auto* backend = new BackEndMock;
     EXPECT_CALL(*backend, engine_forkchoice_updated_v1(testing::_)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<ForkChoiceUpdatedReply> {
         co_return ForkChoiceUpdatedReply{
             .payload_status = PayloadStatus{
@@ -628,7 +592,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with invalid amount of para
 TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty finalized block hash", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    BackEndMock* backend = new BackEndMock();
+    auto* backend = new BackEndMock();
     nlohmann::json reply;
     nlohmann::json request = R"({
         "jsonrpc":"2.0",
@@ -674,7 +638,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty finalized block 
 TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty safe block hash", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    BackEndMock* backend = new BackEndMock();
+    auto* backend = new BackEndMock();
     nlohmann::json reply;
     nlohmann::json request = R"({
         "jsonrpc":"2.0",
@@ -720,10 +684,10 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty safe block hash"
 TEST_CASE("handle_engine_transition_configuration_v1 succeeds if EL configurations has the same request configuration", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    silkrpc::ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
     context_pool.start();
 
-    std::shared_ptr<MockCursor> mock_cursor = std::make_shared<MockCursor>();
+    std::shared_ptr<test::MockCursor> mock_cursor = std::make_shared<test::MockCursor>();
 
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
@@ -779,10 +743,10 @@ TEST_CASE("handle_engine_transition_configuration_v1 succeeds if EL configuratio
 TEST_CASE("handle_engine_transition_configuration_v1 succeeds and default terminal block number to zero if chain config doesn't specify it", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    silkrpc::ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
     context_pool.start();
 
-    std::shared_ptr<MockCursor> mock_cursor = std::make_shared<MockCursor>();
+    std::shared_ptr<test::MockCursor> mock_cursor = std::make_shared<test::MockCursor>();
 
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
@@ -838,10 +802,10 @@ TEST_CASE("handle_engine_transition_configuration_v1 succeeds and default termin
 TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect terminal total difficulty", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    silkrpc::ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
     context_pool.start();
 
-    std::shared_ptr<MockCursor> mock_cursor = std::make_shared<MockCursor>();
+    std::shared_ptr<test::MockCursor> mock_cursor = std::make_shared<test::MockCursor>();
 
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
@@ -895,10 +859,10 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect terminal
 TEST_CASE("handle_engine_transition_configuration_v1 fails if execution layer does not have terminal total difficulty", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    silkrpc::ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
     context_pool.start();
 
-    std::shared_ptr<MockCursor> mock_cursor = std::make_shared<MockCursor>();
+    std::shared_ptr<test::MockCursor> mock_cursor = std::make_shared<test::MockCursor>();
 
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
@@ -952,10 +916,10 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if execution layer do
 TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer sends block number different from zero", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    silkrpc::ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
     context_pool.start();
 
-    std::shared_ptr<MockCursor> mock_cursor = std::make_shared<MockCursor>();
+    std::shared_ptr<test::MockCursor> mock_cursor = std::make_shared<test::MockCursor>();
 
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
@@ -1009,10 +973,10 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer se
 TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect params", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    silkrpc::ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
     context_pool.start();
 
-    std::shared_ptr<MockCursor> mock_cursor = std::make_shared<MockCursor>();
+    std::shared_ptr<test::MockCursor> mock_cursor = std::make_shared<test::MockCursor>();
 
     std::unique_ptr<ethdb::Database> database_ptr = std::make_unique<DummyDatabase>(mock_cursor);
     std::unique_ptr<ethbackend::BackEnd> backend_ptr;
@@ -1048,4 +1012,4 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect params",
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

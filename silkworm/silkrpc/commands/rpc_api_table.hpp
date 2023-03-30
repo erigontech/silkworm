@@ -28,7 +28,7 @@
 #include <silkworm/silkrpc/commands/rpc_api.hpp>
 #include <silkworm/silkrpc/json/stream.hpp>
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 class RpcApiTable {
   public:
@@ -64,4 +64,4 @@ class RpcApiTable {
     std::map<std::string, HandleStream> stream_handlers_;
 };
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

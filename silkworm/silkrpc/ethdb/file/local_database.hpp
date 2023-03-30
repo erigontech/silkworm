@@ -24,13 +24,13 @@
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
 
-namespace silkrpc::ethdb::file {
+namespace silkworm::rpc::ethdb::file {
 
 class LocalDatabase : public Database {
   public:
     explicit LocalDatabase(std::shared_ptr<mdbx::env_managed> chaindata_env);
 
-    ~LocalDatabase();
+    ~LocalDatabase() override;
 
     LocalDatabase(const LocalDatabase&) = delete;
     LocalDatabase& operator=(const LocalDatabase&) = delete;
@@ -41,4 +41,4 @@ class LocalDatabase : public Database {
     std::shared_ptr<mdbx::env_managed> chaindata_env_;
 };
 
-}  // namespace silkrpc::ethdb::file
+}  // namespace silkworm::rpc::ethdb::file

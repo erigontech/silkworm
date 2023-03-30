@@ -16,14 +16,13 @@
 
 #include "net_api.hpp"
 
-#include <agrpc/grpc_context.hpp>
 #include <agrpc/test.hpp>
 #include <catch2/catch.hpp>
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/silkrpc/ethbackend/remote_backend.hpp>
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 using Catch::Matchers::Message;
 
@@ -38,4 +37,4 @@ TEST_CASE("NetRpcApi::NetRpcApi", "[silkrpc][erigon_api]") {
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

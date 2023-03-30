@@ -24,7 +24,7 @@
 
 #include <silkworm/silkrpc/common/tee.hpp>
 
-namespace silkrpc {
+namespace silkworm {
 
 constexpr char const kLogTags_[7][6] = {
     "TRACE",
@@ -46,7 +46,7 @@ void log_set_streams_(std::ostream& o1, std::ostream& o2) { log_streams_.set_str
 
 std::mutex log_::log_mtx_;
 
-std::ostream& log_::header_(LogLevel level) {
+std::ostream& log_::header(LogLevel level) {
     log_streams_ << kLogTags_[static_cast<int>(level)] << "["
                  << absl::FormatTime("%m-%d|%H:%M:%E3S", absl::Now(), absl::LocalTimeZone()) << "]";
     if (log_thread_enabled_) {
@@ -119,4 +119,4 @@ std::string AbslUnparseFlag(LogLevel level) {
     }
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm

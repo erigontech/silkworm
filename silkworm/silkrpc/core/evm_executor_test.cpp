@@ -28,7 +28,7 @@
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using boost::asio::awaitable;
 using Catch::Matchers::Message;
@@ -74,7 +74,7 @@ TEST_CASE("EVMExecutor") {
         boost::asio::io_context& io_context = my_pool.next_io_context();
 
         state::RemoteState remote_state{io_context, tx_database, block_number};
-        EVMExecutor executor{io_context, tx_database, *chain_config_ptr, workers, remote_state};
+        EVMExecutor executor{io_context, *chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}), boost::asio::use_future);
         auto result = execution_result.get();
         my_pool.stop();
@@ -103,7 +103,7 @@ TEST_CASE("EVMExecutor") {
 
         boost::asio::io_context& io_context = my_pool.next_io_context();
         state::RemoteState remote_state{io_context, tx_database, block_number};
-        EVMExecutor executor{io_context, tx_database, *chain_config_ptr, workers, remote_state};
+        EVMExecutor executor{io_context, *chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}), boost::asio::use_future);
         auto result = execution_result.get();
         my_pool.stop();
@@ -133,7 +133,7 @@ TEST_CASE("EVMExecutor") {
 
         boost::asio::io_context& io_context = my_pool.next_io_context();
         state::RemoteState remote_state{io_context, tx_database, block_number};
-        EVMExecutor executor{io_context, tx_database, *chain_config_ptr, workers, remote_state};
+        EVMExecutor executor{io_context, *chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}), boost::asio::use_future);
         auto result = execution_result.get();
         my_pool.stop();
@@ -163,7 +163,7 @@ TEST_CASE("EVMExecutor") {
 
         boost::asio::io_context& io_context = my_pool.next_io_context();
         state::RemoteState remote_state{io_context, tx_database, block_number};
-        EVMExecutor executor{io_context, tx_database, *chain_config_ptr, workers, remote_state};
+        EVMExecutor executor{io_context, *chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}), boost::asio::use_future);
         auto result = execution_result.get();
         my_pool.stop();
@@ -193,7 +193,7 @@ TEST_CASE("EVMExecutor") {
 
         boost::asio::io_context& io_context = my_pool.next_io_context();
         state::RemoteState remote_state{io_context, tx_database, block_number};
-        EVMExecutor executor{io_context, tx_database, *chain_config_ptr, workers, remote_state};
+        EVMExecutor executor{io_context, *chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}, false, /* gasBailout */ true), boost::asio::use_future);
         auto result = execution_result.get();
         executor.reset();
@@ -231,7 +231,7 @@ TEST_CASE("EVMExecutor") {
 
         boost::asio::io_context& io_context = my_pool.next_io_context();
         state::RemoteState remote_state{io_context, tx_database, block_number};
-        EVMExecutor executor{io_context, tx_database, *chain_config_ptr, workers, remote_state};
+        EVMExecutor executor{io_context, *chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}, true, true), boost::asio::use_future);
         auto result = execution_result.get();
         my_pool.stop();
@@ -374,4 +374,4 @@ TEST_CASE("EVMExecutor") {
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

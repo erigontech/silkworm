@@ -39,7 +39,7 @@
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/core/remote_state.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 struct ExecutionResult {
     int64_t error_code;
@@ -55,13 +55,12 @@ class EVMExecutor {
   public:
     static std::string get_error_message(int64_t error_code, const silkworm::Bytes& error_data, bool full_error = true);
 
-    explicit EVMExecutor(
+    EVMExecutor(
         boost::asio::io_context& io_context,
-        const core::rawdb::DatabaseReader& db_reader,
         const silkworm::ChainConfig& config,
         boost::asio::thread_pool& workers,
         state::RemoteState& remote_state)
-        : io_context_(io_context), db_reader_(db_reader), config_(config), workers_{workers}, remote_state_{remote_state}, state_{remote_state_} {
+        : io_context_(io_context), config_(config), workers_{workers}, remote_state_{remote_state}, state_{remote_state_} {
         consensus_engine_ = silkworm::consensus::engine_factory(config);
         SILKWORM_ASSERT(consensus_engine_ != nullptr);
     }
@@ -78,7 +77,6 @@ class EVMExecutor {
     uint64_t refund_gas(const VM& evm, const silkworm::Transaction& txn, uint64_t gas_left, uint64_t gas_refund);
 
     boost::asio::io_context& io_context_;
-    const core::rawdb::DatabaseReader& db_reader_;
     const silkworm::ChainConfig& config_;
     boost::asio::thread_pool& workers_;
     state::RemoteState& remote_state_;
@@ -86,4 +84,4 @@ class EVMExecutor {
     std::unique_ptr<silkworm::consensus::IEngine> consensus_engine_;
 };
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

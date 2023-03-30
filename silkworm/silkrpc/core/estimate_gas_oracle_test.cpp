@@ -29,7 +29,7 @@
 
 #include <silkworm/silkrpc/types/block.hpp>
 
-namespace silkrpc::ego {
+namespace silkworm::rpc {
 
 using Catch::Matchers::Message;
 
@@ -61,17 +61,17 @@ TEST_CASE("estimate gas") {
     std::vector<bool> steps;
     intx::uint256 kBalance{1'000'000'000};
 
-    silkrpc::ExecutionResult kSuccessResult{evmc_status_code::EVMC_SUCCESS};
-    silkrpc::ExecutionResult kFailureResult{evmc_status_code::EVMC_INSUFFICIENT_BALANCE};
+    ExecutionResult kSuccessResult{evmc_status_code::EVMC_SUCCESS};
+    ExecutionResult kFailureResult{evmc_status_code::EVMC_INSUFFICIENT_BALANCE};
 
     silkworm::BlockHeader kBlockHeader;
     kBlockHeader.gas_limit = kTxGas * 2;
 
     silkworm::Account kAccount{0, kBalance};
 
-    Executor executor = [&steps, &count](const silkworm::Transaction& /*transaction*/) -> boost::asio::awaitable<silkrpc::ExecutionResult> {
+    Executor executor = [&steps, &count](const silkworm::Transaction& /*transaction*/) -> boost::asio::awaitable<ExecutionResult> {
         bool success = steps[count++];
-        silkrpc::ExecutionResult result{success ? evmc_status_code::EVMC_SUCCESS : evmc_status_code::EVMC_INSUFFICIENT_BALANCE};
+        ExecutionResult result{success ? evmc_status_code::EVMC_SUCCESS : evmc_status_code::EVMC_INSUFFICIENT_BALANCE};
         co_return result;
     };
 
@@ -241,4 +241,4 @@ TEST_CASE("estimate gas") {
     }
 }
 
-}  // namespace silkrpc::ego
+}  // namespace silkworm::rpc

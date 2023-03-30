@@ -25,7 +25,7 @@
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/grpc/util.hpp>
 
-namespace silkrpc::ethdb::kv {
+namespace silkworm::rpc::ethdb::kv {
 
 //! Define Asio coroutine-based completion token using error codes instead of exceptions for errors
 constexpr auto use_nothrow_awaitable = boost::asio::as_tuple(boost::asio::use_awaitable);
@@ -120,4 +120,4 @@ boost::asio::awaitable<void> StateChangesStream::run() {
     SILKRPC_TRACE << "StateChangesStream::run state stream END\n";
 }
 
-}  // namespace silkrpc::ethdb::kv
+}  // namespace silkworm::rpc::ethdb::kv

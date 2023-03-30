@@ -28,7 +28,9 @@
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
+
+using boost::asio::awaitable;
 
 class StateReader {
   public:
@@ -37,20 +39,20 @@ class StateReader {
     StateReader(const StateReader&) = delete;
     StateReader& operator=(const StateReader&) = delete;
 
-    boost::asio::awaitable<std::optional<silkworm::Account>> read_account(const evmc::address& address, uint64_t block_number) const;
+    [[nodiscard]] awaitable<std::optional<silkworm::Account>> read_account(const evmc::address& address, uint64_t block_number) const;
 
-    boost::asio::awaitable<evmc::bytes32> read_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location_hash,
-                                                       uint64_t block_number) const;
+    [[nodiscard]] awaitable<evmc::bytes32> read_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location_hash,
+                                                        uint64_t block_number) const;
 
-    boost::asio::awaitable<std::optional<silkworm::Bytes>> read_code(const evmc::bytes32& code_hash) const;
+    [[nodiscard]] awaitable<std::optional<silkworm::Bytes>> read_code(const evmc::bytes32& code_hash) const;
 
-    boost::asio::awaitable<std::optional<silkworm::Bytes>> read_historical_account(const evmc::address& address, uint64_t block_number) const;
+    [[nodiscard]] awaitable<std::optional<silkworm::Bytes>> read_historical_account(const evmc::address& address, uint64_t block_number) const;
 
-    boost::asio::awaitable<std::optional<silkworm::Bytes>> read_historical_storage(const evmc::address& address, uint64_t incarnation,
-                                                                                   const evmc::bytes32& location_hash, uint64_t block_number) const;
+    [[nodiscard]] awaitable<std::optional<silkworm::Bytes>> read_historical_storage(const evmc::address& address, uint64_t incarnation,
+                                                                                    const evmc::bytes32& location_hash, uint64_t block_number) const;
 
   private:
     const core::rawdb::DatabaseReader& db_reader_;
 };
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

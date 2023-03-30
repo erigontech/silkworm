@@ -70,7 +70,6 @@ set(LIBS_PRIVATE
     protobuf::libprotobuf
     OpenSSL::Crypto
     Snappy::snappy
-    silkpre
     silkworm_core
     silkworm_interfaces
     silkworm-buildinfo

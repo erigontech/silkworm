@@ -23,7 +23,6 @@
 #include <intx/intx.hpp>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/infra/common/binary_search.hpp>
 #include <silkworm/silkrpc/common/binary_search.hpp>
 #include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
@@ -33,23 +32,21 @@
 #include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/core/receipts.hpp>
-#include <silkworm/silkrpc/ethdb/kv/cached_database.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 ErigonRpcApi::ErigonRpcApi(Context& context)
     : context_(context),
       backend_(context.backend()),
       block_cache_(context.block_cache()),
-      state_cache_(context.state_cache()),
       database_(context.database()) {}
 
 // https://eth.wiki/json-rpc/API#erigon_getBlockByTimestamp
 boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::json& request, nlohmann::json& reply) {
     // Decode request parameters
-    const auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid erigon_getBlockByTimestamp params: " + params.dump();
         SILKRPC_ERROR << error_msg << "\n";
@@ -82,7 +79,7 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(
         } else if (first_header.timestamp >= timestamp) {
             block_number = core::kEarliestBlockNumber;
         } else {
-            // Good-ol' binary search to find the lowest block header matching timestamp
+            // Good-old binary search to find the lowest block header matching timestamp
             const auto matching_block_number = co_await binary_search(current_block_number, [&](uint64_t i) -> boost::asio::awaitable<bool> {
                 const auto header = co_await core::rawdb::read_header_by_number(tx_database, i);
                 co_return header.timestamp >= timestamp;
@@ -117,7 +114,7 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(
 
 // https://eth.wiki/json-rpc/API#erigon_getHeaderByHash
 boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_get_header_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid erigon_getHeaderByHash params: " + params.dump();
         SILKRPC_ERROR << error_msg << "\n";
@@ -149,7 +146,7 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_get_header_by_hash(cons
 
 // https://eth.wiki/json-rpc/API#erigon_getHeaderByNumber
 boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_get_header_by_number(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid erigon_getHeaderByNumber params: " + params.dump();
         SILKRPC_ERROR << error_msg << "\n";
@@ -190,9 +187,9 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_get_header_by_number(co
 
 // https://eth.wiki/json-rpc/API#erigon_getlogsbyhash
 boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 1) {
-        auto error_msg = "invalid erigon_getHeaderByHash params: " + params.dump();
+        auto error_msg = "invalid erigon_getLogsByHash params: " + params.dump();
         SILKRPC_ERROR << error_msg << "\n";
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
@@ -237,7 +234,7 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_forks(const nlohmann::j
     try {
         ethdb::TransactionDatabase tx_database{*tx};
 
-        const auto chain_config{co_await silkrpc::core::rawdb::read_chain_config(tx_database)};
+        const auto chain_config{co_await core::rawdb::read_chain_config(tx_database)};
         SILKRPC_DEBUG << "chain config: " << chain_config << "\n";
 
         Forks forks{chain_config};
@@ -257,7 +254,7 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_forks(const nlohmann::j
 
 // https://eth.wiki/json-rpc/API#erigon_WatchTheBurn
 boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid erigon_watchTheBurn params: " + params.dump();
         SILKRPC_ERROR << error_msg << "\n";
@@ -272,7 +269,7 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nl
     try {
         ethdb::TransactionDatabase tx_database{*tx};
 
-        const auto chain_config{co_await silkrpc::core::rawdb::read_chain_config(tx_database)};
+        const auto chain_config{co_await core::rawdb::read_chain_config(tx_database)};
         SILKRPC_DEBUG << "chain config: " << chain_config << "\n";
 
         Issuance issuance{};  // default is empty: no PoW => no issuance
@@ -327,9 +324,9 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nl
 
 // https://eth.wiki/json-rpc/API#erigon_blockNumber
 boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_block_number(const nlohmann::json& request, nlohmann::json& reply) {
-    const auto params = request["params"];
+    const auto& params = request["params"];
     std::string block_id;
-    if (params.size() == 0) {
+    if (params.empty()) {
         block_id = core::kLatestExecutedBlockId;
     } else if (params.size() == 1) {
         block_id = params[0];
@@ -361,7 +358,7 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_block_number(const nloh
 
 // https://eth.wiki/json-rpc/API#erigon_cumulativeChainTraffic
 boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_cumulative_chain_traffic(const nlohmann::json& request, nlohmann::json& reply) {
-    const auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid erigon_cumulativeChainTraffic params: " + params.dump();
         SILKRPC_ERROR << error_msg << "\n";
@@ -413,4 +410,4 @@ boost::asio::awaitable<void> ErigonRpcApi::handle_erigon_node_info(const nlohman
     co_return;
 }
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

@@ -20,11 +20,11 @@
 
 #include <silkworm/silkrpc/common/log.hpp>
 
-namespace silkrpc {
+namespace silkworm {
 
 TEST_CASE("print grpc::Status", "[silkrpc][grpc][util]") {
     CHECK_NOTHROW(null_stream() << grpc::Status::OK);
     CHECK_NOTHROW(null_stream() << grpc::Status::CANCELLED);
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm

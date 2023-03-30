@@ -22,7 +22,7 @@
 
 #include <silkworm/silkrpc/common/log.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 TEST_CASE("StringWriter", "[silkrpc]") {
     SILKRPC_LOG_STREAMS(null_stream(), null_stream());
@@ -51,7 +51,7 @@ TEST_CASE("ChunksWriter", "[silkrpc]") {
     SILKRPC_LOG_STREAMS(std::cout, null_stream());
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    SECTION("write&close under chunck size") {
+    SECTION("write&close under chunk size") {
         StringWriter s_writer;
         ChunksWriter writer(s_writer);
 
@@ -60,7 +60,7 @@ TEST_CASE("ChunksWriter", "[silkrpc]") {
 
         CHECK(s_writer.get_content() == "4\r\n1234\r\n0\r\n\r\n");
     }
-    SECTION("write over chunck size 4") {
+    SECTION("write over chunk size 4") {
         StringWriter s_writer;
         ChunksWriter writer(s_writer, 4);
 
@@ -68,7 +68,7 @@ TEST_CASE("ChunksWriter", "[silkrpc]") {
 
         CHECK(s_writer.get_content() == "4\r\n1234\r\n4\r\n5678\r\n");
     }
-    SECTION("write&close over chunck size 4") {
+    SECTION("write&close over chunk size 4") {
         StringWriter s_writer;
         ChunksWriter writer(s_writer, 4);
 
@@ -77,7 +77,7 @@ TEST_CASE("ChunksWriter", "[silkrpc]") {
 
         CHECK(s_writer.get_content() == "4\r\n1234\r\n4\r\n5678\r\n2\r\n90\r\n0\r\n\r\n");
     }
-    SECTION("write over chunck size 5") {
+    SECTION("write over chunk size 5") {
         StringWriter s_writer;
         ChunksWriter writer(s_writer, 5);
 
@@ -85,7 +85,7 @@ TEST_CASE("ChunksWriter", "[silkrpc]") {
 
         CHECK(s_writer.get_content() == "5\r\n12345\r\n5\r\n67890\r\n");
     }
-    SECTION("write&close over chunck size 5") {
+    SECTION("write&close over chunk size 5") {
         StringWriter s_writer;
         ChunksWriter writer(s_writer, 5);
 
@@ -103,4 +103,4 @@ TEST_CASE("ChunksWriter", "[silkrpc]") {
         CHECK(s_writer.get_content() == "0\r\n\r\n");
     }
 }
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

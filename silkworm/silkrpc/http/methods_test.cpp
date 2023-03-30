@@ -18,8 +18,8 @@
 
 #include <catch2/catch.hpp>
 
-namespace silkrpc::http::method {
+namespace silkworm::rpc::http::method {
 
 using Catch::Matchers::Message;
 
-}  // namespace silkrpc::http::method
+}  // namespace silkworm::rpc::http::method

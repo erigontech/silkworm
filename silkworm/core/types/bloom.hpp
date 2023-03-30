@@ -29,6 +29,9 @@ inline constexpr size_t kBloomByteLength{256};
 
 using Bloom = std::array<uint8_t, kBloomByteLength>;
 
+//! See Section 4.3.1 "Transaction Receipt" of the Yellow Paper
+void m3_2048(Bloom& bloom, ByteView x);
+
 Bloom logs_bloom(const std::vector<Log>& logs);
 
 inline void join(Bloom& sum, const Bloom& addend) {

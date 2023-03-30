@@ -29,7 +29,7 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 struct Transaction : public silkworm::Transaction {
     evmc::bytes32 block_hash;
@@ -81,4 +81,4 @@ using TransactionContent = std::map<std::string, std::map<std::string, std::map<
 std::ostream& operator<<(std::ostream& out, const Transaction& t);
 std::ostream& operator<<(std::ostream& out, const silkworm::Transaction& t);
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

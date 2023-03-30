@@ -21,13 +21,13 @@
 #include <silkworm/silkrpc/common/clock_time.hpp>
 #include <silkworm/silkrpc/grpc/unary_rpc.hpp>
 
-namespace silkrpc::txpool {
+namespace silkworm::rpc::txpool {
 
 TransactionPool::TransactionPool(boost::asio::io_context& context, std::shared_ptr<grpc::Channel> channel, agrpc::GrpcContext& grpc_context)
     : TransactionPool(context.get_executor(), ::txpool::Txpool::NewStub(channel, grpc::StubOptions()), grpc_context) {}
 
 TransactionPool::TransactionPool(boost::asio::io_context::executor_type executor, std::unique_ptr<::txpool::Txpool::StubInterface> stub, agrpc::GrpcContext& grpc_context)
-    : executor_(executor), stub_(std::move(stub)), grpc_context_(grpc_context) {
+    : executor_(std::move(executor)), stub_(std::move(stub)), grpc_context_(grpc_context) {
     SILKRPC_TRACE << "TransactionPool::ctor " << this << "\n";
 }
 
@@ -177,4 +177,4 @@ types::H128* TransactionPool::H128_from_bytes(const uint8_t* bytes) {
     return h128;
 }
 
-}  // namespace silkrpc::txpool
+}  // namespace silkworm::rpc::txpool

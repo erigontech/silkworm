@@ -19,12 +19,11 @@
 #include <string>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 // https://eth.wiki/json-rpc/API#web3_clientversion
 boost::asio::awaitable<void> Web3RpcApi::handle_web3_client_version(const nlohmann::json& request, nlohmann::json& reply) {
@@ -64,4 +63,4 @@ boost::asio::awaitable<void> Web3RpcApi::handle_web3_sha3(const nlohmann::json& 
     co_return;
 }
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

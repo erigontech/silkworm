@@ -32,20 +32,22 @@
 
 #include "../common/common.hpp"
 
+using namespace silkworm;
 using namespace silkworm::cmd;
+using namespace silkworm::rpc;
 
-ABSL_FLAG(std::string, chaindata, silkrpc::kEmptyChainData, "chain data path as string");
-ABSL_FLAG(std::string, http_port, silkrpc::kDefaultHttpPort, "Ethereum JSON RPC API local end-point as string <address>:<port>");
-ABSL_FLAG(std::string, engine_port, silkrpc::kDefaultEnginePort, "Engine JSON RPC API local end-point as string <address>:<port>");
-ABSL_FLAG(std::string, target, silkrpc::kDefaultTarget, "Erigon Core gRPC service location as string <address>:<port>");
-ABSL_FLAG(std::string, api_spec, silkrpc::kDefaultEth1ApiSpec, "JSON RPC API namespaces as comma-separated list of strings");
+ABSL_FLAG(std::string, chaindata, kEmptyChainData, "chain data path as string");
+ABSL_FLAG(std::string, http_port, kDefaultHttpPort, "Ethereum JSON RPC API local end-point as string <address>:<port>");
+ABSL_FLAG(std::string, engine_port, kDefaultEnginePort, "Engine JSON RPC API local end-point as string <address>:<port>");
+ABSL_FLAG(std::string, target, kDefaultTarget, "Erigon Core gRPC service location as string <address>:<port>");
+ABSL_FLAG(std::string, api_spec, kDefaultEth1ApiSpec, "JSON RPC API namespaces as comma-separated list of strings");
 ABSL_FLAG(uint32_t, num_contexts, std::thread::hardware_concurrency() / 3, "number of running I/O contexts as 32-bit integer");
 ABSL_FLAG(uint32_t, num_workers, 16, "number of worker threads as 32-bit integer");
-ABSL_FLAG(uint32_t, timeout, silkrpc::kDefaultTimeout.count(), "gRPC call timeout as 32-bit integer");
-ABSL_FLAG(silkrpc::LogLevel, log_verbosity, silkrpc::LogLevel::Critical, "logging verbosity level");
-ABSL_FLAG(silkrpc::WaitMode, wait_mode, silkrpc::WaitMode::blocking, "scheduler wait mode");
-ABSL_FLAG(std::string, jwt_secret_file, silkrpc::kDefaultJwtFilename, "Token file to ensure safe connection between CL and EL");
-ABSL_FLAG(std::string, datadir, silkrpc::kDefaultDataDir, "DB Path");
+ABSL_FLAG(uint32_t, timeout, kDefaultTimeout.count(), "gRPC call timeout as 32-bit integer");
+ABSL_FLAG(LogLevel, log_verbosity, LogLevel::Critical, "logging verbosity level");
+ABSL_FLAG(strategy::WaitMode, wait_mode, strategy::WaitMode::blocking, "scheduler wait mode");
+ABSL_FLAG(std::string, jwt_secret_file, kDefaultJwtFilename, "Token file to ensure safe connection between CL and EL");
+ABSL_FLAG(std::string, datadir, kDefaultDataDir, "DB Path");
 
 //! Assemble the application version using the Cable build information
 std::string get_version_from_build_info() {
@@ -70,7 +72,7 @@ std::string get_library_versions() {
     return library_versions;
 }
 
-silkrpc::DaemonSettings parse_args(int argc, char* argv[]) {
+DaemonSettings parse_args(int argc, char* argv[]) {
     absl::FlagsUsageConfig config;
     config.contains_helpshort_flags = [](absl::string_view) { return false; };
     config.contains_help_flags = [](absl::string_view filename) { return absl::EndsWith(filename, "main.cpp"); };
@@ -86,7 +88,7 @@ silkrpc::DaemonSettings parse_args(int argc, char* argv[]) {
     if (!datadir.empty()) {
         datadir_optional = datadir;
     }
-    silkrpc::DaemonSettings rpc_daemon_settings{
+    DaemonSettings rpc_daemon_settings{
         datadir_optional,
         absl::GetFlag(FLAGS_http_port),
         absl::GetFlag(FLAGS_engine_port),
@@ -102,5 +104,5 @@ silkrpc::DaemonSettings parse_args(int argc, char* argv[]) {
 }
 
 int main(int argc, char* argv[]) {
-    return silkrpc::Daemon::run(parse_args(argc, argv), {get_name_from_build_info(), get_library_versions()});
+    return Daemon::run(parse_args(argc, argv), {get_name_from_build_info(), get_library_versions()});
 }

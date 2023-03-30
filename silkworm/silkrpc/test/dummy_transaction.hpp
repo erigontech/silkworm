@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include <boost/asio/awaitable.hpp>
 
@@ -25,14 +26,15 @@
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
 
-namespace silkrpc::test {
+namespace silkworm::rpc::test {
 
 //! This dummy transaction just gives you the same cursor over and over again.
 class DummyTransaction : public ethdb::Transaction {
   public:
-    explicit DummyTransaction(uint64_t tx_id, std::shared_ptr<ethdb::CursorDupSort> cursor) : tx_id_(tx_id), cursor_(cursor) {}
+    explicit DummyTransaction(uint64_t tx_id, std::shared_ptr<ethdb::CursorDupSort> cursor)
+        : tx_id_(tx_id), cursor_(std::move(cursor)) {}
 
-    uint64_t tx_id() const override { return tx_id_; }
+    [[nodiscard]] uint64_t tx_id() const override { return tx_id_; }
 
     boost::asio::awaitable<void> open() override { co_return; }
 
@@ -51,4 +53,4 @@ class DummyTransaction : public ethdb::Transaction {
     std::shared_ptr<ethdb::CursorDupSort> cursor_;
 };
 
-}  // namespace silkrpc::test
+}  // namespace silkworm::rpc::test

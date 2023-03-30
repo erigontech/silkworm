@@ -18,24 +18,20 @@
 
 #include <algorithm>
 #include <utility>
-#include <vector>
 
-#include <boost/asio/awaitable.hpp>
-#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
-#include <boost/asio/use_awaitable.hpp>
-#include <boost/asio/use_future.hpp>
 #include <boost/asio/write.hpp>
 
 #include <silkworm/silkrpc/common/log.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
-const std::string chunck_sep{'\r', '\n'};                     // NOLINT(runtime/string)
-const std::string final_chunck{'0', '\r', '\n', '\r', '\n'};  // NOLINT(runtime/string)
+const std::string kChunkSep{'\r', '\n'};                     // NOLINT(runtime/string)
+const std::string kFinalChunk{'0', '\r', '\n', '\r', '\n'};  // NOLINT(runtime/string)
 
-ChunksWriter::ChunksWriter(Writer& writer, std::size_t chunck_size) : writer_(writer), chunck_size_(chunck_size), available_(chunck_size), buffer_{new char[chunck_size_]} {
-    std::memset(buffer_.get(), 0, chunck_size_);
+ChunksWriter::ChunksWriter(Writer& writer, std::size_t chunck_size)
+    : writer_(writer), chunk_size_(chunck_size), available_(chunck_size), buffer_{new char[chunk_size_]} {
+    std::memset(buffer_.get(), 0, chunk_size_);
 }
 
 void ChunksWriter::write(const std::string& content) {
@@ -47,7 +43,7 @@ void ChunksWriter::write(const std::string& content) {
                   << std::endl
                   << std::flush;
 
-    char* buffer_start = buffer_.get() + (chunck_size_ - available_);
+    char* buffer_start = buffer_.get() + (chunk_size_ - available_);
     if (available_ > size) {
         std::strncpy(buffer_start, c_str, size);
         available_ -= size;
@@ -71,12 +67,12 @@ void ChunksWriter::write(const std::string& content) {
 
 void ChunksWriter::close() {
     flush();
-    writer_.write(final_chunck);
+    writer_.write(kFinalChunk);
     writer_.close();
 }
 
 void ChunksWriter::flush() {
-    auto size = chunck_size_ - available_;
+    auto size = chunk_size_ - available_;
     SILKRPC_DEBUG << "ChunksWriter::flush available_: " << available_
                   << " size: " << size
                   << std::endl
@@ -89,10 +85,10 @@ void ChunksWriter::flush() {
         writer_.write(stream.str());
         std::string str{buffer_.get(), size};
         writer_.write(str);
-        writer_.write(chunck_sep);
+        writer_.write(kChunkSep);
     }
-    available_ = chunck_size_;
-    std::memset(buffer_.get(), 0, chunck_size_);
+    available_ = chunk_size_;
+    std::memset(buffer_.get(), 0, chunk_size_);
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

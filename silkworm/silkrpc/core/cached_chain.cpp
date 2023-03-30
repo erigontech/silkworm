@@ -19,9 +19,9 @@
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 
-namespace silkrpc::core {
+namespace silkworm::rpc::core {
 
-boost::asio::awaitable<silkworm::BlockWithHash> read_block_by_number(BlockCache& cache, const rawdb::DatabaseReader& reader, uint64_t block_number) {
+awaitable<BlockWithHash> read_block_by_number(BlockCache& cache, const rawdb::DatabaseReader& reader, uint64_t block_number) {
     const auto block_hash = co_await rawdb::read_canonical_block_hash(reader, block_number);
     const auto cached_block = cache.get(block_hash);
     if (cached_block) {
@@ -36,7 +36,7 @@ boost::asio::awaitable<silkworm::BlockWithHash> read_block_by_number(BlockCache&
     co_return block_with_hash;
 }
 
-boost::asio::awaitable<silkworm::BlockWithHash> read_block_by_hash(BlockCache& cache, const rawdb::DatabaseReader& reader, const evmc::bytes32& block_hash) {
+awaitable<BlockWithHash> read_block_by_hash(BlockCache& cache, const rawdb::DatabaseReader& reader, const evmc::bytes32& block_hash) {
     const auto cached_block = cache.get(block_hash);
     if (cached_block) {
         co_return cached_block.value();
@@ -50,8 +50,8 @@ boost::asio::awaitable<silkworm::BlockWithHash> read_block_by_hash(BlockCache& c
     co_return block_with_hash;
 }
 
-boost::asio::awaitable<silkworm::BlockWithHash> read_block_by_number_or_hash(BlockCache& cache, const rawdb::DatabaseReader& reader, const silkrpc::BlockNumberOrHash& bnoh) {
-    if (bnoh.is_number()) {
+awaitable<BlockWithHash> read_block_by_number_or_hash(BlockCache& cache, const rawdb::DatabaseReader& reader, const BlockNumberOrHash& bnoh) {
+    if (bnoh.is_number()) {  // NOLINT(bugprone-branch-clone)
         co_return co_await read_block_by_number(cache, reader, bnoh.number());
     } else if (bnoh.is_hash()) {
         co_return co_await read_block_by_hash(cache, reader, bnoh.hash());
@@ -62,12 +62,12 @@ boost::asio::awaitable<silkworm::BlockWithHash> read_block_by_number_or_hash(Blo
     throw std::runtime_error{"invalid block_number_or_hash value"};
 }
 
-boost::asio::awaitable<silkworm::BlockWithHash> read_block_by_transaction_hash(BlockCache& cache, const rawdb::DatabaseReader& reader, const evmc::bytes32& transaction_hash) {
+awaitable<BlockWithHash> read_block_by_transaction_hash(BlockCache& cache, const rawdb::DatabaseReader& reader, const evmc::bytes32& transaction_hash) {
     auto block_number = co_await rawdb::read_block_number_by_transaction_hash(reader, transaction_hash);
     co_return co_await read_block_by_number(cache, reader, block_number);
 }
 
-boost::asio::awaitable<std::optional<silkrpc::TransactionWithBlock>> read_transaction_by_hash(BlockCache& cache, const rawdb::DatabaseReader& reader, const evmc::bytes32& transaction_hash) {
+awaitable<std::optional<TransactionWithBlock>> read_transaction_by_hash(BlockCache& cache, const rawdb::DatabaseReader& reader, const evmc::bytes32& transaction_hash) {
     auto block_number = co_await rawdb::read_block_number_by_transaction_hash(reader, transaction_hash);
     auto block_with_hash = co_await read_block_by_number(cache, reader, block_number);
     const silkworm::ByteView tx_hash{transaction_hash.bytes, silkworm::kHashLength};
@@ -86,4 +86,4 @@ boost::asio::awaitable<std::optional<silkrpc::TransactionWithBlock>> read_transa
     co_return std::nullopt;
 }
 
-}  // namespace silkrpc::core
+}  // namespace silkworm::rpc::core

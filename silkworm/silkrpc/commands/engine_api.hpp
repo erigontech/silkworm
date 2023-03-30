@@ -27,11 +27,11 @@
 #include <silkworm/silkrpc/ethbackend/backend.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::http {
 class RequestHandler;
 }
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 class EngineRpcApi {
   public:
@@ -52,7 +52,7 @@ class EngineRpcApi {
     std::unique_ptr<ethbackend::BackEnd>& backend_;
     std::unique_ptr<ethdb::Database>& database_;
 
-    friend class silkrpc::http::RequestHandler;
+    friend class silkworm::http::RequestHandler;
 };
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

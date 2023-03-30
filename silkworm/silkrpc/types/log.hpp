@@ -27,7 +27,7 @@
 #pragma GCC diagnostic pop
 #include <silkworm/core/common/base.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 struct Log {
     /* raw fields */
@@ -91,4 +91,4 @@ struct GlazeLogJson {
 
 std::ostream& operator<<(std::ostream& out, const Log& log);
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

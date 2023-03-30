@@ -29,16 +29,16 @@
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::http {
 class RequestHandler;
 }
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 class ErigonRpcApi {
   public:
     explicit ErigonRpcApi(Context& context);
-    virtual ~ErigonRpcApi() {}
+    virtual ~ErigonRpcApi() = default;
 
     ErigonRpcApi(const ErigonRpcApi&) = delete;
     ErigonRpcApi& operator=(const ErigonRpcApi&) = delete;
@@ -58,10 +58,9 @@ class ErigonRpcApi {
     Context& context_;
     std::unique_ptr<ethbackend::BackEnd>& backend_;
     std::shared_ptr<BlockCache>& block_cache_;
-    std::shared_ptr<ethdb::kv::StateCache>& state_cache_;
     std::unique_ptr<ethdb::Database>& database_;
 
-    friend class silkrpc::http::RequestHandler;
+    friend class silkworm::http::RequestHandler;
 };
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

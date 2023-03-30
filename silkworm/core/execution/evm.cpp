@@ -27,10 +27,10 @@
 #include <evmone/evmone.h>
 #include <evmone/tracing.hpp>
 #include <evmone/vm.hpp>
-#include <silkpre/precompile.h>
 
 #include <silkworm/core/chain/protocol_param.hpp>
 #include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/execution/precompile.hpp>
 
 namespace silkworm {
 
@@ -189,12 +189,12 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
 }
 
 evmc::Result EVM::call(const evmc_message& message) noexcept {
-    evmc_result res{evmc_make_result(EVMC_SUCCESS, message.gas, 0, nullptr, 0)};
+    evmc::Result res{EVMC_SUCCESS, message.gas};
 
     const auto value{intx::be::load<intx::uint256>(message.value)};
     if (message.kind != EVMC_DELEGATECALL && state_.get_balance(message.sender) < value) {
         res.status_code = EVMC_INSUFFICIENT_BALANCE;
-        return evmc::Result{res};
+        return res;
     }
 
     const auto snapshot{state_.take_snapshot()};
@@ -212,18 +212,15 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
 
     if (is_precompiled(message.code_address)) {
         const uint8_t num{message.code_address.bytes[kAddressLength - 1]};
-        SilkpreContract contract{kSilkpreContracts[num - 1]};
+        precompile::Contract contract{precompile::kContracts[num - 1]};
         const ByteView input{message.input_data, message.input_size};
-        const int64_t gas{static_cast<int64_t>(contract.gas(input.data(), input.length(), revision()))};
+        const int64_t gas{static_cast<int64_t>(contract.gas(input, revision()))};
         if (gas < 0 || gas > message.gas) {
             res.status_code = EVMC_OUT_OF_GAS;
         } else {
-            SilkpreOutput output{contract.run(input.data(), input.length())};
-            if (output.data) {
-                res.gas_left -= gas;
-                res.output_size = output.size;
-                res.output_data = output.data;
-                res.release = evmc_free_result_memory;
+            const std::optional<Bytes> output{contract.run(input)};
+            if (output) {
+                res = evmc::Result{EVMC_SUCCESS, message.gas - gas, 0, output->data(), output->size()};
             } else {
                 res.status_code = EVMC_PRECOMPILE_FAILURE;
             }
@@ -235,11 +232,11 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
     } else {
         const ByteView code{state_.get_code(message.code_address)};
         if (code.empty() && tracers_.empty()) {  // Do not skip execution if there are any tracers
-            return evmc::Result{res};
+            return res;
         }
 
         const evmc::bytes32 code_hash{state_.get_code_hash(message.code_address)};
-        res = execute(message, code, &code_hash);
+        res = evmc::Result{execute(message, code, &code_hash)};
     }
 
     if (res.status_code != EVMC_SUCCESS) {
@@ -250,7 +247,7 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
         }
     }
 
-    return evmc::Result{res};
+    return res;
 }
 
 evmc_result EVM::execute(const evmc_message& msg, ByteView code, const evmc::bytes32* code_hash) noexcept {
@@ -352,11 +349,11 @@ uint8_t EVM::number_of_precompiles() const noexcept {
     const evmc_revision rev{revision()};
 
     if (rev >= EVMC_ISTANBUL) {
-        return SILKPRE_NUMBER_OF_ISTANBUL_CONTRACTS;
+        return precompile::kNumOfIstanbulContracts;
     } else if (rev >= EVMC_BYZANTIUM) {
-        return SILKPRE_NUMBER_OF_BYZANTIUM_CONTRACTS;
+        return precompile::kNumOfByzantiumContracts;
     } else {
-        return SILKPRE_NUMBER_OF_FRONTIER_CONTRACTS;
+        return precompile::kNumOfFrontierContracts;
     }
 }
 

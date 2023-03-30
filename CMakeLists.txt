@@ -136,142 +136,36 @@ endif()
 
 if(NOT SILKWORM_CORE_ONLY)
   # Silence CMake policy warnings in submodules
-
   set(CMAKE_POLICY_DEFAULT_CMP0048 NEW) # project() command manages VERSION variables
   set(CMAKE_POLICY_DEFAULT_CMP0063 NEW) # Honor visibility properties for all target types
 
-  # Roaring Bitmaps
-  option(ENABLE_ROARING_TESTS "" OFF)
-  option(ROARING_BUILD_STATIC "Build a static library" ON)
-  if(NOT MSVC)
-    # Not supported on MSVC
-    option(ROARING_LINK_STATIC "Link executables (tests, benchmarks) statically" ON)
-  endif()
-  add_subdirectory(third_party/CRoaring EXCLUDE_FROM_ALL)
-
-  # CBOR
-  add_subdirectory(third_party/cbor-cpp)
-
-  # GLAZE
-  add_subdirectory(third_party/glaze)
-endif()
-
-# evmone with dependencies
-if(SILKWORM_WASM_API)
-  add_compile_definitions(EVMC_LOADER_MOCK)
-endif()
-
-find_package(intx REQUIRED) # Required from here below
-find_package(ethash REQUIRED) # Required from here below
-
-add_subdirectory(third_party/evmone/evmc)
-
-add_library(
-  evmone
-  third_party/evmone/lib/evmone/advanced_analysis.cpp
-  third_party/evmone/lib/evmone/advanced_analysis.hpp
-  third_party/evmone/lib/evmone/advanced_execution.cpp
-  third_party/evmone/lib/evmone/advanced_execution.hpp
-  third_party/evmone/lib/evmone/advanced_instructions.cpp
-  third_party/evmone/lib/evmone/baseline_instruction_table.cpp
-  third_party/evmone/lib/evmone/baseline_instruction_table.hpp
-  third_party/evmone/lib/evmone/baseline.cpp
-  third_party/evmone/lib/evmone/baseline.hpp
-  third_party/evmone/lib/evmone/eof.cpp
-  third_party/evmone/lib/evmone/eof.hpp
-  third_party/evmone/lib/evmone/execution_state.hpp
-  third_party/evmone/lib/evmone/instructions_calls.cpp
-  third_party/evmone/lib/evmone/instructions_opcodes.hpp
-  third_party/evmone/lib/evmone/instructions_storage.cpp
-  third_party/evmone/lib/evmone/instructions_traits.hpp
-  third_party/evmone/lib/evmone/instructions_xmacro.hpp
-  third_party/evmone/lib/evmone/instructions.hpp
-  third_party/evmone/lib/evmone/opcodes_helpers.h
-  third_party/evmone/lib/evmone/tracing.cpp
-  third_party/evmone/lib/evmone/tracing.hpp
-  third_party/evmone/lib/evmone/vm.cpp
-  third_party/evmone/lib/evmone/vm.hpp
-)
-set_source_files_properties(
-  third_party/evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.10.0-dev"
-)
-target_include_directories(evmone PUBLIC third_party/evmone/include third_party/evmone/lib)
-target_link_libraries(
-  evmone
-  PUBLIC evmc intx::intx
-  PRIVATE evmc::instructions
-)
-
-if(MSVC)
-  target_compile_options(evmone PRIVATE /EHsc /w)
-else()
-  target_compile_options(evmone PRIVATE -fno-exceptions)
-endif()
-
-# MDBX
-if(NOT SILKWORM_CORE_ONLY)
-  set(MDBX_ENABLE_TESTS OFF)
-  add_subdirectory(third_party/libmdbx)
-  target_include_directories(mdbx-static INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libmdbx)
-endif()
-
-if(NOT MSVC)
-  set(GMP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/gmplib")
-  set(GMP_INSTALL_DIR "${CMAKE_BINARY_DIR}/third_party/gmplib")
-
-  set(GMP_INCLUDE_DIR
-      "${GMP_INSTALL_DIR}"
-      CACHE PATH ""
-  )
-  set(GMP_LIBRARY
-      "${GMP_INSTALL_DIR}/lib/libgmp.a"
-      CACHE FILEPATH ""
-  )
-
-  include(ExternalProject)
-  ExternalProject_Add(
-    gmplib
-    SOURCE_DIR "${GMP_SOURCE_DIR}"
-    BINARY_DIR "${GMP_INSTALL_DIR}"
-    CONFIGURE_COMMAND "${GMP_SOURCE_DIR}/configure" "--prefix=${GMP_INSTALL_DIR}" --with-pic=yes
-    PREFIX "${GMP_INSTALL_DIR}"
-    BUILD_BYPRODUCTS "${GMP_LIBRARY}"
-  )
-endif()
-
-# libtorrent
-if(NOT SILKWORM_CORE_ONLY)
   find_package(Boost REQUIRED)
   # Define Boost::headers target if missing because libtorrent needs it
   if(NOT TARGET Boost::headers)
     add_library(Boost::headers INTERFACE IMPORTED)
     target_include_directories(Boost::headers INTERFACE ${Boost_INCLUDE_DIRS})
   endif()
-  add_subdirectory(third_party/libtorrent)
-  target_compile_options(torrent-rasterbar PRIVATE -w)
 endif()
 
-add_subdirectory(third_party/silkpre)
-add_subdirectory(third_party/tomlplusplus)
+find_package(intx REQUIRED)
+find_package(ethash REQUIRED)
 
-if(NOT MSVC)
-  add_dependencies(silkpre gmplib)
-  add_dependencies(ff gmplib)
-endif()
+add_subdirectory(third_party)
 
 # Compiler enforcements on Silkworm
 if(NOT MSVC)
   add_compile_options(-Werror -Wall -Wextra -pedantic)
   add_compile_options(-Wshadow -Wimplicit-fallthrough -Wsign-conversion)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>)
-  add_compile_options(-Wno-missing-field-initializers -Wnon-virtual-dtor)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wnon-virtual-dtor>)
+  add_compile_options(-Wno-missing-field-initializers)
 
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_compile_options(-Wno-attributes)
 
     # coroutines support
-    if((CMAKE_CXX_STANDARD GREATER_EQUAL 20) AND (NOT SILKWORM_WASM_API))
-      add_compile_options(-fcoroutines)
+    if(NOT SILKWORM_WASM_API)
+      add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fcoroutines>)
     endif()
   endif()
 

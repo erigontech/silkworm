@@ -21,10 +21,9 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/core/types/transaction.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using Catch::Matchers::Message;
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
@@ -216,4 +215,4 @@ TEST_CASE("check size of EIP-2718 block from RLP", "[silkrpc][types][block]") {
     CHECK_NOTHROW(null_stream() << rpc_block_with_hash);
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

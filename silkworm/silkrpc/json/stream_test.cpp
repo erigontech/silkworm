@@ -16,19 +16,18 @@
 
 #include "stream.hpp"
 
-#include <iostream>
-
 #include <catch2/catch.hpp>
 
 #include <silkworm/silkrpc/common/log.hpp>
 
-namespace json {
-TEST_CASE("JsonStream", "[json]") {
-    SILKRPC_LOG_STREAMS(silkrpc::null_stream(), silkrpc::null_stream());
-    SILKRPC_LOG_VERBOSITY(silkrpc::LogLevel::None);
+namespace silkworm::rpc::json {
 
-    silkrpc::StringWriter string_writer;
-    silkrpc::ChunksWriter chunks_writer(string_writer, 16);
+TEST_CASE("JsonStream", "[json]") {
+    SILKRPC_LOG_STREAMS(silkworm::null_stream(), silkworm::null_stream());
+    SILKRPC_LOG_VERBOSITY(silkworm::LogLevel::None);
+
+    StringWriter string_writer;
+    ChunksWriter chunks_writer(string_writer, 16);
 
     SECTION("write_json in string") {
         Stream stream(string_writer);
@@ -70,10 +69,10 @@ TEST_CASE("JsonStream", "[json]") {
 }
 
 TEST_CASE("JsonStream calls") {
-    SILKRPC_LOG_STREAMS(silkrpc::null_stream(), silkrpc::null_stream());
-    SILKRPC_LOG_VERBOSITY(silkrpc::LogLevel::None);
+    SILKRPC_LOG_STREAMS(silkworm::null_stream(), silkworm::null_stream());
+    SILKRPC_LOG_VERBOSITY(silkworm::LogLevel::None);
 
-    silkrpc::StringWriter string_writer;
+    StringWriter string_writer;
     Stream stream(string_writer);
 
     SECTION("write_json json") {
@@ -318,4 +317,4 @@ TEST_CASE("JsonStream calls") {
         CHECK(string_writer.get_content() == "[10,10.3,true]");
     }
 }
-}  // namespace json
+}  // namespace silkworm::rpc::json

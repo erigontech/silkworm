@@ -32,7 +32,7 @@
 #include <silkworm/core/types/bloom.hpp>
 #include <silkworm/core/types/transaction.hpp>
 
-namespace silkrpc {
+namespace silkworm {
 
 struct KeyValue {
     silkworm::Bytes key;
@@ -72,16 +72,24 @@ inline silkworm::ByteView full_view(const ethash::hash256& hash) { return {hash.
 
 const silkworm::ChainConfig* lookup_chain_config(uint64_t chain_id);
 
-}  // namespace silkrpc
+}  // namespace silkworm
 
 namespace silkworm {
+
+inline std::ostream& operator<<(std::ostream& out, ByteView bytes) {
+    for (const auto& b : bytes) {
+        out << std::hex << std::setw(2) << std::setfill('0') << int(b);
+    }
+    out << std::dec;
+    return out;
+}
 
 inline ByteView byte_view_of_string(const std::string& s) {
     return {reinterpret_cast<const uint8_t*>(s.data()), s.length()};
 }
 
 inline Bytes bytes_of_string(const std::string& s) {
-    return Bytes(s.begin(), s.end());
+    return {s.begin(), s.end()};
 }
 
 inline evmc::bytes32 bytes32_from_hex(const std::string& s) {
@@ -104,16 +112,8 @@ inline auto hash_of(const silkworm::ByteView& bytes) {
 
 inline auto hash_of_transaction(const silkworm::Transaction& txn) {
     silkworm::Bytes txn_rlp{};
-    silkworm::rlp::encode(txn_rlp, txn, /*for_signing=*/false, /*wrap_eip2718_as_array=*/false);
+    silkworm::rlp::encode(txn_rlp, txn, /*for_signing=*/false, /*wrap_eip2718_into_string=*/false);
     return ethash::keccak256(txn_rlp.data(), txn_rlp.length());
-}
-
-inline std::ostream& operator<<(std::ostream& out, silkworm::ByteView bytes) {
-    for (const auto& b : bytes) {
-        out << std::hex << std::setw(2) << std::setfill('0') << int(b);
-    }
-    out << std::dec;
-    return out;
 }
 
 namespace evmc {
@@ -138,14 +138,16 @@ inline std::ostream& operator<<(std::ostream& out, const uint<N>& value) {
 }
 }  // namespace intx
 
-inline std::ostream& operator<<(std::ostream& out, const boost::asio::const_buffer& buffer) {
+namespace boost::asio {
+inline std::ostream& operator<<(std::ostream& out, const const_buffer& buffer) {
     out << std::string{static_cast<const char*>(buffer.data()), buffer.size()};
     return out;
 }
 
-inline std::ostream& operator<<(std::ostream& out, const std::vector<boost::asio::const_buffer>& buffers) {
+inline std::ostream& operator<<(std::ostream& out, const std::vector<const_buffer>& buffers) {
     for (const auto buffer : buffers) {
         out << buffer;
     }
     return out;
 }
+}  // namespace boost::asio

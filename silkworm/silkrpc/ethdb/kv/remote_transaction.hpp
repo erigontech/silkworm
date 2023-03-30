@@ -33,13 +33,14 @@
 #include <silkworm/silkrpc/ethdb/kv/rpc.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
 
-namespace silkrpc::ethdb::kv {
+namespace silkworm::rpc::ethdb::kv {
 
 class RemoteTransaction : public Transaction {
   public:
-    explicit RemoteTransaction(remote::KV::StubInterface& stub, agrpc::GrpcContext& grpc_context);
+    explicit RemoteTransaction(remote::KV::StubInterface& stub, agrpc::GrpcContext& grpc_context)
+        : tx_rpc_{stub, grpc_context} {}
 
-    ~RemoteTransaction();
+    ~RemoteTransaction() override = default;
 
     uint64_t tx_id() const override { return tx_id_; }
 
@@ -57,7 +58,7 @@ class RemoteTransaction : public Transaction {
     std::map<std::string, std::shared_ptr<CursorDupSort>> cursors_;
     std::map<std::string, std::shared_ptr<CursorDupSort>> dup_cursors_;
     TxRpc tx_rpc_;
-    uint64_t tx_id_;
+    uint64_t tx_id_{0};
 };
 
-}  // namespace silkrpc::ethdb::kv
+}  // namespace silkworm::rpc::ethdb::kv

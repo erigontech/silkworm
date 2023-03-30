@@ -21,7 +21,7 @@
 
 #include <absl/strings/string_view.h>
 
-namespace silkrpc {
+namespace silkworm {
 
 // available verbosity levels
 enum class LogLevel {
@@ -48,39 +48,41 @@ class log_ {
   public:
     explicit log_(LogLevel level) : level_(level) { log_mtx_.lock(); }
     ~log_() { log_mtx_.unlock(); }
-    std::ostream& header_(LogLevel);
+
     template <class T>
     std::ostream& operator<<(const T& message) {
-        return header_(level_) << message;
+        return header(level_) << message;
     }
 
   private:
+    static std::ostream& header(LogLevel);
+
     LogLevel level_;
     static std::mutex log_mtx_;
 };
 
-using Logger = log_;
+using Logger [[maybe_unused]] = log_;
 
 bool AbslParseFlag(absl::string_view text, LogLevel* level, std::string* error);
 std::string AbslUnparseFlag(LogLevel level);
 
-}  // namespace silkrpc
+}  // namespace silkworm
 
-#define LOG(level_)                           \
-    if ((level_) < silkrpc::log_verbosity_) { \
-    } else                                    \
-        silkrpc::log_(level_) << " "  // NOLINT
+#define LOG(level_)                            \
+    if ((level_) < silkworm::log_verbosity_) { \
+    } else                                     \
+        silkworm::log_(level_) << " "  // NOLINT
 
-#define SILKRPC_TRACE LOG(silkrpc::LogLevel::Trace)
-#define SILKRPC_DEBUG LOG(silkrpc::LogLevel::Debug)
-#define SILKRPC_INFO LOG(silkrpc::LogLevel::Info)
-#define SILKRPC_WARN LOG(silkrpc::LogLevel::Warn)
-#define SILKRPC_ERROR LOG(silkrpc::LogLevel::Error)
-#define SILKRPC_CRIT LOG(silkrpc::LogLevel::Critical)
-#define SILKRPC_LOG LOG(silkrpc::LogLevel::None)
+#define SILKRPC_TRACE LOG(silkworm::LogLevel::Trace)
+#define SILKRPC_DEBUG LOG(silkworm::LogLevel::Debug)
+#define SILKRPC_INFO LOG(silkworm::LogLevel::Info)
+#define SILKRPC_WARN LOG(silkworm::LogLevel::Warn)
+#define SILKRPC_ERROR LOG(silkworm::LogLevel::Error)
+#define SILKRPC_CRIT LOG(silkworm::LogLevel::Critical)
+#define SILKRPC_LOG LOG(silkworm::LogLevel::None)
 
-#define SILKRPC_LOG_VERBOSITY(level_) (silkrpc::log_verbosity_ = (level_))
+#define SILKRPC_LOG_VERBOSITY(level_) (silkworm::log_verbosity_ = (level_))
 
-#define SILKRPC_LOG_THREAD(log_thread_) (silkrpc::log_thread_enabled_ = (log_thread_))
+#define SILKRPC_LOG_THREAD(log_thread_) (silkworm::log_thread_enabled_ = (log_thread_))
 
-#define SILKRPC_LOG_STREAMS(stream1_, stream2_) silkrpc::log_set_streams_((stream1_), (stream2_))
+#define SILKRPC_LOG_STREAMS(stream1_, stream2_) silkworm::log_set_streams_((stream1_), (stream2_))

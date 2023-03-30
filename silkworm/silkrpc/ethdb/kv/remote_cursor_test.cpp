@@ -18,9 +18,6 @@
 
 #include <future>
 
-#include <agrpc/test.hpp>
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/io_context.hpp>
 #include <boost/asio/use_future.hpp>
 #include <catch2/catch.hpp>
 #include <gmock/gmock.h>
@@ -28,10 +25,9 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/test/grpc_actions.hpp>
 #include <silkworm/silkrpc/test/grpc_matcher.hpp>
-#include <silkworm/silkrpc/test/grpc_responder.hpp>
 #include <silkworm/silkrpc/test/kv_test_base.hpp>
 
-namespace silkrpc::ethdb::kv {
+namespace silkworm::rpc::ethdb::kv {
 
 using testing::_;
 using testing::AllOf;
@@ -730,4 +726,4 @@ TEST_CASE_METHOD(RemoteCursorTest, "RemoteCursor::seek_both_exact", "[silkrpc][e
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc::ethdb::kv
+}  // namespace silkworm::rpc::ethdb::kv

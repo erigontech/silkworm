@@ -18,11 +18,8 @@
 
 #include <algorithm>
 #include <string>
-#include <vector>
 
-#include <boost/asio/write.hpp>
-
-namespace json {
+namespace silkworm::rpc::json {
 
 static std::uint8_t kObjectOpen = 1;
 static std::uint8_t kArrayOpen = 2;
@@ -114,4 +111,4 @@ void Stream::ensure_separator() {
     }
 }
 
-}  // namespace json
+}  // namespace silkworm::rpc::json

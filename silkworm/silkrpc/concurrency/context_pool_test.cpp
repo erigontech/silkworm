@@ -25,10 +25,9 @@
 #include <catch2/catch.hpp>
 #include <grpcpp/grpcpp.h>
 
-#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using Catch::Matchers::Message;
 
@@ -44,10 +43,15 @@ TEST_CASE("Context", "[silkrpc][context_pool]") {
 
     auto block_cache = std::make_shared<BlockCache>();
     auto state_cache = std::make_shared<ethdb::kv::CoherentStateCache>();
-    filter::FilterStorage filter_storage{0x400};
+    FilterStorage filter_storage{0x400};
 
-    WaitMode all_wait_modes[] = {
-        WaitMode::backoff, WaitMode::blocking, WaitMode::sleeping, WaitMode::yielding, WaitMode::spin_wait, WaitMode::busy_spin};
+    strategy::WaitMode all_wait_modes[] = {
+        strategy::WaitMode::backoff,
+        strategy::WaitMode::blocking,
+        strategy::WaitMode::sleeping,
+        strategy::WaitMode::yielding,
+        strategy::WaitMode::spin_wait,
+        strategy::WaitMode::busy_spin};
     for (auto wait_mode : all_wait_modes) {
         SECTION(std::string("Context::Context wait_mode=") + std::to_string(static_cast<int>(wait_mode))) {
             Context context{create_channel(), block_cache, state_cache, filter_storage, {}, wait_mode};
@@ -89,7 +93,7 @@ TEST_CASE("Context with chain_env", "[silkrpc][context_pool]") {
     std::shared_ptr<mdbx::env_managed> chain_env = std::make_shared<mdbx::env_managed>();
     auto block_cache = std::make_shared<BlockCache>();
     auto state_cache = std::make_shared<ethdb::kv::CoherentStateCache>();
-    filter::FilterStorage filter_storage{0x400};
+    FilterStorage filter_storage{0x400};
 
     Context context{create_channel(), block_cache, state_cache, filter_storage, chain_env};
     std::atomic_bool processed{false};
@@ -245,4 +249,4 @@ TEST_CASE("print context pool", "[silkrpc][context_pool]") {
 
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

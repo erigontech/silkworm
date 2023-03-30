@@ -27,19 +27,21 @@
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
 #include <silkworm/silkrpc/test/dummy_transaction.hpp>
 
-namespace silkrpc::test {
+namespace silkworm::rpc::test {
 
 //! This dummy database acts as a factory for dummy transactions using the same cursor.
 class DummyDatabase : public ethdb::Database {
   public:
-    explicit DummyDatabase(std::shared_ptr<ethdb::Cursor> cursor) : cursor_(cursor) {}
+    explicit DummyDatabase(uint64_t tx_id, std::shared_ptr<ethdb::CursorDupSort> cursor)
+        : tx_id_(tx_id), cursor_(std::move(cursor)) {}
 
     boost::asio::awaitable<std::unique_ptr<ethdb::Transaction>> begin() override {
-        co_return std::make_unique<DummyTransaction>(cursor_);
+        co_return std::make_unique<DummyTransaction>(tx_id_, cursor_);
     }
 
   private:
-    std::shared_ptr<ethdb::Cursor> cursor_;
+    uint64_t tx_id_;
+    std::shared_ptr<ethdb::CursorDupSort> cursor_;
 };
 
-}  // namespace silkrpc::test
+}  // namespace silkworm::rpc::test

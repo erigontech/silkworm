@@ -22,7 +22,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 static std::string optional_uint256_to_string(std::optional<intx::uint256> u) {
     return silkworm::to_hex(silkworm::endian::to_big_compact(u.value_or(intx::uint256{})));
@@ -40,4 +40,4 @@ std::ostream& operator<<(std::ostream& out, const Call& call) {
     return out;
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

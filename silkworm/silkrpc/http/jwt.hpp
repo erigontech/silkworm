@@ -18,13 +18,12 @@
 
 #include <string>
 
-namespace silkrpc {
+namespace silkworm {
 
-// generates jwt token
+//! Generate a new JSON Web Token (JWT) secret
 void generate_jwt_token(const std::string& file_path, std::string& jwt_token);
 
-// load a jwt secret token from provided file path
-// if the file doesn't contain the jwt secret token then we generate one
+//! Load a JWT secret token from provided file path. If the file doesn't contain the token then we generate one
 bool load_jwt_token(const std::string& file_path, std::string& jwt_token);
 
-}  // namespace silkrpc
+}  // namespace silkworm

@@ -19,7 +19,7 @@
 #include <catch2/catch.hpp>
 #include <grpcpp/grpcpp.h>
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 using Catch::Matchers::Message;
 
@@ -32,4 +32,4 @@ TEST_CASE("Web3RpcApi::Web3RpcApi", "[silkrpc][erigon_api]") {
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

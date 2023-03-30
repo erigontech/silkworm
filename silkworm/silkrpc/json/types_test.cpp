@@ -27,7 +27,6 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/db/prune_mode.hpp>
 
 namespace {
 #ifdef _WIN32
@@ -37,7 +36,7 @@ const auto invalidArgumentMessage = "Invalid argument";
 #endif
 }  // namespace
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using Catch::Matchers::Message;
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
@@ -123,7 +122,7 @@ TEST_CASE("serialize AccessListResult with error", "[silkrpc][to_json]") {
 }
 
 TEST_CASE("serialize TxPoolStatusInfo", "[silkrpc][to_json]") {
-    TxPoolStatusInfo status_info;
+    TxPoolStatusInfo status_info{};
     status_info.pending = 0x7;
     status_info.queued = 0x8;
     status_info.base_fee = 0x9;
@@ -268,7 +267,7 @@ TEST_CASE("serialize block header with baseFeePerGas", "[silkrpc][to_json]") {
 }
 
 TEST_CASE("serialize block with baseFeePerGas", "[silkrpc][to_json]") {
-    silkrpc::Block rpc_block{
+    silkworm::rpc::Block rpc_block{
         { /* BlockWithHash */
          {/* Block */
           {
@@ -373,7 +372,7 @@ TEST_CASE("serialize block with baseFeePerGas", "[silkrpc][to_json]") {
 }
 
 TEST_CASE("serialize empty block", "[silkrpc][to_json]") {
-    silkrpc::Block block{};
+    silkworm::rpc::Block block{};
     nlohmann::json j = block;
     CHECK(j == R"({
         "parentHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -425,7 +424,7 @@ TEST_CASE("serialize EIP-2718 block", "[silkrpc][to_json]") {
     silkworm::Bytes rlp_bytes{*silkworm::from_hex(rlp_hex)};
     silkworm::ByteView view{rlp_bytes};
 
-    silkrpc::Block rpc_block;
+    silkworm::rpc::Block rpc_block;
     REQUIRE(silkworm::rlp::decode(view, rpc_block.block));
 
     nlohmann::json rpc_block_json = rpc_block;
@@ -515,7 +514,7 @@ TEST_CASE("serialize block with hydrated transactions", "[silkrpc][to_json]") {
     REQUIRE(silkworm::rlp::decode(tx2_view, tx2));
 
     // 1.4) build the full block
-    silkrpc::Block rpc_block{
+    silkworm::rpc::Block rpc_block{
         {
             // BlockWithHash
             /*.block =*/{
@@ -635,7 +634,7 @@ TEST_CASE("serialize block body with ommers", "[silkrpc][to_json]") {
     silkworm::Bytes rlp_bytes{*silkworm::from_hex(rlp_hex)};
     silkworm::ByteView in{rlp_bytes};
 
-    silkrpc::Block rpc_block;
+    silkworm::rpc::Block rpc_block;
     silkworm::BlockBody block_body;
     REQUIRE(silkworm::rlp::decode(in, block_body));
     rpc_block.block.ommers = block_body.ommers;
@@ -779,7 +778,7 @@ TEST_CASE("serialize legacy transaction (type=0)", "[silkrpc][to_json]") {
         "value":"0x7a69"
     })"_json);
 
-    silkrpc::Transaction txn2{
+    silkworm::rpc::Transaction txn2{
         {
             silkworm::Transaction::Type::kLegacy,                                                                    // type
             0,                                                                                                       // nonce
@@ -819,7 +818,7 @@ TEST_CASE("serialize legacy transaction (type=0)", "[silkrpc][to_json]") {
         "v":"0x1c",
         "value":"0x7a69"
     })"_json);
-    silkrpc::Transaction txn3{
+    silkworm::rpc::Transaction txn3{
         {
             silkworm::Transaction::Type::kLegacy,                                                                    // type
             0,                                                                                                       // nonce
@@ -904,7 +903,7 @@ TEST_CASE("serialize EIP-2930 transaction (type=1)", "[silkrpc][to_json]") {
         {0xbb9bc244d798123fde783fcc1c72d3bb8c189413_address, {}},
     };
 
-    silkrpc::Transaction txn2{
+    silkworm::rpc::Transaction txn2{
         {
             silkworm::Transaction::Type::kEip2930,
             0,
@@ -1185,7 +1184,7 @@ TEST_CASE("deserialize array receipt", "[silkrpc][from_json]") {
     CHECK(r.cumulative_gas_used == 123456);
 }
 
-TEST_CASE("serialize empty receipt", "[silkrpc::json][to_json]") {
+TEST_CASE("serialize empty receipt", "[silkworm::json][to_json]") {
     Receipt r{};
     nlohmann::json j = r;
     CHECK(j == R"({
@@ -1212,7 +1211,7 @@ TEST_CASE("serialize empty receipt", "[silkrpc::json][to_json]") {
     })"_json);
 }
 
-TEST_CASE("serialize receipt", "[silkrpc::json][to_json]") {
+TEST_CASE("serialize receipt", "[silkworm::json][to_json]") {
     Receipt r{
         true,
         454647,
@@ -1254,40 +1253,40 @@ TEST_CASE("serialize receipt", "[silkrpc::json][to_json]") {
     })"_json);
 }
 
-TEST_CASE("serialize empty filter", "[silkrpc::json][to_json]") {
+TEST_CASE("serialize empty filter", "[silkworm::json][to_json]") {
     Filter f{"0", "0", FilterAddresses{}, FilterTopics(2), ""};
     nlohmann::json j = f;
     CHECK(j == R"({"blockHash":"","fromBlock":"0","toBlock":"0","topics":[[], []]})"_json);
 }
 
-TEST_CASE("serialize filter with one address", "[silkrpc::json][to_json]") {
+TEST_CASE("serialize filter with one address", "[silkworm::json][to_json]") {
     Filter f;
     f.addresses = {{0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address}};
     nlohmann::json j = f;
     CHECK(j == R"({"address":"0x007fb8417eb9ad4d958b050fc3720d5b46a2c053"})"_json);
 }
 
-TEST_CASE("serialize filter with fromBlock and toBlock", "[silkrpc::json][to_json]") {
+TEST_CASE("serialize filter with fromBlock and toBlock", "[silkworm::json][to_json]") {
     Filter f{"1000", "2000", FilterAddresses{}, FilterTopics(2), ""};
     nlohmann::json j = f;
     CHECK(j == R"({"blockHash":"","fromBlock":"1000","toBlock":"2000","topics":[[], []]})"_json);
 }
 
-TEST_CASE("deserialize null filter", "[silkrpc::json][from_json]") {
+TEST_CASE("deserialize null filter", "[silkworm::json][from_json]") {
     auto j1 = R"({})"_json;
     auto f1 = j1.get<Filter>();
     CHECK(f1.from_block == std::nullopt);
     CHECK(f1.to_block == std::nullopt);
 }
 
-TEST_CASE("deserialize empty filter", "[silkrpc::json][from_json]") {
+TEST_CASE("deserialize empty filter", "[silkworm::json][from_json]") {
     auto j1 = R"({"address":["",""],"blockHash":"","fromBlock":0,"toBlock":0,"topics":[["",""], ["",""]]})"_json;
     auto f1 = j1.get<Filter>();
     CHECK(f1.from_block == "0x0");
     CHECK(f1.to_block == "0x0");
 }
 
-TEST_CASE("deserialize filter with topic", "[silkrpc::json][from_json]") {
+TEST_CASE("deserialize filter with topic", "[silkworm::json][from_json]") {
     auto j = R"({
         "address": "0x6090a6e47849629b7245dfa1ca21d94cd15878ef",
         "fromBlock": "0x3d0000",
@@ -1307,7 +1306,7 @@ TEST_CASE("deserialize filter with topic", "[silkrpc::json][from_json]") {
     CHECK(f.block_hash == std::nullopt);
 }
 
-TEST_CASE("deserialize filter with topic null", "[silkrpc::json][from_json]") {
+TEST_CASE("deserialize filter with topic null", "[silkworm::json][from_json]") {
     auto j = R"({
         "address": "0x6090a6e47849629b7245dfa1ca21d94cd15878ef",
         "fromBlock": "0x3d0000",
@@ -1321,12 +1320,12 @@ TEST_CASE("deserialize filter with topic null", "[silkrpc::json][from_json]") {
     CHECK(f.block_hash == std::nullopt);
 }
 
-TEST_CASE("deserialize null call", "[silkrpc::json][from_json]") {
+TEST_CASE("deserialize null call", "[silkworm::json][from_json]") {
     auto j1 = R"({})"_json;
     CHECK_NOTHROW(j1.get<Call>());
 }
 
-TEST_CASE("deserialize minimal call", "[silkrpc::json][from_json]") {
+TEST_CASE("deserialize minimal call", "[silkworm::json][from_json]") {
     auto j1 = R"({
         "to": "0x0715a7794a1dc8e42615f059dd6e406a6594651a"
     })"_json;
@@ -1340,10 +1339,10 @@ TEST_CASE("deserialize minimal call", "[silkrpc::json][from_json]") {
     CHECK(c1.value == std::nullopt);
     CHECK(c1.data == std::nullopt);
     CHECK(c1.nonce == std::nullopt);
-    CHECK(c1.access_list.size() == 0);
+    CHECK(c1.access_list.empty());
 }
 
-TEST_CASE("deserialize full call", "[silkrpc::json][from_json]") {
+TEST_CASE("deserialize full call", "[silkworm::json][from_json]") {
     auto j1 = R"({
         "from": "0x52c24586c31cff0485a6208bb63859290fba5bce",
         "to": "0x0715a7794a1dc8e42615f059dd6e406a6594651a",
@@ -1392,7 +1391,7 @@ TEST_CASE("deserialize full call", "[silkrpc::json][from_json]") {
     CHECK(c2.nonce == intx::uint256{1});
 }
 
-TEST_CASE("deserialize block_number_or_hash", "[silkrpc::json][from_json]") {
+TEST_CASE("deserialize block_number_or_hash", "[silkworm::json][from_json]") {
     SECTION("as hash") {
         auto json = R"("0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c")"_json;
         auto bnoh = json.get<BlockNumberOrHash>();
@@ -1444,11 +1443,11 @@ TEST_CASE("deserialize block_number_or_hash", "[silkrpc::json][from_json]") {
     }
 }
 
-TEST_CASE("serialize zero forks", "[silkrpc::json][to_json]") {
-    silkrpc::ChainConfig cc{
+TEST_CASE("serialize zero forks", "[silkworm::json][to_json]") {
+    silkworm::rpc::ChainConfig cc{
         0x0000000000000000000000000000000000000000000000000000000000000000_bytes32,
         R"({"chainId":1,"ethash":{}})"_json};
-    silkrpc::Forks f{cc};
+    silkworm::rpc::Forks f{cc};
     nlohmann::json j = f;
     CHECK(j == R"({
         "genesis":"0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -1456,8 +1455,8 @@ TEST_CASE("serialize zero forks", "[silkrpc::json][to_json]") {
     })"_json);
 }
 
-TEST_CASE("serialize forks", "[silkrpc::json][to_json]") {
-    silkrpc::ChainConfig cc{
+TEST_CASE("serialize forks", "[silkworm::json][to_json]") {
+    silkworm::rpc::ChainConfig cc{
         0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32,
         R"({
             "berlinBlock":12244000,
@@ -1474,7 +1473,7 @@ TEST_CASE("serialize forks", "[silkrpc::json][to_json]") {
             "muirGlacierBlock":9200000,
             "petersburgBlock":7280000
         })"_json};
-    silkrpc::Forks f{cc};
+    silkworm::rpc::Forks f{cc};
     nlohmann::json j = f;
     CHECK(j == R"({
         "genesis":"0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c",
@@ -1483,8 +1482,8 @@ TEST_CASE("serialize forks", "[silkrpc::json][to_json]") {
     })"_json);
 }
 
-TEST_CASE("serialize empty issuance", "[silkrpc::json][to_json]") {
-    silkrpc::Issuance issuance{};
+TEST_CASE("serialize empty issuance", "[silkworm::json][to_json]") {
+    silkworm::rpc::Issuance issuance{};
     nlohmann::json j = issuance;
     CHECK(j == R"({
         "blockReward":null,
@@ -1497,8 +1496,8 @@ TEST_CASE("serialize empty issuance", "[silkrpc::json][to_json]") {
     })"_json);
 }
 
-TEST_CASE("serialize chain_traffic", "[silkrpc::json][to_json]") {
-    silkrpc::ChainTraffic chain_traffic{4, 5};
+TEST_CASE("serialize chain_traffic", "[silkworm::json][to_json]") {
+    silkworm::rpc::ChainTraffic chain_traffic{4, 5};
     nlohmann::json j = chain_traffic;
     CHECK(j == R"({
         "cumulativeGasUsed":"0x4",
@@ -1506,8 +1505,8 @@ TEST_CASE("serialize chain_traffic", "[silkrpc::json][to_json]") {
     })"_json);
 }
 
-TEST_CASE("serialize NodeInfoPorts", "[silkrpc::json][to_json]") {
-    silkrpc::NodeInfoPorts ports{6, 7};
+TEST_CASE("serialize NodeInfoPorts", "[silkworm::json][to_json]") {
+    silkworm::rpc::NodeInfoPorts ports{6, 7};
     nlohmann::json j = ports;
     CHECK(j == R"({
         "discovery":6,
@@ -1515,8 +1514,8 @@ TEST_CASE("serialize NodeInfoPorts", "[silkrpc::json][to_json]") {
     })"_json);
 }
 
-TEST_CASE("serialize NodeInfo", "[silkrpc::json][to_json]") {
-    silkrpc::NodeInfo node_info{"340", "erigon", "enode", "enr", "[::]:30303", "{\"eth\": {\"network\":5, \"difficulty\":10790000}}"};
+TEST_CASE("serialize NodeInfo", "[silkworm::json][to_json]") {
+    silkworm::rpc::NodeInfo node_info{"340", "erigon", "enode", "enr", "[::]:30303", R"({"eth": {"network":5, "difficulty":10790000}})"};
     nlohmann::json j = node_info;
     CHECK(j == R"( {
               "enode":"enode",
@@ -1530,8 +1529,8 @@ TEST_CASE("serialize NodeInfo", "[silkrpc::json][to_json]") {
     })"_json);
 }
 
-TEST_CASE("serialize issuance", "[silkrpc::json][to_json]") {
-    silkrpc::Issuance issuance{
+TEST_CASE("serialize issuance", "[silkworm::json][to_json]") {
+    silkworm::rpc::Issuance issuance{
         "0x0",
         "0x0",
         "0x0",
@@ -1551,9 +1550,9 @@ TEST_CASE("serialize issuance", "[silkrpc::json][to_json]") {
     })"_json);
 }
 
-TEST_CASE("serialize execution_payload", "[silkrpc::json][to_json]") {
+TEST_CASE("serialize execution_payload", "[silkworm::json][to_json]") {
     // uint64_t are kept as hex for readability
-    silkrpc::ExecutionPayload execution_payload{
+    silkworm::rpc::ExecutionPayload execution_payload{
         .number = 0x1,
         .timestamp = 0x5,
         .gas_limit = 0x1c9c380,
@@ -1585,9 +1584,9 @@ TEST_CASE("serialize execution_payload", "[silkrpc::json][to_json]") {
 })"_json);
 }
 
-TEST_CASE("deserialize execution_payload", "[silkrpc::json][to_json]") {
+TEST_CASE("deserialize execution_payload", "[silkworm::json][to_json]") {
     // uint64_t are kept as hex for readability
-    silkrpc::ExecutionPayload actual_payload = R"({
+    ExecutionPayload actual_payload = R"({
         "parentHash":"0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a",
         "feeRecipient":"0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
         "stateRoot":"0xca3149fa9e37db08d1cd49c9061db1002ef1cd58db2210f2115c8c989b2bdf45",
@@ -1604,7 +1603,7 @@ TEST_CASE("deserialize execution_payload", "[silkrpc::json][to_json]") {
         "transactions":["0xf92ebdeab45d368f6354e8c5a8ac586c"]
     })"_json;
     // expected deserialization result
-    silkrpc::ExecutionPayload expected_payload{
+    ExecutionPayload expected_payload{
         .number = 0x1,
         .timestamp = 0x5,
         .gas_limit = 0x1c9c380,
@@ -1632,8 +1631,8 @@ TEST_CASE("deserialize execution_payload", "[silkrpc::json][to_json]") {
     CHECK(actual_payload.transactions == expected_payload.transactions);
 }
 
-TEST_CASE("serialize forkchoice state", "[silkrpc::json][to_json]") {
-    silkrpc::ForkChoiceState forkchoice_state{
+TEST_CASE("serialize forkchoice state", "[silkworm::json][to_json]") {
+    ForkChoiceState forkchoice_state{
         .head_block_hash = 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32,
         .safe_block_hash = 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32,
         .finalized_block_hash = 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32};
@@ -1646,21 +1645,21 @@ TEST_CASE("serialize forkchoice state", "[silkrpc::json][to_json]") {
     })"_json);
 }
 
-TEST_CASE("deserialize forkchoice state", "[silkrpc::json][from_json]") {
+TEST_CASE("deserialize forkchoice state", "[silkworm::json][from_json]") {
     nlohmann::json j = R"({
         "headBlockHash":"0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858",
         "safeBlockHash":"0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858",
         "finalizedBlockHash":"0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858"
     })"_json;
 
-    silkrpc::ForkChoiceState forkchoice_state = j;
+    ForkChoiceState forkchoice_state = j;
     CHECK(forkchoice_state.head_block_hash == 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32);
     CHECK(forkchoice_state.safe_block_hash == 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32);
     CHECK(forkchoice_state.finalized_block_hash == 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32);
 }
 
-TEST_CASE("serialize payload attributes", "[silkrpc::json][to_json]") {
-    silkrpc::PayloadAttributes payload_attributes{
+TEST_CASE("serialize payload attributes", "[silkworm::json][to_json]") {
+    PayloadAttributes payload_attributes{
         .timestamp = 0x1,
         .prev_randao = 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32,
         .suggested_fee_recipient = 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address};
@@ -1673,26 +1672,26 @@ TEST_CASE("serialize payload attributes", "[silkrpc::json][to_json]") {
     })"_json);
 }
 
-TEST_CASE("deserialize payload attributes", "[silkrpc::json][from_json]") {
+TEST_CASE("deserialize payload attributes", "[silkworm::json][from_json]") {
     nlohmann::json j = R"({
         "timestamp":"0x1",
         "prevRandao":"0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858",
         "feeRecipient":"0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b"
     })"_json;
 
-    silkrpc::PayloadAttributes payload_attributes = j;
+    PayloadAttributes payload_attributes = j;
 
     CHECK(payload_attributes.timestamp == 0x1);
     CHECK(payload_attributes.prev_randao == 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32);
     CHECK(payload_attributes.suggested_fee_recipient == 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address);
 }
 
-TEST_CASE("serialize forkchoice updated reply", "[silkrpc::json][to_json]") {
-    silkrpc::PayloadStatus payload_status{
+TEST_CASE("serialize forkchoice updated reply", "[silkworm::json][to_json]") {
+    silkworm::rpc::PayloadStatus payload_status{
         .status = "VALID",
         .latest_valid_hash = 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32,
         .validation_error = "some error"};
-    silkrpc::ForkChoiceUpdatedReply forkchoice_update_reply{
+    silkworm::rpc::ForkChoiceUpdatedReply forkchoice_update_reply{
         .payload_status = payload_status,
         .payload_id = 0x1};
 
@@ -1707,8 +1706,8 @@ TEST_CASE("serialize forkchoice updated reply", "[silkrpc::json][to_json]") {
     })"_json);
 }
 
-TEST_CASE("serialize payload status", "[silkrpc::json][to_json]") {
-    silkrpc::PayloadStatus payload_status{
+TEST_CASE("serialize payload status", "[silkworm::json][to_json]") {
+    silkworm::rpc::PayloadStatus payload_status{
         .status = "VALID",
         .latest_valid_hash = 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32,
         .validation_error = "some error"};
@@ -1720,8 +1719,8 @@ TEST_CASE("serialize payload status", "[silkrpc::json][to_json]") {
     })"_json);
 }
 
-TEST_CASE("serialize transition configuration", "[silkrpc::json][to_json]") {
-    silkrpc::TransitionConfiguration transition_configuration{
+TEST_CASE("serialize transition configuration", "[silkworm::json][to_json]") {
+    TransitionConfiguration transition_configuration{
         .terminal_total_difficulty = 0xf4240,
         .terminal_block_hash = 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32,
         .terminal_block_number = 0x0};
@@ -1732,14 +1731,14 @@ TEST_CASE("serialize transition configuration", "[silkrpc::json][to_json]") {
     CHECK(j["terminalBlockNumber"] == "0x0");
 }
 
-TEST_CASE("deserialize transition configuration", "[silkrpc::json][from_json]") {
-    silkrpc::TransitionConfiguration actual_transition_configuration = R"({
+TEST_CASE("deserialize transition configuration", "[silkworm::json][from_json]") {
+    TransitionConfiguration actual_transition_configuration = R"({
         "terminalTotalDifficulty":"0xf4240",
         "terminalBlockHash":"0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858",
         "terminalBlockNumber":"0x0"
     })"_json;
 
-    silkrpc::TransitionConfiguration expected_transition_configuration{
+    TransitionConfiguration expected_transition_configuration{
         .terminal_total_difficulty = 0xf4240,
         .terminal_block_hash = 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32,
         .terminal_block_number = 0x0};
@@ -1749,8 +1748,8 @@ TEST_CASE("deserialize transition configuration", "[silkrpc::json][from_json]") 
     CHECK(actual_transition_configuration.terminal_block_number == expected_transition_configuration.terminal_block_number);
 }
 
-TEST_CASE("make empty json content", "[silkrpc::json][make_json_content]") {
-    const auto j = silkrpc::make_json_content(0, {});
+TEST_CASE("make empty json content", "[silkworm::json][make_json_content]") {
+    const auto j = make_json_content(0, {});
     CHECK(j == R"({
         "jsonrpc":"2.0",
         "id":0,
@@ -1758,9 +1757,9 @@ TEST_CASE("make empty json content", "[silkrpc::json][make_json_content]") {
     })"_json);
 }
 
-TEST_CASE("make json content", "[silkrpc::json][make_json_content]") {
+TEST_CASE("make json content", "[silkworm::json][make_json_content]") {
     nlohmann::json json_result = {{"currency", "ETH"}, {"value", 4.2}};
-    const auto j = silkrpc::make_json_content(123, json_result);
+    const auto j = make_json_content(123, json_result);
     CHECK(j == R"({
         "jsonrpc":"2.0",
         "id":123,
@@ -1768,8 +1767,8 @@ TEST_CASE("make json content", "[silkrpc::json][make_json_content]") {
     })"_json);
 }
 
-TEST_CASE("make empty json error", "[silkrpc::json][make_json_error]") {
-    const auto j = silkrpc::make_json_error(0, 0, "");
+TEST_CASE("make empty json error", "[silkworm::json][make_json_error]") {
+    const auto j = make_json_error(0, 0, "");
     CHECK(j == R"({
         "jsonrpc":"2.0",
         "id":0,
@@ -1777,8 +1776,8 @@ TEST_CASE("make empty json error", "[silkrpc::json][make_json_error]") {
     })"_json);
 }
 
-TEST_CASE("make empty json revert error", "[silkrpc::json][make_json_error]") {
-    const auto j = silkrpc::make_json_error(0, {{0, ""}, silkworm::Bytes{}});
+TEST_CASE("make empty json revert error", "[silkworm::json][make_json_error]") {
+    const auto j = make_json_error(0, {{0, ""}, silkworm::Bytes{}});
     CHECK(j == R"({
         "jsonrpc":"2.0",
         "id":0,
@@ -1786,8 +1785,8 @@ TEST_CASE("make empty json revert error", "[silkrpc::json][make_json_error]") {
     })"_json);
 }
 
-TEST_CASE("make json error", "[silkrpc::json][make_json_error]") {
-    const auto j = silkrpc::make_json_error(123, -32000, "revert");
+TEST_CASE("make json error", "[silkworm::json][make_json_error]") {
+    const auto j = make_json_error(123, -32000, "revert");
     CHECK(j == R"({
         "jsonrpc":"2.0",
         "id":123,
@@ -1795,8 +1794,8 @@ TEST_CASE("make json error", "[silkrpc::json][make_json_error]") {
     })"_json);
 }
 
-TEST_CASE("make json revert error", "[silkrpc::json][make_json_error]") {
-    const auto j = silkrpc::make_json_error(123, {{3, "execution reverted: Ownable: caller is not the owner"}, *silkworm::from_hex("0x00010203")});
+TEST_CASE("make json revert error", "[silkworm::json][make_json_error]") {
+    const auto j = make_json_error(123, {{3, "execution reverted: Ownable: caller is not the owner"}, *silkworm::from_hex("0x00010203")});
     CHECK(j == R"({
         "jsonrpc":"2.0",
         "id":123,
@@ -1804,4 +1803,4 @@ TEST_CASE("make json revert error", "[silkrpc::json][make_json_error]") {
     })"_json);
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

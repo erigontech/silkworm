@@ -23,13 +23,10 @@
 #include <vector>
 
 #include <catch2/catch.hpp>
-#include <grpcpp/grpcpp.h>
-
-#include <silkworm/silkrpc/common/log.hpp>
 
 using namespace std::chrono_literals;  // NOLINT(build/namespaces)
 
-namespace silkrpc {
+namespace silkworm::strategy {
 
 using Catch::Matchers::Message;
 
@@ -117,4 +114,4 @@ TEST_CASE("BusySpinWaitStrategy", "[silkrpc][context_pool]") {
     sleep_then_check_wait(wait_strategy, 10ms, 1);
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::strategy

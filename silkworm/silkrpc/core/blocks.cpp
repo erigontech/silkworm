@@ -22,22 +22,22 @@
 #include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/stagedsync/stages.hpp>
 
-namespace silkrpc::core {
+namespace silkworm::rpc::core {
 
 constexpr const char* kHeadBlockHash = "headBlockHash";
 constexpr const char* kFinalizedBlockHash = "finalizedBlockHash";
 constexpr const char* kSafeBlockHash = "safeBlockHash";
 
-boost::asio::awaitable<bool> is_latest_block_number(uint64_t block_number, const core::rawdb::DatabaseReader& db_reader) {
+boost::asio::awaitable<bool> is_latest_block_number(uint64_t block_number, const rawdb::DatabaseReader& db_reader) {
     const auto last_executed_block_number = co_await core::get_latest_executed_block_number(db_reader);
     co_return last_executed_block_number == block_number;
 }
 
-boost::asio::awaitable<uint64_t> get_block_number_by_tag(const std::string& block_id, const core::rawdb::DatabaseReader& reader) {
+boost::asio::awaitable<uint64_t> get_block_number_by_tag(const std::string& block_id, const rawdb::DatabaseReader& reader) {
     uint64_t block_number;
     if (block_id == kEarliestBlockId) {
         block_number = kEarliestBlockNumber;
-    } else if (block_id == kLatestBlockId || block_id == kPendingBlockId) {
+    } else if (block_id == kLatestBlockId || block_id == kPendingBlockId) {  // NOLINT(bugprone-branch-clone)
         block_number = co_await get_latest_block_number(reader);
     } else if (block_id == kFinalizedBlockId) {
         block_number = co_await get_forkchoice_finalized_block_number(reader);
@@ -50,16 +50,16 @@ boost::asio::awaitable<uint64_t> get_block_number_by_tag(const std::string& bloc
     co_return block_number;
 }
 
-boost::asio::awaitable<std::pair<uint64_t, bool>> get_block_number(const std::string& block_id, const core::rawdb::DatabaseReader& reader, bool latest_required) {
+boost::asio::awaitable<std::pair<uint64_t, bool>> get_block_number(const std::string& block_id, const rawdb::DatabaseReader& reader, bool latest_required) {
     uint64_t block_number;
     bool is_latest_block = false;
     bool check_if_latest = false;
     if (block_id == kEarliestBlockId) {
         block_number = kEarliestBlockNumber;
-    } else if (block_id == kLatestBlockId || block_id == kPendingBlockId) {
+    } else if (block_id == kLatestBlockId || block_id == kPendingBlockId) {  // NOLINT(bugprone-branch-clone)
         block_number = co_await get_latest_block_number(reader);
         is_latest_block = true;
-    } else if (block_id == kFinalizedBlockId) {
+    } else if (block_id == kFinalizedBlockId) {  // NOLINT(bugprone-branch-clone)
         block_number = co_await get_forkchoice_finalized_block_number(reader);
         check_if_latest = latest_required;
     } else if (block_id == kSafeBlockId) {
@@ -79,27 +79,27 @@ boost::asio::awaitable<std::pair<uint64_t, bool>> get_block_number(const std::st
     co_return std::make_pair(block_number, is_latest_block);
 }
 
-boost::asio::awaitable<uint64_t> get_block_number(const std::string& block_id, const core::rawdb::DatabaseReader& reader) {
+boost::asio::awaitable<uint64_t> get_block_number(const std::string& block_id, const rawdb::DatabaseReader& reader) {
     const auto [block_number, _] = co_await get_block_number(block_id, reader, /*latest_required=*/false);
     co_return block_number;
 }
 
-boost::asio::awaitable<uint64_t> get_current_block_number(const core::rawdb::DatabaseReader& reader) {
+boost::asio::awaitable<uint64_t> get_current_block_number(const rawdb::DatabaseReader& reader) {
     const auto current_block_number = co_await stages::get_sync_stage_progress(reader, stages::kFinish);
     co_return current_block_number;
 }
 
-boost::asio::awaitable<uint64_t> get_highest_block_number(const core::rawdb::DatabaseReader& reader) {
+boost::asio::awaitable<uint64_t> get_highest_block_number(const rawdb::DatabaseReader& reader) {
     const auto highest_block_number = co_await stages::get_sync_stage_progress(reader, stages::kHeaders);
     co_return highest_block_number;
 }
 
-boost::asio::awaitable<uint64_t> get_latest_executed_block_number(const core::rawdb::DatabaseReader& reader) {
+boost::asio::awaitable<uint64_t> get_latest_executed_block_number(const rawdb::DatabaseReader& reader) {
     const auto latest_executed_block_number = co_await stages::get_sync_stage_progress(reader, stages::kExecution);
     co_return latest_executed_block_number;
 }
 
-boost::asio::awaitable<uint64_t> get_latest_block_number(const core::rawdb::DatabaseReader& reader) {
+boost::asio::awaitable<uint64_t> get_latest_block_number(const rawdb::DatabaseReader& reader) {
     const auto kv_pair = co_await reader.get(db::table::kLastForkchoice, silkworm::bytes_of_string(kHeadBlockHash));
     const auto head_block_hash_data = kv_pair.value;
     if (!head_block_hash_data.empty()) {
@@ -112,7 +112,7 @@ boost::asio::awaitable<uint64_t> get_latest_block_number(const core::rawdb::Data
     co_return latest_block_number;
 }
 
-boost::asio::awaitable<uint64_t> get_forkchoice_finalized_block_number(const core::rawdb::DatabaseReader& reader) {
+boost::asio::awaitable<uint64_t> get_forkchoice_finalized_block_number(const rawdb::DatabaseReader& reader) {
     const auto kv_pair = co_await reader.get(db::table::kLastForkchoice, silkworm::bytes_of_string(kFinalizedBlockHash));
     const auto finalized_block_hash_data = kv_pair.value;
     if (finalized_block_hash_data.empty()) {
@@ -125,7 +125,7 @@ boost::asio::awaitable<uint64_t> get_forkchoice_finalized_block_number(const cor
     co_return finalized_header.number;
 }
 
-boost::asio::awaitable<uint64_t> get_forkchoice_safe_block_number(const core::rawdb::DatabaseReader& reader) {
+boost::asio::awaitable<uint64_t> get_forkchoice_safe_block_number(const rawdb::DatabaseReader& reader) {
     const auto kv_pair = co_await reader.get(db::table::kLastForkchoice, silkworm::bytes_of_string(kSafeBlockHash));
     const auto safe_block_hash_data = kv_pair.value;
     if (safe_block_hash_data.empty()) {
@@ -138,7 +138,7 @@ boost::asio::awaitable<uint64_t> get_forkchoice_safe_block_number(const core::ra
     co_return safe_block_header.number;
 }
 
-boost::asio::awaitable<bool> is_latest_block_number(const BlockNumberOrHash& bnoh, const core::rawdb::DatabaseReader& reader) {
+boost::asio::awaitable<bool> is_latest_block_number(const BlockNumberOrHash& bnoh, const rawdb::DatabaseReader& reader) {
     if (bnoh.is_tag()) {
         co_return bnoh.tag() == core::kLatestBlockId || bnoh.tag() == core::kPendingBlockId;
     } else {
@@ -153,4 +153,4 @@ boost::asio::awaitable<bool> is_latest_block_number(const BlockNumberOrHash& bno
     }
 }
 
-}  // namespace silkrpc::core
+}  // namespace silkworm::rpc::core

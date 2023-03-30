@@ -37,11 +37,11 @@
 #include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/dump_account.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc::core {
 
 class AccountDumper {
   public:
-    explicit AccountDumper(silkrpc::ethdb::Transaction& transaction) : transaction_(transaction) {}
+    explicit AccountDumper(ethdb::Transaction& transaction) : transaction_(transaction) {}
 
     AccountDumper(const AccountDumper&) = delete;
     AccountDumper& operator=(const AccountDumper&) = delete;
@@ -50,10 +50,10 @@ class AccountDumper {
                                                        bool exclude_code, bool exclude_storage);
 
   private:
-    boost::asio::awaitable<void> load_accounts(ethdb::TransactionDatabase& tx_database, const std::vector<silkrpc::KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code);
+    boost::asio::awaitable<void> load_accounts(ethdb::TransactionDatabase& tx_database, const std::vector<silkworm::KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code);
     boost::asio::awaitable<void> load_storage(uint64_t block_number, DumpAccounts& dump_accounts);
 
-    silkrpc::ethdb::Transaction& transaction_;
+    ethdb::Transaction& transaction_;
 };
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc::core

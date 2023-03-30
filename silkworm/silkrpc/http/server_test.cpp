@@ -19,7 +19,7 @@
 #include <catch2/catch.hpp>
 #include <grpcpp/grpcpp.h>
 
-namespace silkrpc::http {
+namespace silkworm::rpc::http {
 
 using Catch::Matchers::Message;
 
@@ -43,4 +43,4 @@ TEST_CASE("server creation", "[silkrpc][http][server]") {
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc::http
+}  // namespace silkworm::rpc::http

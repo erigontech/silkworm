@@ -16,9 +16,7 @@
 
 #include "cursor.hpp"
 
-#include <iostream>
 #include <string>
-#include <vector>
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/thread_pool.hpp>
@@ -28,7 +26,7 @@
 
 #include <silkworm/silkrpc/test/mock_cursor.hpp>
 
-namespace silkrpc::ethdb {
+namespace silkworm::rpc::ethdb {
 
 using Catch::Matchers::Message;
 using evmc::literals::operator""_bytes32;
@@ -38,7 +36,6 @@ using testing::InvokeWithoutArgs;
 
 static const silkworm::Bytes value{*silkworm::from_hex("0x000000000000000000000000000000000000000000000000000000000000001134567")};
 static const silkworm::Bytes empty_key{};
-static const silkworm::Bytes empty_value{};
 static const silkworm::Bytes short_key{*silkworm::from_hex("0x79a4d35bd00b1843ec5292217e71dace5e5")};
 static const silkworm::Bytes wrong_key_last_byte{*silkworm::from_hex("0x79a4d35bd00b1843ec5292217e71dace5e5a7430")};
 static const silkworm::Bytes wrong_key_first_byte{*silkworm::from_hex("0x59a4d35bd00b1843ec5292217e71dace5e5a7430")};
@@ -51,7 +48,7 @@ TEST_CASE("split cursor dup sort") {
     test::MockCursorDupSort csdp;
 
     SECTION("0 maching bits: seek_both, key not exists") {
-        SplitCursorDupSort sc(csdp, key, location, 0, silkworm::kAddressLength, silkworm::kAddressLength, 0);
+        SplitCursorDupSort sc(csdp, key, location, 0, silkworm::kAddressLength, 0);
 
         EXPECT_CALL(csdp, seek_both(_, _))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
@@ -61,14 +58,14 @@ TEST_CASE("split cursor dup sort") {
         const SplittedKeyValue& skv = result.get();
 
         CHECK(silkworm::to_hex(skv.key1) == silkworm::to_hex(key));
-        CHECK(silkworm::to_hex(skv.key2) == "");
-        CHECK(silkworm::to_hex(skv.key3) == "");
-        CHECK(silkworm::to_hex(skv.value) == "");
+        CHECK(silkworm::to_hex(skv.key2).empty());
+        CHECK(silkworm::to_hex(skv.key3).empty());
+        CHECK(silkworm::to_hex(skv.value).empty());
     }
 
     SECTION("evmc:.address maching bits: seek_both, key not exists") {
         SplitCursorDupSort sc(csdp, key, location, 8 * silkworm::kAddressLength, silkworm::kAddressLength,
-                              silkworm::kAddressLength, silkworm::kHashLength);
+                              silkworm::kHashLength);
 
         EXPECT_CALL(csdp, seek_both(_, _))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
@@ -77,15 +74,15 @@ TEST_CASE("split cursor dup sort") {
         auto result = boost::asio::co_spawn(pool, sc.seek_both(), boost::asio::use_future);
         const SplittedKeyValue& skv = result.get();
 
-        CHECK(silkworm::to_hex(skv.key1) == "");
-        CHECK(silkworm::to_hex(skv.key2) == "");
-        CHECK(silkworm::to_hex(skv.key3) == "");
-        CHECK(silkworm::to_hex(skv.value) == "");
+        CHECK(silkworm::to_hex(skv.key1).empty());
+        CHECK(silkworm::to_hex(skv.key2).empty());
+        CHECK(silkworm::to_hex(skv.key3).empty());
+        CHECK(silkworm::to_hex(skv.value).empty());
     }
 
     SECTION("evmc:.address odd maching bits: seek_both, key not exists") {
         SplitCursorDupSort sc(csdp, key, location, 153, silkworm::kAddressLength,
-                              silkworm::kAddressLength, silkworm::kHashLength);
+                              silkworm::kHashLength);
 
         EXPECT_CALL(csdp, seek_both(_, _))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
@@ -94,15 +91,15 @@ TEST_CASE("split cursor dup sort") {
         auto result = boost::asio::co_spawn(pool, sc.seek_both(), boost::asio::use_future);
         const SplittedKeyValue& skv = result.get();
 
-        CHECK(silkworm::to_hex(skv.key1) == "");
-        CHECK(silkworm::to_hex(skv.key2) == "");
-        CHECK(silkworm::to_hex(skv.key3) == "");
-        CHECK(silkworm::to_hex(skv.value) == "");
+        CHECK(silkworm::to_hex(skv.key1).empty());
+        CHECK(silkworm::to_hex(skv.key2).empty());
+        CHECK(silkworm::to_hex(skv.key3).empty());
+        CHECK(silkworm::to_hex(skv.value).empty());
     }
 
     SECTION("evmc:.address maching bits: seek_both, key exists") {
         SplitCursorDupSort sc(csdp, key, location, 8 * silkworm::kAddressLength, silkworm::kAddressLength,
-                              silkworm::kAddressLength, silkworm::kHashLength);
+                              silkworm::kHashLength);
 
         EXPECT_CALL(csdp, seek_both(_, _))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> {
@@ -113,13 +110,13 @@ TEST_CASE("split cursor dup sort") {
 
         CHECK(silkworm::to_hex(skv.key1) == silkworm::to_hex(key));
         CHECK(silkworm::to_hex(skv.key2) == silkworm::to_hex(location));
-        CHECK(silkworm::to_hex(skv.key3) == "");
+        CHECK(silkworm::to_hex(skv.key3).empty());
         CHECK(silkworm::to_hex(skv.value) == "134567");
     }
 
     SECTION("evmc:.address maching bits: next_dup, key exists short key") {
         SplitCursorDupSort sc(csdp, key, location, 8 * silkworm::kAddressLength, silkworm::kAddressLength,
-                              silkworm::kAddressLength, silkworm::kHashLength);
+                              silkworm::kHashLength);
 
         EXPECT_CALL(csdp, next_dup())
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
@@ -128,15 +125,15 @@ TEST_CASE("split cursor dup sort") {
         auto result = boost::asio::co_spawn(pool, sc.next_dup(), boost::asio::use_future);
         const SplittedKeyValue& skv = result.get();
 
-        CHECK(silkworm::to_hex(skv.key1) == "");
-        CHECK(silkworm::to_hex(skv.key2) == "");
-        CHECK(silkworm::to_hex(skv.key3) == "");
-        CHECK(silkworm::to_hex(skv.value) == "");
+        CHECK(silkworm::to_hex(skv.key1).empty());
+        CHECK(silkworm::to_hex(skv.key2).empty());
+        CHECK(silkworm::to_hex(skv.key3).empty());
+        CHECK(silkworm::to_hex(skv.value).empty());
     }
 
     SECTION("evmc:.address maching bits: next_dup, key exists empty key") {
         SplitCursorDupSort sc(csdp, key, location, 8 * silkworm::kAddressLength, silkworm::kAddressLength,
-                              silkworm::kAddressLength, silkworm::kHashLength);
+                              silkworm::kHashLength);
 
         EXPECT_CALL(csdp, next_dup())
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
@@ -145,15 +142,15 @@ TEST_CASE("split cursor dup sort") {
         auto result = boost::asio::co_spawn(pool, sc.next_dup(), boost::asio::use_future);
         const SplittedKeyValue& skv = result.get();
 
-        CHECK(silkworm::to_hex(skv.key1) == "");
-        CHECK(silkworm::to_hex(skv.key2) == "");
-        CHECK(silkworm::to_hex(skv.key3) == "");
-        CHECK(silkworm::to_hex(skv.value) == "");
+        CHECK(silkworm::to_hex(skv.key1).empty());
+        CHECK(silkworm::to_hex(skv.key2).empty());
+        CHECK(silkworm::to_hex(skv.key3).empty());
+        CHECK(silkworm::to_hex(skv.value).empty());
     }
 
     SECTION("evmc:.address maching bits: next_dup, key exists wrong key last byte") {
         SplitCursorDupSort sc(csdp, key, location, 8 * silkworm::kAddressLength, silkworm::kAddressLength,
-                              silkworm::kAddressLength, silkworm::kHashLength);
+                              silkworm::kHashLength);
 
         EXPECT_CALL(csdp, next_dup())
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
@@ -162,15 +159,15 @@ TEST_CASE("split cursor dup sort") {
         auto result = boost::asio::co_spawn(pool, sc.next_dup(), boost::asio::use_future);
         const SplittedKeyValue& skv = result.get();
 
-        CHECK(silkworm::to_hex(skv.key1) == "");
-        CHECK(silkworm::to_hex(skv.key2) == "");
-        CHECK(silkworm::to_hex(skv.key3) == "");
-        CHECK(silkworm::to_hex(skv.value) == "");
+        CHECK(silkworm::to_hex(skv.key1).empty());
+        CHECK(silkworm::to_hex(skv.key2).empty());
+        CHECK(silkworm::to_hex(skv.key3).empty());
+        CHECK(silkworm::to_hex(skv.value).empty());
     }
 
     SECTION("evmc:.address maching bits: next_dup, key exists wrong key first byte") {
         SplitCursorDupSort sc(csdp, key, location, 8 * silkworm::kAddressLength, silkworm::kAddressLength,
-                              silkworm::kAddressLength, silkworm::kHashLength);
+                              silkworm::kHashLength);
 
         EXPECT_CALL(csdp, next_dup())
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
@@ -179,10 +176,10 @@ TEST_CASE("split cursor dup sort") {
         auto result = boost::asio::co_spawn(pool, sc.next_dup(), boost::asio::use_future);
         const SplittedKeyValue& skv = result.get();
 
-        CHECK(silkworm::to_hex(skv.key1) == "");
-        CHECK(silkworm::to_hex(skv.key2) == "");
-        CHECK(silkworm::to_hex(skv.key3) == "");
-        CHECK(silkworm::to_hex(skv.value) == "");
+        CHECK(silkworm::to_hex(skv.key1).empty());
+        CHECK(silkworm::to_hex(skv.key2).empty());
+        CHECK(silkworm::to_hex(skv.key3).empty());
+        CHECK(silkworm::to_hex(skv.value).empty());
     }
 }
 
@@ -202,8 +199,8 @@ TEST_CASE("split cursor") {
 
         CHECK(silkworm::to_hex(skv.key1) == silkworm::to_hex(key));
         CHECK(silkworm::to_hex(skv.key2) == silkworm::to_hex(key));
-        CHECK(silkworm::to_hex(skv.key3) == "");
-        CHECK(silkworm::to_hex(skv.value) == "");
+        CHECK(silkworm::to_hex(skv.key3).empty());
+        CHECK(silkworm::to_hex(skv.value).empty());
     }
 
     SECTION("evmc:.address maching bits: seek, key not exists") {
@@ -216,10 +213,10 @@ TEST_CASE("split cursor") {
         auto result = boost::asio::co_spawn(pool, sc.seek(), boost::asio::use_future);
         const SplittedKeyValue& skv = result.get();
 
-        CHECK(silkworm::to_hex(skv.key1) == "");
-        CHECK(silkworm::to_hex(skv.key2) == "");
-        CHECK(silkworm::to_hex(skv.key3) == "");
-        CHECK(silkworm::to_hex(skv.value) == "");
+        CHECK(silkworm::to_hex(skv.key1).empty());
+        CHECK(silkworm::to_hex(skv.key2).empty());
+        CHECK(silkworm::to_hex(skv.key3).empty());
+        CHECK(silkworm::to_hex(skv.value).empty());
     }
 
     SECTION("evmc:.address odd maching bits: seek, key not exists") {
@@ -232,10 +229,10 @@ TEST_CASE("split cursor") {
         auto result = boost::asio::co_spawn(pool, sc.seek(), boost::asio::use_future);
         const SplittedKeyValue& skv = result.get();
 
-        CHECK(silkworm::to_hex(skv.key1) == "");
-        CHECK(silkworm::to_hex(skv.key2) == "");
-        CHECK(silkworm::to_hex(skv.key3) == "");
-        CHECK(silkworm::to_hex(skv.value) == "");
+        CHECK(silkworm::to_hex(skv.key1).empty());
+        CHECK(silkworm::to_hex(skv.key2).empty());
+        CHECK(silkworm::to_hex(skv.key3).empty());
+        CHECK(silkworm::to_hex(skv.value).empty());
     }
 
     SECTION("evmc:.address maching bits: seek, key exists") {
@@ -250,7 +247,7 @@ TEST_CASE("split cursor") {
 
         CHECK(silkworm::to_hex(skv.key1) == silkworm::to_hex(key));
         CHECK(silkworm::to_hex(skv.key2) == silkworm::to_hex(key));
-        CHECK(silkworm::to_hex(skv.key3) == "");
+        CHECK(silkworm::to_hex(skv.key3).empty());
         CHECK(silkworm::to_hex(skv.value) == "0000000000000000000000000000000000000000000000000000000000000001134567");
     }
 
@@ -264,10 +261,10 @@ TEST_CASE("split cursor") {
         auto result = boost::asio::co_spawn(pool, sc.next(), boost::asio::use_future);
         const SplittedKeyValue& skv = result.get();
 
-        CHECK(silkworm::to_hex(skv.key1) == "");
-        CHECK(silkworm::to_hex(skv.key2) == "");
-        CHECK(silkworm::to_hex(skv.key3) == "");
-        CHECK(silkworm::to_hex(skv.value) == "");
+        CHECK(silkworm::to_hex(skv.key1).empty());
+        CHECK(silkworm::to_hex(skv.key2).empty());
+        CHECK(silkworm::to_hex(skv.key3).empty());
+        CHECK(silkworm::to_hex(skv.value).empty());
     }
 
     SECTION("evmc:.address maching bits: next, empty key") {
@@ -280,10 +277,10 @@ TEST_CASE("split cursor") {
         auto result = boost::asio::co_spawn(pool, sc.next(), boost::asio::use_future);
         const SplittedKeyValue& skv = result.get();
 
-        CHECK(silkworm::to_hex(skv.key1) == "");
-        CHECK(silkworm::to_hex(skv.key2) == "");
-        CHECK(silkworm::to_hex(skv.key3) == "");
-        CHECK(silkworm::to_hex(skv.value) == "");
+        CHECK(silkworm::to_hex(skv.key1).empty());
+        CHECK(silkworm::to_hex(skv.key2).empty());
+        CHECK(silkworm::to_hex(skv.key3).empty());
+        CHECK(silkworm::to_hex(skv.value).empty());
     }
 
     SECTION("evmc:.address maching bits: next, key exists wrong key last byte") {
@@ -295,10 +292,10 @@ TEST_CASE("split cursor") {
         auto result = boost::asio::co_spawn(pool, sc.next(), boost::asio::use_future);
         const SplittedKeyValue& skv = result.get();
 
-        CHECK(silkworm::to_hex(skv.key1) == "");
-        CHECK(silkworm::to_hex(skv.key2) == "");
-        CHECK(silkworm::to_hex(skv.key3) == "");
-        CHECK(silkworm::to_hex(skv.value) == "");
+        CHECK(silkworm::to_hex(skv.key1).empty());
+        CHECK(silkworm::to_hex(skv.key2).empty());
+        CHECK(silkworm::to_hex(skv.key3).empty());
+        CHECK(silkworm::to_hex(skv.value).empty());
     }
 
     SECTION("evmc:.address maching bits: next, key exists wrong key first byte") {
@@ -311,10 +308,10 @@ TEST_CASE("split cursor") {
         auto result = boost::asio::co_spawn(pool, sc.next(), boost::asio::use_future);
         const SplittedKeyValue& skv = result.get();
 
-        CHECK(silkworm::to_hex(skv.key1) == "");
-        CHECK(silkworm::to_hex(skv.key2) == "");
-        CHECK(silkworm::to_hex(skv.key3) == "");
-        CHECK(silkworm::to_hex(skv.value) == "");
+        CHECK(silkworm::to_hex(skv.key1).empty());
+        CHECK(silkworm::to_hex(skv.key2).empty());
+        CHECK(silkworm::to_hex(skv.key3).empty());
+        CHECK(silkworm::to_hex(skv.value).empty());
     }
 }
-}  // namespace silkrpc::ethdb
+}  // namespace silkworm::rpc::ethdb

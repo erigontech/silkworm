@@ -20,7 +20,7 @@
 
 #include <catch2/catch.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::rpc::http {
 
 using Catch::Matchers::Message;
 
@@ -156,15 +156,15 @@ TEST_CASE("Reply", "[silkrpc][http][reply]") {
     Reply reply{
         StatusType::ok,
         std::vector<Header>{{"Accept", "*/*"}},
-        "{\"json\": \"2.0\"}"};
+        R"({"json": "2.0"})"};
 
     SECTION("check reset method") {
         CHECK(reply.status == StatusType::ok);
         CHECK(reply.headers == std::vector<Header>{{"Accept", "*/*"}});
         CHECK(reply.content == "{\"json\": \"2.0\"}");
         reply.reset();
-        CHECK(reply.headers == std::vector<Header>{});
-        CHECK(reply.content == "");
+        CHECK(reply.headers.empty());
+        CHECK(reply.content.empty());
     }
     SECTION("check to_buffers") {
         auto buffers = reply.to_buffers();
@@ -183,7 +183,7 @@ TEST_CASE("Reply stock_reply", "[silkrpc][http][reply]") {
     SECTION("ok") {
         auto result = Reply::stock_reply(StatusType::ok);
         CHECK(result.status == StatusType::ok);
-        CHECK(result.content == "");
+        CHECK(result.content.empty());
     }
     SECTION("created") {
         auto result = Reply::stock_reply(StatusType::created);
@@ -263,8 +263,8 @@ TEST_CASE("Reply stock_reply", "[silkrpc][http][reply]") {
     SECTION("processing_continue") {
         auto result = Reply::stock_reply(StatusType::processing_continue);
         CHECK(result.status == StatusType::processing_continue);
-        CHECK(result.content == "");
+        CHECK(result.content.empty());
     }
 }
 
-}  // namespace silkrpc::http
+}  // namespace silkworm::rpc::http

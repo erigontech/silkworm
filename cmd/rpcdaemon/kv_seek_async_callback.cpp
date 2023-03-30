@@ -18,6 +18,7 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <utility>
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/signal_set.hpp>
@@ -36,12 +37,12 @@ class GrpcKvCallbackReactor final : public grpc::ClientBidiReactor<remote::Curso
     }
 
     void read_start(std::function<void(bool, remote::Pair)> read_completed) {
-        read_completed_ = read_completed;
+        read_completed_ = std::move(read_completed);
         StartRead(&pair_);
     }
 
     void write_start(remote::Cursor* cursor, std::function<void(bool)> write_completed) {
-        write_completed_ = write_completed;
+        write_completed_ = std::move(write_completed);
         StartWrite(cursor);
     }
 
@@ -61,7 +62,7 @@ class GrpcKvCallbackReactor final : public grpc::ClientBidiReactor<remote::Curso
     std::function<void(bool)> write_completed_;
 };
 
-int kv_seek_async_callback(const std::string& target, const std::string& table_name, const silkworm::Bytes& key, uint32_t timeout) {
+int kv_seek_async_callback(const std::string& target, const std::string& table_name, silkworm::ByteView key, uint32_t timeout) {
     boost::asio::io_context context;
     boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{context.get_executor()};
 
@@ -104,7 +105,7 @@ int kv_seek_async_callback(const std::string& target, const std::string& table_n
                 auto seek_message = remote::Cursor{};
                 seek_message.set_op(remote::Op::SEEK);
                 seek_message.set_cursor(cursor_id);
-                seek_message.set_k(key.c_str(), key.length());
+                seek_message.set_k(key.data(), key.length());
                 reactor.write_start(&seek_message, [&, cursor_id](bool seek_write_ok) {
                     if (!seek_write_ok) {
                         std::cout << "error writing SEEK gRPC" << std::flush;

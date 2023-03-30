@@ -24,7 +24,7 @@
 
 #define API_WITH_GLAZE 1
 
-namespace silkrpc::commands {
+namespace silkrpc::rpc::commands {
 
 RpcApiTable::RpcApiTable(const std::string& api_spec) {
     build_handlers(api_spec);
@@ -221,4 +221,4 @@ void RpcApiTable::add_ots_handlers() {
     method_handlers_[http::method::k_ots_getBlockDetailsByHash] = &commands::RpcApi::handle_ots_getBlockDetailsByHash;
 }
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

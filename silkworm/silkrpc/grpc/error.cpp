@@ -18,27 +18,25 @@
 
 #include <utility>
 
-class generic_error_category : public std::error_category {
+class GrpcErrorCategory : public std::error_category {
   public:
-    const char* name() const noexcept override;
-    std::string message(int ev) const override;
+    [[nodiscard]] const char* name() const noexcept override;
+    [[nodiscard]] std::string message(int ev) const override;
 
-    void set_error(int error_code, std::string&& error_message) {
-        error_code_ = error_code;
+    void set_error(std::string&& error_message) {
         error_message_ = error_message;
     }
 
   private:
-    int error_code_;
     std::string error_message_;
 };
 
-const char* generic_error_category::name() const noexcept { return "grpc"; }
+const char* GrpcErrorCategory::name() const noexcept { return "grpc"; }
 
-std::string generic_error_category::message(int /*ev*/) const { return error_message_; }
+std::string GrpcErrorCategory::message(int /*ev*/) const { return error_message_; }
 
 std::error_code make_error_code(int error_code, std::string&& error_message) {
-    thread_local generic_error_category tls_error_category{};
-    tls_error_category.set_error(error_code, std::move(error_message));
+    thread_local GrpcErrorCategory tls_error_category{};
+    tls_error_category.set_error(std::move(error_message));
     return {error_code, tls_error_category};
 }

@@ -18,14 +18,13 @@
 
 #include <utility>
 
-#include <silkpre/secp256k1n.hpp>
-
 #include <silkworm/core/chain/intrinsic_gas.hpp>
 #include <silkworm/core/chain/protocol_param.hpp>
 #include <silkworm/core/consensus/clique/engine.hpp>
 #include <silkworm/core/consensus/ethash/engine.hpp>
 #include <silkworm/core/consensus/merge/engine.hpp>
 #include <silkworm/core/consensus/noproof/engine.hpp>
+#include <silkworm/core/crypto/secp256k1n.hpp>
 
 namespace silkworm::consensus {
 
@@ -60,7 +59,7 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
 
     /* Should the sender already be present it means the validation of signature already occurred */
     if (!txn.from.has_value()) {
-        if (!silkpre::is_valid_signature(txn.r, txn.s, rev >= EVMC_HOMESTEAD)) {
+        if (!is_valid_signature(txn.r, txn.s, rev >= EVMC_HOMESTEAD)) {
             return ValidationResult::kInvalidSignature;
         }
     }

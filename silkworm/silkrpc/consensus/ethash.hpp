@@ -25,7 +25,7 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/silkrpc/types/chain_config.hpp>
 
-namespace silkrpc::ethash {
+namespace silkworm::rpc::ethash {
 
 struct BlockReward {
     intx::uint256 miner_reward;
@@ -36,4 +36,4 @@ BlockReward compute_reward(const ChainConfig& config, const silkworm::Block& blo
 
 std::ostream& operator<<(std::ostream& out, const BlockReward& reward);
 
-}  // namespace silkrpc::ethash
+}  // namespace silkworm::rpc::ethash

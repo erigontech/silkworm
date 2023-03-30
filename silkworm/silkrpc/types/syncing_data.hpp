@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 struct StageData {
     std::string stage_name;
@@ -32,4 +32,4 @@ struct SyncingData {
     std::vector<StageData> stages;
 };
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

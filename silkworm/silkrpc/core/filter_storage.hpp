@@ -29,11 +29,10 @@
 #include <silkworm/silkrpc/types/filter.hpp>
 #include <silkworm/silkrpc/types/log.hpp>
 
-namespace silkrpc::filter {
+namespace silkworm::rpc {
 
 enum FilterType {
     logs,
-    pending_transactions,
     block
 };
 
@@ -46,7 +45,7 @@ struct StoredFilter : public Filter {
 
 struct FilterEntry {
     void renew() { last_access = std::chrono::system_clock::now(); }
-    std::chrono::duration<double> age() { return std::chrono::system_clock::now() - last_access; }
+    [[nodiscard]] std::chrono::duration<double> age() const { return std::chrono::system_clock::now() - last_access; }
 
     StoredFilter filter;
     std::chrono::system_clock::time_point last_access = std::chrono::system_clock::now();
@@ -66,7 +65,7 @@ class FilterStorage {
     bool remove_filter(const std::string& filter_id);
     std::optional<std::reference_wrapper<StoredFilter>> get_filter(const std::string& filter_id);
 
-    auto size() const {
+    [[nodiscard]] auto size() const {
         return storage_.size();
     }
 
@@ -82,4 +81,4 @@ class FilterStorage {
     std::map<std::string, FilterEntry> storage_;
 };
 
-}  // namespace silkrpc::filter
+}  // namespace silkworm::rpc

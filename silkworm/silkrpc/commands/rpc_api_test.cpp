@@ -18,8 +18,8 @@
 
 #include <catch2/catch.hpp>
 
-namespace silkrpc {
+namespace silkworm {
 
 using Catch::Matchers::Message;
 
-}  // namespace silkrpc
+}  // namespace silkworm

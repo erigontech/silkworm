@@ -28,7 +28,7 @@
 #include <silkworm/interfaces/txpool/txpool.grpc.pb.h>
 #include <silkworm/interfaces/types/types.pb.h>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 struct ProtocolVersion {
     uint32_t major;
@@ -36,10 +36,10 @@ struct ProtocolVersion {
     uint32_t patch;
 };
 
-constexpr auto KV_SERVICE_API_VERSION = ProtocolVersion{6, 0, 0};
-constexpr auto ETHBACKEND_SERVICE_API_VERSION = ProtocolVersion{3, 1, 0};
-constexpr auto MINING_SERVICE_API_VERSION = ProtocolVersion{1, 0, 0};
-constexpr auto TXPOOL_SERVICE_API_VERSION = ProtocolVersion{1, 0, 0};
+constexpr auto kKvServiceApiVersion = ProtocolVersion{6, 0, 0};
+constexpr auto kEthBackEndServiceApiVersion = ProtocolVersion{3, 1, 0};
+constexpr auto kMiningServiceApiVersion = ProtocolVersion{1, 0, 0};
+constexpr auto kTxPoolServiceApiVersion = ProtocolVersion{1, 0, 0};
 
 std::ostream& operator<<(std::ostream& out, const ProtocolVersion& v);
 
@@ -60,4 +60,4 @@ ProtocolVersionResult wait_for_mining_protocol_check(const std::shared_ptr<grpc:
 ProtocolVersionResult wait_for_txpool_protocol_check(const std::unique_ptr<::txpool::Txpool::StubInterface>& stub);
 ProtocolVersionResult wait_for_txpool_protocol_check(const std::shared_ptr<grpc::Channel>& channel);
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

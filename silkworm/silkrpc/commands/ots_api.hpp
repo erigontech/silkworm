@@ -33,11 +33,11 @@
 #include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/types/log.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::http {
 class RequestHandler;
 }
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 class OtsRpcApi {
   public:
@@ -55,11 +55,11 @@ class OtsRpcApi {
 
     std::unique_ptr<ethdb::Database>& database_;
     std::shared_ptr<ethdb::kv::StateCache>& state_cache_;
-    friend class silkrpc::http::RequestHandler;
+    friend class silkworm::http::RequestHandler;
 
   private:
     static IssuanceDetails get_issuance(const ChainConfig& chain_config, const silkworm::BlockWithHash& block);
     static intx::uint256 get_block_fees(const ChainConfig& chain_config, const silkworm::BlockWithHash& block, std::vector<Receipt>& receipts, silkworm::BlockNum block_number);
 };
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

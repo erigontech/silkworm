@@ -23,7 +23,7 @@
 
 #include <silkworm/core/common/base.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 struct Error {
     int64_t code{0};
@@ -38,4 +38,4 @@ struct RevertError : public Error {
 
 std::ostream& operator<<(std::ostream& out, const RevertError& error);
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

@@ -23,7 +23,7 @@
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/types/log.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using Catch::Matchers::Message;
 
@@ -107,4 +107,4 @@ TEST_CASE("receipt with empty bloom", "[silkrpc][types][receipt]") {
     CHECK(r.logs.empty());
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

@@ -19,7 +19,7 @@
 #include <chrono>
 #include <cstddef>
 
-namespace silkrpc {
+namespace silkworm {
 
 constexpr const char* kDebugApiNamespace{"debug"};
 constexpr const char* kEngineApiNamespace{"engine"};
@@ -52,4 +52,4 @@ constexpr const std::size_t kRequestHeadersInitialCapacity{8};
 constexpr const std::size_t kRequestMethodInitialCapacity{64};
 constexpr const std::size_t kRequestUriInitialCapacity{64};
 
-}  // namespace silkrpc
+}  // namespace silkworm

@@ -16,8 +16,6 @@
 
 #include "state_reader.hpp"
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
 #include <boost/asio/awaitable.hpp>
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
@@ -28,7 +26,7 @@
 #include <silkworm/silkrpc/test/context_test_base.hpp>
 #include <silkworm/silkrpc/test/mock_database_reader.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using evmc::literals::operator""_bytes32;
 using testing::_;
@@ -220,4 +218,4 @@ TEST_CASE_METHOD(StateReaderTest, "StateReader::read_code") {
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

@@ -23,18 +23,15 @@
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 #include <gmock/gmock.h>
-#include <grpcpp/grpcpp.h>
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/interfaces/txpool/mining.grpc.pb.h>
-#include <silkworm/silkrpc/common/log.hpp>
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/test/api_test_base.hpp>
 #include <silkworm/silkrpc/test/grpc_actions.hpp>
 #include <silkworm/silkrpc/test/grpc_responder.hpp>
 #include <silkworm/silkrpc/test/interfaces/mining_mock_fix24351.grpc.pb.h>
 
-namespace silkrpc::txpool {
+namespace silkworm::rpc::txpool {
 
 using Catch::Matchers::Message;
 using testing::_;
@@ -203,4 +200,4 @@ TEST_CASE_METHOD(MinerTest, "Miner::submit_hash_rate", "[silkrpc][txpool][miner]
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc::txpool
+}  // namespace silkworm::rpc::txpool

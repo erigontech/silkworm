@@ -27,7 +27,7 @@
 #include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/test/mock_database_reader.hpp>
 
-namespace silkrpc::stages {
+namespace silkworm::rpc::stages {
 
 using testing::_;
 using testing::InvokeWithoutArgs;
@@ -55,4 +55,4 @@ TEST_CASE("get_sync_stage_progress", "[silkrpc][stagedsync]") {
     }
 }
 
-}  // namespace silkrpc::stages
+}  // namespace silkworm::rpc::stages

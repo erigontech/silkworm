@@ -16,13 +16,13 @@
 
 #include "sha256.hpp"
 
-#include <silkpre/sha256.h>
+#include <silkworm/core/crypto/sha256.h>
 
 namespace silkworm::sentry::rlpx::crypto {
 
 Bytes sha256(ByteView data) {
     Bytes hash(32, 0);
-    silkpre_sha256(hash.data(), data.data(), data.size(), /* use_cpu_extensions = */ false);
+    silkworm_sha256(hash.data(), data.data(), data.size(), /* use_cpu_extensions = */ false);
     return hash;
 }
 

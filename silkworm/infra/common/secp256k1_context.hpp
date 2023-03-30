@@ -22,7 +22,6 @@
 
 #include <gsl/pointers>
 #include <secp256k1_recovery.h>
-#include <silkpre/ecdsa.h>
 
 #include <silkworm/core/common/base.hpp>
 
@@ -60,9 +59,7 @@ class SecP256K1Context final {
     bool compute_ecdh_secret(
         Bytes& shared_secret,
         const secp256k1_pubkey* public_key,
-        const ByteView& private_key) const {
-        return silkpre_secp256k1_ecdh(context_, shared_secret.data(), public_key, private_key.data());
-    }
+        const ByteView& private_key) const;
 
     bool sign_recoverable(secp256k1_ecdsa_recoverable_signature* signature, ByteView data, ByteView private_key) {
         if (data.size() != 32)

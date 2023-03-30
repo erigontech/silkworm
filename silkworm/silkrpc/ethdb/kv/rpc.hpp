@@ -20,10 +20,10 @@
 #include <silkworm/silkrpc/grpc/bidi_streaming_rpc.hpp>
 #include <silkworm/silkrpc/grpc/server_streaming_rpc.hpp>
 
-namespace silkrpc::ethdb::kv {
+namespace silkworm::rpc::ethdb::kv {
 
 using TxRpc = BidiStreamingRpc<&remote::KV::StubInterface::PrepareAsyncTx>;
 
 using StateChangesRpc = ServerStreamingRpc<&remote::KV::StubInterface::PrepareAsyncStateChanges>;
 
-}  // namespace silkrpc::ethdb::kv
+}  // namespace silkworm::rpc::ethdb::kv

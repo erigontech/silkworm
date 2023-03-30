@@ -493,7 +493,11 @@ uint64_t point_evaluation_gas(ByteView, evmc_revision) noexcept {
     return 50000;
 }
 
-std::optional<Bytes> point_evaluation_run(ByteView) noexcept {
+std::optional<Bytes> point_evaluation_run(ByteView input) noexcept {
+    if (input.length() != 192) {
+        return std::nullopt;
+    }
+
     // TODO(yperbasis) implement
     return std::nullopt;
 }

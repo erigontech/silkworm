@@ -54,6 +54,7 @@ jobs:
       run: |
         Add-Content $env:GITHUB_PATH "${{runner.workspace}}\silkworm\vcpkg\installed\x64-windows\bin"
         Add-Content $env:GITHUB_ENV "INCLUDE=${{runner.workspace}}\silkworm\vcpkg\installed\x64-windows\include"
+        Add-Content $env:GITHUB_ENV "LIB=${{runner.workspace}}\silkworm\vcpkg\installed\x64-windows\lib"
 
     - name: Configure CMake
       working-directory: C:\build

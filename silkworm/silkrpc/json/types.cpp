@@ -826,6 +826,40 @@ nlohmann::json make_json_error(uint32_t id, const RevertError& error) {
     return {{"jsonrpc", "2.0"}, {"id", id}, {"error", error}};
 }
 
+struct GlazeJsonError {
+     int code;
+     char message[1024];
+     struct glaze {
+         using T = GlazeJsonError;
+         static constexpr auto value = glz::object(
+            "code", &T::code,
+            "message", &T::message
+         );
+     };
+};
+
+struct GlazeJsonErrorRsp {
+     char jsonrpc[8] = "2.0";
+     uint32_t id;
+     GlazeJsonError json_error;
+     struct glaze {
+         using T = GlazeJsonErrorRsp;
+         static constexpr auto value = glz::object(
+             "jsonrpc", &T::jsonrpc,
+            "id", &T::id,
+            "error", &T::json_error
+         );
+     };
+};
+
+void make_glaze_json_error(std::string& reply, uint32_t id, const int code, const std::string& message) {
+    GlazeJsonErrorRsp glaze_json_error;
+    glaze_json_error.id = id;
+    glaze_json_error.json_error.code = code;
+    strcpy(glaze_json_error.json_error.message, message.c_str());
+
+    glz::write_json(glaze_json_error, reply);
+}
 
 void make_glaze_json_content(std::string& reply, uint32_t id, const silkrpc::Logs& logs) {
     GlazeLogJson log_json_data{};
@@ -850,7 +884,6 @@ void make_glaze_json_content(std::string& reply, uint32_t id, const silkrpc::Log
     }
 
     glz::write_json(log_json_data, reply);
-    //std::cout << "make_json_content4: " << buffer << "\n";
 }
 
 

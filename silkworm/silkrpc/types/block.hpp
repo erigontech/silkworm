@@ -103,4 +103,13 @@ struct BlockDetailsResponse {
     intx::uint256 total_fees{0};
 };
 
+struct BlockTransactionsResponse{
+    evmc::bytes32 hash;
+    silkworm::BlockHeader header;
+    intx::uint256 total_difficulty{0};
+    uint64_t transaction_count{0};
+    std::vector<silkworm::Transaction> transactions;
+    std::vector<silkworm::Receipt> receipts;
+};
+
 }  // namespace silkworm::rpc

@@ -89,8 +89,8 @@ boost::asio::awaitable<void> RequestHandler::handle_request(const http::Request&
         reply.content += "\n";
 #ifdef notdef
 #endif
-
 #ifdef notdef
+
         const auto request_json = nlohmann::json::parse(request.content);
         if (request_json.is_object()) {
             if (!request_json.contains("id")) {

@@ -115,7 +115,7 @@ protected:
     boost::asio::awaitable<roaring::Roaring> get_topics_bitmap(core::rawdb::DatabaseReader& db_reader, FilterTopics& topics, uint64_t start, uint64_t end);
     boost::asio::awaitable<roaring::Roaring> get_addresses_bitmap(core::rawdb::DatabaseReader& db_reader, FilterAddresses& addresses, uint64_t start, uint64_t end);
 
-    std::vector<Log> filter_logs(std::vector<Log>& logs, const Filter& filter);
+    void filter_logs(std::vector<Log>&& logs, const Filter& filter, std::vector<Log>& filtered_logs);
 
     Context& context_;
     std::shared_ptr<BlockCache>& block_cache_;

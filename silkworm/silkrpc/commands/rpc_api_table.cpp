@@ -155,8 +155,7 @@ void RpcApiTable::add_eth_handlers() {
     if (API_WITH_GLAZE) {
         // GLAZE
         method_handlers_glaze_[http::method::k_eth_getLogs] = &commands::RpcApi::handle_eth_glaze_get_logs;
-    }
-    else {
+    } else {
         method_handlers_[http::method::k_eth_getLogs] = &commands::RpcApi::handle_eth_get_logs;
     }
 }
@@ -221,4 +220,4 @@ void RpcApiTable::add_ots_handlers() {
     method_handlers_[http::method::k_ots_getBlockDetailsByHash] = &commands::RpcApi::handle_ots_getBlockDetailsByHash;
 }
 
-}  // namespace silkworm::rpc::commands
+}  // namespace silkrpc::rpc::commands

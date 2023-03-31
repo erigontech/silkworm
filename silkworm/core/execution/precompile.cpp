@@ -37,6 +37,7 @@
 #include <silkworm/core/crypto/rmd160.h>
 #include <silkworm/core/crypto/secp256k1n.hpp>
 #include <silkworm/core/crypto/sha256.h>
+#include <silkworm/core/types/hash.hpp>
 
 namespace silkworm::precompile {
 
@@ -493,8 +494,23 @@ uint64_t point_evaluation_gas(ByteView, evmc_revision) noexcept {
     return 50000;
 }
 
+// https://eips.ethereum.org/EIPS/eip-4844#helpers
+static Hash kzg_to_versioned_hash(ByteView kzg) {
+    Hash hash;
+    silkworm_sha256(hash.bytes, kzg.data(), kzg.length(), /*use_cpu_extensions=*/true);
+    hash.bytes[0] = 0x1;
+    return hash;
+}
+
 std::optional<Bytes> point_evaluation_run(ByteView input) noexcept {
     if (input.length() != 192) {
+        return std::nullopt;
+    }
+
+    const ByteView versioned_hash{input.substr(0, 32)};
+    const ByteView commitment{input.substr(96, 48)};
+
+    if (kzg_to_versioned_hash(commitment) != versioned_hash) {
         return std::nullopt;
     }
 

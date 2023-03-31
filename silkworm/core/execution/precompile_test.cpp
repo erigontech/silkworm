@@ -257,37 +257,37 @@ TEST_CASE("BLAKE2") {
 
 TEST_CASE("POINT_EVALUATION") {
     Bytes in{
-        *from_hex("013c03613f6fc558fb7e61e75602241ed9a2f04e36d8670aadd286e71b5ca9cc"
-                  "4200000000000000000000000000000000000000000000000000000000000000"
-                  "31e5a2356cbc2ef6a733eae8d54bf48719ae3d990017ca787c419c7d369f8e3c"
-                  "83fac17c3f237fc51f90e2c660eb202a438bc2025baded5cd193c1a018c5885b"
-                  "c9281ba704d5566082e851235c7be763b2a99adff965e0a121ee972ebc472d02"
-                  "944a74f5c6243e14052e105124b70bf65faf85ad3a494325e269fad097842c")};
-    std::optional<Bytes> out{blake2_f_run(in)};
-    CHECK(!out);
-
-    /* TODO(yperbasis) enable
-        in = *from_hex(
+        *from_hex(
             "013c03613f6fc558fb7e61e75602241ed9a2f04e36d8670aadd286e71b5ca9cc"
             "4200000000000000000000000000000000000000000000000000000000000000"
             "31e5a2356cbc2ef6a733eae8d54bf48719ae3d990017ca787c419c7d369f8e3c"
-            "83fac17c3f237fc51f90e2c660eb202a438bc2025baded5cd193c1a018c5885b"
-            "c9281ba704d5566082e851235c7be763b2a99adff965e0a121ee972ebc472d02"
-            "944a74f5c6243e14052e105124b70bf65faf85ad3a494325e269fad097842cba");
-        REQUIRE(out);
-        CHECK(to_hex(*out) ==
-              "0000000000000000000000000000000000000000000000000000000000001000"
-              "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001");
-    */
+            "83fac17c3f237fc51f90e2c660eb202a438bc2025baded5cd193c1a018c5885bc9281ba704d5566082e851235c7be763"
+            "b2a99adff965e0a121ee972ebc472d02944a74f5c6243e14052e105124b70bf65faf85ad3a494325e269fad097842cba")};
+    std::optional<Bytes> out{point_evaluation_run(in)};
+    /* TODO(yperbasis) enable
+    REQUIRE(out);
+     CHECK(to_hex(*out) ==
+           "0000000000000000000000000000000000000000000000000000000000001000"
+           "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001");
+     */
 
-    in = *from_hex(
-        "013c03613f6fc558fb7e61e75602241ed9a2f04e36d8670aadd286e71b5ca9cc"
-        "4200000000000000000000000000000000000000000000000000000000000000"
-        "31e5a2356cbc2ef6a733eae8d54bf48719ae3d990017ca787c419c7d369f8e3c"
-        "83fac17c3f237fc51f90e2c660eb202a438bc2025baded5cd193c1a018c5885b"
-        "c9281ba704d5566082e851235c7be763b2a99adff965e0a121ee972ebc472d02"
-        "944a74f5c6243e14052e105124b70bf65faf85ad3a494325e269fad097842cba00");
+    // change hash version
+    in[0] = 0x2;
+    out = point_evaluation_run(in);
     CHECK(!out);
+    in[0] = 0x1;
+
+    // truncate input
+    in.pop_back();
+    out = point_evaluation_run(in);
+    CHECK(!out);
+    in.push_back(0xba);
+
+    // extra input
+    in.push_back(0);
+    out = point_evaluation_run(in);
+    CHECK(!out);
+    in.pop_back();
 }
 
 TEST_CASE("is_precompile") {

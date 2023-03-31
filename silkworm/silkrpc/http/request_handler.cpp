@@ -156,7 +156,6 @@ boost::asio::awaitable<void> RequestHandler::handle_request(uint32_t request_id,
         co_await (rpc_api_.*handler)(request_json, reply_json);
         reply.status = http::StatusType::ok;
         reply.content = std::move(reply_json);
-        // std::cout << "reply: " << reply.content << "\n";
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << "\n";
         reply.content = make_json_error(request_id, 100, e.what()).dump();

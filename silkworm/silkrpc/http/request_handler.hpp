@@ -49,15 +49,18 @@ class RequestHandler {
     RequestHandler(const RequestHandler&) = delete;
     RequestHandler& operator=(const RequestHandler&) = delete;
 
-    boost::asio::awaitable<void> handle_request(const http::Request& request);
+    boost::asio::awaitable<void> handle_user_request(const http::Request& request);
 
   private:
     boost::asio::awaitable<std::optional<std::string>> is_request_authorized(const http::Request& request);
 
-    boost::asio::awaitable<void> handle_request(const nlohmann::json& request_json, http::Reply& reply);
-    boost::asio::awaitable<void> handle_request(commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, http::Reply& reply);
-    boost::asio::awaitable<void> handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json);
+    boost::asio::awaitable<void> handle_request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply);
 
+    boost::asio::awaitable<void> handle_request(uint32_t request_id,
+                                                commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, http::Reply& reply);
+    boost::asio::awaitable<void> handle_request(uint32_t request_id,
+                                                commands::RpcApiTable::HandleMethodGlaze handler, const nlohmann::json& request_json, http::Reply& reply);
+    boost::asio::awaitable<void> handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json);
     boost::asio::awaitable<void> do_write(http::Reply& reply);
     boost::asio::awaitable<void> write_headers();
 

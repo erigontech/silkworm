@@ -31,6 +31,68 @@ namespace silkworm::rpc {
 
 using evmc::literals::operator""_address;
 
+void to_hex(char* hex_bytes, silkworm::ByteView bytes) {
+    static const char* kHexDigits{"0123456789abcdef"};
+    char* dest{&hex_bytes[0]};
+    *dest++ = '0';
+    *dest++ = 'x';
+    for (const auto& b : bytes) {
+        *dest++ = kHexDigits[b >> 4];    // Hi
+        *dest++ = kHexDigits[b & 0x0f];  // Lo
+    }
+}
+
+std::size_t to_hex_no_leading_zeros(char* hex_bytes, silkworm::ByteView bytes) {
+    static const char* kHexDigits{"0123456789abcdef"};
+
+    char* dest{&hex_bytes[0]};
+    size_t len = bytes.length();
+    *dest++ = '0';
+    *dest++ = 'x';
+
+    bool found_nonzero{false};
+    for (size_t i{0}; i < len; ++i) {
+        auto x{bytes[i]};
+        char lo{kHexDigits[x & 0x0f]};
+        char hi{kHexDigits[x >> 4]};
+        if (!found_nonzero && hi != '0') {
+            found_nonzero = true;
+        }
+        if (found_nonzero) {
+            *dest++ = hi;
+        }
+        if (!found_nonzero && lo != '0') {
+            found_nonzero = true;
+        }
+        if (found_nonzero || i == len - 1) {
+            *dest++ = lo;
+        }
+    }
+    *dest = '\0';
+
+    return static_cast<size_t>(dest - hex_bytes);
+}
+
+std::size_t to_quantity(char* quantity_hex_bytes, silkworm::ByteView bytes) {
+    return to_hex_no_leading_zeros(quantity_hex_bytes, bytes);
+}
+
+std::size_t to_quantity(char* quantity_hex_bytes, uint64_t number) {
+    silkworm::Bytes number_bytes(8, '\0');
+    silkworm::endian::store_big_u64(number_bytes.data(), number);
+    return to_hex_no_leading_zeros(quantity_hex_bytes, number_bytes);
+}
+
+std::size_t to_quantity(char* quantity_hex_bytes, intx::uint256 number) {
+    if (number == 0) {
+        quantity_hex_bytes[0] = '0';
+        quantity_hex_bytes[1] = 'x';
+        quantity_hex_bytes[2] = '0';
+        return 3;
+    }
+    return to_quantity(quantity_hex_bytes, silkworm::endian::to_big_compact(number));
+}
+
 std::string to_hex_no_leading_zeros(silkworm::ByteView bytes) {
     static const char* kHexDigits{"0123456789abcdef"};
 
@@ -758,6 +820,64 @@ nlohmann::json make_json_error(uint32_t id, int64_t code, const std::string& mes
 
 nlohmann::json make_json_error(uint32_t id, const RevertError& error) {
     return {{"jsonrpc", "2.0"}, {"id", id}, {"error", error}};
+}
+
+struct GlazeJsonError {
+    int code;
+    char message[1024];
+    struct glaze {
+        using T = GlazeJsonError;
+        static constexpr auto value = glz::object(
+            "code", &T::code,
+            "message", &T::message);
+    };
+};
+
+struct GlazeJsonErrorRsp {
+    char jsonrpc[8] = "2.0";
+    uint32_t id;
+    GlazeJsonError json_error;
+    struct glaze {
+        using T = GlazeJsonErrorRsp;
+        static constexpr auto value = glz::object(
+            "jsonrpc", &T::jsonrpc,
+            "id", &T::id,
+            "error", &T::json_error);
+    };
+};
+
+void make_glaze_json_error(std::string& reply, uint32_t id, const int code, const std::string& message) {
+    GlazeJsonErrorRsp glaze_json_error;
+    glaze_json_error.id = id;
+    glaze_json_error.json_error.code = code;
+    strcpy(glaze_json_error.json_error.message, message.c_str());
+
+    glz::write_json(glaze_json_error, reply);
+}
+
+void make_glaze_json_content(std::string& reply, uint32_t id, const Logs& logs) {
+    GlazeLogJson log_json_data{};
+    log_json_data.log_json_list.reserve(logs.size());
+
+    log_json_data.id = id;
+
+    for (const auto& l : logs) {
+        GlazeJsonItem item{};
+        to_hex(item.address, l.address);
+        to_hex(item.tx_hash, l.tx_hash);
+        to_hex(item.block_hash, l.block_hash);
+        to_quantity(item.block_number, l.block_number);
+        to_quantity(item.tx_index, l.tx_index);
+        to_quantity(item.index, l.index);
+        item.removed = l.removed;
+        to_hex(item.data, l.data);
+        for (const auto& t : l.topics) {
+            item.topics.push_back("0x" + silkworm::to_hex(t));
+        }
+        log_json_data.log_json_list.push_back(item);
+    }
+
+    glz::write_json(log_json_data, reply);
 }
 
 }  // namespace silkworm::rpc

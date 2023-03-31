@@ -29,7 +29,6 @@
 
 namespace silkworm::rpc {
 
-
 using evmc::literals::operator""_address;
 
 void to_hex(char* hex_bytes, silkworm::ByteView bytes) {

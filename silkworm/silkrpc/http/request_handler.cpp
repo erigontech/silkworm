@@ -151,12 +151,12 @@ boost::asio::awaitable<void> RequestHandler::handle_request_and_create_reply(con
 
 boost::asio::awaitable<void> RequestHandler::handle_request(uint32_t request_id, silkrpc::commands::RpcApiTable::HandleMethodGlaze handler, const nlohmann::json& request_json, http::Reply& reply) {
     try {
-       std::string reply_json;
-       reply_json.reserve(2048);
-       co_await (rpc_api_.*handler)(request_json, reply_json);
-       reply.status = http::StatusType::ok;
-       reply.content = std::move(reply_json);
-       //std::cout << "reply: " << reply.content << "\n";
+        std::string reply_json;
+        reply_json.reserve(2048);
+        co_await (rpc_api_.*handler)(request_json, reply_json);
+        reply.status = http::StatusType::ok;
+        reply.content = std::move(reply_json);
+        // std::cout << "reply: " << reply.content << "\n";
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << "\n";
         reply.content = make_json_error(request_id, 100, e.what()).dump();
@@ -170,13 +170,12 @@ boost::asio::awaitable<void> RequestHandler::handle_request(uint32_t request_id,
     co_return;
 }
 
-
 boost::asio::awaitable<void> RequestHandler::handle_request(uint32_t request_id, silkrpc::commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, http::Reply& reply) {
     try {
         nlohmann::json reply_json;
         co_await (rpc_api_.*handler)(request_json, reply_json);
         reply.content = reply_json.dump(
-        /*indent=*/-1, /*indent_char=*/' ', /*ensure_ascii=*/false, nlohmann::json::error_handler_t::replace);
+            /*indent=*/-1, /*indent_char=*/' ', /*ensure_ascii=*/false, nlohmann::json::error_handler_t::replace);
         reply.status = http::StatusType::ok;
 
     } catch (const std::exception& e) {

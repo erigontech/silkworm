@@ -76,7 +76,6 @@ class EthereumRpcApi {
     boost::asio::awaitable<void> get_logs(ethdb::TransactionDatabase& tx_database, std::uint64_t start, std::uint64_t end,
                                           FilterAddresses& addresses, FilterTopics& topics, std::vector<Log>& logs);
 
-
     boost::asio::awaitable<void> handle_eth_block_number(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_chain_id(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_protocol_version(const nlohmann::json& request, nlohmann::json& reply);
@@ -125,10 +124,8 @@ class EthereumRpcApi {
     boost::asio::awaitable<void> handle_eth_subscribe(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_unsubscribe(const nlohmann::json& request, nlohmann::json& reply);
 
-
     // GLAZE format routine
     boost::asio::awaitable<void> handle_eth_glaze_get_logs(const nlohmann::json& request, std::string& reply);
-
 
     Context& context_;
     std::shared_ptr<BlockCache>& block_cache_;

@@ -29,7 +29,6 @@
 
 namespace silkworm::rpc {
 
-static constexpr auto errorMessageSize = 1024;
 
 using evmc::literals::operator""_address;
 
@@ -824,6 +823,7 @@ nlohmann::json make_json_error(uint32_t id, const RevertError& error) {
     return {{"jsonrpc", "2.0"}, {"id", id}, {"error", error}};
 }
 
+static constexpr auto errorMessageSize = 1024;
 struct GlazeJsonError {
     int code;
     char message[errorMessageSize];
@@ -836,7 +836,7 @@ struct GlazeJsonError {
 };
 
 struct GlazeJsonErrorRsp {
-    char jsonrpc[8] = "2.0";
+    char jsonrpc[jsonVersionSize] = "2.0";
     uint32_t id;
     GlazeJsonError json_error;
     struct glaze {
@@ -858,13 +858,13 @@ void make_glaze_json_error(std::string& reply, uint32_t id, const int code, cons
 }
 
 void make_glaze_json_content(std::string& reply, uint32_t id, const Logs& logs) {
-    GlazeLogJson log_json_data{};
+    GlazeJsonLog log_json_data{};
     log_json_data.log_json_list.reserve(logs.size());
 
     log_json_data.id = id;
 
     for (const auto& l : logs) {
-        GlazeJsonItem item{};
+        GlazeJsonLogItem item{};
         to_hex(item.address, l.address);
         to_hex(item.tx_hash, l.tx_hash);
         to_hex(item.block_hash, l.block_hash);

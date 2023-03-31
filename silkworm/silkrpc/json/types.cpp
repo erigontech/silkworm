@@ -31,7 +31,7 @@ namespace silkworm::rpc {
 
 using evmc::literals::operator""_address;
 
-void to_hex(char *hex_bytes, silkworm::ByteView bytes) {
+void to_hex(char* hex_bytes, silkworm::ByteView bytes) {
     static const char* kHexDigits{"0123456789abcdef"};
     char* dest{&hex_bytes[0]};
     *dest++ = '0';
@@ -42,7 +42,7 @@ void to_hex(char *hex_bytes, silkworm::ByteView bytes) {
     }
 }
 
-std::size_t to_hex_no_leading_zeros(char *hex_bytes, silkworm::ByteView bytes) {
+std::size_t to_hex_no_leading_zeros(char* hex_bytes, silkworm::ByteView bytes) {
     static const char* kHexDigits{"0123456789abcdef"};
 
     char* dest{&hex_bytes[0]};
@@ -70,31 +70,29 @@ std::size_t to_hex_no_leading_zeros(char *hex_bytes, silkworm::ByteView bytes) {
     }
     *dest = '\0';
 
-    return static_cast<size_t>(dest-hex_bytes);
+    return static_cast<size_t>(dest - hex_bytes);
 }
 
-std::size_t to_quantity(char *quantity_hex_bytes, silkworm::ByteView bytes) {
+std::size_t to_quantity(char* quantity_hex_bytes, silkworm::ByteView bytes) {
     return to_hex_no_leading_zeros(quantity_hex_bytes, bytes);
 }
 
-std::size_t to_quantity(char *quantity_hex_bytes, uint64_t number) {
+std::size_t to_quantity(char* quantity_hex_bytes, uint64_t number) {
     silkworm::Bytes number_bytes(8, '\0');
     silkworm::endian::store_big_u64(number_bytes.data(), number);
     return to_hex_no_leading_zeros(quantity_hex_bytes, number_bytes);
 }
 
-std::size_t to_quantity(char *quantity_hex_bytes, intx::uint256 number) {
+std::size_t to_quantity(char* quantity_hex_bytes, intx::uint256 number) {
     if (number == 0) {
-       quantity_hex_bytes[0] = '0';
-       quantity_hex_bytes[1] = 'x';
-       quantity_hex_bytes[2] = '0';
-       return 3;
+        quantity_hex_bytes[0] = '0';
+        quantity_hex_bytes[1] = 'x';
+        quantity_hex_bytes[2] = '0';
+        return 3;
     }
     return to_quantity(quantity_hex_bytes, silkworm::endian::to_big_compact(number));
 }
 
-
-    
 std::string to_hex_no_leading_zeros(silkworm::ByteView bytes) {
     static const char* kHexDigits{"0123456789abcdef"};
 
@@ -150,7 +148,6 @@ std::string to_quantity(intx::uint256 number) {
     }
     return to_quantity(silkworm::endian::to_big_compact(number));
 }
-
 
 }  // namespace silkworm::rpc
 
@@ -826,29 +823,27 @@ nlohmann::json make_json_error(uint32_t id, const RevertError& error) {
 }
 
 struct GlazeJsonError {
-     int code;
-     char message[1024];
-     struct glaze {
-         using T = GlazeJsonError;
-         static constexpr auto value = glz::object(
+    int code;
+    char message[1024];
+    struct glaze {
+        using T = GlazeJsonError;
+        static constexpr auto value = glz::object(
             "code", &T::code,
-            "message", &T::message
-         );
-     };
+            "message", &T::message);
+    };
 };
 
 struct GlazeJsonErrorRsp {
-     char jsonrpc[8] = "2.0";
-     uint32_t id;
-     GlazeJsonError json_error;
-     struct glaze {
-         using T = GlazeJsonErrorRsp;
-         static constexpr auto value = glz::object(
-             "jsonrpc", &T::jsonrpc,
+    char jsonrpc[8] = "2.0";
+    uint32_t id;
+    GlazeJsonError json_error;
+    struct glaze {
+        using T = GlazeJsonErrorRsp;
+        static constexpr auto value = glz::object(
+            "jsonrpc", &T::jsonrpc,
             "id", &T::id,
-            "error", &T::json_error
-         );
-     };
+            "error", &T::json_error);
+    };
 };
 
 void make_glaze_json_error(std::string& reply, uint32_t id, const int code, const std::string& message) {
@@ -867,19 +862,19 @@ void make_glaze_json_content(std::string& reply, uint32_t id, const silkrpc::Log
     log_json_data.id = id;
 
     for (const auto& l : logs) {
-       GlazeJsonItem item{};
-       to_hex(item.address, l.address);
-       to_hex(item.tx_hash, l.tx_hash);
-       to_hex(item.block_hash, l.block_hash);
-       to_quantity(item.block_number, l.block_number);
-       to_quantity(item.tx_index, l.tx_index);
-       to_quantity(item.index, l.index);
-       item.removed = l.removed;
-       to_hex(item.data, l.data);
-       for (const auto& t : l.topics) {
-          item.topics.push_back("0x" + silkworm::to_hex(t));
-       }
-       log_json_data.log_json_list.push_back(item);
+        GlazeJsonItem item{};
+        to_hex(item.address, l.address);
+        to_hex(item.tx_hash, l.tx_hash);
+        to_hex(item.block_hash, l.block_hash);
+        to_quantity(item.block_number, l.block_number);
+        to_quantity(item.tx_index, l.tx_index);
+        to_quantity(item.index, l.index);
+        item.removed = l.removed;
+        to_hex(item.data, l.data);
+        for (const auto& t : l.topics) {
+            item.topics.push_back("0x" + silkworm::to_hex(t));
+        }
+        log_json_data.log_json_list.push_back(item);
     }
 
     glz::write_json(log_json_data, reply);

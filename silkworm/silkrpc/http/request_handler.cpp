@@ -149,7 +149,7 @@ boost::asio::awaitable<void> RequestHandler::handle_request_and_create_reply(con
     co_return;
 }
 
-boost::asio::awaitable<void> RequestHandler::handle_request(uint32_t request_id, silkrpc::commands::RpcApiTable::HandleMethodGlaze handler, const nlohmann::json& request_json, http::Reply& reply) {
+boost::asio::awaitable<void> RequestHandler::handle_request(uint32_t request_id, commands::RpcApiTable::HandleMethodGlaze handler, const nlohmann::json& request_json, http::Reply& reply) {
     try {
         std::string reply_json;
         reply_json.reserve(2048);
@@ -170,7 +170,7 @@ boost::asio::awaitable<void> RequestHandler::handle_request(uint32_t request_id,
     co_return;
 }
 
-boost::asio::awaitable<void> RequestHandler::handle_request(uint32_t request_id, silkrpc::commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, http::Reply& reply) {
+boost::asio::awaitable<void> RequestHandler::handle_request(uint32_t request_id, commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, http::Reply& reply) {
     try {
         nlohmann::json reply_json;
         co_await (rpc_api_.*handler)(request_json, reply_json);

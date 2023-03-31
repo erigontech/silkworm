@@ -114,11 +114,11 @@ set(CURVE
 )
 option(WITH_PROCPS "" OFF)
 option(IS_LIBFF_PARENT "" OFF)
-if(MSVC)
+if(MSVC AND NOT CONAN_PACKAGE_MANAGER)
   option(MPIR_INSTEAD_OF_GMP "" ON)
 endif()
 add_subdirectory(libff)
-if(NOT MSVC)
+if(NOT MSVC OR CONAN_PACKAGE_MANAGER)
   add_dependencies(ff gmplib)
 endif()
 

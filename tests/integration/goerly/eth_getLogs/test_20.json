@@ -24,7 +24,7 @@
             "id":3,
             "error": {
               "code": -32602,
-              "message": "missing value for required argument 0"
+              "message": "too many arguments, want at most 1"
             }
         }
     }

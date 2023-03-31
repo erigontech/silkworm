@@ -29,6 +29,8 @@
 
 namespace silkworm::rpc {
 
+static constexpr auto errorMessageSize = 1024;
+
 using evmc::literals::operator""_address;
 
 void to_hex(char* hex_bytes, silkworm::ByteView bytes) {
@@ -824,7 +826,7 @@ nlohmann::json make_json_error(uint32_t id, const RevertError& error) {
 
 struct GlazeJsonError {
     int code;
-    char message[1024];
+    char message[errorMessageSize];
     struct glaze {
         using T = GlazeJsonError;
         static constexpr auto value = glz::object(

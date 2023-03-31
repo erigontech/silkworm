@@ -46,7 +46,6 @@ struct Log {
 
 typedef std::vector<Log> Logs;
 
-
 struct GlazeJsonItem {
     char address[128];
     char tx_hash[128];
@@ -59,19 +58,18 @@ struct GlazeJsonItem {
     std::vector<std::string> topics;
 
     struct glaze {
-     using T = GlazeJsonItem;
-     static constexpr auto value = glz::object(
-        "address", &T::address,
-        "transactionHash", &T::tx_hash,
-        "blockHash", &T::block_hash,
-        "blockNumber", &T::block_number,
-        "transactionIndex", &T::tx_index,
-        "logIndex", &T::index,
-        "data", &T::data,
-        "removed", &T::removed,
-        "topics", &T::topics
-     );
-   };
+        using T = GlazeJsonItem;
+        static constexpr auto value = glz::object(
+            "address", &T::address,
+            "transactionHash", &T::tx_hash,
+            "blockHash", &T::block_hash,
+            "blockNumber", &T::block_number,
+            "transactionIndex", &T::tx_index,
+            "logIndex", &T::index,
+            "data", &T::data,
+            "removed", &T::removed,
+            "topics", &T::topics);
+    };
 };
 
 struct GlazeLogJson {
@@ -79,15 +77,13 @@ struct GlazeLogJson {
     uint32_t id;
     std::vector<GlazeJsonItem> log_json_list;
     struct glaze {
-     using T = GlazeLogJson;
-     static constexpr auto value = glz::object(
-        "jsonrpc", &T::jsonrpc,
-        "id", &T::id,
-        "result", &T::log_json_list
-     );
-   };
+        using T = GlazeLogJson;
+        static constexpr auto value = glz::object(
+            "jsonrpc", &T::jsonrpc,
+            "id", &T::id,
+            "result", &T::log_json_list);
+    };
 };
-
 
 std::ostream& operator<<(std::ostream& out, const Log& log);
 

@@ -46,19 +46,24 @@ struct Log {
 
 typedef std::vector<Log> Logs;
 
-struct GlazeJsonItem {
-    char address[128];
-    char tx_hash[128];
-    char block_hash[128];
-    char block_number[16];
-    char tx_index[16];
-    char index[16];
+static constexpr auto addressSize = 64;
+static constexpr auto hashSize = 128;
+static constexpr auto int64Size = 32;
+static constexpr auto dataSize = 4096;
+
+struct GlazeJsonLogItem {
+    char address[addressSize];
+    char tx_hash[hashSize];
+    char block_hash[hashSize];
+    char block_number[int64Size];
+    char tx_index[int64Size];
+    char index[int64Size];
     char data[4096];
     bool removed;
     std::vector<std::string> topics;
 
     struct glaze {
-        using T = GlazeJsonItem;
+        using T = GlazeJsonLogItem;
         static constexpr auto value = glz::object(
             "address", &T::address,
             "transactionHash", &T::tx_hash,
@@ -72,12 +77,14 @@ struct GlazeJsonItem {
     };
 };
 
-struct GlazeLogJson {
-    char jsonrpc[8] = "2.0";
+static constexpr auto jsonVersionSize = 8;
+
+struct GlazeJsonLog {
+    char jsonrpc[jsonVersionSize] = "2.0";
     uint32_t id;
-    std::vector<GlazeJsonItem> log_json_list;
+    std::vector<GlazeJsonLogItem> log_json_list;
     struct glaze {
-        using T = GlazeLogJson;
+        using T = GlazeJsonLog;
         static constexpr auto value = glz::object(
             "jsonrpc", &T::jsonrpc,
             "id", &T::id,

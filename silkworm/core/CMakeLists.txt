@@ -63,3 +63,6 @@ target_link_libraries(
   PUBLIC ${SILKWORM_CORE_PUBLIC_LIBS}
   PRIVATE ${SILKWORM_CORE_PRIVATE_LIBS}
 )
+
+# TODO(yperbasis) embed
+target_compile_definitions(silkworm_core PRIVATE SILKWORM_KZG_TRUSTED_SETUP="${SILKWORM_MAIN_DIR}/third_party/c-kzg-4844/src/trusted_setup.txt")

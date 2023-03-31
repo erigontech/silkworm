@@ -1554,13 +1554,20 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_uninstall_filter(const n
 
 // https://eth.wiki/json-rpc/API#eth_getlogs
 boost::asio::awaitable<void> EthereumRpcApi::handle_eth_glaze_get_logs(const nlohmann::json& request, std::string& reply) {
-    auto params = request["params"];
-    if (params.size() != 1) {
+    if (!request.contains("params")) {
         auto error_msg = "missing value for required argument 0";
         SILKRPC_ERROR << error_msg << request.dump() << "\n";
         make_glaze_json_error(reply, request["id"], -32602, error_msg);
         co_return;
     }
+    auto params = request["params"];
+    if (params.size() > 1) {
+        auto error_msg = "too many arguments, want at most 1";
+        SILKRPC_ERROR << error_msg << request.dump() << "\n";
+        make_glaze_json_error(reply, request["id"], -32602, error_msg);
+        co_return;
+    }
+
     auto filter = params[0].get<Filter>();
     SILKRPC_DEBUG << "filter: " << filter << "\n";
 

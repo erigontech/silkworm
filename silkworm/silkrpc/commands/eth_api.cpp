@@ -1493,15 +1493,22 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann:
             co_await tx->close(); // RAII not (yet) available with coroutines
             co_return;
         }
+        std::vector<Log> filtered_logs;
+        filtered_logs.reserve(128);
+        Logs chunck_logs{};
+        chunck_logs.reserve(512);
+        Logs filtered_block_logs{};
+        filtered_block_logs.reserve(64);
+        
 
         for (auto block_to_match : block_numbers) {
             uint64_t log_index{0};
 
-            Logs filtered_block_logs{};
+            filtered_block_logs.clear();
             const auto block_key = silkworm::db::block_key(block_to_match);
             SILKRPC_TRACE << "block_to_match: " << block_to_match << " block_key: " << silkworm::to_hex(block_key) << "\n";
             co_await tx_database.for_prefix(db::table::kLogs, block_key, [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
-                Logs chunck_logs{};
+                chunck_logs.clear();
                 const bool decoding_ok{cbor_decode(v, chunck_logs)};
                 if (!decoding_ok) {
                     return false;
@@ -1510,15 +1517,15 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann:
                     log.index = log_index++;
                 }
                 SILKRPC_DEBUG << "chunck_logs.size(): " << chunck_logs.size() << "\n";
-                auto filtered_chunck_logs = filter_logs(chunck_logs, filter);
-                SILKRPC_DEBUG << "filtered_chunck_logs.size(): " << filtered_chunck_logs.size() << "\n";
-                if (filtered_chunck_logs.size() > 0) {
+                filter_logs(std::move(chunck_logs), filter, filtered_logs);
+                SILKRPC_DEBUG << "filtered_logs.size(): " << filtered_logs.size() << "\n";
+                if (filtered_logs.size() > 0) {
                     const auto tx_id = boost::endian::load_big_u32(&k[sizeof(uint64_t)]);
                     SILKRPC_DEBUG << "tx_id: " << tx_id << "\n";
-                    for (auto& log : filtered_chunck_logs) {
+                    for (auto& log : filtered_logs) {
                         log.tx_index = tx_id;
                     }
-                    filtered_block_logs.insert(filtered_block_logs.end(), filtered_chunck_logs.begin(), filtered_chunck_logs.end());
+                    filtered_block_logs.insert(filtered_block_logs.end(), filtered_logs.begin(), filtered_logs.end());
                 }
                 return true;
             });
@@ -1567,12 +1574,6 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_logs2(const nlohmann
     SILKRPC_DEBUG << "filter: " << filter << "\n";
 
     std::vector<Log> logs;
-#ifdef notdef
-    if (filter.topics) {
-       make_json_content2(buffer, request["id"], logs);
-       co_return;
-    }
-#endif
 
     auto tx = co_await database_->begin();
 
@@ -1645,14 +1646,21 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_logs2(const nlohmann
             co_return;
         }
 
+        std::vector<Log> filtered_logs;
+        filtered_logs.reserve(128);
+        Logs chunck_logs{};
+        chunck_logs.reserve(512);
+        Logs filtered_block_logs{};
+        filtered_block_logs.reserve(64);
+
         for (auto block_to_match : block_numbers) {
             uint64_t log_index{0};
 
-            Logs filtered_block_logs{};
+            filtered_block_logs.clear();
             const auto block_key = silkworm::db::block_key(block_to_match);
             SILKRPC_TRACE << "block_to_match: " << block_to_match << " block_key: " << silkworm::to_hex(block_key) << "\n";
             co_await tx_database.for_prefix(db::table::kLogs, block_key, [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
-                Logs chunck_logs{};
+                chunck_logs.clear();
                 const bool decoding_ok{cbor_decode(v, chunck_logs)};
                 if (!decoding_ok) {
                     return false;
@@ -1661,15 +1669,15 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_logs2(const nlohmann
                     log.index = log_index++;
                 }
                 SILKRPC_DEBUG << "chunck_logs.size(): " << chunck_logs.size() << "\n";
-                auto filtered_chunck_logs = filter_logs(chunck_logs, filter);
-                SILKRPC_DEBUG << "filtered_chunck_logs.size(): " << filtered_chunck_logs.size() << "\n";
-                if (filtered_chunck_logs.size() > 0) {
+                filter_logs(std::move(chunck_logs), filter, filtered_logs);
+                SILKRPC_DEBUG << "filtered_chunck_logs.size(): " << filtered_logs.size() << "\n";
+                if (filtered_logs.size() > 0) {
                     const auto tx_id = boost::endian::load_big_u32(&k[sizeof(uint64_t)]);
                     SILKRPC_DEBUG << "tx_id: " << tx_id << "\n";
-                    for (auto& log : filtered_chunck_logs) {
+                    for (auto& log : filtered_logs) {
                         log.tx_index = tx_id;
                     }
-                    filtered_block_logs.insert(filtered_block_logs.end(), filtered_chunck_logs.begin(), filtered_chunck_logs.end());
+                    filtered_block_logs.insert(filtered_block_logs.end(), filtered_logs.begin(), filtered_logs.end());
                 }
                 return true;
             });
@@ -1833,14 +1841,21 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_logs3(eth_getLogs_re
             co_return;
         }
 
+        std::vector<Log> filtered_logs;
+        filtered_logs.reserve(128);
+        Logs chunck_logs{};
+        chunck_logs.reserve(512);
+        Logs filtered_block_logs{};
+        filtered_block_logs.reserve(64);
+
         for (auto block_to_match : block_numbers) {
             uint64_t log_index{0};
 
-            Logs filtered_block_logs{};
+            filtered_block_logs.clear();
             const auto block_key = silkworm::db::block_key(block_to_match);
             SILKRPC_TRACE << "block_to_match: " << block_to_match << " block_key: " << silkworm::to_hex(block_key) << "\n";
             co_await tx_database.for_prefix(db::table::kLogs, block_key, [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
-                Logs chunck_logs{};
+                chunck_logs.clear();
                 const bool decoding_ok{cbor_decode(v, chunck_logs)};
                 if (!decoding_ok) {
                     return false;
@@ -1849,15 +1864,15 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_logs3(eth_getLogs_re
                     log.index = log_index++;
                 }
                 SILKRPC_DEBUG << "chunck_logs.size(): " << chunck_logs.size() << "\n";
-                auto filtered_chunck_logs = filter_logs(chunck_logs, filter);
-                SILKRPC_DEBUG << "filtered_chunck_logs.size(): " << filtered_chunck_logs.size() << "\n";
-                if (filtered_chunck_logs.size() > 0) {
+                filter_logs(std::move(chunck_logs), filter, filtered_logs);
+                SILKRPC_DEBUG << "filtered_chunck_logs.size(): " << filtered_logs.size() << "\n";
+                if (filtered_logs.size() > 0) {
                     const auto tx_id = boost::endian::load_big_u32(&k[sizeof(uint64_t)]);
                     SILKRPC_DEBUG << "tx_id: " << tx_id << "\n";
-                    for (auto& log : filtered_chunck_logs) {
+                    for (auto& log : filtered_logs) {
                         log.tx_index = tx_id;
                     }
-                    filtered_block_logs.insert(filtered_block_logs.end(), filtered_chunck_logs.begin(), filtered_chunck_logs.end());
+                    filtered_block_logs.insert(filtered_block_logs.end(), filtered_logs.begin(), filtered_logs.end());
                 }
                 return true;
             });
@@ -2255,31 +2270,30 @@ boost::asio::awaitable<roaring::Roaring> EthereumRpcApi::get_addresses_bitmap(co
     co_return result_bitmap;
 }
 
-std::vector<Log> EthereumRpcApi::filter_logs(std::vector<Log>& logs, const Filter& filter) {
-    std::vector<Log> filtered_logs;
-    filtered_logs.reserve(128);
+void EthereumRpcApi::filter_logs(std::vector<Log>&& logs, const Filter& filter, std::vector<Log>& filtered_logs) {
+    filtered_logs.clear();
 
-    auto addresses = filter.addresses;
-    auto topics = filter.topics;
+    const auto addresses = std::move(filter.addresses);
+    const auto topics = std::move(filter.topics);
     SILKRPC_DEBUG << "filter.addresses: " << filter.addresses << "\n";
-    for (auto log : logs) {
+    for (auto & log : logs) {
         SILKRPC_DEBUG << "log: " << log << "\n";
-        if (addresses.has_value() && std::find(addresses.value().begin(), addresses.value().end(), log.address) == addresses.value().end()) {
+        if (addresses && std::find(addresses->begin(), addresses->end(), log.address) == addresses->end()) {
             SILKRPC_DEBUG << "skipped log for address: 0x" << silkworm::to_hex(log.address) << "\n";
             continue;
         }
         auto matches = true;
-        if (topics.has_value()) {
-            if (topics.value().size() > log.topics.size()) {
-                SILKRPC_DEBUG << "#topics: " << topics.value().size() << " #log.topics: " << log.topics.size() << "\n";
+        if (topics) {
+            if (topics->size() > log.topics.size()) {
+                SILKRPC_DEBUG << "#topics: " << topics->size() << " #log.topics: " << log.topics.size() << "\n";
                 continue;
             }
-            for (size_t i{0}; i < topics.value().size(); i++) {
+            for (size_t i{0}; i < topics->size(); i++) {
                 SILKRPC_DEBUG << "log.topics[i]: " << log.topics[i] << "\n";
-                auto subtopics = topics.value()[i];
+                auto subtopics = std::move(topics->at(i));
                 auto matches_subtopics = subtopics.empty(); // empty rule set == wildcard
                 SILKRPC_TRACE << "matches_subtopics: " << std::boolalpha << matches_subtopics << "\n";
-                for (auto topic : subtopics) {
+                for (auto& topic : subtopics) {
                     SILKRPC_DEBUG << "topic: " << topic << "\n";
                     if (log.topics[i] == topic) {
                         matches_subtopics = true;
@@ -2296,10 +2310,9 @@ std::vector<Log> EthereumRpcApi::filter_logs(std::vector<Log>& logs, const Filte
         }
         SILKRPC_DEBUG << "matches: " << matches << "\n";
         if (matches) {
-            filtered_logs.push_back(log);
+            filtered_logs.push_back(std::move(log));
         }
     }
-    return filtered_logs;
 }
 
 } // namespace silkrpc::commands

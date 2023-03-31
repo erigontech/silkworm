@@ -122,6 +122,41 @@ if(NOT MSVC)
   add_dependencies(ff gmplib)
 endif()
 
+# BLST
+set(BLST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/c-kzg-4844/blst)
+if(MSVC)
+  set(BLST_BUILD_SCRIPT build.bat)
+  set(BLST_LIB blst.lib)
+else()
+  set(BLST_BUILD_SCRIPT ./build.sh)
+  set(BLST_LIB libblst.a)
+endif()
+ExternalProject_Add(
+  blst_build
+  SOURCE_DIR ${BLST_DIR}
+  CONFIGURE_COMMAND ""
+  BUILD_COMMAND ${BLST_BUILD_SCRIPT}
+  BUILD_IN_SOURCE 1
+  BUILD_BYPRODUCTS ${BLST_DIR}/${BLST_LIB}
+  INSTALL_COMMAND ""
+)
+add_library(blst STATIC IMPORTED)
+add_dependencies(blst blst_build)
+set_target_properties(blst PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES ${BLST_DIR}/bindings
+  IMPORTED_LOCATION ${BLST_DIR}/${BLST_LIB}
+)
+
+# c-kzg-4844
+add_library(
+  c-kzg-4844
+  c-kzg-4844/src/c_kzg_4844.h
+  c-kzg-4844/src/c_kzg_4844.c
+)
+target_compile_definitions(c-kzg-4844 PUBLIC FIELD_ELEMENTS_PER_BLOB=4096)
+target_include_directories(c-kzg-4844 PUBLIC c-kzg-4844/src)
+target_link_libraries(c-kzg-4844 PUBLIC blst)
+
 if(NOT SILKWORM_CORE_ONLY)
   # Roaring Bitmaps
   option(ENABLE_ROARING_TESTS "" OFF)

@@ -58,7 +58,7 @@ struct GlazeJsonLogItem {
     char block_number[int64Size];
     char tx_index[int64Size];
     char index[int64Size];
-    char data[4096];
+    char data[dataSize];
     bool removed;
     std::vector<std::string> topics;
 

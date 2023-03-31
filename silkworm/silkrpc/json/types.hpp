@@ -164,4 +164,3 @@ struct adl_serializer<silkworm::rpc::BlockNumberOrHash> {
 };
 
 }  // namespace nlohmann
-

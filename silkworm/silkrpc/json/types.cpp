@@ -855,7 +855,7 @@ void make_glaze_json_error(std::string& reply, uint32_t id, const int code, cons
     glz::write_json(glaze_json_error, reply);
 }
 
-void make_glaze_json_content(std::string& reply, uint32_t id, const silkrpc::Logs& logs) {
+void make_glaze_json_content(std::string& reply, uint32_t id, const Logs& logs) {
     GlazeLogJson log_json_data{};
     log_json_data.log_json_list.reserve(logs.size());
 

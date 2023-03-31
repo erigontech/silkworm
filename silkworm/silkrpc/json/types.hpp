@@ -143,25 +143,24 @@ nlohmann::json make_json_content(uint32_t id, const nlohmann::json& result);
 nlohmann::json make_json_error(uint32_t id, int64_t code, const std::string& message);
 nlohmann::json make_json_error(uint32_t id, const RevertError& error);
 
-  
 // GLAZE
 void make_glaze_json_content(std::string& reply, uint32_t id, const silkrpc::Logs& logs);
-void make_glaze_json_error(std::string& reply, uint32_t id, const int error_id, const std::string & message);
+void make_glaze_json_error(std::string& reply, uint32_t id, const int error_id, const std::string& message);
 
-  // namespace silkworm::rpc
+// namespace silkworm::rpc
 
 namespace nlohmann {
 
-template <>
-struct adl_serializer<silkworm::rpc::BlockNumberOrHash> {
-    static silkworm::rpc::BlockNumberOrHash from_json(const json& json) {
-        if (json.is_string()) {
-            return silkworm::rpc::BlockNumberOrHash{json.get<std::string>()};
-        } else if (json.is_number()) {
-            return silkworm::rpc::BlockNumberOrHash{json.get<std::uint64_t>()};
+    template <>
+    struct adl_serializer<silkworm::rpc::BlockNumberOrHash> {
+        static silkworm::rpc::BlockNumberOrHash from_json(const json& json) {
+            if (json.is_string()) {
+                return silkworm::rpc::BlockNumberOrHash{json.get<std::string>()};
+            } else if (json.is_number()) {
+                return silkworm::rpc::BlockNumberOrHash{json.get<std::uint64_t>()};
+            }
+            return silkworm::rpc::BlockNumberOrHash{0};
         }
-        return silkworm::rpc::BlockNumberOrHash{0};
-    }
-};
+    };
 
 }  // namespace nlohmann

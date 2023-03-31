@@ -57,7 +57,7 @@ jobs:
 
     - name: Configure CMake
       working-directory: C:\build
-      run: cmake ${{runner.workspace}}\silkworm -DCONAN_PACKAGE_MANAGER=ON -DCONAN_PROFILE=windows_msvc_17_release
+      run: cmake ${{runner.workspace}}\silkworm -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }}
 
     - name: Build
       working-directory: C:\build

@@ -5,7 +5,6 @@ benchmark/1.6.1
 boost/1.81.0
 catch2/2.13.9
 cli11/2.2.0
-gmp/6.2.1
 grpc/1.46.3
 gtest/1.12.1
 jwt-cpp/0.6.0

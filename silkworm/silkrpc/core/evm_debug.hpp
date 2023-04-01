@@ -94,22 +94,6 @@ class DebugTracer : public silkworm::EvmTracer {
     std::int64_t gas_on_precompiled_{0};
 };
 
-struct DebugTrace {
-    bool failed;
-    uint64_t gas{0};
-    std::string return_value;
-    std::vector<DebugLog> debug_logs;
-
-    DebugConfig debug_config;
-};
-
-void to_json(nlohmann::json& json, const DebugTrace& debug_trace);
-
-struct DebugExecutorResult {
-    DebugTrace debug_trace;
-    std::optional<std::string> pre_check_error{std::nullopt};
-};
-
 template <typename WorldState = silkworm::IntraBlockState, typename VM = silkworm::EVM>
 class DebugExecutor {
   public:

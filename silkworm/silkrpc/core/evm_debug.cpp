@@ -47,37 +47,6 @@ std::ostream& operator<<(std::ostream& out, const DebugConfig& tc) {
     return out;
 }
 
-void to_json(nlohmann::json& json, const DebugTrace& debug_trace) {
-    json["failed"] = debug_trace.failed;
-    json["gas"] = debug_trace.gas;
-    json["returnValue"] = debug_trace.return_value;
-
-    const auto& config = debug_trace.debug_config;
-    json["structLogs"] = nlohmann::json::array();
-    for (auto& log : debug_trace.debug_logs) {
-        nlohmann::json entry;
-
-        entry["depth"] = log.depth;
-        entry["gas"] = log.gas;
-        entry["gasCost"] = log.gas_cost;
-        entry["op"] = log.op;
-        entry["pc"] = log.pc;
-        if (!config.disableStack) {
-            entry["stack"] = log.stack;
-        }
-        if (!config.disableMemory) {
-            entry["memory"] = log.memory;
-        }
-        if (!config.disableStorage && !log.storage.empty()) {
-            entry["storage"] = log.storage;
-        }
-        if (log.error) {
-            entry["error"] = nlohmann::json::object();
-        }
-        json["structLogs"].push_back(entry);
-    }
-}
-
 std::string get_opcode_name(const char* const* names, std::uint8_t opcode) {
     const auto name = names[opcode];
     return (name != nullptr) ? name : "opcode 0x" + evmc::hex(opcode) + " not defined";

@@ -18,6 +18,7 @@
 
 #include <cstring>
 #include <utility>
+#include <span>
 
 #include <boost/endian/conversion.hpp>
 #include <intx/intx.hpp>
@@ -31,9 +32,12 @@ namespace silkworm::rpc {
 
 using evmc::literals::operator""_address;
 
-void to_hex(char* hex_bytes, silkworm::ByteView bytes) {
+void to_hex(std::span<char> hex_bytes, silkworm::ByteView bytes) {
     static const char* kHexDigits{"0123456789abcdef"};
-    char* dest{&hex_bytes[0]};
+    if (bytes.size() * 2 + 2 > hex_bytes.size()) {
+       throw std::invalid_argument("to_hex: hex_bytes too small");
+    } 
+    char* dest = hex_bytes.data();
     *dest++ = '0';
     *dest++ = 'x';
     for (const auto& b : bytes) {
@@ -42,11 +46,13 @@ void to_hex(char* hex_bytes, silkworm::ByteView bytes) {
     }
 }
 
-std::size_t to_hex_no_leading_zeros(char* hex_bytes, silkworm::ByteView bytes) {
+std::size_t to_hex_no_leading_zeros(std::span<char> hex_bytes, silkworm::ByteView bytes) {
     static const char* kHexDigits{"0123456789abcdef"};
-
-    char* dest{&hex_bytes[0]};
     size_t len = bytes.length();
+    if (len * 2 + 2 > hex_bytes.size()) {
+        throw std::invalid_argument("to_hex_no_leading_zeros: hex_bytes too small");
+    } 
+    char* dest = hex_bytes.data();
     *dest++ = '0';
     *dest++ = 'x';
 
@@ -70,20 +76,20 @@ std::size_t to_hex_no_leading_zeros(char* hex_bytes, silkworm::ByteView bytes) {
     }
     *dest = '\0';
 
-    return static_cast<size_t>(dest - hex_bytes);
+    return static_cast<size_t>(dest - hex_bytes.data());
 }
 
-std::size_t to_quantity(char* quantity_hex_bytes, silkworm::ByteView bytes) {
+std::size_t to_quantity(std::span<char> quantity_hex_bytes, silkworm::ByteView bytes) {
     return to_hex_no_leading_zeros(quantity_hex_bytes, bytes);
 }
 
-std::size_t to_quantity(char* quantity_hex_bytes, uint64_t number) {
+std::size_t to_quantity(std::span<char> quantity_hex_bytes, uint64_t number) {
     silkworm::Bytes number_bytes(8, '\0');
     silkworm::endian::store_big_u64(number_bytes.data(), number);
     return to_hex_no_leading_zeros(quantity_hex_bytes, number_bytes);
 }
 
-std::size_t to_quantity(char* quantity_hex_bytes, intx::uint256 number) {
+std::size_t to_quantity(std::span<char> quantity_hex_bytes, intx::uint256 number) {
     if (number == 0) {
         quantity_hex_bytes[0] = '0';
         quantity_hex_bytes[1] = 'x';
@@ -856,6 +862,11 @@ void make_glaze_json_error(std::string& reply, uint32_t id, const int code, cons
     glz::write_json(glaze_json_error, reply);
 }
 
+//static constexpr auto addressSize = 64;
+//static constexpr auto hashSize = 128;
+//static constexpr auto int64Size = 32;
+//static constexpr auto dataSize = 4096;
+
 void make_glaze_json_content(std::string& reply, uint32_t id, const Logs& logs) {
     GlazeJsonLog log_json_data{};
     log_json_data.log_json_list.reserve(logs.size());
@@ -864,12 +875,12 @@ void make_glaze_json_content(std::string& reply, uint32_t id, const Logs& logs) 
 
     for (const auto& l : logs) {
         GlazeJsonLogItem item{};
-        to_hex(item.address, l.address);
-        to_hex(item.tx_hash, l.tx_hash);
-        to_hex(item.block_hash, l.block_hash);
-        to_quantity(item.block_number, l.block_number);
-        to_quantity(item.tx_index, l.tx_index);
-        to_quantity(item.index, l.index);
+        to_hex(std::span(item.address), l.address);
+        to_hex(std::span(item.tx_hash), l.tx_hash);
+        to_hex(std::span(item.block_hash), l.block_hash);
+        to_quantity(std::span(item.block_number), l.block_number);
+        to_quantity(std::span(item.tx_index), l.tx_index);
+        to_quantity(std::span(item.index), l.index);
         item.removed = l.removed;
         to_hex(item.data, l.data);
         for (const auto& t : l.topics) {

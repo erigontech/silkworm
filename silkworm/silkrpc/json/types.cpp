@@ -44,6 +44,7 @@ void to_hex(std::span<char> hex_bytes, silkworm::ByteView bytes) {
         *dest++ = kHexDigits[b >> 4];    // Hi
         *dest++ = kHexDigits[b & 0x0f];  // Lo
     }
+    *dest = '\0';
 }
 
 std::size_t to_hex_no_leading_zeros(std::span<char> hex_bytes, silkworm::ByteView bytes) {
@@ -94,6 +95,7 @@ std::size_t to_quantity(std::span<char> quantity_hex_bytes, intx::uint256 number
         quantity_hex_bytes[0] = '0';
         quantity_hex_bytes[1] = 'x';
         quantity_hex_bytes[2] = '0';
+        quantity_hex_bytes[3] = '\0';
         return 3;
     }
     return to_quantity(quantity_hex_bytes, silkworm::endian::to_big_compact(number));

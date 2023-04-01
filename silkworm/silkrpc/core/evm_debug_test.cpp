@@ -71,6 +71,9 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
 
+    StringWriter writer(4096);
+    json::Stream stream(writer);
+
     SECTION("precompiled contract failure") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
@@ -118,10 +121,14 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
         block.header.number = 10'336'006;
 
         DebugExecutor executor{io_context_, db_reader, workers};
-        const auto result = spawn_and_wait(executor.execute(block, call));
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
 
-        CHECK(!result.pre_check_error);
-        CHECK(result.debug_trace == R"({
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
             "failed":true,
             "gas":50000,
             "returnValue":"",
@@ -224,6 +231,9 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
 
+    StringWriter writer(4096);
+    json::Stream stream(writer);
+
     SECTION("Call: failed with intrinsic gas too low") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
@@ -256,10 +266,18 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         block.header.number = block_number;
 
         DebugExecutor executor{io_context_, db_reader, workers};
-        const auto result = spawn_and_wait(executor.execute(block, call));
 
-        CHECK(result.pre_check_error.has_value() == true);
-        CHECK(result.pre_check_error.value() == "tracing failed: intrinsic gas too low: have 50000, want 53072");
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
+
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
+            "failed": true,
+            "structLogs":[]
+        })"_json);
     }
 
     SECTION("Call: full output") {
@@ -307,11 +325,15 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         block.header.number = block_number;
 
         DebugExecutor executor{io_context_, db_reader, workers};
-        const auto result = spawn_and_wait(executor.execute(block, call));
 
-        CHECK(result.pre_check_error.has_value() == false);
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
 
-        CHECK(result.debug_trace == R"({
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
             "failed": false,
             "gas": 75178,
             "returnValue": "",
@@ -410,10 +432,15 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
 
         DebugConfig config{false, false, true};
         DebugExecutor executor{io_context_, db_reader, workers, config};
-        const auto result = spawn_and_wait(executor.execute(block, call));
 
-        CHECK(result.pre_check_error.has_value() == false);
-        CHECK(result.debug_trace == R"({
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
+
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
             "failed": false,
             "gas": 75178,
             "returnValue": "",
@@ -503,11 +530,15 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
 
         DebugConfig config{false, true, false};
         DebugExecutor executor{io_context_, db_reader, workers, config};
-        const auto result = spawn_and_wait(executor.execute(block, call));
 
-        CHECK(result.pre_check_error.has_value() == false);
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
 
-        CHECK(result.debug_trace == R"({
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
             "failed": false,
             "gas": 75178,
             "returnValue": "",
@@ -602,11 +633,15 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
 
         DebugConfig config{true, false, false};
         DebugExecutor executor{io_context_, db_reader, workers, config};
-        const auto result = spawn_and_wait(executor.execute(block, call));
 
-        CHECK(result.pre_check_error.has_value() == false);
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
 
-        CHECK(result.debug_trace == R"({
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
             "failed": false,
             "gas": 75178,
             "returnValue": "",
@@ -702,11 +737,15 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
 
         DebugConfig config{true, true, true};
         DebugExecutor executor{io_context_, db_reader, workers, config};
-        const auto result = spawn_and_wait(executor.execute(block, call));
 
-        CHECK(result.pre_check_error.has_value() == false);
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
 
-        CHECK(result.debug_trace == R"({
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
             "failed": false,
             "gas": 75178,
             "returnValue": "",
@@ -787,20 +826,16 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         silkworm::Block block{};
         block.header.number = block_number;
 
-        StringWriter writer(4096);
-        json::Stream stream(writer);
-
         DebugConfig config{true, true, true};
         DebugExecutor executor{io_context_, db_reader, workers, config};
 
         stream.open_object();
-        const auto result = spawn_and_wait(executor.execute(block, call, &stream));
+        spawn_and_wait(executor.execute(stream, block, call));
         stream.close_object();
         stream.close();
 
         nlohmann::json json = nlohmann::json::parse(writer.get_content());
 
-        CHECK(result.pre_check_error.has_value() == false);
         CHECK(json == R"({
             "failed": false,
             "gas": 75178,
@@ -938,6 +973,9 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
 
+    StringWriter writer(4096);
+    json::Stream stream(writer);
+
     SECTION("Call: TO present") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
@@ -992,10 +1030,15 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
         block.header.number = block_number;
 
         DebugExecutor executor{io_context_, db_reader, workers};
-        const auto result = spawn_and_wait(executor.execute(block, call));
 
-        CHECK(result.pre_check_error.has_value() == false);
-        CHECK(result.debug_trace == R"({
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
+
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
             "failed": false,
             "gas": 21004,
             "returnValue": "",
@@ -1075,6 +1118,9 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
 
+    StringWriter writer(4096);
+    json::Stream stream(writer);
+
     EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
         .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
             co_return kZeroHeader;
@@ -1136,10 +1182,15 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     block.header.number = block_number;
 
     DebugExecutor executor{io_context_, db_reader, workers};
-    const auto result = spawn_and_wait(executor.execute(block, call));
 
-    CHECK(result.pre_check_error.has_value() == false);
-    CHECK(result.debug_trace == R"({
+    stream.open_object();
+    spawn_and_wait(executor.execute(stream, block, call));
+    stream.close_object();
+    stream.close();
+
+    nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+    CHECK(json == R"({
         "failed": true,
         "gas": 211190,
         "returnValue": "",

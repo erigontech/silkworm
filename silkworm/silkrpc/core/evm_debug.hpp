@@ -65,8 +65,8 @@ struct DebugLog {
 
 class DebugTracer : public silkworm::EvmTracer {
   public:
-    explicit DebugTracer(std::vector<DebugLog>& logs, const DebugConfig& config = {}, json::Stream* stream = nullptr)
-        : logs_(logs), config_(config), stream_(stream) {}
+    explicit DebugTracer(json::Stream& stream, const DebugConfig& config = {})
+        : stream_(stream), config_(config) {}
 
     DebugTracer(const DebugTracer&) = delete;
     DebugTracer& operator=(const DebugTracer&) = delete;
@@ -85,9 +85,9 @@ class DebugTracer : public silkworm::EvmTracer {
   private:
     void write_log(const DebugLog& log);
 
-    std::vector<DebugLog>& logs_;
+    json::Stream& stream_;
     const DebugConfig& config_;
-    json::Stream* stream_ = nullptr;
+    std::vector<DebugLog> logs_;
     std::map<evmc::address, Storage> storage_;
     const char* const* opcode_names_ = nullptr;
     std::int64_t start_gas_{0};
@@ -124,16 +124,15 @@ class DebugExecutor {
     DebugExecutor(const DebugExecutor&) = delete;
     DebugExecutor& operator=(const DebugExecutor&) = delete;
 
-    boost::asio::awaitable<std::vector<DebugTrace>> execute(const silkworm::Block& block, json::Stream* stream = nullptr);
-    boost::asio::awaitable<DebugExecutorResult> execute(const silkworm::Block& block, const Call& call, json::Stream* stream = nullptr);
-    boost::asio::awaitable<DebugExecutorResult> execute(const silkworm::Block& block, const Transaction& transaction,
-                                                        json::Stream* stream = nullptr) {
-        return execute(block.header.number - 1, block, transaction, transaction.transaction_index, stream);
+    boost::asio::awaitable<void> execute(json::Stream& stream, const silkworm::Block& block);
+    boost::asio::awaitable<void> execute(json::Stream& stream, const silkworm::Block& block, const Call& call);
+    boost::asio::awaitable<void> execute(json::Stream& stream, const silkworm::Block& block, const Transaction& transaction) {
+        return execute(stream, block.header.number - 1, block, transaction, transaction.transaction_index);
     }
 
   private:
-    boost::asio::awaitable<DebugExecutorResult> execute(std::uint64_t block_number, const silkworm::Block& block,
-                                                        const Transaction& transaction, int32_t = -1, json::Stream* stream = nullptr);
+    boost::asio::awaitable<void> execute(json::Stream& stream, std::uint64_t block_number,
+                                         const silkworm::Block& block, const Transaction& transaction, int32_t = -1);
 
     boost::asio::io_context& io_context_;
     const core::rawdb::DatabaseReader& database_reader_;

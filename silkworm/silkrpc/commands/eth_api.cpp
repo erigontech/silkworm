@@ -1553,7 +1553,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_uninstall_filter(const n
 }
 
 // https://eth.wiki/json-rpc/API#eth_getlogs
-boost::asio::awaitable<void> EthereumRpcApi::handle_eth_glaze_get_logs(const nlohmann::json& request, std::string& reply) {
+boost::asio::awaitable<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann::json& request, std::string& reply) {
     if (!request.contains("params")) {
         auto error_msg = "missing value for required argument 0";
         SILKRPC_ERROR << error_msg << request.dump() << "\n";

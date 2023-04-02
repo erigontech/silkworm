@@ -909,6 +909,36 @@ TEST_CASE("MemoryMutationCursor: SeekBothRange interleaved", "[silkworm][node][d
     CHECK(mem_result.value == "value3.3");
 }
 
+TEST_CASE("MemoryMutationCursor: Delete interleaved", "[silkworm][node][db][memory_mutation_cursor]") {
+    MemoryMutationCursorTest test;
+
+    auto rw_db_cursor = test.main_txn.rw_cursor_dup_sort(db::table::kHashedAccounts);
+    rw_db_cursor->upsert(mdbx::slice{"key1"}, mdbx::slice{"value1.1"});
+    rw_db_cursor->upsert(mdbx::slice{"key3"}, mdbx::slice{"value3.3"});
+    test.main_txn.commit_and_renew();
+
+    auto rw_mem_cursor = test.mutation.rw_cursor_dup_sort(db::table::kHashedAccounts);
+    rw_mem_cursor->upsert("key1", "value1.3");
+    rw_mem_cursor->upsert("key2", "value2.1");
+    rw_mem_cursor->upsert("key3", "value3.1");
+    test.mutation.commit_and_renew();
+
+    auto db_cursor = test.main_txn.rw_cursor_dup_sort(db::table::kHashedAccounts);
+    auto mem_cursor = test.mutation.rw_cursor_dup_sort(db::table::kHashedAccounts);
+
+    mem_cursor->erase(mdbx::slice{"key1"});
+    mem_cursor->erase(mdbx::slice{"key3"});
+
+    CHECK(db_cursor->seek("key1"));
+    CHECK(db_cursor->seek("key3"));
+    CHECK(!mem_cursor->seek("key1"));
+    CHECK(mem_cursor->seek("key2"));
+    CHECK(!mem_cursor->seek("key3"));
+
+    mem_cursor->erase(mdbx::slice{"key2"});
+    CHECK(!mem_cursor->seek("key2"));
+}
+
 #endif  // SILKWORM_SANITIZE
 
 }  // namespace silkworm::db

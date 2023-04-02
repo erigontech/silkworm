@@ -47,7 +47,7 @@ void to_hex(std::span<char> hex_bytes, silkworm::ByteView bytes) {
     *dest = '\0';
 }
 
-std::size_t to_hex_no_leading_zeros(std::span<char> hex_bytes, silkworm::ByteView bytes) {
+void to_hex_no_leading_zeros(std::span<char> hex_bytes, silkworm::ByteView bytes) {
     static const char* kHexDigits{"0123456789abcdef"};
     size_t len = bytes.length();
     if (len * 2 + 2 + 1 > hex_bytes.size()) {
@@ -76,29 +76,27 @@ std::size_t to_hex_no_leading_zeros(std::span<char> hex_bytes, silkworm::ByteVie
         }
     }
     *dest = '\0';
-
-    return static_cast<size_t>(dest - hex_bytes.data());
 }
 
-std::size_t to_quantity(std::span<char> quantity_hex_bytes, silkworm::ByteView bytes) {
-    return to_hex_no_leading_zeros(quantity_hex_bytes, bytes);
+void to_quantity(std::span<char> quantity_hex_bytes, silkworm::ByteView bytes) {
+    to_hex_no_leading_zeros(quantity_hex_bytes, bytes);
 }
 
-std::size_t to_quantity(std::span<char> quantity_hex_bytes, uint64_t number) {
+void to_quantity(std::span<char> quantity_hex_bytes, uint64_t number) {
     silkworm::Bytes number_bytes(8, '\0');
     silkworm::endian::store_big_u64(number_bytes.data(), number);
-    return to_hex_no_leading_zeros(quantity_hex_bytes, number_bytes);
+    to_hex_no_leading_zeros(quantity_hex_bytes, number_bytes);
 }
 
-std::size_t to_quantity(std::span<char> quantity_hex_bytes, intx::uint256 number) {
+void to_quantity(std::span<char> quantity_hex_bytes, intx::uint256 number) {
     if (number == 0) {
         quantity_hex_bytes[0] = '0';
         quantity_hex_bytes[1] = 'x';
         quantity_hex_bytes[2] = '0';
         quantity_hex_bytes[3] = '\0';
-        return 3;
+        return;
     }
-    return to_quantity(quantity_hex_bytes, silkworm::endian::to_big_compact(number));
+    to_quantity(quantity_hex_bytes, silkworm::endian::to_big_compact(number));
 }
 
 std::string to_hex_no_leading_zeros(silkworm::ByteView bytes) {

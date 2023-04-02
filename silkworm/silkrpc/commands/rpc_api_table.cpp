@@ -151,7 +151,7 @@ void RpcApiTable::add_eth_handlers() {
     method_handlers_[http::method::k_eth_getBlockReceipts] = &commands::RpcApi::handle_parity_get_block_receipts;
 
     // GLAZE methods
-    method_handlers_glaze_[http::method::k_eth_getLogs] = &commands::RpcApi::handle_eth_glaze_get_logs;
+    method_handlers_glaze_[http::method::k_eth_getLogs] = &commands::RpcApi::handle_eth_get_logs;
 }
 
 void RpcApiTable::add_net_handlers() {

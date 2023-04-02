@@ -57,8 +57,8 @@ class MemoryMutation : public RWTxn {
     std::unique_ptr<RWCursor> rw_cursor(const MapConfig& config) override;
     std::unique_ptr<RWCursorDupSort> rw_cursor_dup_sort(const MapConfig& config) override;
 
-    bool erase(::mdbx::map_handle table, const Slice &key);
-    bool erase(::mdbx::map_handle table, const Slice &key, const Slice &value);
+    bool erase(::mdbx::map_handle table, const Slice& key);
+    bool erase(::mdbx::map_handle table, const Slice& key, const Slice& value);
 
     void rollback();
 

@@ -371,7 +371,7 @@ CursorResult MemoryMutationCursor::lower_bound_multivalue(const Slice& key, cons
         return memory_cursor_->lower_bound_multivalue(key, value, throw_notfound);
     }
 
-    const auto memory_result = memory_cursor_->lower_bound_multivalue(key, value,  false);
+    const auto memory_result = memory_cursor_->lower_bound_multivalue(key, value, false);
 
     auto db_result = cursor_->lower_bound_multivalue(key, value, false);
     if (db_result.key && is_entry_deleted(db_result.key)) {

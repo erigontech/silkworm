@@ -22,8 +22,6 @@
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/http/methods.hpp>
 
-#define API_WITH_GLAZE 1
-
 namespace silkworm::rpc::commands {
 
 RpcApiTable::RpcApiTable(const std::string& api_spec) {
@@ -152,12 +150,8 @@ void RpcApiTable::add_eth_handlers() {
     method_handlers_[http::method::k_eth_unsubscribe] = &commands::RpcApi::handle_eth_unsubscribe;
     method_handlers_[http::method::k_eth_getBlockReceipts] = &commands::RpcApi::handle_parity_get_block_receipts;
 
-    if (API_WITH_GLAZE) {
-        // GLAZE
-        method_handlers_glaze_[http::method::k_eth_getLogs] = &commands::RpcApi::handle_eth_glaze_get_logs;
-    } else {
-        method_handlers_[http::method::k_eth_getLogs] = &commands::RpcApi::handle_eth_get_logs;
-    }
+    // GLAZE methods
+    method_handlers_glaze_[http::method::k_eth_getLogs] = &commands::RpcApi::handle_eth_get_logs;
 }
 
 void RpcApiTable::add_net_handlers() {

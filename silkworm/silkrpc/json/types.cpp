@@ -34,7 +34,7 @@ using evmc::literals::operator""_address;
 
 void to_hex(std::span<char> hex_bytes, silkworm::ByteView bytes) {
     static const char* kHexDigits{"0123456789abcdef"};
-    if (bytes.size() * 2 + 2 > hex_bytes.size()) {
+    if (bytes.size() * 2 + 2 + 1 > hex_bytes.size()) {
         throw std::invalid_argument("to_hex: hex_bytes too small");
     }
     char* dest = hex_bytes.data();
@@ -50,7 +50,7 @@ void to_hex(std::span<char> hex_bytes, silkworm::ByteView bytes) {
 std::size_t to_hex_no_leading_zeros(std::span<char> hex_bytes, silkworm::ByteView bytes) {
     static const char* kHexDigits{"0123456789abcdef"};
     size_t len = bytes.length();
-    if (len * 2 + 2 > hex_bytes.size()) {
+    if (len * 2 + 2 + 1 > hex_bytes.size()) {
         throw std::invalid_argument("to_hex_no_leading_zeros: hex_bytes too small");
     }
     char* dest = hex_bytes.data();
@@ -863,11 +863,6 @@ void make_glaze_json_error(std::string& reply, uint32_t id, const int code, cons
 
     glz::write_json(glaze_json_error, reply);
 }
-
-// static constexpr auto addressSize = 64;
-// static constexpr auto hashSize = 128;
-// static constexpr auto int64Size = 32;
-// static constexpr auto dataSize = 4096;
 
 void make_glaze_json_content(std::string& reply, uint32_t id, const Logs& logs) {
     GlazeJsonLog log_json_data{};

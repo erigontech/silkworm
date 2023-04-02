@@ -634,6 +634,72 @@ TEST_CASE("MemoryMutationCursor: current", "[silkworm][node][db][memory_mutation
     }
 }
 
+TEST_CASE("MemoryMutationCursor: lower_bound_multivalue", "[silkworm][node][db][memory_mutation_cursor]") {
+    MemoryMutationCursorTest test1;
+    test1.fill_main_tables();
+
+    MemoryMutationCursorTest test2;
+    test2.fill_main_tables();
+    test2.fill_mutation_tables();
+
+    std::map<std::string, MemoryMutationCursorTest*> mutation_tests = {
+        {"Empty overlay", &test1},
+        {"Nonempty overlay", &test2},
+    };
+    for (auto [tag, test] : mutation_tests) {
+        SECTION(tag + ": lower_bound_multivalue on nonexistent single-value table: mdbx::incompatible_operation") {
+            MemoryMutationCursor mutation_cursor1{test->mutation, kNonexistentTestMap};
+            CHECK_THROWS_AS(mutation_cursor1.lower_bound_multivalue("k", "v", /*throw_notfound=*/true), mdbx::incompatible_operation);
+            CHECK_THROWS_AS(!mutation_cursor1.lower_bound_multivalue("k", "v"), mdbx::incompatible_operation);
+        }
+
+        SECTION(tag + ": lower_bound_multivalue on nonexistent multi-value table: mdbx::not_found") {
+            MemoryMutationCursor mutation_cursor2{test->mutation, kNonexistentTestMultiMap};
+            CHECK_THROWS_AS(mutation_cursor2.lower_bound_multivalue("k", "v", /*throw_notfound=*/true), mdbx::not_found);
+            CHECK(!mutation_cursor2.lower_bound_multivalue("k", "v", /*throw_notfound=*/false));
+            CHECK(!mutation_cursor2.lower_bound_multivalue("k", "v"));
+        }
+
+        SECTION(tag + ": lower_bound_multivalue on existent multi-value table: OK") {
+            MemoryMutationCursor mutation_cursor1{test->mutation, kTestMap};
+            CHECK_THROWS_AS(mutation_cursor1.lower_bound_multivalue("BB", "11"), mdbx::incompatible_operation);
+
+            MemoryMutationCursor mutation_cursor4{test->mutation, kTestMultiMap};
+            const auto result4 = mutation_cursor4.lower_bound_multivalue("AA", "11");
+            CHECK(result4.done);
+            CHECK(result4.key == "AA");
+            CHECK(result4.value == "11");
+
+            MemoryMutationCursor mutation_cursor5{test->mutation, kTestMultiMap};
+            const auto result5 = mutation_cursor5.lower_bound_multivalue("AA", "11", /*throw_notfound=*/true);
+            CHECK(result5.done);
+            CHECK(result5.key == "AA");
+            CHECK(result5.value == "11");
+
+            MemoryMutationCursor mutation_cursor6{test->mutation, kTestMultiMap};
+            const auto result6 = mutation_cursor6.lower_bound_multivalue("AA", "11", /*throw_notfound=*/false);
+            CHECK(result6.done);
+            CHECK(result6.key == "AA");
+            CHECK(result6.value == "11");
+        }
+
+        SECTION(tag + ": lower_bound_multivalue multiple operations") {
+            MemoryMutationCursor mutation_cursor{test->mutation, kTestMultiMap};
+            const auto result4 = mutation_cursor.lower_bound_multivalue("AA", "11");
+            CHECK(result4.done);
+            CHECK(result4.key == "AA");
+            CHECK(result4.value == "11");
+            const auto result5 = mutation_cursor.lower_bound_multivalue("AA", "22");
+            CHECK(result5.done);
+            CHECK(result5.key == "AA");
+            CHECK(result5.value == "22");
+            REQUIRE(mutation_cursor.to_last(/*throw_notfound=*/false));
+            const auto result6 = mutation_cursor.lower_bound_multivalue("AA", "33");
+            CHECK(!result6.done);
+        }
+    }
+}
+
 TEST_CASE("MemoryMutationCursor: Next interleaved", "[silkworm][node][db][memory_mutation_cursor]") {
     MemoryMutationCursorTest test;
 
@@ -765,6 +831,82 @@ TEST_CASE("MemoryMutationCursor: NextDup interleaved", "[silkworm][node][db][mem
 
     mem_result = mem_cursor->to_current_next_multi(/*throw_notfound=*/false);
     CHECK(!mem_result.done);
+}
+
+TEST_CASE("MemoryMutationCursor: SeekBothExact interleaved", "[silkworm][node][db][memory_mutation_cursor]") {
+    MemoryMutationCursorTest test;
+
+    auto rw_db_cursor = test.main_txn.rw_cursor_dup_sort(db::table::kAccountChangeSet);
+    rw_db_cursor->upsert(mdbx::slice{"key1"}, mdbx::slice{"value1.1"});
+    rw_db_cursor->upsert(mdbx::slice{"key3"}, mdbx::slice{"value3.3"});
+    test.main_txn.commit_and_renew();
+
+    auto rw_mem_cursor = test.mutation.rw_cursor_dup_sort(db::table::kAccountChangeSet);
+    rw_mem_cursor->upsert(mdbx::slice{"key3"}, mdbx::slice{"value3.1"});
+    rw_mem_cursor->upsert(mdbx::slice{"key1"}, mdbx::slice{"value1.3"});
+    test.mutation.commit_and_renew();
+
+    auto db_cursor = test.main_txn.ro_cursor_dup_sort(db::table::kAccountChangeSet);
+    auto mem_cursor = test.mutation.ro_cursor_dup_sort(db::table::kAccountChangeSet);
+
+    auto db_result = db_cursor->find_multivalue("key2", "value1.2", /*throw_notfound=*/false);
+    CHECK(!db_result.done);
+    auto mem_result = mem_cursor->find_multivalue("key2", "value1.2", /*throw_notfound=*/false);
+    CHECK(!mem_result.done);
+
+    db_result = db_cursor->find_multivalue("key3", "value3.1", /*throw_notfound=*/false);
+    CHECK(!db_result.done);
+    mem_result = mem_cursor->find_multivalue("key3", "value3.1", /*throw_notfound=*/false);
+    CHECK(mem_result.done);
+    CHECK(mem_result.key == "key3");
+    CHECK(mem_result.value == "value3.1");
+
+    db_result = db_cursor->find_multivalue("key3", "value3.2", /*throw_notfound=*/false);
+    CHECK(!db_result.done);
+    mem_result = mem_cursor->find_multivalue("key3", "value3.2", /*throw_notfound=*/false);
+    CHECK(!mem_result.done);
+
+    db_result = db_cursor->find_multivalue("key3", "value3.3", /*throw_notfound=*/false);
+    CHECK(db_result.done);
+    CHECK(db_result.key == "key3");
+    CHECK(db_result.value == "value3.3");
+    mem_result = mem_cursor->find_multivalue("key3", "value3.3", /*throw_notfound=*/false);
+    CHECK(mem_result.done);
+    CHECK(mem_result.key == "key3");
+    CHECK(mem_result.value == "value3.3");
+}
+
+TEST_CASE("MemoryMutationCursor: SeekBothRange interleaved", "[silkworm][node][db][memory_mutation_cursor]") {
+    MemoryMutationCursorTest test;
+
+    auto rw_db_cursor = test.main_txn.rw_cursor_dup_sort(db::table::kAccountChangeSet);
+    rw_db_cursor->upsert(mdbx::slice{"key1"}, mdbx::slice{"value1.1"});
+    rw_db_cursor->upsert(mdbx::slice{"key3"}, mdbx::slice{"value3.3"});
+    test.main_txn.commit_and_renew();
+
+    auto rw_mem_cursor = test.mutation.rw_cursor_dup_sort(db::table::kAccountChangeSet);
+    rw_mem_cursor->upsert(mdbx::slice{"key3"}, mdbx::slice{"value3.1"});
+    rw_mem_cursor->upsert(mdbx::slice{"key1"}, mdbx::slice{"value1.3"});
+    test.mutation.commit_and_renew();
+
+    auto db_cursor = test.main_txn.ro_cursor_dup_sort(db::table::kAccountChangeSet);
+    auto mem_cursor = test.mutation.ro_cursor_dup_sort(db::table::kAccountChangeSet);
+
+    // SeekBothRange does exact match of the key, so we find nothing here
+    auto db_result = db_cursor->lower_bound_multivalue("key2", "value1.2");
+    CHECK(!db_result.done);
+    auto mem_result = mem_cursor->lower_bound_multivalue("key2", "value1.2");
+    CHECK(!mem_result.done);
+
+    // SeekBothRange does exact match of the key and range match of the value, so we get last value
+    db_result = db_cursor->lower_bound_multivalue("key3", "value3.2");
+    CHECK(db_result.done);
+    CHECK(db_result.key == "key3");
+    CHECK(db_result.value == "value3.3");
+    mem_result = mem_cursor->lower_bound_multivalue("key3", "value3.2");
+    CHECK(mem_result.done);
+    CHECK(mem_result.key == "key3");
+    CHECK(mem_result.value == "value3.3");
 }
 
 #endif  // SILKWORM_SANITIZE

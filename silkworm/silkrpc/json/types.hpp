@@ -133,15 +133,14 @@ void to_json(nlohmann::json& json, const std::set<evmc::address>& addresses);
 
 std::string to_hex_no_leading_zeros(uint64_t number);
 std::string to_hex_no_leading_zeros(silkworm::ByteView bytes);
-
-void to_hex(std::span<char> hex_bytes, silkworm::ByteView bytes);
-
 std::string to_quantity(uint64_t number);
 std::string to_quantity(intx::uint256 number);
 std::string to_quantity(silkworm::ByteView bytes);
-size_t to_quantity(std::span<char> hex_bytes, uint64_t number);
-size_t to_quantity(std::span<char> hex_bytes, intx::uint256 number);
-size_t to_quantity(std::span<char> hex_bytes, silkworm::ByteView bytes);
+
+void to_quantity(std::span<char> hex_bytes, uint64_t number);
+void to_quantity(std::span<char> hex_bytes, intx::uint256 number);
+void to_quantity(std::span<char> hex_bytes, silkworm::ByteView bytes);
+void to_hex(std::span<char> hex_bytes, silkworm::ByteView bytes);
 
 nlohmann::json make_json_content(uint32_t id);
 nlohmann::json make_json_content(uint32_t id, const nlohmann::json& result);

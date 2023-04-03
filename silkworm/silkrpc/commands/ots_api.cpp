@@ -104,7 +104,11 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetails(const nlohman
         const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_hash, block_number);
         //const auto block_with_hash = co_await core::rawdb::read_block_by_hash(tx_database, block_hash);
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
-        const BlockDetails block_details{block_hash, block_with_hash.block.header, total_difficulty, block_with_hash.block.transactions.size() - 2, block_with_hash.block.ommers};
+
+        const Block extended_block{block_with_hash, total_difficulty, false};
+        auto block_size = extended_block.get_block_size();
+
+        const BlockDetails block_details{block_size, block_hash, block_with_hash.block.header, total_difficulty, block_with_hash.block.transactions.size(), block_with_hash.block.ommers};
 
         auto receipts = co_await core::get_receipts(tx_database, block_with_hash);
         auto chain_config = co_await core::rawdb::read_chain_config(tx_database);
@@ -151,7 +155,11 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetailsByHash(const n
         const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_hash, block_number);
         //const auto block_with_hash = co_await core::rawdb::read_block_by_hash(tx_database, block_hash);
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
-        const BlockDetails block_details{block_hash, block_with_hash.block.header, total_difficulty, block_with_hash.block.transactions.size() - 2, block_with_hash.block.ommers};
+
+        const Block extended_block{block_with_hash, total_difficulty, false};
+        auto block_size = extended_block.get_block_size();
+
+        const BlockDetails block_details{block_size, block_hash, block_with_hash.block.header, total_difficulty, block_with_hash.block.transactions.size() - 2, block_with_hash.block.ommers};
 
         auto receipts = co_await core::get_receipts(tx_database, block_with_hash);
         auto chain_config = co_await core::rawdb::read_chain_config(tx_database);
@@ -188,8 +196,8 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockTransactions(const nl
     }
 
     const auto block_id = params[0].get<std::string>();
-    const auto page_number = params[1].get<uint8_t>();
-    const auto page_size = params[2].get<uint8_t>();
+    const auto page_number = params[1].get<unsigned long>();
+    const auto page_size = params[2].get<unsigned long>();
 
     SILKRPC_DEBUG << "block_id: " << block_id << " page_number: " << page_number << " page_size: " << page_size << "\n";
 
@@ -203,10 +211,27 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockTransactions(const nl
         const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_with_hash.hash, block_number);
         auto receipts = co_await core::get_receipts(tx_database, block_with_hash);
 
-        auto transaction_count = block_with_hash.block.transactions.size() - 2;
-        BlockTransactionsResponse block_transactions{block_with_hash.hash, block_with_hash.block.header, total_difficulty, transaction_count};
+        const Block extended_block{block_with_hash, total_difficulty, false};
+        auto block_size = extended_block.get_block_size();
 
-        // TODO: add transactions and receipts to the response
+        auto transaction_count = block_with_hash.block.transactions.size(); //  - 2;
+        BlockTransactionsResponse block_transactions{block_size, block_with_hash.hash, block_with_hash.block.header, total_difficulty, transaction_count, block_with_hash.block.ommers};
+
+        unsigned long page_start = (page_number - 1) * page_size;
+        unsigned long page_end = page_start + page_size;
+        if (page_end > block_with_hash.block.transactions.size() -1){
+            page_end = block_with_hash.block.transactions.size() -1;
+        }
+
+        for (unsigned long i = page_start; i < page_end; i++){
+            block_transactions.transactions.push_back(block_with_hash.block.transactions.at(i));
+        }
+
+        // TODO: add receipts to the response: silkworm::Receipt or silkworm::rpc::Receipt ?
+
+        //for (unsigned long i = page_start; i < page_end; i++){
+        //    block_transactions.receipts.push_back(receipts.at(i));
+        //}
 
         reply = make_json_content(request["id"], block_transactions);
 
@@ -254,12 +279,12 @@ intx::uint256 OtsRpcApi::get_block_fees(const ChainConfig& chain_config, const s
 
         intx::uint256 effective_gas_price;
         if (config.london_block && block_number >= config.london_block.value()) {
-            intx::uint256 base_fee = block.block.header.base_fee_per_gas.value();
+            intx::uint256 base_fee = block.block.header.base_fee_per_gas.value_or(0);
             intx::uint256 gas_price = txn.effective_gas_price(base_fee);
             effective_gas_price = base_fee + gas_price;
 
         } else {
-            intx::uint256 base_fee = block.block.header.base_fee_per_gas.value();
+            intx::uint256 base_fee = block.block.header.base_fee_per_gas.value_or(0);
             effective_gas_price = txn.effective_gas_price(base_fee);
         }
 

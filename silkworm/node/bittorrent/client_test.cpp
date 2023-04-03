@@ -234,6 +234,8 @@ TEST_CASE("BitTorrentClient::stop", "[silkworm][snapshot][bittorrent]") {
         execution_thread.join();
     }
 
+// Exclude from sanitizer builds due to false positive: https://gcc.gnu.org/bugzilla//show_bug.cgi?id=101978
+#ifndef SILKWORM_SANITIZE
     SECTION("interrupt seeding execution loop on separate thread") {
         settings.seeding = true;
         BitTorrentClient client{settings};
@@ -241,6 +243,7 @@ TEST_CASE("BitTorrentClient::stop", "[silkworm][snapshot][bittorrent]") {
         CHECK_NOTHROW(client.stop());
         execution_thread.join();
     }
+#endif  // SILKWORM_SANITIZE
 }
 
 TEST_CASE("BitTorrentClient::request_torrent_updates", "[silkworm][snapshot][bittorrent]") {

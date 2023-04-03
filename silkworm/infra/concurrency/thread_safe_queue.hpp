@@ -20,6 +20,8 @@
 #include <mutex>
 #include <queue>
 
+namespace silkworm {
+
 template <typename T, template <typename S, typename Alloc = std::allocator<T> > class container = std::deque>
 class ThreadSafeQueue {
   private:
@@ -83,3 +85,5 @@ class ThreadSafeQueue {
         return true;
     }
 };
+
+}  // namespace silkworm

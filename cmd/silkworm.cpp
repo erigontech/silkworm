@@ -16,6 +16,7 @@
 
 #include <regex>
 #include <stdexcept>
+#include <string>
 
 #include <CLI/CLI.hpp>
 
@@ -68,6 +69,17 @@ class ResourceUsageLog : public ActiveComponent {
                 last_update = now;
             }
         }
+    }
+};
+
+struct PruneModeValidator : public CLI::Validator {
+    explicit PruneModeValidator() {
+        func_ = [](const std::string& value) -> std::string {
+            if (value.find_first_not_of("hrtc") != std::string::npos) {
+                return "Value " + value + " contains other characters other than h r t c";
+            }
+            return {};
+        };
     }
 };
 

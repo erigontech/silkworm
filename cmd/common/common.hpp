@@ -30,10 +30,6 @@ namespace silkworm::cmd::common {
 //! Assemble the full node name using the Cable build information
 std::string get_node_name_from_build_info(const buildinfo* build_info);
 
-struct PruneModeValidator : public CLI::Validator {
-    explicit PruneModeValidator();
-};
-
 //! \brief Set up options to populate log settings after cli.parse()
 void add_logging_options(CLI::App& cli, log::Settings& log_settings);
 

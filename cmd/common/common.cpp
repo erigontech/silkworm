@@ -16,23 +16,12 @@
 
 #include "common.hpp"
 
-#include <stdexcept>
-
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 
 #include "ip_endpoint_option.hpp"
 
 namespace silkworm::cmd::common {
-
-PruneModeValidator::PruneModeValidator() {
-    func_ = [](const std::string& value) -> std::string {
-        if (value.find_first_not_of("hrtc") != std::string::npos) {
-            return "Value " + value + " contains other characters other than h r t c";
-        }
-        return {};
-    };
-}
 
 void add_logging_options(CLI::App& cli, log::Settings& log_settings) {
     std::map<std::string, log::Level> level_mapping{

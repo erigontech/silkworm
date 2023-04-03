@@ -16,8 +16,9 @@
 
 #pragma once
 
-#include "client.hpp"
 #include <silkworm/node/stagedsync/server.hpp>
+
+#include "client.hpp"
 
 namespace silkworm::execution {
 

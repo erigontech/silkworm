@@ -15,4 +15,4 @@
 ]]
 
 add_executable(kzg_g2_uncompress kzg_g2_uncompress.cpp)
-target_link_libraries(kzg_g2_uncompress silkworm_core c-kzg-4844)
+target_link_libraries(kzg_g2_uncompress silkworm_core blst)

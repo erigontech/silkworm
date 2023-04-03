@@ -26,12 +26,7 @@
 #include <silkworm/node/common/settings.hpp>
 #include <silkworm/node/snapshot/settings.hpp>
 
-#include "settings.hpp"
-
 namespace silkworm::cmd::common {
-
-//! \brief Parses command line arguments for Silkworm executables
-void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], SilkwormCoreSettings& settings);
 
 //! \brief Ensure database is ready to take off and consistent with command line arguments
 void run_preflight_checklist(NodeSettings& node_settings, bool init_if_empty = true);

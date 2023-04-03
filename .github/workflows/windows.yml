@@ -84,10 +84,11 @@ jobs:
       working-directory: C:\build
       run: cmake --build . --config ${{ matrix.config.build_type }} --target node_test -j 2
 
-# Skip rpcdaemon_test to avoid fatal error C1002: compiler is out of heap space in pass 2
-#    - name: Build rpcdaemon_test
-#      working-directory: C:\build
-#      run: cmake --build . --config ${{ matrix.config.build_type }} --target rpcdaemon_test -j 2
+    - name: Build rpcdaemon_test
+      working-directory: C:\build
+      # Skip rpcdaemon_test to avoid fatal error C1002: compiler is out of heap space in pass 2
+      # run: cmake --build . --config ${{ matrix.config.build_type }} --target rpcdaemon_test -j 2
+      run: echo "Skip rpcdaemon_test build to avoid fatal error C1002 compiler is out of heap space in pass 2"
 
     - name: Build sentry_test
       working-directory: C:\build
@@ -107,7 +108,6 @@ jobs:
         cmd/test/${{ matrix.config.build_type }}/core_test
         cmd/test/${{ matrix.config.build_type }}/infra_test
         cmd/test/${{ matrix.config.build_type }}/node_test
-#        cmd/test/${{ matrix.config.build_type }}/rpcdaemon_test
         cmd/test/${{ matrix.config.build_type }}/sentry_test
         cmd/test/${{ matrix.config.build_type }}/sync_test
         cmd/test/${{ matrix.config.build_type }}/consensus --threads 4

@@ -39,7 +39,7 @@ class RequestHandler;
 
 namespace silkworm::rpc::commands {
 
-const int16_t kAccountRangeMaxResults = 256;
+using boost::asio::awaitable;
 
 class DebugRpcApi {
   public:
@@ -51,15 +51,15 @@ class DebugRpcApi {
     DebugRpcApi& operator=(const DebugRpcApi&) = delete;
 
   protected:
-    boost::asio::awaitable<void> handle_debug_account_range(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_debug_get_modified_accounts_by_number(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_debug_get_modified_accounts_by_hash(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_debug_storage_range_at(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_debug_account_range(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_debug_get_modified_accounts_by_number(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_debug_get_modified_accounts_by_hash(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_debug_storage_range_at(const nlohmann::json& request, nlohmann::json& reply);
 
-    boost::asio::awaitable<void> handle_debug_trace_transaction(const nlohmann::json& request, json::Stream& stream);
-    boost::asio::awaitable<void> handle_debug_trace_call(const nlohmann::json& request, json::Stream& stream);
-    boost::asio::awaitable<void> handle_debug_trace_block_by_number(const nlohmann::json& request, json::Stream& stream);
-    boost::asio::awaitable<void> handle_debug_trace_block_by_hash(const nlohmann::json& request, json::Stream& stream);
+    awaitable<void> handle_debug_trace_transaction(const nlohmann::json& request, json::Stream& stream);
+    awaitable<void> handle_debug_trace_call(const nlohmann::json& request, json::Stream& stream);
+    awaitable<void> handle_debug_trace_block_by_number(const nlohmann::json& request, json::Stream& stream);
+    awaitable<void> handle_debug_trace_block_by_hash(const nlohmann::json& request, json::Stream& stream);
 
   private:
     Context& context_;
@@ -70,6 +70,6 @@ class DebugRpcApi {
     friend class silkworm::http::RequestHandler;
 };
 
-boost::asio::awaitable<std::set<evmc::address>> get_modified_accounts(ethdb::TransactionDatabase& tx_database, uint64_t start_block_number, uint64_t end_block_number);
+awaitable<std::set<evmc::address>> get_modified_accounts(ethdb::TransactionDatabase& tx_database, uint64_t start_block_number, uint64_t end_block_number);
 
 }  // namespace silkworm::rpc::commands

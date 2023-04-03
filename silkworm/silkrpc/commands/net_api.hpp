@@ -35,6 +35,8 @@ class RequestHandler;
 
 namespace silkworm::rpc::commands {
 
+using boost::asio::awaitable;
+
 class NetRpcApi {
   public:
     explicit NetRpcApi(std::unique_ptr<ethbackend::BackEnd>& backend) : backend_(backend) {}
@@ -44,9 +46,9 @@ class NetRpcApi {
     NetRpcApi& operator=(const NetRpcApi&) = delete;
 
   protected:
-    boost::asio::awaitable<void> handle_net_listening(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_net_peer_count(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_net_version(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_net_listening(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_net_peer_count(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_net_version(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
     friend class silkworm::http::RequestHandler;

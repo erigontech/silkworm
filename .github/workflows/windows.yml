@@ -37,6 +37,15 @@ jobs:
         submodules: recursive
         fetch-depth: "0"
 
+    - name: Install Conan
+      id: conan
+      uses: turtlebrowser/get-conan@main
+      with:
+        version: 1.59.0
+
+    - name: Conan version
+      run: echo "${{ steps.conan.outputs.version }}"
+
     - name: vcpkg build
       uses: johnwason/vcpkg-action@v4
       id: vcpkg
@@ -57,7 +66,7 @@ jobs:
 
     - name: Configure CMake
       working-directory: C:\build
-      run: cmake ${{runner.workspace}}\silkworm -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }}
+      run: cmake ${{runner.workspace}}\silkworm -DCONAN_PACKAGE_MANAGER=ON -DCONAN_PROFILE=windows_msvc_17_release
 
     - name: Build
       working-directory: C:\build

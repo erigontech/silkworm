@@ -162,6 +162,10 @@ size_t process_headers_at_height(ROTxn& txn, BlockNum height, std::function<void
 }
 
 void write_header(RWTxn& txn, const BlockHeader& header, bool with_header_numbers) {
+    write_header_ex(txn, header, with_header_numbers);
+}
+
+evmc::bytes32 write_header_ex(RWTxn& txn, const BlockHeader& header, bool with_header_numbers) {
     Bytes value{};
     rlp::encode(value, header);
     auto header_hash = bit_cast<evmc_bytes32>(keccak256(value));  // avoid header.hash() because it re-does rlp encoding
@@ -174,6 +178,7 @@ void write_header(RWTxn& txn, const BlockHeader& header, bool with_header_number
     if (with_header_numbers) {
         write_header_number(txn, header_hash.bytes, header.number);
     }
+    return header_hash;
 }
 
 std::optional<ByteView> read_rlp_encoded_header(ROTxn& txn, BlockNum bn, const evmc::bytes32& hash) {

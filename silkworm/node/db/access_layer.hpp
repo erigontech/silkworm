@@ -76,6 +76,9 @@ std::optional<BlockHeader> read_canonical_header(ROTxn& txn, BlockNum b);
 //! \brief Writes given header to table::kHeaders
 void write_header(RWTxn& txn, const BlockHeader& header, bool with_header_numbers = false);
 
+//! \brief Writes given header to table::kHeaders and returns its hash
+evmc::bytes32 write_header_ex(RWTxn& txn, const BlockHeader& header, bool with_header_numbers);
+
 //! \brief Read block number from hash
 std::optional<BlockNum> read_block_number(ROTxn& txn, const evmc::bytes32& hash);
 

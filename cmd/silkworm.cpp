@@ -40,6 +40,7 @@
 #include "common/common.hpp"
 #include "common/human_size_parser_validator.hpp"
 #include "common/settings.hpp"
+#include "common/snapshot_options.hpp"
 
 using namespace silkworm;
 using namespace silkworm::cmd::common;

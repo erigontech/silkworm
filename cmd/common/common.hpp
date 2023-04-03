@@ -23,7 +23,6 @@
 #include <silkworm/buildinfo.h>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/rpc/server/wait_strategy.hpp>
-#include <silkworm/node/snapshot/settings.hpp>
 
 namespace silkworm::cmd::common {
 
@@ -59,8 +58,5 @@ void add_option_num_contexts(CLI::App& cli, uint32_t& num_contexts);
 
 //! \brief Set up parsing of the wait mode (e.g. block, sleep, spin...) in RPC execution contexts
 void add_option_wait_mode(CLI::App& cli, silkworm::rpc::WaitMode& wait_mode);
-
-//! \brief Setup options to populate snapshot settings after cli.parse()
-void add_snapshot_options(CLI::App& cli, SnapshotSettings& snapshot_settings);
 
 }  // namespace silkworm::cmd::common

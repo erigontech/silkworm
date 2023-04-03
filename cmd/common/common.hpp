@@ -23,13 +23,9 @@
 #include <silkworm/buildinfo.h>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/rpc/server/wait_strategy.hpp>
-#include <silkworm/node/common/settings.hpp>
 #include <silkworm/node/snapshot/settings.hpp>
 
 namespace silkworm::cmd::common {
-
-//! \brief Ensure database is ready to take off and consistent with command line arguments
-void run_preflight_checklist(NodeSettings& node_settings, bool init_if_empty = true);
 
 //! Assemble the full node name using the Cable build information
 std::string get_node_name_from_build_info(const buildinfo* build_info);

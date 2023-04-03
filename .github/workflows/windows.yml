@@ -68,10 +68,38 @@ jobs:
       working-directory: C:\build
       run: cmake ${{runner.workspace}}\silkworm -DCONAN_PACKAGE_MANAGER=ON -DCONAN_PROFILE=windows_msvc_17_release
 
-    - name: Build
+    - name: Build silkworm
       working-directory: C:\build
       # Execute the build. You can specify a specific target with "--target <NAME>"
-      run: cmake --build . --config ${{ matrix.config.build_type }} -j 2
+      run: cmake --build . --config ${{ matrix.config.build_type }} --target silkworm -j 2
+
+    - name: Build core_test
+      working-directory: C:\build
+      run: cmake --build . --config ${{ matrix.config.build_type }} --target core_test -j 2
+
+    - name: Build infra_test
+      working-directory: C:\build
+      run: cmake --build . --config ${{ matrix.config.build_type }} --target infra_test -j 2
+
+    - name: Build node_test
+      working-directory: C:\build
+      run: cmake --build . --config ${{ matrix.config.build_type }} --target node_test -j 2
+
+    - name: Build rpcdaemon_test
+      working-directory: C:\build
+      run: cmake --build . --config ${{ matrix.config.build_type }} --target rpcdaemon_test -j 2
+
+    - name: Build sentry_test
+      working-directory: C:\build
+      run: cmake --build . --config ${{ matrix.config.build_type }} --target sentry_test -j 2
+
+    - name: Build sync_test
+      working-directory: C:\build
+      run: cmake --build . --config ${{ matrix.config.build_type }} --target sync_test -j 2
+
+    - name: Build consensus
+      working-directory: C:\build
+      run: cmake --build . --config ${{ matrix.config.build_type }} --target consensus -j 2
 
     - name: Test
       working-directory: C:\build

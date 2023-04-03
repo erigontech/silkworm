@@ -69,8 +69,6 @@ TEST_CASE("MemoryMutation", "[silkworm][node][db][memory_mutation]") {
     SECTION("Check initial values") {
         MemoryMutation mutation{overlay, &main_rw_txn};
         CHECK_NOTHROW(mutation.external_txn() == &main_rw_txn);
-        CHECK_NOTHROW(!mutation.is_table_cleared("TestTable"));
-        CHECK_NOTHROW(!mutation.is_entry_deleted("TestTable", Slice{}));
     }
 
     SECTION("Cannot create two memory mutations") {

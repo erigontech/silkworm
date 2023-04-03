@@ -503,7 +503,7 @@ std::optional<Bytes> point_evaluation_run(ByteView input) noexcept {
 
     std::span<const uint8_t, 32> versioned_hash{&input[0], 32};
     std::span<const uint8_t, 32> z{&input[32], 32};
-    std::span<const uint8_t, 32> y{&input[32], 32};
+    std::span<const uint8_t, 32> y{&input[64], 32};
     std::span<const uint8_t, 48> commitment{&input[96], 48};
     std::span<const uint8_t, 48> proof{&input[144], 48};
 

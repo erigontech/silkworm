@@ -19,11 +19,8 @@
 #include <gmp.h>
 
 #include <algorithm>
-#include <cstdio>
 #include <cstring>
 #include <limits>
-
-#include <c_kzg_4844.h>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
@@ -37,6 +34,7 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/crypto/blake2b.h>
 #include <silkworm/core/crypto/ecdsa.h>
+#include <silkworm/core/crypto/kzg.hpp>
 #include <silkworm/core/crypto/rmd160.h>
 #include <silkworm/core/crypto/secp256k1n.hpp>
 #include <silkworm/core/crypto/sha256.h>
@@ -497,57 +495,23 @@ uint64_t point_evaluation_gas(ByteView, evmc_revision) noexcept {
     return 50000;
 }
 
-// https://eips.ethereum.org/EIPS/eip-4844#helpers
-static Hash kzg_to_versioned_hash(ByteView kzg) {
-    Hash hash;
-    silkworm_sha256(hash.bytes, kzg.data(), kzg.length(), /*use_cpu_extensions=*/true);
-    hash.bytes[0] = 0x1;
-    return hash;
-}
-
 // https://eips.ethereum.org/EIPS/eip-4844#point-evaluation-precompile
 std::optional<Bytes> point_evaluation_run(ByteView input) noexcept {
     if (input.length() != 192) {
         return std::nullopt;
     }
 
-    ByteView versioned_hash{input.substr(0, 32)};
-    Bytes48 commitment;
-    std::memcpy(commitment.bytes, &input[96], 48);
+    std::span<const uint8_t, 32> versioned_hash{&input[0], 32};
+    std::span<const uint8_t, 32> z{&input[32], 32};
+    std::span<const uint8_t, 32> y{&input[32], 32};
+    std::span<const uint8_t, 48> commitment{&input[96], 48};
+    std::span<const uint8_t, 48> proof{&input[144], 48};
 
-    if (kzg_to_versioned_hash(commitment.bytes) != versioned_hash) {
+    if (kzg_to_versioned_hash(commitment) != ByteView{versioned_hash}) {
         return std::nullopt;
     }
 
-    Bytes32 z_bytes;
-    std::memcpy(z_bytes.bytes, &input[32], 32);
-    Bytes32 y_bytes;
-    std::memcpy(y_bytes.bytes, &input[64], 32);
-    Bytes48 proof_bytes;
-    std::memcpy(proof_bytes.bytes, &input[144], 48);
-
-    FILE* file = std::fopen(SILKWORM_KZG_TRUSTED_SETUP, "r");
-
-    KZGSettings* kzg_setup = new KZGSettings;
-
-    SILKWORM_ASSERT(load_trusted_setup_file(kzg_setup, file) == C_KZG_OK);
-
-    bool ok{false};
-    C_KZG_RET ret{verify_kzg_proof(&ok,
-                                   &commitment,
-                                   &z_bytes,
-                                   &y_bytes,
-                                   &proof_bytes,
-                                   kzg_setup)};
-
-    free_trusted_setup(kzg_setup);
-    delete kzg_setup;
-
-    std::fclose(file);
-
-    SILKWORM_ASSERT(ret == C_KZG_OK || ret == C_KZG_BADARGS);
-
-    if (ret != C_KZG_OK || !ok) {
+    if (!verify_kzg_proof(commitment, z, y, proof)) {
         return std::nullopt;
     }
 

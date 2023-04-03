@@ -21,6 +21,7 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -40,7 +41,7 @@ using namespace evmc::literals;
 
 template <class T>
 concept UnsignedIntegral = std::unsigned_integral<T> || std::same_as<T, intx::uint128> ||
-    std::same_as<T, intx::uint256> || std::same_as<T, intx::uint512>;
+                           std::same_as<T, intx::uint256> || std::same_as<T, intx::uint512>;
 
 using Bytes = std::basic_string<uint8_t>;
 
@@ -66,6 +67,10 @@ class ByteView : public std::basic_string_view<uint8_t> {
     constexpr ByteView(const evmc::address& address) noexcept : ByteView{address.bytes} {}
 
     constexpr ByteView(const evmc::bytes32& hash) noexcept : ByteView{hash.bytes} {}
+
+    template <std::size_t Extent>
+    constexpr ByteView(std::span<const uint8_t, Extent> span) noexcept
+        : std::basic_string_view<uint8_t>{span.data(), span.size()} {}
 
     [[nodiscard]] bool is_null() const noexcept { return data() == nullptr; }
 };

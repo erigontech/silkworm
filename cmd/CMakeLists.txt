@@ -36,6 +36,8 @@ if(NOT SILKWORM_CORE_ONLY)
   # Silkworm components
   add_subdirectory(rpcdaemon)
 
+  add_subdirectory(dev)
+
   file(GLOB_RECURSE COMMON_SRC CONFIGURE_DEPENDS "common/*.cpp" "common/*.hpp")
 
   add_executable(silkworm "silkworm.cpp;${COMMON_SRC}")

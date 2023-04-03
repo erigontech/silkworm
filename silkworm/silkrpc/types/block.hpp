@@ -27,6 +27,8 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/receipt.hpp>
 
+#include "receipt.hpp"
+
 namespace silkworm::rpc {
 
 struct Block : public silkworm::BlockWithHash {
@@ -110,7 +112,7 @@ struct BlockTransactionsResponse{
     intx::uint256 total_difficulty{0};
     uint64_t transaction_count{0};
     std::vector<silkworm::BlockHeader> ommers;
-    std::vector<Receipt> receipts;
+    std::vector<silkworm::rpc::Receipt> receipts;
     std::vector<silkworm::Transaction> transactions;
 };
 

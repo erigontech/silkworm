@@ -63,7 +63,29 @@ else()
 endif()
 
 # GMP
-if(MSVC)
+if(NOT MSVC)
+  set(GMP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/gmplib")
+  set(GMP_INSTALL_DIR "${CMAKE_BINARY_DIR}/gmplib")
+
+  set(GMP_INCLUDE_DIR
+      "${GMP_INSTALL_DIR}"
+      CACHE PATH ""
+      )
+  set(GMP_LIBRARY
+      "${GMP_INSTALL_DIR}/lib/libgmp.a"
+      CACHE FILEPATH ""
+      )
+
+  include(ExternalProject)
+  ExternalProject_Add(
+      gmplib
+      SOURCE_DIR "${GMP_SOURCE_DIR}"
+      BINARY_DIR "${GMP_INSTALL_DIR}"
+      CONFIGURE_COMMAND "${GMP_SOURCE_DIR}/configure" "--prefix=${GMP_INSTALL_DIR}" --with-pic=yes
+      PREFIX "${GMP_INSTALL_DIR}"
+      BUILD_BYPRODUCTS "${GMP_LIBRARY}"
+  )
+else()
   find_path(GMP_INCLUDE_DIR NAMES gmp.h)
   find_library(GMP_LIBRARY mpir)
   if(GMP_LIBRARY MATCHES ${CMAKE_SHARED_LIBRARY_SUFFIX})
@@ -74,31 +96,9 @@ if(MSVC)
   message(STATUS "GMP: ${GMP_LIBRARY}, ${GMP_INCLUDE_DIR}")
   add_library(gmp ${gmp_library_type} IMPORTED)
   set_target_properties(
-          gmp PROPERTIES
-          IMPORTED_LOCATION ${GMP_LIBRARY}
-          INTERFACE_INCLUDE_DIRECTORIES ${GMP_INCLUDE_DIR}
-  )
-else()
-  set(GMP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/gmplib")
-  set(GMP_INSTALL_DIR "${CMAKE_BINARY_DIR}/gmplib")
-
-  set(GMP_INCLUDE_DIR
-      "${GMP_INSTALL_DIR}"
-      CACHE PATH ""
-  )
-  set(GMP_LIBRARY
-      "${GMP_INSTALL_DIR}/lib/libgmp.a"
-      CACHE FILEPATH ""
-  )
-
-  include(ExternalProject)
-  ExternalProject_Add(
-    gmplib
-    SOURCE_DIR "${GMP_SOURCE_DIR}"
-    BINARY_DIR "${GMP_INSTALL_DIR}"
-    CONFIGURE_COMMAND "${GMP_SOURCE_DIR}/configure" "--prefix=${GMP_INSTALL_DIR}" --with-pic=yes
-    PREFIX "${GMP_INSTALL_DIR}"
-    BUILD_BYPRODUCTS "${GMP_LIBRARY}"
+      gmp PROPERTIES
+      IMPORTED_LOCATION ${GMP_LIBRARY}
+      INTERFACE_INCLUDE_DIRECTORIES ${GMP_INCLUDE_DIR}
   )
 endif()
 

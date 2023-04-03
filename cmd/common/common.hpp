@@ -22,20 +22,13 @@
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/rpc/server/server_config.hpp>
 #include <silkworm/infra/rpc/server/wait_strategy.hpp>
 #include <silkworm/node/common/settings.hpp>
 #include <silkworm/node/snapshot/settings.hpp>
 
-namespace silkworm::cmd::common {
+#include "settings.hpp"
 
-//! The overall settings for Silkworm Core component
-struct SilkwormCoreSettings {
-    silkworm::log::Settings log_settings;
-    silkworm::NodeSettings node_settings;
-    silkworm::rpc::ServerConfig server_settings;
-    SnapshotSettings snapshot_settings;
-};
+namespace silkworm::cmd::common {
 
 //! \brief Parses command line arguments for Silkworm executables
 void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], SilkwormCoreSettings& settings);

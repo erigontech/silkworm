@@ -34,6 +34,7 @@
 #include <silkworm/sync/sync_engine_pow.hpp>
 
 #include "common/common.hpp"
+#include "common/settings.hpp"
 
 using namespace silkworm;
 using namespace silkworm::cmd::common;

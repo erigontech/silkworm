@@ -19,8 +19,8 @@
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/prefix_set.hpp>
 #include <silkworm/node/etl/collector.hpp>
-#include <silkworm/node/stagedsync/stages/stage_interhashes/trie_loader.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
+#include <silkworm/node/stagedsync/stages/stage_interhashes/trie_loader.hpp>
 
 namespace silkworm::stagedsync {
 

@@ -20,7 +20,7 @@
 
 #include <boost/asio/awaitable.hpp>
 
-#include <silkworm/node/backend/execution/types.hpp>
+#include <silkworm/node/stagedsync/types.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
 
 namespace silkworm::execution {

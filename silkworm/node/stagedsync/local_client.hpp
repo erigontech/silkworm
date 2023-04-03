@@ -16,22 +16,14 @@
 
 #pragma once
 
-#include <memory>
-
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <agrpc/asio_grpc.hpp>
-#include <boost/asio/awaitable.hpp>
-#include <grpcpp/grpcpp.h>
-
-#include <silkworm/interfaces/execution/execution.grpc.pb.h>
-#include <silkworm/node/backend/execution/client.hpp>
+#include "client.hpp"
+#include <silkworm/node/stagedsync/server.hpp>
 
 namespace silkworm::execution {
 
-class RemoteClient : public Client {
+class LocalClient : public Client {
   public:
-    RemoteClient(agrpc::GrpcContext& grpc_context, const std::shared_ptr<grpc::Channel>& channel);
+    explicit LocalClient(Server* local_server);
 
     auto start() -> awaitable<void> override;
 
@@ -49,11 +41,11 @@ class RemoteClient : public Client {
 
     auto validate_chain(Hash head_block_hash) -> awaitable<ValidationResult> override;
 
-    auto update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt) -> awaitable<ForkChoiceApplication> override;
+    auto update_fork_choice(Hash head_block_hash,
+                            std::optional<Hash> finalized_block_hash = std::nullopt) -> awaitable<ForkChoiceApplication> override;
 
   private:
-    agrpc::GrpcContext& grpc_context_;
-    std::unique_ptr<::execution::Execution::Stub> stub_;
+    Server* local_server_;
 };
 
 }  // namespace silkworm::execution

@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "server.hpp"
+#include "local_server.hpp"
 
 namespace silkworm::execution {
 

@@ -37,8 +37,8 @@ CanonicalChain::CanonicalChain(db::RWTxn& tx) : tx_{tx}, canonical_cache_{kCache
     current_head_ = initial_head_;
 }
 
-BlockId CanonicalChain::initial_head() { return initial_head_; }
-BlockId CanonicalChain::current_head() { return current_head_; }
+BlockId CanonicalChain::initial_head() const { return initial_head_; }
+BlockId CanonicalChain::current_head() const { return current_head_; }
 
 BlockNum CanonicalChain::find_forking_point(db::RWTxn& tx, Hash header_hash) {
     BlockNum forking_point{};

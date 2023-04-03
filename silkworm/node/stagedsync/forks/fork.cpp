@@ -42,19 +42,19 @@ Fork::Fork(BlockId forking_point, NodeSettings& ns, const db::RWAccess dba)
     current_head_ = forking_point;
 }
 
-auto Fork::current_head() -> BlockId {
+auto Fork::current_head() const -> BlockId {
     return current_head_;
 }
 
-auto Fork::last_verified_head() -> BlockId {
+auto Fork::last_verified_head() const -> BlockId {
     return canonical_chain_.current_head();
 }
 
-auto Fork::last_head_status() -> VerificationResult {
+auto Fork::last_head_status() const -> VerificationResult {
     return canonical_head_status_;
 }
 
-auto Fork::extends_current_head(const BlockHeader& header) -> bool {
+auto Fork::extends_current_head(const BlockHeader& header) const -> bool {
     return current_head().hash == header.parent_hash;
 }
 
@@ -74,7 +74,7 @@ void Fork::insert_body(const Block& block) {
     }
 }
 
-void Fork::insert_block_over_head(const Block& block) {
+void Fork::extend_with(const Block& block) {
     ensure_invariant(extends_current_head(block.header), "inserting block must extend the head");
 
     Hash header_hash = insert_header(block.header);

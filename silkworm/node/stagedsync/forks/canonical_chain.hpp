@@ -41,8 +41,8 @@ class CanonicalChain {
     void update_up_to(BlockNum height, Hash header_hash);
     void delete_down_to(BlockNum unwind_point);
 
-    BlockId initial_head();
-    BlockId current_head();
+    BlockId initial_head() const;
+    BlockId current_head() const;
 
     auto get_hash(BlockNum height) -> std::optional<Hash>;
 

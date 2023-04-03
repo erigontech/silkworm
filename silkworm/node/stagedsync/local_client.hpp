@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <silkworm/node/stagedsync/server.hpp>
+#include <silkworm/node/stagedsync/local_server.hpp>
 
 #include "client.hpp"
 

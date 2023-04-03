@@ -21,8 +21,8 @@
 #include <boost/asio/awaitable.hpp>
 
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/node/stagedsync/types.hpp>
+#include <silkworm/node/stagedsync/execution_engine.hpp>
 
 namespace silkworm::execution {
 
@@ -34,17 +34,17 @@ class Client {
 
     virtual auto start() -> awaitable<void> = 0;
 
-    virtual auto get_header(BlockNum block_number, Hash block_hash) -> awaitable<BlockHeader> = 0;
+    virtual auto get_block_progress() -> awaitable<BlockNum>;
 
+    virtual auto get_header(BlockNum block_number, Hash block_hash) -> awaitable<BlockHeader> = 0;
     virtual auto get_body(BlockNum block_number, Hash block_hash) -> awaitable<BlockBody> = 0;
 
     virtual auto is_canonical(Hash block_hash) -> awaitable<bool> = 0;
-
     virtual auto get_block_num(Hash block_hash) -> awaitable<BlockNum> = 0;
 
     virtual auto insert_headers(const BlockVector& blocks) -> awaitable<void> = 0;
-
     virtual auto insert_bodies(const BlockVector& blocks) -> awaitable<void> = 0;
+    virtual auto insert_blocks(const BlockVector& blocks) -> awaitable<void> = 0;
 
     virtual auto validate_chain(Hash head_block_hash) -> awaitable<ValidationResult> = 0;
 

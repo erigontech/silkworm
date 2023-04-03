@@ -53,19 +53,19 @@ class Fork {
     using VerificationResult = std::variant<ValidChain, InvalidChain, ValidationError>;  // clang-format on
 
     // actions
-    void insert_block_over_head(const Block& block);
+    void extend_with(const Block& block);  // put block over the head
 
     auto verify_chain(Hash head_block_hash) -> VerificationResult;
 
     bool notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
 
     // state
-    auto current_head() -> BlockId;
+    auto current_head() const -> BlockId;
 
-    auto last_verified_head() -> BlockId;
-    auto last_head_status() -> VerificationResult;
+    auto last_verified_head() const -> BlockId;
+    auto last_head_status() const -> VerificationResult;
 
-    bool extends_current_head(const BlockHeader&);
+    bool extends_current_head(const BlockHeader&) const;
 
     auto get_block_progress() -> BlockNum;
     auto get_header(Hash) -> std::optional<BlockHeader>;

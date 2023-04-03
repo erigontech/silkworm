@@ -16,8 +16,8 @@
 
 #include "common.hpp"
 
+#include <silkworm/core/chain/config.hpp>
 #include <silkworm/infra/common/directories.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 
 #include "ip_endpoint_option.hpp"
 
@@ -58,12 +58,6 @@ void add_option_data_dir(CLI::App& cli, std::filesystem::path& data_dir) {
 void add_option_etherbase(CLI::App& cli, std::string& etherbase_address) {
     cli.add_option("--etherbase", etherbase_address, "The coinbase address as hex string")
         ->default_val("");
-}
-
-void add_option_db_max_readers(CLI::App& cli, uint32_t& max_readers) {
-    cli.add_option("--mdbx.max.readers", max_readers, "The maximum number of MDBX readers")
-        ->default_val(silkworm::db::EnvConfig{}.max_readers)
-        ->check(CLI::Range(1, 32767));
 }
 
 void add_option_private_api_address(CLI::App& cli, std::string& private_api_address) {

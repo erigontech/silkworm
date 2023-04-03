@@ -41,9 +41,6 @@ void add_option_data_dir(CLI::App& cli, std::filesystem::path& data_dir);
 //! \brief Set up option for the node Etherbase address
 void add_option_etherbase(CLI::App& cli, std::string& etherbase_address);
 
-//! \brief Set up option for maximum number of database readers
-void add_option_db_max_readers(CLI::App& cli, uint32_t& max_readers);
-
 //! \brief Set up option for the IP address of Core private gRPC API
 void add_option_private_api_address(CLI::App& cli, std::string& private_api_address);
 

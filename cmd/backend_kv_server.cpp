@@ -35,6 +35,7 @@
 #include <silkworm/sync/sentry_client.hpp>
 
 #include "common/common.hpp"
+#include "common/db_max_readers_option.hpp"
 #include "common/settings.hpp"
 #include "common/shutdown_signal.hpp"
 

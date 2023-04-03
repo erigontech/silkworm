@@ -33,6 +33,7 @@
 #include <silkworm/sentry/settings.hpp>
 
 #include "common/common.hpp"
+#include "common/ip_endpoint_option.hpp"
 #include "common/shutdown_signal.hpp"
 
 using namespace silkworm;
@@ -46,9 +47,7 @@ Settings sentry_parse_cli_settings(int argc, char* argv[]) {
     settings.build_info = silkworm_get_buildinfo();
     add_logging_options(cli, settings.log_settings);
 
-    cli.add_option("--sentry.api.addr", settings.api_address, "GRPC API endpoint")
-        ->capture_default_str()
-        ->check(IPEndPointValidator(/*allow_empty=*/true));
+    add_option_ip_endpoint(cli, "--sentry.api.addr", settings.api_address, "GRPC API endpoint");
 
     cli.add_option("--port", settings.port)
         ->description("Network listening port for incoming peers TCP connections and discovery UDP requests")

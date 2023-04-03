@@ -16,13 +16,12 @@
 
 #include "common.hpp"
 
-#include <regex>
 #include <stdexcept>
-
-#include <boost/asio/ip/address.hpp>
 
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/node/db/access_layer.hpp>
+
+#include "ip_endpoint_option.hpp"
 
 namespace silkworm::cmd::common {
 
@@ -31,35 +30,6 @@ PruneModeValidator::PruneModeValidator() {
         if (value.find_first_not_of("hrtc") != std::string::npos) {
             return "Value " + value + " contains other characters other than h r t c";
         }
-        return {};
-    };
-}
-
-IPEndPointValidator::IPEndPointValidator(bool allow_empty) {
-    func_ = [&allow_empty](const std::string& value) -> std::string {
-        if (value.empty() && allow_empty) {
-            return {};
-        }
-
-        const std::regex pattern(R"(([\da-fA-F\.\:]*)\:([\d]*))");
-        std::smatch matches;
-        if (!std::regex_match(value, matches, pattern)) {
-            return "Value " + value + " is not a valid endpoint";
-        }
-
-        // Validate IP address
-        boost::system::error_code err;
-        boost::asio::ip::make_address(matches[1], err).to_string();
-        if (err) {
-            return "Value " + std::string(matches[1]) + " is not a valid ip address";
-        }
-
-        // Validate port
-        int port{std::stoi(matches[2])};
-        if (port < 1 || port > 65535) {
-            return "Value " + std::string(matches[2]) + " is not a valid listening port";
-        }
-
         return {};
     };
 }
@@ -108,25 +78,19 @@ void add_option_db_max_readers(CLI::App& cli, uint32_t& max_readers) {
 }
 
 void add_option_private_api_address(CLI::App& cli, std::string& private_api_address) {
-    add_option_ip_address(cli, "--private.api.addr", private_api_address,
-                          "Private API network address to serve remote database interface\n"
-                          "An empty string means to not start the listener\n"
-                          "Use the endpoint form i.e. ip-address:port\n"
-                          "DO NOT EXPOSE TO THE INTERNET");
+    add_option_ip_endpoint(cli, "--private.api.addr", private_api_address,
+                           "Private API network address to serve remote database interface\n"
+                           "An empty string means to not start the listener\n"
+                           "Use the endpoint form i.e. ip-address:port\n"
+                           "DO NOT EXPOSE TO THE INTERNET");
 }
 
 void add_option_sentry_api_address(CLI::App& cli, std::string& sentry_api_address) {
-    add_option_ip_address(cli, "--sentry.api.addr", sentry_api_address, "Sentry api endpoint");
+    add_option_ip_endpoint(cli, "--sentry.api.addr", sentry_api_address, "Sentry api endpoint");
 }
 
 void add_option_external_sentry_address(CLI::App& cli, std::string& external_sentry_address) {
-    add_option_ip_address(cli, "--sentry.remote.addr", external_sentry_address, "External Sentry endpoint");
-}
-
-void add_option_ip_address(CLI::App& cli, const std::string& name, std::string& address, const std::string& description) {
-    cli.add_option(name, address, description)
-        ->capture_default_str()
-        ->check(IPEndPointValidator(/*allow_empty=*/true));
+    add_option_ip_endpoint(cli, "--sentry.remote.addr", external_sentry_address, "External Sentry endpoint");
 }
 
 void add_option_num_contexts(CLI::App& cli, uint32_t& num_contexts) {

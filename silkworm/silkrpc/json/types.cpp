@@ -357,8 +357,6 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
 }
 
 void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {
-
-    // TODO: populante json response
     const auto block_number = to_quantity(b.header.number);
     json["fullblock"]["difficulty"] = to_quantity(silkworm::endian::to_big_compact(b.header.difficulty));
     json["fullblock"]["extraData"] = "0x" + silkworm::to_hex(b.header.extra_data);
@@ -396,17 +394,14 @@ void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {
         ommer_hashes.emplace(ommer_hashes.end(), b.ommers[i].hash());
         SILKRPC_DEBUG << "ommer_hashes[" << i << "]: " << silkworm::to_hex({ommer_hashes[i].bytes, silkworm::kHashLength}) << "\n";
     }
+
     json["fullblock"]["uncles"] = ommer_hashes;
-
-    //json["receipts"] = [];
-
-    //for (const auto& item : b.transactions){
-    //    json["fullblock"]["transactions"] = "";
-    //}
-    //for (const auto& item : b.receipts){
-    //    json["receipts"] = "";
-    //}
-
+    json["receipts"] = b.receipts;
+    for (std::size_t i{0}; i < json["receipts"].size(); i++) {
+        auto& json_txn = json["receipts"][i];
+        json_txn["logs"] = nullptr;
+        json_txn["logsBloom"] = nullptr;
+    }
 }
 
 void to_json(nlohmann::json& json, const Transaction& transaction) {

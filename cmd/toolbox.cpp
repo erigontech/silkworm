@@ -47,7 +47,7 @@
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/db/prune_mode.hpp>
 #include <silkworm/node/db/stages.hpp>
-#include <silkworm/node/stagedsync/stage_interhashes/trie_cursor.hpp>
+#include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
 
 namespace fs = std::filesystem;
 using namespace silkworm;

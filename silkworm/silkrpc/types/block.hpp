@@ -25,6 +25,7 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/core/types/receipt.hpp>
 
 namespace silkworm::rpc {
 
@@ -82,13 +83,12 @@ class BlockNumberOrHash {
 std::ostream& operator<<(std::ostream& out, const BlockNumberOrHash& b);
 
 struct BlockDetails {
+    uint64_t block_size;
     evmc::bytes32 hash;
     silkworm::BlockHeader header;
     intx::uint256 total_difficulty{0};
     uint64_t transaction_count{0};
     std::vector<silkworm::BlockHeader> ommers;
-
-    [[nodiscard]] uint64_t get_block_size() const;
 };
 
 struct IssuanceDetails {
@@ -104,12 +104,14 @@ struct BlockDetailsResponse {
 };
 
 struct BlockTransactionsResponse{
+    uint64_t block_size;
     evmc::bytes32 hash;
     silkworm::BlockHeader header;
     intx::uint256 total_difficulty{0};
     uint64_t transaction_count{0};
+    std::vector<silkworm::BlockHeader> ommers;
+    std::vector<Receipt> receipts;
     std::vector<silkworm::Transaction> transactions;
-    std::vector<silkworm::Receipt> receipts;
 };
 
 }  // namespace silkworm::rpc

@@ -21,8 +21,8 @@
 #include <boost/asio/awaitable.hpp>
 
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/node/stagedsync/types.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
+#include <silkworm/node/stagedsync/types.hpp>
 
 namespace silkworm::execution {
 

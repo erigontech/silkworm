@@ -22,6 +22,7 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/util.hpp>
 
+// TODO(yperbasis) Switch to std::format when Apple Clang has it
 void print_blst_fp(const blst_fp& fp) {
     std::cout << "{";
     std::cout << "0x" << std::setfill('0') << std::setw(16) << std::hex << fp.l[0] << ", ";
@@ -48,6 +49,7 @@ int main() {
     blst_p2 out;
     blst_p2_from_affine(&out, &g2_affine);
 
+    // TODO(C++23) std::print
     std::cout << "{{";
     print_blst_fp(out.x.fp[0]);
     std::cout << ",\n  ";

@@ -26,7 +26,7 @@
 #include <silkworm/node/db/bitmap.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/db/stages.hpp>
-#include <silkworm/node/stagedsync/stage_history_index.hpp>
+#include <silkworm/node/stagedsync/stages/stage_history_index.hpp>
 
 using namespace evmc::literals;
 

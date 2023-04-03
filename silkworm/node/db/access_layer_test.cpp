@@ -30,8 +30,8 @@
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/db/prune_mode.hpp>
 #include <silkworm/node/db/tables.hpp>
-#include <silkworm/node/stagedsync/stage.hpp>
-#include <silkworm/node/stagedsync/stage_history_index.hpp>
+#include <silkworm/node/stagedsync/stages/stage.hpp>
+#include <silkworm/node/stagedsync/stages/stage_history_index.hpp>
 
 namespace silkworm {
 

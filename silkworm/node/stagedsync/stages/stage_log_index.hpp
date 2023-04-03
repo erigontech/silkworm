@@ -21,7 +21,7 @@
 #include <cbor/cbor.h>
 
 #include <silkworm/node/db/bitmap.hpp>
-#include <silkworm/node/stagedsync/stage.hpp>
+#include <silkworm/node/stagedsync/stages/stage.hpp>
 
 namespace silkworm::stagedsync {
 

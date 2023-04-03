@@ -30,28 +30,6 @@ namespace silkworm::cmd::common {
 //! Assemble the full node name using the Cable build information
 std::string get_node_name_from_build_info(const buildinfo* build_info);
 
-struct HumanSizeParserValidator : public CLI::Validator {
-    template <typename T>
-    explicit HumanSizeParserValidator(T min, std::optional<T> max = std::nullopt) {
-        std::stringstream out;
-        out << " in [" << min << " - " << (max.has_value() ? max.value() : "inf") << "]";
-        description(out.str());
-
-        func_ = [min, max](const std::string& value) -> std::string {
-            auto parsed_size{parse_size(value)};
-            if (!parsed_size.has_value()) {
-                return std::string("Value " + value + " is not a parseable size");
-            }
-            auto min_size{parse_size(min).value()};
-            auto max_size{max.has_value() ? parse_size(max.value()).value() : UINT64_MAX};
-            if (parsed_size.value() < min_size || parsed_size.value() > max_size) {
-                return "Value " + value + " not in range " + min + " to " + (max.has_value() ? max.value() : "∞");
-            }
-            return {};
-        };
-    }
-};
-
 struct IPEndPointValidator : public CLI::Validator {
     explicit IPEndPointValidator(bool allow_empty = false);
 };

@@ -37,6 +37,7 @@
 #include <silkworm/sync/sync_engine_pow.hpp>
 
 #include "common/common.hpp"
+#include "common/human_size_parser_validator.hpp"
 #include "common/settings.hpp"
 
 using namespace silkworm;

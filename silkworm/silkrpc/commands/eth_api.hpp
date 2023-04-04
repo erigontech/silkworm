@@ -101,7 +101,6 @@ class EthereumRpcApi {
     boost::asio::awaitable<void> handle_eth_get_code(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_get_transaction_count(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_get_storage_at(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_eth_call(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_call_bundle(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_create_access_list(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_eth_new_filter(const nlohmann::json& request, nlohmann::json& reply);
@@ -125,6 +124,7 @@ class EthereumRpcApi {
 
     // GLAZE format routine
     boost::asio::awaitable<void> handle_eth_get_logs(const nlohmann::json& request, std::string& reply);
+    boost::asio::awaitable<void> handle_eth_call(const nlohmann::json& request, std::string& reply);
 
     Context& context_;
     std::shared_ptr<BlockCache>& block_cache_;

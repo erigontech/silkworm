@@ -34,7 +34,7 @@ jobs:
 
     env:
       CONAN_USER_HOME: "${{ github.workspace }}/conan/"
-      SILKWORM_BUILD_DIR: "C:\build"
+      SILKWORM_BUILD_DIR: "C:/build"
 
     steps:
     - name: Checkout repository

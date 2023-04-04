@@ -257,6 +257,9 @@ TEST_CASE("BLAKE2") {
 
 // https://eips.ethereum.org/EIPS/eip-4844#point-evaluation-precompile
 TEST_CASE("POINT_EVALUATION") {
+    static constexpr intx::uint256 kBlsModulus{intx::from_string<intx::uint256>(
+        "52435875175126190479447740508185965837690552500527637822603658699938581184513")};
+
     Bytes in{
         *from_hex(
             "013c03613f6fc558fb7e61e75602241ed9a2f04e36d8670aadd286e71b5ca9cc"
@@ -269,7 +272,7 @@ TEST_CASE("POINT_EVALUATION") {
     intx::uint256 fieldElementsPerBlob{intx::be::unsafe::load<intx::uint256>(out->data())};
     CHECK(fieldElementsPerBlob == 4096);
     intx::uint256 blsModulus{intx::be::unsafe::load<intx::uint256>(out->data() + 32)};
-    CHECK(blsModulus == intx::from_string<intx::uint256>("52435875175126190479447740508185965837690552500527637822603658699938581184513"));
+    CHECK(blsModulus == kBlsModulus);
 
     // change hash version
     in[0] = 0x2;
@@ -289,8 +292,12 @@ TEST_CASE("POINT_EVALUATION") {
     CHECK(!out);
     in.pop_back();
 
-    // TODO(yperbasis): z >= BLS_MODULUS
-    // TODO(yperbasis): y >= BLS_MODULUS
+    // Try z > BLS_MODULUS
+    intx::uint256 z{intx::le::unsafe::load<intx::uint256>(&in[32])};
+    z += kBlsModulus;
+    intx::le::unsafe::store(&in[32], z);
+    out = point_evaluation_run(in);
+    CHECK(!out);
 }
 
 TEST_CASE("is_precompile") {

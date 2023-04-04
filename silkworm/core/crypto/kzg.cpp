@@ -39,6 +39,7 @@ using Fr = blst_fr;
 
 // KZG_SETUP_G2[1] printed by cmd/dev/kzg_g2_uncompress
 // See https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md#trusted-setup
+// TODO(yperbasis): change to the final value when known
 static const G2 kKzgSetupG2_1{
     {{{0x57ee3e7f2b4817eb, 0xe61eec73bb684409, 0x651e001e8be0fed2,
        0xa86dd531eb3991eb, 0x73aee61923311169, 0x15d24210c18e21e1},
@@ -218,14 +219,13 @@ static bool validate_kzg_g1(G1* out, std::span<const uint8_t, 48> b) {
  * Given a @p commitment to a polynomial, a @p proof for @p z, and the
  * claimed value @p y at @p z, verify the claim.
  *
- * @param[out] out        `true` if the proof is valid, `false` if not
  * @param[in]  commitment The commitment to a polynomial
  * @param[in]  z          The point at which the proof is to be checked
  *                        (opened)
  * @param[in]  y          The claimed value of the polynomial at @p z
  * @param[in]  proof      A proof of the value of the polynomial at the
  *                        point @p z
- * @param[in]  s          The trusted setup
+ * @return `true` if the proof is valid, `false` if not
  */
 static bool verify_kzg_proof_impl(
     const G1* commitment,

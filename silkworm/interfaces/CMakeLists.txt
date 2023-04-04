@@ -17,6 +17,7 @@
 include(generate_grpc.cmake)
 
 find_package(gRPC REQUIRED)
+find_package(Protobuf REQUIRED)
 
 set(SILKWORM_INTERFACE_SRC "")
 list(APPEND SILKWORM_INTERFACE_SRC "${TYPES_SOURCES_SYMLINK}")

@@ -31,22 +31,40 @@ jobs:
           - {build_type: "Release"}
       fail-fast: false # This makes it so that if 1 of the tests in the matrix fail, they don't all fail
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+
+    env:
+      CONAN_USER_HOME: "${{ github.workspace }}/conan/"
+      SILKWORM_BUILD_DIR: "C:\build"
+
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v3
       with:
         submodules: recursive
         fetch-depth: "0"
 
     - name: Install Conan
-      id: conan
+      id: install-conan
       uses: turtlebrowser/get-conan@main
       with:
         version: 1.59.0
 
     - name: Conan version
-      run: echo "${{ steps.conan.outputs.version }}"
+      run: echo "${{ steps.install-conan.outputs.version }}"
 
-    - name: vcpkg build
+    - name: Restore Conan cache
+      id: github-cache-conan
+      uses: actions/cache@v1
+      env:
+        cache-name: cache-conan-modules
+      with:
+        path: ${{ env.CONAN_USER_HOME }}
+        key: host-${{ runner.os }}-target-${{ runner.os }}-${{ hashFiles('conanfile.txt') }}
+
+    - name: Conan cache hit
+      run: echo "${{ steps.github-cache-conan.outputs.cache-hit }}"
+
+    - name: VCPKG packages
       uses: johnwason/vcpkg-action@v4
       id: vcpkg
       with:
@@ -54,56 +72,56 @@ jobs:
         triplet: x64-windows
         token: ${{ github.token }}
 
-    - name: Create Build Environment
-      # Some projects don't allow in-source building, so create a separate build directory
-      # We'll use this as our working directory for all subsequent commands
-      run: cmake -E make_directory C:\build
-
-    - name: Add VCPKG libs to environment
+    - name: Add VCPKG packages to environment
       run: |
         Add-Content $env:GITHUB_PATH "${{runner.workspace}}\silkworm\vcpkg\installed\x64-windows\bin"
         Add-Content $env:GITHUB_ENV "INCLUDE=${{runner.workspace}}\silkworm\vcpkg\installed\x64-windows\include"
 
-    - name: Configure CMake
-      working-directory: C:\build
-      run: cmake ${{runner.workspace}}\silkworm -DCONAN_PACKAGE_MANAGER=ON -DCONAN_PROFILE=windows_msvc_17_release
+    - name: Create build environment
+      # Some projects don't allow in-source building, so create a separate build directory
+      # We'll use this as our working directory for all subsequent commands
+      run: cmake -E make_directory ${{ env.SILKWORM_BUILD_DIR }}
+
+    - name: Generate CMake build scripts
+      working-directory: ${{ env.SILKWORM_BUILD_DIR }}
+      run: cmake ${{ runner.workspace }}\silkworm -DCONAN_PACKAGE_MANAGER=ON -DCONAN_PROFILE=windows_msvc_17_release
 
     - name: Build silkworm
-      working-directory: C:\build
+      working-directory: ${{ env.SILKWORM_BUILD_DIR }}
       run: cmake --build . --config ${{ matrix.config.build_type }} --target silkworm -j 2
 
     - name: Build core_test
-      working-directory: C:\build
+      working-directory: ${{ env.SILKWORM_BUILD_DIR }}
       run: cmake --build . --config ${{ matrix.config.build_type }} --target core_test -j 2
 
     - name: Build infra_test
-      working-directory: C:\build
+      working-directory: ${{ env.SILKWORM_BUILD_DIR }}
       run: cmake --build . --config ${{ matrix.config.build_type }} --target infra_test -j 2
 
     - name: Build node_test
-      working-directory: C:\build
+      working-directory: ${{ env.SILKWORM_BUILD_DIR }}
       run: cmake --build . --config ${{ matrix.config.build_type }} --target node_test -j 2
 
     - name: Build rpcdaemon_test
-      working-directory: C:\build
+      working-directory: ${{ env.SILKWORM_BUILD_DIR }}
       # Skip rpcdaemon_test to avoid fatal error C1002: compiler is out of heap space in pass 2
       # run: cmake --build . --config ${{ matrix.config.build_type }} --target rpcdaemon_test -j 2
       run: echo "Skip rpcdaemon_test build to avoid fatal error C1002 compiler is out of heap space in pass 2"
 
     - name: Build sentry_test
-      working-directory: C:\build
+      working-directory: ${{ env.SILKWORM_BUILD_DIR }}
       run: cmake --build . --config ${{ matrix.config.build_type }} --target sentry_test -j 2
 
     - name: Build sync_test
-      working-directory: C:\build
+      working-directory: ${{ env.SILKWORM_BUILD_DIR }}
       run: cmake --build . --config ${{ matrix.config.build_type }} --target sync_test -j 2
 
     - name: Build consensus
-      working-directory: C:\build
+      working-directory: ${{ env.SILKWORM_BUILD_DIR }}
       run: cmake --build . --config ${{ matrix.config.build_type }} --target consensus -j 2
 
     - name: Test
-      working-directory: C:\build
+      working-directory: ${{ env.SILKWORM_BUILD_DIR }}
       run: |
         cmd/test/${{ matrix.config.build_type }}/core_test
         cmd/test/${{ matrix.config.build_type }}/infra_test

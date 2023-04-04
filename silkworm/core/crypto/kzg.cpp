@@ -20,6 +20,9 @@
 
 #include <silkworm/core/crypto/sha256.h>
 
+// Based on https://github.com/ethereum/c-kzg-4844/blob/main/src/c_kzg_4844.c
+// and modified for Silkworm.
+
 namespace silkworm {
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -34,8 +37,8 @@ using Fr = blst_fr;
 // Constants
 ///////////////////////////////////////////////////////////////////////////////
 
-// KZG_SETUP_G2[1]
-// produced by cmd/dev/kzg_g2_uncompress
+// KZG_SETUP_G2[1] printed by cmd/dev/kzg_g2_uncompress
+// See https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md#trusted-setup
 static const G2 kKzgSetupG2_1{
     {{{0x57ee3e7f2b4817eb, 0xe61eec73bb684409, 0x651e001e8be0fed2,
        0xa86dd531eb3991eb, 0x73aee61923311169, 0x15d24210c18e21e1},

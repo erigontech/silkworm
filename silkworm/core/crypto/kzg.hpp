@@ -20,6 +20,10 @@
 
 #include <silkworm/core/types/hash.hpp>
 
+// Cryptographic support for EIP-4844: Shard Blob Transactions.
+// KZG stands for the commitment scheme introduced by Kate, Zaverucha, and Goldberg.
+// See https://dankradfeist.de/ethereum/2020/06/16/kate-polynomial-commitments.html
+
 namespace silkworm {
 
 // https://eips.ethereum.org/EIPS/eip-4844#helpers

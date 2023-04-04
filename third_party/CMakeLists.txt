@@ -16,6 +16,7 @@
 
 # evmone with dependencies
 add_subdirectory(intx)
+option(ETHASH_BUILD_GLOBAL_CONTEXT "" OFF)
 add_subdirectory(ethash)
 
 if(SILKWORM_WASM_API)

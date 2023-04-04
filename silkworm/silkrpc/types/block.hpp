@@ -105,7 +105,7 @@ struct BlockDetailsResponse {
     intx::uint256 total_fees{0};
 };
 
-struct BlockTransactionsResponse{
+struct BlockTransactionsResponse {
     uint64_t block_size;
     evmc::bytes32 hash;
     silkworm::BlockHeader header;

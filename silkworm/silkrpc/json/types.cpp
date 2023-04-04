@@ -402,7 +402,7 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
     json["block"]["stateRoot"] = b.block.header.state_root;
     json["block"]["timestamp"] = to_quantity(b.block.header.timestamp);
     json["block"]["totalDifficulty"] = to_quantity(silkworm::endian::to_big_compact(b.block.total_difficulty));
-    json["block"]["transactionCount"] = b.block.transaction_count; // to_quantity(b.block.transaction_count);
+    json["block"]["transactionCount"] = b.block.transaction_count;  // to_quantity(b.block.transaction_count);
     json["block"]["transactionsRoot"] = b.block.header.transactions_root;
 
     std::vector<evmc::bytes32> ommer_hashes;
@@ -418,7 +418,7 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
         json["issuance"]["ommersReward"] = to_quantity(b.issuance.ommers_reward);
         json["issuance"]["totalReward"] = to_quantity(b.issuance.total_reward);
     } else {
-        json["issuance"] = {};
+        json["issuance"] = nlohmann::json{};
     }
 
     json["totalFees"] = to_quantity(b.total_fees);
@@ -431,9 +431,9 @@ void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {
     json["fullblock"]["gasLimit"] = to_quantity(b.header.gas_limit);
     json["fullblock"]["gasUsed"] = to_quantity(b.header.gas_used);
     json["fullblock"]["hash"] = b.hash;
-    json["fullblock"]["logsBloom"]; // null
+    json["fullblock"]["logsBloom"];  // null
     json["fullblock"]["miner"] = b.header.beneficiary;
-    json["fullblock"]["mixHash"] =  b.header.mix_hash;
+    json["fullblock"]["mixHash"] = b.header.mix_hash;
     json["fullblock"]["nonce"] = "0x" + silkworm::to_hex({b.header.nonce.data(), b.header.nonce.size()});
     json["fullblock"]["number"] = block_number;
     json["fullblock"]["parentHash"] = b.header.parent_hash;

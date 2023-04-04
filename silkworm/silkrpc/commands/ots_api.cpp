@@ -22,8 +22,8 @@
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/silkrpc/consensus/ethash.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
-#include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
+#include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/core/receipts.hpp>
 #include <silkworm/silkrpc/core/state_reader.hpp>
 #include <silkworm/silkrpc/ethdb/kv/cached_database.hpp>
@@ -102,7 +102,6 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetails(const nlohman
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto block_hash = co_await core::rawdb::read_canonical_block_hash(tx_database, block_number);
         const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_hash, block_number);
-        //const auto block_with_hash = co_await core::rawdb::read_block_by_hash(tx_database, block_hash);
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
 
         const Block extended_block{block_with_hash, total_difficulty, false};
@@ -153,7 +152,6 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetailsByHash(const n
 
         const auto block_number = co_await read_header_number(tx_database, block_hash);
         const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_hash, block_number);
-        //const auto block_with_hash = co_await core::rawdb::read_block_by_hash(tx_database, block_hash);
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
 
         const Block extended_block{block_with_hash, total_difficulty, false};
@@ -186,8 +184,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetailsByHash(const n
 }
 
 boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockTransactions(const nlohmann::json& request, nlohmann::json& reply) {
-
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 3) {
         auto error_msg = "invalid ots_getBlockTransactions params: " + params.dump();
         SILKRPC_ERROR << error_msg << "\n";
@@ -196,8 +193,8 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockTransactions(const nl
     }
 
     const auto block_id = params[0].get<std::string>();
-    const auto page_number = params[1].get<unsigned long>();
-    const auto page_size = params[2].get<unsigned long>();
+    const auto page_number = params[1].get<std::size_t>();
+    const auto page_size = params[2].get<std::size_t>();
 
     SILKRPC_DEBUG << "block_id: " << block_id << " page_number: " << page_number << " page_size: " << page_size << "\n";
 
@@ -214,23 +211,23 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockTransactions(const nl
         const Block extended_block{block_with_hash, total_difficulty, false};
         auto block_size = extended_block.get_block_size();
 
-        auto transaction_count = block_with_hash.block.transactions.size(); //  - 2;
+        auto transaction_count = block_with_hash.block.transactions.size();
 
-        BlockTransactionsResponse block_transactions{ block_size, block_with_hash.hash, block_with_hash.block.header, total_difficulty, transaction_count, block_with_hash.block.ommers};
+        BlockTransactionsResponse block_transactions{block_size, block_with_hash.hash, block_with_hash.block.header, total_difficulty, transaction_count, block_with_hash.block.ommers};
 
-        unsigned long page_start = (block_with_hash.block.transactions.size() -1) - (page_size * page_number);
+        auto page_end = block_with_hash.block.transactions.size() - (page_size * page_number);
 
-        if (page_start > block_with_hash.block.transactions.size()) {
-            page_start = 0;
-        }
-
-        unsigned long page_end = page_start - page_size;
-
-        if (page_end > page_start) {
+        if (page_end > block_with_hash.block.transactions.size()) {
             page_end = 0;
         }
 
-        for (unsigned long i = page_end + 1; i < page_start +1; i++){
+        auto page_start = page_end - page_size;
+
+        if (page_start > page_end) {
+            page_start = 0;
+        }
+
+        for (auto i = page_start; i < page_end; i++) {
             block_transactions.receipts.push_back(receipts.at(i));
             block_transactions.transactions.push_back(block_with_hash.block.transactions.at(i));
         }
@@ -250,7 +247,6 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockTransactions(const nl
 
     co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
-
 }
 
 IssuanceDetails OtsRpcApi::get_issuance(const ChainConfig& chain_config, const silkworm::BlockWithHash& block) {

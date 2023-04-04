@@ -24,7 +24,7 @@
 
 #include <silkworm/silkrpc/common/tee.hpp>
 
-namespace silkrpc {
+namespace silkworm {
 
 constexpr char const kLogTags_[7][6] = {
     "TRACE",
@@ -119,4 +119,4 @@ std::string AbslUnparseFlag(LogLevel level) {
     }
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm

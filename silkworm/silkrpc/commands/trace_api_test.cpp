@@ -20,7 +20,7 @@
 
 #include <silkworm/silkrpc/common/log.hpp>
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 using Catch::Matchers::Message;
 
@@ -29,7 +29,7 @@ TEST_CASE("TraceRpcApi") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
     auto channel = grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials());
-    filter::FilterStorage filter_storage{0x400};
+    FilterStorage filter_storage{0x400};
     Context context{channel, std::make_shared<BlockCache>(), std::make_shared<ethdb::kv::CoherentStateCache>(), filter_storage};
     boost::asio::thread_pool workers{1};
 
@@ -39,4 +39,4 @@ TEST_CASE("TraceRpcApi") {
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

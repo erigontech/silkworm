@@ -26,7 +26,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 struct Block : public silkworm::BlockWithHash {
     intx::uint256 total_difficulty{0};
@@ -47,10 +47,7 @@ class BlockNumberOrHash {
     BlockNumberOrHash(BlockNumberOrHash&& bnoh) = default;
     BlockNumberOrHash(BlockNumberOrHash const& bnoh) noexcept = default;
 
-    BlockNumberOrHash& operator=(BlockNumberOrHash const& bnoh) {
-        value_ = bnoh.value_;
-        return *this;
-    }
+    BlockNumberOrHash& operator=(BlockNumberOrHash const& bnoh) = default;
 
     [[nodiscard]] bool is_number() const {
         return std::holds_alternative<uint64_t>(value_);
@@ -106,4 +103,4 @@ struct BlockDetailsResponse {
     intx::uint256 total_fees{0};
 };
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

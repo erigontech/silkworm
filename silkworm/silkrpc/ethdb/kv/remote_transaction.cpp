@@ -22,7 +22,7 @@
 
 #include <grpcpp/grpcpp.h>
 
-namespace silkrpc::ethdb::kv {
+namespace silkworm::rpc::ethdb::kv {
 
 boost::asio::awaitable<void> RemoteTransaction::open() {
     tx_id_ = (co_await tx_rpc_.request_and_read()).txid();
@@ -64,4 +64,4 @@ boost::asio::awaitable<std::shared_ptr<CursorDupSort>> RemoteTransaction::get_cu
     co_return cursor;
 }
 
-}  // namespace silkrpc::ethdb::kv
+}  // namespace silkworm::rpc::ethdb::kv

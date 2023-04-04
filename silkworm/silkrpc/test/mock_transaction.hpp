@@ -27,7 +27,7 @@
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
 
-namespace silkrpc::test {
+namespace silkworm::rpc::test {
 
 class MockTransaction : public ethdb::Transaction {
   public:
@@ -38,4 +38,4 @@ class MockTransaction : public ethdb::Transaction {
     MOCK_METHOD((boost::asio::awaitable<void>), close, ());
 };
 
-}  // namespace silkrpc::test
+}  // namespace silkworm::rpc::test

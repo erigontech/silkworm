@@ -29,7 +29,7 @@
 #include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 
-namespace silkrpc::ethdb::kv {
+namespace silkworm::rpc::ethdb::kv {
 
 CoherentStateView::CoherentStateView(Transaction& txn, CoherentStateCache* cache) : txn_(txn), cache_(cache) {}
 
@@ -366,4 +366,4 @@ void CoherentStateCache::evict_roots(StateViewId next_view_id) {
     });
 }
 
-}  // namespace silkrpc::ethdb::kv
+}  // namespace silkworm::rpc::ethdb::kv

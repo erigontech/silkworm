@@ -34,7 +34,7 @@
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
-namespace silkrpc::txpool {
+namespace silkworm::rpc::txpool {
 
 struct WorkResult {
     evmc::bytes32 header_hash;
@@ -50,9 +50,9 @@ struct MiningResult {
 
 class Miner final {
   public:
-    explicit Miner(boost::asio::io_context& context, std::shared_ptr<grpc::Channel> channel, agrpc::GrpcContext& grpc_context);
-    explicit Miner(boost::asio::io_context::executor_type executor, std::unique_ptr<::txpool::Mining::StubInterface> stub,
-                   agrpc::GrpcContext& grpc_context);
+    Miner(boost::asio::io_context& context, const std::shared_ptr<grpc::Channel>& channel, agrpc::GrpcContext& grpc_context);
+    Miner(boost::asio::io_context::executor_type executor, std::unique_ptr<::txpool::Mining::StubInterface> stub,
+          agrpc::GrpcContext& grpc_context);
 
     ~Miner();
 
@@ -72,4 +72,4 @@ class Miner final {
     agrpc::GrpcContext& grpc_context_;
 };
 
-}  // namespace silkrpc::txpool
+}  // namespace silkworm::rpc::txpool

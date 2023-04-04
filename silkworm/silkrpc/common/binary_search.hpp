@@ -23,10 +23,10 @@
 #include <absl/functional/function_ref.h>
 #include <boost/asio/awaitable.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using BinaryPredicate = absl::FunctionRef<boost::asio::awaitable<bool>(std::size_t)>;
 
 boost::asio::awaitable<std::size_t> binary_search(std::size_t n, BinaryPredicate pred);
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

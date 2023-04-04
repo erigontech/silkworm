@@ -26,7 +26,7 @@
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 
-namespace silkrpc::ethdb::kv {
+namespace silkworm::rpc::ethdb::kv {
 
 class CachedDatabase : public core::rawdb::DatabaseReader {
   public:
@@ -55,4 +55,4 @@ class CachedDatabase : public core::rawdb::DatabaseReader {
     TransactionDatabase txn_database_;
 };
 
-}  // namespace silkrpc::ethdb::kv
+}  // namespace silkworm::rpc::ethdb::kv

@@ -22,8 +22,8 @@
 #include <silkworm/node/common/test_context.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/etl/collector.hpp>
-#include <silkworm/node/stagedsync/stage_interhashes/trie_cursor.hpp>
-#include <silkworm/node/stagedsync/stage_interhashes/trie_loader.hpp>
+#include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
+#include <silkworm/node/stagedsync/stages/stage_interhashes/trie_loader.hpp>
 
 namespace silkworm::trie {
 

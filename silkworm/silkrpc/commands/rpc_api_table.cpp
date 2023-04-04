@@ -22,7 +22,7 @@
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/http/methods.hpp>
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 RpcApiTable::RpcApiTable(const std::string& api_spec) {
     build_handlers(api_spec);
@@ -31,6 +31,14 @@ RpcApiTable::RpcApiTable(const std::string& api_spec) {
 std::optional<RpcApiTable::HandleMethod> RpcApiTable::find_json_handler(const std::string& method) const {
     const auto handle_method_pair = method_handlers_.find(method);
     if (handle_method_pair == method_handlers_.end()) {
+        return std::nullopt;
+    }
+    return handle_method_pair->second;
+}
+
+std::optional<RpcApiTable::HandleMethodGlaze> RpcApiTable::find_json_glaze_handler(const std::string& method) const {
+    const auto handle_method_pair = method_handlers_glaze_.find(method);
+    if (handle_method_pair == method_handlers_glaze_.end()) {
         return std::nullopt;
     }
     return handle_method_pair->second;
@@ -128,7 +136,6 @@ void RpcApiTable::add_eth_handlers() {
     method_handlers_[http::method::k_eth_getFilterLogs] = &commands::RpcApi::handle_eth_get_filter_logs;
     method_handlers_[http::method::k_eth_getFilterChanges] = &commands::RpcApi::handle_eth_get_filter_changes;
     method_handlers_[http::method::k_eth_uninstallFilter] = &commands::RpcApi::handle_eth_uninstall_filter;
-    method_handlers_[http::method::k_eth_getLogs] = &commands::RpcApi::handle_eth_get_logs;
     method_handlers_[http::method::k_eth_sendRawTransaction] = &commands::RpcApi::handle_eth_send_raw_transaction;
     method_handlers_[http::method::k_eth_sendTransaction] = &commands::RpcApi::handle_eth_send_transaction;
     method_handlers_[http::method::k_eth_signTransaction] = &commands::RpcApi::handle_eth_sign_transaction;
@@ -142,6 +149,9 @@ void RpcApiTable::add_eth_handlers() {
     method_handlers_[http::method::k_eth_subscribe] = &commands::RpcApi::handle_eth_subscribe;
     method_handlers_[http::method::k_eth_unsubscribe] = &commands::RpcApi::handle_eth_unsubscribe;
     method_handlers_[http::method::k_eth_getBlockReceipts] = &commands::RpcApi::handle_parity_get_block_receipts;
+
+    // GLAZE methods
+    method_handlers_glaze_[http::method::k_eth_getLogs] = &commands::RpcApi::handle_eth_get_logs;
 }
 
 void RpcApiTable::add_net_handlers() {
@@ -204,4 +214,4 @@ void RpcApiTable::add_ots_handlers() {
     method_handlers_[http::method::k_ots_getBlockDetailsByHash] = &commands::RpcApi::handle_ots_getBlockDetailsByHash;
 }
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

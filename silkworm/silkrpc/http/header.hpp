@@ -18,7 +18,7 @@
 
 #include <string>
 
-namespace silkrpc::http {
+namespace silkworm::rpc::http {
 
 struct Header {
     std::string name;
@@ -31,4 +31,4 @@ inline bool operator==(const Header& lhs, const Header& rhs) {
     return lhs.name == rhs.name && lhs.value == rhs.value;
 }
 
-}  // namespace silkrpc::http
+}  // namespace silkworm::rpc::http

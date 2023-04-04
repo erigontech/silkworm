@@ -26,7 +26,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/bloom.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 //! ExecutionPayload as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md
 struct ExecutionPayload {
@@ -91,4 +91,4 @@ std::ostream& operator<<(std::ostream& out, const PayloadAttributes& payload_att
 std::ostream& operator<<(std::ostream& out, const ForkChoiceUpdatedReply& fork_choice_updated_reply);
 std::ostream& operator<<(std::ostream& out, const TransitionConfiguration& transition_configuration);
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

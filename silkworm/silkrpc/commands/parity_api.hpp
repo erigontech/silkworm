@@ -28,11 +28,13 @@
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::http {
 class RequestHandler;
 }
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
+
+using boost::asio::awaitable;
 
 class ParityRpcApi {
   public:
@@ -43,14 +45,14 @@ class ParityRpcApi {
     ParityRpcApi& operator=(const ParityRpcApi&) = delete;
 
   protected:
-    boost::asio::awaitable<void> handle_parity_get_block_receipts(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_parity_list_storage_keys(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_parity_get_block_receipts(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_parity_list_storage_keys(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
     std::unique_ptr<ethdb::Database>& database_;
     Context& context_;
 
-    friend class silkrpc::http::RequestHandler;
+    friend class silkworm::http::RequestHandler;
 };
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

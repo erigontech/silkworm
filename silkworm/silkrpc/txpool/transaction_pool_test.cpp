@@ -66,7 +66,7 @@ inline bool operator==(const AddReply& lhs, const AddReply& rhs) {
 }
 }  // namespace txpool
 
-namespace silkrpc::txpool {
+namespace silkworm::rpc::txpool {
 
 using Catch::Matchers::Message;
 using testing::_;
@@ -166,7 +166,7 @@ TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::nonce", "[silkrpc][txpoo
 
     SECTION("call nonce and check success") {
         ::txpool::NonceReply response;
-        response.set_found(1);
+        response.set_found(true);
         response.set_nonce(21);
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
         const auto nonce = run<&TransactionPool::nonce>(account);
@@ -184,7 +184,7 @@ TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::nonce", "[silkrpc][txpoo
 
     SECTION("call nonce and check result is null [not found]") {
         ::txpool::NonceReply response;
-        response.set_found(0);
+        response.set_found(false);
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
         const auto nonce = run<&TransactionPool::nonce>(account);
         CHECK(!nonce);
@@ -241,7 +241,7 @@ TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::get_transactions", "[sil
         const auto transactions = run<&TransactionPool::get_transactions>();
         CHECK(transactions.size() == 1);
         if (transactions.size() > 0) {
-            CHECK(transactions[0].transaction_type == silkrpc::txpool::TransactionType::QUEUED);
+            CHECK(transactions[0].transaction_type == TransactionType::QUEUED);
             CHECK(transactions[0].sender == 0xaaaaeeffffeeaaaa11ddbbaaaabbdd11ccddddcc_address);
             CHECK(transactions[0].rlp == silkworm::Bytes{0x30, 0x38, 0x30, 0x34});
         }
@@ -288,4 +288,4 @@ TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::get_transactions", "[sil
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc::txpool
+}  // namespace silkworm::rpc::txpool

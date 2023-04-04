@@ -28,7 +28,7 @@
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
 
-namespace silkrpc::test {
+namespace silkworm::rpc::test {
 
 class MockStateView : public ethdb::kv::StateView {
   public:
@@ -52,4 +52,4 @@ class MockStateCache : public ethdb::kv::StateCache {
     MOCK_METHOD((uint64_t), code_eviction_count, (), (const));
 };
 
-}  // namespace silkrpc::test
+}  // namespace silkworm::rpc::test

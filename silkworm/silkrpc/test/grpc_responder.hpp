@@ -19,7 +19,7 @@
 #include <gmock/gmock.h>
 #include <grpcpp/grpcpp.h>
 
-namespace silkrpc::test {
+namespace silkworm::rpc::test {
 
 template <typename Reply>
 class MockAsyncResponseReader : public grpc::ClientAsyncResponseReaderInterface<Reply> {
@@ -59,4 +59,4 @@ class MockAsyncReaderWriter : public grpc::ClientAsyncReaderWriterInterface<Requ
 template <typename Request, typename Reply>
 using StrictMockAsyncReaderWriter = testing::StrictMock<MockAsyncReaderWriter<Request, Reply>>;
 
-}  // namespace silkrpc::test
+}  // namespace silkworm::rpc::test

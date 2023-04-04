@@ -39,7 +39,7 @@
 #include <silkworm/silkrpc/http/request_handler.hpp>
 #include <silkworm/silkrpc/http/request_parser.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::rpc::http {
 
 /// Represents a single connection from a client.
 class Connection {
@@ -86,4 +86,4 @@ class Connection {
     Reply reply_;
 };
 
-}  // namespace silkrpc::http
+}  // namespace silkworm::rpc::http

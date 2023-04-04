@@ -33,7 +33,7 @@
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 static silkworm::Bytes build_abi_selector(const std::string& signature) {
     const auto signature_hash = hash_of(silkworm::byte_view_of_string(signature));
@@ -49,13 +49,13 @@ static std::optional<std::string> decode_error_reason(const silkworm::Bytes& err
     }
 
     silkworm::ByteView encoded_msg{error_data.data() + kRevertSelector.size(), error_data.size() - kRevertSelector.size()};
-    SILKRPC_TRACE << "silkrpc::decode_error_reason size: " << encoded_msg.size() << " error_message: " << silkworm::to_hex(encoded_msg) << "\n";
+    SILKRPC_TRACE << "silkworm::decode_error_reason size: " << encoded_msg.size() << " error_message: " << silkworm::to_hex(encoded_msg) << "\n";
     if (encoded_msg.size() < kAbiStringOffsetSize) {
         return std::nullopt;
     }
 
     const auto offset_uint256{intx::be::unsafe::load<intx::uint256>(encoded_msg.data())};
-    SILKRPC_TRACE << "silkrpc::decode_error_reason offset_uint256: " << intx::to_string(offset_uint256) << "\n";
+    SILKRPC_TRACE << "silkworm::decode_error_reason offset_uint256: " << intx::to_string(offset_uint256) << "\n";
     const auto offset = static_cast<uint64_t>(offset_uint256);
     if (encoded_msg.size() < kAbiStringOffsetSize + offset) {
         return std::nullopt;
@@ -63,7 +63,7 @@ static std::optional<std::string> decode_error_reason(const silkworm::Bytes& err
 
     const uint64_t message_offset{kAbiStringOffsetSize + offset};
     const auto length_uint256{intx::be::unsafe::load<intx::uint256>(encoded_msg.data() + offset)};
-    SILKRPC_TRACE << "silkrpc::decode_error_reason length_uint256: " << intx::to_string(length_uint256) << "\n";
+    SILKRPC_TRACE << "silkworm::decode_error_reason length_uint256: " << intx::to_string(length_uint256) << "\n";
     const auto length = static_cast<uint64_t>(length_uint256);
     if (encoded_msg.size() < message_offset + length) {
         return std::nullopt;
@@ -316,4 +316,4 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor<WorldState, VM>::call(
 
 template class EVMExecutor<silkworm::IntraBlockState, silkworm::EVM>;
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

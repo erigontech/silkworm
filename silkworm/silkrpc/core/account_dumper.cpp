@@ -35,7 +35,7 @@
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc::core {
 
 boost::asio::awaitable<DumpAccounts> AccountDumper::dump_accounts(BlockCache& cache, const BlockNumberOrHash& bnoh, const evmc::address& start_address, int16_t max_result,
                                                                   bool exclude_code, bool exclude_storage) {
@@ -47,7 +47,7 @@ boost::asio::awaitable<DumpAccounts> AccountDumper::dump_accounts(BlockCache& ca
 
     dump_accounts.root = block_with_hash.block.header.state_root;
 
-    std::vector<silkrpc::KeyValue> collected_data;
+    std::vector<silkworm::KeyValue> collected_data;
 
     AccountWalker::Collector collector = [&](silkworm::ByteView k, silkworm::ByteView v) {
         if (max_result > 0 && collected_data.size() >= static_cast<std::size_t>(max_result)) {
@@ -59,7 +59,7 @@ boost::asio::awaitable<DumpAccounts> AccountDumper::dump_accounts(BlockCache& ca
             return true;
         }
 
-        silkrpc::KeyValue kv;
+        silkworm::KeyValue kv;
         kv.key = k;
         kv.value = v;
         collected_data.push_back(kv);
@@ -78,7 +78,7 @@ boost::asio::awaitable<DumpAccounts> AccountDumper::dump_accounts(BlockCache& ca
 }
 
 boost::asio::awaitable<void> AccountDumper::load_accounts(ethdb::TransactionDatabase& tx_database,
-                                                          const std::vector<silkrpc::KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code) {
+                                                          const std::vector<silkworm::KeyValue>& collected_data, DumpAccounts& dump_accounts, bool exclude_code) {
     StateReader state_reader{tx_database};
     for (const auto& kv : collected_data) {
         const auto address = silkworm::to_evmc_address(kv.key);
@@ -148,4 +148,4 @@ boost::asio::awaitable<void> AccountDumper::load_storage(uint64_t block_number, 
     co_return;
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc::core

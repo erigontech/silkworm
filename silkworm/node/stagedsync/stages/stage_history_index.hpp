@@ -17,15 +17,15 @@
 #pragma once
 
 #include <silkworm/node/db/bitmap.hpp>
-#include <silkworm/node/stagedsync/stage.hpp>
+#include <silkworm/node/stagedsync/stages/stage.hpp>
 
 namespace silkworm::stagedsync {
 
-class TxLookup : public Stage {
+class HistoryIndex : public Stage {
   public:
-    explicit TxLookup(NodeSettings* node_settings, SyncContext* sync_context)
-        : Stage(sync_context, db::stages::kTxLookupKey, node_settings){};
-    ~TxLookup() override = default;
+    explicit HistoryIndex(NodeSettings* node_settings, SyncContext* sync_context)
+        : Stage(sync_context, db::stages::kHistoryIndexKey, node_settings){};
+    ~HistoryIndex() override = default;
 
     Stage::Result forward(db::RWTxn& txn) final;
     Stage::Result unwind(db::RWTxn& txn) final;
@@ -34,20 +34,27 @@ class TxLookup : public Stage {
 
   private:
     std::unique_ptr<etl::Collector> collector_{nullptr};
+    std::unique_ptr<db::bitmap::IndexLoader> index_loader_{nullptr};
 
     std::atomic_bool loading_{false};  // Whether we're in ETL loading phase
     std::string current_source_;       // Current source of data
     std::string current_target_;       // Current target of transformed data
     std::string current_key_;          // Actual processing key
 
-    void forward_impl(db::RWTxn& txn, BlockNum from, BlockNum to);
-    void unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to);
-    void prune_impl(db::RWTxn& txn, BlockNum from, BlockNum to);
+    Stage::Result forward_impl(db::RWTxn& txn, BlockNum from, BlockNum to, bool storage);
+    Stage::Result unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to, bool storage);
+    Stage::Result prune_impl(db::RWTxn& txn, BlockNum threshold, BlockNum to, bool storage);
+
+    //! \brief Collects bitmaps of block numbers changes for each account within provided
+    //! changeset boundaries
+    void collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapConfig& source_config, BlockNum from, BlockNum to,
+                                        bool storage);
+
+    //! \brief Collects unique keys touched by changesets within provided boundaries
+    std::map<Bytes, bool> collect_unique_keys_from_changeset(
+        db::RWTxn& txn, const db::MapConfig& source_config, BlockNum from, BlockNum to, bool storage);
 
     void reset_log_progress();  // Clears out all logging vars
-
-    void collect_transaction_hashes_from_canonical_bodies(db::RWTxn& txn,
-                                                          BlockNum from, BlockNum to,
-                                                          bool for_deletion);
 };
+
 }  // namespace silkworm::stagedsync

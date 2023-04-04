@@ -22,7 +22,7 @@
 
 #include <silkworm/silkrpc/commands/rpc_api_table.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::rpc::http {
 
 using Catch::Matchers::Message;
 
@@ -51,4 +51,4 @@ TEST_CASE("connection creation", "[silkrpc][http][connection]") {
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc::http
+}  // namespace silkworm::rpc::http

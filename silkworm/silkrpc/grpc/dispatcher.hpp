@@ -25,7 +25,7 @@
 #include <boost/asio/dispatch.hpp>
 #include <boost/asio/experimental/append.hpp>
 
-namespace silkrpc::detail {
+namespace silkworm::detail {
 
 template <typename Executor>
 struct ExecutorDispatcher {
@@ -47,4 +47,4 @@ struct InlineDispatcher {
     }
 };
 
-}  // namespace silkrpc::detail
+}  // namespace silkworm::detail

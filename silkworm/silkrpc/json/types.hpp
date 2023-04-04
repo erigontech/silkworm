@@ -67,7 +67,7 @@ void from_json(const nlohmann::json& json, AccessListEntry& entry);
 
 }  // namespace silkworm
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 void to_json(nlohmann::json& json, const struct NodeInfo& node_info);
 
@@ -133,29 +133,37 @@ void to_json(nlohmann::json& json, const std::set<evmc::address>& addresses);
 
 std::string to_hex_no_leading_zeros(uint64_t number);
 std::string to_hex_no_leading_zeros(silkworm::ByteView bytes);
-
 std::string to_quantity(uint64_t number);
 std::string to_quantity(intx::uint256 number);
 std::string to_quantity(silkworm::ByteView bytes);
 
+void to_quantity(std::span<char> hex_bytes, uint64_t number);
+void to_quantity(std::span<char> hex_bytes, intx::uint256 number);
+void to_quantity(std::span<char> hex_bytes, silkworm::ByteView bytes);
+void to_hex(std::span<char> hex_bytes, silkworm::ByteView bytes);
+
 nlohmann::json make_json_content(uint32_t id);
 nlohmann::json make_json_content(uint32_t id, const nlohmann::json& result);
-nlohmann::json make_json_error(uint32_t id, int32_t code, const std::string& message);
+nlohmann::json make_json_error(uint32_t id, int64_t code, const std::string& message);
 nlohmann::json make_json_error(uint32_t id, const RevertError& error);
 
-}  // namespace silkrpc
+// GLAZE
+void make_glaze_json_content(std::string& reply, uint32_t id, const Logs& logs);
+void make_glaze_json_error(std::string& reply, uint32_t id, const int error_id, const std::string& message);
+
+}  // namespace silkworm::rpc
 
 namespace nlohmann {
 
 template <>
-struct adl_serializer<silkrpc::BlockNumberOrHash> {
-    static silkrpc::BlockNumberOrHash from_json(const json& json) {
+struct adl_serializer<silkworm::rpc::BlockNumberOrHash> {
+    static silkworm::rpc::BlockNumberOrHash from_json(const json& json) {
         if (json.is_string()) {
-            return silkrpc::BlockNumberOrHash{json.get<std::string>()};
+            return silkworm::rpc::BlockNumberOrHash{json.get<std::string>()};
         } else if (json.is_number()) {
-            return silkrpc::BlockNumberOrHash{json.get<std::uint64_t>()};
+            return silkworm::rpc::BlockNumberOrHash{json.get<std::uint64_t>()};
         }
-        return silkrpc::BlockNumberOrHash{0};
+        return silkworm::rpc::BlockNumberOrHash{0};
     }
 };
 

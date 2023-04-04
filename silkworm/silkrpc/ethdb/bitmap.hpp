@@ -30,8 +30,8 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 
-namespace silkrpc::ethdb::bitmap {
+namespace silkworm::rpc::ethdb::bitmap {
 
 boost::asio::awaitable<roaring::Roaring> get(core::rawdb::DatabaseReader& db_reader, const std::string& table, silkworm::Bytes& key, uint32_t from_block, uint32_t to_block);
 
-}  // namespace silkrpc::ethdb::bitmap
+}  // namespace silkworm::rpc::ethdb::bitmap

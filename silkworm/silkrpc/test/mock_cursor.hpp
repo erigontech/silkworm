@@ -25,7 +25,7 @@
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 
-namespace silkrpc::test {
+namespace silkworm::rpc::test {
 
 class MockCursor : public ethdb::Cursor {
   public:
@@ -50,4 +50,4 @@ class MockCursorDupSort : public ethdb::CursorDupSort {
     MOCK_METHOD((boost::asio::awaitable<KeyValue>), seek_both_exact, (silkworm::ByteView, silkworm::ByteView));
 };
 
-}  // namespace silkrpc::test
+}  // namespace silkworm::rpc::test

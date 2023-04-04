@@ -16,7 +16,7 @@
 
 #include "issuance.hpp"
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const Issuance& issuance) {
     out << "block_reward: " << issuance.block_reward.value_or("null") << " "
@@ -25,4 +25,4 @@ std::ostream& operator<<(std::ostream& out, const Issuance& issuance) {
     return out;
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

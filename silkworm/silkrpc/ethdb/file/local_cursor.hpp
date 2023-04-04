@@ -32,7 +32,7 @@
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 
-namespace silkrpc::ethdb::file {
+namespace silkworm::rpc::ethdb::file {
 
 class LocalCursor : public CursorDupSort {
   public:
@@ -65,4 +65,4 @@ class LocalCursor : public CursorDupSort {
     mdbx::txn_managed& read_only_txn_;
 };
 
-}  // namespace silkrpc::ethdb::file
+}  // namespace silkworm::rpc::ethdb::file

@@ -21,7 +21,7 @@
 
 #include <silkworm/silkrpc/common/log.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using Catch::Matchers::Message;
 
@@ -37,4 +37,4 @@ TEST_CASE("print empty log", "[silkrpc][types][log]") {
     CHECK_NOTHROW(null_stream() << l);
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

@@ -35,7 +35,7 @@
 #include <silkworm/silkrpc/test/interfaces/mining_mock_fix24351.grpc.pb.h>
 #include <silkworm/silkrpc/test/interfaces/txpool_mock_fix24351.grpc.pb.h>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using Catch::Matchers::Message;
 using testing::_;
@@ -360,4 +360,4 @@ TEST_CASE("TXPOOL protocol version with server stub", "[silkrpc][protocol][wait_
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

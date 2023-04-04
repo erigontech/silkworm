@@ -25,7 +25,7 @@
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 class LogCborListener : public cbor::listener {
   private:
@@ -191,4 +191,4 @@ bool cbor_decode(const silkworm::Bytes& bytes, std::vector<Receipt>& receipts) {
     }
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

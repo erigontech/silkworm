@@ -25,23 +25,25 @@
 #include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 
+using namespace silkworm;
+
 int ethbackend_async(const std::string& target);
 int ethbackend_coroutines(const std::string& target);
 int ethbackend(const std::string& target);
-int kv_seek_async_callback(const std::string& target, const std::string& table_name, const silkworm::Bytes& key, uint32_t timeout);
-int kv_seek_async_coroutines(const std::string& target, const std::string& table_name, const silkworm::Bytes& key, uint32_t timeout);
-int kv_seek_async(const std::string& target, const std::string& table_name, const silkworm::Bytes& key, uint32_t timeout);
-int kv_seek_both(const std::string& target, const std::string& table_name, const silkworm::Bytes& key, const silkworm::Bytes& subkey);
-int kv_seek(const std::string& target, const std::string& table_name, const silkworm::Bytes& key);
+int kv_seek_async_callback(const std::string& target, const std::string& table_name, ByteView key, uint32_t timeout);
+int kv_seek_async_coroutines(const std::string& target, const std::string& table_name, ByteView key, uint32_t timeout);
+int kv_seek_async(const std::string& target, const std::string& table_name, ByteView key, uint32_t timeout);
+int kv_seek_both(const std::string& target, const std::string& table_name, ByteView key, ByteView subkey);
+int kv_seek(const std::string& target, const std::string& table_name, ByteView key);
 
 ABSL_FLAG(std::string, key, "", "key as hex string w/o leading 0x");
-ABSL_FLAG(silkrpc::LogLevel, log_verbosity, silkrpc::LogLevel::Critical, "logging level as string");
+ABSL_FLAG(LogLevel, log_verbosity, LogLevel::Critical, "logging level as string");
 ABSL_FLAG(std::string, seekkey, "", "seek key as hex string w/o leading 0x");
 ABSL_FLAG(std::string, subkey, "", "subkey as hex string w/o leading 0x");
 ABSL_FLAG(std::string, tool, "", "gRPC remote interface tool name as string");
-ABSL_FLAG(std::string, target, silkrpc::kDefaultTarget, "Erigon location as string <address>:<port>");
+ABSL_FLAG(std::string, target, kDefaultTarget, "Erigon location as string <address>:<port>");
 ABSL_FLAG(std::string, table, "", "database table name as string");
-ABSL_FLAG(uint32_t, timeout, silkrpc::kDefaultTimeout.count(), "gRPC call timeout as integer");
+ABSL_FLAG(uint32_t, timeout, kDefaultTimeout.count(), "gRPC call timeout as integer");
 
 int ethbackend_async() {
     auto target{absl::GetFlag(FLAGS_target)};

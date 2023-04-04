@@ -27,7 +27,7 @@
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 
-namespace silkrpc::ethdb {
+namespace silkworm::rpc::ethdb {
 
 class Transaction {
   public:
@@ -49,4 +49,4 @@ class Transaction {
     virtual boost::asio::awaitable<void> close() = 0;
 };
 
-}  // namespace silkrpc::ethdb
+}  // namespace silkworm::rpc::ethdb

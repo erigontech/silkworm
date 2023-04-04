@@ -29,7 +29,7 @@
 
 #include <silkworm/silkrpc/http/jwt.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 // The maximum receive message in bytes for gRPC channels.
 constexpr auto kRpcMaxReceiveMessageSize{64 * 1024 * 1024};  // 64 MiB
@@ -104,7 +104,7 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
         const std::string secret_key{jwt_secret_bytes_option->cbegin(), jwt_secret_bytes_option->cend()};
 
         // Create the one-and-only Silkrpc daemon
-        silkrpc::Daemon rpc_daemon{settings, secret_key};
+        Daemon rpc_daemon{settings, secret_key};
 
         // Check protocol version compatibility with Core Services
         SILKRPC_LOG << "Checking protocol version compatibility with core services...\n";
@@ -161,14 +161,14 @@ bool Daemon::validate_settings(const DaemonSettings& settings) {
     }
 
     const auto http_port = settings.http_port;
-    if (!http_port.empty() && http_port.find(silkrpc::kAddressPortSeparator) == std::string::npos) {
+    if (!http_port.empty() && http_port.find(silkworm::kAddressPortSeparator) == std::string::npos) {
         SILKRPC_ERROR << "Parameter http_port is invalid: [" << http_port << "]\n";
         SILKRPC_ERROR << "Use --http_port flag to specify the local binding for Ethereum JSON RPC service\n";
         return false;
     }
 
     const auto engine_port = settings.engine_port;
-    if (!engine_port.empty() && engine_port.find(silkrpc::kAddressPortSeparator) == std::string::npos) {
+    if (!engine_port.empty() && engine_port.find(silkworm::kAddressPortSeparator) == std::string::npos) {
         SILKRPC_ERROR << "Parameter engine_port is invalid: [" << engine_port << "]\n";
         SILKRPC_ERROR << "Use --engine_port flag to specify the local binding for Engine JSON RPC service\n";
         return false;
@@ -224,16 +224,16 @@ DaemonChecklist Daemon::run_checklist() {
     const auto core_service_channel{create_channel_()};
 
     if (!settings_.datadir) {
-        const auto kv_protocol_check{silkrpc::wait_for_kv_protocol_check(core_service_channel)};
-        const auto ethbackend_protocol_check{silkrpc::wait_for_ethbackend_protocol_check(core_service_channel)};
-        const auto mining_protocol_check{silkrpc::wait_for_mining_protocol_check(core_service_channel)};
-        const auto txpool_protocol_check{silkrpc::wait_for_txpool_protocol_check(core_service_channel)};
+        const auto kv_protocol_check{wait_for_kv_protocol_check(core_service_channel)};
+        const auto ethbackend_protocol_check{wait_for_ethbackend_protocol_check(core_service_channel)};
+        const auto mining_protocol_check{wait_for_mining_protocol_check(core_service_channel)};
+        const auto txpool_protocol_check{wait_for_txpool_protocol_check(core_service_channel)};
         DaemonChecklist checklist{{kv_protocol_check, ethbackend_protocol_check, mining_protocol_check, txpool_protocol_check}};
         return checklist;
     } else {
-        const auto ethbackend_protocol_check{silkrpc::wait_for_ethbackend_protocol_check(core_service_channel)};
-        const auto mining_protocol_check{silkrpc::wait_for_mining_protocol_check(core_service_channel)};
-        const auto txpool_protocol_check{silkrpc::wait_for_txpool_protocol_check(core_service_channel)};
+        const auto ethbackend_protocol_check{wait_for_ethbackend_protocol_check(core_service_channel)};
+        const auto mining_protocol_check{wait_for_mining_protocol_check(core_service_channel)};
+        const auto txpool_protocol_check{wait_for_txpool_protocol_check(core_service_channel)};
         DaemonChecklist checklist{{ethbackend_protocol_check, mining_protocol_check, txpool_protocol_check}};
         return checklist;
     }
@@ -273,4 +273,4 @@ void Daemon::join() {
     context_pool_.join();
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

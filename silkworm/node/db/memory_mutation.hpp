@@ -44,8 +44,8 @@ class MemoryMutation : public RWTxn {
     MemoryMutation(MemoryOverlay& memory_db, ROTxn* txn);
     ~MemoryMutation() override;
 
-    [[nodiscard]] bool is_table_cleared(const std::string& bucket_name) const;
-    [[nodiscard]] bool is_entry_deleted(const std::string& bucket_name, const Slice& key) const;
+    [[nodiscard]] bool is_table_cleared(::mdbx::map_handle table) const;
+    [[nodiscard]] bool is_entry_deleted(::mdbx::map_handle table, const Slice& key) const;
     [[nodiscard]] bool has_map(const std::string& bucket_name) const;
 
     [[nodiscard]] db::ROTxn* external_txn() const { return txn_; }
@@ -57,6 +57,9 @@ class MemoryMutation : public RWTxn {
     std::unique_ptr<RWCursor> rw_cursor(const MapConfig& config) override;
     std::unique_ptr<RWCursorDupSort> rw_cursor_dup_sort(const MapConfig& config) override;
 
+    bool erase(::mdbx::map_handle table, const Slice& key);
+    bool erase(::mdbx::map_handle table, const Slice& key, const Slice& value);
+
     void rollback();
 
   private:
@@ -64,8 +67,8 @@ class MemoryMutation : public RWTxn {
 
     MemoryOverlay& memory_db_;
     db::ROTxn* txn_;
-    std::map<std::string, Slice> deleted_entries_;
-    std::map<std::string, bool> cleared_tables_;
+    std::map<::mdbx::map_handle, std::map<Slice, bool>> deleted_entries_;
+    std::map<::mdbx::map_handle, bool> cleared_tables_;
 };
 
 }  // namespace silkworm::db

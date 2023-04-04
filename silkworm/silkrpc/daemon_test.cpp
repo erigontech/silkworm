@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using Catch::Matchers::Message;
 
@@ -37,4 +37,4 @@ TEST_CASE("DaemonChecklist::success_or_throw", "[silkrpc]") {
 }
 #endif  // BUILD_COVERAGE
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

@@ -32,7 +32,7 @@
 #include <silkworm/silkrpc/ethbackend/backend.hpp>
 #include <silkworm/silkrpc/types/execution_payload.hpp>
 
-namespace silkrpc::ethbackend {
+namespace silkworm::rpc::ethbackend {
 
 class RemoteBackEnd final : public BackEnd {
   public:
@@ -83,4 +83,4 @@ class RemoteBackEnd final : public BackEnd {
     agrpc::GrpcContext& grpc_context_;
 };
 
-}  // namespace silkrpc::ethbackend
+}  // namespace silkworm::rpc::ethbackend

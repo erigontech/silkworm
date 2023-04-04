@@ -23,7 +23,7 @@
 
 #include <silkworm/silkrpc/test/context_test_base.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 struct BinarySearchTest : test::ContextTestBase {
 };
@@ -66,4 +66,4 @@ TEST_CASE_METHOD(BinarySearchTest, "binary_search", "[silkrpc][common][binary_se
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

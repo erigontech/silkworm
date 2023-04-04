@@ -30,7 +30,7 @@
 #include <silkworm/silkrpc/test/grpc_actions.hpp>
 #include <silkworm/silkrpc/test/grpc_responder.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using Catch::Matchers::Message;
 using evmc::literals::operator""_address;
@@ -390,4 +390,4 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_forkchoice_updated_v1", "[silk
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

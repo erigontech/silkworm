@@ -30,7 +30,7 @@
 #include <silkworm/silkrpc/types/call.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 class AccessListTracer : public silkworm::EvmTracer {
   public:
@@ -78,4 +78,4 @@ inline bool operator==(const AccessList& acl1, const AccessList& acl2) {
     return AccessListTracer::compare(acl1, acl2);
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

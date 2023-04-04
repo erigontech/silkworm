@@ -26,7 +26,7 @@
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/test/api_test_base.hpp>
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 using boost::asio::awaitable;
 using Catch::Matchers::Message;
@@ -51,7 +51,7 @@ using EthereumRpcApiTest = test::JsonApiWithWorkersTestBase<EthereumRpcApi_ForTe
 TEST_CASE_METHOD(EthereumRpcApiTest, "handle_eth_block_number succeeds if request well-formed", "[silkrpc][eth_api]") {
     nlohmann::json reply;
 
-    // TODO(canepat) we need to mock silkrpc::core functions properly, then we must change this check
+    // TODO(canepat) we need to mock silkworm::core functions properly, then we must change this check
     CHECK_THROWS_AS(run<&EthereumRpcApi_ForTest::eth_block_number>(R"({
         "jsonrpc":"2.0",
         "id": 1,
@@ -70,7 +70,7 @@ TEST_CASE_METHOD(EthereumRpcApiTest, "handle_eth_block_number succeeds if reques
 TEST_CASE_METHOD(EthereumRpcApiTest, "handle_eth_block_number fails if request empty", "[silkrpc][eth_api]") {
     nlohmann::json reply;
 
-    // TODO(canepat) we need to mock silkrpc::core functions properly, then we must change this check
+    // TODO(canepat) we need to mock silkworm::core functions properly, then we must change this check
     CHECK_THROWS_AS(run<&EthereumRpcApi_ForTest::eth_block_number>(R"({})"_json, reply), std::exception);
     /*CHECK(reply == R"({
             "jsonrpc":"2.0",
@@ -110,4 +110,4 @@ TEST_CASE_METHOD(EthereumRpcApiTest, "handle_eth_send_raw_transaction fails wron
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

@@ -28,7 +28,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/etl/collector.hpp>
-#include <silkworm/node/stagedsync/stage.hpp>
+#include <silkworm/node/stagedsync/stages/stage.hpp>
 
 namespace silkworm::stagedsync {
 

@@ -20,8 +20,6 @@
 #include <iostream>
 #include <utility>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
 #include <absl/flags/usage.h>
@@ -39,18 +37,19 @@
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/ethdb/kv/remote_database.hpp>
 
-ABSL_FLAG(std::string, target, silkrpc::kDefaultTarget, "server location as string <address>:<port>");
-ABSL_FLAG(silkrpc::LogLevel, log_verbosity, silkrpc::LogLevel::Critical, "logging level");
+using namespace silkworm;
+using namespace silkworm::rpc;
 
-using silkrpc::LogLevel;
+ABSL_FLAG(std::string, target, kDefaultTarget, "server location as string <address>:<port>");
+ABSL_FLAG(LogLevel, log_verbosity, LogLevel::Critical, "logging level");
 
-boost::asio::awaitable<std::optional<uint64_t>> latest_block(silkrpc::ethdb::Database& db) {
+boost::asio::awaitable<std::optional<uint64_t>> latest_block(ethdb::Database& db) {
     std::optional<uint64_t> block_height;
 
     const auto db_transaction = co_await db.begin();
     try {
-        silkrpc::ethdb::TransactionDatabase tx_db_reader{*db_transaction};
-        block_height = co_await silkrpc::core::get_latest_block_number(tx_db_reader);
+        ethdb::TransactionDatabase tx_db_reader{*db_transaction};
+        block_height = co_await core::get_latest_block_number(tx_db_reader);
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << "\n";
     } catch (...) {
@@ -61,7 +60,7 @@ boost::asio::awaitable<std::optional<uint64_t>> latest_block(silkrpc::ethdb::Dat
     co_return block_height;
 }
 
-std::optional<uint64_t> get_latest_block(boost::asio::io_context& io_context, silkrpc::ethdb::Database& db) {
+std::optional<uint64_t> get_latest_block(boost::asio::io_context& io_context, ethdb::Database& db) {
     auto result = boost::asio::co_spawn(io_context, latest_block(db), boost::asio::use_future);
     return result.get();
 }
@@ -81,11 +80,11 @@ int main(int argc, char* argv[]) {
         }
 
         // TODO(canepat): handle also secure channel for remote
-        silkrpc::ChannelFactory create_channel = [&]() {
+        ChannelFactory create_channel = [&]() {
             return grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
         };
         // TODO(canepat): handle also local (shared-memory) database
-        silkrpc::ContextPool context_pool{1, create_channel};
+        ContextPool context_pool{1, create_channel};
         auto& context = context_pool.next_context();
         auto io_context = context.io_context();
         auto& database = context.database();

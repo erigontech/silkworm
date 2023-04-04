@@ -20,7 +20,7 @@
 
 #include <catch2/catch.hpp>
 
-namespace silkrpc {
+namespace silkworm {
 
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 
@@ -94,4 +94,4 @@ TEST_CASE("max incarnation composite key", "[silkrpc][core][rawdb][util]") {
                       "0000000000000000000000000000000000000000000000000000000000000000"));
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm

@@ -21,7 +21,7 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 intx::uint256 Transaction::effective_gas_price() const {
     return silkworm::Transaction::effective_gas_price(block_base_fee_per_gas.value_or(0));
@@ -98,4 +98,4 @@ std::ostream& operator<<(std::ostream& out, const silkworm::Transaction& t) {
     return out;
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

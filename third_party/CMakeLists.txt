@@ -139,13 +139,17 @@ endif()
 
 # BLST
 set(BLST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/blst)
-if(MSVC)
+if(SILKWORM_WASM_API)
+  set(BLST_BUILD_SCRIPT ./build.sh CC=/opt/wasi-sdk/bin/clang -D__BLST_PORTABLE__)
+  set(BLST_LIB libblst.a)
+elseif(MSVC)
   set(BLST_BUILD_SCRIPT build.bat)
   set(BLST_LIB blst.lib)
 else()
   set(BLST_BUILD_SCRIPT ./build.sh)
   set(BLST_LIB libblst.a)
 endif()
+
 ExternalProject_Add(
   blst_build
   SOURCE_DIR ${BLST_DIR}
@@ -155,6 +159,7 @@ ExternalProject_Add(
   BUILD_BYPRODUCTS ${BLST_DIR}/${BLST_LIB}
   INSTALL_COMMAND ""
 )
+
 add_library(blst STATIC IMPORTED GLOBAL)
 add_dependencies(blst blst_build)
 set_target_properties(blst PROPERTIES

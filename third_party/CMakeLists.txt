@@ -56,7 +56,7 @@ target_include_directories(evmone PUBLIC evmone/include evmone/lib)
 target_link_libraries(
   evmone
   PUBLIC evmc intx::intx
-  PRIVATE evmc::instructions
+  PRIVATE evmc::instructions ethash::keccak
 )
 
 if(MSVC)

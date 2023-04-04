@@ -36,7 +36,7 @@
 #include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/types/receipt.hpp>
 
-namespace silkrpc::core::rawdb {
+namespace silkworm::rpc::core::rawdb {
 
 boost::asio::awaitable<uint64_t> read_header_number(const DatabaseReader& reader, const evmc::bytes32& block_hash) {
     const silkworm::ByteView block_hash_bytes{block_hash.bytes, silkworm::kHashLength};
@@ -436,4 +436,4 @@ boost::asio::awaitable<intx::uint256> read_cumulative_gas_used(const core::rawdb
     co_return cumulative_gas_index;
 }
 
-}  // namespace silkrpc::core::rawdb
+}  // namespace silkworm::rpc::core::rawdb

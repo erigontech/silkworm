@@ -29,7 +29,7 @@
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 constexpr int kCurrentApiLevel{8};
 
@@ -216,4 +216,4 @@ intx::uint256 OtsRpcApi::get_block_fees(const ChainConfig& chain_config, const s
     return fees;
 }
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

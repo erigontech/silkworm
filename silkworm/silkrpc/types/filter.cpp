@@ -18,7 +18,7 @@
 
 #include <silkworm/silkrpc/common/util.hpp>
 
-std::ostream& operator<<(std::ostream& out, const std::optional<silkrpc::FilterAddresses>& addresses) {
+std::ostream& operator<<(std::ostream& out, const std::optional<silkworm::rpc::FilterAddresses>& addresses) {
     if (addresses.has_value()) {
         auto address_vector = addresses.value();
         out << "[";
@@ -35,7 +35,7 @@ std::ostream& operator<<(std::ostream& out, const std::optional<silkrpc::FilterA
     return out;
 }
 
-std::ostream& operator<<(std::ostream& out, const silkrpc::FilterSubTopics& subtopics) {
+std::ostream& operator<<(std::ostream& out, const silkworm::rpc::FilterSubTopics& subtopics) {
     out << "[";
     for (std::size_t i{0}; i < subtopics.size(); i++) {
         out << "0x" << subtopics[i];
@@ -47,7 +47,7 @@ std::ostream& operator<<(std::ostream& out, const silkrpc::FilterSubTopics& subt
     return out;
 }
 
-std::ostream& operator<<(std::ostream& out, const std::optional<silkrpc::FilterTopics>& topics) {
+std::ostream& operator<<(std::ostream& out, const std::optional<silkworm::rpc::FilterTopics>& topics) {
     if (topics.has_value()) {
         auto topic_vector = topics.value();
         out << "[";
@@ -64,7 +64,7 @@ std::ostream& operator<<(std::ostream& out, const std::optional<silkrpc::FilterT
     return out;
 }
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const Filter& filter) {
     out << "from_block: " << filter.from_block.value_or("null") << " ";
@@ -75,4 +75,4 @@ std::ostream& operator<<(std::ostream& out, const Filter& filter) {
     return out;
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

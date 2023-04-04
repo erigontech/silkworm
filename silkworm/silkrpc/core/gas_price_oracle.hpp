@@ -31,7 +31,7 @@
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 
-namespace silkrpc {
+namespace silkworm {
 
 const intx::uint256 kWei = 1;
 const intx::uint256 kGWei = 1E9;
@@ -63,4 +63,4 @@ class GasPriceOracle {
     const BlockProvider& block_provider_;
 };
 
-}  // namespace silkrpc
+}  // namespace silkworm

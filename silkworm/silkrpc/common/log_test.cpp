@@ -23,7 +23,7 @@
 
 #include <catch2/catch.hpp>
 
-namespace silkrpc {
+namespace silkworm {
 
 using Catch::Matchers::Message;
 
@@ -169,4 +169,4 @@ TEST_CASE("SILKRPC_LOG_THREAD macro enables/disables thread tracing", "[silkrpc]
     CHECK(ss2.str().find(thread_id_stream.str()) == std::string::npos);
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm

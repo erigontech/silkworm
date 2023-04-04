@@ -20,7 +20,7 @@
 #include <optional>
 #include <string>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 struct Issuance {
     std::optional<std::string> block_reward;
@@ -34,4 +34,4 @@ struct Issuance {
 
 std::ostream& operator<<(std::ostream& out, const Issuance& issuance);
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

@@ -33,7 +33,7 @@
 #include <silkworm/silkrpc/grpc/error.hpp>
 #include <silkworm/silkrpc/grpc/util.hpp>
 
-namespace silkrpc {
+namespace silkworm {
 
 namespace detail {
     struct RequestTag {
@@ -209,4 +209,4 @@ class ServerStreamingRpc<PrepareAsync> {
     bool read_failed_;
 };
 
-}  // namespace silkrpc
+}  // namespace silkworm

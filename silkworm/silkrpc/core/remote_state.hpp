@@ -32,7 +32,7 @@
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/core/state_reader.hpp>
 
-namespace silkrpc::state {
+namespace silkworm::rpc::state {
 
 class AsyncRemoteState {
   public:
@@ -129,4 +129,4 @@ class RemoteState : public silkworm::State {
 
 std::ostream& operator<<(std::ostream& out, const RemoteState& s);
 
-}  // namespace silkrpc::state
+}  // namespace silkworm::rpc::state

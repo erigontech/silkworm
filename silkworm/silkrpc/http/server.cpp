@@ -35,7 +35,7 @@
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/http/connection.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::rpc::http {
 #ifdef WIN32
 using reuse_port = boost::asio::detail::socket_option::boolean<SOL_SOCKET, SO_REUSEADDR>;
 #else
@@ -115,4 +115,4 @@ void Server::stop() {
                   << std::flush;
 }
 
-}  // namespace silkrpc::http
+}  // namespace silkworm::rpc::http

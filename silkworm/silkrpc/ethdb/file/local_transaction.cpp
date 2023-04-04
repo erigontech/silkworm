@@ -20,7 +20,7 @@
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
-namespace silkrpc::ethdb::file {
+namespace silkworm::rpc::ethdb::file {
 
 boost::asio::awaitable<void> LocalTransaction::open() {
     // Create a new read-only transaction.
@@ -64,4 +64,4 @@ boost::asio::awaitable<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cur
     co_return cursor;
 }
 
-}  // namespace silkrpc::ethdb::file
+}  // namespace silkworm::rpc::ethdb::file

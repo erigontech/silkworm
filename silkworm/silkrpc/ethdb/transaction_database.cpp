@@ -22,23 +22,23 @@
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
-namespace silkrpc::ethdb {
+namespace silkworm::rpc::ethdb {
 
-boost::asio::awaitable<KeyValue> TransactionDatabase::get(const std::string& table, silkworm::ByteView key) const {
+awaitable<KeyValue> TransactionDatabase::get(const std::string& table, ByteView key) const {
     const auto cursor = co_await tx_.cursor(table);
     SILKRPC_TRACE << "TransactionDatabase::get cursor_id: " << cursor->cursor_id() << "\n";
     const auto kv_pair = co_await cursor->seek(key);
     co_return kv_pair;
 }
 
-boost::asio::awaitable<silkworm::Bytes> TransactionDatabase::get_one(const std::string& table, silkworm::ByteView key) const {
+awaitable<silkworm::Bytes> TransactionDatabase::get_one(const std::string& table, ByteView key) const {
     const auto cursor = co_await tx_.cursor(table);
     SILKRPC_TRACE << "TransactionDatabase::get_one cursor_id: " << cursor->cursor_id() << "\n";
     const auto kv_pair = co_await cursor->seek_exact(key);
     co_return kv_pair.value;
 }
 
-boost::asio::awaitable<std::optional<silkworm::Bytes>> TransactionDatabase::get_both_range(const std::string& table, silkworm::ByteView key, silkworm::ByteView subkey) const {
+awaitable<std::optional<Bytes>> TransactionDatabase::get_both_range(const std::string& table, ByteView key, ByteView subkey) const {
     const auto cursor = co_await tx_.cursor_dup_sort(table);
     SILKRPC_TRACE << "TransactionDatabase::get_both_range cursor_id: " << cursor->cursor_id() << "\n";
     const auto value{co_await cursor->seek_both(key, subkey)};
@@ -50,7 +50,7 @@ boost::asio::awaitable<std::optional<silkworm::Bytes>> TransactionDatabase::get_
     co_return value.substr(subkey.length());
 }
 
-boost::asio::awaitable<void> TransactionDatabase::walk(const std::string& table, silkworm::ByteView start_key, uint32_t fixed_bits, core::rawdb::Walker w) const {
+awaitable<void> TransactionDatabase::walk(const std::string& table, ByteView start_key, uint32_t fixed_bits, core::rawdb::Walker w) const {
     const auto fixed_bytes = (fixed_bits + 7) / CHAR_BIT;
     SILKRPC_TRACE << "TransactionDatabase::walk fixed_bits: " << fixed_bits << " fixed_bytes: " << fixed_bytes << "\n";
     const auto shift_bits = fixed_bits & 7;
@@ -82,7 +82,7 @@ boost::asio::awaitable<void> TransactionDatabase::walk(const std::string& table,
     co_return;
 }
 
-boost::asio::awaitable<void> TransactionDatabase::for_prefix(const std::string& table, silkworm::ByteView prefix, core::rawdb::Walker w) const {
+awaitable<void> TransactionDatabase::for_prefix(const std::string& table, ByteView prefix, core::rawdb::Walker w) const {
     const auto cursor = co_await tx_.cursor(table);
     SILKRPC_TRACE << "TransactionDatabase::for_prefix cursor_id: " << cursor->cursor_id() << " prefix: " << silkworm::to_hex(prefix) << "\n";
     auto kv_pair = co_await cursor->seek(prefix);
@@ -102,4 +102,4 @@ boost::asio::awaitable<void> TransactionDatabase::for_prefix(const std::string& 
     co_return;
 }
 
-}  // namespace silkrpc::ethdb
+}  // namespace silkworm::rpc::ethdb

@@ -24,7 +24,7 @@
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const Block& b) {
     out << "parent_hash: " << b.block.header.parent_hash;
@@ -103,4 +103,4 @@ uint64_t BlockDetails::get_block_size() const {
     return rlp_head.payload_length;
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

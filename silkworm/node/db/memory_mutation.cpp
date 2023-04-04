@@ -64,15 +64,16 @@ MemoryMutation::~MemoryMutation() {
     rollback();
 }
 
-bool MemoryMutation::is_table_cleared(const std::string& bucket_name) const {
-    return cleared_tables_.contains(bucket_name);
+bool MemoryMutation::is_table_cleared(::mdbx::map_handle table) const {
+    return cleared_tables_.contains(table);
 }
 
-bool MemoryMutation::is_entry_deleted(const std::string& bucket_name, const Slice& key) const {
-    if (!deleted_entries_.contains(bucket_name)) {
+bool MemoryMutation::is_entry_deleted(::mdbx::map_handle table, const Slice& key) const {
+    if (!deleted_entries_.contains(table)) {
         return false;
     }
-    return deleted_entries_.at(bucket_name) == key;
+    const auto& deleted_slices = deleted_entries_.at(table);
+    return deleted_slices.find(key) != deleted_slices.cend();
 }
 
 bool MemoryMutation::has_map(const std::string& bucket_name) const {
@@ -97,6 +98,16 @@ std::unique_ptr<RWCursor> MemoryMutation::rw_cursor(const MapConfig& config) {
 
 std::unique_ptr<RWCursorDupSort> MemoryMutation::rw_cursor_dup_sort(const MapConfig& config) {
     return make_cursor(config);
+}
+
+bool MemoryMutation::erase(::mdbx::map_handle table, const Slice& key) {
+    deleted_entries_[table][key] = true;
+    return managed_txn_.erase(table, key);
+}
+
+bool MemoryMutation::erase(::mdbx::map_handle table, const Slice& key, const Slice& value) {
+    deleted_entries_[table][key] = true;
+    return managed_txn_.erase(table, key, value);
 }
 
 void MemoryMutation::rollback() {

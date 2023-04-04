@@ -33,7 +33,7 @@
 #include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/test/mock_database_reader.hpp>
 
-namespace silkrpc::core::rawdb {
+namespace silkworm::rpc::core::rawdb {
 
 using Catch::Matchers::Message;
 using testing::_;
@@ -143,7 +143,11 @@ TEST_CASE("read_header_number") {
         EXPECT_CALL(db_reader, get_one(db::table::kHeaderNumbers, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
         const auto block_hash{0x0000000000000000000000000000000000000000000000000000000000000000_bytes32};
         auto result = boost::asio::co_spawn(pool, read_header_number(db_reader, block_hash), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::invalid_argument);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::invalid_argument, Message("empty block number value in read_header_number"));
+#endif  // SILKWORM_SANITIZE
     }
 }
 
@@ -155,7 +159,11 @@ TEST_CASE("read_chain_config") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return kBlockHash; }));
         EXPECT_CALL(db_reader, get_one(db::table::kConfig, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
         auto result = boost::asio::co_spawn(pool, read_chain_config(db_reader), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::invalid_argument);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::invalid_argument, Message("empty chain config data in read_chain_config"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("invalid JSON chain data") {
@@ -347,7 +355,11 @@ TEST_CASE("read_block_by_number") {
         const uint64_t block_number{4'000'000};
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
         auto result = boost::asio::co_spawn(pool, read_block_by_number(db_reader, block_number), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::invalid_argument);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::invalid_argument, Message("empty block hash value in read_canonical_block_hash"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("block header not found") {
@@ -355,7 +367,11 @@ TEST_CASE("read_block_by_number") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return kBlockHash; }));
         EXPECT_CALL(db_reader, get_one(db::table::kHeaders, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
         auto result = boost::asio::co_spawn(pool, read_block_by_number(db_reader, block_number), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::runtime_error);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::runtime_error, Message("empty block header RLP in read_header"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("invalid block header") {
@@ -363,7 +379,11 @@ TEST_CASE("read_block_by_number") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return kBlockHash; }));
         EXPECT_CALL(db_reader, get_one(db::table::kHeaders, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{0x00, 0x01}; }));
         auto result = boost::asio::co_spawn(pool, read_block_by_number(db_reader, block_number), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::runtime_error);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::runtime_error, Message("invalid RLP decoding for block header"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("block body not found") {
@@ -372,7 +392,11 @@ TEST_CASE("read_block_by_number") {
         EXPECT_CALL(db_reader, get_one(db::table::kHeaders, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return kHeader; }));
         EXPECT_CALL(db_reader, get_one(db::table::kBlockBodies, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
         auto result = boost::asio::co_spawn(pool, read_block_by_number(db_reader, block_number), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::runtime_error);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::runtime_error, Message("empty block body RLP in read_body"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("invalid block body") {
@@ -404,7 +428,11 @@ TEST_CASE("read_block_number_by_transaction_hash") {
         const auto transaction_hash{0x18dcb90e76b61fe6f37c9a9cd269a66188c05af5f7a62c50ff3246c6e207dc6d_bytes32};
         EXPECT_CALL(db_reader, get_one(db::table::kTxLookup, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
         auto result = boost::asio::co_spawn(pool, read_block_number_by_transaction_hash(db_reader, transaction_hash), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::invalid_argument);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::invalid_argument, Message("empty block number value in read_block_by_transaction_hash"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("invalid block header number") {
@@ -432,7 +460,11 @@ TEST_CASE("read_block") {
         const uint64_t block_number{4'000'000};
         EXPECT_CALL(db_reader, get_one(db::table::kHeaders, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
         auto result = boost::asio::co_spawn(pool, read_block(db_reader, block_hash, block_number), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::runtime_error);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::runtime_error, Message("empty block header RLP in read_header"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("invalid block header") {
@@ -440,7 +472,11 @@ TEST_CASE("read_block") {
         const uint64_t block_number{4'000'000};
         EXPECT_CALL(db_reader, get_one(db::table::kHeaders, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{0x00, 0x01}; }));
         auto result = boost::asio::co_spawn(pool, read_block(db_reader, block_hash, block_number), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::runtime_error);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::runtime_error, Message("invalid RLP decoding for block header"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("block body not found") {
@@ -449,7 +485,11 @@ TEST_CASE("read_block") {
         EXPECT_CALL(db_reader, get_one(db::table::kHeaders, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return kHeader; }));
         EXPECT_CALL(db_reader, get_one(db::table::kBlockBodies, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
         auto result = boost::asio::co_spawn(pool, read_block(db_reader, block_hash, block_number), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::runtime_error);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::runtime_error, Message("empty block body RLP in read_body"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("invalid block body") {
@@ -492,7 +532,11 @@ TEST_CASE("read_header_by_hash") {
         const auto block_hash{0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32};
         EXPECT_CALL(db_reader, get_one(db::table::kHeaderNumbers, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
         auto result = boost::asio::co_spawn(pool, read_header_by_hash(db_reader, block_hash), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::invalid_argument);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::invalid_argument, Message("empty block number value in read_header_number"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("block header not found") {
@@ -500,7 +544,11 @@ TEST_CASE("read_header_by_hash") {
         EXPECT_CALL(db_reader, get_one(db::table::kHeaderNumbers, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return kNumber; }));
         EXPECT_CALL(db_reader, get_one(db::table::kHeaders, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
         auto result = boost::asio::co_spawn(pool, read_header_by_hash(db_reader, block_hash), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::runtime_error);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::runtime_error, Message("empty block header RLP in read_header"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("invalid block header") {
@@ -508,7 +556,11 @@ TEST_CASE("read_header_by_hash") {
         EXPECT_CALL(db_reader, get_one(db::table::kHeaderNumbers, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return kNumber; }));
         EXPECT_CALL(db_reader, get_one(db::table::kHeaders, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{0x00, 0x01}; }));
         auto result = boost::asio::co_spawn(pool, read_header_by_hash(db_reader, block_hash), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::runtime_error);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::runtime_error, Message("invalid RLP decoding for block header"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("block header found and matching") {
@@ -529,7 +581,11 @@ TEST_CASE("read_header_by_number") {
         const uint64_t block_number{4'000'000};
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
         auto result = boost::asio::co_spawn(pool, read_header_by_number(db_reader, block_number), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::invalid_argument);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::invalid_argument, Message("empty block hash value in read_canonical_block_hash"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("block header not found") {
@@ -537,7 +593,11 @@ TEST_CASE("read_header_by_number") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return kBlockHash; }));
         EXPECT_CALL(db_reader, get_one(db::table::kHeaders, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
         auto result = boost::asio::co_spawn(pool, read_header_by_number(db_reader, block_number), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::runtime_error);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::runtime_error, Message("empty block header RLP in read_header"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("invalid block header") {
@@ -545,7 +605,11 @@ TEST_CASE("read_header_by_number") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return kBlockHash; }));
         EXPECT_CALL(db_reader, get_one(db::table::kHeaders, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{0x00, 0x01}; }));
         auto result = boost::asio::co_spawn(pool, read_header_by_number(db_reader, block_number), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::runtime_error);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::runtime_error, Message("invalid RLP decoding for block header"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("block header found and matching") {
@@ -567,7 +631,11 @@ TEST_CASE("read_header") {
         const uint64_t block_number{4'000'000};
         EXPECT_CALL(db_reader, get_one(db::table::kHeaders, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
         auto result = boost::asio::co_spawn(pool, read_header(db_reader, block_hash, block_number), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::runtime_error);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::runtime_error, Message("empty block header RLP in read_header"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("invalid block header") {
@@ -575,7 +643,11 @@ TEST_CASE("read_header") {
         const uint64_t block_number{4'000'000};
         EXPECT_CALL(db_reader, get_one(db::table::kHeaders, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{0x00, 0x01}; }));
         auto result = boost::asio::co_spawn(pool, read_header(db_reader, block_hash, block_number), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::runtime_error);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::runtime_error, Message("invalid RLP decoding for block header"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("block header found and matching") {
@@ -597,7 +669,11 @@ TEST_CASE("read_body") {
         const uint64_t block_number{4'000'000};
         EXPECT_CALL(db_reader, get_one(db::table::kBlockBodies, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
         auto result = boost::asio::co_spawn(pool, read_body(db_reader, block_hash, block_number), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::runtime_error);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::runtime_error, Message("empty block body RLP in read_body"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("invalid block body") {
@@ -932,7 +1008,11 @@ TEST_CASE("read_receipts") {
 
         EXPECT_CALL(db_reader, get_one(db::table::kBlockReceipts, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
         auto result1 = boost::asio::co_spawn(pool, read_receipts(db_reader, bwh), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result1.get(), std::runtime_error);
+#else
         CHECK_THROWS_MATCHES(result1.get(), std::runtime_error, Message("#transactions and #receipts do not match in read_receipts"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("one receipt") {  // https://goerli.etherscan.io/block/3529600
@@ -1334,7 +1414,11 @@ TEST_CASE("read_cumulative_transaction_count") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return *silkworm::from_hex("9816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff"); }));
         EXPECT_CALL(db_reader, get_one(db::table::kBlockBodies, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
         auto result = boost::asio::co_spawn(pool, read_cumulative_transaction_count(db_reader, block_number), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::runtime_error);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::runtime_error, Message("empty block body RLP in read_body"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("block invalid") {
@@ -1390,4 +1474,4 @@ TEST_CASE("read_cumulative_gas_used") {
     }
 }
 
-}  // namespace silkrpc::core::rawdb
+}  // namespace silkworm::rpc::core::rawdb

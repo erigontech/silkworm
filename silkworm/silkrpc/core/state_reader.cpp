@@ -26,7 +26,7 @@
 #include <silkworm/silkrpc/core/rawdb/util.hpp>
 #include <silkworm/silkrpc/ethdb/tables.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 boost::asio::awaitable<std::optional<silkworm::Account>> StateReader::read_account(const evmc::address& address, uint64_t block_number) const {
     std::optional<silkworm::Bytes> encoded{co_await read_historical_account(address, block_number)};
@@ -57,7 +57,7 @@ boost::asio::awaitable<evmc::bytes32> StateReader::read_storage(const evmc::addr
                                                                 uint64_t block_number) const {
     std::optional<silkworm::Bytes> value{co_await read_historical_storage(address, incarnation, location_hash, block_number)};
     if (!value) {
-        auto composite_key{silkrpc::composite_storage_key_without_hash_lookup(address, incarnation)};
+        auto composite_key{silkworm::composite_storage_key_without_hash_lookup(address, incarnation)};
         SILKRPC_DEBUG << "StateReader::read_storage composite_key: " << composite_key << "\n";
         value = co_await db_reader_.get_both_range(db::table::kPlainState, composite_key, location_hash);
         SILKRPC_DEBUG << "StateReader::read_storage value: " << (value ? *value : silkworm::Bytes{}) << "\n";
@@ -140,4 +140,4 @@ boost::asio::awaitable<std::optional<silkworm::Bytes>> StateReader::read_histori
 
     co_return value;
 }
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

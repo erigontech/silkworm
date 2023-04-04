@@ -20,7 +20,7 @@
 
 #include "header.hpp"
 
-namespace silkrpc::http::method {
+namespace silkworm::rpc::http::method {
 
 constexpr const char* k_web3_clientVersion{"web3_clientVersion"};
 constexpr const char* k_web3_sha3{"web3_sha3"};
@@ -124,4 +124,4 @@ constexpr const char* k_ots_hasCode{"ots_hasCode"};
 constexpr const char* k_ots_getBlockDetails{"ots_getBlockDetails"};
 constexpr const char* k_ots_getBlockDetailsByHash{"ots_getBlockDetailsByHash"};
 
-}  // namespace silkrpc::http::method
+}  // namespace silkworm::rpc::http::method

@@ -22,10 +22,10 @@
 
 #include <silkworm/core/common/util.hpp>
 
-namespace silkrpc {
+namespace silkworm {
 
 silkworm::Bytes composite_storage_key(const evmc::address& address, uint64_t incarnation, const uint8_t (&hash)[silkworm::kHashLength]);
 
 silkworm::Bytes composite_storage_key_without_hash_lookup(const evmc::address& address, uint64_t incarnation);
 
-}  // namespace silkrpc
+}  // namespace silkworm

@@ -25,7 +25,7 @@
 
 #include <silkworm/core/chain/config.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 struct ChainConfig {
     evmc::bytes32 genesis_hash;
@@ -51,4 +51,4 @@ struct Forks {
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& chain_config);
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

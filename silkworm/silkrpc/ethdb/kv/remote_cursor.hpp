@@ -32,7 +32,7 @@
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 #include <silkworm/silkrpc/ethdb/kv/rpc.hpp>
 
-namespace silkrpc::ethdb::kv {
+namespace silkworm::rpc::ethdb::kv {
 
 class RemoteCursor : public CursorDupSort {
   public:
@@ -61,4 +61,4 @@ class RemoteCursor : public CursorDupSort {
     uint32_t cursor_id_;
 };
 
-}  // namespace silkrpc::ethdb::kv
+}  // namespace silkworm::rpc::ethdb::kv

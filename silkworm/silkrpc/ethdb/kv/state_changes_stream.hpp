@@ -48,7 +48,7 @@ inline std::ostream& operator<<(std::ostream& out, const remote::StateChangeBatc
 
 }  // namespace remote
 
-namespace silkrpc::ethdb::kv {
+namespace silkworm::rpc::ethdb::kv {
 
 //! The default registration interval
 constexpr boost::posix_time::milliseconds kDefaultRegistrationInterval{10'000};
@@ -102,4 +102,4 @@ class StateChangesStream {
     std::mutex cancellation_mutex_;
 };
 
-}  // namespace silkrpc::ethdb::kv
+}  // namespace silkworm::rpc::ethdb::kv

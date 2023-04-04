@@ -33,7 +33,7 @@
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
 
-namespace silkrpc::ethdb::kv {
+namespace silkworm::rpc::ethdb::kv {
 
 class StateView {
   public:
@@ -160,4 +160,4 @@ class CoherentStateCache : public StateCache {
     uint64_t code_eviction_count_{0};
 };
 
-}  // namespace silkrpc::ethdb::kv
+}  // namespace silkworm::rpc::ethdb::kv

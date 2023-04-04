@@ -29,11 +29,13 @@
 #include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/types/log.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::http {
 class RequestHandler;
 }
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
+
+using boost::asio::awaitable;
 
 class NetRpcApi {
   public:
@@ -44,13 +46,13 @@ class NetRpcApi {
     NetRpcApi& operator=(const NetRpcApi&) = delete;
 
   protected:
-    boost::asio::awaitable<void> handle_net_listening(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_net_peer_count(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_net_version(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_net_listening(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_net_peer_count(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_net_version(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
-    friend class silkrpc::http::RequestHandler;
+    friend class silkworm::http::RequestHandler;
 
     std::unique_ptr<ethbackend::BackEnd>& backend_;
 };
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

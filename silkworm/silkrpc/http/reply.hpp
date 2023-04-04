@@ -32,7 +32,7 @@
 
 #include "header.hpp"
 
-namespace silkrpc::http {
+namespace silkworm::rpc::http {
 
 /// The status of the reply.
 enum class StatusType {
@@ -73,7 +73,7 @@ struct Reply {
     /// Convert the reply into a vector of buffers. The buffers do not own the
     /// underlying memory blocks, therefore the reply object must remain valid and
     /// not be changed until the write operation has completed.
-    std::vector<boost::asio::const_buffer> to_buffers() const;
+    [[nodiscard]] std::vector<boost::asio::const_buffer> to_buffers() const;
 
     /// Get a stock reply.
     static Reply stock_reply(StatusType status);
@@ -85,4 +85,4 @@ struct Reply {
     }
 };
 
-}  // namespace silkrpc::http
+}  // namespace silkworm::rpc::http

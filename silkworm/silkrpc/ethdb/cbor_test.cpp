@@ -33,7 +33,7 @@ const auto invalidArgumentMessage = "Invalid argument";
 #endif
 }  // namespace
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using Catch::Matchers::Message;
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
@@ -171,4 +171,4 @@ TEST_CASE("decode receipts from incorrect bytes", "[silkrpc][ethdb][cbor]") {
     CHECK_THROWS_MATCHES(cbor_decode(b2, receipts), std::system_error, Message("Receipt CBOR: missing entries: "s + invalidArgumentMessage));
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

@@ -38,7 +38,7 @@
 #include <silkworm/silkrpc/types/call.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
 
-namespace silkrpc::debug {
+namespace silkworm::rpc::debug {
 
 struct DebugConfig {
     bool disableStorage{false};
@@ -125,19 +125,19 @@ class DebugExecutor {
     DebugExecutor& operator=(const DebugExecutor&) = delete;
 
     boost::asio::awaitable<std::vector<DebugTrace>> execute(const silkworm::Block& block, json::Stream* stream = nullptr);
-    boost::asio::awaitable<DebugExecutorResult> execute(const silkworm::Block& block, const silkrpc::Call& call, json::Stream* stream = nullptr);
-    boost::asio::awaitable<DebugExecutorResult> execute(const silkworm::Block& block, const silkrpc::Transaction& transaction,
+    boost::asio::awaitable<DebugExecutorResult> execute(const silkworm::Block& block, const Call& call, json::Stream* stream = nullptr);
+    boost::asio::awaitable<DebugExecutorResult> execute(const silkworm::Block& block, const Transaction& transaction,
                                                         json::Stream* stream = nullptr) {
         return execute(block.header.number - 1, block, transaction, transaction.transaction_index, stream);
     }
 
   private:
     boost::asio::awaitable<DebugExecutorResult> execute(std::uint64_t block_number, const silkworm::Block& block,
-                                                        const silkrpc::Transaction& transaction, int32_t = -1, json::Stream* stream = nullptr);
+                                                        const Transaction& transaction, int32_t = -1, json::Stream* stream = nullptr);
 
     boost::asio::io_context& io_context_;
     const core::rawdb::DatabaseReader& database_reader_;
     boost::asio::thread_pool& workers_;
     DebugConfig config_;
 };
-}  // namespace silkrpc::debug
+}  // namespace silkworm::rpc::debug

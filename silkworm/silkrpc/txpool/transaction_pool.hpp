@@ -37,7 +37,7 @@
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
-namespace silkrpc::txpool {
+namespace silkworm::rpc::txpool {
 
 struct OperationResult {
     bool success;
@@ -93,4 +93,4 @@ class TransactionPool final {
     agrpc::GrpcContext& grpc_context_;
 };
 
-}  // namespace silkrpc::txpool
+}  // namespace silkworm::rpc::txpool

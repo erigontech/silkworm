@@ -202,7 +202,7 @@ void TxCall::handle(const remote::Cursor* request, remote::Pair& response) {
 
     // Handle separately main use cases: cursor OPEN, cursor CLOSE and any other cursor operation.
     const auto cursor_op = request->op();
-    if (cursor_op == remote::Op::OPEN) {
+    if (cursor_op == remote::Op::OPEN || cursor_op == remote::Op::OPEN_DUP_SORT) {
         handle_cursor_open(request, response);
     } else if (cursor_op == remote::Op::CLOSE) {
         handle_cursor_close(request);

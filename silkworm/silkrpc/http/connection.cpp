@@ -34,7 +34,7 @@
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::rpc::http {
 
 Connection::Connection(Context& context, boost::asio::thread_pool& workers, commands::RpcApiTable& handler_table, std::optional<std::string> jwt_secret)
     : socket_{*context.io_context()}, request_handler_{context, workers, socket_, handler_table, std::move(jwt_secret)}, buffer_{} {
@@ -85,7 +85,7 @@ boost::asio::awaitable<void> Connection::do_read() {
     RequestParser::ResultType result = request_parser_.parse(request_, buffer_.data(), buffer_.data() + bytes_read);
 
     if (result == RequestParser::ResultType::good) {
-        co_await request_handler_.handle_request(request_);
+        co_await request_handler_.handle_user_request(request_);
         clean();
     } else if (result == RequestParser::ResultType::bad) {
         reply_ = Reply::stock_reply(StatusType::bad_request);
@@ -112,4 +112,4 @@ void Connection::clean() {
     reply_.reset();
 }
 
-}  // namespace silkrpc::http
+}  // namespace silkworm::rpc::http

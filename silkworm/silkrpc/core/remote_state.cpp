@@ -28,7 +28,7 @@
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 
-namespace silkrpc::state {
+namespace silkworm::rpc::state {
 
 std::unordered_map<evmc::bytes32, silkworm::Bytes> AsyncRemoteState::code_;
 
@@ -176,4 +176,4 @@ std::optional<evmc::bytes32> RemoteState::canonical_hash(uint64_t block_number) 
     return std::nullopt;
 }
 
-}  // namespace silkrpc::state
+}  // namespace silkworm::rpc::state

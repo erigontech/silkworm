@@ -22,7 +22,7 @@
 
 #include <silkworm/silkrpc/common/log.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using Catch::Matchers::Message;
 using evmc::literals::operator""_bytes32;
@@ -75,4 +75,4 @@ TEST_CASE("create forks from chain config", "[silkrpc][types][chain_config]") {
     CHECK(forks.block_numbers[9] == 12'965'000);
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

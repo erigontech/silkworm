@@ -20,10 +20,14 @@
 #include <vector>
 
 #include <evmc/evmc.hpp>
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
+#include <glaze/glaze.hpp>
+#pragma GCC diagnostic pop
 #include <silkworm/core/common/base.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 struct Log {
     /* raw fields */
@@ -42,6 +46,52 @@ struct Log {
 
 typedef std::vector<Log> Logs;
 
+static constexpr auto addressSize = 64;
+static constexpr auto hashSize = 128;
+static constexpr auto int64Size = 32;
+static constexpr auto dataSize = 4096;
+
+struct GlazeJsonLogItem {
+    char address[addressSize];
+    char tx_hash[hashSize];
+    char block_hash[hashSize];
+    char block_number[int64Size];
+    char tx_index[int64Size];
+    char index[int64Size];
+    char data[dataSize];
+    bool removed;
+    std::vector<std::string> topics;
+
+    struct glaze {
+        using T = GlazeJsonLogItem;
+        static constexpr auto value = glz::object(
+            "address", &T::address,
+            "transactionHash", &T::tx_hash,
+            "blockHash", &T::block_hash,
+            "blockNumber", &T::block_number,
+            "transactionIndex", &T::tx_index,
+            "logIndex", &T::index,
+            "data", &T::data,
+            "removed", &T::removed,
+            "topics", &T::topics);
+    };
+};
+
+static constexpr auto jsonVersionSize = 8;
+
+struct GlazeJsonLog {
+    char jsonrpc[jsonVersionSize] = "2.0";
+    uint32_t id;
+    std::vector<GlazeJsonLogItem> log_json_list;
+    struct glaze {
+        using T = GlazeJsonLog;
+        static constexpr auto value = glz::object(
+            "jsonrpc", &T::jsonrpc,
+            "id", &T::id,
+            "result", &T::log_json_list);
+    };
+};
+
 std::ostream& operator<<(std::ostream& out, const Log& log);
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

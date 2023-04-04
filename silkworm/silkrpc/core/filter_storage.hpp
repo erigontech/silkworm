@@ -29,7 +29,7 @@
 #include <silkworm/silkrpc/types/filter.hpp>
 #include <silkworm/silkrpc/types/log.hpp>
 
-namespace silkrpc::filter {
+namespace silkworm::rpc {
 
 enum FilterType {
     logs,
@@ -81,4 +81,4 @@ class FilterStorage {
     std::map<std::string, FilterEntry> storage_;
 };
 
-}  // namespace silkrpc::filter
+}  // namespace silkworm::rpc

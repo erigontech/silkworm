@@ -27,7 +27,7 @@
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 // Gas limit cap for eth_call (increased wrt RPCDaemon)
 constexpr uint64_t kDefaultGasLimit{50'000'000};
@@ -77,4 +77,4 @@ struct Call {
 
 std::ostream& operator<<(std::ostream& out, const Call& call);
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

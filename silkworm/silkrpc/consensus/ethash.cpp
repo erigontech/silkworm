@@ -18,9 +18,9 @@
 
 #include <silkworm/core/chain/protocol_param.hpp>
 
-namespace silkrpc::ethash {
+namespace silkworm::rpc::ethash {
 
-BlockReward compute_reward(const ChainConfig& config, const silkworm::Block& block) {
+BlockReward compute_reward(const rpc::ChainConfig& config, const silkworm::Block& block) {
     const auto cc_optional = silkworm::ChainConfig::from_json(config.config);
     if (!cc_optional) {
         throw std::runtime_error("Invalid chain config");
@@ -66,4 +66,4 @@ std::ostream& operator<<(std::ostream& out, const BlockReward& reward) {
     return out;
 }
 
-}  // namespace silkrpc::ethash
+}  // namespace silkworm::rpc::ethash

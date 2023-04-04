@@ -16,7 +16,7 @@
 
 #include "binary_search.hpp"
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 boost::asio::awaitable<std::size_t> binary_search(std::size_t n, BinaryPredicate pred) {
     std::size_t i{0};
@@ -33,4 +33,4 @@ boost::asio::awaitable<std::size_t> binary_search(std::size_t n, BinaryPredicate
     co_return i;
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

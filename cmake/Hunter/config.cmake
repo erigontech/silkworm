@@ -55,12 +55,6 @@ hunter_config(
   SHA1 909c9540a76fe4b4f71dbbd24126cab3925fb78e
 )
 
-hunter_config(
-  ethash
-  VERSION 0.9.0
-  CMAKE_ARGS ETHASH_BUILD_ETHASH=ON ETHASH_BUILD_GLOBAL_CONTEXT=OFF ETHASH_BUILD_TESTS=OFF
-)
-
 # Downgrade Protobuf version due to a CMake error in 3.19.4-p0
 # (protobuf-module.cmake.in: _protobuf_find_threads)
 hunter_config(

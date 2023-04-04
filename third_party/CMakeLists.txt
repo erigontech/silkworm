@@ -15,6 +15,10 @@
 ]]
 
 # evmone with dependencies
+add_subdirectory(intx)
+option(ETHASH_BUILD_GLOBAL_CONTEXT "" OFF)
+add_subdirectory(ethash)
+
 if(SILKWORM_WASM_API)
   add_compile_definitions(EVMC_LOADER_MOCK)
 endif()
@@ -53,7 +57,7 @@ target_include_directories(evmone PUBLIC evmone/include evmone/lib)
 target_link_libraries(
   evmone
   PUBLIC evmc intx::intx
-  PRIVATE evmc::instructions
+  PRIVATE evmc::instructions ethash::keccak
 )
 
 if(MSVC)
@@ -70,20 +74,20 @@ if(NOT MSVC)
   set(GMP_INCLUDE_DIR
       "${GMP_INSTALL_DIR}"
       CACHE PATH ""
-  )
+      )
   set(GMP_LIBRARY
       "${GMP_INSTALL_DIR}/lib/libgmp.a"
       CACHE FILEPATH ""
-  )
+      )
 
   include(ExternalProject)
   ExternalProject_Add(
-    gmplib
-    SOURCE_DIR "${GMP_SOURCE_DIR}"
-    BINARY_DIR "${GMP_INSTALL_DIR}"
-    CONFIGURE_COMMAND "${GMP_SOURCE_DIR}/configure" "--prefix=${GMP_INSTALL_DIR}" --with-pic=yes
-    PREFIX "${GMP_INSTALL_DIR}"
-    BUILD_BYPRODUCTS "${GMP_LIBRARY}"
+      gmplib
+      SOURCE_DIR "${GMP_SOURCE_DIR}"
+      BINARY_DIR "${GMP_INSTALL_DIR}"
+      CONFIGURE_COMMAND "${GMP_SOURCE_DIR}/configure" "--prefix=${GMP_INSTALL_DIR}" --with-pic=yes
+      PREFIX "${GMP_INSTALL_DIR}"
+      BUILD_BYPRODUCTS "${GMP_LIBRARY}"
   )
 else()
   find_path(GMP_INCLUDE_DIR NAMES gmp.h)
@@ -96,9 +100,9 @@ else()
   message(STATUS "GMP: ${GMP_LIBRARY}, ${GMP_INCLUDE_DIR}")
   add_library(gmp ${gmp_library_type} IMPORTED)
   set_target_properties(
-          gmp PROPERTIES
-          IMPORTED_LOCATION ${GMP_LIBRARY}
-          INTERFACE_INCLUDE_DIRECTORIES ${GMP_INCLUDE_DIR}
+      gmp PROPERTIES
+      IMPORTED_LOCATION ${GMP_LIBRARY}
+      INTERFACE_INCLUDE_DIRECTORIES ${GMP_INCLUDE_DIR}
   )
 endif()
 

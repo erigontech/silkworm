@@ -1,5 +1,5 @@
-#[[
-   Copyright 2022 The Silkworm Authors
+/*
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -12,8 +12,15 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-hunter_add_package(Catch)
-hunter_add_package(Microsoft.GSL)
-hunter_add_package(nlohmann_json)
+#pragma once
+
+#include <CLI/CLI.hpp>
+
+namespace silkworm::cmd::common {
+
+//! \brief Set up option for maximum number of database readers
+void add_option_db_max_readers(CLI::App& cli, uint32_t& max_readers);
+
+}  // namespace silkworm::cmd::common

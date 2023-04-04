@@ -98,7 +98,6 @@ target_include_directories(
 set(SILKWORM_NODE_PUBLIC_LIBS
     silkworm_core
     silkworm_infra
-    silkworm_interfaces
     absl::btree
     absl::flat_hash_map
     absl::flat_hash_set

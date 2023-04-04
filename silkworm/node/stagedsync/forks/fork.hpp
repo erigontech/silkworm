@@ -37,36 +37,35 @@ namespace silkworm::stagedsync {
 class Fork {
   public:
     explicit Fork(BlockId forking_point, NodeSettings&, db::RWAccess);
+    Fork(Fork&&);
 
-    // verification result | clang-format off
-    struct ValidChain {
-        BlockId current_head;
-    };
-    struct InvalidChain {
-        BlockId unwind_point;
-        std::optional<Hash> bad_block;
-        std::set<Hash> bad_headers;
-    };
-    struct ValidationError {
-        BlockId latest_valid_head;
-    };
-    using VerificationResult = std::variant<ValidChain, InvalidChain, ValidationError>;  // clang-format on
+    // clang-format off
+    struct ValidChain { BlockId current_head; };
+    struct InvalidChain { BlockId unwind_point; std::optional<Hash> bad_block; std::set<Hash> bad_headers; };
+    struct ValidationError { BlockId latest_valid_head; };
+    // clang-format on
+    using VerificationResult = std::variant<ValidChain, InvalidChain, ValidationError>;
 
-    // actions
-    void extend_with(const Block& block);  // put block over the head
+    // extension
+    void extend_with(const Block&);  // put block over the head of the fork
+    bool extends_head(const BlockHeader&) const;
 
-    auto verify_chain(Hash head_block_hash) -> VerificationResult;
+    // branching
+    Fork branch_at(BlockId forking_point, db::RWAccess);
+    std::optional<BlockId> find_attachment_point(const BlockHeader& header, const Hash& header_hash) const;
+    BlockNum distance_from_root(const BlockId&) const;
 
-    bool notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
+    // verification
+    auto verify_chain(Hash head_block_hash) -> VerificationResult;  // verify chain up to head_block_hash
+    bool notify_fork_choice_update(Hash head_block_hash,            // accept the current chain up to head_block_hash
+                                   std::optional<Hash> finalized_block_hash = std::nullopt);
 
     // state
     auto current_head() const -> BlockId;
-
     auto last_verified_head() const -> BlockId;
     auto last_head_status() const -> VerificationResult;
 
-    bool extends_current_head(const BlockHeader&) const;
-
+    // header/body retrieval
     auto get_block_progress() -> BlockNum;
     auto get_header(Hash) -> std::optional<BlockHeader>;
     auto get_header(BlockNum, Hash) -> std::optional<BlockHeader>;
@@ -89,6 +88,7 @@ class Fork {
     db::RWAccess db_access_;
     db::RWTxn tx_;
     bool is_first_sync_{true};
+
     // lru_cache<Hash, BlockHeader> header_cache_;  // use cache if it improves performances
 
     ExecutionPipeline pipeline_;
@@ -98,5 +98,32 @@ class Fork {
     BlockId current_head_;
     BlockId last_fork_choice_;
 };
+
+// find the fork with the head to extend
+auto fork_to_extend(const std::vector<Fork>& forks, const BlockHeader& header)
+    -> std::vector<Fork>::const_iterator {
+    auto f = forks.begin();
+    while (f != forks.end() && !f->extends_head(header))  // return the first with head == header.parent_hash
+        f++;
+    return f;
+}
+
+// find the best fork to branch from
+auto best_fork_to_branch(const std::vector<Fork>& forks, const BlockHeader& header, const Hash& header_hash)
+    -> std::vector<Fork>::const_iterator {
+    auto fork = forks.end();
+    BlockNum height = 0;
+    for (auto f = forks.begin(); f != forks.end(); ++f) {
+        auto attachment_point = f->find_attachment_point(header, header_hash);
+        if (!attachment_point) continue;
+        auto distance = f->distance_from_root(*attachment_point);
+        if (fork == forks.end() || distance < height) {
+            height = distance;
+            fork = f;
+        }
+    }
+
+    return fork;
+}
 
 }  // namespace silkworm::stagedsync

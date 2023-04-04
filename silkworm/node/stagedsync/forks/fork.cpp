@@ -54,8 +54,29 @@ auto Fork::last_head_status() const -> VerificationResult {
     return canonical_head_status_;
 }
 
-auto Fork::extends_current_head(const BlockHeader& header) const -> bool {
+auto Fork::extends_head(const BlockHeader& header) const -> bool {
     return current_head().hash == header.parent_hash;
+}
+
+std::optional<BlockId> Fork::find_attachment_point(const BlockHeader& header, const Hash& header_hash) const {
+    // todo: optimize using a cache to avoid header retrieval
+    // use header_cache_
+    // or canonical_chain_.find_forking_point(header, header_hash);
+    // or share canonical_chain_ cache
+    if (header_hash == current_head().hash) return current_head();
+
+    auto curr_header = db::read_header(tx_, current_head_.number, current_head_.hash);
+    while (curr_header.number > canonical_chain_.initial_head().number) {
+        if (curr_header.parent_hash == header_hash) {
+            return {curr_header.number - 1, curr_header.parent_hash};
+        }
+        curr_header = db::read_header(tx_, header.number - 1, header.parent_hash);
+    }
+    return std::nullopt
+}
+
+BlockNum Fork::distance_from_root(const BlockId& block) const {
+    return block.number - canonical_chain_.initial_head().number;
 }
 
 Hash Fork::insert_header(const BlockHeader& header) {
@@ -75,7 +96,7 @@ void Fork::insert_body(const Block& block) {
 }
 
 void Fork::extend_with(const Block& block) {
-    ensure_invariant(extends_current_head(block.header), "inserting block must extend the head");
+    ensure_invariant(extends_head(block.header), "inserting block must extend the head");
 
     Hash header_hash = insert_header(block.header);
     insert_body(block);

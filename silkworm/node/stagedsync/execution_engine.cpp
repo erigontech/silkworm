@@ -46,9 +46,7 @@ void ExecutionEngine::insert_block(const Block& block) {
     Hash header_hash{block.header.hash()};
 
     // find attachment point at fork heads
-    auto f = std::find_if(forks_.begin(), forks_.end(), [&](const auto& fork) {
-        return fork.extends_current_head(block.header, header_hash);
-    });
+    auto f = fork_to_extend(forks_, block.header);
 
     if (f != forks_.end()) {
         SILK_TRACE << "ExecutionEngine: extending a fork";
@@ -56,14 +54,12 @@ void ExecutionEngine::insert_block(const Block& block) {
         return;
     }
 
-    // find attachment point withing fork blocks
-    f = std::max_element(forks_.begin(), forks_.end(), [&](const auto& fork) {
-        return fork.forking_point(block.header, header_hash);
-    });
+    // find attachment point within fork blocks
+    f = best_fork_to_branch(forks_, block.header, header_hash);
 
     if (f != forks_.end()) {
         SILK_TRACE << "ExecutionEngine: branching a fork";
-        forks.emplace_back(f->branch_from(block, header_hash));
+        forks_.emplace_back(f->branch_at(block, header_hash));
         return;
     }
 

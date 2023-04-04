@@ -51,16 +51,15 @@ target_link_libraries(silkrpc_toolbox absl::flags_parse gRPC::grpc++ protobuf::l
 # Silkrpc daemon
 # cmake-format: off
 set(SILKRPC_DAEMON_LIBRARIES
-    silkworm-buildinfo
     silkrpc
     absl::flags_parse
-    CLI11::CLI11
+    cmd_common
 )
 # cmake-format: on
 if(SILKWORM_USE_MIMALLOC)
   list(APPEND SILKRPC_DAEMON_LIBRARIES mimalloc)
 endif()
 
-add_executable(silkrpcdaemon silkrpc_daemon.cpp ../common/common.cpp)
+add_executable(silkrpcdaemon silkrpc_daemon.cpp)
 target_include_directories(silkrpcdaemon PUBLIC ${CMAKE_SOURCE_DIR})
 target_link_libraries(silkrpcdaemon PRIVATE ${SILKRPC_DAEMON_LIBRARIES})

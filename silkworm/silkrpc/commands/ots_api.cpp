@@ -218,27 +218,6 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockTransactions(const nl
 
         BlockTransactionsResponse block_transactions{ block_size, block_with_hash.hash, block_with_hash.block.header, total_difficulty, transaction_count, block_with_hash.block.ommers};
 
-        //unsigned long page_start = (page_number - 1) * page_size;
-        //unsigned long page_end = page_start + page_size;
-        //if (page_end > block_with_hash.block.transactions.size() -1){
-        //    page_end = block_with_hash.block.transactions.size() -1;
-        //}
-
-        //for (unsigned long i = page_start; i < page_end; i++){
-        //    block_transactions.transactions.push_back(block_with_hash.block.transactions.at(i));
-        //}
-        //
-        //for (unsigned long i = page_start; i < page_end; i++){
-        //    block_transactions.receipts.push_back(receipts.at(i));
-        //}
-
-        // 35 elements, page_size = 10
-        // page 0 = 34 a 25
-        // page 1 = 24 a 15
-        // page 2 = 14 a 5
-        // page 3 = 4 a 0
-        // page 4 = 0 a 0
-
         unsigned long page_start = (block_with_hash.block.transactions.size() -1) - (page_size * page_number);
 
         if (page_start > block_with_hash.block.transactions.size()) {
@@ -251,12 +230,9 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockTransactions(const nl
             page_end = 0;
         }
 
-        for (unsigned long i = page_start; i > page_end; i--){
-            block_transactions.transactions.push_back(block_with_hash.block.transactions.at(i));
-        }
-
-        for (unsigned long i = page_start; i > page_end; i--){
+        for (unsigned long i = page_end + 1; i < page_start +1; i++){
             block_transactions.receipts.push_back(receipts.at(i));
+            block_transactions.transactions.push_back(block_with_hash.block.transactions.at(i));
         }
 
         reply = make_json_content(request["id"], block_transactions);

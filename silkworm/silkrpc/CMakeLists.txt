@@ -22,7 +22,6 @@ else()
   find_package(Boost CONFIG REQUIRED container thread)
 endif()
 find_package(gRPC REQUIRED)
-find_package(intx REQUIRED)
 find_package(jwt-cpp REQUIRED)
 find_package(nlohmann_json REQUIRED)
 

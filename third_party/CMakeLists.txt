@@ -15,6 +15,10 @@
 ]]
 
 # evmone with dependencies
+add_subdirectory(intx)
+option(ETHASH_BUILD_GLOBAL_CONTEXT "" OFF)
+add_subdirectory(ethash)
+
 if(SILKWORM_WASM_API)
   add_compile_definitions(EVMC_LOADER_MOCK)
 endif()
@@ -53,7 +57,7 @@ target_include_directories(evmone PUBLIC evmone/include evmone/lib)
 target_link_libraries(
   evmone
   PUBLIC evmc intx::intx
-  PRIVATE evmc::instructions
+  PRIVATE evmc::instructions ethash::keccak
 )
 
 if(MSVC)

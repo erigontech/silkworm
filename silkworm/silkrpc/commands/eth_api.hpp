@@ -73,6 +73,7 @@ class EthereumRpcApi {
 
   protected:
     static void filter_logs(std::vector<Log>&& logs, FilterAddresses& addresses, FilterTopics& topics, std::vector<Log>& filtered_logs);
+
     static awaitable<roaring::Roaring> get_topics_bitmap(core::rawdb::DatabaseReader& db_reader, FilterTopics& topics, uint64_t start, uint64_t end);
     static awaitable<roaring::Roaring> get_addresses_bitmap(core::rawdb::DatabaseReader& db_reader, FilterAddresses& addresses, uint64_t start, uint64_t end);
     awaitable<void> get_logs(ethdb::TransactionDatabase& tx_database, std::uint64_t start, std::uint64_t end,
@@ -103,7 +104,6 @@ class EthereumRpcApi {
     awaitable<void> handle_eth_get_code(const nlohmann::json& request, nlohmann::json& reply);
     awaitable<void> handle_eth_get_transaction_count(const nlohmann::json& request, nlohmann::json& reply);
     awaitable<void> handle_eth_get_storage_at(const nlohmann::json& request, nlohmann::json& reply);
-    awaitable<void> handle_eth_call(const nlohmann::json& request, nlohmann::json& reply);
     awaitable<void> handle_eth_call_bundle(const nlohmann::json& request, nlohmann::json& reply);
     awaitable<void> handle_eth_create_access_list(const nlohmann::json& request, nlohmann::json& reply);
     awaitable<void> handle_eth_new_filter(const nlohmann::json& request, nlohmann::json& reply);
@@ -127,6 +127,7 @@ class EthereumRpcApi {
 
     // GLAZE format routine
     awaitable<void> handle_eth_get_logs(const nlohmann::json& request, std::string& reply);
+    awaitable<void> handle_eth_call(const nlohmann::json& request, std::string& reply);
 
     Context& context_;
     std::shared_ptr<BlockCache>& block_cache_;

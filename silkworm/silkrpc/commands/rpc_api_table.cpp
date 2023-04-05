@@ -127,7 +127,6 @@ void RpcApiTable::add_eth_handlers() {
     method_handlers_[http::method::k_eth_getCode] = &commands::RpcApi::handle_eth_get_code;
     method_handlers_[http::method::k_eth_getTransactionCount] = &commands::RpcApi::handle_eth_get_transaction_count;
     method_handlers_[http::method::k_eth_getStorageAt] = &commands::RpcApi::handle_eth_get_storage_at;
-    method_handlers_[http::method::k_eth_call] = &commands::RpcApi::handle_eth_call;
     method_handlers_[http::method::k_eth_callBundle] = &commands::RpcApi::handle_eth_call_bundle;
     method_handlers_[http::method::k_eth_createAccessList] = &commands::RpcApi::handle_eth_create_access_list;
     method_handlers_[http::method::k_eth_newFilter] = &commands::RpcApi::handle_eth_new_filter;
@@ -152,6 +151,7 @@ void RpcApiTable::add_eth_handlers() {
 
     // GLAZE methods
     method_handlers_glaze_[http::method::k_eth_getLogs] = &commands::RpcApi::handle_eth_get_logs;
+    method_handlers_glaze_[http::method::k_eth_call] = &commands::RpcApi::handle_eth_call;
 }
 
 void RpcApiTable::add_net_handlers() {

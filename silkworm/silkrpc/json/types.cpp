@@ -840,6 +840,13 @@ struct GlazeJsonError {
     };
 };
 
+static constexpr auto jsonVersionSize = 8;
+static constexpr auto addressSize = 64;
+static constexpr auto hashSize = 128;
+static constexpr auto int64Size = 32;
+static constexpr auto dataSize = 4096;
+static constexpr auto ethCallResultFixedSize = 2048;
+
 struct GlazeJsonErrorRsp {
     char jsonrpc[jsonVersionSize] = "2.0";
     uint32_t id;
@@ -857,10 +864,83 @@ void make_glaze_json_error(std::string& reply, uint32_t id, const int code, cons
     GlazeJsonErrorRsp glaze_json_error;
     glaze_json_error.id = id;
     glaze_json_error.json_error.code = code;
-    strcpy(glaze_json_error.json_error.message, message.c_str());
-
+    std::strncpy(glaze_json_error.json_error.message, message.c_str(), message.size() > errorMessageSize ? errorMessageSize : message.size() + 1);
     glz::write_json(glaze_json_error, reply);
 }
+
+struct GlazeJsonRevert {
+    int code;
+    char message[errorMessageSize];
+    std::string data;
+    struct glaze {
+        using T = GlazeJsonRevert;
+        static constexpr auto value = glz::object(
+            "code", &T::code,
+            "message", &T::message,
+            "data", &T::data);
+    };
+};
+
+struct GlazeJsonRevertError {
+    char jsonrpc[jsonVersionSize] = "2.0";
+    uint32_t id;
+    GlazeJsonRevert revert_data;
+    struct glaze {
+        using T = GlazeJsonRevertError;
+        static constexpr auto value = glz::object(
+            "jsonrpc", &T::jsonrpc,
+            "id", &T::id,
+            "error", &T::revert_data);
+    };
+};
+
+void make_glaze_json_error(std::string& reply, uint32_t id, const RevertError& error) {
+    GlazeJsonRevertError glaze_json_revert;
+    glaze_json_revert.id = id;
+    glaze_json_revert.revert_data.code = error.code;
+    std::strncpy(glaze_json_revert.revert_data.message, error.message.c_str(), error.message.size() > errorMessageSize ? errorMessageSize : error.message.size() + 1);
+    glaze_json_revert.revert_data.data = "0x" + silkworm::to_hex(error.data);
+    glz::write_json(glaze_json_revert, reply);
+}
+
+struct GlazeJsonLogItem {
+    char address[addressSize];
+    char tx_hash[hashSize];
+    char block_hash[hashSize];
+    char block_number[int64Size];
+    char tx_index[int64Size];
+    char index[int64Size];
+    char data[dataSize];
+    bool removed;
+    std::vector<std::string> topics;
+
+    struct glaze {
+        using T = GlazeJsonLogItem;
+        static constexpr auto value = glz::object(
+            "address", &T::address,
+            "transactionHash", &T::tx_hash,
+            "blockHash", &T::block_hash,
+            "blockNumber", &T::block_number,
+            "transactionIndex", &T::tx_index,
+            "logIndex", &T::index,
+            "data", &T::data,
+            "removed", &T::removed,
+            "topics", &T::topics);
+    };
+};
+
+struct GlazeJsonLog {
+    char jsonrpc[jsonVersionSize] = "2.0";
+    uint32_t id;
+    std::vector<GlazeJsonLogItem> log_json_list;
+    struct glaze {
+        using T = GlazeJsonLog;
+        static constexpr auto value = glz::object(
+            "jsonrpc", &T::jsonrpc,
+            "id", &T::id,
+            "result", &T::log_json_list);
+    };
+};
 
 void make_glaze_json_content(std::string& reply, uint32_t id, const Logs& logs) {
     GlazeJsonLog log_json_data{};
@@ -885,6 +965,47 @@ void make_glaze_json_content(std::string& reply, uint32_t id, const Logs& logs) 
     }
 
     glz::write_json(log_json_data, reply);
+}
+
+struct GlazeJsonCall {
+    char jsonrpc[jsonVersionSize] = "2.0";
+    uint32_t id;
+    char result[2048];
+    struct glaze {
+        using T = GlazeJsonCall;
+        static constexpr auto value = glz::object(
+            "jsonrpc", &T::jsonrpc,
+            "id", &T::id,
+            "result", &T::result);
+    };
+};
+
+struct GlazeJsonCallResultAsString {
+    char jsonrpc[jsonVersionSize] = "2.0";
+    uint32_t id;
+    std::string result;
+    struct glaze {
+        using T = GlazeJsonCallResultAsString;
+        static constexpr auto value = glz::object(
+            "jsonrpc", &T::jsonrpc,
+            "id", &T::id,
+            "result", &T::result);
+    };
+};
+
+void make_glaze_json_content(std::string& reply, uint32_t id, const silkworm::Bytes& call_result) {
+    if (call_result.size() * 2 + 2 + 1 > ethCallResultFixedSize) {
+        GlazeJsonCallResultAsString log_json_data{};
+        log_json_data.result.reserve(call_result.size() * 2 + 2);
+        log_json_data.id = id;
+        log_json_data.result = "0x" + silkworm::to_hex(call_result);
+        glz::write_json(std::move(log_json_data), reply);
+    } else {
+        GlazeJsonCall log_json_data{};
+        log_json_data.id = id;
+        to_hex(log_json_data.result, call_result);
+        glz::write_json(std::move(log_json_data), reply);
+    }
 }
 
 }  // namespace silkworm::rpc

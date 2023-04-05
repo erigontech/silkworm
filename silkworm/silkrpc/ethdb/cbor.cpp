@@ -96,7 +96,7 @@ class LogCborListener : public cbor::listener {
 
     void on_bytes(unsigned char* data, int size) override {
         if (state_ == ProcessingState::kWaitAddress) {
-            current_log_.address = silkworm::to_evmc_address(silkworm::Bytes{data, static_cast<long unsigned int>(size)});
+            std::memcpy(current_log_.address.bytes, data, static_cast<size_t>(size));
             state_ = ProcessingState::kWaitNTopics;
         } else if (state_ == ProcessingState::kWaitTopics) {
             evmc::bytes32 out;

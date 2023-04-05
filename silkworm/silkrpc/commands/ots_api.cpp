@@ -157,7 +157,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetailsByHash(const n
         const Block extended_block{block_with_hash, total_difficulty, false};
         auto block_size = extended_block.get_block_size();
 
-        const BlockDetails block_details{block_size, block_hash, block_with_hash.block.header, total_difficulty, block_with_hash.block.transactions.size() - 2, block_with_hash.block.ommers};
+        const BlockDetails block_details{block_size, block_hash, block_with_hash.block.header, total_difficulty, block_with_hash.block.transactions.size(), block_with_hash.block.ommers};
 
         auto receipts = co_await core::get_receipts(tx_database, block_with_hash);
         auto chain_config = co_await core::rawdb::read_chain_config(tx_database);

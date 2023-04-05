@@ -418,7 +418,7 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
         json["issuance"]["ommersReward"] = to_quantity(b.issuance.ommers_reward);
         json["issuance"]["totalReward"] = to_quantity(b.issuance.total_reward);
     } else {
-        json["issuance"] = nlohmann::json{};
+        json["issuance"] = nlohmann::json::object();
     }
 
     json["totalFees"] = to_quantity(b.total_fees);
@@ -431,7 +431,7 @@ void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {
     json["fullblock"]["gasLimit"] = to_quantity(b.header.gas_limit);
     json["fullblock"]["gasUsed"] = to_quantity(b.header.gas_used);
     json["fullblock"]["hash"] = b.hash;
-    json["fullblock"]["logsBloom"];  // null
+    json["fullblock"]["logsBloom"];
     json["fullblock"]["miner"] = b.header.beneficiary;
     json["fullblock"]["mixHash"] = b.header.mix_hash;
     json["fullblock"]["nonce"] = "0x" + silkworm::to_hex({b.header.nonce.data(), b.header.nonce.size()});
@@ -452,6 +452,7 @@ void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {
         json_txn["blockHash"] = b.hash;
         json_txn["blockNumber"] = block_number;
         json_txn["gasPrice"] = to_quantity(b.transactions[i].effective_gas_price(b.header.base_fee_per_gas.value_or(0)));
+        json_txn["input"] = "0x" + silkworm::to_hex(b.transactions[i].data.substr(0,4));
     }
 
     json["fullblock"]["transactionsRoot"] = b.header.transactions_root;

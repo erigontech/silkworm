@@ -1095,7 +1095,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
         make_glaze_json_error(reply, request["id"], -32602, error_msg);
         co_return;
     }
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_call params: " + params.dump();
         SILKRPC_ERROR << error_msg << "\n";

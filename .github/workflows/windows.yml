@@ -61,9 +61,6 @@ jobs:
         path: ${{ env.CONAN_USER_HOME }}
         key: host-${{ runner.os }}-target-${{ runner.os }}-${{ hashFiles('conanfile.txt') }}
 
-    - name: Conan cache hit
-      run: echo "${{ steps.github-cache-conan.outputs.cache-hit }}"
-
     - name: VCPKG packages
       uses: johnwason/vcpkg-action@v4
       id: vcpkg

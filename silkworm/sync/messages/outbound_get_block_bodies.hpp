@@ -38,7 +38,7 @@ class OutboundGetBlockBodies : public OutboundMessage {
     bool packet_present() const;
 
   private:
-    sentry::SentPeers send_packet(SentryClient&, seconds_t timeout);
+    ::sentry::SentPeers send_packet(SentryClient&, seconds_t timeout);
     void send_penalization(SentryClient&, const PeerPenalization&, seconds_t timeout);
 
     GetBlockBodiesPacket66 packet_{};

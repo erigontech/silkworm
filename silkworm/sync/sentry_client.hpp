@@ -38,10 +38,10 @@ namespace silkworm {
  * The remote sentry must implement the ethereum p2p protocol and must have an interface specified by sentry.proto
  * SentryClient uses gRPC/protobuf to communicate with the remote sentry.
  */
-class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent {
+class SentryClient : public rpc::Client<::sentry::Sentry>, public ActiveComponent {
   public:
-    using base_t = rpc::Client<sentry::Sentry>;
-    using subscriber_t = void(const sentry::InboundMessage&);
+    using base_t = rpc::Client<::sentry::Sentry>;
+    using subscriber_t = void(const ::sentry::InboundMessage&);
 
     explicit SentryClient(const std::string& sentry_addr, const db::ROAccess&, const ChainConfig&);  // connect to the remote sentry
     SentryClient(const SentryClient&) = delete;
@@ -65,7 +65,7 @@ class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent 
     /*[[long_running]]*/ void execution_loop() override;  // do a long-running loop to wait for messages
     /*[[long_running]]*/ void stats_receiving_loop();     // do a long-running loop to wait for peer statistics
 
-    static rpc::ReceiveMessages::Scope scope(const sentry::InboundMessage& message);  // find the scope of the message
+    static rpc::ReceiveMessages::Scope scope(const ::sentry::InboundMessage& message);  // find the scope of the message
 
     static constexpr seconds_t kRequestDeadline = std::chrono::seconds(30);          // time beyond which the remote sentry
                                                                                      // considers an answer lost
@@ -74,7 +74,7 @@ class SentryClient : public rpc::Client<sentry::Sentry>, public ActiveComponent 
     static constexpr size_t kPerPeerMaxOutstandingRequests = 4;                      // max number of outstanding requests per peer
 
   protected:
-    void publish(const sentry::InboundMessage&);  // notifying registered subscribers
+    void publish(const ::sentry::InboundMessage&);  // notifying registered subscribers
     void set_status(Hash head_hash, BigInt head_td, const ChainConfig&);
 
     const std::string sentry_addr_;

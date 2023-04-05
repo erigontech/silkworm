@@ -21,7 +21,7 @@
 
 namespace silkworm::rpc {
 
-class ReceiveMessages : public rpc::OutStreamingCall<sentry::Sentry, sentry::MessagesRequest, sentry::InboundMessage> {
+class ReceiveMessages : public rpc::OutStreamingCall<::sentry::Sentry, ::sentry::MessagesRequest, ::sentry::InboundMessage> {
   public:
     ReceiveMessages(int scope);
 
@@ -32,7 +32,7 @@ class ReceiveMessages : public rpc::OutStreamingCall<sentry::Sentry, sentry::Mes
     };
     // enum values enable bit masking, for example: cope = BlockRequests & BlockAnnouncements
 
-    static Scope scope(const sentry::InboundMessage&);
+    static Scope scope(const ::sentry::InboundMessage&);
 };
 
 }  // namespace silkworm::rpc

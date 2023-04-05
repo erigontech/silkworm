@@ -21,7 +21,7 @@
 
 namespace silkworm::rpc {
 
-class ReceivePeerStats : public rpc::OutStreamingCall<sentry::Sentry, sentry::PeerEventsRequest, sentry::PeerEvent> {
+class ReceivePeerStats : public rpc::OutStreamingCall<::sentry::Sentry, ::sentry::PeerEventsRequest, ::sentry::PeerEvent> {
   public:
     ReceivePeerStats();
 };

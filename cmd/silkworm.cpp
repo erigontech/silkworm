@@ -49,6 +49,7 @@
 
 #include "common/common.hpp"
 #include "common/human_size_parser_validator.hpp"
+#include "common/sentry_options.hpp"
 #include "common/settings.hpp"
 #include "common/shutdown_signal.hpp"
 #include "common/snapshot_options.hpp"
@@ -95,7 +96,7 @@ struct PruneModeValidator : public CLI::Validator {
     }
 };
 
-void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], SilkwormCoreSettings& settings) {
+void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], SilkwormSettings& settings) {
     using namespace silkworm::cmd;
 
     auto& node_settings = settings.node_settings;
@@ -137,8 +138,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
 
     // Sentry settings
     add_option_external_sentry_address(cli, node_settings.external_sentry_addr);
-
-    add_option_sentry_api_address(cli, node_settings.sentry_api_addr);
+    add_sentry_options(cli, settings.sentry_settings);
 
     cli.add_option("--sync.loop.throttle", node_settings.sync_loop_throttle_seconds,
                    "Sets the minimum delay between sync loop starts (in seconds)")
@@ -437,7 +437,7 @@ int main(int argc, char* argv[]) {
     cli.get_formatter()->column_width(50);
 
     try {
-        SilkwormCoreSettings settings;
+        SilkwormSettings settings;
         parse_silkworm_command_line(cli, argc, argv, settings);
 
         auto& node_settings = settings.node_settings;
@@ -503,13 +503,15 @@ int main(int argc, char* argv[]) {
         silkworm::rpc::BackEndKvServer rpc_server{settings.server_settings, backend};
 
         // Sentry
-        // TODO: parse from command line
-        silkworm::sentry::Settings sentry_settings;
         std::optional<silkworm::sentry::Sentry> sentry;
         if (node_settings.external_sentry_addr.empty()) {
+            silkworm::sentry::Settings sentry_settings = std::move(settings.sentry_settings);
+            sentry_settings.data_dir_path = node_settings.data_directory->path();
+            sentry_settings.context_pool_settings = settings.server_settings.context_pool_settings();
             // disable GRPC in the embedded sentry
             // TODO: uncomment when sync_sentry_client is refactored to use the sentry client
             // sentry_settings.api_address = "";
+
             sentry.emplace(std::move(sentry_settings), context_pool);
             // TODO: remove when sync_sentry_client is refactored to use the sentry client
             node_settings.external_sentry_addr = "127.0.0.1:9091";

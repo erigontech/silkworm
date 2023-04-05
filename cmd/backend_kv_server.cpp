@@ -53,7 +53,7 @@ std::string get_library_versions() {
 }
 
 //! Standalone BackEndKV server settings
-struct StandaloneBackEndKVSettings : public SilkwormCoreSettings {
+struct StandaloneBackEndKVSettings : public SilkwormSettings {
     bool simulate_state_changes{false};
 };
 

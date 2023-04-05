@@ -68,10 +68,6 @@ void add_option_private_api_address(CLI::App& cli, std::string& private_api_addr
                            "DO NOT EXPOSE TO THE INTERNET");
 }
 
-void add_option_sentry_api_address(CLI::App& cli, std::string& sentry_api_address) {
-    add_option_ip_endpoint(cli, "--sentry.api.addr", sentry_api_address, "Sentry api endpoint");
-}
-
 void add_option_external_sentry_address(CLI::App& cli, std::string& external_sentry_address) {
     add_option_ip_endpoint(cli, "--sentry.remote.addr", external_sentry_address, "External Sentry endpoint");
 }

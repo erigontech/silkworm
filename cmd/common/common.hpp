@@ -44,9 +44,6 @@ void add_option_etherbase(CLI::App& cli, std::string& etherbase_address);
 //! \brief Set up option for the IP address of Core private gRPC API
 void add_option_private_api_address(CLI::App& cli, std::string& private_api_address);
 
-//! \brief Set up option for the IP address of Sentry gRPC API
-void add_option_sentry_api_address(CLI::App& cli, std::string& sentry_api_address);
-
 //! \brief Set up option for the IP address(es) of external Sentry component(s)
 void add_option_external_sentry_address(CLI::App& cli, std::string& external_sentry_address);
 

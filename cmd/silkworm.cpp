@@ -14,18 +14,25 @@
    limitations under the License.
 */
 
+#include <optional>
 #include <regex>
 #include <stdexcept>
 #include <string>
 
 #include <CLI/CLI.hpp>
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/use_future.hpp>
+#include <grpcpp/grpcpp.h>
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/common/mem_usage.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
-#include <silkworm/infra/concurrency/signal_handler.hpp>
+#include <silkworm/infra/concurrency/async_thread.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
+#include <silkworm/infra/rpc/server/server_context_pool.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
 #include <silkworm/node/common/settings.hpp>
@@ -40,6 +47,7 @@
 #include "common/common.hpp"
 #include "common/human_size_parser_validator.hpp"
 #include "common/settings.hpp"
+#include "common/shutdown_signal.hpp"
 #include "common/snapshot_options.hpp"
 
 using namespace silkworm;
@@ -416,10 +424,15 @@ void run_preflight_checklist(NodeSettings& node_settings, bool init_if_empty = t
     node_settings.chaindata_env_config.create = false;  // Has already been created
 }
 
+class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
+};
+
 // main
 int main(int argc, char* argv[]) {
     using namespace boost::placeholders;
     using namespace std::chrono;
+    using namespace silkworm::concurrency::awaitable_wait_for_one;
+    using namespace silkworm::concurrency::awaitable_wait_for_all;
 
     CLI::App cli("Silkworm node");
     cli.get_formatter()->column_width(50);
@@ -475,10 +488,14 @@ int main(int argc, char* argv[]) {
             node_settings.asio_context.run();
             log::Trace("Boost Asio", {"state", "stopped"});
         }};
+        silkworm::rpc::ServerContextPool context_pool{
+            settings.server_settings.num_contexts(),
+            settings.server_settings.wait_mode(),
+            [] { return std::make_unique<DummyServerCompletionQueue>(); },
+        };
 
         // Resource usage logging
         ResourceUsageLog resource_usage_log(node_settings);
-        auto resource_usage_logging = std::thread([&resource_usage_log]() { resource_usage_log.execution_loop(); });
 
         // BackEnd & KV server
         const auto node_name{get_node_name_from_build_info(build_info)};
@@ -486,17 +503,19 @@ int main(int argc, char* argv[]) {
         backend.set_node_name(node_name);
 
         silkworm::rpc::BackEndKvServer rpc_server{settings.server_settings, backend};
-        rpc_server.build_and_start();
 
         // Sentry client - connects to sentry
-        SentryClient sentry{node_settings.external_sentry_addr, db::ROAccess{chaindata_db},
-                            node_settings.chain_config.value()};
-        auto message_receiving = std::thread([&sentry]() { sentry.execution_loop(); });
-        auto stats_receiving = std::thread([&sentry]() { sentry.stats_receiving_loop(); });
+        silkworm::SentryClient sync_sentry_client{
+            node_settings.external_sentry_addr,
+            db::ROAccess{chaindata_db},
+            node_settings.chain_config.value(),
+        };
+        auto sync_sentry_client_stats_receiving_loop = concurrency::async_thread(
+            [&sentry = sync_sentry_client]() { sentry.stats_receiving_loop(); },
+            [&sentry = sync_sentry_client]() { sentry.stop(); });
 
         // BlockExchange - download headers and bodies from remote peers using the sentry
-        BlockExchange block_exchange{sentry, db::ROAccess{chaindata_db}, node_settings.chain_config.value()};
-        auto block_downloading = std::thread([&block_exchange]() { block_exchange.execution_loop(); });
+        BlockExchange block_exchange{sync_sentry_client, db::ROAccess{chaindata_db}, node_settings.chain_config.value()};
 
         if (snapshot_settings.enabled) {
             db::RWTxn rw_txn{chaindata_db};
@@ -512,63 +531,39 @@ int main(int argc, char* argv[]) {
         silkworm::stagedsync::ExecutionEngine execution{node_settings, db::RWAccess{chaindata_db}};
 
         // ConsensusEngine drives headers and bodies sync, implementing fork choice rules
+        // currently sync & execution are on the same process, sync calls execution so due to
+        // limitations related to the db rw tx owned by execution they must run on the same thread
         silkworm::chainsync::PoWSync sync{block_exchange, execution};
 
+        auto tasks =
+            resource_usage_log.async_run() &&
+            rpc_server.async_run() &&
+            sync_sentry_client.async_run() &&
+            std::move(sync_sentry_client_stats_receiving_loop) &&
+            block_exchange.async_run() &&
+            sync.async_run();
+
         // Trap OS signals
-        SignalHandler::init([&](int) {
-            log::Info() << "Requesting termination\n";
-            sync.stop();
-        });
+        ShutdownSignal shutdown_signal{context_pool.next_io_context()};
 
-        // Sync main loop
-        sync.execution_loop();  // currently sync & execution are on the same process, sync calls execution so due to
-                                // limitations related to the db rw tx owned by execution they must run on the same thread
+        // Go!
+        auto run_future = boost::asio::co_spawn(
+            context_pool.next_io_context(),
+            std::move(tasks) || shutdown_signal.wait(),
+            boost::asio::use_future);
+        context_pool.start();
 
-        /*
-        if (is_pow(node_settings.chain_config)) {
-            silkworm::stagedsync::ExecutionEngine execution{node_settings, db::RWAccess{chaindata_db}};
-
-            chainsync::pow::SyncEngine sync(block_exchange, execution);
-
-            SignalHandler::init([&](int) { sync.stop(); });
-
-            sync.execution_loop();
-        }
-        else (is_pos(node_settings.chain_config)) {
-            ExecutionServer exec_server;
-
-            ExecutionClient exec_client(exec_server);
-
-            chainsync::pos::SyncEngine sync(block_exchange, exec_client);
-            auto sync_running = std::thread([&sync]() { sync.execution_loop(); });
-
-            ExtConsensusClient cons(sync);
-            auto cons_running = std::thread([&cons]() { cons.execution_loop(); });
-
-            SignalHandler::init([&](int) { exec_server.stop(); });
-
-            exec_server.execution_loop();  // MDBX wr thread
-        }
-        else
-            throw std::invalid_argument("Invalid chain config");
-        */
+        // Wait for shutdown_signal or an exception from tasks
+        run_future.get();
 
         // Close all resources
-        backend.close();
-        rpc_server.shutdown();
-        rpc_server.join();
-
-        block_exchange.stop();
-        sentry.stop();
-        sync.stop();
-        resource_usage_log.stop();
-        block_downloading.join();
-        message_receiving.join();
-        stats_receiving.join();
-        resource_usage_logging.join();
-
         asio_guard.reset();
         asio_thread.join();
+
+        context_pool.stop();
+        context_pool.join();
+
+        backend.close();
 
         log::Message() << "Closing database chaindata path: " << node_settings.data_directory->chaindata().path();
         chaindata_db.close();

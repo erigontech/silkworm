@@ -31,15 +31,38 @@ static void ensure_invariant(bool condition, const std::string& message) {
     }
 }
 
-Fork::Fork(BlockId forking_point, NodeSettings& ns, const db::RWAccess dba)
+Fork::Fork(BlockId forking_point, NodeSettings& ns, db::RWAccess db_access)
     : node_settings_{ns},
-      db_access_{dba},
-      tx_{db_access_.start_rw_tx()},
+      tx_{db_access.start_rw_tx()},
       pipeline_{&ns},
       canonical_chain_(tx_) {
     ensure_invariant(canonical_chain_.initial_head() == forking_point,
                      "forking point must be the current canonical head");
     current_head_ = forking_point;
+}
+
+Fork::Fork(const Fork& copy, db::RWAccess db_access)
+    : node_settings_{copy.node_settings_},
+      tx_{db_access.start_rw_tx()},  // db tx cannot be shared between forks
+      is_first_sync_{copy.is_first_sync_},
+      pipeline_{&copy.node_settings_},  // warning: pipeline is not copyable, we build a new one here
+      canonical_chain_{copy.canonical_chain_, tx_},
+      current_head_{copy.current_head_},
+      last_verified_head_{copy.last_verified_head_},
+      last_head_status_{copy.last_head_status_},
+      last_fork_choice_{copy.last_fork_choice_} {
+}
+
+Fork::Fork(Fork&& orig) noexcept
+    : node_settings_{orig.node_settings_},
+      tx_{std::move(orig.tx_)},  // db tx cannot be shared between forks
+      is_first_sync_{orig.is_first_sync_},
+      pipeline_{&orig.node_settings_},  // warning: pipeline is not movable, we build a new one here
+      canonical_chain_{std::move(orig.canonical_chain_)},
+      current_head_{std::move(orig.current_head_)},
+      last_verified_head_{std::move(orig.last_verified_head_)},
+      last_head_status_{std::move(orig.last_head_status_)},
+      last_fork_choice_{std::move(orig.last_fork_choice_)} {
 }
 
 BlockId Fork::current_head() const {
@@ -105,6 +128,12 @@ void Fork::insert_body(const Block& block) {
     }
 }
 
+Fork Fork::branch_at(BlockId forking_point, db::RWAccess db_access) {
+    Fork fork{*this, db_access};
+    fork.reduce_down_to(forking_point);
+    return fork;
+}
+
 void Fork::extend_with(const Block& block) {
     ensure_invariant(extends_head(block.header), "inserting block must extend the head");
 
@@ -114,6 +143,33 @@ void Fork::extend_with(const Block& block) {
     canonical_chain_.advance(block.header.number, header_hash);
 
     current_head_ = {block.header.number, header_hash};
+}
+
+void Fork::reduce_down_to(BlockId unwind_point) {
+    ensure_invariant(unwind_point.number < current_head().number,
+                     "reducing down to a block above the fork head");
+    ensure_invariant(unwind_point.number > canonical_chain_.initial_head().number,
+                     "reducing down to a block below the fork root");
+
+    // we do not handle differently the case where unwind_point.number > last_verified_head_.number
+    // assuming pipeline unwind can handle it correclty
+
+    auto unwind_result = pipeline_.unwind(tx_, unwind_point.number);
+    success_or_throw(unwind_result);  // unwind must complete with success
+
+    ensure_invariant(pipeline_.head_header_number() == unwind_point.number &&
+                         pipeline_.head_header_hash() == unwind_point.hash,
+                     "unwind succeeded with pipeline head not aligned with unwind point");
+
+    canonical_chain_.delete_down_to(unwind_point.number);  // remove last part of canonical
+
+    ensure_invariant(canonical_chain_.current_head().hash == unwind_point.hash,
+                     "canonical chain not updated to unwind point");
+
+    last_verified_head_ = unwind_point;
+    last_head_status_ = ValidChain{unwind_point};
+
+    current_head_ = unwind_point;
 }
 
 VerificationResult Fork::verify_chain() {
@@ -173,7 +229,7 @@ bool Fork::notify_fork_choice_update(Hash head_block_hash, [[maybe_unused]] std:
         // usually update_fork_choice must follow verify_chain with the same header
         // except when verify_chain returned InvalidChain, in which case we expect
         // update_fork_choice to be called with a previous valid head block hash
-        auto head_block_num= find_block(head_block_hash);
+        auto head_block_num = find_block(head_block_hash);
 
         ensure_invariant(head_block_num.has_value(),
                          "fork choice update with unknown block hash");
@@ -183,12 +239,12 @@ bool Fork::notify_fork_choice_update(Hash head_block_hash, [[maybe_unused]] std:
         auto unwind_result = pipeline_.unwind(tx_, *head_block_num);
         success_or_throw(unwind_result);  // unwind must complete with success
 
-        canonical_chain_.delete_down_to(*head_block_num); // remove last part of canonical
+        canonical_chain_.delete_down_to(*head_block_num);  // remove last part of canonical
 
         ensure_invariant(canonical_chain_.current_head().hash == head_block_hash,
                          "fork choice update failed to update canonical chain");
 
-        last_verified_head_ = { *head_block_num, head_block_hash };
+        last_verified_head_ = {*head_block_num, head_block_hash};
         last_head_status_ = ValidChain{*head_block_num, head_block_hash};
     }
 
@@ -216,19 +272,17 @@ std::set<Hash> Fork::collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_ch
     return bad_headers;
 }
 
-
-
-std::vector<Fork>::const_iterator find_fork_with_head(const std::vector<Fork>& forks, const Hash& requested_head_hash) {
+std::vector<Fork>::iterator find_fork_with_head(std::vector<Fork>& forks, const Hash& requested_head_hash) {
     return std::find_if(forks.begin(), forks.end(), [&](const auto& fork) {
         return fork.current_head().hash == requested_head_hash;
     });
 }
 
-std::vector<Fork>::const_iterator best_fork_to_extend(const std::vector<Fork>& forks, const BlockHeader& header) {
+std::vector<Fork>::iterator best_fork_to_extend(std::vector<Fork>& forks, const BlockHeader& header) {
     return find_fork_with_head(forks, header.parent_hash);
 }
 
-std::vector<Fork>::const_iterator best_fork_to_branch(const std::vector<Fork>& forks, const BlockHeader& header) {
+std::vector<Fork>::iterator best_fork_to_branch(std::vector<Fork>& forks, const BlockHeader& header) {
     auto fork = forks.end();
     BlockNum height = 0;
     for (auto f = forks.begin(); f != forks.end(); ++f) {

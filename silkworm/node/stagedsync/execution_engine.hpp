@@ -51,6 +51,7 @@ class ExecutionEngine : public Stoppable {
 
   protected:
     bool acceptable_fork(const BlockHeader& head_header) const;
+    void consolidate_forks();
 
     NodeSettings& node_settings_;
     db::RWAccess db_access_;

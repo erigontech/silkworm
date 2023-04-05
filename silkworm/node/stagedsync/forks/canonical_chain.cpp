@@ -30,7 +30,20 @@ static void ensure_invariant(bool condition, const std::string& message) {
     }
 }
 
-CanonicalChain::CanonicalChain(db::RWTxn& tx, size_t cache_size) : tx_{tx}, canonical_hash_cache_{cache_size} {
+CanonicalChain::CanonicalChain(db::RWTxn& tx, size_t cache_size)
+    : tx_{tx},
+      canonical_hash_cache_{cache_size} {
+    // Read head of canonical chain
+    std::tie(initial_head_.number, initial_head_.hash) = db::read_canonical_head(tx_);
+    // Set current status
+    current_head_ = initial_head_;
+}
+
+CanonicalChain::CanonicalChain(const CanonicalChain& copy, db::RWTxn& new_tx)
+    : tx_{new_tx},
+      initial_head_{copy.initial_head_},
+      current_head_{copy.current_head_},
+      canonical_hash_cache_{copy.canonical_hash_cache_} {
     // Read head of canonical chain
     std::tie(initial_head_.number, initial_head_.hash) = db::read_canonical_head(tx_);
     // Set current status
@@ -42,14 +55,14 @@ BlockId CanonicalChain::current_head() const { return current_head_; }
 
 bool CanonicalChain::cache_enabled() const { return canonical_hash_cache_.size() > 0; }
 
-BlockId CanonicalChain::find_forking_point(db::RWTxn& tx, Hash header_hash) const {
-    std::optional<BlockHeader> header = db::read_header(tx, header_hash);
+BlockId CanonicalChain::find_forking_point(Hash header_hash) const {
+    std::optional<BlockHeader> header = db::read_header(tx_, header_hash);
     if (!header) throw std::logic_error("find_forking_point precondition violation, header not found");
 
-    return find_forking_point(tx, *header);
+    return find_forking_point(*header);
 }
 
-BlockId CanonicalChain::find_forking_point(db::RWTxn& tx, const BlockHeader& header) const {
+BlockId CanonicalChain::find_forking_point(const BlockHeader& header) const {
     BlockId forking_point{};
 
     if (header.number == 0) return forking_point;
@@ -65,7 +78,7 @@ BlockId CanonicalChain::find_forking_point(db::RWTxn& tx, const BlockHeader& hea
 
     // Going further back
     else {
-        auto parent = db::read_header(tx, height - 1, parent_hash);
+        auto parent = db::read_header(tx_, height - 1, parent_hash);
         ensure_invariant(parent.has_value(),
                          "canonical chain could not find parent with hash " + to_hex(parent_hash) +
                              " and height " + std::to_string(height - 1));
@@ -75,7 +88,7 @@ BlockId CanonicalChain::find_forking_point(db::RWTxn& tx, const BlockHeader& hea
 
         std::optional<Hash> canon_hash;
         while ((canon_hash = get_hash(ancestor_height)) && canon_hash != ancestor_hash) {
-            auto ancestor = db::read_header(tx, ancestor_height, ancestor_hash);
+            auto ancestor = db::read_header(tx_, ancestor_height, ancestor_hash);
             ancestor_hash = ancestor->parent_hash;
             --ancestor_height;
         }

@@ -452,7 +452,7 @@ void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {
         json_txn["blockHash"] = b.hash;
         json_txn["blockNumber"] = block_number;
         json_txn["gasPrice"] = to_quantity(b.transactions[i].effective_gas_price(b.header.base_fee_per_gas.value_or(0)));
-        json_txn["input"] = "0x" + silkworm::to_hex(b.transactions[i].data.substr(0,4));
+        json_txn["input"] = "0x" + silkworm::to_hex(b.transactions[i].data.substr(0, 4));
     }
 
     json["fullblock"]["transactionsRoot"] = b.header.transactions_root;

@@ -35,7 +35,7 @@
 #include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
-namespace silkworm::sentry::common::awaitable_wait_for_one {
+namespace silkworm::concurrency::awaitable_wait_for_one {
 
 using boost::asio::experimental::wait_for_one;
 
@@ -206,4 +206,4 @@ awaitable<std::variant<T..., U>, Executor> operator||(awaitable<std::variant<T..
     }
 }
 
-}  // namespace silkworm::sentry::common::awaitable_wait_for_one
+}  // namespace silkworm::concurrency::awaitable_wait_for_one

@@ -26,9 +26,9 @@
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/rpc/common/util.hpp>
 #include <silkworm/infra/rpc/server/server_context_pool.hpp>
-#include <silkworm/sentry/common/awaitable_wait_for_one.hpp>
 #include <silkworm/sentry/sentry.hpp>
 #include <silkworm/sentry/settings.hpp>
 
@@ -122,7 +122,7 @@ class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
 };
 
 void sentry_main(Settings settings) {
-    using namespace common::awaitable_wait_for_one;
+    using namespace concurrency::awaitable_wait_for_one;
 
     log::init(settings.log_settings);
     log::set_thread_name("main");

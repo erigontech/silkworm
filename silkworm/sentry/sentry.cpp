@@ -23,7 +23,7 @@
 #include <silkworm/buildinfo.h>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 
 #include "api/api_common/node_info.hpp"
@@ -132,7 +132,7 @@ SentryImpl::SentryImpl(Settings settings, silkworm::rpc::ServerContextPool& cont
 }
 
 boost::asio::awaitable<void> SentryImpl::run() {
-    using namespace common::awaitable_wait_for_all;
+    using namespace concurrency::awaitable_wait_for_all;
 
     setup_node_key();
 
@@ -146,7 +146,7 @@ void SentryImpl::setup_node_key() {
 }
 
 boost::asio::awaitable<void> SentryImpl::run_tasks() {
-    using namespace common::awaitable_wait_for_all;
+    using namespace concurrency::awaitable_wait_for_all;
 
     log::Info() << "Waiting for status message...";
     co_await status_manager_.wait_for_status();

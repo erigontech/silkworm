@@ -27,14 +27,14 @@
 #include <boost/system/system_error.hpp>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 
 namespace silkworm::sentry {
 
 using namespace boost::asio;
 
 awaitable<void> MessageReceiver::start(std::shared_ptr<MessageReceiver> self, PeerManager& peer_manager) {
-    using namespace common::awaitable_wait_for_all;
+    using namespace concurrency::awaitable_wait_for_all;
 
     peer_manager.add_observer(std::weak_ptr(self));
 

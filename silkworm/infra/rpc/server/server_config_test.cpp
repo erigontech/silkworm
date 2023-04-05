@@ -20,6 +20,7 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/test/log.hpp>
 
 namespace silkworm::rpc {
@@ -30,7 +31,7 @@ TEST_CASE("ServerConfig::ServerConfig", "[silkworm][rpc][server_config]") {
     test::SetLogVerbosityGuard log_guard{log::Level::kNone};
     ServerConfig config;
     CHECK(config.address_uri() == kDefaultAddressUri);
-    CHECK(config.num_contexts() == kDefaultNumContexts);
+    CHECK(config.context_pool_settings().num_contexts > 0);
 }
 
 TEST_CASE("ServerConfig::set_address_uri", "[silkworm][rpc][server_config]") {
@@ -41,12 +42,14 @@ TEST_CASE("ServerConfig::set_address_uri", "[silkworm][rpc][server_config]") {
     CHECK(config.address_uri() == address_uri);
 }
 
-TEST_CASE("ServerConfig::set_num_contexts", "[silkworm][rpc][server_config]") {
+TEST_CASE("ServerConfig::set_context_pool_settings", "[silkworm][rpc][server_config]") {
     test::SetLogVerbosityGuard log_guard{log::Level::kNone};
     const uint32_t num_contexts{10};
+    concurrency::ContextPoolSettings context_pool_settings;
+    context_pool_settings.num_contexts = num_contexts;
     ServerConfig config;
-    config.set_num_contexts(num_contexts);
-    CHECK(config.num_contexts() == num_contexts);
+    config.set_context_pool_settings(context_pool_settings);
+    CHECK(config.context_pool_settings().num_contexts == num_contexts);
 }
 
 TEST_CASE("ServerConfig::set_credentials", "[silkworm][rpc][server_config]") {

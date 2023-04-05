@@ -24,7 +24,7 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/rpc/server/wait_strategy.hpp>
+#include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 
 #include "nat_option.hpp"
@@ -44,10 +44,7 @@ struct Settings {
 
     NatOption nat;
 
-    // initialized in the constructor based on hardware_concurrency
-    uint32_t num_contexts{0};
-
-    silkworm::rpc::WaitMode wait_mode{silkworm::rpc::WaitMode::blocking};
+    concurrency::ContextPoolSettings context_pool_settings;
 
     std::filesystem::path data_dir_path;
 
@@ -56,8 +53,6 @@ struct Settings {
     std::vector<common::EnodeUrl> static_peers;
 
     size_t max_peers{100};
-
-    Settings();
 };
 
 }  // namespace silkworm::sentry

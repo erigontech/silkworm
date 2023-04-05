@@ -63,8 +63,7 @@ Settings sentry_parse_cli_settings(int argc, char* argv[]) {
         "- extip:1.2.3.4     use the given public IP");
     nat_option->default_str("none");
 
-    add_option_num_contexts(cli, settings.num_contexts);
-    add_option_wait_mode(cli, settings.wait_mode);
+    add_context_pool_options(cli, settings.context_pool_settings);
 
     add_option_data_dir(cli, settings.data_dir_path);
 
@@ -130,8 +129,7 @@ void sentry_main(Settings settings) {
     silkworm::rpc::Grpc2SilkwormLogGuard log_guard;
 
     silkworm::rpc::ServerContextPool context_pool{
-        settings.num_contexts,
-        settings.wait_mode,
+        settings.context_pool_settings,
         [] { return std::make_unique<DummyServerCompletionQueue>(); },
     };
 

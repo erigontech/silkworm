@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,14 +14,19 @@
    limitations under the License.
 */
 
-#include "settings.hpp"
+#pragma once
 
-#include <thread>
+#include <silkworm/infra/rpc/server/wait_strategy.hpp>
 
-namespace silkworm::sentry {
+namespace silkworm::concurrency {
 
-Settings::Settings() {
-    num_contexts = std::thread::hardware_concurrency() / 2;
-}
+struct ContextPoolSettings {
+    // initialized in the constructor based on hardware_concurrency
+    uint32_t num_contexts{0};
 
-}  // namespace silkworm::sentry
+    silkworm::rpc::WaitMode wait_mode{silkworm::rpc::WaitMode::blocking};
+
+    ContextPoolSettings();
+};
+
+}  // namespace silkworm::concurrency

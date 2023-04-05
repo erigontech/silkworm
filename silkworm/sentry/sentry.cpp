@@ -100,8 +100,7 @@ class SentryImpl final {
 static silkworm::rpc::ServerConfig make_server_config(const Settings& settings) {
     silkworm::rpc::ServerConfig config;
     config.set_address_uri(settings.api_address);
-    config.set_num_contexts(settings.num_contexts);
-    config.set_wait_mode(settings.wait_mode);
+    config.set_context_pool_settings(settings.context_pool_settings);
     return config;
 }
 

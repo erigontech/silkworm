@@ -32,6 +32,7 @@
 #include <silkworm/infra/concurrency/async_thread.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
+#include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/rpc/server/server_context_pool.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
@@ -199,11 +200,8 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
     // RPC server options
     auto& server_settings = settings.server_settings;
 
-    uint32_t num_contexts;
-    add_option_num_contexts(cli, num_contexts);
-
-    silkworm::rpc::WaitMode wait_mode;
-    add_option_wait_mode(cli, wait_mode);
+    concurrency::ContextPoolSettings context_pool_settings;
+    add_context_pool_options(cli, context_pool_settings);
 
     // Snapshot&Bittorrent options
     auto& snapshot_settings = settings.snapshot_settings;
@@ -256,8 +254,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
                              beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
 
     server_settings.set_address_uri(node_settings.private_api_addr);
-    server_settings.set_num_contexts(num_contexts);
-    server_settings.set_wait_mode(wait_mode);
+    server_settings.set_context_pool_settings(context_pool_settings);
 
     snapshot_settings.bittorrent_settings.repository_path = snapshot_settings.repository_dir;
 }
@@ -491,8 +488,7 @@ int main(int argc, char* argv[]) {
             log::Trace("Boost Asio", {"state", "stopped"});
         }};
         silkworm::rpc::ServerContextPool context_pool{
-            settings.server_settings.num_contexts(),
-            settings.server_settings.wait_mode(),
+            settings.server_settings.context_pool_settings(),
             [] { return std::make_unique<DummyServerCompletionQueue>(); },
         };
 

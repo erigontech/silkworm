@@ -22,7 +22,7 @@
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/rpc/server/wait_strategy.hpp>
+#include <silkworm/infra/concurrency/context_pool_settings.hpp>
 
 namespace silkworm::cmd::common {
 
@@ -50,10 +50,7 @@ void add_option_sentry_api_address(CLI::App& cli, std::string& sentry_api_addres
 //! \brief Set up option for the IP address(es) of external Sentry component(s)
 void add_option_external_sentry_address(CLI::App& cli, std::string& external_sentry_address);
 
-//! \brief Set up parsing of the number of RPC execution contexts (i.e. threading model)
-void add_option_num_contexts(CLI::App& cli, uint32_t& num_contexts);
-
-//! \brief Set up parsing of the wait mode (e.g. block, sleep, spin...) in RPC execution contexts
-void add_option_wait_mode(CLI::App& cli, silkworm::rpc::WaitMode& wait_mode);
+//! \brief Set up context pool options
+void add_context_pool_options(CLI::App& cli, concurrency::ContextPoolSettings& settings);
 
 }  // namespace silkworm::cmd::common

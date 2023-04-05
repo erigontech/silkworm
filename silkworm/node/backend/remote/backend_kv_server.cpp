@@ -27,8 +27,9 @@ BackEndKvService::BackEndKvService(const EthereumBackEnd& backend)
 
 BackEndKvServer::BackEndKvServer(const ServerConfig& srv_config, const EthereumBackEnd& backend)
     : Server(srv_config), backend_(backend) {
-    backend_kv_services_.reserve(srv_config.num_contexts());
-    for (std::size_t i{0}; i < srv_config.num_contexts(); i++) {
+    uint32_t num_contexts = srv_config.context_pool_settings().num_contexts;
+    backend_kv_services_.reserve(num_contexts);
+    for (std::size_t i{0}; i < num_contexts; i++) {
         backend_kv_services_.emplace_back(std::make_unique<BackEndKvService>(backend));
     }
     SILK_INFO << "BackEndKvServer created listening on: " << srv_config.address_uri();

@@ -60,8 +60,7 @@ int main() {
     sentry::Settings sentry_settings;
 
     silkworm::rpc::ServerContextPool context_pool{
-        sentry_settings.num_contexts,
-        sentry_settings.wait_mode,
+        sentry_settings.context_pool_settings,
         [] { return std::make_unique<DummyServerCompletionQueue>(); },
     };
 

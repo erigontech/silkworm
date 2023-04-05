@@ -30,11 +30,11 @@ static void ensure_invariant(bool condition, const std::string& message) {
     }
 }
 
-ExecutionEngine::ExecutionEngine(NodeSettings& ns, const db::RWAccess dba)
+ExecutionEngine::ExecutionEngine(NodeSettings& ns, db::RWAccess dba)
     : node_settings_{ns},
       db_access_{dba},
-      tx_{db_access_.start_rw_tx()}
-// header_cache_{kCacheSize}
+      tx_{db_access_.start_rw_tx()},
+      main_chain_(ns, dba)
 {
 }
 
@@ -46,7 +46,7 @@ void ExecutionEngine::insert_block(const Block& block) {
     Hash header_hash{block.header.hash()};
 
     // find attachment point at fork heads
-    auto f = fork_to_extend(forks_, block.header);
+    auto f = best_fork_to_extend(forks_, block.header);
 
     if (f != forks_.end()) {
         SILK_TRACE << "ExecutionEngine: extending a fork";
@@ -64,17 +64,20 @@ void ExecutionEngine::insert_block(const Block& block) {
     }
 
     // create a new fork from the past
-    if (acceptable_fork_head(block.header, header_hash)) {
+
+    if (acceptable_fork(block.header)) {
         SILK_TRACE << "ExecutionEngine: creating new fork";
-        auto f = forks_.emplace_back(Fork({block.header.number - 1, block.header.parent_hash}, node_settings_, db_access_));
+        auto f = forks_.emplace_back(
+            Fork({block.header.number - 1, block.header.parent_hash},
+                 node_settings_, db_access_));
         f.extend_with(block);
     }
 }
 
-bool ExecutionEngine::acceptable_fork_head(const Block& block, Hash header_hash) {
-    auto parent_header = get_header(block.header.parent_hash);
-    auto header = get_header(header_hash);
-    return parent_header.has_value() && !header.has_value();
+bool ExecutionEngine::acceptable_fork(const BlockHeader& head_header) const {
+    auto forking_point = main_chain_.find_forking_point(head_header);
+    if (!forking_point) return false;
+    return main_chain_.last_fork_choice().number < forking_point->number;     // todo: check if this is correct
 }
 
 void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<Block>>& blocks) {
@@ -82,7 +85,7 @@ void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<Block>>& blocks)
     if (blocks.empty()) return;
 
     as_range::for_each(blocks, [&, this](const auto& block) {
-        insert_block(block);
+        insert_block(*block);
     });
 
     if (is_first_sync_) tx_.commit_and_renew();
@@ -106,11 +109,9 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
 }
 
 bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
-    auto f = std::find_if(forks_.begin(), forks_.end(), [&](const auto& fork) {
-        return fork.current_head().hash == head_block_hash;
-    });
+    auto f = find_fork_with_head(forks_, head_block_hash);
 
-    if (!f) {
+    if (f == forks_.end()) {
         SILK_TRACE << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at fork choice update time";
         return false;
     }

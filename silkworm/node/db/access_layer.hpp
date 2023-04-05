@@ -112,9 +112,15 @@ size_t process_blocks_at_height(ROTxn& txn, BlockNum height, std::function<void(
 [[nodiscard]] bool has_body(ROTxn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
 [[nodiscard]] bool has_body(ROTxn& txn, BlockNum block_number, const evmc::bytes32& hash);
 
+//! \brief Check the presence of a block with the same number
+[[nodiscard]] bool has_sibling(ROTxn& txn, BlockNum block_number);
+
 //! \brief Writes block body in table::kBlockBodies
 void write_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, BlockNum bn);
 void write_body(RWTxn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], BlockNum number);
+
+//! \brief Writes block body in table::kBlockBodies and transactions in table::KNonCanonicalTransactions
+void write_sibling(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, BlockNum bn);
 
 // See Erigon ReadTd
 std::optional<intx::uint256> read_total_difficulty(ROTxn& txn, BlockNum, const evmc::bytes32& hash);

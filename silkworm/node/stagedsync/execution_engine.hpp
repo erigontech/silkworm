@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include "forks/fork.hpp"
-
 #include <atomic>
 #include <concepts>
 #include <set>
@@ -32,13 +30,14 @@
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
 
+#include "forks/fork.hpp"
+#include "forks/main_chain.hpp"
+
 namespace silkworm::stagedsync {
 
 class ExecutionEngine : public Stoppable {
   public:
     explicit ExecutionEngine(NodeSettings&, db::RWAccess);
-
-    using VerificationResult = Fork::VerificationResult;
 
     // actions
     void insert_blocks(std::vector<std::shared_ptr<Block>>& blocks);
@@ -51,11 +50,14 @@ class ExecutionEngine : public Stoppable {
     auto last_fork_choice() -> BlockId;
 
   protected:
+    bool acceptable_fork(const BlockHeader& head_header) const;
+
     NodeSettings& node_settings_;
     db::RWAccess db_access_;
     db::RWTxn tx_;
     bool is_first_sync_{true};
 
+    MainChain main_chain_;
     std::vector<Fork> forks_;
     BlockId last_fork_choice_;
 };

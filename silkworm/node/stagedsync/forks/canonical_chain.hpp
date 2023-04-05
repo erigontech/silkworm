@@ -34,17 +34,21 @@ namespace silkworm::stagedsync {
 
 class CanonicalChain {
   public:
-    explicit CanonicalChain(db::RWTxn&);
+    static constexpr size_t kNoCache = 0;
 
-    BlockNum find_forking_point(db::RWTxn& tx, Hash header_hash);
+    explicit CanonicalChain(db::RWTxn&, size_t cache_size = kDefaultCacheSize);
 
+    BlockId find_forking_point(db::RWTxn& tx, Hash header_hash) const;
+    BlockId find_forking_point(db::RWTxn& tx, const BlockHeader& header) const;
+
+    void advance(BlockNum height, Hash header_hash);
     void update_up_to(BlockNum height, Hash header_hash);
     void delete_down_to(BlockNum unwind_point);
 
     BlockId initial_head() const;
     BlockId current_head() const;
 
-    auto get_hash(BlockNum height) -> std::optional<Hash>;
+    auto get_hash(BlockNum height) const -> std::optional<Hash>;
 
   private:
     db::RWTxn& tx_;
@@ -52,8 +56,9 @@ class CanonicalChain {
     BlockId initial_head_{};
     BlockId current_head_{};
 
-    static constexpr size_t kCacheSize = 1000;
-    lru_cache<BlockNum, Hash> canonical_cache_;
+    static constexpr size_t kDefaultCacheSize = 1000;
+    mutable lru_cache<BlockNum, Hash> canonical_hash_cache_;
+    bool cache_enabled() const;
 };
 
 }  // namespace silkworm::stagedsync

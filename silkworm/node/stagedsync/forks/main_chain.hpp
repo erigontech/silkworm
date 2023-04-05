@@ -22,41 +22,54 @@
 #include <variant>
 #include <vector>
 
+#include <silkworm/core/common/as_range.hpp>
+#include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/infra/common/asio_timer.hpp>
+#include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
+#include <silkworm/node/stagedsync/stages/stage.hpp>
 
 #include "canonical_chain.hpp"
+#include "fork.hpp"
 #include "verification_result.hpp"
 
 namespace silkworm::stagedsync {
 
-class Fork {
+class MainChain {
   public:
-    explicit Fork(BlockId forking_point, NodeSettings&, db::RWAccess);
-    Fork(Fork&&);
+    explicit MainChain(NodeSettings&, db::RWAccess);
+    MainChain(MainChain&&);
 
     // extension
-    void extend_with(const Block&);  // put block over the head of the fork
-    bool extends_head(const BlockHeader&) const;
+    void insert_block(const Block&);
 
     // branching
     Fork branch_at(BlockId forking_point, db::RWAccess);
-    auto find_attachment_point(const BlockHeader& header) const -> std::optional<BlockId>;
-    BlockNum distance_from_root(const BlockId&) const;
+    std::optional<BlockId> find_forking_point(const BlockHeader& header) const;
 
     // verification
-    auto verify_chain() -> VerificationResult;            // verify chain up to current head
-    bool notify_fork_choice_update(Hash head_block_hash,  // accept the current chain up to head_block_hash
+    auto verify_chain(Hash head_block_hash) -> VerificationResult;  // verify chain up to head_block_hash
+    bool notify_fork_choice_update(Hash head_block_hash,            // accept the current chain up to head_block_hash
                                    std::optional<Hash> finalized_block_hash = std::nullopt);
 
     // state
-    auto current_head() const -> BlockId;
-    auto last_verified_head() const -> BlockId;
-    auto last_head_status() const -> VerificationResult;
+    auto canonical_head() const -> BlockId;
+    auto canonical_status() const -> VerificationResult;
     auto last_fork_choice() const -> BlockId;
 
-    // checks
-    auto find_block(Hash header_hash) const -> std::optional<BlockNum>;
+    // header/body retrieval
+    auto get_block_progress() -> BlockNum;
+    auto get_header(Hash) -> std::optional<BlockHeader>;
+    auto get_header(BlockNum, Hash) -> std::optional<BlockHeader>;
+    auto get_canonical_hash(BlockNum) -> std::optional<Hash>;
+    auto get_header_td(BlockNum, Hash) -> std::optional<TotalDifficulty>;
+    auto get_body(Hash) -> std::optional<BlockBody>;
+    auto get_last_headers(BlockNum limit) -> std::vector<BlockHeader>;
+    auto extends_last_fork_choice(BlockNum, Hash) -> bool;
+    auto extends(BlockId block, BlockId supposed_parent) -> bool;
+    auto is_ancestor(BlockId supposed_parent, BlockId block) -> bool;
+    auto is_ancestor(Hash supposed_parent, BlockId block) -> bool;
 
   protected:
     Hash insert_header(const BlockHeader&);
@@ -71,24 +84,8 @@ class Fork {
 
     ExecutionPipeline pipeline_;
     CanonicalChain canonical_chain_;
-
-    BlockId current_head_;
-
-    BlockId last_verified_head_;
-    VerificationResult last_head_status_;
+    VerificationResult canonical_head_status_;
     BlockId last_fork_choice_;
 };
-
-// find the fork with the specified head
-auto find_fork_with_head(const std::vector<Fork>& forks, const Hash& requested_head_hash)
-    -> std::vector<Fork>::const_iterator;
-
-// find the fork with the head to extend
-auto best_fork_to_extend(const std::vector<Fork>& forks, const BlockHeader& header)
-    -> std::vector<Fork>::const_iterator;
-
-// find the best fork to branch from
-auto best_fork_to_branch(const std::vector<Fork>& forks, const BlockHeader& header)
-    -> std::vector<Fork>::const_iterator;
 
 }  // namespace silkworm::stagedsync

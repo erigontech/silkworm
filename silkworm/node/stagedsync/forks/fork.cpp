@@ -21,6 +21,7 @@
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/db_utils.hpp>
+#include <silkworm/node/stagedsync/stages/stage.hpp>
 
 namespace silkworm::stagedsync {
 
@@ -35,44 +36,53 @@ Fork::Fork(BlockId forking_point, NodeSettings& ns, const db::RWAccess dba)
       db_access_{dba},
       tx_{db_access_.start_rw_tx()},
       pipeline_{&ns},
-      canonical_chain_(tx_)
-// header_cache_{kCacheSize}
-{
-    ensure_invariant(canonical_chain_.initial_head() == forking_point, "forking point must be the current canonical head");
+      canonical_chain_(tx_) {
+    ensure_invariant(canonical_chain_.initial_head() == forking_point,
+                     "forking point must be the current canonical head");
     current_head_ = forking_point;
 }
 
-auto Fork::current_head() const -> BlockId {
+BlockId Fork::current_head() const {
     return current_head_;
 }
 
-auto Fork::last_verified_head() const -> BlockId {
-    return canonical_chain_.current_head();
+BlockId Fork::last_verified_head() const {
+    return last_verified_head_;
 }
 
-auto Fork::last_head_status() const -> VerificationResult {
-    return canonical_head_status_;
+VerificationResult Fork::last_head_status() const {
+    return last_head_status_;
 }
 
-auto Fork::extends_head(const BlockHeader& header) const -> bool {
+bool Fork::extends_head(const BlockHeader& header) const {
     return current_head().hash == header.parent_hash;
 }
 
-std::optional<BlockId> Fork::find_attachment_point(const BlockHeader& header, const Hash& header_hash) const {
-    // todo: optimize using a cache to avoid header retrieval
-    // use header_cache_
-    // or canonical_chain_.find_forking_point(header, header_hash);
-    // or share canonical_chain_ cache
-    if (header_hash == current_head().hash) return current_head();
+BlockId Fork::last_fork_choice() const {
+    return last_fork_choice_;
+}
 
-    auto curr_header = db::read_header(tx_, current_head_.number, current_head_.hash);
-    while (curr_header.number > canonical_chain_.initial_head().number) {
-        if (curr_header.parent_hash == header_hash) {
-            return {curr_header.number - 1, curr_header.parent_hash};
+std::optional<BlockNum> Fork::find_block(Hash header_hash) const {
+    auto curr_height = current_head().number;
+    while (curr_height > canonical_chain_.initial_head().number) {
+        auto canonical_hash = canonical_chain_.get_hash(curr_height);
+        ensure_invariant(canonical_hash.has_value(), "canonical chain must be complete");
+        if (canonical_hash == header_hash) {
+            return curr_height;
         }
-        curr_header = db::read_header(tx_, header.number - 1, header.parent_hash);
+        curr_height--;
     }
-    return std::nullopt
+    return std::nullopt;
+}
+
+std::optional<BlockId> Fork::find_attachment_point(const BlockHeader& header) const {
+    auto parent_hash = header.parent_hash;
+    if (parent_hash == current_head().hash) return current_head();
+
+    auto parent_num = find_block(parent_hash);
+    if (!parent_num.has_value()) return std::nullopt;
+
+    return BlockId{*parent_num, parent_hash};
 }
 
 BlockNum Fork::distance_from_root(const BlockId& block) const {
@@ -101,36 +111,20 @@ void Fork::extend_with(const Block& block) {
     Hash header_hash = insert_header(block.header);
     insert_body(block);
 
+    canonical_chain_.advance(block.header.number, header_hash);
+
     current_head_ = {block.header.number, header_hash};
 }
 
-auto Fork::verify_chain(Hash head_block_hash) -> VerificationResult {
-    SILK_TRACE << "ExecutionEngine: verifying chain " << head_block_hash.to_hex();
-
-    // retrieve the head header
-    auto header = get_header(head_block_hash);
-    ensure_invariant(header.has_value(), "header to verify non present");
+VerificationResult Fork::verify_chain() {
+    SILK_TRACE << "Fork: verifying chain from head " << current_head_.hash.to_hex();
 
     // db commit policy
     bool commit_at_each_stage = is_first_sync_;
     if (!commit_at_each_stage) tx_.disable_commit();
 
-    // the new head is on a new fork?
-    BlockNum forking_point = canonical_chain_.find_forking_point(tx_, head_block_hash);  // the forking origin
-
-    if (forking_point < canonical_chain_.current_head().number) {  // if the forking is behind the current head
-        // we need to do unwind to change canonical
-        auto unwind_result = pipeline_.unwind(tx_, forking_point);
-        success_or_throw(unwind_result);  // unwind must complete with success
-        // remove last part of canonical
-        canonical_chain_.delete_down_to(forking_point);
-    }
-
-    // update canonical up to header_hash
-    canonical_chain_.update_up_to(header->number, head_block_hash);
-
     // forward
-    Stage::Result forward_result = pipeline_.forward(tx_, header->number);
+    Stage::Result forward_result = pipeline_.forward(tx_, current_head_.number);
 
     // evaluate result
     VerificationResult verify_result;
@@ -147,7 +141,8 @@ auto Fork::verify_chain(Hash head_block_hash) -> VerificationResult {
         case Stage::Result::kWrongStateRoot: {
             ensure_invariant(pipeline_.unwind_point().has_value(),
                              "unwind point from pipeline requested when forward fails");
-            InvalidChain invalid_chain = {*pipeline_.unwind_point()};
+            InvalidChain invalid_chain;
+            invalid_chain.unwind_point.number = *pipeline_.unwind_point();
             invalid_chain.unwind_point.hash = *canonical_chain_.get_hash(*pipeline_.unwind_point());
             if (pipeline_.bad_block()) {
                 invalid_chain.bad_block = pipeline_.bad_block();
@@ -162,7 +157,8 @@ auto Fork::verify_chain(Hash head_block_hash) -> VerificationResult {
         default:
             verify_result = ValidationError{pipeline_.head_header_number(), pipeline_.head_header_hash()};
     }
-    canonical_head_status_ = verify_result;
+    last_verified_head_ = current_head_;
+    last_head_status_ = verify_result;
 
     // finish
     tx_.enable_commit();
@@ -171,18 +167,32 @@ auto Fork::verify_chain(Hash head_block_hash) -> VerificationResult {
 }
 
 bool Fork::notify_fork_choice_update(Hash head_block_hash, [[maybe_unused]] std::optional<Hash> finalized_block_hash) {
-    if (canonical_chain_.current_head().hash != head_block_hash) {
+    SILK_TRACE << "Fork: fork choice update " << head_block_hash.to_hex();
+
+    if (last_verified_head_.hash != head_block_hash) {
         // usually update_fork_choice must follow verify_chain with the same header
         // except when verify_chain returned InvalidChain, in which case we expect
         // update_fork_choice to be called with a previous valid head block hash
+        auto head_block_num= find_block(head_block_hash);
 
-        auto verification = verify_chain(head_block_hash);
+        ensure_invariant(head_block_num.has_value(),
+                         "fork choice update with unknown block hash");
+        ensure_invariant(*head_block_num < last_verified_head_.number,
+                         "fork choice update upon non verified block");
 
-        if (!std::holds_alternative<ValidChain>(verification)) return false;
+        auto unwind_result = pipeline_.unwind(tx_, *head_block_num);
+        success_or_throw(unwind_result);  // unwind must complete with success
+
+        canonical_chain_.delete_down_to(*head_block_num); // remove last part of canonical
 
         ensure_invariant(canonical_chain_.current_head().hash == head_block_hash,
-                         "canonical head not aligned with fork choice");
+                         "fork choice update failed to update canonical chain");
+
+        last_verified_head_ = { *head_block_num, head_block_hash };
+        last_head_status_ = ValidChain{*head_block_num, head_block_hash};
     }
+
+    if (!holds_alternative<ValidChain>(last_head_status_)) return false;
 
     tx_.commit_and_renew();
 
@@ -203,111 +213,35 @@ std::set<Hash> Fork::collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_ch
         bad_headers.insert(*current_hash);
     }
 
-    /*  todo: check if we need also the following code (remember that this entire algo changed in Erigon)
-    BlockNum new_height = unwind_point;
-    if (is_bad_block) {
-        bad_headers.insert(*bad_block);
-
-        auto [max_block_num, max_hash] = header_with_biggest_td(tx, &bad_headers);
-
-        if (max_block_num == 0) {
-            max_block_num = unwind_point;
-            max_hash = *db::read_canonical_hash(tx, max_block_num);
-        }
-
-        db::write_head_header_hash(tx, max_hash);
-        new_height = max_block_num;
-    }
-    return {bad_headers, new_height};
-    */
     return bad_headers;
 }
 
-auto Fork::get_header(Hash header_hash) -> std::optional<BlockHeader> {
-    // const BlockHeader* cached = header_cache_.get(header_hash);
-    // if (cached) {
-    //     return *cached;
-    // }
-    std::optional<BlockHeader> header = db::read_header(tx_, header_hash);
-    return header;
-}
 
-auto Fork::get_header(BlockNum header_height, Hash header_hash) -> std::optional<BlockHeader> {
-    // const BlockHeader* cached = header_cache_.get(header_hash);
-    // if (cached) {
-    //     return *cached;
-    // }
-    std::optional<BlockHeader> header = db::read_header(tx_, header_height, header_hash);
-    return header;
-}
 
-auto Fork::get_canonical_hash(BlockNum height) -> std::optional<Hash> {
-    auto hash = db::read_canonical_hash(tx_, height);
-    return hash;
-}
-
-auto Fork::get_header_td(BlockNum header_height, Hash header_hash) -> std::optional<TotalDifficulty> {
-    return db::read_total_difficulty(tx_, header_height, header_hash);
-}
-
-auto Fork::get_body(Hash header_hash) -> std::optional<BlockBody> {
-    BlockBody body;
-    bool found = read_body(tx_, header_hash, body);
-    if (!found) return {};
-    return body;
-}
-
-auto Fork::get_block_progress() -> BlockNum {
-    BlockNum block_progress = 0;
-
-    read_headers_in_reverse_order(tx_, 1, [&block_progress](BlockHeader&& header) {
-        block_progress = header.number;
+std::vector<Fork>::const_iterator find_fork_with_head(const std::vector<Fork>& forks, const Hash& requested_head_hash) {
+    return std::find_if(forks.begin(), forks.end(), [&](const auto& fork) {
+        return fork.current_head().hash == requested_head_hash;
     });
-
-    return block_progress;
 }
 
-auto Fork::get_last_headers(BlockNum limit) -> std::vector<BlockHeader> {
-    std::vector<BlockHeader> headers;
-
-    read_headers_in_reverse_order(tx_, limit, [&headers](BlockHeader&& header) {
-        headers.emplace_back(std::move(header));
-    });
-
-    return headers;
+std::vector<Fork>::const_iterator best_fork_to_extend(const std::vector<Fork>& forks, const BlockHeader& header) {
+    return find_fork_with_head(forks, header.parent_hash);
 }
 
-auto Fork::is_ancestor(BlockId supposed_parent, BlockId block) -> bool {
-    return extends(block, supposed_parent);
-}
-
-auto Fork::extends_last_fork_choice(BlockNum height, Hash hash) -> bool {
-    return extends({height, hash}, last_fork_choice_);
-}
-
-auto Fork::extends(BlockId block, BlockId supposed_parent) -> bool {
-    while (block.number > supposed_parent.number) {
-        auto header = get_header(block.number, block.hash);
-        if (!header) return false;
-        if (header->parent_hash == supposed_parent.hash) return true;
-        block.number--;
-        block.hash = header->parent_hash;
+std::vector<Fork>::const_iterator best_fork_to_branch(const std::vector<Fork>& forks, const BlockHeader& header) {
+    auto fork = forks.end();
+    BlockNum height = 0;
+    for (auto f = forks.begin(); f != forks.end(); ++f) {
+        auto attachment_point = f->find_attachment_point(header);
+        if (!attachment_point) continue;
+        auto distance = f->distance_from_root(*attachment_point);
+        if (fork == forks.end() || distance < height) {
+            height = distance;
+            fork = f;
+        }
     }
-    if (block.number == supposed_parent.number) return block.hash == supposed_parent.hash;
 
-    return false;
+    return fork;
 }
-
-/*
-auto Fork::get_canonical_head_from_db() -> ChainHead {
-    auto [height, hash] = db::read_canonical_head(tx_);
-
-    std::optional<TotalDifficulty> td = db::read_total_difficulty(tx_, height, hash);
-    ensure_invariant(td.has_value(),
-                     "total difficulty of canonical hash at height " + std::to_string(height) + " not found in db");
-
-    return {height, hash, *td};
-}
-*/
 
 }  // namespace silkworm::stagedsync

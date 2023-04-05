@@ -40,6 +40,8 @@
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/snapshot/sync.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
+#include <silkworm/sentry/sentry.hpp>
+#include <silkworm/sentry/settings.hpp>
 #include <silkworm/sync/block_exchange.hpp>
 #include <silkworm/sync/sentry_client.hpp>
 #include <silkworm/sync/sync_engine_pow.hpp>
@@ -504,6 +506,24 @@ int main(int argc, char* argv[]) {
 
         silkworm::rpc::BackEndKvServer rpc_server{settings.server_settings, backend};
 
+        // Sentry
+        // TODO: parse from command line
+        silkworm::sentry::Settings sentry_settings;
+        std::optional<silkworm::sentry::Sentry> sentry;
+        if (node_settings.external_sentry_addr.empty()) {
+            // disable GRPC in the embedded sentry
+            // TODO: uncomment when sync_sentry_client is refactored to use the sentry client
+            // sentry_settings.api_address = "";
+            sentry.emplace(std::move(sentry_settings), context_pool);
+            // TODO: remove when sync_sentry_client is refactored to use the sentry client
+            node_settings.external_sentry_addr = "127.0.0.1:9091";
+        }
+        auto embedded_sentry_run_if_needed = [&sentry]() -> boost::asio::awaitable<void> {
+            if (sentry) {
+                co_await sentry->run();
+            }
+        };
+
         // Sentry client - connects to sentry
         silkworm::SentryClient sync_sentry_client{
             node_settings.external_sentry_addr,
@@ -538,6 +558,7 @@ int main(int argc, char* argv[]) {
         auto tasks =
             resource_usage_log.async_run() &&
             rpc_server.async_run() &&
+            embedded_sentry_run_if_needed() &&
             sync_sentry_client.async_run() &&
             std::move(sync_sentry_client_stats_receiving_loop) &&
             block_exchange.async_run() &&

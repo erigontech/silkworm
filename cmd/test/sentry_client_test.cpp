@@ -22,6 +22,7 @@
 #include <silkworm/infra/rpc/client/call.hpp>
 #include <silkworm/infra/rpc/common/util.hpp>
 #include <silkworm/infra/rpc/server/server_context_pool.hpp>
+#include <silkworm/sentry/api/api_common/sentry_client.hpp>
 #include <silkworm/sentry/rpc/client/sentry_client.hpp>
 #include <silkworm/sentry/sentry.hpp>
 
@@ -31,7 +32,7 @@ using namespace silkworm;
 class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
 };
 
-boost::asio::awaitable<void> run(ISentryClient& client) {
+boost::asio::awaitable<void> run(sentry::api::api_common::SentryClient& client) {
     auto service = client.service();
     try {
         auto eth_version = co_await service->handshake();

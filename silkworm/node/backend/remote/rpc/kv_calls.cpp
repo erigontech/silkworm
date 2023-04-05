@@ -232,7 +232,10 @@ void TxCall::handle_cursor_open(const remote::Cursor* request, remote::Pair& res
 
     // Create a new database cursor tracking also bucket name (needed for reopening). We create a read-only dup-sort
     // cursor so that it works for both single-value and multi-value tables.
-    const db::MapConfig map_config{bucket_name.c_str()};
+    const db::MapConfig map_config{
+        .name = bucket_name.c_str(),
+        .value_mode = request->op() == remote::Op::OPEN ? ::mdbx::value_mode::single : ::mdbx::value_mode::multi,
+    };
     auto cursor = read_only_txn_.ro_cursor_dup_sort(map_config);
     const auto [cursor_it, inserted] = cursors_.insert({++last_cursor_id_, TxCursor{std::move(cursor), bucket_name}});
 

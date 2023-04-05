@@ -14,8 +14,11 @@
    limitations under the License.
 ]]
 
+include(ExternalProject)
+
 # evmone with dependencies
 add_subdirectory(intx)
+
 option(ETHASH_BUILD_GLOBAL_CONTEXT "" OFF)
 add_subdirectory(ethash)
 
@@ -80,7 +83,6 @@ if(NOT MSVC)
       CACHE FILEPATH ""
       )
 
-  include(ExternalProject)
   ExternalProject_Add(
       gmplib
       SOURCE_DIR "${GMP_SOURCE_DIR}"

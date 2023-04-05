@@ -33,11 +33,11 @@ MemoryMutationCursor::MemoryMutationCursor(MemoryMutation& memory_mutation, cons
 }
 
 bool MemoryMutationCursor::is_table_cleared() const {
-    return memory_mutation_.is_table_cleared(map());
+    return memory_mutation_.is_table_cleared(config_.name);
 }
 
 bool MemoryMutationCursor::is_entry_deleted(const Slice& key) const {
-    return memory_mutation_.is_entry_deleted(map(), key);
+    return memory_mutation_.is_entry_deleted(config_.name, key);
 }
 
 void MemoryMutationCursor::bind(ROTxn& txn, const MapConfig& config) {
@@ -250,14 +250,20 @@ bool MemoryMutationCursor::seek(const Slice& key) {
 }
 
 bool MemoryMutationCursor::eof() const {
-    return true;
+    const auto result = current(/*throw_notfound=*/false);
+    if (result.done) return false;
+    return result.done ? false : memory_cursor_->eof() && cursor_->eof();
 }
 
 bool MemoryMutationCursor::on_first() const {
-    return false;
+    const auto result = current(/*throw_notfound=*/false);
+    if (!result.done) return false;
+    return memory_cursor_->on_first() || cursor_->on_first();
 }
 
 bool MemoryMutationCursor::on_last() const {
+    const auto result = current(/*throw_notfound=*/false);
+    if (!result.done) return false;
     return false;
 }
 
@@ -388,7 +394,8 @@ MoveResult MemoryMutationCursor::move(MoveOperation /*operation*/, const Slice& 
 }
 
 std::size_t MemoryMutationCursor::count_multivalue() const {
-    return 0;
+    std::size_t count{0};
+    return count;
 }
 
 MDBX_error_t MemoryMutationCursor::put(const Slice& key, Slice* value, MDBX_put_flags_t flags) noexcept {
@@ -408,23 +415,37 @@ void MemoryMutationCursor::update(const Slice& key, const Slice& value) {
 }
 
 bool MemoryMutationCursor::erase() {
-    return false;
+    return erase(/*whole_multivalue=*/false);
 }
 
-bool MemoryMutationCursor::erase(bool /*whole_multivalue*/) {
-    return false;
+bool MemoryMutationCursor::erase(bool whole_multivalue) {
+    const auto current_result = current(/*throw_notfound=*/false);
+    if (!current_result.done) return false;
+
+    if (whole_multivalue) {
+        return memory_mutation_.erase(config_, current_result.key);
+    } else {
+        return memory_mutation_.erase(config_, current_result.key, current_result.value);
+    }
 }
 
 bool MemoryMutationCursor::erase(const Slice& key) {
-    return memory_mutation_.erase(memory_cursor_->map(), key);
+    return erase(key, /*whole_multivalue=*/true);
 }
 
-bool MemoryMutationCursor::erase(const Slice& /*key*/, bool /*whole_multivalue*/) {
-    return false;
+bool MemoryMutationCursor::erase(const Slice& key, bool whole_multivalue) {
+    const auto find_result = find(key, /*throw_notfound=*/false);
+    if (!find_result.done) return false;
+
+    if (whole_multivalue) {
+        return memory_mutation_.erase(config_, find_result.key);
+    } else {
+        return memory_mutation_.erase(config_, find_result.key, find_result.value);
+    }
 }
 
 bool MemoryMutationCursor::erase(const Slice& key, const Slice& value) {
-    return memory_mutation_.erase(memory_cursor_->map(), key, value);
+    return memory_mutation_.erase(config_, key, value);
 }
 
 CursorResult MemoryMutationCursor::next_on_db(MemoryMutationCursor::NextType type, bool throw_notfound) {
@@ -449,9 +470,6 @@ CursorResult MemoryMutationCursor::next_by_type(MemoryMutationCursor::NextType t
         }
         case NextType::kNoDup: {
             return cursor_->to_next_first_multi(throw_notfound);
-        }
-        default: {
-            return CursorResult{{}, {}, false};  // NOLINT(UnreachableCode)
         }
     }
 }

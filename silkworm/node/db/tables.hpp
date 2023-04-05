@@ -352,4 +352,7 @@ inline constexpr db::MapConfig kChainDataTables[]{
 //! \brief Ensures all defined tables are present in db with consistent flags. Should a table not exist it gets created
 void check_or_create_chaindata_tables(RWTxn& txn);
 
+//! \brief Get the table config associated to the table name (if any)
+std::optional<db::MapConfig> get_map_config(const char* map_name);
+
 }  // namespace silkworm::db::table

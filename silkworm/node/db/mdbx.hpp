@@ -443,6 +443,11 @@ class PooledCursor : public RWCursorDupSort, protected ::mdbx::cursor {
 //! \return True / False
 bool has_map(::mdbx::txn& tx, const char* map_name);
 
+//! \brief List the names of the existing maps in database
+//! \param [in] tx : a reference to a valid mdbx transaction
+//! \return the sequence of map names
+std::vector<std::string> list_maps(::mdbx::txn& tx, bool throw_notfound = false);
+
 //! \brief Builds the full path to mdbx datafile provided a directory
 //! \param [in] base_path : a reference to the directory holding the data file
 //! \return A path with file name

@@ -25,12 +25,13 @@
 #include <silkworm/silkrpc/types/execution_payload.hpp>
 
 namespace silkworm::rpc::commands {
+
 using evmc::literals::operator""_bytes32;
 
 // Format for params is a list which includes a payloadId ie. [payloadId]
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md#engine_getpayloadv1
-boost::asio::awaitable<void> EngineRpcApi::handle_engine_get_payload_v1(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request.at("params");
+awaitable<void> EngineRpcApi::handle_engine_get_payload_v1(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request.at("params");
 
     if (params.size() != 1) {
         auto error_msg = "invalid engine_getPayloadV1 params: " + params.dump();
@@ -60,8 +61,8 @@ boost::asio::awaitable<void> EngineRpcApi::handle_engine_get_payload_v1(const nl
 
 // Format for params is a JSON object ie [ExecutionPayload]
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md#engine_newpayloadv1
-boost::asio::awaitable<void> EngineRpcApi::handle_engine_new_payload_v1(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request.at("params");
+awaitable<void> EngineRpcApi::handle_engine_new_payload_v1(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request.at("params");
 
     if (params.size() != 1) {
         auto error_msg = "invalid engine_newPayloadV1 params: " + params.dump();
@@ -92,8 +93,8 @@ boost::asio::awaitable<void> EngineRpcApi::handle_engine_new_payload_v1(const nl
 // Format for params is a JSON list containing two objects
 // one ForkChoiceState and one PayloadAttributes, i.e. [ForkChoiceState, PayloadAttributes]
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md#engine_forkchoiceupdatedv1
-boost::asio::awaitable<void> EngineRpcApi::handle_engine_forkchoice_updated_v1(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request.at("params");
+awaitable<void> EngineRpcApi::handle_engine_forkchoice_updated_v1(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request.at("params");
 
     if (params.size() != 1 && params.size() != 2) {
         auto error_msg = "invalid engine_forkchoiceUpdatedV1 params: " + params.dump();
@@ -151,8 +152,8 @@ boost::asio::awaitable<void> EngineRpcApi::handle_engine_forkchoice_updated_v1(c
 
 // Checks if the transition configurations of the Execution Layer is equal to the ones in the Consensus Layer
 // Format for params is a JSON list of TransitionConfiguration, i.e. [TransitionConfiguration]
-boost::asio::awaitable<void> EngineRpcApi::handle_engine_exchange_transition_configuration_v1(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request.at("params");
+awaitable<void> EngineRpcApi::handle_engine_exchange_transition_configuration_v1(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request.at("params");
     if (params.size() != 1) {
         auto error_msg = "invalid engine_exchangeTransitionConfigurationV1 params: " + params.dump();
         SILKRPC_ERROR << error_msg << "\n";

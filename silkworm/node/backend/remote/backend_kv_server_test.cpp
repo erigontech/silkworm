@@ -17,7 +17,7 @@
 #include "backend_kv_server.hpp"
 
 #include <chrono>
-#include <condition_variable>
+#include <condition_variable>  // DO NOT remove: CLion bug in suggestion 'Unused "#include <condition_variable>"'
 #include <functional>
 #include <mutex>
 #include <string>
@@ -351,6 +351,7 @@ struct BackEndKvE2eTest {
         database_env = db::open_env(*db_config);
         auto rw_txn{database_env.start_write()};
         db::open_map(rw_txn, kTestMap);
+        db::open_map(rw_txn, kTestMultiMap);
         rw_txn.commit();
 
         // Default value for external Sentry address(es) must be erased in tests to avoid conflict on port
@@ -658,10 +659,40 @@ TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
         CHECK(responses[1].cursorid() != 0);
     }
 
+    SECTION("Tx OK: cursor dup_sort opened") {
+        remote::Cursor open_dup_sort;
+        open_dup_sort.set_op(remote::Op::OPEN_DUP_SORT);
+        open_dup_sort.set_bucketname(kTestMultiMap.name);
+        std::vector<remote::Cursor> requests{open_dup_sort};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(responses.size() == 2);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+    }
+
     SECTION("Tx OK: cursor opened then closed") {
         remote::Cursor open;
         open.set_op(remote::Op::OPEN);
         open.set_bucketname(kTestMap.name);
+        remote::Cursor close;
+        close.set_op(remote::Op::CLOSE);
+        close.set_cursor(0);
+        std::vector<remote::Cursor> requests{open, close};
+        std::vector<remote::Pair> responses;
+        const auto status = kv_client.tx(requests, responses);
+        CHECK(status.ok());
+        CHECK(responses.size() == 3);
+        CHECK(responses[0].txid() != 0);
+        CHECK(responses[1].cursorid() != 0);
+        CHECK(responses[2].cursorid() == 0);
+    }
+
+    SECTION("Tx OK: cursor dup_sort opened then closed") {
+        remote::Cursor open;
+        open.set_op(remote::Op::OPEN_DUP_SORT);
+        open.set_bucketname(kTestMultiMap.name);
         remote::Cursor close;
         close.set_op(remote::Op::CLOSE);
         close.set_cursor(0);

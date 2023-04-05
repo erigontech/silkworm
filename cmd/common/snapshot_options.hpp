@@ -1,5 +1,5 @@
-#[[
-   Copyright 2022 The Silkworm Authors
+/*
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -12,8 +12,17 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-hunter_add_package(Catch)
-hunter_add_package(Microsoft.GSL)
-hunter_add_package(nlohmann_json)
+#pragma once
+
+#include <CLI/CLI.hpp>
+
+#include <silkworm/node/snapshot/settings.hpp>
+
+namespace silkworm::cmd::common {
+
+//! \brief Setup options to populate snapshot settings after cli.parse()
+void add_snapshot_options(CLI::App& cli, SnapshotSettings& snapshot_settings);
+
+}  // namespace silkworm::cmd::common

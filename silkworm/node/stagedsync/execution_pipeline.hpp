@@ -23,7 +23,7 @@
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/infra/common/asio_timer.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
-#include <silkworm/node/stagedsync/stage.hpp>
+#include <silkworm/node/stagedsync/stages/stage.hpp>
 
 namespace silkworm::stagedsync {
 

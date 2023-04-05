@@ -1,4 +1,4 @@
-#[[
+/*
    Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,12 +12,24 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-include(hunter_cmake_args)
+#pragma once
 
-hunter_config(
-  ethash
-  VERSION 0.9.0
-  CMAKE_ARGS ETHASH_BUILD_ETHASH=ON ETHASH_BUILD_GLOBAL_CONTEXT=OFF ETHASH_BUILD_TESTS=OFF
-)
+#include <silkworm/node/stagedsync/stages/stage.hpp>
+
+namespace silkworm::stagedsync {
+
+class Finish : public Stage {
+  public:
+    explicit Finish(NodeSettings* node_settings, SyncContext* sync_context)
+        : Stage(sync_context, db::stages::kFinishKey, node_settings){};
+    ~Finish() override = default;
+
+    Stage::Result forward(db::RWTxn& txn) final;
+    Stage::Result unwind(db::RWTxn& txn) final;
+
+    // Finish does not prune.
+    Stage::Result prune(db::RWTxn&) final { return Stage::Result::kSuccess; };
+};
+}  // namespace silkworm::stagedsync

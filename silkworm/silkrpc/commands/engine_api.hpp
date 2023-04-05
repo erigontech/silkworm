@@ -33,6 +33,8 @@ class RequestHandler;
 
 namespace silkworm::rpc::commands {
 
+using boost::asio::awaitable;
+
 class EngineRpcApi {
   public:
     explicit EngineRpcApi(std::unique_ptr<ethdb::Database>& database, std::unique_ptr<ethbackend::BackEnd>& backend)
@@ -43,10 +45,10 @@ class EngineRpcApi {
     EngineRpcApi& operator=(const EngineRpcApi&) = delete;
 
   protected:
-    boost::asio::awaitable<void> handle_engine_get_payload_v1(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_engine_new_payload_v1(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_engine_forkchoice_updated_v1(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_engine_exchange_transition_configuration_v1(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_engine_get_payload_v1(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_engine_new_payload_v1(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_engine_forkchoice_updated_v1(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_engine_exchange_transition_configuration_v1(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
     std::unique_ptr<ethbackend::BackEnd>& backend_;

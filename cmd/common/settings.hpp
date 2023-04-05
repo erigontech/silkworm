@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,16 +16,19 @@
 
 #pragma once
 
-/*
- * Decisions about concurrent containers
- */
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/rpc/server/server_config.hpp>
+#include <silkworm/node/common/settings.hpp>
+#include <silkworm/node/snapshot/settings.hpp>
 
-#include <silkworm/infra/concurrency/thread_safe_queue.hpp>
+namespace silkworm::cmd::common {
 
-namespace silkworm {
+//! The overall settings for Silkworm Core component
+struct SilkwormCoreSettings {
+    silkworm::log::Settings log_settings;
+    silkworm::NodeSettings node_settings;
+    silkworm::rpc::ServerConfig server_settings;
+    SnapshotSettings snapshot_settings;
+};
 
-template <typename T>
-using ConcurrentQueue =
-    ThreadSafeQueue<T>;  // todo: use a better alternative from a known library (Intel oneTBB concurrent_queue<T>?)
-
-}  // namespace silkworm
+}  // namespace silkworm::cmd::common

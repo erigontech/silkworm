@@ -21,7 +21,7 @@
 #include <silkworm/core/consensus/engine.hpp>
 #include <silkworm/core/execution/analysis_cache.hpp>
 #include <silkworm/core/execution/evm.hpp>
-#include <silkworm/node/stagedsync/stage.hpp>
+#include <silkworm/node/stagedsync/stages/stage.hpp>
 
 namespace silkworm::stagedsync {
 

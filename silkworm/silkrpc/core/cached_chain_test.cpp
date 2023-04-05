@@ -285,7 +285,11 @@ TEST_CASE("read_block_by_transaction_hash") {
         const auto transaction_hash{0x18dcb90e76b61fe6f37c9a9cd269a66188c05af5f7a62c50ff3246c6e207dc6d_bytes32};
         EXPECT_CALL(db_reader, get_one(db::table::kTxLookup, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> { co_return Bytes{}; }));
         auto result = boost::asio::co_spawn(pool, read_block_by_transaction_hash(cache, db_reader, transaction_hash), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::invalid_argument);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::invalid_argument, Message("empty block number value in read_block_by_transaction_hash"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("invalid block header number") {
@@ -300,7 +304,11 @@ TEST_CASE("read_block_by_transaction_hash") {
         EXPECT_CALL(db_reader, get_one(db::table::kTxLookup, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> { co_return *silkworm::from_hex("3D0900"); }));
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> { co_return Bytes{}; }));
         auto result = boost::asio::co_spawn(pool, read_block_by_transaction_hash(cache, db_reader, transaction_hash), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::invalid_argument);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::invalid_argument, Message("empty block hash value in read_canonical_block_hash"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("block header not found") {
@@ -309,7 +317,11 @@ TEST_CASE("read_block_by_transaction_hash") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> { co_return kBlockHash; }));
         EXPECT_CALL(db_reader, get_one(db::table::kHeaders, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> { co_return Bytes{}; }));
         auto result = boost::asio::co_spawn(pool, read_block_by_transaction_hash(cache, db_reader, transaction_hash), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::runtime_error);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::runtime_error, Message("empty block header RLP in read_header"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("block body not found") {
@@ -319,7 +331,11 @@ TEST_CASE("read_block_by_transaction_hash") {
         EXPECT_CALL(db_reader, get_one(db::table::kHeaders, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> { co_return kHeader; }));
         EXPECT_CALL(db_reader, get_one(db::table::kBlockBodies, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> { co_return Bytes{}; }));
         auto result = boost::asio::co_spawn(pool, read_block_by_transaction_hash(cache, db_reader, transaction_hash), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::runtime_error);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::runtime_error, Message("empty block body RLP in read_body"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("block found and matching") {
@@ -344,7 +360,11 @@ TEST_CASE("read_transaction_by_hash") {
         const auto transaction_hash{0x18dcb90e76b61fe6f37c9a9cd269a66188c05af5f7a62c50ff3246c6e207dc6d_bytes32};
         EXPECT_CALL(db_reader, get_one(db::table::kTxLookup, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> { co_return Bytes{}; }));
         auto result = boost::asio::co_spawn(pool, read_transaction_by_hash(cache, db_reader, transaction_hash), boost::asio::use_future);
+#ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
+        CHECK_THROWS_AS(result.get(), std::invalid_argument);
+#else
         CHECK_THROWS_MATCHES(result.get(), std::invalid_argument, Message("empty block number value in read_block_by_transaction_hash"));
+#endif  // SILKWORM_SANITIZE
     }
 
     SECTION("invalid block header number") {

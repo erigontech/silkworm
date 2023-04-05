@@ -899,7 +899,6 @@ void make_glaze_json_error(std::string& reply, uint32_t id, const RevertError& e
     glaze_json_revert.id = id;
     glaze_json_revert.revert_data.code = error.code;
     std::strncpy(glaze_json_revert.revert_data.message, error.message.c_str(), error.message.size() > errorMessageSize ? errorMessageSize : error.message.size() + 1);
-    // strcpy(glaze_json_revert.revert_data.message, error.message.c_str());
     glaze_json_revert.revert_data.data = "0x" + silkworm::to_hex(error.data);
     glz::write_json(glaze_json_revert, reply);
 }

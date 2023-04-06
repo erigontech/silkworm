@@ -529,8 +529,8 @@ int main(int argc, char* argv[]) {
             node_settings.chain_config.value(),
         };
         auto sync_sentry_client_stats_receiving_loop = silkworm::concurrency::async_thread(
-            [&sentry = sync_sentry_client]() { sentry.stats_receiving_loop(); },
-            [&sentry = sync_sentry_client]() { sentry.stop(); });
+            [&sentry_client = sync_sentry_client]() { sentry_client.stats_receiving_loop(); },
+            [&sentry_client = sync_sentry_client]() { sentry_client.stop(); });
 
         // BlockExchange - download headers and bodies from remote peers using the sentry
         BlockExchange block_exchange{sync_sentry_client, db::ROAccess{chaindata_db}, node_settings.chain_config.value()};

@@ -503,7 +503,7 @@ int main(int argc, char* argv[]) {
         silkworm::rpc::BackEndKvServer rpc_server{settings.server_settings, backend};
 
         // Sentry
-        std::optional<silkworm::sentry::Sentry> sentry;
+        std::optional<silkworm::sentry::Sentry> sentry_server;
         if (node_settings.external_sentry_addr.empty()) {
             silkworm::sentry::Settings sentry_settings = std::move(settings.sentry_settings);
             sentry_settings.data_dir_path = node_settings.data_directory->path();
@@ -512,13 +512,13 @@ int main(int argc, char* argv[]) {
             // TODO: uncomment when sync_sentry_client is refactored to use the sentry client
             // sentry_settings.api_address = "";
 
-            sentry.emplace(std::move(sentry_settings), context_pool);
+            sentry_server.emplace(std::move(sentry_settings), context_pool);
             // TODO: remove when sync_sentry_client is refactored to use the sentry client
             node_settings.external_sentry_addr = "127.0.0.1:9091";
         }
-        auto embedded_sentry_run_if_needed = [&sentry]() -> boost::asio::awaitable<void> {
-            if (sentry) {
-                co_await sentry->run();
+        auto embedded_sentry_run_if_needed = [&sentry_server]() -> boost::asio::awaitable<void> {
+            if (sentry_server) {
+                co_await sentry_server->run();
             }
         };
 

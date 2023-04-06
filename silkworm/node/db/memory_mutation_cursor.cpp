@@ -212,7 +212,20 @@ CursorResult MemoryMutationCursor::find(const Slice& key) {
 }
 
 CursorResult MemoryMutationCursor::find(const Slice& key, bool throw_notfound) {
-    return CursorResult{key, {}, throw_notfound};
+    if (is_table_cleared()) {
+        return memory_cursor_->find(key);
+    }
+
+    const auto memory_result = memory_cursor_->find(key, false);
+
+    auto db_result = cursor_->find(key, false);
+    if (db_result.key && is_entry_deleted(db_result.key)) {
+        db_result = next_on_db(NextType::kNormal, throw_notfound);
+    }
+
+    const auto result = resolve_priority(memory_result, db_result, NextType::kNormal);
+    if (!result.done && throw_notfound) throw_error_notfound();
+    return result;
 }
 
 CursorResult MemoryMutationCursor::lower_bound(const Slice& key) {
@@ -304,13 +317,13 @@ CursorResult MemoryMutationCursor::to_current_next_multi(bool throw_notfound) {
         const auto db_result = next_on_db(NextType::kDup, false);
 
         const auto result = resolve_priority(current_memory_entry_, db_result, NextType::kDup);
-        if (!result.done) return throw_or_error_result(throw_notfound);
+        if (!result.done && throw_notfound) throw_error_notfound();
         return result;
     } else {
         const auto memory_result = memory_cursor_->to_current_next_multi(false);
 
         const auto result = resolve_priority(memory_result, current_db_entry_, NextType::kDup);
-        if (!result.done) return throw_or_error_result(throw_notfound);
+        if (!result.done && throw_notfound) throw_error_notfound();
         return result;
     }
 }
@@ -336,13 +349,13 @@ CursorResult MemoryMutationCursor::to_next_first_multi(bool throw_notfound) {
         const auto db_result = next_on_db(NextType::kNoDup, false);
 
         const auto result = resolve_priority(current_memory_entry_, db_result, NextType::kNoDup);
-        if (!result.done) return throw_or_error_result(throw_notfound);
+        if (!result.done && throw_notfound) throw_error_notfound();
         return result;
     } else {
         const auto memory_result = memory_cursor_->to_next_first_multi(false);
 
         const auto result = resolve_priority(memory_result, current_db_entry_, NextType::kNoDup);
-        if (!result.done) return throw_or_error_result(throw_notfound);
+        if (!result.done && throw_notfound) throw_error_notfound();
         return result;
     }
 }
@@ -471,6 +484,9 @@ CursorResult MemoryMutationCursor::next_by_type(MemoryMutationCursor::NextType t
         case NextType::kNoDup: {
             return cursor_->to_next_first_multi(throw_notfound);
         }
+        default: {  // Avoid GCC complaining w/ error: control reaches end of non-void function
+            return CursorResult{{}, {}, false};
+        }
     }
 }
 
@@ -541,13 +557,6 @@ void MemoryMutationCursor::throw_error_nodata() {
 
 void MemoryMutationCursor::throw_error_notfound() {
     mdbx::error::throw_exception(MDBX_error_t::MDBX_NOTFOUND);
-}
-
-CursorResult MemoryMutationCursor::throw_or_error_result(bool throw_notfound) {
-    if (throw_notfound) {
-        throw_error_notfound();
-    }
-    return CursorResult{{}, {}, false};
 }
 
 }  // namespace silkworm::db

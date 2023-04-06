@@ -21,6 +21,7 @@
 #include <vector>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/node/db/tables.hpp>
 #include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
@@ -28,11 +29,8 @@
 #include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/receipts.hpp>
 #include <silkworm/silkrpc/core/state_reader.hpp>
-#include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
-#include <silkworm/silkrpc/types/log.hpp>
-#include <silkworm/silkrpc/types/receipt.hpp>
 
 namespace silkworm::rpc::commands {
 
@@ -115,7 +113,7 @@ awaitable<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::js
         if (!account) throw std::domain_error{"account not found"};
 
         silkworm::Bytes seek_bytes = silkworm::db::storage_prefix(full_view(address), account->incarnation);
-        const auto cursor = co_await tx->cursor_dup_sort(db::table::kPlainState);
+        const auto cursor = co_await tx->cursor_dup_sort(db::table::kPlainStateName);
         SILKRPC_TRACE << "ParityRpcApi::handle_parity_list_storage_keys cursor id: " << cursor->cursor_id() << "\n";
         silkworm::Bytes seek_val = offset ? offset.value() : silkworm::Bytes{};
 

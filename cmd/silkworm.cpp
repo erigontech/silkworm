@@ -200,7 +200,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
     // RPC server options
     auto& server_settings = settings.server_settings;
 
-    concurrency::ContextPoolSettings context_pool_settings;
+    silkworm::concurrency::ContextPoolSettings context_pool_settings;
     add_context_pool_options(cli, context_pool_settings);
 
     // Snapshot&Bittorrent options
@@ -528,7 +528,7 @@ int main(int argc, char* argv[]) {
             db::ROAccess{chaindata_db},
             node_settings.chain_config.value(),
         };
-        auto sync_sentry_client_stats_receiving_loop = concurrency::async_thread(
+        auto sync_sentry_client_stats_receiving_loop = silkworm::concurrency::async_thread(
             [&sentry = sync_sentry_client]() { sentry.stats_receiving_loop(); },
             [&sentry = sync_sentry_client]() { sentry.stop(); });
 

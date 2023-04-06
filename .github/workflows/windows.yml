@@ -33,7 +33,7 @@ jobs:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
 
     env:
-      CONAN_USER_HOME: "${{ github.workspace }}/conan/"
+      CONAN_USER_HOME: "${{ runner.temp }}"
       SILKWORM_BUILD_DIR: "C:/build"
 
     steps:
@@ -52,14 +52,14 @@ jobs:
     - name: Conan version
       run: echo "${{ steps.install-conan.outputs.version }}"
 
-    - name: Restore Conan cache
+    - name: Restore Conan 1.x packages from GitHub Cache
       id: github-cache-conan
       uses: actions/cache@v3
       env:
         cache-name: cache-conan-modules
       with:
-        path: ${{ env.CONAN_USER_HOME }}
-        key: host-${{ runner.os }}-target-${{ runner.os }}-${{ hashFiles('conanfile.txt') }}
+        path: ${{ env.CONAN_USER_HOME }}/.conan/data
+        key: conan-data-${{ runner.os }}-${{ hashFiles('conanfile.txt') }}
 
     - name: VCPKG packages
       uses: johnwason/vcpkg-action@v4

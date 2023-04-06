@@ -91,7 +91,6 @@ class MemoryMutationCursor : public RWCursorDupSort {
   private:
     static inline void throw_error_nodata();
     static inline void throw_error_notfound();
-    static inline CursorResult throw_or_error_result(bool throw_notfound);
 
     enum class NextType {
         kNormal,

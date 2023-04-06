@@ -33,7 +33,7 @@ jobs:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
 
     env:
-      CONAN_USER_HOME: ${{ runner.temp }}
+      CONAN_USER_HOME: ${{ github.workspace }}
       SILKWORM_BUILD_DIR: "C:/build"
 
     steps:

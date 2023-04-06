@@ -29,6 +29,7 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/db/util.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
@@ -40,7 +41,6 @@
 #include <silkworm/silkrpc/core/state_reader.hpp>
 #include <silkworm/silkrpc/core/storage_walker.hpp>
 #include <silkworm/silkrpc/ethdb/kv/cached_database.hpp>
-#include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
@@ -538,7 +538,7 @@ awaitable<std::set<evmc::address>> get_modified_accounts(ethdb::TransactionDatab
         const auto key = silkworm::db::block_key(start_block_number);
         SILKRPC_TRACE << "Ready to walk starting from key: " << silkworm::to_hex(key) << "\n";
 
-        co_await tx_database.walk(db::table::kPlainAccountChangeSet, key, 0, walker);
+        co_await tx_database.walk(db::table::kAccountChangeSetName, key, 0, walker);
     }
 
     co_return addresses;

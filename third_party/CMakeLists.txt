@@ -14,8 +14,11 @@
    limitations under the License.
 ]]
 
+include(ExternalProject)
+
 # evmone with dependencies
 add_subdirectory(intx)
+
 option(ETHASH_BUILD_GLOBAL_CONTEXT "" OFF)
 add_subdirectory(ethash)
 
@@ -80,7 +83,6 @@ if(NOT MSVC)
       CACHE FILEPATH ""
       )
 
-  include(ExternalProject)
   ExternalProject_Add(
       gmplib
       SOURCE_DIR "${GMP_SOURCE_DIR}"
@@ -140,6 +142,36 @@ add_subdirectory(libff)
 if(NOT MSVC)
   add_dependencies(ff gmplib)
 endif()
+
+# BLST
+set(BLST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/blst)
+if(SILKWORM_WASM_API)
+  set(BLST_BUILD_SCRIPT ./build.sh CC=/opt/wasi-sdk/bin/clang -D__BLST_PORTABLE__)
+  set(BLST_LIB libblst.a)
+elseif(MSVC)
+  set(BLST_BUILD_SCRIPT build.bat)
+  set(BLST_LIB blst.lib)
+else()
+  set(BLST_BUILD_SCRIPT ./build.sh)
+  set(BLST_LIB libblst.a)
+endif()
+
+ExternalProject_Add(
+  blst_build
+  SOURCE_DIR ${BLST_DIR}
+  CONFIGURE_COMMAND ""
+  BUILD_COMMAND ${BLST_BUILD_SCRIPT}
+  BUILD_IN_SOURCE 1
+  BUILD_BYPRODUCTS ${BLST_DIR}/${BLST_LIB}
+  INSTALL_COMMAND ""
+)
+
+add_library(blst STATIC IMPORTED GLOBAL)
+add_dependencies(blst blst_build)
+set_target_properties(blst PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES ${BLST_DIR}/bindings
+  IMPORTED_LOCATION ${BLST_DIR}/${BLST_LIB}
+)
 
 if(NOT SILKWORM_CORE_ONLY)
   # Roaring Bitmaps

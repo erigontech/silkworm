@@ -23,7 +23,6 @@
 #include <catch2/catch.hpp>
 #include <gmock/gmock.h>
 
-#include <silkworm/core/execution/precompile.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/test/context_test_base.hpp>
@@ -105,12 +104,11 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
                 co_return Bytes{};
             }));
 
-        evmc::address max_precompiled{};
-        max_precompiled.bytes[silkworm::kAddressLength - 1] = silkworm::precompile::kNumOfIstanbulContracts;
+        evmc::address blake2f_precompile{0x0000000000000000000000000000000000000009_address};
 
         Call call;
         call.from = 0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address;
-        call.to = max_precompiled;
+        call.to = blake2f_precompile;
         call.gas = 50'000;
         call.gas_price = 7;
 

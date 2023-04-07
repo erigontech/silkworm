@@ -27,6 +27,7 @@
 
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
+#include <silkworm/silkrpc/json/types_log.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/call.hpp>
 #include <silkworm/silkrpc/types/chain_config.hpp>
@@ -40,7 +41,6 @@
 #include <silkworm/silkrpc/types/receipt.hpp>
 #include <silkworm/silkrpc/types/syncing_data.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
-#include <silkworm/silkrpc/json/types_log.hpp>
 
 namespace evmc {
 
@@ -76,7 +76,6 @@ inline constexpr auto hashSize = 128;
 inline constexpr auto int64Size = 32;
 inline constexpr auto dataSize = 4096;
 inline constexpr auto ethCallResultFixedSize = 2048;
-
 
 void to_json(nlohmann::json& json, const struct NodeInfo& node_info);
 

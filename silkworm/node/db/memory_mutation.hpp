@@ -44,6 +44,8 @@ class MemoryMutation : public RWTxn {
     MemoryMutation(MemoryOverlay& memory_db, ROTxn* txn);
     ~MemoryMutation() override;
 
+    MemoryMutation(MemoryMutation&& other) noexcept = default;  // Movable
+
     [[nodiscard]] bool is_table_cleared(const std::string& table) const;
     [[nodiscard]] bool is_entry_deleted(const std::string& table, const Slice& key) const;
     [[nodiscard]] bool has_map(const std::string& bucket_name) const;

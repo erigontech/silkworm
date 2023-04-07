@@ -100,10 +100,10 @@ class ResourceUsageLog : public ActiveComponent {
             auto now = steady_clock::now();
             if (now - last_update > 300s) {
                 sw_log::Info("Resource usage",
-                          {"mem", human_size(get_mem_usage()),
-                           "chain", human_size(node_settings_.data_directory->chaindata().size()),
-                           "etl-tmp", human_size(node_settings_.data_directory->etl().size()),
-                           "uptime", StopWatch::format(now - start_time)});
+                             {"mem", human_size(get_mem_usage()),
+                              "chain", human_size(node_settings_.data_directory->chaindata().size()),
+                              "etl-tmp", human_size(node_settings_.data_directory->etl().size()),
+                              "uptime", StopWatch::format(now - start_time)});
                 last_update = now;
             }
         }
@@ -275,8 +275,8 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
 
     node_settings.prune_mode =
         sw_db::parse_prune_mode(prune_mode,  //
-                             olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces, beforeHistory,
-                             beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
+                                olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces, beforeHistory,
+                                beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
 
     server_settings.set_address_uri(node_settings.private_api_addr);
     server_settings.set_context_pool_settings(context_pool_settings);
@@ -423,7 +423,7 @@ void run_preflight_checklist(NodeSettings& node_settings, bool init_if_empty = t
             throw std::runtime_error("Could not load genesis hash");
 
         sw_log::Message("Starting Silkworm", {"chain", (known_chain.has_value() ? known_chain->first : "unknown/custom"),
-                                           "config", node_settings.chain_config->to_json().dump()});
+                                              "config", node_settings.chain_config->to_json().dump()});
     }
 
     // Detect prune-mode and verify is compatible
@@ -494,7 +494,7 @@ int main(int argc, char* argv[]) {
         auto mdbx_ver{mdbx::get_version()};
         auto mdbx_bld{mdbx::get_build()};
         sw_log::Message("libmdbx",
-                     {"version", mdbx_ver.git.describe, "build", mdbx_bld.target, "compiler", mdbx_bld.compiler});
+                        {"version", mdbx_ver.git.describe, "build", mdbx_bld.target, "compiler", mdbx_bld.compiler});
 
         // Check db
         run_preflight_checklist(node_settings);  // Prepare database for takeoff

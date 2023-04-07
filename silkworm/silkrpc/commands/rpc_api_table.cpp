@@ -22,8 +22,6 @@
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/http/methods.hpp>
 
-#define API_WITH_GLAZE 1
-
 namespace silkworm::rpc::commands {
 
 RpcApiTable::RpcApiTable(const std::string& api_spec) {
@@ -129,7 +127,6 @@ void RpcApiTable::add_eth_handlers() {
     method_handlers_[http::method::k_eth_getCode] = &commands::RpcApi::handle_eth_get_code;
     method_handlers_[http::method::k_eth_getTransactionCount] = &commands::RpcApi::handle_eth_get_transaction_count;
     method_handlers_[http::method::k_eth_getStorageAt] = &commands::RpcApi::handle_eth_get_storage_at;
-    method_handlers_[http::method::k_eth_call] = &commands::RpcApi::handle_eth_call;
     method_handlers_[http::method::k_eth_callBundle] = &commands::RpcApi::handle_eth_call_bundle;
     method_handlers_[http::method::k_eth_createAccessList] = &commands::RpcApi::handle_eth_create_access_list;
     method_handlers_[http::method::k_eth_newFilter] = &commands::RpcApi::handle_eth_new_filter;
@@ -151,13 +148,11 @@ void RpcApiTable::add_eth_handlers() {
     method_handlers_[http::method::k_eth_subscribe] = &commands::RpcApi::handle_eth_subscribe;
     method_handlers_[http::method::k_eth_unsubscribe] = &commands::RpcApi::handle_eth_unsubscribe;
     method_handlers_[http::method::k_eth_getBlockReceipts] = &commands::RpcApi::handle_parity_get_block_receipts;
+    // method_handlers_glaze_[http::method::k_eth_call] = &commands::RpcApi::handle_eth_call_original;
 
-    if (API_WITH_GLAZE) {
-        // GLAZE
-        method_handlers_glaze_[http::method::k_eth_getLogs] = &commands::RpcApi::handle_eth_glaze_get_logs;
-    } else {
-        method_handlers_[http::method::k_eth_getLogs] = &commands::RpcApi::handle_eth_get_logs;
-    }
+    // GLAZE methods
+    method_handlers_glaze_[http::method::k_eth_getLogs] = &commands::RpcApi::handle_eth_get_logs;
+    method_handlers_glaze_[http::method::k_eth_call] = &commands::RpcApi::handle_eth_call;
 }
 
 void RpcApiTable::add_net_handlers() {
@@ -218,6 +213,7 @@ void RpcApiTable::add_ots_handlers() {
     method_handlers_[http::method::k_ots_hasCode] = &commands::RpcApi::handle_ots_has_code;
     method_handlers_[http::method::k_ots_getBlockDetails] = &commands::RpcApi::handle_ots_getBlockDetails;
     method_handlers_[http::method::k_ots_getBlockDetailsByHash] = &commands::RpcApi::handle_ots_getBlockDetailsByHash;
+    method_handlers_[http::method::k_ots_getBlockTransactions] = &commands::RpcApi::handle_ots_getBlockTransactions;
 }
 
 }  // namespace silkworm::rpc::commands

@@ -22,6 +22,7 @@
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/silkrpc/consensus/ethash.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
+#include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/core/receipts.hpp>
 #include <silkworm/silkrpc/core/state_reader.hpp>
@@ -101,8 +102,12 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetails(const nlohman
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto block_hash = co_await core::rawdb::read_canonical_block_hash(tx_database, block_number);
         const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_hash, block_number);
-        const auto block_with_hash = co_await core::rawdb::read_block_by_hash(tx_database, block_hash);
-        const BlockDetails block_details{block_hash, block_with_hash.block.header, total_difficulty, block_with_hash.block.transactions.size() - 2, block_with_hash.block.ommers};
+        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
+
+        const Block extended_block{block_with_hash, total_difficulty, false};
+        auto block_size = extended_block.get_block_size();
+
+        const BlockDetails block_details{block_size, block_hash, block_with_hash.block.header, total_difficulty, block_with_hash.block.transactions.size(), block_with_hash.block.ommers};
 
         auto receipts = co_await core::get_receipts(tx_database, block_with_hash);
         auto chain_config = co_await core::rawdb::read_chain_config(tx_database);
@@ -147,8 +152,12 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetailsByHash(const n
 
         const auto block_number = co_await read_header_number(tx_database, block_hash);
         const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_hash, block_number);
-        const auto block_with_hash = co_await core::rawdb::read_block_by_hash(tx_database, block_hash);
-        const BlockDetails block_details{block_hash, block_with_hash.block.header, total_difficulty, block_with_hash.block.transactions.size() - 2, block_with_hash.block.ommers};
+        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
+
+        const Block extended_block{block_with_hash, total_difficulty, false};
+        auto block_size = extended_block.get_block_size();
+
+        const BlockDetails block_details{block_size, block_hash, block_with_hash.block.header, total_difficulty, block_with_hash.block.transactions.size(), block_with_hash.block.ommers};
 
         auto receipts = co_await core::get_receipts(tx_database, block_with_hash);
         auto chain_config = co_await core::rawdb::read_chain_config(tx_database);
@@ -159,6 +168,72 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetailsByHash(const n
         const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
 
         reply = make_json_content(request["id"], block_details_response);
+    } catch (const std::invalid_argument& iv) {
+        SILKRPC_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump() << "\n";
+        reply = make_json_content(request["id"], {});
+    } catch (const std::exception& e) {
+        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+    co_return;
+}
+
+boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockTransactions(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request["params"];
+    if (params.size() != 3) {
+        auto error_msg = "invalid ots_getBlockTransactions params: " + params.dump();
+        SILKRPC_ERROR << error_msg << "\n";
+        reply = make_json_error(request["id"], 100, error_msg);
+        co_return;
+    }
+
+    const auto block_id = params[0].get<std::string>();
+    const auto page_number = params[1].get<std::size_t>();
+    const auto page_size = params[2].get<std::size_t>();
+
+    SILKRPC_DEBUG << "block_id: " << block_id << " page_number: " << page_number << " page_size: " << page_size << "\n";
+
+    auto tx = co_await database_->begin();
+
+    try {
+        ethdb::TransactionDatabase tx_database{*tx};
+
+        const auto block_number = co_await core::get_block_number(block_id, tx_database);
+        auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
+        const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_with_hash.hash, block_number);
+        auto receipts = co_await core::get_receipts(tx_database, block_with_hash);
+
+        const Block extended_block{block_with_hash, total_difficulty, false};
+        auto block_size = extended_block.get_block_size();
+
+        auto transaction_count = block_with_hash.block.transactions.size();
+
+        BlockTransactionsResponse block_transactions{block_size, block_with_hash.hash, block_with_hash.block.header, total_difficulty, transaction_count, block_with_hash.block.ommers};
+
+        auto page_end = block_with_hash.block.transactions.size() - (page_size * page_number);
+
+        if (page_end > block_with_hash.block.transactions.size()) {
+            page_end = 0;
+        }
+
+        auto page_start = page_end - page_size;
+
+        if (page_start > page_end) {
+            page_start = 0;
+        }
+
+        for (auto i = page_start; i < page_end; i++) {
+            block_transactions.receipts.push_back(receipts.at(i));
+            block_transactions.transactions.push_back(block_with_hash.block.transactions.at(i));
+        }
+
+        reply = make_json_content(request["id"], block_transactions);
+
     } catch (const std::invalid_argument& iv) {
         SILKRPC_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump() << "\n";
         reply = make_json_content(request["id"], {});
@@ -202,12 +277,12 @@ intx::uint256 OtsRpcApi::get_block_fees(const ChainConfig& chain_config, const s
 
         intx::uint256 effective_gas_price;
         if (config.london_block && block_number >= config.london_block.value()) {
-            intx::uint256 base_fee = block.block.header.base_fee_per_gas.value();
+            intx::uint256 base_fee = block.block.header.base_fee_per_gas.value_or(0);
             intx::uint256 gas_price = txn.effective_gas_price(base_fee);
             effective_gas_price = base_fee + gas_price;
 
         } else {
-            intx::uint256 base_fee = block.block.header.base_fee_per_gas.value();
+            intx::uint256 base_fee = block.block.header.base_fee_per_gas.value_or(0);
             effective_gas_price = txn.effective_gas_price(base_fee);
         }
 

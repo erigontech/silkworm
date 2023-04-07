@@ -21,6 +21,7 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -66,6 +67,10 @@ class ByteView : public std::basic_string_view<uint8_t> {
     constexpr ByteView(const evmc::address& address) noexcept : ByteView{address.bytes} {}
 
     constexpr ByteView(const evmc::bytes32& hash) noexcept : ByteView{hash.bytes} {}
+
+    template <std::size_t Extent>
+    constexpr ByteView(std::span<const uint8_t, Extent> span) noexcept
+        : std::basic_string_view<uint8_t>{span.data(), span.size()} {}
 
     [[nodiscard]] bool is_null() const noexcept { return data() == nullptr; }
 };

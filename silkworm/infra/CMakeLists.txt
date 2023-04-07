@@ -40,13 +40,13 @@ target_include_directories(
 )
 
 set(LIBS_PUBLIC
+    silkworm_core
+    silkworm_interfaces
     absl::strings
     asio-grpc::asio-grpc
     Boost::headers
     Boost::thread
     gRPC::grpc++
-    silkworm_core
-    silkworm_interfaces
 )
 
 # cmake-format: off

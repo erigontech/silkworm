@@ -113,6 +113,30 @@ TEST_CASE("MemoryMutation", "[silkworm][node][db][memory_mutation]") {
         CHECK_NOTHROW(mutation.has_map(kTestMultiMap.name));
         CHECK_NOTHROW(!mutation.has_map(kTestNonexistentMap.name));
     }
+
+    SECTION("Erase key in nonempty mutation") {
+        MemoryMutation mutation{overlay, &main_rw_txn};
+        open_map(mutation, kTestMap);
+        open_map(mutation, kTestMultiMap);
+
+        const auto mutation_cursor = mutation.rw_cursor(kTestMap);
+        mutation_cursor->upsert("key1", "value1");
+        mutation_cursor->upsert("key2", "value2");
+        CHECK(mutation_cursor->seek("key1"));
+        CHECK(mutation_cursor->seek("key2"));
+        mutation.erase(kTestMap, "key2");
+        CHECK(mutation_cursor->seek("key1"));
+        CHECK(!mutation_cursor->seek("key2"));
+
+        const auto mutation_cursor_dupsort = mutation.rw_cursor_dup_sort(kTestMultiMap);
+        mutation_cursor_dupsort->upsert("key1", "value1");
+        mutation_cursor_dupsort->upsert("key2", "value2");
+        CHECK(mutation_cursor_dupsort->seek("key1"));
+        CHECK(mutation_cursor_dupsort->seek("key2"));
+        mutation.erase(kTestMultiMap, "key2");
+        CHECK(mutation_cursor_dupsort->seek("key1"));
+        CHECK(!mutation_cursor_dupsort->seek("key2"));
+    }
 }
 
 }  // namespace silkworm::db

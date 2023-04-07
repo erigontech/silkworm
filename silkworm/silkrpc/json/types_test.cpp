@@ -49,10 +49,37 @@ TEST_CASE("convert zero uint256 to quantity", "[silkrpc][to_quantity]") {
     CHECK(zero_quantity == "0x0");
 }
 
+TEST_CASE("convert zero uint256 to quantity(buff)", "[silkrpc][to_quantity]") {
+    intx::uint256 zero_u256{0};
+    char zero_quantity[64];
+    to_quantity(zero_quantity, zero_u256);
+    CHECK(strcmp(zero_quantity, "0x0") == 0);
+}
+
 TEST_CASE("convert positive uint256 to quantity", "[silkrpc][to_quantity]") {
     intx::uint256 positive_u256{100};
     const auto positive_quantity = to_quantity(positive_u256);
     CHECK(positive_quantity == "0x64");
+}
+
+TEST_CASE("convert positive uint256 to quantity(buff)", "[silkrpc][to_quantity]") {
+    intx::uint256 positive_u256{100};
+    char positive_quantity[64];
+    to_quantity(positive_quantity, positive_u256);
+    CHECK(strcmp(positive_quantity, "0x64") == 0);
+}
+
+TEST_CASE("serialize empty address using to_hex(char *)", "[silkrpc][to_json]") {
+    evmc::address address{};
+    char address_zero[64];
+    to_hex(address_zero, address);
+    CHECK(strcmp(address_zero, "0x0000000000000000000000000000000000000000") == 0);
+}
+
+TEST_CASE("serialize empty address using to_hex(char *) small buffer", "[silkrpc][to_json]") {
+    evmc::address address{};
+    char address_zero[10];
+    CHECK_THROWS(to_hex(address_zero, address));
 }
 
 TEST_CASE("serialize empty address", "[silkrpc][to_json]") {
@@ -1774,6 +1801,47 @@ TEST_CASE("make empty json error", "[silkworm::json][make_json_error]") {
         "id":0,
         "error":{"code":0,"message":""}
     })"_json);
+}
+
+TEST_CASE("make glaze json error", "[make_glaze_json_error]") {
+    std::string json;
+    make_glaze_json_error(json, 1, 3, "generic_error");
+    CHECK(strcmp(json.c_str(),
+                 "{\"jsonrpc\":\"2.0\",\
+                  \"id\":1,\
+                   \"error\":{\"code\":3,\"message\":\"generic_error\"}}"));
+}
+
+TEST_CASE("make glaze json error (Revert)", "[make_glaze_json_error]") {
+    std::string json;
+    const char* data_hex{"c68341b58302c0"};
+    silkworm::Bytes data_bytes{*silkworm::from_hex(data_hex)};
+    make_glaze_json_error(json, 1, RevertError{{3, "generic_error"}, data_bytes});
+    CHECK(strcmp(json.c_str(),
+                 "{\"jsonrpc\":\"2.0\",\
+                  \"id\":1,\
+                   \"error\":{\"code\":3,\"message\":\"generic_error\",\"data\": \"0xc68341b58302c0\"}}"));
+}
+
+TEST_CASE("make glaze content (data)", "[make_glaze_json_error]") {
+    std::string json;
+    const char* data_hex{"c68341b58302d066"};
+    silkworm::Bytes data_bytes{*silkworm::from_hex(data_hex)};
+    make_glaze_json_content(json, 1, data_bytes);
+    CHECK(strcmp(json.c_str(),
+                 "{\"jsonrpc\":\"2.0\",\
+                  \"id\":1,\
+                   \"result\":\"0xc68341b58302d066\"}"));
+}
+
+TEST_CASE("make empty glaze Log", "[make_glaze_content(Log)]") {
+    std::string json;
+    std::vector<Log> log{};
+    make_glaze_json_content(json, 1, log);
+    CHECK(strcmp(json.c_str(),
+                 "[{\"jsonrpc\":\"2.0\",\
+                  \"id\":1,\
+                   \"result\":[]}]"));
 }
 
 TEST_CASE("make empty json revert error", "[silkworm::json][make_json_error]") {

@@ -519,12 +519,22 @@ bool PooledCursor::erase(const Slice& key, const Slice& value) {
 bool has_map(::mdbx::txn& tx, const char* map_name) {
     try {
         ::mdbx::map_handle main_map{1};
-        auto main_crs{tx.open_cursor(main_map)};
-        auto found{main_crs.seek(::mdbx::slice(map_name))};
+        auto main_cursor{tx.open_cursor(main_map)};
+        auto found{main_cursor.seek(::mdbx::slice(map_name))};
         return found;
     } catch (const std::exception&) {
         return false;
     }
+}
+
+std::vector<std::string> list_maps(::mdbx::txn& tx, bool throw_notfound) {
+    std::vector<std::string> map_names;
+    ::mdbx::map_handle main_map{1};
+    auto main_cursor{tx.open_cursor(main_map)};
+    for (auto it{main_cursor.to_first(throw_notfound)}; it.done; it = main_cursor.to_next(throw_notfound)) {
+        map_names.push_back(it.key.as_string());
+    }
+    return map_names;
 }
 
 size_t cursor_for_each(ROCursor& cursor, WalkFuncRef walker, const CursorMoveDirection direction) {

@@ -93,6 +93,8 @@ void to_json(nlohmann::json& json, const Block& b);
 
 void to_json(nlohmann::json& json, const BlockDetailsResponse& b);
 
+void to_json(nlohmann::json& json, const BlockTransactionsResponse& b);
+
 void to_json(nlohmann::json& json, const Transaction& transaction);
 
 void from_json(const nlohmann::json& json, Call& call);
@@ -133,10 +135,14 @@ void to_json(nlohmann::json& json, const std::set<evmc::address>& addresses);
 
 std::string to_hex_no_leading_zeros(uint64_t number);
 std::string to_hex_no_leading_zeros(silkworm::ByteView bytes);
-
 std::string to_quantity(uint64_t number);
 std::string to_quantity(intx::uint256 number);
 std::string to_quantity(silkworm::ByteView bytes);
+
+void to_quantity(std::span<char> hex_bytes, uint64_t number);
+void to_quantity(std::span<char> hex_bytes, intx::uint256 number);
+void to_quantity(std::span<char> hex_bytes, silkworm::ByteView bytes);
+void to_hex(std::span<char> hex_bytes, silkworm::ByteView bytes);
 
 nlohmann::json make_json_content(uint32_t id);
 nlohmann::json make_json_content(uint32_t id, const nlohmann::json& result);
@@ -145,7 +151,9 @@ nlohmann::json make_json_error(uint32_t id, const RevertError& error);
 
 // GLAZE
 void make_glaze_json_content(std::string& reply, uint32_t id, const Logs& logs);
+void make_glaze_json_content(std::string& reply, uint32_t id, const silkworm::Bytes& call_result);
 void make_glaze_json_error(std::string& reply, uint32_t id, const int error_id, const std::string& message);
+void make_glaze_json_error(std::string& reply, uint32_t id, const RevertError& error);
 
 }  // namespace silkworm::rpc
 

@@ -25,7 +25,6 @@
 #include <silkworm/core/chain/protocol_param.hpp>
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/execution/precompile.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
 
 #include "address.hpp"
@@ -647,12 +646,11 @@ TEST_CASE("Tracing precompiled contract failure") {
     // Execute transaction Deploy contract without code
     evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
 
-    evmc::address max_precompiled{};
-    max_precompiled.bytes[kAddressLength - 1] = precompile::kNumOfIstanbulContracts;
+    evmc::address blake2f_precompile{0x0000000000000000000000000000000000000009_address};
 
     Transaction txn{};
     txn.from = caller;
-    txn.to = max_precompiled;
+    txn.to = blake2f_precompile;
     uint64_t gas{50'000};
 
     CallResult res{evm.execute(txn, gas)};

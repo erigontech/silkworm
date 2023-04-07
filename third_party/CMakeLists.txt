@@ -14,7 +14,14 @@
    limitations under the License.
 ]]
 
+include(ExternalProject)
+
 # evmone with dependencies
+add_subdirectory(intx)
+
+option(ETHASH_BUILD_GLOBAL_CONTEXT "" OFF)
+add_subdirectory(ethash)
+
 if(SILKWORM_WASM_API)
   add_compile_definitions(EVMC_LOADER_MOCK)
 endif()
@@ -53,7 +60,7 @@ target_include_directories(evmone PUBLIC evmone/include evmone/lib)
 target_link_libraries(
   evmone
   PUBLIC evmc intx::intx
-  PRIVATE evmc::instructions
+  PRIVATE evmc::instructions ethash::keccak
 )
 
 if(MSVC)
@@ -70,20 +77,34 @@ if(NOT MSVC)
   set(GMP_INCLUDE_DIR
       "${GMP_INSTALL_DIR}"
       CACHE PATH ""
-  )
+      )
   set(GMP_LIBRARY
       "${GMP_INSTALL_DIR}/lib/libgmp.a"
       CACHE FILEPATH ""
-  )
+      )
 
-  include(ExternalProject)
   ExternalProject_Add(
-    gmplib
-    SOURCE_DIR "${GMP_SOURCE_DIR}"
-    BINARY_DIR "${GMP_INSTALL_DIR}"
-    CONFIGURE_COMMAND "${GMP_SOURCE_DIR}/configure" "--prefix=${GMP_INSTALL_DIR}" --with-pic=yes
-    PREFIX "${GMP_INSTALL_DIR}"
-    BUILD_BYPRODUCTS "${GMP_LIBRARY}"
+      gmplib
+      SOURCE_DIR "${GMP_SOURCE_DIR}"
+      BINARY_DIR "${GMP_INSTALL_DIR}"
+      CONFIGURE_COMMAND "${GMP_SOURCE_DIR}/configure" "--prefix=${GMP_INSTALL_DIR}" --with-pic=yes
+      PREFIX "${GMP_INSTALL_DIR}"
+      BUILD_BYPRODUCTS "${GMP_LIBRARY}"
+  )
+else()
+  find_path(GMP_INCLUDE_DIR NAMES gmp.h)
+  find_library(GMP_LIBRARY mpir)
+  if(GMP_LIBRARY MATCHES ${CMAKE_SHARED_LIBRARY_SUFFIX})
+    set(gmp_library_type SHARED)
+  else()
+    set(gmp_library_type STATIC)
+  endif()
+  message(STATUS "GMP: ${GMP_LIBRARY}, ${GMP_INCLUDE_DIR}")
+  add_library(gmp ${gmp_library_type} IMPORTED)
+  set_target_properties(
+      gmp PROPERTIES
+      IMPORTED_LOCATION ${GMP_LIBRARY}
+      INTERFACE_INCLUDE_DIRECTORIES ${GMP_INCLUDE_DIR}
   )
 endif()
 
@@ -121,6 +142,36 @@ add_subdirectory(libff)
 if(NOT MSVC)
   add_dependencies(ff gmplib)
 endif()
+
+# BLST
+set(BLST_DIR ${CMAKE_CURRENT_SOURCE_DIR}/blst)
+if(SILKWORM_WASM_API)
+  set(BLST_BUILD_SCRIPT ./build.sh CC=/opt/wasi-sdk/bin/clang -D__BLST_PORTABLE__)
+  set(BLST_LIB libblst.a)
+elseif(MSVC)
+  set(BLST_BUILD_SCRIPT build.bat)
+  set(BLST_LIB blst.lib)
+else()
+  set(BLST_BUILD_SCRIPT ./build.sh)
+  set(BLST_LIB libblst.a)
+endif()
+
+ExternalProject_Add(
+  blst_build
+  SOURCE_DIR ${BLST_DIR}
+  CONFIGURE_COMMAND ""
+  BUILD_COMMAND ${BLST_BUILD_SCRIPT}
+  BUILD_IN_SOURCE 1
+  BUILD_BYPRODUCTS ${BLST_DIR}/${BLST_LIB}
+  INSTALL_COMMAND ""
+)
+
+add_library(blst STATIC IMPORTED GLOBAL)
+add_dependencies(blst blst_build)
+set_target_properties(blst PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES ${BLST_DIR}/bindings
+  IMPORTED_LOCATION ${BLST_DIR}/${BLST_LIB}
+)
 
 if(NOT SILKWORM_CORE_ONLY)
   # Roaring Bitmaps

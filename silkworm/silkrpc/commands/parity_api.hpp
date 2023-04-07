@@ -34,6 +34,8 @@ class RequestHandler;
 
 namespace silkworm::rpc::commands {
 
+using boost::asio::awaitable;
+
 class ParityRpcApi {
   public:
     explicit ParityRpcApi(Context& context) : database_(context.database()), context_(context) {}
@@ -43,8 +45,8 @@ class ParityRpcApi {
     ParityRpcApi& operator=(const ParityRpcApi&) = delete;
 
   protected:
-    boost::asio::awaitable<void> handle_parity_get_block_receipts(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_parity_list_storage_keys(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_parity_get_block_receipts(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_parity_list_storage_keys(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
     std::unique_ptr<ethdb::Database>& database_;

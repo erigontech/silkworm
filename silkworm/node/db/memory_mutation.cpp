@@ -16,7 +16,10 @@
 
 #include "memory_mutation.hpp"
 
+#include <gsl/util>
+
 #include <silkworm/infra/common/directories.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/tables.hpp>
 
 #include "memory_mutation_cursor.hpp"
@@ -64,15 +67,16 @@ MemoryMutation::~MemoryMutation() {
     rollback();
 }
 
-bool MemoryMutation::is_table_cleared(const std::string& bucket_name) const {
-    return cleared_tables_.contains(bucket_name);
+bool MemoryMutation::is_table_cleared(const std::string& table) const {
+    return cleared_tables_.contains(table);
 }
 
-bool MemoryMutation::is_entry_deleted(const std::string& bucket_name, const Slice& key) const {
-    if (!deleted_entries_.contains(bucket_name)) {
+bool MemoryMutation::is_entry_deleted(const std::string& table, const Slice& key) const {
+    if (!deleted_entries_.contains(table)) {
         return false;
     }
-    return deleted_entries_.at(bucket_name) == key;
+    const auto& deleted_slices = deleted_entries_.at(table);
+    return deleted_slices.find(key) != deleted_slices.cend();
 }
 
 bool MemoryMutation::has_map(const std::string& bucket_name) const {
@@ -97,6 +101,65 @@ std::unique_ptr<RWCursor> MemoryMutation::rw_cursor(const MapConfig& config) {
 
 std::unique_ptr<RWCursorDupSort> MemoryMutation::rw_cursor_dup_sort(const MapConfig& config) {
     return make_cursor(config);
+}
+
+bool MemoryMutation::erase(const MapConfig& config, const Slice& key) {
+    deleted_entries_[config.name][key] = true;
+    const auto handle{managed_txn_.open_map(config.name, config.key_mode, config.value_mode)};
+    return managed_txn_.erase(handle, key);
+}
+
+bool MemoryMutation::erase(const MapConfig& config, const Slice& key, const Slice& value) {
+    deleted_entries_[config.name][key] = true;
+    const auto handle{managed_txn_.open_map(config.name, config.key_mode, config.value_mode)};
+    return managed_txn_.erase(handle, key, value);
+}
+
+bool MemoryMutation::clear_table(const std::string& table) {
+    cleared_tables_[table] = true;
+    return managed_txn_.clear_map(table.c_str(), /*throw_if_absent=*/false);
+}
+
+void MemoryMutation::flush(db::RWTxn& rw_txn) {
+    // Obliterate buckets that need to be deleted
+    for (const auto& [table, _] : cleared_tables_) {
+        rw_txn->clear_map(table);
+    }
+
+    // Obliterate entries that need to be deleted
+    for (const auto& [table, keys] : this->deleted_entries_) {
+        const auto& table_config = db::table::get_map_config(table.c_str());
+        if (!table_config) {
+            SILK_WARN << "Unknown table " << table << " in memory mutation, ignored";
+            continue;
+        }
+        const auto map_handle = db::open_map(rw_txn, *table_config);
+        for (const auto& [key, _] : keys) {
+            rw_txn->erase(map_handle, key);
+        }
+    }
+
+    // Iterate over each touched bucket and apply changes accordingly
+    const auto tables = db::list_maps(managed_txn_);
+    for (const auto& table : tables) {
+        const auto& table_config = db::table::get_map_config(table.c_str());
+        if (!table_config) {
+            SILK_WARN << "Unknown table " << table << " in memory mutation, ignored";
+            continue;
+        }
+
+        const auto mem_cursor = make_cursor(*table_config);
+        const auto db_cursor = rw_txn.rw_cursor_dup_sort(*table_config);
+
+        auto mem_cursor_result = mem_cursor->to_first(/*throw_notfound =*/false);
+        while (mem_cursor_result.done) {
+            const auto& mem_key = mem_cursor_result.key;
+            const auto& mem_value = mem_cursor_result.value;
+            db_cursor->upsert(mem_key, mem_value);
+
+            mem_cursor_result = mem_cursor->to_next(/*throw_notfound =*/false);
+        }
+    }
 }
 
 void MemoryMutation::rollback() {

@@ -34,9 +34,11 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/crypto/blake2b.h>
 #include <silkworm/core/crypto/ecdsa.h>
+#include <silkworm/core/crypto/kzg.hpp>
 #include <silkworm/core/crypto/rmd160.h>
 #include <silkworm/core/crypto/secp256k1n.hpp>
 #include <silkworm/core/crypto/sha256.h>
+#include <silkworm/core/types/hash.hpp>
 
 namespace silkworm::precompile {
 
@@ -487,6 +489,50 @@ std::optional<Bytes> blake2_f_run(ByteView input) noexcept {
     Bytes out(8 * 8, 0);
     std::memcpy(&out[0], &state.h[0], 8 * 8);
     return out;
+}
+
+uint64_t point_evaluation_gas(ByteView, evmc_revision) noexcept {
+    return 50000;
+}
+
+// https://eips.ethereum.org/EIPS/eip-4844#point-evaluation-precompile
+std::optional<Bytes> point_evaluation_run(ByteView input) noexcept {
+    if (input.length() != 192) {
+        return std::nullopt;
+    }
+
+    std::span<const uint8_t, 32> versioned_hash{&input[0], 32};
+    std::span<const uint8_t, 32> z{&input[32], 32};
+    std::span<const uint8_t, 32> y{&input[64], 32};
+    std::span<const uint8_t, 48> commitment{&input[96], 48};
+    std::span<const uint8_t, 48> proof{&input[144], 48};
+
+    if (kzg_to_versioned_hash(commitment) != ByteView{versioned_hash}) {
+        return std::nullopt;
+    }
+
+    if (!verify_kzg_proof(commitment, z, y, proof)) {
+        return std::nullopt;
+    }
+
+    return from_hex(
+        "0000000000000000000000000000000000000000000000000000000000001000"
+        "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001");
+}
+
+bool is_precompile(const evmc::address& address, evmc_revision rev) noexcept {
+    static_assert(std::size(kContracts) < 256);
+    static constexpr evmc::address kMaxOneByteAddress{0x00000000000000000000000000000000000000ff_address};
+    if (address > kMaxOneByteAddress) {
+        return false;
+    }
+
+    const uint8_t num{address.bytes[kAddressLength - 1]};
+    if (num >= std::size(kContracts) || !kContracts[num]) {
+        return false;
+    }
+
+    return kContracts[num]->added_in <= rev;
 }
 
 }  // namespace silkworm::precompile

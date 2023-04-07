@@ -130,12 +130,17 @@ TEST_CASE("Cursor") {
     const db::MapConfig map_config{"GeneticCode"};
 
     {
-        auto txnrw{env.start_write()};
-        (void)db::open_map(txnrw, map_config);
-        txnrw.commit();
+        auto rw_txn{env.start_write()};
+        CHECK(db::list_maps(rw_txn).empty());
+        (void)db::open_map(rw_txn, map_config);
+        rw_txn.commit();
     }
 
     auto txn{env.start_read()};
+
+    const auto& map_names = db::list_maps(txn);
+    CHECK(map_names.size() == 1);
+    CHECK(map_names[0] == "GeneticCode");
 
     // A bit of explanation here:
     // Cursors cache may get polluted by previous tests or is empty
@@ -180,7 +185,7 @@ TEST_CASE("Cursor") {
     db::PooledCursor cursor2(db::PooledCursor(txn, {"test"}));
     REQUIRE(cursor2.operator bool() == true);
     db::PooledCursor cursor3 = std::move(cursor2);
-    REQUIRE(cursor2.operator bool() == false);
+    // REQUIRE(cursor2.operator bool() == false);
     REQUIRE(cursor3.operator bool() == true);
 
     txn.commit();

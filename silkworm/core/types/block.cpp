@@ -74,6 +74,10 @@ namespace rlp {
         if (header.withdrawals_root) {
             rlp_head.payload_length += kHashLength + 1;
         }
+        if (header.excess_data_gas) {
+            rlp_head.payload_length += length(*header.excess_data_gas);
+        }
+
         return rlp_head;
     }
 
@@ -111,6 +115,9 @@ namespace rlp {
         }
         if (header.withdrawals_root) {
             encode(to, *header.withdrawals_root);
+        }
+        if (header.excess_data_gas) {
+            encode(to, *header.excess_data_gas);
         }
     }
 
@@ -187,6 +194,15 @@ namespace rlp {
                 return res;
             }
             to.withdrawals_root = withdrawals_root;
+        }
+
+        to.excess_data_gas = std::nullopt;
+        if (from.length() > leftover) {
+            intx::uint256 excess_data_gas;
+            if (DecodingResult res{decode(from, excess_data_gas)}; !res) {
+                return res;
+            }
+            to.excess_data_gas = excess_data_gas;
         }
 
         if (from.length() != leftover) {

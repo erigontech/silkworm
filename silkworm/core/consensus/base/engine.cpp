@@ -181,11 +181,19 @@ ValidationResult EngineBase::validate_block_header(const BlockHeader& header, co
     }
 
     const evmc_revision rev{chain_config_.revision(header.number, header.timestamp)};
+
     if (rev < EVMC_SHANGHAI && header.withdrawals_root) {
         return ValidationResult::kUnexpectedWithdrawals;
     }
     if (rev >= EVMC_SHANGHAI && !header.withdrawals_root) {
         return ValidationResult::kMissingWithdrawals;
+    }
+
+    if (rev < EVMC_CANCUN && header.excess_data_gas) {
+        return ValidationResult::kUnexpectedExcessDataGas;
+    }
+    if (rev >= EVMC_CANCUN && !header.excess_data_gas) {
+        return ValidationResult::kMissingExcessDataGas;
     }
 
     return validate_seal(header);

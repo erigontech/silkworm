@@ -26,15 +26,18 @@
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 
 #include "canonical_chain.hpp"
+#include "silkworm/node/db/memory_mutation.hpp"
 #include "verification_result.hpp"
 
 namespace silkworm::stagedsync {
 
 class Fork {
   public:
-    explicit Fork(BlockId forking_point, NodeSettings&, db::RWAccess);
+    explicit Fork(BlockId forking_point, NodeSettings&, db::ROTxn*);
     Fork(const Fork&, db::RWAccess);
     Fork(Fork&& orig) noexcept;
+
+    void open();
 
     // extension
     void extend_with(const Block&);  // put block over the head of the fork
@@ -67,8 +70,10 @@ class Fork {
     std::set<Hash> collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain);
 
     NodeSettings& node_settings_;
-    db::RWTxn tx_;
-    bool is_first_sync_{true};
+
+    db::ROTxn db_tx_;
+    db::MemoryOverlay overlay_;
+    db::MemoryMutation tx_;
 
     ExecutionPipeline pipeline_;
     CanonicalChain canonical_chain_;

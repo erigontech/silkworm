@@ -61,6 +61,7 @@ class ExecutionEngine : public Stoppable {
     MainChain main_chain_;
     std::vector<Fork> forks_;
     BlockId last_fork_choice_;
+    Hash last_finalized_block_;
 };
 
 }  // namespace silkworm::stagedsync

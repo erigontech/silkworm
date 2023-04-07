@@ -82,6 +82,10 @@ MemoryMutation::~MemoryMutation() {
     rollback();
 }
 
+void MemoryMutation::reopen() {
+    managed_txn_ = memory_db_.start_rw_tx();
+}
+
 bool MemoryMutation::is_table_cleared(const std::string& table) const {
     return cleared_tables_.contains(table);
 }

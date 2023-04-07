@@ -31,38 +31,49 @@ static void ensure_invariant(bool condition, const std::string& message) {
     }
 }
 
-Fork::Fork(BlockId forking_point, NodeSettings& ns, db::RWAccess db_access)
+Fork::Fork(BlockId forking_point, NodeSettings& ns, db::ROTxn&& db_tx)
     : node_settings_{ns},
-      tx_{db_access.start_rw_tx()},
+      db_tx_(std::move(db_tx)),
+      overlay_{"fork_overlay" + random_string()},
+      tx_{overlay_, &db_tx_},
       pipeline_{&ns},
       canonical_chain_(tx_) {
     ensure_invariant(canonical_chain_.initial_head() == forking_point,
                      "forking point must be the current canonical head");
     current_head_ = forking_point;
+    tx_.commit();
 }
 
-Fork::Fork(const Fork& copy, db::RWAccess db_access)
+Fork::Fork(const Fork& copy)
     : node_settings_{copy.node_settings_},
-      tx_{db_access.start_rw_tx()},  // db tx cannot be shared between forks
-      is_first_sync_{copy.is_first_sync_},
+      db_tx_{copy.db_tx_.db()},
+      overlay_{copy.overlay},  // todo(canepat): we need to copy an overlay
+      tx_{overlay_, &db_tx_},  // db tx cannot be shared between forks
       pipeline_{&copy.node_settings_},  // warning: pipeline is not copyable, we build a new one here
       canonical_chain_{copy.canonical_chain_, tx_},
       current_head_{copy.current_head_},
       last_verified_head_{copy.last_verified_head_},
       last_head_status_{copy.last_head_status_},
       last_fork_choice_{copy.last_fork_choice_} {
+    tx_.commit();
 }
 
 Fork::Fork(Fork&& orig) noexcept
     : node_settings_{orig.node_settings_},
+      db_tx_(std::move(orig.db_tx_)),
+      overlay_{std::move(orig.overlay_)},
       tx_{std::move(orig.tx_)},  // db tx cannot be shared between forks
-      is_first_sync_{orig.is_first_sync_},
       pipeline_{&orig.node_settings_},  // warning: pipeline is not movable, we build a new one here
       canonical_chain_{std::move(orig.canonical_chain_)},
       current_head_{std::move(orig.current_head_)},
       last_verified_head_{std::move(orig.last_verified_head_)},
       last_head_status_{std::move(orig.last_head_status_)},
       last_fork_choice_{std::move(orig.last_fork_choice_)} {
+    tx_.commit();
+}
+
+void Fork::open() {
+    tx_.reopen();
 }
 
 BlockId Fork::current_head() const {
@@ -135,6 +146,7 @@ Fork Fork::branch_at(BlockId forking_point, db::RWAccess db_access) {
 }
 
 void Fork::extend_with(const Block& block) {
+
     ensure_invariant(extends_head(block.header), "inserting block must extend the head");
 
     Hash header_hash = insert_header(block.header);
@@ -176,8 +188,7 @@ VerificationResult Fork::verify_chain() {
     SILK_TRACE << "Fork: verifying chain from head " << current_head_.hash.to_hex();
 
     // db commit policy
-    bool commit_at_each_stage = is_first_sync_;
-    if (!commit_at_each_stage) tx_.disable_commit();
+    tx_.disable_commit();
 
     // forward
     Stage::Result forward_result = pipeline_.forward(tx_, current_head_.number);
@@ -218,7 +229,7 @@ VerificationResult Fork::verify_chain() {
 
     // finish
     tx_.enable_commit();
-    if (commit_at_each_stage) tx_.commit_and_renew();
+    tx_.commit_and_renew();
     return verify_result;
 }
 
@@ -253,8 +264,6 @@ bool Fork::notify_fork_choice_update(Hash head_block_hash, [[maybe_unused]] std:
     tx_.commit_and_renew();
 
     last_fork_choice_ = canonical_chain_.current_head();
-
-    is_first_sync_ = false;
 
     return true;
 }

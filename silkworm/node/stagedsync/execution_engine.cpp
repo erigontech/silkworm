@@ -46,7 +46,7 @@ void ExecutionEngine::insert_block(const Block& block) {
     auto f = best_fork_to_extend(forks_, block.header);
 
     if (f != forks_.end()) {
-        SILK_TRACE << "ExecutionEngine: extending a fork";
+        SILK_DEBUG << "ExecutionEngine: extending a fork";
         f->extend_with(block);
         return;
     }
@@ -55,7 +55,7 @@ void ExecutionEngine::insert_block(const Block& block) {
     f = best_fork_to_branch(forks_, block.header);
 
     if (f != forks_.end()) {
-        SILK_TRACE << "ExecutionEngine: branching a fork";
+        SILK_DEBUG << "ExecutionEngine: branching a fork";
         Hash header_hash{block.header.hash()};
         forks_.push_back(f->branch_at({block.header.number, header_hash}, db_access_));
         return;
@@ -64,7 +64,7 @@ void ExecutionEngine::insert_block(const Block& block) {
     // create a new fork from the past
 
     if (acceptable_fork(block.header)) {
-        SILK_TRACE << "ExecutionEngine: creating new fork";
+        SILK_DEBUG << "ExecutionEngine: creating new fork";
         auto& new_fork = forks_.emplace_back(
             BlockId{block.header.number - 1, block.header.parent_hash},
             node_settings_, db_access_);
@@ -79,7 +79,7 @@ bool ExecutionEngine::acceptable_fork(const BlockHeader& head_header) const {
 }
 
 void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<Block>>& blocks) {
-    SILK_TRACE << "ExecutionEngine: inserting " << blocks.size() << " blocks";
+    SILK_DEBUG << "ExecutionEngine: inserting " << blocks.size() << " blocks";
     if (blocks.empty()) return;
 
     as_range::for_each(blocks, [&, this](const auto& block) {
@@ -90,11 +90,11 @@ void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<Block>>& blocks)
 }
 
 auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
-    SILK_TRACE << "ExecutionEngine: verifying chain " << head_block_hash.to_hex();
+    SILK_DEBUG << "ExecutionEngine: verifying chain " << head_block_hash.to_hex();
 
     auto f = find_fork_with_head(forks_, head_block_hash);
     if (f == forks_.end()) {
-        SILK_TRACE << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at verification time";
+        SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at verification time";
         return ValidationError{};
     }
 
@@ -104,12 +104,12 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
 }
 
 bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
-    SILK_TRACE << "ExecutionEngine: updating fork choice to " << head_block_hash.to_hex();
+    SILK_DEBUG << "ExecutionEngine: updating fork choice to " << head_block_hash.to_hex();
 
     // chose the fork with the given head
     auto f = find_fork_with_head(forks_, head_block_hash);
     if (f == forks_.end()) {
-        SILK_TRACE << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at fork choice update time";
+        SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at fork choice update time";
         return false;
     }
     Fork& chosen_fork = *f;
@@ -120,12 +120,17 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
 
     // update this status and the main chain
     last_fork_choice_ = chosen_fork.current_head();
+    if (finalized_block_hash) last_finalized_block_ = *finalized_block_hash;
 
     consolidate_forks();  // remove side forks, extend main chain with the chosen fork
 
     is_first_sync_ = false;
 
     return true;
+}
+
+void ExecutionEngine::consolidate_forks() {
+
 }
 
 }  // namespace silkworm::stagedsync

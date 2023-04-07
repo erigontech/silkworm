@@ -40,6 +40,7 @@
 #include <silkworm/silkrpc/types/receipt.hpp>
 #include <silkworm/silkrpc/types/syncing_data.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
+#include <silkworm/silkrpc/json/types_log.hpp>
 
 namespace evmc {
 
@@ -68,6 +69,14 @@ void from_json(const nlohmann::json& json, AccessListEntry& entry);
 }  // namespace silkworm
 
 namespace silkworm::rpc {
+
+inline constexpr auto jsonVersionSize = 8;
+inline constexpr auto addressSize = 64;
+inline constexpr auto hashSize = 128;
+inline constexpr auto int64Size = 32;
+inline constexpr auto dataSize = 4096;
+inline constexpr auto ethCallResultFixedSize = 2048;
+
 
 void to_json(nlohmann::json& json, const struct NodeInfo& node_info);
 
@@ -98,9 +107,6 @@ void to_json(nlohmann::json& json, const BlockTransactionsResponse& b);
 void to_json(nlohmann::json& json, const Transaction& transaction);
 
 void from_json(const nlohmann::json& json, Call& call);
-
-void to_json(nlohmann::json& json, const Log& log);
-void from_json(const nlohmann::json& json, Log& log);
 
 void to_json(nlohmann::json& json, const Receipt& receipt);
 void from_json(const nlohmann::json& json, Receipt& receipt);
@@ -150,7 +156,6 @@ nlohmann::json make_json_error(uint32_t id, int64_t code, const std::string& mes
 nlohmann::json make_json_error(uint32_t id, const RevertError& error);
 
 // GLAZE
-void make_glaze_json_content(std::string& reply, uint32_t id, const Logs& logs);
 void make_glaze_json_content(std::string& reply, uint32_t id, const silkworm::Bytes& call_result);
 void make_glaze_json_error(std::string& reply, uint32_t id, const int error_id, const std::string& message);
 void make_glaze_json_error(std::string& reply, uint32_t id, const RevertError& error);

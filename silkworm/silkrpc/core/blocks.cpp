@@ -17,9 +17,9 @@
 #include "blocks.hpp"
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/node/db/tables.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
-#include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/stagedsync/stages.hpp>
 
 namespace silkworm::rpc::core {
@@ -100,7 +100,7 @@ boost::asio::awaitable<uint64_t> get_latest_executed_block_number(const rawdb::D
 }
 
 boost::asio::awaitable<uint64_t> get_latest_block_number(const rawdb::DatabaseReader& reader) {
-    const auto kv_pair = co_await reader.get(db::table::kLastForkchoice, silkworm::bytes_of_string(kHeadBlockHash));
+    const auto kv_pair = co_await reader.get(db::table::kLastForkchoiceName, silkworm::bytes_of_string(kHeadBlockHash));
     const auto head_block_hash_data = kv_pair.value;
     if (!head_block_hash_data.empty()) {
         const auto head_block_hash = silkworm::to_bytes32(head_block_hash_data);
@@ -113,7 +113,7 @@ boost::asio::awaitable<uint64_t> get_latest_block_number(const rawdb::DatabaseRe
 }
 
 boost::asio::awaitable<uint64_t> get_forkchoice_finalized_block_number(const rawdb::DatabaseReader& reader) {
-    const auto kv_pair = co_await reader.get(db::table::kLastForkchoice, silkworm::bytes_of_string(kFinalizedBlockHash));
+    const auto kv_pair = co_await reader.get(db::table::kLastForkchoiceName, silkworm::bytes_of_string(kFinalizedBlockHash));
     const auto finalized_block_hash_data = kv_pair.value;
     if (finalized_block_hash_data.empty()) {
         SILKRPC_LOG << "no finalized forkchoice block number found\n";
@@ -126,7 +126,7 @@ boost::asio::awaitable<uint64_t> get_forkchoice_finalized_block_number(const raw
 }
 
 boost::asio::awaitable<uint64_t> get_forkchoice_safe_block_number(const rawdb::DatabaseReader& reader) {
-    const auto kv_pair = co_await reader.get(db::table::kLastForkchoice, silkworm::bytes_of_string(kSafeBlockHash));
+    const auto kv_pair = co_await reader.get(db::table::kLastForkchoiceName, silkworm::bytes_of_string(kSafeBlockHash));
     const auto safe_block_hash_data = kv_pair.value;
     if (safe_block_hash_data.empty()) {
         SILKRPC_LOG << "no safe forkchoice block number found\n";

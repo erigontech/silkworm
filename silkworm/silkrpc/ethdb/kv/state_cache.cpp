@@ -23,10 +23,10 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/rpc/common/conversion.hpp>
+#include <silkworm/node/db/tables.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/rawdb/util.hpp>
-#include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 
 namespace silkworm::rpc::ethdb::kv {
@@ -245,7 +245,7 @@ boost::asio::awaitable<std::optional<silkworm::Bytes>> CoherentStateCache::get(c
     ++state_miss_count_;
 
     TransactionDatabase tx_database{txn};
-    const auto value = co_await tx_database.get_one(db::table::kPlainState, key);
+    const auto value = co_await tx_database.get_one(db::table::kPlainStateName, key);
     SILKRPC_DEBUG << "Miss in state cache: lookup in PlainState key=" << key << " value=" << value << "\n";
     if (value.empty()) {
         co_return std::nullopt;
@@ -287,7 +287,7 @@ boost::asio::awaitable<std::optional<silkworm::Bytes>> CoherentStateCache::get_c
     ++code_miss_count_;
 
     TransactionDatabase tx_database{txn};
-    const auto value = co_await tx_database.get_one(db::table::kCode, key);
+    const auto value = co_await tx_database.get_one(db::table::kCodeName, key);
     SILKRPC_DEBUG << "Miss in code cache: lookup in Code key=" << key << " value=" << value << "\n";
     if (value.empty()) {
         co_return std::nullopt;

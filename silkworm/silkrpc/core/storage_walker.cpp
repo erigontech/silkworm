@@ -24,13 +24,12 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/node/db/bitmap.hpp>
+#include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/db/util.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
-#include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
-#include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkworm::rpc {
 
@@ -93,7 +92,7 @@ boost::asio::awaitable<void> StorageWalker::walk_of_storages(uint64_t block_numb
                                                              const evmc::bytes32& location_hash, uint64_t incarnation, AccountCollector& collector) {
     SILKRPC_TRACE << "block_number=" << block_number << " address=" << address << " START\n";
 
-    auto ps_cursor = co_await transaction_.cursor_dup_sort(db::table::kPlainState);
+    auto ps_cursor = co_await transaction_.cursor_dup_sort(db::table::kPlainStateName);
     auto ps_key{make_key(address, incarnation)};
     ethdb::SplitCursorDupSort ps_split_cursor{*ps_cursor,
                                               ps_key,
@@ -102,7 +101,7 @@ boost::asio::awaitable<void> StorageWalker::walk_of_storages(uint64_t block_numb
                                               kAddressLength,           /* part1_end */
                                               kHashLength};             /* value_offset */
 
-    auto sh_cursor = co_await transaction_.cursor(db::table::kStorageHistory);
+    auto sh_cursor = co_await transaction_.cursor(db::table::kStorageHistoryName);
     auto sh_key{make_key(address, location_hash)};
     ethdb::SplitCursor sh_split_cursor{*sh_cursor,
                                        sh_key,
@@ -116,7 +115,7 @@ boost::asio::awaitable<void> StorageWalker::walk_of_storages(uint64_t block_numb
     auto h_loc = sh_skv.key2;
 
     uint64_t block = silkworm::endian::load_big_u64(sh_skv.key3.data());
-    auto cs_cursor = co_await transaction_.cursor_dup_sort(db::table::kPlainStorageChangeSet);
+    auto cs_cursor = co_await transaction_.cursor_dup_sort(db::table::kStorageChangeSetName);
 
     if (block < block_number) {
         sh_skv = co_await next(sh_split_cursor, block_number);
@@ -176,7 +175,7 @@ boost::asio::awaitable<void> StorageWalker::walk_of_storages(uint64_t block_numb
 boost::asio::awaitable<void> StorageWalker::storage_range_at(uint64_t block_number, const evmc::address& address,
                                                              const evmc::bytes32& start_location, int16_t max_result, StorageCollector& collector) {
     ethdb::TransactionDatabase tx_database{transaction_};
-    auto account_data = co_await tx_database.get_one(db::table::kPlainState, full_view(address));
+    auto account_data = co_await tx_database.get_one(db::table::kPlainStateName, full_view(address));
 
     auto account = silkworm::Account::from_encoded_storage(account_data);
     silkworm::success_or_throw(account);

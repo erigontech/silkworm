@@ -92,7 +92,10 @@ add_custom_command(
 
 create_symlink_target(generate_types_proto_symlink "${OUT_PATH_SYMLINK}/types" "${OUT_PATH}/types")
 
-add_custom_target(generate_types_proto DEPENDS "${TYPES_SOURCES_OUT}" generate_types_proto_symlink)
+add_custom_command(
+  OUTPUT ${TYPES_SOURCES_SYMLINK}
+  DEPENDS ${TYPES_SOURCES_OUT} generate_types_proto_symlink
+)
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Execution
@@ -119,8 +122,9 @@ add_custom_command(
 
 create_symlink_target(generate_execution_grpc_symlink "${OUT_PATH_SYMLINK}/execution" "${OUT_PATH}/execution")
 
-add_custom_target(
-  generate_execution_grpc DEPENDS "${EXECUTION_SOURCES_OUT}" generate_types_proto generate_execution_grpc_symlink
+add_custom_command(
+  OUTPUT ${EXECUTION_SOURCES_SYMLINK}
+  DEPENDS ${EXECUTION_SOURCES_OUT} ${TYPES_SOURCES_SYMLINK} generate_execution_grpc_symlink
 )
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -156,8 +160,9 @@ add_custom_command(
 
 create_symlink_target(generate_sentry_grpc_symlink "${OUT_PATH_SYMLINK}/p2psentry" "${OUT_PATH}/p2psentry")
 
-add_custom_target(
-  generate_sentry_grpc DEPENDS "${SENTRY_SOURCES_OUT}" generate_types_proto generate_sentry_grpc_symlink
+add_custom_command(
+  OUTPUT ${SENTRY_SOURCES_SYMLINK}
+  DEPENDS ${SENTRY_SOURCES_OUT} ${TYPES_SOURCES_SYMLINK} generate_sentry_grpc_symlink
 )
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -193,7 +198,10 @@ add_custom_command(
 
 create_symlink_target(generate_remote_grpc_symlink "${OUT_PATH_SYMLINK}/remote" "${OUT_PATH}/remote")
 
-add_custom_target(generate_kv_grpc DEPENDS "${KV_SOURCES_OUT}" generate_types_proto generate_remote_grpc_symlink)
+add_custom_command(
+  OUTPUT ${KV_SOURCES_SYMLINK}
+  DEPENDS ${KV_SOURCES_OUT} ${TYPES_SOURCES_SYMLINK} generate_remote_grpc_symlink
+)
 
 # ---------------------------------------------------------------------------------------------------------------------
 # ETHBACKEND
@@ -226,8 +234,9 @@ add_custom_command(
   COMMENT "Running C++ gRPC compiler on ${ETHBACKEND_PROTO}"
 )
 
-add_custom_target(
-  generate_ethbackend_grpc DEPENDS "${ETHBACKEND_SOURCES_OUT}" generate_types_proto generate_remote_grpc_symlink
+add_custom_command(
+  OUTPUT ${ETHBACKEND_SOURCES_SYMLINK}
+  DEPENDS ${ETHBACKEND_SOURCES_OUT} ${TYPES_SOURCES_SYMLINK} generate_remote_grpc_symlink
 )
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -263,8 +272,9 @@ add_custom_command(
 
 create_symlink_target(generate_txpool_grpc_symlink "${OUT_PATH_SYMLINK}/txpool" "${OUT_PATH}/txpool")
 
-add_custom_target(
-  generate_mining_grpc DEPENDS "${MINING_SOURCES_OUT}" generate_types_proto generate_txpool_grpc_symlink
+add_custom_command(
+  OUTPUT ${MINING_SOURCES_SYMLINK}
+  DEPENDS ${MINING_SOURCES_OUT} ${TYPES_SOURCES_SYMLINK} generate_txpool_grpc_symlink
 )
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -298,6 +308,7 @@ add_custom_command(
   COMMENT "Running C++ gRPC compiler on ${TXPOOL_PROTO}"
 )
 
-add_custom_target(
-  generate_txpool_grpc DEPENDS "${TXPOOL_SOURCES_OUT}" generate_types_proto generate_txpool_grpc_symlink
+add_custom_command(
+  OUTPUT ${TXPOOL_SOURCES_SYMLINK}
+  DEPENDS ${TXPOOL_SOURCES_OUT} ${TYPES_SOURCES_SYMLINK} generate_txpool_grpc_symlink
 )

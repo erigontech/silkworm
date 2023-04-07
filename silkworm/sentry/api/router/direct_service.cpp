@@ -120,10 +120,6 @@ awaitable<void> DirectService::penalize_peer(common::EccPublicKey public_key) {
     co_await router_.peer_penalize_calls_channel.send({std::move(public_key)});
 }
 
-awaitable<void> DirectService::peer_useless(common::EccPublicKey public_key) {
-    co_await router_.peer_penalize_calls_channel.send({std::move(public_key)});
-}
-
 awaitable<void> DirectService::peer_events(
     std::function<boost::asio::awaitable<void>(api_common::PeerEvent)> consumer) {
     auto executor = co_await this_coro::executor;

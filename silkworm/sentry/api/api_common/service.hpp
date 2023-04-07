@@ -83,9 +83,6 @@ struct Service {
     // rpc PenalizePeer(PenalizePeerRequest) returns (google.protobuf.Empty);
     virtual boost::asio::awaitable<void> penalize_peer(common::EccPublicKey public_key) = 0;
 
-    // rpc PeerUseless(PeerUselessRequest) returns (google.protobuf.Empty);
-    virtual boost::asio::awaitable<void> peer_useless(common::EccPublicKey public_key) = 0;
-
     // rpc PeerEvents(PeerEventsRequest) returns (stream PeerEvent);
     virtual boost::asio::awaitable<void> peer_events(std::function<boost::asio::awaitable<void>(PeerEvent)> consumer) = 0;
 };

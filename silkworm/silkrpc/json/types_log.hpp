@@ -50,4 +50,3 @@ void from_json(const nlohmann::json& json, Log& log);
 void make_glaze_json_content(std::string& reply, uint32_t id, const Logs& logs);
 
 }  // namespace silkworm::rpc
-

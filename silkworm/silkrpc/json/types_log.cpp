@@ -14,8 +14,6 @@
    limitations under the License.
 */
 
-#include "types.hpp"
-
 #include <cstring>
 #include <span>
 #include <utility>
@@ -28,8 +26,9 @@
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
-namespace silkworm::rpc {
+#include "types.hpp"
 
+namespace silkworm::rpc {
 
 void to_json(nlohmann::json& json, const Log& log) {
     json["address"] = log.address;
@@ -77,7 +76,6 @@ void from_json(const nlohmann::json& json, Log& log) {
         log.data = json.at("data").get<silkworm::Bytes>();
     }
 }
-
 
 struct GlazeJsonLogItem {
     char address[addressSize];

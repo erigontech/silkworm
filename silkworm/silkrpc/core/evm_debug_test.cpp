@@ -70,6 +70,9 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
 
+    StringWriter writer(4096);
+    json::Stream stream(writer);
+
     SECTION("precompiled contract failure") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
@@ -116,10 +119,14 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
         block.header.number = 10'336'006;
 
         DebugExecutor executor{io_context_, db_reader, workers};
-        const auto result = spawn_and_wait(executor.execute(block, call));
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
 
-        CHECK(!result.pre_check_error);
-        CHECK(result.debug_trace == R"({
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
             "failed":true,
             "gas":50000,
             "returnValue":"",
@@ -222,6 +229,9 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
 
+    StringWriter writer(4096);
+    json::Stream stream(writer);
+
     SECTION("Call: failed with intrinsic gas too low") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
@@ -254,10 +264,18 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         block.header.number = block_number;
 
         DebugExecutor executor{io_context_, db_reader, workers};
-        const auto result = spawn_and_wait(executor.execute(block, call));
 
-        CHECK(result.pre_check_error.has_value() == true);
-        CHECK(result.pre_check_error.value() == "tracing failed: intrinsic gas too low: have 50000, want 53072");
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
+
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
+            "failed": true,
+            "structLogs":[]
+        })"_json);
     }
 
     SECTION("Call: full output") {
@@ -305,11 +323,15 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         block.header.number = block_number;
 
         DebugExecutor executor{io_context_, db_reader, workers};
-        const auto result = spawn_and_wait(executor.execute(block, call));
 
-        CHECK(result.pre_check_error.has_value() == false);
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
 
-        CHECK(result.debug_trace == R"({
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
             "failed": false,
             "gas": 75178,
             "returnValue": "",
@@ -408,10 +430,15 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
 
         DebugConfig config{false, false, true};
         DebugExecutor executor{io_context_, db_reader, workers, config};
-        const auto result = spawn_and_wait(executor.execute(block, call));
 
-        CHECK(result.pre_check_error.has_value() == false);
-        CHECK(result.debug_trace == R"({
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
+
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
             "failed": false,
             "gas": 75178,
             "returnValue": "",
@@ -501,11 +528,15 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
 
         DebugConfig config{false, true, false};
         DebugExecutor executor{io_context_, db_reader, workers, config};
-        const auto result = spawn_and_wait(executor.execute(block, call));
 
-        CHECK(result.pre_check_error.has_value() == false);
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
 
-        CHECK(result.debug_trace == R"({
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
             "failed": false,
             "gas": 75178,
             "returnValue": "",
@@ -600,11 +631,15 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
 
         DebugConfig config{true, false, false};
         DebugExecutor executor{io_context_, db_reader, workers, config};
-        const auto result = spawn_and_wait(executor.execute(block, call));
 
-        CHECK(result.pre_check_error.has_value() == false);
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
 
-        CHECK(result.debug_trace == R"({
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
             "failed": false,
             "gas": 75178,
             "returnValue": "",
@@ -700,11 +735,15 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
 
         DebugConfig config{true, true, true};
         DebugExecutor executor{io_context_, db_reader, workers, config};
-        const auto result = spawn_and_wait(executor.execute(block, call));
 
-        CHECK(result.pre_check_error.has_value() == false);
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
 
-        CHECK(result.debug_trace == R"({
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
             "failed": false,
             "gas": 75178,
             "returnValue": "",
@@ -785,20 +824,16 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         silkworm::Block block{};
         block.header.number = block_number;
 
-        StringWriter writer(4096);
-        json::Stream stream(writer);
-
         DebugConfig config{true, true, true};
         DebugExecutor executor{io_context_, db_reader, workers, config};
 
         stream.open_object();
-        const auto result = spawn_and_wait(executor.execute(block, call, &stream));
+        spawn_and_wait(executor.execute(stream, block, call));
         stream.close_object();
         stream.close();
 
         nlohmann::json json = nlohmann::json::parse(writer.get_content());
 
-        CHECK(result.pre_check_error.has_value() == false);
         CHECK(json == R"({
             "failed": false,
             "gas": 75178,
@@ -936,6 +971,9 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
 
+    StringWriter writer(4096);
+    json::Stream stream(writer);
+
     SECTION("Call: TO present") {
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
@@ -990,10 +1028,15 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
         block.header.number = block_number;
 
         DebugExecutor executor{io_context_, db_reader, workers};
-        const auto result = spawn_and_wait(executor.execute(block, call));
 
-        CHECK(result.pre_check_error.has_value() == false);
-        CHECK(result.debug_trace == R"({
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
+
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
             "failed": false,
             "gas": 21004,
             "returnValue": "",
@@ -1073,6 +1116,9 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
 
+    StringWriter writer(4096);
+    json::Stream stream(writer);
+
     EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
         .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
             co_return kZeroHeader;
@@ -1134,10 +1180,15 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     block.header.number = block_number;
 
     DebugExecutor executor{io_context_, db_reader, workers};
-    const auto result = spawn_and_wait(executor.execute(block, call));
 
-    CHECK(result.pre_check_error.has_value() == false);
-    CHECK(result.debug_trace == R"({
+    stream.open_object();
+    spawn_and_wait(executor.execute(stream, block, call));
+    stream.close_object();
+    stream.close();
+
+    nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+    CHECK(json == R"({
         "failed": true,
         "gas": 211190,
         "returnValue": "",
@@ -1165,216 +1216,6 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
             }
         ]
     })"_json);
-}
-
-TEST_CASE_METHOD(DebugExecutorTest, "DebugTrace json serialization") {
-    DebugLog log;
-    log.pc = 1;
-    log.op = "PUSH1";
-    log.gas = 3;
-    log.gas_cost = 4;
-    log.depth = 1;
-    log.error = false;
-    log.memory.emplace_back("0000000000000000000000000000000000000000000000000000000000000080");
-    log.stack.emplace_back("0x80");
-    log.storage["804292fe56769f4b9f0e91cf85875f67487cd9e85a084cbba2188be4466c4f23"] = "0000000000000000000000000000000000000000000000000000000000000008";
-
-    SECTION("DebugTrace: no memory, stack and storage") {
-        DebugTrace debug_trace;
-        debug_trace.failed = false;
-        debug_trace.gas = 20;
-        debug_trace.return_value = "deadbeaf";
-        debug_trace.debug_logs.push_back(log);
-
-        debug_trace.debug_config.disableStorage = true;
-        debug_trace.debug_config.disableMemory = true;
-        debug_trace.debug_config.disableStack = true;
-
-        CHECK(debug_trace == R"({
-            "failed": false,
-            "gas": 20,
-            "returnValue": "deadbeaf",
-            "structLogs": [{
-                "depth": 1,
-                "gas": 3,
-                "gasCost": 4,
-                "op": "PUSH1",
-                "pc": 1
-            }]
-        })"_json);
-    }
-
-    SECTION("DebugTrace: only memory") {
-        DebugTrace debug_trace;
-        debug_trace.failed = false;
-        debug_trace.gas = 20;
-        debug_trace.return_value = "deadbeaf";
-        debug_trace.debug_logs.push_back(log);
-
-        debug_trace.debug_config.disableStorage = true;
-        debug_trace.debug_config.disableMemory = false;
-        debug_trace.debug_config.disableStack = true;
-
-        CHECK(debug_trace == R"({
-            "failed": false,
-            "gas": 20,
-            "returnValue": "deadbeaf",
-            "structLogs": [{
-                "depth": 1,
-                "gas": 3,
-                "gasCost": 4,
-                "op": "PUSH1",
-                "pc": 1,
-                "memory":["0000000000000000000000000000000000000000000000000000000000000080"]
-            }]
-        })"_json);
-    }
-
-    SECTION("DebugTrace: only stack") {
-        DebugTrace debug_trace;
-        debug_trace.failed = false;
-        debug_trace.gas = 20;
-        debug_trace.return_value = "deadbeaf";
-        debug_trace.debug_logs.push_back(log);
-
-        debug_trace.debug_config.disableStorage = true;
-        debug_trace.debug_config.disableMemory = true;
-        debug_trace.debug_config.disableStack = false;
-
-        CHECK(debug_trace == R"({
-            "failed": false,
-            "gas": 20,
-            "returnValue": "deadbeaf",
-            "structLogs": [{
-                "depth": 1,
-                "gas": 3,
-                "gasCost": 4,
-                "op": "PUSH1",
-                "pc": 1,
-                "stack":["0x80"]
-            }]
-        })"_json);
-    }
-
-    SECTION("DebugTrace: only storage") {
-        DebugTrace debug_trace;
-        debug_trace.failed = false;
-        debug_trace.gas = 20;
-        debug_trace.return_value = "deadbeaf";
-        debug_trace.debug_logs.push_back(log);
-        debug_trace.debug_config.disableStorage = false;
-        debug_trace.debug_config.disableMemory = true;
-        debug_trace.debug_config.disableStack = true;
-
-        CHECK(debug_trace == R"({
-            "failed": false,
-            "gas": 20,
-            "returnValue": "deadbeaf",
-            "structLogs": [{
-                "depth": 1,
-                "gas": 3,
-                "gasCost": 4,
-                "op": "PUSH1",
-                "pc": 1,
-                "storage": {
-                    "804292fe56769f4b9f0e91cf85875f67487cd9e85a084cbba2188be4466c4f23": "0000000000000000000000000000000000000000000000000000000000000008"
-                }
-            }]
-        })"_json);
-    }
-
-    SECTION("DebugTrace: full") {
-        DebugTrace debug_trace;
-        debug_trace.failed = false;
-        debug_trace.gas = 20;
-        debug_trace.return_value = "deadbeaf";
-        debug_trace.debug_logs.push_back(log);
-
-        debug_trace.debug_config.disableStorage = false;
-        debug_trace.debug_config.disableMemory = false;
-        debug_trace.debug_config.disableStack = false;
-
-        CHECK(debug_trace == R"({
-            "failed": false,
-            "gas": 20,
-            "returnValue": "deadbeaf",
-            "structLogs": [{
-                "depth": 1,
-                "gas": 3,
-                "gasCost": 4,
-                "op": "PUSH1",
-                "pc": 1,
-                "stack":["0x80"],
-                "memory":["0000000000000000000000000000000000000000000000000000000000000080"],
-                "storage": {
-                    "804292fe56769f4b9f0e91cf85875f67487cd9e85a084cbba2188be4466c4f23": "0000000000000000000000000000000000000000000000000000000000000008"
-                }
-            }]
-        })"_json);
-    }
-
-    SECTION("DebugTrace vector") {
-        DebugTrace debug_trace;
-        debug_trace.failed = false;
-        debug_trace.gas = 20;
-        debug_trace.return_value = "deadbeaf";
-        debug_trace.debug_logs.push_back(log);
-
-        debug_trace.debug_config.disableStorage = false;
-        debug_trace.debug_config.disableMemory = false;
-        debug_trace.debug_config.disableStack = false;
-
-        std::vector<DebugTrace> debug_traces;
-        debug_traces.push_back(debug_trace);
-
-        CHECK(debug_traces == R"([{
-            "failed": false,
-            "gas": 20,
-            "returnValue": "deadbeaf",
-            "structLogs": [{
-                "depth": 1,
-                "gas": 3,
-                "gasCost": 4,
-                "op": "PUSH1",
-                "pc": 1,
-                "stack":["0x80"],
-                "memory":["0000000000000000000000000000000000000000000000000000000000000080"],
-                "storage": {
-                    "804292fe56769f4b9f0e91cf85875f67487cd9e85a084cbba2188be4466c4f23": "0000000000000000000000000000000000000000000000000000000000000008"
-                }
-            }]
-        }])"_json);
-    }
-
-    SECTION("DebugTraceResultList: no memory, stack and storage") {
-        DebugTrace debug_trace;
-        debug_trace.failed = false;
-        debug_trace.gas = 20;
-        debug_trace.return_value = "deadbeaf";
-        debug_trace.debug_logs.push_back(log);
-
-        debug_trace.debug_config.disableStorage = true;
-        debug_trace.debug_config.disableMemory = true;
-        debug_trace.debug_config.disableStack = true;
-
-        std::vector<DebugTrace> debug_traces;
-        debug_traces.push_back(debug_trace);
-        nlohmann::json j = debug_traces;
-
-        CHECK(j == R"([{
-                "failed": false,
-                "gas": 20,
-                "returnValue": "deadbeaf",
-                "structLogs": [{
-                    "depth": 1,
-                    "gas": 3,
-                    "gasCost": 4,
-                    "op": "PUSH1",
-                    "pc": 1
-                }]
-           }]
-        )"_json);
-    }
 }
 
 TEST_CASE_METHOD(DebugExecutorTest, "DebugConfig") {

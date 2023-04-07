@@ -299,13 +299,8 @@ awaitable<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json
 
             stream.write_field("result");
             stream.open_object();
-            const auto result = co_await executor.execute(tx_with_block->block_with_hash.block, tx_with_block->transaction, &stream);
+            co_await executor.execute(stream, tx_with_block->block_with_hash.block, tx_with_block->transaction);
             stream.close_object();
-
-            if (result.pre_check_error) {
-                const Error error{-32000, result.pre_check_error.value()};
-                stream.write_field("error", error);
-            }
         }
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
@@ -361,13 +356,8 @@ awaitable<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& reque
 
         stream.write_field("result");
         stream.open_object();
-        const auto result = co_await executor.execute(block_with_hash.block, call, &stream);
+        co_await executor.execute(stream, block_with_hash.block, call);
         stream.close_object();
-
-        if (result.pre_check_error) {
-            const Error error{-32000, result.pre_check_error.value()};
-            stream.write_field("error", error);
-        }
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
 
@@ -423,7 +413,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::
 
         stream.write_field("result");
         stream.open_array();
-        co_await executor.execute(block_with_hash.block, &stream);
+        co_await executor.execute(stream, block_with_hash.block);
         stream.close_array();
     } catch (const std::invalid_argument& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
@@ -485,7 +475,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::js
 
         stream.write_field("result");
         stream.open_array();
-        co_await executor.execute(block_with_hash.block, &stream);
+        co_await executor.execute(stream, block_with_hash.block);
         stream.close_array();
     } catch (const std::invalid_argument& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";

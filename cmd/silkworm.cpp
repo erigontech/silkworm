@@ -54,8 +54,33 @@
 #include "common/shutdown_signal.hpp"
 #include "common/snapshot_options.hpp"
 
-using namespace silkworm;
-using namespace silkworm::cmd::common;
+namespace db = silkworm::db;
+namespace log = silkworm::log;
+
+using silkworm::ActiveComponent;
+using silkworm::BlockNum;
+using silkworm::BlockExchange;
+using silkworm::DataDirectory;
+using silkworm::NodeSettings;
+using silkworm::PreverifiedHashes;
+using silkworm::SnapshotSync;
+using silkworm::StopWatch;
+using silkworm::human_size;
+using silkworm::lookup_known_chain;
+using silkworm::parse_size;
+using silkworm::read_genesis_data;
+using silkworm::cmd::common::SilkwormSettings;
+using silkworm::cmd::common::HumanSizeParserValidator;
+using silkworm::cmd::common::ShutdownSignal;
+using silkworm::cmd::common::add_option_chain;
+using silkworm::cmd::common::add_option_external_sentry_address;
+using silkworm::cmd::common::add_option_data_dir;
+using silkworm::cmd::common::add_option_private_api_address;
+using silkworm::cmd::common::add_context_pool_options;
+using silkworm::cmd::common::add_logging_options;
+using silkworm::cmd::common::add_snapshot_options;
+using silkworm::cmd::common::add_sentry_options;
+using silkworm::cmd::common::get_node_name_from_build_info;
 
 // progress log
 class ResourceUsageLog : public ActiveComponent {

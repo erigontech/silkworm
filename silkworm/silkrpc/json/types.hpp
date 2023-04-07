@@ -27,7 +27,7 @@
 
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
-#include <silkworm/silkrpc/json/types_log.hpp>
+#include <silkworm/silkrpc/json/log.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/call.hpp>
 #include <silkworm/silkrpc/types/chain_config.hpp>

@@ -163,7 +163,7 @@ awaitable<BlockBody> RemoteClient::get_body(BlockNum block_number, Hash block_ha
             .index = execution_withdrawal.index(),
             .validator_index = execution_withdrawal.validatorindex(),
             .address = rpc::address_from_H160(execution_withdrawal.address()),
-            .amount = uint64_t(rpc::uint256_from_H256(execution_withdrawal.amount())),
+            .amount = execution_withdrawal.amount(),
         });
     }
     co_return body;
@@ -200,7 +200,7 @@ awaitable<void> RemoteClient::insert_bodies(const BlockVector& blocks) {
                 w->set_index(withdrawal.index);
                 w->set_validatorindex(withdrawal.validator_index);
                 w->set_allocated_address(rpc::H160_from_address(withdrawal.address).release());
-                w->set_allocated_amount(rpc::H256_from_uint256(withdrawal.amount).release());
+                w->set_amount(withdrawal.amount);
             }
         }
     }

@@ -14,7 +14,6 @@
 #include <google/protobuf/wire_format.h>
 // @@protoc_insertion_point(includes)
 #include <google/protobuf/port_def.inc>
-extern PROTOBUF_INTERNAL_EXPORT_types_2ftypes_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<3> scc_info_ExecutionPayload_types_2ftypes_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_types_2ftypes_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_H1024_types_2ftypes_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_types_2ftypes_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_H128_types_2ftypes_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_types_2ftypes_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_H160_types_2ftypes_2eproto;
@@ -22,7 +21,7 @@ extern PROTOBUF_INTERNAL_EXPORT_types_2ftypes_2eproto ::PROTOBUF_NAMESPACE_ID::i
 extern PROTOBUF_INTERNAL_EXPORT_types_2ftypes_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_H256_types_2ftypes_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_types_2ftypes_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_H512_types_2ftypes_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_types_2ftypes_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_NodeInfoPorts_types_2ftypes_2eproto;
-extern PROTOBUF_INTERNAL_EXPORT_types_2ftypes_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<2> scc_info_Withdrawal_types_2ftypes_2eproto;
+extern PROTOBUF_INTERNAL_EXPORT_types_2ftypes_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_Withdrawal_types_2ftypes_2eproto;
 namespace types {
 class H128DefaultTypeInternal {
  public:
@@ -60,10 +59,10 @@ class WithdrawalDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<Withdrawal> _instance;
 } _Withdrawal_default_instance_;
-class ExecutionPayloadV2DefaultTypeInternal {
+class BlobsBundleV1DefaultTypeInternal {
  public:
-  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<ExecutionPayloadV2> _instance;
-} _ExecutionPayloadV2_default_instance_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<BlobsBundleV1> _instance;
+} _BlobsBundleV1_default_instance_;
 class NodeInfoPortsDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<NodeInfoPorts> _instance;
@@ -76,7 +75,25 @@ class PeerInfoDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<PeerInfo> _instance;
 } _PeerInfo_default_instance_;
+class ExecutionPayloadBodyV1DefaultTypeInternal {
+ public:
+  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<ExecutionPayloadBodyV1> _instance;
+} _ExecutionPayloadBodyV1_default_instance_;
 }  // namespace types
+static void InitDefaultsscc_info_BlobsBundleV1_types_2ftypes_2eproto() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+  {
+    void* ptr = &::types::_BlobsBundleV1_default_instance_;
+    new (ptr) ::types::BlobsBundleV1();
+    ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
+  }
+}
+
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_BlobsBundleV1_types_2ftypes_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_BlobsBundleV1_types_2ftypes_2eproto}, {
+      &scc_info_H256_types_2ftypes_2eproto.base,}};
+
 static void InitDefaultsscc_info_ExecutionPayload_types_2ftypes_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -87,25 +104,25 @@ static void InitDefaultsscc_info_ExecutionPayload_types_2ftypes_2eproto() {
   }
 }
 
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<3> scc_info_ExecutionPayload_types_2ftypes_2eproto =
-    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 3, 0, InitDefaultsscc_info_ExecutionPayload_types_2ftypes_2eproto}, {
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<4> scc_info_ExecutionPayload_types_2ftypes_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 4, 0, InitDefaultsscc_info_ExecutionPayload_types_2ftypes_2eproto}, {
       &scc_info_H256_types_2ftypes_2eproto.base,
       &scc_info_H160_types_2ftypes_2eproto.base,
-      &scc_info_H2048_types_2ftypes_2eproto.base,}};
+      &scc_info_H2048_types_2ftypes_2eproto.base,
+      &scc_info_Withdrawal_types_2ftypes_2eproto.base,}};
 
-static void InitDefaultsscc_info_ExecutionPayloadV2_types_2ftypes_2eproto() {
+static void InitDefaultsscc_info_ExecutionPayloadBodyV1_types_2ftypes_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   {
-    void* ptr = &::types::_ExecutionPayloadV2_default_instance_;
-    new (ptr) ::types::ExecutionPayloadV2();
+    void* ptr = &::types::_ExecutionPayloadBodyV1_default_instance_;
+    new (ptr) ::types::ExecutionPayloadBodyV1();
     ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
   }
 }
 
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<2> scc_info_ExecutionPayloadV2_types_2ftypes_2eproto =
-    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 2, 0, InitDefaultsscc_info_ExecutionPayloadV2_types_2ftypes_2eproto}, {
-      &scc_info_ExecutionPayload_types_2ftypes_2eproto.base,
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_ExecutionPayloadBodyV1_types_2ftypes_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_ExecutionPayloadBodyV1_types_2ftypes_2eproto}, {
       &scc_info_Withdrawal_types_2ftypes_2eproto.base,}};
 
 static void InitDefaultsscc_info_H1024_types_2ftypes_2eproto() {
@@ -254,12 +271,11 @@ static void InitDefaultsscc_info_Withdrawal_types_2ftypes_2eproto() {
   }
 }
 
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<2> scc_info_Withdrawal_types_2ftypes_2eproto =
-    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 2, 0, InitDefaultsscc_info_Withdrawal_types_2ftypes_2eproto}, {
-      &scc_info_H160_types_2ftypes_2eproto.base,
-      &scc_info_H256_types_2ftypes_2eproto.base,}};
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_Withdrawal_types_2ftypes_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_Withdrawal_types_2ftypes_2eproto}, {
+      &scc_info_H160_types_2ftypes_2eproto.base,}};
 
-static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_types_2ftypes_2eproto[13];
+static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_types_2ftypes_2eproto[14];
 static constexpr ::PROTOBUF_NAMESPACE_ID::EnumDescriptor const** file_level_enum_descriptors_types_2ftypes_2eproto = nullptr;
 static constexpr ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor const** file_level_service_descriptors_types_2ftypes_2eproto = nullptr;
 
@@ -319,6 +335,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_types_2ftypes_2eproto::offsets
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, version_),
   PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, parenthash_),
   PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, coinbase_),
   PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, stateroot_),
@@ -333,6 +350,8 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_types_2ftypes_2eproto::offsets
   PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, basefeepergas_),
   PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, blockhash_),
   PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, transactions_),
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, withdrawals_),
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, excessdatagas_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::types::Withdrawal, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -343,12 +362,13 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_types_2ftypes_2eproto::offsets
   PROTOBUF_FIELD_OFFSET(::types::Withdrawal, address_),
   PROTOBUF_FIELD_OFFSET(::types::Withdrawal, amount_),
   ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayloadV2, _internal_metadata_),
+  PROTOBUF_FIELD_OFFSET(::types::BlobsBundleV1, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayloadV2, payload_),
-  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayloadV2, withdrawals_),
+  PROTOBUF_FIELD_OFFSET(::types::BlobsBundleV1, blockhash_),
+  PROTOBUF_FIELD_OFFSET(::types::BlobsBundleV1, kzgs_),
+  PROTOBUF_FIELD_OFFSET(::types::BlobsBundleV1, blobs_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::types::NodeInfoPorts, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -383,6 +403,13 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_types_2ftypes_2eproto::offsets
   PROTOBUF_FIELD_OFFSET(::types::PeerInfo, connisinbound_),
   PROTOBUF_FIELD_OFFSET(::types::PeerInfo, connistrusted_),
   PROTOBUF_FIELD_OFFSET(::types::PeerInfo, connisstatic_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayloadBodyV1, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayloadBodyV1, transactions_),
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayloadBodyV1, withdrawals_),
 };
 static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, sizeof(::types::H128)},
@@ -393,11 +420,12 @@ static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOB
   { 35, -1, sizeof(::types::H2048)},
   { 42, -1, sizeof(::types::VersionReply)},
   { 50, -1, sizeof(::types::ExecutionPayload)},
-  { 69, -1, sizeof(::types::Withdrawal)},
-  { 78, -1, sizeof(::types::ExecutionPayloadV2)},
-  { 85, -1, sizeof(::types::NodeInfoPorts)},
-  { 92, -1, sizeof(::types::NodeInfoReply)},
-  { 104, -1, sizeof(::types::PeerInfo)},
+  { 72, -1, sizeof(::types::Withdrawal)},
+  { 81, -1, sizeof(::types::BlobsBundleV1)},
+  { 89, -1, sizeof(::types::NodeInfoPorts)},
+  { 96, -1, sizeof(::types::NodeInfoReply)},
+  { 108, -1, sizeof(::types::PeerInfo)},
+  { 123, -1, sizeof(::types::ExecutionPayloadBodyV1)},
 };
 
 static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
@@ -410,10 +438,11 @@ static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] =
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::types::_VersionReply_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::types::_ExecutionPayload_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::types::_Withdrawal_default_instance_),
-  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::types::_ExecutionPayloadV2_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::types::_BlobsBundleV1_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::types::_NodeInfoPorts_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::types::_NodeInfoReply_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::types::_PeerInfo_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::types::_ExecutionPayloadBodyV1_default_instance_),
 };
 
 const char descriptor_table_protodef_types_2ftypes_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
@@ -427,45 +456,50 @@ const char descriptor_table_protodef_types_2ftypes_2eproto[] PROTOBUF_SECTION_VA
   "es.H512\022\027\n\002lo\030\002 \001(\0132\013.types.H512\";\n\005H204"
   "8\022\030\n\002hi\030\001 \001(\0132\014.types.H1024\022\030\n\002lo\030\002 \001(\0132"
   "\014.types.H1024\";\n\014VersionReply\022\r\n\005major\030\001"
-  " \001(\r\022\r\n\005minor\030\002 \001(\r\022\r\n\005patch\030\003 \001(\r\"\216\003\n\020E"
-  "xecutionPayload\022\037\n\nparentHash\030\001 \001(\0132\013.ty"
-  "pes.H256\022\035\n\010coinbase\030\002 \001(\0132\013.types.H160\022"
-  "\036\n\tstateRoot\030\003 \001(\0132\013.types.H256\022 \n\013recei"
-  "ptRoot\030\004 \001(\0132\013.types.H256\022\037\n\tlogsBloom\030\005"
-  " \001(\0132\014.types.H2048\022\037\n\nprevRandao\030\006 \001(\0132\013"
-  ".types.H256\022\023\n\013blockNumber\030\007 \001(\004\022\020\n\010gasL"
-  "imit\030\010 \001(\004\022\017\n\007gasUsed\030\t \001(\004\022\021\n\ttimestamp"
-  "\030\n \001(\004\022\021\n\textraData\030\013 \001(\014\022\"\n\rbaseFeePerG"
-  "as\030\014 \001(\0132\013.types.H256\022\036\n\tblockHash\030\r \001(\013"
-  "2\013.types.H256\022\024\n\014transactions\030\016 \003(\014\"n\n\nW"
-  "ithdrawal\022\r\n\005index\030\001 \001(\004\022\026\n\016validatorInd"
-  "ex\030\002 \001(\004\022\034\n\007address\030\003 \001(\0132\013.types.H160\022\033"
-  "\n\006amount\030\004 \001(\0132\013.types.H256\"f\n\022Execution"
-  "PayloadV2\022(\n\007payload\030\001 \001(\0132\027.types.Execu"
-  "tionPayload\022&\n\013withdrawals\030\002 \003(\0132\021.types"
-  ".Withdrawal\"4\n\rNodeInfoPorts\022\021\n\tdiscover"
-  "y\030\001 \001(\r\022\020\n\010listener\030\002 \001(\r\"\223\001\n\rNodeInfoRe"
-  "ply\022\n\n\002id\030\001 \001(\t\022\014\n\004name\030\002 \001(\t\022\r\n\005enode\030\003"
-  " \001(\t\022\013\n\003enr\030\004 \001(\t\022#\n\005ports\030\005 \001(\0132\024.types"
-  ".NodeInfoPorts\022\024\n\014listenerAddr\030\006 \001(\t\022\021\n\t"
-  "protocols\030\007 \001(\014\"\301\001\n\010PeerInfo\022\n\n\002id\030\001 \001(\t"
-  "\022\014\n\004name\030\002 \001(\t\022\r\n\005enode\030\003 \001(\t\022\013\n\003enr\030\004 \001"
-  "(\t\022\014\n\004caps\030\005 \003(\t\022\025\n\rconnLocalAddr\030\006 \001(\t\022"
-  "\026\n\016connRemoteAddr\030\007 \001(\t\022\025\n\rconnIsInbound"
-  "\030\010 \001(\010\022\025\n\rconnIsTrusted\030\t \001(\010\022\024\n\014connIsS"
-  "tatic\030\n \001(\010:=\n\025service_major_version\022\034.g"
-  "oogle.protobuf.FileOptions\030\321\206\003 \001(\r:=\n\025se"
-  "rvice_minor_version\022\034.google.protobuf.Fi"
-  "leOptions\030\322\206\003 \001(\r:=\n\025service_patch_versi"
-  "on\022\034.google.protobuf.FileOptions\030\323\206\003 \001(\r"
-  "B\017Z\r./types;typesb\006proto3"
+  " \001(\r\022\r\n\005minor\030\002 \001(\r\022\r\n\005patch\030\003 \001(\r\"\353\003\n\020E"
+  "xecutionPayload\022\017\n\007version\030\001 \001(\r\022\037\n\npare"
+  "ntHash\030\002 \001(\0132\013.types.H256\022\035\n\010coinbase\030\003 "
+  "\001(\0132\013.types.H160\022\036\n\tstateRoot\030\004 \001(\0132\013.ty"
+  "pes.H256\022 \n\013receiptRoot\030\005 \001(\0132\013.types.H2"
+  "56\022\037\n\tlogsBloom\030\006 \001(\0132\014.types.H2048\022\037\n\np"
+  "revRandao\030\007 \001(\0132\013.types.H256\022\023\n\013blockNum"
+  "ber\030\010 \001(\004\022\020\n\010gasLimit\030\t \001(\004\022\017\n\007gasUsed\030\n"
+  " \001(\004\022\021\n\ttimestamp\030\013 \001(\004\022\021\n\textraData\030\014 \001"
+  "(\014\022\"\n\rbaseFeePerGas\030\r \001(\0132\013.types.H256\022\036"
+  "\n\tblockHash\030\016 \001(\0132\013.types.H256\022\024\n\014transa"
+  "ctions\030\017 \003(\014\022&\n\013withdrawals\030\020 \003(\0132\021.type"
+  "s.Withdrawal\022\"\n\rexcessDataGas\030\021 \001(\0132\013.ty"
+  "pes.H256\"a\n\nWithdrawal\022\r\n\005index\030\001 \001(\004\022\026\n"
+  "\016validatorIndex\030\002 \001(\004\022\034\n\007address\030\003 \001(\0132\013"
+  ".types.H160\022\016\n\006amount\030\004 \001(\004\"L\n\rBlobsBund"
+  "leV1\022\036\n\tblockHash\030\001 \001(\0132\013.types.H256\022\014\n\004"
+  "kzgs\030\002 \003(\014\022\r\n\005blobs\030\003 \003(\014\"4\n\rNodeInfoPor"
+  "ts\022\021\n\tdiscovery\030\001 \001(\r\022\020\n\010listener\030\002 \001(\r\""
+  "\223\001\n\rNodeInfoReply\022\n\n\002id\030\001 \001(\t\022\014\n\004name\030\002 "
+  "\001(\t\022\r\n\005enode\030\003 \001(\t\022\013\n\003enr\030\004 \001(\t\022#\n\005ports"
+  "\030\005 \001(\0132\024.types.NodeInfoPorts\022\024\n\014listener"
+  "Addr\030\006 \001(\t\022\021\n\tprotocols\030\007 \001(\014\"\301\001\n\010PeerIn"
+  "fo\022\n\n\002id\030\001 \001(\t\022\014\n\004name\030\002 \001(\t\022\r\n\005enode\030\003 "
+  "\001(\t\022\013\n\003enr\030\004 \001(\t\022\014\n\004caps\030\005 \003(\t\022\025\n\rconnLo"
+  "calAddr\030\006 \001(\t\022\026\n\016connRemoteAddr\030\007 \001(\t\022\025\n"
+  "\rconnIsInbound\030\010 \001(\010\022\025\n\rconnIsTrusted\030\t "
+  "\001(\010\022\024\n\014connIsStatic\030\n \001(\010\"V\n\026ExecutionPa"
+  "yloadBodyV1\022\024\n\014transactions\030\001 \003(\014\022&\n\013wit"
+  "hdrawals\030\002 \003(\0132\021.types.Withdrawal:=\n\025ser"
+  "vice_major_version\022\034.google.protobuf.Fil"
+  "eOptions\030\321\206\003 \001(\r:=\n\025service_minor_versio"
+  "n\022\034.google.protobuf.FileOptions\030\322\206\003 \001(\r:"
+  "=\n\025service_patch_version\022\034.google.protob"
+  "uf.FileOptions\030\323\206\003 \001(\rB\017Z\r./types;typesb"
+  "\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_types_2ftypes_2eproto_deps[1] = {
   &::descriptor_table_google_2fprotobuf_2fdescriptor_2eproto,
 };
-static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_types_2ftypes_2eproto_sccs[13] = {
+static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_types_2ftypes_2eproto_sccs[14] = {
+  &scc_info_BlobsBundleV1_types_2ftypes_2eproto.base,
   &scc_info_ExecutionPayload_types_2ftypes_2eproto.base,
-  &scc_info_ExecutionPayloadV2_types_2ftypes_2eproto.base,
+  &scc_info_ExecutionPayloadBodyV1_types_2ftypes_2eproto.base,
   &scc_info_H1024_types_2ftypes_2eproto.base,
   &scc_info_H128_types_2ftypes_2eproto.base,
   &scc_info_H160_types_2ftypes_2eproto.base,
@@ -480,10 +514,10 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_typ
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_types_2ftypes_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_types_2ftypes_2eproto = {
-  false, false, descriptor_table_protodef_types_2ftypes_2eproto, "types/types.proto", 1665,
-  &descriptor_table_types_2ftypes_2eproto_once, descriptor_table_types_2ftypes_2eproto_sccs, descriptor_table_types_2ftypes_2eproto_deps, 13, 1,
+  false, false, descriptor_table_protodef_types_2ftypes_2eproto, "types/types.proto", 1807,
+  &descriptor_table_types_2ftypes_2eproto_once, descriptor_table_types_2ftypes_2eproto_sccs, descriptor_table_types_2ftypes_2eproto_deps, 14, 1,
   schemas, file_default_instances, TableStruct_types_2ftypes_2eproto::offsets,
-  file_level_metadata_types_2ftypes_2eproto, 13, file_level_enum_descriptors_types_2ftypes_2eproto, file_level_service_descriptors_types_2ftypes_2eproto,
+  file_level_metadata_types_2ftypes_2eproto, 14, file_level_enum_descriptors_types_2ftypes_2eproto, file_level_service_descriptors_types_2ftypes_2eproto,
 };
 
 // Force running AddDescriptors() at dynamic initialization time.
@@ -2258,6 +2292,7 @@ class ExecutionPayload::_Internal {
   static const ::types::H256& prevrandao(const ExecutionPayload* msg);
   static const ::types::H256& basefeepergas(const ExecutionPayload* msg);
   static const ::types::H256& blockhash(const ExecutionPayload* msg);
+  static const ::types::H256& excessdatagas(const ExecutionPayload* msg);
 };
 
 const ::types::H256&
@@ -2292,16 +2327,22 @@ const ::types::H256&
 ExecutionPayload::_Internal::blockhash(const ExecutionPayload* msg) {
   return *msg->blockhash_;
 }
+const ::types::H256&
+ExecutionPayload::_Internal::excessdatagas(const ExecutionPayload* msg) {
+  return *msg->excessdatagas_;
+}
 ExecutionPayload::ExecutionPayload(::PROTOBUF_NAMESPACE_ID::Arena* arena)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena),
-  transactions_(arena) {
+  transactions_(arena),
+  withdrawals_(arena) {
   SharedCtor();
   RegisterArenaDtor(arena);
   // @@protoc_insertion_point(arena_constructor:types.ExecutionPayload)
 }
 ExecutionPayload::ExecutionPayload(const ExecutionPayload& from)
   : ::PROTOBUF_NAMESPACE_ID::Message(),
-      transactions_(from.transactions_) {
+      transactions_(from.transactions_),
+      withdrawals_(from.withdrawals_) {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   extradata_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_extradata().empty()) {
@@ -2348,9 +2389,14 @@ ExecutionPayload::ExecutionPayload(const ExecutionPayload& from)
   } else {
     blockhash_ = nullptr;
   }
+  if (from._internal_has_excessdatagas()) {
+    excessdatagas_ = new ::types::H256(*from.excessdatagas_);
+  } else {
+    excessdatagas_ = nullptr;
+  }
   ::memcpy(&blocknumber_, &from.blocknumber_,
-    static_cast<size_t>(reinterpret_cast<char*>(&timestamp_) -
-    reinterpret_cast<char*>(&blocknumber_)) + sizeof(timestamp_));
+    static_cast<size_t>(reinterpret_cast<char*>(&version_) -
+    reinterpret_cast<char*>(&blocknumber_)) + sizeof(version_));
   // @@protoc_insertion_point(copy_constructor:types.ExecutionPayload)
 }
 
@@ -2359,8 +2405,8 @@ void ExecutionPayload::SharedCtor() {
   extradata_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
       reinterpret_cast<char*>(&parenthash_) - reinterpret_cast<char*>(this)),
-      0, static_cast<size_t>(reinterpret_cast<char*>(&timestamp_) -
-      reinterpret_cast<char*>(&parenthash_)) + sizeof(timestamp_));
+      0, static_cast<size_t>(reinterpret_cast<char*>(&version_) -
+      reinterpret_cast<char*>(&parenthash_)) + sizeof(version_));
 }
 
 ExecutionPayload::~ExecutionPayload() {
@@ -2380,6 +2426,7 @@ void ExecutionPayload::SharedDtor() {
   if (this != internal_default_instance()) delete prevrandao_;
   if (this != internal_default_instance()) delete basefeepergas_;
   if (this != internal_default_instance()) delete blockhash_;
+  if (this != internal_default_instance()) delete excessdatagas_;
 }
 
 void ExecutionPayload::ArenaDtor(void* object) {
@@ -2404,6 +2451,7 @@ void ExecutionPayload::Clear() {
   (void) cached_has_bits;
 
   transactions_.Clear();
+  withdrawals_.Clear();
   extradata_.ClearToEmpty();
   if (GetArena() == nullptr && parenthash_ != nullptr) {
     delete parenthash_;
@@ -2437,9 +2485,13 @@ void ExecutionPayload::Clear() {
     delete blockhash_;
   }
   blockhash_ = nullptr;
+  if (GetArena() == nullptr && excessdatagas_ != nullptr) {
+    delete excessdatagas_;
+  }
+  excessdatagas_ = nullptr;
   ::memset(&blocknumber_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&timestamp_) -
-      reinterpret_cast<char*>(&blocknumber_)) + sizeof(timestamp_));
+      reinterpret_cast<char*>(&version_) -
+      reinterpret_cast<char*>(&blocknumber_)) + sizeof(version_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -2450,101 +2502,108 @@ const char* ExecutionPayload::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPA
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // .types.H256 parentHash = 1;
+      // uint32 version = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 8)) {
+          version_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // .types.H256 parentHash = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
           ptr = ctx->ParseMessage(_internal_mutable_parenthash(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H160 coinbase = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
+      // .types.H160 coinbase = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 26)) {
           ptr = ctx->ParseMessage(_internal_mutable_coinbase(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H256 stateRoot = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 26)) {
+      // .types.H256 stateRoot = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 34)) {
           ptr = ctx->ParseMessage(_internal_mutable_stateroot(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H256 receiptRoot = 4;
-      case 4:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 34)) {
+      // .types.H256 receiptRoot = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 42)) {
           ptr = ctx->ParseMessage(_internal_mutable_receiptroot(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H2048 logsBloom = 5;
-      case 5:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 42)) {
+      // .types.H2048 logsBloom = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 50)) {
           ptr = ctx->ParseMessage(_internal_mutable_logsbloom(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H256 prevRandao = 6;
-      case 6:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 50)) {
+      // .types.H256 prevRandao = 7;
+      case 7:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 58)) {
           ptr = ctx->ParseMessage(_internal_mutable_prevrandao(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // uint64 blockNumber = 7;
-      case 7:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 56)) {
+      // uint64 blockNumber = 8;
+      case 8:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 64)) {
           blocknumber_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // uint64 gasLimit = 8;
-      case 8:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 64)) {
+      // uint64 gasLimit = 9;
+      case 9:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 72)) {
           gaslimit_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // uint64 gasUsed = 9;
-      case 9:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 72)) {
+      // uint64 gasUsed = 10;
+      case 10:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 80)) {
           gasused_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // uint64 timestamp = 10;
-      case 10:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 80)) {
+      // uint64 timestamp = 11;
+      case 11:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 88)) {
           timestamp_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // bytes extraData = 11;
-      case 11:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 90)) {
+      // bytes extraData = 12;
+      case 12:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 98)) {
           auto str = _internal_mutable_extradata();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H256 baseFeePerGas = 12;
-      case 12:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 98)) {
+      // .types.H256 baseFeePerGas = 13;
+      case 13:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 106)) {
           ptr = ctx->ParseMessage(_internal_mutable_basefeepergas(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H256 blockHash = 13;
-      case 13:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 106)) {
+      // .types.H256 blockHash = 14;
+      case 14:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 114)) {
           ptr = ctx->ParseMessage(_internal_mutable_blockhash(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // repeated bytes transactions = 14;
-      case 14:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 114)) {
+      // repeated bytes transactions = 15;
+      case 15:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 122)) {
           ptr -= 1;
           do {
             ptr += 1;
@@ -2552,7 +2611,26 @@ const char* ExecutionPayload::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPA
             ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<114>(ptr));
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<122>(ptr));
+        } else goto handle_unusual;
+        continue;
+      // repeated .types.Withdrawal withdrawals = 16;
+      case 16:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 130)) {
+          ptr -= 2;
+          do {
+            ptr += 2;
+            ptr = ctx->ParseMessage(_internal_add_withdrawals(), ptr);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<130>(ptr));
+        } else goto handle_unusual;
+        continue;
+      // .types.H256 excessDataGas = 17;
+      case 17:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 138)) {
+          ptr = ctx->ParseMessage(_internal_mutable_excessdatagas(), ptr);
+          CHK_(ptr);
         } else goto handle_unusual;
         continue;
       default: {
@@ -2583,104 +2661,126 @@ failure:
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // .types.H256 parentHash = 1;
+  // uint32 version = 1;
+  if (this->version() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(1, this->_internal_version(), target);
+  }
+
+  // .types.H256 parentHash = 2;
   if (this->has_parenthash()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        1, _Internal::parenthash(this), target, stream);
+        2, _Internal::parenthash(this), target, stream);
   }
 
-  // .types.H160 coinbase = 2;
+  // .types.H160 coinbase = 3;
   if (this->has_coinbase()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        2, _Internal::coinbase(this), target, stream);
+        3, _Internal::coinbase(this), target, stream);
   }
 
-  // .types.H256 stateRoot = 3;
+  // .types.H256 stateRoot = 4;
   if (this->has_stateroot()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        3, _Internal::stateroot(this), target, stream);
+        4, _Internal::stateroot(this), target, stream);
   }
 
-  // .types.H256 receiptRoot = 4;
+  // .types.H256 receiptRoot = 5;
   if (this->has_receiptroot()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        4, _Internal::receiptroot(this), target, stream);
+        5, _Internal::receiptroot(this), target, stream);
   }
 
-  // .types.H2048 logsBloom = 5;
+  // .types.H2048 logsBloom = 6;
   if (this->has_logsbloom()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        5, _Internal::logsbloom(this), target, stream);
+        6, _Internal::logsbloom(this), target, stream);
   }
 
-  // .types.H256 prevRandao = 6;
+  // .types.H256 prevRandao = 7;
   if (this->has_prevrandao()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        6, _Internal::prevrandao(this), target, stream);
+        7, _Internal::prevrandao(this), target, stream);
   }
 
-  // uint64 blockNumber = 7;
+  // uint64 blockNumber = 8;
   if (this->blocknumber() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(7, this->_internal_blocknumber(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(8, this->_internal_blocknumber(), target);
   }
 
-  // uint64 gasLimit = 8;
+  // uint64 gasLimit = 9;
   if (this->gaslimit() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(8, this->_internal_gaslimit(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(9, this->_internal_gaslimit(), target);
   }
 
-  // uint64 gasUsed = 9;
+  // uint64 gasUsed = 10;
   if (this->gasused() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(9, this->_internal_gasused(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(10, this->_internal_gasused(), target);
   }
 
-  // uint64 timestamp = 10;
+  // uint64 timestamp = 11;
   if (this->timestamp() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(10, this->_internal_timestamp(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(11, this->_internal_timestamp(), target);
   }
 
-  // bytes extraData = 11;
+  // bytes extraData = 12;
   if (this->extradata().size() > 0) {
     target = stream->WriteBytesMaybeAliased(
-        11, this->_internal_extradata(), target);
+        12, this->_internal_extradata(), target);
   }
 
-  // .types.H256 baseFeePerGas = 12;
+  // .types.H256 baseFeePerGas = 13;
   if (this->has_basefeepergas()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        12, _Internal::basefeepergas(this), target, stream);
+        13, _Internal::basefeepergas(this), target, stream);
   }
 
-  // .types.H256 blockHash = 13;
+  // .types.H256 blockHash = 14;
   if (this->has_blockhash()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        13, _Internal::blockhash(this), target, stream);
+        14, _Internal::blockhash(this), target, stream);
   }
 
-  // repeated bytes transactions = 14;
+  // repeated bytes transactions = 15;
   for (int i = 0, n = this->_internal_transactions_size(); i < n; i++) {
     const auto& s = this->_internal_transactions(i);
-    target = stream->WriteBytes(14, s, target);
+    target = stream->WriteBytes(15, s, target);
+  }
+
+  // repeated .types.Withdrawal withdrawals = 16;
+  for (unsigned int i = 0,
+      n = static_cast<unsigned int>(this->_internal_withdrawals_size()); i < n; i++) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(16, this->_internal_withdrawals(i), target, stream);
+  }
+
+  // .types.H256 excessDataGas = 17;
+  if (this->has_excessdatagas()) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(
+        17, _Internal::excessdatagas(this), target, stream);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -2699,7 +2799,7 @@ size_t ExecutionPayload::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // repeated bytes transactions = 14;
+  // repeated bytes transactions = 15;
   total_size += 1 *
       ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(transactions_.size());
   for (int i = 0, n = transactions_.size(); i < n; i++) {
@@ -2707,95 +2807,116 @@ size_t ExecutionPayload::ByteSizeLong() const {
       transactions_.Get(i));
   }
 
-  // bytes extraData = 11;
+  // repeated .types.Withdrawal withdrawals = 16;
+  total_size += 2UL * this->_internal_withdrawals_size();
+  for (const auto& msg : this->withdrawals_) {
+    total_size +=
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
+
+  // bytes extraData = 12;
   if (this->extradata().size() > 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
         this->_internal_extradata());
   }
 
-  // .types.H256 parentHash = 1;
+  // .types.H256 parentHash = 2;
   if (this->has_parenthash()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *parenthash_);
   }
 
-  // .types.H160 coinbase = 2;
+  // .types.H160 coinbase = 3;
   if (this->has_coinbase()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *coinbase_);
   }
 
-  // .types.H256 stateRoot = 3;
+  // .types.H256 stateRoot = 4;
   if (this->has_stateroot()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *stateroot_);
   }
 
-  // .types.H256 receiptRoot = 4;
+  // .types.H256 receiptRoot = 5;
   if (this->has_receiptroot()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *receiptroot_);
   }
 
-  // .types.H2048 logsBloom = 5;
+  // .types.H2048 logsBloom = 6;
   if (this->has_logsbloom()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *logsbloom_);
   }
 
-  // .types.H256 prevRandao = 6;
+  // .types.H256 prevRandao = 7;
   if (this->has_prevrandao()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *prevrandao_);
   }
 
-  // .types.H256 baseFeePerGas = 12;
+  // .types.H256 baseFeePerGas = 13;
   if (this->has_basefeepergas()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *basefeepergas_);
   }
 
-  // .types.H256 blockHash = 13;
+  // .types.H256 blockHash = 14;
   if (this->has_blockhash()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *blockhash_);
   }
 
-  // uint64 blockNumber = 7;
+  // .types.H256 excessDataGas = 17;
+  if (this->has_excessdatagas()) {
+    total_size += 2 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *excessdatagas_);
+  }
+
+  // uint64 blockNumber = 8;
   if (this->blocknumber() != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
         this->_internal_blocknumber());
   }
 
-  // uint64 gasLimit = 8;
+  // uint64 gasLimit = 9;
   if (this->gaslimit() != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
         this->_internal_gaslimit());
   }
 
-  // uint64 gasUsed = 9;
+  // uint64 gasUsed = 10;
   if (this->gasused() != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
         this->_internal_gasused());
   }
 
-  // uint64 timestamp = 10;
+  // uint64 timestamp = 11;
   if (this->timestamp() != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
         this->_internal_timestamp());
+  }
+
+  // uint32 version = 1;
+  if (this->version() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
+        this->_internal_version());
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -2830,6 +2951,7 @@ void ExecutionPayload::MergeFrom(const ExecutionPayload& from) {
   (void) cached_has_bits;
 
   transactions_.MergeFrom(from.transactions_);
+  withdrawals_.MergeFrom(from.withdrawals_);
   if (from.extradata().size() > 0) {
     _internal_set_extradata(from._internal_extradata());
   }
@@ -2857,6 +2979,9 @@ void ExecutionPayload::MergeFrom(const ExecutionPayload& from) {
   if (from.has_blockhash()) {
     _internal_mutable_blockhash()->::types::H256::MergeFrom(from._internal_blockhash());
   }
+  if (from.has_excessdatagas()) {
+    _internal_mutable_excessdatagas()->::types::H256::MergeFrom(from._internal_excessdatagas());
+  }
   if (from.blocknumber() != 0) {
     _internal_set_blocknumber(from._internal_blocknumber());
   }
@@ -2868,6 +2993,9 @@ void ExecutionPayload::MergeFrom(const ExecutionPayload& from) {
   }
   if (from.timestamp() != 0) {
     _internal_set_timestamp(from._internal_timestamp());
+  }
+  if (from.version() != 0) {
+    _internal_set_version(from._internal_version());
   }
 }
 
@@ -2893,10 +3021,11 @@ void ExecutionPayload::InternalSwap(ExecutionPayload* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
   transactions_.InternalSwap(&other->transactions_);
+  withdrawals_.InternalSwap(&other->withdrawals_);
   extradata_.Swap(&other->extradata_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(ExecutionPayload, timestamp_)
-      + sizeof(ExecutionPayload::timestamp_)
+      PROTOBUF_FIELD_OFFSET(ExecutionPayload, version_)
+      + sizeof(ExecutionPayload::version_)
       - PROTOBUF_FIELD_OFFSET(ExecutionPayload, parenthash_)>(
           reinterpret_cast<char*>(&parenthash_),
           reinterpret_cast<char*>(&other->parenthash_));
@@ -2912,16 +3041,11 @@ void ExecutionPayload::InternalSwap(ExecutionPayload* other) {
 class Withdrawal::_Internal {
  public:
   static const ::types::H160& address(const Withdrawal* msg);
-  static const ::types::H256& amount(const Withdrawal* msg);
 };
 
 const ::types::H160&
 Withdrawal::_Internal::address(const Withdrawal* msg) {
   return *msg->address_;
-}
-const ::types::H256&
-Withdrawal::_Internal::amount(const Withdrawal* msg) {
-  return *msg->amount_;
 }
 Withdrawal::Withdrawal(::PROTOBUF_NAMESPACE_ID::Arena* arena)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
@@ -2937,14 +3061,9 @@ Withdrawal::Withdrawal(const Withdrawal& from)
   } else {
     address_ = nullptr;
   }
-  if (from._internal_has_amount()) {
-    amount_ = new ::types::H256(*from.amount_);
-  } else {
-    amount_ = nullptr;
-  }
   ::memcpy(&index_, &from.index_,
-    static_cast<size_t>(reinterpret_cast<char*>(&validatorindex_) -
-    reinterpret_cast<char*>(&index_)) + sizeof(validatorindex_));
+    static_cast<size_t>(reinterpret_cast<char*>(&amount_) -
+    reinterpret_cast<char*>(&index_)) + sizeof(amount_));
   // @@protoc_insertion_point(copy_constructor:types.Withdrawal)
 }
 
@@ -2952,8 +3071,8 @@ void Withdrawal::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_Withdrawal_types_2ftypes_2eproto.base);
   ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
       reinterpret_cast<char*>(&address_) - reinterpret_cast<char*>(this)),
-      0, static_cast<size_t>(reinterpret_cast<char*>(&validatorindex_) -
-      reinterpret_cast<char*>(&address_)) + sizeof(validatorindex_));
+      0, static_cast<size_t>(reinterpret_cast<char*>(&amount_) -
+      reinterpret_cast<char*>(&address_)) + sizeof(amount_));
 }
 
 Withdrawal::~Withdrawal() {
@@ -2965,7 +3084,6 @@ Withdrawal::~Withdrawal() {
 void Withdrawal::SharedDtor() {
   GOOGLE_DCHECK(GetArena() == nullptr);
   if (this != internal_default_instance()) delete address_;
-  if (this != internal_default_instance()) delete amount_;
 }
 
 void Withdrawal::ArenaDtor(void* object) {
@@ -2993,13 +3111,9 @@ void Withdrawal::Clear() {
     delete address_;
   }
   address_ = nullptr;
-  if (GetArena() == nullptr && amount_ != nullptr) {
-    delete amount_;
-  }
-  amount_ = nullptr;
   ::memset(&index_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&validatorindex_) -
-      reinterpret_cast<char*>(&index_)) + sizeof(validatorindex_));
+      reinterpret_cast<char*>(&amount_) -
+      reinterpret_cast<char*>(&index_)) + sizeof(amount_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -3031,10 +3145,10 @@ const char* Withdrawal::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID:
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H256 amount = 4;
+      // uint64 amount = 4;
       case 4:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 34)) {
-          ptr = ctx->ParseMessage(_internal_mutable_amount(), ptr);
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 32)) {
+          amount_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -3086,12 +3200,10 @@ failure:
         3, _Internal::address(this), target, stream);
   }
 
-  // .types.H256 amount = 4;
-  if (this->has_amount()) {
+  // uint64 amount = 4;
+  if (this->amount() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(
-        4, _Internal::amount(this), target, stream);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(4, this->_internal_amount(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -3117,13 +3229,6 @@ size_t Withdrawal::ByteSizeLong() const {
         *address_);
   }
 
-  // .types.H256 amount = 4;
-  if (this->has_amount()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *amount_);
-  }
-
   // uint64 index = 1;
   if (this->index() != 0) {
     total_size += 1 +
@@ -3136,6 +3241,13 @@ size_t Withdrawal::ByteSizeLong() const {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
         this->_internal_validatorindex());
+  }
+
+  // uint64 amount = 4;
+  if (this->amount() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_amount());
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -3172,14 +3284,14 @@ void Withdrawal::MergeFrom(const Withdrawal& from) {
   if (from.has_address()) {
     _internal_mutable_address()->::types::H160::MergeFrom(from._internal_address());
   }
-  if (from.has_amount()) {
-    _internal_mutable_amount()->::types::H256::MergeFrom(from._internal_amount());
-  }
   if (from.index() != 0) {
     _internal_set_index(from._internal_index());
   }
   if (from.validatorindex() != 0) {
     _internal_set_validatorindex(from._internal_validatorindex());
+  }
+  if (from.amount() != 0) {
+    _internal_set_amount(from._internal_amount());
   }
 }
 
@@ -3205,8 +3317,8 @@ void Withdrawal::InternalSwap(Withdrawal* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(Withdrawal, validatorindex_)
-      + sizeof(Withdrawal::validatorindex_)
+      PROTOBUF_FIELD_OFFSET(Withdrawal, amount_)
+      + sizeof(Withdrawal::amount_)
       - PROTOBUF_FIELD_OFFSET(Withdrawal, address_)>(
           reinterpret_cast<char*>(&address_),
           reinterpret_cast<char*>(&other->address_));
@@ -3219,103 +3331,120 @@ void Withdrawal::InternalSwap(Withdrawal* other) {
 
 // ===================================================================
 
-class ExecutionPayloadV2::_Internal {
+class BlobsBundleV1::_Internal {
  public:
-  static const ::types::ExecutionPayload& payload(const ExecutionPayloadV2* msg);
+  static const ::types::H256& blockhash(const BlobsBundleV1* msg);
 };
 
-const ::types::ExecutionPayload&
-ExecutionPayloadV2::_Internal::payload(const ExecutionPayloadV2* msg) {
-  return *msg->payload_;
+const ::types::H256&
+BlobsBundleV1::_Internal::blockhash(const BlobsBundleV1* msg) {
+  return *msg->blockhash_;
 }
-ExecutionPayloadV2::ExecutionPayloadV2(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+BlobsBundleV1::BlobsBundleV1(::PROTOBUF_NAMESPACE_ID::Arena* arena)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena),
-  withdrawals_(arena) {
+  kzgs_(arena),
+  blobs_(arena) {
   SharedCtor();
   RegisterArenaDtor(arena);
-  // @@protoc_insertion_point(arena_constructor:types.ExecutionPayloadV2)
+  // @@protoc_insertion_point(arena_constructor:types.BlobsBundleV1)
 }
-ExecutionPayloadV2::ExecutionPayloadV2(const ExecutionPayloadV2& from)
+BlobsBundleV1::BlobsBundleV1(const BlobsBundleV1& from)
   : ::PROTOBUF_NAMESPACE_ID::Message(),
-      withdrawals_(from.withdrawals_) {
+      kzgs_(from.kzgs_),
+      blobs_(from.blobs_) {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  if (from._internal_has_payload()) {
-    payload_ = new ::types::ExecutionPayload(*from.payload_);
+  if (from._internal_has_blockhash()) {
+    blockhash_ = new ::types::H256(*from.blockhash_);
   } else {
-    payload_ = nullptr;
+    blockhash_ = nullptr;
   }
-  // @@protoc_insertion_point(copy_constructor:types.ExecutionPayloadV2)
+  // @@protoc_insertion_point(copy_constructor:types.BlobsBundleV1)
 }
 
-void ExecutionPayloadV2::SharedCtor() {
-  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_ExecutionPayloadV2_types_2ftypes_2eproto.base);
-  payload_ = nullptr;
+void BlobsBundleV1::SharedCtor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_BlobsBundleV1_types_2ftypes_2eproto.base);
+  blockhash_ = nullptr;
 }
 
-ExecutionPayloadV2::~ExecutionPayloadV2() {
-  // @@protoc_insertion_point(destructor:types.ExecutionPayloadV2)
+BlobsBundleV1::~BlobsBundleV1() {
+  // @@protoc_insertion_point(destructor:types.BlobsBundleV1)
   SharedDtor();
   _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-void ExecutionPayloadV2::SharedDtor() {
+void BlobsBundleV1::SharedDtor() {
   GOOGLE_DCHECK(GetArena() == nullptr);
-  if (this != internal_default_instance()) delete payload_;
+  if (this != internal_default_instance()) delete blockhash_;
 }
 
-void ExecutionPayloadV2::ArenaDtor(void* object) {
-  ExecutionPayloadV2* _this = reinterpret_cast< ExecutionPayloadV2* >(object);
+void BlobsBundleV1::ArenaDtor(void* object) {
+  BlobsBundleV1* _this = reinterpret_cast< BlobsBundleV1* >(object);
   (void)_this;
 }
-void ExecutionPayloadV2::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
+void BlobsBundleV1::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
 }
-void ExecutionPayloadV2::SetCachedSize(int size) const {
+void BlobsBundleV1::SetCachedSize(int size) const {
   _cached_size_.Set(size);
 }
-const ExecutionPayloadV2& ExecutionPayloadV2::default_instance() {
-  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_ExecutionPayloadV2_types_2ftypes_2eproto.base);
+const BlobsBundleV1& BlobsBundleV1::default_instance() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_BlobsBundleV1_types_2ftypes_2eproto.base);
   return *internal_default_instance();
 }
 
 
-void ExecutionPayloadV2::Clear() {
-// @@protoc_insertion_point(message_clear_start:types.ExecutionPayloadV2)
+void BlobsBundleV1::Clear() {
+// @@protoc_insertion_point(message_clear_start:types.BlobsBundleV1)
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  withdrawals_.Clear();
-  if (GetArena() == nullptr && payload_ != nullptr) {
-    delete payload_;
+  kzgs_.Clear();
+  blobs_.Clear();
+  if (GetArena() == nullptr && blockhash_ != nullptr) {
+    delete blockhash_;
   }
-  payload_ = nullptr;
+  blockhash_ = nullptr;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-const char* ExecutionPayloadV2::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+const char* BlobsBundleV1::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // .types.ExecutionPayload payload = 1;
+      // .types.H256 blockHash = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
-          ptr = ctx->ParseMessage(_internal_mutable_payload(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_blockhash(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // repeated .types.Withdrawal withdrawals = 2;
+      // repeated bytes kzgs = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
           ptr -= 1;
           do {
             ptr += 1;
-            ptr = ctx->ParseMessage(_internal_add_withdrawals(), ptr);
+            auto str = _internal_add_kzgs();
+            ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
           } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<18>(ptr));
+        } else goto handle_unusual;
+        continue;
+      // repeated bytes blobs = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 26)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            auto str = _internal_add_blobs();
+            ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<26>(ptr));
         } else goto handle_unusual;
         continue;
       default: {
@@ -3340,56 +3469,69 @@ failure:
 #undef CHK_
 }
 
-::PROTOBUF_NAMESPACE_ID::uint8* ExecutionPayloadV2::_InternalSerialize(
+::PROTOBUF_NAMESPACE_ID::uint8* BlobsBundleV1::_InternalSerialize(
     ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:types.ExecutionPayloadV2)
+  // @@protoc_insertion_point(serialize_to_array_start:types.BlobsBundleV1)
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // .types.ExecutionPayload payload = 1;
-  if (this->has_payload()) {
+  // .types.H256 blockHash = 1;
+  if (this->has_blockhash()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        1, _Internal::payload(this), target, stream);
+        1, _Internal::blockhash(this), target, stream);
   }
 
-  // repeated .types.Withdrawal withdrawals = 2;
-  for (unsigned int i = 0,
-      n = static_cast<unsigned int>(this->_internal_withdrawals_size()); i < n; i++) {
-    target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(2, this->_internal_withdrawals(i), target, stream);
+  // repeated bytes kzgs = 2;
+  for (int i = 0, n = this->_internal_kzgs_size(); i < n; i++) {
+    const auto& s = this->_internal_kzgs(i);
+    target = stream->WriteBytes(2, s, target);
+  }
+
+  // repeated bytes blobs = 3;
+  for (int i = 0, n = this->_internal_blobs_size(); i < n; i++) {
+    const auto& s = this->_internal_blobs(i);
+    target = stream->WriteBytes(3, s, target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:types.ExecutionPayloadV2)
+  // @@protoc_insertion_point(serialize_to_array_end:types.BlobsBundleV1)
   return target;
 }
 
-size_t ExecutionPayloadV2::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:types.ExecutionPayloadV2)
+size_t BlobsBundleV1::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:types.BlobsBundleV1)
   size_t total_size = 0;
 
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // repeated .types.Withdrawal withdrawals = 2;
-  total_size += 1UL * this->_internal_withdrawals_size();
-  for (const auto& msg : this->withdrawals_) {
-    total_size +=
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  // repeated bytes kzgs = 2;
+  total_size += 1 *
+      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(kzgs_.size());
+  for (int i = 0, n = kzgs_.size(); i < n; i++) {
+    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+      kzgs_.Get(i));
   }
 
-  // .types.ExecutionPayload payload = 1;
-  if (this->has_payload()) {
+  // repeated bytes blobs = 3;
+  total_size += 1 *
+      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(blobs_.size());
+  for (int i = 0, n = blobs_.size(); i < n; i++) {
+    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+      blobs_.Get(i));
+  }
+
+  // .types.H256 blockHash = 1;
+  if (this->has_blockhash()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *payload_);
+        *blockhash_);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -3401,60 +3543,62 @@ size_t ExecutionPayloadV2::ByteSizeLong() const {
   return total_size;
 }
 
-void ExecutionPayloadV2::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_merge_from_start:types.ExecutionPayloadV2)
+void BlobsBundleV1::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:types.BlobsBundleV1)
   GOOGLE_DCHECK_NE(&from, this);
-  const ExecutionPayloadV2* source =
-      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<ExecutionPayloadV2>(
+  const BlobsBundleV1* source =
+      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<BlobsBundleV1>(
           &from);
   if (source == nullptr) {
-  // @@protoc_insertion_point(generalized_merge_from_cast_fail:types.ExecutionPayloadV2)
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:types.BlobsBundleV1)
     ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
   } else {
-  // @@protoc_insertion_point(generalized_merge_from_cast_success:types.ExecutionPayloadV2)
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:types.BlobsBundleV1)
     MergeFrom(*source);
   }
 }
 
-void ExecutionPayloadV2::MergeFrom(const ExecutionPayloadV2& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:types.ExecutionPayloadV2)
+void BlobsBundleV1::MergeFrom(const BlobsBundleV1& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:types.BlobsBundleV1)
   GOOGLE_DCHECK_NE(&from, this);
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  withdrawals_.MergeFrom(from.withdrawals_);
-  if (from.has_payload()) {
-    _internal_mutable_payload()->::types::ExecutionPayload::MergeFrom(from._internal_payload());
+  kzgs_.MergeFrom(from.kzgs_);
+  blobs_.MergeFrom(from.blobs_);
+  if (from.has_blockhash()) {
+    _internal_mutable_blockhash()->::types::H256::MergeFrom(from._internal_blockhash());
   }
 }
 
-void ExecutionPayloadV2::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_copy_from_start:types.ExecutionPayloadV2)
+void BlobsBundleV1::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:types.BlobsBundleV1)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-void ExecutionPayloadV2::CopyFrom(const ExecutionPayloadV2& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:types.ExecutionPayloadV2)
+void BlobsBundleV1::CopyFrom(const BlobsBundleV1& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:types.BlobsBundleV1)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-bool ExecutionPayloadV2::IsInitialized() const {
+bool BlobsBundleV1::IsInitialized() const {
   return true;
 }
 
-void ExecutionPayloadV2::InternalSwap(ExecutionPayloadV2* other) {
+void BlobsBundleV1::InternalSwap(BlobsBundleV1* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-  withdrawals_.InternalSwap(&other->withdrawals_);
-  swap(payload_, other->payload_);
+  kzgs_.InternalSwap(&other->kzgs_);
+  blobs_.InternalSwap(&other->blobs_);
+  swap(blockhash_, other->blockhash_);
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata ExecutionPayloadV2::GetMetadata() const {
+::PROTOBUF_NAMESPACE_ID::Metadata BlobsBundleV1::GetMetadata() const {
   return GetMetadataStatic();
 }
 
@@ -4632,6 +4776,238 @@ void PeerInfo::InternalSwap(PeerInfo* other) {
   return GetMetadataStatic();
 }
 
+
+// ===================================================================
+
+class ExecutionPayloadBodyV1::_Internal {
+ public:
+};
+
+ExecutionPayloadBodyV1::ExecutionPayloadBodyV1(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena),
+  transactions_(arena),
+  withdrawals_(arena) {
+  SharedCtor();
+  RegisterArenaDtor(arena);
+  // @@protoc_insertion_point(arena_constructor:types.ExecutionPayloadBodyV1)
+}
+ExecutionPayloadBodyV1::ExecutionPayloadBodyV1(const ExecutionPayloadBodyV1& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message(),
+      transactions_(from.transactions_),
+      withdrawals_(from.withdrawals_) {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  // @@protoc_insertion_point(copy_constructor:types.ExecutionPayloadBodyV1)
+}
+
+void ExecutionPayloadBodyV1::SharedCtor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_ExecutionPayloadBodyV1_types_2ftypes_2eproto.base);
+}
+
+ExecutionPayloadBodyV1::~ExecutionPayloadBodyV1() {
+  // @@protoc_insertion_point(destructor:types.ExecutionPayloadBodyV1)
+  SharedDtor();
+  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+void ExecutionPayloadBodyV1::SharedDtor() {
+  GOOGLE_DCHECK(GetArena() == nullptr);
+}
+
+void ExecutionPayloadBodyV1::ArenaDtor(void* object) {
+  ExecutionPayloadBodyV1* _this = reinterpret_cast< ExecutionPayloadBodyV1* >(object);
+  (void)_this;
+}
+void ExecutionPayloadBodyV1::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
+}
+void ExecutionPayloadBodyV1::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+const ExecutionPayloadBodyV1& ExecutionPayloadBodyV1::default_instance() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_ExecutionPayloadBodyV1_types_2ftypes_2eproto.base);
+  return *internal_default_instance();
+}
+
+
+void ExecutionPayloadBodyV1::Clear() {
+// @@protoc_insertion_point(message_clear_start:types.ExecutionPayloadBodyV1)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  transactions_.Clear();
+  withdrawals_.Clear();
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* ExecutionPayloadBodyV1::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    ::PROTOBUF_NAMESPACE_ID::uint32 tag;
+    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    CHK_(ptr);
+    switch (tag >> 3) {
+      // repeated bytes transactions = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            auto str = _internal_add_transactions();
+            ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<10>(ptr));
+        } else goto handle_unusual;
+        continue;
+      // repeated .types.Withdrawal withdrawals = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            ptr = ctx->ParseMessage(_internal_add_withdrawals(), ptr);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<18>(ptr));
+        } else goto handle_unusual;
+        continue;
+      default: {
+      handle_unusual:
+        if ((tag & 7) == 4 || tag == 0) {
+          ctx->SetLastTag(tag);
+          goto success;
+        }
+        ptr = UnknownFieldParse(tag,
+            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+            ptr, ctx);
+        CHK_(ptr != nullptr);
+        continue;
+      }
+    }  // switch
+  }  // while
+success:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto success;
+#undef CHK_
+}
+
+::PROTOBUF_NAMESPACE_ID::uint8* ExecutionPayloadBodyV1::_InternalSerialize(
+    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:types.ExecutionPayloadBodyV1)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // repeated bytes transactions = 1;
+  for (int i = 0, n = this->_internal_transactions_size(); i < n; i++) {
+    const auto& s = this->_internal_transactions(i);
+    target = stream->WriteBytes(1, s, target);
+  }
+
+  // repeated .types.Withdrawal withdrawals = 2;
+  for (unsigned int i = 0,
+      n = static_cast<unsigned int>(this->_internal_withdrawals_size()); i < n; i++) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(2, this->_internal_withdrawals(i), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:types.ExecutionPayloadBodyV1)
+  return target;
+}
+
+size_t ExecutionPayloadBodyV1::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:types.ExecutionPayloadBodyV1)
+  size_t total_size = 0;
+
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // repeated bytes transactions = 1;
+  total_size += 1 *
+      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(transactions_.size());
+  for (int i = 0, n = transactions_.size(); i < n; i++) {
+    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+      transactions_.Get(i));
+  }
+
+  // repeated .types.Withdrawal withdrawals = 2;
+  total_size += 1UL * this->_internal_withdrawals_size();
+  for (const auto& msg : this->withdrawals_) {
+    total_size +=
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
+        _internal_metadata_, total_size, &_cached_size_);
+  }
+  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
+  SetCachedSize(cached_size);
+  return total_size;
+}
+
+void ExecutionPayloadBodyV1::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:types.ExecutionPayloadBodyV1)
+  GOOGLE_DCHECK_NE(&from, this);
+  const ExecutionPayloadBodyV1* source =
+      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<ExecutionPayloadBodyV1>(
+          &from);
+  if (source == nullptr) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:types.ExecutionPayloadBodyV1)
+    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:types.ExecutionPayloadBodyV1)
+    MergeFrom(*source);
+  }
+}
+
+void ExecutionPayloadBodyV1::MergeFrom(const ExecutionPayloadBodyV1& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:types.ExecutionPayloadBodyV1)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  transactions_.MergeFrom(from.transactions_);
+  withdrawals_.MergeFrom(from.withdrawals_);
+}
+
+void ExecutionPayloadBodyV1::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:types.ExecutionPayloadBodyV1)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void ExecutionPayloadBodyV1::CopyFrom(const ExecutionPayloadBodyV1& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:types.ExecutionPayloadBodyV1)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool ExecutionPayloadBodyV1::IsInitialized() const {
+  return true;
+}
+
+void ExecutionPayloadBodyV1::InternalSwap(ExecutionPayloadBodyV1* other) {
+  using std::swap;
+  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
+  transactions_.InternalSwap(&other->transactions_);
+  withdrawals_.InternalSwap(&other->withdrawals_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata ExecutionPayloadBodyV1::GetMetadata() const {
+  return GetMetadataStatic();
+}
+
 ::PROTOBUF_NAMESPACE_ID::internal::ExtensionIdentifier< ::google::protobuf::FileOptions,
     ::PROTOBUF_NAMESPACE_ID::internal::PrimitiveTypeTraits< ::PROTOBUF_NAMESPACE_ID::uint32 >, 13, false >
   service_major_version(kServiceMajorVersionFieldNumber, 0u);
@@ -4672,8 +5048,8 @@ template<> PROTOBUF_NOINLINE ::types::ExecutionPayload* Arena::CreateMaybeMessag
 template<> PROTOBUF_NOINLINE ::types::Withdrawal* Arena::CreateMaybeMessage< ::types::Withdrawal >(Arena* arena) {
   return Arena::CreateMessageInternal< ::types::Withdrawal >(arena);
 }
-template<> PROTOBUF_NOINLINE ::types::ExecutionPayloadV2* Arena::CreateMaybeMessage< ::types::ExecutionPayloadV2 >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::types::ExecutionPayloadV2 >(arena);
+template<> PROTOBUF_NOINLINE ::types::BlobsBundleV1* Arena::CreateMaybeMessage< ::types::BlobsBundleV1 >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::types::BlobsBundleV1 >(arena);
 }
 template<> PROTOBUF_NOINLINE ::types::NodeInfoPorts* Arena::CreateMaybeMessage< ::types::NodeInfoPorts >(Arena* arena) {
   return Arena::CreateMessageInternal< ::types::NodeInfoPorts >(arena);
@@ -4683,6 +5059,9 @@ template<> PROTOBUF_NOINLINE ::types::NodeInfoReply* Arena::CreateMaybeMessage< 
 }
 template<> PROTOBUF_NOINLINE ::types::PeerInfo* Arena::CreateMaybeMessage< ::types::PeerInfo >(Arena* arena) {
   return Arena::CreateMessageInternal< ::types::PeerInfo >(arena);
+}
+template<> PROTOBUF_NOINLINE ::types::ExecutionPayloadBodyV1* Arena::CreateMaybeMessage< ::types::ExecutionPayloadBodyV1 >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::types::ExecutionPayloadBodyV1 >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE
 

@@ -16,30 +16,9 @@
 
 #pragma once
 
-//#include <optional>
-//#include <set>
-//#include <string>
-//#include <vector>
-
-//#include <evmc/evmc.hpp>
-//#include <intx/intx.hpp>
 #include <nlohmann/json.hpp>
 
-//#include <silkworm/core/types/block.hpp>
-//#include <silkworm/core/types/transaction.hpp>
-//#include <silkworm/silkrpc/types/block.hpp>
-//#include <silkworm/silkrpc/types/call.hpp>
-//#include <silkworm/silkrpc/types/chain_config.hpp>
-//#include <silkworm/silkrpc/types/chain_traffic.hpp>
-//#include <silkworm/silkrpc/types/error.hpp>
-//#include <silkworm/silkrpc/types/execution_payload.hpp>
-//#include <silkworm/silkrpc/types/filter.hpp>
-//#include <silkworm/silkrpc/types/issuance.hpp>
 #include <silkworm/silkrpc/types/log.hpp>
-//#include <silkworm/silkrpc/types/node_info.hpp>
-//#include <silkworm/silkrpc/types/receipt.hpp>
-//#include <silkworm/silkrpc/types/syncing_data.hpp>
-//#include <silkworm/silkrpc/types/transaction.hpp>
 
 namespace silkworm::rpc {
 

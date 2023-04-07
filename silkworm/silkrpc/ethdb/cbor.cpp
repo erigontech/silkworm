@@ -100,7 +100,7 @@ class LogCborListener : public cbor::listener {
             throw std::invalid_argument("Log CBOR: unexpected format(on_bytes negatize size)");
         }
         if (state_ == ProcessingState::kWaitAddress) {
-            size_t n{static_cast<size_t>(size) < static_cast<size_t>(kAddressLength) ? static_cast<size_t>(size) : static_cast<size_t>(kAddressLength)};
+            size_t n{static_cast<size_t>(size) < kAddressLength ? static_cast<size_t>(size) : kAddressLength};
             std::memcpy(current_log_.address.bytes + kAddressLength - n, data, n);
             state_ = ProcessingState::kWaitNTopics;
         } else if (state_ == ProcessingState::kWaitTopics) {

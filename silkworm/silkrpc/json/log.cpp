@@ -14,14 +14,12 @@
    limitations under the License.
 */
 
+#include "log.hpp"
+
 #include <cstring>
 #include <span>
 #include <utility>
 
-#include <boost/endian/conversion.hpp>
-#include <intx/intx.hpp>
-
-#include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>

@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+#include "log.hpp"
+
 #include <optional>
 #include <string>
 #include <vector>
@@ -24,8 +26,6 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/node/db/access_layer.hpp>
-
-#include "log.hpp"
 
 namespace {
 #ifdef _WIN32

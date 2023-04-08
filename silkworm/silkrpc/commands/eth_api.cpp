@@ -2015,6 +2015,48 @@ awaitable<void> EthereumRpcApi::handle_eth_unsubscribe(const nlohmann::json& req
     co_return;
 }
 
+// https://eth.wiki/json-rpc/API#eth_feehistory
+awaitable<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request["params"];
+    if (params.size() != 3) {
+        const auto error_msg = "invalid eth_feeHistory params: " + params.dump();
+        SILKRPC_ERROR << error_msg << "\n";
+        reply = make_json_error(request["id"], 100, error_msg);
+        co_return;
+    }
+
+    uint64_t block_count;
+    if (params[0].is_string()) {
+        const auto value = params[0].get<std::string>();
+        block_count = std::stoul(value, nullptr, 16);
+    } else {
+        block_count = params[0].get<uint64_t>();
+    }
+    const auto newest_block = params[1].get<std::string>();
+    const auto reward_percentile = params[2].get<std::vector<uint64_t>>();
+
+    SILKRPC_LOG << "block_count: " << block_count 
+        << ", newest_block: " << newest_block
+        << ", reward_percentile size: " << reward_percentile.size() << "\n";
+
+    auto tx = co_await database_->begin();
+
+    try {
+        ethdb::TransactionDatabase tx_database{*tx};
+
+        reply = make_json_content(request["id"], to_quantity(0));
+    } catch (const std::exception& e) {
+        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+    co_return;
+}
+
 awaitable<roaring::Roaring> EthereumRpcApi::get_topics_bitmap(core::rawdb::DatabaseReader& db_reader, FilterTopics& topics, uint64_t start, uint64_t end) {
     SILKRPC_DEBUG << "#topics: " << topics.size() << " start: " << start << " end: " << end << "\n";
     roaring::Roaring result_bitmap;

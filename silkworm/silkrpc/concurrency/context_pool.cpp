@@ -44,6 +44,7 @@ std::ostream& operator<<(std::ostream& out, Context& c) {
 Context::Context(
     std::shared_ptr<grpc::Channel> channel,
     std::shared_ptr<BlockCache> block_cache,
+    std::shared_ptr<BlockCacheNEW> block_cache_NEW,
     std::shared_ptr<ethdb::kv::StateCache> state_cache,
     FilterStorage& filter_storage,
     std::shared_ptr<mdbx::env_managed> chaindata_env,
@@ -53,6 +54,7 @@ Context::Context(
       grpc_context_{std::make_shared<agrpc::GrpcContext>()},
       grpc_context_work_{boost::asio::make_work_guard(grpc_context_->get_executor())},
       block_cache_(std::move(block_cache)),
+      block_cache_NEW_(std::move(block_cache_NEW)),
       state_cache_(std::move(state_cache)),
       filter_storage_{filter_storage},
       chaindata_env_(chaindata_env),
@@ -148,12 +150,14 @@ ContextPool::ContextPool(std::size_t pool_size, ChannelFactory create_channel, s
     // Create the unique block cache to be shared among the execution contexts
     auto block_cache = std::make_shared<BlockCache>();
 
+    auto block_cache_NEW = std::make_shared<BlockCacheNEW>();
+
     // Create the unique state cache to be shared among the execution contexts
     auto state_cache = std::make_shared<ethdb::kv::CoherentStateCache>();
 
     // Create as many execution contexts as required by the pool size
     for (std::size_t i{0}; i < pool_size; ++i) {
-        contexts_.emplace_back(create_channel(), block_cache, state_cache, filter_storage_, chain_env, wait_mode);
+        contexts_.emplace_back(create_channel(), block_cache, block_cache_NEW, state_cache, filter_storage_, chain_env, wait_mode);
         SILKRPC_DEBUG << "ContextPool::ContextPool context[" << i << "] " << contexts_[i] << "\n";
     }
 }

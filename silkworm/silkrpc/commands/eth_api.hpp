@@ -58,6 +58,7 @@ class EthereumRpcApi {
     EthereumRpcApi(Context& context, boost::asio::thread_pool& workers)
         : context_(context),
           block_cache_(context.block_cache()),
+          block_cache_NEW_(context.block_cache_NEW()),
           state_cache_(context.state_cache()),
           database_(context.database()),
           backend_(context.backend()),
@@ -129,9 +130,11 @@ class EthereumRpcApi {
     // GLAZE format routine
     awaitable<void> handle_eth_get_logs(const nlohmann::json& request, std::string& reply);
     awaitable<void> handle_eth_call(const nlohmann::json& request, std::string& reply);
+    awaitable<void> handle_eth_call_NEW(const nlohmann::json& request, std::string& reply);
 
     Context& context_;
     std::shared_ptr<BlockCache>& block_cache_;
+    std::shared_ptr<BlockCacheNEW>& block_cache_NEW_;
     std::shared_ptr<ethdb::kv::StateCache>& state_cache_;
     std::unique_ptr<ethdb::Database>& database_;
     std::unique_ptr<ethbackend::BackEnd>& backend_;

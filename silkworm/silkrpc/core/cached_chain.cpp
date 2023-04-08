@@ -21,6 +21,39 @@
 
 namespace silkworm::rpc::core {
 
+awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCacheNEW& cache, const rawdb::DatabaseReader& reader, uint64_t block_number) {
+    const auto block_hash = co_await rawdb::read_canonical_block_hash(reader, block_number);
+    const auto cached_block = cache.get(block_hash);
+    if (cached_block) {
+        co_return cached_block.value();
+    }
+    auto block_with_hash = co_await rawdb::read_block(reader, block_hash, block_number);
+    auto ptr = std::make_shared<silkworm::BlockWithHash>();
+    *ptr = block_with_hash;
+    if (block_with_hash.block.transactions.size() != 0) {
+        // don't save empty (without txs) blocks to cache, if block become non-canonical (not in main chain), we remove it's transactions,
+        // but block can in the future become canonical(inserted in main chain) with its transactions
+        cache.insert(block_hash, ptr);
+    }
+    co_return ptr;
+}
+
+awaitable<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCacheNEW& cache, const rawdb::DatabaseReader& reader, const evmc::bytes32& block_hash) {
+    const auto cached_block = cache.get(block_hash);
+    if (cached_block) {
+        co_return cached_block.value();
+    }
+    auto block_with_hash = co_await rawdb::read_block_by_hash(reader, block_hash);
+    auto ptr = std::make_shared<silkworm::BlockWithHash>();
+    *ptr = block_with_hash;
+    if (block_with_hash.block.transactions.size() != 0) {
+        // don't save empty (without txs) blocks to cache, if block become non-canonical (not in main chain), we remove it's transactions,
+        // but block can in the future become canonical(inserted in main chain) with its transactions
+        cache.insert(block_hash, ptr);
+    }
+    co_return ptr;
+}
+
 awaitable<BlockWithHash> read_block_by_number(BlockCache& cache, const rawdb::DatabaseReader& reader, uint64_t block_number) {
     const auto block_hash = co_await rawdb::read_canonical_block_hash(reader, block_number);
     const auto cached_block = cache.get(block_hash);

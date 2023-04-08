@@ -22,6 +22,7 @@
 #include <evmc/evmc.hpp>
 
 #include <silkworm/silkrpc/common/block_cache.hpp>
+#include <silkworm/silkrpc/common/block_cache_NEW.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
@@ -29,6 +30,9 @@
 namespace silkworm::rpc::core {
 
 using boost::asio::awaitable;
+
+awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCacheNEW& cache, const rawdb::DatabaseReader& reader, uint64_t block_number);
+awaitable<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCacheNEW& cache, const rawdb::DatabaseReader& reader, const evmc::bytes32& block_hash);
 
 awaitable<BlockWithHash> read_block_by_number(BlockCache& cache, const rawdb::DatabaseReader& reader, uint64_t block_number);
 awaitable<BlockWithHash> read_block_by_hash(BlockCache& cache, const rawdb::DatabaseReader& reader, const evmc::bytes32& block_hash);

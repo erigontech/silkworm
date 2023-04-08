@@ -39,10 +39,10 @@ void OutboundNewBlock::execute(db::ROAccess, HeaderChain&, BodySequence&, Sentry
     }
 }
 
-sentry::SentPeers OutboundNewBlock::send_packet(SentryClient& sentry, const NewBlockPacket& packet, seconds_t timeout) {
-    auto request = std::make_unique<sentry::OutboundMessageData>();  // create request
+::sentry::SentPeers OutboundNewBlock::send_packet(SentryClient& sentry, const NewBlockPacket& packet, seconds_t timeout) {
+    auto request = std::make_unique<::sentry::OutboundMessageData>();  // create request
 
-    request->set_id(sentry::MessageId::NEW_BLOCK_66);
+    request->set_id(::sentry::MessageId::NEW_BLOCK_66);
 
     Bytes rlp_encoding;
     rlp::encode(rlp_encoding, packet);
@@ -64,7 +64,7 @@ sentry::SentPeers OutboundNewBlock::send_packet(SentryClient& sentry, const NewB
 
     sent_packets_++;
 
-    sentry::SentPeers peers = rpc.reply();
+    ::sentry::SentPeers peers = rpc.reply();
     SILK_TRACE << "Received rpc result of OutboundNewBlock: " << std::to_string(peers.peers_size()) + " peer(s)";
 
     return peers;

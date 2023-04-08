@@ -33,7 +33,7 @@ class OutboundNewBlock : public OutboundMessage {
     void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override;
 
   private:
-    sentry::SentPeers send_packet(SentryClient& sentry, const NewBlockPacket& packet, seconds_t timeout);
+    ::sentry::SentPeers send_packet(SentryClient& sentry, const NewBlockPacket& packet, seconds_t timeout);
 
     static constexpr uint64_t kMaxPeers = 1024;
 

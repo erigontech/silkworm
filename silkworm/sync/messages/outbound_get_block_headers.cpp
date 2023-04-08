@@ -56,7 +56,7 @@ void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequenc
     }
 }
 
-sentry::SentPeers OutboundGetBlockHeaders::send_packet(SentryClient& sentry, seconds_t timeout) {
+::sentry::SentPeers OutboundGetBlockHeaders::send_packet(SentryClient& sentry, seconds_t timeout) {
     if (std::holds_alternative<Hash>(packet_.request.origin))
         throw std::logic_error("OutboundGetBlockHeaders expects block number not hash");
 
@@ -66,9 +66,9 @@ sentry::SentPeers OutboundGetBlockHeaders::send_packet(SentryClient& sentry, sec
     BlockNum min_block = std::get<BlockNum>(packet_.request.origin);  // choose target peer
     if (!packet_.request.reverse) min_block += packet_.request.amount * packet_.request.skip;
 
-    auto request = std::make_unique<sentry::OutboundMessageData>();  // create header request
+    auto request = std::make_unique<::sentry::OutboundMessageData>();  // create header request
 
-    request->set_id(sentry::MessageId::GET_BLOCK_HEADERS_66);
+    request->set_id(::sentry::MessageId::GET_BLOCK_HEADERS_66);
 
     Bytes rlp_encoding;
     rlp::encode(rlp_encoding, packet_);
@@ -88,7 +88,7 @@ sentry::SentPeers OutboundGetBlockHeaders::send_packet(SentryClient& sentry, sec
         return {};
     }
 
-    sentry::SentPeers peers = rpc.reply();
+    ::sentry::SentPeers peers = rpc.reply();
     // SILK_TRACE << "Received rpc result of OutboundGetBlockHeaders reqId=" << packet_.requestId << ": "
     //            << std::to_string(peers.peers_size()) + " peer(s)";
 

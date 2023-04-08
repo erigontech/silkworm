@@ -570,12 +570,9 @@ int main(int argc, char* argv[]) {
         asio_guard.reset();
         asio_thread.join();
 
-        log::Message() << "Closing database chaindata path: " << node_settings.data_directory->chaindata().path();
-        chaindata_db.close();
-        log::Message() << "Database closed";
+        log::Message() << "Exiting Silkworm";
 
         return 0;
-
     } catch (const CLI::ParseError& ex) {
         return cli.exit(ex);
     } catch (const std::runtime_error& ex) {

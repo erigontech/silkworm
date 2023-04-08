@@ -28,8 +28,8 @@
 
 namespace silkworm {
 
-InboundNewBlock::InboundNewBlock(const sentry::InboundMessage& msg) {
-    if (msg.id() != sentry::MessageId::NEW_BLOCK_66)
+InboundNewBlock::InboundNewBlock(const ::sentry::InboundMessage& msg) {
+    if (msg.id() != ::sentry::MessageId::NEW_BLOCK_66)
         throw std::logic_error("InboundNewBlock received wrong InboundMessage");
 
     reqId_ = RANDOM_NUMBER.generate_one();  // for trace purposes

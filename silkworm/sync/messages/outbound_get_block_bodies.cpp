@@ -58,10 +58,10 @@ void OutboundGetBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence& b
     }
 }
 
-sentry::SentPeers OutboundGetBlockBodies::send_packet(SentryClient& sentry, seconds_t timeout) {
-    auto request = std::make_unique<sentry::OutboundMessageData>();  // create header request
+::sentry::SentPeers OutboundGetBlockBodies::send_packet(SentryClient& sentry, seconds_t timeout) {
+    auto request = std::make_unique<::sentry::OutboundMessageData>();  // create header request
 
-    request->set_id(sentry::MessageId::GET_BLOCK_BODIES_66);
+    request->set_id(::sentry::MessageId::GET_BLOCK_BODIES_66);
 
     Bytes rlp_encoding;
     rlp::encode(rlp_encoding, packet_);
@@ -81,7 +81,7 @@ sentry::SentPeers OutboundGetBlockBodies::send_packet(SentryClient& sentry, seco
         return {};
     }
 
-    sentry::SentPeers peers = rpc.reply();
+    ::sentry::SentPeers peers = rpc.reply();
     // SILK_TRACE << "Received rpc result of OutboundGetBlockBodies reqId=" << packet_.requestId << ": "
     //            << std::to_string(peers.peers_size()) + " peer(s)";
 

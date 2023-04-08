@@ -24,7 +24,7 @@ namespace silkworm {
 
 class InboundBlockHeaders : public InboundMessage {
   public:
-    InboundBlockHeaders(const sentry::InboundMessage& msg);
+    InboundBlockHeaders(const ::sentry::InboundMessage& msg);
 
     std::string name() const override { return "InboundBlockHeaders"; }
     std::string content() const override;

@@ -31,6 +31,7 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/silkrpc/common/block_cache.hpp>
+#include <silkworm/silkrpc/common/block_cache_NEW.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/concurrency/wait_strategy.hpp>
 #include <silkworm/silkrpc/core/filter_storage.hpp>
@@ -50,6 +51,7 @@ class Context {
     explicit Context(
         std::shared_ptr<grpc::Channel> channel,
         std::shared_ptr<BlockCache> block_cache,
+        std::shared_ptr<BlockCacheNEW> block_cache_NEW,
         std::shared_ptr<ethdb::kv::StateCache> state_cache,
         FilterStorage& filter_storage,
         std::shared_ptr<mdbx::env_managed> chaindata_env = {},
@@ -63,6 +65,7 @@ class Context {
     std::unique_ptr<txpool::Miner>& miner() noexcept { return miner_; }
     std::unique_ptr<txpool::TransactionPool>& tx_pool() noexcept { return tx_pool_; }
     std::shared_ptr<BlockCache>& block_cache() noexcept { return block_cache_; }
+    std::shared_ptr<BlockCacheNEW>& block_cache_NEW() noexcept { return block_cache_NEW_; }
     std::shared_ptr<ethdb::kv::StateCache>& state_cache() noexcept { return state_cache_; }
     FilterStorage& filter_storage() noexcept { return filter_storage_; }
 
@@ -98,6 +101,7 @@ class Context {
     std::unique_ptr<txpool::Miner> miner_;
     std::unique_ptr<txpool::TransactionPool> tx_pool_;
     std::shared_ptr<BlockCache> block_cache_;
+    std::shared_ptr<BlockCacheNEW> block_cache_NEW_;
     std::shared_ptr<ethdb::kv::StateCache> state_cache_;
     FilterStorage& filter_storage_;
     std::shared_ptr<mdbx::env_managed> chaindata_env_;

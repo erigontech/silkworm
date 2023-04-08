@@ -29,6 +29,7 @@ ContextTestBase::ContextTestBase()
       context_{
           grpc::CreateChannel("localhost:12345", grpc::InsecureChannelCredentials()),
           std::make_shared<BlockCache>(),
+          std::make_shared<BlockCacheNEW>(),
           std::make_shared<ethdb::kv::CoherentStateCache>(),
           filter_storage,
       },

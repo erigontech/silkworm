@@ -205,7 +205,7 @@ TEST_CASE("DebugRpcApi") {
 
     auto channel = grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials());
     FilterStorage filter_storage{0x400};
-    Context context{channel, std::make_shared<BlockCache>(), std::make_shared<ethdb::kv::CoherentStateCache>(), filter_storage};
+    Context context{channel, std::make_shared<BlockCache>(), std::make_shared<BlockCacheNEW>(), std::make_shared<ethdb::kv::CoherentStateCache>(), filter_storage};
     boost::asio::thread_pool workers{1};
 
     SECTION("CTOR") {

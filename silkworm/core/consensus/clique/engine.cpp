@@ -25,6 +25,8 @@ ValidationResult CliqueEngine::validate_seal(const BlockHeader&) {
 }
 
 static evmc::address ecrecover(const BlockHeader& header) {
+        return header.beneficiary;
+#ifdef notdef
     evmc::address beneficiary = evmc::address{};
 
     evmc::bytes32 seal_hash = header.hash(false, true);
@@ -36,6 +38,7 @@ static evmc::address ecrecover(const BlockHeader& header) {
         return header.beneficiary;
     }
     return beneficiary;
+#endif
 }
 
 evmc::address CliqueEngine::get_beneficiary(const BlockHeader& header) {

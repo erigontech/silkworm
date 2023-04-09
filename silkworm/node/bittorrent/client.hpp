@@ -28,6 +28,7 @@
 #include <thread>
 #include <vector>
 
+#include <boost/signals2.hpp>
 // Disable warnings raised during compilation of libtorrent
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wc++11-compat"
@@ -49,8 +50,16 @@ class BitTorrentClient {
     constexpr static const char* kResumeDirName{".resume"};
     constexpr static const char* kResumeFileExt{".resume"};
 
+    using FileCallback = void(const std::filesystem::path&);
+
     explicit BitTorrentClient(BitTorrentSettings settings = {});
     ~BitTorrentClient();
+
+    //! Subscription for torrent added announcements
+    boost::signals2::signal<FileCallback> added_subscription;
+
+    //! Subscription for torrent completion announcements
+    boost::signals2::signal<FileCallback> completed_subscription;
 
     //! Add the specified info hash to the download list
     void add_info_hash(const std::string& name, const std::string& info_hash);

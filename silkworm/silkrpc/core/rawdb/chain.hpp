@@ -55,6 +55,8 @@ boost::asio::awaitable<uint64_t> read_block_number_by_transaction_hash(const Dat
 
 boost::asio::awaitable<silkworm::BlockWithHash> read_block(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
 
+boost::asio::awaitable<std::shared_ptr<silkworm::BlockWithHash>> read_block_NEW(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
+
 boost::asio::awaitable<silkworm::BlockHeader> read_header_by_hash(const DatabaseReader& reader, const evmc::bytes32& block_hash);
 
 boost::asio::awaitable<silkworm::BlockHeader> read_header_by_number(const DatabaseReader& reader, uint64_t block_number);

@@ -88,7 +88,8 @@ class TemporaryDirectory final : public Directory {
 //! <base_path>
 //! ├───chaindata   <-- Where main database is stored
 //! ├───etl-temp    <-- Where temporary files from etl collector are stored
-//! └───nodes       <-- Where database(s) for discovered nodes are stored
+//! ├───nodes       <-- Where database(s) for discovered nodes are stored
+//! └───snapshots   <-- Where snapshot files for blocks/transactions/... are stored
 class DataDirectory final : public Directory {
   public:
     //! \brief Creates an instance of Silkworm's data directory given an initial base path
@@ -98,7 +99,8 @@ class DataDirectory final : public Directory {
         : Directory(base_path, create),
           chaindata_(base_path / "chaindata", create),
           etl_(base_path / "etl-temp", create),
-          nodes_(base_path / "nodes", create) {}
+          nodes_(base_path / "nodes", create),
+          snapshots_(base_path / "snapshots", create) {}
 
     //! \brief Creates an instance of Silkworm's data directory starting from default storage path. (each host OS has
     //! its own)
@@ -140,11 +142,14 @@ class DataDirectory final : public Directory {
     [[nodiscard]] const Directory& etl() const { return etl_; }
     //! \brief Returns the "nodes" directory (where discovery nodes info are stored)
     [[nodiscard]] const Directory& nodes() const { return nodes_; }
+    //! \brief Returns the "snapshots" directory (where snapshot files are stored)
+    [[nodiscard]] const Directory& snapshots() const { return snapshots_; }
 
   private:
     Directory chaindata_;  // Database storage
     Directory etl_;        // Temporary etl files
     Directory nodes_;      // Nodes discovery databases
+    Directory snapshots_;  // Snapshot files
 };
 
 }  // namespace silkworm

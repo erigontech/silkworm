@@ -18,18 +18,19 @@
 
 #include <filesystem>
 
+#include <silkworm/infra/common/directories.hpp>
 #include <silkworm/node/bittorrent/settings.hpp>
 #include <silkworm/node/snapshot/path.hpp>
 
 namespace silkworm {
 
 struct SnapshotSettings {
-    std::filesystem::path repository_dir{kDefaultSnapshotDir};  // Path to the snapshot repository on disk
-    bool enabled{true};                                         // Flag indicating if snapshots are enabled
-    bool no_downloader{false};                                  // Flag indicating if snapshots download is disabled
-    bool verify_on_startup{true};                               // Flag indicating if snapshots will be verified on startup
-    uint64_t segment_size{kDefaultSegmentSize};                 // The segment size measured as number of blocks
-    BitTorrentSettings bittorrent_settings;                     // The Bittorrent protocol settings
+    std::filesystem::path repository_dir{DataDirectory{}.snapshots().path()};  // Path to the snapshot repository on disk
+    bool enabled{true};                                                        // Flag indicating if snapshots are enabled
+    bool no_downloader{false};                                                 // Flag indicating if snapshots download is disabled
+    bool verify_on_startup{true};                                              // Flag indicating if snapshots will be verified on startup
+    uint64_t segment_size{kDefaultSegmentSize};                                // The segment size measured as number of blocks
+    BitTorrentSettings bittorrent_settings;                                    // The Bittorrent protocol settings
 };
 
 }  // namespace silkworm

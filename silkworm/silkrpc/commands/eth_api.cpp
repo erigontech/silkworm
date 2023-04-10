@@ -34,6 +34,7 @@
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/node/db/stages.hpp>
+#include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/db/util.hpp>
 #include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
@@ -51,7 +52,6 @@
 #include <silkworm/silkrpc/ethdb/bitmap.hpp>
 #include <silkworm/silkrpc/ethdb/cbor.hpp>
 #include <silkworm/silkrpc/ethdb/kv/cached_database.hpp>
-#include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/stagedsync/stages.hpp>
@@ -1148,6 +1148,61 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
     co_return;
 }
 
+// https://eth.wiki/json-rpc/API#eth_call
+boost::asio::awaitable<void> EthereumRpcApi::handle_eth_call_original(const nlohmann::json& request, nlohmann::json& reply) {
+    auto params = request["params"];
+    if (params.size() != 2) {
+        auto error_msg = "invalid eth_call params: " + params.dump();
+        SILKRPC_ERROR << error_msg << "\n";
+        reply = make_json_error(request["id"], 100, error_msg);
+        co_return;
+    }
+    const auto call = params[0].get<Call>();
+    const auto block_id = params[1].get<std::string>();
+    SILKRPC_DEBUG << "call: " << call << " block_id: " << block_id << "\n";
+
+    auto tx = co_await database_->begin();
+
+    try {
+        ethdb::TransactionDatabase tx_database{*tx};
+        ethdb::kv::CachedDatabase cached_database{BlockNumberOrHash{block_id}, *tx, *state_cache_};
+
+        const auto chain_id = co_await core::rawdb::read_chain_id(tx_database);
+        const auto chain_config_ptr = lookup_chain_config(chain_id);
+        const auto [block_number, is_latest_block] = co_await core::get_block_number(block_id, tx_database, /*latest_required=*/true);
+
+        state::RemoteState remote_state{*context_.io_context(),
+                                        is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database),
+                                        block_number};
+        EVMExecutor executor{*context_.io_context(), *chain_config_ptr, workers_, remote_state};
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
+        silkworm::Transaction txn{call.to_transaction()};
+        const auto execution_result = co_await executor.call(block_with_hash.block, txn);
+
+        if (execution_result.pre_check_error) {
+            reply = make_json_error(request["id"], -32000, execution_result.pre_check_error.value());
+        } else if (execution_result.error_code == evmc_status_code::EVMC_SUCCESS) {
+            reply = make_json_content(request["id"], "0x" + silkworm::to_hex(execution_result.data));
+        } else {
+            const auto error_message = EVMExecutor<>::get_error_message(execution_result.error_code, execution_result.data);
+            if (execution_result.data.empty()) {
+                reply = make_json_error(request["id"], -32000, error_message);
+            } else {
+                reply = make_json_error(request["id"], RevertError{{3, error_message}, execution_result.data});
+            }
+        }
+    } catch (const std::exception& e) {
+        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+    co_return;
+}
+
 // https://geth.ethereum.org/docs/rpc/ns-eth#eth_createaccesslist
 awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
@@ -1940,7 +1995,7 @@ awaitable<roaring::Roaring> EthereumRpcApi::get_topics_bitmap(core::rawdb::Datab
         for (auto topic : subtopics) {
             silkworm::Bytes topic_key{std::begin(topic.bytes), std::end(topic.bytes)};
             SILKRPC_TRACE << "topic: " << topic << " topic_key: " << silkworm::to_hex(topic) << "\n";
-            auto bitmap = co_await ethdb::bitmap::get(db_reader, db::table::kLogTopicIndex, topic_key, start, end);
+            auto bitmap = co_await ethdb::bitmap::get(db_reader, db::table::kLogTopicIndexName, topic_key, start, end);
             SILKRPC_TRACE << "bitmap: " << bitmap.toString() << "\n";
             subtopic_bitmap |= bitmap;
             SILKRPC_TRACE << "subtopic_bitmap: " << subtopic_bitmap.toString() << "\n";
@@ -1962,7 +2017,7 @@ awaitable<roaring::Roaring> EthereumRpcApi::get_addresses_bitmap(core::rawdb::Da
     roaring::Roaring result_bitmap;
     for (auto address : addresses) {
         silkworm::Bytes address_key{std::begin(address.bytes), std::end(address.bytes)};
-        auto bitmap = co_await ethdb::bitmap::get(db_reader, db::table::kLogAddressIndex, address_key, start, end);
+        auto bitmap = co_await ethdb::bitmap::get(db_reader, db::table::kLogAddressIndexName, address_key, start, end);
         SILKRPC_TRACE << "bitmap: " << bitmap.toString() << "\n";
         result_bitmap |= bitmap;
     }
@@ -2019,7 +2074,7 @@ awaitable<void> EthereumRpcApi::get_logs(ethdb::TransactionDatabase& tx_database
         filtered_block_logs.clear();
         const auto block_key = silkworm::db::block_key(block_to_match);
         SILKRPC_TRACE << "block_to_match: " << block_to_match << " block_key: " << silkworm::to_hex(block_key) << "\n";
-        co_await tx_database.for_prefix(db::table::kLogs, block_key, [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
+        co_await tx_database.for_prefix(db::table::kLogsName, block_key, [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
             chunk_logs.clear();
             const bool decoding_ok{cbor_decode(v, chunk_logs)};
             if (!decoding_ok) {

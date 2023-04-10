@@ -23,9 +23,8 @@
 #include <catch2/catch.hpp>
 #include <gmock/gmock.h>
 
-#include <silkworm/core/execution/precompile.hpp>
+#include <silkworm/node/db/tables.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
-#include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/test/context_test_base.hpp>
 #include <silkworm/silkrpc/test/mock_database_reader.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
@@ -71,46 +70,48 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
 
+    StringWriter writer(4096);
+    json::Stream stream(writer);
+
     SECTION("precompiled contract failure") {
-        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
+        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return kZeroHeader;
             }));
-        EXPECT_CALL(db_reader, get_one(db::table::kConfig, silkworm::ByteView{kConfigKey}))
+        EXPECT_CALL(db_reader, get_one(db::table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey1}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{Bytes{}, Bytes{}};
             }));
-        EXPECT_CALL(db_reader, get_one(db::table::kPlainState, silkworm::ByteView{kPlainStateKey1}))
+        EXPECT_CALL(db_reader, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey1}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return kPlainStateValue1;
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey2}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey2, Bytes{}};
             }));
-        EXPECT_CALL(db_reader, get_one(db::table::kPlainState, silkworm::ByteView{kPlainStateKey2}))
+        EXPECT_CALL(db_reader, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return Bytes{};
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey3}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey2, Bytes{}};
             }));
-        EXPECT_CALL(db_reader, get_one(db::table::kPlainState, silkworm::ByteView{kPlainStateKey3}))
+        EXPECT_CALL(db_reader, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey3}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return Bytes{};
             }));
 
-        evmc::address max_precompiled{};
-        max_precompiled.bytes[silkworm::kAddressLength - 1] = silkworm::precompile::kNumOfIstanbulContracts;
+        evmc::address blake2f_precompile{0x0000000000000000000000000000000000000009_address};
 
         Call call;
         call.from = 0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address;
-        call.to = max_precompiled;
+        call.to = blake2f_precompile;
         call.gas = 50'000;
         call.gas_price = 7;
 
@@ -118,10 +119,14 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
         block.header.number = 10'336'006;
 
         DebugExecutor executor{io_context_, db_reader, workers};
-        const auto result = spawn_and_wait(executor.execute(block, call));
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
 
-        CHECK(!result.pre_check_error);
-        CHECK(result.debug_trace == R"({
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
             "failed":true,
             "gas":50000,
             "returnValue":"",
@@ -224,24 +229,27 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
 
+    StringWriter writer(4096);
+    json::Stream stream(writer);
+
     SECTION("Call: failed with intrinsic gas too low") {
-        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
+        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return kZeroHeader;
             }));
-        EXPECT_CALL(db_reader, get_one(db::table::kConfig, silkworm::ByteView{kConfigKey}))
+        EXPECT_CALL(db_reader, get_one(db::table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey1}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey2}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
             }));
-        EXPECT_CALL(db_reader, get_one(db::table::kPlainState, silkworm::ByteView{kPlainStateKey1}))
+        EXPECT_CALL(db_reader, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey1}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return Bytes{};
             }));
@@ -256,42 +264,50 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         block.header.number = block_number;
 
         DebugExecutor executor{io_context_, db_reader, workers};
-        const auto result = spawn_and_wait(executor.execute(block, call));
 
-        CHECK(result.pre_check_error.has_value() == true);
-        CHECK(result.pre_check_error.value() == "tracing failed: intrinsic gas too low: have 50000, want 53072");
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
+
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
+            "failed": true,
+            "structLogs":[]
+        })"_json);
     }
 
     SECTION("Call: full output") {
-        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
+        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return kZeroHeader;
             }));
-        EXPECT_CALL(db_reader, get_one(db::table::kConfig, silkworm::ByteView{kConfigKey}))
+        EXPECT_CALL(db_reader, get_one(db::table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey1}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey3}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
             }));
-        EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
+        EXPECT_CALL(db_reader, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue1;
             }));
-        EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
+        EXPECT_CALL(db_reader, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue2;
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey2}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
             }));
-        EXPECT_CALL(db_reader, get_one(db::table::kPlainState, silkworm::ByteView{kPlainStateKey2}))
+        EXPECT_CALL(db_reader, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return Bytes{};
             }));
@@ -307,11 +323,15 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         block.header.number = block_number;
 
         DebugExecutor executor{io_context_, db_reader, workers};
-        const auto result = spawn_and_wait(executor.execute(block, call));
 
-        CHECK(result.pre_check_error.has_value() == false);
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
 
-        CHECK(result.debug_trace == R"({
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
             "failed": false,
             "gas": 75178,
             "returnValue": "",
@@ -365,35 +385,35 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     }
 
     SECTION("Call: no stack") {
-        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
+        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return kZeroHeader;
             }));
-        EXPECT_CALL(db_reader, get_one(db::table::kConfig, silkworm::ByteView{kConfigKey}))
+        EXPECT_CALL(db_reader, get_one(db::table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey1}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey3}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
             }));
-        EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
+        EXPECT_CALL(db_reader, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue1;
             }));
-        EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
+        EXPECT_CALL(db_reader, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue2;
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey2}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
             }));
-        EXPECT_CALL(db_reader, get_one(db::table::kPlainState, silkworm::ByteView{kPlainStateKey2}))
+        EXPECT_CALL(db_reader, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return Bytes{};
             }));
@@ -410,10 +430,15 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
 
         DebugConfig config{false, false, true};
         DebugExecutor executor{io_context_, db_reader, workers, config};
-        const auto result = spawn_and_wait(executor.execute(block, call));
 
-        CHECK(result.pre_check_error.has_value() == false);
-        CHECK(result.debug_trace == R"({
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
+
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
             "failed": false,
             "gas": 75178,
             "returnValue": "",
@@ -458,35 +483,35 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     }
 
     SECTION("Call: no memory") {
-        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
+        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return kZeroHeader;
             }));
-        EXPECT_CALL(db_reader, get_one(db::table::kConfig, silkworm::ByteView{kConfigKey}))
+        EXPECT_CALL(db_reader, get_one(db::table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey1}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey3}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
             }));
-        EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
+        EXPECT_CALL(db_reader, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue1;
             }));
-        EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
+        EXPECT_CALL(db_reader, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue2;
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey2}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
             }));
-        EXPECT_CALL(db_reader, get_one(db::table::kPlainState, silkworm::ByteView{kPlainStateKey2}))
+        EXPECT_CALL(db_reader, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return Bytes{};
             }));
@@ -503,11 +528,15 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
 
         DebugConfig config{false, true, false};
         DebugExecutor executor{io_context_, db_reader, workers, config};
-        const auto result = spawn_and_wait(executor.execute(block, call));
 
-        CHECK(result.pre_check_error.has_value() == false);
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
 
-        CHECK(result.debug_trace == R"({
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
             "failed": false,
             "gas": 75178,
             "returnValue": "",
@@ -557,35 +586,35 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     }
 
     SECTION("Call: no storage") {
-        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
+        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return kZeroHeader;
             }));
-        EXPECT_CALL(db_reader, get_one(db::table::kConfig, silkworm::ByteView{kConfigKey}))
+        EXPECT_CALL(db_reader, get_one(db::table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey1}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey3}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
             }));
-        EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
+        EXPECT_CALL(db_reader, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue1;
             }));
-        EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
+        EXPECT_CALL(db_reader, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue2;
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey2}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
             }));
-        EXPECT_CALL(db_reader, get_one(db::table::kPlainState, silkworm::ByteView{kPlainStateKey2}))
+        EXPECT_CALL(db_reader, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return Bytes{};
             }));
@@ -602,11 +631,15 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
 
         DebugConfig config{true, false, false};
         DebugExecutor executor{io_context_, db_reader, workers, config};
-        const auto result = spawn_and_wait(executor.execute(block, call));
 
-        CHECK(result.pre_check_error.has_value() == false);
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
 
-        CHECK(result.debug_trace == R"({
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
             "failed": false,
             "gas": 75178,
             "returnValue": "",
@@ -657,35 +690,35 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     }
 
     SECTION("Call: no stack, memory and storage") {
-        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
+        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return kZeroHeader;
             }));
-        EXPECT_CALL(db_reader, get_one(db::table::kConfig, silkworm::ByteView{kConfigKey}))
+        EXPECT_CALL(db_reader, get_one(db::table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey1}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey3}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
             }));
-        EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
+        EXPECT_CALL(db_reader, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue1;
             }));
-        EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
+        EXPECT_CALL(db_reader, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue2;
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey2}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
             }));
-        EXPECT_CALL(db_reader, get_one(db::table::kPlainState, silkworm::ByteView{kPlainStateKey2}))
+        EXPECT_CALL(db_reader, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return Bytes{};
             }));
@@ -702,11 +735,15 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
 
         DebugConfig config{true, true, true};
         DebugExecutor executor{io_context_, db_reader, workers, config};
-        const auto result = spawn_and_wait(executor.execute(block, call));
 
-        CHECK(result.pre_check_error.has_value() == false);
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
 
-        CHECK(result.debug_trace == R"({
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
             "failed": false,
             "gas": 75178,
             "returnValue": "",
@@ -744,35 +781,35 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
     }
 
     SECTION("Call with stream") {
-        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
+        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return kZeroHeader;
             }));
-        EXPECT_CALL(db_reader, get_one(db::table::kConfig, silkworm::ByteView{kConfigKey}))
+        EXPECT_CALL(db_reader, get_one(db::table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey1}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey3}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
             }));
-        EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
+        EXPECT_CALL(db_reader, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1}, silkworm::ByteView{kAccountChangeSetSubkey1}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue1;
             }));
-        EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
+        EXPECT_CALL(db_reader, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2}, silkworm::ByteView{kAccountChangeSetSubKey2}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<Bytes>> {
                 co_return kAccountChangeSetValue2;
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey2}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
             }));
-        EXPECT_CALL(db_reader, get_one(db::table::kPlainState, silkworm::ByteView{kPlainStateKey2}))
+        EXPECT_CALL(db_reader, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return Bytes{};
             }));
@@ -787,20 +824,16 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         silkworm::Block block{};
         block.header.number = block_number;
 
-        StringWriter writer(4096);
-        json::Stream stream(writer);
-
         DebugConfig config{true, true, true};
         DebugExecutor executor{io_context_, db_reader, workers, config};
 
         stream.open_object();
-        const auto result = spawn_and_wait(executor.execute(block, call, &stream));
+        spawn_and_wait(executor.execute(stream, block, call));
         stream.close_object();
         stream.close();
 
         nlohmann::json json = nlohmann::json::parse(writer.get_content());
 
-        CHECK(result.pre_check_error.has_value() == false);
         CHECK(json == R"({
             "failed": false,
             "gas": 75178,
@@ -938,41 +971,44 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
 
+    StringWriter writer(4096);
+    json::Stream stream(writer);
+
     SECTION("Call: TO present") {
-        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
+        EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return kZeroHeader;
             }));
-        EXPECT_CALL(db_reader, get_one(db::table::kConfig, silkworm::ByteView{kConfigKey}))
+        EXPECT_CALL(db_reader, get_one(db::table::kConfigName, silkworm::ByteView{kConfigKey}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
                 co_return kConfigValue;
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey1}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
             }));
         EXPECT_CALL(db_reader,
-                    get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey1},
+                    get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1},
                                    silkworm::ByteView{kAccountChangeSetSubkey1}))
             .WillOnce(InvokeWithoutArgs(
                 []() -> boost::asio::awaitable<std::optional<Bytes>> {
                     co_return kAccountChangeSetValue1;
                 }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey2}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
             .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
             }));
-        EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey3}))
+        EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
             .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
                 co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
             }));
-        EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey2},
+        EXPECT_CALL(db_reader, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2},
                                               silkworm::ByteView{kAccountChangeSetSubkey2}))
             .WillOnce(InvokeWithoutArgs(
                 []() -> boost::asio::awaitable<std::optional<Bytes>> {
                     co_return kAccountChangeSetValue2;
                 }));
-        EXPECT_CALL(db_reader, get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey3},
+        EXPECT_CALL(db_reader, get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey3},
                                               silkworm::ByteView{kAccountChangeSetSubkey3}))
             .WillOnce(InvokeWithoutArgs(
                 []() -> boost::asio::awaitable<std::optional<Bytes>> {
@@ -992,10 +1028,15 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
         block.header.number = block_number;
 
         DebugExecutor executor{io_context_, db_reader, workers};
-        const auto result = spawn_and_wait(executor.execute(block, call));
 
-        CHECK(result.pre_check_error.has_value() == false);
-        CHECK(result.debug_trace == R"({
+        stream.open_object();
+        spawn_and_wait(executor.execute(stream, block, call));
+        stream.close_object();
+        stream.close();
+
+        nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+        CHECK(json == R"({
             "failed": false,
             "gas": 21004,
             "returnValue": "",
@@ -1075,45 +1116,48 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool workers{1};
 
-    EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashes, silkworm::ByteView{kZeroKey}))
+    StringWriter writer(4096);
+    json::Stream stream(writer);
+
+    EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, silkworm::ByteView{kZeroKey}))
         .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
             co_return kZeroHeader;
         }));
-    EXPECT_CALL(db_reader, get_one(db::table::kConfig, silkworm::ByteView{kConfigKey}))
+    EXPECT_CALL(db_reader, get_one(db::table::kConfigName, silkworm::ByteView{kConfigKey}))
         .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
             co_return kConfigValue;
         }));
-    EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey1}))
+    EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey1}))
         .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
             co_return KeyValue{kAccountHistoryKey1, kAccountHistoryValue1};
         }));
     EXPECT_CALL(db_reader,
-                get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey},
+                get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey},
                                silkworm::ByteView{kAccountChangeSetSubkey}))
         .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<Bytes>> {
             co_return kAccountChangeSetValue;
         }));
     EXPECT_CALL(db_reader,
-                get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey1},
+                get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey1},
                                silkworm::ByteView{kAccountChangeSetSubkey1}))
         .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<Bytes>> {
             co_return kAccountChangeSetValue1;
         }));
     EXPECT_CALL(db_reader,
-                get_both_range(db::table::kPlainAccountChangeSet, silkworm::ByteView{kAccountChangeSetKey2},
+                get_both_range(db::table::kAccountChangeSetName, silkworm::ByteView{kAccountChangeSetKey2},
                                silkworm::ByteView{kAccountChangeSetSubkey2}))
         .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<std::optional<Bytes>> {
             co_return kAccountChangeSetValue2;
         }));
-    EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey2}))
+    EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey2}))
         .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
             co_return KeyValue{kAccountHistoryKey2, kAccountHistoryValue2};
         }));
-    EXPECT_CALL(db_reader, get(db::table::kAccountHistory, silkworm::ByteView{kAccountHistoryKey3}))
+    EXPECT_CALL(db_reader, get(db::table::kAccountHistoryName, silkworm::ByteView{kAccountHistoryKey3}))
         .WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<KeyValue> {
             co_return KeyValue{kAccountHistoryKey3, kAccountHistoryValue3};
         }));
-    EXPECT_CALL(db_reader, get_one(db::table::kPlainState, silkworm::ByteView{kPlainStateKey}))
+    EXPECT_CALL(db_reader, get_one(db::table::kPlainStateName, silkworm::ByteView{kPlainStateKey}))
         .WillRepeatedly(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> {
             co_return Bytes{};
         }));
@@ -1136,10 +1180,15 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     block.header.number = block_number;
 
     DebugExecutor executor{io_context_, db_reader, workers};
-    const auto result = spawn_and_wait(executor.execute(block, call));
 
-    CHECK(result.pre_check_error.has_value() == false);
-    CHECK(result.debug_trace == R"({
+    stream.open_object();
+    spawn_and_wait(executor.execute(stream, block, call));
+    stream.close_object();
+    stream.close();
+
+    nlohmann::json json = nlohmann::json::parse(writer.get_content());
+
+    CHECK(json == R"({
         "failed": true,
         "gas": 211190,
         "returnValue": "",
@@ -1167,216 +1216,6 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
             }
         ]
     })"_json);
-}
-
-TEST_CASE_METHOD(DebugExecutorTest, "DebugTrace json serialization") {
-    DebugLog log;
-    log.pc = 1;
-    log.op = "PUSH1";
-    log.gas = 3;
-    log.gas_cost = 4;
-    log.depth = 1;
-    log.error = false;
-    log.memory.emplace_back("0000000000000000000000000000000000000000000000000000000000000080");
-    log.stack.emplace_back("0x80");
-    log.storage["804292fe56769f4b9f0e91cf85875f67487cd9e85a084cbba2188be4466c4f23"] = "0000000000000000000000000000000000000000000000000000000000000008";
-
-    SECTION("DebugTrace: no memory, stack and storage") {
-        DebugTrace debug_trace;
-        debug_trace.failed = false;
-        debug_trace.gas = 20;
-        debug_trace.return_value = "deadbeaf";
-        debug_trace.debug_logs.push_back(log);
-
-        debug_trace.debug_config.disableStorage = true;
-        debug_trace.debug_config.disableMemory = true;
-        debug_trace.debug_config.disableStack = true;
-
-        CHECK(debug_trace == R"({
-            "failed": false,
-            "gas": 20,
-            "returnValue": "deadbeaf",
-            "structLogs": [{
-                "depth": 1,
-                "gas": 3,
-                "gasCost": 4,
-                "op": "PUSH1",
-                "pc": 1
-            }]
-        })"_json);
-    }
-
-    SECTION("DebugTrace: only memory") {
-        DebugTrace debug_trace;
-        debug_trace.failed = false;
-        debug_trace.gas = 20;
-        debug_trace.return_value = "deadbeaf";
-        debug_trace.debug_logs.push_back(log);
-
-        debug_trace.debug_config.disableStorage = true;
-        debug_trace.debug_config.disableMemory = false;
-        debug_trace.debug_config.disableStack = true;
-
-        CHECK(debug_trace == R"({
-            "failed": false,
-            "gas": 20,
-            "returnValue": "deadbeaf",
-            "structLogs": [{
-                "depth": 1,
-                "gas": 3,
-                "gasCost": 4,
-                "op": "PUSH1",
-                "pc": 1,
-                "memory":["0000000000000000000000000000000000000000000000000000000000000080"]
-            }]
-        })"_json);
-    }
-
-    SECTION("DebugTrace: only stack") {
-        DebugTrace debug_trace;
-        debug_trace.failed = false;
-        debug_trace.gas = 20;
-        debug_trace.return_value = "deadbeaf";
-        debug_trace.debug_logs.push_back(log);
-
-        debug_trace.debug_config.disableStorage = true;
-        debug_trace.debug_config.disableMemory = true;
-        debug_trace.debug_config.disableStack = false;
-
-        CHECK(debug_trace == R"({
-            "failed": false,
-            "gas": 20,
-            "returnValue": "deadbeaf",
-            "structLogs": [{
-                "depth": 1,
-                "gas": 3,
-                "gasCost": 4,
-                "op": "PUSH1",
-                "pc": 1,
-                "stack":["0x80"]
-            }]
-        })"_json);
-    }
-
-    SECTION("DebugTrace: only storage") {
-        DebugTrace debug_trace;
-        debug_trace.failed = false;
-        debug_trace.gas = 20;
-        debug_trace.return_value = "deadbeaf";
-        debug_trace.debug_logs.push_back(log);
-        debug_trace.debug_config.disableStorage = false;
-        debug_trace.debug_config.disableMemory = true;
-        debug_trace.debug_config.disableStack = true;
-
-        CHECK(debug_trace == R"({
-            "failed": false,
-            "gas": 20,
-            "returnValue": "deadbeaf",
-            "structLogs": [{
-                "depth": 1,
-                "gas": 3,
-                "gasCost": 4,
-                "op": "PUSH1",
-                "pc": 1,
-                "storage": {
-                    "804292fe56769f4b9f0e91cf85875f67487cd9e85a084cbba2188be4466c4f23": "0000000000000000000000000000000000000000000000000000000000000008"
-                }
-            }]
-        })"_json);
-    }
-
-    SECTION("DebugTrace: full") {
-        DebugTrace debug_trace;
-        debug_trace.failed = false;
-        debug_trace.gas = 20;
-        debug_trace.return_value = "deadbeaf";
-        debug_trace.debug_logs.push_back(log);
-
-        debug_trace.debug_config.disableStorage = false;
-        debug_trace.debug_config.disableMemory = false;
-        debug_trace.debug_config.disableStack = false;
-
-        CHECK(debug_trace == R"({
-            "failed": false,
-            "gas": 20,
-            "returnValue": "deadbeaf",
-            "structLogs": [{
-                "depth": 1,
-                "gas": 3,
-                "gasCost": 4,
-                "op": "PUSH1",
-                "pc": 1,
-                "stack":["0x80"],
-                "memory":["0000000000000000000000000000000000000000000000000000000000000080"],
-                "storage": {
-                    "804292fe56769f4b9f0e91cf85875f67487cd9e85a084cbba2188be4466c4f23": "0000000000000000000000000000000000000000000000000000000000000008"
-                }
-            }]
-        })"_json);
-    }
-
-    SECTION("DebugTrace vector") {
-        DebugTrace debug_trace;
-        debug_trace.failed = false;
-        debug_trace.gas = 20;
-        debug_trace.return_value = "deadbeaf";
-        debug_trace.debug_logs.push_back(log);
-
-        debug_trace.debug_config.disableStorage = false;
-        debug_trace.debug_config.disableMemory = false;
-        debug_trace.debug_config.disableStack = false;
-
-        std::vector<DebugTrace> debug_traces;
-        debug_traces.push_back(debug_trace);
-
-        CHECK(debug_traces == R"([{
-            "failed": false,
-            "gas": 20,
-            "returnValue": "deadbeaf",
-            "structLogs": [{
-                "depth": 1,
-                "gas": 3,
-                "gasCost": 4,
-                "op": "PUSH1",
-                "pc": 1,
-                "stack":["0x80"],
-                "memory":["0000000000000000000000000000000000000000000000000000000000000080"],
-                "storage": {
-                    "804292fe56769f4b9f0e91cf85875f67487cd9e85a084cbba2188be4466c4f23": "0000000000000000000000000000000000000000000000000000000000000008"
-                }
-            }]
-        }])"_json);
-    }
-
-    SECTION("DebugTraceResultList: no memory, stack and storage") {
-        DebugTrace debug_trace;
-        debug_trace.failed = false;
-        debug_trace.gas = 20;
-        debug_trace.return_value = "deadbeaf";
-        debug_trace.debug_logs.push_back(log);
-
-        debug_trace.debug_config.disableStorage = true;
-        debug_trace.debug_config.disableMemory = true;
-        debug_trace.debug_config.disableStack = true;
-
-        std::vector<DebugTrace> debug_traces;
-        debug_traces.push_back(debug_trace);
-        nlohmann::json j = debug_traces;
-
-        CHECK(j == R"([{
-                "failed": false,
-                "gas": 20,
-                "returnValue": "deadbeaf",
-                "structLogs": [{
-                    "depth": 1,
-                    "gas": 3,
-                    "gasCost": 4,
-                    "op": "PUSH1",
-                    "pc": 1
-                }]
-           }]
-        )"_json);
-    }
 }
 
 TEST_CASE_METHOD(DebugExecutorTest, "DebugConfig") {

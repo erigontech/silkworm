@@ -50,12 +50,13 @@ file(
   LIST_DIRECTORIES false
   "cmd/*.?pp" "silkworm/*.?pp"
 )
-list(FILTER SRC EXCLUDE REGEX "silkworm/core/chain/genesis_[a-z]+\\.cpp\$")
-list(FILTER SRC EXCLUDE REGEX "silkworm/core/common/lru_cache(_test)?\\..pp\$")
-list(FILTER SRC EXCLUDE REGEX "silkworm/infra/concurrency/thread_pool\\.hpp\$")
-list(FILTER SRC EXCLUDE REGEX "silkworm/interfaces/")
-list(FILTER SRC EXCLUDE REGEX "silkworm/node/common/preverified_hashes_[a-z]+\\.cpp\$")
-list(FILTER SRC EXCLUDE REGEX "silkworm/node/snapshot/config/[a-z_]+.cpp\$")
+list(FILTER SRC EXCLUDE REGEX [[silkworm/core/chain/genesis_[a-z]+\.cpp$]])
+list(FILTER SRC EXCLUDE REGEX [[silkworm/core/common/lru_cache(_test)?\..pp$]])
+list(FILTER SRC EXCLUDE REGEX [[silkworm/core/crypto/kzg\.cpp$]])
+list(FILTER SRC EXCLUDE REGEX [[silkworm/infra/concurrency/thread_pool\.hpp$]])
+list(FILTER SRC EXCLUDE REGEX [[silkworm/interfaces/]])
+list(FILTER SRC EXCLUDE REGEX [[silkworm/node/common/preverified_hashes_[a-z]+\.cpp$]])
+list(FILTER SRC EXCLUDE REGEX [[silkworm/node/snapshot/config/[a-z_]+\.cpp$]])
 
 foreach(F IN LISTS SRC)
   check("${F}")

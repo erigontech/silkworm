@@ -16,6 +16,7 @@
 
 #include "cbor.hpp"
 
+#include <algorithm>
 #include <vector>
 
 #include <cbor/cbor.h>
@@ -95,8 +96,12 @@ class LogCborListener : public cbor::listener {
     }
 
     void on_bytes(unsigned char* data, int size) override {
+        if (size < 0) {
+            throw std::invalid_argument("Log CBOR: unexpected format(on_bytes negatize size)");
+        }
         if (state_ == ProcessingState::kWaitAddress) {
-            current_log_.address = silkworm::to_evmc_address(silkworm::Bytes{data, static_cast<long unsigned int>(size)});
+            size_t n{static_cast<size_t>(size) < kAddressLength ? static_cast<size_t>(size) : kAddressLength};
+            std::memcpy(current_log_.address.bytes + kAddressLength - n, data, n);
             state_ = ProcessingState::kWaitNTopics;
         } else if (state_ == ProcessingState::kWaitTopics) {
             evmc::bytes32 out;
@@ -106,7 +111,8 @@ class LogCborListener : public cbor::listener {
                 state_ = ProcessingState::kWaitData;
             }
         } else if (state_ == ProcessingState::kWaitData) {
-            current_log_.data = silkworm::Bytes{data, static_cast<long unsigned int>(size)};
+            current_log_.data.resize(static_cast<std::vector<evmc::bytes32>::size_type>(size));
+            std::memcpy(current_log_.data.data(), data, static_cast<size_t>(size));
             logs_.emplace_back(std::move(current_log_));
             current_log_.topics.clear();
             state_ = ProcessingState::kWaitNFields;
@@ -116,6 +122,9 @@ class LogCborListener : public cbor::listener {
     }
 
     void on_array(int size) override {
+        if (size < 0) {
+            throw std::invalid_argument("Log CBOR: unexpected format(on_array negatize size)");
+        }
         if (state_ == ProcessingState::kWaitNLogs) {
             num_logs_ = size;
             logs_.reserve(static_cast<std::vector<evmc::bytes32>::size_type>(size));

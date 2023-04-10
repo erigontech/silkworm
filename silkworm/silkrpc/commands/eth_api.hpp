@@ -124,6 +124,7 @@ class EthereumRpcApi {
     awaitable<void> handle_eth_submit_work(const nlohmann::json& request, nlohmann::json& reply);
     awaitable<void> handle_eth_subscribe(const nlohmann::json& request, nlohmann::json& reply);
     awaitable<void> handle_eth_unsubscribe(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_eth_call_original(const nlohmann::json& request, nlohmann::json& reply);  // Temporary
 
     // GLAZE format routine
     awaitable<void> handle_eth_get_logs(const nlohmann::json& request, std::string& reply);

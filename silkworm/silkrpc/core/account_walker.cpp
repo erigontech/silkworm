@@ -18,16 +18,16 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/node/db/bitmap.hpp>
+#include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/db/util.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
-#include <silkworm/silkrpc/ethdb/tables.hpp>
 
 namespace silkworm::rpc {
 
 boost::asio::awaitable<void> AccountWalker::walk_of_accounts(uint64_t block_number, const evmc::address& start_address, Collector& collector) {
-    auto ps_cursor = co_await transaction_.cursor(db::table::kPlainState);
+    auto ps_cursor = co_await transaction_.cursor(db::table::kPlainStateName);
 
     auto start_key = full_view(start_address);
     auto ps_kv = co_await seek(*ps_cursor, start_key, kAddressLength);
@@ -35,12 +35,12 @@ boost::asio::awaitable<void> AccountWalker::walk_of_accounts(uint64_t block_numb
         co_return;
     }
 
-    auto ah_cursor = co_await transaction_.cursor(db::table::kAccountHistory);
+    auto ah_cursor = co_await transaction_.cursor(db::table::kAccountHistoryName);
     ethdb::SplitCursor split_cursor{*ah_cursor, start_key, 0, kAddressLength, kAddressLength, kAddressLength + 8};
 
     auto s_kv = co_await seek(split_cursor, block_number);
 
-    auto acs_cursor = co_await transaction_.cursor_dup_sort(db::table::kPlainAccountChangeSet);
+    auto acs_cursor = co_await transaction_.cursor_dup_sort(db::table::kAccountChangeSetName);
 
     auto go_on = true;
     while (go_on) {

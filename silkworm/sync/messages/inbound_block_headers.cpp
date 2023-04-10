@@ -27,8 +27,8 @@
 
 namespace silkworm {
 
-InboundBlockHeaders::InboundBlockHeaders(const sentry::InboundMessage& msg) {
-    if (msg.id() != sentry::MessageId::BLOCK_HEADERS_66)
+InboundBlockHeaders::InboundBlockHeaders(const ::sentry::InboundMessage& msg) {
+    if (msg.id() != ::sentry::MessageId::BLOCK_HEADERS_66)
         throw std::logic_error("InboundBlockHeaders received wrong InboundMessage");
 
     peerId_ = bytes_from_H512(msg.peer_id());

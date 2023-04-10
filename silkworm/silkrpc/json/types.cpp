@@ -391,18 +391,18 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
     json["block"]["gasLimit"] = to_quantity(b.block.header.gas_limit);
     json["block"]["gasUsed"] = to_quantity(b.block.header.gas_used);
     json["block"]["hash"] = b.block.hash;
-    json["block"]["logsBloom"] = "0x" + silkworm::to_hex(full_view(b.block.header.logs_bloom));
+    json["block"]["logsBloom"] = nullptr;
     json["block"]["miner"] = b.block.header.beneficiary;
     json["block"]["mixHash"] = b.block.header.mix_hash;
     json["block"]["nonce"] = "0x" + silkworm::to_hex({b.block.header.nonce.data(), b.block.header.nonce.size()});
     json["block"]["parentHash"] = b.block.header.parent_hash;
     json["block"]["receiptsRoot"] = b.block.header.receipts_root;
     json["block"]["sha3Uncles"] = b.block.header.ommers_hash;
-    json["block"]["size"] = to_quantity(b.block.get_block_size());
+    json["block"]["size"] = to_quantity(b.block.block_size);
     json["block"]["stateRoot"] = b.block.header.state_root;
     json["block"]["timestamp"] = to_quantity(b.block.header.timestamp);
     json["block"]["totalDifficulty"] = to_quantity(silkworm::endian::to_big_compact(b.block.total_difficulty));
-    json["block"]["transactionCount"] = to_quantity(b.block.transaction_count);
+    json["block"]["transactionCount"] = b.block.transaction_count;  // to_quantity(b.block.transaction_count);
     json["block"]["transactionsRoot"] = b.block.header.transactions_root;
 
     std::vector<evmc::bytes32> ommer_hashes;
@@ -418,10 +418,60 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
         json["issuance"]["ommersReward"] = to_quantity(b.issuance.ommers_reward);
         json["issuance"]["totalReward"] = to_quantity(b.issuance.total_reward);
     } else {
-        json["issuance"] = {};
+        json["issuance"] = nlohmann::json::object();
     }
 
     json["totalFees"] = to_quantity(b.total_fees);
+}
+
+void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {
+    const auto block_number = to_quantity(b.header.number);
+    json["fullblock"]["difficulty"] = to_quantity(silkworm::endian::to_big_compact(b.header.difficulty));
+    json["fullblock"]["extraData"] = "0x" + silkworm::to_hex(b.header.extra_data);
+    json["fullblock"]["gasLimit"] = to_quantity(b.header.gas_limit);
+    json["fullblock"]["gasUsed"] = to_quantity(b.header.gas_used);
+    json["fullblock"]["hash"] = b.hash;
+    json["fullblock"]["logsBloom"];
+    json["fullblock"]["miner"] = b.header.beneficiary;
+    json["fullblock"]["mixHash"] = b.header.mix_hash;
+    json["fullblock"]["nonce"] = "0x" + silkworm::to_hex({b.header.nonce.data(), b.header.nonce.size()});
+    json["fullblock"]["number"] = block_number;
+    json["fullblock"]["parentHash"] = b.header.parent_hash;
+    json["fullblock"]["receiptsRoot"] = b.header.receipts_root;
+    json["fullblock"]["sha3Uncles"] = b.header.ommers_hash;
+    json["fullblock"]["size"] = to_quantity(b.block_size);
+    json["fullblock"]["stateRoot"] = b.header.state_root;
+    json["fullblock"]["timestamp"] = to_quantity(b.header.timestamp);
+    json["fullblock"]["totalDifficulty"] = to_quantity(silkworm::endian::to_big_compact(b.total_difficulty));
+    json["fullblock"]["transactionCount"] = b.transaction_count;
+
+    json["fullblock"]["transactions"] = b.transactions;
+    for (std::size_t i{0}; i < json["fullblock"]["transactions"].size(); i++) {
+        auto& json_txn = json["fullblock"]["transactions"][i];
+        json_txn["transactionIndex"] = to_quantity(b.receipts.at(i).tx_index);
+        json_txn["blockHash"] = b.hash;
+        json_txn["blockNumber"] = block_number;
+        json_txn["gasPrice"] = to_quantity(b.transactions[i].effective_gas_price(b.header.base_fee_per_gas.value_or(0)));
+        json_txn["input"] = "0x" + silkworm::to_hex(b.transactions[i].data.substr(0, 4));
+    }
+
+    json["fullblock"]["transactionsRoot"] = b.header.transactions_root;
+
+    std::vector<evmc::bytes32> ommer_hashes;
+    ommer_hashes.reserve(b.ommers.size());
+    for (std::size_t i{0}; i < b.ommers.size(); i++) {
+        ommer_hashes.emplace(ommer_hashes.end(), b.ommers[i].hash());
+        SILKRPC_DEBUG << "ommer_hashes[" << i << "]: " << silkworm::to_hex({ommer_hashes[i].bytes, silkworm::kHashLength}) << "\n";
+    }
+
+    json["fullblock"]["uncles"] = ommer_hashes;
+    json["receipts"] = b.receipts;
+    for (std::size_t i{0}; i < json["receipts"].size(); i++) {
+        auto& json_txn = json["receipts"][i];
+        json_txn["logs"] = nullptr;
+        json_txn["logsBloom"] = nullptr;
+        json_txn["effectiveGasPrice"] = to_quantity(b.transactions[i].effective_gas_price(b.header.base_fee_per_gas.value_or(0)));
+    }
 }
 
 void to_json(nlohmann::json& json, const Transaction& transaction) {
@@ -477,53 +527,6 @@ void from_json(const nlohmann::json& json, Call& call) {
     }
     if (json.count("accessList") != 0) {
         call.access_list = json.at("accessList").get<AccessList>();
-    }
-}
-
-void to_json(nlohmann::json& json, const Log& log) {
-    json["address"] = log.address;
-    json["topics"] = log.topics;
-    json["data"] = "0x" + silkworm::to_hex(log.data);
-    json["blockNumber"] = to_quantity(log.block_number);
-    json["blockHash"] = log.block_hash;
-    json["transactionHash"] = log.tx_hash;
-    json["transactionIndex"] = to_quantity(log.tx_index);
-    json["logIndex"] = to_quantity(log.index);
-    json["removed"] = log.removed;
-}
-
-void from_json(const nlohmann::json& json, Log& log) {
-    if (json.is_array()) {
-        if (json.size() < 3) {
-            throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Log CBOR: missing entries"};
-        }
-        if (!json[0].is_binary()) {
-            throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Log CBOR: binary expected in [0]"};
-        }
-        auto address_bytes = json[0].get_binary();
-        log.address = silkworm::to_evmc_address(silkworm::Bytes{address_bytes.begin(), address_bytes.end()});
-        if (!json[1].is_array()) {
-            throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Log CBOR: array expected in [1]"};
-        }
-        std::vector<evmc::bytes32> topics{};
-        topics.reserve(json[1].size());
-        for (auto topic : json[1]) {
-            auto topic_bytes = topic.get_binary();
-            topics.push_back(silkworm::to_bytes32(silkworm::Bytes{topic_bytes.begin(), topic_bytes.end()}));
-        }
-        log.topics = topics;
-        if (json[2].is_binary()) {
-            auto data_bytes = json[2].get_binary();
-            log.data = silkworm::Bytes{data_bytes.begin(), data_bytes.end()};
-        } else if (json[2].is_null()) {
-            log.data = silkworm::Bytes{};
-        } else {
-            throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Log CBOR: binary or null expected in [2]"};
-        }
-    } else {
-        log.address = json.at("address").get<evmc::address>();
-        log.topics = json.at("topics").get<std::vector<evmc::bytes32>>();
-        log.data = json.at("data").get<silkworm::Bytes>();
     }
 }
 
@@ -840,13 +843,6 @@ struct GlazeJsonError {
     };
 };
 
-static constexpr auto jsonVersionSize = 8;
-static constexpr auto addressSize = 64;
-static constexpr auto hashSize = 128;
-static constexpr auto int64Size = 32;
-static constexpr auto dataSize = 4096;
-static constexpr auto ethCallResultFixedSize = 2048;
-
 struct GlazeJsonErrorRsp {
     char jsonrpc[jsonVersionSize] = "2.0";
     uint32_t id;
@@ -901,70 +897,6 @@ void make_glaze_json_error(std::string& reply, uint32_t id, const RevertError& e
     std::strncpy(glaze_json_revert.revert_data.message, error.message.c_str(), error.message.size() > errorMessageSize ? errorMessageSize : error.message.size() + 1);
     glaze_json_revert.revert_data.data = "0x" + silkworm::to_hex(error.data);
     glz::write_json(glaze_json_revert, reply);
-}
-
-struct GlazeJsonLogItem {
-    char address[addressSize];
-    char tx_hash[hashSize];
-    char block_hash[hashSize];
-    char block_number[int64Size];
-    char tx_index[int64Size];
-    char index[int64Size];
-    char data[dataSize];
-    bool removed;
-    std::vector<std::string> topics;
-
-    struct glaze {
-        using T = GlazeJsonLogItem;
-        static constexpr auto value = glz::object(
-            "address", &T::address,
-            "transactionHash", &T::tx_hash,
-            "blockHash", &T::block_hash,
-            "blockNumber", &T::block_number,
-            "transactionIndex", &T::tx_index,
-            "logIndex", &T::index,
-            "data", &T::data,
-            "removed", &T::removed,
-            "topics", &T::topics);
-    };
-};
-
-struct GlazeJsonLog {
-    char jsonrpc[jsonVersionSize] = "2.0";
-    uint32_t id;
-    std::vector<GlazeJsonLogItem> log_json_list;
-    struct glaze {
-        using T = GlazeJsonLog;
-        static constexpr auto value = glz::object(
-            "jsonrpc", &T::jsonrpc,
-            "id", &T::id,
-            "result", &T::log_json_list);
-    };
-};
-
-void make_glaze_json_content(std::string& reply, uint32_t id, const Logs& logs) {
-    GlazeJsonLog log_json_data{};
-    log_json_data.log_json_list.reserve(logs.size());
-
-    log_json_data.id = id;
-
-    for (const auto& l : logs) {
-        GlazeJsonLogItem item{};
-        to_hex(std::span(item.address), l.address);
-        to_hex(std::span(item.tx_hash), l.tx_hash);
-        to_hex(std::span(item.block_hash), l.block_hash);
-        to_quantity(std::span(item.block_number), l.block_number);
-        to_quantity(std::span(item.tx_index), l.tx_index);
-        to_quantity(std::span(item.index), l.index);
-        item.removed = l.removed;
-        to_hex(item.data, l.data);
-        for (const auto& t : l.topics) {
-            item.topics.push_back("0x" + silkworm::to_hex(t));
-        }
-        log_json_data.log_json_list.push_back(item);
-    }
-
-    glz::write_json(log_json_data, reply);
 }
 
 struct GlazeJsonCall {

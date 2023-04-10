@@ -44,6 +44,8 @@ if(NOT SILKWORM_CORE_ONLY)
   add_library(cmd_common "${COMMON_SRC}")
   target_link_libraries(cmd_common silkworm-buildinfo CLI11::CLI11 silkworm_infra)
 
+  add_subdirectory(dev)
+
   # Silkworm components
   add_subdirectory(rpcdaemon)
 

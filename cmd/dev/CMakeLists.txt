@@ -1,4 +1,4 @@
-/*
+#[[
    Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,14 +12,7 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-*/
+]]
 
-#include "tables.hpp"
-
-#include <catch2/catch.hpp>
-
-namespace silkworm {
-
-using Catch::Matchers::Message;
-
-}  // namespace silkworm
+add_executable(kzg_g2_uncompress kzg_g2_uncompress.cpp)
+target_link_libraries(kzg_g2_uncompress silkworm_core blst)

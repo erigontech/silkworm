@@ -27,8 +27,8 @@
 
 namespace silkworm {
 
-InboundGetBlockHeaders::InboundGetBlockHeaders(const sentry::InboundMessage& msg) {
-    if (msg.id() != sentry::MessageId::GET_BLOCK_HEADERS_66) {
+InboundGetBlockHeaders::InboundGetBlockHeaders(const ::sentry::InboundMessage& msg) {
+    if (msg.id() != ::sentry::MessageId::GET_BLOCK_HEADERS_66) {
         throw std::logic_error("InboundGetBlockHeaders received wrong InboundMessage");
     }
 
@@ -69,8 +69,8 @@ void InboundGetBlockHeaders::execute(db::ROAccess db, HeaderChain&, BodySequence
     Bytes rlp_encoding;
     rlp::encode(rlp_encoding, reply);
 
-    auto msg_reply = std::make_unique<sentry::OutboundMessageData>();
-    msg_reply->set_id(sentry::MessageId::BLOCK_HEADERS_66);
+    auto msg_reply = std::make_unique<::sentry::OutboundMessageData>();
+    msg_reply->set_id(::sentry::MessageId::BLOCK_HEADERS_66);
     msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
     SILK_TRACE << "Replying to " << identify(*this) << " using send_message_by_id with "

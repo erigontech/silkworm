@@ -130,6 +130,11 @@ void PoWSync::execution_loop() {
         NewHeight new_height = is_starting_up
                                    ? resume()                      // resuming, the following verify_chain is needed to check all stages
                                    : forward_and_insert_blocks();  // downloads new blocks and inserts them into the db
+        if (new_height.block_num == 0) {
+            // When starting from empty db there is no chain to verify, so go on downloading new blocks
+            is_starting_up = false;
+            continue;
+        }
 
         // verify the new section of the chain
         log::Info("Sync") << "Verifying chain, head=" << new_height.block_num;

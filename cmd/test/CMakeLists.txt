@@ -106,7 +106,7 @@ if(NOT SILKWORM_CORE_ONLY)
   endif()
   find_package(CLI11 REQUIRED)
   add_executable(consensus consensus.cpp)
-  target_compile_definitions(consensus PRIVATE SILKWORM_CONSENSUS_TEST_DIR="${CMAKE_SOURCE_DIR}/third_party/tests")
+  target_compile_definitions(consensus PRIVATE SILKWORM_CONSENSUS_TEST_DIR="${SILKWORM_MAIN_DIR}/third_party/tests")
   target_link_libraries(consensus PRIVATE silkworm_node evmc::loader CLI11::CLI11)
 
   # BE&KV Tests

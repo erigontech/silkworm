@@ -66,22 +66,39 @@ std::optional<Bytes> snarkv_run(ByteView input) noexcept;
 uint64_t blake2_f_gas(ByteView input, evmc_revision) noexcept;
 std::optional<Bytes> blake2_f_run(ByteView input) noexcept;
 
-inline constexpr Contract kContracts[]{
-    {ecrec_gas, ecrec_run},
-    {sha256_gas, sha256_run},
-    {rip160_gas, rip160_run},
-    {id_gas, id_run},
-    {expmod_gas, expmod_run},
-    {bn_add_gas, bn_add_run},
-    {bn_mul_gas, bn_mul_run},
-    {snarkv_gas, snarkv_run},
-    {blake2_f_gas, blake2_f_run},
+// EIP-4844: Shard Blob Transactions
+uint64_t point_evaluation_gas(ByteView input, evmc_revision) noexcept;
+std::optional<Bytes> point_evaluation_run(ByteView input) noexcept;
+
+struct SupportedContract {
+    Contract contract;
+    evmc_revision added_in;
 };
 
-inline constexpr size_t kNumOfFrontierContracts{4};
-inline constexpr size_t kNumOfByzantiumContracts{8};
-inline constexpr size_t kNumOfIstanbulContracts{9};
+inline constexpr std::optional<SupportedContract> kContracts[]{
+    std::nullopt,                                                                  // 0x00
+    SupportedContract{{ecrec_gas, ecrec_run}, EVMC_FRONTIER},                      // 0x01
+    SupportedContract{{sha256_gas, sha256_run}, EVMC_FRONTIER},                    // 0x02
+    SupportedContract{{rip160_gas, rip160_run}, EVMC_FRONTIER},                    // 0x03
+    SupportedContract{{id_gas, id_run}, EVMC_FRONTIER},                            // 0x04
+    SupportedContract{{expmod_gas, expmod_run}, EVMC_BYZANTIUM},                   // 0x05
+    SupportedContract{{bn_add_gas, bn_add_run}, EVMC_BYZANTIUM},                   // 0x06
+    SupportedContract{{bn_mul_gas, bn_mul_run}, EVMC_BYZANTIUM},                   // 0x07
+    SupportedContract{{snarkv_gas, snarkv_run}, EVMC_BYZANTIUM},                   // 0x08
+    SupportedContract{{blake2_f_gas, blake2_f_run}, EVMC_ISTANBUL},                // 0x09
+    std::nullopt,                                                                  // 0x0a
+    std::nullopt,                                                                  // 0x0b
+    std::nullopt,                                                                  // 0x0c
+    std::nullopt,                                                                  // 0x0d
+    std::nullopt,                                                                  // 0x0e
+    std::nullopt,                                                                  // 0x0f
+    std::nullopt,                                                                  // 0x10
+    std::nullopt,                                                                  // 0x11
+    std::nullopt,                                                                  // 0x12
+    std::nullopt,                                                                  // 0x13
+    SupportedContract{{point_evaluation_gas, point_evaluation_run}, EVMC_CANCUN},  // 0x14
+};
 
-static_assert(std::size(kContracts) == kNumOfIstanbulContracts);
+[[nodiscard]] bool is_precompile(const evmc::address&, evmc_revision) noexcept;
 
 }  // namespace silkworm::precompile

@@ -24,7 +24,7 @@ namespace silkworm {
 
 class InboundNewBlockHashes : public InboundMessage {
   public:
-    InboundNewBlockHashes(const sentry::InboundMessage&);
+    InboundNewBlockHashes(const ::sentry::InboundMessage&);
 
     std::string name() const override { return "InboundNewBlockHashes"; }
     std::string content() const override;

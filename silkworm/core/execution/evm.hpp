@@ -117,9 +117,6 @@ class EVM {
     gsl::owner<EvmoneExecutionState*> acquire_state() const noexcept;
     void release_state(gsl::owner<EvmoneExecutionState*> state) const noexcept;
 
-    [[nodiscard]] uint8_t number_of_precompiles() const noexcept;
-    [[nodiscard]] bool is_precompiled(const evmc::address& contract) const noexcept;
-
     const Block& block_;
     IntraBlockState& state_;
     const ChainConfig& config_;

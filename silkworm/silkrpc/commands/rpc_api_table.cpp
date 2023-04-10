@@ -148,6 +148,7 @@ void RpcApiTable::add_eth_handlers() {
     method_handlers_[http::method::k_eth_subscribe] = &commands::RpcApi::handle_eth_subscribe;
     method_handlers_[http::method::k_eth_unsubscribe] = &commands::RpcApi::handle_eth_unsubscribe;
     method_handlers_[http::method::k_eth_getBlockReceipts] = &commands::RpcApi::handle_parity_get_block_receipts;
+    // method_handlers_glaze_[http::method::k_eth_call] = &commands::RpcApi::handle_eth_call_original;
 
     // GLAZE methods
     method_handlers_glaze_[http::method::k_eth_getLogs] = &commands::RpcApi::handle_eth_get_logs;
@@ -212,6 +213,7 @@ void RpcApiTable::add_ots_handlers() {
     method_handlers_[http::method::k_ots_hasCode] = &commands::RpcApi::handle_ots_has_code;
     method_handlers_[http::method::k_ots_getBlockDetails] = &commands::RpcApi::handle_ots_getBlockDetails;
     method_handlers_[http::method::k_ots_getBlockDetailsByHash] = &commands::RpcApi::handle_ots_getBlockDetailsByHash;
+    method_handlers_[http::method::k_ots_getBlockTransactions] = &commands::RpcApi::handle_ots_getBlockTransactions;
 }
 
 }  // namespace silkworm::rpc::commands

@@ -24,21 +24,24 @@
 
 #include <silkworm/infra/rpc/server/server_context_pool.hpp>
 
+#include "api/api_common/sentry_client.hpp"
 #include "settings.hpp"
 
 namespace silkworm::sentry {
 
 class SentryImpl;
 
-class Sentry final {
+class Sentry final : public api::api_common::SentryClient {
   public:
     explicit Sentry(Settings settings, silkworm::rpc::ServerContextPool& context_pool);
-    ~Sentry();
+    ~Sentry() override;
 
     Sentry(const Sentry&) = delete;
     Sentry& operator=(const Sentry&) = delete;
 
     boost::asio::awaitable<void> run();
+
+    std::shared_ptr<api::api_common::Service> service() override;
 
   private:
     std::unique_ptr<SentryImpl> p_impl_;

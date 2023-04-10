@@ -36,7 +36,9 @@ namespace silkworm::rpc {
 class Server {
   public:
     //! Build a ready-to-start RPC server according to specified configuration.
-    explicit Server(const ServerConfig& config) : config_(config), context_pool_{config.num_contexts()} {}
+    explicit Server(const ServerConfig& config)
+        : config_(config),
+          context_pool_{config.context_pool_settings().num_contexts} {}
 
     /// No need to explicitly shutdown the server because this destructor takes care.
     /// Use \ref shutdown() if you want explicit control over termination before destruction.
@@ -68,8 +70,9 @@ class Server {
         builder.AddListeningPort(config_.address_uri(), config_.credentials(), &selected_port);
 
         // Add one server-side gRPC completion queue for each execution context.
-        for (std::size_t i{0}; i < config_.num_contexts(); ++i) {
-            context_pool_.add_context(builder.AddCompletionQueue(), config_.wait_mode());
+        const auto& context_pool_settings = config_.context_pool_settings();
+        for (std::size_t i{0}; i < context_pool_settings.num_contexts; ++i) {
+            context_pool_.add_context(builder.AddCompletionQueue(), context_pool_settings.wait_mode);
         }
 
         // gRPC async model requires the server to register the RPC services first.

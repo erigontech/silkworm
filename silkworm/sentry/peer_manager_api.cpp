@@ -28,7 +28,7 @@
 #include <boost/system/system_error.hpp>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/sentry/rlpx/rlpx_common/disconnect_reason.hpp>
 
 namespace silkworm::sentry {
@@ -36,7 +36,7 @@ namespace silkworm::sentry {
 using namespace boost::asio;
 
 awaitable<void> PeerManagerApi::start(std::shared_ptr<PeerManagerApi> self) {
-    using namespace common::awaitable_wait_for_all;
+    using namespace concurrency::awaitable_wait_for_all;
 
     self->peer_manager_.add_observer(std::weak_ptr(self));
 

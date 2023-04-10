@@ -49,15 +49,15 @@ if(NOT SILKWORM_CORE_ONLY)
   # Silkworm components
   add_subdirectory(rpcdaemon)
 
-  # cmake-format: off
   set(SILKWORM_CMD_SRC
       silkworm.cpp
       common/human_size_parser_validator.hpp
       common/settings.hpp
+      common/sentry_options.cpp
+      common/sentry_options.hpp
       common/snapshot_options.cpp
       common/snapshot_options.hpp
   )
-  # cmake-format: on
 
   add_executable(silkworm "${SILKWORM_CMD_SRC}")
   target_link_libraries(silkworm PRIVATE silkworm_node silkworm_sync cmd_common $<$<BOOL:${MSVC}>:Kernel32.lib>)
@@ -92,7 +92,7 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(snapshots snapshots.cpp)
   target_link_libraries(snapshots PRIVATE silkworm_node cmd_common torrent-rasterbar)
 
-  add_executable(sentry sentry.cpp)
+  add_executable(sentry sentry.cpp common/sentry_options.cpp common/sentry_options.hpp)
   target_link_libraries(sentry PRIVATE silkworm_sentry cmd_common)
 
   # cmake-format: off

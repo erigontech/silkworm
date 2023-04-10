@@ -21,7 +21,7 @@
 #include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
 
-namespace silkworm::sentry::common::awaitable_wait_for_all::detail {
+namespace silkworm::concurrency::awaitable_wait_for_all::detail {
 
 static bool is_operation_cancelled_error(const std::exception_ptr& ex_ptr) {
     try {
@@ -79,4 +79,4 @@ void rethrow_exceptions(const std::exception_ptr& ex0, const std::exception_ptr&
     }
 }
 
-}  // namespace silkworm::sentry::common::awaitable_wait_for_all::detail
+}  // namespace silkworm::concurrency::awaitable_wait_for_all::detail

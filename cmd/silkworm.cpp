@@ -14,18 +14,26 @@
    limitations under the License.
 */
 
+#include <optional>
 #include <regex>
 #include <stdexcept>
 #include <string>
 
 #include <CLI/CLI.hpp>
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/use_future.hpp>
+#include <grpcpp/grpcpp.h>
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/common/mem_usage.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
-#include <silkworm/infra/concurrency/signal_handler.hpp>
+#include <silkworm/infra/concurrency/async_thread.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
+#include <silkworm/infra/concurrency/context_pool_settings.hpp>
+#include <silkworm/infra/rpc/server/server_context_pool.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
 #include <silkworm/node/common/settings.hpp>
@@ -33,17 +41,46 @@
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/snapshot/sync.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
+#include <silkworm/sentry/sentry.hpp>
+#include <silkworm/sentry/settings.hpp>
 #include <silkworm/sync/block_exchange.hpp>
 #include <silkworm/sync/sentry_client.hpp>
 #include <silkworm/sync/sync_engine_pow.hpp>
 
 #include "common/common.hpp"
 #include "common/human_size_parser_validator.hpp"
+#include "common/sentry_options.hpp"
 #include "common/settings.hpp"
+#include "common/shutdown_signal.hpp"
 #include "common/snapshot_options.hpp"
 
-using namespace silkworm;
-using namespace silkworm::cmd::common;
+namespace sw_db = silkworm::db;
+namespace sw_log = silkworm::log;
+
+using silkworm::ActiveComponent;
+using silkworm::BlockExchange;
+using silkworm::BlockNum;
+using silkworm::DataDirectory;
+using silkworm::human_size;
+using silkworm::lookup_known_chain;
+using silkworm::NodeSettings;
+using silkworm::parse_size;
+using silkworm::PreverifiedHashes;
+using silkworm::read_genesis_data;
+using silkworm::SnapshotSync;
+using silkworm::StopWatch;
+using silkworm::cmd::common::add_context_pool_options;
+using silkworm::cmd::common::add_logging_options;
+using silkworm::cmd::common::add_option_chain;
+using silkworm::cmd::common::add_option_data_dir;
+using silkworm::cmd::common::add_option_external_sentry_address;
+using silkworm::cmd::common::add_option_private_api_address;
+using silkworm::cmd::common::add_sentry_options;
+using silkworm::cmd::common::add_snapshot_options;
+using silkworm::cmd::common::get_node_name_from_build_info;
+using silkworm::cmd::common::HumanSizeParserValidator;
+using silkworm::cmd::common::ShutdownSignal;
+using silkworm::cmd::common::SilkwormSettings;
 
 // progress log
 class ResourceUsageLog : public ActiveComponent {
@@ -54,7 +91,7 @@ class ResourceUsageLog : public ActiveComponent {
 
     void execution_loop() override {  // todo: this is only a trick, instead use asio timers
         using namespace std::chrono;
-        log::set_thread_name("progress-log  ");
+        sw_log::set_thread_name("progress-log  ");
         auto start_time = steady_clock::now();
         auto last_update = start_time;
         while (!is_stopping()) {
@@ -62,11 +99,11 @@ class ResourceUsageLog : public ActiveComponent {
 
             auto now = steady_clock::now();
             if (now - last_update > 300s) {
-                log::Info("Resource usage",
-                          {"mem", human_size(get_mem_usage()),
-                           "chain", human_size(node_settings_.data_directory->chaindata().size()),
-                           "etl-tmp", human_size(node_settings_.data_directory->etl().size()),
-                           "uptime", StopWatch::format(now - start_time)});
+                sw_log::Info("Resource usage",
+                             {"mem", human_size(get_mem_usage()),
+                              "chain", human_size(node_settings_.data_directory->chaindata().size()),
+                              "etl-tmp", human_size(node_settings_.data_directory->etl().size()),
+                              "uptime", StopWatch::format(now - start_time)});
                 last_update = now;
             }
         }
@@ -84,7 +121,7 @@ struct PruneModeValidator : public CLI::Validator {
     }
 };
 
-void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], SilkwormCoreSettings& settings) {
+void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], SilkwormSettings& settings) {
     using namespace silkworm::cmd;
 
     auto& node_settings = settings.node_settings;
@@ -126,8 +163,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
 
     // Sentry settings
     add_option_external_sentry_address(cli, node_settings.external_sentry_addr);
-
-    add_option_sentry_api_address(cli, node_settings.sentry_api_addr);
+    add_sentry_options(cli, settings.sentry_settings);
 
     cli.add_option("--sync.loop.throttle", node_settings.sync_loop_throttle_seconds,
                    "Sets the minimum delay between sync loop starts (in seconds)")
@@ -189,11 +225,8 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
     // RPC server options
     auto& server_settings = settings.server_settings;
 
-    uint32_t num_contexts;
-    add_option_num_contexts(cli, num_contexts);
-
-    silkworm::rpc::WaitMode wait_mode;
-    add_option_wait_mode(cli, wait_mode);
+    silkworm::concurrency::ContextPoolSettings context_pool_settings;
+    add_context_pool_options(cli, context_pool_settings);
 
     // Snapshot&Bittorrent options
     auto& snapshot_settings = settings.snapshot_settings;
@@ -207,7 +240,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
         throw std::invalid_argument("--chaindata.pagesize is not a power of 2");
     }
     node_settings.chaindata_env_config.page_size = chaindata_page_size.value();
-    const auto mdbx_max_size_hard_limit{chaindata_page_size.value() * db::kMdbxMaxPages};
+    const auto mdbx_max_size_hard_limit{chaindata_page_size.value() * sw_db::kMdbxMaxPages};
     const auto chaindata_max_size{parse_size(chaindata_max_size_str)};
     if (chaindata_max_size.value() > mdbx_max_size_hard_limit) {
         throw std::invalid_argument("--chaindata.maxsize exceeds max allowed size by page size i.e" +
@@ -226,14 +259,14 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
     node_settings.etl_buffer_size = parse_size(etl_buffer_size_str).value();
 
     // Parse prune mode
-    db::PruneDistance olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces;
+    sw_db::PruneDistance olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces;
     if (cli["--prune.h.older"]->count()) olderHistory.emplace(cli["--prune.h.older"]->as<BlockNum>());
     if (cli["--prune.r.older"]->count()) olderReceipts.emplace(cli["--prune.r.older"]->as<BlockNum>());
     if (cli["--prune.s.older"]->count()) olderSenders.emplace(cli["--prune.s.older"]->as<BlockNum>());
     if (cli["--prune.t.older"]->count()) olderTxIndex.emplace(cli["--prune.t.older"]->as<BlockNum>());
     if (cli["--prune.c.older"]->count()) olderCallTraces.emplace(cli["--prune.c.older"]->as<BlockNum>());
 
-    db::PruneThreshold beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces;
+    sw_db::PruneThreshold beforeHistory, beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces;
     if (cli["--prune.h.before"]->count()) beforeHistory.emplace(cli["--prune.h.before"]->as<BlockNum>());
     if (cli["--prune.r.before"]->count()) beforeReceipts.emplace(cli["--prune.r.before"]->as<BlockNum>());
     if (cli["--prune.s.before"]->count()) beforeSenders.emplace(cli["--prune.s.before"]->as<BlockNum>());
@@ -241,13 +274,12 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
     if (cli["--prune.c.before"]->count()) beforeCallTraces.emplace(cli["--prune.c.before"]->as<BlockNum>());
 
     node_settings.prune_mode =
-        db::parse_prune_mode(prune_mode,  //
-                             olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces, beforeHistory,
-                             beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
+        sw_db::parse_prune_mode(prune_mode,  //
+                                olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces, beforeHistory,
+                                beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
 
     server_settings.set_address_uri(node_settings.private_api_addr);
-    server_settings.set_num_contexts(num_contexts);
-    server_settings.set_wait_mode(wait_mode);
+    server_settings.set_context_pool_settings(context_pool_settings);
 
     snapshot_settings.bittorrent_settings.repository_path = snapshot_settings.repository_dir;
 }
@@ -260,26 +292,26 @@ void run_preflight_checklist(NodeSettings& node_settings, bool init_if_empty = t
         auto& config = node_settings.chaindata_env_config;
         config.path = node_settings.data_directory->chaindata().path().string();
         config.create =
-            !std::filesystem::exists(db::get_datafile_path(node_settings.data_directory->chaindata().path()));
+            !std::filesystem::exists(sw_db::get_datafile_path(node_settings.data_directory->chaindata().path()));
         config.exclusive = true;  // Will be cleared after this phase
     }
 
     // Open chaindata environment and check tables are consistent
-    log::Message("Opening database", {"path", node_settings.data_directory->chaindata().path().string()});
-    auto chaindata_env{silkworm::db::open_env(node_settings.chaindata_env_config)};
-    db::RWTxn tx(chaindata_env);
+    sw_log::Message("Opening database", {"path", node_settings.data_directory->chaindata().path().string()});
+    auto chaindata_env{sw_db::open_env(node_settings.chaindata_env_config)};
+    sw_db::RWTxn tx(chaindata_env);
 
     // Ensures all tables are present
-    db::table::check_or_create_chaindata_tables(tx);
-    log::Message("Database schema", {"version", db::read_schema_version(tx)->to_string()});
+    sw_db::table::check_or_create_chaindata_tables(tx);
+    sw_log::Message("Database schema", {"version", sw_db::read_schema_version(tx)->to_string()});
 
     // Detect the highest downloaded header. We need that to detect if we can apply changes in chain config and/or
     // prune mode
-    const auto header_download_progress{db::stages::read_stage_progress(tx, db::stages::kHeadersKey)};
+    const auto header_download_progress{sw_db::stages::read_stage_progress(tx, sw_db::stages::kHeadersKey)};
 
     // Check db is initialized with chain config
     {
-        node_settings.chain_config = db::read_chain_config(tx);
+        node_settings.chain_config = sw_db::read_chain_config(tx);
         if (!node_settings.chain_config.has_value() && init_if_empty) {
             auto source_data{read_genesis_data(node_settings.network_id)};
             auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
@@ -287,10 +319,10 @@ void run_preflight_checklist(NodeSettings& node_settings, bool init_if_empty = t
                 throw std::runtime_error("Could not initialize db for chain id " +
                                          std::to_string(node_settings.network_id) + " : unknown network");
             }
-            log::Message("Priming database", {"network id", std::to_string(node_settings.network_id)});
-            db::initialize_genesis(tx, genesis_json, /*allow_exceptions=*/true);
+            sw_log::Message("Priming database", {"network id", std::to_string(node_settings.network_id)});
+            sw_db::initialize_genesis(tx, genesis_json, /*allow_exceptions=*/true);
             tx.commit();
-            node_settings.chain_config = db::read_chain_config(tx);
+            node_settings.chain_config = sw_db::read_chain_config(tx);
         }
 
         if (!node_settings.chain_config.has_value()) {
@@ -379,24 +411,24 @@ void run_preflight_checklist(NodeSettings& node_settings, bool init_if_empty = t
             }
 
             if (new_members_added || old_members_changed) {
-                db::update_chain_config(tx, *(known_chain->second));
+                sw_db::update_chain_config(tx, *(known_chain->second));
                 tx.commit();
                 node_settings.chain_config = *(known_chain->second);
             }
         }
 
         // Load genesis_hash
-        node_settings.chain_config->genesis_hash = db::read_canonical_header_hash(tx, 0);
+        node_settings.chain_config->genesis_hash = sw_db::read_canonical_header_hash(tx, 0);
         if (!node_settings.chain_config->genesis_hash.has_value())
             throw std::runtime_error("Could not load genesis hash");
 
-        log::Message("Starting Silkworm", {"chain", (known_chain.has_value() ? known_chain->first : "unknown/custom"),
-                                           "config", node_settings.chain_config->to_json().dump()});
+        sw_log::Message("Starting Silkworm", {"chain", (known_chain.has_value() ? known_chain->first : "unknown/custom"),
+                                              "config", node_settings.chain_config->to_json().dump()});
     }
 
     // Detect prune-mode and verify is compatible
     {
-        auto db_prune_mode{db::read_prune_mode(*tx)};
+        auto db_prune_mode{sw_db::read_prune_mode(*tx)};
         if (db_prune_mode != *node_settings.prune_mode) {
             // In case we have mismatching modes (cli != db) we prevent
             // further execution ONLY if we've already synced something
@@ -404,10 +436,10 @@ void run_preflight_checklist(NodeSettings& node_settings, bool init_if_empty = t
                 throw std::runtime_error("Can't change prune_mode on already synced data. Expected " +
                                          db_prune_mode.to_string() + " got " + node_settings.prune_mode->to_string());
             }
-            db::write_prune_mode(*tx, *node_settings.prune_mode);
-            node_settings.prune_mode = std::make_unique<db::PruneMode>(db::read_prune_mode(*tx));
+            sw_db::write_prune_mode(*tx, *node_settings.prune_mode);
+            node_settings.prune_mode = std::make_unique<sw_db::PruneMode>(sw_db::read_prune_mode(*tx));
         }
-        log::Message("Effective pruning", {"mode", node_settings.prune_mode->to_string()});
+        sw_log::Message("Effective pruning", {"mode", node_settings.prune_mode->to_string()});
     }
 
     tx.commit(/*renew=*/false);
@@ -416,24 +448,29 @@ void run_preflight_checklist(NodeSettings& node_settings, bool init_if_empty = t
     node_settings.chaindata_env_config.create = false;  // Has already been created
 }
 
+class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
+};
+
 // main
 int main(int argc, char* argv[]) {
     using namespace boost::placeholders;
     using namespace std::chrono;
+    using namespace silkworm::concurrency::awaitable_wait_for_one;
+    using namespace silkworm::concurrency::awaitable_wait_for_all;
 
     CLI::App cli("Silkworm node");
     cli.get_formatter()->column_width(50);
 
     try {
-        SilkwormCoreSettings settings;
+        SilkwormSettings settings;
         parse_silkworm_command_line(cli, argc, argv, settings);
 
         auto& node_settings = settings.node_settings;
         auto& snapshot_settings = settings.snapshot_settings;
 
         // Initialize logging with cli settings
-        log::init(settings.log_settings);
-        log::set_thread_name("main");
+        sw_log::init(settings.log_settings);
+        sw_log::set_thread_name("main");
 
         // Output BuildInfo
         const auto build_info{silkworm_get_buildinfo()};
@@ -444,7 +481,7 @@ int main(int argc, char* argv[]) {
             "compiler=" + std::string(build_info->compiler_id) +
             " " + std::string(build_info->compiler_version);
 
-        log::Message(
+        sw_log::Message(
             "Silkworm",
             {"version", std::string(build_info->git_branch) + std::string(build_info->project_version),
              "build",
@@ -456,13 +493,13 @@ int main(int argc, char* argv[]) {
         // Output mdbx build info
         auto mdbx_ver{mdbx::get_version()};
         auto mdbx_bld{mdbx::get_build()};
-        log::Message("libmdbx",
-                     {"version", mdbx_ver.git.describe, "build", mdbx_bld.target, "compiler", mdbx_bld.compiler});
+        sw_log::Message("libmdbx",
+                        {"version", mdbx_ver.git.describe, "build", mdbx_bld.target, "compiler", mdbx_bld.compiler});
 
         // Check db
         run_preflight_checklist(node_settings);  // Prepare database for takeoff
 
-        auto chaindata_db{silkworm::db::open_env(node_settings.chaindata_env_config)};
+        auto chaindata_db{sw_db::open_env(node_settings.chaindata_env_config)};
 
         PreverifiedHashes::load(node_settings.chain_config->chain_id);
 
@@ -470,15 +507,18 @@ int main(int argc, char* argv[]) {
         using asio_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
         auto asio_guard = std::make_unique<asio_guard_type>(node_settings.asio_context.get_executor());
         std::thread asio_thread{[&node_settings]() -> void {
-            log::set_thread_name("Asio");
-            log::Trace("Boost Asio", {"state", "started"});
+            sw_log::set_thread_name("Asio");
+            sw_log::Trace("Boost Asio", {"state", "started"});
             node_settings.asio_context.run();
-            log::Trace("Boost Asio", {"state", "stopped"});
+            sw_log::Trace("Boost Asio", {"state", "stopped"});
         }};
+        silkworm::rpc::ServerContextPool context_pool{
+            settings.server_settings.context_pool_settings(),
+            [] { return std::make_unique<DummyServerCompletionQueue>(); },
+        };
 
         // Resource usage logging
         ResourceUsageLog resource_usage_log(node_settings);
-        auto resource_usage_logging = std::thread([&resource_usage_log]() { resource_usage_log.execution_loop(); });
 
         // BackEnd & KV server
         const auto node_name{get_node_name_from_build_info(build_info)};
@@ -486,97 +526,110 @@ int main(int argc, char* argv[]) {
         backend.set_node_name(node_name);
 
         silkworm::rpc::BackEndKvServer rpc_server{settings.server_settings, backend};
-        rpc_server.build_and_start();
+
+        // Sentry
+        std::optional<silkworm::sentry::Sentry> sentry_server;
+        if (node_settings.external_sentry_addr.empty()) {
+            silkworm::sentry::Settings sentry_settings = std::move(settings.sentry_settings);
+            sentry_settings.data_dir_path = node_settings.data_directory->path();
+            sentry_settings.context_pool_settings = settings.server_settings.context_pool_settings();
+            // disable GRPC in the embedded sentry
+            // TODO: uncomment when sync_sentry_client is refactored to use the sentry client
+            // sentry_settings.api_address = "";
+
+            sentry_server.emplace(std::move(sentry_settings), context_pool);
+            // TODO: remove when sync_sentry_client is refactored to use the sentry client
+            node_settings.external_sentry_addr = "127.0.0.1:9091";
+        }
+        auto embedded_sentry_run_if_needed = [&sentry_server]() -> boost::asio::awaitable<void> {
+            if (sentry_server) {
+                co_await sentry_server->run();
+            }
+        };
 
         // Sentry client - connects to sentry
-        SentryClient sentry{node_settings.external_sentry_addr, db::ROAccess{chaindata_db},
-                            node_settings.chain_config.value()};
-        auto message_receiving = std::thread([&sentry]() { sentry.execution_loop(); });
-        auto stats_receiving = std::thread([&sentry]() { sentry.stats_receiving_loop(); });
+        silkworm::SentryClient sync_sentry_client{
+            node_settings.external_sentry_addr,
+            sw_db::ROAccess{chaindata_db},
+            node_settings.chain_config.value(),
+        };
+        auto sync_sentry_client_stats_receiving_loop = silkworm::concurrency::async_thread(
+            [&sentry_client = sync_sentry_client]() { sentry_client.stats_receiving_loop(); },
+            [&sentry_client = sync_sentry_client]() { sentry_client.stop(); });
 
         // BlockExchange - download headers and bodies from remote peers using the sentry
-        BlockExchange block_exchange{sentry, db::ROAccess{chaindata_db}, node_settings.chain_config.value()};
-        auto block_downloading = std::thread([&block_exchange]() { block_exchange.execution_loop(); });
+        BlockExchange block_exchange{sync_sentry_client, sw_db::ROAccess{chaindata_db}, node_settings.chain_config.value()};
 
         if (snapshot_settings.enabled) {
-            db::RWTxn rw_txn{chaindata_db};
+            sw_db::RWTxn rw_txn{chaindata_db};
 
             // Snapshot sync - download chain from peers using snapshot files
             SnapshotSync snapshot_sync{snapshot_settings, node_settings.chain_config.value()};
             snapshot_sync.download_and_index_snapshots(rw_txn);
         } else {
-            log::Info() << "Snapshot sync disabled, no snapshot must be downloaded";
+            sw_log::Info() << "Snapshot sync disabled, no snapshot must be downloaded";
         }
 
-        // ExecutionEngine executes transactions and builds state validating chain slices
-        silkworm::stagedsync::ExecutionEngine execution{node_settings, db::RWAccess{chaindata_db}};
+        // The following trick is currently needed because of weird threading issues:
+        // 1) MDBX requires that the very same thread creates and uses the unique r/w tx on the db
+        // 2) ExecutionEngine currently creates such unique r/w tx in its constructor
+        // 3) PoWSync has sync execution_loop using execution methods which in turn use r/w tx
+        // so basically ExecutionEngine ctor + PoWSync::execution_loop must happen in the same thread
+        auto sync_executor = [&]() -> boost::asio::awaitable<void> {
+            std::shared_ptr<silkworm::chainsync::PoWSync> sync;
+            auto run = [&] {
+                // ExecutionEngine executes transactions and builds state validating chain slices
+                silkworm::stagedsync::ExecutionEngine execution{node_settings, sw_db::RWAccess{chaindata_db}};
 
-        // ConsensusEngine drives headers and bodies sync, implementing fork choice rules
-        silkworm::chainsync::PoWSync sync{block_exchange, execution};
+                // ConsensusEngine drives headers and bodies sync, implementing fork choice rules
+                // currently sync & execution are on the same process, sync calls execution so due to
+                // limitations related to the db rw tx owned by execution they must run on the same thread
+                sync = std::make_shared<silkworm::chainsync::PoWSync>(block_exchange, execution);
+
+                sync->execution_loop();
+            };
+            auto stop = [&] { sync->stop(); };
+            co_await silkworm::concurrency::async_thread(std::move(run), std::move(stop));
+        };
+
+        auto tasks =
+            resource_usage_log.async_run() &&
+            rpc_server.async_run() &&
+            embedded_sentry_run_if_needed() &&
+            sync_sentry_client.async_run() &&
+            std::move(sync_sentry_client_stats_receiving_loop) &&
+            block_exchange.async_run() &&
+            sync_executor();
 
         // Trap OS signals
-        SignalHandler::init([&](int) {
-            log::Info() << "Requesting termination\n";
-            sync.stop();
-        });
+        ShutdownSignal shutdown_signal{context_pool.next_io_context()};
 
-        // Sync main loop
-        sync.execution_loop();  // currently sync & execution are on the same process, sync calls execution so due to
-                                // limitations related to the db rw tx owned by execution they must run on the same thread
+        // Go!
+        auto run_future = boost::asio::co_spawn(
+            context_pool.next_io_context(),
+            std::move(tasks) || shutdown_signal.wait(),
+            boost::asio::use_future);
+        context_pool.start();
 
-        /*
-        if (is_pow(node_settings.chain_config)) {
-            silkworm::stagedsync::ExecutionEngine execution{node_settings, db::RWAccess{chaindata_db}};
-
-            chainsync::pow::SyncEngine sync(block_exchange, execution);
-
-            SignalHandler::init([&](int) { sync.stop(); });
-
-            sync.execution_loop();
-        }
-        else (is_pos(node_settings.chain_config)) {
-            ExecutionServer exec_server;
-
-            ExecutionClient exec_client(exec_server);
-
-            chainsync::pos::SyncEngine sync(block_exchange, exec_client);
-            auto sync_running = std::thread([&sync]() { sync.execution_loop(); });
-
-            ExtConsensusClient cons(sync);
-            auto cons_running = std::thread([&cons]() { cons.execution_loop(); });
-
-            SignalHandler::init([&](int) { exec_server.stop(); });
-
-            exec_server.execution_loop();  // MDBX wr thread
-        }
-        else
-            throw std::invalid_argument("Invalid chain config");
-        */
+        // Wait for shutdown_signal or an exception from tasks
+        run_future.get();
 
         // Close all resources
-        backend.close();
-        rpc_server.shutdown();
-        rpc_server.join();
-
-        block_exchange.stop();
-        sentry.stop();
-        sync.stop();
-        resource_usage_log.stop();
-        block_downloading.join();
-        message_receiving.join();
-        stats_receiving.join();
-        resource_usage_logging.join();
-
         asio_guard.reset();
         asio_thread.join();
 
-        log::Message() << "Exiting Silkworm";
+        context_pool.stop();
+        context_pool.join();
+
+        backend.close();
+
+        sw_log::Message() << "Exiting Silkworm";
 
         return 0;
     } catch (const CLI::ParseError& ex) {
         return cli.exit(ex);
     } catch (const std::runtime_error& ex) {
-        log::Error() << ex.what();
+        sw_log::Error() << ex.what();
         return -1;
     } catch (const std::invalid_argument& ex) {
         std::cerr << "\tInvalid argument :" << ex.what() << "\n"

@@ -1,5 +1,5 @@
-#[[
-   Copyright 2022 The Silkworm Authors
+/*
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -12,20 +12,20 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-# Silkworm itself
-add_subdirectory(core)
+#pragma once
 
-if(NOT SILKWORM_CORE_ONLY)
-  add_subdirectory(interfaces)
-  add_subdirectory(infra)
-  add_subdirectory(sentry)
-  add_subdirectory(sync)
-  add_subdirectory(node)
-  add_subdirectory(silkrpc)
-endif()
+#include <memory>
 
-if(SILKWORM_WASM_API)
-  add_subdirectory(wasm)
-endif()
+#include "service.hpp"
+
+namespace silkworm::sentry::api::api_common {
+
+struct SentryClient {
+    virtual ~SentryClient() = default;
+
+    virtual std::shared_ptr<Service> service() = 0;
+};
+
+}  // namespace silkworm::sentry::api::api_common

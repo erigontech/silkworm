@@ -68,19 +68,17 @@ void add_option_private_api_address(CLI::App& cli, std::string& private_api_addr
                            "DO NOT EXPOSE TO THE INTERNET");
 }
 
-void add_option_sentry_api_address(CLI::App& cli, std::string& sentry_api_address) {
-    add_option_ip_endpoint(cli, "--sentry.api.addr", sentry_api_address, "Sentry api endpoint");
-}
-
 void add_option_external_sentry_address(CLI::App& cli, std::string& external_sentry_address) {
     add_option_ip_endpoint(cli, "--sentry.remote.addr", external_sentry_address, "External Sentry endpoint");
 }
 
+//! \brief Set up parsing of the number of RPC execution contexts (i.e. threading model)
 void add_option_num_contexts(CLI::App& cli, uint32_t& num_contexts) {
     cli.add_option("--contexts", num_contexts, "The number of execution contexts")
         ->default_val(std::thread::hardware_concurrency() / 2);
 }
 
+//! \brief Set up parsing of the wait mode (e.g. block, sleep, spin...) in RPC execution contexts
 void add_option_wait_mode(CLI::App& cli, silkworm::rpc::WaitMode& wait_mode) {
     std::map<std::string, silkworm::rpc::WaitMode> wait_mode_mapping{
         {"backoff", silkworm::rpc::WaitMode::backoff},
@@ -94,6 +92,11 @@ void add_option_wait_mode(CLI::App& cli, silkworm::rpc::WaitMode& wait_mode) {
         ->check(CLI::Range(silkworm::rpc::WaitMode::backoff, silkworm::rpc::WaitMode::busy_spin))
         ->transform(CLI::Transformer(wait_mode_mapping, CLI::ignore_case))
         ->default_val(silkworm::rpc::WaitMode::blocking);
+}
+
+void add_context_pool_options(CLI::App& cli, concurrency::ContextPoolSettings& settings) {
+    add_option_num_contexts(cli, settings.num_contexts);
+    add_option_wait_mode(cli, settings.wait_mode);
 }
 
 std::string get_node_name_from_build_info(const buildinfo* build_info) {

@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,14 +14,14 @@
    limitations under the License.
 */
 
-#include "settings.hpp"
+#pragma once
 
-#include <thread>
+#include <CLI/CLI.hpp>
 
-namespace silkworm::sentry {
+#include <silkworm/sentry/settings.hpp>
 
-Settings::Settings() {
-    num_contexts = std::thread::hardware_concurrency() / 2;
-}
+namespace silkworm::cmd::common {
 
-}  // namespace silkworm::sentry
+void add_sentry_options(CLI::App& cli, silkworm::sentry::Settings& settings);
+
+}  // namespace silkworm::cmd::common

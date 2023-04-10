@@ -73,7 +73,7 @@ ServerImpl::ServerImpl(
       router_(std::move(router)) {
     log::Info() << "Server created"
                 << " listening on: " << config.address_uri() << ";"
-                << " contexts: " << config.num_contexts();
+                << " contexts: " << config.context_pool_settings().num_contexts;
 }
 
 // Register the gRPC services: they must exist for the lifetime of the server built by builder.

@@ -36,7 +36,7 @@
 #include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
-namespace silkworm::sentry::common::awaitable_wait_for_all {
+namespace silkworm::concurrency::awaitable_wait_for_all {
 
 using boost::asio::experimental::wait_for_one_error;
 
@@ -198,4 +198,4 @@ awaitable<std::tuple<T..., U>, Executor> operator&&(
         std::make_tuple(std::move(detail::awaitable_unwrap<U>(r1))));
 }
 
-}  // namespace silkworm::sentry::common::awaitable_wait_for_all
+}  // namespace silkworm::concurrency::awaitable_wait_for_all

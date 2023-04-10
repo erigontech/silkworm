@@ -50,9 +50,9 @@ struct SentryStatus {
 
 class SentryClient {
   public:
-    using SetStatusResult = sentry::SetStatusReply;
-    using PeerCountResult = sentry::PeerCountReply;
-    using NodeInfoResult = types::NodeInfoReply;
+    using SetStatusResult = ::sentry::SetStatusReply;
+    using PeerCountResult = ::sentry::PeerCountReply;
+    using NodeInfoResult = ::types::NodeInfoReply;
 
     virtual ~SentryClient() = default;
 
@@ -82,7 +82,7 @@ class RemoteSentryClient : public SentryClient {
 
   private:
     agrpc::GrpcContext& grpc_context_;
-    std::unique_ptr<sentry::Sentry::Stub> stub_;
+    std::unique_ptr<::sentry::Sentry::Stub> stub_;
     std::string address_uri_;
 };
 

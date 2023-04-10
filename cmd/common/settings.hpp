@@ -20,13 +20,15 @@
 #include <silkworm/infra/rpc/server/server_config.hpp>
 #include <silkworm/node/common/settings.hpp>
 #include <silkworm/node/snapshot/settings.hpp>
+#include <silkworm/sentry/settings.hpp>
 
 namespace silkworm::cmd::common {
 
-//! The overall settings for Silkworm Core component
-struct SilkwormCoreSettings {
+//! The overall settings
+struct SilkwormSettings {
     silkworm::log::Settings log_settings;
     silkworm::NodeSettings node_settings;
+    silkworm::sentry::Settings sentry_settings;
     silkworm::rpc::ServerConfig server_settings;
     SnapshotSettings snapshot_settings;
 };

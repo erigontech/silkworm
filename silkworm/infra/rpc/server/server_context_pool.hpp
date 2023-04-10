@@ -28,6 +28,7 @@
 #include <boost/asio/io_context.hpp>
 #include <grpcpp/grpcpp.h>
 
+#include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/rpc/server/wait_strategy.hpp>
 
 namespace silkworm::rpc {
@@ -89,8 +90,7 @@ class ServerContextPool {
   public:
     explicit ServerContextPool(std::size_t pool_size);
     ServerContextPool(
-        std::size_t pool_size,
-        WaitMode wait_mode,
+        concurrency::ContextPoolSettings settings,
         const std::function<std::unique_ptr<grpc::ServerCompletionQueue>()>& queue_factory);
     ~ServerContextPool();
 

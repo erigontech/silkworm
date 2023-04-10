@@ -570,13 +570,27 @@ int main(int argc, char* argv[]) {
             sw_log::Info() << "Snapshot sync disabled, no snapshot must be downloaded";
         }
 
-        // ExecutionEngine executes transactions and builds state validating chain slices
-        silkworm::stagedsync::ExecutionEngine execution{node_settings, sw_db::RWAccess{chaindata_db}};
+        // The following trick is currently needed because of weird threading issues:
+        // 1) MDBX requires that the very same thread creates and uses the unique r/w tx on the db
+        // 2) ExecutionEngine currently creates such unique r/w tx in its constructor
+        // 3) PoWSync has sync execution_loop using execution methods which in turn use r/w tx
+        // so basically ExecutionEngine ctor + PoWSync::execution_loop must happen in the same thread
+        auto sync_executor = [&]()-> boost::asio::awaitable<void> {
+            std::shared_ptr<silkworm::chainsync::PoWSync> sync;
+            auto run = [&] {
+                // ExecutionEngine executes transactions and builds state validating chain slices
+                silkworm::stagedsync::ExecutionEngine execution{node_settings, sw_db::RWAccess{chaindata_db}};
 
-        // ConsensusEngine drives headers and bodies sync, implementing fork choice rules
-        // currently sync & execution are on the same process, sync calls execution so due to
-        // limitations related to the db rw tx owned by execution they must run on the same thread
-        silkworm::chainsync::PoWSync sync{block_exchange, execution};
+                // ConsensusEngine drives headers and bodies sync, implementing fork choice rules
+                // currently sync & execution are on the same process, sync calls execution so due to
+                // limitations related to the db rw tx owned by execution they must run on the same thread
+                sync = std::make_shared<silkworm::chainsync::PoWSync>(block_exchange, execution);
+
+                sync->execution_loop();
+            };
+            auto stop = [&] { sync->stop(); };
+            co_await silkworm::concurrency::async_thread(std::move(run), std::move(stop));
+        };
 
         auto tasks =
             resource_usage_log.async_run() &&
@@ -585,7 +599,7 @@ int main(int argc, char* argv[]) {
             sync_sentry_client.async_run() &&
             std::move(sync_sentry_client_stats_receiving_loop) &&
             block_exchange.async_run() &&
-            sync.async_run();
+            sync_executor();
 
         // Trap OS signals
         ShutdownSignal shutdown_signal{context_pool.next_io_context()};
@@ -609,12 +623,9 @@ int main(int argc, char* argv[]) {
 
         backend.close();
 
-        sw_log::Message() << "Closing database chaindata path: " << node_settings.data_directory->chaindata().path();
-        chaindata_db.close();
-        sw_log::Message() << "Database closed";
+        sw_log::Message() << "Exiting Silkworm";
 
         return 0;
-
     } catch (const CLI::ParseError& ex) {
         return cli.exit(ex);
     } catch (const std::runtime_error& ex) {

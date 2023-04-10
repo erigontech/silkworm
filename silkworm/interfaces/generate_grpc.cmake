@@ -79,22 +79,15 @@ endmacro()
 # gRPC protocol interface file
 set(TYPES_PROTO "${PROTO_PATH}/types/types.proto")
 
-set(TYPES_SOURCES_OUT "${OUT_PATH}/types/types.pb.cc" "${OUT_PATH}/types/types.pb.h")
 set(TYPES_SOURCES_SYMLINK "${OUT_PATH_SYMLINK}/types/types.pb.cc" "${OUT_PATH_SYMLINK}/types/types.pb.h")
-
-add_custom_command(
-  OUTPUT ${TYPES_SOURCES_OUT}
-  COMMAND ${PROTOBUF_PROTOC} ARGS ${PROTOC_ARGS} "${TYPES_PROTO}"
-  DEPENDS "${TYPES_PROTO}"
-  BYPRODUCTS ${TYPES_SOURCES_SYMLINK}
-  COMMENT "Running C++ gRPC compiler on ${TYPES_PROTO}"
-)
 
 create_symlink_target(generate_types_proto_symlink "${OUT_PATH_SYMLINK}/types" "${OUT_PATH}/types")
 
 add_custom_command(
   OUTPUT ${TYPES_SOURCES_SYMLINK}
-  DEPENDS ${TYPES_SOURCES_OUT} generate_types_proto_symlink
+  COMMAND ${PROTOBUF_PROTOC} ARGS ${PROTOC_ARGS} "${TYPES_PROTO}"
+  DEPENDS ${TYPES_PROTO} generate_types_proto_symlink
+  COMMENT "Running C++ gRPC compiler on ${TYPES_PROTO}"
 )
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -104,27 +97,18 @@ add_custom_command(
 set(EXECUTION_PROTO "${PROTO_PATH}/execution/execution.proto")
 
 # Generate sources
-set(EXECUTION_SOURCES_OUT "${OUT_PATH}/execution/execution.grpc.pb.cc" "${OUT_PATH}/execution/execution.grpc.pb.h"
-                          "${OUT_PATH}/execution/execution.pb.cc" "${OUT_PATH}/execution/execution.pb.h"
-)
 set(EXECUTION_SOURCES_SYMLINK
     "${OUT_PATH_SYMLINK}/execution/execution.grpc.pb.cc" "${OUT_PATH_SYMLINK}/execution/execution.grpc.pb.h"
     "${OUT_PATH_SYMLINK}/execution/execution.pb.cc" "${OUT_PATH_SYMLINK}/execution/execution.pb.h"
-)
-
-add_custom_command(
-  OUTPUT ${EXECUTION_SOURCES_OUT}
-  COMMAND ${PROTOBUF_PROTOC} ARGS ${PROTOC_ARGS_GRPC} "${EXECUTION_PROTO}"
-  DEPENDS "${EXECUTION_PROTO}"
-  BYPRODUCTS ${EXECUTION_SOURCES_SYMLINK}
-  COMMENT "Running C++ gRPC compiler on ${EXECUTION_PROTO}"
 )
 
 create_symlink_target(generate_execution_grpc_symlink "${OUT_PATH_SYMLINK}/execution" "${OUT_PATH}/execution")
 
 add_custom_command(
   OUTPUT ${EXECUTION_SOURCES_SYMLINK}
-  DEPENDS ${EXECUTION_SOURCES_OUT} ${TYPES_SOURCES_SYMLINK} generate_execution_grpc_symlink
+  COMMAND ${PROTOBUF_PROTOC} ARGS ${PROTOC_ARGS_GRPC} "${EXECUTION_PROTO}"
+  DEPENDS ${EXECUTION_PROTO} generate_execution_grpc_symlink
+  COMMENT "Running C++ gRPC compiler on ${EXECUTION_PROTO}"
 )
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -134,13 +118,6 @@ add_custom_command(
 set(SENTRY_PROTO "${PROTO_PATH}/p2psentry/sentry.proto")
 
 # cmake-format: off
-set(SENTRY_SOURCES_OUT
-    "${OUT_PATH}/p2psentry/sentry.grpc.pb.cc"
-    "${OUT_PATH}/p2psentry/sentry.grpc.pb.h"
-    "${OUT_PATH}/p2psentry/sentry.pb.cc"
-    "${OUT_PATH}/p2psentry/sentry.pb.h"
-    "${OUT_PATH}/p2psentry/sentry_mock.grpc.pb.h"
-)
 set(SENTRY_SOURCES_SYMLINK
     "${OUT_PATH_SYMLINK}/p2psentry/sentry.grpc.pb.cc"
     "${OUT_PATH_SYMLINK}/p2psentry/sentry.grpc.pb.h"
@@ -150,19 +127,13 @@ set(SENTRY_SOURCES_SYMLINK
 )
 # cmake-format: on
 
-add_custom_command(
-  OUTPUT ${SENTRY_SOURCES_OUT}
-  COMMAND ${PROTOBUF_PROTOC} ARGS ${PROTOC_ARGS_GRPC} "${SENTRY_PROTO}"
-  DEPENDS "${SENTRY_PROTO}"
-  BYPRODUCTS ${SENTRY_SOURCES_SYMLINK}
-  COMMENT "Running C++ gRPC compiler on ${SENTRY_PROTO}"
-)
-
 create_symlink_target(generate_sentry_grpc_symlink "${OUT_PATH_SYMLINK}/p2psentry" "${OUT_PATH}/p2psentry")
 
 add_custom_command(
   OUTPUT ${SENTRY_SOURCES_SYMLINK}
-  DEPENDS ${SENTRY_SOURCES_OUT} ${TYPES_SOURCES_SYMLINK} generate_sentry_grpc_symlink
+  COMMAND ${PROTOBUF_PROTOC} ARGS ${PROTOC_ARGS_GRPC} "${SENTRY_PROTO}"
+  DEPENDS ${SENTRY_PROTO} generate_sentry_grpc_symlink
+  COMMENT "Running C++ gRPC compiler on ${SENTRY_PROTO}"
 )
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -172,13 +143,6 @@ add_custom_command(
 set(KV_PROTO "${PROTO_PATH}/remote/kv.proto")
 
 # cmake-format: off
-set(KV_SOURCES_OUT
-    "${OUT_PATH}/remote/kv.grpc.pb.cc"
-    "${OUT_PATH}/remote/kv.grpc.pb.h"
-    "${OUT_PATH}/remote/kv.pb.cc"
-    "${OUT_PATH}/remote/kv.pb.h"
-    "${OUT_PATH}/remote/kv_mock.grpc.pb.h"
-)
 set(KV_SOURCES_SYMLINK
     "${OUT_PATH_SYMLINK}/remote/kv.grpc.pb.cc"
     "${OUT_PATH_SYMLINK}/remote/kv.grpc.pb.h"
@@ -188,19 +152,13 @@ set(KV_SOURCES_SYMLINK
 )
 # cmake-format: on
 
-add_custom_command(
-  OUTPUT ${KV_SOURCES_OUT}
-  COMMAND ${PROTOBUF_PROTOC} ARGS ${PROTOC_ARGS_GRPC} "${KV_PROTO}"
-  DEPENDS "${KV_PROTO}"
-  BYPRODUCTS ${KV_SOURCES_SYMLINK}
-  COMMENT "Running C++ gRPC compiler on ${KV_PROTO}"
-)
-
 create_symlink_target(generate_remote_grpc_symlink "${OUT_PATH_SYMLINK}/remote" "${OUT_PATH}/remote")
 
 add_custom_command(
   OUTPUT ${KV_SOURCES_SYMLINK}
-  DEPENDS ${KV_SOURCES_OUT} ${TYPES_SOURCES_SYMLINK} generate_remote_grpc_symlink
+  COMMAND ${PROTOBUF_PROTOC} ARGS ${PROTOC_ARGS_GRPC} "${KV_PROTO}"
+  DEPENDS ${KV_PROTO} generate_remote_grpc_symlink
+  COMMENT "Running C++ gRPC compiler on ${KV_PROTO}"
 )
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -210,13 +168,6 @@ add_custom_command(
 set(ETHBACKEND_PROTO "${PROTO_PATH}/remote/ethbackend.proto")
 
 # cmake-format: off
-set(ETHBACKEND_SOURCES_OUT
-    "${OUT_PATH}/remote/ethbackend.grpc.pb.cc"
-    "${OUT_PATH}/remote/ethbackend.grpc.pb.h"
-    "${OUT_PATH}/remote/ethbackend.pb.cc"
-    "${OUT_PATH}/remote/ethbackend.pb.h"
-    "${OUT_PATH}/remote/ethbackend_mock.grpc.pb.h"
-)
 set(ETHBACKEND_SOURCES_SYMLINK
     "${OUT_PATH_SYMLINK}/remote/ethbackend.grpc.pb.cc"
     "${OUT_PATH_SYMLINK}/remote/ethbackend.grpc.pb.h"
@@ -227,16 +178,10 @@ set(ETHBACKEND_SOURCES_SYMLINK
 # cmake-format: on
 
 add_custom_command(
-  OUTPUT ${ETHBACKEND_SOURCES_OUT}
-  COMMAND ${PROTOBUF_PROTOC} ARGS ${PROTOC_ARGS_GRPC} "${ETHBACKEND_PROTO}"
-  DEPENDS "${ETHBACKEND_PROTO}"
-  BYPRODUCTS ${ETHBACKEND_SOURCES_SYMLINK}
-  COMMENT "Running C++ gRPC compiler on ${ETHBACKEND_PROTO}"
-)
-
-add_custom_command(
   OUTPUT ${ETHBACKEND_SOURCES_SYMLINK}
-  DEPENDS ${ETHBACKEND_SOURCES_OUT} ${TYPES_SOURCES_SYMLINK} generate_remote_grpc_symlink
+  COMMAND ${PROTOBUF_PROTOC} ARGS ${PROTOC_ARGS_GRPC} "${ETHBACKEND_PROTO}"
+  DEPENDS ${ETHBACKEND_PROTO} generate_remote_grpc_symlink
+  COMMENT "Running C++ gRPC compiler on ${ETHBACKEND_PROTO}"
 )
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -246,13 +191,6 @@ add_custom_command(
 set(MINING_PROTO "${PROTO_PATH}/txpool/mining.proto")
 
 # cmake-format: off
-set(MINING_SOURCES_OUT
-    "${OUT_PATH}/txpool/mining.grpc.pb.cc"
-    "${OUT_PATH}/txpool/mining.grpc.pb.h"
-    "${OUT_PATH}/txpool/mining.pb.cc"
-    "${OUT_PATH}/txpool/mining.pb.h"
-    "${OUT_PATH}/txpool/mining_mock.grpc.pb.h"
-)
 set(MINING_SOURCES_SYMLINK
     "${OUT_PATH_SYMLINK}/txpool/mining.grpc.pb.cc"
     "${OUT_PATH_SYMLINK}/txpool/mining.grpc.pb.h"
@@ -262,19 +200,13 @@ set(MINING_SOURCES_SYMLINK
 )
 # cmake-format: on
 
-add_custom_command(
-  OUTPUT ${MINING_SOURCES_OUT}
-  COMMAND ${PROTOBUF_PROTOC} ARGS ${PROTOC_ARGS_GRPC} "${MINING_PROTO}"
-  DEPENDS "${MINING_PROTO}"
-  BYPRODUCTS ${MINING_SOURCES_SYMLINK}
-  COMMENT "Running C++ gRPC compiler on ${KV_PROTO}"
-)
-
 create_symlink_target(generate_txpool_grpc_symlink "${OUT_PATH_SYMLINK}/txpool" "${OUT_PATH}/txpool")
 
 add_custom_command(
   OUTPUT ${MINING_SOURCES_SYMLINK}
-  DEPENDS ${MINING_SOURCES_OUT} ${TYPES_SOURCES_SYMLINK} generate_txpool_grpc_symlink
+  COMMAND ${PROTOBUF_PROTOC} ARGS ${PROTOC_ARGS_GRPC} "${MINING_PROTO}"
+  DEPENDS ${MINING_PROTO} generate_txpool_grpc_symlink
+  COMMENT "Running C++ gRPC compiler on ${KV_PROTO}"
 )
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -284,13 +216,6 @@ add_custom_command(
 set(TXPOOL_PROTO "${PROTO_PATH}/txpool/txpool.proto")
 
 # cmake-format: off
-set(TXPOOL_SOURCES_OUT
-    "${OUT_PATH}/txpool/txpool.grpc.pb.cc"
-    "${OUT_PATH}/txpool/txpool.grpc.pb.h"
-    "${OUT_PATH}/txpool/txpool.pb.cc"
-    "${OUT_PATH}/txpool/txpool.pb.h"
-    "${OUT_PATH}/txpool/txpool_mock.grpc.pb.h"
-)
 set(TXPOOL_SOURCES_SYMLINK
     "${OUT_PATH_SYMLINK}/txpool/txpool.grpc.pb.cc"
     "${OUT_PATH_SYMLINK}/txpool/txpool.grpc.pb.h"
@@ -301,14 +226,8 @@ set(TXPOOL_SOURCES_SYMLINK
 # cmake-format: on
 
 add_custom_command(
-  OUTPUT ${TXPOOL_SOURCES_OUT}
-  COMMAND ${PROTOBUF_PROTOC} ARGS ${PROTOC_ARGS_GRPC} "${TXPOOL_PROTO}"
-  DEPENDS "${TXPOOL_PROTO}"
-  BYPRODUCTS ${TXPOOL_SOURCES_SYMLINK}
-  COMMENT "Running C++ gRPC compiler on ${TXPOOL_PROTO}"
-)
-
-add_custom_command(
   OUTPUT ${TXPOOL_SOURCES_SYMLINK}
-  DEPENDS ${TXPOOL_SOURCES_OUT} ${TYPES_SOURCES_SYMLINK} generate_txpool_grpc_symlink
+  COMMAND ${PROTOBUF_PROTOC} ARGS ${PROTOC_ARGS_GRPC} "${TXPOOL_PROTO}"
+  DEPENDS ${TXPOOL_PROTO} generate_txpool_grpc_symlink
+  COMMENT "Running C++ gRPC compiler on ${TXPOOL_PROTO}"
 )

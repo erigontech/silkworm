@@ -291,6 +291,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_execution_2fexecution_2eproto:
   PROTOBUF_FIELD_OFFSET(::execution::Header, transactionhash_),
   PROTOBUF_FIELD_OFFSET(::execution::Header, basefeepergas_),
   PROTOBUF_FIELD_OFFSET(::execution::Header, withdrawalhash_),
+  PROTOBUF_FIELD_OFFSET(::execution::Header, excessdatagas_),
   ~0u,
   ~0u,
   ~0u,
@@ -309,6 +310,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_execution_2fexecution_2eproto:
   ~0u,
   0,
   1,
+  2,
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::execution::BlockBody, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -371,15 +373,15 @@ static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOB
   { 0, -1, sizeof(::execution::ForkChoiceReceipt)},
   { 7, 15, sizeof(::execution::ValidationReceipt)},
   { 18, -1, sizeof(::execution::IsCanonicalResponse)},
-  { 24, 47, sizeof(::execution::Header)},
-  { 65, -1, sizeof(::execution::BlockBody)},
-  { 75, 81, sizeof(::execution::GetHeaderResponse)},
-  { 82, 88, sizeof(::execution::GetBodyResponse)},
-  { 89, 95, sizeof(::execution::GetHeaderHashNumberResponse)},
-  { 96, 103, sizeof(::execution::GetSegmentRequest)},
-  { 105, -1, sizeof(::execution::InsertHeadersRequest)},
-  { 111, -1, sizeof(::execution::InsertBodiesRequest)},
-  { 117, -1, sizeof(::execution::EmptyMessage)},
+  { 24, 48, sizeof(::execution::Header)},
+  { 67, -1, sizeof(::execution::BlockBody)},
+  { 77, 83, sizeof(::execution::GetHeaderResponse)},
+  { 84, 90, sizeof(::execution::GetBodyResponse)},
+  { 91, 97, sizeof(::execution::GetHeaderHashNumberResponse)},
+  { 98, 105, sizeof(::execution::GetSegmentRequest)},
+  { 107, -1, sizeof(::execution::InsertHeadersRequest)},
+  { 113, -1, sizeof(::execution::InsertBodiesRequest)},
+  { 119, -1, sizeof(::execution::EmptyMessage)},
 };
 
 static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
@@ -406,7 +408,7 @@ const char descriptor_table_protodef_execution_2fexecution_2eproto[] PROTOBUF_SE
   "tionStatus\022$\n\017latestValidHash\030\002 \001(\0132\013.ty"
   "pes.H256\022%\n\013missingHash\030\003 \001(\0132\013.types.H2"
   "56H\000\210\001\001B\016\n\014_missingHash\"(\n\023IsCanonicalRe"
-  "sponse\022\021\n\tcanonical\030\001 \001(\010\"\267\004\n\006Header\022\037\n\n"
+  "sponse\022\021\n\tcanonical\030\001 \001(\010\"\362\004\n\006Header\022\037\n\n"
   "parentHash\030\001 \001(\0132\013.types.H256\022\035\n\010coinbas"
   "e\030\002 \001(\0132\013.types.H160\022\036\n\tstateRoot\030\003 \001(\0132"
   "\013.types.H256\022 \n\013receiptRoot\030\004 \001(\0132\013.type"
@@ -419,43 +421,44 @@ const char descriptor_table_protodef_execution_2fexecution_2eproto[] PROTOBUF_SE
   ".H256\022\036\n\tommerHash\030\017 \001(\0132\013.types.H256\022$\n"
   "\017transactionHash\030\020 \001(\0132\013.types.H256\022\'\n\rb"
   "aseFeePerGas\030\021 \001(\0132\013.types.H256H\000\210\001\001\022(\n\016"
-  "withdrawalHash\030\022 \001(\0132\013.types.H256H\001\210\001\001B\020"
-  "\n\016_baseFeePerGasB\021\n\017_withdrawalHash\"\241\001\n\t"
-  "BlockBody\022\036\n\tblockHash\030\001 \001(\0132\013.types.H25"
-  "6\022\023\n\013blockNumber\030\002 \001(\004\022\024\n\014transactions\030\003"
-  " \003(\014\022!\n\006uncles\030\004 \003(\0132\021.execution.Header\022"
-  "&\n\013withdrawals\030\005 \003(\0132\021.types.Withdrawal\""
-  "F\n\021GetHeaderResponse\022&\n\006header\030\001 \001(\0132\021.e"
-  "xecution.HeaderH\000\210\001\001B\t\n\007_header\"C\n\017GetBo"
-  "dyResponse\022\'\n\004body\030\001 \001(\0132\024.execution.Blo"
-  "ckBodyH\000\210\001\001B\007\n\005_body\"G\n\033GetHeaderHashNum"
-  "berResponse\022\030\n\013blockNumber\030\001 \001(\004H\000\210\001\001B\016\n"
-  "\014_blockNumber\"p\n\021GetSegmentRequest\022\030\n\013bl"
-  "ockNumber\030\001 \001(\004H\000\210\001\001\022#\n\tblockHash\030\002 \001(\0132"
-  "\013.types.H256H\001\210\001\001B\016\n\014_blockNumberB\014\n\n_bl"
-  "ockHash\":\n\024InsertHeadersRequest\022\"\n\007heade"
-  "rs\030\001 \003(\0132\021.execution.Header\";\n\023InsertBod"
-  "iesRequest\022$\n\006bodies\030\001 \003(\0132\024.execution.B"
-  "lockBody\"\016\n\014EmptyMessage*U\n\020ValidationSt"
-  "atus\022\013\n\007Success\020\000\022\020\n\014InvalidChain\020\001\022\016\n\nT"
-  "ooFarAway\020\002\022\022\n\016MissingSegment\020\0032\367\004\n\tExec"
-  "ution\022I\n\rInsertHeaders\022\037.execution.Inser"
-  "tHeadersRequest\032\027.execution.EmptyMessage"
-  "\022G\n\014InsertBodies\022\036.execution.InsertBodie"
-  "sRequest\032\027.execution.EmptyMessage\022:\n\rVal"
-  "idateChain\022\013.types.H256\032\034.execution.Vali"
-  "dationReceipt\022=\n\020UpdateForkChoice\022\013.type"
-  "s.H256\032\034.execution.ForkChoiceReceipt\022A\n\r"
-  "AssembleBlock\022\027.execution.EmptyMessage\032\027"
-  ".types.ExecutionPayload\022G\n\tGetHeader\022\034.e"
-  "xecution.GetSegmentRequest\032\034.execution.G"
-  "etHeaderResponse\022C\n\007GetBody\022\034.execution."
-  "GetSegmentRequest\032\032.execution.GetBodyRes"
-  "ponse\022>\n\017IsCanonicalHash\022\013.types.H256\032\036."
-  "execution.IsCanonicalResponse\022J\n\023GetHead"
-  "erHashNumber\022\013.types.H256\032&.execution.Ge"
-  "tHeaderHashNumberResponseB\027Z\025./execution"
-  ";executionb\006proto3"
+  "withdrawalHash\030\022 \001(\0132\013.types.H256H\001\210\001\001\022\'"
+  "\n\rexcessDataGas\030\023 \001(\0132\013.types.H256H\002\210\001\001B"
+  "\020\n\016_baseFeePerGasB\021\n\017_withdrawalHashB\020\n\016"
+  "_excessDataGas\"\241\001\n\tBlockBody\022\036\n\tblockHas"
+  "h\030\001 \001(\0132\013.types.H256\022\023\n\013blockNumber\030\002 \001("
+  "\004\022\024\n\014transactions\030\003 \003(\014\022!\n\006uncles\030\004 \003(\0132"
+  "\021.execution.Header\022&\n\013withdrawals\030\005 \003(\0132"
+  "\021.types.Withdrawal\"F\n\021GetHeaderResponse\022"
+  "&\n\006header\030\001 \001(\0132\021.execution.HeaderH\000\210\001\001B"
+  "\t\n\007_header\"C\n\017GetBodyResponse\022\'\n\004body\030\001 "
+  "\001(\0132\024.execution.BlockBodyH\000\210\001\001B\007\n\005_body\""
+  "G\n\033GetHeaderHashNumberResponse\022\030\n\013blockN"
+  "umber\030\001 \001(\004H\000\210\001\001B\016\n\014_blockNumber\"p\n\021GetS"
+  "egmentRequest\022\030\n\013blockNumber\030\001 \001(\004H\000\210\001\001\022"
+  "#\n\tblockHash\030\002 \001(\0132\013.types.H256H\001\210\001\001B\016\n\014"
+  "_blockNumberB\014\n\n_blockHash\":\n\024InsertHead"
+  "ersRequest\022\"\n\007headers\030\001 \003(\0132\021.execution."
+  "Header\";\n\023InsertBodiesRequest\022$\n\006bodies\030"
+  "\001 \003(\0132\024.execution.BlockBody\"\016\n\014EmptyMess"
+  "age*U\n\020ValidationStatus\022\013\n\007Success\020\000\022\020\n\014"
+  "InvalidChain\020\001\022\016\n\nTooFarAway\020\002\022\022\n\016Missin"
+  "gSegment\020\0032\367\004\n\tExecution\022I\n\rInsertHeader"
+  "s\022\037.execution.InsertHeadersRequest\032\027.exe"
+  "cution.EmptyMessage\022G\n\014InsertBodies\022\036.ex"
+  "ecution.InsertBodiesRequest\032\027.execution."
+  "EmptyMessage\022:\n\rValidateChain\022\013.types.H2"
+  "56\032\034.execution.ValidationReceipt\022=\n\020Upda"
+  "teForkChoice\022\013.types.H256\032\034.execution.Fo"
+  "rkChoiceReceipt\022A\n\rAssembleBlock\022\027.execu"
+  "tion.EmptyMessage\032\027.types.ExecutionPaylo"
+  "ad\022G\n\tGetHeader\022\034.execution.GetSegmentRe"
+  "quest\032\034.execution.GetHeaderResponse\022C\n\007G"
+  "etBody\022\034.execution.GetSegmentRequest\032\032.e"
+  "xecution.GetBodyResponse\022>\n\017IsCanonicalH"
+  "ash\022\013.types.H256\032\036.execution.IsCanonical"
+  "Response\022J\n\023GetHeaderHashNumber\022\013.types."
+  "H256\032&.execution.GetHeaderHashNumberResp"
+  "onseB\027Z\025./execution;executionb\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_execution_2fexecution_2eproto_deps[1] = {
   &::descriptor_table_types_2ftypes_2eproto,
@@ -476,7 +479,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_exe
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_execution_2fexecution_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_execution_2fexecution_2eproto = {
-  false, false, descriptor_table_protodef_execution_2fexecution_2eproto, "execution/execution.proto", 2298,
+  false, false, descriptor_table_protodef_execution_2fexecution_2eproto, "execution/execution.proto", 2357,
   &descriptor_table_execution_2fexecution_2eproto_once, descriptor_table_execution_2fexecution_2eproto_sccs, descriptor_table_execution_2fexecution_2eproto_deps, 12, 1,
   schemas, file_default_instances, TableStruct_execution_2fexecution_2eproto::offsets,
   file_level_metadata_execution_2fexecution_2eproto, 12, file_level_enum_descriptors_execution_2fexecution_2eproto, file_level_service_descriptors_execution_2fexecution_2eproto,
@@ -1274,6 +1277,10 @@ class Header::_Internal {
   static void set_has_withdrawalhash(HasBits* has_bits) {
     (*has_bits)[0] |= 2u;
   }
+  static const ::types::H256& excessdatagas(const Header* msg);
+  static void set_has_excessdatagas(HasBits* has_bits) {
+    (*has_bits)[0] |= 4u;
+  }
 };
 
 const ::types::H256&
@@ -1323,6 +1330,10 @@ Header::_Internal::basefeepergas(const Header* msg) {
 const ::types::H256&
 Header::_Internal::withdrawalhash(const Header* msg) {
   return *msg->withdrawalhash_;
+}
+const ::types::H256&
+Header::_Internal::excessdatagas(const Header* msg) {
+  return *msg->excessdatagas_;
 }
 void Header::clear_parenthash() {
   if (GetArena() == nullptr && parenthash_ != nullptr) {
@@ -1397,6 +1408,13 @@ void Header::clear_withdrawalhash() {
   }
   withdrawalhash_ = nullptr;
   _has_bits_[0] &= ~0x00000002u;
+}
+void Header::clear_excessdatagas() {
+  if (GetArena() == nullptr && excessdatagas_ != nullptr) {
+    delete excessdatagas_;
+  }
+  excessdatagas_ = nullptr;
+  _has_bits_[0] &= ~0x00000004u;
 }
 Header::Header(::PROTOBUF_NAMESPACE_ID::Arena* arena)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
@@ -1473,6 +1491,11 @@ Header::Header(const Header& from)
   } else {
     withdrawalhash_ = nullptr;
   }
+  if (from._internal_has_excessdatagas()) {
+    excessdatagas_ = new ::types::H256(*from.excessdatagas_);
+  } else {
+    excessdatagas_ = nullptr;
+  }
   ::memcpy(&blocknumber_, &from.blocknumber_,
     static_cast<size_t>(reinterpret_cast<char*>(&nonce_) -
     reinterpret_cast<char*>(&blocknumber_)) + sizeof(nonce_));
@@ -1509,6 +1532,7 @@ void Header::SharedDtor() {
   if (this != internal_default_instance()) delete transactionhash_;
   if (this != internal_default_instance()) delete basefeepergas_;
   if (this != internal_default_instance()) delete withdrawalhash_;
+  if (this != internal_default_instance()) delete excessdatagas_;
 }
 
 void Header::ArenaDtor(void* object) {
@@ -1574,7 +1598,7 @@ void Header::Clear() {
   }
   transactionhash_ = nullptr;
   cached_has_bits = _has_bits_[0];
-  if (cached_has_bits & 0x00000003u) {
+  if (cached_has_bits & 0x00000007u) {
     if (cached_has_bits & 0x00000001u) {
       if (GetArena() == nullptr && basefeepergas_ != nullptr) {
         delete basefeepergas_;
@@ -1586,6 +1610,12 @@ void Header::Clear() {
         delete withdrawalhash_;
       }
       withdrawalhash_ = nullptr;
+    }
+    if (cached_has_bits & 0x00000004u) {
+      if (GetArena() == nullptr && excessdatagas_ != nullptr) {
+        delete excessdatagas_;
+      }
+      excessdatagas_ = nullptr;
     }
   }
   ::memset(&blocknumber_, 0, static_cast<size_t>(
@@ -1727,6 +1757,13 @@ const char* Header::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::int
       case 18:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 146)) {
           ptr = ctx->ParseMessage(_internal_mutable_withdrawalhash(), ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // .types.H256 excessDataGas = 19;
+      case 19:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 154)) {
+          ptr = ctx->ParseMessage(_internal_mutable_excessdatagas(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -1891,6 +1928,14 @@ failure:
         18, _Internal::withdrawalhash(this), target, stream);
   }
 
+  // .types.H256 excessDataGas = 19;
+  if (_internal_has_excessdatagas()) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(
+        19, _Internal::excessdatagas(this), target, stream);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -1985,7 +2030,7 @@ size_t Header::ByteSizeLong() const {
   }
 
   cached_has_bits = _has_bits_[0];
-  if (cached_has_bits & 0x00000003u) {
+  if (cached_has_bits & 0x00000007u) {
     // .types.H256 baseFeePerGas = 17;
     if (cached_has_bits & 0x00000001u) {
       total_size += 2 +
@@ -1998,6 +2043,13 @@ size_t Header::ByteSizeLong() const {
       total_size += 2 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
           *withdrawalhash_);
+    }
+
+    // .types.H256 excessDataGas = 19;
+    if (cached_has_bits & 0x00000004u) {
+      total_size += 2 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *excessdatagas_);
     }
 
   }
@@ -2101,12 +2153,15 @@ void Header::MergeFrom(const Header& from) {
     _internal_mutable_transactionhash()->::types::H256::MergeFrom(from._internal_transactionhash());
   }
   cached_has_bits = from._has_bits_[0];
-  if (cached_has_bits & 0x00000003u) {
+  if (cached_has_bits & 0x00000007u) {
     if (cached_has_bits & 0x00000001u) {
       _internal_mutable_basefeepergas()->::types::H256::MergeFrom(from._internal_basefeepergas());
     }
     if (cached_has_bits & 0x00000002u) {
       _internal_mutable_withdrawalhash()->::types::H256::MergeFrom(from._internal_withdrawalhash());
+    }
+    if (cached_has_bits & 0x00000004u) {
+      _internal_mutable_excessdatagas()->::types::H256::MergeFrom(from._internal_excessdatagas());
     }
   }
   if (from.blocknumber() != 0) {

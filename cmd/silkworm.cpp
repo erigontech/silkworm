@@ -575,7 +575,7 @@ int main(int argc, char* argv[]) {
         // 2) ExecutionEngine currently creates such unique r/w tx in its constructor
         // 3) PoWSync has sync execution_loop using execution methods which in turn use r/w tx
         // so basically ExecutionEngine ctor + PoWSync::execution_loop must happen in the same thread
-        auto sync_executor = [&]()-> boost::asio::awaitable<void> {
+        auto sync_executor = [&]() -> boost::asio::awaitable<void> {
             std::shared_ptr<silkworm::chainsync::PoWSync> sync;
             auto run = [&] {
                 // ExecutionEngine executes transactions and builds state validating chain slices

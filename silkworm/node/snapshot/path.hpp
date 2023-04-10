@@ -28,8 +28,6 @@
 
 namespace silkworm {
 
-constexpr const char* kDefaultSnapshotDir{"snapshots"};
-
 //! The scale factor to convert the block numbers to/from the values in snapshot file names
 constexpr int kFileNameBlockScaleFactor{1'000};
 

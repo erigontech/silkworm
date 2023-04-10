@@ -116,7 +116,7 @@ void SignalHandler::handle(int sig_code) {
     bool expected{false};
     if (signalled_.compare_exchange_strong(expected, true)) {
         sig_code_ = sig_code;
-        std::fputs("Got ", stderr);
+        std::fputs("\nGot ", stderr);
         std::fputs(sig_name(sig_code), stderr);
         std::fputs(". Shutting down ...\n", stderr);
     }

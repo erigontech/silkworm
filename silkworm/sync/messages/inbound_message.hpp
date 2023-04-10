@@ -27,7 +27,7 @@ namespace silkworm {
 
 class InboundMessage : public Message {
   public:
-    static std::shared_ptr<InboundMessage> make(const sentry::InboundMessage& msg);
+    static std::shared_ptr<InboundMessage> make(const ::sentry::InboundMessage& msg);
 
     void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override = 0;
 

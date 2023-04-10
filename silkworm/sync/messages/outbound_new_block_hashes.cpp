@@ -46,9 +46,9 @@ void OutboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence
         packet_.push_back({announce.hash, announce.number});
     }
 
-    auto request = std::make_unique<sentry::OutboundMessageData>();  // create request
+    auto request = std::make_unique<::sentry::OutboundMessageData>();  // create request
 
-    request->set_id(sentry::MessageId::NEW_BLOCK_HASHES_66);
+    request->set_id(::sentry::MessageId::NEW_BLOCK_HASHES_66);
 
     Bytes rlp_encoding;
     rlp::encode(rlp_encoding, packet_);
@@ -70,7 +70,7 @@ void OutboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence
         return;
     }
 
-    sentry::SentPeers peers = rpc.reply();
+    ::sentry::SentPeers peers = rpc.reply();
     SILK_TRACE << "Received rpc result of OutboundNewBlockHashes: "
                << std::to_string(peers.peers_size()) + " peer(s)";
 

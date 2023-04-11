@@ -21,6 +21,7 @@
 #include <silkworm/infra/rpc/common/conversion.hpp>
 #include <silkworm/infra/rpc/common/util.hpp>
 #include <silkworm/interfaces/types/types.pb.h>
+#include <silkworm/sentry/rpc/interfaces/node_info.hpp>
 
 namespace silkworm::rpc {
 
@@ -64,40 +65,26 @@ awaitable<void> NetVersionCall::operator()(const EthereumBackEnd& /*backend*/) {
     SILK_TRACE << "NetVersionCall END chain_id: " << response_.id();
 }
 
-std::set<SentryClient*> NetPeerCountCall::sentries_;
-
-void NetPeerCountCall::add_sentry(SentryClient* sentry) {
-    NetPeerCountCall::sentries_.insert(sentry);
-}
-
-void NetPeerCountCall::remove_sentry(SentryClient* sentry) {
-    NetPeerCountCall::sentries_.erase(sentry);
-}
-
 awaitable<void> NetPeerCountCall::operator()(const EthereumBackEnd& backend) {
-    SILK_TRACE << "NetPeerCountCall START [#sentries: " << sentries_.size() << "]";
+    SILK_TRACE << "NetPeerCountCall START";
 
-    // This sequential implementation is far from ideal when num sentries > 0 because request latencies sum up
-    // We need when_all algorithm for coroutines or make_parallel_group (see *convoluted* parallel_sort in asio examples)
-    uint64_t total_peer_count{0};
+    auto sentry_client = backend.sentry_client();
+    auto sentry = sentry_client->service();
+
+    remote::NetPeerCountReply response;
     grpc::Status result_status{grpc::Status::OK};
-    for (const auto& sentry : sentries_) {
-        try {
-            const auto reply = co_await sentry->peer_count();
-            const uint64_t count = reply.count();
-            total_peer_count += count;
-            SILK_DEBUG << "Reply OK peer count: partial=" << count << " total=" << total_peer_count;
-        } catch (const GrpcStatusError& status_error) {
-            result_status = status_error.status();
-            SILK_DEBUG << "Reply KO result: " << result_status;
-        }
+    try {
+        auto peer_count = co_await sentry->peer_count();
+        response.set_count(peer_count);
+        SILK_DEBUG << "Reply OK peer count = " << peer_count;
+    } catch (const GrpcStatusError& status_error) {
+        result_status = status_error.status();
+        SILK_ERROR << "Reply KO result: " << result_status;
     }
 
     if (result_status.ok()) {
-        remote::NetPeerCountReply response;
-        response.set_count(total_peer_count);
         co_await agrpc::finish(responder_, response, grpc::Status::OK);
-        SILK_TRACE << "NetPeerCountCall END count: " << total_peer_count;
+        SILK_TRACE << "NetPeerCountCall END count: " << response.count();
     } else {
         co_await agrpc::finish_with_error(responder_, result_status);
         SILK_TRACE << "NetPeerCountCall END error: " << result_status;
@@ -158,33 +145,21 @@ awaitable<void> SubscribeCall::operator()(const EthereumBackEnd& /*backend*/) {
     SILK_TRACE << "SubscribeCall END";
 }
 
-std::set<SentryClient*> NodeInfoCall::sentries_;
-
-void NodeInfoCall::add_sentry(SentryClient* sentry) {
-    NodeInfoCall::sentries_.insert(sentry);
-}
-
-void NodeInfoCall::remove_sentry(SentryClient* sentry) {
-    NodeInfoCall::sentries_.erase(sentry);
-}
-
 awaitable<void> NodeInfoCall::operator()(const EthereumBackEnd& backend) {
-    SILK_TRACE << "NodeInfoCall START limit: " << request_.limit() << " [#sentries: " << sentries_.size() << "]";
+    SILK_TRACE << "NodeInfoCall START limit: " << request_.limit();
 
-    // This sequential implementation is far from ideal when num sentries > 0 because request latencies sum up
-    // We need when_all algorithm for coroutines or make_parallel_group (see *convoluted* parallel_sort in asio examples)
+    auto sentry_client = backend.sentry_client();
+    auto sentry = sentry_client->service();
+
     remote::NodesInfoReply response;
     grpc::Status result_status{grpc::Status::OK};
-    for (const auto& sentry : sentries_) {
-        try {
-            const auto reply = co_await sentry->node_info();
-            types::NodeInfoReply* nodes_info = response.add_nodesinfo();
-            *nodes_info = reply;
-            SILK_DEBUG << "Reply OK node info: name=" << reply.name();
-        } catch (const GrpcStatusError& status_error) {
-            result_status = status_error.status();
-            SILK_DEBUG << "Reply KO result: " << result_status;
-        }
+    try {
+        auto node_info = co_await sentry->node_info();
+        response.add_nodesinfo()->CopyFrom(sentry::rpc::interfaces::proto_node_info_from_node_info(node_info));
+        SILK_DEBUG << "Reply OK node info: name=" << node_info.client_id;
+    } catch (const GrpcStatusError& status_error) {
+        result_status = status_error.status();
+        SILK_ERROR << "Reply KO result: " << result_status;
     }
 
     if (result_status.ok()) {

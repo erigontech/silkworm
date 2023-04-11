@@ -19,6 +19,7 @@
 #include <chrono>
 #include <condition_variable>  // DO NOT remove: CLion bug in suggestion 'Unused "#include <condition_variable>"'
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -41,10 +42,12 @@
 #include <silkworm/node/backend/state_change_collection.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/test/os.hpp>
+#include <silkworm/sentry/api/api_common/sentry_client.hpp>
 
 using namespace std::chrono_literals;
 
 namespace {  // Trick suggested by gRPC team to avoid name clashes in multiple test modules
+
 class BackEndClient {
   public:
     explicit BackEndClient(remote::ETHBACKEND::StubInterface* stub) : stub_(stub) {}
@@ -201,101 +204,78 @@ class ThreadedKvClient {
 };
 
 const uint64_t kTestSentryPeerCount{10};
-constexpr const char* kTestSentryPeerId{"peer_id"};
-constexpr const char* kTestSentryPeerName{"peer_name"};
+constexpr const char* kTestSentryNodeId{"24bfa2cdce7c6a41184fa0809ad8d76969b7280952e9aa46179d90cfbab90f7d2b004928f0364389a1aa8d5166281f2ff7568493c1f719e8f6148ef8cf8af42d"};
+constexpr const char* kTestSentryNodeClientId{"MockSentryClient"};
 
-class SentryServer {
-  public:
-    explicit SentryServer(grpc::Status status) : status_(std::move(status)) {}
-
-    void build_and_start(const std::string& server_address) {
-        grpc::ServerBuilder builder;
-        builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
-        builder.RegisterService(&service_);
-        cq_ = builder.AddCompletionQueue();
-        server_ = builder.BuildAndStart();
-        server_thread_ = std::thread{[&]() { run(); }};
+class MockSentryClient
+    : public std::enable_shared_from_this<MockSentryClient>,
+      public silkworm::sentry::api::api_common::SentryClient,
+      public silkworm::sentry::api::api_common::Service {
+    std::shared_ptr<silkworm::sentry::api::api_common::Service> service() override {
+        return shared_from_this();
     }
 
-    void stop() {
-        server_->Shutdown();
-        server_->Wait();
-        cq_->Shutdown();
-        void* tag{nullptr};
-        bool ok{false};
-        while (cq_->Next(&tag, &ok)) {
-        }
-        server_thread_.join();
+    boost::asio::awaitable<void> set_status(silkworm::sentry::eth::StatusData /*status_data*/) override {
+        throw std::runtime_error("not implemented");
+    }
+    boost::asio::awaitable<uint8_t> handshake() override {
+        throw std::runtime_error("not implemented");
+    }
+    boost::asio::awaitable<silkworm::sentry::api::api_common::NodeInfo> node_info() override {
+        const std::string ip_str = "1.2.3.4";
+        const uint16_t port = 50555;
+        const std::string node_url_str = std::string("enode://") + kTestSentryNodeId + "@" + ip_str + ":" + std::to_string(port);
+
+        silkworm::sentry::api::api_common::NodeInfo info = {
+            silkworm::sentry::common::EnodeUrl{node_url_str},
+            silkworm::sentry::common::EccPublicKey::deserialize_hex(kTestSentryNodeId),
+            kTestSentryNodeClientId,
+            boost::asio::ip::tcp::endpoint{boost::asio::ip::make_address(ip_str), port},
+            port,
+        };
+        co_return info;
     }
 
-  private:
-    void run() {
-        grpc::ServerContext pc_context;
-        sentry::PeerCountRequest pc_request;
-        grpc::ServerAsyncResponseWriter<sentry::PeerCountReply> pc_responder{&pc_context};
-        service_.RequestPeerCount(&pc_context, &pc_request, &pc_responder, cq_.get(), cq_.get(),
-                                  PEER_COUNT_REQUEST_TAG);
-        grpc::ServerContext ni_context;
-        google::protobuf::Empty ni_request;
-        grpc::ServerAsyncResponseWriter<types::NodeInfoReply> ni_responder{&ni_context};
-        service_.RequestNodeInfo(&ni_context, &ni_request, &ni_responder, cq_.get(), cq_.get(), NODE_INFO_REQUEST_TAG);
-        bool has_work{true};
-        while (has_work) {
-            void* tag{nullptr};
-            bool ok{false};
-            const bool got_event = cq_->Next(&tag, &ok);
-            if (!got_event) {
-                has_work = false;
-                continue;
-            }
-            if (ok && tag == PEER_COUNT_REQUEST_TAG) {
-                if (status_.ok()) {
-                    sentry::PeerCountReply pc_reply;
-                    if (status_.ok()) {
-                        pc_reply.set_count(kTestSentryPeerCount);
-                    }
-                    pc_responder.Finish(pc_reply, status_, PEER_COUNT_FINISH_TAG);
-                } else {
-                    pc_responder.FinishWithError(status_, PEER_COUNT_FINISH_TAG);
-                }
-            }
-            if (ok && tag == PEER_COUNT_FINISH_TAG) {
-                continue;
-            }
-            if (ok && tag == NODE_INFO_REQUEST_TAG) {
-                if (status_.ok()) {
-                    types::NodeInfoReply ni_reply;
-                    ni_reply.set_id(kTestSentryPeerId);
-                    ni_reply.set_name(kTestSentryPeerName);
-                    ni_responder.Finish(ni_reply, status_, NODE_INFO_FINISH_TAG);
-                } else {
-                    ni_responder.FinishWithError(status_, NODE_INFO_FINISH_TAG);
-                }
-            }
-            if (ok && tag == NODE_INFO_FINISH_TAG) {
-                continue;
-            }
-        }
+    boost::asio::awaitable<PeerKeys> send_message_by_id(silkworm::sentry::common::Message /*message*/, silkworm::sentry::common::EccPublicKey /*public_key*/) override {
+        throw std::runtime_error("not implemented");
+    }
+    boost::asio::awaitable<PeerKeys> send_message_to_random_peers(silkworm::sentry::common::Message /*message*/, size_t /*max_peers*/) override {
+        throw std::runtime_error("not implemented");
+    }
+    boost::asio::awaitable<PeerKeys> send_message_to_all(silkworm::sentry::common::Message /*message*/) override {
+        throw std::runtime_error("not implemented");
+    }
+    boost::asio::awaitable<PeerKeys> send_message_by_min_block(silkworm::sentry::common::Message /*message*/, size_t /*max_peers*/) override {
+        throw std::runtime_error("not implemented");
+    }
+    boost::asio::awaitable<void> peer_min_block(silkworm::sentry::common::EccPublicKey /*public_key*/) override {
+        throw std::runtime_error("not implemented");
+    }
+    boost::asio::awaitable<void> messages(
+        silkworm::sentry::api::api_common::MessageIdSet /*message_id_filter*/,
+        std::function<boost::asio::awaitable<void>(silkworm::sentry::api::api_common::MessageFromPeer)> /*consumer*/) override {
+        throw std::runtime_error("not implemented");
     }
 
-    inline static void* PEER_COUNT_REQUEST_TAG = reinterpret_cast<void*>(1);
-    inline static void* PEER_COUNT_FINISH_TAG = reinterpret_cast<void*>(2);
-
-    inline static void* NODE_INFO_REQUEST_TAG = reinterpret_cast<void*>(3);
-    inline static void* NODE_INFO_FINISH_TAG = reinterpret_cast<void*>(4);
-
-    grpc::Status status_;
-    sentry::Sentry::AsyncService service_;
-    std::unique_ptr<grpc::ServerCompletionQueue> cq_;
-    std::unique_ptr<grpc::Server> server_;
-    std::thread server_thread_;
+    boost::asio::awaitable<silkworm::sentry::api::api_common::PeerInfos> peers() override {
+        throw std::runtime_error("not implemented");
+    }
+    boost::asio::awaitable<size_t> peer_count() override {
+        co_return kTestSentryPeerCount;
+    }
+    boost::asio::awaitable<std::optional<silkworm::sentry::api::api_common::PeerInfo>> peer_by_id(silkworm::sentry::common::EccPublicKey /*public_key*/) override {
+        throw std::runtime_error("not implemented");
+    }
+    boost::asio::awaitable<void> penalize_peer(silkworm::sentry::common::EccPublicKey /*public_key*/) override {
+        throw std::runtime_error("not implemented");
+    }
+    boost::asio::awaitable<void> peer_events(std::function<boost::asio::awaitable<void>(silkworm::sentry::api::api_common::PeerEvent)> /*consumer*/) override {
+        throw std::runtime_error("not implemented");
+    }
 };
 
 // TODO(canepat): better copy grpc_pick_unused_port_or_die to generate unused port
 const std::string kTestAddressUri{"localhost:12345"};
-
-const std::string kTestSentryAddress1{"localhost:54321"};
-const std::string kTestSentryAddress2{"localhost:54322"};
 
 const silkworm::db::MapConfig kTestMap{"TestTable"};
 const silkworm::db::MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::value_mode::multi};
@@ -323,7 +303,12 @@ struct TestableStateChangeCollection : public StateChangeCollection {
 class TestableEthereumBackEnd : public EthereumBackEnd {
   public:
     TestableEthereumBackEnd(const NodeSettings& node_settings, mdbx::env* chaindata_env)
-        : EthereumBackEnd(node_settings, chaindata_env, std::make_unique<TestableStateChangeCollection>()) {}
+        : EthereumBackEnd{
+              node_settings,
+              chaindata_env,
+              std::make_shared<MockSentryClient>(),
+              std::make_unique<TestableStateChangeCollection>(),
+          } {}
 
     [[nodiscard]] TestableStateChangeCollection* state_change_source_for_test() const noexcept {
         return dynamic_cast<TestableStateChangeCollection*>(EthereumBackEnd::state_change_source());
@@ -331,8 +316,9 @@ class TestableEthereumBackEnd : public EthereumBackEnd {
 };
 
 struct BackEndKvE2eTest {
-    explicit BackEndKvE2eTest(silkworm::log::Level log_verbosity, NodeSettings&& options = {},
-                              std::vector<grpc::Status> statuses = {grpc::Status::OK})
+    explicit BackEndKvE2eTest(
+        silkworm::log::Level log_verbosity = silkworm::log::Level::kNone,
+        NodeSettings&& options = {})
         : set_verbosity_log_guard{log_verbosity} {
         std::shared_ptr<grpc::Channel> channel =
             grpc::CreateChannel(kTestAddressUri, grpc::InsecureChannelCredentials());
@@ -359,24 +345,9 @@ struct BackEndKvE2eTest {
         db::open_map(rw_txn, kTestMultiMap);
         rw_txn.commit();
 
-        // Default value for external Sentry address(es) must be erased in tests to avoid conflict on port
-        if (options.external_sentry_addr == "127.0.0.1:9091") {
-            options.external_sentry_addr.clear();
-        }
-
         backend = std::make_unique<TestableEthereumBackEnd>(options, &database_env);
         server = std::make_unique<rpc::BackEndKvServer>(srv_config, *backend);
         server->build_and_start();
-
-        std::stringstream sentry_list_stream{options.external_sentry_addr};
-        std::string sentry_address;
-        std::size_t i{0};
-        while (std::getline(sentry_list_stream, sentry_address, kSentryAddressDelimiter)) {
-            SILKWORM_ASSERT(i < statuses.size());
-            sentry_servers.emplace_back(std::make_unique<SentryServer>(statuses[i]));
-            sentry_servers.back()->build_and_start(sentry_address);
-            ++i;
-        }
     }
 
     void fill_tables() {
@@ -405,9 +376,6 @@ struct BackEndKvE2eTest {
     ~BackEndKvE2eTest() {
         server->shutdown();
         server->join();
-        for (auto& sentry_server : sentry_servers) {
-            sentry_server->stop();
-        }
     }
 
     test::SetLogVerbosityGuard set_verbosity_log_guard;
@@ -422,8 +390,8 @@ struct BackEndKvE2eTest {
     mdbx::env_managed database_env;
     std::unique_ptr<TestableEthereumBackEnd> backend;
     std::unique_ptr<rpc::BackEndKvServer> server;
-    std::vector<std::unique_ptr<SentryServer>> sentry_servers;
 };
+
 }  // namespace
 
 namespace silkworm::rpc {
@@ -443,7 +411,7 @@ TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
     db_config.in_memory = true;
     auto database_env = db::open_env(db_config);
     NodeSettings node_settings;
-    EthereumBackEnd backend{node_settings, &database_env};
+    TestableEthereumBackEnd backend{node_settings, &database_env};
 
     SECTION("BackEndKvServer::BackEndKvServer OK: create/destroy server") {
         BackEndKvServer server{srv_config, backend};
@@ -521,7 +489,7 @@ TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
 }
 
 TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
-    BackEndKvE2eTest test{silkworm::log::Level::kNone};
+    BackEndKvE2eTest test;
     auto backend_client = *test.backend_client;
 
     SECTION("Etherbase: return missing coinbase error") {
@@ -538,13 +506,6 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
         const auto status = backend_client.net_version(&response);
         CHECK(status.ok());
         CHECK(response.id() == 0);
-    }
-
-    SECTION("NetPeerCount: return zero peer count") {
-        remote::NetPeerCountReply response;
-        const auto status = backend_client.net_peer_count(&response);
-        CHECK(status.ok());
-        CHECK(response.count() == 0);
     }
 
     SECTION("Version: return ETHBACKEND version") {
@@ -578,19 +539,10 @@ TEST_CASE("BackEndKvServer E2E: empty node settings", "[silkworm][node][rpc]") {
         CHECK(status.ok());
         CHECK(responses.size() == 2);
     }
-
-    SECTION("NodeInfo: return information about zero nodes") {
-        remote::NodesInfoRequest request;
-        request.set_limit(0);
-        remote::NodesInfoReply response;
-        const auto status = backend_client.node_info(request, &response);
-        CHECK(status.ok());
-        CHECK(response.nodesinfo_size() == 0);
-    }
 }
 
 TEST_CASE("BackEndKvServer E2E: KV", "[silkworm][node][rpc]") {
-    BackEndKvE2eTest test{silkworm::log::Level::kNone};
+    BackEndKvE2eTest test;
     auto kv_client = *test.kv_client;
 
     SECTION("Version: return KV version") {
@@ -897,9 +849,7 @@ TEST_CASE("BackEndKvServer E2E: mainnet chain with zero etherbase", "[silkworm][
 }
 
 TEST_CASE("BackEndKvServer E2E: one Sentry status OK", "[silkworm][node][rpc]") {
-    NodeSettings node_settings;
-    node_settings.external_sentry_addr = kTestSentryAddress1;
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, std::move(node_settings), {grpc::Status::OK}};
+    BackEndKvE2eTest test;
     auto backend_client = *test.backend_client;
 
     SECTION("NetPeerCount: return peer count") {
@@ -916,110 +866,15 @@ TEST_CASE("BackEndKvServer E2E: one Sentry status OK", "[silkworm][node][rpc]") 
         const auto status = backend_client.node_info(request, &response);
         CHECK(status.ok());
         CHECK(response.nodesinfo_size() == 1);
-        CHECK(response.nodesinfo(0).id() == kTestSentryPeerId);
-        CHECK(response.nodesinfo(0).name() == kTestSentryPeerName);
-    }
-}
-
-TEST_CASE("BackEndKvServer E2E: one Sentry status KO", "[silkworm][node][rpc]") {
-    NodeSettings node_settings;
-    node_settings.external_sentry_addr = kTestSentryAddress1;
-    grpc::Status DEADLINE_EXCEEDED_ERROR{grpc::StatusCode::DEADLINE_EXCEEDED, "timeout"};
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, std::move(node_settings), {DEADLINE_EXCEEDED_ERROR}};
-    auto backend_client = *test.backend_client;
-
-    SECTION("NetPeerCount: return expected status error") {
-        remote::NetPeerCountReply response;
-        const auto status = backend_client.net_peer_count(&response);
-        CHECK(status == DEADLINE_EXCEEDED_ERROR);
-    }
-
-    SECTION("NodeInfo: return expected status error") {
-        remote::NodesInfoRequest request;
-        request.set_limit(0);
-        remote::NodesInfoReply response;
-        const auto status = backend_client.node_info(request, &response);
-        CHECK(status == DEADLINE_EXCEEDED_ERROR);
-    }
-}
-
-TEST_CASE("BackEndKvServer E2E: more than one Sentry all status OK", "[silkworm][node][rpc]") {
-    NodeSettings node_settings;
-    node_settings.external_sentry_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, std::move(node_settings), {grpc::Status::OK, grpc::Status::OK}};
-    auto backend_client = *test.backend_client;
-
-    SECTION("NetPeerCount: return peer count") {
-        remote::NetPeerCountReply response;
-        const auto status = backend_client.net_peer_count(&response);
-        CHECK(status.ok());
-        CHECK(response.count() == 2 * kTestSentryPeerCount);
-    }
-
-    SECTION("NodeInfo: return information about nodes") {
-        remote::NodesInfoRequest request;
-        request.set_limit(0);
-        remote::NodesInfoReply response;
-        const auto status = backend_client.node_info(request, &response);
-        CHECK(status.ok());
-        CHECK(response.nodesinfo_size() == 2);
-        for (int i{0}; i < response.nodesinfo_size(); i++) {
-            const types::NodeInfoReply& nodes_info = response.nodesinfo(i);
-            CHECK(nodes_info.id() == kTestSentryPeerId);
-            CHECK(nodes_info.name() == kTestSentryPeerName);
-        }
-    }
-}
-
-TEST_CASE("BackEndKvServer E2E: more than one Sentry at least one status KO", "[silkworm][node][rpc]") {
-    NodeSettings node_settings;
-    node_settings.external_sentry_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, std::move(node_settings), {grpc::Status::OK, grpc::Status::CANCELLED}};
-    auto backend_client = *test.backend_client;
-
-    SECTION("NetPeerCount: return expected status error") {
-        remote::NetPeerCountReply response;
-        const auto status = backend_client.net_peer_count(&response);
-        CHECK(status == grpc::Status::CANCELLED);
-    }
-
-    SECTION("NodeInfo: return expected status error") {
-        remote::NodesInfoRequest request;
-        request.set_limit(0);
-        remote::NodesInfoReply response;
-        const auto status = backend_client.node_info(request, &response);
-        CHECK(status == grpc::Status::CANCELLED);
-    }
-}
-
-TEST_CASE("BackEndKvServer E2E: more than one Sentry all status KO", "[silkworm][node][rpc]") {
-    NodeSettings node_settings;
-    node_settings.external_sentry_addr = kTestSentryAddress1 + "," + kTestSentryAddress2;
-    grpc::Status INTERNAL_ERROR{grpc::StatusCode::INTERNAL, "internal error"};
-    grpc::Status INVALID_ARGUMENT_ERROR{grpc::StatusCode::INVALID_ARGUMENT, "invalid"};
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, std::move(node_settings), {INTERNAL_ERROR, INVALID_ARGUMENT_ERROR}};
-    auto backend_client = *test.backend_client;
-
-    SECTION("NetPeerCount: return expected status error") {
-        remote::NetPeerCountReply response;
-        const auto status = backend_client.net_peer_count(&response);
-        CHECK((status == INTERNAL_ERROR || status == INVALID_ARGUMENT_ERROR));
-    }
-
-    SECTION("NodeInfo: return expected status error") {
-        remote::NodesInfoRequest request;
-        request.set_limit(0);
-        remote::NodesInfoReply response;
-        const auto status = backend_client.node_info(request, &response);
-        CHECK((status == INTERNAL_ERROR || status == INVALID_ARGUMENT_ERROR));
+        CHECK(response.nodesinfo(0).id() == kTestSentryNodeId);
+        CHECK(response.nodesinfo(0).name() == kTestSentryNodeClientId);
     }
 }
 
 TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][node][rpc]") {
     {
         const uint32_t kNumTxs{1000};
-        NodeSettings node_settings;
-        BackEndKvE2eTest test{silkworm::log::Level::kError, std::move(node_settings)};
+        BackEndKvE2eTest test{silkworm::log::Level::kError};
         test.fill_tables();
         auto kv_client = *test.kv_client;
 
@@ -1045,8 +900,7 @@ TEST_CASE("BackEndKvServer E2E: Tx max simultaneous readers exceeded", "[silkwor
         FAIL("insufficient number of process file descriptors, increase to 1024 at least");
     }
 
-    NodeSettings node_settings;
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, std::move(node_settings)};
+    BackEndKvE2eTest test;
     test.fill_tables();
     auto kv_client = *test.kv_client;
 
@@ -1082,7 +936,7 @@ TEST_CASE("BackEndKvServer E2E: Tx max simultaneous readers exceeded", "[silkwor
 }
 
 TEST_CASE("BackEndKvServer E2E: Tx max opened cursors exceeded", "[silkworm][node][rpc]") {
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, NodeSettings{}};
+    BackEndKvE2eTest test;
     test.fill_tables();
     auto kv_client = *test.kv_client;
 
@@ -1127,7 +981,7 @@ class TxIdleTimeoutGuard {
 
 TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][rpc]") {
     TxIdleTimeoutGuard timeout_guard{100};
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, NodeSettings{}};
+    BackEndKvE2eTest test;
     test.fill_tables();
     auto kv_client = *test.kv_client;
 
@@ -1177,7 +1031,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional idle timeout", "[silkworm][node][r
 }
 
 TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][rpc]") {
-    BackEndKvE2eTest test{silkworm::log::Level::kNone};
+    BackEndKvE2eTest test;
     test.fill_tables();
     auto kv_client = *test.kv_client;
 
@@ -2109,7 +1963,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor valid operations", "[silkworm][node][r
 }
 
 TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node][rpc]") {
-    BackEndKvE2eTest test{silkworm::log::Level::kNone};
+    BackEndKvE2eTest test;
     test.fill_tables();
     auto kv_client = *test.kv_client;
 
@@ -2272,7 +2126,7 @@ class TxMaxTimeToLiveGuard {
 TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][node][rpc]") {
     constexpr uint8_t kCustomMaxTimeToLive{100};
     TxMaxTimeToLiveGuard ttl_guard{kCustomMaxTimeToLive};
-    BackEndKvE2eTest test{silkworm::log::Level::kNone, NodeSettings{}};
+    BackEndKvE2eTest test;
     test.fill_tables();
     auto kv_client = *test.kv_client;
 

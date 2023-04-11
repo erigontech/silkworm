@@ -19,21 +19,26 @@
 #include <string>
 
 #include <CLI/CLI.hpp>
+#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/error.hpp>
-#include <boost/asio/io_context.hpp>
 #include <boost/asio/steady_timer.hpp>
+#include <boost/asio/use_future.hpp>
 #include <boost/process/environment.hpp>
 #include <boost/system/error_code.hpp>
+#include <grpcpp/grpcpp.h>
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/rpc/common/util.hpp>
+#include <silkworm/infra/rpc/server/server_context_pool.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
+#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/mdbx.hpp>
-#include <silkworm/sync/sentry_client.hpp>
+#include <silkworm/sentry/rpc/client/sentry_client.hpp>
 
 #include "common/common.hpp"
 #include "common/db_max_readers_option.hpp"
@@ -110,8 +115,13 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, StandaloneBackEndK
     return 0;
 }
 
+class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
+};
+
 int main(int argc, char* argv[]) {
-    CLI::App cli{"ETHBACKEND & KV server"};
+    using namespace silkworm::concurrency::awaitable_wait_for_one;
+
+    CLI::App cli{"ETH BACKEND & KV server"};
 
     try {
         StandaloneBackEndKVSettings settings;
@@ -160,30 +170,28 @@ int main(int argc, char* argv[]) {
         }
         SILK_INFO << "BackEndKvServer genesis from db: " << to_hex(*node_settings.chain_config->genesis_hash);
 
-        // Standalone BackEndKV server needs to connect to an external Sentry for its Sentry clients to work
-        SentryClient sentry{node_settings.external_sentry_addr, db::ROAccess{database_env},
-                            node_settings.chain_config.value()};
-        SILK_INFO << "Hand-shake and set status start for Sentry at: " << node_settings.external_sentry_addr << "...";
-        sentry.hand_shake();
-        sentry.set_status();
-        SILK_INFO << "Hand-shake and set status completed for Sentry at: " << node_settings.external_sentry_addr;
+        silkworm::rpc::ServerContextPool context_pool{
+            server_settings.context_pool_settings(),
+            [] { return std::make_unique<DummyServerCompletionQueue>(); },
+        };
 
-        EthereumBackEnd backend{node_settings, &database_env};
+        // remote sentry client
+        auto sentry_client = std::make_shared<silkworm::sentry::rpc::client::SentryClient>(
+            node_settings.external_sentry_addr,
+            *context_pool.next_context().client_grpc_context());
+
+        EthereumBackEnd backend{
+            node_settings,
+            &database_env,
+            sentry_client,
+        };
         backend.set_node_name(node_name);
 
         rpc::BackEndKvServer server{server_settings, backend};
         server.build_and_start();
 
-        boost::asio::io_context& scheduler = server.next_io_context();
-
-        ShutdownSignal shutdown_signal{scheduler};
-        shutdown_signal.on_signal([&](ShutdownSignal::SignalNumber /*num*/) {
-            backend.close();
-            server.shutdown();
-        });
-
         // Standalone BackEndKV server has no staged loop, so this simulates periodic state changes
-        boost::asio::steady_timer state_changes_timer{scheduler};
+        boost::asio::steady_timer state_changes_timer{context_pool.next_io_context()};
         constexpr auto kStateChangeInterval{std::chrono::seconds(10)};
         constexpr silkworm::BlockNum kStartBlock{100'000'000};
         constexpr uint64_t kGasLimit{30'000'000};
@@ -204,8 +212,24 @@ int main(int argc, char* argv[]) {
             state_changes_timer.async_wait(state_change_notification);
         }
 
+        ShutdownSignal shutdown_signal{context_pool.next_io_context()};
+
+        // Go!
+        auto run_future = boost::asio::co_spawn(
+            context_pool.next_io_context(),
+            server.async_run() || shutdown_signal.wait(),
+            boost::asio::use_future);
+        context_pool.start();
+
         SILK_LOG << "BackEndKvServer is now running [pid=" + std::to_string(pid) + ", main thread=" << tid << "]";
-        server.join();
+
+        // Wait for shutdown_signal or an exception
+        run_future.get();
+
+        context_pool.stop();
+        context_pool.join();
+
+        backend.close();
 
         SILK_LOG << "BackEndKvServer exiting [pid=" + std::to_string(pid) + ", main thread=" << tid << "]";
         return 0;

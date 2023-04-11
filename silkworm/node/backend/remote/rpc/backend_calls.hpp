@@ -34,7 +34,6 @@
 #include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>
 #include <silkworm/interfaces/remote/ethbackend.pb.h>
 #include <silkworm/node/backend/ethereum_backend.hpp>
-#include <silkworm/node/backend/remote/rpc/sentry_client.hpp>
 
 // ETHBACKEND API protocol versions
 // 2.2.0 - first issue
@@ -78,13 +77,7 @@ class NetPeerCountCall : public server::UnaryCall<remote::NetPeerCountRequest, r
   public:
     using Base::UnaryCall;
 
-    static void add_sentry(SentryClient* sentry);
-    static void remove_sentry(SentryClient* sentry);
-
     boost::asio::awaitable<void> operator()(const EthereumBackEnd& backend);
-
-  private:
-    static std::set<SentryClient*> sentries_;
 };
 
 //! Unary RPC for Version method of 'ethbackend' gRPC protocol.
@@ -139,13 +132,7 @@ class NodeInfoCall : public server::UnaryCall<remote::NodesInfoRequest, remote::
   public:
     using Base::UnaryCall;
 
-    static void add_sentry(SentryClient* sentry);
-    static void remove_sentry(SentryClient* sentry);
-
     boost::asio::awaitable<void> operator()(const EthereumBackEnd& backend);
-
-  private:
-    static std::set<SentryClient*> sentries_;
 };
 
 }  // namespace silkworm::rpc

@@ -23,7 +23,6 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/backend/remote/rpc/backend_calls.hpp>
 #include <silkworm/node/backend/remote/rpc/kv_calls.hpp>
-#include <silkworm/node/backend/remote/rpc/sentry_client.hpp>
 
 namespace silkworm::rpc {
 

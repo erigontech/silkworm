@@ -18,39 +18,32 @@
 
 #include <memory>
 #include <string>
-#include <thread>
 
 #include <grpcpp/grpcpp.h>
 
-#include <silkworm/infra/rpc/server/wait_strategy.hpp>
+#include <silkworm/infra/concurrency/context_pool_settings.hpp>
 
 namespace silkworm::rpc {
 
 constexpr const char* kDefaultAddressUri{"localhost:9090"};
-const uint32_t kDefaultNumContexts{std::thread::hardware_concurrency()};
 
 class ServerConfig {
   public:
-    ServerConfig(std::shared_ptr<grpc::ServerCredentials> credentials = grpc::InsecureServerCredentials());
-    virtual ~ServerConfig() {}
+    explicit ServerConfig(std::shared_ptr<grpc::ServerCredentials> credentials = grpc::InsecureServerCredentials());
+    virtual ~ServerConfig() = default;
 
     void set_address_uri(const std::string& address_uri) noexcept;
     void set_credentials(std::shared_ptr<grpc::ServerCredentials> credentials) noexcept;
-    void set_num_contexts(uint32_t num_contexts) noexcept;
-    void set_wait_mode(WaitMode wait_mode) noexcept;
+    void set_context_pool_settings(concurrency::ContextPoolSettings settings) noexcept;
 
-    const std::string& address_uri() const noexcept { return address_uri_; }  // TODO(canepat) remove as duplicated
-    std::shared_ptr<grpc::ServerCredentials> credentials() const noexcept { return credentials_; }
-    uint32_t num_contexts() const noexcept { return num_contexts_; }
-    WaitMode wait_mode() const noexcept { return wait_mode_; }
+    [[nodiscard]] const std::string& address_uri() const noexcept { return address_uri_; }  // TODO(canepat) remove as duplicated
+    [[nodiscard]] std::shared_ptr<grpc::ServerCredentials> credentials() const noexcept { return credentials_; }
+    [[nodiscard]] const concurrency::ContextPoolSettings& context_pool_settings() const noexcept { return context_pool_settings_; }
 
   private:
     std::string address_uri_;
     std::shared_ptr<grpc::ServerCredentials> credentials_;
-    uint32_t num_contexts_;
-
-    //! The waiting mode used by execution loops during idle cycles.
-    WaitMode wait_mode_;
+    concurrency::ContextPoolSettings context_pool_settings_;
 };
 
 }  // namespace silkworm::rpc

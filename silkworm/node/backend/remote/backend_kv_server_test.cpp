@@ -30,6 +30,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/rpc/common/conversion.hpp>
 #include <silkworm/infra/rpc/common/util.hpp>
 #include <silkworm/infra/test/log.hpp>
@@ -338,7 +339,9 @@ struct BackEndKvE2eTest {
         kv_stub = remote::KV::NewStub(channel);
         kv_client = std::make_unique<KvClient>(kv_stub.get());
 
-        srv_config.set_num_contexts(1);
+        concurrency::ContextPoolSettings context_pool_settings;
+        context_pool_settings.num_contexts = 1;
+        srv_config.set_context_pool_settings(context_pool_settings);
         srv_config.set_address_uri(kTestAddressUri);
 
         DataDirectory data_dir{tmp_dir.path()};

@@ -17,7 +17,7 @@
 #include "auth_recipient.hpp"
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/sentry/common/awaitable_wait_for_one.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/sentry/common/timeout.hpp>
 
 #include "auth_ack_message.hpp"
@@ -26,7 +26,7 @@
 namespace silkworm::sentry::rlpx::auth {
 
 using namespace std::chrono_literals;
-using namespace common::awaitable_wait_for_one;
+using namespace concurrency::awaitable_wait_for_one;
 
 boost::asio::awaitable<AuthKeys> AuthRecipient::execute(common::SocketStream& stream) {
     common::Timeout timeout(5s);

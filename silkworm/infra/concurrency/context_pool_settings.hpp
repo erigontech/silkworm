@@ -1,5 +1,5 @@
-#[[
-   Copyright 2022 The Silkworm Authors
+/*
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -12,20 +12,21 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-# Silkworm itself
-add_subdirectory(core)
+#pragma once
 
-if(NOT SILKWORM_CORE_ONLY)
-  add_subdirectory(interfaces)
-  add_subdirectory(infra)
-  add_subdirectory(sentry)
-  add_subdirectory(sync)
-  add_subdirectory(node)
-  add_subdirectory(silkrpc)
-endif()
+#include <silkworm/infra/rpc/server/wait_strategy.hpp>
 
-if(SILKWORM_WASM_API)
-  add_subdirectory(wasm)
-endif()
+namespace silkworm::concurrency {
+
+struct ContextPoolSettings {
+    // initialized in the constructor based on hardware_concurrency
+    uint32_t num_contexts{0};
+
+    silkworm::rpc::WaitMode wait_mode{silkworm::rpc::WaitMode::blocking};
+
+    ContextPoolSettings();
+};
+
+}  // namespace silkworm::concurrency

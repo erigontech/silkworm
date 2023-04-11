@@ -29,13 +29,13 @@
 #include <boost/system/system_error.hpp>
 #include <catch2/catch.hpp>
 
-#include "awaitable_wait_for_all.hpp"
+#include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 
 namespace silkworm::sentry::common {
 
 using namespace boost::asio;
 using namespace std::chrono_literals;
-using namespace awaitable_wait_for_all;
+using namespace concurrency::awaitable_wait_for_all;
 
 static awaitable<void> async_ok() {
     co_await this_coro::executor;

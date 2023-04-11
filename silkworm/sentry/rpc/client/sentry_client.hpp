@@ -21,20 +21,13 @@
 
 #include <agrpc/detail/forward.hpp>
 
-#include <silkworm/sentry/api/api_common/service.hpp>
+#include <silkworm/sentry/api/api_common/sentry_client.hpp>
 
 namespace silkworm::sentry::rpc::client {
 
-// TODO: move to a common place for all clients
-struct ISentryClient {
-    virtual ~ISentryClient() = default;
-
-    virtual std::shared_ptr<api::api_common::Service> service() = 0;
-};
-
 class SentryClientImpl;
 
-class SentryClient : public ISentryClient {
+class SentryClient : public api::api_common::SentryClient {
   public:
     explicit SentryClient(const std::string& address_uri, agrpc::GrpcContext& grpc_context);
     ~SentryClient() override;

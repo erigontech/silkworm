@@ -21,7 +21,7 @@
 
 namespace silkworm::rpc {
 
-class HandShake : public rpc::UnaryCall<sentry::Sentry, google::protobuf::Empty, sentry::HandShakeReply> {
+class HandShake : public rpc::UnaryCall<::sentry::Sentry, google::protobuf::Empty, ::sentry::HandShakeReply> {
   public:
     HandShake();
 };

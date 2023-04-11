@@ -22,9 +22,7 @@ namespace silkworm::rpc {
 
 ServerConfig::ServerConfig(std::shared_ptr<grpc::ServerCredentials> credentials)
     : address_uri_{kDefaultAddressUri},
-      credentials_(std::move(credentials)),
-      num_contexts_{kDefaultNumContexts},
-      wait_mode_{WaitMode::blocking} {
+      credentials_(std::move(credentials)) {
 }
 
 void ServerConfig::set_address_uri(const std::string& address_uri) noexcept {
@@ -35,12 +33,8 @@ void ServerConfig::set_credentials(std::shared_ptr<grpc::ServerCredentials> cred
     credentials_ = std::move(credentials);
 }
 
-void ServerConfig::set_num_contexts(uint32_t num_contexts) noexcept {
-    num_contexts_ = num_contexts;
-}
-
-void ServerConfig::set_wait_mode(WaitMode wait_mode) noexcept {
-    wait_mode_ = wait_mode;
+void ServerConfig::set_context_pool_settings(concurrency::ContextPoolSettings settings) noexcept {
+    context_pool_settings_ = settings;
 }
 
 }  // namespace silkworm::rpc

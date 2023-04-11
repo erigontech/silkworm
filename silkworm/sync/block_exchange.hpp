@@ -66,7 +66,7 @@ class BlockExchange final : public ActiveComponent {
   private:
     using MessageQueue = ConcurrentQueue<std::shared_ptr<Message>>;  // used internally to store new messages
 
-    void receive_message(const sentry::InboundMessage& raw_message);
+    void receive_message(const ::sentry::InboundMessage& raw_message);
     void send_penalization(PeerId id, Penalty p) noexcept;
     size_t request_headers(time_point_t tp, size_t max_requests);
     size_t request_bodies(time_point_t tp, size_t max_requests);

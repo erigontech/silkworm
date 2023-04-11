@@ -28,6 +28,7 @@
 #include <silkworm/buildinfo.h>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/rpc/common/util.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
@@ -52,7 +53,7 @@ std::string get_library_versions() {
 }
 
 //! Standalone BackEndKV server settings
-struct StandaloneBackEndKVSettings : public SilkwormCoreSettings {
+struct StandaloneBackEndKVSettings : public SilkwormSettings {
     bool simulate_state_changes{false};
 };
 
@@ -76,11 +77,8 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, StandaloneBackEndK
     add_option_private_api_address(app, node_settings.private_api_addr);
     add_option_external_sentry_address(app, node_settings.external_sentry_addr);
 
-    uint32_t num_contexts;
-    add_option_num_contexts(app, num_contexts);
-
-    rpc::WaitMode wait_mode;
-    add_option_wait_mode(app, wait_mode);
+    concurrency::ContextPoolSettings context_pool_settings;
+    add_context_pool_options(app, context_pool_settings);
 
     // Logging options
     add_logging_options(app, log_settings);
@@ -107,8 +105,7 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, StandaloneBackEndK
     node_settings.chaindata_env_config.max_readers = max_readers;
 
     server_settings.set_address_uri(node_settings.private_api_addr);
-    server_settings.set_num_contexts(num_contexts);
-    server_settings.set_wait_mode(wait_mode);
+    server_settings.set_context_pool_settings(context_pool_settings);
 
     return 0;
 }
@@ -142,7 +139,7 @@ int main(int argc, char* argv[]) {
         SILK_LOG << "BackEndKvServer library info: " << get_library_versions();
         SILK_LOG << "BackEndKvServer launched with chaindata: " << node_settings.chaindata_env_config.path
                  << " address: " << node_settings.private_api_addr
-                 << " contexts: " << server_settings.num_contexts();
+                 << " contexts: " << server_settings.context_pool_settings().num_contexts;
 
         auto database_env = db::open_env(node_settings.chaindata_env_config);
         SILK_INFO << "BackEndKvServer MDBX max readers: " << database_env.max_readers();

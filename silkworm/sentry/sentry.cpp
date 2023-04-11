@@ -23,10 +23,13 @@
 #include <silkworm/buildinfo.h>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 
 #include "api/api_common/node_info.hpp"
+#include "api/api_common/service.hpp"
+#include "api/router/direct_service.hpp"
+#include "api/router/service_router.hpp"
 #include "discovery/discovery.hpp"
 #include "eth/protocol.hpp"
 #include "message_receiver.hpp"
@@ -53,6 +56,8 @@ class SentryImpl final {
 
     boost::asio::awaitable<void> run();
 
+    [[nodiscard]] std::shared_ptr<api::api_common::Service> service() { return direct_service_; }
+
   private:
     void setup_node_key();
     boost::asio::awaitable<void> run_tasks();
@@ -69,9 +74,9 @@ class SentryImpl final {
     std::unique_ptr<rlpx::Client> make_client();
     std::function<std::unique_ptr<rlpx::Client>()> client_factory();
     [[nodiscard]] std::string client_id() const;
-    common::EnodeUrl make_node_url() const;
-    api::api_common::NodeInfo make_node_info() const;
-    std::function<api::api_common::NodeInfo()> node_info_provider() const;
+    [[nodiscard]] common::EnodeUrl make_node_url() const;
+    [[nodiscard]] api::api_common::NodeInfo make_node_info() const;
+    [[nodiscard]] std::function<api::api_common::NodeInfo()> node_info_provider() const;
 
     Settings settings_;
     std::optional<NodeKey> node_key_;
@@ -87,14 +92,15 @@ class SentryImpl final {
     std::shared_ptr<MessageReceiver> message_receiver_;
     std::shared_ptr<PeerManagerApi> peer_manager_api_;
 
+    api::router::ServiceRouter service_router_;
+    std::shared_ptr<api::router::DirectService> direct_service_;
     rpc::server::Server rpc_server_;
 };
 
 static silkworm::rpc::ServerConfig make_server_config(const Settings& settings) {
     silkworm::rpc::ServerConfig config;
     config.set_address_uri(settings.api_address);
-    config.set_num_contexts(settings.num_contexts);
-    config.set_wait_mode(settings.wait_mode);
+    config.set_context_pool_settings(settings.context_pool_settings);
     return config;
 }
 
@@ -128,11 +134,13 @@ SentryImpl::SentryImpl(Settings settings, silkworm::rpc::ServerContextPool& cont
       message_sender_(context_pool_.next_io_context()),
       message_receiver_(std::make_shared<MessageReceiver>(context_pool_.next_io_context(), settings_.max_peers)),
       peer_manager_api_(std::make_shared<PeerManagerApi>(context_pool_.next_io_context(), peer_manager_)),
-      rpc_server_(make_server_config(settings_), make_service_router(status_manager_.status_channel(), message_sender_, *message_receiver_, *peer_manager_api_, node_info_provider())) {
+      service_router_(make_service_router(status_manager_.status_channel(), message_sender_, *message_receiver_, *peer_manager_api_, node_info_provider())),
+      direct_service_(std::make_shared<api::router::DirectService>(service_router_)),
+      rpc_server_(make_server_config(settings_), service_router_) {
 }
 
 boost::asio::awaitable<void> SentryImpl::run() {
-    using namespace common::awaitable_wait_for_all;
+    using namespace concurrency::awaitable_wait_for_all;
 
     setup_node_key();
 
@@ -146,7 +154,7 @@ void SentryImpl::setup_node_key() {
 }
 
 boost::asio::awaitable<void> SentryImpl::run_tasks() {
-    using namespace common::awaitable_wait_for_all;
+    using namespace concurrency::awaitable_wait_for_all;
 
     log::Info() << "Waiting for status message...";
     co_await status_manager_.wait_for_status();
@@ -206,7 +214,9 @@ boost::asio::awaitable<void> SentryImpl::start_peer_manager_api() {
 }
 
 boost::asio::awaitable<void> SentryImpl::start_rpc_server() {
-    return rpc_server_.async_run();
+    if (!settings_.api_address.empty()) {
+        co_await rpc_server_.async_run();
+    }
 }
 
 static std::string make_client_id(const buildinfo& info) {
@@ -255,6 +265,10 @@ Sentry::~Sentry() {
 
 boost::asio::awaitable<void> Sentry::run() {
     return p_impl_->run();
+}
+
+std::shared_ptr<api::api_common::Service> Sentry::service() {
+    return p_impl_->service();
 }
 
 }  // namespace silkworm::sentry

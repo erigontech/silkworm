@@ -22,7 +22,7 @@
 
 namespace silkworm::sentry::api::router {
 
-class DirectService : api_common::Service {
+class DirectService : public api_common::Service {
   public:
     explicit DirectService(ServiceRouter router)
         : router_(std::move(router)) {}

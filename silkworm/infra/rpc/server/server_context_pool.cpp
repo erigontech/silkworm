@@ -134,12 +134,11 @@ ServerContextPool::ServerContextPool(std::size_t pool_size) : next_index_{0} {
 }
 
 ServerContextPool::ServerContextPool(
-    std::size_t pool_size,
-    WaitMode wait_mode,
+    concurrency::ContextPoolSettings settings,
     const std::function<std::unique_ptr<grpc::ServerCompletionQueue>()>& queue_factory)
-    : ServerContextPool(pool_size) {
-    for (size_t i = 0; i < pool_size; i++) {
-        add_context(queue_factory(), wait_mode);
+    : ServerContextPool(settings.num_contexts) {
+    for (size_t i = 0; i < settings.num_contexts; i++) {
+        add_context(queue_factory(), settings.wait_mode);
     }
 }
 

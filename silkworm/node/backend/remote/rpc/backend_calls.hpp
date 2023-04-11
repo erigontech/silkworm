@@ -21,7 +21,10 @@
 #include <tuple>
 #include <vector>
 
+#include <silkworm/infra/concurrency/coroutine.hpp>
+
 #include <agrpc/asio_grpc.hpp>
+#include <boost/asio/awaitable.hpp>
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/core/chain/config.hpp>
@@ -51,7 +54,7 @@ class EtherbaseCall : public server::UnaryCall<remote::EtherbaseRequest, remote:
 
     static void fill_predefined_reply(const EthereumBackEnd& backend);
 
-    boost::asio::awaitable<void> operator()();
+    boost::asio::awaitable<void> operator()(const EthereumBackEnd& backend);
 
   private:
     static remote::EtherbaseReply response_;
@@ -64,7 +67,7 @@ class NetVersionCall : public server::UnaryCall<remote::NetVersionRequest, remot
 
     static void fill_predefined_reply(const EthereumBackEnd& backend);
 
-    boost::asio::awaitable<void> operator()();
+    boost::asio::awaitable<void> operator()(const EthereumBackEnd& backend);
 
   private:
     static remote::NetVersionReply response_;
@@ -78,7 +81,7 @@ class NetPeerCountCall : public server::UnaryCall<remote::NetPeerCountRequest, r
     static void add_sentry(SentryClient* sentry);
     static void remove_sentry(SentryClient* sentry);
 
-    boost::asio::awaitable<void> operator()();
+    boost::asio::awaitable<void> operator()(const EthereumBackEnd& backend);
 
   private:
     static std::set<SentryClient*> sentries_;
@@ -91,7 +94,7 @@ class BackEndVersionCall : public server::UnaryCall<google::protobuf::Empty, typ
 
     static void fill_predefined_reply();
 
-    boost::asio::awaitable<void> operator()();
+    boost::asio::awaitable<void> operator()(const EthereumBackEnd& backend);
 
   private:
     static types::VersionReply response_;
@@ -104,7 +107,7 @@ class ProtocolVersionCall : public server::UnaryCall<remote::ProtocolVersionRequ
 
     static void fill_predefined_reply();
 
-    boost::asio::awaitable<void> operator()();
+    boost::asio::awaitable<void> operator()(const EthereumBackEnd& backend);
 
   private:
     static remote::ProtocolVersionReply response_;
@@ -117,7 +120,7 @@ class ClientVersionCall : public server::UnaryCall<remote::ClientVersionRequest,
 
     static void fill_predefined_reply(const EthereumBackEnd& backend);
 
-    boost::asio::awaitable<void> operator()();
+    boost::asio::awaitable<void> operator()(const EthereumBackEnd& backend);
 
   private:
     static remote::ClientVersionReply response_;
@@ -128,7 +131,7 @@ class SubscribeCall : public server::ServerStreamingCall<remote::SubscribeReques
   public:
     using Base::ServerStreamingCall;
 
-    boost::asio::awaitable<void> operator()();
+    boost::asio::awaitable<void> operator()(const EthereumBackEnd& backend);
 };
 
 //! Unary RPC for NodeInfo method of 'ethbackend' gRPC protocol.
@@ -139,24 +142,10 @@ class NodeInfoCall : public server::UnaryCall<remote::NodesInfoRequest, remote::
     static void add_sentry(SentryClient* sentry);
     static void remove_sentry(SentryClient* sentry);
 
-    boost::asio::awaitable<void> operator()();
+    boost::asio::awaitable<void> operator()(const EthereumBackEnd& backend);
 
   private:
     static std::set<SentryClient*> sentries_;
-};
-
-//! The ETHBACKEND service implementation.
-struct BackEndService {
-  public:
-    static void register_backend_request_calls(const ServerContext& context, remote::ETHBACKEND::AsyncService* service);
-
-    explicit BackEndService(const EthereumBackEnd& backend);
-    ~BackEndService();
-
-    void add_sentry(std::unique_ptr<SentryClient>&& sentry);
-
-  private:
-    std::vector<std::unique_ptr<SentryClient>> sentries_;
 };
 
 }  // namespace silkworm::rpc

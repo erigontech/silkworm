@@ -36,6 +36,8 @@
 #include <silkworm/infra/test/log.hpp>
 #include <silkworm/interfaces/types/types.pb.h>
 #include <silkworm/node/backend/ethereum_backend.hpp>
+#include <silkworm/node/backend/remote/rpc/backend_calls.hpp>
+#include <silkworm/node/backend/remote/rpc/kv_calls.hpp>
 #include <silkworm/node/backend/state_change_collection.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/test/os.hpp>

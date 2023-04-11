@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,31 +14,22 @@
    limitations under the License.
 */
 
-#pragma once
+#include "message_id.hpp"
 
-#include <cstdint>
+#include "status_message.hpp"
 
 namespace silkworm::sentry::eth {
 
-enum class MessageId : uint8_t {
-    kStatus,
-    kNewBlockHashes,
-    kTransactions,
-    kGetBlockHeaders,
-    kBlockHeaders,
-    kGetBlockBodies,
-    kBlockBodies,
-    kNewBlock,
-    kNewPooledTransactionHashes,
-    kGetPooledTransactions,
-    kPooledTransactions,
-    kGetNodeData = 0xD,  // removed in eth/67
-    kNodeData,           // removed in eth/67
-    kGetReceipts = 0xF,
-    kReceipts,
-};
+MessageId eth_message_id_from_common_id(uint8_t message_id) {
+    assert(message_id >= eth::StatusMessage::kId);
+    if (message_id < eth::StatusMessage::kId)
+        return MessageId::kStatus;
 
-MessageId eth_message_id_from_common_id(uint8_t id);
-uint8_t common_message_id_from_eth_id(MessageId eth_id);
+    return static_cast<eth::MessageId>(message_id - eth::StatusMessage::kId);
+}
+
+uint8_t common_message_id_from_eth_id(MessageId eth_id) {
+    return (static_cast<uint8_t>(eth_id) + eth::StatusMessage::kId);
+}
 
 }  // namespace silkworm::sentry::eth

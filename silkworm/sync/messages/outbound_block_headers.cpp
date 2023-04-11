@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,18 +14,28 @@
    limitations under the License.
 */
 
-#pragma once
+#include "outbound_block_headers.hpp"
 
-#include <memory>
+#include <sstream>
 
-#include <silkworm/infra/grpc/interfaces/types.hpp>
-#include <silkworm/interfaces/types/types.pb.h>
-
-#include "types.hpp"
+#include <silkworm/infra/common/log.hpp>
 
 namespace silkworm {
 
-std::unique_ptr<types::H256> to_H256(const intx::uint256& orig);
-std::unique_ptr<types::H256> to_H256(const Hash& orig);
+void OutboundBlockHeaders::execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) {
+}
+
+Bytes OutboundBlockHeaders::message_data() const {
+    Bytes rlp_encoding;
+    rlp::encode(rlp_encoding, packet_);
+    return rlp_encoding;
+}
+
+std::string OutboundBlockHeaders::content() const {
+    std::stringstream content;
+    log::prepare_for_logging(content);
+    content << packet_;
+    return content.str();
+}
 
 }  // namespace silkworm

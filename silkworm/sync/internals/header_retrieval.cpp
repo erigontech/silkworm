@@ -116,8 +116,8 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_number(BlockNum origin, uin
 // Node current status
 BlockNum HeaderRetrieval::head_height() { return db::stages::read_stage_progress(db_tx_, db::stages::kBlockBodiesKey); }
 
-std::tuple<Hash, BigInt> HeaderRetrieval::head_hash_and_total_difficulty() {
-    BlockNum head_height = db::stages::read_stage_progress(db_tx_, db::stages::kBlockBodiesKey);
+std::tuple<BlockNum, Hash, BigInt> HeaderRetrieval::head_info() {
+    BlockNum head_height = this->head_height();
     auto head_hash = db::read_canonical_hash(db_tx_, head_height);
     if (!head_hash)
         throw std::logic_error("canonical hash at height " + std::to_string(head_height) + " not found in db");
@@ -125,7 +125,7 @@ std::tuple<Hash, BigInt> HeaderRetrieval::head_hash_and_total_difficulty() {
     if (!head_td)
         throw std::logic_error("total difficulty of canonical hash at height " + std::to_string(head_height) +
                                " not found in db");
-    return {*head_hash, *head_td};
+    return {head_height, *head_hash, *head_td};
 }
 
 std::tuple<Hash, BlockNum> HeaderRetrieval::get_ancestor(Hash hash, BlockNum block_num, BlockNum ancestor_delta,

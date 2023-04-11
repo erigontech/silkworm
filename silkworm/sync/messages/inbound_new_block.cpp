@@ -16,29 +16,17 @@
 
 #include "inbound_new_block.hpp"
 
-#include <algorithm>
-
-#include <silkworm/core/common/cast.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/sync/internals/body_sequence.hpp>
-#include <silkworm/sync/internals/header_chain.hpp>
 #include <silkworm/sync/internals/random_number.hpp>
-#include <silkworm/sync/rpc/send_message_by_id.hpp>
 
 namespace silkworm {
 
-InboundNewBlock::InboundNewBlock(const ::sentry::InboundMessage& msg) {
-    if (msg.id() != ::sentry::MessageId::NEW_BLOCK_66)
-        throw std::logic_error("InboundNewBlock received wrong InboundMessage");
-
+InboundNewBlock::InboundNewBlock(ByteView data, PeerId peer_id)
+    : peerId_(std::move(peer_id)) {
     reqId_ = RANDOM_NUMBER.generate_one();  // for trace purposes
-
-    peerId_ = bytes_from_H512(msg.peer_id());
-
-    ByteView data = string_view_to_byte_view(msg.data());  // copy for consumption
     success_or_throw(rlp::decode(data, packet_));
-
     SILK_TRACE << "Received message " << *this;
 }
 

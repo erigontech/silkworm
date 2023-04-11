@@ -40,7 +40,9 @@ class HeaderRetrieval {
 
     // Node current status
     BlockNum head_height();
-    std::tuple<Hash, BigInt> head_hash_and_total_difficulty();
+
+    // Head block height, hash and total difficulty
+    std::tuple<BlockNum, Hash, BigInt> head_info();
 
     // Ancestor
     std::tuple<Hash, BlockNum> get_ancestor(Hash hash, BlockNum block_num, BlockNum ancestor_delta,

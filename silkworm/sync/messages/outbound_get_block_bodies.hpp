@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include <silkworm/sync/packets/get_block_bodies_packet.hpp>
 
 #include "outbound_message.hpp"
@@ -24,22 +26,27 @@ namespace silkworm {
 
 class OutboundGetBlockBodies : public OutboundMessage {
   public:
-    OutboundGetBlockBodies();
+    OutboundGetBlockBodies() = default;
 
-    std::string name() const override { return "OutboundGetBlockBodies"; }
-    std::string content() const override;
+    [[nodiscard]] std::string name() const override { return "OutboundGetBlockBodies"; }
+    [[nodiscard]] std::string content() const override;
 
     void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override;
+
+    [[nodiscard]] silkworm::sentry::eth::MessageId eth_message_id() const override {
+        return silkworm::sentry::eth::MessageId::kGetBlockBodies;
+    }
+
+    [[nodiscard]] Bytes message_data() const override;
 
     GetBlockBodiesPacket66& packet();
     std::vector<PeerPenalization>& penalties();
     BlockNum& min_block();
 
-    bool packet_present() const;
+    [[nodiscard]] bool packet_present() const;
 
   private:
-    ::sentry::SentPeers send_packet(SentryClient&, seconds_t timeout);
-    void send_penalization(SentryClient&, const PeerPenalization&, seconds_t timeout);
+    std::vector<PeerId> send_packet(SentryClient&);
 
     GetBlockBodiesPacket66 packet_{};
     std::vector<PeerPenalization> penalizations_;

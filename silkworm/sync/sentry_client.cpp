@@ -16,137 +16,250 @@
 
 #include "sentry_client.hpp"
 
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/use_future.hpp>
+
+#include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/sentry/eth/message_id.hpp>
 #include <silkworm/sync/internals/header_retrieval.hpp>
-#include <silkworm/sync/rpc/hand_shake.hpp>
-#include <silkworm/sync/rpc/peer_by_id.hpp>
-#include <silkworm/sync/rpc/peer_count.hpp>
-#include <silkworm/sync/rpc/receive_messages.hpp>
-#include <silkworm/sync/rpc/set_status.hpp>
+
+#include "messages/inbound_block_bodies.hpp"
+#include "messages/inbound_block_headers.hpp"
+#include "messages/inbound_get_block_bodies.hpp"
+#include "messages/inbound_get_block_headers.hpp"
+#include "messages/inbound_new_block.hpp"
+#include "messages/inbound_new_block_hashes.hpp"
 
 namespace silkworm {
 
-constexpr int kMaxReceiveMessageSize = 10_Mebi;  // reference: eth/66 protocol
+using namespace boost::asio;
 
-static std::shared_ptr<grpc::Channel> create_custom_channel(const std::string& sentry_addr) {
-    grpc::ChannelArguments custom_args{};
-    custom_args.SetMaxReceiveMessageSize(kMaxReceiveMessageSize);
-    return grpc::CreateCustomChannel(sentry_addr, grpc::InsecureChannelCredentials(), custom_args);
+SentryClient::SentryClient(
+    boost::asio::io_context& io_context,
+    std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> sentry_client,
+    const db::ROAccess& db_access,
+    const ChainConfig& chain_config)
+    : io_context_{io_context},
+      sentry_client_{std::move(sentry_client)},
+      db_access_{db_access},
+      chain_config_{chain_config} {
 }
 
-SentryClient::SentryClient(const std::string& sentry_addr, const db::ROAccess& dba, const ChainConfig& cc)
-    : base_t(create_custom_channel(sentry_addr)),
-      sentry_addr_{sentry_addr},
-      db_access_{dba},
-      chain_config_{cc} {
-}
-
-rpc::ReceiveMessages::Scope SentryClient::scope(const sentry::InboundMessage& message) {
-    switch (message.id()) {
-        case sentry::MessageId::BLOCK_HEADERS_66:
-        case sentry::MessageId::BLOCK_BODIES_66:
-        case sentry::MessageId::NEW_BLOCK_HASHES_66:
-        case sentry::MessageId::NEW_BLOCK_66:
-            return rpc::ReceiveMessages::Scope::BlockAnnouncements;
-        case sentry::MessageId::GET_BLOCK_HEADERS_66:
-        case sentry::MessageId::GET_BLOCK_BODIES_66:
-            return rpc::ReceiveMessages::Scope::BlockRequests;
+static std::unique_ptr<InboundMessage> decode_inbound_message(const silkworm::sentry::api::api_common::MessageFromPeer& message_from_peer) {
+    using sentry::eth::MessageId;
+    auto eth_message_id = sentry::eth::eth_message_id_from_common_id(message_from_peer.message.id);
+    PeerId peer_id = message_from_peer.peer_public_key->serialized();
+    ByteView raw_message{message_from_peer.message.data};
+    switch (eth_message_id) {
+        case MessageId::kGetBlockHeaders:
+            return std::make_unique<InboundGetBlockHeaders>(raw_message, peer_id);
+        case MessageId::kGetBlockBodies:
+            return std::make_unique<InboundGetBlockBodies>(raw_message, peer_id);
+        case MessageId::kNewBlockHashes:
+            return std::make_unique<InboundNewBlockHashes>(raw_message, peer_id);
+        case MessageId::kNewBlock:
+            return std::make_unique<InboundNewBlock>(raw_message, peer_id);
+        case MessageId::kBlockHeaders:
+            return std::make_unique<InboundBlockHeaders>(raw_message, peer_id);
+        case MessageId::kBlockBodies:
+            return std::make_unique<InboundBlockBodies>(raw_message, peer_id);
         default:
-            return rpc::ReceiveMessages::Scope::Other;
+            return {};
     }
 }
 
-void SentryClient::publish(const sentry::InboundMessage& message) {
-    switch (scope(message)) {
-        case rpc::ReceiveMessages::Scope::BlockRequests:
+static constexpr std::string_view kLogTitle{"sync::SentryClient"};
+
+boost::asio::awaitable<void> SentryClient::publish(const silkworm::sentry::api::api_common::MessageFromPeer& message_from_peer) {
+    using sentry::eth::MessageId;
+    auto eth_message_id = sentry::eth::eth_message_id_from_common_id(message_from_peer.message.id);
+
+    std::shared_ptr<InboundMessage> message;
+    std::optional<PeerId> penalize_peer_id;
+    try {
+        message = std::shared_ptr(decode_inbound_message(message_from_peer));
+    } catch (DecodingException& error) {
+        PeerId peer_id = message_from_peer.peer_public_key->serialized();
+        log::Warning(kLogTitle) << "received and ignored a malformed message, peer= " << human_readable_id(peer_id)
+                                << ", msg-id= " << static_cast<int>(message_from_peer.message.id)
+                                << " - " << error.what();
+        penalize_peer_id = std::move(peer_id);
+    }
+
+    received_message_size_subscription(message_from_peer.message.data.size());
+
+    if (penalize_peer_id) {
+        malformed_message_subscription();
+        co_await penalize_peer_async(penalize_peer_id.value(), BadBlockPenalty);
+        co_return;
+    }
+
+    if (!message) {
+        log::Warning(kLogTitle) << "InboundMessage " << static_cast<int>(eth_message_id) << " received but ignored";
+        co_return;
+    }
+
+    switch (eth_message_id) {
+        case MessageId::kGetBlockHeaders:
+        case MessageId::kGetBlockBodies:
             requests_subscription(message);
             break;
-        case rpc::ReceiveMessages::Scope::BlockAnnouncements:
+        case MessageId::kBlockHeaders:
+        case MessageId::kBlockBodies:
+        case MessageId::kNewBlockHashes:
+        case MessageId::kNewBlock:
             announcements_subscription(message);
             break;
         default:
             rest_subscription(message);
+            break;
     }
 }
 
-void SentryClient::set_status(Hash head_hash, BigInt head_td, const ChainConfig& chain_config) {
-    rpc::SetStatus set_status{chain_config, head_hash, head_td};
-    set_status.timeout(std::chrono::seconds(1));
-    exec_remotely(set_status);
+static silkworm::sentry::api::api_common::MessageIdSet make_message_id_filter() {
+    using namespace sentry::eth;
+    silkworm::sentry::api::api_common::MessageIdSet ids = {
+        common_message_id_from_eth_id(MessageId::kGetBlockHeaders),
+        common_message_id_from_eth_id(MessageId::kGetBlockBodies),
+
+        common_message_id_from_eth_id(MessageId::kBlockHeaders),
+        common_message_id_from_eth_id(MessageId::kBlockBodies),
+        common_message_id_from_eth_id(MessageId::kNewBlockHashes),
+        common_message_id_from_eth_id(MessageId::kNewBlock),
+    };
+    return ids;
+}
+
+void SentryClient::set_status(BlockNum head_block_num, Hash head_hash, BigInt head_td, const ChainConfig& chain_config) {
+    auto fork_block_numbers = chain_config.distinct_fork_numbers();
+    auto best_block_hash = Bytes{ByteView{head_hash}};
+    auto genesis_hash = ByteView{chain_config.genesis_hash.value()};
+
+    silkworm::sentry::eth::StatusMessage status_message = {
+        0,  // the eth protocol version is replaced on the sentry end
+        chain_config.chain_id,
+        head_td,
+        best_block_hash,
+        Bytes{genesis_hash},
+        silkworm::sentry::eth::ForkId(genesis_hash, fork_block_numbers, head_block_num),
+    };
+
+    silkworm::sentry::eth::StatusData status_data = {
+        std::move(fork_block_numbers),
+        head_block_num,
+        std::move(status_message),
+    };
+
+    co_spawn(io_context_, sentry_client_->service()->set_status(std::move(status_data)), use_future).get();
+
     SILK_TRACE << "SentryClient, set_status sent";
 }
 
 void SentryClient::set_status() {
     HeaderRetrieval headers(db_access_);
-    auto [head_hash, head_td] = headers.head_hash_and_total_difficulty();
-    auto head_height = headers.head_height();
+    auto [head_height, head_hash, head_td] = headers.head_info();
     headers.close();
 
     log::Debug("Chain/db status", {"head hash", head_hash.to_hex()});
     log::Debug("Chain/db status", {"head td", intx::to_string(head_td)});
     log::Debug("Chain/db status", {"head height", std::to_string(head_height)});
 
-    set_status(head_hash, head_td, chain_config_);
+    set_status(head_height, head_hash, head_td, chain_config_);
 }
 
-void SentryClient::hand_shake() {
-    auto rpc = std::make_shared<rpc::HandShake>();
-    std::atomic_store(&handshake_, rpc);
-    exec_remotely(*handshake_);
+void SentryClient::handshake() {
+    auto supported_protocol = co_spawn(io_context_, sentry_client_->service()->handshake(), use_future).get();
 
-    SILK_TRACE << "SentryClient, hand_shake sent";
-    sentry::HandShakeReply reply = handshake_->reply();
-
-    sentry::Protocol supported_protocol = reply.protocol();
-    if (supported_protocol < sentry::Protocol::ETH66) {
-        log::Critical("SentryClient") << "remote sentry do not support eth/66 protocol, stopping...";
+    if (supported_protocol < 66) {
+        log::Critical(kLogTitle) << "remote sentry do not support eth/66 protocol, stopping...";
         stop();
         throw SentryClientException("SentryClient exception, cause: sentry do not support eth/66 protocol");
     }
 }
 
-void SentryClient::execution_loop() {
-    using RMS = rpc::ReceiveMessages::Scope;
+static sentry::common::Message sentry_message_from_outbound_message(const OutboundMessage& outbound_message) {
+    return sentry::common::Message{
+        sentry::eth::common_message_id_from_eth_id(outbound_message.eth_message_id()),
+        outbound_message.message_data(),
+    };
+}
 
+static SentryClient::PeerIds peer_ids_from_peer_keys(const silkworm::sentry::api::api_common::Service::PeerKeys& peer_keys) {
+    SentryClient::PeerIds peer_ids;
+    for (auto& peer_key : peer_keys) {
+        peer_ids.push_back(peer_key.serialized());
+    }
+    return peer_ids;
+}
+
+SentryClient::PeerIds SentryClient::send_message_by_id(const OutboundMessage& outbound_message, const PeerId& peer_id) {
+    auto message = sentry_message_from_outbound_message(outbound_message);
+    auto peer_public_key = sentry::common::EccPublicKey::deserialize(peer_id);
+    auto peer_keys = co_spawn(io_context_, sentry_client_->service()->send_message_by_id(std::move(message), std::move(peer_public_key)), use_future).get();
+    return peer_ids_from_peer_keys(peer_keys);
+}
+
+SentryClient::PeerIds SentryClient::send_message_to_random_peers(const OutboundMessage& outbound_message, size_t max_peers) {
+    auto message = sentry_message_from_outbound_message(outbound_message);
+    auto peer_keys = co_spawn(io_context_, sentry_client_->service()->send_message_to_random_peers(std::move(message), max_peers), use_future).get();
+    return peer_ids_from_peer_keys(peer_keys);
+}
+
+SentryClient::PeerIds SentryClient::send_message_to_all(const OutboundMessage& outbound_message) {
+    auto message = sentry_message_from_outbound_message(outbound_message);
+    auto peer_keys = co_spawn(io_context_, sentry_client_->service()->send_message_to_all(std::move(message)), use_future).get();
+    return peer_ids_from_peer_keys(peer_keys);
+}
+
+SentryClient::PeerIds SentryClient::send_message_by_min_block(const OutboundMessage& outbound_message, BlockNum /*min_block*/, size_t max_peers) {
+    auto message = sentry_message_from_outbound_message(outbound_message);
+    auto peer_keys = co_spawn(io_context_, sentry_client_->service()->send_message_by_min_block(std::move(message), max_peers), use_future).get();
+    return peer_ids_from_peer_keys(peer_keys);
+}
+
+void SentryClient::peer_min_block(const PeerId& peer_id, BlockNum /*min_block*/) {
+    auto peer_public_key = sentry::common::EccPublicKey::deserialize(peer_id);
+    co_spawn(io_context_, sentry_client_->service()->peer_min_block(std::move(peer_public_key)), use_future).get();
+}
+
+void SentryClient::execution_loop() {
     log::set_thread_name("sentry-recv   ");
 
     while (!is_stopping()) {
         try {
             connected_ = false;
-            log::Info("SentryClient", {"remote", sentry_addr_}) << " connecting ...";
+            log::Info(kLogTitle) << "connecting ...";
 
             // send current status of the chain
-            hand_shake();
+            handshake();
             set_status();
 
             connected_ = true;
             connected_.notify_all();
-            log::Info("SentryClient", {"remote", sentry_addr_}) << " connected";
-
-            // send a message subscription
-            auto rpc = std::make_shared<rpc::ReceiveMessages>(RMS::BlockAnnouncements | RMS::BlockRequests);
-            std::atomic_store(&receive_messages_, rpc);
-
-            exec_remotely(*receive_messages_);
+            log::Info(kLogTitle) << "connected";
 
             // receive messages
-            while (!is_stopping() && receive_messages_->receive_one_reply()) {
-                const auto& message = receive_messages_->reply();
 
-                publish(message);
-            }
+            std::function<awaitable<void>(silkworm::sentry::api::api_common::MessageFromPeer)> consumer = [this](auto message_from_peer) -> awaitable<void> {
+                if (!this->is_stopping()) {
+                    co_await this->publish(message_from_peer);
+                }
+            };
+
+            co_spawn(io_context_, sentry_client_->service()->messages(make_message_id_filter(), consumer), use_future).get();
 
         } catch (const std::exception& e) {
-            if (!is_stopping()) log::Error("SentryClient") << "exception: " << e.what();
+            if (!is_stopping()) log::Error(kLogTitle) << "exception: " << e.what();
         }
     }
 
     // note: do we need to handle connection loss with an outer loop that wait and then re-try hand_shake and so on?
     // (we would redo set_status & hand-shake too)
-    log::Warning("SentryClient") << "execution loop is stopping...";
+    log::Warning(kLogTitle) << "execution loop is stopping...";
     stop();
 
-    connected_ = true;
+    connected_ = false;
     connected_.notify_all();
 }
 
@@ -158,89 +271,83 @@ void SentryClient::stats_receiving_loop() {
         try {
             connected_.wait(false);
 
-            // send a stats subscription
-            auto rpc = std::make_shared<rpc::ReceivePeerStats>();
-            std::atomic_store(&receive_peer_stats_, rpc);
-
-            exec_remotely(*receive_peer_stats_);
-
             // ask the remote sentry about the current active peers
-            count_active_peers();
-            log::Info("SentryClient") << active_peers_ << " active peers";
+            log::Info(kLogTitle) << count_active_peers() << " active peers";
 
             // receive stats
-            while (!is_stopping() && receive_peer_stats_->receive_one_reply()) {
-                const sentry::PeerEvent& stat = receive_peer_stats_->reply();
 
-                auto peerId = bytes_from_H512(stat.peer_id());
-                const char* event = "";
+            std::function<awaitable<void>(silkworm::sentry::api::api_common::PeerEvent)> consumer = [this, &peer_infos](auto stat) -> awaitable<void> {
+                if (this->is_stopping()) {
+                    co_return;
+                }
+
+                auto peer_id = stat.peer_public_key->serialized();
+                std::string event;
                 std::string info;
-                if (stat.event_id() == sentry::PeerEvent::Connect) {
+                if (stat.event_id == silkworm::sentry::api::api_common::PeerEventId::kAdded) {
                     event = "connected";
                     active_peers_++;
 
-                    info = request_peer_info(peerId);
-                    peer_infos[peerId] = info;
+                    info = co_await request_peer_info_async(peer_id);
+                    peer_infos[peer_id] = info;
                 } else {
                     event = "disconnected";
                     if (active_peers_ > 0) active_peers_--;
 
-                    info = peer_infos[peerId];
-                    peer_infos.erase(peerId);
+                    info = peer_infos[peer_id];
+                    peer_infos.erase(peer_id);
                 }
 
-                log::Info("SentryClient") << "Peer " << human_readable_id(peerId) << " " << event
-                                          << ", active " << active_peers_
-                                          << ", info: " << info;
-            }
+                log::Info(kLogTitle) << "Peer " << human_readable_id(peer_id)
+                                     << " " << event
+                                     << ", active " << active_peers()
+                                     << ", info: " << info;
+            };
+
+            co_spawn(io_context_, sentry_client_->service()->peer_events(consumer), use_future).get();
 
         } catch (const std::exception& e) {
-            if (!is_stopping()) log::Warning("SentryClient") << "exception: " << e.what();
+            if (!is_stopping()) log::Warning(kLogTitle) << "exception: " << e.what();
         }
     }
 
-    log::Warning("SentryClient") << "stats loop is stopping...";
+    log::Warning(kLogTitle) << "stats loop is stopping...";
     stop();
 }
 
 uint64_t SentryClient::count_active_peers() {
-    rpc::PeerCount rpc;
-
-    rpc.timeout(std::chrono::seconds(1));
-    rpc.do_not_throw_on_failure();
-
-    exec_remotely(rpc);
-
-    if (!rpc.status().ok()) {
-        SILK_TRACE << "Failure of rpc PeerCount: " << rpc.status().error_message();
-        return 0;
-    }
-
-    sentry::PeerCountReply peers = rpc.reply();
-    active_peers_.store(peers.count());
-
-    return peers.count();
+    size_t peer_count = co_spawn(io_context_, sentry_client_->service()->peer_count(), use_future).get();
+    active_peers_.store(peer_count);
+    return peer_count;
 }
 
-std::string SentryClient::request_peer_info(PeerId id) {
-    rpc::PeerById rpc(id);
-    rpc.timeout(std::chrono::seconds(1));
-    rpc.do_not_throw_on_failure();
+boost::asio::awaitable<std::string> SentryClient::request_peer_info_async(PeerId peer_id) {
+    auto peer_public_key = sentry::common::EccPublicKey::deserialize(peer_id);
+    auto peer_info_opt = co_await sentry_client_->service()->peer_by_id(std::move(peer_public_key));
 
-    exec_remotely(rpc);
-
-    if (!rpc.status().ok()) {
-        SILK_TRACE << "Failure of rpc PeerById: " << rpc.status().error_message();
-        return "-info-retrieval-failure-";
+    if (!peer_info_opt) {
+        co_return "-info-not-found-";
+    } else {
+        auto peer_info = peer_info_opt.value();
+        std::string info = "client_id=" + peer_info.client_id + " / enode_url=" + peer_info.url.to_string();
+        co_return info;
     }
+}
 
-    sentry::PeerByIdReply reply = rpc.reply();
+std::string SentryClient::request_peer_info(PeerId peer_id) {
+    return co_spawn(io_context_, this->request_peer_info_async(std::move(peer_id)), use_future).get();
+}
 
-    if (!reply.has_peer()) return "-info-not-found-";
+boost::asio::awaitable<void> SentryClient::penalize_peer_async(PeerId peer_id, Penalty penalty) {
+    if (penalty == Penalty::NoPenalty) {
+        co_return;
+    }
+    auto peer_public_key = sentry::common::EccPublicKey::deserialize(peer_id);
+    co_await sentry_client_->service()->penalize_peer(std::move(peer_public_key));
+}
 
-    std::string info = "name=" + reply.peer().name() + " / enode=" + reply.peer().enode();
-
-    return info;
+void SentryClient::penalize_peer(PeerId peer_id, Penalty penalty) {
+    co_spawn(io_context_, this->penalize_peer_async(std::move(peer_id), penalty), use_future).get();
 }
 
 uint64_t SentryClient::active_peers() {
@@ -249,15 +356,7 @@ uint64_t SentryClient::active_peers() {
 
 bool SentryClient::stop() {
     bool expected = Stoppable::stop();
-    auto receive_messages = std::atomic_load(&receive_messages_);
-    if (receive_messages)
-        receive_messages->try_cancel();
-    auto receive_peer_stats = std::atomic_load(&receive_peer_stats_);
-    if (receive_peer_stats)
-        receive_peer_stats->try_cancel();
-    auto handshake = std::atomic_load(&handshake_);
-    if (handshake)
-        handshake->try_cancel();
+    // TODO: stop futures
     return expected;
 }
 

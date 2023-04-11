@@ -16,26 +16,16 @@
 
 #include "inbound_block_headers.hpp"
 
-#include <silkworm/core/common/cast.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/sync/internals/body_sequence.hpp>
 #include <silkworm/sync/internals/header_chain.hpp>
-#include <silkworm/sync/messages/outbound_get_block_headers.hpp>
-#include <silkworm/sync/rpc/peer_min_block.hpp>
-#include <silkworm/sync/rpc/penalize_peer.hpp>
+#include <silkworm/sync/sentry_client.hpp>
 
 namespace silkworm {
 
-InboundBlockHeaders::InboundBlockHeaders(const ::sentry::InboundMessage& msg) {
-    if (msg.id() != ::sentry::MessageId::BLOCK_HEADERS_66)
-        throw std::logic_error("InboundBlockHeaders received wrong InboundMessage");
-
-    peerId_ = bytes_from_H512(msg.peer_id());
-
-    ByteView data = string_view_to_byte_view(msg.data());  // copy for consumption
+InboundBlockHeaders::InboundBlockHeaders(ByteView data, PeerId peer_id)
+    : peerId_(std::move(peer_id)) {
     success_or_throw(rlp::decode(data, packet_));
-
     SILK_TRACE << "Received message " << *this;
 }
 
@@ -56,19 +46,11 @@ void InboundBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequence&, 
     if (penalty != Penalty::NoPenalty) {
         SILK_TRACE << "Replying to " << identify(*this) << " with penalize_peer";
         SILK_TRACE << "Penalizing " << PeerPenalization(penalty, peerId_);
-        rpc::PenalizePeer penalize_peer(peerId_, penalty);
-        penalize_peer.do_not_throw_on_failure();
-        sentry.exec_remotely(penalize_peer);
+        sentry.penalize_peer(peerId_, penalty);
     }
 
     SILK_TRACE << "Replying to " << identify(*this) << " with peer_min_block";
-    rpc::PeerMinBlock rpc(peerId_, highestBlock);
-    rpc.do_not_throw_on_failure();
-    sentry.exec_remotely(rpc);
-
-    if (!rpc.status().ok()) {
-        SILK_TRACE << "Failure of the replay to rpc " << identify(*this) << ": " << rpc.status().error_message();
-    }
+    sentry.peer_min_block(peerId_, highestBlock);
 }
 
 uint64_t InboundBlockHeaders::reqId() const { return packet_.requestId; }

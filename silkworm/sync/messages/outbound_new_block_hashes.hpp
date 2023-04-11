@@ -24,12 +24,18 @@ namespace silkworm {
 
 class OutboundNewBlockHashes : public OutboundMessage {
   public:
-    OutboundNewBlockHashes(bool is_first_sync);
+    explicit OutboundNewBlockHashes(bool is_first_sync);
 
-    std::string name() const override { return "OutboundNewBlockHashes"; }
-    std::string content() const override;
+    [[nodiscard]] std::string name() const override { return "OutboundNewBlockHashes"; }
+    [[nodiscard]] std::string content() const override;
 
     void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override;
+
+    [[nodiscard]] silkworm::sentry::eth::MessageId eth_message_id() const override {
+        return silkworm::sentry::eth::MessageId::kNewBlockHashes;
+    }
+
+    [[nodiscard]] Bytes message_data() const override;
 
   private:
     NewBlockHashesPacket packet_;

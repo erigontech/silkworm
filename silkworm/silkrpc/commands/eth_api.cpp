@@ -2035,9 +2035,9 @@ awaitable<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request
     const auto newest_block = params[1].get<std::string>();
     const auto reward_percentile = params[2].get<std::vector<uint64_t>>();
 
-    SILKRPC_LOG << "block_count: " << block_count 
-        << ", newest_block: " << newest_block
-        << ", reward_percentile size: " << reward_percentile.size() << "\n";
+    SILKRPC_LOG << "block_count: " << block_count
+                << ", newest_block: " << newest_block
+                << ", reward_percentile size: " << reward_percentile.size() << "\n";
 
     auto tx = co_await database_->begin();
 

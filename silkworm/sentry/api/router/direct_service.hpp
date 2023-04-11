@@ -45,7 +45,6 @@ class DirectService : public api_common::Service {
     boost::asio::awaitable<size_t> peer_count() override;
     boost::asio::awaitable<std::optional<api_common::PeerInfo>> peer_by_id(common::EccPublicKey public_key) override;
     boost::asio::awaitable<void> penalize_peer(common::EccPublicKey public_key) override;
-    boost::asio::awaitable<void> peer_useless(common::EccPublicKey public_key) override;
     boost::asio::awaitable<void> peer_events(std::function<boost::asio::awaitable<void>(api_common::PeerEvent)> consumer) override;
 
   private:

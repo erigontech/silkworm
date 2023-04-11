@@ -43,6 +43,12 @@ namespace remote {
 // Prefix: Has(k, prefix)
 // Amount: [from, INF) AND maximum N records
 //
+// Entity Naming:
+// State: simple table in db
+// InvertedIndex: supports range-scans
+// History: can return value of key K as of given TimeStamp. Doesn't know about latest/current value of key K. Returns NIL if K not changed after TimeStamp.
+// Domain: as History but also aware about latest/current value of key K.
+//
 // Provides methods to access key-value data
 class KV final {
  public:
@@ -91,7 +97,27 @@ class KV final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::SnapshotsReply>> PrepareAsyncSnapshots(::grpc::ClientContext* context, const ::remote::SnapshotsRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::SnapshotsReply>>(PrepareAsyncSnapshotsRaw(context, request, cq));
     }
+    // Range [from, to)
+    // Range(from, nil) means [from, EndOfTable)
+    // Range(nil, to)   means [StartOfTable, to)
+    // If orderAscend=false server expecting `from`<`to`. Example: Range("B", "A")
+    virtual ::grpc::Status Range(::grpc::ClientContext* context, const ::remote::RangeReq& request, ::remote::Pairs* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>> AsyncRange(::grpc::ClientContext* context, const ::remote::RangeReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>>(AsyncRangeRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>> PrepareAsyncRange(::grpc::ClientContext* context, const ::remote::RangeReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>>(PrepareAsyncRangeRaw(context, request, cq));
+    }
+    //    rpc Stream(RangeReq) returns (stream Pairs);
     // Temporal methods
+    virtual ::grpc::Status DomainGet(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::remote::DomainGetReply* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::DomainGetReply>> AsyncDomainGet(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::DomainGetReply>>(AsyncDomainGetRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::DomainGetReply>> PrepareAsyncDomainGet(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::DomainGetReply>>(PrepareAsyncDomainGetRaw(context, request, cq));
+    }
+    // can return latest value or as of given timestamp
     virtual ::grpc::Status HistoryGet(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::remote::HistoryGetReply* response) = 0;
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistoryGetReply>> AsyncHistoryGet(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistoryGetReply>>(AsyncHistoryGetRaw(context, request, cq));
@@ -99,14 +125,26 @@ class KV final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistoryGetReply>> PrepareAsyncHistoryGet(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistoryGetReply>>(PrepareAsyncHistoryGetRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientReaderInterface< ::remote::IndexRangeReply>> IndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request) {
-      return std::unique_ptr< ::grpc::ClientReaderInterface< ::remote::IndexRangeReply>>(IndexRangeRaw(context, request));
+    virtual ::grpc::Status IndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::remote::IndexRangeReply* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::IndexRangeReply>> AsyncIndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::IndexRangeReply>>(AsyncIndexRangeRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::remote::IndexRangeReply>> AsyncIndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq, void* tag) {
-      return std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::remote::IndexRangeReply>>(AsyncIndexRangeRaw(context, request, cq, tag));
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::IndexRangeReply>> PrepareAsyncIndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::IndexRangeReply>>(PrepareAsyncIndexRangeRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::remote::IndexRangeReply>> PrepareAsyncIndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::remote::IndexRangeReply>>(PrepareAsyncIndexRangeRaw(context, request, cq));
+    virtual ::grpc::Status HistoryRange(::grpc::ClientContext* context, const ::remote::HistoryRangeReq& request, ::remote::Pairs* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>> AsyncHistoryRange(::grpc::ClientContext* context, const ::remote::HistoryRangeReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>>(AsyncHistoryRangeRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>> PrepareAsyncHistoryRange(::grpc::ClientContext* context, const ::remote::HistoryRangeReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>>(PrepareAsyncHistoryRangeRaw(context, request, cq));
+    }
+    virtual ::grpc::Status DomainRange(::grpc::ClientContext* context, const ::remote::DomainRangeReq& request, ::remote::Pairs* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>> AsyncDomainRange(::grpc::ClientContext* context, const ::remote::DomainRangeReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>>(AsyncDomainRangeRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>> PrepareAsyncDomainRange(::grpc::ClientContext* context, const ::remote::DomainRangeReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>>(PrepareAsyncDomainRangeRaw(context, request, cq));
     }
     class async_interface {
      public:
@@ -124,10 +162,25 @@ class KV final {
       // Snapshots returns list of current snapshot files. Then client can just open all of them.
       virtual void Snapshots(::grpc::ClientContext* context, const ::remote::SnapshotsRequest* request, ::remote::SnapshotsReply* response, std::function<void(::grpc::Status)>) = 0;
       virtual void Snapshots(::grpc::ClientContext* context, const ::remote::SnapshotsRequest* request, ::remote::SnapshotsReply* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      // Range [from, to)
+      // Range(from, nil) means [from, EndOfTable)
+      // Range(nil, to)   means [StartOfTable, to)
+      // If orderAscend=false server expecting `from`<`to`. Example: Range("B", "A")
+      virtual void Range(::grpc::ClientContext* context, const ::remote::RangeReq* request, ::remote::Pairs* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void Range(::grpc::ClientContext* context, const ::remote::RangeReq* request, ::remote::Pairs* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      //    rpc Stream(RangeReq) returns (stream Pairs);
       // Temporal methods
+      virtual void DomainGet(::grpc::ClientContext* context, const ::remote::DomainGetReq* request, ::remote::DomainGetReply* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void DomainGet(::grpc::ClientContext* context, const ::remote::DomainGetReq* request, ::remote::DomainGetReply* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      // can return latest value or as of given timestamp
       virtual void HistoryGet(::grpc::ClientContext* context, const ::remote::HistoryGetReq* request, ::remote::HistoryGetReply* response, std::function<void(::grpc::Status)>) = 0;
       virtual void HistoryGet(::grpc::ClientContext* context, const ::remote::HistoryGetReq* request, ::remote::HistoryGetReply* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      virtual void IndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq* request, ::grpc::ClientReadReactor< ::remote::IndexRangeReply>* reactor) = 0;
+      virtual void IndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq* request, ::remote::IndexRangeReply* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void IndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq* request, ::remote::IndexRangeReply* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      virtual void HistoryRange(::grpc::ClientContext* context, const ::remote::HistoryRangeReq* request, ::remote::Pairs* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void HistoryRange(::grpc::ClientContext* context, const ::remote::HistoryRangeReq* request, ::remote::Pairs* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      virtual void DomainRange(::grpc::ClientContext* context, const ::remote::DomainRangeReq* request, ::remote::Pairs* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void DomainRange(::grpc::ClientContext* context, const ::remote::DomainRangeReq* request, ::remote::Pairs* response, ::grpc::ClientUnaryReactor* reactor) = 0;
     };
     typedef class async_interface experimental_async_interface;
     virtual class async_interface* async() { return nullptr; }
@@ -143,11 +196,18 @@ class KV final {
     virtual ::grpc::ClientAsyncReaderInterface< ::remote::StateChangeBatch>* PrepareAsyncStateChangesRaw(::grpc::ClientContext* context, const ::remote::StateChangeRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::SnapshotsReply>* AsyncSnapshotsRaw(::grpc::ClientContext* context, const ::remote::SnapshotsRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::SnapshotsReply>* PrepareAsyncSnapshotsRaw(::grpc::ClientContext* context, const ::remote::SnapshotsRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>* AsyncRangeRaw(::grpc::ClientContext* context, const ::remote::RangeReq& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>* PrepareAsyncRangeRaw(::grpc::ClientContext* context, const ::remote::RangeReq& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::DomainGetReply>* AsyncDomainGetRaw(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::DomainGetReply>* PrepareAsyncDomainGetRaw(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistoryGetReply>* AsyncHistoryGetRaw(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::HistoryGetReply>* PrepareAsyncHistoryGetRaw(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientReaderInterface< ::remote::IndexRangeReply>* IndexRangeRaw(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request) = 0;
-    virtual ::grpc::ClientAsyncReaderInterface< ::remote::IndexRangeReply>* AsyncIndexRangeRaw(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq, void* tag) = 0;
-    virtual ::grpc::ClientAsyncReaderInterface< ::remote::IndexRangeReply>* PrepareAsyncIndexRangeRaw(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::IndexRangeReply>* AsyncIndexRangeRaw(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::IndexRangeReply>* PrepareAsyncIndexRangeRaw(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>* AsyncHistoryRangeRaw(::grpc::ClientContext* context, const ::remote::HistoryRangeReq& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>* PrepareAsyncHistoryRangeRaw(::grpc::ClientContext* context, const ::remote::HistoryRangeReq& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>* AsyncDomainRangeRaw(::grpc::ClientContext* context, const ::remote::DomainRangeReq& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::Pairs>* PrepareAsyncDomainRangeRaw(::grpc::ClientContext* context, const ::remote::DomainRangeReq& request, ::grpc::CompletionQueue* cq) = 0;
   };
   class Stub final : public StubInterface {
    public:
@@ -184,6 +244,20 @@ class KV final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::SnapshotsReply>> PrepareAsyncSnapshots(::grpc::ClientContext* context, const ::remote::SnapshotsRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::SnapshotsReply>>(PrepareAsyncSnapshotsRaw(context, request, cq));
     }
+    ::grpc::Status Range(::grpc::ClientContext* context, const ::remote::RangeReq& request, ::remote::Pairs* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::Pairs>> AsyncRange(::grpc::ClientContext* context, const ::remote::RangeReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::Pairs>>(AsyncRangeRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::Pairs>> PrepareAsyncRange(::grpc::ClientContext* context, const ::remote::RangeReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::Pairs>>(PrepareAsyncRangeRaw(context, request, cq));
+    }
+    ::grpc::Status DomainGet(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::remote::DomainGetReply* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::DomainGetReply>> AsyncDomainGet(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::DomainGetReply>>(AsyncDomainGetRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::DomainGetReply>> PrepareAsyncDomainGet(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::DomainGetReply>>(PrepareAsyncDomainGetRaw(context, request, cq));
+    }
     ::grpc::Status HistoryGet(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::remote::HistoryGetReply* response) override;
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::HistoryGetReply>> AsyncHistoryGet(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::HistoryGetReply>>(AsyncHistoryGetRaw(context, request, cq));
@@ -191,14 +265,26 @@ class KV final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::HistoryGetReply>> PrepareAsyncHistoryGet(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::HistoryGetReply>>(PrepareAsyncHistoryGetRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientReader< ::remote::IndexRangeReply>> IndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request) {
-      return std::unique_ptr< ::grpc::ClientReader< ::remote::IndexRangeReply>>(IndexRangeRaw(context, request));
+    ::grpc::Status IndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::remote::IndexRangeReply* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::IndexRangeReply>> AsyncIndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::IndexRangeReply>>(AsyncIndexRangeRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientAsyncReader< ::remote::IndexRangeReply>> AsyncIndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq, void* tag) {
-      return std::unique_ptr< ::grpc::ClientAsyncReader< ::remote::IndexRangeReply>>(AsyncIndexRangeRaw(context, request, cq, tag));
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::IndexRangeReply>> PrepareAsyncIndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::IndexRangeReply>>(PrepareAsyncIndexRangeRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientAsyncReader< ::remote::IndexRangeReply>> PrepareAsyncIndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncReader< ::remote::IndexRangeReply>>(PrepareAsyncIndexRangeRaw(context, request, cq));
+    ::grpc::Status HistoryRange(::grpc::ClientContext* context, const ::remote::HistoryRangeReq& request, ::remote::Pairs* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::Pairs>> AsyncHistoryRange(::grpc::ClientContext* context, const ::remote::HistoryRangeReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::Pairs>>(AsyncHistoryRangeRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::Pairs>> PrepareAsyncHistoryRange(::grpc::ClientContext* context, const ::remote::HistoryRangeReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::Pairs>>(PrepareAsyncHistoryRangeRaw(context, request, cq));
+    }
+    ::grpc::Status DomainRange(::grpc::ClientContext* context, const ::remote::DomainRangeReq& request, ::remote::Pairs* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::Pairs>> AsyncDomainRange(::grpc::ClientContext* context, const ::remote::DomainRangeReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::Pairs>>(AsyncDomainRangeRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::Pairs>> PrepareAsyncDomainRange(::grpc::ClientContext* context, const ::remote::DomainRangeReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::Pairs>>(PrepareAsyncDomainRangeRaw(context, request, cq));
     }
     class async final :
       public StubInterface::async_interface {
@@ -209,9 +295,18 @@ class KV final {
       void StateChanges(::grpc::ClientContext* context, const ::remote::StateChangeRequest* request, ::grpc::ClientReadReactor< ::remote::StateChangeBatch>* reactor) override;
       void Snapshots(::grpc::ClientContext* context, const ::remote::SnapshotsRequest* request, ::remote::SnapshotsReply* response, std::function<void(::grpc::Status)>) override;
       void Snapshots(::grpc::ClientContext* context, const ::remote::SnapshotsRequest* request, ::remote::SnapshotsReply* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void Range(::grpc::ClientContext* context, const ::remote::RangeReq* request, ::remote::Pairs* response, std::function<void(::grpc::Status)>) override;
+      void Range(::grpc::ClientContext* context, const ::remote::RangeReq* request, ::remote::Pairs* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void DomainGet(::grpc::ClientContext* context, const ::remote::DomainGetReq* request, ::remote::DomainGetReply* response, std::function<void(::grpc::Status)>) override;
+      void DomainGet(::grpc::ClientContext* context, const ::remote::DomainGetReq* request, ::remote::DomainGetReply* response, ::grpc::ClientUnaryReactor* reactor) override;
       void HistoryGet(::grpc::ClientContext* context, const ::remote::HistoryGetReq* request, ::remote::HistoryGetReply* response, std::function<void(::grpc::Status)>) override;
       void HistoryGet(::grpc::ClientContext* context, const ::remote::HistoryGetReq* request, ::remote::HistoryGetReply* response, ::grpc::ClientUnaryReactor* reactor) override;
-      void IndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq* request, ::grpc::ClientReadReactor< ::remote::IndexRangeReply>* reactor) override;
+      void IndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq* request, ::remote::IndexRangeReply* response, std::function<void(::grpc::Status)>) override;
+      void IndexRange(::grpc::ClientContext* context, const ::remote::IndexRangeReq* request, ::remote::IndexRangeReply* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void HistoryRange(::grpc::ClientContext* context, const ::remote::HistoryRangeReq* request, ::remote::Pairs* response, std::function<void(::grpc::Status)>) override;
+      void HistoryRange(::grpc::ClientContext* context, const ::remote::HistoryRangeReq* request, ::remote::Pairs* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void DomainRange(::grpc::ClientContext* context, const ::remote::DomainRangeReq* request, ::remote::Pairs* response, std::function<void(::grpc::Status)>) override;
+      void DomainRange(::grpc::ClientContext* context, const ::remote::DomainRangeReq* request, ::remote::Pairs* response, ::grpc::ClientUnaryReactor* reactor) override;
      private:
       friend class Stub;
       explicit async(Stub* stub): stub_(stub) { }
@@ -233,17 +328,28 @@ class KV final {
     ::grpc::ClientAsyncReader< ::remote::StateChangeBatch>* PrepareAsyncStateChangesRaw(::grpc::ClientContext* context, const ::remote::StateChangeRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::remote::SnapshotsReply>* AsyncSnapshotsRaw(::grpc::ClientContext* context, const ::remote::SnapshotsRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::remote::SnapshotsReply>* PrepareAsyncSnapshotsRaw(::grpc::ClientContext* context, const ::remote::SnapshotsRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::remote::Pairs>* AsyncRangeRaw(::grpc::ClientContext* context, const ::remote::RangeReq& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::remote::Pairs>* PrepareAsyncRangeRaw(::grpc::ClientContext* context, const ::remote::RangeReq& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::remote::DomainGetReply>* AsyncDomainGetRaw(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::remote::DomainGetReply>* PrepareAsyncDomainGetRaw(::grpc::ClientContext* context, const ::remote::DomainGetReq& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::remote::HistoryGetReply>* AsyncHistoryGetRaw(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::remote::HistoryGetReply>* PrepareAsyncHistoryGetRaw(::grpc::ClientContext* context, const ::remote::HistoryGetReq& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientReader< ::remote::IndexRangeReply>* IndexRangeRaw(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request) override;
-    ::grpc::ClientAsyncReader< ::remote::IndexRangeReply>* AsyncIndexRangeRaw(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq, void* tag) override;
-    ::grpc::ClientAsyncReader< ::remote::IndexRangeReply>* PrepareAsyncIndexRangeRaw(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::remote::IndexRangeReply>* AsyncIndexRangeRaw(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::remote::IndexRangeReply>* PrepareAsyncIndexRangeRaw(::grpc::ClientContext* context, const ::remote::IndexRangeReq& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::remote::Pairs>* AsyncHistoryRangeRaw(::grpc::ClientContext* context, const ::remote::HistoryRangeReq& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::remote::Pairs>* PrepareAsyncHistoryRangeRaw(::grpc::ClientContext* context, const ::remote::HistoryRangeReq& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::remote::Pairs>* AsyncDomainRangeRaw(::grpc::ClientContext* context, const ::remote::DomainRangeReq& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::remote::Pairs>* PrepareAsyncDomainRangeRaw(::grpc::ClientContext* context, const ::remote::DomainRangeReq& request, ::grpc::CompletionQueue* cq) override;
     const ::grpc::internal::RpcMethod rpcmethod_Version_;
     const ::grpc::internal::RpcMethod rpcmethod_Tx_;
     const ::grpc::internal::RpcMethod rpcmethod_StateChanges_;
     const ::grpc::internal::RpcMethod rpcmethod_Snapshots_;
+    const ::grpc::internal::RpcMethod rpcmethod_Range_;
+    const ::grpc::internal::RpcMethod rpcmethod_DomainGet_;
     const ::grpc::internal::RpcMethod rpcmethod_HistoryGet_;
     const ::grpc::internal::RpcMethod rpcmethod_IndexRange_;
+    const ::grpc::internal::RpcMethod rpcmethod_HistoryRange_;
+    const ::grpc::internal::RpcMethod rpcmethod_DomainRange_;
   };
   static std::unique_ptr<Stub> NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
 
@@ -262,9 +368,19 @@ class KV final {
     virtual ::grpc::Status StateChanges(::grpc::ServerContext* context, const ::remote::StateChangeRequest* request, ::grpc::ServerWriter< ::remote::StateChangeBatch>* writer);
     // Snapshots returns list of current snapshot files. Then client can just open all of them.
     virtual ::grpc::Status Snapshots(::grpc::ServerContext* context, const ::remote::SnapshotsRequest* request, ::remote::SnapshotsReply* response);
+    // Range [from, to)
+    // Range(from, nil) means [from, EndOfTable)
+    // Range(nil, to)   means [StartOfTable, to)
+    // If orderAscend=false server expecting `from`<`to`. Example: Range("B", "A")
+    virtual ::grpc::Status Range(::grpc::ServerContext* context, const ::remote::RangeReq* request, ::remote::Pairs* response);
+    //    rpc Stream(RangeReq) returns (stream Pairs);
     // Temporal methods
+    virtual ::grpc::Status DomainGet(::grpc::ServerContext* context, const ::remote::DomainGetReq* request, ::remote::DomainGetReply* response);
+    // can return latest value or as of given timestamp
     virtual ::grpc::Status HistoryGet(::grpc::ServerContext* context, const ::remote::HistoryGetReq* request, ::remote::HistoryGetReply* response);
-    virtual ::grpc::Status IndexRange(::grpc::ServerContext* context, const ::remote::IndexRangeReq* request, ::grpc::ServerWriter< ::remote::IndexRangeReply>* writer);
+    virtual ::grpc::Status IndexRange(::grpc::ServerContext* context, const ::remote::IndexRangeReq* request, ::remote::IndexRangeReply* response);
+    virtual ::grpc::Status HistoryRange(::grpc::ServerContext* context, const ::remote::HistoryRangeReq* request, ::remote::Pairs* response);
+    virtual ::grpc::Status DomainRange(::grpc::ServerContext* context, const ::remote::DomainRangeReq* request, ::remote::Pairs* response);
   };
   template <class BaseClass>
   class WithAsyncMethod_Version : public BaseClass {
@@ -347,12 +463,52 @@ class KV final {
     }
   };
   template <class BaseClass>
+  class WithAsyncMethod_Range : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_Range() {
+      ::grpc::Service::MarkMethodAsync(4);
+    }
+    ~WithAsyncMethod_Range() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Range(::grpc::ServerContext* /*context*/, const ::remote::RangeReq* /*request*/, ::remote::Pairs* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestRange(::grpc::ServerContext* context, ::remote::RangeReq* request, ::grpc::ServerAsyncResponseWriter< ::remote::Pairs>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithAsyncMethod_DomainGet : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_DomainGet() {
+      ::grpc::Service::MarkMethodAsync(5);
+    }
+    ~WithAsyncMethod_DomainGet() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status DomainGet(::grpc::ServerContext* /*context*/, const ::remote::DomainGetReq* /*request*/, ::remote::DomainGetReply* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestDomainGet(::grpc::ServerContext* context, ::remote::DomainGetReq* request, ::grpc::ServerAsyncResponseWriter< ::remote::DomainGetReply>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(5, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
   class WithAsyncMethod_HistoryGet : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_HistoryGet() {
-      ::grpc::Service::MarkMethodAsync(4);
+      ::grpc::Service::MarkMethodAsync(6);
     }
     ~WithAsyncMethod_HistoryGet() override {
       BaseClassMustBeDerivedFromService(this);
@@ -363,7 +519,7 @@ class KV final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestHistoryGet(::grpc::ServerContext* context, ::remote::HistoryGetReq* request, ::grpc::ServerAsyncResponseWriter< ::remote::HistoryGetReply>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(6, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -372,21 +528,61 @@ class KV final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_IndexRange() {
-      ::grpc::Service::MarkMethodAsync(5);
+      ::grpc::Service::MarkMethodAsync(7);
     }
     ~WithAsyncMethod_IndexRange() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status IndexRange(::grpc::ServerContext* /*context*/, const ::remote::IndexRangeReq* /*request*/, ::grpc::ServerWriter< ::remote::IndexRangeReply>* /*writer*/) override {
+    ::grpc::Status IndexRange(::grpc::ServerContext* /*context*/, const ::remote::IndexRangeReq* /*request*/, ::remote::IndexRangeReply* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    void RequestIndexRange(::grpc::ServerContext* context, ::remote::IndexRangeReq* request, ::grpc::ServerAsyncWriter< ::remote::IndexRangeReply>* writer, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncServerStreaming(5, context, request, writer, new_call_cq, notification_cq, tag);
+    void RequestIndexRange(::grpc::ServerContext* context, ::remote::IndexRangeReq* request, ::grpc::ServerAsyncResponseWriter< ::remote::IndexRangeReply>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(7, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_Version<WithAsyncMethod_Tx<WithAsyncMethod_StateChanges<WithAsyncMethod_Snapshots<WithAsyncMethod_HistoryGet<WithAsyncMethod_IndexRange<Service > > > > > > AsyncService;
+  template <class BaseClass>
+  class WithAsyncMethod_HistoryRange : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_HistoryRange() {
+      ::grpc::Service::MarkMethodAsync(8);
+    }
+    ~WithAsyncMethod_HistoryRange() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status HistoryRange(::grpc::ServerContext* /*context*/, const ::remote::HistoryRangeReq* /*request*/, ::remote::Pairs* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestHistoryRange(::grpc::ServerContext* context, ::remote::HistoryRangeReq* request, ::grpc::ServerAsyncResponseWriter< ::remote::Pairs>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(8, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithAsyncMethod_DomainRange : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_DomainRange() {
+      ::grpc::Service::MarkMethodAsync(9);
+    }
+    ~WithAsyncMethod_DomainRange() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status DomainRange(::grpc::ServerContext* /*context*/, const ::remote::DomainRangeReq* /*request*/, ::remote::Pairs* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestDomainRange(::grpc::ServerContext* context, ::remote::DomainRangeReq* request, ::grpc::ServerAsyncResponseWriter< ::remote::Pairs>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(9, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  typedef WithAsyncMethod_Version<WithAsyncMethod_Tx<WithAsyncMethod_StateChanges<WithAsyncMethod_Snapshots<WithAsyncMethod_Range<WithAsyncMethod_DomainGet<WithAsyncMethod_HistoryGet<WithAsyncMethod_IndexRange<WithAsyncMethod_HistoryRange<WithAsyncMethod_DomainRange<Service > > > > > > > > > > AsyncService;
   template <class BaseClass>
   class WithCallbackMethod_Version : public BaseClass {
    private:
@@ -487,18 +683,72 @@ class KV final {
       ::grpc::CallbackServerContext* /*context*/, const ::remote::SnapshotsRequest* /*request*/, ::remote::SnapshotsReply* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
+  class WithCallbackMethod_Range : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_Range() {
+      ::grpc::Service::MarkMethodCallback(4,
+          new ::grpc::internal::CallbackUnaryHandler< ::remote::RangeReq, ::remote::Pairs>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::remote::RangeReq* request, ::remote::Pairs* response) { return this->Range(context, request, response); }));}
+    void SetMessageAllocatorFor_Range(
+        ::grpc::MessageAllocator< ::remote::RangeReq, ::remote::Pairs>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(4);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::remote::RangeReq, ::remote::Pairs>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_Range() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Range(::grpc::ServerContext* /*context*/, const ::remote::RangeReq* /*request*/, ::remote::Pairs* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* Range(
+      ::grpc::CallbackServerContext* /*context*/, const ::remote::RangeReq* /*request*/, ::remote::Pairs* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_DomainGet : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_DomainGet() {
+      ::grpc::Service::MarkMethodCallback(5,
+          new ::grpc::internal::CallbackUnaryHandler< ::remote::DomainGetReq, ::remote::DomainGetReply>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::remote::DomainGetReq* request, ::remote::DomainGetReply* response) { return this->DomainGet(context, request, response); }));}
+    void SetMessageAllocatorFor_DomainGet(
+        ::grpc::MessageAllocator< ::remote::DomainGetReq, ::remote::DomainGetReply>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(5);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::remote::DomainGetReq, ::remote::DomainGetReply>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_DomainGet() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status DomainGet(::grpc::ServerContext* /*context*/, const ::remote::DomainGetReq* /*request*/, ::remote::DomainGetReply* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* DomainGet(
+      ::grpc::CallbackServerContext* /*context*/, const ::remote::DomainGetReq* /*request*/, ::remote::DomainGetReply* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
   class WithCallbackMethod_HistoryGet : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_HistoryGet() {
-      ::grpc::Service::MarkMethodCallback(4,
+      ::grpc::Service::MarkMethodCallback(6,
           new ::grpc::internal::CallbackUnaryHandler< ::remote::HistoryGetReq, ::remote::HistoryGetReply>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::remote::HistoryGetReq* request, ::remote::HistoryGetReply* response) { return this->HistoryGet(context, request, response); }));}
     void SetMessageAllocatorFor_HistoryGet(
         ::grpc::MessageAllocator< ::remote::HistoryGetReq, ::remote::HistoryGetReply>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(4);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(6);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::remote::HistoryGetReq, ::remote::HistoryGetReply>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -519,23 +769,82 @@ class KV final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_IndexRange() {
-      ::grpc::Service::MarkMethodCallback(5,
-          new ::grpc::internal::CallbackServerStreamingHandler< ::remote::IndexRangeReq, ::remote::IndexRangeReply>(
+      ::grpc::Service::MarkMethodCallback(7,
+          new ::grpc::internal::CallbackUnaryHandler< ::remote::IndexRangeReq, ::remote::IndexRangeReply>(
             [this](
-                   ::grpc::CallbackServerContext* context, const ::remote::IndexRangeReq* request) { return this->IndexRange(context, request); }));
+                   ::grpc::CallbackServerContext* context, const ::remote::IndexRangeReq* request, ::remote::IndexRangeReply* response) { return this->IndexRange(context, request, response); }));}
+    void SetMessageAllocatorFor_IndexRange(
+        ::grpc::MessageAllocator< ::remote::IndexRangeReq, ::remote::IndexRangeReply>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(7);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::remote::IndexRangeReq, ::remote::IndexRangeReply>*>(handler)
+              ->SetMessageAllocator(allocator);
     }
     ~WithCallbackMethod_IndexRange() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status IndexRange(::grpc::ServerContext* /*context*/, const ::remote::IndexRangeReq* /*request*/, ::grpc::ServerWriter< ::remote::IndexRangeReply>* /*writer*/) override {
+    ::grpc::Status IndexRange(::grpc::ServerContext* /*context*/, const ::remote::IndexRangeReq* /*request*/, ::remote::IndexRangeReply* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    virtual ::grpc::ServerWriteReactor< ::remote::IndexRangeReply>* IndexRange(
-      ::grpc::CallbackServerContext* /*context*/, const ::remote::IndexRangeReq* /*request*/)  { return nullptr; }
+    virtual ::grpc::ServerUnaryReactor* IndexRange(
+      ::grpc::CallbackServerContext* /*context*/, const ::remote::IndexRangeReq* /*request*/, ::remote::IndexRangeReply* /*response*/)  { return nullptr; }
   };
-  typedef WithCallbackMethod_Version<WithCallbackMethod_Tx<WithCallbackMethod_StateChanges<WithCallbackMethod_Snapshots<WithCallbackMethod_HistoryGet<WithCallbackMethod_IndexRange<Service > > > > > > CallbackService;
+  template <class BaseClass>
+  class WithCallbackMethod_HistoryRange : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_HistoryRange() {
+      ::grpc::Service::MarkMethodCallback(8,
+          new ::grpc::internal::CallbackUnaryHandler< ::remote::HistoryRangeReq, ::remote::Pairs>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::remote::HistoryRangeReq* request, ::remote::Pairs* response) { return this->HistoryRange(context, request, response); }));}
+    void SetMessageAllocatorFor_HistoryRange(
+        ::grpc::MessageAllocator< ::remote::HistoryRangeReq, ::remote::Pairs>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(8);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::remote::HistoryRangeReq, ::remote::Pairs>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_HistoryRange() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status HistoryRange(::grpc::ServerContext* /*context*/, const ::remote::HistoryRangeReq* /*request*/, ::remote::Pairs* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* HistoryRange(
+      ::grpc::CallbackServerContext* /*context*/, const ::remote::HistoryRangeReq* /*request*/, ::remote::Pairs* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_DomainRange : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_DomainRange() {
+      ::grpc::Service::MarkMethodCallback(9,
+          new ::grpc::internal::CallbackUnaryHandler< ::remote::DomainRangeReq, ::remote::Pairs>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::remote::DomainRangeReq* request, ::remote::Pairs* response) { return this->DomainRange(context, request, response); }));}
+    void SetMessageAllocatorFor_DomainRange(
+        ::grpc::MessageAllocator< ::remote::DomainRangeReq, ::remote::Pairs>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(9);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::remote::DomainRangeReq, ::remote::Pairs>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_DomainRange() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status DomainRange(::grpc::ServerContext* /*context*/, const ::remote::DomainRangeReq* /*request*/, ::remote::Pairs* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* DomainRange(
+      ::grpc::CallbackServerContext* /*context*/, const ::remote::DomainRangeReq* /*request*/, ::remote::Pairs* /*response*/)  { return nullptr; }
+  };
+  typedef WithCallbackMethod_Version<WithCallbackMethod_Tx<WithCallbackMethod_StateChanges<WithCallbackMethod_Snapshots<WithCallbackMethod_Range<WithCallbackMethod_DomainGet<WithCallbackMethod_HistoryGet<WithCallbackMethod_IndexRange<WithCallbackMethod_HistoryRange<WithCallbackMethod_DomainRange<Service > > > > > > > > > > CallbackService;
   typedef CallbackService ExperimentalCallbackService;
   template <class BaseClass>
   class WithGenericMethod_Version : public BaseClass {
@@ -606,12 +915,46 @@ class KV final {
     }
   };
   template <class BaseClass>
+  class WithGenericMethod_Range : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_Range() {
+      ::grpc::Service::MarkMethodGeneric(4);
+    }
+    ~WithGenericMethod_Range() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Range(::grpc::ServerContext* /*context*/, const ::remote::RangeReq* /*request*/, ::remote::Pairs* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithGenericMethod_DomainGet : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_DomainGet() {
+      ::grpc::Service::MarkMethodGeneric(5);
+    }
+    ~WithGenericMethod_DomainGet() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status DomainGet(::grpc::ServerContext* /*context*/, const ::remote::DomainGetReq* /*request*/, ::remote::DomainGetReply* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
   class WithGenericMethod_HistoryGet : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_HistoryGet() {
-      ::grpc::Service::MarkMethodGeneric(4);
+      ::grpc::Service::MarkMethodGeneric(6);
     }
     ~WithGenericMethod_HistoryGet() override {
       BaseClassMustBeDerivedFromService(this);
@@ -628,13 +971,47 @@ class KV final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_IndexRange() {
-      ::grpc::Service::MarkMethodGeneric(5);
+      ::grpc::Service::MarkMethodGeneric(7);
     }
     ~WithGenericMethod_IndexRange() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status IndexRange(::grpc::ServerContext* /*context*/, const ::remote::IndexRangeReq* /*request*/, ::grpc::ServerWriter< ::remote::IndexRangeReply>* /*writer*/) override {
+    ::grpc::Status IndexRange(::grpc::ServerContext* /*context*/, const ::remote::IndexRangeReq* /*request*/, ::remote::IndexRangeReply* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithGenericMethod_HistoryRange : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_HistoryRange() {
+      ::grpc::Service::MarkMethodGeneric(8);
+    }
+    ~WithGenericMethod_HistoryRange() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status HistoryRange(::grpc::ServerContext* /*context*/, const ::remote::HistoryRangeReq* /*request*/, ::remote::Pairs* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithGenericMethod_DomainRange : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_DomainRange() {
+      ::grpc::Service::MarkMethodGeneric(9);
+    }
+    ~WithGenericMethod_DomainRange() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status DomainRange(::grpc::ServerContext* /*context*/, const ::remote::DomainRangeReq* /*request*/, ::remote::Pairs* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -720,12 +1097,52 @@ class KV final {
     }
   };
   template <class BaseClass>
+  class WithRawMethod_Range : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_Range() {
+      ::grpc::Service::MarkMethodRaw(4);
+    }
+    ~WithRawMethod_Range() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Range(::grpc::ServerContext* /*context*/, const ::remote::RangeReq* /*request*/, ::remote::Pairs* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestRange(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_DomainGet : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_DomainGet() {
+      ::grpc::Service::MarkMethodRaw(5);
+    }
+    ~WithRawMethod_DomainGet() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status DomainGet(::grpc::ServerContext* /*context*/, const ::remote::DomainGetReq* /*request*/, ::remote::DomainGetReply* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestDomainGet(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(5, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
   class WithRawMethod_HistoryGet : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_HistoryGet() {
-      ::grpc::Service::MarkMethodRaw(4);
+      ::grpc::Service::MarkMethodRaw(6);
     }
     ~WithRawMethod_HistoryGet() override {
       BaseClassMustBeDerivedFromService(this);
@@ -736,7 +1153,7 @@ class KV final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestHistoryGet(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(6, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -745,18 +1162,58 @@ class KV final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_IndexRange() {
-      ::grpc::Service::MarkMethodRaw(5);
+      ::grpc::Service::MarkMethodRaw(7);
     }
     ~WithRawMethod_IndexRange() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status IndexRange(::grpc::ServerContext* /*context*/, const ::remote::IndexRangeReq* /*request*/, ::grpc::ServerWriter< ::remote::IndexRangeReply>* /*writer*/) override {
+    ::grpc::Status IndexRange(::grpc::ServerContext* /*context*/, const ::remote::IndexRangeReq* /*request*/, ::remote::IndexRangeReply* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    void RequestIndexRange(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncWriter< ::grpc::ByteBuffer>* writer, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncServerStreaming(5, context, request, writer, new_call_cq, notification_cq, tag);
+    void RequestIndexRange(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(7, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_HistoryRange : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_HistoryRange() {
+      ::grpc::Service::MarkMethodRaw(8);
+    }
+    ~WithRawMethod_HistoryRange() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status HistoryRange(::grpc::ServerContext* /*context*/, const ::remote::HistoryRangeReq* /*request*/, ::remote::Pairs* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestHistoryRange(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(8, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_DomainRange : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_DomainRange() {
+      ::grpc::Service::MarkMethodRaw(9);
+    }
+    ~WithRawMethod_DomainRange() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status DomainRange(::grpc::ServerContext* /*context*/, const ::remote::DomainRangeReq* /*request*/, ::remote::Pairs* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestDomainRange(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(9, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -849,12 +1306,56 @@ class KV final {
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
+  class WithRawCallbackMethod_Range : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_Range() {
+      ::grpc::Service::MarkMethodRawCallback(4,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->Range(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_Range() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Range(::grpc::ServerContext* /*context*/, const ::remote::RangeReq* /*request*/, ::remote::Pairs* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* Range(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_DomainGet : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_DomainGet() {
+      ::grpc::Service::MarkMethodRawCallback(5,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->DomainGet(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_DomainGet() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status DomainGet(::grpc::ServerContext* /*context*/, const ::remote::DomainGetReq* /*request*/, ::remote::DomainGetReply* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* DomainGet(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
   class WithRawCallbackMethod_HistoryGet : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_HistoryGet() {
-      ::grpc::Service::MarkMethodRawCallback(4,
+      ::grpc::Service::MarkMethodRawCallback(6,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->HistoryGet(context, request, response); }));
@@ -876,21 +1377,65 @@ class KV final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_IndexRange() {
-      ::grpc::Service::MarkMethodRawCallback(5,
-          new ::grpc::internal::CallbackServerStreamingHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+      ::grpc::Service::MarkMethodRawCallback(7,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
-                   ::grpc::CallbackServerContext* context, const::grpc::ByteBuffer* request) { return this->IndexRange(context, request); }));
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->IndexRange(context, request, response); }));
     }
     ~WithRawCallbackMethod_IndexRange() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status IndexRange(::grpc::ServerContext* /*context*/, const ::remote::IndexRangeReq* /*request*/, ::grpc::ServerWriter< ::remote::IndexRangeReply>* /*writer*/) override {
+    ::grpc::Status IndexRange(::grpc::ServerContext* /*context*/, const ::remote::IndexRangeReq* /*request*/, ::remote::IndexRangeReply* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    virtual ::grpc::ServerWriteReactor< ::grpc::ByteBuffer>* IndexRange(
-      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/)  { return nullptr; }
+    virtual ::grpc::ServerUnaryReactor* IndexRange(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_HistoryRange : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_HistoryRange() {
+      ::grpc::Service::MarkMethodRawCallback(8,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->HistoryRange(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_HistoryRange() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status HistoryRange(::grpc::ServerContext* /*context*/, const ::remote::HistoryRangeReq* /*request*/, ::remote::Pairs* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* HistoryRange(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_DomainRange : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_DomainRange() {
+      ::grpc::Service::MarkMethodRawCallback(9,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->DomainRange(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_DomainRange() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status DomainRange(::grpc::ServerContext* /*context*/, const ::remote::DomainRangeReq* /*request*/, ::remote::Pairs* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* DomainRange(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_Version : public BaseClass {
@@ -947,12 +1492,66 @@ class KV final {
     virtual ::grpc::Status StreamedSnapshots(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::remote::SnapshotsRequest,::remote::SnapshotsReply>* server_unary_streamer) = 0;
   };
   template <class BaseClass>
+  class WithStreamedUnaryMethod_Range : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_Range() {
+      ::grpc::Service::MarkMethodStreamed(4,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::remote::RangeReq, ::remote::Pairs>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::remote::RangeReq, ::remote::Pairs>* streamer) {
+                       return this->StreamedRange(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_Range() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status Range(::grpc::ServerContext* /*context*/, const ::remote::RangeReq* /*request*/, ::remote::Pairs* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedRange(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::remote::RangeReq,::remote::Pairs>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_DomainGet : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_DomainGet() {
+      ::grpc::Service::MarkMethodStreamed(5,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::remote::DomainGetReq, ::remote::DomainGetReply>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::remote::DomainGetReq, ::remote::DomainGetReply>* streamer) {
+                       return this->StreamedDomainGet(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_DomainGet() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status DomainGet(::grpc::ServerContext* /*context*/, const ::remote::DomainGetReq* /*request*/, ::remote::DomainGetReply* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedDomainGet(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::remote::DomainGetReq,::remote::DomainGetReply>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
   class WithStreamedUnaryMethod_HistoryGet : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_HistoryGet() {
-      ::grpc::Service::MarkMethodStreamed(4,
+      ::grpc::Service::MarkMethodStreamed(6,
         new ::grpc::internal::StreamedUnaryHandler<
           ::remote::HistoryGetReq, ::remote::HistoryGetReply>(
             [this](::grpc::ServerContext* context,
@@ -973,7 +1572,88 @@ class KV final {
     // replace default version of method with streamed unary
     virtual ::grpc::Status StreamedHistoryGet(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::remote::HistoryGetReq,::remote::HistoryGetReply>* server_unary_streamer) = 0;
   };
-  typedef WithStreamedUnaryMethod_Version<WithStreamedUnaryMethod_Snapshots<WithStreamedUnaryMethod_HistoryGet<Service > > > StreamedUnaryService;
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_IndexRange : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_IndexRange() {
+      ::grpc::Service::MarkMethodStreamed(7,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::remote::IndexRangeReq, ::remote::IndexRangeReply>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::remote::IndexRangeReq, ::remote::IndexRangeReply>* streamer) {
+                       return this->StreamedIndexRange(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_IndexRange() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status IndexRange(::grpc::ServerContext* /*context*/, const ::remote::IndexRangeReq* /*request*/, ::remote::IndexRangeReply* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedIndexRange(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::remote::IndexRangeReq,::remote::IndexRangeReply>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_HistoryRange : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_HistoryRange() {
+      ::grpc::Service::MarkMethodStreamed(8,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::remote::HistoryRangeReq, ::remote::Pairs>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::remote::HistoryRangeReq, ::remote::Pairs>* streamer) {
+                       return this->StreamedHistoryRange(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_HistoryRange() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status HistoryRange(::grpc::ServerContext* /*context*/, const ::remote::HistoryRangeReq* /*request*/, ::remote::Pairs* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedHistoryRange(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::remote::HistoryRangeReq,::remote::Pairs>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_DomainRange : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_DomainRange() {
+      ::grpc::Service::MarkMethodStreamed(9,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::remote::DomainRangeReq, ::remote::Pairs>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::remote::DomainRangeReq, ::remote::Pairs>* streamer) {
+                       return this->StreamedDomainRange(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_DomainRange() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status DomainRange(::grpc::ServerContext* /*context*/, const ::remote::DomainRangeReq* /*request*/, ::remote::Pairs* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedDomainRange(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::remote::DomainRangeReq,::remote::Pairs>* server_unary_streamer) = 0;
+  };
+  typedef WithStreamedUnaryMethod_Version<WithStreamedUnaryMethod_Snapshots<WithStreamedUnaryMethod_Range<WithStreamedUnaryMethod_DomainGet<WithStreamedUnaryMethod_HistoryGet<WithStreamedUnaryMethod_IndexRange<WithStreamedUnaryMethod_HistoryRange<WithStreamedUnaryMethod_DomainRange<Service > > > > > > > > StreamedUnaryService;
   template <class BaseClass>
   class WithSplitStreamingMethod_StateChanges : public BaseClass {
    private:
@@ -1001,35 +1681,8 @@ class KV final {
     // replace default version of method with split streamed
     virtual ::grpc::Status StreamedStateChanges(::grpc::ServerContext* context, ::grpc::ServerSplitStreamer< ::remote::StateChangeRequest,::remote::StateChangeBatch>* server_split_streamer) = 0;
   };
-  template <class BaseClass>
-  class WithSplitStreamingMethod_IndexRange : public BaseClass {
-   private:
-    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
-   public:
-    WithSplitStreamingMethod_IndexRange() {
-      ::grpc::Service::MarkMethodStreamed(5,
-        new ::grpc::internal::SplitServerStreamingHandler<
-          ::remote::IndexRangeReq, ::remote::IndexRangeReply>(
-            [this](::grpc::ServerContext* context,
-                   ::grpc::ServerSplitStreamer<
-                     ::remote::IndexRangeReq, ::remote::IndexRangeReply>* streamer) {
-                       return this->StreamedIndexRange(context,
-                         streamer);
-                  }));
-    }
-    ~WithSplitStreamingMethod_IndexRange() override {
-      BaseClassMustBeDerivedFromService(this);
-    }
-    // disable regular version of this method
-    ::grpc::Status IndexRange(::grpc::ServerContext* /*context*/, const ::remote::IndexRangeReq* /*request*/, ::grpc::ServerWriter< ::remote::IndexRangeReply>* /*writer*/) override {
-      abort();
-      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-    }
-    // replace default version of method with split streamed
-    virtual ::grpc::Status StreamedIndexRange(::grpc::ServerContext* context, ::grpc::ServerSplitStreamer< ::remote::IndexRangeReq,::remote::IndexRangeReply>* server_split_streamer) = 0;
-  };
-  typedef WithSplitStreamingMethod_StateChanges<WithSplitStreamingMethod_IndexRange<Service > > SplitStreamedService;
-  typedef WithStreamedUnaryMethod_Version<WithSplitStreamingMethod_StateChanges<WithStreamedUnaryMethod_Snapshots<WithStreamedUnaryMethod_HistoryGet<WithSplitStreamingMethod_IndexRange<Service > > > > > StreamedService;
+  typedef WithSplitStreamingMethod_StateChanges<Service > SplitStreamedService;
+  typedef WithStreamedUnaryMethod_Version<WithSplitStreamingMethod_StateChanges<WithStreamedUnaryMethod_Snapshots<WithStreamedUnaryMethod_Range<WithStreamedUnaryMethod_DomainGet<WithStreamedUnaryMethod_HistoryGet<WithStreamedUnaryMethod_IndexRange<WithStreamedUnaryMethod_HistoryRange<WithStreamedUnaryMethod_DomainRange<Service > > > > > > > > > StreamedService;
 };
 
 }  // namespace remote

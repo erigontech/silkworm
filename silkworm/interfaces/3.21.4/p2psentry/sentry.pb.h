@@ -70,6 +70,9 @@ extern PeerByIdReplyDefaultTypeInternal _PeerByIdReply_default_instance_;
 class PeerByIdRequest;
 struct PeerByIdRequestDefaultTypeInternal;
 extern PeerByIdRequestDefaultTypeInternal _PeerByIdRequest_default_instance_;
+class PeerCountPerProtocol;
+struct PeerCountPerProtocolDefaultTypeInternal;
+extern PeerCountPerProtocolDefaultTypeInternal _PeerCountPerProtocol_default_instance_;
 class PeerCountReply;
 struct PeerCountReplyDefaultTypeInternal;
 extern PeerCountReplyDefaultTypeInternal _PeerCountReply_default_instance_;
@@ -85,9 +88,6 @@ extern PeerEventsRequestDefaultTypeInternal _PeerEventsRequest_default_instance_
 class PeerMinBlockRequest;
 struct PeerMinBlockRequestDefaultTypeInternal;
 extern PeerMinBlockRequestDefaultTypeInternal _PeerMinBlockRequest_default_instance_;
-class PeerUselessRequest;
-struct PeerUselessRequestDefaultTypeInternal;
-extern PeerUselessRequestDefaultTypeInternal _PeerUselessRequest_default_instance_;
 class PeersReply;
 struct PeersReplyDefaultTypeInternal;
 extern PeersReplyDefaultTypeInternal _PeersReply_default_instance_;
@@ -121,12 +121,12 @@ template<> ::sentry::MessagesRequest* Arena::CreateMaybeMessage<::sentry::Messag
 template<> ::sentry::OutboundMessageData* Arena::CreateMaybeMessage<::sentry::OutboundMessageData>(Arena*);
 template<> ::sentry::PeerByIdReply* Arena::CreateMaybeMessage<::sentry::PeerByIdReply>(Arena*);
 template<> ::sentry::PeerByIdRequest* Arena::CreateMaybeMessage<::sentry::PeerByIdRequest>(Arena*);
+template<> ::sentry::PeerCountPerProtocol* Arena::CreateMaybeMessage<::sentry::PeerCountPerProtocol>(Arena*);
 template<> ::sentry::PeerCountReply* Arena::CreateMaybeMessage<::sentry::PeerCountReply>(Arena*);
 template<> ::sentry::PeerCountRequest* Arena::CreateMaybeMessage<::sentry::PeerCountRequest>(Arena*);
 template<> ::sentry::PeerEvent* Arena::CreateMaybeMessage<::sentry::PeerEvent>(Arena*);
 template<> ::sentry::PeerEventsRequest* Arena::CreateMaybeMessage<::sentry::PeerEventsRequest>(Arena*);
 template<> ::sentry::PeerMinBlockRequest* Arena::CreateMaybeMessage<::sentry::PeerMinBlockRequest>(Arena*);
-template<> ::sentry::PeerUselessRequest* Arena::CreateMaybeMessage<::sentry::PeerUselessRequest>(Arena*);
 template<> ::sentry::PeersReply* Arena::CreateMaybeMessage<::sentry::PeersReply>(Arena*);
 template<> ::sentry::PenalizePeerRequest* Arena::CreateMaybeMessage<::sentry::PenalizePeerRequest>(Arena*);
 template<> ::sentry::SendMessageByIdRequest* Arena::CreateMaybeMessage<::sentry::SendMessageByIdRequest>(Arena*);
@@ -195,12 +195,13 @@ enum MessageId : int {
   NODE_DATA_66 = 29,
   RECEIPTS_66 = 30,
   POOLED_TRANSACTIONS_66 = 31,
+  NEW_POOLED_TRANSACTION_HASHES_68 = 32,
   MessageId_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   MessageId_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
 bool MessageId_IsValid(int value);
 constexpr MessageId MessageId_MIN = STATUS_65;
-constexpr MessageId MessageId_MAX = POOLED_TRANSACTIONS_66;
+constexpr MessageId MessageId_MAX = NEW_POOLED_TRANSACTION_HASHES_68;
 constexpr int MessageId_ARRAYSIZE = MessageId_MAX + 1;
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* MessageId_descriptor();
@@ -245,12 +246,13 @@ enum Protocol : int {
   ETH65 = 0,
   ETH66 = 1,
   ETH67 = 2,
+  ETH68 = 3,
   Protocol_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   Protocol_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
 bool Protocol_IsValid(int value);
 constexpr Protocol Protocol_MIN = ETH65;
-constexpr Protocol Protocol_MAX = ETH67;
+constexpr Protocol Protocol_MAX = ETH68;
 constexpr int Protocol_ARRAYSIZE = Protocol_MAX + 1;
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* Protocol_descriptor();
@@ -1450,163 +1452,6 @@ class PeerMinBlockRequest final :
 };
 // -------------------------------------------------------------------
 
-class PeerUselessRequest final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:sentry.PeerUselessRequest) */ {
- public:
-  inline PeerUselessRequest() : PeerUselessRequest(nullptr) {}
-  ~PeerUselessRequest() override;
-  explicit PROTOBUF_CONSTEXPR PeerUselessRequest(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
-
-  PeerUselessRequest(const PeerUselessRequest& from);
-  PeerUselessRequest(PeerUselessRequest&& from) noexcept
-    : PeerUselessRequest() {
-    *this = ::std::move(from);
-  }
-
-  inline PeerUselessRequest& operator=(const PeerUselessRequest& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  inline PeerUselessRequest& operator=(PeerUselessRequest&& from) noexcept {
-    if (this == &from) return *this;
-    if (GetOwningArena() == from.GetOwningArena()
-  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
-        && GetOwningArena() != nullptr
-  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
-    ) {
-      InternalSwap(&from);
-    } else {
-      CopyFrom(from);
-    }
-    return *this;
-  }
-
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
-    return GetDescriptor();
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
-    return default_instance().GetMetadata().descriptor;
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
-    return default_instance().GetMetadata().reflection;
-  }
-  static const PeerUselessRequest& default_instance() {
-    return *internal_default_instance();
-  }
-  static inline const PeerUselessRequest* internal_default_instance() {
-    return reinterpret_cast<const PeerUselessRequest*>(
-               &_PeerUselessRequest_default_instance_);
-  }
-  static constexpr int kIndexInFileMessages =
-    7;
-
-  friend void swap(PeerUselessRequest& a, PeerUselessRequest& b) {
-    a.Swap(&b);
-  }
-  inline void Swap(PeerUselessRequest* other) {
-    if (other == this) return;
-  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() != nullptr &&
-        GetOwningArena() == other->GetOwningArena()) {
-   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() == other->GetOwningArena()) {
-  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
-      InternalSwap(other);
-    } else {
-      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
-    }
-  }
-  void UnsafeArenaSwap(PeerUselessRequest* other) {
-    if (other == this) return;
-    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
-    InternalSwap(other);
-  }
-
-  // implements Message ----------------------------------------------
-
-  PeerUselessRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<PeerUselessRequest>(arena);
-  }
-  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const PeerUselessRequest& from);
-  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom( const PeerUselessRequest& from) {
-    PeerUselessRequest::MergeImpl(*this, from);
-  }
-  private:
-  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
-  public:
-  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
-  bool IsInitialized() const final;
-
-  size_t ByteSizeLong() const final;
-  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
-  uint8_t* _InternalSerialize(
-      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
-
-  private:
-  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
-  void SharedDtor();
-  void SetCachedSize(int size) const final;
-  void InternalSwap(PeerUselessRequest* other);
-
-  private:
-  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
-  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "sentry.PeerUselessRequest";
-  }
-  protected:
-  explicit PeerUselessRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                       bool is_message_owned = false);
-  public:
-
-  static const ClassData _class_data_;
-  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
-
-  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
-
-  // nested types ----------------------------------------------------
-
-  // accessors -------------------------------------------------------
-
-  enum : int {
-    kPeerIdFieldNumber = 1,
-  };
-  // .types.H512 peer_id = 1;
-  bool has_peer_id() const;
-  private:
-  bool _internal_has_peer_id() const;
-  public:
-  void clear_peer_id();
-  const ::types::H512& peer_id() const;
-  PROTOBUF_NODISCARD ::types::H512* release_peer_id();
-  ::types::H512* mutable_peer_id();
-  void set_allocated_peer_id(::types::H512* peer_id);
-  private:
-  const ::types::H512& _internal_peer_id() const;
-  ::types::H512* _internal_mutable_peer_id();
-  public:
-  void unsafe_arena_set_allocated_peer_id(
-      ::types::H512* peer_id);
-  ::types::H512* unsafe_arena_release_peer_id();
-
-  // @@protoc_insertion_point(class_scope:sentry.PeerUselessRequest)
- private:
-  class _Internal;
-
-  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
-  typedef void InternalArenaConstructable_;
-  typedef void DestructorSkippable_;
-  struct Impl_ {
-    ::types::H512* peer_id_;
-    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-  };
-  union { Impl_ _impl_; };
-  friend struct ::TableStruct_p2psentry_2fsentry_2eproto;
-};
-// -------------------------------------------------------------------
-
 class InboundMessage final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:sentry.InboundMessage) */ {
  public:
@@ -1655,7 +1500,7 @@ class InboundMessage final :
                &_InboundMessage_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    8;
+    7;
 
   friend void swap(InboundMessage& a, InboundMessage& b) {
     a.Swap(&b);
@@ -1839,7 +1684,7 @@ class Forks final :
                &_Forks_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    9;
+    8;
 
   friend void swap(Forks& a, Forks& b) {
     a.Swap(&b);
@@ -2046,7 +1891,7 @@ class StatusData final :
                &_StatusData_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    10;
+    9;
 
   friend void swap(StatusData& a, StatusData& b) {
     a.Swap(&b);
@@ -2125,7 +1970,6 @@ class StatusData final :
     kNetworkIdFieldNumber = 1,
     kMaxBlockHeightFieldNumber = 5,
     kMaxBlockTimeFieldNumber = 6,
-    kPassivePeersFieldNumber = 7,
   };
   // .types.H256 total_difficulty = 2;
   bool has_total_difficulty() const;
@@ -2208,15 +2052,6 @@ class StatusData final :
   void _internal_set_max_block_time(uint64_t value);
   public:
 
-  // bool passive_peers = 7;
-  void clear_passive_peers();
-  bool passive_peers() const;
-  void set_passive_peers(bool value);
-  private:
-  bool _internal_passive_peers() const;
-  void _internal_set_passive_peers(bool value);
-  public:
-
   // @@protoc_insertion_point(class_scope:sentry.StatusData)
  private:
   class _Internal;
@@ -2231,7 +2066,6 @@ class StatusData final :
     uint64_t network_id_;
     uint64_t max_block_height_;
     uint64_t max_block_time_;
-    bool passive_peers_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -2286,7 +2120,7 @@ class SetStatusReply final :
                &_SetStatusReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    11;
+    10;
 
   friend void swap(SetStatusReply& a, SetStatusReply& b) {
     a.Swap(&b);
@@ -2405,7 +2239,7 @@ class HandShakeReply final :
                &_HandShakeReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    12;
+    11;
 
   friend void swap(HandShakeReply& a, HandShakeReply& b) {
     a.Swap(&b);
@@ -2553,7 +2387,7 @@ class MessagesRequest final :
                &_MessagesRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    13;
+    12;
 
   friend void swap(MessagesRequest& a, MessagesRequest& b) {
     a.Swap(&b);
@@ -2710,7 +2544,7 @@ class PeersReply final :
                &_PeersReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    14;
+    13;
 
   friend void swap(PeersReply& a, PeersReply& b) {
     a.Swap(&b);
@@ -2866,7 +2700,7 @@ class PeerCountRequest final :
                &_PeerCountRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    15;
+    14;
 
   friend void swap(PeerCountRequest& a, PeerCountRequest& b) {
     a.Swap(&b);
@@ -2933,6 +2767,165 @@ class PeerCountRequest final :
   typedef void DestructorSkippable_;
   struct Impl_ {
   };
+  friend struct ::TableStruct_p2psentry_2fsentry_2eproto;
+};
+// -------------------------------------------------------------------
+
+class PeerCountPerProtocol final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:sentry.PeerCountPerProtocol) */ {
+ public:
+  inline PeerCountPerProtocol() : PeerCountPerProtocol(nullptr) {}
+  ~PeerCountPerProtocol() override;
+  explicit PROTOBUF_CONSTEXPR PeerCountPerProtocol(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  PeerCountPerProtocol(const PeerCountPerProtocol& from);
+  PeerCountPerProtocol(PeerCountPerProtocol&& from) noexcept
+    : PeerCountPerProtocol() {
+    *this = ::std::move(from);
+  }
+
+  inline PeerCountPerProtocol& operator=(const PeerCountPerProtocol& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline PeerCountPerProtocol& operator=(PeerCountPerProtocol&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const PeerCountPerProtocol& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const PeerCountPerProtocol* internal_default_instance() {
+    return reinterpret_cast<const PeerCountPerProtocol*>(
+               &_PeerCountPerProtocol_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    15;
+
+  friend void swap(PeerCountPerProtocol& a, PeerCountPerProtocol& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(PeerCountPerProtocol* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(PeerCountPerProtocol* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  PeerCountPerProtocol* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<PeerCountPerProtocol>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const PeerCountPerProtocol& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const PeerCountPerProtocol& from) {
+    PeerCountPerProtocol::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(PeerCountPerProtocol* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "sentry.PeerCountPerProtocol";
+  }
+  protected:
+  explicit PeerCountPerProtocol(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kCountFieldNumber = 2,
+    kProtocolFieldNumber = 1,
+  };
+  // uint64 count = 2;
+  void clear_count();
+  uint64_t count() const;
+  void set_count(uint64_t value);
+  private:
+  uint64_t _internal_count() const;
+  void _internal_set_count(uint64_t value);
+  public:
+
+  // .sentry.Protocol protocol = 1;
+  void clear_protocol();
+  ::sentry::Protocol protocol() const;
+  void set_protocol(::sentry::Protocol value);
+  private:
+  ::sentry::Protocol _internal_protocol() const;
+  void _internal_set_protocol(::sentry::Protocol value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:sentry.PeerCountPerProtocol)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    uint64_t count_;
+    int protocol_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
   friend struct ::TableStruct_p2psentry_2fsentry_2eproto;
 };
 // -------------------------------------------------------------------
@@ -3058,8 +3051,27 @@ class PeerCountReply final :
   // accessors -------------------------------------------------------
 
   enum : int {
+    kCountsPerProtocolFieldNumber = 2,
     kCountFieldNumber = 1,
   };
+  // repeated .sentry.PeerCountPerProtocol countsPerProtocol = 2;
+  int countsperprotocol_size() const;
+  private:
+  int _internal_countsperprotocol_size() const;
+  public:
+  void clear_countsperprotocol();
+  ::sentry::PeerCountPerProtocol* mutable_countsperprotocol(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::sentry::PeerCountPerProtocol >*
+      mutable_countsperprotocol();
+  private:
+  const ::sentry::PeerCountPerProtocol& _internal_countsperprotocol(int index) const;
+  ::sentry::PeerCountPerProtocol* _internal_add_countsperprotocol();
+  public:
+  const ::sentry::PeerCountPerProtocol& countsperprotocol(int index) const;
+  ::sentry::PeerCountPerProtocol* add_countsperprotocol();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::sentry::PeerCountPerProtocol >&
+      countsperprotocol() const;
+
   // uint64 count = 1;
   void clear_count();
   uint64_t count() const;
@@ -3077,6 +3089,7 @@ class PeerCountReply final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::sentry::PeerCountPerProtocol > countsperprotocol_;
     uint64_t count_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
@@ -4483,95 +4496,6 @@ inline void PeerMinBlockRequest::set_min_block(uint64_t value) {
 
 // -------------------------------------------------------------------
 
-// PeerUselessRequest
-
-// .types.H512 peer_id = 1;
-inline bool PeerUselessRequest::_internal_has_peer_id() const {
-  return this != internal_default_instance() && _impl_.peer_id_ != nullptr;
-}
-inline bool PeerUselessRequest::has_peer_id() const {
-  return _internal_has_peer_id();
-}
-inline const ::types::H512& PeerUselessRequest::_internal_peer_id() const {
-  const ::types::H512* p = _impl_.peer_id_;
-  return p != nullptr ? *p : reinterpret_cast<const ::types::H512&>(
-      ::types::_H512_default_instance_);
-}
-inline const ::types::H512& PeerUselessRequest::peer_id() const {
-  // @@protoc_insertion_point(field_get:sentry.PeerUselessRequest.peer_id)
-  return _internal_peer_id();
-}
-inline void PeerUselessRequest::unsafe_arena_set_allocated_peer_id(
-    ::types::H512* peer_id) {
-  if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.peer_id_);
-  }
-  _impl_.peer_id_ = peer_id;
-  if (peer_id) {
-    
-  } else {
-    
-  }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:sentry.PeerUselessRequest.peer_id)
-}
-inline ::types::H512* PeerUselessRequest::release_peer_id() {
-  
-  ::types::H512* temp = _impl_.peer_id_;
-  _impl_.peer_id_ = nullptr;
-#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
-  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
-  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  if (GetArenaForAllocation() == nullptr) { delete old; }
-#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
-  if (GetArenaForAllocation() != nullptr) {
-    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  }
-#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
-  return temp;
-}
-inline ::types::H512* PeerUselessRequest::unsafe_arena_release_peer_id() {
-  // @@protoc_insertion_point(field_release:sentry.PeerUselessRequest.peer_id)
-  
-  ::types::H512* temp = _impl_.peer_id_;
-  _impl_.peer_id_ = nullptr;
-  return temp;
-}
-inline ::types::H512* PeerUselessRequest::_internal_mutable_peer_id() {
-  
-  if (_impl_.peer_id_ == nullptr) {
-    auto* p = CreateMaybeMessage<::types::H512>(GetArenaForAllocation());
-    _impl_.peer_id_ = p;
-  }
-  return _impl_.peer_id_;
-}
-inline ::types::H512* PeerUselessRequest::mutable_peer_id() {
-  ::types::H512* _msg = _internal_mutable_peer_id();
-  // @@protoc_insertion_point(field_mutable:sentry.PeerUselessRequest.peer_id)
-  return _msg;
-}
-inline void PeerUselessRequest::set_allocated_peer_id(::types::H512* peer_id) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
-  if (message_arena == nullptr) {
-    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.peer_id_);
-  }
-  if (peer_id) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
-                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(peer_id));
-    if (message_arena != submessage_arena) {
-      peer_id = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, peer_id, submessage_arena);
-    }
-    
-  } else {
-    
-  }
-  _impl_.peer_id_ = peer_id;
-  // @@protoc_insertion_point(field_set_allocated:sentry.PeerUselessRequest.peer_id)
-}
-
-// -------------------------------------------------------------------
-
 // InboundMessage
 
 // .sentry.MessageId id = 1;
@@ -5236,26 +5160,6 @@ inline void StatusData::set_max_block_time(uint64_t value) {
   // @@protoc_insertion_point(field_set:sentry.StatusData.max_block_time)
 }
 
-// bool passive_peers = 7;
-inline void StatusData::clear_passive_peers() {
-  _impl_.passive_peers_ = false;
-}
-inline bool StatusData::_internal_passive_peers() const {
-  return _impl_.passive_peers_;
-}
-inline bool StatusData::passive_peers() const {
-  // @@protoc_insertion_point(field_get:sentry.StatusData.passive_peers)
-  return _internal_passive_peers();
-}
-inline void StatusData::_internal_set_passive_peers(bool value) {
-  
-  _impl_.passive_peers_ = value;
-}
-inline void StatusData::set_passive_peers(bool value) {
-  _internal_set_passive_peers(value);
-  // @@protoc_insertion_point(field_set:sentry.StatusData.passive_peers)
-}
-
 // -------------------------------------------------------------------
 
 // SetStatusReply
@@ -5378,6 +5282,50 @@ PeersReply::peers() const {
 
 // -------------------------------------------------------------------
 
+// PeerCountPerProtocol
+
+// .sentry.Protocol protocol = 1;
+inline void PeerCountPerProtocol::clear_protocol() {
+  _impl_.protocol_ = 0;
+}
+inline ::sentry::Protocol PeerCountPerProtocol::_internal_protocol() const {
+  return static_cast< ::sentry::Protocol >(_impl_.protocol_);
+}
+inline ::sentry::Protocol PeerCountPerProtocol::protocol() const {
+  // @@protoc_insertion_point(field_get:sentry.PeerCountPerProtocol.protocol)
+  return _internal_protocol();
+}
+inline void PeerCountPerProtocol::_internal_set_protocol(::sentry::Protocol value) {
+  
+  _impl_.protocol_ = value;
+}
+inline void PeerCountPerProtocol::set_protocol(::sentry::Protocol value) {
+  _internal_set_protocol(value);
+  // @@protoc_insertion_point(field_set:sentry.PeerCountPerProtocol.protocol)
+}
+
+// uint64 count = 2;
+inline void PeerCountPerProtocol::clear_count() {
+  _impl_.count_ = uint64_t{0u};
+}
+inline uint64_t PeerCountPerProtocol::_internal_count() const {
+  return _impl_.count_;
+}
+inline uint64_t PeerCountPerProtocol::count() const {
+  // @@protoc_insertion_point(field_get:sentry.PeerCountPerProtocol.count)
+  return _internal_count();
+}
+inline void PeerCountPerProtocol::_internal_set_count(uint64_t value) {
+  
+  _impl_.count_ = value;
+}
+inline void PeerCountPerProtocol::set_count(uint64_t value) {
+  _internal_set_count(value);
+  // @@protoc_insertion_point(field_set:sentry.PeerCountPerProtocol.count)
+}
+
+// -------------------------------------------------------------------
+
 // PeerCountReply
 
 // uint64 count = 1;
@@ -5398,6 +5346,46 @@ inline void PeerCountReply::_internal_set_count(uint64_t value) {
 inline void PeerCountReply::set_count(uint64_t value) {
   _internal_set_count(value);
   // @@protoc_insertion_point(field_set:sentry.PeerCountReply.count)
+}
+
+// repeated .sentry.PeerCountPerProtocol countsPerProtocol = 2;
+inline int PeerCountReply::_internal_countsperprotocol_size() const {
+  return _impl_.countsperprotocol_.size();
+}
+inline int PeerCountReply::countsperprotocol_size() const {
+  return _internal_countsperprotocol_size();
+}
+inline void PeerCountReply::clear_countsperprotocol() {
+  _impl_.countsperprotocol_.Clear();
+}
+inline ::sentry::PeerCountPerProtocol* PeerCountReply::mutable_countsperprotocol(int index) {
+  // @@protoc_insertion_point(field_mutable:sentry.PeerCountReply.countsPerProtocol)
+  return _impl_.countsperprotocol_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::sentry::PeerCountPerProtocol >*
+PeerCountReply::mutable_countsperprotocol() {
+  // @@protoc_insertion_point(field_mutable_list:sentry.PeerCountReply.countsPerProtocol)
+  return &_impl_.countsperprotocol_;
+}
+inline const ::sentry::PeerCountPerProtocol& PeerCountReply::_internal_countsperprotocol(int index) const {
+  return _impl_.countsperprotocol_.Get(index);
+}
+inline const ::sentry::PeerCountPerProtocol& PeerCountReply::countsperprotocol(int index) const {
+  // @@protoc_insertion_point(field_get:sentry.PeerCountReply.countsPerProtocol)
+  return _internal_countsperprotocol(index);
+}
+inline ::sentry::PeerCountPerProtocol* PeerCountReply::_internal_add_countsperprotocol() {
+  return _impl_.countsperprotocol_.Add();
+}
+inline ::sentry::PeerCountPerProtocol* PeerCountReply::add_countsperprotocol() {
+  ::sentry::PeerCountPerProtocol* _add = _internal_add_countsperprotocol();
+  // @@protoc_insertion_point(field_add:sentry.PeerCountReply.countsPerProtocol)
+  return _add;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::sentry::PeerCountPerProtocol >&
+PeerCountReply::countsperprotocol() const {
+  // @@protoc_insertion_point(field_list:sentry.PeerCountReply.countsPerProtocol)
+  return _impl_.countsperprotocol_;
 }
 
 // -------------------------------------------------------------------

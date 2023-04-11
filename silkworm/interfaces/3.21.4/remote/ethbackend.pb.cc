@@ -106,6 +106,19 @@ struct EngineGetPayloadRequestDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 EngineGetPayloadRequestDefaultTypeInternal _EngineGetPayloadRequest_default_instance_;
+PROTOBUF_CONSTEXPR EngineGetBlobsBundleRequest::EngineGetBlobsBundleRequest(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.payloadid_)*/uint64_t{0u}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct EngineGetBlobsBundleRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR EngineGetBlobsBundleRequestDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~EngineGetBlobsBundleRequestDefaultTypeInternal() {}
+  union {
+    EngineGetBlobsBundleRequest _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 EngineGetBlobsBundleRequestDefaultTypeInternal _EngineGetBlobsBundleRequest_default_instance_;
 PROTOBUF_CONSTEXPR EnginePayloadStatus::EnginePayloadStatus(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.validationerror_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
@@ -123,9 +136,11 @@ struct EnginePayloadStatusDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 EnginePayloadStatusDefaultTypeInternal _EnginePayloadStatus_default_instance_;
 PROTOBUF_CONSTEXPR EnginePayloadAttributes::EnginePayloadAttributes(
     ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.prevrandao_)*/nullptr
+    /*decltype(_impl_.withdrawals_)*/{}
+  , /*decltype(_impl_.prevrandao_)*/nullptr
   , /*decltype(_impl_.suggestedfeerecipient_)*/nullptr
   , /*decltype(_impl_.timestamp_)*/uint64_t{0u}
+  , /*decltype(_impl_.version_)*/0u
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct EnginePayloadAttributesDefaultTypeInternal {
   PROTOBUF_CONSTEXPR EnginePayloadAttributesDefaultTypeInternal()
@@ -165,48 +180,34 @@ struct EngineForkChoiceUpdatedRequestDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 EngineForkChoiceUpdatedRequestDefaultTypeInternal _EngineForkChoiceUpdatedRequest_default_instance_;
-PROTOBUF_CONSTEXPR EnginePayloadAttributesV2::EnginePayloadAttributesV2(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.withdrawals_)*/{}
-  , /*decltype(_impl_.attributes_)*/nullptr
-  , /*decltype(_impl_._cached_size_)*/{}} {}
-struct EnginePayloadAttributesV2DefaultTypeInternal {
-  PROTOBUF_CONSTEXPR EnginePayloadAttributesV2DefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~EnginePayloadAttributesV2DefaultTypeInternal() {}
-  union {
-    EnginePayloadAttributesV2 _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 EnginePayloadAttributesV2DefaultTypeInternal _EnginePayloadAttributesV2_default_instance_;
-PROTOBUF_CONSTEXPR EngineForkChoiceUpdatedRequestV2::EngineForkChoiceUpdatedRequestV2(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.forkchoicestate_)*/nullptr
-  , /*decltype(_impl_.payloadattributes_)*/nullptr
-  , /*decltype(_impl_._cached_size_)*/{}} {}
-struct EngineForkChoiceUpdatedRequestV2DefaultTypeInternal {
-  PROTOBUF_CONSTEXPR EngineForkChoiceUpdatedRequestV2DefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~EngineForkChoiceUpdatedRequestV2DefaultTypeInternal() {}
-  union {
-    EngineForkChoiceUpdatedRequestV2 _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 EngineForkChoiceUpdatedRequestV2DefaultTypeInternal _EngineForkChoiceUpdatedRequestV2_default_instance_;
-PROTOBUF_CONSTEXPR EngineForkChoiceUpdatedReply::EngineForkChoiceUpdatedReply(
+PROTOBUF_CONSTEXPR EngineForkChoiceUpdatedResponse::EngineForkChoiceUpdatedResponse(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.payloadstatus_)*/nullptr
   , /*decltype(_impl_.payloadid_)*/uint64_t{0u}
   , /*decltype(_impl_._cached_size_)*/{}} {}
-struct EngineForkChoiceUpdatedReplyDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR EngineForkChoiceUpdatedReplyDefaultTypeInternal()
+struct EngineForkChoiceUpdatedResponseDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR EngineForkChoiceUpdatedResponseDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
-  ~EngineForkChoiceUpdatedReplyDefaultTypeInternal() {}
+  ~EngineForkChoiceUpdatedResponseDefaultTypeInternal() {}
   union {
-    EngineForkChoiceUpdatedReply _instance;
+    EngineForkChoiceUpdatedResponse _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 EngineForkChoiceUpdatedReplyDefaultTypeInternal _EngineForkChoiceUpdatedReply_default_instance_;
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 EngineForkChoiceUpdatedResponseDefaultTypeInternal _EngineForkChoiceUpdatedResponse_default_instance_;
+PROTOBUF_CONSTEXPR EngineGetPayloadResponse::EngineGetPayloadResponse(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.executionpayload_)*/nullptr
+  , /*decltype(_impl_.blockvalue_)*/nullptr
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct EngineGetPayloadResponseDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR EngineGetPayloadResponseDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~EngineGetPayloadResponseDefaultTypeInternal() {}
+  union {
+    EngineGetPayloadResponse _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 EngineGetPayloadResponseDefaultTypeInternal _EngineGetPayloadResponse_default_instance_;
 PROTOBUF_CONSTEXPR ProtocolVersionRequest::ProtocolVersionRequest(
     ::_pbi::ConstantInitialized) {}
 struct ProtocolVersionRequestDefaultTypeInternal {
@@ -425,8 +426,48 @@ struct PendingBlockReplyDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 PendingBlockReplyDefaultTypeInternal _PendingBlockReply_default_instance_;
+PROTOBUF_CONSTEXPR EngineGetPayloadBodiesByHashV1Request::EngineGetPayloadBodiesByHashV1Request(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.hashes_)*/{}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct EngineGetPayloadBodiesByHashV1RequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR EngineGetPayloadBodiesByHashV1RequestDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~EngineGetPayloadBodiesByHashV1RequestDefaultTypeInternal() {}
+  union {
+    EngineGetPayloadBodiesByHashV1Request _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 EngineGetPayloadBodiesByHashV1RequestDefaultTypeInternal _EngineGetPayloadBodiesByHashV1Request_default_instance_;
+PROTOBUF_CONSTEXPR EngineGetPayloadBodiesByRangeV1Request::EngineGetPayloadBodiesByRangeV1Request(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.start_)*/uint64_t{0u}
+  , /*decltype(_impl_.count_)*/uint64_t{0u}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct EngineGetPayloadBodiesByRangeV1RequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR EngineGetPayloadBodiesByRangeV1RequestDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~EngineGetPayloadBodiesByRangeV1RequestDefaultTypeInternal() {}
+  union {
+    EngineGetPayloadBodiesByRangeV1Request _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 EngineGetPayloadBodiesByRangeV1RequestDefaultTypeInternal _EngineGetPayloadBodiesByRangeV1Request_default_instance_;
+PROTOBUF_CONSTEXPR EngineGetPayloadBodiesV1Response::EngineGetPayloadBodiesV1Response(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.bodies_)*/{}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct EngineGetPayloadBodiesV1ResponseDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR EngineGetPayloadBodiesV1ResponseDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~EngineGetPayloadBodiesV1ResponseDefaultTypeInternal() {}
+  union {
+    EngineGetPayloadBodiesV1Response _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 EngineGetPayloadBodiesV1ResponseDefaultTypeInternal _EngineGetPayloadBodiesV1Response_default_instance_;
 }  // namespace remote
-static ::_pb::Metadata file_level_metadata_remote_2fethbackend_2eproto[30];
+static ::_pb::Metadata file_level_metadata_remote_2fethbackend_2eproto[33];
 static const ::_pb::EnumDescriptor* file_level_enum_descriptors_remote_2fethbackend_2eproto[2];
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_remote_2fethbackend_2eproto = nullptr;
 
@@ -478,6 +519,13 @@ const uint32_t TableStruct_remote_2fethbackend_2eproto::offsets[] PROTOBUF_SECTI
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::remote::EngineGetPayloadRequest, _impl_.payloadid_),
   ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::remote::EngineGetBlobsBundleRequest, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::remote::EngineGetBlobsBundleRequest, _impl_.payloadid_),
+  ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::remote::EnginePayloadStatus, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
@@ -492,9 +540,11 @@ const uint32_t TableStruct_remote_2fethbackend_2eproto::offsets[] PROTOBUF_SECTI
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::remote::EnginePayloadAttributes, _impl_.version_),
   PROTOBUF_FIELD_OFFSET(::remote::EnginePayloadAttributes, _impl_.timestamp_),
   PROTOBUF_FIELD_OFFSET(::remote::EnginePayloadAttributes, _impl_.prevrandao_),
   PROTOBUF_FIELD_OFFSET(::remote::EnginePayloadAttributes, _impl_.suggestedfeerecipient_),
+  PROTOBUF_FIELD_OFFSET(::remote::EnginePayloadAttributes, _impl_.withdrawals_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::remote::EngineForkChoiceState, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -513,29 +563,21 @@ const uint32_t TableStruct_remote_2fethbackend_2eproto::offsets[] PROTOBUF_SECTI
   PROTOBUF_FIELD_OFFSET(::remote::EngineForkChoiceUpdatedRequest, _impl_.forkchoicestate_),
   PROTOBUF_FIELD_OFFSET(::remote::EngineForkChoiceUpdatedRequest, _impl_.payloadattributes_),
   ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::remote::EnginePayloadAttributesV2, _internal_metadata_),
+  PROTOBUF_FIELD_OFFSET(::remote::EngineForkChoiceUpdatedResponse, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::remote::EnginePayloadAttributesV2, _impl_.attributes_),
-  PROTOBUF_FIELD_OFFSET(::remote::EnginePayloadAttributesV2, _impl_.withdrawals_),
+  PROTOBUF_FIELD_OFFSET(::remote::EngineForkChoiceUpdatedResponse, _impl_.payloadstatus_),
+  PROTOBUF_FIELD_OFFSET(::remote::EngineForkChoiceUpdatedResponse, _impl_.payloadid_),
   ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::remote::EngineForkChoiceUpdatedRequestV2, _internal_metadata_),
+  PROTOBUF_FIELD_OFFSET(::remote::EngineGetPayloadResponse, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::remote::EngineForkChoiceUpdatedRequestV2, _impl_.forkchoicestate_),
-  PROTOBUF_FIELD_OFFSET(::remote::EngineForkChoiceUpdatedRequestV2, _impl_.payloadattributes_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::remote::EngineForkChoiceUpdatedReply, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::remote::EngineForkChoiceUpdatedReply, _impl_.payloadstatus_),
-  PROTOBUF_FIELD_OFFSET(::remote::EngineForkChoiceUpdatedReply, _impl_.payloadid_),
+  PROTOBUF_FIELD_OFFSET(::remote::EngineGetPayloadResponse, _impl_.executionpayload_),
+  PROTOBUF_FIELD_OFFSET(::remote::EngineGetPayloadResponse, _impl_.blockvalue_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::remote::ProtocolVersionRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -660,6 +702,28 @@ const uint32_t TableStruct_remote_2fethbackend_2eproto::offsets[] PROTOBUF_SECTI
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::remote::PendingBlockReply, _impl_.blockrlp_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::remote::EngineGetPayloadBodiesByHashV1Request, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::remote::EngineGetPayloadBodiesByHashV1Request, _impl_.hashes_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::remote::EngineGetPayloadBodiesByRangeV1Request, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::remote::EngineGetPayloadBodiesByRangeV1Request, _impl_.start_),
+  PROTOBUF_FIELD_OFFSET(::remote::EngineGetPayloadBodiesByRangeV1Request, _impl_.count_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::remote::EngineGetPayloadBodiesV1Response, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::remote::EngineGetPayloadBodiesV1Response, _impl_.bodies_),
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, -1, sizeof(::remote::EtherbaseRequest)},
@@ -669,29 +733,32 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 26, -1, -1, sizeof(::remote::NetPeerCountRequest)},
   { 32, -1, -1, sizeof(::remote::NetPeerCountReply)},
   { 39, -1, -1, sizeof(::remote::EngineGetPayloadRequest)},
-  { 46, -1, -1, sizeof(::remote::EnginePayloadStatus)},
-  { 55, -1, -1, sizeof(::remote::EnginePayloadAttributes)},
-  { 64, -1, -1, sizeof(::remote::EngineForkChoiceState)},
-  { 73, -1, -1, sizeof(::remote::EngineForkChoiceUpdatedRequest)},
-  { 81, -1, -1, sizeof(::remote::EnginePayloadAttributesV2)},
-  { 89, -1, -1, sizeof(::remote::EngineForkChoiceUpdatedRequestV2)},
-  { 97, -1, -1, sizeof(::remote::EngineForkChoiceUpdatedReply)},
-  { 105, -1, -1, sizeof(::remote::ProtocolVersionRequest)},
-  { 111, -1, -1, sizeof(::remote::ProtocolVersionReply)},
-  { 118, -1, -1, sizeof(::remote::ClientVersionRequest)},
-  { 124, -1, -1, sizeof(::remote::ClientVersionReply)},
-  { 131, -1, -1, sizeof(::remote::SubscribeRequest)},
-  { 138, -1, -1, sizeof(::remote::SubscribeReply)},
-  { 146, -1, -1, sizeof(::remote::LogsFilterRequest)},
-  { 156, -1, -1, sizeof(::remote::SubscribeLogsReply)},
-  { 171, -1, -1, sizeof(::remote::BlockRequest)},
-  { 179, -1, -1, sizeof(::remote::BlockReply)},
-  { 187, -1, -1, sizeof(::remote::TxnLookupRequest)},
-  { 194, -1, -1, sizeof(::remote::TxnLookupReply)},
-  { 201, -1, -1, sizeof(::remote::NodesInfoRequest)},
-  { 208, -1, -1, sizeof(::remote::NodesInfoReply)},
-  { 215, -1, -1, sizeof(::remote::PeersReply)},
-  { 222, -1, -1, sizeof(::remote::PendingBlockReply)},
+  { 46, -1, -1, sizeof(::remote::EngineGetBlobsBundleRequest)},
+  { 53, -1, -1, sizeof(::remote::EnginePayloadStatus)},
+  { 62, -1, -1, sizeof(::remote::EnginePayloadAttributes)},
+  { 73, -1, -1, sizeof(::remote::EngineForkChoiceState)},
+  { 82, -1, -1, sizeof(::remote::EngineForkChoiceUpdatedRequest)},
+  { 90, -1, -1, sizeof(::remote::EngineForkChoiceUpdatedResponse)},
+  { 98, -1, -1, sizeof(::remote::EngineGetPayloadResponse)},
+  { 106, -1, -1, sizeof(::remote::ProtocolVersionRequest)},
+  { 112, -1, -1, sizeof(::remote::ProtocolVersionReply)},
+  { 119, -1, -1, sizeof(::remote::ClientVersionRequest)},
+  { 125, -1, -1, sizeof(::remote::ClientVersionReply)},
+  { 132, -1, -1, sizeof(::remote::SubscribeRequest)},
+  { 139, -1, -1, sizeof(::remote::SubscribeReply)},
+  { 147, -1, -1, sizeof(::remote::LogsFilterRequest)},
+  { 157, -1, -1, sizeof(::remote::SubscribeLogsReply)},
+  { 172, -1, -1, sizeof(::remote::BlockRequest)},
+  { 180, -1, -1, sizeof(::remote::BlockReply)},
+  { 188, -1, -1, sizeof(::remote::TxnLookupRequest)},
+  { 195, -1, -1, sizeof(::remote::TxnLookupReply)},
+  { 202, -1, -1, sizeof(::remote::NodesInfoRequest)},
+  { 209, -1, -1, sizeof(::remote::NodesInfoReply)},
+  { 216, -1, -1, sizeof(::remote::PeersReply)},
+  { 223, -1, -1, sizeof(::remote::PendingBlockReply)},
+  { 230, -1, -1, sizeof(::remote::EngineGetPayloadBodiesByHashV1Request)},
+  { 237, -1, -1, sizeof(::remote::EngineGetPayloadBodiesByRangeV1Request)},
+  { 245, -1, -1, sizeof(::remote::EngineGetPayloadBodiesV1Response)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -702,13 +769,13 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::remote::_NetPeerCountRequest_default_instance_._instance,
   &::remote::_NetPeerCountReply_default_instance_._instance,
   &::remote::_EngineGetPayloadRequest_default_instance_._instance,
+  &::remote::_EngineGetBlobsBundleRequest_default_instance_._instance,
   &::remote::_EnginePayloadStatus_default_instance_._instance,
   &::remote::_EnginePayloadAttributes_default_instance_._instance,
   &::remote::_EngineForkChoiceState_default_instance_._instance,
   &::remote::_EngineForkChoiceUpdatedRequest_default_instance_._instance,
-  &::remote::_EnginePayloadAttributesV2_default_instance_._instance,
-  &::remote::_EngineForkChoiceUpdatedRequestV2_default_instance_._instance,
-  &::remote::_EngineForkChoiceUpdatedReply_default_instance_._instance,
+  &::remote::_EngineForkChoiceUpdatedResponse_default_instance_._instance,
+  &::remote::_EngineGetPayloadResponse_default_instance_._instance,
   &::remote::_ProtocolVersionRequest_default_instance_._instance,
   &::remote::_ProtocolVersionReply_default_instance_._instance,
   &::remote::_ClientVersionRequest_default_instance_._instance,
@@ -725,6 +792,9 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::remote::_NodesInfoReply_default_instance_._instance,
   &::remote::_PeersReply_default_instance_._instance,
   &::remote::_PendingBlockReply_default_instance_._instance,
+  &::remote::_EngineGetPayloadBodiesByHashV1Request_default_instance_._instance,
+  &::remote::_EngineGetPayloadBodiesByRangeV1Request_default_instance_._instance,
+  &::remote::_EngineGetPayloadBodiesV1Response_default_instance_._instance,
 };
 
 const char descriptor_table_protodef_remote_2fethbackend_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
@@ -735,95 +805,101 @@ const char descriptor_table_protodef_remote_2fethbackend_2eproto[] PROTOBUF_SECT
   "ionRequest\"\035\n\017NetVersionReply\022\n\n\002id\030\001 \001("
   "\004\"\025\n\023NetPeerCountRequest\"\"\n\021NetPeerCount"
   "Reply\022\r\n\005count\030\001 \001(\004\",\n\027EngineGetPayload"
-  "Request\022\021\n\tpayloadId\030\001 \001(\004\"z\n\023EnginePayl"
-  "oadStatus\022$\n\006status\030\001 \001(\0162\024.remote.Engin"
-  "eStatus\022$\n\017latestValidHash\030\002 \001(\0132\013.types"
-  ".H256\022\027\n\017validationError\030\003 \001(\t\"y\n\027Engine"
-  "PayloadAttributes\022\021\n\ttimestamp\030\001 \001(\004\022\037\n\n"
-  "prevRandao\030\002 \001(\0132\013.types.H256\022*\n\025suggest"
-  "edFeeRecipient\030\003 \001(\0132\013.types.H160\"\210\001\n\025En"
-  "gineForkChoiceState\022\"\n\rheadBlockHash\030\001 \001"
-  "(\0132\013.types.H256\022\"\n\rsafeBlockHash\030\002 \001(\0132\013"
-  ".types.H256\022\'\n\022finalizedBlockHash\030\003 \001(\0132"
-  "\013.types.H256\"\224\001\n\036EngineForkChoiceUpdated"
-  "Request\0226\n\017forkchoiceState\030\001 \001(\0132\035.remot"
-  "e.EngineForkChoiceState\022:\n\021payloadAttrib"
-  "utes\030\002 \001(\0132\037.remote.EnginePayloadAttribu"
-  "tes\"x\n\031EnginePayloadAttributesV2\0223\n\nattr"
-  "ibutes\030\001 \001(\0132\037.remote.EnginePayloadAttri"
-  "butes\022&\n\013withdrawals\030\002 \003(\0132\021.types.Withd"
-  "rawal\"\230\001\n EngineForkChoiceUpdatedRequest"
-  "V2\0226\n\017forkchoiceState\030\001 \001(\0132\035.remote.Eng"
-  "ineForkChoiceState\022<\n\021payloadAttributes\030"
-  "\002 \001(\0132!.remote.EnginePayloadAttributesV2"
-  "\"e\n\034EngineForkChoiceUpdatedReply\0222\n\rpayl"
-  "oadStatus\030\001 \001(\0132\033.remote.EnginePayloadSt"
-  "atus\022\021\n\tpayloadId\030\002 \001(\004\"\030\n\026ProtocolVersi"
-  "onRequest\"\"\n\024ProtocolVersionReply\022\n\n\002id\030"
-  "\001 \001(\004\"\026\n\024ClientVersionRequest\"&\n\022ClientV"
-  "ersionReply\022\020\n\010nodeName\030\001 \001(\t\"/\n\020Subscri"
-  "beRequest\022\033\n\004type\030\001 \001(\0162\r.remote.Event\";"
-  "\n\016SubscribeReply\022\033\n\004type\030\001 \001(\0162\r.remote."
-  "Event\022\014\n\004data\030\002 \001(\014\"y\n\021LogsFilterRequest"
-  "\022\024\n\014allAddresses\030\001 \001(\010\022\036\n\taddresses\030\002 \003("
-  "\0132\013.types.H160\022\021\n\tallTopics\030\003 \001(\010\022\033\n\006top"
-  "ics\030\004 \003(\0132\013.types.H256\"\365\001\n\022SubscribeLogs"
-  "Reply\022\034\n\007address\030\001 \001(\0132\013.types.H160\022\036\n\tb"
-  "lockHash\030\002 \001(\0132\013.types.H256\022\023\n\013blockNumb"
-  "er\030\003 \001(\004\022\014\n\004data\030\004 \001(\014\022\020\n\010logIndex\030\005 \001(\004"
-  "\022\033\n\006topics\030\006 \003(\0132\013.types.H256\022$\n\017transac"
-  "tionHash\030\007 \001(\0132\013.types.H256\022\030\n\020transacti"
-  "onIndex\030\010 \001(\004\022\017\n\007removed\030\t \001(\010\"C\n\014BlockR"
-  "equest\022\023\n\013blockHeight\030\002 \001(\004\022\036\n\tblockHash"
-  "\030\003 \001(\0132\013.types.H256\"/\n\nBlockReply\022\020\n\010blo"
-  "ckRlp\030\001 \001(\014\022\017\n\007senders\030\002 \001(\014\"0\n\020TxnLooku"
-  "pRequest\022\034\n\007txnHash\030\001 \001(\0132\013.types.H256\"%"
-  "\n\016TxnLookupReply\022\023\n\013blockNumber\030\001 \001(\004\"!\n"
-  "\020NodesInfoRequest\022\r\n\005limit\030\001 \001(\r\"9\n\016Node"
-  "sInfoReply\022\'\n\tnodesInfo\030\001 \003(\0132\024.types.No"
-  "deInfoReply\",\n\nPeersReply\022\036\n\005peers\030\001 \003(\013"
-  "2\017.types.PeerInfo\"%\n\021PendingBlockReply\022\020"
-  "\n\010blockRlp\030\001 \001(\014*J\n\005Event\022\n\n\006HEADER\020\000\022\020\n"
-  "\014PENDING_LOGS\020\001\022\021\n\rPENDING_BLOCK\020\002\022\020\n\014NE"
-  "W_SNAPSHOT\020\003*Y\n\014EngineStatus\022\t\n\005VALID\020\000\022"
-  "\013\n\007INVALID\020\001\022\013\n\007SYNCING\020\002\022\014\n\010ACCEPTED\020\003\022"
-  "\026\n\022INVALID_BLOCK_HASH\020\0042\362\n\n\nETHBACKEND\022="
-  "\n\tEtherbase\022\030.remote.EtherbaseRequest\032\026."
-  "remote.EtherbaseReply\022@\n\nNetVersion\022\031.re"
-  "mote.NetVersionRequest\032\027.remote.NetVersi"
-  "onReply\022F\n\014NetPeerCount\022\033.remote.NetPeer"
-  "CountRequest\032\031.remote.NetPeerCountReply\022"
-  "J\n\022EngineNewPayloadV1\022\027.types.ExecutionP"
-  "ayload\032\033.remote.EnginePayloadStatus\022L\n\022E"
-  "ngineNewPayloadV2\022\031.types.ExecutionPaylo"
-  "adV2\032\033.remote.EnginePayloadStatus\022i\n\031Eng"
-  "ineForkChoiceUpdatedV1\022&.remote.EngineFo"
-  "rkChoiceUpdatedRequest\032$.remote.EngineFo"
-  "rkChoiceUpdatedReply\022k\n\031EngineForkChoice"
-  "UpdatedV2\022(.remote.EngineForkChoiceUpdat"
-  "edRequestV2\032$.remote.EngineForkChoiceUpd"
-  "atedReply\022N\n\022EngineGetPayloadV1\022\037.remote"
-  ".EngineGetPayloadRequest\032\027.types.Executi"
-  "onPayload\022P\n\022EngineGetPayloadV2\022\037.remote"
-  ".EngineGetPayloadRequest\032\031.types.Executi"
-  "onPayloadV2\0226\n\007Version\022\026.google.protobuf"
-  ".Empty\032\023.types.VersionReply\022O\n\017ProtocolV"
-  "ersion\022\036.remote.ProtocolVersionRequest\032\034"
-  ".remote.ProtocolVersionReply\022I\n\rClientVe"
-  "rsion\022\034.remote.ClientVersionRequest\032\032.re"
-  "mote.ClientVersionReply\022\?\n\tSubscribe\022\030.r"
-  "emote.SubscribeRequest\032\026.remote.Subscrib"
-  "eReply0\001\022J\n\rSubscribeLogs\022\031.remote.LogsF"
-  "ilterRequest\032\032.remote.SubscribeLogsReply"
-  "(\0010\001\0221\n\005Block\022\024.remote.BlockRequest\032\022.re"
-  "mote.BlockReply\022=\n\tTxnLookup\022\030.remote.Tx"
-  "nLookupRequest\032\026.remote.TxnLookupReply\022<"
-  "\n\010NodeInfo\022\030.remote.NodesInfoRequest\032\026.r"
-  "emote.NodesInfoReply\0223\n\005Peers\022\026.google.p"
-  "rotobuf.Empty\032\022.remote.PeersReply\022A\n\014Pen"
-  "dingBlock\022\026.google.protobuf.Empty\032\031.remo"
-  "te.PendingBlockReplyB\021Z\017./remote;remoteb"
-  "\006proto3"
+  "Request\022\021\n\tpayloadId\030\001 \001(\004\"0\n\033EngineGetB"
+  "lobsBundleRequest\022\021\n\tpayloadId\030\001 \001(\004\"z\n\023"
+  "EnginePayloadStatus\022$\n\006status\030\001 \001(\0162\024.re"
+  "mote.EngineStatus\022$\n\017latestValidHash\030\002 \001"
+  "(\0132\013.types.H256\022\027\n\017validationError\030\003 \001(\t"
+  "\"\262\001\n\027EnginePayloadAttributes\022\017\n\007version\030"
+  "\001 \001(\r\022\021\n\ttimestamp\030\002 \001(\004\022\037\n\nprevRandao\030\003"
+  " \001(\0132\013.types.H256\022*\n\025suggestedFeeRecipie"
+  "nt\030\004 \001(\0132\013.types.H160\022&\n\013withdrawals\030\005 \003"
+  "(\0132\021.types.Withdrawal\"\210\001\n\025EngineForkChoi"
+  "ceState\022\"\n\rheadBlockHash\030\001 \001(\0132\013.types.H"
+  "256\022\"\n\rsafeBlockHash\030\002 \001(\0132\013.types.H256\022"
+  "\'\n\022finalizedBlockHash\030\003 \001(\0132\013.types.H256"
+  "\"\224\001\n\036EngineForkChoiceUpdatedRequest\0226\n\017f"
+  "orkchoiceState\030\001 \001(\0132\035.remote.EngineFork"
+  "ChoiceState\022:\n\021payloadAttributes\030\002 \001(\0132\037"
+  ".remote.EnginePayloadAttributes\"h\n\037Engin"
+  "eForkChoiceUpdatedResponse\0222\n\rpayloadSta"
+  "tus\030\001 \001(\0132\033.remote.EnginePayloadStatus\022\021"
+  "\n\tpayloadId\030\002 \001(\004\"n\n\030EngineGetPayloadRes"
+  "ponse\0221\n\020executionPayload\030\001 \001(\0132\027.types."
+  "ExecutionPayload\022\037\n\nblockValue\030\002 \001(\0132\013.t"
+  "ypes.H256\"\030\n\026ProtocolVersionRequest\"\"\n\024P"
+  "rotocolVersionReply\022\n\n\002id\030\001 \001(\004\"\026\n\024Clien"
+  "tVersionRequest\"&\n\022ClientVersionReply\022\020\n"
+  "\010nodeName\030\001 \001(\t\"/\n\020SubscribeRequest\022\033\n\004t"
+  "ype\030\001 \001(\0162\r.remote.Event\";\n\016SubscribeRep"
+  "ly\022\033\n\004type\030\001 \001(\0162\r.remote.Event\022\014\n\004data\030"
+  "\002 \001(\014\"y\n\021LogsFilterRequest\022\024\n\014allAddress"
+  "es\030\001 \001(\010\022\036\n\taddresses\030\002 \003(\0132\013.types.H160"
+  "\022\021\n\tallTopics\030\003 \001(\010\022\033\n\006topics\030\004 \003(\0132\013.ty"
+  "pes.H256\"\365\001\n\022SubscribeLogsReply\022\034\n\007addre"
+  "ss\030\001 \001(\0132\013.types.H160\022\036\n\tblockHash\030\002 \001(\013"
+  "2\013.types.H256\022\023\n\013blockNumber\030\003 \001(\004\022\014\n\004da"
+  "ta\030\004 \001(\014\022\020\n\010logIndex\030\005 \001(\004\022\033\n\006topics\030\006 \003"
+  "(\0132\013.types.H256\022$\n\017transactionHash\030\007 \001(\013"
+  "2\013.types.H256\022\030\n\020transactionIndex\030\010 \001(\004\022"
+  "\017\n\007removed\030\t \001(\010\"C\n\014BlockRequest\022\023\n\013bloc"
+  "kHeight\030\002 \001(\004\022\036\n\tblockHash\030\003 \001(\0132\013.types"
+  ".H256\"/\n\nBlockReply\022\020\n\010blockRlp\030\001 \001(\014\022\017\n"
+  "\007senders\030\002 \001(\014\"0\n\020TxnLookupRequest\022\034\n\007tx"
+  "nHash\030\001 \001(\0132\013.types.H256\"%\n\016TxnLookupRep"
+  "ly\022\023\n\013blockNumber\030\001 \001(\004\"!\n\020NodesInfoRequ"
+  "est\022\r\n\005limit\030\001 \001(\r\"9\n\016NodesInfoReply\022\'\n\t"
+  "nodesInfo\030\001 \003(\0132\024.types.NodeInfoReply\",\n"
+  "\nPeersReply\022\036\n\005peers\030\001 \003(\0132\017.types.PeerI"
+  "nfo\"%\n\021PendingBlockReply\022\020\n\010blockRlp\030\001 \001"
+  "(\014\"D\n%EngineGetPayloadBodiesByHashV1Requ"
+  "est\022\033\n\006hashes\030\001 \003(\0132\013.types.H256\"F\n&Engi"
+  "neGetPayloadBodiesByRangeV1Request\022\r\n\005st"
+  "art\030\001 \001(\004\022\r\n\005count\030\002 \001(\004\"Q\n EngineGetPay"
+  "loadBodiesV1Response\022-\n\006bodies\030\001 \003(\0132\035.t"
+  "ypes.ExecutionPayloadBodyV1*J\n\005Event\022\n\n\006"
+  "HEADER\020\000\022\020\n\014PENDING_LOGS\020\001\022\021\n\rPENDING_BL"
+  "OCK\020\002\022\020\n\014NEW_SNAPSHOT\020\003*Y\n\014EngineStatus\022"
+  "\t\n\005VALID\020\000\022\013\n\007INVALID\020\001\022\013\n\007SYNCING\020\002\022\014\n\010"
+  "ACCEPTED\020\003\022\026\n\022INVALID_BLOCK_HASH\020\0042\270\013\n\nE"
+  "THBACKEND\022=\n\tEtherbase\022\030.remote.Etherbas"
+  "eRequest\032\026.remote.EtherbaseReply\022@\n\nNetV"
+  "ersion\022\031.remote.NetVersionRequest\032\027.remo"
+  "te.NetVersionReply\022F\n\014NetPeerCount\022\033.rem"
+  "ote.NetPeerCountRequest\032\031.remote.NetPeer"
+  "CountReply\022H\n\020EngineNewPayload\022\027.types.E"
+  "xecutionPayload\032\033.remote.EnginePayloadSt"
+  "atus\022j\n\027EngineForkChoiceUpdated\022&.remote"
+  ".EngineForkChoiceUpdatedRequest\032\'.remote"
+  ".EngineForkChoiceUpdatedResponse\022U\n\020Engi"
+  "neGetPayload\022\037.remote.EngineGetPayloadRe"
+  "quest\032 .remote.EngineGetPayloadResponse\022"
+  "y\n\036EngineGetPayloadBodiesByHashV1\022-.remo"
+  "te.EngineGetPayloadBodiesByHashV1Request"
+  "\032(.remote.EngineGetPayloadBodiesV1Respon"
+  "se\022{\n\037EngineGetPayloadBodiesByRangeV1\022.."
+  "remote.EngineGetPayloadBodiesByRangeV1Re"
+  "quest\032(.remote.EngineGetPayloadBodiesV1R"
+  "esponse\022S\n\026EngineGetBlobsBundleV1\022#.remo"
+  "te.EngineGetBlobsBundleRequest\032\024.types.B"
+  "lobsBundleV1\0226\n\007Version\022\026.google.protobu"
+  "f.Empty\032\023.types.VersionReply\022O\n\017Protocol"
+  "Version\022\036.remote.ProtocolVersionRequest\032"
+  "\034.remote.ProtocolVersionReply\022I\n\rClientV"
+  "ersion\022\034.remote.ClientVersionRequest\032\032.r"
+  "emote.ClientVersionReply\022\?\n\tSubscribe\022\030."
+  "remote.SubscribeRequest\032\026.remote.Subscri"
+  "beReply0\001\022J\n\rSubscribeLogs\022\031.remote.Logs"
+  "FilterRequest\032\032.remote.SubscribeLogsRepl"
+  "y(\0010\001\0221\n\005Block\022\024.remote.BlockRequest\032\022.r"
+  "emote.BlockReply\022=\n\tTxnLookup\022\030.remote.T"
+  "xnLookupRequest\032\026.remote.TxnLookupReply\022"
+  "<\n\010NodeInfo\022\030.remote.NodesInfoRequest\032\026."
+  "remote.NodesInfoReply\0223\n\005Peers\022\026.google."
+  "protobuf.Empty\032\022.remote.PeersReply\022A\n\014Pe"
+  "ndingBlock\022\026.google.protobuf.Empty\032\031.rem"
+  "ote.PendingBlockReplyB\021Z\017./remote;remote"
+  "b\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_remote_2fethbackend_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fempty_2eproto,
@@ -831,9 +907,9 @@ static const ::_pbi::DescriptorTable* const descriptor_table_remote_2fethbackend
 };
 static ::_pbi::once_flag descriptor_table_remote_2fethbackend_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_remote_2fethbackend_2eproto = {
-    false, false, 3807, descriptor_table_protodef_remote_2fethbackend_2eproto,
+    false, false, 4048, descriptor_table_protodef_remote_2fethbackend_2eproto,
     "remote/ethbackend.proto",
-    &descriptor_table_remote_2fethbackend_2eproto_once, descriptor_table_remote_2fethbackend_2eproto_deps, 2, 30,
+    &descriptor_table_remote_2fethbackend_2eproto_once, descriptor_table_remote_2fethbackend_2eproto_deps, 2, 33,
     schemas, file_default_instances, TableStruct_remote_2fethbackend_2eproto::offsets,
     file_level_metadata_remote_2fethbackend_2eproto, file_level_enum_descriptors_remote_2fethbackend_2eproto,
     file_level_service_descriptors_remote_2fethbackend_2eproto,
@@ -1734,6 +1810,184 @@ void EngineGetPayloadRequest::InternalSwap(EngineGetPayloadRequest* other) {
 
 // ===================================================================
 
+class EngineGetBlobsBundleRequest::_Internal {
+ public:
+};
+
+EngineGetBlobsBundleRequest::EngineGetBlobsBundleRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:remote.EngineGetBlobsBundleRequest)
+}
+EngineGetBlobsBundleRequest::EngineGetBlobsBundleRequest(const EngineGetBlobsBundleRequest& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  EngineGetBlobsBundleRequest* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.payloadid_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_impl_.payloadid_ = from._impl_.payloadid_;
+  // @@protoc_insertion_point(copy_constructor:remote.EngineGetBlobsBundleRequest)
+}
+
+inline void EngineGetBlobsBundleRequest::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.payloadid_){uint64_t{0u}}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+}
+
+EngineGetBlobsBundleRequest::~EngineGetBlobsBundleRequest() {
+  // @@protoc_insertion_point(destructor:remote.EngineGetBlobsBundleRequest)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void EngineGetBlobsBundleRequest::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+}
+
+void EngineGetBlobsBundleRequest::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void EngineGetBlobsBundleRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:remote.EngineGetBlobsBundleRequest)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.payloadid_ = uint64_t{0u};
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* EngineGetBlobsBundleRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // uint64 payloadId = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
+          _impl_.payloadid_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* EngineGetBlobsBundleRequest::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:remote.EngineGetBlobsBundleRequest)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 payloadId = 1;
+  if (this->_internal_payloadid() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(1, this->_internal_payloadid(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:remote.EngineGetBlobsBundleRequest)
+  return target;
+}
+
+size_t EngineGetBlobsBundleRequest::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:remote.EngineGetBlobsBundleRequest)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // uint64 payloadId = 1;
+  if (this->_internal_payloadid() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_payloadid());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData EngineGetBlobsBundleRequest::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    EngineGetBlobsBundleRequest::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*EngineGetBlobsBundleRequest::GetClassData() const { return &_class_data_; }
+
+
+void EngineGetBlobsBundleRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<EngineGetBlobsBundleRequest*>(&to_msg);
+  auto& from = static_cast<const EngineGetBlobsBundleRequest&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:remote.EngineGetBlobsBundleRequest)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_payloadid() != 0) {
+    _this->_internal_set_payloadid(from._internal_payloadid());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void EngineGetBlobsBundleRequest::CopyFrom(const EngineGetBlobsBundleRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:remote.EngineGetBlobsBundleRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool EngineGetBlobsBundleRequest::IsInitialized() const {
+  return true;
+}
+
+void EngineGetBlobsBundleRequest::InternalSwap(EngineGetBlobsBundleRequest* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_.payloadid_, other->_impl_.payloadid_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata EngineGetBlobsBundleRequest::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
+      file_level_metadata_remote_2fethbackend_2eproto[7]);
+}
+
+// ===================================================================
+
 class EnginePayloadStatus::_Internal {
  public:
   static const ::types::H256& latestvalidhash(const EnginePayloadStatus* msg);
@@ -2014,7 +2268,7 @@ void EnginePayloadStatus::InternalSwap(EnginePayloadStatus* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata EnginePayloadStatus::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
-      file_level_metadata_remote_2fethbackend_2eproto[7]);
+      file_level_metadata_remote_2fethbackend_2eproto[8]);
 }
 
 // ===================================================================
@@ -2045,6 +2299,9 @@ void EnginePayloadAttributes::clear_suggestedfeerecipient() {
   }
   _impl_.suggestedfeerecipient_ = nullptr;
 }
+void EnginePayloadAttributes::clear_withdrawals() {
+  _impl_.withdrawals_.Clear();
+}
 EnginePayloadAttributes::EnginePayloadAttributes(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
@@ -2055,9 +2312,11 @@ EnginePayloadAttributes::EnginePayloadAttributes(const EnginePayloadAttributes& 
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   EnginePayloadAttributes* const _this = this; (void)_this;
   new (&_impl_) Impl_{
-      decltype(_impl_.prevrandao_){nullptr}
+      decltype(_impl_.withdrawals_){from._impl_.withdrawals_}
+    , decltype(_impl_.prevrandao_){nullptr}
     , decltype(_impl_.suggestedfeerecipient_){nullptr}
     , decltype(_impl_.timestamp_){}
+    , decltype(_impl_.version_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -2067,7 +2326,9 @@ EnginePayloadAttributes::EnginePayloadAttributes(const EnginePayloadAttributes& 
   if (from._internal_has_suggestedfeerecipient()) {
     _this->_impl_.suggestedfeerecipient_ = new ::types::H160(*from._impl_.suggestedfeerecipient_);
   }
-  _this->_impl_.timestamp_ = from._impl_.timestamp_;
+  ::memcpy(&_impl_.timestamp_, &from._impl_.timestamp_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.version_) -
+    reinterpret_cast<char*>(&_impl_.timestamp_)) + sizeof(_impl_.version_));
   // @@protoc_insertion_point(copy_constructor:remote.EnginePayloadAttributes)
 }
 
@@ -2076,9 +2337,11 @@ inline void EnginePayloadAttributes::SharedCtor(
   (void)arena;
   (void)is_message_owned;
   new (&_impl_) Impl_{
-      decltype(_impl_.prevrandao_){nullptr}
+      decltype(_impl_.withdrawals_){arena}
+    , decltype(_impl_.prevrandao_){nullptr}
     , decltype(_impl_.suggestedfeerecipient_){nullptr}
     , decltype(_impl_.timestamp_){uint64_t{0u}}
+    , decltype(_impl_.version_){0u}
     , /*decltype(_impl_._cached_size_)*/{}
   };
 }
@@ -2094,6 +2357,7 @@ EnginePayloadAttributes::~EnginePayloadAttributes() {
 
 inline void EnginePayloadAttributes::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.withdrawals_.~RepeatedPtrField();
   if (this != internal_default_instance()) delete _impl_.prevrandao_;
   if (this != internal_default_instance()) delete _impl_.suggestedfeerecipient_;
 }
@@ -2108,6 +2372,7 @@ void EnginePayloadAttributes::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
+  _impl_.withdrawals_.Clear();
   if (GetArenaForAllocation() == nullptr && _impl_.prevrandao_ != nullptr) {
     delete _impl_.prevrandao_;
   }
@@ -2116,7 +2381,9 @@ void EnginePayloadAttributes::Clear() {
     delete _impl_.suggestedfeerecipient_;
   }
   _impl_.suggestedfeerecipient_ = nullptr;
-  _impl_.timestamp_ = uint64_t{0u};
+  ::memset(&_impl_.timestamp_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.version_) -
+      reinterpret_cast<char*>(&_impl_.timestamp_)) + sizeof(_impl_.version_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -2126,27 +2393,48 @@ const char* EnginePayloadAttributes::_InternalParse(const char* ptr, ::_pbi::Par
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // uint64 timestamp = 1;
+      // uint32 version = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
+          _impl_.version_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // uint64 timestamp = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
           _impl_.timestamp_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // .types.H256 prevRandao = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+      // .types.H256 prevRandao = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
           ptr = ctx->ParseMessage(_internal_mutable_prevrandao(), ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // .types.H160 suggestedFeeRecipient = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
+      // .types.H160 suggestedFeeRecipient = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
           ptr = ctx->ParseMessage(_internal_mutable_suggestedfeerecipient(), ptr);
           CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // repeated .types.Withdrawal withdrawals = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 42)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            ptr = ctx->ParseMessage(_internal_add_withdrawals(), ptr);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<42>(ptr));
         } else
           goto handle_unusual;
         continue;
@@ -2179,24 +2467,38 @@ uint8_t* EnginePayloadAttributes::_InternalSerialize(
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // uint64 timestamp = 1;
-  if (this->_internal_timestamp() != 0) {
+  // uint32 version = 1;
+  if (this->_internal_version() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(1, this->_internal_timestamp(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(1, this->_internal_version(), target);
   }
 
-  // .types.H256 prevRandao = 2;
+  // uint64 timestamp = 2;
+  if (this->_internal_timestamp() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(2, this->_internal_timestamp(), target);
+  }
+
+  // .types.H256 prevRandao = 3;
   if (this->_internal_has_prevrandao()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(2, _Internal::prevrandao(this),
+      InternalWriteMessage(3, _Internal::prevrandao(this),
         _Internal::prevrandao(this).GetCachedSize(), target, stream);
   }
 
-  // .types.H160 suggestedFeeRecipient = 3;
+  // .types.H160 suggestedFeeRecipient = 4;
   if (this->_internal_has_suggestedfeerecipient()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(3, _Internal::suggestedfeerecipient(this),
+      InternalWriteMessage(4, _Internal::suggestedfeerecipient(this),
         _Internal::suggestedfeerecipient(this).GetCachedSize(), target, stream);
+  }
+
+  // repeated .types.Withdrawal withdrawals = 5;
+  for (unsigned i = 0,
+      n = static_cast<unsigned>(this->_internal_withdrawals_size()); i < n; i++) {
+    const auto& repfield = this->_internal_withdrawals(i);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+        InternalWriteMessage(5, repfield, repfield.GetCachedSize(), target, stream);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -2215,23 +2517,35 @@ size_t EnginePayloadAttributes::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // .types.H256 prevRandao = 2;
+  // repeated .types.Withdrawal withdrawals = 5;
+  total_size += 1UL * this->_internal_withdrawals_size();
+  for (const auto& msg : this->_impl_.withdrawals_) {
+    total_size +=
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
+
+  // .types.H256 prevRandao = 3;
   if (this->_internal_has_prevrandao()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *_impl_.prevrandao_);
   }
 
-  // .types.H160 suggestedFeeRecipient = 3;
+  // .types.H160 suggestedFeeRecipient = 4;
   if (this->_internal_has_suggestedfeerecipient()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *_impl_.suggestedfeerecipient_);
   }
 
-  // uint64 timestamp = 1;
+  // uint64 timestamp = 2;
   if (this->_internal_timestamp() != 0) {
     total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_timestamp());
+  }
+
+  // uint32 version = 1;
+  if (this->_internal_version() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_version());
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -2252,6 +2566,7 @@ void EnginePayloadAttributes::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
+  _this->_impl_.withdrawals_.MergeFrom(from._impl_.withdrawals_);
   if (from._internal_has_prevrandao()) {
     _this->_internal_mutable_prevrandao()->::types::H256::MergeFrom(
         from._internal_prevrandao());
@@ -2262,6 +2577,9 @@ void EnginePayloadAttributes::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg
   }
   if (from._internal_timestamp() != 0) {
     _this->_internal_set_timestamp(from._internal_timestamp());
+  }
+  if (from._internal_version() != 0) {
+    _this->_internal_set_version(from._internal_version());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -2280,9 +2598,10 @@ bool EnginePayloadAttributes::IsInitialized() const {
 void EnginePayloadAttributes::InternalSwap(EnginePayloadAttributes* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  _impl_.withdrawals_.InternalSwap(&other->_impl_.withdrawals_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(EnginePayloadAttributes, _impl_.timestamp_)
-      + sizeof(EnginePayloadAttributes::_impl_.timestamp_)
+      PROTOBUF_FIELD_OFFSET(EnginePayloadAttributes, _impl_.version_)
+      + sizeof(EnginePayloadAttributes::_impl_.version_)
       - PROTOBUF_FIELD_OFFSET(EnginePayloadAttributes, _impl_.prevrandao_)>(
           reinterpret_cast<char*>(&_impl_.prevrandao_),
           reinterpret_cast<char*>(&other->_impl_.prevrandao_));
@@ -2291,7 +2610,7 @@ void EnginePayloadAttributes::InternalSwap(EnginePayloadAttributes* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata EnginePayloadAttributes::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
-      file_level_metadata_remote_2fethbackend_2eproto[8]);
+      file_level_metadata_remote_2fethbackend_2eproto[9]);
 }
 
 // ===================================================================
@@ -2589,7 +2908,7 @@ void EngineForkChoiceState::InternalSwap(EngineForkChoiceState* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata EngineForkChoiceState::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
-      file_level_metadata_remote_2fethbackend_2eproto[9]);
+      file_level_metadata_remote_2fethbackend_2eproto[10]);
 }
 
 // ===================================================================
@@ -2828,498 +3147,29 @@ void EngineForkChoiceUpdatedRequest::InternalSwap(EngineForkChoiceUpdatedRequest
 ::PROTOBUF_NAMESPACE_ID::Metadata EngineForkChoiceUpdatedRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
-      file_level_metadata_remote_2fethbackend_2eproto[10]);
-}
-
-// ===================================================================
-
-class EnginePayloadAttributesV2::_Internal {
- public:
-  static const ::remote::EnginePayloadAttributes& attributes(const EnginePayloadAttributesV2* msg);
-};
-
-const ::remote::EnginePayloadAttributes&
-EnginePayloadAttributesV2::_Internal::attributes(const EnginePayloadAttributesV2* msg) {
-  return *msg->_impl_.attributes_;
-}
-void EnginePayloadAttributesV2::clear_withdrawals() {
-  _impl_.withdrawals_.Clear();
-}
-EnginePayloadAttributesV2::EnginePayloadAttributesV2(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:remote.EnginePayloadAttributesV2)
-}
-EnginePayloadAttributesV2::EnginePayloadAttributesV2(const EnginePayloadAttributesV2& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  EnginePayloadAttributesV2* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      decltype(_impl_.withdrawals_){from._impl_.withdrawals_}
-    , decltype(_impl_.attributes_){nullptr}
-    , /*decltype(_impl_._cached_size_)*/{}};
-
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  if (from._internal_has_attributes()) {
-    _this->_impl_.attributes_ = new ::remote::EnginePayloadAttributes(*from._impl_.attributes_);
-  }
-  // @@protoc_insertion_point(copy_constructor:remote.EnginePayloadAttributesV2)
-}
-
-inline void EnginePayloadAttributesV2::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      decltype(_impl_.withdrawals_){arena}
-    , decltype(_impl_.attributes_){nullptr}
-    , /*decltype(_impl_._cached_size_)*/{}
-  };
-}
-
-EnginePayloadAttributesV2::~EnginePayloadAttributesV2() {
-  // @@protoc_insertion_point(destructor:remote.EnginePayloadAttributesV2)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
-  SharedDtor();
-}
-
-inline void EnginePayloadAttributesV2::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.withdrawals_.~RepeatedPtrField();
-  if (this != internal_default_instance()) delete _impl_.attributes_;
-}
-
-void EnginePayloadAttributesV2::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
-
-void EnginePayloadAttributesV2::Clear() {
-// @@protoc_insertion_point(message_clear_start:remote.EnginePayloadAttributesV2)
-  uint32_t cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  _impl_.withdrawals_.Clear();
-  if (GetArenaForAllocation() == nullptr && _impl_.attributes_ != nullptr) {
-    delete _impl_.attributes_;
-  }
-  _impl_.attributes_ = nullptr;
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-const char* EnginePayloadAttributesV2::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // .remote.EnginePayloadAttributes attributes = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          ptr = ctx->ParseMessage(_internal_mutable_attributes(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // repeated .types.Withdrawal withdrawals = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          ptr -= 1;
-          do {
-            ptr += 1;
-            ptr = ctx->ParseMessage(_internal_add_withdrawals(), ptr);
-            CHK_(ptr);
-            if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<18>(ptr));
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
-    }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
-}
-
-uint8_t* EnginePayloadAttributesV2::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:remote.EnginePayloadAttributesV2)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  // .remote.EnginePayloadAttributes attributes = 1;
-  if (this->_internal_has_attributes()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(1, _Internal::attributes(this),
-        _Internal::attributes(this).GetCachedSize(), target, stream);
-  }
-
-  // repeated .types.Withdrawal withdrawals = 2;
-  for (unsigned i = 0,
-      n = static_cast<unsigned>(this->_internal_withdrawals_size()); i < n; i++) {
-    const auto& repfield = this->_internal_withdrawals(i);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-        InternalWriteMessage(2, repfield, repfield.GetCachedSize(), target, stream);
-  }
-
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
-  }
-  // @@protoc_insertion_point(serialize_to_array_end:remote.EnginePayloadAttributesV2)
-  return target;
-}
-
-size_t EnginePayloadAttributesV2::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:remote.EnginePayloadAttributesV2)
-  size_t total_size = 0;
-
-  uint32_t cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  // repeated .types.Withdrawal withdrawals = 2;
-  total_size += 1UL * this->_internal_withdrawals_size();
-  for (const auto& msg : this->_impl_.withdrawals_) {
-    total_size +=
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
-  }
-
-  // .remote.EnginePayloadAttributes attributes = 1;
-  if (this->_internal_has_attributes()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.attributes_);
-  }
-
-  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
-}
-
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData EnginePayloadAttributesV2::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    EnginePayloadAttributesV2::MergeImpl
-};
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*EnginePayloadAttributesV2::GetClassData() const { return &_class_data_; }
-
-
-void EnginePayloadAttributesV2::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
-  auto* const _this = static_cast<EnginePayloadAttributesV2*>(&to_msg);
-  auto& from = static_cast<const EnginePayloadAttributesV2&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:remote.EnginePayloadAttributesV2)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  _this->_impl_.withdrawals_.MergeFrom(from._impl_.withdrawals_);
-  if (from._internal_has_attributes()) {
-    _this->_internal_mutable_attributes()->::remote::EnginePayloadAttributes::MergeFrom(
-        from._internal_attributes());
-  }
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-}
-
-void EnginePayloadAttributesV2::CopyFrom(const EnginePayloadAttributesV2& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:remote.EnginePayloadAttributesV2)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-bool EnginePayloadAttributesV2::IsInitialized() const {
-  return true;
-}
-
-void EnginePayloadAttributesV2::InternalSwap(EnginePayloadAttributesV2* other) {
-  using std::swap;
-  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  _impl_.withdrawals_.InternalSwap(&other->_impl_.withdrawals_);
-  swap(_impl_.attributes_, other->_impl_.attributes_);
-}
-
-::PROTOBUF_NAMESPACE_ID::Metadata EnginePayloadAttributesV2::GetMetadata() const {
-  return ::_pbi::AssignDescriptors(
-      &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
       file_level_metadata_remote_2fethbackend_2eproto[11]);
 }
 
 // ===================================================================
 
-class EngineForkChoiceUpdatedRequestV2::_Internal {
+class EngineForkChoiceUpdatedResponse::_Internal {
  public:
-  static const ::remote::EngineForkChoiceState& forkchoicestate(const EngineForkChoiceUpdatedRequestV2* msg);
-  static const ::remote::EnginePayloadAttributesV2& payloadattributes(const EngineForkChoiceUpdatedRequestV2* msg);
-};
-
-const ::remote::EngineForkChoiceState&
-EngineForkChoiceUpdatedRequestV2::_Internal::forkchoicestate(const EngineForkChoiceUpdatedRequestV2* msg) {
-  return *msg->_impl_.forkchoicestate_;
-}
-const ::remote::EnginePayloadAttributesV2&
-EngineForkChoiceUpdatedRequestV2::_Internal::payloadattributes(const EngineForkChoiceUpdatedRequestV2* msg) {
-  return *msg->_impl_.payloadattributes_;
-}
-EngineForkChoiceUpdatedRequestV2::EngineForkChoiceUpdatedRequestV2(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:remote.EngineForkChoiceUpdatedRequestV2)
-}
-EngineForkChoiceUpdatedRequestV2::EngineForkChoiceUpdatedRequestV2(const EngineForkChoiceUpdatedRequestV2& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  EngineForkChoiceUpdatedRequestV2* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      decltype(_impl_.forkchoicestate_){nullptr}
-    , decltype(_impl_.payloadattributes_){nullptr}
-    , /*decltype(_impl_._cached_size_)*/{}};
-
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  if (from._internal_has_forkchoicestate()) {
-    _this->_impl_.forkchoicestate_ = new ::remote::EngineForkChoiceState(*from._impl_.forkchoicestate_);
-  }
-  if (from._internal_has_payloadattributes()) {
-    _this->_impl_.payloadattributes_ = new ::remote::EnginePayloadAttributesV2(*from._impl_.payloadattributes_);
-  }
-  // @@protoc_insertion_point(copy_constructor:remote.EngineForkChoiceUpdatedRequestV2)
-}
-
-inline void EngineForkChoiceUpdatedRequestV2::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      decltype(_impl_.forkchoicestate_){nullptr}
-    , decltype(_impl_.payloadattributes_){nullptr}
-    , /*decltype(_impl_._cached_size_)*/{}
-  };
-}
-
-EngineForkChoiceUpdatedRequestV2::~EngineForkChoiceUpdatedRequestV2() {
-  // @@protoc_insertion_point(destructor:remote.EngineForkChoiceUpdatedRequestV2)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
-  SharedDtor();
-}
-
-inline void EngineForkChoiceUpdatedRequestV2::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  if (this != internal_default_instance()) delete _impl_.forkchoicestate_;
-  if (this != internal_default_instance()) delete _impl_.payloadattributes_;
-}
-
-void EngineForkChoiceUpdatedRequestV2::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
-
-void EngineForkChoiceUpdatedRequestV2::Clear() {
-// @@protoc_insertion_point(message_clear_start:remote.EngineForkChoiceUpdatedRequestV2)
-  uint32_t cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  if (GetArenaForAllocation() == nullptr && _impl_.forkchoicestate_ != nullptr) {
-    delete _impl_.forkchoicestate_;
-  }
-  _impl_.forkchoicestate_ = nullptr;
-  if (GetArenaForAllocation() == nullptr && _impl_.payloadattributes_ != nullptr) {
-    delete _impl_.payloadattributes_;
-  }
-  _impl_.payloadattributes_ = nullptr;
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-const char* EngineForkChoiceUpdatedRequestV2::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // .remote.EngineForkChoiceState forkchoiceState = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          ptr = ctx->ParseMessage(_internal_mutable_forkchoicestate(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // .remote.EnginePayloadAttributesV2 payloadAttributes = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          ptr = ctx->ParseMessage(_internal_mutable_payloadattributes(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
-    }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
-}
-
-uint8_t* EngineForkChoiceUpdatedRequestV2::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:remote.EngineForkChoiceUpdatedRequestV2)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  // .remote.EngineForkChoiceState forkchoiceState = 1;
-  if (this->_internal_has_forkchoicestate()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(1, _Internal::forkchoicestate(this),
-        _Internal::forkchoicestate(this).GetCachedSize(), target, stream);
-  }
-
-  // .remote.EnginePayloadAttributesV2 payloadAttributes = 2;
-  if (this->_internal_has_payloadattributes()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(2, _Internal::payloadattributes(this),
-        _Internal::payloadattributes(this).GetCachedSize(), target, stream);
-  }
-
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
-  }
-  // @@protoc_insertion_point(serialize_to_array_end:remote.EngineForkChoiceUpdatedRequestV2)
-  return target;
-}
-
-size_t EngineForkChoiceUpdatedRequestV2::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:remote.EngineForkChoiceUpdatedRequestV2)
-  size_t total_size = 0;
-
-  uint32_t cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  // .remote.EngineForkChoiceState forkchoiceState = 1;
-  if (this->_internal_has_forkchoicestate()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.forkchoicestate_);
-  }
-
-  // .remote.EnginePayloadAttributesV2 payloadAttributes = 2;
-  if (this->_internal_has_payloadattributes()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.payloadattributes_);
-  }
-
-  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
-}
-
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData EngineForkChoiceUpdatedRequestV2::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    EngineForkChoiceUpdatedRequestV2::MergeImpl
-};
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*EngineForkChoiceUpdatedRequestV2::GetClassData() const { return &_class_data_; }
-
-
-void EngineForkChoiceUpdatedRequestV2::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
-  auto* const _this = static_cast<EngineForkChoiceUpdatedRequestV2*>(&to_msg);
-  auto& from = static_cast<const EngineForkChoiceUpdatedRequestV2&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:remote.EngineForkChoiceUpdatedRequestV2)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  if (from._internal_has_forkchoicestate()) {
-    _this->_internal_mutable_forkchoicestate()->::remote::EngineForkChoiceState::MergeFrom(
-        from._internal_forkchoicestate());
-  }
-  if (from._internal_has_payloadattributes()) {
-    _this->_internal_mutable_payloadattributes()->::remote::EnginePayloadAttributesV2::MergeFrom(
-        from._internal_payloadattributes());
-  }
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-}
-
-void EngineForkChoiceUpdatedRequestV2::CopyFrom(const EngineForkChoiceUpdatedRequestV2& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:remote.EngineForkChoiceUpdatedRequestV2)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-bool EngineForkChoiceUpdatedRequestV2::IsInitialized() const {
-  return true;
-}
-
-void EngineForkChoiceUpdatedRequestV2::InternalSwap(EngineForkChoiceUpdatedRequestV2* other) {
-  using std::swap;
-  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(EngineForkChoiceUpdatedRequestV2, _impl_.payloadattributes_)
-      + sizeof(EngineForkChoiceUpdatedRequestV2::_impl_.payloadattributes_)
-      - PROTOBUF_FIELD_OFFSET(EngineForkChoiceUpdatedRequestV2, _impl_.forkchoicestate_)>(
-          reinterpret_cast<char*>(&_impl_.forkchoicestate_),
-          reinterpret_cast<char*>(&other->_impl_.forkchoicestate_));
-}
-
-::PROTOBUF_NAMESPACE_ID::Metadata EngineForkChoiceUpdatedRequestV2::GetMetadata() const {
-  return ::_pbi::AssignDescriptors(
-      &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
-      file_level_metadata_remote_2fethbackend_2eproto[12]);
-}
-
-// ===================================================================
-
-class EngineForkChoiceUpdatedReply::_Internal {
- public:
-  static const ::remote::EnginePayloadStatus& payloadstatus(const EngineForkChoiceUpdatedReply* msg);
+  static const ::remote::EnginePayloadStatus& payloadstatus(const EngineForkChoiceUpdatedResponse* msg);
 };
 
 const ::remote::EnginePayloadStatus&
-EngineForkChoiceUpdatedReply::_Internal::payloadstatus(const EngineForkChoiceUpdatedReply* msg) {
+EngineForkChoiceUpdatedResponse::_Internal::payloadstatus(const EngineForkChoiceUpdatedResponse* msg) {
   return *msg->_impl_.payloadstatus_;
 }
-EngineForkChoiceUpdatedReply::EngineForkChoiceUpdatedReply(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+EngineForkChoiceUpdatedResponse::EngineForkChoiceUpdatedResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:remote.EngineForkChoiceUpdatedReply)
+  // @@protoc_insertion_point(arena_constructor:remote.EngineForkChoiceUpdatedResponse)
 }
-EngineForkChoiceUpdatedReply::EngineForkChoiceUpdatedReply(const EngineForkChoiceUpdatedReply& from)
+EngineForkChoiceUpdatedResponse::EngineForkChoiceUpdatedResponse(const EngineForkChoiceUpdatedResponse& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
-  EngineForkChoiceUpdatedReply* const _this = this; (void)_this;
+  EngineForkChoiceUpdatedResponse* const _this = this; (void)_this;
   new (&_impl_) Impl_{
       decltype(_impl_.payloadstatus_){nullptr}
     , decltype(_impl_.payloadid_){}
@@ -3330,10 +3180,10 @@ EngineForkChoiceUpdatedReply::EngineForkChoiceUpdatedReply(const EngineForkChoic
     _this->_impl_.payloadstatus_ = new ::remote::EnginePayloadStatus(*from._impl_.payloadstatus_);
   }
   _this->_impl_.payloadid_ = from._impl_.payloadid_;
-  // @@protoc_insertion_point(copy_constructor:remote.EngineForkChoiceUpdatedReply)
+  // @@protoc_insertion_point(copy_constructor:remote.EngineForkChoiceUpdatedResponse)
 }
 
-inline void EngineForkChoiceUpdatedReply::SharedCtor(
+inline void EngineForkChoiceUpdatedResponse::SharedCtor(
     ::_pb::Arena* arena, bool is_message_owned) {
   (void)arena;
   (void)is_message_owned;
@@ -3344,8 +3194,8 @@ inline void EngineForkChoiceUpdatedReply::SharedCtor(
   };
 }
 
-EngineForkChoiceUpdatedReply::~EngineForkChoiceUpdatedReply() {
-  // @@protoc_insertion_point(destructor:remote.EngineForkChoiceUpdatedReply)
+EngineForkChoiceUpdatedResponse::~EngineForkChoiceUpdatedResponse() {
+  // @@protoc_insertion_point(destructor:remote.EngineForkChoiceUpdatedResponse)
   if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
   (void)arena;
     return;
@@ -3353,17 +3203,17 @@ EngineForkChoiceUpdatedReply::~EngineForkChoiceUpdatedReply() {
   SharedDtor();
 }
 
-inline void EngineForkChoiceUpdatedReply::SharedDtor() {
+inline void EngineForkChoiceUpdatedResponse::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   if (this != internal_default_instance()) delete _impl_.payloadstatus_;
 }
 
-void EngineForkChoiceUpdatedReply::SetCachedSize(int size) const {
+void EngineForkChoiceUpdatedResponse::SetCachedSize(int size) const {
   _impl_._cached_size_.Set(size);
 }
 
-void EngineForkChoiceUpdatedReply::Clear() {
-// @@protoc_insertion_point(message_clear_start:remote.EngineForkChoiceUpdatedReply)
+void EngineForkChoiceUpdatedResponse::Clear() {
+// @@protoc_insertion_point(message_clear_start:remote.EngineForkChoiceUpdatedResponse)
   uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -3376,7 +3226,7 @@ void EngineForkChoiceUpdatedReply::Clear() {
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-const char* EngineForkChoiceUpdatedReply::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+const char* EngineForkChoiceUpdatedResponse::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   while (!ctx->Done(&ptr)) {
     uint32_t tag;
@@ -3421,9 +3271,9 @@ failure:
 #undef CHK_
 }
 
-uint8_t* EngineForkChoiceUpdatedReply::_InternalSerialize(
+uint8_t* EngineForkChoiceUpdatedResponse::_InternalSerialize(
     uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:remote.EngineForkChoiceUpdatedReply)
+  // @@protoc_insertion_point(serialize_to_array_start:remote.EngineForkChoiceUpdatedResponse)
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
@@ -3444,12 +3294,12 @@ uint8_t* EngineForkChoiceUpdatedReply::_InternalSerialize(
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:remote.EngineForkChoiceUpdatedReply)
+  // @@protoc_insertion_point(serialize_to_array_end:remote.EngineForkChoiceUpdatedResponse)
   return target;
 }
 
-size_t EngineForkChoiceUpdatedReply::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:remote.EngineForkChoiceUpdatedReply)
+size_t EngineForkChoiceUpdatedResponse::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:remote.EngineForkChoiceUpdatedResponse)
   size_t total_size = 0;
 
   uint32_t cached_has_bits = 0;
@@ -3471,17 +3321,17 @@ size_t EngineForkChoiceUpdatedReply::ByteSizeLong() const {
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData EngineForkChoiceUpdatedReply::_class_data_ = {
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData EngineForkChoiceUpdatedResponse::_class_data_ = {
     ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    EngineForkChoiceUpdatedReply::MergeImpl
+    EngineForkChoiceUpdatedResponse::MergeImpl
 };
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*EngineForkChoiceUpdatedReply::GetClassData() const { return &_class_data_; }
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*EngineForkChoiceUpdatedResponse::GetClassData() const { return &_class_data_; }
 
 
-void EngineForkChoiceUpdatedReply::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
-  auto* const _this = static_cast<EngineForkChoiceUpdatedReply*>(&to_msg);
-  auto& from = static_cast<const EngineForkChoiceUpdatedReply&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:remote.EngineForkChoiceUpdatedReply)
+void EngineForkChoiceUpdatedResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<EngineForkChoiceUpdatedResponse*>(&to_msg);
+  auto& from = static_cast<const EngineForkChoiceUpdatedResponse&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:remote.EngineForkChoiceUpdatedResponse)
   GOOGLE_DCHECK_NE(&from, _this);
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
@@ -3496,29 +3346,280 @@ void EngineForkChoiceUpdatedReply::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& t
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
-void EngineForkChoiceUpdatedReply::CopyFrom(const EngineForkChoiceUpdatedReply& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:remote.EngineForkChoiceUpdatedReply)
+void EngineForkChoiceUpdatedResponse::CopyFrom(const EngineForkChoiceUpdatedResponse& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:remote.EngineForkChoiceUpdatedResponse)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-bool EngineForkChoiceUpdatedReply::IsInitialized() const {
+bool EngineForkChoiceUpdatedResponse::IsInitialized() const {
   return true;
 }
 
-void EngineForkChoiceUpdatedReply::InternalSwap(EngineForkChoiceUpdatedReply* other) {
+void EngineForkChoiceUpdatedResponse::InternalSwap(EngineForkChoiceUpdatedResponse* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(EngineForkChoiceUpdatedReply, _impl_.payloadid_)
-      + sizeof(EngineForkChoiceUpdatedReply::_impl_.payloadid_)
-      - PROTOBUF_FIELD_OFFSET(EngineForkChoiceUpdatedReply, _impl_.payloadstatus_)>(
+      PROTOBUF_FIELD_OFFSET(EngineForkChoiceUpdatedResponse, _impl_.payloadid_)
+      + sizeof(EngineForkChoiceUpdatedResponse::_impl_.payloadid_)
+      - PROTOBUF_FIELD_OFFSET(EngineForkChoiceUpdatedResponse, _impl_.payloadstatus_)>(
           reinterpret_cast<char*>(&_impl_.payloadstatus_),
           reinterpret_cast<char*>(&other->_impl_.payloadstatus_));
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata EngineForkChoiceUpdatedReply::GetMetadata() const {
+::PROTOBUF_NAMESPACE_ID::Metadata EngineForkChoiceUpdatedResponse::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
+      file_level_metadata_remote_2fethbackend_2eproto[12]);
+}
+
+// ===================================================================
+
+class EngineGetPayloadResponse::_Internal {
+ public:
+  static const ::types::ExecutionPayload& executionpayload(const EngineGetPayloadResponse* msg);
+  static const ::types::H256& blockvalue(const EngineGetPayloadResponse* msg);
+};
+
+const ::types::ExecutionPayload&
+EngineGetPayloadResponse::_Internal::executionpayload(const EngineGetPayloadResponse* msg) {
+  return *msg->_impl_.executionpayload_;
+}
+const ::types::H256&
+EngineGetPayloadResponse::_Internal::blockvalue(const EngineGetPayloadResponse* msg) {
+  return *msg->_impl_.blockvalue_;
+}
+void EngineGetPayloadResponse::clear_executionpayload() {
+  if (GetArenaForAllocation() == nullptr && _impl_.executionpayload_ != nullptr) {
+    delete _impl_.executionpayload_;
+  }
+  _impl_.executionpayload_ = nullptr;
+}
+void EngineGetPayloadResponse::clear_blockvalue() {
+  if (GetArenaForAllocation() == nullptr && _impl_.blockvalue_ != nullptr) {
+    delete _impl_.blockvalue_;
+  }
+  _impl_.blockvalue_ = nullptr;
+}
+EngineGetPayloadResponse::EngineGetPayloadResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:remote.EngineGetPayloadResponse)
+}
+EngineGetPayloadResponse::EngineGetPayloadResponse(const EngineGetPayloadResponse& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  EngineGetPayloadResponse* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.executionpayload_){nullptr}
+    , decltype(_impl_.blockvalue_){nullptr}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  if (from._internal_has_executionpayload()) {
+    _this->_impl_.executionpayload_ = new ::types::ExecutionPayload(*from._impl_.executionpayload_);
+  }
+  if (from._internal_has_blockvalue()) {
+    _this->_impl_.blockvalue_ = new ::types::H256(*from._impl_.blockvalue_);
+  }
+  // @@protoc_insertion_point(copy_constructor:remote.EngineGetPayloadResponse)
+}
+
+inline void EngineGetPayloadResponse::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.executionpayload_){nullptr}
+    , decltype(_impl_.blockvalue_){nullptr}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+}
+
+EngineGetPayloadResponse::~EngineGetPayloadResponse() {
+  // @@protoc_insertion_point(destructor:remote.EngineGetPayloadResponse)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void EngineGetPayloadResponse::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  if (this != internal_default_instance()) delete _impl_.executionpayload_;
+  if (this != internal_default_instance()) delete _impl_.blockvalue_;
+}
+
+void EngineGetPayloadResponse::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void EngineGetPayloadResponse::Clear() {
+// @@protoc_insertion_point(message_clear_start:remote.EngineGetPayloadResponse)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  if (GetArenaForAllocation() == nullptr && _impl_.executionpayload_ != nullptr) {
+    delete _impl_.executionpayload_;
+  }
+  _impl_.executionpayload_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && _impl_.blockvalue_ != nullptr) {
+    delete _impl_.blockvalue_;
+  }
+  _impl_.blockvalue_ = nullptr;
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* EngineGetPayloadResponse::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // .types.ExecutionPayload executionPayload = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_executionpayload(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .types.H256 blockValue = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          ptr = ctx->ParseMessage(_internal_mutable_blockvalue(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* EngineGetPayloadResponse::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:remote.EngineGetPayloadResponse)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .types.ExecutionPayload executionPayload = 1;
+  if (this->_internal_has_executionpayload()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(1, _Internal::executionpayload(this),
+        _Internal::executionpayload(this).GetCachedSize(), target, stream);
+  }
+
+  // .types.H256 blockValue = 2;
+  if (this->_internal_has_blockvalue()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(2, _Internal::blockvalue(this),
+        _Internal::blockvalue(this).GetCachedSize(), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:remote.EngineGetPayloadResponse)
+  return target;
+}
+
+size_t EngineGetPayloadResponse::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:remote.EngineGetPayloadResponse)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // .types.ExecutionPayload executionPayload = 1;
+  if (this->_internal_has_executionpayload()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.executionpayload_);
+  }
+
+  // .types.H256 blockValue = 2;
+  if (this->_internal_has_blockvalue()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *_impl_.blockvalue_);
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData EngineGetPayloadResponse::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    EngineGetPayloadResponse::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*EngineGetPayloadResponse::GetClassData() const { return &_class_data_; }
+
+
+void EngineGetPayloadResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<EngineGetPayloadResponse*>(&to_msg);
+  auto& from = static_cast<const EngineGetPayloadResponse&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:remote.EngineGetPayloadResponse)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_has_executionpayload()) {
+    _this->_internal_mutable_executionpayload()->::types::ExecutionPayload::MergeFrom(
+        from._internal_executionpayload());
+  }
+  if (from._internal_has_blockvalue()) {
+    _this->_internal_mutable_blockvalue()->::types::H256::MergeFrom(
+        from._internal_blockvalue());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void EngineGetPayloadResponse::CopyFrom(const EngineGetPayloadResponse& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:remote.EngineGetPayloadResponse)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool EngineGetPayloadResponse::IsInitialized() const {
+  return true;
+}
+
+void EngineGetPayloadResponse::InternalSwap(EngineGetPayloadResponse* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(EngineGetPayloadResponse, _impl_.blockvalue_)
+      + sizeof(EngineGetPayloadResponse::_impl_.blockvalue_)
+      - PROTOBUF_FIELD_OFFSET(EngineGetPayloadResponse, _impl_.executionpayload_)>(
+          reinterpret_cast<char*>(&_impl_.executionpayload_),
+          reinterpret_cast<char*>(&other->_impl_.executionpayload_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata EngineGetPayloadResponse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
       file_level_metadata_remote_2fethbackend_2eproto[13]);
@@ -6765,6 +6866,593 @@ void PendingBlockReply::InternalSwap(PendingBlockReply* other) {
       file_level_metadata_remote_2fethbackend_2eproto[29]);
 }
 
+// ===================================================================
+
+class EngineGetPayloadBodiesByHashV1Request::_Internal {
+ public:
+};
+
+void EngineGetPayloadBodiesByHashV1Request::clear_hashes() {
+  _impl_.hashes_.Clear();
+}
+EngineGetPayloadBodiesByHashV1Request::EngineGetPayloadBodiesByHashV1Request(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:remote.EngineGetPayloadBodiesByHashV1Request)
+}
+EngineGetPayloadBodiesByHashV1Request::EngineGetPayloadBodiesByHashV1Request(const EngineGetPayloadBodiesByHashV1Request& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  EngineGetPayloadBodiesByHashV1Request* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.hashes_){from._impl_.hashes_}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  // @@protoc_insertion_point(copy_constructor:remote.EngineGetPayloadBodiesByHashV1Request)
+}
+
+inline void EngineGetPayloadBodiesByHashV1Request::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.hashes_){arena}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+}
+
+EngineGetPayloadBodiesByHashV1Request::~EngineGetPayloadBodiesByHashV1Request() {
+  // @@protoc_insertion_point(destructor:remote.EngineGetPayloadBodiesByHashV1Request)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void EngineGetPayloadBodiesByHashV1Request::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.hashes_.~RepeatedPtrField();
+}
+
+void EngineGetPayloadBodiesByHashV1Request::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void EngineGetPayloadBodiesByHashV1Request::Clear() {
+// @@protoc_insertion_point(message_clear_start:remote.EngineGetPayloadBodiesByHashV1Request)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.hashes_.Clear();
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* EngineGetPayloadBodiesByHashV1Request::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // repeated .types.H256 hashes = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            ptr = ctx->ParseMessage(_internal_add_hashes(), ptr);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<10>(ptr));
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* EngineGetPayloadBodiesByHashV1Request::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:remote.EngineGetPayloadBodiesByHashV1Request)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // repeated .types.H256 hashes = 1;
+  for (unsigned i = 0,
+      n = static_cast<unsigned>(this->_internal_hashes_size()); i < n; i++) {
+    const auto& repfield = this->_internal_hashes(i);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+        InternalWriteMessage(1, repfield, repfield.GetCachedSize(), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:remote.EngineGetPayloadBodiesByHashV1Request)
+  return target;
+}
+
+size_t EngineGetPayloadBodiesByHashV1Request::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:remote.EngineGetPayloadBodiesByHashV1Request)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // repeated .types.H256 hashes = 1;
+  total_size += 1UL * this->_internal_hashes_size();
+  for (const auto& msg : this->_impl_.hashes_) {
+    total_size +=
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData EngineGetPayloadBodiesByHashV1Request::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    EngineGetPayloadBodiesByHashV1Request::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*EngineGetPayloadBodiesByHashV1Request::GetClassData() const { return &_class_data_; }
+
+
+void EngineGetPayloadBodiesByHashV1Request::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<EngineGetPayloadBodiesByHashV1Request*>(&to_msg);
+  auto& from = static_cast<const EngineGetPayloadBodiesByHashV1Request&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:remote.EngineGetPayloadBodiesByHashV1Request)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  _this->_impl_.hashes_.MergeFrom(from._impl_.hashes_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void EngineGetPayloadBodiesByHashV1Request::CopyFrom(const EngineGetPayloadBodiesByHashV1Request& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:remote.EngineGetPayloadBodiesByHashV1Request)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool EngineGetPayloadBodiesByHashV1Request::IsInitialized() const {
+  return true;
+}
+
+void EngineGetPayloadBodiesByHashV1Request::InternalSwap(EngineGetPayloadBodiesByHashV1Request* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  _impl_.hashes_.InternalSwap(&other->_impl_.hashes_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata EngineGetPayloadBodiesByHashV1Request::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
+      file_level_metadata_remote_2fethbackend_2eproto[30]);
+}
+
+// ===================================================================
+
+class EngineGetPayloadBodiesByRangeV1Request::_Internal {
+ public:
+};
+
+EngineGetPayloadBodiesByRangeV1Request::EngineGetPayloadBodiesByRangeV1Request(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:remote.EngineGetPayloadBodiesByRangeV1Request)
+}
+EngineGetPayloadBodiesByRangeV1Request::EngineGetPayloadBodiesByRangeV1Request(const EngineGetPayloadBodiesByRangeV1Request& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  EngineGetPayloadBodiesByRangeV1Request* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.start_){}
+    , decltype(_impl_.count_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::memcpy(&_impl_.start_, &from._impl_.start_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.count_) -
+    reinterpret_cast<char*>(&_impl_.start_)) + sizeof(_impl_.count_));
+  // @@protoc_insertion_point(copy_constructor:remote.EngineGetPayloadBodiesByRangeV1Request)
+}
+
+inline void EngineGetPayloadBodiesByRangeV1Request::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.start_){uint64_t{0u}}
+    , decltype(_impl_.count_){uint64_t{0u}}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+}
+
+EngineGetPayloadBodiesByRangeV1Request::~EngineGetPayloadBodiesByRangeV1Request() {
+  // @@protoc_insertion_point(destructor:remote.EngineGetPayloadBodiesByRangeV1Request)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void EngineGetPayloadBodiesByRangeV1Request::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+}
+
+void EngineGetPayloadBodiesByRangeV1Request::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void EngineGetPayloadBodiesByRangeV1Request::Clear() {
+// @@protoc_insertion_point(message_clear_start:remote.EngineGetPayloadBodiesByRangeV1Request)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  ::memset(&_impl_.start_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.count_) -
+      reinterpret_cast<char*>(&_impl_.start_)) + sizeof(_impl_.count_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* EngineGetPayloadBodiesByRangeV1Request::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // uint64 start = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
+          _impl_.start_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // uint64 count = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
+          _impl_.count_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* EngineGetPayloadBodiesByRangeV1Request::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:remote.EngineGetPayloadBodiesByRangeV1Request)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint64 start = 1;
+  if (this->_internal_start() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(1, this->_internal_start(), target);
+  }
+
+  // uint64 count = 2;
+  if (this->_internal_count() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(2, this->_internal_count(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:remote.EngineGetPayloadBodiesByRangeV1Request)
+  return target;
+}
+
+size_t EngineGetPayloadBodiesByRangeV1Request::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:remote.EngineGetPayloadBodiesByRangeV1Request)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // uint64 start = 1;
+  if (this->_internal_start() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_start());
+  }
+
+  // uint64 count = 2;
+  if (this->_internal_count() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_count());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData EngineGetPayloadBodiesByRangeV1Request::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    EngineGetPayloadBodiesByRangeV1Request::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*EngineGetPayloadBodiesByRangeV1Request::GetClassData() const { return &_class_data_; }
+
+
+void EngineGetPayloadBodiesByRangeV1Request::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<EngineGetPayloadBodiesByRangeV1Request*>(&to_msg);
+  auto& from = static_cast<const EngineGetPayloadBodiesByRangeV1Request&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:remote.EngineGetPayloadBodiesByRangeV1Request)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_start() != 0) {
+    _this->_internal_set_start(from._internal_start());
+  }
+  if (from._internal_count() != 0) {
+    _this->_internal_set_count(from._internal_count());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void EngineGetPayloadBodiesByRangeV1Request::CopyFrom(const EngineGetPayloadBodiesByRangeV1Request& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:remote.EngineGetPayloadBodiesByRangeV1Request)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool EngineGetPayloadBodiesByRangeV1Request::IsInitialized() const {
+  return true;
+}
+
+void EngineGetPayloadBodiesByRangeV1Request::InternalSwap(EngineGetPayloadBodiesByRangeV1Request* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(EngineGetPayloadBodiesByRangeV1Request, _impl_.count_)
+      + sizeof(EngineGetPayloadBodiesByRangeV1Request::_impl_.count_)
+      - PROTOBUF_FIELD_OFFSET(EngineGetPayloadBodiesByRangeV1Request, _impl_.start_)>(
+          reinterpret_cast<char*>(&_impl_.start_),
+          reinterpret_cast<char*>(&other->_impl_.start_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata EngineGetPayloadBodiesByRangeV1Request::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
+      file_level_metadata_remote_2fethbackend_2eproto[31]);
+}
+
+// ===================================================================
+
+class EngineGetPayloadBodiesV1Response::_Internal {
+ public:
+};
+
+void EngineGetPayloadBodiesV1Response::clear_bodies() {
+  _impl_.bodies_.Clear();
+}
+EngineGetPayloadBodiesV1Response::EngineGetPayloadBodiesV1Response(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:remote.EngineGetPayloadBodiesV1Response)
+}
+EngineGetPayloadBodiesV1Response::EngineGetPayloadBodiesV1Response(const EngineGetPayloadBodiesV1Response& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  EngineGetPayloadBodiesV1Response* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.bodies_){from._impl_.bodies_}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  // @@protoc_insertion_point(copy_constructor:remote.EngineGetPayloadBodiesV1Response)
+}
+
+inline void EngineGetPayloadBodiesV1Response::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.bodies_){arena}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+}
+
+EngineGetPayloadBodiesV1Response::~EngineGetPayloadBodiesV1Response() {
+  // @@protoc_insertion_point(destructor:remote.EngineGetPayloadBodiesV1Response)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void EngineGetPayloadBodiesV1Response::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.bodies_.~RepeatedPtrField();
+}
+
+void EngineGetPayloadBodiesV1Response::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void EngineGetPayloadBodiesV1Response::Clear() {
+// @@protoc_insertion_point(message_clear_start:remote.EngineGetPayloadBodiesV1Response)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.bodies_.Clear();
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* EngineGetPayloadBodiesV1Response::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // repeated .types.ExecutionPayloadBodyV1 bodies = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            ptr = ctx->ParseMessage(_internal_add_bodies(), ptr);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<10>(ptr));
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* EngineGetPayloadBodiesV1Response::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:remote.EngineGetPayloadBodiesV1Response)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // repeated .types.ExecutionPayloadBodyV1 bodies = 1;
+  for (unsigned i = 0,
+      n = static_cast<unsigned>(this->_internal_bodies_size()); i < n; i++) {
+    const auto& repfield = this->_internal_bodies(i);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+        InternalWriteMessage(1, repfield, repfield.GetCachedSize(), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:remote.EngineGetPayloadBodiesV1Response)
+  return target;
+}
+
+size_t EngineGetPayloadBodiesV1Response::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:remote.EngineGetPayloadBodiesV1Response)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // repeated .types.ExecutionPayloadBodyV1 bodies = 1;
+  total_size += 1UL * this->_internal_bodies_size();
+  for (const auto& msg : this->_impl_.bodies_) {
+    total_size +=
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData EngineGetPayloadBodiesV1Response::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    EngineGetPayloadBodiesV1Response::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*EngineGetPayloadBodiesV1Response::GetClassData() const { return &_class_data_; }
+
+
+void EngineGetPayloadBodiesV1Response::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<EngineGetPayloadBodiesV1Response*>(&to_msg);
+  auto& from = static_cast<const EngineGetPayloadBodiesV1Response&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:remote.EngineGetPayloadBodiesV1Response)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  _this->_impl_.bodies_.MergeFrom(from._impl_.bodies_);
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void EngineGetPayloadBodiesV1Response::CopyFrom(const EngineGetPayloadBodiesV1Response& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:remote.EngineGetPayloadBodiesV1Response)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool EngineGetPayloadBodiesV1Response::IsInitialized() const {
+  return true;
+}
+
+void EngineGetPayloadBodiesV1Response::InternalSwap(EngineGetPayloadBodiesV1Response* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  _impl_.bodies_.InternalSwap(&other->_impl_.bodies_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata EngineGetPayloadBodiesV1Response::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_remote_2fethbackend_2eproto_getter, &descriptor_table_remote_2fethbackend_2eproto_once,
+      file_level_metadata_remote_2fethbackend_2eproto[32]);
+}
+
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace remote
 PROTOBUF_NAMESPACE_OPEN
@@ -6796,6 +7484,10 @@ template<> PROTOBUF_NOINLINE ::remote::EngineGetPayloadRequest*
 Arena::CreateMaybeMessage< ::remote::EngineGetPayloadRequest >(Arena* arena) {
   return Arena::CreateMessageInternal< ::remote::EngineGetPayloadRequest >(arena);
 }
+template<> PROTOBUF_NOINLINE ::remote::EngineGetBlobsBundleRequest*
+Arena::CreateMaybeMessage< ::remote::EngineGetBlobsBundleRequest >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::remote::EngineGetBlobsBundleRequest >(arena);
+}
 template<> PROTOBUF_NOINLINE ::remote::EnginePayloadStatus*
 Arena::CreateMaybeMessage< ::remote::EnginePayloadStatus >(Arena* arena) {
   return Arena::CreateMessageInternal< ::remote::EnginePayloadStatus >(arena);
@@ -6812,17 +7504,13 @@ template<> PROTOBUF_NOINLINE ::remote::EngineForkChoiceUpdatedRequest*
 Arena::CreateMaybeMessage< ::remote::EngineForkChoiceUpdatedRequest >(Arena* arena) {
   return Arena::CreateMessageInternal< ::remote::EngineForkChoiceUpdatedRequest >(arena);
 }
-template<> PROTOBUF_NOINLINE ::remote::EnginePayloadAttributesV2*
-Arena::CreateMaybeMessage< ::remote::EnginePayloadAttributesV2 >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::remote::EnginePayloadAttributesV2 >(arena);
+template<> PROTOBUF_NOINLINE ::remote::EngineForkChoiceUpdatedResponse*
+Arena::CreateMaybeMessage< ::remote::EngineForkChoiceUpdatedResponse >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::remote::EngineForkChoiceUpdatedResponse >(arena);
 }
-template<> PROTOBUF_NOINLINE ::remote::EngineForkChoiceUpdatedRequestV2*
-Arena::CreateMaybeMessage< ::remote::EngineForkChoiceUpdatedRequestV2 >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::remote::EngineForkChoiceUpdatedRequestV2 >(arena);
-}
-template<> PROTOBUF_NOINLINE ::remote::EngineForkChoiceUpdatedReply*
-Arena::CreateMaybeMessage< ::remote::EngineForkChoiceUpdatedReply >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::remote::EngineForkChoiceUpdatedReply >(arena);
+template<> PROTOBUF_NOINLINE ::remote::EngineGetPayloadResponse*
+Arena::CreateMaybeMessage< ::remote::EngineGetPayloadResponse >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::remote::EngineGetPayloadResponse >(arena);
 }
 template<> PROTOBUF_NOINLINE ::remote::ProtocolVersionRequest*
 Arena::CreateMaybeMessage< ::remote::ProtocolVersionRequest >(Arena* arena) {
@@ -6887,6 +7575,18 @@ Arena::CreateMaybeMessage< ::remote::PeersReply >(Arena* arena) {
 template<> PROTOBUF_NOINLINE ::remote::PendingBlockReply*
 Arena::CreateMaybeMessage< ::remote::PendingBlockReply >(Arena* arena) {
   return Arena::CreateMessageInternal< ::remote::PendingBlockReply >(arena);
+}
+template<> PROTOBUF_NOINLINE ::remote::EngineGetPayloadBodiesByHashV1Request*
+Arena::CreateMaybeMessage< ::remote::EngineGetPayloadBodiesByHashV1Request >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::remote::EngineGetPayloadBodiesByHashV1Request >(arena);
+}
+template<> PROTOBUF_NOINLINE ::remote::EngineGetPayloadBodiesByRangeV1Request*
+Arena::CreateMaybeMessage< ::remote::EngineGetPayloadBodiesByRangeV1Request >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::remote::EngineGetPayloadBodiesByRangeV1Request >(arena);
+}
+template<> PROTOBUF_NOINLINE ::remote::EngineGetPayloadBodiesV1Response*
+Arena::CreateMaybeMessage< ::remote::EngineGetPayloadBodiesV1Response >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::remote::EngineGetPayloadBodiesV1Response >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE
 

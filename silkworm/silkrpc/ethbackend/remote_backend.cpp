@@ -119,18 +119,18 @@ boost::asio::awaitable<std::vector<NodeInfo>> RemoteBackEnd::engine_node_info() 
 
 boost::asio::awaitable<ExecutionPayload> RemoteBackEnd::engine_get_payload_v1(uint64_t payload_id) {
     const auto start_time = clock_time::now();
-    UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncEngineGetPayloadV1> npc_rpc{*stub_, grpc_context_};
+    UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncEngineGetPayload> npc_rpc{*stub_, grpc_context_};
     ::remote::EngineGetPayloadRequest req;
     req.set_payloadid(payload_id);
     const auto reply = co_await npc_rpc.finish_on(executor_, req);
-    auto execution_payload{decode_execution_payload(reply)};
+    auto execution_payload{decode_execution_payload(reply.executionpayload())};
     SILKRPC_DEBUG << "RemoteBackEnd::engine_get_payload_v1 data=" << execution_payload << " t=" << clock_time::since(start_time) << "\n";
     co_return execution_payload;
 }
 
 boost::asio::awaitable<PayloadStatus> RemoteBackEnd::engine_new_payload_v1(ExecutionPayload payload) {
     const auto start_time = clock_time::now();
-    UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncEngineNewPayloadV1> npc_rpc{*stub_, grpc_context_};
+    UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncEngineNewPayload> npc_rpc{*stub_, grpc_context_};
     auto req{encode_execution_payload(payload)};
     const auto reply = co_await npc_rpc.finish_on(executor_, req);
     PayloadStatus payload_status = decode_payload_status(reply);
@@ -141,7 +141,7 @@ boost::asio::awaitable<PayloadStatus> RemoteBackEnd::engine_new_payload_v1(Execu
 boost::asio::awaitable<ForkChoiceUpdatedReply> RemoteBackEnd::engine_forkchoice_updated_v1(
     ForkChoiceUpdatedRequest forkchoice_updated_request) {
     const auto start_time = clock_time::now();
-    UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncEngineForkChoiceUpdatedV1> fcu_rpc{*stub_, grpc_context_};
+    UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncEngineForkChoiceUpdated> fcu_rpc{*stub_, grpc_context_};
     const auto req{encode_forkchoice_updated_request(forkchoice_updated_request)};
     const auto reply = co_await fcu_rpc.finish_on(executor_, req);
     PayloadStatus payload_status = decode_payload_status(reply.payloadstatus());
@@ -364,6 +364,8 @@ remote::EngineForkChoiceState* RemoteBackEnd::encode_forkchoice_state(const Fork
 
 remote::EnginePayloadAttributes* RemoteBackEnd::encode_payload_attributes(const PayloadAttributes& payload_attributes) {
     remote::EnginePayloadAttributes* payload_attributes_grpc = new remote::EnginePayloadAttributes();
+    // TODO(yperbasis) support v2 (withdrawals) as well
+    payload_attributes_grpc->set_version(1);
     // Numerical parameters
     payload_attributes_grpc->set_timestamp(payload_attributes.timestamp);
     // 32-bytes parameters

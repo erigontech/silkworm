@@ -289,20 +289,6 @@ class PenalizePeerCall : public sw_rpc::server::UnaryCall<proto::PenalizePeerReq
     }
 };
 
-// rpc PeerUseless(PeerUselessRequest) returns (google.protobuf.Empty);
-class PeerUselessCall : public sw_rpc::server::UnaryCall<proto::PeerUselessRequest, protobuf::Empty> {
-  public:
-    using Base::UnaryCall;
-
-    awaitable<void> operator()(const ServiceRouter& router) {
-        auto peer_public_key = interfaces::peer_public_key_from_id(request_.peer_id());
-
-        co_await router.peer_penalize_calls_channel.send({peer_public_key});
-
-        co_await agrpc::finish(responder_, protobuf::Empty{}, grpc::Status::OK);
-    }
-};
-
 // Subscribe to notifications about connected or lost peers.
 // rpc PeerEvents(PeerEventsRequest) returns (stream PeerEvent);
 class PeerEventsCall : public sw_rpc::server::ServerStreamingCall<proto::PeerEventsRequest, proto::PeerEvent> {

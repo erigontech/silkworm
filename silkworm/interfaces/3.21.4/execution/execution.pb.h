@@ -769,6 +769,7 @@ class Header final :
     kTransactionHashFieldNumber = 16,
     kBaseFeePerGasFieldNumber = 17,
     kWithdrawalHashFieldNumber = 18,
+    kExcessDataGasFieldNumber = 19,
     kBlockNumberFieldNumber = 7,
     kGasLimitFieldNumber = 8,
     kGasUsedFieldNumber = 9,
@@ -1005,6 +1006,24 @@ class Header final :
       ::types::H256* withdrawalhash);
   ::types::H256* unsafe_arena_release_withdrawalhash();
 
+  // optional .types.H256 excessDataGas = 19;
+  bool has_excessdatagas() const;
+  private:
+  bool _internal_has_excessdatagas() const;
+  public:
+  void clear_excessdatagas();
+  const ::types::H256& excessdatagas() const;
+  PROTOBUF_NODISCARD ::types::H256* release_excessdatagas();
+  ::types::H256* mutable_excessdatagas();
+  void set_allocated_excessdatagas(::types::H256* excessdatagas);
+  private:
+  const ::types::H256& _internal_excessdatagas() const;
+  ::types::H256* _internal_mutable_excessdatagas();
+  public:
+  void unsafe_arena_set_allocated_excessdatagas(
+      ::types::H256* excessdatagas);
+  ::types::H256* unsafe_arena_release_excessdatagas();
+
   // uint64 blockNumber = 7;
   void clear_blocknumber();
   uint64_t blocknumber() const;
@@ -1073,6 +1092,7 @@ class Header final :
     ::types::H256* transactionhash_;
     ::types::H256* basefeepergas_;
     ::types::H256* withdrawalhash_;
+    ::types::H256* excessdatagas_;
     uint64_t blocknumber_;
     uint64_t gaslimit_;
     uint64_t gasused_;
@@ -3902,6 +3922,93 @@ inline void Header::set_allocated_withdrawalhash(::types::H256* withdrawalhash) 
   }
   _impl_.withdrawalhash_ = withdrawalhash;
   // @@protoc_insertion_point(field_set_allocated:execution.Header.withdrawalHash)
+}
+
+// optional .types.H256 excessDataGas = 19;
+inline bool Header::_internal_has_excessdatagas() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000004u) != 0;
+  PROTOBUF_ASSUME(!value || _impl_.excessdatagas_ != nullptr);
+  return value;
+}
+inline bool Header::has_excessdatagas() const {
+  return _internal_has_excessdatagas();
+}
+inline const ::types::H256& Header::_internal_excessdatagas() const {
+  const ::types::H256* p = _impl_.excessdatagas_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
+      ::types::_H256_default_instance_);
+}
+inline const ::types::H256& Header::excessdatagas() const {
+  // @@protoc_insertion_point(field_get:execution.Header.excessDataGas)
+  return _internal_excessdatagas();
+}
+inline void Header::unsafe_arena_set_allocated_excessdatagas(
+    ::types::H256* excessdatagas) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.excessdatagas_);
+  }
+  _impl_.excessdatagas_ = excessdatagas;
+  if (excessdatagas) {
+    _impl_._has_bits_[0] |= 0x00000004u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000004u;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.excessDataGas)
+}
+inline ::types::H256* Header::release_excessdatagas() {
+  _impl_._has_bits_[0] &= ~0x00000004u;
+  ::types::H256* temp = _impl_.excessdatagas_;
+  _impl_.excessdatagas_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::types::H256* Header::unsafe_arena_release_excessdatagas() {
+  // @@protoc_insertion_point(field_release:execution.Header.excessDataGas)
+  _impl_._has_bits_[0] &= ~0x00000004u;
+  ::types::H256* temp = _impl_.excessdatagas_;
+  _impl_.excessdatagas_ = nullptr;
+  return temp;
+}
+inline ::types::H256* Header::_internal_mutable_excessdatagas() {
+  _impl_._has_bits_[0] |= 0x00000004u;
+  if (_impl_.excessdatagas_ == nullptr) {
+    auto* p = CreateMaybeMessage<::types::H256>(GetArenaForAllocation());
+    _impl_.excessdatagas_ = p;
+  }
+  return _impl_.excessdatagas_;
+}
+inline ::types::H256* Header::mutable_excessdatagas() {
+  ::types::H256* _msg = _internal_mutable_excessdatagas();
+  // @@protoc_insertion_point(field_mutable:execution.Header.excessDataGas)
+  return _msg;
+}
+inline void Header::set_allocated_excessdatagas(::types::H256* excessdatagas) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.excessdatagas_);
+  }
+  if (excessdatagas) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(excessdatagas));
+    if (message_arena != submessage_arena) {
+      excessdatagas = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, excessdatagas, submessage_arena);
+    }
+    _impl_._has_bits_[0] |= 0x00000004u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000004u;
+  }
+  _impl_.excessdatagas_ = excessdatagas;
+  // @@protoc_insertion_point(field_set_allocated:execution.Header.excessDataGas)
 }
 
 // -------------------------------------------------------------------

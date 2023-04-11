@@ -194,13 +194,6 @@ class SentryClientImpl final : public api::api_common::Service {
         co_await sw_rpc::unary_rpc_with_retries(&Stub::AsyncPenalizePeer, stub_, std::move(request), grpc_context_, *channel_);
     }
 
-    // rpc PeerUseless(PeerUselessRequest) returns (google.protobuf.Empty);
-    awaitable<void> peer_useless(common::EccPublicKey public_key) override {
-        proto::PeerUselessRequest request;
-        request.mutable_peer_id()->CopyFrom(interfaces::peer_id_from_public_key(public_key));
-        co_await sw_rpc::unary_rpc_with_retries(&Stub::AsyncPeerUseless, stub_, std::move(request), grpc_context_, *channel_);
-    }
-
     // rpc PeerEvents(PeerEventsRequest) returns (stream PeerEvent);
     awaitable<void> peer_events(
         std::function<awaitable<void>(PeerEvent)> consumer) override {

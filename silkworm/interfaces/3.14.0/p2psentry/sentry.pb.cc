@@ -16,6 +16,7 @@
 #include <google/protobuf/port_def.inc>
 extern PROTOBUF_INTERNAL_EXPORT_p2psentry_2fsentry_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_Forks_p2psentry_2fsentry_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_p2psentry_2fsentry_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_OutboundMessageData_p2psentry_2fsentry_2eproto;
+extern PROTOBUF_INTERNAL_EXPORT_p2psentry_2fsentry_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_PeerCountPerProtocol_p2psentry_2fsentry_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_types_2ftypes_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_H256_types_2ftypes_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_types_2ftypes_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_H512_types_2ftypes_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_types_2ftypes_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_PeerInfo_types_2ftypes_2eproto;
@@ -48,10 +49,6 @@ class PeerMinBlockRequestDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<PeerMinBlockRequest> _instance;
 } _PeerMinBlockRequest_default_instance_;
-class PeerUselessRequestDefaultTypeInternal {
- public:
-  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<PeerUselessRequest> _instance;
-} _PeerUselessRequest_default_instance_;
 class InboundMessageDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<InboundMessage> _instance;
@@ -84,6 +81,10 @@ class PeerCountRequestDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<PeerCountRequest> _instance;
 } _PeerCountRequest_default_instance_;
+class PeerCountPerProtocolDefaultTypeInternal {
+ public:
+  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<PeerCountPerProtocol> _instance;
+} _PeerCountPerProtocol_default_instance_;
 class PeerCountReplyDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<PeerCountReply> _instance;
@@ -200,6 +201,19 @@ static void InitDefaultsscc_info_PeerByIdRequest_p2psentry_2fsentry_2eproto() {
     {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_PeerByIdRequest_p2psentry_2fsentry_2eproto}, {
       &scc_info_H512_types_2ftypes_2eproto.base,}};
 
+static void InitDefaultsscc_info_PeerCountPerProtocol_p2psentry_2fsentry_2eproto() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+  {
+    void* ptr = &::sentry::_PeerCountPerProtocol_default_instance_;
+    new (ptr) ::sentry::PeerCountPerProtocol();
+    ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
+  }
+}
+
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_PeerCountPerProtocol_p2psentry_2fsentry_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_PeerCountPerProtocol_p2psentry_2fsentry_2eproto}, {}};
+
 static void InitDefaultsscc_info_PeerCountReply_p2psentry_2fsentry_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -210,8 +224,9 @@ static void InitDefaultsscc_info_PeerCountReply_p2psentry_2fsentry_2eproto() {
   }
 }
 
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_PeerCountReply_p2psentry_2fsentry_2eproto =
-    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_PeerCountReply_p2psentry_2fsentry_2eproto}, {}};
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_PeerCountReply_p2psentry_2fsentry_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_PeerCountReply_p2psentry_2fsentry_2eproto}, {
+      &scc_info_PeerCountPerProtocol_p2psentry_2fsentry_2eproto.base,}};
 
 static void InitDefaultsscc_info_PeerCountRequest_p2psentry_2fsentry_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -265,20 +280,6 @@ static void InitDefaultsscc_info_PeerMinBlockRequest_p2psentry_2fsentry_2eproto(
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_PeerMinBlockRequest_p2psentry_2fsentry_2eproto =
     {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_PeerMinBlockRequest_p2psentry_2fsentry_2eproto}, {
-      &scc_info_H512_types_2ftypes_2eproto.base,}};
-
-static void InitDefaultsscc_info_PeerUselessRequest_p2psentry_2fsentry_2eproto() {
-  GOOGLE_PROTOBUF_VERIFY_VERSION;
-
-  {
-    void* ptr = &::sentry::_PeerUselessRequest_default_instance_;
-    new (ptr) ::sentry::PeerUselessRequest();
-    ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
-  }
-}
-
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_PeerUselessRequest_p2psentry_2fsentry_2eproto =
-    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_PeerUselessRequest_p2psentry_2fsentry_2eproto}, {
       &scc_info_H512_types_2ftypes_2eproto.base,}};
 
 static void InitDefaultsscc_info_PeersReply_p2psentry_2fsentry_2eproto() {
@@ -449,12 +450,6 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_p2psentry_2fsentry_2eproto::of
   PROTOBUF_FIELD_OFFSET(::sentry::PeerMinBlockRequest, peer_id_),
   PROTOBUF_FIELD_OFFSET(::sentry::PeerMinBlockRequest, min_block_),
   ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::sentry::PeerUselessRequest, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::sentry::PeerUselessRequest, peer_id_),
-  ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::sentry::InboundMessage, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
@@ -481,7 +476,6 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_p2psentry_2fsentry_2eproto::of
   PROTOBUF_FIELD_OFFSET(::sentry::StatusData, fork_data_),
   PROTOBUF_FIELD_OFFSET(::sentry::StatusData, max_block_height_),
   PROTOBUF_FIELD_OFFSET(::sentry::StatusData, max_block_time_),
-  PROTOBUF_FIELD_OFFSET(::sentry::StatusData, passive_peers_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::sentry::SetStatusReply, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -511,11 +505,19 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_p2psentry_2fsentry_2eproto::of
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::sentry::PeerCountPerProtocol, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  PROTOBUF_FIELD_OFFSET(::sentry::PeerCountPerProtocol, protocol_),
+  PROTOBUF_FIELD_OFFSET(::sentry::PeerCountPerProtocol, count_),
+  ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::sentry::PeerCountReply, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   PROTOBUF_FIELD_OFFSET(::sentry::PeerCountReply, count_),
+  PROTOBUF_FIELD_OFFSET(::sentry::PeerCountReply, countsperprotocol_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::sentry::PeerByIdRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -550,20 +552,20 @@ static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOB
   { 29, -1, sizeof(::sentry::SentPeers)},
   { 35, -1, sizeof(::sentry::PenalizePeerRequest)},
   { 42, -1, sizeof(::sentry::PeerMinBlockRequest)},
-  { 49, -1, sizeof(::sentry::PeerUselessRequest)},
-  { 55, -1, sizeof(::sentry::InboundMessage)},
-  { 63, -1, sizeof(::sentry::Forks)},
-  { 71, -1, sizeof(::sentry::StatusData)},
-  { 83, -1, sizeof(::sentry::SetStatusReply)},
-  { 88, -1, sizeof(::sentry::HandShakeReply)},
-  { 94, -1, sizeof(::sentry::MessagesRequest)},
-  { 100, -1, sizeof(::sentry::PeersReply)},
-  { 106, -1, sizeof(::sentry::PeerCountRequest)},
+  { 49, -1, sizeof(::sentry::InboundMessage)},
+  { 57, -1, sizeof(::sentry::Forks)},
+  { 65, -1, sizeof(::sentry::StatusData)},
+  { 76, -1, sizeof(::sentry::SetStatusReply)},
+  { 81, -1, sizeof(::sentry::HandShakeReply)},
+  { 87, -1, sizeof(::sentry::MessagesRequest)},
+  { 93, -1, sizeof(::sentry::PeersReply)},
+  { 99, -1, sizeof(::sentry::PeerCountRequest)},
+  { 104, -1, sizeof(::sentry::PeerCountPerProtocol)},
   { 111, -1, sizeof(::sentry::PeerCountReply)},
-  { 117, -1, sizeof(::sentry::PeerByIdRequest)},
-  { 123, 129, sizeof(::sentry::PeerByIdReply)},
-  { 130, -1, sizeof(::sentry::PeerEventsRequest)},
-  { 135, -1, sizeof(::sentry::PeerEvent)},
+  { 118, -1, sizeof(::sentry::PeerByIdRequest)},
+  { 124, 130, sizeof(::sentry::PeerByIdReply)},
+  { 131, -1, sizeof(::sentry::PeerEventsRequest)},
+  { 136, -1, sizeof(::sentry::PeerEvent)},
 };
 
 static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
@@ -574,7 +576,6 @@ static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] =
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::sentry::_SentPeers_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::sentry::_PenalizePeerRequest_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::sentry::_PeerMinBlockRequest_default_instance_),
-  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::sentry::_PeerUselessRequest_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::sentry::_InboundMessage_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::sentry::_Forks_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::sentry::_StatusData_default_instance_),
@@ -583,6 +584,7 @@ static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] =
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::sentry::_MessagesRequest_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::sentry::_PeersReply_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::sentry::_PeerCountRequest_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::sentry::_PeerCountPerProtocol_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::sentry::_PeerCountReply_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::sentry::_PeerByIdRequest_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::sentry::_PeerByIdReply_default_instance_),
@@ -607,76 +609,77 @@ const char descriptor_table_protodef_p2psentry_2fsentry_2eproto[] PROTOBUF_SECTI
   "t\022\034\n\007peer_id\030\001 \001(\0132\013.types.H512\022$\n\007penal"
   "ty\030\002 \001(\0162\023.sentry.PenaltyKind\"F\n\023PeerMin"
   "BlockRequest\022\034\n\007peer_id\030\001 \001(\0132\013.types.H5"
-  "12\022\021\n\tmin_block\030\002 \001(\004\"2\n\022PeerUselessRequ"
-  "est\022\034\n\007peer_id\030\001 \001(\0132\013.types.H512\"[\n\016Inb"
-  "oundMessage\022\035\n\002id\030\001 \001(\0162\021.sentry.Message"
-  "Id\022\014\n\004data\030\002 \001(\014\022\034\n\007peer_id\030\003 \001(\0132\013.type"
-  "s.H512\"O\n\005Forks\022\034\n\007genesis\030\001 \001(\0132\013.types"
-  ".H256\022\024\n\014height_forks\030\002 \003(\004\022\022\n\ntime_fork"
-  "s\030\003 \003(\004\"\322\001\n\nStatusData\022\022\n\nnetwork_id\030\001 \001"
-  "(\004\022%\n\020total_difficulty\030\002 \001(\0132\013.types.H25"
-  "6\022\036\n\tbest_hash\030\003 \001(\0132\013.types.H256\022 \n\tfor"
-  "k_data\030\004 \001(\0132\r.sentry.Forks\022\030\n\020max_block"
-  "_height\030\005 \001(\004\022\026\n\016max_block_time\030\006 \001(\004\022\025\n"
-  "\rpassive_peers\030\007 \001(\010\"\020\n\016SetStatusReply\"4"
-  "\n\016HandShakeReply\022\"\n\010protocol\030\001 \001(\0162\020.sen"
-  "try.Protocol\"1\n\017MessagesRequest\022\036\n\003ids\030\001"
-  " \003(\0162\021.sentry.MessageId\",\n\nPeersReply\022\036\n"
-  "\005peers\030\001 \003(\0132\017.types.PeerInfo\"\022\n\020PeerCou"
-  "ntRequest\"\037\n\016PeerCountReply\022\r\n\005count\030\001 \001"
-  "(\004\"/\n\017PeerByIdRequest\022\034\n\007peer_id\030\001 \001(\0132\013"
-  ".types.H512\"<\n\rPeerByIdReply\022\"\n\004peer\030\001 \001"
-  "(\0132\017.types.PeerInfoH\000\210\001\001B\007\n\005_peer\"\023\n\021Pee"
-  "rEventsRequest\"\206\001\n\tPeerEvent\022\034\n\007peer_id\030"
-  "\001 \001(\0132\013.types.H512\022/\n\010event_id\030\002 \001(\0162\035.s"
-  "entry.PeerEvent.PeerEventId\"*\n\013PeerEvent"
-  "Id\022\013\n\007Connect\020\000\022\016\n\nDisconnect\020\001*\332\005\n\tMess"
-  "ageId\022\r\n\tSTATUS_65\020\000\022\030\n\024GET_BLOCK_HEADER"
-  "S_65\020\001\022\024\n\020BLOCK_HEADERS_65\020\002\022\023\n\017BLOCK_HA"
-  "SHES_65\020\003\022\027\n\023GET_BLOCK_BODIES_65\020\004\022\023\n\017BL"
-  "OCK_BODIES_65\020\005\022\024\n\020GET_NODE_DATA_65\020\006\022\020\n"
-  "\014NODE_DATA_65\020\007\022\023\n\017GET_RECEIPTS_65\020\010\022\017\n\013"
-  "RECEIPTS_65\020\t\022\027\n\023NEW_BLOCK_HASHES_65\020\n\022\020"
-  "\n\014NEW_BLOCK_65\020\013\022\023\n\017TRANSACTIONS_65\020\014\022$\n"
-  " NEW_POOLED_TRANSACTION_HASHES_65\020\r\022\036\n\032G"
-  "ET_POOLED_TRANSACTIONS_65\020\016\022\032\n\026POOLED_TR"
-  "ANSACTIONS_65\020\017\022\r\n\tSTATUS_66\020\021\022\027\n\023NEW_BL"
-  "OCK_HASHES_66\020\022\022\020\n\014NEW_BLOCK_66\020\023\022\023\n\017TRA"
-  "NSACTIONS_66\020\024\022$\n NEW_POOLED_TRANSACTION"
-  "_HASHES_66\020\025\022\030\n\024GET_BLOCK_HEADERS_66\020\026\022\027"
-  "\n\023GET_BLOCK_BODIES_66\020\027\022\024\n\020GET_NODE_DATA"
-  "_66\020\030\022\023\n\017GET_RECEIPTS_66\020\031\022\036\n\032GET_POOLED"
-  "_TRANSACTIONS_66\020\032\022\024\n\020BLOCK_HEADERS_66\020\033"
-  "\022\023\n\017BLOCK_BODIES_66\020\034\022\020\n\014NODE_DATA_66\020\035\022"
-  "\017\n\013RECEIPTS_66\020\036\022\032\n\026POOLED_TRANSACTIONS_"
-  "66\020\037*\027\n\013PenaltyKind\022\010\n\004Kick\020\000*+\n\010Protoco"
-  "l\022\t\n\005ETH65\020\000\022\t\n\005ETH66\020\001\022\t\n\005ETH67\020\0022\346\007\n\006S"
-  "entry\0227\n\tSetStatus\022\022.sentry.StatusData\032\026"
-  ".sentry.SetStatusReply\022C\n\014PenalizePeer\022\033"
-  ".sentry.PenalizePeerRequest\032\026.google.pro"
-  "tobuf.Empty\022C\n\014PeerMinBlock\022\033.sentry.Pee"
-  "rMinBlockRequest\032\026.google.protobuf.Empty"
-  "\022A\n\013PeerUseless\022\032.sentry.PeerUselessRequ"
-  "est\032\026.google.protobuf.Empty\022;\n\tHandShake"
-  "\022\026.google.protobuf.Empty\032\026.sentry.HandSh"
-  "akeReply\022P\n\025SendMessageByMinBlock\022$.sent"
-  "ry.SendMessageByMinBlockRequest\032\021.sentry"
-  ".SentPeers\022D\n\017SendMessageById\022\036.sentry.S"
-  "endMessageByIdRequest\032\021.sentry.SentPeers"
-  "\022V\n\030SendMessageToRandomPeers\022\'.sentry.Se"
-  "ndMessageToRandomPeersRequest\032\021.sentry.S"
-  "entPeers\022B\n\020SendMessageToAll\022\033.sentry.Ou"
-  "tboundMessageData\032\021.sentry.SentPeers\022=\n\010"
-  "Messages\022\027.sentry.MessagesRequest\032\026.sent"
-  "ry.InboundMessage0\001\0223\n\005Peers\022\026.google.pr"
-  "otobuf.Empty\032\022.sentry.PeersReply\022=\n\tPeer"
-  "Count\022\030.sentry.PeerCountRequest\032\026.sentry"
-  ".PeerCountReply\022:\n\010PeerById\022\027.sentry.Pee"
-  "rByIdRequest\032\025.sentry.PeerByIdReply\022<\n\nP"
-  "eerEvents\022\031.sentry.PeerEventsRequest\032\021.s"
-  "entry.PeerEvent0\001\0228\n\010NodeInfo\022\026.google.p"
-  "rotobuf.Empty\032\024.types.NodeInfoReplyB\021Z\017."
-  "/sentry;sentryb\006proto3"
+  "12\022\021\n\tmin_block\030\002 \001(\004\"[\n\016InboundMessage\022"
+  "\035\n\002id\030\001 \001(\0162\021.sentry.MessageId\022\014\n\004data\030\002"
+  " \001(\014\022\034\n\007peer_id\030\003 \001(\0132\013.types.H512\"O\n\005Fo"
+  "rks\022\034\n\007genesis\030\001 \001(\0132\013.types.H256\022\024\n\014hei"
+  "ght_forks\030\002 \003(\004\022\022\n\ntime_forks\030\003 \003(\004\"\273\001\n\n"
+  "StatusData\022\022\n\nnetwork_id\030\001 \001(\004\022%\n\020total_"
+  "difficulty\030\002 \001(\0132\013.types.H256\022\036\n\tbest_ha"
+  "sh\030\003 \001(\0132\013.types.H256\022 \n\tfork_data\030\004 \001(\013"
+  "2\r.sentry.Forks\022\030\n\020max_block_height\030\005 \001("
+  "\004\022\026\n\016max_block_time\030\006 \001(\004\"\020\n\016SetStatusRe"
+  "ply\"4\n\016HandShakeReply\022\"\n\010protocol\030\001 \001(\0162"
+  "\020.sentry.Protocol\"1\n\017MessagesRequest\022\036\n\003"
+  "ids\030\001 \003(\0162\021.sentry.MessageId\",\n\nPeersRep"
+  "ly\022\036\n\005peers\030\001 \003(\0132\017.types.PeerInfo\"\022\n\020Pe"
+  "erCountRequest\"I\n\024PeerCountPerProtocol\022\""
+  "\n\010protocol\030\001 \001(\0162\020.sentry.Protocol\022\r\n\005co"
+  "unt\030\002 \001(\004\"X\n\016PeerCountReply\022\r\n\005count\030\001 \001"
+  "(\004\0227\n\021countsPerProtocol\030\002 \003(\0132\034.sentry.P"
+  "eerCountPerProtocol\"/\n\017PeerByIdRequest\022\034"
+  "\n\007peer_id\030\001 \001(\0132\013.types.H512\"<\n\rPeerById"
+  "Reply\022\"\n\004peer\030\001 \001(\0132\017.types.PeerInfoH\000\210\001"
+  "\001B\007\n\005_peer\"\023\n\021PeerEventsRequest\"\206\001\n\tPeer"
+  "Event\022\034\n\007peer_id\030\001 \001(\0132\013.types.H512\022/\n\010e"
+  "vent_id\030\002 \001(\0162\035.sentry.PeerEvent.PeerEve"
+  "ntId\"*\n\013PeerEventId\022\013\n\007Connect\020\000\022\016\n\nDisc"
+  "onnect\020\001*\200\006\n\tMessageId\022\r\n\tSTATUS_65\020\000\022\030\n"
+  "\024GET_BLOCK_HEADERS_65\020\001\022\024\n\020BLOCK_HEADERS"
+  "_65\020\002\022\023\n\017BLOCK_HASHES_65\020\003\022\027\n\023GET_BLOCK_"
+  "BODIES_65\020\004\022\023\n\017BLOCK_BODIES_65\020\005\022\024\n\020GET_"
+  "NODE_DATA_65\020\006\022\020\n\014NODE_DATA_65\020\007\022\023\n\017GET_"
+  "RECEIPTS_65\020\010\022\017\n\013RECEIPTS_65\020\t\022\027\n\023NEW_BL"
+  "OCK_HASHES_65\020\n\022\020\n\014NEW_BLOCK_65\020\013\022\023\n\017TRA"
+  "NSACTIONS_65\020\014\022$\n NEW_POOLED_TRANSACTION"
+  "_HASHES_65\020\r\022\036\n\032GET_POOLED_TRANSACTIONS_"
+  "65\020\016\022\032\n\026POOLED_TRANSACTIONS_65\020\017\022\r\n\tSTAT"
+  "US_66\020\021\022\027\n\023NEW_BLOCK_HASHES_66\020\022\022\020\n\014NEW_"
+  "BLOCK_66\020\023\022\023\n\017TRANSACTIONS_66\020\024\022$\n NEW_P"
+  "OOLED_TRANSACTION_HASHES_66\020\025\022\030\n\024GET_BLO"
+  "CK_HEADERS_66\020\026\022\027\n\023GET_BLOCK_BODIES_66\020\027"
+  "\022\024\n\020GET_NODE_DATA_66\020\030\022\023\n\017GET_RECEIPTS_6"
+  "6\020\031\022\036\n\032GET_POOLED_TRANSACTIONS_66\020\032\022\024\n\020B"
+  "LOCK_HEADERS_66\020\033\022\023\n\017BLOCK_BODIES_66\020\034\022\020"
+  "\n\014NODE_DATA_66\020\035\022\017\n\013RECEIPTS_66\020\036\022\032\n\026POO"
+  "LED_TRANSACTIONS_66\020\037\022$\n NEW_POOLED_TRAN"
+  "SACTION_HASHES_68\020 *\027\n\013PenaltyKind\022\010\n\004Ki"
+  "ck\020\000*6\n\010Protocol\022\t\n\005ETH65\020\000\022\t\n\005ETH66\020\001\022\t"
+  "\n\005ETH67\020\002\022\t\n\005ETH68\020\0032\243\007\n\006Sentry\0227\n\tSetSt"
+  "atus\022\022.sentry.StatusData\032\026.sentry.SetSta"
+  "tusReply\022C\n\014PenalizePeer\022\033.sentry.Penali"
+  "zePeerRequest\032\026.google.protobuf.Empty\022C\n"
+  "\014PeerMinBlock\022\033.sentry.PeerMinBlockReque"
+  "st\032\026.google.protobuf.Empty\022;\n\tHandShake\022"
+  "\026.google.protobuf.Empty\032\026.sentry.HandSha"
+  "keReply\022P\n\025SendMessageByMinBlock\022$.sentr"
+  "y.SendMessageByMinBlockRequest\032\021.sentry."
+  "SentPeers\022D\n\017SendMessageById\022\036.sentry.Se"
+  "ndMessageByIdRequest\032\021.sentry.SentPeers\022"
+  "V\n\030SendMessageToRandomPeers\022\'.sentry.Sen"
+  "dMessageToRandomPeersRequest\032\021.sentry.Se"
+  "ntPeers\022B\n\020SendMessageToAll\022\033.sentry.Out"
+  "boundMessageData\032\021.sentry.SentPeers\022=\n\010M"
+  "essages\022\027.sentry.MessagesRequest\032\026.sentr"
+  "y.InboundMessage0\001\0223\n\005Peers\022\026.google.pro"
+  "tobuf.Empty\032\022.sentry.PeersReply\022=\n\tPeerC"
+  "ount\022\030.sentry.PeerCountRequest\032\026.sentry."
+  "PeerCountReply\022:\n\010PeerById\022\027.sentry.Peer"
+  "ByIdRequest\032\025.sentry.PeerByIdReply\022<\n\nPe"
+  "erEvents\022\031.sentry.PeerEventsRequest\032\021.se"
+  "ntry.PeerEvent0\001\0228\n\010NodeInfo\022\026.google.pr"
+  "otobuf.Empty\032\024.types.NodeInfoReplyB\021Z\017./"
+  "sentry;sentryb\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_p2psentry_2fsentry_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fempty_2eproto,
@@ -690,12 +693,12 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_p2p
   &scc_info_OutboundMessageData_p2psentry_2fsentry_2eproto.base,
   &scc_info_PeerByIdReply_p2psentry_2fsentry_2eproto.base,
   &scc_info_PeerByIdRequest_p2psentry_2fsentry_2eproto.base,
+  &scc_info_PeerCountPerProtocol_p2psentry_2fsentry_2eproto.base,
   &scc_info_PeerCountReply_p2psentry_2fsentry_2eproto.base,
   &scc_info_PeerCountRequest_p2psentry_2fsentry_2eproto.base,
   &scc_info_PeerEvent_p2psentry_2fsentry_2eproto.base,
   &scc_info_PeerEventsRequest_p2psentry_2fsentry_2eproto.base,
   &scc_info_PeerMinBlockRequest_p2psentry_2fsentry_2eproto.base,
-  &scc_info_PeerUselessRequest_p2psentry_2fsentry_2eproto.base,
   &scc_info_PeersReply_p2psentry_2fsentry_2eproto.base,
   &scc_info_PenalizePeerRequest_p2psentry_2fsentry_2eproto.base,
   &scc_info_SendMessageByIdRequest_p2psentry_2fsentry_2eproto.base,
@@ -707,7 +710,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_p2p
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_p2psentry_2fsentry_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_p2psentry_2fsentry_2eproto = {
-  false, false, descriptor_table_protodef_p2psentry_2fsentry_2eproto, "p2psentry/sentry.proto", 3422,
+  false, false, descriptor_table_protodef_p2psentry_2fsentry_2eproto, "p2psentry/sentry.proto", 3461,
   &descriptor_table_p2psentry_2fsentry_2eproto_once, descriptor_table_p2psentry_2fsentry_2eproto_sccs, descriptor_table_p2psentry_2fsentry_2eproto_deps, 21, 2,
   schemas, file_default_instances, TableStruct_p2psentry_2fsentry_2eproto::offsets,
   file_level_metadata_p2psentry_2fsentry_2eproto, 21, file_level_enum_descriptors_p2psentry_2fsentry_2eproto, file_level_service_descriptors_p2psentry_2fsentry_2eproto,
@@ -774,6 +777,7 @@ bool MessageId_IsValid(int value) {
     case 29:
     case 30:
     case 31:
+    case 32:
       return true;
     default:
       return false;
@@ -802,6 +806,7 @@ bool Protocol_IsValid(int value) {
     case 0:
     case 1:
     case 2:
+    case 3:
       return true;
     default:
       return false;
@@ -2519,222 +2524,6 @@ void PeerMinBlockRequest::InternalSwap(PeerMinBlockRequest* other) {
 
 // ===================================================================
 
-class PeerUselessRequest::_Internal {
- public:
-  static const ::types::H512& peer_id(const PeerUselessRequest* msg);
-};
-
-const ::types::H512&
-PeerUselessRequest::_Internal::peer_id(const PeerUselessRequest* msg) {
-  return *msg->peer_id_;
-}
-void PeerUselessRequest::clear_peer_id() {
-  if (GetArena() == nullptr && peer_id_ != nullptr) {
-    delete peer_id_;
-  }
-  peer_id_ = nullptr;
-}
-PeerUselessRequest::PeerUselessRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
-  SharedCtor();
-  RegisterArenaDtor(arena);
-  // @@protoc_insertion_point(arena_constructor:sentry.PeerUselessRequest)
-}
-PeerUselessRequest::PeerUselessRequest(const PeerUselessRequest& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  if (from._internal_has_peer_id()) {
-    peer_id_ = new ::types::H512(*from.peer_id_);
-  } else {
-    peer_id_ = nullptr;
-  }
-  // @@protoc_insertion_point(copy_constructor:sentry.PeerUselessRequest)
-}
-
-void PeerUselessRequest::SharedCtor() {
-  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_PeerUselessRequest_p2psentry_2fsentry_2eproto.base);
-  peer_id_ = nullptr;
-}
-
-PeerUselessRequest::~PeerUselessRequest() {
-  // @@protoc_insertion_point(destructor:sentry.PeerUselessRequest)
-  SharedDtor();
-  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-void PeerUselessRequest::SharedDtor() {
-  GOOGLE_DCHECK(GetArena() == nullptr);
-  if (this != internal_default_instance()) delete peer_id_;
-}
-
-void PeerUselessRequest::ArenaDtor(void* object) {
-  PeerUselessRequest* _this = reinterpret_cast< PeerUselessRequest* >(object);
-  (void)_this;
-}
-void PeerUselessRequest::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
-}
-void PeerUselessRequest::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
-}
-const PeerUselessRequest& PeerUselessRequest::default_instance() {
-  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_PeerUselessRequest_p2psentry_2fsentry_2eproto.base);
-  return *internal_default_instance();
-}
-
-
-void PeerUselessRequest::Clear() {
-// @@protoc_insertion_point(message_clear_start:sentry.PeerUselessRequest)
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  if (GetArena() == nullptr && peer_id_ != nullptr) {
-    delete peer_id_;
-  }
-  peer_id_ = nullptr;
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-const char* PeerUselessRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    ::PROTOBUF_NAMESPACE_ID::uint32 tag;
-    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
-    CHK_(ptr);
-    switch (tag >> 3) {
-      // .types.H512 peer_id = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
-          ptr = ctx->ParseMessage(_internal_mutable_peer_id(), ptr);
-          CHK_(ptr);
-        } else goto handle_unusual;
-        continue;
-      default: {
-      handle_unusual:
-        if ((tag & 7) == 4 || tag == 0) {
-          ctx->SetLastTag(tag);
-          goto success;
-        }
-        ptr = UnknownFieldParse(tag,
-            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-            ptr, ctx);
-        CHK_(ptr != nullptr);
-        continue;
-      }
-    }  // switch
-  }  // while
-success:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto success;
-#undef CHK_
-}
-
-::PROTOBUF_NAMESPACE_ID::uint8* PeerUselessRequest::_InternalSerialize(
-    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:sentry.PeerUselessRequest)
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  // .types.H512 peer_id = 1;
-  if (this->has_peer_id()) {
-    target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(
-        1, _Internal::peer_id(this), target, stream);
-  }
-
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
-  }
-  // @@protoc_insertion_point(serialize_to_array_end:sentry.PeerUselessRequest)
-  return target;
-}
-
-size_t PeerUselessRequest::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:sentry.PeerUselessRequest)
-  size_t total_size = 0;
-
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  // .types.H512 peer_id = 1;
-  if (this->has_peer_id()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *peer_id_);
-  }
-
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
-        _internal_metadata_, total_size, &_cached_size_);
-  }
-  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
-  SetCachedSize(cached_size);
-  return total_size;
-}
-
-void PeerUselessRequest::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_merge_from_start:sentry.PeerUselessRequest)
-  GOOGLE_DCHECK_NE(&from, this);
-  const PeerUselessRequest* source =
-      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<PeerUselessRequest>(
-          &from);
-  if (source == nullptr) {
-  // @@protoc_insertion_point(generalized_merge_from_cast_fail:sentry.PeerUselessRequest)
-    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
-  } else {
-  // @@protoc_insertion_point(generalized_merge_from_cast_success:sentry.PeerUselessRequest)
-    MergeFrom(*source);
-  }
-}
-
-void PeerUselessRequest::MergeFrom(const PeerUselessRequest& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:sentry.PeerUselessRequest)
-  GOOGLE_DCHECK_NE(&from, this);
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  if (from.has_peer_id()) {
-    _internal_mutable_peer_id()->::types::H512::MergeFrom(from._internal_peer_id());
-  }
-}
-
-void PeerUselessRequest::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_copy_from_start:sentry.PeerUselessRequest)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-void PeerUselessRequest::CopyFrom(const PeerUselessRequest& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:sentry.PeerUselessRequest)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-bool PeerUselessRequest::IsInitialized() const {
-  return true;
-}
-
-void PeerUselessRequest::InternalSwap(PeerUselessRequest* other) {
-  using std::swap;
-  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-  swap(peer_id_, other->peer_id_);
-}
-
-::PROTOBUF_NAMESPACE_ID::Metadata PeerUselessRequest::GetMetadata() const {
-  return GetMetadataStatic();
-}
-
-
-// ===================================================================
-
 class InboundMessage::_Internal {
  public:
   static const ::types::H512& peer_id(const InboundMessage* msg);
@@ -3368,8 +3157,8 @@ StatusData::StatusData(const StatusData& from)
     fork_data_ = nullptr;
   }
   ::memcpy(&network_id_, &from.network_id_,
-    static_cast<size_t>(reinterpret_cast<char*>(&passive_peers_) -
-    reinterpret_cast<char*>(&network_id_)) + sizeof(passive_peers_));
+    static_cast<size_t>(reinterpret_cast<char*>(&max_block_time_) -
+    reinterpret_cast<char*>(&network_id_)) + sizeof(max_block_time_));
   // @@protoc_insertion_point(copy_constructor:sentry.StatusData)
 }
 
@@ -3377,8 +3166,8 @@ void StatusData::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_StatusData_p2psentry_2fsentry_2eproto.base);
   ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
       reinterpret_cast<char*>(&total_difficulty_) - reinterpret_cast<char*>(this)),
-      0, static_cast<size_t>(reinterpret_cast<char*>(&passive_peers_) -
-      reinterpret_cast<char*>(&total_difficulty_)) + sizeof(passive_peers_));
+      0, static_cast<size_t>(reinterpret_cast<char*>(&max_block_time_) -
+      reinterpret_cast<char*>(&total_difficulty_)) + sizeof(max_block_time_));
 }
 
 StatusData::~StatusData() {
@@ -3428,8 +3217,8 @@ void StatusData::Clear() {
   }
   fork_data_ = nullptr;
   ::memset(&network_id_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&passive_peers_) -
-      reinterpret_cast<char*>(&network_id_)) + sizeof(passive_peers_));
+      reinterpret_cast<char*>(&max_block_time_) -
+      reinterpret_cast<char*>(&network_id_)) + sizeof(max_block_time_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -3479,13 +3268,6 @@ const char* StatusData::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID:
       case 6:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 48)) {
           max_block_time_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
-          CHK_(ptr);
-        } else goto handle_unusual;
-        continue;
-      // bool passive_peers = 7;
-      case 7:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 56)) {
-          passive_peers_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -3559,12 +3341,6 @@ failure:
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(6, this->_internal_max_block_time(), target);
   }
 
-  // bool passive_peers = 7;
-  if (this->passive_peers() != 0) {
-    target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteBoolToArray(7, this->_internal_passive_peers(), target);
-  }
-
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -3623,11 +3399,6 @@ size_t StatusData::ByteSizeLong() const {
         this->_internal_max_block_time());
   }
 
-  // bool passive_peers = 7;
-  if (this->passive_peers() != 0) {
-    total_size += 1 + 1;
-  }
-
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
         _internal_metadata_, total_size, &_cached_size_);
@@ -3677,9 +3448,6 @@ void StatusData::MergeFrom(const StatusData& from) {
   if (from.max_block_time() != 0) {
     _internal_set_max_block_time(from._internal_max_block_time());
   }
-  if (from.passive_peers() != 0) {
-    _internal_set_passive_peers(from._internal_passive_peers());
-  }
 }
 
 void StatusData::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
@@ -3704,8 +3472,8 @@ void StatusData::InternalSwap(StatusData* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(StatusData, passive_peers_)
-      + sizeof(StatusData::passive_peers_)
+      PROTOBUF_FIELD_OFFSET(StatusData, max_block_time_)
+      + sizeof(StatusData::max_block_time_)
       - PROTOBUF_FIELD_OFFSET(StatusData, total_difficulty_)>(
           reinterpret_cast<char*>(&total_difficulty_),
           reinterpret_cast<char*>(&other->total_difficulty_));
@@ -4650,24 +4418,257 @@ void PeerCountRequest::InternalSwap(PeerCountRequest* other) {
 
 // ===================================================================
 
+class PeerCountPerProtocol::_Internal {
+ public:
+};
+
+PeerCountPerProtocol::PeerCountPerProtocol(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor();
+  RegisterArenaDtor(arena);
+  // @@protoc_insertion_point(arena_constructor:sentry.PeerCountPerProtocol)
+}
+PeerCountPerProtocol::PeerCountPerProtocol(const PeerCountPerProtocol& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::memcpy(&count_, &from.count_,
+    static_cast<size_t>(reinterpret_cast<char*>(&protocol_) -
+    reinterpret_cast<char*>(&count_)) + sizeof(protocol_));
+  // @@protoc_insertion_point(copy_constructor:sentry.PeerCountPerProtocol)
+}
+
+void PeerCountPerProtocol::SharedCtor() {
+  ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+      reinterpret_cast<char*>(&count_) - reinterpret_cast<char*>(this)),
+      0, static_cast<size_t>(reinterpret_cast<char*>(&protocol_) -
+      reinterpret_cast<char*>(&count_)) + sizeof(protocol_));
+}
+
+PeerCountPerProtocol::~PeerCountPerProtocol() {
+  // @@protoc_insertion_point(destructor:sentry.PeerCountPerProtocol)
+  SharedDtor();
+  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+void PeerCountPerProtocol::SharedDtor() {
+  GOOGLE_DCHECK(GetArena() == nullptr);
+}
+
+void PeerCountPerProtocol::ArenaDtor(void* object) {
+  PeerCountPerProtocol* _this = reinterpret_cast< PeerCountPerProtocol* >(object);
+  (void)_this;
+}
+void PeerCountPerProtocol::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
+}
+void PeerCountPerProtocol::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+const PeerCountPerProtocol& PeerCountPerProtocol::default_instance() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_PeerCountPerProtocol_p2psentry_2fsentry_2eproto.base);
+  return *internal_default_instance();
+}
+
+
+void PeerCountPerProtocol::Clear() {
+// @@protoc_insertion_point(message_clear_start:sentry.PeerCountPerProtocol)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  ::memset(&count_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&protocol_) -
+      reinterpret_cast<char*>(&count_)) + sizeof(protocol_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* PeerCountPerProtocol::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    ::PROTOBUF_NAMESPACE_ID::uint32 tag;
+    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    CHK_(ptr);
+    switch (tag >> 3) {
+      // .sentry.Protocol protocol = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 8)) {
+          ::PROTOBUF_NAMESPACE_ID::uint64 val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+          _internal_set_protocol(static_cast<::sentry::Protocol>(val));
+        } else goto handle_unusual;
+        continue;
+      // uint64 count = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 16)) {
+          count_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      default: {
+      handle_unusual:
+        if ((tag & 7) == 4 || tag == 0) {
+          ctx->SetLastTag(tag);
+          goto success;
+        }
+        ptr = UnknownFieldParse(tag,
+            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+            ptr, ctx);
+        CHK_(ptr != nullptr);
+        continue;
+      }
+    }  // switch
+  }  // while
+success:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto success;
+#undef CHK_
+}
+
+::PROTOBUF_NAMESPACE_ID::uint8* PeerCountPerProtocol::_InternalSerialize(
+    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:sentry.PeerCountPerProtocol)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .sentry.Protocol protocol = 1;
+  if (this->protocol() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteEnumToArray(
+      1, this->_internal_protocol(), target);
+  }
+
+  // uint64 count = 2;
+  if (this->count() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(2, this->_internal_count(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:sentry.PeerCountPerProtocol)
+  return target;
+}
+
+size_t PeerCountPerProtocol::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:sentry.PeerCountPerProtocol)
+  size_t total_size = 0;
+
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // uint64 count = 2;
+  if (this->count() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_count());
+  }
+
+  // .sentry.Protocol protocol = 1;
+  if (this->protocol() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::EnumSize(this->_internal_protocol());
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
+        _internal_metadata_, total_size, &_cached_size_);
+  }
+  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
+  SetCachedSize(cached_size);
+  return total_size;
+}
+
+void PeerCountPerProtocol::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:sentry.PeerCountPerProtocol)
+  GOOGLE_DCHECK_NE(&from, this);
+  const PeerCountPerProtocol* source =
+      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<PeerCountPerProtocol>(
+          &from);
+  if (source == nullptr) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:sentry.PeerCountPerProtocol)
+    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:sentry.PeerCountPerProtocol)
+    MergeFrom(*source);
+  }
+}
+
+void PeerCountPerProtocol::MergeFrom(const PeerCountPerProtocol& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:sentry.PeerCountPerProtocol)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.count() != 0) {
+    _internal_set_count(from._internal_count());
+  }
+  if (from.protocol() != 0) {
+    _internal_set_protocol(from._internal_protocol());
+  }
+}
+
+void PeerCountPerProtocol::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:sentry.PeerCountPerProtocol)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void PeerCountPerProtocol::CopyFrom(const PeerCountPerProtocol& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:sentry.PeerCountPerProtocol)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool PeerCountPerProtocol::IsInitialized() const {
+  return true;
+}
+
+void PeerCountPerProtocol::InternalSwap(PeerCountPerProtocol* other) {
+  using std::swap;
+  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(PeerCountPerProtocol, protocol_)
+      + sizeof(PeerCountPerProtocol::protocol_)
+      - PROTOBUF_FIELD_OFFSET(PeerCountPerProtocol, count_)>(
+          reinterpret_cast<char*>(&count_),
+          reinterpret_cast<char*>(&other->count_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata PeerCountPerProtocol::GetMetadata() const {
+  return GetMetadataStatic();
+}
+
+
+// ===================================================================
+
 class PeerCountReply::_Internal {
  public:
 };
 
 PeerCountReply::PeerCountReply(::PROTOBUF_NAMESPACE_ID::Arena* arena)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena),
+  countsperprotocol_(arena) {
   SharedCtor();
   RegisterArenaDtor(arena);
   // @@protoc_insertion_point(arena_constructor:sentry.PeerCountReply)
 }
 PeerCountReply::PeerCountReply(const PeerCountReply& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  : ::PROTOBUF_NAMESPACE_ID::Message(),
+      countsperprotocol_(from.countsperprotocol_) {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   count_ = from.count_;
   // @@protoc_insertion_point(copy_constructor:sentry.PeerCountReply)
 }
 
 void PeerCountReply::SharedCtor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_PeerCountReply_p2psentry_2fsentry_2eproto.base);
   count_ = PROTOBUF_ULONGLONG(0);
 }
 
@@ -4702,6 +4703,7 @@ void PeerCountReply::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
+  countsperprotocol_.Clear();
   count_ = PROTOBUF_ULONGLONG(0);
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
@@ -4718,6 +4720,18 @@ const char* PeerCountReply::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 8)) {
           count_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // repeated .sentry.PeerCountPerProtocol countsPerProtocol = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            ptr = ctx->ParseMessage(_internal_add_countsperprotocol(), ptr);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<18>(ptr));
         } else goto handle_unusual;
         continue;
       default: {
@@ -4754,6 +4768,14 @@ failure:
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(1, this->_internal_count(), target);
   }
 
+  // repeated .sentry.PeerCountPerProtocol countsPerProtocol = 2;
+  for (unsigned int i = 0,
+      n = static_cast<unsigned int>(this->_internal_countsperprotocol_size()); i < n; i++) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(2, this->_internal_countsperprotocol(i), target, stream);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -4769,6 +4791,13 @@ size_t PeerCountReply::ByteSizeLong() const {
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
+
+  // repeated .sentry.PeerCountPerProtocol countsPerProtocol = 2;
+  total_size += 1UL * this->_internal_countsperprotocol_size();
+  for (const auto& msg : this->countsperprotocol_) {
+    total_size +=
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
 
   // uint64 count = 1;
   if (this->count() != 0) {
@@ -4808,6 +4837,7 @@ void PeerCountReply::MergeFrom(const PeerCountReply& from) {
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
+  countsperprotocol_.MergeFrom(from.countsperprotocol_);
   if (from.count() != 0) {
     _internal_set_count(from._internal_count());
   }
@@ -4834,6 +4864,7 @@ bool PeerCountReply::IsInitialized() const {
 void PeerCountReply::InternalSwap(PeerCountReply* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
+  countsperprotocol_.InternalSwap(&other->countsperprotocol_);
   swap(count_, other->count_);
 }
 
@@ -5724,9 +5755,6 @@ template<> PROTOBUF_NOINLINE ::sentry::PenalizePeerRequest* Arena::CreateMaybeMe
 template<> PROTOBUF_NOINLINE ::sentry::PeerMinBlockRequest* Arena::CreateMaybeMessage< ::sentry::PeerMinBlockRequest >(Arena* arena) {
   return Arena::CreateMessageInternal< ::sentry::PeerMinBlockRequest >(arena);
 }
-template<> PROTOBUF_NOINLINE ::sentry::PeerUselessRequest* Arena::CreateMaybeMessage< ::sentry::PeerUselessRequest >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::sentry::PeerUselessRequest >(arena);
-}
 template<> PROTOBUF_NOINLINE ::sentry::InboundMessage* Arena::CreateMaybeMessage< ::sentry::InboundMessage >(Arena* arena) {
   return Arena::CreateMessageInternal< ::sentry::InboundMessage >(arena);
 }
@@ -5750,6 +5778,9 @@ template<> PROTOBUF_NOINLINE ::sentry::PeersReply* Arena::CreateMaybeMessage< ::
 }
 template<> PROTOBUF_NOINLINE ::sentry::PeerCountRequest* Arena::CreateMaybeMessage< ::sentry::PeerCountRequest >(Arena* arena) {
   return Arena::CreateMessageInternal< ::sentry::PeerCountRequest >(arena);
+}
+template<> PROTOBUF_NOINLINE ::sentry::PeerCountPerProtocol* Arena::CreateMaybeMessage< ::sentry::PeerCountPerProtocol >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::sentry::PeerCountPerProtocol >(arena);
 }
 template<> PROTOBUF_NOINLINE ::sentry::PeerCountReply* Arena::CreateMaybeMessage< ::sentry::PeerCountReply >(Arena* arena) {
   return Arena::CreateMessageInternal< ::sentry::PeerCountReply >(arena);

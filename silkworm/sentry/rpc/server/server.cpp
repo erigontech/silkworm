@@ -105,7 +105,6 @@ void ServerImpl::register_request_calls(agrpc::GrpcContext* grpc_context) {
     request_repeatedly<PeerCountCall>(&AsyncService::RequestPeerCount, grpc_context);
     request_repeatedly<PeerByIdCall>(&AsyncService::RequestPeerById, grpc_context);
     request_repeatedly<PenalizePeerCall>(&AsyncService::RequestPenalizePeer, grpc_context);
-    request_repeatedly<PeerUselessCall>(&AsyncService::RequestPeerUseless, grpc_context);
     request_repeatedly<PeerEventsCall>(&AsyncService::RequestPeerEvents, grpc_context);
 }
 

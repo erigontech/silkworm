@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#include <memory>
 #include <optional>
 #include <regex>
 #include <stdexcept>
@@ -41,6 +42,8 @@
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/snapshot/sync.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
+#include <silkworm/sentry/api/api_common/sentry_client.hpp>
+#include <silkworm/sentry/rpc/client/sentry_client.hpp>
 #include <silkworm/sentry/sentry.hpp>
 #include <silkworm/sentry/settings.hpp>
 #include <silkworm/sync/block_exchange.hpp>
@@ -520,15 +523,9 @@ int main(int argc, char* argv[]) {
         // Resource usage logging
         ResourceUsageLog resource_usage_log(node_settings);
 
-        // BackEnd & KV server
-        const auto node_name{get_node_name_from_build_info(build_info)};
-        silkworm::EthereumBackEnd backend{node_settings, &chaindata_db};
-        backend.set_node_name(node_name);
-
-        silkworm::rpc::BackEndKvServer rpc_server{settings.server_settings, backend};
-
         // Sentry
-        std::optional<silkworm::sentry::Sentry> sentry_server;
+        std::optional<std::shared_ptr<silkworm::sentry::Sentry>> sentry_server;
+        std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> sentry_client;
         if (node_settings.external_sentry_addr.empty()) {
             silkworm::sentry::Settings sentry_settings = std::move(settings.sentry_settings);
             sentry_settings.data_dir_path = node_settings.data_directory->path();
@@ -537,15 +534,35 @@ int main(int argc, char* argv[]) {
             // TODO: uncomment when sync_sentry_client is refactored to use the sentry client
             // sentry_settings.api_address = "";
 
-            sentry_server.emplace(std::move(sentry_settings), context_pool);
+            *sentry_server = std::make_shared<silkworm::sentry::Sentry>(std::move(sentry_settings), context_pool);
+
+            // direct client
+            sentry_client = sentry_server.value();
+
             // TODO: remove when sync_sentry_client is refactored to use the sentry client
             node_settings.external_sentry_addr = "127.0.0.1:9091";
+        } else {
+            // remote client
+            sentry_client = std::make_shared<silkworm::sentry::rpc::client::SentryClient>(
+                node_settings.external_sentry_addr,
+                *context_pool.next_context().client_grpc_context());
         }
         auto embedded_sentry_run_if_needed = [&sentry_server]() -> boost::asio::awaitable<void> {
             if (sentry_server) {
-                co_await sentry_server->run();
+                co_await sentry_server.value()->run();
             }
         };
+
+        // BackEnd & KV server
+        silkworm::EthereumBackEnd backend{
+            node_settings,
+            &chaindata_db,
+            sentry_client,
+        };
+        const auto node_name{get_node_name_from_build_info(build_info)};
+        backend.set_node_name(node_name);
+
+        silkworm::rpc::BackEndKvServer rpc_server{settings.server_settings, backend};
 
         // Sentry client - connects to sentry
         silkworm::SentryClient sync_sentry_client{

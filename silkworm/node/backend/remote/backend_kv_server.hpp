@@ -23,15 +23,9 @@
 #include <silkworm/infra/rpc/server/server.hpp>
 #include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
-#include <silkworm/node/backend/remote/rpc/backend_calls.hpp>
-#include <silkworm/node/backend/remote/rpc/kv_calls.hpp>
+#include <silkworm/node/backend/ethereum_backend.hpp>
 
 namespace silkworm::rpc {
-
-class BackEndKvService : public BackEndService, public KvService {
-  public:
-    explicit BackEndKvService(const EthereumBackEnd& backend);
-};
 
 class BackEndKvServer : public Server {
   public:
@@ -45,6 +39,12 @@ class BackEndKvServer : public Server {
     void register_request_calls() override;
 
   private:
+    static void setup_backend_calls(const EthereumBackEnd& backend);
+    void register_backend_request_calls(agrpc::GrpcContext* grpc_context);
+
+    static void setup_kv_calls();
+    void register_kv_request_calls(agrpc::GrpcContext* grpc_context);
+
     //! The Ethereum full node service.
     const EthereumBackEnd& backend_;
 
@@ -53,9 +53,6 @@ class BackEndKvServer : public Server {
 
     /// \warning The gRPC service must exist for the lifetime of the gRPC server it is registered on.
     remote::KV::AsyncService kv_async_service_;
-
-    //! The sequence of \ref BackEndKvService instance, one for each \ref ServerContext.
-    std::vector<std::unique_ptr<BackEndKvService>> backend_kv_services_;
 };
 
 }  // namespace silkworm::rpc

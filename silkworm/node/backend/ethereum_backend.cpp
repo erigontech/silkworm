@@ -16,31 +16,27 @@
 
 #include "ethereum_backend.hpp"
 
-#include <sstream>
-
 namespace silkworm {
 
-EthereumBackEnd::EthereumBackEnd(const NodeSettings& node_settings, mdbx::env* chaindata_env)
-    : EthereumBackEnd(node_settings, chaindata_env, std::make_unique<StateChangeCollection>()) {
+EthereumBackEnd::EthereumBackEnd(
+    const NodeSettings& node_settings,
+    mdbx::env* chaindata_env,
+    std::shared_ptr<sentry::api::api_common::SentryClient> sentry_client)
+    : EthereumBackEnd(node_settings, chaindata_env, std::move(sentry_client), std::make_unique<StateChangeCollection>()) {
 }
 
 EthereumBackEnd::EthereumBackEnd(
     const NodeSettings& node_settings,
     mdbx::env* chaindata_env,
+    std::shared_ptr<sentry::api::api_common::SentryClient> sentry_client,
     std::unique_ptr<StateChangeCollection> state_change_collection)
     : node_settings_(node_settings),
       chaindata_env_(chaindata_env),
+      sentry_client_(std::move(sentry_client)),
       state_change_collection_(std::move(state_change_collection)) {
     // Get the numeric chain identifier from node settings
     if (node_settings_.chain_config) {
         chain_id_ = (*node_settings_.chain_config).chain_id;
-    }
-
-    // Get the list of Sentry client addresses from node settings
-    std::stringstream sentry_list_stream{node_settings_.external_sentry_addr};
-    std::string sentry_address;
-    while (std::getline(sentry_list_stream, sentry_address, kSentryAddressDelimiter)) {
-        sentry_addresses_.push_back(sentry_address);
     }
 }
 

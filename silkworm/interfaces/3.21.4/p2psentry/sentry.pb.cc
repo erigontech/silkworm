@@ -247,7 +247,7 @@ struct PeerCountPerProtocolDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 PeerCountPerProtocolDefaultTypeInternal _PeerCountPerProtocol_default_instance_;
 PROTOBUF_CONSTEXPR PeerCountReply::PeerCountReply(
     ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.countsperprotocol_)*/{}
+    /*decltype(_impl_.counts_per_protocol_)*/{}
   , /*decltype(_impl_.count_)*/uint64_t{0u}
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct PeerCountReplyDefaultTypeInternal {
@@ -451,7 +451,7 @@ const uint32_t TableStruct_p2psentry_2fsentry_2eproto::offsets[] PROTOBUF_SECTIO
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::sentry::PeerCountReply, _impl_.count_),
-  PROTOBUF_FIELD_OFFSET(::sentry::PeerCountReply, _impl_.countsperprotocol_),
+  PROTOBUF_FIELD_OFFSET(::sentry::PeerCountReply, _impl_.counts_per_protocol_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::sentry::PeerByIdRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -563,61 +563,61 @@ const char descriptor_table_protodef_p2psentry_2fsentry_2eproto[] PROTOBUF_SECTI
   "ly\022\036\n\005peers\030\001 \003(\0132\017.types.PeerInfo\"\022\n\020Pe"
   "erCountRequest\"I\n\024PeerCountPerProtocol\022\""
   "\n\010protocol\030\001 \001(\0162\020.sentry.Protocol\022\r\n\005co"
-  "unt\030\002 \001(\004\"X\n\016PeerCountReply\022\r\n\005count\030\001 \001"
-  "(\004\0227\n\021countsPerProtocol\030\002 \003(\0132\034.sentry.P"
-  "eerCountPerProtocol\"/\n\017PeerByIdRequest\022\034"
-  "\n\007peer_id\030\001 \001(\0132\013.types.H512\"<\n\rPeerById"
-  "Reply\022\"\n\004peer\030\001 \001(\0132\017.types.PeerInfoH\000\210\001"
-  "\001B\007\n\005_peer\"\023\n\021PeerEventsRequest\"\206\001\n\tPeer"
-  "Event\022\034\n\007peer_id\030\001 \001(\0132\013.types.H512\022/\n\010e"
-  "vent_id\030\002 \001(\0162\035.sentry.PeerEvent.PeerEve"
-  "ntId\"*\n\013PeerEventId\022\013\n\007Connect\020\000\022\016\n\nDisc"
-  "onnect\020\001*\200\006\n\tMessageId\022\r\n\tSTATUS_65\020\000\022\030\n"
-  "\024GET_BLOCK_HEADERS_65\020\001\022\024\n\020BLOCK_HEADERS"
-  "_65\020\002\022\023\n\017BLOCK_HASHES_65\020\003\022\027\n\023GET_BLOCK_"
-  "BODIES_65\020\004\022\023\n\017BLOCK_BODIES_65\020\005\022\024\n\020GET_"
-  "NODE_DATA_65\020\006\022\020\n\014NODE_DATA_65\020\007\022\023\n\017GET_"
-  "RECEIPTS_65\020\010\022\017\n\013RECEIPTS_65\020\t\022\027\n\023NEW_BL"
-  "OCK_HASHES_65\020\n\022\020\n\014NEW_BLOCK_65\020\013\022\023\n\017TRA"
-  "NSACTIONS_65\020\014\022$\n NEW_POOLED_TRANSACTION"
-  "_HASHES_65\020\r\022\036\n\032GET_POOLED_TRANSACTIONS_"
-  "65\020\016\022\032\n\026POOLED_TRANSACTIONS_65\020\017\022\r\n\tSTAT"
-  "US_66\020\021\022\027\n\023NEW_BLOCK_HASHES_66\020\022\022\020\n\014NEW_"
-  "BLOCK_66\020\023\022\023\n\017TRANSACTIONS_66\020\024\022$\n NEW_P"
-  "OOLED_TRANSACTION_HASHES_66\020\025\022\030\n\024GET_BLO"
-  "CK_HEADERS_66\020\026\022\027\n\023GET_BLOCK_BODIES_66\020\027"
-  "\022\024\n\020GET_NODE_DATA_66\020\030\022\023\n\017GET_RECEIPTS_6"
-  "6\020\031\022\036\n\032GET_POOLED_TRANSACTIONS_66\020\032\022\024\n\020B"
-  "LOCK_HEADERS_66\020\033\022\023\n\017BLOCK_BODIES_66\020\034\022\020"
-  "\n\014NODE_DATA_66\020\035\022\017\n\013RECEIPTS_66\020\036\022\032\n\026POO"
-  "LED_TRANSACTIONS_66\020\037\022$\n NEW_POOLED_TRAN"
-  "SACTION_HASHES_68\020 *\027\n\013PenaltyKind\022\010\n\004Ki"
-  "ck\020\000*6\n\010Protocol\022\t\n\005ETH65\020\000\022\t\n\005ETH66\020\001\022\t"
-  "\n\005ETH67\020\002\022\t\n\005ETH68\020\0032\243\007\n\006Sentry\0227\n\tSetSt"
-  "atus\022\022.sentry.StatusData\032\026.sentry.SetSta"
-  "tusReply\022C\n\014PenalizePeer\022\033.sentry.Penali"
-  "zePeerRequest\032\026.google.protobuf.Empty\022C\n"
-  "\014PeerMinBlock\022\033.sentry.PeerMinBlockReque"
-  "st\032\026.google.protobuf.Empty\022;\n\tHandShake\022"
-  "\026.google.protobuf.Empty\032\026.sentry.HandSha"
-  "keReply\022P\n\025SendMessageByMinBlock\022$.sentr"
-  "y.SendMessageByMinBlockRequest\032\021.sentry."
-  "SentPeers\022D\n\017SendMessageById\022\036.sentry.Se"
-  "ndMessageByIdRequest\032\021.sentry.SentPeers\022"
-  "V\n\030SendMessageToRandomPeers\022\'.sentry.Sen"
-  "dMessageToRandomPeersRequest\032\021.sentry.Se"
-  "ntPeers\022B\n\020SendMessageToAll\022\033.sentry.Out"
-  "boundMessageData\032\021.sentry.SentPeers\022=\n\010M"
-  "essages\022\027.sentry.MessagesRequest\032\026.sentr"
-  "y.InboundMessage0\001\0223\n\005Peers\022\026.google.pro"
-  "tobuf.Empty\032\022.sentry.PeersReply\022=\n\tPeerC"
-  "ount\022\030.sentry.PeerCountRequest\032\026.sentry."
-  "PeerCountReply\022:\n\010PeerById\022\027.sentry.Peer"
-  "ByIdRequest\032\025.sentry.PeerByIdReply\022<\n\nPe"
-  "erEvents\022\031.sentry.PeerEventsRequest\032\021.se"
-  "ntry.PeerEvent0\001\0228\n\010NodeInfo\022\026.google.pr"
-  "otobuf.Empty\032\024.types.NodeInfoReplyB\021Z\017./"
-  "sentry;sentryb\006proto3"
+  "unt\030\002 \001(\004\"Z\n\016PeerCountReply\022\r\n\005count\030\001 \001"
+  "(\004\0229\n\023counts_per_protocol\030\002 \003(\0132\034.sentry"
+  ".PeerCountPerProtocol\"/\n\017PeerByIdRequest"
+  "\022\034\n\007peer_id\030\001 \001(\0132\013.types.H512\"<\n\rPeerBy"
+  "IdReply\022\"\n\004peer\030\001 \001(\0132\017.types.PeerInfoH\000"
+  "\210\001\001B\007\n\005_peer\"\023\n\021PeerEventsRequest\"\206\001\n\tPe"
+  "erEvent\022\034\n\007peer_id\030\001 \001(\0132\013.types.H512\022/\n"
+  "\010event_id\030\002 \001(\0162\035.sentry.PeerEvent.PeerE"
+  "ventId\"*\n\013PeerEventId\022\013\n\007Connect\020\000\022\016\n\nDi"
+  "sconnect\020\001*\200\006\n\tMessageId\022\r\n\tSTATUS_65\020\000\022"
+  "\030\n\024GET_BLOCK_HEADERS_65\020\001\022\024\n\020BLOCK_HEADE"
+  "RS_65\020\002\022\023\n\017BLOCK_HASHES_65\020\003\022\027\n\023GET_BLOC"
+  "K_BODIES_65\020\004\022\023\n\017BLOCK_BODIES_65\020\005\022\024\n\020GE"
+  "T_NODE_DATA_65\020\006\022\020\n\014NODE_DATA_65\020\007\022\023\n\017GE"
+  "T_RECEIPTS_65\020\010\022\017\n\013RECEIPTS_65\020\t\022\027\n\023NEW_"
+  "BLOCK_HASHES_65\020\n\022\020\n\014NEW_BLOCK_65\020\013\022\023\n\017T"
+  "RANSACTIONS_65\020\014\022$\n NEW_POOLED_TRANSACTI"
+  "ON_HASHES_65\020\r\022\036\n\032GET_POOLED_TRANSACTION"
+  "S_65\020\016\022\032\n\026POOLED_TRANSACTIONS_65\020\017\022\r\n\tST"
+  "ATUS_66\020\021\022\027\n\023NEW_BLOCK_HASHES_66\020\022\022\020\n\014NE"
+  "W_BLOCK_66\020\023\022\023\n\017TRANSACTIONS_66\020\024\022$\n NEW"
+  "_POOLED_TRANSACTION_HASHES_66\020\025\022\030\n\024GET_B"
+  "LOCK_HEADERS_66\020\026\022\027\n\023GET_BLOCK_BODIES_66"
+  "\020\027\022\024\n\020GET_NODE_DATA_66\020\030\022\023\n\017GET_RECEIPTS"
+  "_66\020\031\022\036\n\032GET_POOLED_TRANSACTIONS_66\020\032\022\024\n"
+  "\020BLOCK_HEADERS_66\020\033\022\023\n\017BLOCK_BODIES_66\020\034"
+  "\022\020\n\014NODE_DATA_66\020\035\022\017\n\013RECEIPTS_66\020\036\022\032\n\026P"
+  "OOLED_TRANSACTIONS_66\020\037\022$\n NEW_POOLED_TR"
+  "ANSACTION_HASHES_68\020 *\027\n\013PenaltyKind\022\010\n\004"
+  "Kick\020\000*6\n\010Protocol\022\t\n\005ETH65\020\000\022\t\n\005ETH66\020\001"
+  "\022\t\n\005ETH67\020\002\022\t\n\005ETH68\020\0032\243\007\n\006Sentry\0227\n\tSet"
+  "Status\022\022.sentry.StatusData\032\026.sentry.SetS"
+  "tatusReply\022C\n\014PenalizePeer\022\033.sentry.Pena"
+  "lizePeerRequest\032\026.google.protobuf.Empty\022"
+  "C\n\014PeerMinBlock\022\033.sentry.PeerMinBlockReq"
+  "uest\032\026.google.protobuf.Empty\022;\n\tHandShak"
+  "e\022\026.google.protobuf.Empty\032\026.sentry.HandS"
+  "hakeReply\022P\n\025SendMessageByMinBlock\022$.sen"
+  "try.SendMessageByMinBlockRequest\032\021.sentr"
+  "y.SentPeers\022D\n\017SendMessageById\022\036.sentry."
+  "SendMessageByIdRequest\032\021.sentry.SentPeer"
+  "s\022V\n\030SendMessageToRandomPeers\022\'.sentry.S"
+  "endMessageToRandomPeersRequest\032\021.sentry."
+  "SentPeers\022B\n\020SendMessageToAll\022\033.sentry.O"
+  "utboundMessageData\032\021.sentry.SentPeers\022=\n"
+  "\010Messages\022\027.sentry.MessagesRequest\032\026.sen"
+  "try.InboundMessage0\001\0223\n\005Peers\022\026.google.p"
+  "rotobuf.Empty\032\022.sentry.PeersReply\022=\n\tPee"
+  "rCount\022\030.sentry.PeerCountRequest\032\026.sentr"
+  "y.PeerCountReply\022:\n\010PeerById\022\027.sentry.Pe"
+  "erByIdRequest\032\025.sentry.PeerByIdReply\022<\n\n"
+  "PeerEvents\022\031.sentry.PeerEventsRequest\032\021."
+  "sentry.PeerEvent0\001\0228\n\010NodeInfo\022\026.google."
+  "protobuf.Empty\032\024.types.NodeInfoReplyB\021Z\017"
+  "./sentry;sentryb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_p2psentry_2fsentry_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fempty_2eproto,
@@ -625,7 +625,7 @@ static const ::_pbi::DescriptorTable* const descriptor_table_p2psentry_2fsentry_
 };
 static ::_pbi::once_flag descriptor_table_p2psentry_2fsentry_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_p2psentry_2fsentry_2eproto = {
-    false, false, 3461, descriptor_table_protodef_p2psentry_2fsentry_2eproto,
+    false, false, 3463, descriptor_table_protodef_p2psentry_2fsentry_2eproto,
     "p2psentry/sentry.proto",
     &descriptor_table_p2psentry_2fsentry_2eproto_once, descriptor_table_p2psentry_2fsentry_2eproto_deps, 2, 21,
     schemas, file_default_instances, TableStruct_p2psentry_2fsentry_2eproto::offsets,
@@ -4143,7 +4143,7 @@ PeerCountReply::PeerCountReply(const PeerCountReply& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   PeerCountReply* const _this = this; (void)_this;
   new (&_impl_) Impl_{
-      decltype(_impl_.countsperprotocol_){from._impl_.countsperprotocol_}
+      decltype(_impl_.counts_per_protocol_){from._impl_.counts_per_protocol_}
     , decltype(_impl_.count_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
@@ -4157,7 +4157,7 @@ inline void PeerCountReply::SharedCtor(
   (void)arena;
   (void)is_message_owned;
   new (&_impl_) Impl_{
-      decltype(_impl_.countsperprotocol_){arena}
+      decltype(_impl_.counts_per_protocol_){arena}
     , decltype(_impl_.count_){uint64_t{0u}}
     , /*decltype(_impl_._cached_size_)*/{}
   };
@@ -4174,7 +4174,7 @@ PeerCountReply::~PeerCountReply() {
 
 inline void PeerCountReply::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.countsperprotocol_.~RepeatedPtrField();
+  _impl_.counts_per_protocol_.~RepeatedPtrField();
 }
 
 void PeerCountReply::SetCachedSize(int size) const {
@@ -4187,7 +4187,7 @@ void PeerCountReply::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _impl_.countsperprotocol_.Clear();
+  _impl_.counts_per_protocol_.Clear();
   _impl_.count_ = uint64_t{0u};
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
@@ -4206,13 +4206,13 @@ const char* PeerCountReply::_InternalParse(const char* ptr, ::_pbi::ParseContext
         } else
           goto handle_unusual;
         continue;
-      // repeated .sentry.PeerCountPerProtocol countsPerProtocol = 2;
+      // repeated .sentry.PeerCountPerProtocol counts_per_protocol = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
           ptr -= 1;
           do {
             ptr += 1;
-            ptr = ctx->ParseMessage(_internal_add_countsperprotocol(), ptr);
+            ptr = ctx->ParseMessage(_internal_add_counts_per_protocol(), ptr);
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
           } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<18>(ptr));
@@ -4254,10 +4254,10 @@ uint8_t* PeerCountReply::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteUInt64ToArray(1, this->_internal_count(), target);
   }
 
-  // repeated .sentry.PeerCountPerProtocol countsPerProtocol = 2;
+  // repeated .sentry.PeerCountPerProtocol counts_per_protocol = 2;
   for (unsigned i = 0,
-      n = static_cast<unsigned>(this->_internal_countsperprotocol_size()); i < n; i++) {
-    const auto& repfield = this->_internal_countsperprotocol(i);
+      n = static_cast<unsigned>(this->_internal_counts_per_protocol_size()); i < n; i++) {
+    const auto& repfield = this->_internal_counts_per_protocol(i);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
         InternalWriteMessage(2, repfield, repfield.GetCachedSize(), target, stream);
   }
@@ -4278,9 +4278,9 @@ size_t PeerCountReply::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // repeated .sentry.PeerCountPerProtocol countsPerProtocol = 2;
-  total_size += 1UL * this->_internal_countsperprotocol_size();
-  for (const auto& msg : this->_impl_.countsperprotocol_) {
+  // repeated .sentry.PeerCountPerProtocol counts_per_protocol = 2;
+  total_size += 1UL * this->_internal_counts_per_protocol_size();
+  for (const auto& msg : this->_impl_.counts_per_protocol_) {
     total_size +=
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
@@ -4308,7 +4308,7 @@ void PeerCountReply::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const :
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  _this->_impl_.countsperprotocol_.MergeFrom(from._impl_.countsperprotocol_);
+  _this->_impl_.counts_per_protocol_.MergeFrom(from._impl_.counts_per_protocol_);
   if (from._internal_count() != 0) {
     _this->_internal_set_count(from._internal_count());
   }
@@ -4329,7 +4329,7 @@ bool PeerCountReply::IsInitialized() const {
 void PeerCountReply::InternalSwap(PeerCountReply* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  _impl_.countsperprotocol_.InternalSwap(&other->_impl_.countsperprotocol_);
+  _impl_.counts_per_protocol_.InternalSwap(&other->_impl_.counts_per_protocol_);
   swap(_impl_.count_, other->_impl_.count_);
 }
 

@@ -254,23 +254,23 @@ class ForkChoiceReceipt final :
     kLatestValidHashFieldNumber = 2,
     kSuccessFieldNumber = 1,
   };
-  // .types.H256 latestValidHash = 2;
-  bool has_latestvalidhash() const;
+  // .types.H256 latest_valid_hash = 2;
+  bool has_latest_valid_hash() const;
   private:
-  bool _internal_has_latestvalidhash() const;
+  bool _internal_has_latest_valid_hash() const;
   public:
-  void clear_latestvalidhash();
-  const ::types::H256& latestvalidhash() const;
-  PROTOBUF_NODISCARD ::types::H256* release_latestvalidhash();
-  ::types::H256* mutable_latestvalidhash();
-  void set_allocated_latestvalidhash(::types::H256* latestvalidhash);
+  void clear_latest_valid_hash();
+  const ::types::H256& latest_valid_hash() const;
+  PROTOBUF_NODISCARD ::types::H256* release_latest_valid_hash();
+  ::types::H256* mutable_latest_valid_hash();
+  void set_allocated_latest_valid_hash(::types::H256* latest_valid_hash);
   private:
-  const ::types::H256& _internal_latestvalidhash() const;
-  ::types::H256* _internal_mutable_latestvalidhash();
+  const ::types::H256& _internal_latest_valid_hash() const;
+  ::types::H256* _internal_mutable_latest_valid_hash();
   public:
-  void unsafe_arena_set_allocated_latestvalidhash(
-      ::types::H256* latestvalidhash);
-  ::types::H256* unsafe_arena_release_latestvalidhash();
+  void unsafe_arena_set_allocated_latest_valid_hash(
+      ::types::H256* latest_valid_hash);
+  ::types::H256* unsafe_arena_release_latest_valid_hash();
 
   // bool success = 1;
   void clear_success();
@@ -289,7 +289,7 @@ class ForkChoiceReceipt final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::types::H256* latestvalidhash_;
+    ::types::H256* latest_valid_hash_;
     bool success_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
@@ -423,49 +423,49 @@ class ValidationReceipt final :
     kMissingHashFieldNumber = 3,
     kValidationStatusFieldNumber = 1,
   };
-  // .types.H256 latestValidHash = 2;
-  bool has_latestvalidhash() const;
+  // .types.H256 latest_valid_hash = 2;
+  bool has_latest_valid_hash() const;
   private:
-  bool _internal_has_latestvalidhash() const;
+  bool _internal_has_latest_valid_hash() const;
   public:
-  void clear_latestvalidhash();
-  const ::types::H256& latestvalidhash() const;
-  PROTOBUF_NODISCARD ::types::H256* release_latestvalidhash();
-  ::types::H256* mutable_latestvalidhash();
-  void set_allocated_latestvalidhash(::types::H256* latestvalidhash);
+  void clear_latest_valid_hash();
+  const ::types::H256& latest_valid_hash() const;
+  PROTOBUF_NODISCARD ::types::H256* release_latest_valid_hash();
+  ::types::H256* mutable_latest_valid_hash();
+  void set_allocated_latest_valid_hash(::types::H256* latest_valid_hash);
   private:
-  const ::types::H256& _internal_latestvalidhash() const;
-  ::types::H256* _internal_mutable_latestvalidhash();
+  const ::types::H256& _internal_latest_valid_hash() const;
+  ::types::H256* _internal_mutable_latest_valid_hash();
   public:
-  void unsafe_arena_set_allocated_latestvalidhash(
-      ::types::H256* latestvalidhash);
-  ::types::H256* unsafe_arena_release_latestvalidhash();
+  void unsafe_arena_set_allocated_latest_valid_hash(
+      ::types::H256* latest_valid_hash);
+  ::types::H256* unsafe_arena_release_latest_valid_hash();
 
-  // optional .types.H256 missingHash = 3;
-  bool has_missinghash() const;
+  // optional .types.H256 missing_hash = 3;
+  bool has_missing_hash() const;
   private:
-  bool _internal_has_missinghash() const;
+  bool _internal_has_missing_hash() const;
   public:
-  void clear_missinghash();
-  const ::types::H256& missinghash() const;
-  PROTOBUF_NODISCARD ::types::H256* release_missinghash();
-  ::types::H256* mutable_missinghash();
-  void set_allocated_missinghash(::types::H256* missinghash);
+  void clear_missing_hash();
+  const ::types::H256& missing_hash() const;
+  PROTOBUF_NODISCARD ::types::H256* release_missing_hash();
+  ::types::H256* mutable_missing_hash();
+  void set_allocated_missing_hash(::types::H256* missing_hash);
   private:
-  const ::types::H256& _internal_missinghash() const;
-  ::types::H256* _internal_mutable_missinghash();
+  const ::types::H256& _internal_missing_hash() const;
+  ::types::H256* _internal_mutable_missing_hash();
   public:
-  void unsafe_arena_set_allocated_missinghash(
-      ::types::H256* missinghash);
-  ::types::H256* unsafe_arena_release_missinghash();
+  void unsafe_arena_set_allocated_missing_hash(
+      ::types::H256* missing_hash);
+  ::types::H256* unsafe_arena_release_missing_hash();
 
-  // .execution.ValidationStatus validationStatus = 1;
-  void clear_validationstatus();
-  ::execution::ValidationStatus validationstatus() const;
-  void set_validationstatus(::execution::ValidationStatus value);
+  // .execution.ValidationStatus validation_status = 1;
+  void clear_validation_status();
+  ::execution::ValidationStatus validation_status() const;
+  void set_validation_status(::execution::ValidationStatus value);
   private:
-  ::execution::ValidationStatus _internal_validationstatus() const;
-  void _internal_set_validationstatus(::execution::ValidationStatus value);
+  ::execution::ValidationStatus _internal_validation_status() const;
+  void _internal_set_validation_status(::execution::ValidationStatus value);
   public:
 
   // @@protoc_insertion_point(class_scope:execution.ValidationReceipt)
@@ -478,9 +478,9 @@ class ValidationReceipt final :
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-    ::types::H256* latestvalidhash_;
-    ::types::H256* missinghash_;
-    int validationstatus_;
+    ::types::H256* latest_valid_hash_;
+    ::types::H256* missing_hash_;
+    int validation_status_;
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_execution_2fexecution_2eproto;
@@ -776,37 +776,37 @@ class Header final :
     kTimestampFieldNumber = 10,
     kNonceFieldNumber = 11,
   };
-  // bytes extraData = 12;
-  void clear_extradata();
-  const std::string& extradata() const;
+  // bytes extra_data = 12;
+  void clear_extra_data();
+  const std::string& extra_data() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_extradata(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_extradata();
-  PROTOBUF_NODISCARD std::string* release_extradata();
-  void set_allocated_extradata(std::string* extradata);
+  void set_extra_data(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_extra_data();
+  PROTOBUF_NODISCARD std::string* release_extra_data();
+  void set_allocated_extra_data(std::string* extra_data);
   private:
-  const std::string& _internal_extradata() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_extradata(const std::string& value);
-  std::string* _internal_mutable_extradata();
+  const std::string& _internal_extra_data() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_extra_data(const std::string& value);
+  std::string* _internal_mutable_extra_data();
   public:
 
-  // .types.H256 parentHash = 1;
-  bool has_parenthash() const;
+  // .types.H256 parent_hash = 1;
+  bool has_parent_hash() const;
   private:
-  bool _internal_has_parenthash() const;
+  bool _internal_has_parent_hash() const;
   public:
-  void clear_parenthash();
-  const ::types::H256& parenthash() const;
-  PROTOBUF_NODISCARD ::types::H256* release_parenthash();
-  ::types::H256* mutable_parenthash();
-  void set_allocated_parenthash(::types::H256* parenthash);
+  void clear_parent_hash();
+  const ::types::H256& parent_hash() const;
+  PROTOBUF_NODISCARD ::types::H256* release_parent_hash();
+  ::types::H256* mutable_parent_hash();
+  void set_allocated_parent_hash(::types::H256* parent_hash);
   private:
-  const ::types::H256& _internal_parenthash() const;
-  ::types::H256* _internal_mutable_parenthash();
+  const ::types::H256& _internal_parent_hash() const;
+  ::types::H256* _internal_mutable_parent_hash();
   public:
-  void unsafe_arena_set_allocated_parenthash(
-      ::types::H256* parenthash);
-  ::types::H256* unsafe_arena_release_parenthash();
+  void unsafe_arena_set_allocated_parent_hash(
+      ::types::H256* parent_hash);
+  ::types::H256* unsafe_arena_release_parent_hash();
 
   // .types.H160 coinbase = 2;
   bool has_coinbase() const;
@@ -826,77 +826,77 @@ class Header final :
       ::types::H160* coinbase);
   ::types::H160* unsafe_arena_release_coinbase();
 
-  // .types.H256 stateRoot = 3;
-  bool has_stateroot() const;
+  // .types.H256 state_root = 3;
+  bool has_state_root() const;
   private:
-  bool _internal_has_stateroot() const;
+  bool _internal_has_state_root() const;
   public:
-  void clear_stateroot();
-  const ::types::H256& stateroot() const;
-  PROTOBUF_NODISCARD ::types::H256* release_stateroot();
-  ::types::H256* mutable_stateroot();
-  void set_allocated_stateroot(::types::H256* stateroot);
+  void clear_state_root();
+  const ::types::H256& state_root() const;
+  PROTOBUF_NODISCARD ::types::H256* release_state_root();
+  ::types::H256* mutable_state_root();
+  void set_allocated_state_root(::types::H256* state_root);
   private:
-  const ::types::H256& _internal_stateroot() const;
-  ::types::H256* _internal_mutable_stateroot();
+  const ::types::H256& _internal_state_root() const;
+  ::types::H256* _internal_mutable_state_root();
   public:
-  void unsafe_arena_set_allocated_stateroot(
-      ::types::H256* stateroot);
-  ::types::H256* unsafe_arena_release_stateroot();
+  void unsafe_arena_set_allocated_state_root(
+      ::types::H256* state_root);
+  ::types::H256* unsafe_arena_release_state_root();
 
-  // .types.H256 receiptRoot = 4;
-  bool has_receiptroot() const;
+  // .types.H256 receipt_root = 4;
+  bool has_receipt_root() const;
   private:
-  bool _internal_has_receiptroot() const;
+  bool _internal_has_receipt_root() const;
   public:
-  void clear_receiptroot();
-  const ::types::H256& receiptroot() const;
-  PROTOBUF_NODISCARD ::types::H256* release_receiptroot();
-  ::types::H256* mutable_receiptroot();
-  void set_allocated_receiptroot(::types::H256* receiptroot);
+  void clear_receipt_root();
+  const ::types::H256& receipt_root() const;
+  PROTOBUF_NODISCARD ::types::H256* release_receipt_root();
+  ::types::H256* mutable_receipt_root();
+  void set_allocated_receipt_root(::types::H256* receipt_root);
   private:
-  const ::types::H256& _internal_receiptroot() const;
-  ::types::H256* _internal_mutable_receiptroot();
+  const ::types::H256& _internal_receipt_root() const;
+  ::types::H256* _internal_mutable_receipt_root();
   public:
-  void unsafe_arena_set_allocated_receiptroot(
-      ::types::H256* receiptroot);
-  ::types::H256* unsafe_arena_release_receiptroot();
+  void unsafe_arena_set_allocated_receipt_root(
+      ::types::H256* receipt_root);
+  ::types::H256* unsafe_arena_release_receipt_root();
 
-  // .types.H2048 logsBloom = 5;
-  bool has_logsbloom() const;
+  // .types.H2048 logs_bloom = 5;
+  bool has_logs_bloom() const;
   private:
-  bool _internal_has_logsbloom() const;
+  bool _internal_has_logs_bloom() const;
   public:
-  void clear_logsbloom();
-  const ::types::H2048& logsbloom() const;
-  PROTOBUF_NODISCARD ::types::H2048* release_logsbloom();
-  ::types::H2048* mutable_logsbloom();
-  void set_allocated_logsbloom(::types::H2048* logsbloom);
+  void clear_logs_bloom();
+  const ::types::H2048& logs_bloom() const;
+  PROTOBUF_NODISCARD ::types::H2048* release_logs_bloom();
+  ::types::H2048* mutable_logs_bloom();
+  void set_allocated_logs_bloom(::types::H2048* logs_bloom);
   private:
-  const ::types::H2048& _internal_logsbloom() const;
-  ::types::H2048* _internal_mutable_logsbloom();
+  const ::types::H2048& _internal_logs_bloom() const;
+  ::types::H2048* _internal_mutable_logs_bloom();
   public:
-  void unsafe_arena_set_allocated_logsbloom(
-      ::types::H2048* logsbloom);
-  ::types::H2048* unsafe_arena_release_logsbloom();
+  void unsafe_arena_set_allocated_logs_bloom(
+      ::types::H2048* logs_bloom);
+  ::types::H2048* unsafe_arena_release_logs_bloom();
 
-  // .types.H256 mixDigest = 6;
-  bool has_mixdigest() const;
+  // .types.H256 mix_digest = 6;
+  bool has_mix_digest() const;
   private:
-  bool _internal_has_mixdigest() const;
+  bool _internal_has_mix_digest() const;
   public:
-  void clear_mixdigest();
-  const ::types::H256& mixdigest() const;
-  PROTOBUF_NODISCARD ::types::H256* release_mixdigest();
-  ::types::H256* mutable_mixdigest();
-  void set_allocated_mixdigest(::types::H256* mixdigest);
+  void clear_mix_digest();
+  const ::types::H256& mix_digest() const;
+  PROTOBUF_NODISCARD ::types::H256* release_mix_digest();
+  ::types::H256* mutable_mix_digest();
+  void set_allocated_mix_digest(::types::H256* mix_digest);
   private:
-  const ::types::H256& _internal_mixdigest() const;
-  ::types::H256* _internal_mutable_mixdigest();
+  const ::types::H256& _internal_mix_digest() const;
+  ::types::H256* _internal_mutable_mix_digest();
   public:
-  void unsafe_arena_set_allocated_mixdigest(
-      ::types::H256* mixdigest);
-  ::types::H256* unsafe_arena_release_mixdigest();
+  void unsafe_arena_set_allocated_mix_digest(
+      ::types::H256* mix_digest);
+  ::types::H256* unsafe_arena_release_mix_digest();
 
   // .types.H256 difficulty = 13;
   bool has_difficulty() const;
@@ -916,139 +916,139 @@ class Header final :
       ::types::H256* difficulty);
   ::types::H256* unsafe_arena_release_difficulty();
 
-  // .types.H256 blockHash = 14;
-  bool has_blockhash() const;
+  // .types.H256 block_hash = 14;
+  bool has_block_hash() const;
   private:
-  bool _internal_has_blockhash() const;
+  bool _internal_has_block_hash() const;
   public:
-  void clear_blockhash();
-  const ::types::H256& blockhash() const;
-  PROTOBUF_NODISCARD ::types::H256* release_blockhash();
-  ::types::H256* mutable_blockhash();
-  void set_allocated_blockhash(::types::H256* blockhash);
+  void clear_block_hash();
+  const ::types::H256& block_hash() const;
+  PROTOBUF_NODISCARD ::types::H256* release_block_hash();
+  ::types::H256* mutable_block_hash();
+  void set_allocated_block_hash(::types::H256* block_hash);
   private:
-  const ::types::H256& _internal_blockhash() const;
-  ::types::H256* _internal_mutable_blockhash();
+  const ::types::H256& _internal_block_hash() const;
+  ::types::H256* _internal_mutable_block_hash();
   public:
-  void unsafe_arena_set_allocated_blockhash(
-      ::types::H256* blockhash);
-  ::types::H256* unsafe_arena_release_blockhash();
+  void unsafe_arena_set_allocated_block_hash(
+      ::types::H256* block_hash);
+  ::types::H256* unsafe_arena_release_block_hash();
 
-  // .types.H256 ommerHash = 15;
-  bool has_ommerhash() const;
+  // .types.H256 ommer_hash = 15;
+  bool has_ommer_hash() const;
   private:
-  bool _internal_has_ommerhash() const;
+  bool _internal_has_ommer_hash() const;
   public:
-  void clear_ommerhash();
-  const ::types::H256& ommerhash() const;
-  PROTOBUF_NODISCARD ::types::H256* release_ommerhash();
-  ::types::H256* mutable_ommerhash();
-  void set_allocated_ommerhash(::types::H256* ommerhash);
+  void clear_ommer_hash();
+  const ::types::H256& ommer_hash() const;
+  PROTOBUF_NODISCARD ::types::H256* release_ommer_hash();
+  ::types::H256* mutable_ommer_hash();
+  void set_allocated_ommer_hash(::types::H256* ommer_hash);
   private:
-  const ::types::H256& _internal_ommerhash() const;
-  ::types::H256* _internal_mutable_ommerhash();
+  const ::types::H256& _internal_ommer_hash() const;
+  ::types::H256* _internal_mutable_ommer_hash();
   public:
-  void unsafe_arena_set_allocated_ommerhash(
-      ::types::H256* ommerhash);
-  ::types::H256* unsafe_arena_release_ommerhash();
+  void unsafe_arena_set_allocated_ommer_hash(
+      ::types::H256* ommer_hash);
+  ::types::H256* unsafe_arena_release_ommer_hash();
 
-  // .types.H256 transactionHash = 16;
-  bool has_transactionhash() const;
+  // .types.H256 transaction_hash = 16;
+  bool has_transaction_hash() const;
   private:
-  bool _internal_has_transactionhash() const;
+  bool _internal_has_transaction_hash() const;
   public:
-  void clear_transactionhash();
-  const ::types::H256& transactionhash() const;
-  PROTOBUF_NODISCARD ::types::H256* release_transactionhash();
-  ::types::H256* mutable_transactionhash();
-  void set_allocated_transactionhash(::types::H256* transactionhash);
+  void clear_transaction_hash();
+  const ::types::H256& transaction_hash() const;
+  PROTOBUF_NODISCARD ::types::H256* release_transaction_hash();
+  ::types::H256* mutable_transaction_hash();
+  void set_allocated_transaction_hash(::types::H256* transaction_hash);
   private:
-  const ::types::H256& _internal_transactionhash() const;
-  ::types::H256* _internal_mutable_transactionhash();
+  const ::types::H256& _internal_transaction_hash() const;
+  ::types::H256* _internal_mutable_transaction_hash();
   public:
-  void unsafe_arena_set_allocated_transactionhash(
-      ::types::H256* transactionhash);
-  ::types::H256* unsafe_arena_release_transactionhash();
+  void unsafe_arena_set_allocated_transaction_hash(
+      ::types::H256* transaction_hash);
+  ::types::H256* unsafe_arena_release_transaction_hash();
 
-  // optional .types.H256 baseFeePerGas = 17;
-  bool has_basefeepergas() const;
+  // optional .types.H256 base_fee_per_gas = 17;
+  bool has_base_fee_per_gas() const;
   private:
-  bool _internal_has_basefeepergas() const;
+  bool _internal_has_base_fee_per_gas() const;
   public:
-  void clear_basefeepergas();
-  const ::types::H256& basefeepergas() const;
-  PROTOBUF_NODISCARD ::types::H256* release_basefeepergas();
-  ::types::H256* mutable_basefeepergas();
-  void set_allocated_basefeepergas(::types::H256* basefeepergas);
+  void clear_base_fee_per_gas();
+  const ::types::H256& base_fee_per_gas() const;
+  PROTOBUF_NODISCARD ::types::H256* release_base_fee_per_gas();
+  ::types::H256* mutable_base_fee_per_gas();
+  void set_allocated_base_fee_per_gas(::types::H256* base_fee_per_gas);
   private:
-  const ::types::H256& _internal_basefeepergas() const;
-  ::types::H256* _internal_mutable_basefeepergas();
+  const ::types::H256& _internal_base_fee_per_gas() const;
+  ::types::H256* _internal_mutable_base_fee_per_gas();
   public:
-  void unsafe_arena_set_allocated_basefeepergas(
-      ::types::H256* basefeepergas);
-  ::types::H256* unsafe_arena_release_basefeepergas();
+  void unsafe_arena_set_allocated_base_fee_per_gas(
+      ::types::H256* base_fee_per_gas);
+  ::types::H256* unsafe_arena_release_base_fee_per_gas();
 
-  // optional .types.H256 withdrawalHash = 18;
-  bool has_withdrawalhash() const;
+  // optional .types.H256 withdrawal_hash = 18;
+  bool has_withdrawal_hash() const;
   private:
-  bool _internal_has_withdrawalhash() const;
+  bool _internal_has_withdrawal_hash() const;
   public:
-  void clear_withdrawalhash();
-  const ::types::H256& withdrawalhash() const;
-  PROTOBUF_NODISCARD ::types::H256* release_withdrawalhash();
-  ::types::H256* mutable_withdrawalhash();
-  void set_allocated_withdrawalhash(::types::H256* withdrawalhash);
+  void clear_withdrawal_hash();
+  const ::types::H256& withdrawal_hash() const;
+  PROTOBUF_NODISCARD ::types::H256* release_withdrawal_hash();
+  ::types::H256* mutable_withdrawal_hash();
+  void set_allocated_withdrawal_hash(::types::H256* withdrawal_hash);
   private:
-  const ::types::H256& _internal_withdrawalhash() const;
-  ::types::H256* _internal_mutable_withdrawalhash();
+  const ::types::H256& _internal_withdrawal_hash() const;
+  ::types::H256* _internal_mutable_withdrawal_hash();
   public:
-  void unsafe_arena_set_allocated_withdrawalhash(
-      ::types::H256* withdrawalhash);
-  ::types::H256* unsafe_arena_release_withdrawalhash();
+  void unsafe_arena_set_allocated_withdrawal_hash(
+      ::types::H256* withdrawal_hash);
+  ::types::H256* unsafe_arena_release_withdrawal_hash();
 
-  // optional .types.H256 excessDataGas = 19;
-  bool has_excessdatagas() const;
+  // optional .types.H256 excess_data_gas = 19;
+  bool has_excess_data_gas() const;
   private:
-  bool _internal_has_excessdatagas() const;
+  bool _internal_has_excess_data_gas() const;
   public:
-  void clear_excessdatagas();
-  const ::types::H256& excessdatagas() const;
-  PROTOBUF_NODISCARD ::types::H256* release_excessdatagas();
-  ::types::H256* mutable_excessdatagas();
-  void set_allocated_excessdatagas(::types::H256* excessdatagas);
+  void clear_excess_data_gas();
+  const ::types::H256& excess_data_gas() const;
+  PROTOBUF_NODISCARD ::types::H256* release_excess_data_gas();
+  ::types::H256* mutable_excess_data_gas();
+  void set_allocated_excess_data_gas(::types::H256* excess_data_gas);
   private:
-  const ::types::H256& _internal_excessdatagas() const;
-  ::types::H256* _internal_mutable_excessdatagas();
+  const ::types::H256& _internal_excess_data_gas() const;
+  ::types::H256* _internal_mutable_excess_data_gas();
   public:
-  void unsafe_arena_set_allocated_excessdatagas(
-      ::types::H256* excessdatagas);
-  ::types::H256* unsafe_arena_release_excessdatagas();
+  void unsafe_arena_set_allocated_excess_data_gas(
+      ::types::H256* excess_data_gas);
+  ::types::H256* unsafe_arena_release_excess_data_gas();
 
-  // uint64 blockNumber = 7;
-  void clear_blocknumber();
-  uint64_t blocknumber() const;
-  void set_blocknumber(uint64_t value);
+  // uint64 block_number = 7;
+  void clear_block_number();
+  uint64_t block_number() const;
+  void set_block_number(uint64_t value);
   private:
-  uint64_t _internal_blocknumber() const;
-  void _internal_set_blocknumber(uint64_t value);
-  public:
-
-  // uint64 gasLimit = 8;
-  void clear_gaslimit();
-  uint64_t gaslimit() const;
-  void set_gaslimit(uint64_t value);
-  private:
-  uint64_t _internal_gaslimit() const;
-  void _internal_set_gaslimit(uint64_t value);
+  uint64_t _internal_block_number() const;
+  void _internal_set_block_number(uint64_t value);
   public:
 
-  // uint64 gasUsed = 9;
-  void clear_gasused();
-  uint64_t gasused() const;
-  void set_gasused(uint64_t value);
+  // uint64 gas_limit = 8;
+  void clear_gas_limit();
+  uint64_t gas_limit() const;
+  void set_gas_limit(uint64_t value);
   private:
-  uint64_t _internal_gasused() const;
-  void _internal_set_gasused(uint64_t value);
+  uint64_t _internal_gas_limit() const;
+  void _internal_set_gas_limit(uint64_t value);
+  public:
+
+  // uint64 gas_used = 9;
+  void clear_gas_used();
+  uint64_t gas_used() const;
+  void set_gas_used(uint64_t value);
+  private:
+  uint64_t _internal_gas_used() const;
+  void _internal_set_gas_used(uint64_t value);
   public:
 
   // uint64 timestamp = 10;
@@ -1079,23 +1079,23 @@ class Header final :
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr extradata_;
-    ::types::H256* parenthash_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr extra_data_;
+    ::types::H256* parent_hash_;
     ::types::H160* coinbase_;
-    ::types::H256* stateroot_;
-    ::types::H256* receiptroot_;
-    ::types::H2048* logsbloom_;
-    ::types::H256* mixdigest_;
+    ::types::H256* state_root_;
+    ::types::H256* receipt_root_;
+    ::types::H2048* logs_bloom_;
+    ::types::H256* mix_digest_;
     ::types::H256* difficulty_;
-    ::types::H256* blockhash_;
-    ::types::H256* ommerhash_;
-    ::types::H256* transactionhash_;
-    ::types::H256* basefeepergas_;
-    ::types::H256* withdrawalhash_;
-    ::types::H256* excessdatagas_;
-    uint64_t blocknumber_;
-    uint64_t gaslimit_;
-    uint64_t gasused_;
+    ::types::H256* block_hash_;
+    ::types::H256* ommer_hash_;
+    ::types::H256* transaction_hash_;
+    ::types::H256* base_fee_per_gas_;
+    ::types::H256* withdrawal_hash_;
+    ::types::H256* excess_data_gas_;
+    uint64_t block_number_;
+    uint64_t gas_limit_;
+    uint64_t gas_used_;
     uint64_t timestamp_;
     uint64_t nonce_;
   };
@@ -1291,31 +1291,31 @@ class BlockBody final :
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::Withdrawal >&
       withdrawals() const;
 
-  // .types.H256 blockHash = 1;
-  bool has_blockhash() const;
+  // .types.H256 block_hash = 1;
+  bool has_block_hash() const;
   private:
-  bool _internal_has_blockhash() const;
+  bool _internal_has_block_hash() const;
   public:
-  void clear_blockhash();
-  const ::types::H256& blockhash() const;
-  PROTOBUF_NODISCARD ::types::H256* release_blockhash();
-  ::types::H256* mutable_blockhash();
-  void set_allocated_blockhash(::types::H256* blockhash);
+  void clear_block_hash();
+  const ::types::H256& block_hash() const;
+  PROTOBUF_NODISCARD ::types::H256* release_block_hash();
+  ::types::H256* mutable_block_hash();
+  void set_allocated_block_hash(::types::H256* block_hash);
   private:
-  const ::types::H256& _internal_blockhash() const;
-  ::types::H256* _internal_mutable_blockhash();
+  const ::types::H256& _internal_block_hash() const;
+  ::types::H256* _internal_mutable_block_hash();
   public:
-  void unsafe_arena_set_allocated_blockhash(
-      ::types::H256* blockhash);
-  ::types::H256* unsafe_arena_release_blockhash();
+  void unsafe_arena_set_allocated_block_hash(
+      ::types::H256* block_hash);
+  ::types::H256* unsafe_arena_release_block_hash();
 
-  // uint64 blockNumber = 2;
-  void clear_blocknumber();
-  uint64_t blocknumber() const;
-  void set_blocknumber(uint64_t value);
+  // uint64 block_number = 2;
+  void clear_block_number();
+  uint64_t block_number() const;
+  void set_block_number(uint64_t value);
   private:
-  uint64_t _internal_blocknumber() const;
-  void _internal_set_blocknumber(uint64_t value);
+  uint64_t _internal_block_number() const;
+  void _internal_set_block_number(uint64_t value);
   public:
 
   // @@protoc_insertion_point(class_scope:execution.BlockBody)
@@ -1329,8 +1329,8 @@ class BlockBody final :
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> transactions_;
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::execution::Header > uncles_;
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::types::Withdrawal > withdrawals_;
-    ::types::H256* blockhash_;
-    uint64_t blocknumber_;
+    ::types::H256* block_hash_;
+    uint64_t block_number_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -1777,17 +1777,17 @@ class GetHeaderHashNumberResponse final :
   enum : int {
     kBlockNumberFieldNumber = 1,
   };
-  // optional uint64 blockNumber = 1;
-  bool has_blocknumber() const;
+  // optional uint64 block_number = 1;
+  bool has_block_number() const;
   private:
-  bool _internal_has_blocknumber() const;
+  bool _internal_has_block_number() const;
   public:
-  void clear_blocknumber();
-  uint64_t blocknumber() const;
-  void set_blocknumber(uint64_t value);
+  void clear_block_number();
+  uint64_t block_number() const;
+  void set_block_number(uint64_t value);
   private:
-  uint64_t _internal_blocknumber() const;
-  void _internal_set_blocknumber(uint64_t value);
+  uint64_t _internal_block_number() const;
+  void _internal_set_block_number(uint64_t value);
   public:
 
   // @@protoc_insertion_point(class_scope:execution.GetHeaderHashNumberResponse)
@@ -1800,7 +1800,7 @@ class GetHeaderHashNumberResponse final :
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-    uint64_t blocknumber_;
+    uint64_t block_number_;
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_execution_2fexecution_2eproto;
@@ -1931,35 +1931,35 @@ class GetSegmentRequest final :
     kBlockHashFieldNumber = 2,
     kBlockNumberFieldNumber = 1,
   };
-  // optional .types.H256 blockHash = 2;
-  bool has_blockhash() const;
+  // optional .types.H256 block_hash = 2;
+  bool has_block_hash() const;
   private:
-  bool _internal_has_blockhash() const;
+  bool _internal_has_block_hash() const;
   public:
-  void clear_blockhash();
-  const ::types::H256& blockhash() const;
-  PROTOBUF_NODISCARD ::types::H256* release_blockhash();
-  ::types::H256* mutable_blockhash();
-  void set_allocated_blockhash(::types::H256* blockhash);
+  void clear_block_hash();
+  const ::types::H256& block_hash() const;
+  PROTOBUF_NODISCARD ::types::H256* release_block_hash();
+  ::types::H256* mutable_block_hash();
+  void set_allocated_block_hash(::types::H256* block_hash);
   private:
-  const ::types::H256& _internal_blockhash() const;
-  ::types::H256* _internal_mutable_blockhash();
+  const ::types::H256& _internal_block_hash() const;
+  ::types::H256* _internal_mutable_block_hash();
   public:
-  void unsafe_arena_set_allocated_blockhash(
-      ::types::H256* blockhash);
-  ::types::H256* unsafe_arena_release_blockhash();
+  void unsafe_arena_set_allocated_block_hash(
+      ::types::H256* block_hash);
+  ::types::H256* unsafe_arena_release_block_hash();
 
-  // optional uint64 blockNumber = 1;
-  bool has_blocknumber() const;
+  // optional uint64 block_number = 1;
+  bool has_block_number() const;
   private:
-  bool _internal_has_blocknumber() const;
+  bool _internal_has_block_number() const;
   public:
-  void clear_blocknumber();
-  uint64_t blocknumber() const;
-  void set_blocknumber(uint64_t value);
+  void clear_block_number();
+  uint64_t block_number() const;
+  void set_block_number(uint64_t value);
   private:
-  uint64_t _internal_blocknumber() const;
-  void _internal_set_blocknumber(uint64_t value);
+  uint64_t _internal_block_number() const;
+  void _internal_set_block_number(uint64_t value);
   public:
 
   // @@protoc_insertion_point(class_scope:execution.GetSegmentRequest)
@@ -1972,8 +1972,8 @@ class GetSegmentRequest final :
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-    ::types::H256* blockhash_;
-    uint64_t blocknumber_;
+    ::types::H256* block_hash_;
+    uint64_t block_number_;
   };
   union { Impl_ _impl_; };
   friend struct ::TableStruct_execution_2fexecution_2eproto;
@@ -2441,39 +2441,39 @@ inline void ForkChoiceReceipt::set_success(bool value) {
   // @@protoc_insertion_point(field_set:execution.ForkChoiceReceipt.success)
 }
 
-// .types.H256 latestValidHash = 2;
-inline bool ForkChoiceReceipt::_internal_has_latestvalidhash() const {
-  return this != internal_default_instance() && _impl_.latestvalidhash_ != nullptr;
+// .types.H256 latest_valid_hash = 2;
+inline bool ForkChoiceReceipt::_internal_has_latest_valid_hash() const {
+  return this != internal_default_instance() && _impl_.latest_valid_hash_ != nullptr;
 }
-inline bool ForkChoiceReceipt::has_latestvalidhash() const {
-  return _internal_has_latestvalidhash();
+inline bool ForkChoiceReceipt::has_latest_valid_hash() const {
+  return _internal_has_latest_valid_hash();
 }
-inline const ::types::H256& ForkChoiceReceipt::_internal_latestvalidhash() const {
-  const ::types::H256* p = _impl_.latestvalidhash_;
+inline const ::types::H256& ForkChoiceReceipt::_internal_latest_valid_hash() const {
+  const ::types::H256* p = _impl_.latest_valid_hash_;
   return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
       ::types::_H256_default_instance_);
 }
-inline const ::types::H256& ForkChoiceReceipt::latestvalidhash() const {
-  // @@protoc_insertion_point(field_get:execution.ForkChoiceReceipt.latestValidHash)
-  return _internal_latestvalidhash();
+inline const ::types::H256& ForkChoiceReceipt::latest_valid_hash() const {
+  // @@protoc_insertion_point(field_get:execution.ForkChoiceReceipt.latest_valid_hash)
+  return _internal_latest_valid_hash();
 }
-inline void ForkChoiceReceipt::unsafe_arena_set_allocated_latestvalidhash(
-    ::types::H256* latestvalidhash) {
+inline void ForkChoiceReceipt::unsafe_arena_set_allocated_latest_valid_hash(
+    ::types::H256* latest_valid_hash) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.latestvalidhash_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.latest_valid_hash_);
   }
-  _impl_.latestvalidhash_ = latestvalidhash;
-  if (latestvalidhash) {
+  _impl_.latest_valid_hash_ = latest_valid_hash;
+  if (latest_valid_hash) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.ForkChoiceReceipt.latestValidHash)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.ForkChoiceReceipt.latest_valid_hash)
 }
-inline ::types::H256* ForkChoiceReceipt::release_latestvalidhash() {
+inline ::types::H256* ForkChoiceReceipt::release_latest_valid_hash() {
   
-  ::types::H256* temp = _impl_.latestvalidhash_;
-  _impl_.latestvalidhash_ = nullptr;
+  ::types::H256* temp = _impl_.latest_valid_hash_;
+  _impl_.latest_valid_hash_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -2485,104 +2485,104 @@ inline ::types::H256* ForkChoiceReceipt::release_latestvalidhash() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::types::H256* ForkChoiceReceipt::unsafe_arena_release_latestvalidhash() {
-  // @@protoc_insertion_point(field_release:execution.ForkChoiceReceipt.latestValidHash)
+inline ::types::H256* ForkChoiceReceipt::unsafe_arena_release_latest_valid_hash() {
+  // @@protoc_insertion_point(field_release:execution.ForkChoiceReceipt.latest_valid_hash)
   
-  ::types::H256* temp = _impl_.latestvalidhash_;
-  _impl_.latestvalidhash_ = nullptr;
+  ::types::H256* temp = _impl_.latest_valid_hash_;
+  _impl_.latest_valid_hash_ = nullptr;
   return temp;
 }
-inline ::types::H256* ForkChoiceReceipt::_internal_mutable_latestvalidhash() {
+inline ::types::H256* ForkChoiceReceipt::_internal_mutable_latest_valid_hash() {
   
-  if (_impl_.latestvalidhash_ == nullptr) {
+  if (_impl_.latest_valid_hash_ == nullptr) {
     auto* p = CreateMaybeMessage<::types::H256>(GetArenaForAllocation());
-    _impl_.latestvalidhash_ = p;
+    _impl_.latest_valid_hash_ = p;
   }
-  return _impl_.latestvalidhash_;
+  return _impl_.latest_valid_hash_;
 }
-inline ::types::H256* ForkChoiceReceipt::mutable_latestvalidhash() {
-  ::types::H256* _msg = _internal_mutable_latestvalidhash();
-  // @@protoc_insertion_point(field_mutable:execution.ForkChoiceReceipt.latestValidHash)
+inline ::types::H256* ForkChoiceReceipt::mutable_latest_valid_hash() {
+  ::types::H256* _msg = _internal_mutable_latest_valid_hash();
+  // @@protoc_insertion_point(field_mutable:execution.ForkChoiceReceipt.latest_valid_hash)
   return _msg;
 }
-inline void ForkChoiceReceipt::set_allocated_latestvalidhash(::types::H256* latestvalidhash) {
+inline void ForkChoiceReceipt::set_allocated_latest_valid_hash(::types::H256* latest_valid_hash) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.latestvalidhash_);
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.latest_valid_hash_);
   }
-  if (latestvalidhash) {
+  if (latest_valid_hash) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
         ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
-                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(latestvalidhash));
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(latest_valid_hash));
     if (message_arena != submessage_arena) {
-      latestvalidhash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, latestvalidhash, submessage_arena);
+      latest_valid_hash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, latest_valid_hash, submessage_arena);
     }
     
   } else {
     
   }
-  _impl_.latestvalidhash_ = latestvalidhash;
-  // @@protoc_insertion_point(field_set_allocated:execution.ForkChoiceReceipt.latestValidHash)
+  _impl_.latest_valid_hash_ = latest_valid_hash;
+  // @@protoc_insertion_point(field_set_allocated:execution.ForkChoiceReceipt.latest_valid_hash)
 }
 
 // -------------------------------------------------------------------
 
 // ValidationReceipt
 
-// .execution.ValidationStatus validationStatus = 1;
-inline void ValidationReceipt::clear_validationstatus() {
-  _impl_.validationstatus_ = 0;
+// .execution.ValidationStatus validation_status = 1;
+inline void ValidationReceipt::clear_validation_status() {
+  _impl_.validation_status_ = 0;
 }
-inline ::execution::ValidationStatus ValidationReceipt::_internal_validationstatus() const {
-  return static_cast< ::execution::ValidationStatus >(_impl_.validationstatus_);
+inline ::execution::ValidationStatus ValidationReceipt::_internal_validation_status() const {
+  return static_cast< ::execution::ValidationStatus >(_impl_.validation_status_);
 }
-inline ::execution::ValidationStatus ValidationReceipt::validationstatus() const {
-  // @@protoc_insertion_point(field_get:execution.ValidationReceipt.validationStatus)
-  return _internal_validationstatus();
+inline ::execution::ValidationStatus ValidationReceipt::validation_status() const {
+  // @@protoc_insertion_point(field_get:execution.ValidationReceipt.validation_status)
+  return _internal_validation_status();
 }
-inline void ValidationReceipt::_internal_set_validationstatus(::execution::ValidationStatus value) {
+inline void ValidationReceipt::_internal_set_validation_status(::execution::ValidationStatus value) {
   
-  _impl_.validationstatus_ = value;
+  _impl_.validation_status_ = value;
 }
-inline void ValidationReceipt::set_validationstatus(::execution::ValidationStatus value) {
-  _internal_set_validationstatus(value);
-  // @@protoc_insertion_point(field_set:execution.ValidationReceipt.validationStatus)
+inline void ValidationReceipt::set_validation_status(::execution::ValidationStatus value) {
+  _internal_set_validation_status(value);
+  // @@protoc_insertion_point(field_set:execution.ValidationReceipt.validation_status)
 }
 
-// .types.H256 latestValidHash = 2;
-inline bool ValidationReceipt::_internal_has_latestvalidhash() const {
-  return this != internal_default_instance() && _impl_.latestvalidhash_ != nullptr;
+// .types.H256 latest_valid_hash = 2;
+inline bool ValidationReceipt::_internal_has_latest_valid_hash() const {
+  return this != internal_default_instance() && _impl_.latest_valid_hash_ != nullptr;
 }
-inline bool ValidationReceipt::has_latestvalidhash() const {
-  return _internal_has_latestvalidhash();
+inline bool ValidationReceipt::has_latest_valid_hash() const {
+  return _internal_has_latest_valid_hash();
 }
-inline const ::types::H256& ValidationReceipt::_internal_latestvalidhash() const {
-  const ::types::H256* p = _impl_.latestvalidhash_;
+inline const ::types::H256& ValidationReceipt::_internal_latest_valid_hash() const {
+  const ::types::H256* p = _impl_.latest_valid_hash_;
   return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
       ::types::_H256_default_instance_);
 }
-inline const ::types::H256& ValidationReceipt::latestvalidhash() const {
-  // @@protoc_insertion_point(field_get:execution.ValidationReceipt.latestValidHash)
-  return _internal_latestvalidhash();
+inline const ::types::H256& ValidationReceipt::latest_valid_hash() const {
+  // @@protoc_insertion_point(field_get:execution.ValidationReceipt.latest_valid_hash)
+  return _internal_latest_valid_hash();
 }
-inline void ValidationReceipt::unsafe_arena_set_allocated_latestvalidhash(
-    ::types::H256* latestvalidhash) {
+inline void ValidationReceipt::unsafe_arena_set_allocated_latest_valid_hash(
+    ::types::H256* latest_valid_hash) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.latestvalidhash_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.latest_valid_hash_);
   }
-  _impl_.latestvalidhash_ = latestvalidhash;
-  if (latestvalidhash) {
+  _impl_.latest_valid_hash_ = latest_valid_hash;
+  if (latest_valid_hash) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.ValidationReceipt.latestValidHash)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.ValidationReceipt.latest_valid_hash)
 }
-inline ::types::H256* ValidationReceipt::release_latestvalidhash() {
+inline ::types::H256* ValidationReceipt::release_latest_valid_hash() {
   
-  ::types::H256* temp = _impl_.latestvalidhash_;
-  _impl_.latestvalidhash_ = nullptr;
+  ::types::H256* temp = _impl_.latest_valid_hash_;
+  _impl_.latest_valid_hash_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -2594,82 +2594,82 @@ inline ::types::H256* ValidationReceipt::release_latestvalidhash() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::types::H256* ValidationReceipt::unsafe_arena_release_latestvalidhash() {
-  // @@protoc_insertion_point(field_release:execution.ValidationReceipt.latestValidHash)
+inline ::types::H256* ValidationReceipt::unsafe_arena_release_latest_valid_hash() {
+  // @@protoc_insertion_point(field_release:execution.ValidationReceipt.latest_valid_hash)
   
-  ::types::H256* temp = _impl_.latestvalidhash_;
-  _impl_.latestvalidhash_ = nullptr;
+  ::types::H256* temp = _impl_.latest_valid_hash_;
+  _impl_.latest_valid_hash_ = nullptr;
   return temp;
 }
-inline ::types::H256* ValidationReceipt::_internal_mutable_latestvalidhash() {
+inline ::types::H256* ValidationReceipt::_internal_mutable_latest_valid_hash() {
   
-  if (_impl_.latestvalidhash_ == nullptr) {
+  if (_impl_.latest_valid_hash_ == nullptr) {
     auto* p = CreateMaybeMessage<::types::H256>(GetArenaForAllocation());
-    _impl_.latestvalidhash_ = p;
+    _impl_.latest_valid_hash_ = p;
   }
-  return _impl_.latestvalidhash_;
+  return _impl_.latest_valid_hash_;
 }
-inline ::types::H256* ValidationReceipt::mutable_latestvalidhash() {
-  ::types::H256* _msg = _internal_mutable_latestvalidhash();
-  // @@protoc_insertion_point(field_mutable:execution.ValidationReceipt.latestValidHash)
+inline ::types::H256* ValidationReceipt::mutable_latest_valid_hash() {
+  ::types::H256* _msg = _internal_mutable_latest_valid_hash();
+  // @@protoc_insertion_point(field_mutable:execution.ValidationReceipt.latest_valid_hash)
   return _msg;
 }
-inline void ValidationReceipt::set_allocated_latestvalidhash(::types::H256* latestvalidhash) {
+inline void ValidationReceipt::set_allocated_latest_valid_hash(::types::H256* latest_valid_hash) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.latestvalidhash_);
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.latest_valid_hash_);
   }
-  if (latestvalidhash) {
+  if (latest_valid_hash) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
         ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
-                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(latestvalidhash));
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(latest_valid_hash));
     if (message_arena != submessage_arena) {
-      latestvalidhash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, latestvalidhash, submessage_arena);
+      latest_valid_hash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, latest_valid_hash, submessage_arena);
     }
     
   } else {
     
   }
-  _impl_.latestvalidhash_ = latestvalidhash;
-  // @@protoc_insertion_point(field_set_allocated:execution.ValidationReceipt.latestValidHash)
+  _impl_.latest_valid_hash_ = latest_valid_hash;
+  // @@protoc_insertion_point(field_set_allocated:execution.ValidationReceipt.latest_valid_hash)
 }
 
-// optional .types.H256 missingHash = 3;
-inline bool ValidationReceipt::_internal_has_missinghash() const {
+// optional .types.H256 missing_hash = 3;
+inline bool ValidationReceipt::_internal_has_missing_hash() const {
   bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
-  PROTOBUF_ASSUME(!value || _impl_.missinghash_ != nullptr);
+  PROTOBUF_ASSUME(!value || _impl_.missing_hash_ != nullptr);
   return value;
 }
-inline bool ValidationReceipt::has_missinghash() const {
-  return _internal_has_missinghash();
+inline bool ValidationReceipt::has_missing_hash() const {
+  return _internal_has_missing_hash();
 }
-inline const ::types::H256& ValidationReceipt::_internal_missinghash() const {
-  const ::types::H256* p = _impl_.missinghash_;
+inline const ::types::H256& ValidationReceipt::_internal_missing_hash() const {
+  const ::types::H256* p = _impl_.missing_hash_;
   return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
       ::types::_H256_default_instance_);
 }
-inline const ::types::H256& ValidationReceipt::missinghash() const {
-  // @@protoc_insertion_point(field_get:execution.ValidationReceipt.missingHash)
-  return _internal_missinghash();
+inline const ::types::H256& ValidationReceipt::missing_hash() const {
+  // @@protoc_insertion_point(field_get:execution.ValidationReceipt.missing_hash)
+  return _internal_missing_hash();
 }
-inline void ValidationReceipt::unsafe_arena_set_allocated_missinghash(
-    ::types::H256* missinghash) {
+inline void ValidationReceipt::unsafe_arena_set_allocated_missing_hash(
+    ::types::H256* missing_hash) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.missinghash_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.missing_hash_);
   }
-  _impl_.missinghash_ = missinghash;
-  if (missinghash) {
+  _impl_.missing_hash_ = missing_hash;
+  if (missing_hash) {
     _impl_._has_bits_[0] |= 0x00000001u;
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.ValidationReceipt.missingHash)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.ValidationReceipt.missing_hash)
 }
-inline ::types::H256* ValidationReceipt::release_missinghash() {
+inline ::types::H256* ValidationReceipt::release_missing_hash() {
   _impl_._has_bits_[0] &= ~0x00000001u;
-  ::types::H256* temp = _impl_.missinghash_;
-  _impl_.missinghash_ = nullptr;
+  ::types::H256* temp = _impl_.missing_hash_;
+  _impl_.missing_hash_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -2681,45 +2681,45 @@ inline ::types::H256* ValidationReceipt::release_missinghash() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::types::H256* ValidationReceipt::unsafe_arena_release_missinghash() {
-  // @@protoc_insertion_point(field_release:execution.ValidationReceipt.missingHash)
+inline ::types::H256* ValidationReceipt::unsafe_arena_release_missing_hash() {
+  // @@protoc_insertion_point(field_release:execution.ValidationReceipt.missing_hash)
   _impl_._has_bits_[0] &= ~0x00000001u;
-  ::types::H256* temp = _impl_.missinghash_;
-  _impl_.missinghash_ = nullptr;
+  ::types::H256* temp = _impl_.missing_hash_;
+  _impl_.missing_hash_ = nullptr;
   return temp;
 }
-inline ::types::H256* ValidationReceipt::_internal_mutable_missinghash() {
+inline ::types::H256* ValidationReceipt::_internal_mutable_missing_hash() {
   _impl_._has_bits_[0] |= 0x00000001u;
-  if (_impl_.missinghash_ == nullptr) {
+  if (_impl_.missing_hash_ == nullptr) {
     auto* p = CreateMaybeMessage<::types::H256>(GetArenaForAllocation());
-    _impl_.missinghash_ = p;
+    _impl_.missing_hash_ = p;
   }
-  return _impl_.missinghash_;
+  return _impl_.missing_hash_;
 }
-inline ::types::H256* ValidationReceipt::mutable_missinghash() {
-  ::types::H256* _msg = _internal_mutable_missinghash();
-  // @@protoc_insertion_point(field_mutable:execution.ValidationReceipt.missingHash)
+inline ::types::H256* ValidationReceipt::mutable_missing_hash() {
+  ::types::H256* _msg = _internal_mutable_missing_hash();
+  // @@protoc_insertion_point(field_mutable:execution.ValidationReceipt.missing_hash)
   return _msg;
 }
-inline void ValidationReceipt::set_allocated_missinghash(::types::H256* missinghash) {
+inline void ValidationReceipt::set_allocated_missing_hash(::types::H256* missing_hash) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.missinghash_);
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.missing_hash_);
   }
-  if (missinghash) {
+  if (missing_hash) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
         ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
-                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(missinghash));
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(missing_hash));
     if (message_arena != submessage_arena) {
-      missinghash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, missinghash, submessage_arena);
+      missing_hash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, missing_hash, submessage_arena);
     }
     _impl_._has_bits_[0] |= 0x00000001u;
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  _impl_.missinghash_ = missinghash;
-  // @@protoc_insertion_point(field_set_allocated:execution.ValidationReceipt.missingHash)
+  _impl_.missing_hash_ = missing_hash;
+  // @@protoc_insertion_point(field_set_allocated:execution.ValidationReceipt.missing_hash)
 }
 
 // -------------------------------------------------------------------
@@ -2750,39 +2750,39 @@ inline void IsCanonicalResponse::set_canonical(bool value) {
 
 // Header
 
-// .types.H256 parentHash = 1;
-inline bool Header::_internal_has_parenthash() const {
-  return this != internal_default_instance() && _impl_.parenthash_ != nullptr;
+// .types.H256 parent_hash = 1;
+inline bool Header::_internal_has_parent_hash() const {
+  return this != internal_default_instance() && _impl_.parent_hash_ != nullptr;
 }
-inline bool Header::has_parenthash() const {
-  return _internal_has_parenthash();
+inline bool Header::has_parent_hash() const {
+  return _internal_has_parent_hash();
 }
-inline const ::types::H256& Header::_internal_parenthash() const {
-  const ::types::H256* p = _impl_.parenthash_;
+inline const ::types::H256& Header::_internal_parent_hash() const {
+  const ::types::H256* p = _impl_.parent_hash_;
   return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
       ::types::_H256_default_instance_);
 }
-inline const ::types::H256& Header::parenthash() const {
-  // @@protoc_insertion_point(field_get:execution.Header.parentHash)
-  return _internal_parenthash();
+inline const ::types::H256& Header::parent_hash() const {
+  // @@protoc_insertion_point(field_get:execution.Header.parent_hash)
+  return _internal_parent_hash();
 }
-inline void Header::unsafe_arena_set_allocated_parenthash(
-    ::types::H256* parenthash) {
+inline void Header::unsafe_arena_set_allocated_parent_hash(
+    ::types::H256* parent_hash) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.parenthash_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.parent_hash_);
   }
-  _impl_.parenthash_ = parenthash;
-  if (parenthash) {
+  _impl_.parent_hash_ = parent_hash;
+  if (parent_hash) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.parentHash)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.parent_hash)
 }
-inline ::types::H256* Header::release_parenthash() {
+inline ::types::H256* Header::release_parent_hash() {
   
-  ::types::H256* temp = _impl_.parenthash_;
-  _impl_.parenthash_ = nullptr;
+  ::types::H256* temp = _impl_.parent_hash_;
+  _impl_.parent_hash_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -2794,45 +2794,45 @@ inline ::types::H256* Header::release_parenthash() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::types::H256* Header::unsafe_arena_release_parenthash() {
-  // @@protoc_insertion_point(field_release:execution.Header.parentHash)
+inline ::types::H256* Header::unsafe_arena_release_parent_hash() {
+  // @@protoc_insertion_point(field_release:execution.Header.parent_hash)
   
-  ::types::H256* temp = _impl_.parenthash_;
-  _impl_.parenthash_ = nullptr;
+  ::types::H256* temp = _impl_.parent_hash_;
+  _impl_.parent_hash_ = nullptr;
   return temp;
 }
-inline ::types::H256* Header::_internal_mutable_parenthash() {
+inline ::types::H256* Header::_internal_mutable_parent_hash() {
   
-  if (_impl_.parenthash_ == nullptr) {
+  if (_impl_.parent_hash_ == nullptr) {
     auto* p = CreateMaybeMessage<::types::H256>(GetArenaForAllocation());
-    _impl_.parenthash_ = p;
+    _impl_.parent_hash_ = p;
   }
-  return _impl_.parenthash_;
+  return _impl_.parent_hash_;
 }
-inline ::types::H256* Header::mutable_parenthash() {
-  ::types::H256* _msg = _internal_mutable_parenthash();
-  // @@protoc_insertion_point(field_mutable:execution.Header.parentHash)
+inline ::types::H256* Header::mutable_parent_hash() {
+  ::types::H256* _msg = _internal_mutable_parent_hash();
+  // @@protoc_insertion_point(field_mutable:execution.Header.parent_hash)
   return _msg;
 }
-inline void Header::set_allocated_parenthash(::types::H256* parenthash) {
+inline void Header::set_allocated_parent_hash(::types::H256* parent_hash) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.parenthash_);
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.parent_hash_);
   }
-  if (parenthash) {
+  if (parent_hash) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
         ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
-                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(parenthash));
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(parent_hash));
     if (message_arena != submessage_arena) {
-      parenthash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, parenthash, submessage_arena);
+      parent_hash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, parent_hash, submessage_arena);
     }
     
   } else {
     
   }
-  _impl_.parenthash_ = parenthash;
-  // @@protoc_insertion_point(field_set_allocated:execution.Header.parentHash)
+  _impl_.parent_hash_ = parent_hash;
+  // @@protoc_insertion_point(field_set_allocated:execution.Header.parent_hash)
 }
 
 // .types.H160 coinbase = 2;
@@ -2920,39 +2920,39 @@ inline void Header::set_allocated_coinbase(::types::H160* coinbase) {
   // @@protoc_insertion_point(field_set_allocated:execution.Header.coinbase)
 }
 
-// .types.H256 stateRoot = 3;
-inline bool Header::_internal_has_stateroot() const {
-  return this != internal_default_instance() && _impl_.stateroot_ != nullptr;
+// .types.H256 state_root = 3;
+inline bool Header::_internal_has_state_root() const {
+  return this != internal_default_instance() && _impl_.state_root_ != nullptr;
 }
-inline bool Header::has_stateroot() const {
-  return _internal_has_stateroot();
+inline bool Header::has_state_root() const {
+  return _internal_has_state_root();
 }
-inline const ::types::H256& Header::_internal_stateroot() const {
-  const ::types::H256* p = _impl_.stateroot_;
+inline const ::types::H256& Header::_internal_state_root() const {
+  const ::types::H256* p = _impl_.state_root_;
   return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
       ::types::_H256_default_instance_);
 }
-inline const ::types::H256& Header::stateroot() const {
-  // @@protoc_insertion_point(field_get:execution.Header.stateRoot)
-  return _internal_stateroot();
+inline const ::types::H256& Header::state_root() const {
+  // @@protoc_insertion_point(field_get:execution.Header.state_root)
+  return _internal_state_root();
 }
-inline void Header::unsafe_arena_set_allocated_stateroot(
-    ::types::H256* stateroot) {
+inline void Header::unsafe_arena_set_allocated_state_root(
+    ::types::H256* state_root) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.stateroot_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.state_root_);
   }
-  _impl_.stateroot_ = stateroot;
-  if (stateroot) {
+  _impl_.state_root_ = state_root;
+  if (state_root) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.stateRoot)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.state_root)
 }
-inline ::types::H256* Header::release_stateroot() {
+inline ::types::H256* Header::release_state_root() {
   
-  ::types::H256* temp = _impl_.stateroot_;
-  _impl_.stateroot_ = nullptr;
+  ::types::H256* temp = _impl_.state_root_;
+  _impl_.state_root_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -2964,80 +2964,80 @@ inline ::types::H256* Header::release_stateroot() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::types::H256* Header::unsafe_arena_release_stateroot() {
-  // @@protoc_insertion_point(field_release:execution.Header.stateRoot)
+inline ::types::H256* Header::unsafe_arena_release_state_root() {
+  // @@protoc_insertion_point(field_release:execution.Header.state_root)
   
-  ::types::H256* temp = _impl_.stateroot_;
-  _impl_.stateroot_ = nullptr;
+  ::types::H256* temp = _impl_.state_root_;
+  _impl_.state_root_ = nullptr;
   return temp;
 }
-inline ::types::H256* Header::_internal_mutable_stateroot() {
+inline ::types::H256* Header::_internal_mutable_state_root() {
   
-  if (_impl_.stateroot_ == nullptr) {
+  if (_impl_.state_root_ == nullptr) {
     auto* p = CreateMaybeMessage<::types::H256>(GetArenaForAllocation());
-    _impl_.stateroot_ = p;
+    _impl_.state_root_ = p;
   }
-  return _impl_.stateroot_;
+  return _impl_.state_root_;
 }
-inline ::types::H256* Header::mutable_stateroot() {
-  ::types::H256* _msg = _internal_mutable_stateroot();
-  // @@protoc_insertion_point(field_mutable:execution.Header.stateRoot)
+inline ::types::H256* Header::mutable_state_root() {
+  ::types::H256* _msg = _internal_mutable_state_root();
+  // @@protoc_insertion_point(field_mutable:execution.Header.state_root)
   return _msg;
 }
-inline void Header::set_allocated_stateroot(::types::H256* stateroot) {
+inline void Header::set_allocated_state_root(::types::H256* state_root) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.stateroot_);
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.state_root_);
   }
-  if (stateroot) {
+  if (state_root) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
         ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
-                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(stateroot));
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(state_root));
     if (message_arena != submessage_arena) {
-      stateroot = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, stateroot, submessage_arena);
+      state_root = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, state_root, submessage_arena);
     }
     
   } else {
     
   }
-  _impl_.stateroot_ = stateroot;
-  // @@protoc_insertion_point(field_set_allocated:execution.Header.stateRoot)
+  _impl_.state_root_ = state_root;
+  // @@protoc_insertion_point(field_set_allocated:execution.Header.state_root)
 }
 
-// .types.H256 receiptRoot = 4;
-inline bool Header::_internal_has_receiptroot() const {
-  return this != internal_default_instance() && _impl_.receiptroot_ != nullptr;
+// .types.H256 receipt_root = 4;
+inline bool Header::_internal_has_receipt_root() const {
+  return this != internal_default_instance() && _impl_.receipt_root_ != nullptr;
 }
-inline bool Header::has_receiptroot() const {
-  return _internal_has_receiptroot();
+inline bool Header::has_receipt_root() const {
+  return _internal_has_receipt_root();
 }
-inline const ::types::H256& Header::_internal_receiptroot() const {
-  const ::types::H256* p = _impl_.receiptroot_;
+inline const ::types::H256& Header::_internal_receipt_root() const {
+  const ::types::H256* p = _impl_.receipt_root_;
   return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
       ::types::_H256_default_instance_);
 }
-inline const ::types::H256& Header::receiptroot() const {
-  // @@protoc_insertion_point(field_get:execution.Header.receiptRoot)
-  return _internal_receiptroot();
+inline const ::types::H256& Header::receipt_root() const {
+  // @@protoc_insertion_point(field_get:execution.Header.receipt_root)
+  return _internal_receipt_root();
 }
-inline void Header::unsafe_arena_set_allocated_receiptroot(
-    ::types::H256* receiptroot) {
+inline void Header::unsafe_arena_set_allocated_receipt_root(
+    ::types::H256* receipt_root) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.receiptroot_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.receipt_root_);
   }
-  _impl_.receiptroot_ = receiptroot;
-  if (receiptroot) {
+  _impl_.receipt_root_ = receipt_root;
+  if (receipt_root) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.receiptRoot)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.receipt_root)
 }
-inline ::types::H256* Header::release_receiptroot() {
+inline ::types::H256* Header::release_receipt_root() {
   
-  ::types::H256* temp = _impl_.receiptroot_;
-  _impl_.receiptroot_ = nullptr;
+  ::types::H256* temp = _impl_.receipt_root_;
+  _impl_.receipt_root_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -3049,80 +3049,80 @@ inline ::types::H256* Header::release_receiptroot() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::types::H256* Header::unsafe_arena_release_receiptroot() {
-  // @@protoc_insertion_point(field_release:execution.Header.receiptRoot)
+inline ::types::H256* Header::unsafe_arena_release_receipt_root() {
+  // @@protoc_insertion_point(field_release:execution.Header.receipt_root)
   
-  ::types::H256* temp = _impl_.receiptroot_;
-  _impl_.receiptroot_ = nullptr;
+  ::types::H256* temp = _impl_.receipt_root_;
+  _impl_.receipt_root_ = nullptr;
   return temp;
 }
-inline ::types::H256* Header::_internal_mutable_receiptroot() {
+inline ::types::H256* Header::_internal_mutable_receipt_root() {
   
-  if (_impl_.receiptroot_ == nullptr) {
+  if (_impl_.receipt_root_ == nullptr) {
     auto* p = CreateMaybeMessage<::types::H256>(GetArenaForAllocation());
-    _impl_.receiptroot_ = p;
+    _impl_.receipt_root_ = p;
   }
-  return _impl_.receiptroot_;
+  return _impl_.receipt_root_;
 }
-inline ::types::H256* Header::mutable_receiptroot() {
-  ::types::H256* _msg = _internal_mutable_receiptroot();
-  // @@protoc_insertion_point(field_mutable:execution.Header.receiptRoot)
+inline ::types::H256* Header::mutable_receipt_root() {
+  ::types::H256* _msg = _internal_mutable_receipt_root();
+  // @@protoc_insertion_point(field_mutable:execution.Header.receipt_root)
   return _msg;
 }
-inline void Header::set_allocated_receiptroot(::types::H256* receiptroot) {
+inline void Header::set_allocated_receipt_root(::types::H256* receipt_root) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.receiptroot_);
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.receipt_root_);
   }
-  if (receiptroot) {
+  if (receipt_root) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
         ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
-                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(receiptroot));
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(receipt_root));
     if (message_arena != submessage_arena) {
-      receiptroot = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, receiptroot, submessage_arena);
+      receipt_root = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, receipt_root, submessage_arena);
     }
     
   } else {
     
   }
-  _impl_.receiptroot_ = receiptroot;
-  // @@protoc_insertion_point(field_set_allocated:execution.Header.receiptRoot)
+  _impl_.receipt_root_ = receipt_root;
+  // @@protoc_insertion_point(field_set_allocated:execution.Header.receipt_root)
 }
 
-// .types.H2048 logsBloom = 5;
-inline bool Header::_internal_has_logsbloom() const {
-  return this != internal_default_instance() && _impl_.logsbloom_ != nullptr;
+// .types.H2048 logs_bloom = 5;
+inline bool Header::_internal_has_logs_bloom() const {
+  return this != internal_default_instance() && _impl_.logs_bloom_ != nullptr;
 }
-inline bool Header::has_logsbloom() const {
-  return _internal_has_logsbloom();
+inline bool Header::has_logs_bloom() const {
+  return _internal_has_logs_bloom();
 }
-inline const ::types::H2048& Header::_internal_logsbloom() const {
-  const ::types::H2048* p = _impl_.logsbloom_;
+inline const ::types::H2048& Header::_internal_logs_bloom() const {
+  const ::types::H2048* p = _impl_.logs_bloom_;
   return p != nullptr ? *p : reinterpret_cast<const ::types::H2048&>(
       ::types::_H2048_default_instance_);
 }
-inline const ::types::H2048& Header::logsbloom() const {
-  // @@protoc_insertion_point(field_get:execution.Header.logsBloom)
-  return _internal_logsbloom();
+inline const ::types::H2048& Header::logs_bloom() const {
+  // @@protoc_insertion_point(field_get:execution.Header.logs_bloom)
+  return _internal_logs_bloom();
 }
-inline void Header::unsafe_arena_set_allocated_logsbloom(
-    ::types::H2048* logsbloom) {
+inline void Header::unsafe_arena_set_allocated_logs_bloom(
+    ::types::H2048* logs_bloom) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.logsbloom_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.logs_bloom_);
   }
-  _impl_.logsbloom_ = logsbloom;
-  if (logsbloom) {
+  _impl_.logs_bloom_ = logs_bloom;
+  if (logs_bloom) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.logsBloom)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.logs_bloom)
 }
-inline ::types::H2048* Header::release_logsbloom() {
+inline ::types::H2048* Header::release_logs_bloom() {
   
-  ::types::H2048* temp = _impl_.logsbloom_;
-  _impl_.logsbloom_ = nullptr;
+  ::types::H2048* temp = _impl_.logs_bloom_;
+  _impl_.logs_bloom_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -3134,80 +3134,80 @@ inline ::types::H2048* Header::release_logsbloom() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::types::H2048* Header::unsafe_arena_release_logsbloom() {
-  // @@protoc_insertion_point(field_release:execution.Header.logsBloom)
+inline ::types::H2048* Header::unsafe_arena_release_logs_bloom() {
+  // @@protoc_insertion_point(field_release:execution.Header.logs_bloom)
   
-  ::types::H2048* temp = _impl_.logsbloom_;
-  _impl_.logsbloom_ = nullptr;
+  ::types::H2048* temp = _impl_.logs_bloom_;
+  _impl_.logs_bloom_ = nullptr;
   return temp;
 }
-inline ::types::H2048* Header::_internal_mutable_logsbloom() {
+inline ::types::H2048* Header::_internal_mutable_logs_bloom() {
   
-  if (_impl_.logsbloom_ == nullptr) {
+  if (_impl_.logs_bloom_ == nullptr) {
     auto* p = CreateMaybeMessage<::types::H2048>(GetArenaForAllocation());
-    _impl_.logsbloom_ = p;
+    _impl_.logs_bloom_ = p;
   }
-  return _impl_.logsbloom_;
+  return _impl_.logs_bloom_;
 }
-inline ::types::H2048* Header::mutable_logsbloom() {
-  ::types::H2048* _msg = _internal_mutable_logsbloom();
-  // @@protoc_insertion_point(field_mutable:execution.Header.logsBloom)
+inline ::types::H2048* Header::mutable_logs_bloom() {
+  ::types::H2048* _msg = _internal_mutable_logs_bloom();
+  // @@protoc_insertion_point(field_mutable:execution.Header.logs_bloom)
   return _msg;
 }
-inline void Header::set_allocated_logsbloom(::types::H2048* logsbloom) {
+inline void Header::set_allocated_logs_bloom(::types::H2048* logs_bloom) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.logsbloom_);
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.logs_bloom_);
   }
-  if (logsbloom) {
+  if (logs_bloom) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
         ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
-                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(logsbloom));
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(logs_bloom));
     if (message_arena != submessage_arena) {
-      logsbloom = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, logsbloom, submessage_arena);
+      logs_bloom = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, logs_bloom, submessage_arena);
     }
     
   } else {
     
   }
-  _impl_.logsbloom_ = logsbloom;
-  // @@protoc_insertion_point(field_set_allocated:execution.Header.logsBloom)
+  _impl_.logs_bloom_ = logs_bloom;
+  // @@protoc_insertion_point(field_set_allocated:execution.Header.logs_bloom)
 }
 
-// .types.H256 mixDigest = 6;
-inline bool Header::_internal_has_mixdigest() const {
-  return this != internal_default_instance() && _impl_.mixdigest_ != nullptr;
+// .types.H256 mix_digest = 6;
+inline bool Header::_internal_has_mix_digest() const {
+  return this != internal_default_instance() && _impl_.mix_digest_ != nullptr;
 }
-inline bool Header::has_mixdigest() const {
-  return _internal_has_mixdigest();
+inline bool Header::has_mix_digest() const {
+  return _internal_has_mix_digest();
 }
-inline const ::types::H256& Header::_internal_mixdigest() const {
-  const ::types::H256* p = _impl_.mixdigest_;
+inline const ::types::H256& Header::_internal_mix_digest() const {
+  const ::types::H256* p = _impl_.mix_digest_;
   return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
       ::types::_H256_default_instance_);
 }
-inline const ::types::H256& Header::mixdigest() const {
-  // @@protoc_insertion_point(field_get:execution.Header.mixDigest)
-  return _internal_mixdigest();
+inline const ::types::H256& Header::mix_digest() const {
+  // @@protoc_insertion_point(field_get:execution.Header.mix_digest)
+  return _internal_mix_digest();
 }
-inline void Header::unsafe_arena_set_allocated_mixdigest(
-    ::types::H256* mixdigest) {
+inline void Header::unsafe_arena_set_allocated_mix_digest(
+    ::types::H256* mix_digest) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.mixdigest_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.mix_digest_);
   }
-  _impl_.mixdigest_ = mixdigest;
-  if (mixdigest) {
+  _impl_.mix_digest_ = mix_digest;
+  if (mix_digest) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.mixDigest)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.mix_digest)
 }
-inline ::types::H256* Header::release_mixdigest() {
+inline ::types::H256* Header::release_mix_digest() {
   
-  ::types::H256* temp = _impl_.mixdigest_;
-  _impl_.mixdigest_ = nullptr;
+  ::types::H256* temp = _impl_.mix_digest_;
+  _impl_.mix_digest_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -3219,105 +3219,105 @@ inline ::types::H256* Header::release_mixdigest() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::types::H256* Header::unsafe_arena_release_mixdigest() {
-  // @@protoc_insertion_point(field_release:execution.Header.mixDigest)
+inline ::types::H256* Header::unsafe_arena_release_mix_digest() {
+  // @@protoc_insertion_point(field_release:execution.Header.mix_digest)
   
-  ::types::H256* temp = _impl_.mixdigest_;
-  _impl_.mixdigest_ = nullptr;
+  ::types::H256* temp = _impl_.mix_digest_;
+  _impl_.mix_digest_ = nullptr;
   return temp;
 }
-inline ::types::H256* Header::_internal_mutable_mixdigest() {
+inline ::types::H256* Header::_internal_mutable_mix_digest() {
   
-  if (_impl_.mixdigest_ == nullptr) {
+  if (_impl_.mix_digest_ == nullptr) {
     auto* p = CreateMaybeMessage<::types::H256>(GetArenaForAllocation());
-    _impl_.mixdigest_ = p;
+    _impl_.mix_digest_ = p;
   }
-  return _impl_.mixdigest_;
+  return _impl_.mix_digest_;
 }
-inline ::types::H256* Header::mutable_mixdigest() {
-  ::types::H256* _msg = _internal_mutable_mixdigest();
-  // @@protoc_insertion_point(field_mutable:execution.Header.mixDigest)
+inline ::types::H256* Header::mutable_mix_digest() {
+  ::types::H256* _msg = _internal_mutable_mix_digest();
+  // @@protoc_insertion_point(field_mutable:execution.Header.mix_digest)
   return _msg;
 }
-inline void Header::set_allocated_mixdigest(::types::H256* mixdigest) {
+inline void Header::set_allocated_mix_digest(::types::H256* mix_digest) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.mixdigest_);
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.mix_digest_);
   }
-  if (mixdigest) {
+  if (mix_digest) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
         ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
-                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(mixdigest));
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(mix_digest));
     if (message_arena != submessage_arena) {
-      mixdigest = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, mixdigest, submessage_arena);
+      mix_digest = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, mix_digest, submessage_arena);
     }
     
   } else {
     
   }
-  _impl_.mixdigest_ = mixdigest;
-  // @@protoc_insertion_point(field_set_allocated:execution.Header.mixDigest)
+  _impl_.mix_digest_ = mix_digest;
+  // @@protoc_insertion_point(field_set_allocated:execution.Header.mix_digest)
 }
 
-// uint64 blockNumber = 7;
-inline void Header::clear_blocknumber() {
-  _impl_.blocknumber_ = uint64_t{0u};
+// uint64 block_number = 7;
+inline void Header::clear_block_number() {
+  _impl_.block_number_ = uint64_t{0u};
 }
-inline uint64_t Header::_internal_blocknumber() const {
-  return _impl_.blocknumber_;
+inline uint64_t Header::_internal_block_number() const {
+  return _impl_.block_number_;
 }
-inline uint64_t Header::blocknumber() const {
-  // @@protoc_insertion_point(field_get:execution.Header.blockNumber)
-  return _internal_blocknumber();
+inline uint64_t Header::block_number() const {
+  // @@protoc_insertion_point(field_get:execution.Header.block_number)
+  return _internal_block_number();
 }
-inline void Header::_internal_set_blocknumber(uint64_t value) {
+inline void Header::_internal_set_block_number(uint64_t value) {
   
-  _impl_.blocknumber_ = value;
+  _impl_.block_number_ = value;
 }
-inline void Header::set_blocknumber(uint64_t value) {
-  _internal_set_blocknumber(value);
-  // @@protoc_insertion_point(field_set:execution.Header.blockNumber)
+inline void Header::set_block_number(uint64_t value) {
+  _internal_set_block_number(value);
+  // @@protoc_insertion_point(field_set:execution.Header.block_number)
 }
 
-// uint64 gasLimit = 8;
-inline void Header::clear_gaslimit() {
-  _impl_.gaslimit_ = uint64_t{0u};
+// uint64 gas_limit = 8;
+inline void Header::clear_gas_limit() {
+  _impl_.gas_limit_ = uint64_t{0u};
 }
-inline uint64_t Header::_internal_gaslimit() const {
-  return _impl_.gaslimit_;
+inline uint64_t Header::_internal_gas_limit() const {
+  return _impl_.gas_limit_;
 }
-inline uint64_t Header::gaslimit() const {
-  // @@protoc_insertion_point(field_get:execution.Header.gasLimit)
-  return _internal_gaslimit();
+inline uint64_t Header::gas_limit() const {
+  // @@protoc_insertion_point(field_get:execution.Header.gas_limit)
+  return _internal_gas_limit();
 }
-inline void Header::_internal_set_gaslimit(uint64_t value) {
+inline void Header::_internal_set_gas_limit(uint64_t value) {
   
-  _impl_.gaslimit_ = value;
+  _impl_.gas_limit_ = value;
 }
-inline void Header::set_gaslimit(uint64_t value) {
-  _internal_set_gaslimit(value);
-  // @@protoc_insertion_point(field_set:execution.Header.gasLimit)
+inline void Header::set_gas_limit(uint64_t value) {
+  _internal_set_gas_limit(value);
+  // @@protoc_insertion_point(field_set:execution.Header.gas_limit)
 }
 
-// uint64 gasUsed = 9;
-inline void Header::clear_gasused() {
-  _impl_.gasused_ = uint64_t{0u};
+// uint64 gas_used = 9;
+inline void Header::clear_gas_used() {
+  _impl_.gas_used_ = uint64_t{0u};
 }
-inline uint64_t Header::_internal_gasused() const {
-  return _impl_.gasused_;
+inline uint64_t Header::_internal_gas_used() const {
+  return _impl_.gas_used_;
 }
-inline uint64_t Header::gasused() const {
-  // @@protoc_insertion_point(field_get:execution.Header.gasUsed)
-  return _internal_gasused();
+inline uint64_t Header::gas_used() const {
+  // @@protoc_insertion_point(field_get:execution.Header.gas_used)
+  return _internal_gas_used();
 }
-inline void Header::_internal_set_gasused(uint64_t value) {
+inline void Header::_internal_set_gas_used(uint64_t value) {
   
-  _impl_.gasused_ = value;
+  _impl_.gas_used_ = value;
 }
-inline void Header::set_gasused(uint64_t value) {
-  _internal_set_gasused(value);
-  // @@protoc_insertion_point(field_set:execution.Header.gasUsed)
+inline void Header::set_gas_used(uint64_t value) {
+  _internal_set_gas_used(value);
+  // @@protoc_insertion_point(field_set:execution.Header.gas_used)
 }
 
 // uint64 timestamp = 10;
@@ -3360,54 +3360,54 @@ inline void Header::set_nonce(uint64_t value) {
   // @@protoc_insertion_point(field_set:execution.Header.nonce)
 }
 
-// bytes extraData = 12;
-inline void Header::clear_extradata() {
-  _impl_.extradata_.ClearToEmpty();
+// bytes extra_data = 12;
+inline void Header::clear_extra_data() {
+  _impl_.extra_data_.ClearToEmpty();
 }
-inline const std::string& Header::extradata() const {
-  // @@protoc_insertion_point(field_get:execution.Header.extraData)
-  return _internal_extradata();
+inline const std::string& Header::extra_data() const {
+  // @@protoc_insertion_point(field_get:execution.Header.extra_data)
+  return _internal_extra_data();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void Header::set_extradata(ArgT0&& arg0, ArgT... args) {
+void Header::set_extra_data(ArgT0&& arg0, ArgT... args) {
  
- _impl_.extradata_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:execution.Header.extraData)
+ _impl_.extra_data_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:execution.Header.extra_data)
 }
-inline std::string* Header::mutable_extradata() {
-  std::string* _s = _internal_mutable_extradata();
-  // @@protoc_insertion_point(field_mutable:execution.Header.extraData)
+inline std::string* Header::mutable_extra_data() {
+  std::string* _s = _internal_mutable_extra_data();
+  // @@protoc_insertion_point(field_mutable:execution.Header.extra_data)
   return _s;
 }
-inline const std::string& Header::_internal_extradata() const {
-  return _impl_.extradata_.Get();
+inline const std::string& Header::_internal_extra_data() const {
+  return _impl_.extra_data_.Get();
 }
-inline void Header::_internal_set_extradata(const std::string& value) {
+inline void Header::_internal_set_extra_data(const std::string& value) {
   
-  _impl_.extradata_.Set(value, GetArenaForAllocation());
+  _impl_.extra_data_.Set(value, GetArenaForAllocation());
 }
-inline std::string* Header::_internal_mutable_extradata() {
+inline std::string* Header::_internal_mutable_extra_data() {
   
-  return _impl_.extradata_.Mutable(GetArenaForAllocation());
+  return _impl_.extra_data_.Mutable(GetArenaForAllocation());
 }
-inline std::string* Header::release_extradata() {
-  // @@protoc_insertion_point(field_release:execution.Header.extraData)
-  return _impl_.extradata_.Release();
+inline std::string* Header::release_extra_data() {
+  // @@protoc_insertion_point(field_release:execution.Header.extra_data)
+  return _impl_.extra_data_.Release();
 }
-inline void Header::set_allocated_extradata(std::string* extradata) {
-  if (extradata != nullptr) {
+inline void Header::set_allocated_extra_data(std::string* extra_data) {
+  if (extra_data != nullptr) {
     
   } else {
     
   }
-  _impl_.extradata_.SetAllocated(extradata, GetArenaForAllocation());
+  _impl_.extra_data_.SetAllocated(extra_data, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.extradata_.IsDefault()) {
-    _impl_.extradata_.Set("", GetArenaForAllocation());
+  if (_impl_.extra_data_.IsDefault()) {
+    _impl_.extra_data_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:execution.Header.extraData)
+  // @@protoc_insertion_point(field_set_allocated:execution.Header.extra_data)
 }
 
 // .types.H256 difficulty = 13;
@@ -3495,39 +3495,39 @@ inline void Header::set_allocated_difficulty(::types::H256* difficulty) {
   // @@protoc_insertion_point(field_set_allocated:execution.Header.difficulty)
 }
 
-// .types.H256 blockHash = 14;
-inline bool Header::_internal_has_blockhash() const {
-  return this != internal_default_instance() && _impl_.blockhash_ != nullptr;
+// .types.H256 block_hash = 14;
+inline bool Header::_internal_has_block_hash() const {
+  return this != internal_default_instance() && _impl_.block_hash_ != nullptr;
 }
-inline bool Header::has_blockhash() const {
-  return _internal_has_blockhash();
+inline bool Header::has_block_hash() const {
+  return _internal_has_block_hash();
 }
-inline const ::types::H256& Header::_internal_blockhash() const {
-  const ::types::H256* p = _impl_.blockhash_;
+inline const ::types::H256& Header::_internal_block_hash() const {
+  const ::types::H256* p = _impl_.block_hash_;
   return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
       ::types::_H256_default_instance_);
 }
-inline const ::types::H256& Header::blockhash() const {
-  // @@protoc_insertion_point(field_get:execution.Header.blockHash)
-  return _internal_blockhash();
+inline const ::types::H256& Header::block_hash() const {
+  // @@protoc_insertion_point(field_get:execution.Header.block_hash)
+  return _internal_block_hash();
 }
-inline void Header::unsafe_arena_set_allocated_blockhash(
-    ::types::H256* blockhash) {
+inline void Header::unsafe_arena_set_allocated_block_hash(
+    ::types::H256* block_hash) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.blockhash_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.block_hash_);
   }
-  _impl_.blockhash_ = blockhash;
-  if (blockhash) {
+  _impl_.block_hash_ = block_hash;
+  if (block_hash) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.blockHash)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.block_hash)
 }
-inline ::types::H256* Header::release_blockhash() {
+inline ::types::H256* Header::release_block_hash() {
   
-  ::types::H256* temp = _impl_.blockhash_;
-  _impl_.blockhash_ = nullptr;
+  ::types::H256* temp = _impl_.block_hash_;
+  _impl_.block_hash_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -3539,80 +3539,80 @@ inline ::types::H256* Header::release_blockhash() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::types::H256* Header::unsafe_arena_release_blockhash() {
-  // @@protoc_insertion_point(field_release:execution.Header.blockHash)
+inline ::types::H256* Header::unsafe_arena_release_block_hash() {
+  // @@protoc_insertion_point(field_release:execution.Header.block_hash)
   
-  ::types::H256* temp = _impl_.blockhash_;
-  _impl_.blockhash_ = nullptr;
+  ::types::H256* temp = _impl_.block_hash_;
+  _impl_.block_hash_ = nullptr;
   return temp;
 }
-inline ::types::H256* Header::_internal_mutable_blockhash() {
+inline ::types::H256* Header::_internal_mutable_block_hash() {
   
-  if (_impl_.blockhash_ == nullptr) {
+  if (_impl_.block_hash_ == nullptr) {
     auto* p = CreateMaybeMessage<::types::H256>(GetArenaForAllocation());
-    _impl_.blockhash_ = p;
+    _impl_.block_hash_ = p;
   }
-  return _impl_.blockhash_;
+  return _impl_.block_hash_;
 }
-inline ::types::H256* Header::mutable_blockhash() {
-  ::types::H256* _msg = _internal_mutable_blockhash();
-  // @@protoc_insertion_point(field_mutable:execution.Header.blockHash)
+inline ::types::H256* Header::mutable_block_hash() {
+  ::types::H256* _msg = _internal_mutable_block_hash();
+  // @@protoc_insertion_point(field_mutable:execution.Header.block_hash)
   return _msg;
 }
-inline void Header::set_allocated_blockhash(::types::H256* blockhash) {
+inline void Header::set_allocated_block_hash(::types::H256* block_hash) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.blockhash_);
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.block_hash_);
   }
-  if (blockhash) {
+  if (block_hash) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
         ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
-                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(blockhash));
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(block_hash));
     if (message_arena != submessage_arena) {
-      blockhash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, blockhash, submessage_arena);
+      block_hash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, block_hash, submessage_arena);
     }
     
   } else {
     
   }
-  _impl_.blockhash_ = blockhash;
-  // @@protoc_insertion_point(field_set_allocated:execution.Header.blockHash)
+  _impl_.block_hash_ = block_hash;
+  // @@protoc_insertion_point(field_set_allocated:execution.Header.block_hash)
 }
 
-// .types.H256 ommerHash = 15;
-inline bool Header::_internal_has_ommerhash() const {
-  return this != internal_default_instance() && _impl_.ommerhash_ != nullptr;
+// .types.H256 ommer_hash = 15;
+inline bool Header::_internal_has_ommer_hash() const {
+  return this != internal_default_instance() && _impl_.ommer_hash_ != nullptr;
 }
-inline bool Header::has_ommerhash() const {
-  return _internal_has_ommerhash();
+inline bool Header::has_ommer_hash() const {
+  return _internal_has_ommer_hash();
 }
-inline const ::types::H256& Header::_internal_ommerhash() const {
-  const ::types::H256* p = _impl_.ommerhash_;
+inline const ::types::H256& Header::_internal_ommer_hash() const {
+  const ::types::H256* p = _impl_.ommer_hash_;
   return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
       ::types::_H256_default_instance_);
 }
-inline const ::types::H256& Header::ommerhash() const {
-  // @@protoc_insertion_point(field_get:execution.Header.ommerHash)
-  return _internal_ommerhash();
+inline const ::types::H256& Header::ommer_hash() const {
+  // @@protoc_insertion_point(field_get:execution.Header.ommer_hash)
+  return _internal_ommer_hash();
 }
-inline void Header::unsafe_arena_set_allocated_ommerhash(
-    ::types::H256* ommerhash) {
+inline void Header::unsafe_arena_set_allocated_ommer_hash(
+    ::types::H256* ommer_hash) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.ommerhash_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.ommer_hash_);
   }
-  _impl_.ommerhash_ = ommerhash;
-  if (ommerhash) {
+  _impl_.ommer_hash_ = ommer_hash;
+  if (ommer_hash) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.ommerHash)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.ommer_hash)
 }
-inline ::types::H256* Header::release_ommerhash() {
+inline ::types::H256* Header::release_ommer_hash() {
   
-  ::types::H256* temp = _impl_.ommerhash_;
-  _impl_.ommerhash_ = nullptr;
+  ::types::H256* temp = _impl_.ommer_hash_;
+  _impl_.ommer_hash_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -3624,80 +3624,80 @@ inline ::types::H256* Header::release_ommerhash() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::types::H256* Header::unsafe_arena_release_ommerhash() {
-  // @@protoc_insertion_point(field_release:execution.Header.ommerHash)
+inline ::types::H256* Header::unsafe_arena_release_ommer_hash() {
+  // @@protoc_insertion_point(field_release:execution.Header.ommer_hash)
   
-  ::types::H256* temp = _impl_.ommerhash_;
-  _impl_.ommerhash_ = nullptr;
+  ::types::H256* temp = _impl_.ommer_hash_;
+  _impl_.ommer_hash_ = nullptr;
   return temp;
 }
-inline ::types::H256* Header::_internal_mutable_ommerhash() {
+inline ::types::H256* Header::_internal_mutable_ommer_hash() {
   
-  if (_impl_.ommerhash_ == nullptr) {
+  if (_impl_.ommer_hash_ == nullptr) {
     auto* p = CreateMaybeMessage<::types::H256>(GetArenaForAllocation());
-    _impl_.ommerhash_ = p;
+    _impl_.ommer_hash_ = p;
   }
-  return _impl_.ommerhash_;
+  return _impl_.ommer_hash_;
 }
-inline ::types::H256* Header::mutable_ommerhash() {
-  ::types::H256* _msg = _internal_mutable_ommerhash();
-  // @@protoc_insertion_point(field_mutable:execution.Header.ommerHash)
+inline ::types::H256* Header::mutable_ommer_hash() {
+  ::types::H256* _msg = _internal_mutable_ommer_hash();
+  // @@protoc_insertion_point(field_mutable:execution.Header.ommer_hash)
   return _msg;
 }
-inline void Header::set_allocated_ommerhash(::types::H256* ommerhash) {
+inline void Header::set_allocated_ommer_hash(::types::H256* ommer_hash) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.ommerhash_);
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.ommer_hash_);
   }
-  if (ommerhash) {
+  if (ommer_hash) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
         ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
-                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(ommerhash));
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(ommer_hash));
     if (message_arena != submessage_arena) {
-      ommerhash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, ommerhash, submessage_arena);
+      ommer_hash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, ommer_hash, submessage_arena);
     }
     
   } else {
     
   }
-  _impl_.ommerhash_ = ommerhash;
-  // @@protoc_insertion_point(field_set_allocated:execution.Header.ommerHash)
+  _impl_.ommer_hash_ = ommer_hash;
+  // @@protoc_insertion_point(field_set_allocated:execution.Header.ommer_hash)
 }
 
-// .types.H256 transactionHash = 16;
-inline bool Header::_internal_has_transactionhash() const {
-  return this != internal_default_instance() && _impl_.transactionhash_ != nullptr;
+// .types.H256 transaction_hash = 16;
+inline bool Header::_internal_has_transaction_hash() const {
+  return this != internal_default_instance() && _impl_.transaction_hash_ != nullptr;
 }
-inline bool Header::has_transactionhash() const {
-  return _internal_has_transactionhash();
+inline bool Header::has_transaction_hash() const {
+  return _internal_has_transaction_hash();
 }
-inline const ::types::H256& Header::_internal_transactionhash() const {
-  const ::types::H256* p = _impl_.transactionhash_;
+inline const ::types::H256& Header::_internal_transaction_hash() const {
+  const ::types::H256* p = _impl_.transaction_hash_;
   return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
       ::types::_H256_default_instance_);
 }
-inline const ::types::H256& Header::transactionhash() const {
-  // @@protoc_insertion_point(field_get:execution.Header.transactionHash)
-  return _internal_transactionhash();
+inline const ::types::H256& Header::transaction_hash() const {
+  // @@protoc_insertion_point(field_get:execution.Header.transaction_hash)
+  return _internal_transaction_hash();
 }
-inline void Header::unsafe_arena_set_allocated_transactionhash(
-    ::types::H256* transactionhash) {
+inline void Header::unsafe_arena_set_allocated_transaction_hash(
+    ::types::H256* transaction_hash) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.transactionhash_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.transaction_hash_);
   }
-  _impl_.transactionhash_ = transactionhash;
-  if (transactionhash) {
+  _impl_.transaction_hash_ = transaction_hash;
+  if (transaction_hash) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.transactionHash)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.transaction_hash)
 }
-inline ::types::H256* Header::release_transactionhash() {
+inline ::types::H256* Header::release_transaction_hash() {
   
-  ::types::H256* temp = _impl_.transactionhash_;
-  _impl_.transactionhash_ = nullptr;
+  ::types::H256* temp = _impl_.transaction_hash_;
+  _impl_.transaction_hash_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -3709,82 +3709,82 @@ inline ::types::H256* Header::release_transactionhash() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::types::H256* Header::unsafe_arena_release_transactionhash() {
-  // @@protoc_insertion_point(field_release:execution.Header.transactionHash)
+inline ::types::H256* Header::unsafe_arena_release_transaction_hash() {
+  // @@protoc_insertion_point(field_release:execution.Header.transaction_hash)
   
-  ::types::H256* temp = _impl_.transactionhash_;
-  _impl_.transactionhash_ = nullptr;
+  ::types::H256* temp = _impl_.transaction_hash_;
+  _impl_.transaction_hash_ = nullptr;
   return temp;
 }
-inline ::types::H256* Header::_internal_mutable_transactionhash() {
+inline ::types::H256* Header::_internal_mutable_transaction_hash() {
   
-  if (_impl_.transactionhash_ == nullptr) {
+  if (_impl_.transaction_hash_ == nullptr) {
     auto* p = CreateMaybeMessage<::types::H256>(GetArenaForAllocation());
-    _impl_.transactionhash_ = p;
+    _impl_.transaction_hash_ = p;
   }
-  return _impl_.transactionhash_;
+  return _impl_.transaction_hash_;
 }
-inline ::types::H256* Header::mutable_transactionhash() {
-  ::types::H256* _msg = _internal_mutable_transactionhash();
-  // @@protoc_insertion_point(field_mutable:execution.Header.transactionHash)
+inline ::types::H256* Header::mutable_transaction_hash() {
+  ::types::H256* _msg = _internal_mutable_transaction_hash();
+  // @@protoc_insertion_point(field_mutable:execution.Header.transaction_hash)
   return _msg;
 }
-inline void Header::set_allocated_transactionhash(::types::H256* transactionhash) {
+inline void Header::set_allocated_transaction_hash(::types::H256* transaction_hash) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.transactionhash_);
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.transaction_hash_);
   }
-  if (transactionhash) {
+  if (transaction_hash) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
         ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
-                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(transactionhash));
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(transaction_hash));
     if (message_arena != submessage_arena) {
-      transactionhash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, transactionhash, submessage_arena);
+      transaction_hash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, transaction_hash, submessage_arena);
     }
     
   } else {
     
   }
-  _impl_.transactionhash_ = transactionhash;
-  // @@protoc_insertion_point(field_set_allocated:execution.Header.transactionHash)
+  _impl_.transaction_hash_ = transaction_hash;
+  // @@protoc_insertion_point(field_set_allocated:execution.Header.transaction_hash)
 }
 
-// optional .types.H256 baseFeePerGas = 17;
-inline bool Header::_internal_has_basefeepergas() const {
+// optional .types.H256 base_fee_per_gas = 17;
+inline bool Header::_internal_has_base_fee_per_gas() const {
   bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
-  PROTOBUF_ASSUME(!value || _impl_.basefeepergas_ != nullptr);
+  PROTOBUF_ASSUME(!value || _impl_.base_fee_per_gas_ != nullptr);
   return value;
 }
-inline bool Header::has_basefeepergas() const {
-  return _internal_has_basefeepergas();
+inline bool Header::has_base_fee_per_gas() const {
+  return _internal_has_base_fee_per_gas();
 }
-inline const ::types::H256& Header::_internal_basefeepergas() const {
-  const ::types::H256* p = _impl_.basefeepergas_;
+inline const ::types::H256& Header::_internal_base_fee_per_gas() const {
+  const ::types::H256* p = _impl_.base_fee_per_gas_;
   return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
       ::types::_H256_default_instance_);
 }
-inline const ::types::H256& Header::basefeepergas() const {
-  // @@protoc_insertion_point(field_get:execution.Header.baseFeePerGas)
-  return _internal_basefeepergas();
+inline const ::types::H256& Header::base_fee_per_gas() const {
+  // @@protoc_insertion_point(field_get:execution.Header.base_fee_per_gas)
+  return _internal_base_fee_per_gas();
 }
-inline void Header::unsafe_arena_set_allocated_basefeepergas(
-    ::types::H256* basefeepergas) {
+inline void Header::unsafe_arena_set_allocated_base_fee_per_gas(
+    ::types::H256* base_fee_per_gas) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.basefeepergas_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.base_fee_per_gas_);
   }
-  _impl_.basefeepergas_ = basefeepergas;
-  if (basefeepergas) {
+  _impl_.base_fee_per_gas_ = base_fee_per_gas;
+  if (base_fee_per_gas) {
     _impl_._has_bits_[0] |= 0x00000001u;
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.baseFeePerGas)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.base_fee_per_gas)
 }
-inline ::types::H256* Header::release_basefeepergas() {
+inline ::types::H256* Header::release_base_fee_per_gas() {
   _impl_._has_bits_[0] &= ~0x00000001u;
-  ::types::H256* temp = _impl_.basefeepergas_;
-  _impl_.basefeepergas_ = nullptr;
+  ::types::H256* temp = _impl_.base_fee_per_gas_;
+  _impl_.base_fee_per_gas_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -3796,82 +3796,82 @@ inline ::types::H256* Header::release_basefeepergas() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::types::H256* Header::unsafe_arena_release_basefeepergas() {
-  // @@protoc_insertion_point(field_release:execution.Header.baseFeePerGas)
+inline ::types::H256* Header::unsafe_arena_release_base_fee_per_gas() {
+  // @@protoc_insertion_point(field_release:execution.Header.base_fee_per_gas)
   _impl_._has_bits_[0] &= ~0x00000001u;
-  ::types::H256* temp = _impl_.basefeepergas_;
-  _impl_.basefeepergas_ = nullptr;
+  ::types::H256* temp = _impl_.base_fee_per_gas_;
+  _impl_.base_fee_per_gas_ = nullptr;
   return temp;
 }
-inline ::types::H256* Header::_internal_mutable_basefeepergas() {
+inline ::types::H256* Header::_internal_mutable_base_fee_per_gas() {
   _impl_._has_bits_[0] |= 0x00000001u;
-  if (_impl_.basefeepergas_ == nullptr) {
+  if (_impl_.base_fee_per_gas_ == nullptr) {
     auto* p = CreateMaybeMessage<::types::H256>(GetArenaForAllocation());
-    _impl_.basefeepergas_ = p;
+    _impl_.base_fee_per_gas_ = p;
   }
-  return _impl_.basefeepergas_;
+  return _impl_.base_fee_per_gas_;
 }
-inline ::types::H256* Header::mutable_basefeepergas() {
-  ::types::H256* _msg = _internal_mutable_basefeepergas();
-  // @@protoc_insertion_point(field_mutable:execution.Header.baseFeePerGas)
+inline ::types::H256* Header::mutable_base_fee_per_gas() {
+  ::types::H256* _msg = _internal_mutable_base_fee_per_gas();
+  // @@protoc_insertion_point(field_mutable:execution.Header.base_fee_per_gas)
   return _msg;
 }
-inline void Header::set_allocated_basefeepergas(::types::H256* basefeepergas) {
+inline void Header::set_allocated_base_fee_per_gas(::types::H256* base_fee_per_gas) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.basefeepergas_);
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.base_fee_per_gas_);
   }
-  if (basefeepergas) {
+  if (base_fee_per_gas) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
         ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
-                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(basefeepergas));
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(base_fee_per_gas));
     if (message_arena != submessage_arena) {
-      basefeepergas = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, basefeepergas, submessage_arena);
+      base_fee_per_gas = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, base_fee_per_gas, submessage_arena);
     }
     _impl_._has_bits_[0] |= 0x00000001u;
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  _impl_.basefeepergas_ = basefeepergas;
-  // @@protoc_insertion_point(field_set_allocated:execution.Header.baseFeePerGas)
+  _impl_.base_fee_per_gas_ = base_fee_per_gas;
+  // @@protoc_insertion_point(field_set_allocated:execution.Header.base_fee_per_gas)
 }
 
-// optional .types.H256 withdrawalHash = 18;
-inline bool Header::_internal_has_withdrawalhash() const {
+// optional .types.H256 withdrawal_hash = 18;
+inline bool Header::_internal_has_withdrawal_hash() const {
   bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
-  PROTOBUF_ASSUME(!value || _impl_.withdrawalhash_ != nullptr);
+  PROTOBUF_ASSUME(!value || _impl_.withdrawal_hash_ != nullptr);
   return value;
 }
-inline bool Header::has_withdrawalhash() const {
-  return _internal_has_withdrawalhash();
+inline bool Header::has_withdrawal_hash() const {
+  return _internal_has_withdrawal_hash();
 }
-inline const ::types::H256& Header::_internal_withdrawalhash() const {
-  const ::types::H256* p = _impl_.withdrawalhash_;
+inline const ::types::H256& Header::_internal_withdrawal_hash() const {
+  const ::types::H256* p = _impl_.withdrawal_hash_;
   return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
       ::types::_H256_default_instance_);
 }
-inline const ::types::H256& Header::withdrawalhash() const {
-  // @@protoc_insertion_point(field_get:execution.Header.withdrawalHash)
-  return _internal_withdrawalhash();
+inline const ::types::H256& Header::withdrawal_hash() const {
+  // @@protoc_insertion_point(field_get:execution.Header.withdrawal_hash)
+  return _internal_withdrawal_hash();
 }
-inline void Header::unsafe_arena_set_allocated_withdrawalhash(
-    ::types::H256* withdrawalhash) {
+inline void Header::unsafe_arena_set_allocated_withdrawal_hash(
+    ::types::H256* withdrawal_hash) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.withdrawalhash_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.withdrawal_hash_);
   }
-  _impl_.withdrawalhash_ = withdrawalhash;
-  if (withdrawalhash) {
+  _impl_.withdrawal_hash_ = withdrawal_hash;
+  if (withdrawal_hash) {
     _impl_._has_bits_[0] |= 0x00000002u;
   } else {
     _impl_._has_bits_[0] &= ~0x00000002u;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.withdrawalHash)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.withdrawal_hash)
 }
-inline ::types::H256* Header::release_withdrawalhash() {
+inline ::types::H256* Header::release_withdrawal_hash() {
   _impl_._has_bits_[0] &= ~0x00000002u;
-  ::types::H256* temp = _impl_.withdrawalhash_;
-  _impl_.withdrawalhash_ = nullptr;
+  ::types::H256* temp = _impl_.withdrawal_hash_;
+  _impl_.withdrawal_hash_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -3883,82 +3883,82 @@ inline ::types::H256* Header::release_withdrawalhash() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::types::H256* Header::unsafe_arena_release_withdrawalhash() {
-  // @@protoc_insertion_point(field_release:execution.Header.withdrawalHash)
+inline ::types::H256* Header::unsafe_arena_release_withdrawal_hash() {
+  // @@protoc_insertion_point(field_release:execution.Header.withdrawal_hash)
   _impl_._has_bits_[0] &= ~0x00000002u;
-  ::types::H256* temp = _impl_.withdrawalhash_;
-  _impl_.withdrawalhash_ = nullptr;
+  ::types::H256* temp = _impl_.withdrawal_hash_;
+  _impl_.withdrawal_hash_ = nullptr;
   return temp;
 }
-inline ::types::H256* Header::_internal_mutable_withdrawalhash() {
+inline ::types::H256* Header::_internal_mutable_withdrawal_hash() {
   _impl_._has_bits_[0] |= 0x00000002u;
-  if (_impl_.withdrawalhash_ == nullptr) {
+  if (_impl_.withdrawal_hash_ == nullptr) {
     auto* p = CreateMaybeMessage<::types::H256>(GetArenaForAllocation());
-    _impl_.withdrawalhash_ = p;
+    _impl_.withdrawal_hash_ = p;
   }
-  return _impl_.withdrawalhash_;
+  return _impl_.withdrawal_hash_;
 }
-inline ::types::H256* Header::mutable_withdrawalhash() {
-  ::types::H256* _msg = _internal_mutable_withdrawalhash();
-  // @@protoc_insertion_point(field_mutable:execution.Header.withdrawalHash)
+inline ::types::H256* Header::mutable_withdrawal_hash() {
+  ::types::H256* _msg = _internal_mutable_withdrawal_hash();
+  // @@protoc_insertion_point(field_mutable:execution.Header.withdrawal_hash)
   return _msg;
 }
-inline void Header::set_allocated_withdrawalhash(::types::H256* withdrawalhash) {
+inline void Header::set_allocated_withdrawal_hash(::types::H256* withdrawal_hash) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.withdrawalhash_);
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.withdrawal_hash_);
   }
-  if (withdrawalhash) {
+  if (withdrawal_hash) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
         ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
-                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(withdrawalhash));
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(withdrawal_hash));
     if (message_arena != submessage_arena) {
-      withdrawalhash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, withdrawalhash, submessage_arena);
+      withdrawal_hash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, withdrawal_hash, submessage_arena);
     }
     _impl_._has_bits_[0] |= 0x00000002u;
   } else {
     _impl_._has_bits_[0] &= ~0x00000002u;
   }
-  _impl_.withdrawalhash_ = withdrawalhash;
-  // @@protoc_insertion_point(field_set_allocated:execution.Header.withdrawalHash)
+  _impl_.withdrawal_hash_ = withdrawal_hash;
+  // @@protoc_insertion_point(field_set_allocated:execution.Header.withdrawal_hash)
 }
 
-// optional .types.H256 excessDataGas = 19;
-inline bool Header::_internal_has_excessdatagas() const {
+// optional .types.H256 excess_data_gas = 19;
+inline bool Header::_internal_has_excess_data_gas() const {
   bool value = (_impl_._has_bits_[0] & 0x00000004u) != 0;
-  PROTOBUF_ASSUME(!value || _impl_.excessdatagas_ != nullptr);
+  PROTOBUF_ASSUME(!value || _impl_.excess_data_gas_ != nullptr);
   return value;
 }
-inline bool Header::has_excessdatagas() const {
-  return _internal_has_excessdatagas();
+inline bool Header::has_excess_data_gas() const {
+  return _internal_has_excess_data_gas();
 }
-inline const ::types::H256& Header::_internal_excessdatagas() const {
-  const ::types::H256* p = _impl_.excessdatagas_;
+inline const ::types::H256& Header::_internal_excess_data_gas() const {
+  const ::types::H256* p = _impl_.excess_data_gas_;
   return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
       ::types::_H256_default_instance_);
 }
-inline const ::types::H256& Header::excessdatagas() const {
-  // @@protoc_insertion_point(field_get:execution.Header.excessDataGas)
-  return _internal_excessdatagas();
+inline const ::types::H256& Header::excess_data_gas() const {
+  // @@protoc_insertion_point(field_get:execution.Header.excess_data_gas)
+  return _internal_excess_data_gas();
 }
-inline void Header::unsafe_arena_set_allocated_excessdatagas(
-    ::types::H256* excessdatagas) {
+inline void Header::unsafe_arena_set_allocated_excess_data_gas(
+    ::types::H256* excess_data_gas) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.excessdatagas_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.excess_data_gas_);
   }
-  _impl_.excessdatagas_ = excessdatagas;
-  if (excessdatagas) {
+  _impl_.excess_data_gas_ = excess_data_gas;
+  if (excess_data_gas) {
     _impl_._has_bits_[0] |= 0x00000004u;
   } else {
     _impl_._has_bits_[0] &= ~0x00000004u;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.excessDataGas)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.excess_data_gas)
 }
-inline ::types::H256* Header::release_excessdatagas() {
+inline ::types::H256* Header::release_excess_data_gas() {
   _impl_._has_bits_[0] &= ~0x00000004u;
-  ::types::H256* temp = _impl_.excessdatagas_;
-  _impl_.excessdatagas_ = nullptr;
+  ::types::H256* temp = _impl_.excess_data_gas_;
+  _impl_.excess_data_gas_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -3970,84 +3970,84 @@ inline ::types::H256* Header::release_excessdatagas() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::types::H256* Header::unsafe_arena_release_excessdatagas() {
-  // @@protoc_insertion_point(field_release:execution.Header.excessDataGas)
+inline ::types::H256* Header::unsafe_arena_release_excess_data_gas() {
+  // @@protoc_insertion_point(field_release:execution.Header.excess_data_gas)
   _impl_._has_bits_[0] &= ~0x00000004u;
-  ::types::H256* temp = _impl_.excessdatagas_;
-  _impl_.excessdatagas_ = nullptr;
+  ::types::H256* temp = _impl_.excess_data_gas_;
+  _impl_.excess_data_gas_ = nullptr;
   return temp;
 }
-inline ::types::H256* Header::_internal_mutable_excessdatagas() {
+inline ::types::H256* Header::_internal_mutable_excess_data_gas() {
   _impl_._has_bits_[0] |= 0x00000004u;
-  if (_impl_.excessdatagas_ == nullptr) {
+  if (_impl_.excess_data_gas_ == nullptr) {
     auto* p = CreateMaybeMessage<::types::H256>(GetArenaForAllocation());
-    _impl_.excessdatagas_ = p;
+    _impl_.excess_data_gas_ = p;
   }
-  return _impl_.excessdatagas_;
+  return _impl_.excess_data_gas_;
 }
-inline ::types::H256* Header::mutable_excessdatagas() {
-  ::types::H256* _msg = _internal_mutable_excessdatagas();
-  // @@protoc_insertion_point(field_mutable:execution.Header.excessDataGas)
+inline ::types::H256* Header::mutable_excess_data_gas() {
+  ::types::H256* _msg = _internal_mutable_excess_data_gas();
+  // @@protoc_insertion_point(field_mutable:execution.Header.excess_data_gas)
   return _msg;
 }
-inline void Header::set_allocated_excessdatagas(::types::H256* excessdatagas) {
+inline void Header::set_allocated_excess_data_gas(::types::H256* excess_data_gas) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.excessdatagas_);
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.excess_data_gas_);
   }
-  if (excessdatagas) {
+  if (excess_data_gas) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
         ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
-                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(excessdatagas));
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(excess_data_gas));
     if (message_arena != submessage_arena) {
-      excessdatagas = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, excessdatagas, submessage_arena);
+      excess_data_gas = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, excess_data_gas, submessage_arena);
     }
     _impl_._has_bits_[0] |= 0x00000004u;
   } else {
     _impl_._has_bits_[0] &= ~0x00000004u;
   }
-  _impl_.excessdatagas_ = excessdatagas;
-  // @@protoc_insertion_point(field_set_allocated:execution.Header.excessDataGas)
+  _impl_.excess_data_gas_ = excess_data_gas;
+  // @@protoc_insertion_point(field_set_allocated:execution.Header.excess_data_gas)
 }
 
 // -------------------------------------------------------------------
 
 // BlockBody
 
-// .types.H256 blockHash = 1;
-inline bool BlockBody::_internal_has_blockhash() const {
-  return this != internal_default_instance() && _impl_.blockhash_ != nullptr;
+// .types.H256 block_hash = 1;
+inline bool BlockBody::_internal_has_block_hash() const {
+  return this != internal_default_instance() && _impl_.block_hash_ != nullptr;
 }
-inline bool BlockBody::has_blockhash() const {
-  return _internal_has_blockhash();
+inline bool BlockBody::has_block_hash() const {
+  return _internal_has_block_hash();
 }
-inline const ::types::H256& BlockBody::_internal_blockhash() const {
-  const ::types::H256* p = _impl_.blockhash_;
+inline const ::types::H256& BlockBody::_internal_block_hash() const {
+  const ::types::H256* p = _impl_.block_hash_;
   return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
       ::types::_H256_default_instance_);
 }
-inline const ::types::H256& BlockBody::blockhash() const {
-  // @@protoc_insertion_point(field_get:execution.BlockBody.blockHash)
-  return _internal_blockhash();
+inline const ::types::H256& BlockBody::block_hash() const {
+  // @@protoc_insertion_point(field_get:execution.BlockBody.block_hash)
+  return _internal_block_hash();
 }
-inline void BlockBody::unsafe_arena_set_allocated_blockhash(
-    ::types::H256* blockhash) {
+inline void BlockBody::unsafe_arena_set_allocated_block_hash(
+    ::types::H256* block_hash) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.blockhash_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.block_hash_);
   }
-  _impl_.blockhash_ = blockhash;
-  if (blockhash) {
+  _impl_.block_hash_ = block_hash;
+  if (block_hash) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.BlockBody.blockHash)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.BlockBody.block_hash)
 }
-inline ::types::H256* BlockBody::release_blockhash() {
+inline ::types::H256* BlockBody::release_block_hash() {
   
-  ::types::H256* temp = _impl_.blockhash_;
-  _impl_.blockhash_ = nullptr;
+  ::types::H256* temp = _impl_.block_hash_;
+  _impl_.block_hash_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -4059,65 +4059,65 @@ inline ::types::H256* BlockBody::release_blockhash() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::types::H256* BlockBody::unsafe_arena_release_blockhash() {
-  // @@protoc_insertion_point(field_release:execution.BlockBody.blockHash)
+inline ::types::H256* BlockBody::unsafe_arena_release_block_hash() {
+  // @@protoc_insertion_point(field_release:execution.BlockBody.block_hash)
   
-  ::types::H256* temp = _impl_.blockhash_;
-  _impl_.blockhash_ = nullptr;
+  ::types::H256* temp = _impl_.block_hash_;
+  _impl_.block_hash_ = nullptr;
   return temp;
 }
-inline ::types::H256* BlockBody::_internal_mutable_blockhash() {
+inline ::types::H256* BlockBody::_internal_mutable_block_hash() {
   
-  if (_impl_.blockhash_ == nullptr) {
+  if (_impl_.block_hash_ == nullptr) {
     auto* p = CreateMaybeMessage<::types::H256>(GetArenaForAllocation());
-    _impl_.blockhash_ = p;
+    _impl_.block_hash_ = p;
   }
-  return _impl_.blockhash_;
+  return _impl_.block_hash_;
 }
-inline ::types::H256* BlockBody::mutable_blockhash() {
-  ::types::H256* _msg = _internal_mutable_blockhash();
-  // @@protoc_insertion_point(field_mutable:execution.BlockBody.blockHash)
+inline ::types::H256* BlockBody::mutable_block_hash() {
+  ::types::H256* _msg = _internal_mutable_block_hash();
+  // @@protoc_insertion_point(field_mutable:execution.BlockBody.block_hash)
   return _msg;
 }
-inline void BlockBody::set_allocated_blockhash(::types::H256* blockhash) {
+inline void BlockBody::set_allocated_block_hash(::types::H256* block_hash) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.blockhash_);
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.block_hash_);
   }
-  if (blockhash) {
+  if (block_hash) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
         ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
-                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(blockhash));
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(block_hash));
     if (message_arena != submessage_arena) {
-      blockhash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, blockhash, submessage_arena);
+      block_hash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, block_hash, submessage_arena);
     }
     
   } else {
     
   }
-  _impl_.blockhash_ = blockhash;
-  // @@protoc_insertion_point(field_set_allocated:execution.BlockBody.blockHash)
+  _impl_.block_hash_ = block_hash;
+  // @@protoc_insertion_point(field_set_allocated:execution.BlockBody.block_hash)
 }
 
-// uint64 blockNumber = 2;
-inline void BlockBody::clear_blocknumber() {
-  _impl_.blocknumber_ = uint64_t{0u};
+// uint64 block_number = 2;
+inline void BlockBody::clear_block_number() {
+  _impl_.block_number_ = uint64_t{0u};
 }
-inline uint64_t BlockBody::_internal_blocknumber() const {
-  return _impl_.blocknumber_;
+inline uint64_t BlockBody::_internal_block_number() const {
+  return _impl_.block_number_;
 }
-inline uint64_t BlockBody::blocknumber() const {
-  // @@protoc_insertion_point(field_get:execution.BlockBody.blockNumber)
-  return _internal_blocknumber();
+inline uint64_t BlockBody::block_number() const {
+  // @@protoc_insertion_point(field_get:execution.BlockBody.block_number)
+  return _internal_block_number();
 }
-inline void BlockBody::_internal_set_blocknumber(uint64_t value) {
+inline void BlockBody::_internal_set_block_number(uint64_t value) {
   
-  _impl_.blocknumber_ = value;
+  _impl_.block_number_ = value;
 }
-inline void BlockBody::set_blocknumber(uint64_t value) {
-  _internal_set_blocknumber(value);
-  // @@protoc_insertion_point(field_set:execution.BlockBody.blockNumber)
+inline void BlockBody::set_block_number(uint64_t value) {
+  _internal_set_block_number(value);
+  // @@protoc_insertion_point(field_set:execution.BlockBody.block_number)
 }
 
 // repeated bytes transactions = 3;
@@ -4464,101 +4464,101 @@ inline void GetBodyResponse::set_allocated_body(::execution::BlockBody* body) {
 
 // GetHeaderHashNumberResponse
 
-// optional uint64 blockNumber = 1;
-inline bool GetHeaderHashNumberResponse::_internal_has_blocknumber() const {
+// optional uint64 block_number = 1;
+inline bool GetHeaderHashNumberResponse::_internal_has_block_number() const {
   bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
   return value;
 }
-inline bool GetHeaderHashNumberResponse::has_blocknumber() const {
-  return _internal_has_blocknumber();
+inline bool GetHeaderHashNumberResponse::has_block_number() const {
+  return _internal_has_block_number();
 }
-inline void GetHeaderHashNumberResponse::clear_blocknumber() {
-  _impl_.blocknumber_ = uint64_t{0u};
+inline void GetHeaderHashNumberResponse::clear_block_number() {
+  _impl_.block_number_ = uint64_t{0u};
   _impl_._has_bits_[0] &= ~0x00000001u;
 }
-inline uint64_t GetHeaderHashNumberResponse::_internal_blocknumber() const {
-  return _impl_.blocknumber_;
+inline uint64_t GetHeaderHashNumberResponse::_internal_block_number() const {
+  return _impl_.block_number_;
 }
-inline uint64_t GetHeaderHashNumberResponse::blocknumber() const {
-  // @@protoc_insertion_point(field_get:execution.GetHeaderHashNumberResponse.blockNumber)
-  return _internal_blocknumber();
+inline uint64_t GetHeaderHashNumberResponse::block_number() const {
+  // @@protoc_insertion_point(field_get:execution.GetHeaderHashNumberResponse.block_number)
+  return _internal_block_number();
 }
-inline void GetHeaderHashNumberResponse::_internal_set_blocknumber(uint64_t value) {
+inline void GetHeaderHashNumberResponse::_internal_set_block_number(uint64_t value) {
   _impl_._has_bits_[0] |= 0x00000001u;
-  _impl_.blocknumber_ = value;
+  _impl_.block_number_ = value;
 }
-inline void GetHeaderHashNumberResponse::set_blocknumber(uint64_t value) {
-  _internal_set_blocknumber(value);
-  // @@protoc_insertion_point(field_set:execution.GetHeaderHashNumberResponse.blockNumber)
+inline void GetHeaderHashNumberResponse::set_block_number(uint64_t value) {
+  _internal_set_block_number(value);
+  // @@protoc_insertion_point(field_set:execution.GetHeaderHashNumberResponse.block_number)
 }
 
 // -------------------------------------------------------------------
 
 // GetSegmentRequest
 
-// optional uint64 blockNumber = 1;
-inline bool GetSegmentRequest::_internal_has_blocknumber() const {
+// optional uint64 block_number = 1;
+inline bool GetSegmentRequest::_internal_has_block_number() const {
   bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
   return value;
 }
-inline bool GetSegmentRequest::has_blocknumber() const {
-  return _internal_has_blocknumber();
+inline bool GetSegmentRequest::has_block_number() const {
+  return _internal_has_block_number();
 }
-inline void GetSegmentRequest::clear_blocknumber() {
-  _impl_.blocknumber_ = uint64_t{0u};
+inline void GetSegmentRequest::clear_block_number() {
+  _impl_.block_number_ = uint64_t{0u};
   _impl_._has_bits_[0] &= ~0x00000002u;
 }
-inline uint64_t GetSegmentRequest::_internal_blocknumber() const {
-  return _impl_.blocknumber_;
+inline uint64_t GetSegmentRequest::_internal_block_number() const {
+  return _impl_.block_number_;
 }
-inline uint64_t GetSegmentRequest::blocknumber() const {
-  // @@protoc_insertion_point(field_get:execution.GetSegmentRequest.blockNumber)
-  return _internal_blocknumber();
+inline uint64_t GetSegmentRequest::block_number() const {
+  // @@protoc_insertion_point(field_get:execution.GetSegmentRequest.block_number)
+  return _internal_block_number();
 }
-inline void GetSegmentRequest::_internal_set_blocknumber(uint64_t value) {
+inline void GetSegmentRequest::_internal_set_block_number(uint64_t value) {
   _impl_._has_bits_[0] |= 0x00000002u;
-  _impl_.blocknumber_ = value;
+  _impl_.block_number_ = value;
 }
-inline void GetSegmentRequest::set_blocknumber(uint64_t value) {
-  _internal_set_blocknumber(value);
-  // @@protoc_insertion_point(field_set:execution.GetSegmentRequest.blockNumber)
+inline void GetSegmentRequest::set_block_number(uint64_t value) {
+  _internal_set_block_number(value);
+  // @@protoc_insertion_point(field_set:execution.GetSegmentRequest.block_number)
 }
 
-// optional .types.H256 blockHash = 2;
-inline bool GetSegmentRequest::_internal_has_blockhash() const {
+// optional .types.H256 block_hash = 2;
+inline bool GetSegmentRequest::_internal_has_block_hash() const {
   bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
-  PROTOBUF_ASSUME(!value || _impl_.blockhash_ != nullptr);
+  PROTOBUF_ASSUME(!value || _impl_.block_hash_ != nullptr);
   return value;
 }
-inline bool GetSegmentRequest::has_blockhash() const {
-  return _internal_has_blockhash();
+inline bool GetSegmentRequest::has_block_hash() const {
+  return _internal_has_block_hash();
 }
-inline const ::types::H256& GetSegmentRequest::_internal_blockhash() const {
-  const ::types::H256* p = _impl_.blockhash_;
+inline const ::types::H256& GetSegmentRequest::_internal_block_hash() const {
+  const ::types::H256* p = _impl_.block_hash_;
   return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
       ::types::_H256_default_instance_);
 }
-inline const ::types::H256& GetSegmentRequest::blockhash() const {
-  // @@protoc_insertion_point(field_get:execution.GetSegmentRequest.blockHash)
-  return _internal_blockhash();
+inline const ::types::H256& GetSegmentRequest::block_hash() const {
+  // @@protoc_insertion_point(field_get:execution.GetSegmentRequest.block_hash)
+  return _internal_block_hash();
 }
-inline void GetSegmentRequest::unsafe_arena_set_allocated_blockhash(
-    ::types::H256* blockhash) {
+inline void GetSegmentRequest::unsafe_arena_set_allocated_block_hash(
+    ::types::H256* block_hash) {
   if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.blockhash_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.block_hash_);
   }
-  _impl_.blockhash_ = blockhash;
-  if (blockhash) {
+  _impl_.block_hash_ = block_hash;
+  if (block_hash) {
     _impl_._has_bits_[0] |= 0x00000001u;
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.GetSegmentRequest.blockHash)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.GetSegmentRequest.block_hash)
 }
-inline ::types::H256* GetSegmentRequest::release_blockhash() {
+inline ::types::H256* GetSegmentRequest::release_block_hash() {
   _impl_._has_bits_[0] &= ~0x00000001u;
-  ::types::H256* temp = _impl_.blockhash_;
-  _impl_.blockhash_ = nullptr;
+  ::types::H256* temp = _impl_.block_hash_;
+  _impl_.block_hash_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
   auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
   temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
@@ -4570,45 +4570,45 @@ inline ::types::H256* GetSegmentRequest::release_blockhash() {
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::types::H256* GetSegmentRequest::unsafe_arena_release_blockhash() {
-  // @@protoc_insertion_point(field_release:execution.GetSegmentRequest.blockHash)
+inline ::types::H256* GetSegmentRequest::unsafe_arena_release_block_hash() {
+  // @@protoc_insertion_point(field_release:execution.GetSegmentRequest.block_hash)
   _impl_._has_bits_[0] &= ~0x00000001u;
-  ::types::H256* temp = _impl_.blockhash_;
-  _impl_.blockhash_ = nullptr;
+  ::types::H256* temp = _impl_.block_hash_;
+  _impl_.block_hash_ = nullptr;
   return temp;
 }
-inline ::types::H256* GetSegmentRequest::_internal_mutable_blockhash() {
+inline ::types::H256* GetSegmentRequest::_internal_mutable_block_hash() {
   _impl_._has_bits_[0] |= 0x00000001u;
-  if (_impl_.blockhash_ == nullptr) {
+  if (_impl_.block_hash_ == nullptr) {
     auto* p = CreateMaybeMessage<::types::H256>(GetArenaForAllocation());
-    _impl_.blockhash_ = p;
+    _impl_.block_hash_ = p;
   }
-  return _impl_.blockhash_;
+  return _impl_.block_hash_;
 }
-inline ::types::H256* GetSegmentRequest::mutable_blockhash() {
-  ::types::H256* _msg = _internal_mutable_blockhash();
-  // @@protoc_insertion_point(field_mutable:execution.GetSegmentRequest.blockHash)
+inline ::types::H256* GetSegmentRequest::mutable_block_hash() {
+  ::types::H256* _msg = _internal_mutable_block_hash();
+  // @@protoc_insertion_point(field_mutable:execution.GetSegmentRequest.block_hash)
   return _msg;
 }
-inline void GetSegmentRequest::set_allocated_blockhash(::types::H256* blockhash) {
+inline void GetSegmentRequest::set_allocated_block_hash(::types::H256* block_hash) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
-    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.blockhash_);
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.block_hash_);
   }
-  if (blockhash) {
+  if (block_hash) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
         ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
-                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(blockhash));
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(block_hash));
     if (message_arena != submessage_arena) {
-      blockhash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, blockhash, submessage_arena);
+      block_hash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, block_hash, submessage_arena);
     }
     _impl_._has_bits_[0] |= 0x00000001u;
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  _impl_.blockhash_ = blockhash;
-  // @@protoc_insertion_point(field_set_allocated:execution.GetSegmentRequest.blockHash)
+  _impl_.block_hash_ = block_hash;
+  // @@protoc_insertion_point(field_set_allocated:execution.GetSegmentRequest.block_hash)
 }
 
 // -------------------------------------------------------------------

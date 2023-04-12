@@ -8,7 +8,7 @@
 #include <optional>
 #include <unordered_set>
 
-namespace silkworm::state
+namespace evmone::state
 {
 using evmc::uint256be;
 
@@ -26,7 +26,7 @@ inline constexpr size_t max_initcode_size = 2 * max_code_size;
 /// @param init_code     The contract creation init code. Value only affects CREATE2. YP: 𝐢.
 /// @return              The computed address for CREATE or CREATE2 scheme.
 address compute_new_account_address(const address& sender, uint64_t sender_nonce,
-    const std::optional<bytes32>& salt, evmc::bytes_view init_code) noexcept;
+    const std::optional<bytes32>& salt, bytes_view init_code) noexcept;
 
 class Host : public evmc::Host
 {
@@ -92,4 +92,4 @@ private:
 
     evmc::Result execute_message(const evmc_message& msg) noexcept;
 };
-}  // namespace silkworm::state
+}  // namespace evmone::state

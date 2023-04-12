@@ -12,7 +12,7 @@
 #include <variant>
 #include <vector>
 
-namespace silkworm::state
+namespace evmone::state
 {
 class State
 {
@@ -106,7 +106,7 @@ struct Log
 {
     address addr;
     bytes data;
-    std::vector<ethash::hash256> topics;
+    std::vector<hash256> topics;
 };
 
 struct TransactionReceipt
@@ -130,4 +130,4 @@ struct TransactionReceipt
 /// Defines how to RLP-encode a Log.
 [[nodiscard]] bytes rlp_encode(const Log& log);
 
-}  // namespace silkworm::state
+}  // namespace evmone::state

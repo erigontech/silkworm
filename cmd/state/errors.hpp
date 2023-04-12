@@ -6,7 +6,7 @@
 #include <cassert>
 #include <system_error>
 
-namespace silkworm::state
+namespace evmone::state
 {
 
 enum ErrorCode : int
@@ -77,4 +77,4 @@ inline std::error_code make_error_code(ErrorCode errc) noexcept
     return {errc, evmone_category()};
 }
 
-}  // namespace silkworm::state
+}  // namespace evmone::state

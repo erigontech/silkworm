@@ -3,14 +3,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "host.hpp"
-
-#include <evmone/eof.hpp>
-
-#include "../../silkworm/core/common/util.hpp"
 #include "precompiles.hpp"
 #include "rlp.hpp"
+#include <evmone/eof.hpp>
 
-namespace silkworm::state
+namespace evmone::state
 {
 bool Host::account_exists(const address& addr) const noexcept
 {
@@ -94,7 +91,7 @@ size_t Host::copy_code(const address& addr, size_t code_offset, uint8_t* buffer_
     size_t buffer_size) const noexcept
 {
     const auto* const acc = m_state.find(addr);
-    const auto code = (acc != nullptr) ? evmc::bytes_view{acc->code} : evmc::bytes_view{};
+    const auto code = (acc != nullptr) ? bytes_view{acc->code} : bytes_view{};
     const auto code_slice = code.substr(std::min(code_offset, code.size()));
     const auto num_bytes = std::min(buffer_size, code_slice.size());
     std::copy_n(code_slice.begin(), num_bytes, buffer_data);
@@ -117,7 +114,7 @@ bool Host::selfdestruct(const address& addr, const address& beneficiary) noexcep
 address compute_new_account_address(const address& sender, uint64_t sender_nonce,
     const std::optional<bytes32>& salt, bytes_view init_code) noexcept
 {
-    ethash::hash256 addr_base_hash;
+    hash256 addr_base_hash;
     if (!salt.has_value())  // CREATE
     {
         // TODO: Compute CREATE address without using RLP library.
@@ -354,4 +351,4 @@ evmc_access_status Host::access_storage(const address& addr, const bytes32& key)
 {
     return std::exchange(m_state.get(addr).storage[key].access_status, EVMC_ACCESS_WARM);
 }
-}  // namespace silkworm::state
+}  // namespace evmone::state

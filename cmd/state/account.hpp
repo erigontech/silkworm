@@ -7,7 +7,7 @@
 #include <intx/intx.hpp>
 #include <unordered_map>
 
-namespace silkworm::state
+namespace evmone::state
 {
 using evmc::address;
 using evmc::bytes;
@@ -58,4 +58,4 @@ struct Account
         return code.empty() && nonce == 0 && balance == 0;
     }
 };
-}  // namespace silkworm::state
+}  // namespace evmone::state

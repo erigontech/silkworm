@@ -9,7 +9,7 @@
 #include <evmone/evmone.h>
 #include <evmone/execution_state.hpp>
 
-namespace silkworm::state
+namespace evmone::state
 {
 namespace
 {
@@ -18,7 +18,7 @@ inline constexpr int64_t num_words(size_t size_in_bytes) noexcept
     return static_cast<int64_t>((size_in_bytes + 31) / 32);
 }
 
-int64_t compute_tx_data_cost(evmc_revision rev, evmc::bytes_view data) noexcept
+int64_t compute_tx_data_cost(evmc_revision rev, bytes_view data) noexcept
 {
     constexpr int64_t zero_byte_cost = 4;
     const int64_t nonzero_byte_cost = rev >= EVMC_ISTANBUL ? 16 : 68;
@@ -201,7 +201,7 @@ std::variant<TransactionReceipt, std::error_code> transition(
     {
         // rlp [nonce, gas_price, gas_limit, to, value, data, v, r, s];
         return rlp::encode_tuple(tx.nonce, tx.max_gas_price, static_cast<uint64_t>(tx.gas_limit),
-            tx.to.has_value() ? tx.to.value() : evmc::bytes_view(), tx.value, tx.data, tx.v, tx.r, tx.s);
+            tx.to.has_value() ? tx.to.value() : bytes_view(), tx.value, tx.data, tx.v, tx.r, tx.s);
     }
     else
     {
@@ -214,7 +214,7 @@ std::variant<TransactionReceipt, std::error_code> transition(
         return bytes{0x02} +  // Transaction type (eip1559 type == 2)
                rlp::encode_tuple(tx.chain_id, tx.nonce, tx.max_priority_gas_price, tx.max_gas_price,
                    static_cast<uint64_t>(tx.gas_limit),
-                   tx.to.has_value() ? tx.to.value() : evmc::bytes_view(), tx.value, tx.data,
+                   tx.to.has_value() ? tx.to.value() : bytes_view(), tx.value, tx.data,
                    std::vector<uint8_t>(), static_cast<bool>(tx.v), tx.r, tx.s);
     }
 }
@@ -227,4 +227,4 @@ std::variant<TransactionReceipt, std::error_code> transition(
                         bytes_view(receipt.logs_bloom_filter), receipt.logs);
 }
 
-}  // namespace silkworm::state
+}  // namespace evmone::state

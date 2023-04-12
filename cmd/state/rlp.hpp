@@ -11,7 +11,7 @@
 #include <utility>
 #include <vector>
 
-namespace silkworm::rlp
+namespace evmone::rlp
 {
 using bytes = std::basic_string<uint8_t>;
 using bytes_view = std::basic_string_view<uint8_t>;
@@ -112,4 +112,4 @@ inline bytes internal::encode_container(InputIterator begin, InputIterator end)
         content += encode(*it);
     return wrap_list(content);
 }
-}  // namespace silkworm::rlp
+}  // namespace evmone::rlp

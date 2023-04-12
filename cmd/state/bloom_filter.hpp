@@ -6,7 +6,7 @@
 #include "hash_utils.hpp"
 #include <span>
 
-namespace silkworm::state
+namespace evmone::state
 {
 struct Log;
 struct TransactionReceipt;
@@ -18,7 +18,7 @@ struct BloomFilter
     uint8_t bytes[256] = {};
 
     /// Implicit operator converting to bytes_view.
-    inline constexpr operator evmc::bytes_view() const noexcept { return {bytes, sizeof(bytes)}; }
+    inline constexpr operator bytes_view() const noexcept { return {bytes, sizeof(bytes)}; }
 };
 
 /// Computes combined bloom fitter for set of logs.
@@ -30,4 +30,4 @@ struct BloomFilter
 [[nodiscard]] BloomFilter compute_bloom_filter(
     std::span<const TransactionReceipt> receipts) noexcept;
 
-}  // namespace silkworm::state
+}  // namespace evmone::state

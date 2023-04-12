@@ -33,13 +33,14 @@
 #include <boost/system/system_error.hpp>
 #include <catch2/catch.hpp>
 
-#include "awaitable_wait_for_all.hpp"
-#include "awaitable_wait_for_one.hpp"
+#include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 
 namespace silkworm::sentry::common {
 
 using namespace std::chrono_literals;
 using namespace boost::asio;
+using namespace silkworm::concurrency;
 
 class TestException : public std::runtime_error {
   public:

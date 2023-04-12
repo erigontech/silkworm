@@ -18,30 +18,29 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/node/db/bitmap.hpp>
+#include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/db/util.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
-#include <silkworm/silkrpc/ethdb/tables.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 boost::asio::awaitable<void> AccountWalker::walk_of_accounts(uint64_t block_number, const evmc::address& start_address, Collector& collector) {
-    auto ps_cursor = co_await transaction_.cursor(db::table::kPlainState);
+    auto ps_cursor = co_await transaction_.cursor(db::table::kPlainStateName);
 
     auto start_key = full_view(start_address);
-    auto ps_kv = co_await seek(*ps_cursor, start_key, silkworm::kAddressLength);
+    auto ps_kv = co_await seek(*ps_cursor, start_key, kAddressLength);
     if (ps_kv.key.empty()) {
         co_return;
     }
 
-    auto ah_cursor = co_await transaction_.cursor(db::table::kAccountHistory);
-    silkrpc::ethdb::SplitCursor split_cursor{*ah_cursor, start_key, 0, silkworm::kAddressLength,
-                                             silkworm::kAddressLength, silkworm::kAddressLength + 8};
+    auto ah_cursor = co_await transaction_.cursor(db::table::kAccountHistoryName);
+    ethdb::SplitCursor split_cursor{*ah_cursor, start_key, 0, kAddressLength, kAddressLength, kAddressLength + 8};
 
     auto s_kv = co_await seek(split_cursor, block_number);
 
-    auto acs_cursor = co_await transaction_.cursor_dup_sort(db::table::kPlainAccountChangeSet);
+    auto acs_cursor = co_await transaction_.cursor_dup_sort(db::table::kAccountChangeSetName);
 
     auto go_on = true;
     while (go_on) {
@@ -59,8 +58,8 @@ boost::asio::awaitable<void> AccountWalker::walk_of_accounts(uint64_t block_numb
                 const auto block_key{silkworm::db::block_key(found.value())};
                 auto data = co_await acs_cursor->seek_both(block_key, s_kv.key1);
 
-                if (data.size() > silkworm::kAddressLength) {
-                    data = data.substr(silkworm::kAddressLength);
+                if (data.size() > kAddressLength) {
+                    data = data.substr(kAddressLength);
                     go_on = collector(s_kv.key1, data);
                 } else {
                 }
@@ -71,17 +70,17 @@ boost::asio::awaitable<void> AccountWalker::walk_of_accounts(uint64_t block_numb
 
         if (go_on) {
             if (cmp <= 0) {
-                ps_kv = co_await next(*ps_cursor, silkworm::kAddressLength);
+                ps_kv = co_await next(*ps_cursor, kAddressLength);
             }
             if (cmp >= 0) {
-                auto block = silkworm::endian::load_big_u64(s_kv.key2.data());
+                auto block = endian::load_big_u64(s_kv.key2.data());
                 s_kv = co_await next(split_cursor, block_number, block, s_kv.key1);
             }
         }
     }
 }
 
-boost::asio::awaitable<KeyValue> AccountWalker::next(silkrpc::ethdb::Cursor& cursor, uint64_t len) {
+boost::asio::awaitable<KeyValue> AccountWalker::next(ethdb::Cursor& cursor, uint64_t len) {
     auto kv = co_await cursor.next();
     while (!kv.key.empty() && kv.key.size() > len) {
         kv = co_await cursor.next();
@@ -89,7 +88,7 @@ boost::asio::awaitable<KeyValue> AccountWalker::next(silkrpc::ethdb::Cursor& cur
     co_return kv;
 }
 
-boost::asio::awaitable<KeyValue> AccountWalker::seek(silkrpc::ethdb::Cursor& cursor, silkworm::ByteView key, uint64_t len) {
+boost::asio::awaitable<KeyValue> AccountWalker::seek(ethdb::Cursor& cursor, silkworm::ByteView key, uint64_t len) {
     auto kv = co_await cursor.seek(key);
     if (kv.key.size() > len) {
         co_return co_await next(cursor, len);
@@ -97,8 +96,8 @@ boost::asio::awaitable<KeyValue> AccountWalker::seek(silkrpc::ethdb::Cursor& cur
     co_return kv;
 }
 
-boost::asio::awaitable<silkrpc::ethdb::SplittedKeyValue> AccountWalker::next(silkrpc::ethdb::SplitCursor& cursor, uint64_t number, uint64_t block, silkworm::Bytes addr) {
-    silkrpc::ethdb::SplittedKeyValue skv;
+boost::asio::awaitable<ethdb::SplittedKeyValue> AccountWalker::next(ethdb::SplitCursor& cursor, uint64_t number, uint64_t block, silkworm::Bytes addr) {
+    ethdb::SplittedKeyValue skv;
     auto tmp_addr = addr;
     while (!addr.empty() && (tmp_addr == addr || block < number)) {
         skv = co_await cursor.next();
@@ -112,7 +111,7 @@ boost::asio::awaitable<silkrpc::ethdb::SplittedKeyValue> AccountWalker::next(sil
     co_return skv;
 }
 
-boost::asio::awaitable<silkrpc::ethdb::SplittedKeyValue> AccountWalker::seek(silkrpc::ethdb::SplitCursor& cursor, uint64_t number) {
+boost::asio::awaitable<ethdb::SplittedKeyValue> AccountWalker::seek(ethdb::SplitCursor& cursor, uint64_t number) {
     auto kv = co_await cursor.seek();
     if (kv.key1.empty()) {
         co_return kv;
@@ -130,4 +129,4 @@ boost::asio::awaitable<silkrpc::ethdb::SplittedKeyValue> AccountWalker::seek(sil
     co_return kv;
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

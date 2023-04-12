@@ -38,7 +38,7 @@
 #include <silkworm/silkrpc/test/mock_cursor.hpp>
 #include <silkworm/silkrpc/test/mock_transaction.hpp>
 
-namespace silkrpc::ethdb::kv {
+namespace silkworm::rpc::ethdb::kv {
 
 using namespace evmc::literals;  // NOLINT(build/namespaces_literals)
 
@@ -617,4 +617,4 @@ TEST_CASE("CoherentStateCache::on_new_block clear the cache on view ID wrapping"
     }
 }
 
-}  // namespace silkrpc::ethdb::kv
+}  // namespace silkworm::rpc::ethdb::kv

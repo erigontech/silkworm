@@ -25,7 +25,7 @@
 #include <boost/bind/bind.hpp>
 #include <boost/thread/thread.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 class Writer {
   public:
@@ -85,4 +85,4 @@ class ChunksWriter : public Writer {
     std::unique_ptr<char[]> buffer_;
 };
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

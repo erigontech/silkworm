@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-namespace silkrpc {
+namespace silkworm {
 
 using Catch::Matchers::Message;
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
@@ -65,4 +65,4 @@ TEST_CASE("insert entry in cache(no-lock)", "[silkrpc][commands][block_cache]") 
     CHECK((*ret_block_option).hash == block1.hash);
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm

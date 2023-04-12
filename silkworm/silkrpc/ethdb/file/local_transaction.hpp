@@ -32,7 +32,7 @@
 #include <silkworm/silkrpc/ethdb/file/local_cursor.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
 
-namespace silkrpc::ethdb::file {
+namespace silkworm::rpc::ethdb::file {
 
 class LocalTransaction : public Transaction {
   public:
@@ -63,4 +63,4 @@ class LocalTransaction : public Transaction {
     uint32_t last_cursor_id_;
 };
 
-}  // namespace silkrpc::ethdb::file
+}  // namespace silkworm::rpc::ethdb::file

@@ -33,15 +33,15 @@
 #include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/types/log.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::http {
 class RequestHandler;
 }
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 class OtsRpcApi {
   public:
-    explicit OtsRpcApi(Context& context) : database_(context.database()), state_cache_(context.state_cache()) {}
+    explicit OtsRpcApi(Context& context) : database_(context.database()), state_cache_(context.state_cache()), block_cache_(context.block_cache()) {}
     virtual ~OtsRpcApi() = default;
 
     OtsRpcApi(const OtsRpcApi&) = delete;
@@ -52,14 +52,16 @@ class OtsRpcApi {
     boost::asio::awaitable<void> handle_ots_has_code(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_ots_getBlockDetails(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_ots_getBlockDetailsByHash(const nlohmann::json& request, nlohmann::json& reply);
+    boost::asio::awaitable<void> handle_ots_getBlockTransactions(const nlohmann::json& request, nlohmann::json& reply);
 
     std::unique_ptr<ethdb::Database>& database_;
     std::shared_ptr<ethdb::kv::StateCache>& state_cache_;
-    friend class silkrpc::http::RequestHandler;
+    std::shared_ptr<BlockCache>& block_cache_;
+    friend class silkworm::http::RequestHandler;
 
   private:
     static IssuanceDetails get_issuance(const ChainConfig& chain_config, const silkworm::BlockWithHash& block);
     static intx::uint256 get_block_fees(const ChainConfig& chain_config, const silkworm::BlockWithHash& block, std::vector<Receipt>& receipts, silkworm::BlockNum block_number);
 };
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

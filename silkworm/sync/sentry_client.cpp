@@ -145,6 +145,9 @@ void SentryClient::execution_loop() {
     // (we would redo set_status & hand-shake too)
     log::Warning("SentryClient") << "execution loop is stopping...";
     stop();
+
+    connected_ = true;
+    connected_.notify_all();
 }
 
 void SentryClient::stats_receiving_loop() {

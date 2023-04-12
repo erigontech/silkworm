@@ -32,7 +32,7 @@
 #include <silkworm/silkrpc/types/chain_config.hpp>
 #include <silkworm/silkrpc/types/receipt.hpp>
 
-namespace silkrpc::core::rawdb {
+namespace silkworm::rpc::core::rawdb {
 
 using Addresses = std::vector<evmc::address>;
 using Transactions = std::vector<silkworm::Transaction>;
@@ -89,4 +89,4 @@ boost::asio::awaitable<intx::uint256> read_total_burnt(const core::rawdb::Databa
 
 boost::asio::awaitable<intx::uint256> read_cumulative_gas_used(const core::rawdb::DatabaseReader& reader, uint64_t block_number);
 
-}  // namespace silkrpc::core::rawdb
+}  // namespace silkworm::rpc::core::rawdb

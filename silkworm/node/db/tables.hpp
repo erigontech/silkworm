@@ -29,8 +29,6 @@ namespace silkworm::db::table {
 
 inline constexpr VersionBase kRequiredSchemaVersion{3, 0, 0};  // We're compatible with this
 
-inline constexpr const char* kLastHeaderKey{"LastHeader"};
-
 /* Canonical tables */
 
 //! \details At block N stores value of state of account for block N-1.
@@ -44,7 +42,8 @@ inline constexpr const char* kLastHeaderKey{"LastHeader"};
 //!   key   : block_num_u64 (BE)
 //!   value : address + X
 //! \endverbatim
-inline constexpr db::MapConfig kAccountChangeSet{"AccountChangeSet", mdbx::key_mode::usual, mdbx::value_mode::multi};
+inline constexpr const char* kAccountChangeSetName{"AccountChangeSet"};
+inline constexpr db::MapConfig kAccountChangeSet{kAccountChangeSetName, mdbx::key_mode::usual, mdbx::value_mode::multi};
 
 //! \details Holds the list of blocks in which a specific account has been changed
 //! \struct
@@ -58,7 +57,8 @@ inline constexpr db::MapConfig kAccountChangeSet{"AccountChangeSet", mdbx::key_m
 //! how RoaringBitmap64 work.
 //! \remark This table/bucket indexes the contents of PlainState (Account record type) therefore honoring the
 //! same content limits wrt pruning
-inline constexpr db::MapConfig kAccountHistory{"AccountHistory"};
+inline constexpr const char* kAccountHistoryName{"AccountHistory"};
+inline constexpr db::MapConfig kAccountHistory{kAccountHistoryName};
 
 //! \details Holds blockbody data
 //! \struct
@@ -66,7 +66,8 @@ inline constexpr db::MapConfig kAccountHistory{"AccountHistory"};
 //!   key   : block number (BE 8 bytes) + block header hash (32 bytes)
 //!   value : block body data RLP encoded
 //! \endverbatim
-inline constexpr db::MapConfig kBlockBodies{"BlockBody"};
+inline constexpr const char* kBlockBodiesName{"BlockBody"};
+inline constexpr db::MapConfig kBlockBodies{kBlockBodiesName};
 
 //! \details Stores the binding of *canonical* block number with header hash
 //! \struct
@@ -74,7 +75,8 @@ inline constexpr db::MapConfig kBlockBodies{"BlockBody"};
 //!   key   : block_num_u64 (BE)
 //!   value : header_hash
 //! \endverbatim
-inline constexpr db::MapConfig kCanonicalHashes{"CanonicalHeader"};
+inline constexpr const char* kCanonicalHashesName{"CanonicalHeader"};
+inline constexpr db::MapConfig kCanonicalHashes{kCanonicalHashesName};
 
 //! \details Stores the headers downloaded from peers
 //! \struct
@@ -82,7 +84,8 @@ inline constexpr db::MapConfig kCanonicalHashes{"CanonicalHeader"};
 //!   key   : block_num_u64 (BE) + header hash
 //!   value : header RLP encoded
 //! \endverbatim
-inline constexpr db::MapConfig kHeaders{"Header"};
+inline constexpr const char* kHeadersName{"Header"};
+inline constexpr db::MapConfig kHeaders{kHeadersName};
 
 //! \details Stores the total difficulty accrued at each block height
 //! \struct
@@ -90,7 +93,8 @@ inline constexpr db::MapConfig kHeaders{"Header"};
 //!   key   : block_num_u64 (BE) + header hash
 //!   value : total difficulty (RLP encoded
 //! \endverbatim
-inline constexpr db::MapConfig kDifficulty{"HeadersTotalDifficulty"};
+inline constexpr const char* kDifficultyName{"HeadersTotalDifficulty"};
+inline constexpr db::MapConfig kDifficulty{kDifficultyName};
 
 //! \details Stores the receipts for every canonical block
 //! \remarks Non canonical blocks' receipts are not stored
@@ -99,10 +103,17 @@ inline constexpr db::MapConfig kDifficulty{"HeadersTotalDifficulty"};
 //!   key   : block_num_u64 (BE)
 //!   value : receipts (CBOR Encoded)
 //! \endverbatim
-inline constexpr db::MapConfig kBlockReceipts{"Receipt"};
-inline constexpr db::MapConfig kBloomBitsIndex{"BloomBitsIndex"};
-inline constexpr db::MapConfig kBloomBits{"BloomBits"};
-inline constexpr db::MapConfig kBodiesSnapshotInfo{"BodiesSnapshotInfo"};
+inline constexpr const char* kBlockReceiptsName{"Receipt"};
+inline constexpr db::MapConfig kBlockReceipts{kBlockReceiptsName};
+
+inline constexpr const char* kBloomBitsIndexName{"BloomBitsIndex"};
+inline constexpr db::MapConfig kBloomBitsIndex{kBloomBitsIndexName};
+
+inline constexpr const char* kBloomBitsName{"BloomBits"};
+inline constexpr db::MapConfig kBloomBits{kBloomBitsName};
+
+inline constexpr const char* kBodiesSnapshotInfoName{"BodiesSnapshotInfo"};
+inline constexpr db::MapConfig kBodiesSnapshotInfo{kBodiesSnapshotInfoName};
 
 //! \details Stores the mapping of block number to the set (sorted) of all accounts touched by call traces.
 //! \struct
@@ -110,9 +121,14 @@ inline constexpr db::MapConfig kBodiesSnapshotInfo{"BodiesSnapshotInfo"};
 //!   key   : block_num_u64 (BE)
 //!   value : account address + two bits (one for "from" + another for "to")
 //! \endverbatim
-inline constexpr db::MapConfig kCallTraceSet{"CallTraceSet", mdbx::key_mode::usual, mdbx::value_mode::multi};
-inline constexpr db::MapConfig kCallFromIndex{"CallFromIndex"};
-inline constexpr db::MapConfig kCallToIndex{"CallToIndex"};
+inline constexpr const char* kCallTraceSetName{"CallTraceSet"};
+inline constexpr db::MapConfig kCallTraceSet{kCallTraceSetName, mdbx::key_mode::usual, mdbx::value_mode::multi};
+
+inline constexpr const char* kCallFromIndexName{"CallFromIndex"};
+inline constexpr db::MapConfig kCallFromIndex{kCallFromIndexName};
+
+inline constexpr const char* kCallToIndexName{"CallToIndex"};
+inline constexpr db::MapConfig kCallToIndex{kCallToIndexName};
 
 //! \details Stores contract's code
 //! \struct
@@ -120,11 +136,20 @@ inline constexpr db::MapConfig kCallToIndex{"CallToIndex"};
 //!   key   : contract code hash
 //!   value : contract code
 //! \endverbatim
-inline constexpr db::MapConfig kCode{"Code"};
+inline constexpr const char* kCodeName{"Code"};
+inline constexpr db::MapConfig kCode{kCodeName};
 
-inline constexpr db::MapConfig kConfig{"Config"};
-inline constexpr db::MapConfig kDatabaseInfo{"DbInfo"};
-inline constexpr db::MapConfig kBlockTransactions{"BlockTransaction"};
+inline constexpr const char* kConfigName{"Config"};
+inline constexpr db::MapConfig kConfig{kConfigName};
+
+inline constexpr const char* kDatabaseInfoName{"DbInfo"};
+inline constexpr db::MapConfig kDatabaseInfo{kDatabaseInfoName};
+
+inline constexpr const char* kBlockTransactionsName{"BlockTransaction"};
+inline constexpr db::MapConfig kBlockTransactions{kBlockTransactionsName};
+
+inline constexpr const char* kNonCanonicalTransactionsName{"NonCanonicalTransaction"};
+inline constexpr db::MapConfig kNonCanonicalTransactions{kNonCanonicalTransactionsName};
 
 //! \details Store "current" state for accounts with hashed address key
 //! \remarks This table stores the same values for PlainState (Account record type) but with hashed key
@@ -133,7 +158,8 @@ inline constexpr db::MapConfig kBlockTransactions{"BlockTransaction"};
 //!   key   : account address hash (32 bytes)
 //!   value : account encoded for storage
 //! \endverbatim
-inline constexpr db::MapConfig kHashedAccounts{"HashedAccount"};
+inline constexpr const char* kHashedAccountsName{"HashedAccount"};
+inline constexpr db::MapConfig kHashedAccounts{kHashedAccountsName};
 
 //! \details Store contract code hash for given contract by key hashed address + incarnation
 //! \remarks This table stores the same values for PlainCodeHash but with hashed key address
@@ -152,11 +178,20 @@ inline constexpr db::MapConfig kHashedCodeHash{"HashedCodeHash"};
 //!   key   : contract address hash (32 bytes) + incarnation (u64 BE)
 //!   value : storage key hash (32 bytes) + storage value (hash 32 bytes)
 //! \endverbatim
-inline constexpr db::MapConfig kHashedStorage{"HashedStorage", mdbx::key_mode::usual, mdbx::value_mode::multi};
-inline constexpr db::MapConfig kHeadBlock{"LastBlock"};
-inline constexpr db::MapConfig kHeadHeader{"LastHeader"};
-inline constexpr db::MapConfig kHeaderNumbers{"HeaderNumber"};
-inline constexpr db::MapConfig kHeadersSnapshotInfo{"HeadersSnapshotInfo"};
+inline constexpr const char* kHashedStorageName{"HashedStorage"};
+inline constexpr db::MapConfig kHashedStorage{kHashedStorageName, mdbx::key_mode::usual, mdbx::value_mode::multi};
+
+inline constexpr const char* kHeadBlockName{"LastBlock"};
+inline constexpr db::MapConfig kHeadBlock{kHeadBlockName};
+
+inline constexpr const char* kHeadHeaderName{"LastHeader"};
+inline constexpr db::MapConfig kHeadHeader{kHeadHeaderName};
+
+inline constexpr const char* kHeaderNumbersName{"HeaderNumber"};
+inline constexpr db::MapConfig kHeaderNumbers{kHeaderNumbersName};
+
+inline constexpr const char* kHeadersSnapshotInfoName{"HeadersSnapshotInfo"};
+inline constexpr db::MapConfig kHeadersSnapshotInfo{kHeadersSnapshotInfoName};
 
 //! \details Stores the last incarnation of last contract SelfDestruct
 //! \struct
@@ -164,7 +199,8 @@ inline constexpr db::MapConfig kHeadersSnapshotInfo{"HeadersSnapshotInfo"};
 //!   key   : contract address (unhashed 20 bytes)
 //!   value : incarnation (u64 BE)
 //! \endverbatim
-inline constexpr db::MapConfig kIncarnationMap{"IncarnationMap"};
+inline constexpr const char* kIncarnationMapName{"IncarnationMap"};
+inline constexpr db::MapConfig kIncarnationMap{kIncarnationMapName};
 
 //! \details Holds the list of blocks in which a specific log address has been touched
 //! \struct
@@ -176,7 +212,8 @@ inline constexpr db::MapConfig kIncarnationMap{"IncarnationMap"};
 //! of the list of blocks contained in value part. When this integer is equal to UINT64_MAX it means this
 //! record holds the last known chunk of blocks which have changed the account. This is due to
 //! how RoaringBitmap64 work.
-inline constexpr db::MapConfig kLogAddressIndex{"LogAddressIndex"};
+inline constexpr const char* kLogAddressIndexName{"LogAddressIndex"};
+inline constexpr db::MapConfig kLogAddressIndex{kLogAddressIndexName};
 
 //! \details Holds the list of blocks in which a specific log topic has been touched
 //! \struct
@@ -188,7 +225,8 @@ inline constexpr db::MapConfig kLogAddressIndex{"LogAddressIndex"};
 //! of the list of blocks contained in value part. When this integer is equal to UINT64_MAX it means this
 //! record holds the last known chunk of blocks which have changed the account. This is due to
 //! how RoaringBitmap64 work.
-inline constexpr db::MapConfig kLogTopicIndex{"LogTopicIndex"};
+inline constexpr const char* kLogTopicIndexName{"LogTopicIndex"};
+inline constexpr db::MapConfig kLogTopicIndex{kLogTopicIndexName};
 
 //! \details Stores the logs for every transaction in canonical blocks
 //! \remarks Non canonical blocks' transactions logs are not stored
@@ -197,9 +235,11 @@ inline constexpr db::MapConfig kLogTopicIndex{"LogTopicIndex"};
 //!   key   : block_num_u64 (BE) + transaction_index_u32 (BE)
 //!   value : logs of transaction (CBOR Encoded)
 //! \endverbatim
-inline constexpr db::MapConfig kLogs{"TransactionLog"};
+inline constexpr const char* kLogsName{"TransactionLog"};
+inline constexpr db::MapConfig kLogs{kLogsName};
 
-inline constexpr db::MapConfig kMigrations{"Migration"};
+inline constexpr const char* kMigrationsName{"Migration"};
+inline constexpr db::MapConfig kMigrations{kMigrationsName};
 
 //! \details Store contract code hash for given contract address + incarnation
 //! \def "Incarnation" how many times given account was SelfDestruct'ed.
@@ -208,7 +248,8 @@ inline constexpr db::MapConfig kMigrations{"Migration"};
 //!   key   : contract address (20 bytes) + incarnation (u64 BE)
 //!   value : code hash (32 bytes)
 //! \endverbatim
-inline constexpr db::MapConfig kPlainCodeHash{"PlainCodeHash"};
+inline constexpr const char* kPlainCodeHashName{"PlainCodeHash"};
+inline constexpr db::MapConfig kPlainCodeHash{kPlainCodeHashName};
 
 //! \details Store "current" state for accounts and storage and is used for block execution
 //! \def "Incarnation" how many times given account was SelfDestruct'ed.
@@ -221,7 +262,8 @@ inline constexpr db::MapConfig kPlainCodeHash{"PlainCodeHash"};
 //!   key   : address (20 bytes) + incarnation (u64 BE)
 //!   value : storage key (32 bytes) + storage value (hash 32 bytes)
 //! \endverbatim
-inline constexpr db::MapConfig kPlainState{"PlainState", mdbx::key_mode::usual, mdbx::value_mode::multi};
+inline constexpr const char* kPlainStateName{"PlainState"};
+inline constexpr db::MapConfig kPlainState{kPlainStateName, mdbx::key_mode::usual, mdbx::value_mode::multi};
 
 //! \details Store recovered senders' addresses for each transaction in a block
 //! \remarks Senders' addresses are not stored in transactions so they must be recovered from the signature
@@ -232,7 +274,8 @@ inline constexpr db::MapConfig kPlainState{"PlainState", mdbx::key_mode::usual, 
 //!   value : array of addresses (each 20 bytes)
 //!   The addresses in array are listed in the same order of the transactions of the block
 //! \endverbatim
-inline constexpr db::MapConfig kSenders{"TxSender"};
+inline constexpr const char* kSendersName{"TxSender"};
+inline constexpr db::MapConfig kSenders{kSendersName};
 
 //! \details Stores sequence values for different keys
 //! \remarks Usually keys are table names
@@ -241,10 +284,14 @@ inline constexpr db::MapConfig kSenders{"TxSender"};
 //!   key   : a string
 //!   value : last increment generated (u64 BE)
 //! \endverbatim
-inline constexpr db::MapConfig kSequence{"Sequence"};
+inline constexpr const char* kSequenceName{"Sequence"};
+inline constexpr db::MapConfig kSequence{kSequenceName};
 
-inline constexpr db::MapConfig kSnapshotInfo{"SnapshotInfo"};
-inline constexpr db::MapConfig kStateSnapshotInfo{"StateSnapshotInfo"};
+inline constexpr const char* kSnapshotInfoName{"SnapshotInfo"};
+inline constexpr db::MapConfig kSnapshotInfo{kSnapshotInfoName};
+
+inline constexpr const char* kStateSnapshotInfoName{"StateSnapshotInfo"};
+inline constexpr db::MapConfig kStateSnapshotInfo{kStateSnapshotInfoName};
 
 //! \details At block N stores value of state of storage for block N-1.
 //! \struct
@@ -257,7 +304,8 @@ inline constexpr db::MapConfig kStateSnapshotInfo{"StateSnapshotInfo"};
 //!   key   : block_num_u64 (BE) + address + incarnation_u64 (BE)
 //!   value : plain_storage_location (32 bytes) + X
 //! \endverbatim
-inline constexpr db::MapConfig kStorageChangeSet{"StorageChangeSet", mdbx::key_mode::usual, mdbx::value_mode::multi};
+inline constexpr const char* kStorageChangeSetName{"StorageChangeSet"};
+inline constexpr db::MapConfig kStorageChangeSet{kStorageChangeSetName, mdbx::key_mode::usual, mdbx::value_mode::multi};
 
 //! \details Holds the list of blocks in which a specific storage location has been changed
 //! \struct
@@ -271,7 +319,8 @@ inline constexpr db::MapConfig kStorageChangeSet{"StorageChangeSet", mdbx::key_m
 //! how RoaringBitmap64 work.
 //! \remark This table/bucket indexes the contents of PlainState (Account record type) therefore honoring the
 //! same content limits wrt pruning
-inline constexpr db::MapConfig kStorageHistory{"StorageHistory"};
+inline constexpr const char* kStorageHistoryName{"StorageHistory"};
+inline constexpr db::MapConfig kStorageHistory{kStorageHistoryName};
 
 //! \details Stores reached progress for each stage
 //! \struct
@@ -279,11 +328,13 @@ inline constexpr db::MapConfig kStorageHistory{"StorageHistory"};
 //!   key   : stage name
 //!   value : block_num_u64 (BE)
 //! \endverbatim
-inline constexpr db::MapConfig kSyncStageProgress{"SyncStage"};
+inline constexpr const char* kSyncStageProgressName{"SyncStage"};
+inline constexpr db::MapConfig kSyncStageProgress{kSyncStageProgressName};
 
 //! \brief Unwind point for stages
 //! \struct stage name -> block_num_u64 (BE)
-inline constexpr db::MapConfig kSyncStageUnwind{"SyncStageUnwind"};
+inline constexpr const char* kSyncStageUnwindName{"SyncStageUnwind"};
+inline constexpr db::MapConfig kSyncStageUnwind{kSyncStageUnwindName};
 
 //! \brief Hold the nodes composing the StateRoot
 //! \verbatim
@@ -291,7 +342,8 @@ inline constexpr db::MapConfig kSyncStageUnwind{"SyncStageUnwind"};
 //!   value : serialized node value (see core::trie::Node)
 //! \endverbatim
 //! \remark The only record with empty key is the root node
-inline constexpr db::MapConfig kTrieOfAccounts{"TrieAccount"};
+inline constexpr const char* kTrieOfAccountsName{"TrieAccount"};
+inline constexpr db::MapConfig kTrieOfAccounts{kTrieOfAccountsName};
 
 //! \brief Hold the nodes composing the StorageRoot for each contract
 //! \verbatim
@@ -300,9 +352,20 @@ inline constexpr db::MapConfig kTrieOfAccounts{"TrieAccount"};
 //! \endverbatim
 //! \remark Each trie has its own invariant db::kHashedStoragePrefix
 //! \remark Records with key len == 40 (ie node key == 0) are root nodes
-inline constexpr db::MapConfig kTrieOfStorage{"TrieStorage"};
+inline constexpr const char* kTrieOfStorageName{"TrieStorage"};
+inline constexpr db::MapConfig kTrieOfStorage{kTrieOfStorageName};
 
-inline constexpr db::MapConfig kTxLookup{"BlockTransactionLookup"};
+inline constexpr const char* kTxLookupName{"BlockTransactionLookup"};
+inline constexpr db::MapConfig kTxLookup{kTxLookupName};
+
+inline constexpr const char* kLastForkchoiceName{"LastForkchoice"};
+inline constexpr db::MapConfig kLastForkchoice{kLastForkchoiceName};
+
+inline constexpr const char* kIssuanceName{"Issuance"};
+inline constexpr db::MapConfig kIssuance{kIssuanceName};
+
+inline constexpr const char* kCumulativeGasIndexName{"CumulativeGasIndex"};
+inline constexpr db::MapConfig kCumulativeGasIndex{kCumulativeGasIndexName};
 
 inline constexpr db::MapConfig kChainDataTables[]{
     kAccountChangeSet,
@@ -351,5 +414,8 @@ inline constexpr db::MapConfig kChainDataTables[]{
 
 //! \brief Ensures all defined tables are present in db with consistent flags. Should a table not exist it gets created
 void check_or_create_chaindata_tables(RWTxn& txn);
+
+//! \brief Get the table config associated to the table name (if any)
+std::optional<db::MapConfig> get_map_config(const char* map_name);
 
 }  // namespace silkworm::db::table

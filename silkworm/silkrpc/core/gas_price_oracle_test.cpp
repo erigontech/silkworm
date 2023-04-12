@@ -27,7 +27,7 @@
 
 #include <silkworm/silkrpc/types/block.hpp>
 
-namespace silkrpc {
+namespace silkworm {
 
 using evmc::literals::operator""_address;
 
@@ -467,4 +467,4 @@ TEST_CASE("suggested price") {
     }
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm

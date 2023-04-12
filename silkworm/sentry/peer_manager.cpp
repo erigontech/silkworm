@@ -22,7 +22,7 @@
 #include <gsl/util>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/sentry/common/random.hpp>
 
 namespace silkworm::sentry {
@@ -33,7 +33,7 @@ awaitable<void> PeerManager::start(
     rlpx::Server& server,
     discovery::Discovery& discovery,
     std::function<std::unique_ptr<rlpx::Client>()> client_factory) {
-    using namespace common::awaitable_wait_for_all;
+    using namespace concurrency::awaitable_wait_for_all;
 
     need_peers_notifier_.notify();
 
@@ -68,7 +68,7 @@ awaitable<void> PeerManager::start_in_strand(concurrency::Channel<std::shared_pt
 }
 
 boost::asio::awaitable<void> PeerManager::start_peer(std::shared_ptr<rlpx::Peer> peer) {
-    using namespace common::awaitable_wait_for_all;
+    using namespace concurrency::awaitable_wait_for_all;
 
     try {
         co_await (rlpx::Peer::start(peer) && wait_for_peer_handshake(peer));

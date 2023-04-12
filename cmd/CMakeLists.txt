@@ -33,17 +33,36 @@ if(NOT SILKWORM_CORE_ONLY)
   find_package(Boost REQUIRED)
   find_package(CLI11 REQUIRED)
 
+  set(COMMON_SRC
+      common/common.cpp
+      common/common.hpp
+      common/ip_endpoint_option.cpp
+      common/ip_endpoint_option.hpp
+      common/shutdown_signal.cpp
+      common/shutdown_signal.hpp
+  )
+  add_library(cmd_common "${COMMON_SRC}")
+  target_link_libraries(cmd_common silkworm-buildinfo CLI11::CLI11 silkworm_infra)
+
+  add_subdirectory(dev)
+
   # Silkworm components
   add_subdirectory(rpcdaemon)
   add_subdirectory(state)
   add_subdirectory(statetransition)
 
-  file(GLOB_RECURSE COMMON_SRC CONFIGURE_DEPENDS "common/*.cpp" "common/*.hpp")
-
-  add_executable(silkworm "silkworm.cpp;${COMMON_SRC}")
-  target_link_libraries(
-    silkworm PRIVATE silkworm_node silkworm_sync silkworm-buildinfo CLI11::CLI11 $<$<BOOL:${MSVC}>:Kernel32.lib>
+  set(SILKWORM_CMD_SRC
+      silkworm.cpp
+      common/human_size_parser_validator.hpp
+      common/settings.hpp
+      common/sentry_options.cpp
+      common/sentry_options.hpp
+      common/snapshot_options.cpp
+      common/snapshot_options.hpp
   )
+
+  add_executable(silkworm "${SILKWORM_CMD_SRC}")
+  target_link_libraries(silkworm PRIVATE silkworm_node silkworm_sync cmd_common $<$<BOOL:${MSVC}>:Kernel32.lib>)
 
   add_executable(check_changes check_changes.cpp)
   target_link_libraries(check_changes PRIVATE silkworm_node CLI11::CLI11 absl::time)
@@ -69,16 +88,25 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(check_blockhashes check_blockhashes.cpp)
   target_link_libraries(check_blockhashes PRIVATE silkworm_node CLI11::CLI11)
 
-  add_executable(check_senders "check_senders.cpp;${COMMON_SRC}")
-  target_link_libraries(check_senders PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11)
+  add_executable(check_senders check_senders.cpp)
+  target_link_libraries(check_senders PRIVATE silkworm_node cmd_common)
 
-  add_executable(snapshots "snapshots.cpp;${COMMON_SRC}")
-  target_link_libraries(snapshots PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11 torrent-rasterbar)
+  add_executable(snapshots snapshots.cpp)
+  target_link_libraries(snapshots PRIVATE silkworm_node cmd_common torrent-rasterbar)
 
-  add_executable(sentry "sentry.cpp;${COMMON_SRC}")
-  target_link_libraries(sentry PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11 silkworm_sentry)
+  add_executable(sentry sentry.cpp common/sentry_options.cpp common/sentry_options.hpp)
+  target_link_libraries(sentry PRIVATE silkworm_sentry cmd_common)
 
-  add_executable(backend_kv_server "backend_kv_server.cpp;${COMMON_SRC}" statetransition/statetransition.cpp)
-  target_link_libraries(backend_kv_server PRIVATE silkworm_node silkworm_sync silkworm-buildinfo CLI11::CLI11)
+  # cmake-format: off
+  set(BACKEND_KV_SERVER_SRC
+      backend_kv_server.cpp
+      common/db_max_readers_option.cpp
+      common/db_max_readers_option.hpp
+      common/settings.hpp
+  )
+  # cmake-format: on
+
+  add_executable(backend_kv_server "${BACKEND_KV_SERVER_SRC}")
+  target_link_libraries(backend_kv_server PRIVATE silkworm_node silkworm_sync cmd_common)
 
 endif()

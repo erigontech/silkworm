@@ -18,10 +18,10 @@
 
 #include <memory>
 
+#include <silkworm/node/db/tables.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
-#include <silkworm/silkrpc/ethdb/tables.hpp>
 
-namespace silkrpc::ethdb::kv {
+namespace silkworm::rpc::ethdb::kv {
 
 CachedDatabase::CachedDatabase(const BlockNumberOrHash& block_id, Transaction& txn, kv::StateCache& state_cache)
     : block_id_(block_id), txn_(txn), state_cache_{state_cache}, txn_database_{txn_} {}
@@ -32,14 +32,14 @@ boost::asio::awaitable<KeyValue> CachedDatabase::get(const std::string& table, s
 
 boost::asio::awaitable<silkworm::Bytes> CachedDatabase::get_one(const std::string& table, silkworm::ByteView key) const {
     // Just PlainState and Code tables are present in state cache
-    if (table == db::table::kPlainState) {
+    if (table == db::table::kPlainStateName) {
         std::shared_ptr<kv::StateView> view = state_cache_.get_view(txn_);
         if (view != nullptr) {
             // TODO(canepat) remove key copy changing DatabaseReader interface
             const auto value = co_await view->get(silkworm::Bytes{key.data(), key.size()});
             co_return value ? *value : silkworm::Bytes{};
         }
-    } else if (table == db::table::kCode) {
+    } else if (table == db::table::kCodeName) {
         std::shared_ptr<kv::StateView> view = state_cache_.get_view(txn_);
         if (view != nullptr) {
             // TODO(canepat) remove key copy changing DatabaseReader interface
@@ -68,4 +68,4 @@ boost::asio::awaitable<void> CachedDatabase::for_prefix(const std::string& table
     co_await txn_database_.for_prefix(table, prefix, w);
 }
 
-}  // namespace silkrpc::ethdb::kv
+}  // namespace silkworm::rpc::ethdb::kv

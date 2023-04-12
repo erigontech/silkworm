@@ -29,7 +29,7 @@
 #include <silkworm/silkrpc/http/server.hpp>
 #include <silkworm/silkrpc/protocol/version.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 struct DaemonSettings {
     std::optional<std::string> datadir;
@@ -40,7 +40,7 @@ struct DaemonSettings {
     uint32_t num_contexts;
     uint32_t num_workers;
     LogLevel log_verbosity;
-    WaitMode wait_mode;
+    strategy::WaitMode wait_mode;
     std::string jwt_secret_filename;
 };
 
@@ -99,4 +99,4 @@ class Daemon {
     const std::string& jwt_secret_;
 };
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

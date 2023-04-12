@@ -23,11 +23,11 @@
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 struct ChainTraffic {
     intx::uint<256> cumulative_gas_used;
     uint64_t cumulative_transactions_count{0};
 };
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

@@ -39,9 +39,11 @@ SnapshotSync::~SnapshotSync() {
 
 bool SnapshotSync::download_and_index_snapshots(db::RWTxn& txn) {
     if (!settings_.enabled) {
-        log::Info() << "snapshot sync disabled, no snapshot must be downloaded";
+        log::Info() << "[Snapshots] snapshot sync disabled, no snapshot must be downloaded";
         return true;
     }
+
+    log::Info() << "[Snapshots] snapshot repository: " << settings_.repository_dir.string();
 
     if (settings_.no_downloader) {
         repository_.reopen_folder();

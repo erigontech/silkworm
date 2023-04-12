@@ -28,7 +28,7 @@
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using boost::asio::awaitable;
 using Catch::Matchers::Message;
@@ -374,4 +374,4 @@ TEST_CASE("EVMExecutor") {
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

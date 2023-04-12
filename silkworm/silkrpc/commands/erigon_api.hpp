@@ -29,11 +29,13 @@
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::http {
 class RequestHandler;
 }
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
+
+using boost::asio::awaitable;
 
 class ErigonRpcApi {
   public:
@@ -44,15 +46,15 @@ class ErigonRpcApi {
     ErigonRpcApi& operator=(const ErigonRpcApi&) = delete;
 
   protected:
-    boost::asio::awaitable<void> handle_erigon_block_number(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_erigon_get_block_by_timestamp(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_erigon_get_header_by_hash(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_erigon_get_header_by_number(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_erigon_get_logs_by_hash(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_erigon_forks(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_erigon_watch_the_burn(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_erigon_cumulative_chain_traffic(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_erigon_node_info(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_erigon_block_number(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_erigon_get_block_by_timestamp(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_erigon_get_header_by_hash(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_erigon_get_header_by_number(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_erigon_get_logs_by_hash(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_erigon_forks(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_erigon_watch_the_burn(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_erigon_cumulative_chain_traffic(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_erigon_node_info(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
     Context& context_;
@@ -60,7 +62,7 @@ class ErigonRpcApi {
     std::shared_ptr<BlockCache>& block_cache_;
     std::unique_ptr<ethdb::Database>& database_;
 
-    friend class silkrpc::http::RequestHandler;
+    friend class silkworm::http::RequestHandler;
 };
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

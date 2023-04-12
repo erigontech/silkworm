@@ -30,7 +30,7 @@
 #include <silkworm/silkrpc/test/grpc_actions.hpp>
 #include <silkworm/silkrpc/test/grpc_responder.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using Catch::Matchers::Message;
 using evmc::literals::operator""_address;
@@ -222,23 +222,23 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::node_info", "[silkrpc][ethbackend][ba
 }
 
 TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_get_payload_v1", "[silkrpc][ethbackend][backend]") {
-    test::StrictMockAsyncResponseReader<::types::ExecutionPayload> reader;
-    EXPECT_CALL(*stub_, AsyncEngineGetPayloadV1Raw).WillOnce(testing::Return(&reader));
+    test::StrictMockAsyncResponseReader<::remote::EngineGetPayloadResponse> reader;
+    EXPECT_CALL(*stub_, AsyncEngineGetPayloadRaw).WillOnce(testing::Return(&reader));
 
     SECTION("call engine_get_payload_v1 and get payload") {
-        ::types::ExecutionPayload response;
-        response.set_allocated_coinbase(make_h160(0xa94f5374fce5edbc, 0x8e2a8697c1533167, 0x7e6ebf0b));
-        response.set_allocated_blockhash(make_h256(0x3559e851470f6e7b, 0xbed1db474980683e, 0x8c315bfce99b2a6e, 0xf47c057c04de7858));
-        response.set_allocated_basefeepergas(make_h256(0x0, 0x0, 0x0, 0x7));
-        response.set_allocated_stateroot(make_h256(0xca3149fa9e37db08, 0xd1cd49c9061db100, 0x2ef1cd58db2210f2, 0x115c8c989b2bdf45));
-        response.set_allocated_receiptroot(make_h256(0x56e81f171bcc55a6, 0xff8345e692c0f86e, 0x5b48e01b996cadc0, 0x01622fb5e363b421));
-        response.set_allocated_parenthash(make_h256(0x3b8fb240d288781d, 0x4aac94d3fd16809e, 0xe413bc99294a0857, 0x98a589dae51ddd4a));
-        response.set_allocated_prevrandao(make_h256(0x0, 0x0, 0x0, 0x1));
-        response.set_blocknumber(0x1);
-        response.set_gaslimit(0x1c9c380);
-        response.set_timestamp(0x5);
+        const auto p{new ::types::ExecutionPayload};
+        p->set_allocated_coinbase(make_h160(0xa94f5374fce5edbc, 0x8e2a8697c1533167, 0x7e6ebf0b));
+        p->set_allocated_blockhash(make_h256(0x3559e851470f6e7b, 0xbed1db474980683e, 0x8c315bfce99b2a6e, 0xf47c057c04de7858));
+        p->set_allocated_basefeepergas(make_h256(0x0, 0x0, 0x0, 0x7));
+        p->set_allocated_stateroot(make_h256(0xca3149fa9e37db08, 0xd1cd49c9061db100, 0x2ef1cd58db2210f2, 0x115c8c989b2bdf45));
+        p->set_allocated_receiptroot(make_h256(0x56e81f171bcc55a6, 0xff8345e692c0f86e, 0x5b48e01b996cadc0, 0x01622fb5e363b421));
+        p->set_allocated_parenthash(make_h256(0x3b8fb240d288781d, 0x4aac94d3fd16809e, 0xe413bc99294a0857, 0x98a589dae51ddd4a));
+        p->set_allocated_prevrandao(make_h256(0x0, 0x0, 0x0, 0x1));
+        p->set_blocknumber(0x1);
+        p->set_gaslimit(0x1c9c380);
+        p->set_timestamp(0x5);
         const auto tx_bytes{*silkworm::from_hex("0xf92ebdeab45d368f6354e8c5a8ac586c")};
-        response.add_transactions(tx_bytes.data(), tx_bytes.size());
+        p->add_transactions(tx_bytes.data(), tx_bytes.size());
         const auto hi_hi_hi_logsbloom{make_h256(0x1000000000000000, 0x0, 0x0, 0x0)};
         const auto hi_hi_logsbloom{new ::types::H512()};
         hi_hi_logsbloom->set_allocated_hi(hi_hi_hi_logsbloom);
@@ -246,8 +246,12 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_get_payload_v1", "[silkrpc][et
         hi_logsbloom->set_allocated_hi(hi_hi_logsbloom);
         const auto logsbloom{new ::types::H2048()};
         logsbloom->set_allocated_hi(hi_logsbloom);
-        response.set_allocated_logsbloom(logsbloom);
+        p->set_allocated_logsbloom(logsbloom);
+
+        ::remote::EngineGetPayloadResponse response;
+        response.set_allocated_executionpayload(p);
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
+
         const auto payload = run<&ethbackend::RemoteBackEnd::engine_get_payload_v1>(0u);
         CHECK(payload.number == 0x1);
         CHECK(payload.gas_limit == 0x1c9c380);
@@ -279,7 +283,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_get_payload_v1", "[silkrpc][et
 
 TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_new_payload_v1", "[silkrpc][ethbackend][backend]") {
     test::StrictMockAsyncResponseReader<::remote::EnginePayloadStatus> reader;
-    EXPECT_CALL(*stub_, AsyncEngineNewPayloadV1Raw).WillOnce(testing::Return(&reader));
+    EXPECT_CALL(*stub_, AsyncEngineNewPayloadRaw).WillOnce(testing::Return(&reader));
 
     silkworm::Bloom bloom;
     bloom.fill(0);
@@ -344,8 +348,8 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_new_payload_v1", "[silkrpc][et
 }
 
 TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_forkchoice_updated_v1", "[silkrpc][ethbackend][backend]") {
-    test::StrictMockAsyncResponseReader<::remote::EngineForkChoiceUpdatedReply> reader;
-    EXPECT_CALL(*stub_, AsyncEngineForkChoiceUpdatedV1Raw).WillOnce(testing::Return(&reader));
+    test::StrictMockAsyncResponseReader<::remote::EngineForkChoiceUpdatedResponse> reader;
+    EXPECT_CALL(*stub_, AsyncEngineForkChoiceUpdatedRaw).WillOnce(testing::Return(&reader));
 
     const ForkChoiceUpdatedRequest forkchoice_request{
         .fork_choice_state =
@@ -359,7 +363,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_forkchoice_updated_v1", "[silk
                 .prev_randao = 0x0000000000000000000000000000000000000000000000000000000000000001_bytes32,
                 .suggested_fee_recipient = 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address}};
     SECTION("call engine_forkchoice_updated_v1 and get VALID status") {
-        ::remote::EngineForkChoiceUpdatedReply response;
+        ::remote::EngineForkChoiceUpdatedResponse response;
         auto* engine_payload_status = new ::remote::EnginePayloadStatus();
         engine_payload_status->set_allocated_latestvalidhash(make_h256(0, 0, 0, 0x40));
         engine_payload_status->set_validationerror("some error");
@@ -390,4 +394,4 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_forkchoice_updated_v1", "[silk
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

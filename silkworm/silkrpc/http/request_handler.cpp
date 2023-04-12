@@ -31,14 +31,16 @@
 #include <jwt-cpp/traits/nlohmann-json/defaults.h>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/silkrpc/commands/eth_api.hpp>
 #include <silkworm/silkrpc/common/clock_time.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/http/header.hpp>
+#include <silkworm/silkrpc/http/methods.hpp>
 #include <silkworm/silkrpc/types/writer.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::rpc::http {
 
-boost::asio::awaitable<void> RequestHandler::handle_request(const http::Request& request) {
+boost::asio::awaitable<void> RequestHandler::handle_user_request(const http::Request& request) {
     auto start = clock_time::now();
 
     http::Reply reply;
@@ -46,7 +48,7 @@ boost::asio::awaitable<void> RequestHandler::handle_request(const http::Request&
         reply.content = "";
         reply.status = http::StatusType::no_content;
     } else {
-        SILKRPC_DEBUG << "handle_request content: " << request.content << "\n";
+        SILKRPC_DEBUG << "handle_user_request content: " << request.content << "\n";
 
         const auto request_json = nlohmann::json::parse(request.content);
 
@@ -61,7 +63,7 @@ boost::asio::awaitable<void> RequestHandler::handle_request(const http::Request&
                     reply.content = make_json_error(request_id, 403, error.value()).dump() + "\n";
                     reply.status = http::StatusType::unauthorized;
                 } else {
-                    co_await handle_request(request_json, reply);
+                    co_await handle_request_and_create_reply(request_json, reply);
                     reply.content += "\n";
                 }
             }
@@ -85,7 +87,7 @@ boost::asio::awaitable<void> RequestHandler::handle_request(const http::Request&
                         } else {
                             batch_reply_content += ",";
                         }
-                        co_await handle_request(item_json, reply);
+                        co_await handle_request_and_create_reply(item_json, reply);
                         batch_reply_content += reply.content;
                     }
                 }
@@ -97,10 +99,10 @@ boost::asio::awaitable<void> RequestHandler::handle_request(const http::Request&
 
     co_await do_write(reply);
 
-    SILKRPC_INFO << "handle_request t=" << clock_time::since(start) << "ns\n";
+    SILKRPC_INFO << "handle_user_request t=" << clock_time::since(start) << "ns\n";
 }
 
-boost::asio::awaitable<void> RequestHandler::handle_request(const nlohmann::json& request_json, http::Reply& reply) {
+boost::asio::awaitable<void> RequestHandler::handle_request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply) {
     auto request_id = request_json["id"].get<uint32_t>();
     if (!request_json.contains("method")) {
         reply.content = make_json_error(request_id, -32600, "invalid request").dump();
@@ -114,11 +116,20 @@ boost::asio::awaitable<void> RequestHandler::handle_request(const nlohmann::json
         reply.status = http::StatusType::bad_request;
         co_return;
     }
+    const auto json_glaze_handler_opt = rpc_api_table_.find_json_glaze_handler(method);
+    if (json_glaze_handler_opt) {
+        const auto json_handler = json_glaze_handler_opt.value();
+
+        co_await handle_request(request_id, json_handler, request_json, reply);
+
+        co_return;
+    }
+
     const auto json_handler_opt = rpc_api_table_.find_json_handler(method);
     if (json_handler_opt) {
         const auto json_handler = json_handler_opt.value();
 
-        co_await handle_request(json_handler, request_json, reply);
+        co_await handle_request(request_id, json_handler, request_json, reply);
 
         co_return;
     }
@@ -138,15 +149,13 @@ boost::asio::awaitable<void> RequestHandler::handle_request(const nlohmann::json
     co_return;
 }
 
-boost::asio::awaitable<void> RequestHandler::handle_request(silkrpc::commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, http::Reply& reply) {
-    auto request_id = request_json["id"].get<uint32_t>();
+boost::asio::awaitable<void> RequestHandler::handle_request(uint32_t request_id, commands::RpcApiTable::HandleMethodGlaze handler, const nlohmann::json& request_json, http::Reply& reply) {
     try {
-        nlohmann::json reply_json;
+        std::string reply_json;
+        reply_json.reserve(2048);
         co_await (rpc_api_.*handler)(request_json, reply_json);
-
-        reply.content = reply_json.dump(
-            /*indent=*/-1, /*indent_char=*/' ', /*ensure_ascii=*/false, nlohmann::json::error_handler_t::replace);
         reply.status = http::StatusType::ok;
+        reply.content = std::move(reply_json);
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << "\n";
         reply.content = make_json_error(request_id, 100, e.what()).dump();
@@ -160,7 +169,28 @@ boost::asio::awaitable<void> RequestHandler::handle_request(silkrpc::commands::R
     co_return;
 }
 
-boost::asio::awaitable<void> RequestHandler::handle_request(silkrpc::commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json) {
+boost::asio::awaitable<void> RequestHandler::handle_request(uint32_t request_id, commands::RpcApiTable::HandleMethod handler, const nlohmann::json& request_json, http::Reply& reply) {
+    try {
+        nlohmann::json reply_json;
+        co_await (rpc_api_.*handler)(request_json, reply_json);
+        reply.content = reply_json.dump(
+            /*indent=*/-1, /*indent_char=*/' ', /*ensure_ascii=*/false, nlohmann::json::error_handler_t::replace);
+        reply.status = http::StatusType::ok;
+
+    } catch (const std::exception& e) {
+        SILKRPC_ERROR << "exception: " << e.what() << "\n";
+        reply.content = make_json_error(request_id, 100, e.what()).dump();
+        reply.status = http::StatusType::internal_server_error;
+    } catch (...) {
+        SILKRPC_ERROR << "unexpected exception\n";
+        reply.content = make_json_error(request_id, 100, "unexpected exception").dump();
+        reply.status = http::StatusType::internal_server_error;
+    }
+
+    co_return;
+}
+
+boost::asio::awaitable<void> RequestHandler::handle_request(commands::RpcApiTable::HandleStream handler, const nlohmann::json& request_json) {
     try {
         SocketWriter socket_writer(socket_);
         ChunksWriter chunks_writer(socket_writer);
@@ -262,4 +292,4 @@ boost::asio::awaitable<void> RequestHandler::write_headers() {
     }
 }
 
-}  // namespace silkrpc::http
+}  // namespace silkworm::rpc::http

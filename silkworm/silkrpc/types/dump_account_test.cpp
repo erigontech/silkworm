@@ -23,7 +23,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using Catch::Matchers::Message;
 
@@ -220,4 +220,4 @@ TEST_CASE("Filled contract DumpAccount", "[silkrpc][types][dump_account]") {
     }
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

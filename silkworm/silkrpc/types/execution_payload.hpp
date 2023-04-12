@@ -26,9 +26,9 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/bloom.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
-//! ExecutionPayload as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md
+//! ExecutionPayload as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#executionpayloadv1
 struct ExecutionPayload {
     uint64_t number;
     uint64_t timestamp;
@@ -46,21 +46,21 @@ struct ExecutionPayload {
     std::vector<silkworm::Bytes> transactions;
 };
 
-//! ForkChoiceState as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md#ForkchoiceStateV1
+//! ForkChoiceState as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#forkchoicestatev1
 struct ForkChoiceState {
     evmc::bytes32 head_block_hash;
     evmc::bytes32 safe_block_hash;
     evmc::bytes32 finalized_block_hash;
 };
 
-//! PayloadAttributes as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md#payloadattributesv1
+//! PayloadAttributes as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#payloadattributesv1
 struct PayloadAttributes {
     uint64_t timestamp;
     evmc::bytes32 prev_randao;
     evmc::address suggested_fee_recipient;
 };
 
-//! PayloadStatus as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md
+//! PayloadStatus as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#payloadstatusv1
 struct PayloadStatus {
     std::string status;
     std::optional<evmc::bytes32> latest_valid_hash;
@@ -77,7 +77,7 @@ struct ForkChoiceUpdatedReply {
     std::optional<uint64_t> payload_id;
 };
 
-//! TransitionConfiguration as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md
+//! TransitionConfiguration as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#transitionconfigurationv1
 struct TransitionConfiguration {
     intx::uint256 terminal_total_difficulty;
     evmc::bytes32 terminal_block_hash;
@@ -91,4 +91,4 @@ std::ostream& operator<<(std::ostream& out, const PayloadAttributes& payload_att
 std::ostream& operator<<(std::ostream& out, const ForkChoiceUpdatedReply& fork_choice_updated_reply);
 std::ostream& operator<<(std::ostream& out, const TransitionConfiguration& transition_configuration);
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

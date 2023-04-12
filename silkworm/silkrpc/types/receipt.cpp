@@ -22,7 +22,7 @@
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const Receipt& r) {
     out << " block_hash: " << r.block_hash;
@@ -68,4 +68,4 @@ silkworm::Bloom bloom_from_logs(const Logs& logs) {
     return bloom;
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

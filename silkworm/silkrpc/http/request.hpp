@@ -27,7 +27,7 @@
 
 #include "header.hpp"
 
-namespace silkrpc::http {
+namespace silkworm::rpc::http {
 
 /// A request received from a client.
 struct Request {
@@ -50,4 +50,4 @@ struct Request {
     }
 };
 
-}  // namespace silkrpc::http
+}  // namespace silkworm::rpc::http

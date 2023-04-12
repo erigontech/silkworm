@@ -22,7 +22,7 @@
 
 #include <silkworm/silkrpc/common/log.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 TEST_CASE("StringWriter", "[silkrpc]") {
     SILKRPC_LOG_STREAMS(null_stream(), null_stream());
@@ -103,4 +103,4 @@ TEST_CASE("ChunksWriter", "[silkrpc]") {
         CHECK(s_writer.get_content() == "0\r\n\r\n");
     }
 }
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

@@ -23,7 +23,7 @@
 
 #include <silkworm/silkrpc/common/log.hpp>
 
-namespace silkrpc {
+namespace silkworm {
 
 constexpr char kHexCharacters[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
@@ -74,4 +74,4 @@ bool load_jwt_token(const std::string& file_path, std::string& jwt_token) {
     return true;
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm

@@ -26,7 +26,7 @@
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
 
-namespace silkrpc::test {
+namespace silkworm::rpc::test {
 
 //! This dummy transaction just gives you the same cursor over and over again.
 class DummyTransaction : public ethdb::Transaction {
@@ -53,4 +53,4 @@ class DummyTransaction : public ethdb::Transaction {
     std::shared_ptr<ethdb::CursorDupSort> cursor_;
 };
 
-}  // namespace silkrpc::test
+}  // namespace silkworm::rpc::test

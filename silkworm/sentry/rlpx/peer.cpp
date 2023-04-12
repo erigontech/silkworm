@@ -27,8 +27,8 @@
 #include <gsl/util>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/sentry/common/awaitable_wait_for_all.hpp>
-#include <silkworm/sentry/common/awaitable_wait_for_one.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/sentry/common/sleep.hpp>
 #include <silkworm/sentry/common/timeout.hpp>
 
@@ -75,7 +75,7 @@ Peer::~Peer() {
 }
 
 awaitable<void> Peer::start(std::shared_ptr<Peer> peer) {
-    using namespace common::awaitable_wait_for_one;
+    using namespace concurrency::awaitable_wait_for_one;
 
     auto start = Peer::handle(peer) || Peer::send_message_tasks_wait(peer);
     co_await co_spawn(peer->strand_, std::move(start), use_awaitable);
@@ -101,8 +101,8 @@ awaitable<void> Peer::handle(std::shared_ptr<Peer> peer) {
 }
 
 awaitable<void> Peer::handle() {
-    using namespace common::awaitable_wait_for_all;
-    using namespace common::awaitable_wait_for_one;
+    using namespace concurrency::awaitable_wait_for_all;
+    using namespace concurrency::awaitable_wait_for_one;
 
     log::Debug() << "Peer::handle";
     auto _ = gsl::finally([this] {
@@ -204,7 +204,7 @@ awaitable<void> Peer::drop_in_strand(std::shared_ptr<Peer> self, DisconnectReaso
 }
 
 awaitable<void> Peer::drop(DisconnectReason reason) {
-    using namespace common::awaitable_wait_for_one;
+    using namespace concurrency::awaitable_wait_for_one;
 
     log::Debug() << "Peer::drop reason " << static_cast<int>(reason);
     auto _ = gsl::finally([this] { this->close(); });
@@ -360,7 +360,7 @@ awaitable<void> Peer::receive_messages(framing::MessageStream& message_stream) {
 }
 
 awaitable<void> Peer::ping_periodically(framing::MessageStream& message_stream) {
-    using namespace common::awaitable_wait_for_one;
+    using namespace concurrency::awaitable_wait_for_one;
 
     // loop until message_stream exception
     while (true) {

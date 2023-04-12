@@ -73,7 +73,7 @@ ServerImpl::ServerImpl(
       router_(std::move(router)) {
     log::Info() << "Server created"
                 << " listening on: " << config.address_uri() << ";"
-                << " contexts: " << config.num_contexts();
+                << " contexts: " << config.context_pool_settings().num_contexts;
 }
 
 // Register the gRPC services: they must exist for the lifetime of the server built by builder.
@@ -105,7 +105,6 @@ void ServerImpl::register_request_calls(agrpc::GrpcContext* grpc_context) {
     request_repeatedly<PeerCountCall>(&AsyncService::RequestPeerCount, grpc_context);
     request_repeatedly<PeerByIdCall>(&AsyncService::RequestPeerById, grpc_context);
     request_repeatedly<PenalizePeerCall>(&AsyncService::RequestPenalizePeer, grpc_context);
-    request_repeatedly<PeerUselessCall>(&AsyncService::RequestPeerUseless, grpc_context);
     request_repeatedly<PeerEventsCall>(&AsyncService::RequestPeerEvents, grpc_context);
 }
 

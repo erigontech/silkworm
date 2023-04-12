@@ -19,17 +19,17 @@
 #include <boost/format.hpp>
 
 #include <silkworm/infra/common/environment.hpp>
-#include <silkworm/node/stagedsync/stage_blockhashes.hpp>
-#include <silkworm/node/stagedsync/stage_bodies.hpp>
-#include <silkworm/node/stagedsync/stage_execution.hpp>
-#include <silkworm/node/stagedsync/stage_finish.hpp>
-#include <silkworm/node/stagedsync/stage_hashstate.hpp>
-#include <silkworm/node/stagedsync/stage_headers.hpp>
-#include <silkworm/node/stagedsync/stage_history_index.hpp>
-#include <silkworm/node/stagedsync/stage_interhashes.hpp>
-#include <silkworm/node/stagedsync/stage_log_index.hpp>
-#include <silkworm/node/stagedsync/stage_senders.hpp>
-#include <silkworm/node/stagedsync/stage_tx_lookup.hpp>
+#include <silkworm/node/stagedsync/stages/stage_blockhashes.hpp>
+#include <silkworm/node/stagedsync/stages/stage_bodies.hpp>
+#include <silkworm/node/stagedsync/stages/stage_execution.hpp>
+#include <silkworm/node/stagedsync/stages/stage_finish.hpp>
+#include <silkworm/node/stagedsync/stages/stage_hashstate.hpp>
+#include <silkworm/node/stagedsync/stages/stage_headers.hpp>
+#include <silkworm/node/stagedsync/stages/stage_history_index.hpp>
+#include <silkworm/node/stagedsync/stages/stage_interhashes.hpp>
+#include <silkworm/node/stagedsync/stages/stage_log_index.hpp>
+#include <silkworm/node/stagedsync/stages/stage_senders.hpp>
+#include <silkworm/node/stagedsync/stages/stage_tx_lookup.hpp>
 
 namespace silkworm::stagedsync {
 

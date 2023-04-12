@@ -23,7 +23,9 @@
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
 
-namespace silkrpc::ethdb {
+namespace silkworm::rpc::ethdb {
+
+using boost::asio::awaitable;
 
 class TransactionDatabase : public core::rawdb::DatabaseReader {
   public:
@@ -32,18 +34,18 @@ class TransactionDatabase : public core::rawdb::DatabaseReader {
     TransactionDatabase(const TransactionDatabase&) = delete;
     TransactionDatabase& operator=(const TransactionDatabase&) = delete;
 
-    boost::asio::awaitable<KeyValue> get(const std::string& table, silkworm::ByteView key) const override;
+    [[nodiscard]] awaitable<KeyValue> get(const std::string& table, ByteView key) const override;
 
-    boost::asio::awaitable<silkworm::Bytes> get_one(const std::string& table, silkworm::ByteView key) const override;
+    [[nodiscard]] awaitable<silkworm::Bytes> get_one(const std::string& table, ByteView key) const override;
 
-    boost::asio::awaitable<std::optional<silkworm::Bytes>> get_both_range(const std::string& table, silkworm::ByteView key, silkworm::ByteView subkey) const override;
+    [[nodiscard]] awaitable<std::optional<Bytes>> get_both_range(const std::string& table, ByteView key, ByteView subkey) const override;
 
-    boost::asio::awaitable<void> walk(const std::string& table, silkworm::ByteView start_key, uint32_t fixed_bits, core::rawdb::Walker w) const override;
+    [[nodiscard]] awaitable<void> walk(const std::string& table, ByteView start_key, uint32_t fixed_bits, core::rawdb::Walker w) const override;
 
-    boost::asio::awaitable<void> for_prefix(const std::string& table, silkworm::ByteView prefix, core::rawdb::Walker w) const override;
+    [[nodiscard]] awaitable<void> for_prefix(const std::string& table, ByteView prefix, core::rawdb::Walker w) const override;
 
   private:
     Transaction& tx_;
 };
 
-}  // namespace silkrpc::ethdb
+}  // namespace silkworm::rpc::ethdb

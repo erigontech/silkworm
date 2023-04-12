@@ -96,6 +96,9 @@ target_include_directories(
 # cmake-format: on
 
 set(SILKWORM_NODE_PUBLIC_LIBS
+    silkworm_core
+    silkworm_infra
+    silkworm_sentry
     absl::btree
     absl::flat_hash_map
     absl::flat_hash_set
@@ -107,8 +110,6 @@ set(SILKWORM_NODE_PUBLIC_LIBS
     nlohmann_json::nlohmann_json
     protobuf::libprotobuf
     roaring
-    silkworm_core
-    silkworm_infra
     torrent-rasterbar
 )
 

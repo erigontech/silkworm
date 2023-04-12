@@ -24,7 +24,7 @@
 
 #include <silkworm/silkrpc/common/log.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 const std::string kChunkSep{'\r', '\n'};                     // NOLINT(runtime/string)
 const std::string kFinalChunk{'0', '\r', '\n', '\r', '\n'};  // NOLINT(runtime/string)
@@ -91,4 +91,4 @@ void ChunksWriter::flush() {
     std::memset(buffer_.get(), 0, chunk_size_);
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

@@ -55,12 +55,27 @@ extern AccountChangeDefaultTypeInternal _AccountChange_default_instance_;
 class Cursor;
 struct CursorDefaultTypeInternal;
 extern CursorDefaultTypeInternal _Cursor_default_instance_;
+class DomainGetReply;
+struct DomainGetReplyDefaultTypeInternal;
+extern DomainGetReplyDefaultTypeInternal _DomainGetReply_default_instance_;
+class DomainGetReq;
+struct DomainGetReqDefaultTypeInternal;
+extern DomainGetReqDefaultTypeInternal _DomainGetReq_default_instance_;
+class DomainRangeReq;
+struct DomainRangeReqDefaultTypeInternal;
+extern DomainRangeReqDefaultTypeInternal _DomainRangeReq_default_instance_;
 class HistoryGetReply;
 struct HistoryGetReplyDefaultTypeInternal;
 extern HistoryGetReplyDefaultTypeInternal _HistoryGetReply_default_instance_;
 class HistoryGetReq;
 struct HistoryGetReqDefaultTypeInternal;
 extern HistoryGetReqDefaultTypeInternal _HistoryGetReq_default_instance_;
+class HistoryRangeReq;
+struct HistoryRangeReqDefaultTypeInternal;
+extern HistoryRangeReqDefaultTypeInternal _HistoryRangeReq_default_instance_;
+class IndexPagination;
+struct IndexPaginationDefaultTypeInternal;
+extern IndexPaginationDefaultTypeInternal _IndexPagination_default_instance_;
 class IndexRangeReply;
 struct IndexRangeReplyDefaultTypeInternal;
 extern IndexRangeReplyDefaultTypeInternal _IndexRangeReply_default_instance_;
@@ -70,6 +85,15 @@ extern IndexRangeReqDefaultTypeInternal _IndexRangeReq_default_instance_;
 class Pair;
 struct PairDefaultTypeInternal;
 extern PairDefaultTypeInternal _Pair_default_instance_;
+class Pairs;
+struct PairsDefaultTypeInternal;
+extern PairsDefaultTypeInternal _Pairs_default_instance_;
+class ParisPagination;
+struct ParisPaginationDefaultTypeInternal;
+extern ParisPaginationDefaultTypeInternal _ParisPagination_default_instance_;
+class RangeReq;
+struct RangeReqDefaultTypeInternal;
+extern RangeReqDefaultTypeInternal _RangeReq_default_instance_;
 class SnapshotsReply;
 struct SnapshotsReplyDefaultTypeInternal;
 extern SnapshotsReplyDefaultTypeInternal _SnapshotsReply_default_instance_;
@@ -92,11 +116,19 @@ extern StorageChangeDefaultTypeInternal _StorageChange_default_instance_;
 PROTOBUF_NAMESPACE_OPEN
 template<> ::remote::AccountChange* Arena::CreateMaybeMessage<::remote::AccountChange>(Arena*);
 template<> ::remote::Cursor* Arena::CreateMaybeMessage<::remote::Cursor>(Arena*);
+template<> ::remote::DomainGetReply* Arena::CreateMaybeMessage<::remote::DomainGetReply>(Arena*);
+template<> ::remote::DomainGetReq* Arena::CreateMaybeMessage<::remote::DomainGetReq>(Arena*);
+template<> ::remote::DomainRangeReq* Arena::CreateMaybeMessage<::remote::DomainRangeReq>(Arena*);
 template<> ::remote::HistoryGetReply* Arena::CreateMaybeMessage<::remote::HistoryGetReply>(Arena*);
 template<> ::remote::HistoryGetReq* Arena::CreateMaybeMessage<::remote::HistoryGetReq>(Arena*);
+template<> ::remote::HistoryRangeReq* Arena::CreateMaybeMessage<::remote::HistoryRangeReq>(Arena*);
+template<> ::remote::IndexPagination* Arena::CreateMaybeMessage<::remote::IndexPagination>(Arena*);
 template<> ::remote::IndexRangeReply* Arena::CreateMaybeMessage<::remote::IndexRangeReply>(Arena*);
 template<> ::remote::IndexRangeReq* Arena::CreateMaybeMessage<::remote::IndexRangeReq>(Arena*);
 template<> ::remote::Pair* Arena::CreateMaybeMessage<::remote::Pair>(Arena*);
+template<> ::remote::Pairs* Arena::CreateMaybeMessage<::remote::Pairs>(Arena*);
+template<> ::remote::ParisPagination* Arena::CreateMaybeMessage<::remote::ParisPagination>(Arena*);
+template<> ::remote::RangeReq* Arena::CreateMaybeMessage<::remote::RangeReq>(Arena*);
 template<> ::remote::SnapshotsReply* Arena::CreateMaybeMessage<::remote::SnapshotsReply>(Arena*);
 template<> ::remote::SnapshotsRequest* Arena::CreateMaybeMessage<::remote::SnapshotsRequest>(Arena*);
 template<> ::remote::StateChange* Arena::CreateMaybeMessage<::remote::StateChange>(Arena*);
@@ -1829,30 +1861,55 @@ class SnapshotsReply final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kFilesFieldNumber = 1,
+    kBlocksFilesFieldNumber = 1,
+    kHistoryFilesFieldNumber = 2,
   };
-  // repeated string files = 1;
-  int files_size() const;
+  // repeated string blocks_files = 1;
+  int blocks_files_size() const;
   private:
-  int _internal_files_size() const;
+  int _internal_blocks_files_size() const;
   public:
-  void clear_files();
-  const std::string& files(int index) const;
-  std::string* mutable_files(int index);
-  void set_files(int index, const std::string& value);
-  void set_files(int index, std::string&& value);
-  void set_files(int index, const char* value);
-  void set_files(int index, const char* value, size_t size);
-  std::string* add_files();
-  void add_files(const std::string& value);
-  void add_files(std::string&& value);
-  void add_files(const char* value);
-  void add_files(const char* value, size_t size);
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& files() const;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_files();
+  void clear_blocks_files();
+  const std::string& blocks_files(int index) const;
+  std::string* mutable_blocks_files(int index);
+  void set_blocks_files(int index, const std::string& value);
+  void set_blocks_files(int index, std::string&& value);
+  void set_blocks_files(int index, const char* value);
+  void set_blocks_files(int index, const char* value, size_t size);
+  std::string* add_blocks_files();
+  void add_blocks_files(const std::string& value);
+  void add_blocks_files(std::string&& value);
+  void add_blocks_files(const char* value);
+  void add_blocks_files(const char* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& blocks_files() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_blocks_files();
   private:
-  const std::string& _internal_files(int index) const;
-  std::string* _internal_add_files();
+  const std::string& _internal_blocks_files(int index) const;
+  std::string* _internal_add_blocks_files();
+  public:
+
+  // repeated string history_files = 2;
+  int history_files_size() const;
+  private:
+  int _internal_history_files_size() const;
+  public:
+  void clear_history_files();
+  const std::string& history_files(int index) const;
+  std::string* mutable_history_files(int index);
+  void set_history_files(int index, const std::string& value);
+  void set_history_files(int index, std::string&& value);
+  void set_history_files(int index, const char* value);
+  void set_history_files(int index, const char* value, size_t size);
+  std::string* add_history_files();
+  void add_history_files(const std::string& value);
+  void add_history_files(std::string&& value);
+  void add_history_files(const char* value);
+  void add_history_files(const char* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& history_files() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_history_files();
+  private:
+  const std::string& _internal_history_files(int index) const;
+  std::string* _internal_add_history_files();
   public:
 
   // @@protoc_insertion_point(class_scope:remote.SnapshotsReply)
@@ -1863,7 +1920,635 @@ class SnapshotsReply final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> files_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> blocks_files_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> history_files_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_remote_2fkv_2eproto;
+};
+// -------------------------------------------------------------------
+
+class RangeReq final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.RangeReq) */ {
+ public:
+  inline RangeReq() : RangeReq(nullptr) {}
+  ~RangeReq() override;
+  explicit PROTOBUF_CONSTEXPR RangeReq(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  RangeReq(const RangeReq& from);
+  RangeReq(RangeReq&& from) noexcept
+    : RangeReq() {
+    *this = ::std::move(from);
+  }
+
+  inline RangeReq& operator=(const RangeReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline RangeReq& operator=(RangeReq&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const RangeReq& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const RangeReq* internal_default_instance() {
+    return reinterpret_cast<const RangeReq*>(
+               &_RangeReq_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    9;
+
+  friend void swap(RangeReq& a, RangeReq& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(RangeReq* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(RangeReq* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  RangeReq* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<RangeReq>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const RangeReq& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const RangeReq& from) {
+    RangeReq::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(RangeReq* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "remote.RangeReq";
+  }
+  protected:
+  explicit RangeReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kTableFieldNumber = 2,
+    kFromPrefixFieldNumber = 3,
+    kToPrefixFieldNumber = 4,
+    kPageTokenFieldNumber = 8,
+    kTxIdFieldNumber = 1,
+    kLimitFieldNumber = 6,
+    kOrderAscendFieldNumber = 5,
+    kPageSizeFieldNumber = 7,
+  };
+  // string table = 2;
+  void clear_table();
+  const std::string& table() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_table(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_table();
+  PROTOBUF_NODISCARD std::string* release_table();
+  void set_allocated_table(std::string* table);
+  private:
+  const std::string& _internal_table() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_table(const std::string& value);
+  std::string* _internal_mutable_table();
+  public:
+
+  // bytes from_prefix = 3;
+  void clear_from_prefix();
+  const std::string& from_prefix() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_from_prefix(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_from_prefix();
+  PROTOBUF_NODISCARD std::string* release_from_prefix();
+  void set_allocated_from_prefix(std::string* from_prefix);
+  private:
+  const std::string& _internal_from_prefix() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_from_prefix(const std::string& value);
+  std::string* _internal_mutable_from_prefix();
+  public:
+
+  // bytes to_prefix = 4;
+  void clear_to_prefix();
+  const std::string& to_prefix() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_to_prefix(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_to_prefix();
+  PROTOBUF_NODISCARD std::string* release_to_prefix();
+  void set_allocated_to_prefix(std::string* to_prefix);
+  private:
+  const std::string& _internal_to_prefix() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_to_prefix(const std::string& value);
+  std::string* _internal_mutable_to_prefix();
+  public:
+
+  // string page_token = 8;
+  void clear_page_token();
+  const std::string& page_token() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_page_token(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_page_token();
+  PROTOBUF_NODISCARD std::string* release_page_token();
+  void set_allocated_page_token(std::string* page_token);
+  private:
+  const std::string& _internal_page_token() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_page_token(const std::string& value);
+  std::string* _internal_mutable_page_token();
+  public:
+
+  // uint64 tx_id = 1;
+  void clear_tx_id();
+  uint64_t tx_id() const;
+  void set_tx_id(uint64_t value);
+  private:
+  uint64_t _internal_tx_id() const;
+  void _internal_set_tx_id(uint64_t value);
+  public:
+
+  // sint64 limit = 6;
+  void clear_limit();
+  int64_t limit() const;
+  void set_limit(int64_t value);
+  private:
+  int64_t _internal_limit() const;
+  void _internal_set_limit(int64_t value);
+  public:
+
+  // bool order_ascend = 5;
+  void clear_order_ascend();
+  bool order_ascend() const;
+  void set_order_ascend(bool value);
+  private:
+  bool _internal_order_ascend() const;
+  void _internal_set_order_ascend(bool value);
+  public:
+
+  // int32 page_size = 7;
+  void clear_page_size();
+  int32_t page_size() const;
+  void set_page_size(int32_t value);
+  private:
+  int32_t _internal_page_size() const;
+  void _internal_set_page_size(int32_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:remote.RangeReq)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr table_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr from_prefix_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr to_prefix_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr page_token_;
+    uint64_t tx_id_;
+    int64_t limit_;
+    bool order_ascend_;
+    int32_t page_size_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_remote_2fkv_2eproto;
+};
+// -------------------------------------------------------------------
+
+class DomainGetReq final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.DomainGetReq) */ {
+ public:
+  inline DomainGetReq() : DomainGetReq(nullptr) {}
+  ~DomainGetReq() override;
+  explicit PROTOBUF_CONSTEXPR DomainGetReq(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  DomainGetReq(const DomainGetReq& from);
+  DomainGetReq(DomainGetReq&& from) noexcept
+    : DomainGetReq() {
+    *this = ::std::move(from);
+  }
+
+  inline DomainGetReq& operator=(const DomainGetReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline DomainGetReq& operator=(DomainGetReq&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const DomainGetReq& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const DomainGetReq* internal_default_instance() {
+    return reinterpret_cast<const DomainGetReq*>(
+               &_DomainGetReq_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    10;
+
+  friend void swap(DomainGetReq& a, DomainGetReq& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(DomainGetReq* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(DomainGetReq* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  DomainGetReq* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<DomainGetReq>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const DomainGetReq& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const DomainGetReq& from) {
+    DomainGetReq::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(DomainGetReq* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "remote.DomainGetReq";
+  }
+  protected:
+  explicit DomainGetReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kTableFieldNumber = 2,
+    kKFieldNumber = 3,
+    kK2FieldNumber = 5,
+    kTxIdFieldNumber = 1,
+    kTsFieldNumber = 4,
+    kLatestFieldNumber = 6,
+  };
+  // string table = 2;
+  void clear_table();
+  const std::string& table() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_table(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_table();
+  PROTOBUF_NODISCARD std::string* release_table();
+  void set_allocated_table(std::string* table);
+  private:
+  const std::string& _internal_table() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_table(const std::string& value);
+  std::string* _internal_mutable_table();
+  public:
+
+  // bytes k = 3;
+  void clear_k();
+  const std::string& k() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_k(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_k();
+  PROTOBUF_NODISCARD std::string* release_k();
+  void set_allocated_k(std::string* k);
+  private:
+  const std::string& _internal_k() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_k(const std::string& value);
+  std::string* _internal_mutable_k();
+  public:
+
+  // bytes k2 = 5;
+  void clear_k2();
+  const std::string& k2() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_k2(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_k2();
+  PROTOBUF_NODISCARD std::string* release_k2();
+  void set_allocated_k2(std::string* k2);
+  private:
+  const std::string& _internal_k2() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_k2(const std::string& value);
+  std::string* _internal_mutable_k2();
+  public:
+
+  // uint64 tx_id = 1;
+  void clear_tx_id();
+  uint64_t tx_id() const;
+  void set_tx_id(uint64_t value);
+  private:
+  uint64_t _internal_tx_id() const;
+  void _internal_set_tx_id(uint64_t value);
+  public:
+
+  // uint64 ts = 4;
+  void clear_ts();
+  uint64_t ts() const;
+  void set_ts(uint64_t value);
+  private:
+  uint64_t _internal_ts() const;
+  void _internal_set_ts(uint64_t value);
+  public:
+
+  // bool latest = 6;
+  void clear_latest();
+  bool latest() const;
+  void set_latest(bool value);
+  private:
+  bool _internal_latest() const;
+  void _internal_set_latest(bool value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:remote.DomainGetReq)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr table_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr k_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr k2_;
+    uint64_t tx_id_;
+    uint64_t ts_;
+    bool latest_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_remote_2fkv_2eproto;
+};
+// -------------------------------------------------------------------
+
+class DomainGetReply final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.DomainGetReply) */ {
+ public:
+  inline DomainGetReply() : DomainGetReply(nullptr) {}
+  ~DomainGetReply() override;
+  explicit PROTOBUF_CONSTEXPR DomainGetReply(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  DomainGetReply(const DomainGetReply& from);
+  DomainGetReply(DomainGetReply&& from) noexcept
+    : DomainGetReply() {
+    *this = ::std::move(from);
+  }
+
+  inline DomainGetReply& operator=(const DomainGetReply& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline DomainGetReply& operator=(DomainGetReply&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const DomainGetReply& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const DomainGetReply* internal_default_instance() {
+    return reinterpret_cast<const DomainGetReply*>(
+               &_DomainGetReply_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    11;
+
+  friend void swap(DomainGetReply& a, DomainGetReply& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(DomainGetReply* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(DomainGetReply* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  DomainGetReply* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<DomainGetReply>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const DomainGetReply& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const DomainGetReply& from) {
+    DomainGetReply::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(DomainGetReply* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "remote.DomainGetReply";
+  }
+  protected:
+  explicit DomainGetReply(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kVFieldNumber = 1,
+    kOkFieldNumber = 2,
+  };
+  // bytes v = 1;
+  void clear_v();
+  const std::string& v() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_v(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_v();
+  PROTOBUF_NODISCARD std::string* release_v();
+  void set_allocated_v(std::string* v);
+  private:
+  const std::string& _internal_v() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_v(const std::string& value);
+  std::string* _internal_mutable_v();
+  public:
+
+  // bool ok = 2;
+  void clear_ok();
+  bool ok() const;
+  void set_ok(bool value);
+  private:
+  bool _internal_ok() const;
+  void _internal_set_ok(bool value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:remote.DomainGetReply)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr v_;
+    bool ok_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -1919,7 +2604,7 @@ class HistoryGetReq final :
                &_HistoryGetReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    9;
+    12;
 
   friend void swap(HistoryGetReq& a, HistoryGetReq& b) {
     a.Swap(&b);
@@ -1992,23 +2677,23 @@ class HistoryGetReq final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kNameFieldNumber = 2,
+    kTableFieldNumber = 2,
     kKFieldNumber = 3,
-    kTxIDFieldNumber = 1,
+    kTxIdFieldNumber = 1,
     kTsFieldNumber = 4,
   };
-  // string name = 2;
-  void clear_name();
-  const std::string& name() const;
+  // string table = 2;
+  void clear_table();
+  const std::string& table() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_name(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_name();
-  PROTOBUF_NODISCARD std::string* release_name();
-  void set_allocated_name(std::string* name);
+  void set_table(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_table();
+  PROTOBUF_NODISCARD std::string* release_table();
+  void set_allocated_table(std::string* table);
   private:
-  const std::string& _internal_name() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_name(const std::string& value);
-  std::string* _internal_mutable_name();
+  const std::string& _internal_table() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_table(const std::string& value);
+  std::string* _internal_mutable_table();
   public:
 
   // bytes k = 3;
@@ -2025,13 +2710,13 @@ class HistoryGetReq final :
   std::string* _internal_mutable_k();
   public:
 
-  // uint64 txID = 1;
-  void clear_txid();
-  uint64_t txid() const;
-  void set_txid(uint64_t value);
+  // uint64 tx_id = 1;
+  void clear_tx_id();
+  uint64_t tx_id() const;
+  void set_tx_id(uint64_t value);
   private:
-  uint64_t _internal_txid() const;
-  void _internal_set_txid(uint64_t value);
+  uint64_t _internal_tx_id() const;
+  void _internal_set_tx_id(uint64_t value);
   public:
 
   // uint64 ts = 4;
@@ -2051,9 +2736,9 @@ class HistoryGetReq final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr name_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr table_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr k_;
-    uint64_t txid_;
+    uint64_t tx_id_;
     uint64_t ts_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
@@ -2110,7 +2795,7 @@ class HistoryGetReply final :
                &_HistoryGetReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    10;
+    13;
 
   friend void swap(HistoryGetReply& a, HistoryGetReply& b) {
     a.Swap(&b);
@@ -2274,7 +2959,7 @@ class IndexRangeReq final :
                &_IndexRangeReq_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    11;
+    14;
 
   friend void swap(IndexRangeReq& a, IndexRangeReq& b) {
     a.Swap(&b);
@@ -2347,24 +3032,28 @@ class IndexRangeReq final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kNameFieldNumber = 2,
+    kTableFieldNumber = 2,
     kKFieldNumber = 3,
-    kTxIDFieldNumber = 1,
+    kPageTokenFieldNumber = 9,
+    kTxIdFieldNumber = 1,
     kFromTsFieldNumber = 4,
     kToTsFieldNumber = 5,
+    kLimitFieldNumber = 7,
+    kOrderAscendFieldNumber = 6,
+    kPageSizeFieldNumber = 8,
   };
-  // string name = 2;
-  void clear_name();
-  const std::string& name() const;
+  // string table = 2;
+  void clear_table();
+  const std::string& table() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_name(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_name();
-  PROTOBUF_NODISCARD std::string* release_name();
-  void set_allocated_name(std::string* name);
+  void set_table(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_table();
+  PROTOBUF_NODISCARD std::string* release_table();
+  void set_allocated_table(std::string* table);
   private:
-  const std::string& _internal_name() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_name(const std::string& value);
-  std::string* _internal_mutable_name();
+  const std::string& _internal_table() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_table(const std::string& value);
+  std::string* _internal_mutable_table();
   public:
 
   // bytes k = 3;
@@ -2381,31 +3070,72 @@ class IndexRangeReq final :
   std::string* _internal_mutable_k();
   public:
 
-  // uint64 txID = 1;
-  void clear_txid();
-  uint64_t txid() const;
-  void set_txid(uint64_t value);
+  // string page_token = 9;
+  void clear_page_token();
+  const std::string& page_token() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_page_token(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_page_token();
+  PROTOBUF_NODISCARD std::string* release_page_token();
+  void set_allocated_page_token(std::string* page_token);
   private:
-  uint64_t _internal_txid() const;
-  void _internal_set_txid(uint64_t value);
+  const std::string& _internal_page_token() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_page_token(const std::string& value);
+  std::string* _internal_mutable_page_token();
   public:
 
-  // uint64 fromTs = 4;
-  void clear_fromts();
-  uint64_t fromts() const;
-  void set_fromts(uint64_t value);
+  // uint64 tx_id = 1;
+  void clear_tx_id();
+  uint64_t tx_id() const;
+  void set_tx_id(uint64_t value);
   private:
-  uint64_t _internal_fromts() const;
-  void _internal_set_fromts(uint64_t value);
+  uint64_t _internal_tx_id() const;
+  void _internal_set_tx_id(uint64_t value);
   public:
 
-  // uint64 toTs = 5;
-  void clear_tots();
-  uint64_t tots() const;
-  void set_tots(uint64_t value);
+  // sint64 from_ts = 4;
+  void clear_from_ts();
+  int64_t from_ts() const;
+  void set_from_ts(int64_t value);
   private:
-  uint64_t _internal_tots() const;
-  void _internal_set_tots(uint64_t value);
+  int64_t _internal_from_ts() const;
+  void _internal_set_from_ts(int64_t value);
+  public:
+
+  // sint64 to_ts = 5;
+  void clear_to_ts();
+  int64_t to_ts() const;
+  void set_to_ts(int64_t value);
+  private:
+  int64_t _internal_to_ts() const;
+  void _internal_set_to_ts(int64_t value);
+  public:
+
+  // sint64 limit = 7;
+  void clear_limit();
+  int64_t limit() const;
+  void set_limit(int64_t value);
+  private:
+  int64_t _internal_limit() const;
+  void _internal_set_limit(int64_t value);
+  public:
+
+  // bool order_ascend = 6;
+  void clear_order_ascend();
+  bool order_ascend() const;
+  void set_order_ascend(bool value);
+  private:
+  bool _internal_order_ascend() const;
+  void _internal_set_order_ascend(bool value);
+  public:
+
+  // int32 page_size = 8;
+  void clear_page_size();
+  int32_t page_size() const;
+  void set_page_size(int32_t value);
+  private:
+  int32_t _internal_page_size() const;
+  void _internal_set_page_size(int32_t value);
   public:
 
   // @@protoc_insertion_point(class_scope:remote.IndexRangeReq)
@@ -2416,11 +3146,15 @@ class IndexRangeReq final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr name_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr table_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr k_;
-    uint64_t txid_;
-    uint64_t fromts_;
-    uint64_t tots_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr page_token_;
+    uint64_t tx_id_;
+    int64_t from_ts_;
+    int64_t to_ts_;
+    int64_t limit_;
+    bool order_ascend_;
+    int32_t page_size_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -2476,7 +3210,7 @@ class IndexRangeReply final :
                &_IndexRangeReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    12;
+    15;
 
   friend void swap(IndexRangeReply& a, IndexRangeReply& b) {
     a.Swap(&b);
@@ -2550,6 +3284,7 @@ class IndexRangeReply final :
 
   enum : int {
     kTimestampsFieldNumber = 1,
+    kNextPageTokenFieldNumber = 2,
   };
   // repeated uint64 timestamps = 1;
   int timestamps_size() const;
@@ -2573,6 +3308,20 @@ class IndexRangeReply final :
   ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t >*
       mutable_timestamps();
 
+  // string next_page_token = 2;
+  void clear_next_page_token();
+  const std::string& next_page_token() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_next_page_token(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_next_page_token();
+  PROTOBUF_NODISCARD std::string* release_next_page_token();
+  void set_allocated_next_page_token(std::string* next_page_token);
+  private:
+  const std::string& _internal_next_page_token() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_next_page_token(const std::string& value);
+  std::string* _internal_mutable_next_page_token();
+  public:
+
   // @@protoc_insertion_point(class_scope:remote.IndexRangeReply)
  private:
   class _Internal;
@@ -2583,6 +3332,1037 @@ class IndexRangeReply final :
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::RepeatedField< uint64_t > timestamps_;
     mutable std::atomic<int> _timestamps_cached_byte_size_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr next_page_token_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_remote_2fkv_2eproto;
+};
+// -------------------------------------------------------------------
+
+class HistoryRangeReq final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.HistoryRangeReq) */ {
+ public:
+  inline HistoryRangeReq() : HistoryRangeReq(nullptr) {}
+  ~HistoryRangeReq() override;
+  explicit PROTOBUF_CONSTEXPR HistoryRangeReq(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  HistoryRangeReq(const HistoryRangeReq& from);
+  HistoryRangeReq(HistoryRangeReq&& from) noexcept
+    : HistoryRangeReq() {
+    *this = ::std::move(from);
+  }
+
+  inline HistoryRangeReq& operator=(const HistoryRangeReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline HistoryRangeReq& operator=(HistoryRangeReq&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const HistoryRangeReq& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const HistoryRangeReq* internal_default_instance() {
+    return reinterpret_cast<const HistoryRangeReq*>(
+               &_HistoryRangeReq_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    16;
+
+  friend void swap(HistoryRangeReq& a, HistoryRangeReq& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(HistoryRangeReq* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(HistoryRangeReq* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  HistoryRangeReq* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<HistoryRangeReq>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const HistoryRangeReq& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const HistoryRangeReq& from) {
+    HistoryRangeReq::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(HistoryRangeReq* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "remote.HistoryRangeReq";
+  }
+  protected:
+  explicit HistoryRangeReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kTableFieldNumber = 2,
+    kPageTokenFieldNumber = 9,
+    kTxIdFieldNumber = 1,
+    kFromTsFieldNumber = 4,
+    kToTsFieldNumber = 5,
+    kLimitFieldNumber = 7,
+    kOrderAscendFieldNumber = 6,
+    kPageSizeFieldNumber = 8,
+  };
+  // string table = 2;
+  void clear_table();
+  const std::string& table() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_table(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_table();
+  PROTOBUF_NODISCARD std::string* release_table();
+  void set_allocated_table(std::string* table);
+  private:
+  const std::string& _internal_table() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_table(const std::string& value);
+  std::string* _internal_mutable_table();
+  public:
+
+  // string page_token = 9;
+  void clear_page_token();
+  const std::string& page_token() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_page_token(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_page_token();
+  PROTOBUF_NODISCARD std::string* release_page_token();
+  void set_allocated_page_token(std::string* page_token);
+  private:
+  const std::string& _internal_page_token() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_page_token(const std::string& value);
+  std::string* _internal_mutable_page_token();
+  public:
+
+  // uint64 tx_id = 1;
+  void clear_tx_id();
+  uint64_t tx_id() const;
+  void set_tx_id(uint64_t value);
+  private:
+  uint64_t _internal_tx_id() const;
+  void _internal_set_tx_id(uint64_t value);
+  public:
+
+  // sint64 from_ts = 4;
+  void clear_from_ts();
+  int64_t from_ts() const;
+  void set_from_ts(int64_t value);
+  private:
+  int64_t _internal_from_ts() const;
+  void _internal_set_from_ts(int64_t value);
+  public:
+
+  // sint64 to_ts = 5;
+  void clear_to_ts();
+  int64_t to_ts() const;
+  void set_to_ts(int64_t value);
+  private:
+  int64_t _internal_to_ts() const;
+  void _internal_set_to_ts(int64_t value);
+  public:
+
+  // sint64 limit = 7;
+  void clear_limit();
+  int64_t limit() const;
+  void set_limit(int64_t value);
+  private:
+  int64_t _internal_limit() const;
+  void _internal_set_limit(int64_t value);
+  public:
+
+  // bool order_ascend = 6;
+  void clear_order_ascend();
+  bool order_ascend() const;
+  void set_order_ascend(bool value);
+  private:
+  bool _internal_order_ascend() const;
+  void _internal_set_order_ascend(bool value);
+  public:
+
+  // int32 page_size = 8;
+  void clear_page_size();
+  int32_t page_size() const;
+  void set_page_size(int32_t value);
+  private:
+  int32_t _internal_page_size() const;
+  void _internal_set_page_size(int32_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:remote.HistoryRangeReq)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr table_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr page_token_;
+    uint64_t tx_id_;
+    int64_t from_ts_;
+    int64_t to_ts_;
+    int64_t limit_;
+    bool order_ascend_;
+    int32_t page_size_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_remote_2fkv_2eproto;
+};
+// -------------------------------------------------------------------
+
+class DomainRangeReq final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.DomainRangeReq) */ {
+ public:
+  inline DomainRangeReq() : DomainRangeReq(nullptr) {}
+  ~DomainRangeReq() override;
+  explicit PROTOBUF_CONSTEXPR DomainRangeReq(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  DomainRangeReq(const DomainRangeReq& from);
+  DomainRangeReq(DomainRangeReq&& from) noexcept
+    : DomainRangeReq() {
+    *this = ::std::move(from);
+  }
+
+  inline DomainRangeReq& operator=(const DomainRangeReq& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline DomainRangeReq& operator=(DomainRangeReq&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const DomainRangeReq& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const DomainRangeReq* internal_default_instance() {
+    return reinterpret_cast<const DomainRangeReq*>(
+               &_DomainRangeReq_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    17;
+
+  friend void swap(DomainRangeReq& a, DomainRangeReq& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(DomainRangeReq* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(DomainRangeReq* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  DomainRangeReq* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<DomainRangeReq>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const DomainRangeReq& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const DomainRangeReq& from) {
+    DomainRangeReq::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(DomainRangeReq* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "remote.DomainRangeReq";
+  }
+  protected:
+  explicit DomainRangeReq(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kTableFieldNumber = 2,
+    kFromKeyFieldNumber = 3,
+    kToKeyFieldNumber = 4,
+    kPageTokenFieldNumber = 10,
+    kTxIdFieldNumber = 1,
+    kTsFieldNumber = 5,
+    kLatestFieldNumber = 6,
+    kOrderAscendFieldNumber = 7,
+    kPageSizeFieldNumber = 9,
+    kLimitFieldNumber = 8,
+  };
+  // string table = 2;
+  void clear_table();
+  const std::string& table() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_table(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_table();
+  PROTOBUF_NODISCARD std::string* release_table();
+  void set_allocated_table(std::string* table);
+  private:
+  const std::string& _internal_table() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_table(const std::string& value);
+  std::string* _internal_mutable_table();
+  public:
+
+  // bytes from_key = 3;
+  void clear_from_key();
+  const std::string& from_key() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_from_key(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_from_key();
+  PROTOBUF_NODISCARD std::string* release_from_key();
+  void set_allocated_from_key(std::string* from_key);
+  private:
+  const std::string& _internal_from_key() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_from_key(const std::string& value);
+  std::string* _internal_mutable_from_key();
+  public:
+
+  // bytes to_key = 4;
+  void clear_to_key();
+  const std::string& to_key() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_to_key(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_to_key();
+  PROTOBUF_NODISCARD std::string* release_to_key();
+  void set_allocated_to_key(std::string* to_key);
+  private:
+  const std::string& _internal_to_key() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_to_key(const std::string& value);
+  std::string* _internal_mutable_to_key();
+  public:
+
+  // string page_token = 10;
+  void clear_page_token();
+  const std::string& page_token() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_page_token(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_page_token();
+  PROTOBUF_NODISCARD std::string* release_page_token();
+  void set_allocated_page_token(std::string* page_token);
+  private:
+  const std::string& _internal_page_token() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_page_token(const std::string& value);
+  std::string* _internal_mutable_page_token();
+  public:
+
+  // uint64 tx_id = 1;
+  void clear_tx_id();
+  uint64_t tx_id() const;
+  void set_tx_id(uint64_t value);
+  private:
+  uint64_t _internal_tx_id() const;
+  void _internal_set_tx_id(uint64_t value);
+  public:
+
+  // uint64 ts = 5;
+  void clear_ts();
+  uint64_t ts() const;
+  void set_ts(uint64_t value);
+  private:
+  uint64_t _internal_ts() const;
+  void _internal_set_ts(uint64_t value);
+  public:
+
+  // bool latest = 6;
+  void clear_latest();
+  bool latest() const;
+  void set_latest(bool value);
+  private:
+  bool _internal_latest() const;
+  void _internal_set_latest(bool value);
+  public:
+
+  // bool order_ascend = 7;
+  void clear_order_ascend();
+  bool order_ascend() const;
+  void set_order_ascend(bool value);
+  private:
+  bool _internal_order_ascend() const;
+  void _internal_set_order_ascend(bool value);
+  public:
+
+  // int32 page_size = 9;
+  void clear_page_size();
+  int32_t page_size() const;
+  void set_page_size(int32_t value);
+  private:
+  int32_t _internal_page_size() const;
+  void _internal_set_page_size(int32_t value);
+  public:
+
+  // sint64 limit = 8;
+  void clear_limit();
+  int64_t limit() const;
+  void set_limit(int64_t value);
+  private:
+  int64_t _internal_limit() const;
+  void _internal_set_limit(int64_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:remote.DomainRangeReq)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr table_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr from_key_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr to_key_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr page_token_;
+    uint64_t tx_id_;
+    uint64_t ts_;
+    bool latest_;
+    bool order_ascend_;
+    int32_t page_size_;
+    int64_t limit_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_remote_2fkv_2eproto;
+};
+// -------------------------------------------------------------------
+
+class Pairs final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.Pairs) */ {
+ public:
+  inline Pairs() : Pairs(nullptr) {}
+  ~Pairs() override;
+  explicit PROTOBUF_CONSTEXPR Pairs(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  Pairs(const Pairs& from);
+  Pairs(Pairs&& from) noexcept
+    : Pairs() {
+    *this = ::std::move(from);
+  }
+
+  inline Pairs& operator=(const Pairs& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline Pairs& operator=(Pairs&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const Pairs& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const Pairs* internal_default_instance() {
+    return reinterpret_cast<const Pairs*>(
+               &_Pairs_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    18;
+
+  friend void swap(Pairs& a, Pairs& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(Pairs* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(Pairs* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  Pairs* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<Pairs>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const Pairs& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const Pairs& from) {
+    Pairs::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(Pairs* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "remote.Pairs";
+  }
+  protected:
+  explicit Pairs(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kKeysFieldNumber = 1,
+    kValuesFieldNumber = 2,
+    kNextPageTokenFieldNumber = 3,
+  };
+  // repeated bytes keys = 1;
+  int keys_size() const;
+  private:
+  int _internal_keys_size() const;
+  public:
+  void clear_keys();
+  const std::string& keys(int index) const;
+  std::string* mutable_keys(int index);
+  void set_keys(int index, const std::string& value);
+  void set_keys(int index, std::string&& value);
+  void set_keys(int index, const char* value);
+  void set_keys(int index, const void* value, size_t size);
+  std::string* add_keys();
+  void add_keys(const std::string& value);
+  void add_keys(std::string&& value);
+  void add_keys(const char* value);
+  void add_keys(const void* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& keys() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_keys();
+  private:
+  const std::string& _internal_keys(int index) const;
+  std::string* _internal_add_keys();
+  public:
+
+  // repeated bytes values = 2;
+  int values_size() const;
+  private:
+  int _internal_values_size() const;
+  public:
+  void clear_values();
+  const std::string& values(int index) const;
+  std::string* mutable_values(int index);
+  void set_values(int index, const std::string& value);
+  void set_values(int index, std::string&& value);
+  void set_values(int index, const char* value);
+  void set_values(int index, const void* value, size_t size);
+  std::string* add_values();
+  void add_values(const std::string& value);
+  void add_values(std::string&& value);
+  void add_values(const char* value);
+  void add_values(const void* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& values() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_values();
+  private:
+  const std::string& _internal_values(int index) const;
+  std::string* _internal_add_values();
+  public:
+
+  // string next_page_token = 3;
+  void clear_next_page_token();
+  const std::string& next_page_token() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_next_page_token(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_next_page_token();
+  PROTOBUF_NODISCARD std::string* release_next_page_token();
+  void set_allocated_next_page_token(std::string* next_page_token);
+  private:
+  const std::string& _internal_next_page_token() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_next_page_token(const std::string& value);
+  std::string* _internal_mutable_next_page_token();
+  public:
+
+  // @@protoc_insertion_point(class_scope:remote.Pairs)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> keys_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> values_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr next_page_token_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_remote_2fkv_2eproto;
+};
+// -------------------------------------------------------------------
+
+class ParisPagination final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.ParisPagination) */ {
+ public:
+  inline ParisPagination() : ParisPagination(nullptr) {}
+  ~ParisPagination() override;
+  explicit PROTOBUF_CONSTEXPR ParisPagination(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  ParisPagination(const ParisPagination& from);
+  ParisPagination(ParisPagination&& from) noexcept
+    : ParisPagination() {
+    *this = ::std::move(from);
+  }
+
+  inline ParisPagination& operator=(const ParisPagination& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline ParisPagination& operator=(ParisPagination&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const ParisPagination& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const ParisPagination* internal_default_instance() {
+    return reinterpret_cast<const ParisPagination*>(
+               &_ParisPagination_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    19;
+
+  friend void swap(ParisPagination& a, ParisPagination& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(ParisPagination* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(ParisPagination* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  ParisPagination* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<ParisPagination>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const ParisPagination& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const ParisPagination& from) {
+    ParisPagination::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(ParisPagination* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "remote.ParisPagination";
+  }
+  protected:
+  explicit ParisPagination(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kNextKeyFieldNumber = 1,
+    kLimitFieldNumber = 2,
+  };
+  // bytes next_key = 1;
+  void clear_next_key();
+  const std::string& next_key() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_next_key(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_next_key();
+  PROTOBUF_NODISCARD std::string* release_next_key();
+  void set_allocated_next_key(std::string* next_key);
+  private:
+  const std::string& _internal_next_key() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_next_key(const std::string& value);
+  std::string* _internal_mutable_next_key();
+  public:
+
+  // sint64 limit = 2;
+  void clear_limit();
+  int64_t limit() const;
+  void set_limit(int64_t value);
+  private:
+  int64_t _internal_limit() const;
+  void _internal_set_limit(int64_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:remote.ParisPagination)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr next_key_;
+    int64_t limit_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_remote_2fkv_2eproto;
+};
+// -------------------------------------------------------------------
+
+class IndexPagination final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.IndexPagination) */ {
+ public:
+  inline IndexPagination() : IndexPagination(nullptr) {}
+  ~IndexPagination() override;
+  explicit PROTOBUF_CONSTEXPR IndexPagination(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  IndexPagination(const IndexPagination& from);
+  IndexPagination(IndexPagination&& from) noexcept
+    : IndexPagination() {
+    *this = ::std::move(from);
+  }
+
+  inline IndexPagination& operator=(const IndexPagination& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline IndexPagination& operator=(IndexPagination&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const IndexPagination& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const IndexPagination* internal_default_instance() {
+    return reinterpret_cast<const IndexPagination*>(
+               &_IndexPagination_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    20;
+
+  friend void swap(IndexPagination& a, IndexPagination& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(IndexPagination* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(IndexPagination* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  IndexPagination* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<IndexPagination>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const IndexPagination& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const IndexPagination& from) {
+    IndexPagination::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(IndexPagination* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "remote.IndexPagination";
+  }
+  protected:
+  explicit IndexPagination(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kNextTimeStampFieldNumber = 1,
+    kLimitFieldNumber = 2,
+  };
+  // sint64 next_time_stamp = 1;
+  void clear_next_time_stamp();
+  int64_t next_time_stamp() const;
+  void set_next_time_stamp(int64_t value);
+  private:
+  int64_t _internal_next_time_stamp() const;
+  void _internal_set_next_time_stamp(int64_t value);
+  public:
+
+  // sint64 limit = 2;
+  void clear_limit();
+  int64_t limit() const;
+  void set_limit(int64_t value);
+  private:
+  int64_t _internal_limit() const;
+  void _internal_set_limit(int64_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:remote.IndexPagination)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    int64_t next_time_stamp_;
+    int64_t limit_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -3761,153 +5541,800 @@ inline void StateChangeRequest::set_withtransactions(bool value) {
 
 // SnapshotsReply
 
-// repeated string files = 1;
-inline int SnapshotsReply::_internal_files_size() const {
-  return _impl_.files_.size();
+// repeated string blocks_files = 1;
+inline int SnapshotsReply::_internal_blocks_files_size() const {
+  return _impl_.blocks_files_.size();
 }
-inline int SnapshotsReply::files_size() const {
-  return _internal_files_size();
+inline int SnapshotsReply::blocks_files_size() const {
+  return _internal_blocks_files_size();
 }
-inline void SnapshotsReply::clear_files() {
-  _impl_.files_.Clear();
+inline void SnapshotsReply::clear_blocks_files() {
+  _impl_.blocks_files_.Clear();
 }
-inline std::string* SnapshotsReply::add_files() {
-  std::string* _s = _internal_add_files();
-  // @@protoc_insertion_point(field_add_mutable:remote.SnapshotsReply.files)
+inline std::string* SnapshotsReply::add_blocks_files() {
+  std::string* _s = _internal_add_blocks_files();
+  // @@protoc_insertion_point(field_add_mutable:remote.SnapshotsReply.blocks_files)
   return _s;
 }
-inline const std::string& SnapshotsReply::_internal_files(int index) const {
-  return _impl_.files_.Get(index);
+inline const std::string& SnapshotsReply::_internal_blocks_files(int index) const {
+  return _impl_.blocks_files_.Get(index);
 }
-inline const std::string& SnapshotsReply::files(int index) const {
-  // @@protoc_insertion_point(field_get:remote.SnapshotsReply.files)
-  return _internal_files(index);
+inline const std::string& SnapshotsReply::blocks_files(int index) const {
+  // @@protoc_insertion_point(field_get:remote.SnapshotsReply.blocks_files)
+  return _internal_blocks_files(index);
 }
-inline std::string* SnapshotsReply::mutable_files(int index) {
-  // @@protoc_insertion_point(field_mutable:remote.SnapshotsReply.files)
-  return _impl_.files_.Mutable(index);
+inline std::string* SnapshotsReply::mutable_blocks_files(int index) {
+  // @@protoc_insertion_point(field_mutable:remote.SnapshotsReply.blocks_files)
+  return _impl_.blocks_files_.Mutable(index);
 }
-inline void SnapshotsReply::set_files(int index, const std::string& value) {
-  _impl_.files_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set:remote.SnapshotsReply.files)
+inline void SnapshotsReply::set_blocks_files(int index, const std::string& value) {
+  _impl_.blocks_files_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:remote.SnapshotsReply.blocks_files)
 }
-inline void SnapshotsReply::set_files(int index, std::string&& value) {
-  _impl_.files_.Mutable(index)->assign(std::move(value));
-  // @@protoc_insertion_point(field_set:remote.SnapshotsReply.files)
+inline void SnapshotsReply::set_blocks_files(int index, std::string&& value) {
+  _impl_.blocks_files_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:remote.SnapshotsReply.blocks_files)
 }
-inline void SnapshotsReply::set_files(int index, const char* value) {
+inline void SnapshotsReply::set_blocks_files(int index, const char* value) {
   GOOGLE_DCHECK(value != nullptr);
-  _impl_.files_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set_char:remote.SnapshotsReply.files)
+  _impl_.blocks_files_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:remote.SnapshotsReply.blocks_files)
 }
-inline void SnapshotsReply::set_files(int index, const char* value, size_t size) {
-  _impl_.files_.Mutable(index)->assign(
+inline void SnapshotsReply::set_blocks_files(int index, const char* value, size_t size) {
+  _impl_.blocks_files_.Mutable(index)->assign(
     reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_set_pointer:remote.SnapshotsReply.files)
+  // @@protoc_insertion_point(field_set_pointer:remote.SnapshotsReply.blocks_files)
 }
-inline std::string* SnapshotsReply::_internal_add_files() {
-  return _impl_.files_.Add();
+inline std::string* SnapshotsReply::_internal_add_blocks_files() {
+  return _impl_.blocks_files_.Add();
 }
-inline void SnapshotsReply::add_files(const std::string& value) {
-  _impl_.files_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add:remote.SnapshotsReply.files)
+inline void SnapshotsReply::add_blocks_files(const std::string& value) {
+  _impl_.blocks_files_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:remote.SnapshotsReply.blocks_files)
 }
-inline void SnapshotsReply::add_files(std::string&& value) {
-  _impl_.files_.Add(std::move(value));
-  // @@protoc_insertion_point(field_add:remote.SnapshotsReply.files)
+inline void SnapshotsReply::add_blocks_files(std::string&& value) {
+  _impl_.blocks_files_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:remote.SnapshotsReply.blocks_files)
 }
-inline void SnapshotsReply::add_files(const char* value) {
+inline void SnapshotsReply::add_blocks_files(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
-  _impl_.files_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add_char:remote.SnapshotsReply.files)
+  _impl_.blocks_files_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:remote.SnapshotsReply.blocks_files)
 }
-inline void SnapshotsReply::add_files(const char* value, size_t size) {
-  _impl_.files_.Add()->assign(reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_add_pointer:remote.SnapshotsReply.files)
+inline void SnapshotsReply::add_blocks_files(const char* value, size_t size) {
+  _impl_.blocks_files_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:remote.SnapshotsReply.blocks_files)
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
-SnapshotsReply::files() const {
-  // @@protoc_insertion_point(field_list:remote.SnapshotsReply.files)
-  return _impl_.files_;
+SnapshotsReply::blocks_files() const {
+  // @@protoc_insertion_point(field_list:remote.SnapshotsReply.blocks_files)
+  return _impl_.blocks_files_;
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
-SnapshotsReply::mutable_files() {
-  // @@protoc_insertion_point(field_mutable_list:remote.SnapshotsReply.files)
-  return &_impl_.files_;
+SnapshotsReply::mutable_blocks_files() {
+  // @@protoc_insertion_point(field_mutable_list:remote.SnapshotsReply.blocks_files)
+  return &_impl_.blocks_files_;
+}
+
+// repeated string history_files = 2;
+inline int SnapshotsReply::_internal_history_files_size() const {
+  return _impl_.history_files_.size();
+}
+inline int SnapshotsReply::history_files_size() const {
+  return _internal_history_files_size();
+}
+inline void SnapshotsReply::clear_history_files() {
+  _impl_.history_files_.Clear();
+}
+inline std::string* SnapshotsReply::add_history_files() {
+  std::string* _s = _internal_add_history_files();
+  // @@protoc_insertion_point(field_add_mutable:remote.SnapshotsReply.history_files)
+  return _s;
+}
+inline const std::string& SnapshotsReply::_internal_history_files(int index) const {
+  return _impl_.history_files_.Get(index);
+}
+inline const std::string& SnapshotsReply::history_files(int index) const {
+  // @@protoc_insertion_point(field_get:remote.SnapshotsReply.history_files)
+  return _internal_history_files(index);
+}
+inline std::string* SnapshotsReply::mutable_history_files(int index) {
+  // @@protoc_insertion_point(field_mutable:remote.SnapshotsReply.history_files)
+  return _impl_.history_files_.Mutable(index);
+}
+inline void SnapshotsReply::set_history_files(int index, const std::string& value) {
+  _impl_.history_files_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:remote.SnapshotsReply.history_files)
+}
+inline void SnapshotsReply::set_history_files(int index, std::string&& value) {
+  _impl_.history_files_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:remote.SnapshotsReply.history_files)
+}
+inline void SnapshotsReply::set_history_files(int index, const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.history_files_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:remote.SnapshotsReply.history_files)
+}
+inline void SnapshotsReply::set_history_files(int index, const char* value, size_t size) {
+  _impl_.history_files_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:remote.SnapshotsReply.history_files)
+}
+inline std::string* SnapshotsReply::_internal_add_history_files() {
+  return _impl_.history_files_.Add();
+}
+inline void SnapshotsReply::add_history_files(const std::string& value) {
+  _impl_.history_files_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:remote.SnapshotsReply.history_files)
+}
+inline void SnapshotsReply::add_history_files(std::string&& value) {
+  _impl_.history_files_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:remote.SnapshotsReply.history_files)
+}
+inline void SnapshotsReply::add_history_files(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.history_files_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:remote.SnapshotsReply.history_files)
+}
+inline void SnapshotsReply::add_history_files(const char* value, size_t size) {
+  _impl_.history_files_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:remote.SnapshotsReply.history_files)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
+SnapshotsReply::history_files() const {
+  // @@protoc_insertion_point(field_list:remote.SnapshotsReply.history_files)
+  return _impl_.history_files_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
+SnapshotsReply::mutable_history_files() {
+  // @@protoc_insertion_point(field_mutable_list:remote.SnapshotsReply.history_files)
+  return &_impl_.history_files_;
+}
+
+// -------------------------------------------------------------------
+
+// RangeReq
+
+// uint64 tx_id = 1;
+inline void RangeReq::clear_tx_id() {
+  _impl_.tx_id_ = uint64_t{0u};
+}
+inline uint64_t RangeReq::_internal_tx_id() const {
+  return _impl_.tx_id_;
+}
+inline uint64_t RangeReq::tx_id() const {
+  // @@protoc_insertion_point(field_get:remote.RangeReq.tx_id)
+  return _internal_tx_id();
+}
+inline void RangeReq::_internal_set_tx_id(uint64_t value) {
+  
+  _impl_.tx_id_ = value;
+}
+inline void RangeReq::set_tx_id(uint64_t value) {
+  _internal_set_tx_id(value);
+  // @@protoc_insertion_point(field_set:remote.RangeReq.tx_id)
+}
+
+// string table = 2;
+inline void RangeReq::clear_table() {
+  _impl_.table_.ClearToEmpty();
+}
+inline const std::string& RangeReq::table() const {
+  // @@protoc_insertion_point(field_get:remote.RangeReq.table)
+  return _internal_table();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void RangeReq::set_table(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.table_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:remote.RangeReq.table)
+}
+inline std::string* RangeReq::mutable_table() {
+  std::string* _s = _internal_mutable_table();
+  // @@protoc_insertion_point(field_mutable:remote.RangeReq.table)
+  return _s;
+}
+inline const std::string& RangeReq::_internal_table() const {
+  return _impl_.table_.Get();
+}
+inline void RangeReq::_internal_set_table(const std::string& value) {
+  
+  _impl_.table_.Set(value, GetArenaForAllocation());
+}
+inline std::string* RangeReq::_internal_mutable_table() {
+  
+  return _impl_.table_.Mutable(GetArenaForAllocation());
+}
+inline std::string* RangeReq::release_table() {
+  // @@protoc_insertion_point(field_release:remote.RangeReq.table)
+  return _impl_.table_.Release();
+}
+inline void RangeReq::set_allocated_table(std::string* table) {
+  if (table != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.table_.SetAllocated(table, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.table_.IsDefault()) {
+    _impl_.table_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:remote.RangeReq.table)
+}
+
+// bytes from_prefix = 3;
+inline void RangeReq::clear_from_prefix() {
+  _impl_.from_prefix_.ClearToEmpty();
+}
+inline const std::string& RangeReq::from_prefix() const {
+  // @@protoc_insertion_point(field_get:remote.RangeReq.from_prefix)
+  return _internal_from_prefix();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void RangeReq::set_from_prefix(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.from_prefix_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:remote.RangeReq.from_prefix)
+}
+inline std::string* RangeReq::mutable_from_prefix() {
+  std::string* _s = _internal_mutable_from_prefix();
+  // @@protoc_insertion_point(field_mutable:remote.RangeReq.from_prefix)
+  return _s;
+}
+inline const std::string& RangeReq::_internal_from_prefix() const {
+  return _impl_.from_prefix_.Get();
+}
+inline void RangeReq::_internal_set_from_prefix(const std::string& value) {
+  
+  _impl_.from_prefix_.Set(value, GetArenaForAllocation());
+}
+inline std::string* RangeReq::_internal_mutable_from_prefix() {
+  
+  return _impl_.from_prefix_.Mutable(GetArenaForAllocation());
+}
+inline std::string* RangeReq::release_from_prefix() {
+  // @@protoc_insertion_point(field_release:remote.RangeReq.from_prefix)
+  return _impl_.from_prefix_.Release();
+}
+inline void RangeReq::set_allocated_from_prefix(std::string* from_prefix) {
+  if (from_prefix != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.from_prefix_.SetAllocated(from_prefix, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.from_prefix_.IsDefault()) {
+    _impl_.from_prefix_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:remote.RangeReq.from_prefix)
+}
+
+// bytes to_prefix = 4;
+inline void RangeReq::clear_to_prefix() {
+  _impl_.to_prefix_.ClearToEmpty();
+}
+inline const std::string& RangeReq::to_prefix() const {
+  // @@protoc_insertion_point(field_get:remote.RangeReq.to_prefix)
+  return _internal_to_prefix();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void RangeReq::set_to_prefix(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.to_prefix_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:remote.RangeReq.to_prefix)
+}
+inline std::string* RangeReq::mutable_to_prefix() {
+  std::string* _s = _internal_mutable_to_prefix();
+  // @@protoc_insertion_point(field_mutable:remote.RangeReq.to_prefix)
+  return _s;
+}
+inline const std::string& RangeReq::_internal_to_prefix() const {
+  return _impl_.to_prefix_.Get();
+}
+inline void RangeReq::_internal_set_to_prefix(const std::string& value) {
+  
+  _impl_.to_prefix_.Set(value, GetArenaForAllocation());
+}
+inline std::string* RangeReq::_internal_mutable_to_prefix() {
+  
+  return _impl_.to_prefix_.Mutable(GetArenaForAllocation());
+}
+inline std::string* RangeReq::release_to_prefix() {
+  // @@protoc_insertion_point(field_release:remote.RangeReq.to_prefix)
+  return _impl_.to_prefix_.Release();
+}
+inline void RangeReq::set_allocated_to_prefix(std::string* to_prefix) {
+  if (to_prefix != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.to_prefix_.SetAllocated(to_prefix, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.to_prefix_.IsDefault()) {
+    _impl_.to_prefix_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:remote.RangeReq.to_prefix)
+}
+
+// bool order_ascend = 5;
+inline void RangeReq::clear_order_ascend() {
+  _impl_.order_ascend_ = false;
+}
+inline bool RangeReq::_internal_order_ascend() const {
+  return _impl_.order_ascend_;
+}
+inline bool RangeReq::order_ascend() const {
+  // @@protoc_insertion_point(field_get:remote.RangeReq.order_ascend)
+  return _internal_order_ascend();
+}
+inline void RangeReq::_internal_set_order_ascend(bool value) {
+  
+  _impl_.order_ascend_ = value;
+}
+inline void RangeReq::set_order_ascend(bool value) {
+  _internal_set_order_ascend(value);
+  // @@protoc_insertion_point(field_set:remote.RangeReq.order_ascend)
+}
+
+// sint64 limit = 6;
+inline void RangeReq::clear_limit() {
+  _impl_.limit_ = int64_t{0};
+}
+inline int64_t RangeReq::_internal_limit() const {
+  return _impl_.limit_;
+}
+inline int64_t RangeReq::limit() const {
+  // @@protoc_insertion_point(field_get:remote.RangeReq.limit)
+  return _internal_limit();
+}
+inline void RangeReq::_internal_set_limit(int64_t value) {
+  
+  _impl_.limit_ = value;
+}
+inline void RangeReq::set_limit(int64_t value) {
+  _internal_set_limit(value);
+  // @@protoc_insertion_point(field_set:remote.RangeReq.limit)
+}
+
+// int32 page_size = 7;
+inline void RangeReq::clear_page_size() {
+  _impl_.page_size_ = 0;
+}
+inline int32_t RangeReq::_internal_page_size() const {
+  return _impl_.page_size_;
+}
+inline int32_t RangeReq::page_size() const {
+  // @@protoc_insertion_point(field_get:remote.RangeReq.page_size)
+  return _internal_page_size();
+}
+inline void RangeReq::_internal_set_page_size(int32_t value) {
+  
+  _impl_.page_size_ = value;
+}
+inline void RangeReq::set_page_size(int32_t value) {
+  _internal_set_page_size(value);
+  // @@protoc_insertion_point(field_set:remote.RangeReq.page_size)
+}
+
+// string page_token = 8;
+inline void RangeReq::clear_page_token() {
+  _impl_.page_token_.ClearToEmpty();
+}
+inline const std::string& RangeReq::page_token() const {
+  // @@protoc_insertion_point(field_get:remote.RangeReq.page_token)
+  return _internal_page_token();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void RangeReq::set_page_token(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.page_token_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:remote.RangeReq.page_token)
+}
+inline std::string* RangeReq::mutable_page_token() {
+  std::string* _s = _internal_mutable_page_token();
+  // @@protoc_insertion_point(field_mutable:remote.RangeReq.page_token)
+  return _s;
+}
+inline const std::string& RangeReq::_internal_page_token() const {
+  return _impl_.page_token_.Get();
+}
+inline void RangeReq::_internal_set_page_token(const std::string& value) {
+  
+  _impl_.page_token_.Set(value, GetArenaForAllocation());
+}
+inline std::string* RangeReq::_internal_mutable_page_token() {
+  
+  return _impl_.page_token_.Mutable(GetArenaForAllocation());
+}
+inline std::string* RangeReq::release_page_token() {
+  // @@protoc_insertion_point(field_release:remote.RangeReq.page_token)
+  return _impl_.page_token_.Release();
+}
+inline void RangeReq::set_allocated_page_token(std::string* page_token) {
+  if (page_token != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.page_token_.SetAllocated(page_token, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.page_token_.IsDefault()) {
+    _impl_.page_token_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:remote.RangeReq.page_token)
+}
+
+// -------------------------------------------------------------------
+
+// DomainGetReq
+
+// uint64 tx_id = 1;
+inline void DomainGetReq::clear_tx_id() {
+  _impl_.tx_id_ = uint64_t{0u};
+}
+inline uint64_t DomainGetReq::_internal_tx_id() const {
+  return _impl_.tx_id_;
+}
+inline uint64_t DomainGetReq::tx_id() const {
+  // @@protoc_insertion_point(field_get:remote.DomainGetReq.tx_id)
+  return _internal_tx_id();
+}
+inline void DomainGetReq::_internal_set_tx_id(uint64_t value) {
+  
+  _impl_.tx_id_ = value;
+}
+inline void DomainGetReq::set_tx_id(uint64_t value) {
+  _internal_set_tx_id(value);
+  // @@protoc_insertion_point(field_set:remote.DomainGetReq.tx_id)
+}
+
+// string table = 2;
+inline void DomainGetReq::clear_table() {
+  _impl_.table_.ClearToEmpty();
+}
+inline const std::string& DomainGetReq::table() const {
+  // @@protoc_insertion_point(field_get:remote.DomainGetReq.table)
+  return _internal_table();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void DomainGetReq::set_table(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.table_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:remote.DomainGetReq.table)
+}
+inline std::string* DomainGetReq::mutable_table() {
+  std::string* _s = _internal_mutable_table();
+  // @@protoc_insertion_point(field_mutable:remote.DomainGetReq.table)
+  return _s;
+}
+inline const std::string& DomainGetReq::_internal_table() const {
+  return _impl_.table_.Get();
+}
+inline void DomainGetReq::_internal_set_table(const std::string& value) {
+  
+  _impl_.table_.Set(value, GetArenaForAllocation());
+}
+inline std::string* DomainGetReq::_internal_mutable_table() {
+  
+  return _impl_.table_.Mutable(GetArenaForAllocation());
+}
+inline std::string* DomainGetReq::release_table() {
+  // @@protoc_insertion_point(field_release:remote.DomainGetReq.table)
+  return _impl_.table_.Release();
+}
+inline void DomainGetReq::set_allocated_table(std::string* table) {
+  if (table != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.table_.SetAllocated(table, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.table_.IsDefault()) {
+    _impl_.table_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:remote.DomainGetReq.table)
+}
+
+// bytes k = 3;
+inline void DomainGetReq::clear_k() {
+  _impl_.k_.ClearToEmpty();
+}
+inline const std::string& DomainGetReq::k() const {
+  // @@protoc_insertion_point(field_get:remote.DomainGetReq.k)
+  return _internal_k();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void DomainGetReq::set_k(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.k_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:remote.DomainGetReq.k)
+}
+inline std::string* DomainGetReq::mutable_k() {
+  std::string* _s = _internal_mutable_k();
+  // @@protoc_insertion_point(field_mutable:remote.DomainGetReq.k)
+  return _s;
+}
+inline const std::string& DomainGetReq::_internal_k() const {
+  return _impl_.k_.Get();
+}
+inline void DomainGetReq::_internal_set_k(const std::string& value) {
+  
+  _impl_.k_.Set(value, GetArenaForAllocation());
+}
+inline std::string* DomainGetReq::_internal_mutable_k() {
+  
+  return _impl_.k_.Mutable(GetArenaForAllocation());
+}
+inline std::string* DomainGetReq::release_k() {
+  // @@protoc_insertion_point(field_release:remote.DomainGetReq.k)
+  return _impl_.k_.Release();
+}
+inline void DomainGetReq::set_allocated_k(std::string* k) {
+  if (k != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.k_.SetAllocated(k, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.k_.IsDefault()) {
+    _impl_.k_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:remote.DomainGetReq.k)
+}
+
+// uint64 ts = 4;
+inline void DomainGetReq::clear_ts() {
+  _impl_.ts_ = uint64_t{0u};
+}
+inline uint64_t DomainGetReq::_internal_ts() const {
+  return _impl_.ts_;
+}
+inline uint64_t DomainGetReq::ts() const {
+  // @@protoc_insertion_point(field_get:remote.DomainGetReq.ts)
+  return _internal_ts();
+}
+inline void DomainGetReq::_internal_set_ts(uint64_t value) {
+  
+  _impl_.ts_ = value;
+}
+inline void DomainGetReq::set_ts(uint64_t value) {
+  _internal_set_ts(value);
+  // @@protoc_insertion_point(field_set:remote.DomainGetReq.ts)
+}
+
+// bytes k2 = 5;
+inline void DomainGetReq::clear_k2() {
+  _impl_.k2_.ClearToEmpty();
+}
+inline const std::string& DomainGetReq::k2() const {
+  // @@protoc_insertion_point(field_get:remote.DomainGetReq.k2)
+  return _internal_k2();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void DomainGetReq::set_k2(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.k2_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:remote.DomainGetReq.k2)
+}
+inline std::string* DomainGetReq::mutable_k2() {
+  std::string* _s = _internal_mutable_k2();
+  // @@protoc_insertion_point(field_mutable:remote.DomainGetReq.k2)
+  return _s;
+}
+inline const std::string& DomainGetReq::_internal_k2() const {
+  return _impl_.k2_.Get();
+}
+inline void DomainGetReq::_internal_set_k2(const std::string& value) {
+  
+  _impl_.k2_.Set(value, GetArenaForAllocation());
+}
+inline std::string* DomainGetReq::_internal_mutable_k2() {
+  
+  return _impl_.k2_.Mutable(GetArenaForAllocation());
+}
+inline std::string* DomainGetReq::release_k2() {
+  // @@protoc_insertion_point(field_release:remote.DomainGetReq.k2)
+  return _impl_.k2_.Release();
+}
+inline void DomainGetReq::set_allocated_k2(std::string* k2) {
+  if (k2 != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.k2_.SetAllocated(k2, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.k2_.IsDefault()) {
+    _impl_.k2_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:remote.DomainGetReq.k2)
+}
+
+// bool latest = 6;
+inline void DomainGetReq::clear_latest() {
+  _impl_.latest_ = false;
+}
+inline bool DomainGetReq::_internal_latest() const {
+  return _impl_.latest_;
+}
+inline bool DomainGetReq::latest() const {
+  // @@protoc_insertion_point(field_get:remote.DomainGetReq.latest)
+  return _internal_latest();
+}
+inline void DomainGetReq::_internal_set_latest(bool value) {
+  
+  _impl_.latest_ = value;
+}
+inline void DomainGetReq::set_latest(bool value) {
+  _internal_set_latest(value);
+  // @@protoc_insertion_point(field_set:remote.DomainGetReq.latest)
+}
+
+// -------------------------------------------------------------------
+
+// DomainGetReply
+
+// bytes v = 1;
+inline void DomainGetReply::clear_v() {
+  _impl_.v_.ClearToEmpty();
+}
+inline const std::string& DomainGetReply::v() const {
+  // @@protoc_insertion_point(field_get:remote.DomainGetReply.v)
+  return _internal_v();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void DomainGetReply::set_v(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.v_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:remote.DomainGetReply.v)
+}
+inline std::string* DomainGetReply::mutable_v() {
+  std::string* _s = _internal_mutable_v();
+  // @@protoc_insertion_point(field_mutable:remote.DomainGetReply.v)
+  return _s;
+}
+inline const std::string& DomainGetReply::_internal_v() const {
+  return _impl_.v_.Get();
+}
+inline void DomainGetReply::_internal_set_v(const std::string& value) {
+  
+  _impl_.v_.Set(value, GetArenaForAllocation());
+}
+inline std::string* DomainGetReply::_internal_mutable_v() {
+  
+  return _impl_.v_.Mutable(GetArenaForAllocation());
+}
+inline std::string* DomainGetReply::release_v() {
+  // @@protoc_insertion_point(field_release:remote.DomainGetReply.v)
+  return _impl_.v_.Release();
+}
+inline void DomainGetReply::set_allocated_v(std::string* v) {
+  if (v != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.v_.SetAllocated(v, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.v_.IsDefault()) {
+    _impl_.v_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:remote.DomainGetReply.v)
+}
+
+// bool ok = 2;
+inline void DomainGetReply::clear_ok() {
+  _impl_.ok_ = false;
+}
+inline bool DomainGetReply::_internal_ok() const {
+  return _impl_.ok_;
+}
+inline bool DomainGetReply::ok() const {
+  // @@protoc_insertion_point(field_get:remote.DomainGetReply.ok)
+  return _internal_ok();
+}
+inline void DomainGetReply::_internal_set_ok(bool value) {
+  
+  _impl_.ok_ = value;
+}
+inline void DomainGetReply::set_ok(bool value) {
+  _internal_set_ok(value);
+  // @@protoc_insertion_point(field_set:remote.DomainGetReply.ok)
 }
 
 // -------------------------------------------------------------------
 
 // HistoryGetReq
 
-// uint64 txID = 1;
-inline void HistoryGetReq::clear_txid() {
-  _impl_.txid_ = uint64_t{0u};
+// uint64 tx_id = 1;
+inline void HistoryGetReq::clear_tx_id() {
+  _impl_.tx_id_ = uint64_t{0u};
 }
-inline uint64_t HistoryGetReq::_internal_txid() const {
-  return _impl_.txid_;
+inline uint64_t HistoryGetReq::_internal_tx_id() const {
+  return _impl_.tx_id_;
 }
-inline uint64_t HistoryGetReq::txid() const {
-  // @@protoc_insertion_point(field_get:remote.HistoryGetReq.txID)
-  return _internal_txid();
+inline uint64_t HistoryGetReq::tx_id() const {
+  // @@protoc_insertion_point(field_get:remote.HistoryGetReq.tx_id)
+  return _internal_tx_id();
 }
-inline void HistoryGetReq::_internal_set_txid(uint64_t value) {
+inline void HistoryGetReq::_internal_set_tx_id(uint64_t value) {
   
-  _impl_.txid_ = value;
+  _impl_.tx_id_ = value;
 }
-inline void HistoryGetReq::set_txid(uint64_t value) {
-  _internal_set_txid(value);
-  // @@protoc_insertion_point(field_set:remote.HistoryGetReq.txID)
+inline void HistoryGetReq::set_tx_id(uint64_t value) {
+  _internal_set_tx_id(value);
+  // @@protoc_insertion_point(field_set:remote.HistoryGetReq.tx_id)
 }
 
-// string name = 2;
-inline void HistoryGetReq::clear_name() {
-  _impl_.name_.ClearToEmpty();
+// string table = 2;
+inline void HistoryGetReq::clear_table() {
+  _impl_.table_.ClearToEmpty();
 }
-inline const std::string& HistoryGetReq::name() const {
-  // @@protoc_insertion_point(field_get:remote.HistoryGetReq.name)
-  return _internal_name();
+inline const std::string& HistoryGetReq::table() const {
+  // @@protoc_insertion_point(field_get:remote.HistoryGetReq.table)
+  return _internal_table();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void HistoryGetReq::set_name(ArgT0&& arg0, ArgT... args) {
+void HistoryGetReq::set_table(ArgT0&& arg0, ArgT... args) {
  
- _impl_.name_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:remote.HistoryGetReq.name)
+ _impl_.table_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:remote.HistoryGetReq.table)
 }
-inline std::string* HistoryGetReq::mutable_name() {
-  std::string* _s = _internal_mutable_name();
-  // @@protoc_insertion_point(field_mutable:remote.HistoryGetReq.name)
+inline std::string* HistoryGetReq::mutable_table() {
+  std::string* _s = _internal_mutable_table();
+  // @@protoc_insertion_point(field_mutable:remote.HistoryGetReq.table)
   return _s;
 }
-inline const std::string& HistoryGetReq::_internal_name() const {
-  return _impl_.name_.Get();
+inline const std::string& HistoryGetReq::_internal_table() const {
+  return _impl_.table_.Get();
 }
-inline void HistoryGetReq::_internal_set_name(const std::string& value) {
+inline void HistoryGetReq::_internal_set_table(const std::string& value) {
   
-  _impl_.name_.Set(value, GetArenaForAllocation());
+  _impl_.table_.Set(value, GetArenaForAllocation());
 }
-inline std::string* HistoryGetReq::_internal_mutable_name() {
+inline std::string* HistoryGetReq::_internal_mutable_table() {
   
-  return _impl_.name_.Mutable(GetArenaForAllocation());
+  return _impl_.table_.Mutable(GetArenaForAllocation());
 }
-inline std::string* HistoryGetReq::release_name() {
-  // @@protoc_insertion_point(field_release:remote.HistoryGetReq.name)
-  return _impl_.name_.Release();
+inline std::string* HistoryGetReq::release_table() {
+  // @@protoc_insertion_point(field_release:remote.HistoryGetReq.table)
+  return _impl_.table_.Release();
 }
-inline void HistoryGetReq::set_allocated_name(std::string* name) {
-  if (name != nullptr) {
+inline void HistoryGetReq::set_allocated_table(std::string* table) {
+  if (table != nullptr) {
     
   } else {
     
   }
-  _impl_.name_.SetAllocated(name, GetArenaForAllocation());
+  _impl_.table_.SetAllocated(table, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.name_.IsDefault()) {
-    _impl_.name_.Set("", GetArenaForAllocation());
+  if (_impl_.table_.IsDefault()) {
+    _impl_.table_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:remote.HistoryGetReq.name)
+  // @@protoc_insertion_point(field_set_allocated:remote.HistoryGetReq.table)
 }
 
 // bytes k = 3;
@@ -4058,74 +6485,74 @@ inline void HistoryGetReply::set_ok(bool value) {
 
 // IndexRangeReq
 
-// uint64 txID = 1;
-inline void IndexRangeReq::clear_txid() {
-  _impl_.txid_ = uint64_t{0u};
+// uint64 tx_id = 1;
+inline void IndexRangeReq::clear_tx_id() {
+  _impl_.tx_id_ = uint64_t{0u};
 }
-inline uint64_t IndexRangeReq::_internal_txid() const {
-  return _impl_.txid_;
+inline uint64_t IndexRangeReq::_internal_tx_id() const {
+  return _impl_.tx_id_;
 }
-inline uint64_t IndexRangeReq::txid() const {
-  // @@protoc_insertion_point(field_get:remote.IndexRangeReq.txID)
-  return _internal_txid();
+inline uint64_t IndexRangeReq::tx_id() const {
+  // @@protoc_insertion_point(field_get:remote.IndexRangeReq.tx_id)
+  return _internal_tx_id();
 }
-inline void IndexRangeReq::_internal_set_txid(uint64_t value) {
+inline void IndexRangeReq::_internal_set_tx_id(uint64_t value) {
   
-  _impl_.txid_ = value;
+  _impl_.tx_id_ = value;
 }
-inline void IndexRangeReq::set_txid(uint64_t value) {
-  _internal_set_txid(value);
-  // @@protoc_insertion_point(field_set:remote.IndexRangeReq.txID)
+inline void IndexRangeReq::set_tx_id(uint64_t value) {
+  _internal_set_tx_id(value);
+  // @@protoc_insertion_point(field_set:remote.IndexRangeReq.tx_id)
 }
 
-// string name = 2;
-inline void IndexRangeReq::clear_name() {
-  _impl_.name_.ClearToEmpty();
+// string table = 2;
+inline void IndexRangeReq::clear_table() {
+  _impl_.table_.ClearToEmpty();
 }
-inline const std::string& IndexRangeReq::name() const {
-  // @@protoc_insertion_point(field_get:remote.IndexRangeReq.name)
-  return _internal_name();
+inline const std::string& IndexRangeReq::table() const {
+  // @@protoc_insertion_point(field_get:remote.IndexRangeReq.table)
+  return _internal_table();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void IndexRangeReq::set_name(ArgT0&& arg0, ArgT... args) {
+void IndexRangeReq::set_table(ArgT0&& arg0, ArgT... args) {
  
- _impl_.name_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:remote.IndexRangeReq.name)
+ _impl_.table_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:remote.IndexRangeReq.table)
 }
-inline std::string* IndexRangeReq::mutable_name() {
-  std::string* _s = _internal_mutable_name();
-  // @@protoc_insertion_point(field_mutable:remote.IndexRangeReq.name)
+inline std::string* IndexRangeReq::mutable_table() {
+  std::string* _s = _internal_mutable_table();
+  // @@protoc_insertion_point(field_mutable:remote.IndexRangeReq.table)
   return _s;
 }
-inline const std::string& IndexRangeReq::_internal_name() const {
-  return _impl_.name_.Get();
+inline const std::string& IndexRangeReq::_internal_table() const {
+  return _impl_.table_.Get();
 }
-inline void IndexRangeReq::_internal_set_name(const std::string& value) {
+inline void IndexRangeReq::_internal_set_table(const std::string& value) {
   
-  _impl_.name_.Set(value, GetArenaForAllocation());
+  _impl_.table_.Set(value, GetArenaForAllocation());
 }
-inline std::string* IndexRangeReq::_internal_mutable_name() {
+inline std::string* IndexRangeReq::_internal_mutable_table() {
   
-  return _impl_.name_.Mutable(GetArenaForAllocation());
+  return _impl_.table_.Mutable(GetArenaForAllocation());
 }
-inline std::string* IndexRangeReq::release_name() {
-  // @@protoc_insertion_point(field_release:remote.IndexRangeReq.name)
-  return _impl_.name_.Release();
+inline std::string* IndexRangeReq::release_table() {
+  // @@protoc_insertion_point(field_release:remote.IndexRangeReq.table)
+  return _impl_.table_.Release();
 }
-inline void IndexRangeReq::set_allocated_name(std::string* name) {
-  if (name != nullptr) {
+inline void IndexRangeReq::set_allocated_table(std::string* table) {
+  if (table != nullptr) {
     
   } else {
     
   }
-  _impl_.name_.SetAllocated(name, GetArenaForAllocation());
+  _impl_.table_.SetAllocated(table, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.name_.IsDefault()) {
-    _impl_.name_.Set("", GetArenaForAllocation());
+  if (_impl_.table_.IsDefault()) {
+    _impl_.table_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:remote.IndexRangeReq.name)
+  // @@protoc_insertion_point(field_set_allocated:remote.IndexRangeReq.table)
 }
 
 // bytes k = 3;
@@ -4178,44 +6605,154 @@ inline void IndexRangeReq::set_allocated_k(std::string* k) {
   // @@protoc_insertion_point(field_set_allocated:remote.IndexRangeReq.k)
 }
 
-// uint64 fromTs = 4;
-inline void IndexRangeReq::clear_fromts() {
-  _impl_.fromts_ = uint64_t{0u};
+// sint64 from_ts = 4;
+inline void IndexRangeReq::clear_from_ts() {
+  _impl_.from_ts_ = int64_t{0};
 }
-inline uint64_t IndexRangeReq::_internal_fromts() const {
-  return _impl_.fromts_;
+inline int64_t IndexRangeReq::_internal_from_ts() const {
+  return _impl_.from_ts_;
 }
-inline uint64_t IndexRangeReq::fromts() const {
-  // @@protoc_insertion_point(field_get:remote.IndexRangeReq.fromTs)
-  return _internal_fromts();
+inline int64_t IndexRangeReq::from_ts() const {
+  // @@protoc_insertion_point(field_get:remote.IndexRangeReq.from_ts)
+  return _internal_from_ts();
 }
-inline void IndexRangeReq::_internal_set_fromts(uint64_t value) {
+inline void IndexRangeReq::_internal_set_from_ts(int64_t value) {
   
-  _impl_.fromts_ = value;
+  _impl_.from_ts_ = value;
 }
-inline void IndexRangeReq::set_fromts(uint64_t value) {
-  _internal_set_fromts(value);
-  // @@protoc_insertion_point(field_set:remote.IndexRangeReq.fromTs)
+inline void IndexRangeReq::set_from_ts(int64_t value) {
+  _internal_set_from_ts(value);
+  // @@protoc_insertion_point(field_set:remote.IndexRangeReq.from_ts)
 }
 
-// uint64 toTs = 5;
-inline void IndexRangeReq::clear_tots() {
-  _impl_.tots_ = uint64_t{0u};
+// sint64 to_ts = 5;
+inline void IndexRangeReq::clear_to_ts() {
+  _impl_.to_ts_ = int64_t{0};
 }
-inline uint64_t IndexRangeReq::_internal_tots() const {
-  return _impl_.tots_;
+inline int64_t IndexRangeReq::_internal_to_ts() const {
+  return _impl_.to_ts_;
 }
-inline uint64_t IndexRangeReq::tots() const {
-  // @@protoc_insertion_point(field_get:remote.IndexRangeReq.toTs)
-  return _internal_tots();
+inline int64_t IndexRangeReq::to_ts() const {
+  // @@protoc_insertion_point(field_get:remote.IndexRangeReq.to_ts)
+  return _internal_to_ts();
 }
-inline void IndexRangeReq::_internal_set_tots(uint64_t value) {
+inline void IndexRangeReq::_internal_set_to_ts(int64_t value) {
   
-  _impl_.tots_ = value;
+  _impl_.to_ts_ = value;
 }
-inline void IndexRangeReq::set_tots(uint64_t value) {
-  _internal_set_tots(value);
-  // @@protoc_insertion_point(field_set:remote.IndexRangeReq.toTs)
+inline void IndexRangeReq::set_to_ts(int64_t value) {
+  _internal_set_to_ts(value);
+  // @@protoc_insertion_point(field_set:remote.IndexRangeReq.to_ts)
+}
+
+// bool order_ascend = 6;
+inline void IndexRangeReq::clear_order_ascend() {
+  _impl_.order_ascend_ = false;
+}
+inline bool IndexRangeReq::_internal_order_ascend() const {
+  return _impl_.order_ascend_;
+}
+inline bool IndexRangeReq::order_ascend() const {
+  // @@protoc_insertion_point(field_get:remote.IndexRangeReq.order_ascend)
+  return _internal_order_ascend();
+}
+inline void IndexRangeReq::_internal_set_order_ascend(bool value) {
+  
+  _impl_.order_ascend_ = value;
+}
+inline void IndexRangeReq::set_order_ascend(bool value) {
+  _internal_set_order_ascend(value);
+  // @@protoc_insertion_point(field_set:remote.IndexRangeReq.order_ascend)
+}
+
+// sint64 limit = 7;
+inline void IndexRangeReq::clear_limit() {
+  _impl_.limit_ = int64_t{0};
+}
+inline int64_t IndexRangeReq::_internal_limit() const {
+  return _impl_.limit_;
+}
+inline int64_t IndexRangeReq::limit() const {
+  // @@protoc_insertion_point(field_get:remote.IndexRangeReq.limit)
+  return _internal_limit();
+}
+inline void IndexRangeReq::_internal_set_limit(int64_t value) {
+  
+  _impl_.limit_ = value;
+}
+inline void IndexRangeReq::set_limit(int64_t value) {
+  _internal_set_limit(value);
+  // @@protoc_insertion_point(field_set:remote.IndexRangeReq.limit)
+}
+
+// int32 page_size = 8;
+inline void IndexRangeReq::clear_page_size() {
+  _impl_.page_size_ = 0;
+}
+inline int32_t IndexRangeReq::_internal_page_size() const {
+  return _impl_.page_size_;
+}
+inline int32_t IndexRangeReq::page_size() const {
+  // @@protoc_insertion_point(field_get:remote.IndexRangeReq.page_size)
+  return _internal_page_size();
+}
+inline void IndexRangeReq::_internal_set_page_size(int32_t value) {
+  
+  _impl_.page_size_ = value;
+}
+inline void IndexRangeReq::set_page_size(int32_t value) {
+  _internal_set_page_size(value);
+  // @@protoc_insertion_point(field_set:remote.IndexRangeReq.page_size)
+}
+
+// string page_token = 9;
+inline void IndexRangeReq::clear_page_token() {
+  _impl_.page_token_.ClearToEmpty();
+}
+inline const std::string& IndexRangeReq::page_token() const {
+  // @@protoc_insertion_point(field_get:remote.IndexRangeReq.page_token)
+  return _internal_page_token();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void IndexRangeReq::set_page_token(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.page_token_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:remote.IndexRangeReq.page_token)
+}
+inline std::string* IndexRangeReq::mutable_page_token() {
+  std::string* _s = _internal_mutable_page_token();
+  // @@protoc_insertion_point(field_mutable:remote.IndexRangeReq.page_token)
+  return _s;
+}
+inline const std::string& IndexRangeReq::_internal_page_token() const {
+  return _impl_.page_token_.Get();
+}
+inline void IndexRangeReq::_internal_set_page_token(const std::string& value) {
+  
+  _impl_.page_token_.Set(value, GetArenaForAllocation());
+}
+inline std::string* IndexRangeReq::_internal_mutable_page_token() {
+  
+  return _impl_.page_token_.Mutable(GetArenaForAllocation());
+}
+inline std::string* IndexRangeReq::release_page_token() {
+  // @@protoc_insertion_point(field_release:remote.IndexRangeReq.page_token)
+  return _impl_.page_token_.Release();
+}
+inline void IndexRangeReq::set_allocated_page_token(std::string* page_token) {
+  if (page_token != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.page_token_.SetAllocated(page_token, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.page_token_.IsDefault()) {
+    _impl_.page_token_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:remote.IndexRangeReq.page_token)
 }
 
 // -------------------------------------------------------------------
@@ -4269,9 +6806,945 @@ IndexRangeReply::mutable_timestamps() {
   return _internal_mutable_timestamps();
 }
 
+// string next_page_token = 2;
+inline void IndexRangeReply::clear_next_page_token() {
+  _impl_.next_page_token_.ClearToEmpty();
+}
+inline const std::string& IndexRangeReply::next_page_token() const {
+  // @@protoc_insertion_point(field_get:remote.IndexRangeReply.next_page_token)
+  return _internal_next_page_token();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void IndexRangeReply::set_next_page_token(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.next_page_token_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:remote.IndexRangeReply.next_page_token)
+}
+inline std::string* IndexRangeReply::mutable_next_page_token() {
+  std::string* _s = _internal_mutable_next_page_token();
+  // @@protoc_insertion_point(field_mutable:remote.IndexRangeReply.next_page_token)
+  return _s;
+}
+inline const std::string& IndexRangeReply::_internal_next_page_token() const {
+  return _impl_.next_page_token_.Get();
+}
+inline void IndexRangeReply::_internal_set_next_page_token(const std::string& value) {
+  
+  _impl_.next_page_token_.Set(value, GetArenaForAllocation());
+}
+inline std::string* IndexRangeReply::_internal_mutable_next_page_token() {
+  
+  return _impl_.next_page_token_.Mutable(GetArenaForAllocation());
+}
+inline std::string* IndexRangeReply::release_next_page_token() {
+  // @@protoc_insertion_point(field_release:remote.IndexRangeReply.next_page_token)
+  return _impl_.next_page_token_.Release();
+}
+inline void IndexRangeReply::set_allocated_next_page_token(std::string* next_page_token) {
+  if (next_page_token != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.next_page_token_.SetAllocated(next_page_token, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.next_page_token_.IsDefault()) {
+    _impl_.next_page_token_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:remote.IndexRangeReply.next_page_token)
+}
+
+// -------------------------------------------------------------------
+
+// HistoryRangeReq
+
+// uint64 tx_id = 1;
+inline void HistoryRangeReq::clear_tx_id() {
+  _impl_.tx_id_ = uint64_t{0u};
+}
+inline uint64_t HistoryRangeReq::_internal_tx_id() const {
+  return _impl_.tx_id_;
+}
+inline uint64_t HistoryRangeReq::tx_id() const {
+  // @@protoc_insertion_point(field_get:remote.HistoryRangeReq.tx_id)
+  return _internal_tx_id();
+}
+inline void HistoryRangeReq::_internal_set_tx_id(uint64_t value) {
+  
+  _impl_.tx_id_ = value;
+}
+inline void HistoryRangeReq::set_tx_id(uint64_t value) {
+  _internal_set_tx_id(value);
+  // @@protoc_insertion_point(field_set:remote.HistoryRangeReq.tx_id)
+}
+
+// string table = 2;
+inline void HistoryRangeReq::clear_table() {
+  _impl_.table_.ClearToEmpty();
+}
+inline const std::string& HistoryRangeReq::table() const {
+  // @@protoc_insertion_point(field_get:remote.HistoryRangeReq.table)
+  return _internal_table();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void HistoryRangeReq::set_table(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.table_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:remote.HistoryRangeReq.table)
+}
+inline std::string* HistoryRangeReq::mutable_table() {
+  std::string* _s = _internal_mutable_table();
+  // @@protoc_insertion_point(field_mutable:remote.HistoryRangeReq.table)
+  return _s;
+}
+inline const std::string& HistoryRangeReq::_internal_table() const {
+  return _impl_.table_.Get();
+}
+inline void HistoryRangeReq::_internal_set_table(const std::string& value) {
+  
+  _impl_.table_.Set(value, GetArenaForAllocation());
+}
+inline std::string* HistoryRangeReq::_internal_mutable_table() {
+  
+  return _impl_.table_.Mutable(GetArenaForAllocation());
+}
+inline std::string* HistoryRangeReq::release_table() {
+  // @@protoc_insertion_point(field_release:remote.HistoryRangeReq.table)
+  return _impl_.table_.Release();
+}
+inline void HistoryRangeReq::set_allocated_table(std::string* table) {
+  if (table != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.table_.SetAllocated(table, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.table_.IsDefault()) {
+    _impl_.table_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:remote.HistoryRangeReq.table)
+}
+
+// sint64 from_ts = 4;
+inline void HistoryRangeReq::clear_from_ts() {
+  _impl_.from_ts_ = int64_t{0};
+}
+inline int64_t HistoryRangeReq::_internal_from_ts() const {
+  return _impl_.from_ts_;
+}
+inline int64_t HistoryRangeReq::from_ts() const {
+  // @@protoc_insertion_point(field_get:remote.HistoryRangeReq.from_ts)
+  return _internal_from_ts();
+}
+inline void HistoryRangeReq::_internal_set_from_ts(int64_t value) {
+  
+  _impl_.from_ts_ = value;
+}
+inline void HistoryRangeReq::set_from_ts(int64_t value) {
+  _internal_set_from_ts(value);
+  // @@protoc_insertion_point(field_set:remote.HistoryRangeReq.from_ts)
+}
+
+// sint64 to_ts = 5;
+inline void HistoryRangeReq::clear_to_ts() {
+  _impl_.to_ts_ = int64_t{0};
+}
+inline int64_t HistoryRangeReq::_internal_to_ts() const {
+  return _impl_.to_ts_;
+}
+inline int64_t HistoryRangeReq::to_ts() const {
+  // @@protoc_insertion_point(field_get:remote.HistoryRangeReq.to_ts)
+  return _internal_to_ts();
+}
+inline void HistoryRangeReq::_internal_set_to_ts(int64_t value) {
+  
+  _impl_.to_ts_ = value;
+}
+inline void HistoryRangeReq::set_to_ts(int64_t value) {
+  _internal_set_to_ts(value);
+  // @@protoc_insertion_point(field_set:remote.HistoryRangeReq.to_ts)
+}
+
+// bool order_ascend = 6;
+inline void HistoryRangeReq::clear_order_ascend() {
+  _impl_.order_ascend_ = false;
+}
+inline bool HistoryRangeReq::_internal_order_ascend() const {
+  return _impl_.order_ascend_;
+}
+inline bool HistoryRangeReq::order_ascend() const {
+  // @@protoc_insertion_point(field_get:remote.HistoryRangeReq.order_ascend)
+  return _internal_order_ascend();
+}
+inline void HistoryRangeReq::_internal_set_order_ascend(bool value) {
+  
+  _impl_.order_ascend_ = value;
+}
+inline void HistoryRangeReq::set_order_ascend(bool value) {
+  _internal_set_order_ascend(value);
+  // @@protoc_insertion_point(field_set:remote.HistoryRangeReq.order_ascend)
+}
+
+// sint64 limit = 7;
+inline void HistoryRangeReq::clear_limit() {
+  _impl_.limit_ = int64_t{0};
+}
+inline int64_t HistoryRangeReq::_internal_limit() const {
+  return _impl_.limit_;
+}
+inline int64_t HistoryRangeReq::limit() const {
+  // @@protoc_insertion_point(field_get:remote.HistoryRangeReq.limit)
+  return _internal_limit();
+}
+inline void HistoryRangeReq::_internal_set_limit(int64_t value) {
+  
+  _impl_.limit_ = value;
+}
+inline void HistoryRangeReq::set_limit(int64_t value) {
+  _internal_set_limit(value);
+  // @@protoc_insertion_point(field_set:remote.HistoryRangeReq.limit)
+}
+
+// int32 page_size = 8;
+inline void HistoryRangeReq::clear_page_size() {
+  _impl_.page_size_ = 0;
+}
+inline int32_t HistoryRangeReq::_internal_page_size() const {
+  return _impl_.page_size_;
+}
+inline int32_t HistoryRangeReq::page_size() const {
+  // @@protoc_insertion_point(field_get:remote.HistoryRangeReq.page_size)
+  return _internal_page_size();
+}
+inline void HistoryRangeReq::_internal_set_page_size(int32_t value) {
+  
+  _impl_.page_size_ = value;
+}
+inline void HistoryRangeReq::set_page_size(int32_t value) {
+  _internal_set_page_size(value);
+  // @@protoc_insertion_point(field_set:remote.HistoryRangeReq.page_size)
+}
+
+// string page_token = 9;
+inline void HistoryRangeReq::clear_page_token() {
+  _impl_.page_token_.ClearToEmpty();
+}
+inline const std::string& HistoryRangeReq::page_token() const {
+  // @@protoc_insertion_point(field_get:remote.HistoryRangeReq.page_token)
+  return _internal_page_token();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void HistoryRangeReq::set_page_token(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.page_token_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:remote.HistoryRangeReq.page_token)
+}
+inline std::string* HistoryRangeReq::mutable_page_token() {
+  std::string* _s = _internal_mutable_page_token();
+  // @@protoc_insertion_point(field_mutable:remote.HistoryRangeReq.page_token)
+  return _s;
+}
+inline const std::string& HistoryRangeReq::_internal_page_token() const {
+  return _impl_.page_token_.Get();
+}
+inline void HistoryRangeReq::_internal_set_page_token(const std::string& value) {
+  
+  _impl_.page_token_.Set(value, GetArenaForAllocation());
+}
+inline std::string* HistoryRangeReq::_internal_mutable_page_token() {
+  
+  return _impl_.page_token_.Mutable(GetArenaForAllocation());
+}
+inline std::string* HistoryRangeReq::release_page_token() {
+  // @@protoc_insertion_point(field_release:remote.HistoryRangeReq.page_token)
+  return _impl_.page_token_.Release();
+}
+inline void HistoryRangeReq::set_allocated_page_token(std::string* page_token) {
+  if (page_token != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.page_token_.SetAllocated(page_token, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.page_token_.IsDefault()) {
+    _impl_.page_token_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:remote.HistoryRangeReq.page_token)
+}
+
+// -------------------------------------------------------------------
+
+// DomainRangeReq
+
+// uint64 tx_id = 1;
+inline void DomainRangeReq::clear_tx_id() {
+  _impl_.tx_id_ = uint64_t{0u};
+}
+inline uint64_t DomainRangeReq::_internal_tx_id() const {
+  return _impl_.tx_id_;
+}
+inline uint64_t DomainRangeReq::tx_id() const {
+  // @@protoc_insertion_point(field_get:remote.DomainRangeReq.tx_id)
+  return _internal_tx_id();
+}
+inline void DomainRangeReq::_internal_set_tx_id(uint64_t value) {
+  
+  _impl_.tx_id_ = value;
+}
+inline void DomainRangeReq::set_tx_id(uint64_t value) {
+  _internal_set_tx_id(value);
+  // @@protoc_insertion_point(field_set:remote.DomainRangeReq.tx_id)
+}
+
+// string table = 2;
+inline void DomainRangeReq::clear_table() {
+  _impl_.table_.ClearToEmpty();
+}
+inline const std::string& DomainRangeReq::table() const {
+  // @@protoc_insertion_point(field_get:remote.DomainRangeReq.table)
+  return _internal_table();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void DomainRangeReq::set_table(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.table_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:remote.DomainRangeReq.table)
+}
+inline std::string* DomainRangeReq::mutable_table() {
+  std::string* _s = _internal_mutable_table();
+  // @@protoc_insertion_point(field_mutable:remote.DomainRangeReq.table)
+  return _s;
+}
+inline const std::string& DomainRangeReq::_internal_table() const {
+  return _impl_.table_.Get();
+}
+inline void DomainRangeReq::_internal_set_table(const std::string& value) {
+  
+  _impl_.table_.Set(value, GetArenaForAllocation());
+}
+inline std::string* DomainRangeReq::_internal_mutable_table() {
+  
+  return _impl_.table_.Mutable(GetArenaForAllocation());
+}
+inline std::string* DomainRangeReq::release_table() {
+  // @@protoc_insertion_point(field_release:remote.DomainRangeReq.table)
+  return _impl_.table_.Release();
+}
+inline void DomainRangeReq::set_allocated_table(std::string* table) {
+  if (table != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.table_.SetAllocated(table, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.table_.IsDefault()) {
+    _impl_.table_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:remote.DomainRangeReq.table)
+}
+
+// bytes from_key = 3;
+inline void DomainRangeReq::clear_from_key() {
+  _impl_.from_key_.ClearToEmpty();
+}
+inline const std::string& DomainRangeReq::from_key() const {
+  // @@protoc_insertion_point(field_get:remote.DomainRangeReq.from_key)
+  return _internal_from_key();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void DomainRangeReq::set_from_key(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.from_key_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:remote.DomainRangeReq.from_key)
+}
+inline std::string* DomainRangeReq::mutable_from_key() {
+  std::string* _s = _internal_mutable_from_key();
+  // @@protoc_insertion_point(field_mutable:remote.DomainRangeReq.from_key)
+  return _s;
+}
+inline const std::string& DomainRangeReq::_internal_from_key() const {
+  return _impl_.from_key_.Get();
+}
+inline void DomainRangeReq::_internal_set_from_key(const std::string& value) {
+  
+  _impl_.from_key_.Set(value, GetArenaForAllocation());
+}
+inline std::string* DomainRangeReq::_internal_mutable_from_key() {
+  
+  return _impl_.from_key_.Mutable(GetArenaForAllocation());
+}
+inline std::string* DomainRangeReq::release_from_key() {
+  // @@protoc_insertion_point(field_release:remote.DomainRangeReq.from_key)
+  return _impl_.from_key_.Release();
+}
+inline void DomainRangeReq::set_allocated_from_key(std::string* from_key) {
+  if (from_key != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.from_key_.SetAllocated(from_key, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.from_key_.IsDefault()) {
+    _impl_.from_key_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:remote.DomainRangeReq.from_key)
+}
+
+// bytes to_key = 4;
+inline void DomainRangeReq::clear_to_key() {
+  _impl_.to_key_.ClearToEmpty();
+}
+inline const std::string& DomainRangeReq::to_key() const {
+  // @@protoc_insertion_point(field_get:remote.DomainRangeReq.to_key)
+  return _internal_to_key();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void DomainRangeReq::set_to_key(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.to_key_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:remote.DomainRangeReq.to_key)
+}
+inline std::string* DomainRangeReq::mutable_to_key() {
+  std::string* _s = _internal_mutable_to_key();
+  // @@protoc_insertion_point(field_mutable:remote.DomainRangeReq.to_key)
+  return _s;
+}
+inline const std::string& DomainRangeReq::_internal_to_key() const {
+  return _impl_.to_key_.Get();
+}
+inline void DomainRangeReq::_internal_set_to_key(const std::string& value) {
+  
+  _impl_.to_key_.Set(value, GetArenaForAllocation());
+}
+inline std::string* DomainRangeReq::_internal_mutable_to_key() {
+  
+  return _impl_.to_key_.Mutable(GetArenaForAllocation());
+}
+inline std::string* DomainRangeReq::release_to_key() {
+  // @@protoc_insertion_point(field_release:remote.DomainRangeReq.to_key)
+  return _impl_.to_key_.Release();
+}
+inline void DomainRangeReq::set_allocated_to_key(std::string* to_key) {
+  if (to_key != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.to_key_.SetAllocated(to_key, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.to_key_.IsDefault()) {
+    _impl_.to_key_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:remote.DomainRangeReq.to_key)
+}
+
+// uint64 ts = 5;
+inline void DomainRangeReq::clear_ts() {
+  _impl_.ts_ = uint64_t{0u};
+}
+inline uint64_t DomainRangeReq::_internal_ts() const {
+  return _impl_.ts_;
+}
+inline uint64_t DomainRangeReq::ts() const {
+  // @@protoc_insertion_point(field_get:remote.DomainRangeReq.ts)
+  return _internal_ts();
+}
+inline void DomainRangeReq::_internal_set_ts(uint64_t value) {
+  
+  _impl_.ts_ = value;
+}
+inline void DomainRangeReq::set_ts(uint64_t value) {
+  _internal_set_ts(value);
+  // @@protoc_insertion_point(field_set:remote.DomainRangeReq.ts)
+}
+
+// bool latest = 6;
+inline void DomainRangeReq::clear_latest() {
+  _impl_.latest_ = false;
+}
+inline bool DomainRangeReq::_internal_latest() const {
+  return _impl_.latest_;
+}
+inline bool DomainRangeReq::latest() const {
+  // @@protoc_insertion_point(field_get:remote.DomainRangeReq.latest)
+  return _internal_latest();
+}
+inline void DomainRangeReq::_internal_set_latest(bool value) {
+  
+  _impl_.latest_ = value;
+}
+inline void DomainRangeReq::set_latest(bool value) {
+  _internal_set_latest(value);
+  // @@protoc_insertion_point(field_set:remote.DomainRangeReq.latest)
+}
+
+// bool order_ascend = 7;
+inline void DomainRangeReq::clear_order_ascend() {
+  _impl_.order_ascend_ = false;
+}
+inline bool DomainRangeReq::_internal_order_ascend() const {
+  return _impl_.order_ascend_;
+}
+inline bool DomainRangeReq::order_ascend() const {
+  // @@protoc_insertion_point(field_get:remote.DomainRangeReq.order_ascend)
+  return _internal_order_ascend();
+}
+inline void DomainRangeReq::_internal_set_order_ascend(bool value) {
+  
+  _impl_.order_ascend_ = value;
+}
+inline void DomainRangeReq::set_order_ascend(bool value) {
+  _internal_set_order_ascend(value);
+  // @@protoc_insertion_point(field_set:remote.DomainRangeReq.order_ascend)
+}
+
+// sint64 limit = 8;
+inline void DomainRangeReq::clear_limit() {
+  _impl_.limit_ = int64_t{0};
+}
+inline int64_t DomainRangeReq::_internal_limit() const {
+  return _impl_.limit_;
+}
+inline int64_t DomainRangeReq::limit() const {
+  // @@protoc_insertion_point(field_get:remote.DomainRangeReq.limit)
+  return _internal_limit();
+}
+inline void DomainRangeReq::_internal_set_limit(int64_t value) {
+  
+  _impl_.limit_ = value;
+}
+inline void DomainRangeReq::set_limit(int64_t value) {
+  _internal_set_limit(value);
+  // @@protoc_insertion_point(field_set:remote.DomainRangeReq.limit)
+}
+
+// int32 page_size = 9;
+inline void DomainRangeReq::clear_page_size() {
+  _impl_.page_size_ = 0;
+}
+inline int32_t DomainRangeReq::_internal_page_size() const {
+  return _impl_.page_size_;
+}
+inline int32_t DomainRangeReq::page_size() const {
+  // @@protoc_insertion_point(field_get:remote.DomainRangeReq.page_size)
+  return _internal_page_size();
+}
+inline void DomainRangeReq::_internal_set_page_size(int32_t value) {
+  
+  _impl_.page_size_ = value;
+}
+inline void DomainRangeReq::set_page_size(int32_t value) {
+  _internal_set_page_size(value);
+  // @@protoc_insertion_point(field_set:remote.DomainRangeReq.page_size)
+}
+
+// string page_token = 10;
+inline void DomainRangeReq::clear_page_token() {
+  _impl_.page_token_.ClearToEmpty();
+}
+inline const std::string& DomainRangeReq::page_token() const {
+  // @@protoc_insertion_point(field_get:remote.DomainRangeReq.page_token)
+  return _internal_page_token();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void DomainRangeReq::set_page_token(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.page_token_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:remote.DomainRangeReq.page_token)
+}
+inline std::string* DomainRangeReq::mutable_page_token() {
+  std::string* _s = _internal_mutable_page_token();
+  // @@protoc_insertion_point(field_mutable:remote.DomainRangeReq.page_token)
+  return _s;
+}
+inline const std::string& DomainRangeReq::_internal_page_token() const {
+  return _impl_.page_token_.Get();
+}
+inline void DomainRangeReq::_internal_set_page_token(const std::string& value) {
+  
+  _impl_.page_token_.Set(value, GetArenaForAllocation());
+}
+inline std::string* DomainRangeReq::_internal_mutable_page_token() {
+  
+  return _impl_.page_token_.Mutable(GetArenaForAllocation());
+}
+inline std::string* DomainRangeReq::release_page_token() {
+  // @@protoc_insertion_point(field_release:remote.DomainRangeReq.page_token)
+  return _impl_.page_token_.Release();
+}
+inline void DomainRangeReq::set_allocated_page_token(std::string* page_token) {
+  if (page_token != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.page_token_.SetAllocated(page_token, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.page_token_.IsDefault()) {
+    _impl_.page_token_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:remote.DomainRangeReq.page_token)
+}
+
+// -------------------------------------------------------------------
+
+// Pairs
+
+// repeated bytes keys = 1;
+inline int Pairs::_internal_keys_size() const {
+  return _impl_.keys_.size();
+}
+inline int Pairs::keys_size() const {
+  return _internal_keys_size();
+}
+inline void Pairs::clear_keys() {
+  _impl_.keys_.Clear();
+}
+inline std::string* Pairs::add_keys() {
+  std::string* _s = _internal_add_keys();
+  // @@protoc_insertion_point(field_add_mutable:remote.Pairs.keys)
+  return _s;
+}
+inline const std::string& Pairs::_internal_keys(int index) const {
+  return _impl_.keys_.Get(index);
+}
+inline const std::string& Pairs::keys(int index) const {
+  // @@protoc_insertion_point(field_get:remote.Pairs.keys)
+  return _internal_keys(index);
+}
+inline std::string* Pairs::mutable_keys(int index) {
+  // @@protoc_insertion_point(field_mutable:remote.Pairs.keys)
+  return _impl_.keys_.Mutable(index);
+}
+inline void Pairs::set_keys(int index, const std::string& value) {
+  _impl_.keys_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:remote.Pairs.keys)
+}
+inline void Pairs::set_keys(int index, std::string&& value) {
+  _impl_.keys_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:remote.Pairs.keys)
+}
+inline void Pairs::set_keys(int index, const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.keys_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:remote.Pairs.keys)
+}
+inline void Pairs::set_keys(int index, const void* value, size_t size) {
+  _impl_.keys_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:remote.Pairs.keys)
+}
+inline std::string* Pairs::_internal_add_keys() {
+  return _impl_.keys_.Add();
+}
+inline void Pairs::add_keys(const std::string& value) {
+  _impl_.keys_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:remote.Pairs.keys)
+}
+inline void Pairs::add_keys(std::string&& value) {
+  _impl_.keys_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:remote.Pairs.keys)
+}
+inline void Pairs::add_keys(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.keys_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:remote.Pairs.keys)
+}
+inline void Pairs::add_keys(const void* value, size_t size) {
+  _impl_.keys_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:remote.Pairs.keys)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
+Pairs::keys() const {
+  // @@protoc_insertion_point(field_list:remote.Pairs.keys)
+  return _impl_.keys_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
+Pairs::mutable_keys() {
+  // @@protoc_insertion_point(field_mutable_list:remote.Pairs.keys)
+  return &_impl_.keys_;
+}
+
+// repeated bytes values = 2;
+inline int Pairs::_internal_values_size() const {
+  return _impl_.values_.size();
+}
+inline int Pairs::values_size() const {
+  return _internal_values_size();
+}
+inline void Pairs::clear_values() {
+  _impl_.values_.Clear();
+}
+inline std::string* Pairs::add_values() {
+  std::string* _s = _internal_add_values();
+  // @@protoc_insertion_point(field_add_mutable:remote.Pairs.values)
+  return _s;
+}
+inline const std::string& Pairs::_internal_values(int index) const {
+  return _impl_.values_.Get(index);
+}
+inline const std::string& Pairs::values(int index) const {
+  // @@protoc_insertion_point(field_get:remote.Pairs.values)
+  return _internal_values(index);
+}
+inline std::string* Pairs::mutable_values(int index) {
+  // @@protoc_insertion_point(field_mutable:remote.Pairs.values)
+  return _impl_.values_.Mutable(index);
+}
+inline void Pairs::set_values(int index, const std::string& value) {
+  _impl_.values_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:remote.Pairs.values)
+}
+inline void Pairs::set_values(int index, std::string&& value) {
+  _impl_.values_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:remote.Pairs.values)
+}
+inline void Pairs::set_values(int index, const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.values_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:remote.Pairs.values)
+}
+inline void Pairs::set_values(int index, const void* value, size_t size) {
+  _impl_.values_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:remote.Pairs.values)
+}
+inline std::string* Pairs::_internal_add_values() {
+  return _impl_.values_.Add();
+}
+inline void Pairs::add_values(const std::string& value) {
+  _impl_.values_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:remote.Pairs.values)
+}
+inline void Pairs::add_values(std::string&& value) {
+  _impl_.values_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:remote.Pairs.values)
+}
+inline void Pairs::add_values(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.values_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:remote.Pairs.values)
+}
+inline void Pairs::add_values(const void* value, size_t size) {
+  _impl_.values_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:remote.Pairs.values)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
+Pairs::values() const {
+  // @@protoc_insertion_point(field_list:remote.Pairs.values)
+  return _impl_.values_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
+Pairs::mutable_values() {
+  // @@protoc_insertion_point(field_mutable_list:remote.Pairs.values)
+  return &_impl_.values_;
+}
+
+// string next_page_token = 3;
+inline void Pairs::clear_next_page_token() {
+  _impl_.next_page_token_.ClearToEmpty();
+}
+inline const std::string& Pairs::next_page_token() const {
+  // @@protoc_insertion_point(field_get:remote.Pairs.next_page_token)
+  return _internal_next_page_token();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void Pairs::set_next_page_token(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.next_page_token_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:remote.Pairs.next_page_token)
+}
+inline std::string* Pairs::mutable_next_page_token() {
+  std::string* _s = _internal_mutable_next_page_token();
+  // @@protoc_insertion_point(field_mutable:remote.Pairs.next_page_token)
+  return _s;
+}
+inline const std::string& Pairs::_internal_next_page_token() const {
+  return _impl_.next_page_token_.Get();
+}
+inline void Pairs::_internal_set_next_page_token(const std::string& value) {
+  
+  _impl_.next_page_token_.Set(value, GetArenaForAllocation());
+}
+inline std::string* Pairs::_internal_mutable_next_page_token() {
+  
+  return _impl_.next_page_token_.Mutable(GetArenaForAllocation());
+}
+inline std::string* Pairs::release_next_page_token() {
+  // @@protoc_insertion_point(field_release:remote.Pairs.next_page_token)
+  return _impl_.next_page_token_.Release();
+}
+inline void Pairs::set_allocated_next_page_token(std::string* next_page_token) {
+  if (next_page_token != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.next_page_token_.SetAllocated(next_page_token, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.next_page_token_.IsDefault()) {
+    _impl_.next_page_token_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:remote.Pairs.next_page_token)
+}
+
+// -------------------------------------------------------------------
+
+// ParisPagination
+
+// bytes next_key = 1;
+inline void ParisPagination::clear_next_key() {
+  _impl_.next_key_.ClearToEmpty();
+}
+inline const std::string& ParisPagination::next_key() const {
+  // @@protoc_insertion_point(field_get:remote.ParisPagination.next_key)
+  return _internal_next_key();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void ParisPagination::set_next_key(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.next_key_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:remote.ParisPagination.next_key)
+}
+inline std::string* ParisPagination::mutable_next_key() {
+  std::string* _s = _internal_mutable_next_key();
+  // @@protoc_insertion_point(field_mutable:remote.ParisPagination.next_key)
+  return _s;
+}
+inline const std::string& ParisPagination::_internal_next_key() const {
+  return _impl_.next_key_.Get();
+}
+inline void ParisPagination::_internal_set_next_key(const std::string& value) {
+  
+  _impl_.next_key_.Set(value, GetArenaForAllocation());
+}
+inline std::string* ParisPagination::_internal_mutable_next_key() {
+  
+  return _impl_.next_key_.Mutable(GetArenaForAllocation());
+}
+inline std::string* ParisPagination::release_next_key() {
+  // @@protoc_insertion_point(field_release:remote.ParisPagination.next_key)
+  return _impl_.next_key_.Release();
+}
+inline void ParisPagination::set_allocated_next_key(std::string* next_key) {
+  if (next_key != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.next_key_.SetAllocated(next_key, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.next_key_.IsDefault()) {
+    _impl_.next_key_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:remote.ParisPagination.next_key)
+}
+
+// sint64 limit = 2;
+inline void ParisPagination::clear_limit() {
+  _impl_.limit_ = int64_t{0};
+}
+inline int64_t ParisPagination::_internal_limit() const {
+  return _impl_.limit_;
+}
+inline int64_t ParisPagination::limit() const {
+  // @@protoc_insertion_point(field_get:remote.ParisPagination.limit)
+  return _internal_limit();
+}
+inline void ParisPagination::_internal_set_limit(int64_t value) {
+  
+  _impl_.limit_ = value;
+}
+inline void ParisPagination::set_limit(int64_t value) {
+  _internal_set_limit(value);
+  // @@protoc_insertion_point(field_set:remote.ParisPagination.limit)
+}
+
+// -------------------------------------------------------------------
+
+// IndexPagination
+
+// sint64 next_time_stamp = 1;
+inline void IndexPagination::clear_next_time_stamp() {
+  _impl_.next_time_stamp_ = int64_t{0};
+}
+inline int64_t IndexPagination::_internal_next_time_stamp() const {
+  return _impl_.next_time_stamp_;
+}
+inline int64_t IndexPagination::next_time_stamp() const {
+  // @@protoc_insertion_point(field_get:remote.IndexPagination.next_time_stamp)
+  return _internal_next_time_stamp();
+}
+inline void IndexPagination::_internal_set_next_time_stamp(int64_t value) {
+  
+  _impl_.next_time_stamp_ = value;
+}
+inline void IndexPagination::set_next_time_stamp(int64_t value) {
+  _internal_set_next_time_stamp(value);
+  // @@protoc_insertion_point(field_set:remote.IndexPagination.next_time_stamp)
+}
+
+// sint64 limit = 2;
+inline void IndexPagination::clear_limit() {
+  _impl_.limit_ = int64_t{0};
+}
+inline int64_t IndexPagination::_internal_limit() const {
+  return _impl_.limit_;
+}
+inline int64_t IndexPagination::limit() const {
+  // @@protoc_insertion_point(field_get:remote.IndexPagination.limit)
+  return _internal_limit();
+}
+inline void IndexPagination::_internal_set_limit(int64_t value) {
+  
+  _impl_.limit_ = value;
+}
+inline void IndexPagination::set_limit(int64_t value) {
+  _internal_set_limit(value);
+  // @@protoc_insertion_point(field_set:remote.IndexPagination.limit)
+}
+
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

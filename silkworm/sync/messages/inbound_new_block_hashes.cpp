@@ -29,8 +29,8 @@
 
 namespace silkworm {
 
-InboundNewBlockHashes::InboundNewBlockHashes(const sentry::InboundMessage& msg) {
-    if (msg.id() != sentry::MessageId::NEW_BLOCK_HASHES_66)
+InboundNewBlockHashes::InboundNewBlockHashes(const ::sentry::InboundMessage& msg) {
+    if (msg.id() != ::sentry::MessageId::NEW_BLOCK_HASHES_66)
         throw std::logic_error("InboundNewBlockHashes received wrong InboundMessage");
 
     reqId_ = RANDOM_NUMBER.generate_one();  // for trace purposes
@@ -64,8 +64,8 @@ void InboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence&
         Bytes rlp_encoding;
         rlp::encode(rlp_encoding, *packet);
 
-        auto msg_reply = std::make_unique<sentry::OutboundMessageData>();
-        msg_reply->set_id(sentry::MessageId::GET_BLOCK_HEADERS_66);
+        auto msg_reply = std::make_unique<::sentry::OutboundMessageData>();
+        msg_reply->set_id(::sentry::MessageId::GET_BLOCK_HEADERS_66);
         msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
 
         // send msg_reply

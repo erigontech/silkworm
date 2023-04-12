@@ -22,7 +22,7 @@
 #include <agrpc/test.hpp>
 #include <grpcpp/grpcpp.h>
 
-namespace silkrpc::test {
+namespace silkworm::rpc::test {
 
 inline auto finish_with_status(agrpc::GrpcContext& grpc_context, grpc::Status status, bool ok) {
     return [&grpc_context, status, ok](auto&&, ::grpc::Status* status_ptr, void* tag) {
@@ -103,4 +103,4 @@ inline auto read_failure(agrpc::GrpcContext& grpc_context) {
     return [&grpc_context](auto*, void* tag) { agrpc::process_grpc_tag(grpc_context, tag, false); };
 }
 
-}  // namespace silkrpc::test
+}  // namespace silkworm::rpc::test

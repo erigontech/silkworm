@@ -44,8 +44,10 @@ class MemoryMutation : public RWTxn {
     MemoryMutation(MemoryOverlay& memory_db, ROTxn* txn);
     ~MemoryMutation() override;
 
-    [[nodiscard]] bool is_table_cleared(const std::string& bucket_name) const;
-    [[nodiscard]] bool is_entry_deleted(const std::string& bucket_name, const Slice& key) const;
+    MemoryMutation(MemoryMutation&& other) noexcept = default;  // Movable
+
+    [[nodiscard]] bool is_table_cleared(const std::string& table) const;
+    [[nodiscard]] bool is_entry_deleted(const std::string& table, const Slice& key) const;
     [[nodiscard]] bool has_map(const std::string& bucket_name) const;
 
     [[nodiscard]] db::ROTxn* external_txn() const { return txn_; }
@@ -57,6 +59,12 @@ class MemoryMutation : public RWTxn {
     std::unique_ptr<RWCursor> rw_cursor(const MapConfig& config) override;
     std::unique_ptr<RWCursorDupSort> rw_cursor_dup_sort(const MapConfig& config) override;
 
+    bool erase(const MapConfig& config, const Slice& key);
+    bool erase(const MapConfig& config, const Slice& key, const Slice& value);
+
+    bool clear_table(const std::string& table);
+
+    void flush(db::RWTxn& rw_txn);
     void rollback();
 
   private:
@@ -64,7 +72,7 @@ class MemoryMutation : public RWTxn {
 
     MemoryOverlay& memory_db_;
     db::ROTxn* txn_;
-    std::map<std::string, Slice> deleted_entries_;
+    std::map<std::string, std::map<Slice, bool>> deleted_entries_;
     std::map<std::string, bool> cleared_tables_;
 };
 

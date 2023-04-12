@@ -27,7 +27,7 @@
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
 #include <silkworm/silkrpc/test/dummy_transaction.hpp>
 
-namespace silkrpc::test {
+namespace silkworm::rpc::test {
 
 //! This dummy database acts as a factory for dummy transactions using the same cursor.
 class DummyDatabase : public ethdb::Database {
@@ -44,4 +44,4 @@ class DummyDatabase : public ethdb::Database {
     std::shared_ptr<ethdb::CursorDupSort> cursor_;
 };
 
-}  // namespace silkrpc::test
+}  // namespace silkworm::rpc::test

@@ -24,7 +24,7 @@
 #include <silkworm/silkrpc/test/grpc_matcher.hpp>
 #include <silkworm/silkrpc/test/kv_test_base.hpp>
 
-namespace silkrpc::ethdb::kv {
+namespace silkworm::rpc::ethdb::kv {
 
 using testing::_;
 
@@ -378,4 +378,4 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
 }
 #endif  // SILKWORM_SANITIZE
 
-}  // namespace silkrpc::ethdb::kv
+}  // namespace silkworm::rpc::ethdb::kv

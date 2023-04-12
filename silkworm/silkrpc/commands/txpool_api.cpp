@@ -19,7 +19,7 @@
 #include <string>
 #include <utility>
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 // https://eth.wiki/json-rpc/API#txpool_status
 boost::asio::awaitable<void> TxPoolRpcApi::handle_txpool_status(const nlohmann::json& request, nlohmann::json& reply) {
@@ -60,9 +60,9 @@ boost::asio::awaitable<void> TxPoolRpcApi::handle_txpool_content(const nlohmann:
                 break;
             }
             txn.queued_in_pool = true;
-            if (txpool_transactions[i].transaction_type == silkrpc::txpool::TransactionType::QUEUED) {
+            if (txpool_transactions[i].transaction_type == txpool::TransactionType::QUEUED) {
                 transactions_content["queued"][sender].insert(std::make_pair(std::to_string(txn.nonce), txn));
-            } else if (txpool_transactions[i].transaction_type == silkrpc::txpool::TransactionType::PENDING) {
+            } else if (txpool_transactions[i].transaction_type == txpool::TransactionType::PENDING) {
                 transactions_content["pending"][sender].insert(std::make_pair(std::to_string(txn.nonce), txn));
             } else {
                 transactions_content["baseFee"][sender].insert(std::make_pair(std::to_string(txn.nonce), txn));
@@ -85,4 +85,4 @@ boost::asio::awaitable<void> TxPoolRpcApi::handle_txpool_content(const nlohmann:
     co_return;
 }
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

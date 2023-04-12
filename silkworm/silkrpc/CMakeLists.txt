@@ -22,7 +22,6 @@ else()
   find_package(Boost CONFIG REQUIRED container thread)
 endif()
 find_package(gRPC REQUIRED)
-find_package(intx REQUIRED)
 find_package(jwt-cpp REQUIRED)
 find_package(nlohmann_json REQUIRED)
 
@@ -40,20 +39,20 @@ file(
 list(FILTER SILKRPC_SRC EXCLUDE REGEX "main\\.cpp$|_test\\.cpp$|\\.pb\\.cc|\\.pb\\.h")
 
 set(SILKRPC_LIBRARIES
+    silkworm_node
+    silkworm_core
+    silkworm_interfaces
+    asio-grpc::asio-grpc
+    gRPC::grpc++
+    jwt-cpp::jwt-cpp
+    nlohmann_json::nlohmann_json
     absl::flat_hash_map
     absl::flat_hash_set
     absl::btree
-    asio-grpc::asio-grpc
     Boost::container
     Boost::thread
-    intx::intx
-    jwt-cpp::jwt-cpp
-    gRPC::grpc++
-    nlohmann_json::nlohmann_json
     protobuf::libprotobuf
-    silkworm_core
-    silkworm_interfaces
-    silkworm_node
+    intx::intx
 )
 
 add_library(silkrpc "${SILKRPC_SRC}")

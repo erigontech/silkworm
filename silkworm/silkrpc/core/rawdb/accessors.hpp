@@ -27,7 +27,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
-namespace silkrpc::core::rawdb {
+namespace silkworm::rpc::core::rawdb {
 
 using boost::asio::awaitable;
 using Walker = std::function<bool(silkworm::Bytes&, silkworm::Bytes&)>;
@@ -47,4 +47,4 @@ class DatabaseReader {
     [[nodiscard]] virtual awaitable<void> for_prefix(const std::string& table, silkworm::ByteView prefix, Walker w) const = 0;
 };
 
-}  // namespace silkrpc::core::rawdb
+}  // namespace silkworm::rpc::core::rawdb

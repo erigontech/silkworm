@@ -24,7 +24,7 @@
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 std::ostream& operator<<(std::ostream& out, const Block& b) {
     out << "parent_hash: " << b.block.header.parent_hash;
@@ -94,13 +94,4 @@ void BlockNumberOrHash::build(const std::string& bnoh) {
     }
 }
 
-uint64_t BlockDetails::get_block_size() const {
-    silkworm::rlp::Header rlp_head{true, 0};
-    rlp_head.payload_length = silkworm::rlp::length(header);
-    rlp_head.payload_length += silkworm::rlp::length(transaction_count);
-    rlp_head.payload_length += silkworm::rlp::length(ommers);
-    rlp_head.payload_length += silkworm::rlp::length_of_length(rlp_head.payload_length);
-    return rlp_head.payload_length;
-}
-
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

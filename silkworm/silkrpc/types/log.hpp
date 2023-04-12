@@ -20,10 +20,14 @@
 #include <vector>
 
 #include <evmc/evmc.hpp>
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
+#include <glaze/glaze.hpp>
+#pragma GCC diagnostic pop
 #include <silkworm/core/common/base.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 struct Log {
     /* raw fields */
@@ -44,4 +48,4 @@ typedef std::vector<Log> Logs;
 
 std::ostream& operator<<(std::ostream& out, const Log& log);
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

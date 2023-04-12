@@ -22,7 +22,7 @@
 
 #include <catch2/catch.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::rpc::http {
 
 using Catch::Matchers::Message;
 
@@ -30,8 +30,8 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
     SECTION("invalid request with non-character") {
         std::array<char, 2> non_chars{static_cast<char>(-1), static_cast<char>(128)};
         for (auto c : non_chars) {
-            silkrpc::http::RequestParser parser;
-            silkrpc::http::Request req;
+            RequestParser parser;
+            Request req;
             std::array<char, 1> buffer{c};
             std::size_t bytes_read{1};
             const auto result{parser.parse(req, buffer.data(), buffer.data() + bytes_read)};
@@ -42,8 +42,8 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
     SECTION("invalid request with control character") {
         std::array<char, 33> ctrl_chars{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 127};
         for (auto c : ctrl_chars) {
-            silkrpc::http::RequestParser parser;
-            silkrpc::http::Request req;
+            RequestParser parser;
+            Request req;
             std::array<char, 1> buffer{c};
             std::size_t bytes_read{1};
             const auto result{parser.parse(req, buffer.data(), buffer.data() + bytes_read)};
@@ -52,8 +52,8 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
     }
 
     SECTION("empty request") {
-        silkrpc::http::RequestParser parser;
-        silkrpc::http::Request req;
+        RequestParser parser;
+        Request req;
         std::array<char, 0> buffer{};
         std::size_t bytes_read{0};
         const auto result{parser.parse(req, buffer.data(), buffer.data() + bytes_read)};
@@ -66,8 +66,8 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
             "POST / HTTP/1.1\r\nExpect: 100-continue\r\nContent-Length: 15\r\n\r\n{\"json\": \"2.0\"}",
         };
         for (const auto& s : continue_requests) {
-            silkrpc::http::RequestParser parser;
-            silkrpc::http::Request req;
+            RequestParser parser;
+            Request req;
             const auto result{parser.parse(req, s.data(), s.data() + s.size())};
             CHECK(result == RequestParser::ResultType::processing_continue);
         }
@@ -114,8 +114,8 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
             "POST / HTTP/1.1\r\nExpect: 100-continue\r\n\r\n",
         };
         for (const auto& s : bad_requests) {
-            silkrpc::http::RequestParser parser;
-            silkrpc::http::Request req;
+            RequestParser parser;
+            Request req;
             const auto result{parser.parse(req, s.data(), s.data() + s.size())};
             CHECK(result == RequestParser::ResultType::bad);
         }
@@ -134,8 +134,8 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
             "POST / HTTP/1.1\r\nHost: localhost:8545  \r\nUser-Agent: curl/7.68.0",
         };
         for (const auto& s : incomplete_requests) {
-            silkrpc::http::RequestParser parser;
-            silkrpc::http::Request req;
+            RequestParser parser;
+            Request req;
             const auto result{parser.parse(req, s.data(), s.data() + s.size())};
             CHECK(result == RequestParser::ResultType::indeterminate);
         }
@@ -151,8 +151,8 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
             "POST / HTTP/1.1\r\nHost: localhost:8545\r\n User-Agent: curl/7.68.0\r\n Accept: */*\r\n Content-Type: application/json\r\nContent-Length: 15\r\n\r\n{\"json\": \"2.0\"}",
         };
         for (const auto& s : good_requests) {
-            silkrpc::http::RequestParser parser;
-            silkrpc::http::Request req;
+            RequestParser parser;
+            Request req;
             const auto result{parser.parse(req, s.data(), s.data() + s.size())};
             CHECK(result == RequestParser::ResultType::good);
         }
@@ -160,7 +160,7 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
 }
 
 TEST_CASE("reset", "[silkrpc][http][request_parser]") {
-    silkrpc::http::RequestParser parser;
+    RequestParser parser;
 
     SECTION("empty parser") {
         CHECK_NOTHROW(parser.reset());
@@ -172,4 +172,4 @@ TEST_CASE("reset", "[silkrpc][http][request_parser]") {
     }
 }
 
-}  // namespace silkrpc::http
+}  // namespace silkworm::rpc::http

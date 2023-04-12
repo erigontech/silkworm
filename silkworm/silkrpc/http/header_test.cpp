@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::rpc::http {
 
 using Catch::Matchers::Message;
 
@@ -28,4 +28,4 @@ TEST_CASE("header comparison", "[silkrpc][http][header]") {
     CHECK(h1 == h2);
 }
 
-}  // namespace silkrpc::http
+}  // namespace silkworm::rpc::http

@@ -43,7 +43,6 @@ TEST_CASE("EthereumBackEnd", "[silkworm][backend][ethereum_backend]") {
         EthereumBackEnd backend{node_settings, &database_env};
         CHECK(backend.node_name() == kDefaultNodeName);
         CHECK(!backend.etherbase());
-        CHECK(backend.sentry_addresses().size() == 1);
         CHECK(backend.state_change_source() != nullptr);
     }
 
@@ -62,7 +61,7 @@ TEST_CASE("EthereumBackEnd", "[silkworm][backend][ethereum_backend]") {
 
     SECTION("EthereumBackEnd::sentry_addresses default", "[silkworm][backend][ethereum_backend]") {
         EthereumBackEnd backend{node_settings, &database_env};
-        CHECK(backend.sentry_addresses().size() == 1);
+        CHECK(backend.sentry_addresses().size() == 0);
     }
 
     SECTION("EthereumBackEnd::sentry_addresses one", "[silkworm][backend][ethereum_backend]") {

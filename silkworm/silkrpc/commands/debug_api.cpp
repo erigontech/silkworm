@@ -29,6 +29,7 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/db/util.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
@@ -40,18 +41,19 @@
 #include <silkworm/silkrpc/core/state_reader.hpp>
 #include <silkworm/silkrpc/core/storage_walker.hpp>
 #include <silkworm/silkrpc/ethdb/kv/cached_database.hpp>
-#include <silkworm/silkrpc/ethdb/tables.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/call.hpp>
 #include <silkworm/silkrpc/types/dump_account.hpp>
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
+
+static constexpr int16_t kAccountRangeMaxResults{256};
 
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_accountrange
-boost::asio::awaitable<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+awaitable<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request["params"];
     if (params.size() != 5) {
         auto error_msg = "invalid debug_accountRange params: " + params.dump();
         SILKRPC_ERROR << error_msg << "\n";
@@ -82,7 +84,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_account_range(const nlohm
 
     try {
         auto start = std::chrono::system_clock::now();
-        AccountDumper dumper{*tx};
+        core::AccountDumper dumper{*tx};
         DumpAccounts dump_accounts = co_await dumper.dump_accounts(*context_.block_cache(), block_number_or_hash, start_address, max_result, exclude_code, exclude_storage);
         auto end = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = end - start;
@@ -102,7 +104,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_account_range(const nlohm
 }
 
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_getmodifiedaccountsbynumber
-boost::asio::awaitable<void> DebugRpcApi::handle_debug_get_modified_accounts_by_number(const nlohmann::json& request, nlohmann::json& reply) {
+awaitable<void> DebugRpcApi::handle_debug_get_modified_accounts_by_number(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.empty() || params.size() > 2) {
         auto error_msg = "invalid debug_getModifiedAccountsByNumber params: " + params.dump();
@@ -143,7 +145,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_get_modified_accounts_by_
 }
 
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_getmodifiedaccountsbyhash
-boost::asio::awaitable<void> DebugRpcApi::handle_debug_get_modified_accounts_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
+awaitable<void> DebugRpcApi::handle_debug_get_modified_accounts_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.empty() || params.size() > 2) {
         auto error_msg = "invalid debug_getModifiedAccountsByHash params: " + params.dump();
@@ -184,7 +186,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_get_modified_accounts_by_
 }
 
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_storagerangeat
-boost::asio::awaitable<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& request, nlohmann::json& reply) {
+awaitable<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.empty() || params.size() > 5) {
         auto error_msg = "invalid debug_storageRangeAt params: " + params.dump();
@@ -218,7 +220,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_storage_range_at(const nl
         silkworm::Bytes next_key;
         std::uint16_t count{0};
 
-        silkrpc::StorageWalker::StorageCollector collector = [&](const silkworm::ByteView key, silkworm::ByteView sec_key, silkworm::ByteView value) {
+        StorageWalker::StorageCollector collector = [&](const silkworm::ByteView key, silkworm::ByteView sec_key, silkworm::ByteView value) {
             SILKRPC_TRACE << "StorageCollector: suitable for result"
                           << " key: 0x" << silkworm::to_hex(key)
                           << " sec_key: 0x" << silkworm::to_hex(sec_key)
@@ -259,7 +261,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_storage_range_at(const nl
 }
 
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_tracetransaction
-boost::asio::awaitable<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json& request, json::Stream& stream) {
+awaitable<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json& request, json::Stream& stream) {
     const auto& params = request["params"];
     if (params.empty()) {
         auto error_msg = "invalid debug_traceTransaction params: " + params.dump();
@@ -297,13 +299,8 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_trace_transaction(const n
 
             stream.write_field("result");
             stream.open_object();
-            const auto result = co_await executor.execute(tx_with_block->block_with_hash.block, tx_with_block->transaction, &stream);
+            co_await executor.execute(stream, tx_with_block->block_with_hash.block, tx_with_block->transaction);
             stream.close_object();
-
-            if (result.pre_check_error) {
-                const Error error{-32000, result.pre_check_error.value()};
-                stream.write_field("error", error);
-            }
         }
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
@@ -322,8 +319,8 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_trace_transaction(const n
 }
 
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_tracecall
-boost::asio::awaitable<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& request, json::Stream& stream) {
-    auto params = request["params"];
+awaitable<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& request, json::Stream& stream) {
+    const auto& params = request["params"];
     if (params.size() < 2) {
         auto error_msg = "invalid debug_traceCall params: " + params.dump();
         SILKRPC_ERROR << error_msg << "\n";
@@ -359,13 +356,8 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_trace_call(const nlohmann
 
         stream.write_field("result");
         stream.open_object();
-        const auto result = co_await executor.execute(block_with_hash.block, call, &stream);
+        co_await executor.execute(stream, block_with_hash.block, call);
         stream.close_object();
-
-        if (result.pre_check_error) {
-            const Error error{-32000, result.pre_check_error.value()};
-            stream.write_field("error", error);
-        }
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
 
@@ -388,7 +380,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_trace_call(const nlohmann
 }
 
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_traceblockbynumber
-boost::asio::awaitable<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json& request, json::Stream& stream) {
+awaitable<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json& request, json::Stream& stream) {
     const auto& params = request["params"];
     if (params.empty()) {
         auto error_msg = "invalid debug_traceBlockByNumber params: " + params.dump();
@@ -421,7 +413,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_trace_block_by_number(con
 
         stream.write_field("result");
         stream.open_array();
-        co_await executor.execute(block_with_hash.block, &stream);
+        co_await executor.execute(stream, block_with_hash.block);
         stream.close_array();
     } catch (const std::invalid_argument& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
@@ -450,7 +442,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_trace_block_by_number(con
 }
 
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_traceblockbyhash
-boost::asio::awaitable<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::json& request, json::Stream& stream) {
+awaitable<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::json& request, json::Stream& stream) {
     const auto& params = request["params"];
     if (params.empty()) {
         auto error_msg = "invalid debug_traceBlockByHash params: " + params.dump();
@@ -483,7 +475,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_trace_block_by_hash(const
 
         stream.write_field("result");
         stream.open_array();
-        co_await executor.execute(block_with_hash.block, &stream);
+        co_await executor.execute(stream, block_with_hash.block);
         stream.close_array();
     } catch (const std::invalid_argument& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
@@ -511,7 +503,7 @@ boost::asio::awaitable<void> DebugRpcApi::handle_debug_trace_block_by_hash(const
     co_return;
 }
 
-boost::asio::awaitable<std::set<evmc::address>> get_modified_accounts(ethdb::TransactionDatabase& tx_database, uint64_t start_block_number, uint64_t end_block_number) {
+awaitable<std::set<evmc::address>> get_modified_accounts(ethdb::TransactionDatabase& tx_database, uint64_t start_block_number, uint64_t end_block_number) {
     const auto latest_block_number = co_await core::get_block_number(core::kLatestBlockId, tx_database);
 
     SILKRPC_DEBUG << "latest: " << latest_block_number << " start: " << start_block_number << " end: " << end_block_number << "\n";
@@ -536,10 +528,10 @@ boost::asio::awaitable<std::set<evmc::address>> get_modified_accounts(ethdb::Tra
         const auto key = silkworm::db::block_key(start_block_number);
         SILKRPC_TRACE << "Ready to walk starting from key: " << silkworm::to_hex(key) << "\n";
 
-        co_await tx_database.walk(db::table::kPlainAccountChangeSet, key, 0, walker);
+        co_await tx_database.walk(db::table::kAccountChangeSetName, key, 0, walker);
     }
 
     co_return addresses;
 }
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

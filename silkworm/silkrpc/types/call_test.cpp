@@ -27,7 +27,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using Catch::Matchers::Message;
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
@@ -162,4 +162,4 @@ TEST_CASE("create call with AccessList", "[silkrpc][types][call]") {
     CHECK(txn.access_list == access_list);
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

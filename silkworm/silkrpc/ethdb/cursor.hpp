@@ -26,7 +26,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
-namespace silkrpc::ethdb {
+namespace silkworm::rpc::ethdb {
 
 class Cursor {
   public:
@@ -113,4 +113,4 @@ class SplitCursorDupSort {
     SplittedKeyValue split_key_value(const KeyValue& kv);
 };
 
-}  // namespace silkrpc::ethdb
+}  // namespace silkworm::rpc::ethdb

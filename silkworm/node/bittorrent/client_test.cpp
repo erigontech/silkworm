@@ -234,6 +234,8 @@ TEST_CASE("BitTorrentClient::stop", "[silkworm][snapshot][bittorrent]") {
         execution_thread.join();
     }
 
+// Exclude from sanitizer builds due to false positive: https://gcc.gnu.org/bugzilla//show_bug.cgi?id=101978
+#ifndef SILKWORM_SANITIZE
     SECTION("interrupt seeding execution loop on separate thread") {
         settings.seeding = true;
         BitTorrentClient client{settings};
@@ -241,6 +243,7 @@ TEST_CASE("BitTorrentClient::stop", "[silkworm][snapshot][bittorrent]") {
         CHECK_NOTHROW(client.stop());
         execution_thread.join();
     }
+#endif  // SILKWORM_SANITIZE
 }
 
 TEST_CASE("BitTorrentClient::request_torrent_updates", "[silkworm][snapshot][bittorrent]") {
@@ -323,6 +326,27 @@ TEST_CASE("BitTorrentClient::handle_alert", "[silkworm][snapshot][bittorrent]") 
         CHECK_NOTHROW(!client.handle_alert(&alert1));
         lt::file_completed_alert alert2{allocator, handle, 1};
         CHECK_NOTHROW(!client.handle_alert(&alert2));
+    }
+    SECTION("added_subscription is notified") {
+        std::promise<std::filesystem::path> added_promise;
+        auto handle_added = [&](const std::filesystem::path& added_path) {
+            added_promise.set_value(added_path);
+        };
+        client.added_subscription.connect(handle_added);
+        lt::error_code ec;
+        lt::add_torrent_alert alert{allocator, handle, params, ec};
+        REQUIRE(client.handle_alert(&alert));
+        CHECK_NOTHROW(added_promise.get_future());
+    }
+    SECTION("completed_subscription is notified") {
+        std::promise<std::filesystem::path> completed_promise;
+        auto handle_completed = [&](const std::filesystem::path& added_path) {
+            completed_promise.set_value(added_path);
+        };
+        client.completed_subscription.connect(handle_completed);
+        lt::torrent_finished_alert alert{allocator, handle};
+        REQUIRE(client.handle_alert(&alert));
+        CHECK_NOTHROW(completed_promise.get_future());
     }
 }
 

@@ -16,7 +16,7 @@
 
 #include "cursor.hpp"
 
-namespace silkrpc::ethdb {
+namespace silkworm::rpc::ethdb {
 
 SplitCursor::SplitCursor(Cursor& inner_cursor, silkworm::ByteView key, uint64_t match_bits, uint64_t part1_end,
                          uint64_t part2_start, uint64_t part3_start)
@@ -150,4 +150,4 @@ SplittedKeyValue SplitCursorDupSort::split_key_value(const KeyValue& kv) {
     return skv;
 }
 
-}  // namespace silkrpc::ethdb
+}  // namespace silkworm::rpc::ethdb

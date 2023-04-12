@@ -20,7 +20,7 @@
 
 #include <silkworm/silkrpc/common/log.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 using Catch::Matchers::Message;
 
@@ -47,4 +47,4 @@ TEST_CASE("print empty revert error", "[silkrpc][types][error]") {
     CHECK_NOTHROW(null_stream() << err);
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

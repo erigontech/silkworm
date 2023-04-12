@@ -20,7 +20,7 @@
 #include <catch2/catch.hpp>
 #include <grpcpp/grpcpp.h>
 
-namespace silkrpc::test {
+namespace silkworm::rpc::test {
 
 inline auto exception_has_grpc_status_code(grpc::StatusCode status_code) {
     return Catch::Predicate<const boost::system::system_error&>(
@@ -35,4 +35,4 @@ inline auto exception_has_unknown_grpc_status_code() {
     return test::exception_has_grpc_status_code(grpc::StatusCode::UNKNOWN);
 }
 
-}  // namespace silkrpc::test
+}  // namespace silkworm::rpc::test

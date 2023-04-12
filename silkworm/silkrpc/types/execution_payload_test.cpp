@@ -21,7 +21,7 @@
 
 #include <silkworm/silkrpc/common/log.hpp>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 TEST_CASE("print empty execution payload", "[silkrpc][types][execution_payload]") {
     ExecutionPayload p{};
@@ -35,4 +35,4 @@ TEST_CASE("print empty payload status", "[silkrpc][types][execution_payload]") {
     CHECK_NOTHROW(null_stream() << p);
 }
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

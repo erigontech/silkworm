@@ -21,9 +21,6 @@ class MockSentryStub : public Sentry::StubInterface {
   MOCK_METHOD3(PeerMinBlock, ::grpc::Status(::grpc::ClientContext* context, const ::sentry::PeerMinBlockRequest& request, ::google::protobuf::Empty* response));
   MOCK_METHOD3(AsyncPeerMinBlockRaw, ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>*(::grpc::ClientContext* context, const ::sentry::PeerMinBlockRequest& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(PrepareAsyncPeerMinBlockRaw, ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>*(::grpc::ClientContext* context, const ::sentry::PeerMinBlockRequest& request, ::grpc::CompletionQueue* cq));
-  MOCK_METHOD3(PeerUseless, ::grpc::Status(::grpc::ClientContext* context, const ::sentry::PeerUselessRequest& request, ::google::protobuf::Empty* response));
-  MOCK_METHOD3(AsyncPeerUselessRaw, ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>*(::grpc::ClientContext* context, const ::sentry::PeerUselessRequest& request, ::grpc::CompletionQueue* cq));
-  MOCK_METHOD3(PrepareAsyncPeerUselessRaw, ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>*(::grpc::ClientContext* context, const ::sentry::PeerUselessRequest& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(HandShake, ::grpc::Status(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::sentry::HandShakeReply* response));
   MOCK_METHOD3(AsyncHandShakeRaw, ::grpc::ClientAsyncResponseReaderInterface< ::sentry::HandShakeReply>*(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(PrepareAsyncHandShakeRaw, ::grpc::ClientAsyncResponseReaderInterface< ::sentry::HandShakeReply>*(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq));

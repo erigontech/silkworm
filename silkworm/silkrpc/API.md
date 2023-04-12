@@ -165,7 +165,7 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | ots_searchTransactionsAfter                | -            | not yet implemented                        |
 | ots_getBlockDetails                        | Yes          |                                            |
 | ots_getBlockDetailsByHash                  | Yes          |                                            |
-| ots_getBlockTransactions                   | -            | not yet implemented                        |
+| ots_getBlockTransactions                   | Yes          |                                            |
 | ots_hasCode                                | Yes          |                                            |
 | ots_traceTransaction                       | -            | not yet implemented                        |
 | ots_getTransactionError                    | -            | not yet implemented                        |

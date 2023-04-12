@@ -19,9 +19,9 @@
 #include <chrono>
 #include <cstdint>
 
-namespace silkrpc::clock_time {
+namespace silkworm::clock_time {
 
 uint64_t now();
 uint64_t since(uint64_t start);
 
-}  // namespace silkrpc::clock_time
+}  // namespace silkworm::clock_time

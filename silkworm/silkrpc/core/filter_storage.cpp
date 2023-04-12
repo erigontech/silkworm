@@ -19,9 +19,10 @@
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
-namespace silkrpc::filter {
+namespace silkworm::rpc {
 
 std::mt19937_64 random_engine{std::random_device{}()};
+
 Generator default_generator = []() { return random_engine(); };
 
 FilterStorage::FilterStorage(std::size_t max_size, double max_filter_age) : generator_{default_generator}, max_size_{max_size}, max_filter_age_{max_filter_age} {}
@@ -36,7 +37,7 @@ std::optional<std::string> FilterStorage::add_filter(const StoredFilter& filter)
     }
 
     if (storage_.size() >= max_size_) {
-        SILKRPC_INFO << "No room avaliable in storage, max size " << max_size_ << " reached" << std::endl
+        SILKRPC_INFO << "No room available in storage, max size " << max_size_ << " reached" << std::endl
                      << std::flush;
         return std::nullopt;
     }
@@ -109,4 +110,4 @@ void FilterStorage::clean_up() {
         }
     }
 }
-}  // namespace silkrpc::filter
+}  // namespace silkworm::rpc

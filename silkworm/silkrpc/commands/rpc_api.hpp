@@ -31,11 +31,11 @@
 #include <silkworm/silkrpc/commands/txpool_api.hpp>
 #include <silkworm/silkrpc/commands/web3_api.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::http {
 class RequestHandler;
 }
 
-namespace silkrpc::commands {
+namespace silkworm::rpc::commands {
 
 class RpcApiTable;
 
@@ -59,7 +59,7 @@ class RpcApi : protected EthereumRpcApi, NetRpcApi, Web3RpcApi, DebugRpcApi, Par
     RpcApi& operator=(const RpcApi&) = delete;
 
     friend class RpcApiTable;
-    friend class silkrpc::http::RequestHandler;
+    friend class silkworm::http::RequestHandler;
 };
 
-}  // namespace silkrpc::commands
+}  // namespace silkworm::rpc::commands

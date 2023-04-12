@@ -20,7 +20,7 @@
 
 #include <catch2/catch.hpp>
 
-namespace silkrpc::http {
+namespace silkworm::rpc::http {
 
 using Catch::Matchers::Message;
 
@@ -267,4 +267,4 @@ TEST_CASE("Reply stock_reply", "[silkrpc][http][reply]") {
     }
 }
 
-}  // namespace silkrpc::http
+}  // namespace silkworm::rpc::http

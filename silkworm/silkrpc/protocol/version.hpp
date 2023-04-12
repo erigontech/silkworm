@@ -28,7 +28,7 @@
 #include <silkworm/interfaces/txpool/txpool.grpc.pb.h>
 #include <silkworm/interfaces/types/types.pb.h>
 
-namespace silkrpc {
+namespace silkworm::rpc {
 
 struct ProtocolVersion {
     uint32_t major;
@@ -60,4 +60,4 @@ ProtocolVersionResult wait_for_mining_protocol_check(const std::shared_ptr<grpc:
 ProtocolVersionResult wait_for_txpool_protocol_check(const std::unique_ptr<::txpool::Txpool::StubInterface>& stub);
 ProtocolVersionResult wait_for_txpool_protocol_check(const std::shared_ptr<grpc::Channel>& channel);
 
-}  // namespace silkrpc
+}  // namespace silkworm::rpc

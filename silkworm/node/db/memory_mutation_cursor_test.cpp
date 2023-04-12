@@ -88,8 +88,8 @@ struct MemoryMutationCursorTest {
     };
     mdbx::env_managed main_env{create_main_env(main_db_config)};
     RWTxn main_txn{main_env};
-    MemoryOverlay overlay{tmp_dir.path()};
-    MemoryMutation mutation{overlay, &main_txn};
+    MemoryOverlay overlay{tmp_dir.path(), &main_txn};
+    MemoryMutation mutation{overlay};
 };
 
 // Skip in TSAN build due to false positive lock-order-inversion: https://github.com/google/sanitizers/issues/814

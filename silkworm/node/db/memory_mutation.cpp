@@ -20,13 +20,12 @@
 
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/node/db/memory_mutation_cursor.hpp>
 #include <silkworm/node/db/tables.hpp>
-
-#include "memory_mutation_cursor.hpp"
 
 namespace silkworm::db {
 
-MemoryOverlay::MemoryOverlay(const std::filesystem::path& tmp_dir) {
+MemoryDatabase::MemoryDatabase(const std::filesystem::path& tmp_dir) {
     DataDirectory data_dir{tmp_dir / "silkworm_mem_db"};
     data_dir.deploy();
 
@@ -45,18 +44,36 @@ MemoryOverlay::MemoryOverlay(const std::filesystem::path& tmp_dir) {
     txn.commit_and_stop();
 }
 
-MemoryOverlay::MemoryOverlay(MemoryOverlay&& other) noexcept : memory_env_(std::move(other.memory_env_)) {}
+MemoryDatabase::MemoryDatabase() : MemoryDatabase(TemporaryDirectory::get_unique_temporary_path()) {}
 
-::mdbx::txn_managed MemoryOverlay::start_rw_tx() {
+MemoryDatabase::MemoryDatabase(MemoryDatabase&& other) noexcept : memory_env_(std::move(other.memory_env_)) {}
+
+::mdbx::txn_managed MemoryDatabase::start_rw_txn() {
     return memory_env_.start_write();
 }
 
-MemoryMutation::MemoryMutation(MemoryOverlay& memory_db, ROTxn* txn)
-    : RWTxn{::mdbx::txn_managed{}}, memory_db_(memory_db), txn_(txn) {
-    managed_txn_ = memory_db_.start_rw_tx();
+MemoryOverlay::MemoryOverlay(const std::filesystem::path& tmp_dir, silkworm::db::ROTxn* txn)
+    : memory_db_{tmp_dir}, txn_(txn) {}
+
+MemoryOverlay::MemoryOverlay(silkworm::db::ROTxn* txn) : memory_db_{}, txn_(txn) {}
+
+MemoryOverlay::MemoryOverlay(MemoryOverlay&& other) noexcept
+    : memory_db_(std::move(other.memory_db_)), txn_(other.txn_) {}
+
+void MemoryOverlay::update_txn(ROTxn* txn) {
+    txn_ = txn;
+}
+
+::mdbx::txn_managed MemoryOverlay::start_rw_txn() {
+    return memory_db_.start_rw_txn();
+}
+
+MemoryMutation::MemoryMutation(MemoryOverlay& overlay)
+    : RWTxn{::mdbx::txn_managed{}}, overlay_(overlay) {
+    managed_txn_ = overlay_.start_rw_txn();
 
     // Initialize sequences
-    db::PooledCursor cursor{*txn_, db::table::kSequence};
+    db::PooledCursor cursor{*overlay_.external_txn(), db::table::kSequence};
     db::PooledCursor memory_cursor{managed_txn_, db::table::kSequence};
     for (auto result = cursor.to_first(false); result; result = cursor.to_next(false)) {
         memory_cursor.put(result.key, &result.value, MDBX_put_flags_t::MDBX_UPSERT);
@@ -80,11 +97,11 @@ bool MemoryMutation::is_entry_deleted(const std::string& table, const Slice& key
 }
 
 bool MemoryMutation::has_map(const std::string& bucket_name) const {
-    return db::has_map(*txn_, bucket_name.c_str());
+    return db::has_map(*overlay_.external_txn(), bucket_name.c_str());
 }
 
 void MemoryMutation::update_txn(ROTxn* txn) {
-    txn_ = txn;
+    overlay_.update_txn(txn);
 }
 
 std::unique_ptr<ROCursor> MemoryMutation::ro_cursor(const MapConfig& config) {

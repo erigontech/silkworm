@@ -35,6 +35,8 @@ if(NOT SILKWORM_CORE_ONLY)
 
   # Silkworm components
   add_subdirectory(rpcdaemon)
+  add_subdirectory(state)
+  add_subdirectory(statetransition)
 
   file(GLOB_RECURSE COMMON_SRC CONFIGURE_DEPENDS "common/*.cpp" "common/*.hpp")
 
@@ -76,7 +78,7 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(sentry "sentry.cpp;${COMMON_SRC}")
   target_link_libraries(sentry PRIVATE silkworm_node silkworm-buildinfo CLI11::CLI11 silkworm_sentry)
 
-  add_executable(backend_kv_server "backend_kv_server.cpp;${COMMON_SRC}")
+  add_executable(backend_kv_server "backend_kv_server.cpp;${COMMON_SRC}" statetransition/statetransition.cpp)
   target_link_libraries(backend_kv_server PRIVATE silkworm_node silkworm_sync silkworm-buildinfo CLI11::CLI11)
 
 endif()

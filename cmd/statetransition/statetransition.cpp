@@ -1,17 +1,17 @@
 /*
-   Copyright 2022 The Silkworm Authors
+Copyright 2023 The Silkworm Authors
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 
 #include <iostream>
@@ -24,6 +24,7 @@
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
+
 
 int main(int argc, char* argv[]) {
     CLI::App app{"Executes Ethereum blocks and scans txs for errored txs"};
@@ -49,12 +50,6 @@ int main(int argc, char* argv[]) {
 
     int retvar{0};
 
-    // Note: If Erigon is actively syncing its database (syncing), it is important not to create
-    // long-running datbase reads transactions even though that may make your processing faster.
-    // Uncomment the following line (and comment the line below) only if you're certain Erigon is not
-    // running on the same machine.
-    // std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
-
     AdvancedAnalysisCache analysis_cache;
     ObjectPool<EvmoneExecutionState> state_pool;
     std::vector<Receipt> receipts;
@@ -69,7 +64,7 @@ int main(int argc, char* argv[]) {
         std::cout << a;
         auto chain_config{db::read_chain_config(txn)};
         if (!chain_config) {
-//            throw std::runtime_error("Unable to retrieve chain config");
+            //            throw std::runtime_error("Unable to retrieve chain config");
             const auto json = nlohmann::json::parse("    {\n"
                 "            \"chainId\":1,\n"
                 "            \"homesteadBlock\":1150000,\n"
@@ -96,10 +91,11 @@ int main(int argc, char* argv[]) {
 
         Block block;
         for (uint64_t block_num{from}; block_num < to; ++block_num) {
-            // Note: See the comment above. You may uncomment that line and comment the next line if you're certain
+            // You may uncomment that line and comment the next line if you're certain
             // that Erigon is not syncing on the same machine. If you use a long-running transaction by doing this, and
             // you're mistaken (Erigon is syncing), the database file may 'grow quickly' as per the LMDB docs.
             txn->renew_reading();
+
 
             // Read the block
             if (!db::read_block_by_number(txn, block_num, /*read_senders=*/true, block)) {

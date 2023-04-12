@@ -24,6 +24,9 @@
 #include <utility>
 #include <vector>
 
+#include <silkworm/infra/concurrency/coroutine.hpp>
+
+#include <boost/asio/awaitable.hpp>
 #include <boost/asio/deadline_timer.hpp>
 #include <grpcpp/grpcpp.h>
 
@@ -63,7 +66,7 @@ class KvVersionCall : public server::UnaryCall<google::protobuf::Empty, types::V
 
     static void fill_predefined_reply();
 
-    boost::asio::awaitable<void> operator()();
+    boost::asio::awaitable<void> operator()(const EthereumBackEnd& backend);
 
   private:
     static types::VersionReply response_;
@@ -74,10 +77,9 @@ class TxCall : public server::BidiStreamingCall<remote::Cursor, remote::Pair> {
   public:
     using Base::BidiStreamingCall;
 
-    static void set_chaindata_env(mdbx::env* chaindata_env);
     static void set_max_ttl_duration(const std::chrono::milliseconds& max_ttl_duration);
 
-    boost::asio::awaitable<void> operator()();
+    boost::asio::awaitable<void> operator()(const EthereumBackEnd& backend);
 
   private:
     struct TxCursor {
@@ -100,7 +102,7 @@ class TxCall : public server::BidiStreamingCall<remote::Cursor, remote::Pair> {
 
     void handle_operation(const remote::Cursor* request, db::ROCursorDupSort& cursor, remote::Pair& response);
 
-    void handle_max_ttl_timer_expired();
+    void handle_max_ttl_timer_expired(const EthereumBackEnd& backend);
 
     bool save_cursors(std::vector<CursorPosition>& positions);
 
@@ -142,7 +144,6 @@ class TxCall : public server::BidiStreamingCall<remote::Cursor, remote::Pair> {
 
     void throw_with_error(grpc::Status&& status);
 
-    static mdbx::env* chaindata_env_;
     static std::chrono::milliseconds max_ttl_duration_;
 
     db::ROTxn read_only_txn_;
@@ -155,20 +156,7 @@ class StateChangesCall : public server::ServerStreamingCall<remote::StateChangeR
   public:
     using Base::ServerStreamingCall;
 
-    static void set_source(StateChangeSource* source);
-
-    boost::asio::awaitable<void> operator()();
-
-  private:
-    static StateChangeSource* source_;
-};
-
-//! The KV service implementation.
-class KvService {
-  public:
-    static void register_kv_request_calls(const ServerContext& context, remote::KV::AsyncService* service);
-
-    explicit KvService(const EthereumBackEnd& backend);
+    boost::asio::awaitable<void> operator()(const EthereumBackEnd& backend);
 };
 
 namespace detail {

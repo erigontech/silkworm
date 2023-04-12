@@ -16,22 +16,22 @@
 
 #include "backend_kv_server.hpp"
 
+#include <silkworm/infra/concurrency/coroutine.hpp>
+
+#include <boost/asio/awaitable.hpp>
+
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/backend/remote/rpc/sentry_client.hpp>
+#include <silkworm/node/backend/remote/rpc/backend_calls.hpp>
+#include <silkworm/node/backend/remote/rpc/kv_calls.hpp>
 
 namespace silkworm::rpc {
 
-BackEndKvService::BackEndKvService(const EthereumBackEnd& backend)
-    : BackEndService(backend), KvService(backend) {
-}
+using boost::asio::awaitable;
 
 BackEndKvServer::BackEndKvServer(const ServerConfig& srv_config, const EthereumBackEnd& backend)
     : Server(srv_config), backend_(backend) {
-    uint32_t num_contexts = srv_config.context_pool_settings().num_contexts;
-    backend_kv_services_.reserve(num_contexts);
-    for (std::size_t i{0}; i < num_contexts; i++) {
-        backend_kv_services_.emplace_back(std::make_unique<BackEndKvService>(backend));
-    }
+    setup_backend_calls(backend);
+    setup_kv_calls();
     SILK_INFO << "BackEndKvServer created listening on: " << srv_config.address_uri();
 }
 
@@ -41,21 +41,90 @@ void BackEndKvServer::register_async_services(grpc::ServerBuilder& builder) {
     builder.RegisterService(&kv_async_service_);
 }
 
+void BackEndKvServer::setup_backend_calls(const EthereumBackEnd& backend) {
+    EtherbaseCall::fill_predefined_reply(backend);
+    NetVersionCall::fill_predefined_reply(backend);
+    BackEndVersionCall::fill_predefined_reply();
+    ProtocolVersionCall::fill_predefined_reply();
+    ClientVersionCall::fill_predefined_reply(backend);
+}
+
+void BackEndKvServer::register_backend_request_calls(agrpc::GrpcContext* grpc_context) {
+    SILK_DEBUG << "BackEndService::register_backend_request_calls START";
+    auto service = &backend_async_service_;
+    auto& backend = backend_;
+
+    // Register one requested call repeatedly for each RPC: asio-grpc will take care of re-registration on any incoming call
+    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestEtherbase,
+                       [&backend](auto&&... args) -> awaitable<void> {
+                           co_await EtherbaseCall{std::forward<decltype(args)>(args)...}(backend);
+                       });
+    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestNetVersion,
+                       [&backend](auto&&... args) -> awaitable<void> {
+                           co_await NetVersionCall{std::forward<decltype(args)>(args)...}(backend);
+                       });
+    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestNetPeerCount,
+                       [&backend](auto&&... args) -> awaitable<void> {
+                           co_await NetPeerCountCall{std::forward<decltype(args)>(args)...}(backend);
+                       });
+    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestVersion,
+                       [&backend](auto&&... args) -> awaitable<void> {
+                           co_await BackEndVersionCall{std::forward<decltype(args)>(args)...}(backend);
+                       });
+    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestProtocolVersion,
+                       [&backend](auto&&... args) -> awaitable<void> {
+                           co_await ProtocolVersionCall{std::forward<decltype(args)>(args)...}(backend);
+                       });
+    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestClientVersion,
+                       [&backend](auto&&... args) -> awaitable<void> {
+                           co_await ClientVersionCall{std::forward<decltype(args)>(args)...}(backend);
+                       });
+    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestSubscribe,
+                       [&backend](auto&&... args) -> awaitable<void> {
+                           co_await SubscribeCall{std::forward<decltype(args)>(args)...}(backend);
+                       });
+    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestNodeInfo,
+                       [&backend](auto&&... args) -> awaitable<void> {
+                           co_await NodeInfoCall{std::forward<decltype(args)>(args)...}(backend);
+                       });
+    SILK_DEBUG << "BackEndService::register_backend_request_calls END";
+}
+
+void BackEndKvServer::setup_kv_calls() {
+    KvVersionCall::fill_predefined_reply();
+}
+
+void BackEndKvServer::register_kv_request_calls(agrpc::GrpcContext* grpc_context) {
+    SILK_DEBUG << "BackEndKvServer::register_kv_request_calls START";
+    auto service = &kv_async_service_;
+    auto& backend = backend_;
+
+    // Register one requested call repeatedly for each RPC: asio-grpc will take care of re-registration on any incoming call
+    request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestVersion,
+                       [&backend](auto&&... args) -> awaitable<void> {
+                           co_await KvVersionCall{std::forward<decltype(args)>(args)...}(backend);
+                       });
+    request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestTx,
+                       [&backend, grpc_context](auto&&... args) -> awaitable<void> {
+                           co_await TxCall{*grpc_context, std::forward<decltype(args)>(args)...}(backend);
+                       });
+    request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestStateChanges,
+                       [&backend](auto&&... args) -> awaitable<void> {
+                           co_await StateChangesCall{std::forward<decltype(args)>(args)...}(backend);
+                       });
+    SILK_DEBUG << "BackEndKvServer::register_kv_request_calls END";
+}
+
 /// Start server-side RPC requests as required by gRPC async model: one RPC per type is requested in advance.
 void BackEndKvServer::register_request_calls() {
     // Start all server-side RPC requests for each available server context
-    for (auto& backend_kv_svc : backend_kv_services_) {
-        const auto& server_context = next_context();
-
-        // Complete the service initialization
-        RemoteSentryClientFactory sentry_factory{*server_context.client_grpc_context()};
-        for (const auto& sentry_address : backend_.sentry_addresses()) {
-            backend_kv_svc->add_sentry(sentry_factory.make_sentry_client(sentry_address));
-        }
+    for (std::size_t i = 0; i < num_contexts(); i++) {
+        const auto& context = next_context();
+        auto grpc_context = context.server_grpc_context();
 
         // Register initial requested calls for ETHBACKEND and KV services
-        BackEndKvService::register_backend_request_calls(server_context, &backend_async_service_);
-        BackEndKvService::register_kv_request_calls(server_context, &kv_async_service_);
+        register_backend_request_calls(grpc_context);
+        register_kv_request_calls(grpc_context);
     }
 }
 

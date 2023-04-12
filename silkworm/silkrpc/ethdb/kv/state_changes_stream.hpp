@@ -41,8 +41,8 @@
 namespace remote {
 
 inline std::ostream& operator<<(std::ostream& out, const remote::StateChangeBatch& batch) {
-    out << "changebatch_size=" << batch.changebatch_size() << " stateversionid=" << batch.stateversionid()
-        << " pendingblockbasefee=" << batch.pendingblockbasefee() << " blockgaslimit=" << batch.blockgaslimit();
+    out << "change_batch_size=" << batch.change_batch_size() << " state_version_id=" << batch.state_version_id()
+        << " pending_block_base_fee=" << batch.pending_block_base_fee() << " block_gas_limit=" << batch.block_gas_limit();
     return out;
 }
 

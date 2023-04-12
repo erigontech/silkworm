@@ -303,7 +303,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_txpool_2fmining_2eproto::offse
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::txpool::OnPendingBlockReply, rplblock_),
+  PROTOBUF_FIELD_OFFSET(::txpool::OnPendingBlockReply, rpl_block_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::txpool::OnMinedBlockRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -314,7 +314,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_txpool_2fmining_2eproto::offse
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::txpool::OnMinedBlockReply, rplblock_),
+  PROTOBUF_FIELD_OFFSET(::txpool::OnMinedBlockReply, rpl_block_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::txpool::OnPendingLogsRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -325,7 +325,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_txpool_2fmining_2eproto::offse
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::txpool::OnPendingLogsReply, rpllogs_),
+  PROTOBUF_FIELD_OFFSET(::txpool::OnPendingLogsReply, rpl_logs_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::txpool::GetWorkRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -336,17 +336,17 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_txpool_2fmining_2eproto::offse
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::txpool::GetWorkReply, headerhash_),
-  PROTOBUF_FIELD_OFFSET(::txpool::GetWorkReply, seedhash_),
+  PROTOBUF_FIELD_OFFSET(::txpool::GetWorkReply, header_hash_),
+  PROTOBUF_FIELD_OFFSET(::txpool::GetWorkReply, seed_hash_),
   PROTOBUF_FIELD_OFFSET(::txpool::GetWorkReply, target_),
-  PROTOBUF_FIELD_OFFSET(::txpool::GetWorkReply, blocknumber_),
+  PROTOBUF_FIELD_OFFSET(::txpool::GetWorkReply, block_number_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::txpool::SubmitWorkRequest, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::txpool::SubmitWorkRequest, blocknonce_),
-  PROTOBUF_FIELD_OFFSET(::txpool::SubmitWorkRequest, powhash_),
+  PROTOBUF_FIELD_OFFSET(::txpool::SubmitWorkRequest, block_nonce_),
+  PROTOBUF_FIELD_OFFSET(::txpool::SubmitWorkRequest, pow_hash_),
   PROTOBUF_FIELD_OFFSET(::txpool::SubmitWorkRequest, digest_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::txpool::SubmitWorkReply, _internal_metadata_),
@@ -377,7 +377,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_txpool_2fmining_2eproto::offse
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::txpool::HashRateReply, hashrate_),
+  PROTOBUF_FIELD_OFFSET(::txpool::HashRateReply, hash_rate_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::txpool::MiningRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -432,38 +432,38 @@ static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] =
 const char descriptor_table_protodef_txpool_2fmining_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
   "\n\023txpool/mining.proto\022\006txpool\032\033google/pr"
   "otobuf/empty.proto\032\021types/types.proto\"\027\n"
-  "\025OnPendingBlockRequest\"\'\n\023OnPendingBlock"
-  "Reply\022\020\n\010rplBlock\030\001 \001(\014\"\025\n\023OnMinedBlockR"
-  "equest\"%\n\021OnMinedBlockReply\022\020\n\010rplBlock\030"
-  "\001 \001(\014\"\026\n\024OnPendingLogsRequest\"%\n\022OnPendi"
-  "ngLogsReply\022\017\n\007rplLogs\030\001 \001(\014\"\020\n\016GetWorkR"
-  "equest\"Y\n\014GetWorkReply\022\022\n\nheaderHash\030\001 \001"
-  "(\t\022\020\n\010seedHash\030\002 \001(\t\022\016\n\006target\030\003 \001(\t\022\023\n\013"
-  "blockNumber\030\004 \001(\t\"H\n\021SubmitWorkRequest\022\022"
-  "\n\nblockNonce\030\001 \001(\014\022\017\n\007powHash\030\002 \001(\014\022\016\n\006d"
-  "igest\030\003 \001(\014\"\035\n\017SubmitWorkReply\022\n\n\002ok\030\001 \001"
-  "(\010\"1\n\025SubmitHashRateRequest\022\014\n\004rate\030\001 \001("
-  "\004\022\n\n\002id\030\002 \001(\014\"!\n\023SubmitHashRateReply\022\n\n\002"
-  "ok\030\001 \001(\010\"\021\n\017HashRateRequest\"!\n\rHashRateR"
-  "eply\022\020\n\010hashRate\030\001 \001(\004\"\017\n\rMiningRequest\""
-  "/\n\013MiningReply\022\017\n\007enabled\030\001 \001(\010\022\017\n\007runni"
-  "ng\030\002 \001(\0102\342\004\n\006Mining\0226\n\007Version\022\026.google."
-  "protobuf.Empty\032\023.types.VersionReply\022N\n\016O"
-  "nPendingBlock\022\035.txpool.OnPendingBlockReq"
-  "uest\032\033.txpool.OnPendingBlockReply0\001\022H\n\014O"
-  "nMinedBlock\022\033.txpool.OnMinedBlockRequest"
-  "\032\031.txpool.OnMinedBlockReply0\001\022K\n\rOnPendi"
-  "ngLogs\022\034.txpool.OnPendingLogsRequest\032\032.t"
-  "xpool.OnPendingLogsReply0\001\0227\n\007GetWork\022\026."
-  "txpool.GetWorkRequest\032\024.txpool.GetWorkRe"
-  "ply\022@\n\nSubmitWork\022\031.txpool.SubmitWorkReq"
-  "uest\032\027.txpool.SubmitWorkReply\022L\n\016SubmitH"
-  "ashRate\022\035.txpool.SubmitHashRateRequest\032\033"
-  ".txpool.SubmitHashRateReply\022:\n\010HashRate\022"
-  "\027.txpool.HashRateRequest\032\025.txpool.HashRa"
-  "teReply\0224\n\006Mining\022\025.txpool.MiningRequest"
-  "\032\023.txpool.MiningReplyB\021Z\017./txpool;txpool"
-  "b\006proto3"
+  "\025OnPendingBlockRequest\"(\n\023OnPendingBlock"
+  "Reply\022\021\n\trpl_block\030\001 \001(\014\"\025\n\023OnMinedBlock"
+  "Request\"&\n\021OnMinedBlockReply\022\021\n\trpl_bloc"
+  "k\030\001 \001(\014\"\026\n\024OnPendingLogsRequest\"&\n\022OnPen"
+  "dingLogsReply\022\020\n\010rpl_logs\030\001 \001(\014\"\020\n\016GetWo"
+  "rkRequest\"\\\n\014GetWorkReply\022\023\n\013header_hash"
+  "\030\001 \001(\t\022\021\n\tseed_hash\030\002 \001(\t\022\016\n\006target\030\003 \001("
+  "\t\022\024\n\014block_number\030\004 \001(\t\"J\n\021SubmitWorkReq"
+  "uest\022\023\n\013block_nonce\030\001 \001(\014\022\020\n\010pow_hash\030\002 "
+  "\001(\014\022\016\n\006digest\030\003 \001(\014\"\035\n\017SubmitWorkReply\022\n"
+  "\n\002ok\030\001 \001(\010\"1\n\025SubmitHashRateRequest\022\014\n\004r"
+  "ate\030\001 \001(\004\022\n\n\002id\030\002 \001(\014\"!\n\023SubmitHashRateR"
+  "eply\022\n\n\002ok\030\001 \001(\010\"\021\n\017HashRateRequest\"\"\n\rH"
+  "ashRateReply\022\021\n\thash_rate\030\001 \001(\004\"\017\n\rMinin"
+  "gRequest\"/\n\013MiningReply\022\017\n\007enabled\030\001 \001(\010"
+  "\022\017\n\007running\030\002 \001(\0102\342\004\n\006Mining\0226\n\007Version\022"
+  "\026.google.protobuf.Empty\032\023.types.VersionR"
+  "eply\022N\n\016OnPendingBlock\022\035.txpool.OnPendin"
+  "gBlockRequest\032\033.txpool.OnPendingBlockRep"
+  "ly0\001\022H\n\014OnMinedBlock\022\033.txpool.OnMinedBlo"
+  "ckRequest\032\031.txpool.OnMinedBlockReply0\001\022K"
+  "\n\rOnPendingLogs\022\034.txpool.OnPendingLogsRe"
+  "quest\032\032.txpool.OnPendingLogsReply0\001\0227\n\007G"
+  "etWork\022\026.txpool.GetWorkRequest\032\024.txpool."
+  "GetWorkReply\022@\n\nSubmitWork\022\031.txpool.Subm"
+  "itWorkRequest\032\027.txpool.SubmitWorkReply\022L"
+  "\n\016SubmitHashRate\022\035.txpool.SubmitHashRate"
+  "Request\032\033.txpool.SubmitHashRateReply\022:\n\010"
+  "HashRate\022\027.txpool.HashRateRequest\032\025.txpo"
+  "ol.HashRateReply\0224\n\006Mining\022\025.txpool.Mini"
+  "ngRequest\032\023.txpool.MiningReplyB\021Z\017./txpo"
+  "ol;txpoolb\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_txpool_2fmining_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fempty_2eproto,
@@ -489,7 +489,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_txp
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_txpool_2fmining_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_txpool_2fmining_2eproto = {
-  false, false, descriptor_table_protodef_txpool_2fmining_2eproto, "txpool/mining.proto", 1328,
+  false, false, descriptor_table_protodef_txpool_2fmining_2eproto, "txpool/mining.proto", 1337,
   &descriptor_table_txpool_2fmining_2eproto_once, descriptor_table_txpool_2fmining_2eproto_sccs, descriptor_table_txpool_2fmining_2eproto_deps, 16, 2,
   schemas, file_default_instances, TableStruct_txpool_2fmining_2eproto::offsets,
   file_level_metadata_txpool_2fmining_2eproto, 16, file_level_enum_descriptors_txpool_2fmining_2eproto, file_level_service_descriptors_txpool_2fmining_2eproto,
@@ -676,9 +676,9 @@ OnPendingBlockReply::OnPendingBlockReply(::PROTOBUF_NAMESPACE_ID::Arena* arena)
 OnPendingBlockReply::OnPendingBlockReply(const OnPendingBlockReply& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  rplblock_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  if (!from._internal_rplblock().empty()) {
-    rplblock_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_rplblock(), 
+  rpl_block_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_rpl_block().empty()) {
+    rpl_block_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_rpl_block(), 
       GetArena());
   }
   // @@protoc_insertion_point(copy_constructor:txpool.OnPendingBlockReply)
@@ -686,7 +686,7 @@ OnPendingBlockReply::OnPendingBlockReply(const OnPendingBlockReply& from)
 
 void OnPendingBlockReply::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_OnPendingBlockReply_txpool_2fmining_2eproto.base);
-  rplblock_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  rpl_block_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
 }
 
 OnPendingBlockReply::~OnPendingBlockReply() {
@@ -697,7 +697,7 @@ OnPendingBlockReply::~OnPendingBlockReply() {
 
 void OnPendingBlockReply::SharedDtor() {
   GOOGLE_DCHECK(GetArena() == nullptr);
-  rplblock_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  rpl_block_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
 }
 
 void OnPendingBlockReply::ArenaDtor(void* object) {
@@ -721,7 +721,7 @@ void OnPendingBlockReply::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  rplblock_.ClearToEmpty();
+  rpl_block_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -732,10 +732,10 @@ const char* OnPendingBlockReply::_InternalParse(const char* ptr, ::PROTOBUF_NAME
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // bytes rplBlock = 1;
+      // bytes rpl_block = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
-          auto str = _internal_mutable_rplblock();
+          auto str = _internal_mutable_rpl_block();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
         } else goto handle_unusual;
@@ -768,10 +768,10 @@ failure:
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // bytes rplBlock = 1;
-  if (this->rplblock().size() > 0) {
+  // bytes rpl_block = 1;
+  if (this->rpl_block().size() > 0) {
     target = stream->WriteBytesMaybeAliased(
-        1, this->_internal_rplblock(), target);
+        1, this->_internal_rpl_block(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -790,11 +790,11 @@ size_t OnPendingBlockReply::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // bytes rplBlock = 1;
-  if (this->rplblock().size() > 0) {
+  // bytes rpl_block = 1;
+  if (this->rpl_block().size() > 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_rplblock());
+        this->_internal_rpl_block());
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -828,8 +828,8 @@ void OnPendingBlockReply::MergeFrom(const OnPendingBlockReply& from) {
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from.rplblock().size() > 0) {
-    _internal_set_rplblock(from._internal_rplblock());
+  if (from.rpl_block().size() > 0) {
+    _internal_set_rpl_block(from._internal_rpl_block());
   }
 }
 
@@ -854,7 +854,7 @@ bool OnPendingBlockReply::IsInitialized() const {
 void OnPendingBlockReply::InternalSwap(OnPendingBlockReply* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-  rplblock_.Swap(&other->rplblock_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  rpl_block_.Swap(&other->rpl_block_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata OnPendingBlockReply::GetMetadata() const {
@@ -1039,9 +1039,9 @@ OnMinedBlockReply::OnMinedBlockReply(::PROTOBUF_NAMESPACE_ID::Arena* arena)
 OnMinedBlockReply::OnMinedBlockReply(const OnMinedBlockReply& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  rplblock_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  if (!from._internal_rplblock().empty()) {
-    rplblock_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_rplblock(), 
+  rpl_block_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_rpl_block().empty()) {
+    rpl_block_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_rpl_block(), 
       GetArena());
   }
   // @@protoc_insertion_point(copy_constructor:txpool.OnMinedBlockReply)
@@ -1049,7 +1049,7 @@ OnMinedBlockReply::OnMinedBlockReply(const OnMinedBlockReply& from)
 
 void OnMinedBlockReply::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_OnMinedBlockReply_txpool_2fmining_2eproto.base);
-  rplblock_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  rpl_block_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
 }
 
 OnMinedBlockReply::~OnMinedBlockReply() {
@@ -1060,7 +1060,7 @@ OnMinedBlockReply::~OnMinedBlockReply() {
 
 void OnMinedBlockReply::SharedDtor() {
   GOOGLE_DCHECK(GetArena() == nullptr);
-  rplblock_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  rpl_block_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
 }
 
 void OnMinedBlockReply::ArenaDtor(void* object) {
@@ -1084,7 +1084,7 @@ void OnMinedBlockReply::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  rplblock_.ClearToEmpty();
+  rpl_block_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -1095,10 +1095,10 @@ const char* OnMinedBlockReply::_InternalParse(const char* ptr, ::PROTOBUF_NAMESP
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // bytes rplBlock = 1;
+      // bytes rpl_block = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
-          auto str = _internal_mutable_rplblock();
+          auto str = _internal_mutable_rpl_block();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
         } else goto handle_unusual;
@@ -1131,10 +1131,10 @@ failure:
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // bytes rplBlock = 1;
-  if (this->rplblock().size() > 0) {
+  // bytes rpl_block = 1;
+  if (this->rpl_block().size() > 0) {
     target = stream->WriteBytesMaybeAliased(
-        1, this->_internal_rplblock(), target);
+        1, this->_internal_rpl_block(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1153,11 +1153,11 @@ size_t OnMinedBlockReply::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // bytes rplBlock = 1;
-  if (this->rplblock().size() > 0) {
+  // bytes rpl_block = 1;
+  if (this->rpl_block().size() > 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_rplblock());
+        this->_internal_rpl_block());
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1191,8 +1191,8 @@ void OnMinedBlockReply::MergeFrom(const OnMinedBlockReply& from) {
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from.rplblock().size() > 0) {
-    _internal_set_rplblock(from._internal_rplblock());
+  if (from.rpl_block().size() > 0) {
+    _internal_set_rpl_block(from._internal_rpl_block());
   }
 }
 
@@ -1217,7 +1217,7 @@ bool OnMinedBlockReply::IsInitialized() const {
 void OnMinedBlockReply::InternalSwap(OnMinedBlockReply* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-  rplblock_.Swap(&other->rplblock_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  rpl_block_.Swap(&other->rpl_block_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata OnMinedBlockReply::GetMetadata() const {
@@ -1402,9 +1402,9 @@ OnPendingLogsReply::OnPendingLogsReply(::PROTOBUF_NAMESPACE_ID::Arena* arena)
 OnPendingLogsReply::OnPendingLogsReply(const OnPendingLogsReply& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  rpllogs_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  if (!from._internal_rpllogs().empty()) {
-    rpllogs_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_rpllogs(), 
+  rpl_logs_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_rpl_logs().empty()) {
+    rpl_logs_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_rpl_logs(), 
       GetArena());
   }
   // @@protoc_insertion_point(copy_constructor:txpool.OnPendingLogsReply)
@@ -1412,7 +1412,7 @@ OnPendingLogsReply::OnPendingLogsReply(const OnPendingLogsReply& from)
 
 void OnPendingLogsReply::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_OnPendingLogsReply_txpool_2fmining_2eproto.base);
-  rpllogs_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  rpl_logs_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
 }
 
 OnPendingLogsReply::~OnPendingLogsReply() {
@@ -1423,7 +1423,7 @@ OnPendingLogsReply::~OnPendingLogsReply() {
 
 void OnPendingLogsReply::SharedDtor() {
   GOOGLE_DCHECK(GetArena() == nullptr);
-  rpllogs_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  rpl_logs_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
 }
 
 void OnPendingLogsReply::ArenaDtor(void* object) {
@@ -1447,7 +1447,7 @@ void OnPendingLogsReply::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  rpllogs_.ClearToEmpty();
+  rpl_logs_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -1458,10 +1458,10 @@ const char* OnPendingLogsReply::_InternalParse(const char* ptr, ::PROTOBUF_NAMES
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // bytes rplLogs = 1;
+      // bytes rpl_logs = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
-          auto str = _internal_mutable_rpllogs();
+          auto str = _internal_mutable_rpl_logs();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
         } else goto handle_unusual;
@@ -1494,10 +1494,10 @@ failure:
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // bytes rplLogs = 1;
-  if (this->rpllogs().size() > 0) {
+  // bytes rpl_logs = 1;
+  if (this->rpl_logs().size() > 0) {
     target = stream->WriteBytesMaybeAliased(
-        1, this->_internal_rpllogs(), target);
+        1, this->_internal_rpl_logs(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1516,11 +1516,11 @@ size_t OnPendingLogsReply::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // bytes rplLogs = 1;
-  if (this->rpllogs().size() > 0) {
+  // bytes rpl_logs = 1;
+  if (this->rpl_logs().size() > 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_rpllogs());
+        this->_internal_rpl_logs());
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1554,8 +1554,8 @@ void OnPendingLogsReply::MergeFrom(const OnPendingLogsReply& from) {
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from.rpllogs().size() > 0) {
-    _internal_set_rpllogs(from._internal_rpllogs());
+  if (from.rpl_logs().size() > 0) {
+    _internal_set_rpl_logs(from._internal_rpl_logs());
   }
 }
 
@@ -1580,7 +1580,7 @@ bool OnPendingLogsReply::IsInitialized() const {
 void OnPendingLogsReply::InternalSwap(OnPendingLogsReply* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-  rpllogs_.Swap(&other->rpllogs_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  rpl_logs_.Swap(&other->rpl_logs_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata OnPendingLogsReply::GetMetadata() const {
@@ -1765,14 +1765,14 @@ GetWorkReply::GetWorkReply(::PROTOBUF_NAMESPACE_ID::Arena* arena)
 GetWorkReply::GetWorkReply(const GetWorkReply& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  headerhash_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  if (!from._internal_headerhash().empty()) {
-    headerhash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_headerhash(), 
+  header_hash_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_header_hash().empty()) {
+    header_hash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_header_hash(), 
       GetArena());
   }
-  seedhash_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  if (!from._internal_seedhash().empty()) {
-    seedhash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_seedhash(), 
+  seed_hash_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_seed_hash().empty()) {
+    seed_hash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_seed_hash(), 
       GetArena());
   }
   target_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
@@ -1780,9 +1780,9 @@ GetWorkReply::GetWorkReply(const GetWorkReply& from)
     target_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_target(), 
       GetArena());
   }
-  blocknumber_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  if (!from._internal_blocknumber().empty()) {
-    blocknumber_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_blocknumber(), 
+  block_number_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_block_number().empty()) {
+    block_number_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_block_number(), 
       GetArena());
   }
   // @@protoc_insertion_point(copy_constructor:txpool.GetWorkReply)
@@ -1790,10 +1790,10 @@ GetWorkReply::GetWorkReply(const GetWorkReply& from)
 
 void GetWorkReply::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_GetWorkReply_txpool_2fmining_2eproto.base);
-  headerhash_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  seedhash_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  header_hash_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  seed_hash_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   target_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  blocknumber_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  block_number_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
 }
 
 GetWorkReply::~GetWorkReply() {
@@ -1804,10 +1804,10 @@ GetWorkReply::~GetWorkReply() {
 
 void GetWorkReply::SharedDtor() {
   GOOGLE_DCHECK(GetArena() == nullptr);
-  headerhash_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  seedhash_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  header_hash_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  seed_hash_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   target_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  blocknumber_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  block_number_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
 }
 
 void GetWorkReply::ArenaDtor(void* object) {
@@ -1831,10 +1831,10 @@ void GetWorkReply::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  headerhash_.ClearToEmpty();
-  seedhash_.ClearToEmpty();
+  header_hash_.ClearToEmpty();
+  seed_hash_.ClearToEmpty();
   target_.ClearToEmpty();
-  blocknumber_.ClearToEmpty();
+  block_number_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -1845,21 +1845,21 @@ const char* GetWorkReply::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_I
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // string headerHash = 1;
+      // string header_hash = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
-          auto str = _internal_mutable_headerhash();
+          auto str = _internal_mutable_header_hash();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "txpool.GetWorkReply.headerHash"));
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "txpool.GetWorkReply.header_hash"));
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // string seedHash = 2;
+      // string seed_hash = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
-          auto str = _internal_mutable_seedhash();
+          auto str = _internal_mutable_seed_hash();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "txpool.GetWorkReply.seedHash"));
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "txpool.GetWorkReply.seed_hash"));
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -1872,12 +1872,12 @@ const char* GetWorkReply::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_I
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // string blockNumber = 4;
+      // string block_number = 4;
       case 4:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 34)) {
-          auto str = _internal_mutable_blocknumber();
+          auto str = _internal_mutable_block_number();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "txpool.GetWorkReply.blockNumber"));
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "txpool.GetWorkReply.block_number"));
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -1909,24 +1909,24 @@ failure:
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // string headerHash = 1;
-  if (this->headerhash().size() > 0) {
+  // string header_hash = 1;
+  if (this->header_hash().size() > 0) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_headerhash().data(), static_cast<int>(this->_internal_headerhash().length()),
+      this->_internal_header_hash().data(), static_cast<int>(this->_internal_header_hash().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "txpool.GetWorkReply.headerHash");
+      "txpool.GetWorkReply.header_hash");
     target = stream->WriteStringMaybeAliased(
-        1, this->_internal_headerhash(), target);
+        1, this->_internal_header_hash(), target);
   }
 
-  // string seedHash = 2;
-  if (this->seedhash().size() > 0) {
+  // string seed_hash = 2;
+  if (this->seed_hash().size() > 0) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_seedhash().data(), static_cast<int>(this->_internal_seedhash().length()),
+      this->_internal_seed_hash().data(), static_cast<int>(this->_internal_seed_hash().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "txpool.GetWorkReply.seedHash");
+      "txpool.GetWorkReply.seed_hash");
     target = stream->WriteStringMaybeAliased(
-        2, this->_internal_seedhash(), target);
+        2, this->_internal_seed_hash(), target);
   }
 
   // string target = 3;
@@ -1939,14 +1939,14 @@ failure:
         3, this->_internal_target(), target);
   }
 
-  // string blockNumber = 4;
-  if (this->blocknumber().size() > 0) {
+  // string block_number = 4;
+  if (this->block_number().size() > 0) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_blocknumber().data(), static_cast<int>(this->_internal_blocknumber().length()),
+      this->_internal_block_number().data(), static_cast<int>(this->_internal_block_number().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "txpool.GetWorkReply.blockNumber");
+      "txpool.GetWorkReply.block_number");
     target = stream->WriteStringMaybeAliased(
-        4, this->_internal_blocknumber(), target);
+        4, this->_internal_block_number(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1965,18 +1965,18 @@ size_t GetWorkReply::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // string headerHash = 1;
-  if (this->headerhash().size() > 0) {
+  // string header_hash = 1;
+  if (this->header_hash().size() > 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_headerhash());
+        this->_internal_header_hash());
   }
 
-  // string seedHash = 2;
-  if (this->seedhash().size() > 0) {
+  // string seed_hash = 2;
+  if (this->seed_hash().size() > 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_seedhash());
+        this->_internal_seed_hash());
   }
 
   // string target = 3;
@@ -1986,11 +1986,11 @@ size_t GetWorkReply::ByteSizeLong() const {
         this->_internal_target());
   }
 
-  // string blockNumber = 4;
-  if (this->blocknumber().size() > 0) {
+  // string block_number = 4;
+  if (this->block_number().size() > 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_blocknumber());
+        this->_internal_block_number());
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -2024,17 +2024,17 @@ void GetWorkReply::MergeFrom(const GetWorkReply& from) {
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from.headerhash().size() > 0) {
-    _internal_set_headerhash(from._internal_headerhash());
+  if (from.header_hash().size() > 0) {
+    _internal_set_header_hash(from._internal_header_hash());
   }
-  if (from.seedhash().size() > 0) {
-    _internal_set_seedhash(from._internal_seedhash());
+  if (from.seed_hash().size() > 0) {
+    _internal_set_seed_hash(from._internal_seed_hash());
   }
   if (from.target().size() > 0) {
     _internal_set_target(from._internal_target());
   }
-  if (from.blocknumber().size() > 0) {
-    _internal_set_blocknumber(from._internal_blocknumber());
+  if (from.block_number().size() > 0) {
+    _internal_set_block_number(from._internal_block_number());
   }
 }
 
@@ -2059,10 +2059,10 @@ bool GetWorkReply::IsInitialized() const {
 void GetWorkReply::InternalSwap(GetWorkReply* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-  headerhash_.Swap(&other->headerhash_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  seedhash_.Swap(&other->seedhash_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  header_hash_.Swap(&other->header_hash_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  seed_hash_.Swap(&other->seed_hash_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   target_.Swap(&other->target_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  blocknumber_.Swap(&other->blocknumber_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  block_number_.Swap(&other->block_number_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata GetWorkReply::GetMetadata() const {
@@ -2085,14 +2085,14 @@ SubmitWorkRequest::SubmitWorkRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena)
 SubmitWorkRequest::SubmitWorkRequest(const SubmitWorkRequest& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  blocknonce_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  if (!from._internal_blocknonce().empty()) {
-    blocknonce_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_blocknonce(), 
+  block_nonce_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_block_nonce().empty()) {
+    block_nonce_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_block_nonce(), 
       GetArena());
   }
-  powhash_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  if (!from._internal_powhash().empty()) {
-    powhash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_powhash(), 
+  pow_hash_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_pow_hash().empty()) {
+    pow_hash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_pow_hash(), 
       GetArena());
   }
   digest_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
@@ -2105,8 +2105,8 @@ SubmitWorkRequest::SubmitWorkRequest(const SubmitWorkRequest& from)
 
 void SubmitWorkRequest::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_SubmitWorkRequest_txpool_2fmining_2eproto.base);
-  blocknonce_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  powhash_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  block_nonce_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  pow_hash_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   digest_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
 }
 
@@ -2118,8 +2118,8 @@ SubmitWorkRequest::~SubmitWorkRequest() {
 
 void SubmitWorkRequest::SharedDtor() {
   GOOGLE_DCHECK(GetArena() == nullptr);
-  blocknonce_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  powhash_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  block_nonce_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  pow_hash_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   digest_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
 }
 
@@ -2144,8 +2144,8 @@ void SubmitWorkRequest::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  blocknonce_.ClearToEmpty();
-  powhash_.ClearToEmpty();
+  block_nonce_.ClearToEmpty();
+  pow_hash_.ClearToEmpty();
   digest_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
@@ -2157,18 +2157,18 @@ const char* SubmitWorkRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAMESP
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // bytes blockNonce = 1;
+      // bytes block_nonce = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
-          auto str = _internal_mutable_blocknonce();
+          auto str = _internal_mutable_block_nonce();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // bytes powHash = 2;
+      // bytes pow_hash = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
-          auto str = _internal_mutable_powhash();
+          auto str = _internal_mutable_pow_hash();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
         } else goto handle_unusual;
@@ -2209,16 +2209,16 @@ failure:
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // bytes blockNonce = 1;
-  if (this->blocknonce().size() > 0) {
+  // bytes block_nonce = 1;
+  if (this->block_nonce().size() > 0) {
     target = stream->WriteBytesMaybeAliased(
-        1, this->_internal_blocknonce(), target);
+        1, this->_internal_block_nonce(), target);
   }
 
-  // bytes powHash = 2;
-  if (this->powhash().size() > 0) {
+  // bytes pow_hash = 2;
+  if (this->pow_hash().size() > 0) {
     target = stream->WriteBytesMaybeAliased(
-        2, this->_internal_powhash(), target);
+        2, this->_internal_pow_hash(), target);
   }
 
   // bytes digest = 3;
@@ -2243,18 +2243,18 @@ size_t SubmitWorkRequest::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // bytes blockNonce = 1;
-  if (this->blocknonce().size() > 0) {
+  // bytes block_nonce = 1;
+  if (this->block_nonce().size() > 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_blocknonce());
+        this->_internal_block_nonce());
   }
 
-  // bytes powHash = 2;
-  if (this->powhash().size() > 0) {
+  // bytes pow_hash = 2;
+  if (this->pow_hash().size() > 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_powhash());
+        this->_internal_pow_hash());
   }
 
   // bytes digest = 3;
@@ -2295,11 +2295,11 @@ void SubmitWorkRequest::MergeFrom(const SubmitWorkRequest& from) {
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from.blocknonce().size() > 0) {
-    _internal_set_blocknonce(from._internal_blocknonce());
+  if (from.block_nonce().size() > 0) {
+    _internal_set_block_nonce(from._internal_block_nonce());
   }
-  if (from.powhash().size() > 0) {
-    _internal_set_powhash(from._internal_powhash());
+  if (from.pow_hash().size() > 0) {
+    _internal_set_pow_hash(from._internal_pow_hash());
   }
   if (from.digest().size() > 0) {
     _internal_set_digest(from._internal_digest());
@@ -2327,8 +2327,8 @@ bool SubmitWorkRequest::IsInitialized() const {
 void SubmitWorkRequest::InternalSwap(SubmitWorkRequest* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-  blocknonce_.Swap(&other->blocknonce_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  powhash_.Swap(&other->powhash_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  block_nonce_.Swap(&other->block_nonce_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  pow_hash_.Swap(&other->pow_hash_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   digest_.Swap(&other->digest_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
 
@@ -3126,12 +3126,12 @@ HashRateReply::HashRateReply(::PROTOBUF_NAMESPACE_ID::Arena* arena)
 HashRateReply::HashRateReply(const HashRateReply& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  hashrate_ = from.hashrate_;
+  hash_rate_ = from.hash_rate_;
   // @@protoc_insertion_point(copy_constructor:txpool.HashRateReply)
 }
 
 void HashRateReply::SharedCtor() {
-  hashrate_ = PROTOBUF_ULONGLONG(0);
+  hash_rate_ = PROTOBUF_ULONGLONG(0);
 }
 
 HashRateReply::~HashRateReply() {
@@ -3165,7 +3165,7 @@ void HashRateReply::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  hashrate_ = PROTOBUF_ULONGLONG(0);
+  hash_rate_ = PROTOBUF_ULONGLONG(0);
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -3176,10 +3176,10 @@ const char* HashRateReply::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // uint64 hashRate = 1;
+      // uint64 hash_rate = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 8)) {
-          hashrate_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          hash_rate_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -3211,10 +3211,10 @@ failure:
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // uint64 hashRate = 1;
-  if (this->hashrate() != 0) {
+  // uint64 hash_rate = 1;
+  if (this->hash_rate() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(1, this->_internal_hashrate(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(1, this->_internal_hash_rate(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -3233,11 +3233,11 @@ size_t HashRateReply::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // uint64 hashRate = 1;
-  if (this->hashrate() != 0) {
+  // uint64 hash_rate = 1;
+  if (this->hash_rate() != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
-        this->_internal_hashrate());
+        this->_internal_hash_rate());
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -3271,8 +3271,8 @@ void HashRateReply::MergeFrom(const HashRateReply& from) {
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from.hashrate() != 0) {
-    _internal_set_hashrate(from._internal_hashrate());
+  if (from.hash_rate() != 0) {
+    _internal_set_hash_rate(from._internal_hash_rate());
   }
 }
 
@@ -3297,7 +3297,7 @@ bool HashRateReply::IsInitialized() const {
 void HashRateReply::InternalSwap(HashRateReply* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-  swap(hashrate_, other->hashrate_);
+  swap(hash_rate_, other->hash_rate_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata HashRateReply::GetMetadata() const {

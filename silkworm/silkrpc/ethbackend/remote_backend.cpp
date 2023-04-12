@@ -78,7 +78,7 @@ boost::asio::awaitable<std::string> RemoteBackEnd::client_version() {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncClientVersion> cv_rpc{*stub_, grpc_context_};
     const auto reply = co_await cv_rpc.finish_on(executor_, ::remote::ClientVersionRequest{});
-    const auto cv = reply.nodename();
+    const auto cv = reply.node_name();
     SILKRPC_DEBUG << "RemoteBackEnd::client_version version=" << cv << " t=" << clock_time::since(start_time) << "\n";
     co_return cv;
 }
@@ -97,14 +97,14 @@ boost::asio::awaitable<std::vector<NodeInfo>> RemoteBackEnd::engine_node_info() 
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncNodeInfo> ni_rpc{*stub_, grpc_context_};
     const auto reply = co_await ni_rpc.finish_on(executor_, ::remote::NodesInfoRequest{});
-    for (int i = 0; i < reply.nodesinfo_size(); i++) {
+    for (int i = 0; i < reply.nodes_info_size(); i++) {
         NodeInfo node_info;
-        const auto backend_node_info = reply.nodesinfo(i);
+        const auto backend_node_info = reply.nodes_info(i);
         node_info.id = backend_node_info.id();
         node_info.name = backend_node_info.name();
         node_info.enode = backend_node_info.enode();
         node_info.enr = backend_node_info.enr();
-        node_info.listener_addr = backend_node_info.listeneraddr();
+        node_info.listener_addr = backend_node_info.listener_addr();
         node_info.protocols = backend_node_info.protocols();
         if (backend_node_info.has_ports()) {
             const auto ports = backend_node_info.ports();
@@ -121,9 +121,9 @@ boost::asio::awaitable<ExecutionPayload> RemoteBackEnd::engine_get_payload_v1(ui
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncEngineGetPayload> npc_rpc{*stub_, grpc_context_};
     ::remote::EngineGetPayloadRequest req;
-    req.set_payloadid(payload_id);
+    req.set_payload_id(payload_id);
     const auto reply = co_await npc_rpc.finish_on(executor_, req);
-    auto execution_payload{decode_execution_payload(reply.executionpayload())};
+    auto execution_payload{decode_execution_payload(reply.execution_payload())};
     SILKRPC_DEBUG << "RemoteBackEnd::engine_get_payload_v1 data=" << execution_payload << " t=" << clock_time::since(start_time) << "\n";
     co_return execution_payload;
 }
@@ -144,13 +144,13 @@ boost::asio::awaitable<ForkChoiceUpdatedReply> RemoteBackEnd::engine_forkchoice_
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncEngineForkChoiceUpdated> fcu_rpc{*stub_, grpc_context_};
     const auto req{encode_forkchoice_updated_request(forkchoice_updated_request)};
     const auto reply = co_await fcu_rpc.finish_on(executor_, req);
-    PayloadStatus payload_status = decode_payload_status(reply.payloadstatus());
+    PayloadStatus payload_status = decode_payload_status(reply.payload_status());
     ForkChoiceUpdatedReply forkchoice_updated_reply{
         .payload_status = payload_status,
         .payload_id = std::nullopt};
     // set payload id (if there is one)
-    if (reply.payloadid() != 0) {
-        forkchoice_updated_reply.payload_id = reply.payloadid();
+    if (reply.payload_id() != 0) {
+        forkchoice_updated_reply.payload_id = reply.payload_id();
     }
     SILKRPC_DEBUG << "RemoteBackEnd::engine_forkchoice_updated_v1 data=" << payload_status << " t=" << clock_time::since(start_time) << "\n";
     co_return forkchoice_updated_reply;
@@ -292,14 +292,14 @@ silkworm::Bytes RemoteBackEnd::bytes_from_H2048(types::H2048& h2048) {
 }
 
 ExecutionPayload RemoteBackEnd::decode_execution_payload(const types::ExecutionPayload& execution_payload_grpc) {
-    auto state_root_h256{execution_payload_grpc.stateroot()};
-    auto receipts_root_h256{execution_payload_grpc.receiptroot()};
-    auto block_hash_h256{execution_payload_grpc.blockhash()};
-    auto parent_hash_h256{execution_payload_grpc.parenthash()};
-    auto prev_randao_h256{execution_payload_grpc.prevrandao()};
-    auto base_fee_h256{execution_payload_grpc.basefeepergas()};
-    auto logs_bloom_h2048{execution_payload_grpc.logsbloom()};
-    auto extra_data_string{execution_payload_grpc.extradata()};  // []byte becomes std::string in silkrpc protobuf
+    auto state_root_h256{execution_payload_grpc.state_root()};
+    auto receipts_root_h256{execution_payload_grpc.receipt_root()};
+    auto block_hash_h256{execution_payload_grpc.block_hash()};
+    auto parent_hash_h256{execution_payload_grpc.parent_hash()};
+    auto prev_randao_h256{execution_payload_grpc.prev_randao()};
+    auto base_fee_h256{execution_payload_grpc.base_fee_per_gas()};
+    auto logs_bloom_h2048{execution_payload_grpc.logs_bloom()};
+    auto extra_data_string{execution_payload_grpc.extra_data()};  // []byte becomes std::string in silkrpc protobuf
     // Convert h2048 to a bloom
     silkworm::Bloom bloom;
     std::memcpy(&bloom[0], bytes_from_H2048(logs_bloom_h2048).data(), 256);
@@ -311,10 +311,10 @@ ExecutionPayload RemoteBackEnd::decode_execution_payload(const types::ExecutionP
 
     // Assembling the execution_payload data structure
     return ExecutionPayload{
-        .number = execution_payload_grpc.blocknumber(),
+        .number = execution_payload_grpc.block_number(),
         .timestamp = execution_payload_grpc.timestamp(),
-        .gas_limit = execution_payload_grpc.gaslimit(),
-        .gas_used = execution_payload_grpc.gasused(),
+        .gas_limit = execution_payload_grpc.gas_limit(),
+        .gas_used = execution_payload_grpc.gas_used(),
         .suggested_fee_recipient = address_from_H160(execution_payload_grpc.coinbase()),
         .state_root = bytes32_from_H256(state_root_h256),
         .receipts_root = bytes32_from_H256(receipts_root_h256),
@@ -330,35 +330,35 @@ ExecutionPayload RemoteBackEnd::decode_execution_payload(const types::ExecutionP
 types::ExecutionPayload RemoteBackEnd::encode_execution_payload(const ExecutionPayload& execution_payload) {
     types::ExecutionPayload execution_payload_grpc;
     // Numerical parameters
-    execution_payload_grpc.set_blocknumber(execution_payload.number);
+    execution_payload_grpc.set_block_number(execution_payload.number);
     execution_payload_grpc.set_timestamp(execution_payload.timestamp);
-    execution_payload_grpc.set_gaslimit(execution_payload.gas_limit);
-    execution_payload_grpc.set_gasused(execution_payload.gas_used);
+    execution_payload_grpc.set_gas_limit(execution_payload.gas_limit);
+    execution_payload_grpc.set_gas_used(execution_payload.gas_used);
     // coinbase
     execution_payload_grpc.set_allocated_coinbase(H160_from_address(execution_payload.suggested_fee_recipient));
     // 32-bytes parameters
-    execution_payload_grpc.set_allocated_receiptroot(H256_from_bytes(execution_payload.receipts_root.bytes));
-    execution_payload_grpc.set_allocated_stateroot(H256_from_bytes(execution_payload.state_root.bytes));
-    execution_payload_grpc.set_allocated_parenthash(H256_from_bytes(execution_payload.parent_hash.bytes));
-    execution_payload_grpc.set_allocated_blockhash(H256_from_bytes(execution_payload.block_hash.bytes));
-    execution_payload_grpc.set_allocated_prevrandao(H256_from_bytes(execution_payload.prev_randao.bytes));
-    execution_payload_grpc.set_allocated_basefeepergas(H256_from_uint256(execution_payload.base_fee));
+    execution_payload_grpc.set_allocated_receipt_root(H256_from_bytes(execution_payload.receipts_root.bytes));
+    execution_payload_grpc.set_allocated_state_root(H256_from_bytes(execution_payload.state_root.bytes));
+    execution_payload_grpc.set_allocated_parent_hash(H256_from_bytes(execution_payload.parent_hash.bytes));
+    execution_payload_grpc.set_allocated_block_hash(H256_from_bytes(execution_payload.block_hash.bytes));
+    execution_payload_grpc.set_allocated_prev_randao(H256_from_bytes(execution_payload.prev_randao.bytes));
+    execution_payload_grpc.set_allocated_base_fee_per_gas(H256_from_uint256(execution_payload.base_fee));
     // Logs Bloom
-    execution_payload_grpc.set_allocated_logsbloom(H2048_from_bytes(&execution_payload.logs_bloom[0]));
+    execution_payload_grpc.set_allocated_logs_bloom(H2048_from_bytes(&execution_payload.logs_bloom[0]));
     // String-like parameters
     for (auto transaction_bytes : execution_payload.transactions) {
         execution_payload_grpc.add_transactions(std::string(transaction_bytes.begin(), transaction_bytes.end()));
     }
-    execution_payload_grpc.set_extradata(std::string(execution_payload.extra_data.begin(), execution_payload.extra_data.end()));
+    execution_payload_grpc.set_extra_data(std::string(execution_payload.extra_data.begin(), execution_payload.extra_data.end()));
     return execution_payload_grpc;
 }
 
 remote::EngineForkChoiceState* RemoteBackEnd::encode_forkchoice_state(const ForkChoiceState& forkchoice_state) {
     remote::EngineForkChoiceState* forkchoice_state_grpc = new remote::EngineForkChoiceState();
     // 32-bytes parameters
-    forkchoice_state_grpc->set_allocated_headblockhash(H256_from_bytes(forkchoice_state.head_block_hash.bytes));
-    forkchoice_state_grpc->set_allocated_safeblockhash(H256_from_bytes(forkchoice_state.safe_block_hash.bytes));
-    forkchoice_state_grpc->set_allocated_finalizedblockhash(H256_from_bytes(forkchoice_state.finalized_block_hash.bytes));
+    forkchoice_state_grpc->set_allocated_head_block_hash(H256_from_bytes(forkchoice_state.head_block_hash.bytes));
+    forkchoice_state_grpc->set_allocated_safe_block_hash(H256_from_bytes(forkchoice_state.safe_block_hash.bytes));
+    forkchoice_state_grpc->set_allocated_finalized_block_hash(H256_from_bytes(forkchoice_state.finalized_block_hash.bytes));
     return forkchoice_state_grpc;
 }
 
@@ -369,9 +369,9 @@ remote::EnginePayloadAttributes* RemoteBackEnd::encode_payload_attributes(const 
     // Numerical parameters
     payload_attributes_grpc->set_timestamp(payload_attributes.timestamp);
     // 32-bytes parameters
-    payload_attributes_grpc->set_allocated_prevrandao(H256_from_bytes(payload_attributes.prev_randao.bytes));
+    payload_attributes_grpc->set_allocated_prev_randao(H256_from_bytes(payload_attributes.prev_randao.bytes));
     // Address parameters
-    payload_attributes_grpc->set_allocated_suggestedfeerecipient(H160_from_address(payload_attributes.suggested_fee_recipient));
+    payload_attributes_grpc->set_allocated_suggested_fee_recipient(H160_from_address(payload_attributes.suggested_fee_recipient));
 
     return payload_attributes_grpc;
 }
@@ -380,11 +380,11 @@ remote::EngineForkChoiceUpdatedRequest RemoteBackEnd::encode_forkchoice_updated_
     remote::EngineForkChoiceUpdatedRequest forkchoice_updated_request_grpc;
     remote::EngineForkChoiceState* forkchoice_state_grpc = RemoteBackEnd::encode_forkchoice_state(forkchoice_updated_request.fork_choice_state);
 
-    forkchoice_updated_request_grpc.set_allocated_forkchoicestate(forkchoice_state_grpc);
+    forkchoice_updated_request_grpc.set_allocated_forkchoice_state(forkchoice_state_grpc);
     if (forkchoice_updated_request.payload_attributes != std::nullopt) {
         remote::EnginePayloadAttributes* payload_attributes_grpc =
             RemoteBackEnd::encode_payload_attributes(forkchoice_updated_request.payload_attributes.value());
-        forkchoice_updated_request_grpc.set_allocated_payloadattributes(payload_attributes_grpc);
+        forkchoice_updated_request_grpc.set_allocated_payload_attributes(payload_attributes_grpc);
     }
     return forkchoice_updated_request_grpc;
 }
@@ -393,11 +393,11 @@ PayloadStatus RemoteBackEnd::decode_payload_status(const remote::EnginePayloadSt
     PayloadStatus payload_status;
     payload_status.status = decode_status_message(payload_status_grpc.status());
     // Set LatestValidHash (if there is one)
-    if (payload_status_grpc.has_latestvalidhash()) {
-        payload_status.latest_valid_hash = bytes32_from_H256(payload_status_grpc.latestvalidhash());
+    if (payload_status_grpc.has_latest_valid_hash()) {
+        payload_status.latest_valid_hash = bytes32_from_H256(payload_status_grpc.latest_valid_hash());
     }
     // Set ValidationError (if there is one)
-    const auto validation_error{payload_status_grpc.validationerror()};
+    const auto validation_error{payload_status_grpc.validation_error()};
     if (validation_error != "") {
         payload_status.validation_error = validation_error;
     }

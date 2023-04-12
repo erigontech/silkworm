@@ -361,20 +361,20 @@ class Cursor PROTOBUF_FINAL :
     kOpFieldNumber = 1,
     kCursorFieldNumber = 3,
   };
-  // string bucketName = 2;
-  void clear_bucketname();
-  const std::string& bucketname() const;
-  void set_bucketname(const std::string& value);
-  void set_bucketname(std::string&& value);
-  void set_bucketname(const char* value);
-  void set_bucketname(const char* value, size_t size);
-  std::string* mutable_bucketname();
-  std::string* release_bucketname();
-  void set_allocated_bucketname(std::string* bucketname);
+  // string bucket_name = 2;
+  void clear_bucket_name();
+  const std::string& bucket_name() const;
+  void set_bucket_name(const std::string& value);
+  void set_bucket_name(std::string&& value);
+  void set_bucket_name(const char* value);
+  void set_bucket_name(const char* value, size_t size);
+  std::string* mutable_bucket_name();
+  std::string* release_bucket_name();
+  void set_allocated_bucket_name(std::string* bucket_name);
   private:
-  const std::string& _internal_bucketname() const;
-  void _internal_set_bucketname(const std::string& value);
-  std::string* _internal_mutable_bucketname();
+  const std::string& _internal_bucket_name() const;
+  void _internal_set_bucket_name(const std::string& value);
+  std::string* _internal_mutable_bucket_name();
   public:
 
   // bytes k = 4;
@@ -434,7 +434,7 @@ class Cursor PROTOBUF_FINAL :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr bucketname_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr bucket_name_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr k_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr v_;
   int op_;
@@ -558,9 +558,9 @@ class Pair PROTOBUF_FINAL :
   enum : int {
     kKFieldNumber = 1,
     kVFieldNumber = 2,
-    kViewIDFieldNumber = 4,
-    kTxIDFieldNumber = 5,
-    kCursorIDFieldNumber = 3,
+    kViewIdFieldNumber = 4,
+    kTxIdFieldNumber = 5,
+    kCursorIdFieldNumber = 3,
   };
   // bytes k = 1;
   void clear_k();
@@ -594,31 +594,31 @@ class Pair PROTOBUF_FINAL :
   std::string* _internal_mutable_v();
   public:
 
-  // uint64 viewID = 4;
-  void clear_viewid();
-  ::PROTOBUF_NAMESPACE_ID::uint64 viewid() const;
-  void set_viewid(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  // uint64 view_id = 4;
+  void clear_view_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 view_id() const;
+  void set_view_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
   private:
-  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_viewid() const;
-  void _internal_set_viewid(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_view_id() const;
+  void _internal_set_view_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
   public:
 
-  // uint64 txID = 5;
-  void clear_txid();
-  ::PROTOBUF_NAMESPACE_ID::uint64 txid() const;
-  void set_txid(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  // uint64 tx_id = 5;
+  void clear_tx_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 tx_id() const;
+  void set_tx_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
   private:
-  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_txid() const;
-  void _internal_set_txid(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_tx_id() const;
+  void _internal_set_tx_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
   public:
 
-  // uint32 cursorID = 3;
-  void clear_cursorid();
-  ::PROTOBUF_NAMESPACE_ID::uint32 cursorid() const;
-  void set_cursorid(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  // uint32 cursor_id = 3;
+  void clear_cursor_id();
+  ::PROTOBUF_NAMESPACE_ID::uint32 cursor_id() const;
+  void set_cursor_id(::PROTOBUF_NAMESPACE_ID::uint32 value);
   private:
-  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_cursorid() const;
-  void _internal_set_cursorid(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_cursor_id() const;
+  void _internal_set_cursor_id(::PROTOBUF_NAMESPACE_ID::uint32 value);
   public:
 
   // @@protoc_insertion_point(class_scope:remote.Pair)
@@ -630,9 +630,9 @@ class Pair PROTOBUF_FINAL :
   typedef void DestructorSkippable_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr k_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr v_;
-  ::PROTOBUF_NAMESPACE_ID::uint64 viewid_;
-  ::PROTOBUF_NAMESPACE_ID::uint64 txid_;
-  ::PROTOBUF_NAMESPACE_ID::uint32 cursorid_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 view_id_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 tx_id_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 cursor_id_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_remote_2fkv_2eproto;
 };
@@ -920,23 +920,23 @@ class AccountChange PROTOBUF_FINAL :
     kIncarnationFieldNumber = 2,
     kActionFieldNumber = 3,
   };
-  // repeated .remote.StorageChange storageChanges = 6;
-  int storagechanges_size() const;
+  // repeated .remote.StorageChange storage_changes = 6;
+  int storage_changes_size() const;
   private:
-  int _internal_storagechanges_size() const;
+  int _internal_storage_changes_size() const;
   public:
-  void clear_storagechanges();
-  ::remote::StorageChange* mutable_storagechanges(int index);
+  void clear_storage_changes();
+  ::remote::StorageChange* mutable_storage_changes(int index);
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::remote::StorageChange >*
-      mutable_storagechanges();
+      mutable_storage_changes();
   private:
-  const ::remote::StorageChange& _internal_storagechanges(int index) const;
-  ::remote::StorageChange* _internal_add_storagechanges();
+  const ::remote::StorageChange& _internal_storage_changes(int index) const;
+  ::remote::StorageChange* _internal_add_storage_changes();
   public:
-  const ::remote::StorageChange& storagechanges(int index) const;
-  ::remote::StorageChange* add_storagechanges();
+  const ::remote::StorageChange& storage_changes(int index) const;
+  ::remote::StorageChange* add_storage_changes();
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::remote::StorageChange >&
-      storagechanges() const;
+      storage_changes() const;
 
   // bytes data = 4;
   void clear_data();
@@ -1013,7 +1013,7 @@ class AccountChange PROTOBUF_FINAL :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::remote::StorageChange > storagechanges_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::remote::StorageChange > storage_changes_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr data_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr code_;
   ::types::H160* address_;
@@ -1137,53 +1137,53 @@ class StateChangeBatch PROTOBUF_FINAL :
 
   enum : int {
     kChangeBatchFieldNumber = 2,
-    kStateVersionIDFieldNumber = 1,
+    kStateVersionIdFieldNumber = 1,
     kPendingBlockBaseFeeFieldNumber = 3,
     kBlockGasLimitFieldNumber = 4,
   };
-  // repeated .remote.StateChange changeBatch = 2;
-  int changebatch_size() const;
+  // repeated .remote.StateChange change_batch = 2;
+  int change_batch_size() const;
   private:
-  int _internal_changebatch_size() const;
+  int _internal_change_batch_size() const;
   public:
-  void clear_changebatch();
-  ::remote::StateChange* mutable_changebatch(int index);
+  void clear_change_batch();
+  ::remote::StateChange* mutable_change_batch(int index);
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::remote::StateChange >*
-      mutable_changebatch();
+      mutable_change_batch();
   private:
-  const ::remote::StateChange& _internal_changebatch(int index) const;
-  ::remote::StateChange* _internal_add_changebatch();
+  const ::remote::StateChange& _internal_change_batch(int index) const;
+  ::remote::StateChange* _internal_add_change_batch();
   public:
-  const ::remote::StateChange& changebatch(int index) const;
-  ::remote::StateChange* add_changebatch();
+  const ::remote::StateChange& change_batch(int index) const;
+  ::remote::StateChange* add_change_batch();
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::remote::StateChange >&
-      changebatch() const;
+      change_batch() const;
 
-  // uint64 stateVersionID = 1;
-  void clear_stateversionid();
-  ::PROTOBUF_NAMESPACE_ID::uint64 stateversionid() const;
-  void set_stateversionid(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  // uint64 state_version_id = 1;
+  void clear_state_version_id();
+  ::PROTOBUF_NAMESPACE_ID::uint64 state_version_id() const;
+  void set_state_version_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
   private:
-  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_stateversionid() const;
-  void _internal_set_stateversionid(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_state_version_id() const;
+  void _internal_set_state_version_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
   public:
 
-  // uint64 pendingBlockBaseFee = 3;
-  void clear_pendingblockbasefee();
-  ::PROTOBUF_NAMESPACE_ID::uint64 pendingblockbasefee() const;
-  void set_pendingblockbasefee(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  // uint64 pending_block_base_fee = 3;
+  void clear_pending_block_base_fee();
+  ::PROTOBUF_NAMESPACE_ID::uint64 pending_block_base_fee() const;
+  void set_pending_block_base_fee(::PROTOBUF_NAMESPACE_ID::uint64 value);
   private:
-  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_pendingblockbasefee() const;
-  void _internal_set_pendingblockbasefee(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_pending_block_base_fee() const;
+  void _internal_set_pending_block_base_fee(::PROTOBUF_NAMESPACE_ID::uint64 value);
   public:
 
-  // uint64 blockGasLimit = 4;
-  void clear_blockgaslimit();
-  ::PROTOBUF_NAMESPACE_ID::uint64 blockgaslimit() const;
-  void set_blockgaslimit(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  // uint64 block_gas_limit = 4;
+  void clear_block_gas_limit();
+  ::PROTOBUF_NAMESPACE_ID::uint64 block_gas_limit() const;
+  void set_block_gas_limit(::PROTOBUF_NAMESPACE_ID::uint64 value);
   private:
-  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_blockgaslimit() const;
-  void _internal_set_blockgaslimit(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_block_gas_limit() const;
+  void _internal_set_block_gas_limit(::PROTOBUF_NAMESPACE_ID::uint64 value);
   public:
 
   // @@protoc_insertion_point(class_scope:remote.StateChangeBatch)
@@ -1193,10 +1193,10 @@ class StateChangeBatch PROTOBUF_FINAL :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::remote::StateChange > changebatch_;
-  ::PROTOBUF_NAMESPACE_ID::uint64 stateversionid_;
-  ::PROTOBUF_NAMESPACE_ID::uint64 pendingblockbasefee_;
-  ::PROTOBUF_NAMESPACE_ID::uint64 blockgaslimit_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::remote::StateChange > change_batch_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 state_version_id_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 pending_block_base_fee_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 block_gas_limit_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_remote_2fkv_2eproto;
 };
@@ -1362,31 +1362,31 @@ class StateChange PROTOBUF_FINAL :
   std::string* _internal_add_txs();
   public:
 
-  // .types.H256 blockHash = 3;
-  bool has_blockhash() const;
+  // .types.H256 block_hash = 3;
+  bool has_block_hash() const;
   private:
-  bool _internal_has_blockhash() const;
+  bool _internal_has_block_hash() const;
   public:
-  void clear_blockhash();
-  const ::types::H256& blockhash() const;
-  ::types::H256* release_blockhash();
-  ::types::H256* mutable_blockhash();
-  void set_allocated_blockhash(::types::H256* blockhash);
+  void clear_block_hash();
+  const ::types::H256& block_hash() const;
+  ::types::H256* release_block_hash();
+  ::types::H256* mutable_block_hash();
+  void set_allocated_block_hash(::types::H256* block_hash);
   private:
-  const ::types::H256& _internal_blockhash() const;
-  ::types::H256* _internal_mutable_blockhash();
+  const ::types::H256& _internal_block_hash() const;
+  ::types::H256* _internal_mutable_block_hash();
   public:
-  void unsafe_arena_set_allocated_blockhash(
-      ::types::H256* blockhash);
-  ::types::H256* unsafe_arena_release_blockhash();
+  void unsafe_arena_set_allocated_block_hash(
+      ::types::H256* block_hash);
+  ::types::H256* unsafe_arena_release_block_hash();
 
-  // uint64 blockHeight = 2;
-  void clear_blockheight();
-  ::PROTOBUF_NAMESPACE_ID::uint64 blockheight() const;
-  void set_blockheight(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  // uint64 block_height = 2;
+  void clear_block_height();
+  ::PROTOBUF_NAMESPACE_ID::uint64 block_height() const;
+  void set_block_height(::PROTOBUF_NAMESPACE_ID::uint64 value);
   private:
-  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_blockheight() const;
-  void _internal_set_blockheight(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_block_height() const;
+  void _internal_set_block_height(::PROTOBUF_NAMESPACE_ID::uint64 value);
   public:
 
   // .remote.Direction direction = 1;
@@ -1407,8 +1407,8 @@ class StateChange PROTOBUF_FINAL :
   typedef void DestructorSkippable_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::remote::AccountChange > changes_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> txs_;
-  ::types::H256* blockhash_;
-  ::PROTOBUF_NAMESPACE_ID::uint64 blockheight_;
+  ::types::H256* block_hash_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 block_height_;
   int direction_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_remote_2fkv_2eproto;
@@ -1530,22 +1530,22 @@ class StateChangeRequest PROTOBUF_FINAL :
     kWithStorageFieldNumber = 1,
     kWithTransactionsFieldNumber = 2,
   };
-  // bool withStorage = 1;
-  void clear_withstorage();
-  bool withstorage() const;
-  void set_withstorage(bool value);
+  // bool with_storage = 1;
+  void clear_with_storage();
+  bool with_storage() const;
+  void set_with_storage(bool value);
   private:
-  bool _internal_withstorage() const;
-  void _internal_set_withstorage(bool value);
+  bool _internal_with_storage() const;
+  void _internal_set_with_storage(bool value);
   public:
 
-  // bool withTransactions = 2;
-  void clear_withtransactions();
-  bool withtransactions() const;
-  void set_withtransactions(bool value);
+  // bool with_transactions = 2;
+  void clear_with_transactions();
+  bool with_transactions() const;
+  void set_with_transactions(bool value);
   private:
-  bool _internal_withtransactions() const;
-  void _internal_set_withtransactions(bool value);
+  bool _internal_with_transactions() const;
+  void _internal_set_with_transactions(bool value);
   public:
 
   // @@protoc_insertion_point(class_scope:remote.StateChangeRequest)
@@ -1555,8 +1555,8 @@ class StateChangeRequest PROTOBUF_FINAL :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  bool withstorage_;
-  bool withtransactions_;
+  bool with_storage_;
+  bool with_transactions_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_remote_2fkv_2eproto;
 };
@@ -4234,65 +4234,65 @@ inline void Cursor::set_op(::remote::Op value) {
   // @@protoc_insertion_point(field_set:remote.Cursor.op)
 }
 
-// string bucketName = 2;
-inline void Cursor::clear_bucketname() {
-  bucketname_.ClearToEmpty();
+// string bucket_name = 2;
+inline void Cursor::clear_bucket_name() {
+  bucket_name_.ClearToEmpty();
 }
-inline const std::string& Cursor::bucketname() const {
-  // @@protoc_insertion_point(field_get:remote.Cursor.bucketName)
-  return _internal_bucketname();
+inline const std::string& Cursor::bucket_name() const {
+  // @@protoc_insertion_point(field_get:remote.Cursor.bucket_name)
+  return _internal_bucket_name();
 }
-inline void Cursor::set_bucketname(const std::string& value) {
-  _internal_set_bucketname(value);
-  // @@protoc_insertion_point(field_set:remote.Cursor.bucketName)
+inline void Cursor::set_bucket_name(const std::string& value) {
+  _internal_set_bucket_name(value);
+  // @@protoc_insertion_point(field_set:remote.Cursor.bucket_name)
 }
-inline std::string* Cursor::mutable_bucketname() {
-  // @@protoc_insertion_point(field_mutable:remote.Cursor.bucketName)
-  return _internal_mutable_bucketname();
+inline std::string* Cursor::mutable_bucket_name() {
+  // @@protoc_insertion_point(field_mutable:remote.Cursor.bucket_name)
+  return _internal_mutable_bucket_name();
 }
-inline const std::string& Cursor::_internal_bucketname() const {
-  return bucketname_.Get();
+inline const std::string& Cursor::_internal_bucket_name() const {
+  return bucket_name_.Get();
 }
-inline void Cursor::_internal_set_bucketname(const std::string& value) {
+inline void Cursor::_internal_set_bucket_name(const std::string& value) {
   
-  bucketname_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
+  bucket_name_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
 }
-inline void Cursor::set_bucketname(std::string&& value) {
+inline void Cursor::set_bucket_name(std::string&& value) {
   
-  bucketname_.Set(
+  bucket_name_.Set(
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::move(value), GetArena());
-  // @@protoc_insertion_point(field_set_rvalue:remote.Cursor.bucketName)
+  // @@protoc_insertion_point(field_set_rvalue:remote.Cursor.bucket_name)
 }
-inline void Cursor::set_bucketname(const char* value) {
+inline void Cursor::set_bucket_name(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
   
-  bucketname_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
-  // @@protoc_insertion_point(field_set_char:remote.Cursor.bucketName)
+  bucket_name_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
+  // @@protoc_insertion_point(field_set_char:remote.Cursor.bucket_name)
 }
-inline void Cursor::set_bucketname(const char* value,
+inline void Cursor::set_bucket_name(const char* value,
     size_t size) {
   
-  bucketname_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
+  bucket_name_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
       reinterpret_cast<const char*>(value), size), GetArena());
-  // @@protoc_insertion_point(field_set_pointer:remote.Cursor.bucketName)
+  // @@protoc_insertion_point(field_set_pointer:remote.Cursor.bucket_name)
 }
-inline std::string* Cursor::_internal_mutable_bucketname() {
+inline std::string* Cursor::_internal_mutable_bucket_name() {
   
-  return bucketname_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
+  return bucket_name_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
 }
-inline std::string* Cursor::release_bucketname() {
-  // @@protoc_insertion_point(field_release:remote.Cursor.bucketName)
-  return bucketname_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+inline std::string* Cursor::release_bucket_name() {
+  // @@protoc_insertion_point(field_release:remote.Cursor.bucket_name)
+  return bucket_name_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline void Cursor::set_allocated_bucketname(std::string* bucketname) {
-  if (bucketname != nullptr) {
+inline void Cursor::set_allocated_bucket_name(std::string* bucket_name) {
+  if (bucket_name != nullptr) {
     
   } else {
     
   }
-  bucketname_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), bucketname,
+  bucket_name_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), bucket_name,
       GetArena());
-  // @@protoc_insertion_point(field_set_allocated:remote.Cursor.bucketName)
+  // @@protoc_insertion_point(field_set_allocated:remote.Cursor.bucket_name)
 }
 
 // uint32 cursor = 3;
@@ -4563,64 +4563,64 @@ inline void Pair::set_allocated_v(std::string* v) {
   // @@protoc_insertion_point(field_set_allocated:remote.Pair.v)
 }
 
-// uint32 cursorID = 3;
-inline void Pair::clear_cursorid() {
-  cursorid_ = 0u;
+// uint32 cursor_id = 3;
+inline void Pair::clear_cursor_id() {
+  cursor_id_ = 0u;
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint32 Pair::_internal_cursorid() const {
-  return cursorid_;
+inline ::PROTOBUF_NAMESPACE_ID::uint32 Pair::_internal_cursor_id() const {
+  return cursor_id_;
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint32 Pair::cursorid() const {
-  // @@protoc_insertion_point(field_get:remote.Pair.cursorID)
-  return _internal_cursorid();
+inline ::PROTOBUF_NAMESPACE_ID::uint32 Pair::cursor_id() const {
+  // @@protoc_insertion_point(field_get:remote.Pair.cursor_id)
+  return _internal_cursor_id();
 }
-inline void Pair::_internal_set_cursorid(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+inline void Pair::_internal_set_cursor_id(::PROTOBUF_NAMESPACE_ID::uint32 value) {
   
-  cursorid_ = value;
+  cursor_id_ = value;
 }
-inline void Pair::set_cursorid(::PROTOBUF_NAMESPACE_ID::uint32 value) {
-  _internal_set_cursorid(value);
-  // @@protoc_insertion_point(field_set:remote.Pair.cursorID)
+inline void Pair::set_cursor_id(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_cursor_id(value);
+  // @@protoc_insertion_point(field_set:remote.Pair.cursor_id)
 }
 
-// uint64 viewID = 4;
-inline void Pair::clear_viewid() {
-  viewid_ = PROTOBUF_ULONGLONG(0);
+// uint64 view_id = 4;
+inline void Pair::clear_view_id() {
+  view_id_ = PROTOBUF_ULONGLONG(0);
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint64 Pair::_internal_viewid() const {
-  return viewid_;
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Pair::_internal_view_id() const {
+  return view_id_;
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint64 Pair::viewid() const {
-  // @@protoc_insertion_point(field_get:remote.Pair.viewID)
-  return _internal_viewid();
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Pair::view_id() const {
+  // @@protoc_insertion_point(field_get:remote.Pair.view_id)
+  return _internal_view_id();
 }
-inline void Pair::_internal_set_viewid(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+inline void Pair::_internal_set_view_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
   
-  viewid_ = value;
+  view_id_ = value;
 }
-inline void Pair::set_viewid(::PROTOBUF_NAMESPACE_ID::uint64 value) {
-  _internal_set_viewid(value);
-  // @@protoc_insertion_point(field_set:remote.Pair.viewID)
+inline void Pair::set_view_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_view_id(value);
+  // @@protoc_insertion_point(field_set:remote.Pair.view_id)
 }
 
-// uint64 txID = 5;
-inline void Pair::clear_txid() {
-  txid_ = PROTOBUF_ULONGLONG(0);
+// uint64 tx_id = 5;
+inline void Pair::clear_tx_id() {
+  tx_id_ = PROTOBUF_ULONGLONG(0);
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint64 Pair::_internal_txid() const {
-  return txid_;
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Pair::_internal_tx_id() const {
+  return tx_id_;
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint64 Pair::txid() const {
-  // @@protoc_insertion_point(field_get:remote.Pair.txID)
-  return _internal_txid();
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Pair::tx_id() const {
+  // @@protoc_insertion_point(field_get:remote.Pair.tx_id)
+  return _internal_tx_id();
 }
-inline void Pair::_internal_set_txid(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+inline void Pair::_internal_set_tx_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
   
-  txid_ = value;
+  tx_id_ = value;
 }
-inline void Pair::set_txid(::PROTOBUF_NAMESPACE_ID::uint64 value) {
-  _internal_set_txid(value);
-  // @@protoc_insertion_point(field_set:remote.Pair.txID)
+inline void Pair::set_tx_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_tx_id(value);
+  // @@protoc_insertion_point(field_set:remote.Pair.tx_id)
 }
 
 // -------------------------------------------------------------------
@@ -5008,146 +5008,146 @@ inline void AccountChange::set_allocated_code(std::string* code) {
   // @@protoc_insertion_point(field_set_allocated:remote.AccountChange.code)
 }
 
-// repeated .remote.StorageChange storageChanges = 6;
-inline int AccountChange::_internal_storagechanges_size() const {
-  return storagechanges_.size();
+// repeated .remote.StorageChange storage_changes = 6;
+inline int AccountChange::_internal_storage_changes_size() const {
+  return storage_changes_.size();
 }
-inline int AccountChange::storagechanges_size() const {
-  return _internal_storagechanges_size();
+inline int AccountChange::storage_changes_size() const {
+  return _internal_storage_changes_size();
 }
-inline void AccountChange::clear_storagechanges() {
-  storagechanges_.Clear();
+inline void AccountChange::clear_storage_changes() {
+  storage_changes_.Clear();
 }
-inline ::remote::StorageChange* AccountChange::mutable_storagechanges(int index) {
-  // @@protoc_insertion_point(field_mutable:remote.AccountChange.storageChanges)
-  return storagechanges_.Mutable(index);
+inline ::remote::StorageChange* AccountChange::mutable_storage_changes(int index) {
+  // @@protoc_insertion_point(field_mutable:remote.AccountChange.storage_changes)
+  return storage_changes_.Mutable(index);
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::remote::StorageChange >*
-AccountChange::mutable_storagechanges() {
-  // @@protoc_insertion_point(field_mutable_list:remote.AccountChange.storageChanges)
-  return &storagechanges_;
+AccountChange::mutable_storage_changes() {
+  // @@protoc_insertion_point(field_mutable_list:remote.AccountChange.storage_changes)
+  return &storage_changes_;
 }
-inline const ::remote::StorageChange& AccountChange::_internal_storagechanges(int index) const {
-  return storagechanges_.Get(index);
+inline const ::remote::StorageChange& AccountChange::_internal_storage_changes(int index) const {
+  return storage_changes_.Get(index);
 }
-inline const ::remote::StorageChange& AccountChange::storagechanges(int index) const {
-  // @@protoc_insertion_point(field_get:remote.AccountChange.storageChanges)
-  return _internal_storagechanges(index);
+inline const ::remote::StorageChange& AccountChange::storage_changes(int index) const {
+  // @@protoc_insertion_point(field_get:remote.AccountChange.storage_changes)
+  return _internal_storage_changes(index);
 }
-inline ::remote::StorageChange* AccountChange::_internal_add_storagechanges() {
-  return storagechanges_.Add();
+inline ::remote::StorageChange* AccountChange::_internal_add_storage_changes() {
+  return storage_changes_.Add();
 }
-inline ::remote::StorageChange* AccountChange::add_storagechanges() {
-  // @@protoc_insertion_point(field_add:remote.AccountChange.storageChanges)
-  return _internal_add_storagechanges();
+inline ::remote::StorageChange* AccountChange::add_storage_changes() {
+  // @@protoc_insertion_point(field_add:remote.AccountChange.storage_changes)
+  return _internal_add_storage_changes();
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::remote::StorageChange >&
-AccountChange::storagechanges() const {
-  // @@protoc_insertion_point(field_list:remote.AccountChange.storageChanges)
-  return storagechanges_;
+AccountChange::storage_changes() const {
+  // @@protoc_insertion_point(field_list:remote.AccountChange.storage_changes)
+  return storage_changes_;
 }
 
 // -------------------------------------------------------------------
 
 // StateChangeBatch
 
-// uint64 stateVersionID = 1;
-inline void StateChangeBatch::clear_stateversionid() {
-  stateversionid_ = PROTOBUF_ULONGLONG(0);
+// uint64 state_version_id = 1;
+inline void StateChangeBatch::clear_state_version_id() {
+  state_version_id_ = PROTOBUF_ULONGLONG(0);
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint64 StateChangeBatch::_internal_stateversionid() const {
-  return stateversionid_;
+inline ::PROTOBUF_NAMESPACE_ID::uint64 StateChangeBatch::_internal_state_version_id() const {
+  return state_version_id_;
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint64 StateChangeBatch::stateversionid() const {
-  // @@protoc_insertion_point(field_get:remote.StateChangeBatch.stateVersionID)
-  return _internal_stateversionid();
+inline ::PROTOBUF_NAMESPACE_ID::uint64 StateChangeBatch::state_version_id() const {
+  // @@protoc_insertion_point(field_get:remote.StateChangeBatch.state_version_id)
+  return _internal_state_version_id();
 }
-inline void StateChangeBatch::_internal_set_stateversionid(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+inline void StateChangeBatch::_internal_set_state_version_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
   
-  stateversionid_ = value;
+  state_version_id_ = value;
 }
-inline void StateChangeBatch::set_stateversionid(::PROTOBUF_NAMESPACE_ID::uint64 value) {
-  _internal_set_stateversionid(value);
-  // @@protoc_insertion_point(field_set:remote.StateChangeBatch.stateVersionID)
+inline void StateChangeBatch::set_state_version_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_state_version_id(value);
+  // @@protoc_insertion_point(field_set:remote.StateChangeBatch.state_version_id)
 }
 
-// repeated .remote.StateChange changeBatch = 2;
-inline int StateChangeBatch::_internal_changebatch_size() const {
-  return changebatch_.size();
+// repeated .remote.StateChange change_batch = 2;
+inline int StateChangeBatch::_internal_change_batch_size() const {
+  return change_batch_.size();
 }
-inline int StateChangeBatch::changebatch_size() const {
-  return _internal_changebatch_size();
+inline int StateChangeBatch::change_batch_size() const {
+  return _internal_change_batch_size();
 }
-inline void StateChangeBatch::clear_changebatch() {
-  changebatch_.Clear();
+inline void StateChangeBatch::clear_change_batch() {
+  change_batch_.Clear();
 }
-inline ::remote::StateChange* StateChangeBatch::mutable_changebatch(int index) {
-  // @@protoc_insertion_point(field_mutable:remote.StateChangeBatch.changeBatch)
-  return changebatch_.Mutable(index);
+inline ::remote::StateChange* StateChangeBatch::mutable_change_batch(int index) {
+  // @@protoc_insertion_point(field_mutable:remote.StateChangeBatch.change_batch)
+  return change_batch_.Mutable(index);
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::remote::StateChange >*
-StateChangeBatch::mutable_changebatch() {
-  // @@protoc_insertion_point(field_mutable_list:remote.StateChangeBatch.changeBatch)
-  return &changebatch_;
+StateChangeBatch::mutable_change_batch() {
+  // @@protoc_insertion_point(field_mutable_list:remote.StateChangeBatch.change_batch)
+  return &change_batch_;
 }
-inline const ::remote::StateChange& StateChangeBatch::_internal_changebatch(int index) const {
-  return changebatch_.Get(index);
+inline const ::remote::StateChange& StateChangeBatch::_internal_change_batch(int index) const {
+  return change_batch_.Get(index);
 }
-inline const ::remote::StateChange& StateChangeBatch::changebatch(int index) const {
-  // @@protoc_insertion_point(field_get:remote.StateChangeBatch.changeBatch)
-  return _internal_changebatch(index);
+inline const ::remote::StateChange& StateChangeBatch::change_batch(int index) const {
+  // @@protoc_insertion_point(field_get:remote.StateChangeBatch.change_batch)
+  return _internal_change_batch(index);
 }
-inline ::remote::StateChange* StateChangeBatch::_internal_add_changebatch() {
-  return changebatch_.Add();
+inline ::remote::StateChange* StateChangeBatch::_internal_add_change_batch() {
+  return change_batch_.Add();
 }
-inline ::remote::StateChange* StateChangeBatch::add_changebatch() {
-  // @@protoc_insertion_point(field_add:remote.StateChangeBatch.changeBatch)
-  return _internal_add_changebatch();
+inline ::remote::StateChange* StateChangeBatch::add_change_batch() {
+  // @@protoc_insertion_point(field_add:remote.StateChangeBatch.change_batch)
+  return _internal_add_change_batch();
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::remote::StateChange >&
-StateChangeBatch::changebatch() const {
-  // @@protoc_insertion_point(field_list:remote.StateChangeBatch.changeBatch)
-  return changebatch_;
+StateChangeBatch::change_batch() const {
+  // @@protoc_insertion_point(field_list:remote.StateChangeBatch.change_batch)
+  return change_batch_;
 }
 
-// uint64 pendingBlockBaseFee = 3;
-inline void StateChangeBatch::clear_pendingblockbasefee() {
-  pendingblockbasefee_ = PROTOBUF_ULONGLONG(0);
+// uint64 pending_block_base_fee = 3;
+inline void StateChangeBatch::clear_pending_block_base_fee() {
+  pending_block_base_fee_ = PROTOBUF_ULONGLONG(0);
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint64 StateChangeBatch::_internal_pendingblockbasefee() const {
-  return pendingblockbasefee_;
+inline ::PROTOBUF_NAMESPACE_ID::uint64 StateChangeBatch::_internal_pending_block_base_fee() const {
+  return pending_block_base_fee_;
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint64 StateChangeBatch::pendingblockbasefee() const {
-  // @@protoc_insertion_point(field_get:remote.StateChangeBatch.pendingBlockBaseFee)
-  return _internal_pendingblockbasefee();
+inline ::PROTOBUF_NAMESPACE_ID::uint64 StateChangeBatch::pending_block_base_fee() const {
+  // @@protoc_insertion_point(field_get:remote.StateChangeBatch.pending_block_base_fee)
+  return _internal_pending_block_base_fee();
 }
-inline void StateChangeBatch::_internal_set_pendingblockbasefee(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+inline void StateChangeBatch::_internal_set_pending_block_base_fee(::PROTOBUF_NAMESPACE_ID::uint64 value) {
   
-  pendingblockbasefee_ = value;
+  pending_block_base_fee_ = value;
 }
-inline void StateChangeBatch::set_pendingblockbasefee(::PROTOBUF_NAMESPACE_ID::uint64 value) {
-  _internal_set_pendingblockbasefee(value);
-  // @@protoc_insertion_point(field_set:remote.StateChangeBatch.pendingBlockBaseFee)
+inline void StateChangeBatch::set_pending_block_base_fee(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_pending_block_base_fee(value);
+  // @@protoc_insertion_point(field_set:remote.StateChangeBatch.pending_block_base_fee)
 }
 
-// uint64 blockGasLimit = 4;
-inline void StateChangeBatch::clear_blockgaslimit() {
-  blockgaslimit_ = PROTOBUF_ULONGLONG(0);
+// uint64 block_gas_limit = 4;
+inline void StateChangeBatch::clear_block_gas_limit() {
+  block_gas_limit_ = PROTOBUF_ULONGLONG(0);
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint64 StateChangeBatch::_internal_blockgaslimit() const {
-  return blockgaslimit_;
+inline ::PROTOBUF_NAMESPACE_ID::uint64 StateChangeBatch::_internal_block_gas_limit() const {
+  return block_gas_limit_;
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint64 StateChangeBatch::blockgaslimit() const {
-  // @@protoc_insertion_point(field_get:remote.StateChangeBatch.blockGasLimit)
-  return _internal_blockgaslimit();
+inline ::PROTOBUF_NAMESPACE_ID::uint64 StateChangeBatch::block_gas_limit() const {
+  // @@protoc_insertion_point(field_get:remote.StateChangeBatch.block_gas_limit)
+  return _internal_block_gas_limit();
 }
-inline void StateChangeBatch::_internal_set_blockgaslimit(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+inline void StateChangeBatch::_internal_set_block_gas_limit(::PROTOBUF_NAMESPACE_ID::uint64 value) {
   
-  blockgaslimit_ = value;
+  block_gas_limit_ = value;
 }
-inline void StateChangeBatch::set_blockgaslimit(::PROTOBUF_NAMESPACE_ID::uint64 value) {
-  _internal_set_blockgaslimit(value);
-  // @@protoc_insertion_point(field_set:remote.StateChangeBatch.blockGasLimit)
+inline void StateChangeBatch::set_block_gas_limit(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_block_gas_limit(value);
+  // @@protoc_insertion_point(field_set:remote.StateChangeBatch.block_gas_limit)
 }
 
 // -------------------------------------------------------------------
@@ -5174,101 +5174,101 @@ inline void StateChange::set_direction(::remote::Direction value) {
   // @@protoc_insertion_point(field_set:remote.StateChange.direction)
 }
 
-// uint64 blockHeight = 2;
-inline void StateChange::clear_blockheight() {
-  blockheight_ = PROTOBUF_ULONGLONG(0);
+// uint64 block_height = 2;
+inline void StateChange::clear_block_height() {
+  block_height_ = PROTOBUF_ULONGLONG(0);
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint64 StateChange::_internal_blockheight() const {
-  return blockheight_;
+inline ::PROTOBUF_NAMESPACE_ID::uint64 StateChange::_internal_block_height() const {
+  return block_height_;
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint64 StateChange::blockheight() const {
-  // @@protoc_insertion_point(field_get:remote.StateChange.blockHeight)
-  return _internal_blockheight();
+inline ::PROTOBUF_NAMESPACE_ID::uint64 StateChange::block_height() const {
+  // @@protoc_insertion_point(field_get:remote.StateChange.block_height)
+  return _internal_block_height();
 }
-inline void StateChange::_internal_set_blockheight(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+inline void StateChange::_internal_set_block_height(::PROTOBUF_NAMESPACE_ID::uint64 value) {
   
-  blockheight_ = value;
+  block_height_ = value;
 }
-inline void StateChange::set_blockheight(::PROTOBUF_NAMESPACE_ID::uint64 value) {
-  _internal_set_blockheight(value);
-  // @@protoc_insertion_point(field_set:remote.StateChange.blockHeight)
+inline void StateChange::set_block_height(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_block_height(value);
+  // @@protoc_insertion_point(field_set:remote.StateChange.block_height)
 }
 
-// .types.H256 blockHash = 3;
-inline bool StateChange::_internal_has_blockhash() const {
-  return this != internal_default_instance() && blockhash_ != nullptr;
+// .types.H256 block_hash = 3;
+inline bool StateChange::_internal_has_block_hash() const {
+  return this != internal_default_instance() && block_hash_ != nullptr;
 }
-inline bool StateChange::has_blockhash() const {
-  return _internal_has_blockhash();
+inline bool StateChange::has_block_hash() const {
+  return _internal_has_block_hash();
 }
-inline const ::types::H256& StateChange::_internal_blockhash() const {
-  const ::types::H256* p = blockhash_;
+inline const ::types::H256& StateChange::_internal_block_hash() const {
+  const ::types::H256* p = block_hash_;
   return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
       ::types::_H256_default_instance_);
 }
-inline const ::types::H256& StateChange::blockhash() const {
-  // @@protoc_insertion_point(field_get:remote.StateChange.blockHash)
-  return _internal_blockhash();
+inline const ::types::H256& StateChange::block_hash() const {
+  // @@protoc_insertion_point(field_get:remote.StateChange.block_hash)
+  return _internal_block_hash();
 }
-inline void StateChange::unsafe_arena_set_allocated_blockhash(
-    ::types::H256* blockhash) {
+inline void StateChange::unsafe_arena_set_allocated_block_hash(
+    ::types::H256* block_hash) {
   if (GetArena() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(blockhash_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(block_hash_);
   }
-  blockhash_ = blockhash;
-  if (blockhash) {
+  block_hash_ = block_hash;
+  if (block_hash) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:remote.StateChange.blockHash)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:remote.StateChange.block_hash)
 }
-inline ::types::H256* StateChange::release_blockhash() {
+inline ::types::H256* StateChange::release_block_hash() {
   
-  ::types::H256* temp = blockhash_;
-  blockhash_ = nullptr;
+  ::types::H256* temp = block_hash_;
+  block_hash_ = nullptr;
   if (GetArena() != nullptr) {
     temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
   }
   return temp;
 }
-inline ::types::H256* StateChange::unsafe_arena_release_blockhash() {
-  // @@protoc_insertion_point(field_release:remote.StateChange.blockHash)
+inline ::types::H256* StateChange::unsafe_arena_release_block_hash() {
+  // @@protoc_insertion_point(field_release:remote.StateChange.block_hash)
   
-  ::types::H256* temp = blockhash_;
-  blockhash_ = nullptr;
+  ::types::H256* temp = block_hash_;
+  block_hash_ = nullptr;
   return temp;
 }
-inline ::types::H256* StateChange::_internal_mutable_blockhash() {
+inline ::types::H256* StateChange::_internal_mutable_block_hash() {
   
-  if (blockhash_ == nullptr) {
+  if (block_hash_ == nullptr) {
     auto* p = CreateMaybeMessage<::types::H256>(GetArena());
-    blockhash_ = p;
+    block_hash_ = p;
   }
-  return blockhash_;
+  return block_hash_;
 }
-inline ::types::H256* StateChange::mutable_blockhash() {
-  // @@protoc_insertion_point(field_mutable:remote.StateChange.blockHash)
-  return _internal_mutable_blockhash();
+inline ::types::H256* StateChange::mutable_block_hash() {
+  // @@protoc_insertion_point(field_mutable:remote.StateChange.block_hash)
+  return _internal_mutable_block_hash();
 }
-inline void StateChange::set_allocated_blockhash(::types::H256* blockhash) {
+inline void StateChange::set_allocated_block_hash(::types::H256* block_hash) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
   if (message_arena == nullptr) {
-    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(blockhash_);
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(block_hash_);
   }
-  if (blockhash) {
+  if (block_hash) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-      reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(blockhash)->GetArena();
+      reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(block_hash)->GetArena();
     if (message_arena != submessage_arena) {
-      blockhash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, blockhash, submessage_arena);
+      block_hash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, block_hash, submessage_arena);
     }
     
   } else {
     
   }
-  blockhash_ = blockhash;
-  // @@protoc_insertion_point(field_set_allocated:remote.StateChange.blockHash)
+  block_hash_ = block_hash;
+  // @@protoc_insertion_point(field_set_allocated:remote.StateChange.block_hash)
 }
 
 // repeated .remote.AccountChange changes = 4;
@@ -5388,44 +5388,44 @@ StateChange::mutable_txs() {
 
 // StateChangeRequest
 
-// bool withStorage = 1;
-inline void StateChangeRequest::clear_withstorage() {
-  withstorage_ = false;
+// bool with_storage = 1;
+inline void StateChangeRequest::clear_with_storage() {
+  with_storage_ = false;
 }
-inline bool StateChangeRequest::_internal_withstorage() const {
-  return withstorage_;
+inline bool StateChangeRequest::_internal_with_storage() const {
+  return with_storage_;
 }
-inline bool StateChangeRequest::withstorage() const {
-  // @@protoc_insertion_point(field_get:remote.StateChangeRequest.withStorage)
-  return _internal_withstorage();
+inline bool StateChangeRequest::with_storage() const {
+  // @@protoc_insertion_point(field_get:remote.StateChangeRequest.with_storage)
+  return _internal_with_storage();
 }
-inline void StateChangeRequest::_internal_set_withstorage(bool value) {
+inline void StateChangeRequest::_internal_set_with_storage(bool value) {
   
-  withstorage_ = value;
+  with_storage_ = value;
 }
-inline void StateChangeRequest::set_withstorage(bool value) {
-  _internal_set_withstorage(value);
-  // @@protoc_insertion_point(field_set:remote.StateChangeRequest.withStorage)
+inline void StateChangeRequest::set_with_storage(bool value) {
+  _internal_set_with_storage(value);
+  // @@protoc_insertion_point(field_set:remote.StateChangeRequest.with_storage)
 }
 
-// bool withTransactions = 2;
-inline void StateChangeRequest::clear_withtransactions() {
-  withtransactions_ = false;
+// bool with_transactions = 2;
+inline void StateChangeRequest::clear_with_transactions() {
+  with_transactions_ = false;
 }
-inline bool StateChangeRequest::_internal_withtransactions() const {
-  return withtransactions_;
+inline bool StateChangeRequest::_internal_with_transactions() const {
+  return with_transactions_;
 }
-inline bool StateChangeRequest::withtransactions() const {
-  // @@protoc_insertion_point(field_get:remote.StateChangeRequest.withTransactions)
-  return _internal_withtransactions();
+inline bool StateChangeRequest::with_transactions() const {
+  // @@protoc_insertion_point(field_get:remote.StateChangeRequest.with_transactions)
+  return _internal_with_transactions();
 }
-inline void StateChangeRequest::_internal_set_withtransactions(bool value) {
+inline void StateChangeRequest::_internal_set_with_transactions(bool value) {
   
-  withtransactions_ = value;
+  with_transactions_ = value;
 }
-inline void StateChangeRequest::set_withtransactions(bool value) {
-  _internal_set_withtransactions(value);
-  // @@protoc_insertion_point(field_set:remote.StateChangeRequest.withTransactions)
+inline void StateChangeRequest::set_with_transactions(bool value) {
+  _internal_set_with_transactions(value);
+  // @@protoc_insertion_point(field_set:remote.StateChangeRequest.with_transactions)
 }
 
 // -------------------------------------------------------------------

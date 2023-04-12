@@ -30,52 +30,52 @@ using namespace std::chrono;
 using namespace boost::asio;
 
 static void serialize_header(const BlockHeader& bh, ::execution::Header* header) {
-    header->set_allocated_parenthash(rpc::H256_from_bytes32(bh.parent_hash).release());
+    header->set_allocated_parent_hash(rpc::H256_from_bytes32(bh.parent_hash).release());
     header->set_allocated_coinbase(rpc::H160_from_address(bh.beneficiary).release());
-    header->set_allocated_stateroot(rpc::H256_from_bytes32(bh.state_root).release());
-    header->set_allocated_receiptroot(rpc::H256_from_bytes32(bh.receipts_root).release());
-    header->set_allocated_logsbloom(rpc::H2048_from_string(to_string(bh.logs_bloom)).release());
-    header->set_allocated_mixdigest(rpc::H256_from_bytes32(bh.mix_hash).release());
-    header->set_blocknumber(bh.number);
-    header->set_gaslimit(bh.gas_limit);
-    header->set_gasused(bh.gas_used);
+    header->set_allocated_state_root(rpc::H256_from_bytes32(bh.state_root).release());
+    header->set_allocated_receipt_root(rpc::H256_from_bytes32(bh.receipts_root).release());
+    header->set_allocated_logs_bloom(rpc::H2048_from_string(to_string(bh.logs_bloom)).release());
+    header->set_allocated_mix_digest(rpc::H256_from_bytes32(bh.mix_hash).release());
+    header->set_block_number(bh.number);
+    header->set_gas_limit(bh.gas_limit);
+    header->set_gas_used(bh.gas_used);
     header->set_timestamp(bh.timestamp);
     header->set_nonce(endian::load_big_u64(bh.nonce.data()));
-    header->set_extradata(bh.extra_data.data(), bh.extra_data.size());
+    header->set_extra_data(bh.extra_data.data(), bh.extra_data.size());
     header->set_allocated_difficulty(rpc::H256_from_uint256(bh.difficulty).release());
-    header->set_allocated_blockhash(rpc::H256_from_bytes32(bh.hash()).release());
-    header->set_allocated_ommerhash(rpc::H256_from_bytes32(bh.ommers_hash).release());
-    header->set_allocated_transactionhash(rpc::H256_from_bytes32(bh.transactions_root).release());
+    header->set_allocated_block_hash(rpc::H256_from_bytes32(bh.hash()).release());
+    header->set_allocated_ommer_hash(rpc::H256_from_bytes32(bh.ommers_hash).release());
+    header->set_allocated_transaction_hash(rpc::H256_from_bytes32(bh.transactions_root).release());
     if (bh.base_fee_per_gas) {
-        header->set_allocated_basefeepergas(rpc::H256_from_uint256(*bh.base_fee_per_gas).release());
+        header->set_allocated_base_fee_per_gas(rpc::H256_from_uint256(*bh.base_fee_per_gas).release());
     }
     if (bh.withdrawals_root) {
-        header->set_allocated_withdrawalhash(rpc::H256_from_bytes32(*bh.withdrawals_root).release());
+        header->set_allocated_withdrawal_hash(rpc::H256_from_bytes32(*bh.withdrawals_root).release());
     }
 }
 
 static void deserialize_header(const ::execution::Header& received_header, BlockHeader& header) {
-    header.parent_hash = rpc::bytes32_from_H256(received_header.parenthash());
+    header.parent_hash = rpc::bytes32_from_H256(received_header.parent_hash());
     header.beneficiary = rpc::address_from_H160(received_header.coinbase());
-    header.state_root = rpc::bytes32_from_H256(received_header.stateroot());
-    header.receipts_root = rpc::bytes32_from_H256(received_header.receiptroot());
-    const auto& logs_bloom = rpc::string_from_H2048(received_header.logsbloom());
+    header.state_root = rpc::bytes32_from_H256(received_header.state_root());
+    header.receipts_root = rpc::bytes32_from_H256(received_header.receipt_root());
+    const auto& logs_bloom = rpc::string_from_H2048(received_header.logs_bloom());
     std::copy(logs_bloom.cbegin(), logs_bloom.cend(), header.logs_bloom.begin());
-    header.mix_hash = rpc::bytes32_from_H256(received_header.mixdigest());
-    header.number = received_header.blocknumber();
-    header.gas_limit = received_header.gaslimit();
-    header.gas_used = received_header.gasused();
+    header.mix_hash = rpc::bytes32_from_H256(received_header.mix_digest());
+    header.number = received_header.block_number();
+    header.gas_limit = received_header.gas_limit();
+    header.gas_used = received_header.gas_used();
     header.timestamp = received_header.timestamp();
     endian::store_big_u64(header.nonce.data(), received_header.nonce());
-    std::copy(received_header.extradata().cbegin(), received_header.extradata().cend(), header.extra_data.begin());
+    std::copy(received_header.extra_data().cbegin(), received_header.extra_data().cend(), header.extra_data.begin());
     header.difficulty = rpc::uint256_from_H256(received_header.difficulty());
-    header.ommers_hash = rpc::bytes32_from_H256(received_header.ommerhash());
-    header.transactions_root = rpc::bytes32_from_H256(received_header.transactionhash());
-    if (received_header.has_basefeepergas()) {
-        header.base_fee_per_gas = rpc::uint256_from_H256(received_header.basefeepergas());
+    header.ommers_hash = rpc::bytes32_from_H256(received_header.ommer_hash());
+    header.transactions_root = rpc::bytes32_from_H256(received_header.transaction_hash());
+    if (received_header.has_base_fee_per_gas()) {
+        header.base_fee_per_gas = rpc::uint256_from_H256(received_header.base_fee_per_gas());
     }
-    if (received_header.has_withdrawalhash()) {
-        header.withdrawals_root = rpc::bytes32_from_H256(received_header.withdrawalhash());
+    if (received_header.has_withdrawal_hash()) {
+        header.withdrawals_root = rpc::bytes32_from_H256(received_header.withdrawal_hash());
     }
 }
 
@@ -112,15 +112,15 @@ awaitable<void> RemoteClient::start() {
 awaitable<BlockHeader> RemoteClient::get_header(BlockNum block_number, Hash block_hash) {
     BlockHeader header;
     ::execution::GetSegmentRequest request;
-    request.set_blocknumber(block_number);
-    request.set_allocated_blockhash(rpc::H256_from_bytes32(block_hash).release());
+    request.set_block_number(block_number);
+    request.set_allocated_block_hash(rpc::H256_from_bytes32(block_hash).release());
 
     const auto response = co_await rpc::unary_rpc(
         &::execution::Execution::Stub::AsyncGetHeader, stub_, request, grpc_context_, "failure getting header");
 
     const auto& received_header = response.header();
-    match_or_throw(block_hash, received_header.blockhash());
-    match_or_throw(block_number, received_header.blocknumber());
+    match_or_throw(block_hash, received_header.block_hash());
+    match_or_throw(block_number, received_header.block_number());
 
     deserialize_header(received_header, header);
 
@@ -130,15 +130,15 @@ awaitable<BlockHeader> RemoteClient::get_header(BlockNum block_number, Hash bloc
 awaitable<BlockBody> RemoteClient::get_body(BlockNum block_number, Hash block_hash) {
     BlockBody body;
     ::execution::GetSegmentRequest request;
-    request.set_blocknumber(block_number);
-    request.set_allocated_blockhash(rpc::H256_from_bytes32(block_hash).release());
+    request.set_block_number(block_number);
+    request.set_allocated_block_hash(rpc::H256_from_bytes32(block_hash).release());
 
     const auto response = co_await rpc::unary_rpc(
         &::execution::Execution::Stub::AsyncGetBody, stub_, request, grpc_context_, "failure getting body");
 
     const auto& received_body = response.body();
-    match_or_throw(block_hash, received_body.blockhash());
-    match_or_throw(block_number, received_body.blocknumber());
+    match_or_throw(block_hash, received_body.block_hash());
+    match_or_throw(block_number, received_body.block_number());
 
     body.transactions.reserve(static_cast<std::size_t>(received_body.transactions_size()));
     for (const auto& execution_tx : received_body.transactions()) {
@@ -161,7 +161,7 @@ awaitable<BlockBody> RemoteClient::get_body(BlockNum block_number, Hash block_ha
     for (const auto& execution_withdrawal : received_body.withdrawals()) {
         body.withdrawals->emplace_back(Withdrawal{
             .index = execution_withdrawal.index(),
-            .validator_index = execution_withdrawal.validatorindex(),
+            .validator_index = execution_withdrawal.validator_index(),
             .address = rpc::address_from_H160(execution_withdrawal.address()),
             .amount = execution_withdrawal.amount(),
         });
@@ -183,8 +183,8 @@ awaitable<void> RemoteClient::insert_bodies(const BlockVector& blocks) {
     ::execution::InsertBodiesRequest request;
     for (const auto& b : blocks) {
         ::execution::BlockBody* body = request.add_bodies();
-        body->set_allocated_blockhash(rpc::H256_from_bytes32(b.header.hash()).release());
-        body->set_blocknumber(b.header.number);
+        body->set_allocated_block_hash(rpc::H256_from_bytes32(b.header.hash()).release());
+        body->set_block_number(b.header.number);
         for (const auto& transaction : b.transactions) {
             Bytes tx_rlp;
             rlp::encode(tx_rlp, transaction);
@@ -198,7 +198,7 @@ awaitable<void> RemoteClient::insert_bodies(const BlockVector& blocks) {
             for (const auto& withdrawal : *b.withdrawals) {
                 ::types::Withdrawal* w = body->add_withdrawals();
                 w->set_index(withdrawal.index);
-                w->set_validatorindex(withdrawal.validator_index);
+                w->set_validator_index(withdrawal.validator_index);
                 w->set_allocated_address(rpc::H160_from_address(withdrawal.address).release());
                 w->set_amount(withdrawal.amount);
             }
@@ -221,7 +221,7 @@ awaitable<BlockNum> RemoteClient::get_block_num(Hash block_hash) {
     const auto response = co_await rpc::unary_rpc(
         &::execution::Execution::Stub::AsyncGetHeaderHashNumber, stub_, *request, grpc_context_, "failure getting block number");
 
-    co_return response.blocknumber();
+    co_return response.block_number();
 }
 
 awaitable<ValidationResult> RemoteClient::validate_chain(Hash head_block_hash) {
@@ -230,17 +230,17 @@ awaitable<ValidationResult> RemoteClient::validate_chain(Hash head_block_hash) {
         &::execution::Execution::Stub::AsyncValidateChain, stub_, *request, grpc_context_, "failure verifying chain");
 
     ValidationResult result;
-    switch (response.validationstatus()) {
+    switch (response.validation_status()) {
         case ::execution::ValidationStatus::Success:
-            result = ValidChain{.current_head = hash_from_H256(response.latestvalidhash())};
+            result = ValidChain{.current_head = hash_from_H256(response.latest_valid_hash())};
             break;
         case ::execution::ValidationStatus::InvalidChain:
-            result = InvalidChain{.latest_valid_head = hash_from_H256(response.latestvalidhash())};
+            result = InvalidChain{.latest_valid_head = hash_from_H256(response.latest_valid_hash())};
             break;
         case ::execution::ValidationStatus::TooFarAway:
         case ::execution::ValidationStatus::MissingSegment:
-            result = ValidationError{.latest_valid_head = hash_from_H256(response.latestvalidhash()),
-                                     .missing_block = hash_from_H256(response.missinghash())};
+            result = ValidationError{.latest_valid_head = hash_from_H256(response.latest_valid_hash()),
+                                     .missing_block = hash_from_H256(response.missing_hash())};
             break;
         default:
             throw std::runtime_error("unknown validation status");
@@ -254,7 +254,7 @@ awaitable<ForkChoiceApplication> RemoteClient::update_fork_choice(Hash head_bloc
     const auto response = co_await rpc::unary_rpc(
         &::execution::Execution::Stub::AsyncUpdateForkChoice, stub_, *request, grpc_context_, "failure updating fork choice");
 
-    ForkChoiceApplication result{.success = response.success(), .current_head = hash_from_H256(response.latestvalidhash())};
+    ForkChoiceApplication result{.success = response.success(), .current_head = hash_from_H256(response.latest_valid_hash())};
 
     co_return result;
 }

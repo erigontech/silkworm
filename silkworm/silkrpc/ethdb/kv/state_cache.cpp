@@ -71,16 +71,16 @@ std::size_t CoherentStateCache::latest_code_size() {
 }
 
 void CoherentStateCache::on_new_block(const remote::StateChangeBatch& state_changes) {
-    if (state_changes.changebatch_size() == 0) {
+    if (state_changes.change_batch_size() == 0) {
         SILKRPC_WARN << "Unexpected empty batch received and skipped\n";
         return;
     }
 
     std::unique_lock write_lock{rw_mutex_};
 
-    const auto view_id = state_changes.stateversionid();
+    const auto view_id = state_changes.state_version_id();
     CoherentStateRoot* root = advance_root(view_id);
-    for (const auto& state_change : state_changes.changebatch()) {
+    for (const auto& state_change : state_changes.change_batch()) {
         for (const auto& account_change : state_change.changes()) {
             switch (account_change.action()) {
                 case remote::Action::UPSERT: {
@@ -97,7 +97,7 @@ void CoherentStateCache::on_new_block(const remote::StateChangeBatch& state_chan
                     break;
                 }
                 case remote::Action::STORAGE: {
-                    if (config_.with_storage && account_change.storagechanges_size() > 0) {
+                    if (config_.with_storage && account_change.storage_changes_size() > 0) {
                         process_storage_change(root, view_id, account_change);
                     }
                     break;
@@ -148,7 +148,7 @@ void CoherentStateCache::process_storage_change(CoherentStateRoot* root, StateVi
                                                 const remote::AccountChange& change) {
     const auto address = silkworm::rpc::address_from_H160(change.address());
     SILKRPC_DEBUG << "CoherentStateCache::process_storage_change address=" << address << "\n";
-    for (const auto& storage_change : change.storagechanges()) {
+    for (const auto& storage_change : change.storage_changes()) {
         const auto location_hash = silkworm::rpc::bytes32_from_H256(storage_change.location());
         const auto storage_key = composite_storage_key(address, change.incarnation(), location_hash.bytes);
         const auto value = silkworm::bytes_of_string(storage_change.data());

@@ -54,13 +54,13 @@ int kv_seek_async(const std::string& target, const std::string& table_name, silk
         return -1;
     }
     // 1.2) Read + Next
-    auto txid_pair = remote::Pair{};
-    reader_writer->Read(&txid_pair, START_TAG);
+    auto tx_id_pair = remote::Pair{};
+    reader_writer->Read(&tx_id_pair, START_TAG);
     has_event = queue.Next(&got_tag, &ok);
     if (!has_event || got_tag != START_TAG) {
         return -1;
     }
-    const auto tx_id = txid_pair.cursorid();
+    const auto tx_id = tx_id_pair.cursor_id();
     std::cout << "KV Tx START <- txid: " << tx_id << "\n";
 
     // 2) Open cursor
@@ -68,7 +68,7 @@ int kv_seek_async(const std::string& target, const std::string& table_name, silk
     // 2.1) Write + Next
     auto open_message = remote::Cursor{};
     open_message.set_op(remote::Op::OPEN);
-    open_message.set_bucketname(table_name);
+    open_message.set_bucket_name(table_name);
     reader_writer->Write(open_message, OPEN_TAG);
     has_event = queue.Next(&got_tag, &ok);
     if (!has_event || got_tag != OPEN_TAG) {
@@ -81,7 +81,7 @@ int kv_seek_async(const std::string& target, const std::string& table_name, silk
     if (!has_event || got_tag != OPEN_TAG) {
         return -1;
     }
-    auto cursor_id = open_pair.cursorid();
+    auto cursor_id = open_pair.cursor_id();
     std::cout << "KV Tx OPEN <- cursor: " << cursor_id << "\n";
 
     // 3) Seek given key in given table
@@ -125,7 +125,7 @@ int kv_seek_async(const std::string& target, const std::string& table_name, silk
     if (!has_event || got_tag != CLOSE_TAG) {
         return -1;
     }
-    std::cout << "KV Tx CLOSE <- cursor: " << close_pair.cursorid() << "\n";
+    std::cout << "KV Tx CLOSE <- cursor: " << close_pair.cursor_id() << "\n";
 
     // 5) Finish
     reader_writer->Finish(&status, FINISH_TAG);

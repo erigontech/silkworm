@@ -35,20 +35,20 @@ int kv_seek_both(const std::string& target, const std::string& table_name, silkw
     std::cout << "KV Tx START\n";
 
     // Read TX identifier
-    auto txid_pair = remote::Pair{};
-    auto success = reader_writer->Read(&txid_pair);
+    auto tx_id_pair = remote::Pair{};
+    auto success = reader_writer->Read(&tx_id_pair);
     if (!success) {
         std::cerr << "KV stream closed receiving TXID\n";
         std::cout << "KV Tx STATUS: " << reader_writer->Finish() << "\n";
         return -1;
     }
-    const auto tx_id = txid_pair.cursorid();
+    const auto tx_id = tx_id_pair.cursor_id();
     std::cout << "KV Tx START <- txid: " << tx_id << "\n";
 
     // Open cursor
     auto open_message = remote::Cursor{};
     open_message.set_op(remote::Op::OPEN);
-    open_message.set_bucketname(table_name);
+    open_message.set_bucket_name(table_name);
     success = reader_writer->Write(open_message);
     if (!success) {
         std::cerr << "KV stream closed sending OPEN operation req\n";
@@ -63,7 +63,7 @@ int kv_seek_both(const std::string& target, const std::string& table_name, silkw
         std::cout << "KV Tx STATUS: " << reader_writer->Finish() << "\n";
         return -1;
     }
-    auto cursor_id = open_pair.cursorid();
+    auto cursor_id = open_pair.cursor_id();
     std::cout << "KV Tx OPEN <- cursor: " << cursor_id << "\n";
 
     // Seek given key in given table
@@ -108,7 +108,7 @@ int kv_seek_both(const std::string& target, const std::string& table_name, silkw
         std::cout << "KV Tx STATUS: " << reader_writer->Finish() << "\n";
         return -1;
     }
-    std::cout << "KV Tx CLOSE <- cursor: " << close_pair.cursorid() << "\n";
+    std::cout << "KV Tx CLOSE <- cursor: " << close_pair.cursor_id() << "\n";
 
     reader_writer->WritesDone();
     grpc::Status status = reader_writer->Finish();

@@ -48,7 +48,7 @@ api::api_common::NodeInfo node_info_from_proto_node_info(const types::NodeInfoRe
         sentry::common::EnodeUrl{info.enode()},
         peer_public_key_from_id_string(info.id()),
         info.name(),
-        parse_endpoint(info.listeneraddr()),
+        parse_endpoint(info.listener_addr()),
         static_cast<uint16_t>(info.ports().listener()),
     };
 }
@@ -69,7 +69,7 @@ types::NodeInfoReply proto_node_info_from_node_info(const api::api_common::NodeI
 
     std::ostringstream rlpx_server_listen_endpoint_str;
     rlpx_server_listen_endpoint_str << info.rlpx_server_listen_endpoint;
-    reply.set_listeneraddr(rlpx_server_listen_endpoint_str.str());
+    reply.set_listener_addr(rlpx_server_listen_endpoint_str.str());
 
     return reply;
 }

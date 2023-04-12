@@ -89,7 +89,7 @@ int ethbackend(const std::string& target) {
     std::cout << "ETHBACKEND ClientVersion ->\n";
     status = stub->ClientVersion(&cv_context, remote::ClientVersionRequest{}, &cv_reply);
     if (status.ok()) {
-        std::cout << "ETHBACKEND ClientVersion <- " << status << " nodename: " << cv_reply.nodename() << "\n";
+        std::cout << "ETHBACKEND ClientVersion <- " << status << " node name: " << cv_reply.node_name() << "\n";
     } else {
         std::cout << "ETHBACKEND ClientVersion <- " << status << "\n";
     }

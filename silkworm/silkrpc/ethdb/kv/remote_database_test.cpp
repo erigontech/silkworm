@@ -44,7 +44,7 @@ TEST_CASE_METHOD(RemoteDatabaseTest, "RemoteDatabase::begin", "[silkrpc][ethdb][
         expect_request_async_tx(*kv_stub_, true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call succeeds setting the specified transaction ID
         remote::Pair pair;
-        pair.set_txid(4);
+        pair.set_tx_id(4);
         EXPECT_CALL(reader_writer_, Read).WillOnce(test::read_success_with(grpc_context_, pair));
 
         // Execute the test: RemoteDatabase::begin should return transaction w/ expected transaction ID

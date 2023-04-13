@@ -36,8 +36,8 @@ struct ProtocolVersion {
     uint32_t patch;
 };
 
-constexpr auto kKvServiceApiVersion = ProtocolVersion{6, 0, 0};
-constexpr auto kEthBackEndServiceApiVersion = ProtocolVersion{3, 1, 0};
+constexpr auto kKvServiceApiVersion = ProtocolVersion{6, 2, 0};
+constexpr auto kEthBackEndServiceApiVersion = ProtocolVersion{3, 2, 0};
 constexpr auto kMiningServiceApiVersion = ProtocolVersion{1, 0, 0};
 constexpr auto kTxPoolServiceApiVersion = ProtocolVersion{1, 0, 0};
 

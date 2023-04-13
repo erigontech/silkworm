@@ -19,7 +19,7 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | eth_protocolVersion                        | Yes          |                                            |
 | eth_syncing                                | Yes          |                                            |
 | eth_gasPrice                               | Yes          |                                            |
-| eth_maxPriorityFeePerGas                   | -            | not yet implemented                        |
+| eth_maxPriorityFeePerGas                   | Yes          |                                            |
 | eth_feeHistory                             | -            | not yet implemented                        |
 |                                            |              |                                            |
 | eth_getBlockByHash                         | Yes          |                                            |

@@ -77,6 +77,7 @@ constexpr const char* k_eth_getBlockTransactionCountByHash{"eth_getBlockTransact
 constexpr const char* k_eth_getBlockByNumber{"eth_getBlockByNumber"};
 constexpr const char* k_eth_getBlockTransactionCountByNumber{"eth_getBlockTransactionCountByNumber"};
 constexpr const char* k_eth_getBlockReceipts{"eth_getBlockReceipts"};
+constexpr const char* k_eth_maxPriorityFeePerGas{"eth_maxPriorityFeePerGas"};
 
 constexpr const char* k_debug_accountRange{"debug_accountRange"};
 constexpr const char* k_debug_getModifiedAccountsByNumber{"debug_getModifiedAccountsByNumber"};

@@ -27,25 +27,26 @@ const MapConfig kTestMultiMap{"TestMultiTable", mdbx::key_mode::usual, mdbx::val
 
 const MapConfig kTestNonexistentMap{"NonexistentTable"};
 
-TEST_CASE("MemoryOverlay", "[silkworm][node][db][memory_mutation]") {
+TEST_CASE("MemoryDatabase", "[silkworm][node][db][memory_mutation]") {
     const TemporaryDirectory tmp_dir;
 
     SECTION("Create a temporary database") {
-        CHECK_NOTHROW(MemoryOverlay{tmp_dir.path()});
+        CHECK_NOTHROW(MemoryDatabase{});
+        CHECK_NOTHROW(MemoryDatabase{tmp_dir.path()});
     }
 
     SECTION("Create one R/W transaction in a temporary database") {
-        MemoryOverlay overlay{tmp_dir.path()};
+        MemoryDatabase overlay{tmp_dir.path()};
         ::mdbx::txn_managed rw_txn;
-        CHECK_NOTHROW((rw_txn = overlay.start_rw_tx()));
+        CHECK_NOTHROW((rw_txn = overlay.start_rw_txn()));
         CHECK(!rw_txn.env().is_empty());
     }
 
     SECTION("Cannot create more than one R/W transaction in a temporary database") {
-        MemoryOverlay overlay{tmp_dir.path()};
+        MemoryDatabase overlay{tmp_dir.path()};
         ::mdbx::txn_managed rw_txn;
-        CHECK_NOTHROW((rw_txn = overlay.start_rw_tx()));
-        CHECK_THROWS_AS(overlay.start_rw_tx(), std::exception);
+        CHECK_NOTHROW((rw_txn = overlay.start_rw_txn()));
+        CHECK_THROWS_AS(overlay.start_rw_txn(), std::exception);
     }
 }
 
@@ -60,44 +61,44 @@ TEST_CASE("MemoryMutation", "[silkworm][node][db][memory_mutation]") {
     };
     auto main_env{db::open_env(main_db_config)};
     RWTxn main_rw_txn{main_env};
-    MemoryOverlay overlay{tmp_dir.path()};
+    MemoryOverlay overlay{tmp_dir.path(), &main_rw_txn};
 
     SECTION("Create one memory mutation") {
-        CHECK_NOTHROW(MemoryMutation{overlay, &main_rw_txn});
+        CHECK_NOTHROW(MemoryMutation{overlay});
     }
 
     SECTION("Check initial values") {
-        MemoryMutation mutation{overlay, &main_rw_txn};
+        MemoryMutation mutation{overlay};
         CHECK_NOTHROW(mutation.external_txn() == &main_rw_txn);
         CHECK_NOTHROW(!mutation.is_table_cleared("TestTable"));
         CHECK_NOTHROW(!mutation.is_entry_deleted("TestTable", Slice{}));
     }
 
     SECTION("Cannot create two memory mutations") {
-        MemoryMutation mutation{overlay, &main_rw_txn};
-        CHECK_THROWS_AS(MemoryMutation(overlay, &main_rw_txn), ::mdbx::exception);
+        MemoryMutation mutation{overlay};
+        CHECK_THROWS_AS(MemoryMutation(overlay), ::mdbx::exception);
     }
 
     SECTION("Rollback an empty mutation") {
-        MemoryMutation mutation{overlay, &main_rw_txn};
+        MemoryMutation mutation{overlay};
         CHECK_NOTHROW(mutation.rollback());
     }
 
     SECTION("Rollback twice an empty mutation") {
-        MemoryMutation mutation{overlay, &main_rw_txn};
+        MemoryMutation mutation{overlay};
         CHECK_NOTHROW(mutation.rollback());
         CHECK_NOTHROW(mutation.rollback());
     }
 
     SECTION("Check map presence in empty mutation") {
-        MemoryMutation mutation{overlay, &main_rw_txn};
+        MemoryMutation mutation{overlay};
         CHECK_NOTHROW(!mutation.has_map(kTestMap.name));
         CHECK_NOTHROW(!mutation.has_map(kTestMultiMap.name));
         CHECK_NOTHROW(!mutation.has_map(kTestNonexistentMap.name));
     }
 
     SECTION("Check map presence in nonempty main db") {
-        MemoryMutation mutation{overlay, &main_rw_txn};
+        MemoryMutation mutation{overlay};
         open_map(main_rw_txn, kTestMap);
         open_map(main_rw_txn, kTestMultiMap);
         CHECK_NOTHROW(mutation.has_map(kTestMap.name));
@@ -106,7 +107,7 @@ TEST_CASE("MemoryMutation", "[silkworm][node][db][memory_mutation]") {
     }
 
     SECTION("Check map presence in nonempty mutation") {
-        MemoryMutation mutation{overlay, &main_rw_txn};
+        MemoryMutation mutation{overlay};
         open_map(mutation, kTestMap);
         open_map(mutation, kTestMultiMap);
         CHECK_NOTHROW(mutation.has_map(kTestMap.name));
@@ -115,7 +116,7 @@ TEST_CASE("MemoryMutation", "[silkworm][node][db][memory_mutation]") {
     }
 
     SECTION("Erase key in nonempty mutation") {
-        MemoryMutation mutation{overlay, &main_rw_txn};
+        MemoryMutation mutation{overlay};
         open_map(mutation, kTestMap);
         open_map(mutation, kTestMultiMap);
 

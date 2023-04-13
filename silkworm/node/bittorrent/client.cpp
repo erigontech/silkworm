@@ -264,9 +264,12 @@ bool BitTorrentClient::handle_alert(const lt::alert* alert) {
             SILK_ERROR << "Failed to add torrent: " << (ata->params.ti ? ata->params.ti->name() : ata->params.name)
                        << " message: " << ata->error.message();
         } else {
-            SILK_INFO << "Torrent: " << ata->torrent_name() << " added";
+            SILK_TRACE << "Torrent: " << ata->torrent_name() << " added";
             ata->handle.save_resume_data(lt::torrent_handle::save_info_dict | lt::torrent_handle::only_if_modified);
             ++outstanding_resume_requests_;
+
+            // Notify that torrent file has been added to registered subscribers
+            added_subscription(settings_.repository_path / ata->torrent_name());
         }
         handled = true;
     }
@@ -282,6 +285,9 @@ bool BitTorrentClient::handle_alert(const lt::alert* alert) {
         // TODO(canepat) check if improves download speed
         tfa->handle.set_max_connections(tfa->handle.max_connections() / 2);
         tfa->handle.save_resume_data(lt::torrent_handle::save_info_dict);
+
+        // Notify that torrent file has been downloaded to registered subscribers
+        completed_subscription(settings_.repository_path / tfa->torrent_name());
 
         handled = true;
     }
@@ -335,7 +341,7 @@ bool BitTorrentClient::handle_alert(const lt::alert* alert) {
         SILK_DEBUG << alert->message();
     }
 
-    return false;
+    return handled;
 }
 
 }  // namespace silkworm

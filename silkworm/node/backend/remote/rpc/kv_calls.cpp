@@ -78,36 +78,32 @@ void KvVersionCall::fill_predefined_reply() {
     KvVersionCall::response_.set_patch(std::get<2>(max_version));
 }
 
-awaitable<void> KvVersionCall::operator()() {
+awaitable<void> KvVersionCall::operator()(const EthereumBackEnd& /*backend*/) {
     SILK_TRACE << "KvVersionCall START";
     co_await agrpc::finish(responder_, response_, grpc::Status::OK);
     SILK_TRACE << "KvVersionCall END version: " << response_.major() << "." << response_.minor() << "." << response_.patch();
 }
 
-mdbx::env* TxCall::chaindata_env_{nullptr};
 std::chrono::milliseconds TxCall::max_ttl_duration_{kMaxTxDuration};
-
-void TxCall::set_chaindata_env(mdbx::env* chaindata_env) {
-    TxCall::chaindata_env_ = chaindata_env;
-}
 
 void TxCall::set_max_ttl_duration(const std::chrono::milliseconds& max_ttl_duration) {
     TxCall::max_ttl_duration_ = max_ttl_duration;
 }
 
-awaitable<void> TxCall::operator()() {
-    SILK_TRACE << "TxCall peer: " << peer() << " MDBX readers: " << chaindata_env_->get_info().mi_numreaders;
+awaitable<void> TxCall::operator()(const EthereumBackEnd& backend) {
+    auto chaindata_env = backend.chaindata_env();
+    SILK_TRACE << "TxCall peer: " << peer() << " MDBX readers: " << chaindata_env->get_info().mi_numreaders;
 
     grpc::Status status{grpc::Status::OK};
     try {
         // Create a new read-only transaction.
-        read_only_txn_ = db::ROTxn{*chaindata_env_};
+        read_only_txn_ = db::ROTxn{*chaindata_env};
         SILK_DEBUG << "TxCall peer: " << peer() << " started tx: " << read_only_txn_->id();
 
         // Send an unsolicited message containing the transaction ID.
-        remote::Pair txid_pair;
-        txid_pair.set_txid(read_only_txn_->id());
-        if (!co_await agrpc::write(responder_, txid_pair)) {
+        remote::Pair tx_id_pair;
+        tx_id_pair.set_tx_id(read_only_txn_->id());
+        if (!co_await agrpc::write(responder_, tx_id_pair)) {
             SILK_WARN << "Tx closed by peer: " << server_context_.peer() << " error: write failed";
             co_await agrpc::finish(responder_, grpc::Status::OK);
             co_return;
@@ -173,7 +169,7 @@ awaitable<void> TxCall::operator()() {
             while (true) {
                 const auto [ec] = co_await max_ttl_alarm.async_wait(as_tuple(use_awaitable));
                 if (!ec) {
-                    handle_max_ttl_timer_expired();
+                    handle_max_ttl_timer_expired(backend);
                     max_ttl_deadline += max_ttl_duration_;
                 }
             }
@@ -214,11 +210,11 @@ void TxCall::handle(const remote::Cursor* request, remote::Pair& response) {
 }
 
 void TxCall::handle_cursor_open(const remote::Cursor* request, remote::Pair& response) {
-    const std::string& bucket_name = request->bucketname();
+    const std::string& bucket_name = request->bucket_name();
 
     // Bucket name must be a valid MDBX map name
     if (!db::has_map(read_only_txn_, bucket_name.c_str())) {
-        const auto err = "unknown bucket: " + request->bucketname();
+        const auto err = "unknown bucket: " + request->bucket_name();
         SILK_ERROR << "Tx peer: " << peer() << " op=" << remote::Op_Name(request->op()) << " " << err;
         throw_with_error(grpc::Status{grpc::StatusCode::INVALID_ARGUMENT, err});
     }
@@ -249,8 +245,8 @@ void TxCall::handle_cursor_open(const remote::Cursor* request, remote::Pair& res
     }
 
     // Send the assigned cursor ID back to the client.
-    response.set_cursorid(cursor_it->first);
-    SILK_DEBUG << "Tx peer: " << peer() << " opened cursor: " << response.cursorid();
+    response.set_cursor_id(cursor_it->first);
+    SILK_DEBUG << "Tx peer: " << peer() << " opened cursor: " << response.cursor_id();
 }
 
 void TxCall::handle_cursor_operation(const remote::Cursor* request, remote::Pair& response) {
@@ -341,7 +337,9 @@ void TxCall::handle_operation(const remote::Cursor* request, db::ROCursorDupSort
     SILK_TRACE << "TxCall::handle_operation " << this << " op=" << remote::Op_Name(request->op()) << " END";
 }
 
-void TxCall::handle_max_ttl_timer_expired() {
+void TxCall::handle_max_ttl_timer_expired(const EthereumBackEnd& backend) {
+    auto chaindata_env = backend.chaindata_env();
+
     // Save the whole state of the transaction (i.e. all cursor positions)
     std::vector<CursorPosition> positions;
     const bool save_success = save_cursors(positions);
@@ -352,7 +350,7 @@ void TxCall::handle_max_ttl_timer_expired() {
 
     // Close and reopen to avoid long-lived transactions (resource-consuming for MDBX)
     read_only_txn_.abort();
-    read_only_txn_ = db::ROTxn{*chaindata_env_};
+    read_only_txn_ = db::ROTxn{*chaindata_env};
 
     // Restore the whole state of the transaction (i.e. all cursor positions)
     const bool restore_success = restore_cursors(positions);
@@ -670,14 +668,9 @@ void TxCall::throw_with_error(grpc::Status&& status) {
     throw server::CallException{std::move(status)};
 }
 
-StateChangeSource* StateChangesCall::source_{nullptr};
-
-void StateChangesCall::set_source(StateChangeSource* source) {
-    StateChangesCall::source_ = source;
-}
-
-awaitable<void> StateChangesCall::operator()() {
-    SILK_TRACE << "StateChangesCall w/ storage: " << request_.withstorage() << " w/ txs: " << request_.withtransactions() << " START";
+awaitable<void> StateChangesCall::operator()(const EthereumBackEnd& backend) {
+    SILK_TRACE << "StateChangesCall w/ storage: " << request_.with_storage() << " w/ txs: " << request_.with_transactions() << " START";
+    auto source = backend.state_change_source();
 
     // Create a never-expiring timer whose cancellation will notify our async waiting is completed
     auto coroutine_executor = co_await boost::asio::this_coro::executor;
@@ -686,26 +679,26 @@ awaitable<void> StateChangesCall::operator()() {
     std::optional<remote::StateChangeBatch> incoming_batch;
 
     // Register subscription to receive state change batch notifications
-    StateChangeFilter filter{request_.withstorage(), request_.withtransactions()};
-    const auto token = source_->subscribe([&](std::optional<remote::StateChangeBatch> batch) {
+    StateChangeConsumer state_change_consumer = [&](std::optional<remote::StateChangeBatch> batch) {
         // Make the batch handling logic execute on the scheduler associated to the RPC
         boost::asio::dispatch(coroutine_executor, [&, batch = std::move(batch)]() {
             incoming_batch = batch;
             notifying_timer.cancel();
         });
-    },
-                                          filter);
+    };
+    StateChangeFilter filter{request_.with_storage(), request_.with_transactions()};
+    const auto token = source->subscribe(state_change_consumer, filter);
 
     // The assigned token ID must be valid.
     if (!token) {
-        const auto error_message = "assigned consumer token already in use: " + std::to_string(source_->last_token());
+        const auto error_message = "assigned consumer token already in use: " + std::to_string(source->last_token());
         SILK_ERROR << "StateChanges peer: " << peer() << " subscription failed " << error_message;
         co_await agrpc::finish(responder_, grpc::Status{grpc::StatusCode::ALREADY_EXISTS, error_message});
         co_return;
     }
 
     // Unregister subscription whatever it happens
-    auto _ = gsl::finally([&]() { source_->unsubscribe(*token); });
+    auto _ = gsl::finally([&]() { source->unsubscribe(*token); });
 
     bool done{false};
     while (!done) {
@@ -716,7 +709,7 @@ awaitable<void> StateChangesCall::operator()() {
         if (ec == boost::asio::error::operation_aborted) {
             // Notifying timer cancelled => incoming batch available
             if (incoming_batch) {
-                const auto block_height = incoming_batch->changebatch(0).blockheight();
+                const auto block_height = incoming_batch->change_batch(0).block_height();
                 SILK_DEBUG << "Sending state change batch for block: " << block_height;
                 const bool write_ok = co_await agrpc::write(responder_, *incoming_batch);
                 SILK_DEBUG << "State change batch for block: " << block_height << " sent [write_ok=" << write_ok << "]";
@@ -736,31 +729,6 @@ awaitable<void> StateChangesCall::operator()() {
 
     SILK_TRACE << "StateChangesCall END";
     co_return;
-}
-
-KvService::KvService(const EthereumBackEnd& backend) {
-    KvVersionCall::fill_predefined_reply();
-    TxCall::set_chaindata_env(backend.chaindata_env());
-    StateChangesCall::set_source(backend.state_change_source());
-}
-
-void KvService::register_kv_request_calls(const ServerContext& context, remote::KV::AsyncService* service) {
-    SILK_DEBUG << "KvService::register_kv_request_calls START";
-    const auto grpc_context = context.server_grpc_context();
-    // Register one requested call repeatedly for each RPC: asio-grpc will take care of re-registration on any incoming call
-    request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestVersion,
-                       [](auto&&... args) -> awaitable<void> {
-                           co_await KvVersionCall{std::forward<decltype(args)>(args)...}();
-                       });
-    request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestTx,
-                       [grpc_context](auto&&... args) -> awaitable<void> {
-                           co_await TxCall{*grpc_context, std::forward<decltype(args)>(args)...}();
-                       });
-    request_repeatedly(*grpc_context, service, &remote::KV::AsyncService::RequestStateChanges,
-                       [](auto&&... args) -> awaitable<void> {
-                           co_await StateChangesCall{std::forward<decltype(args)>(args)...}();
-                       });
-    SILK_DEBUG << "KvService::register_kv_request_calls END";
 }
 
 }  // namespace silkworm::rpc

@@ -50,10 +50,10 @@ TEST_CASE_METHOD(MinerTest, "Miner::get_work", "[silkrpc][txpool][miner]") {
 
     SECTION("call get_work and get result") {
         ::txpool::GetWorkReply response;
-        response.set_headerhash("0x209f062567c161c5f71b3f57a7de277b0e95c3455050b152d785ad7524ef8ee7");
-        response.set_seedhash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347");
+        response.set_header_hash("0x209f062567c161c5f71b3f57a7de277b0e95c3455050b152d785ad7524ef8ee7");
+        response.set_seed_hash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347");
         response.set_target("0xe7536c5b61ed0e0ab7f3ce7f085806d40f716689c0c086676757de401b595658");
-        response.set_blocknumber("0x00000000");
+        response.set_block_number("0x00000000");
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
         const auto work_result = run<&Miner::get_work>();
         CHECK(work_result.header_hash == 0x209f062567c161c5f71b3f57a7de277b0e95c3455050b152d785ad7524ef8ee7_bytes32);
@@ -83,7 +83,7 @@ TEST_CASE_METHOD(MinerTest, "Miner::get_hashrate", "[silkrpc][txpool][miner]") {
 
     SECTION("call get_hashrate and get result") {
         ::txpool::HashRateReply response;
-        response.set_hashrate(1234567);
+        response.set_hash_rate(1234567);
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
         const auto hash_rate = run<&Miner::get_hash_rate>();
         CHECK(hash_rate == 1234567);

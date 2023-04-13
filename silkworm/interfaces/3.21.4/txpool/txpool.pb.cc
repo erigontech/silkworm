@@ -36,7 +36,7 @@ struct TxHashesDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TxHashesDefaultTypeInternal _TxHashes_default_instance_;
 PROTOBUF_CONSTEXPR AddRequest::AddRequest(
     ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.rlptxs_)*/{}
+    /*decltype(_impl_.rlp_txs_)*/{}
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct AddRequestDefaultTypeInternal {
   PROTOBUF_CONSTEXPR AddRequestDefaultTypeInternal()
@@ -77,7 +77,7 @@ struct TransactionsRequestDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TransactionsRequestDefaultTypeInternal _TransactionsRequest_default_instance_;
 PROTOBUF_CONSTEXPR TransactionsReply::TransactionsReply(
     ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.rlptxs_)*/{}
+    /*decltype(_impl_.rlp_txs_)*/{}
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct TransactionsReplyDefaultTypeInternal {
   PROTOBUF_CONSTEXPR TransactionsReplyDefaultTypeInternal()
@@ -101,7 +101,7 @@ struct OnAddRequestDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 OnAddRequestDefaultTypeInternal _OnAddRequest_default_instance_;
 PROTOBUF_CONSTEXPR OnAddReply::OnAddReply(
     ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.rpltxs_)*/{}
+    /*decltype(_impl_.rpl_txs_)*/{}
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct OnAddReplyDefaultTypeInternal {
   PROTOBUF_CONSTEXPR OnAddReplyDefaultTypeInternal()
@@ -125,9 +125,9 @@ struct AllRequestDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 AllRequestDefaultTypeInternal _AllRequest_default_instance_;
 PROTOBUF_CONSTEXPR AllReply_Tx::AllReply_Tx(
     ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.rlptx_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+    /*decltype(_impl_.rlp_tx_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.sender_)*/nullptr
-  , /*decltype(_impl_.txntype_)*/0
+  , /*decltype(_impl_.txn_type_)*/0
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct AllReply_TxDefaultTypeInternal {
   PROTOBUF_CONSTEXPR AllReply_TxDefaultTypeInternal()
@@ -153,9 +153,9 @@ struct AllReplyDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 AllReplyDefaultTypeInternal _AllReply_default_instance_;
 PROTOBUF_CONSTEXPR PendingReply_Tx::PendingReply_Tx(
     ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.rlptx_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+    /*decltype(_impl_.rlp_tx_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.sender_)*/nullptr
-  , /*decltype(_impl_.islocal_)*/false
+  , /*decltype(_impl_.is_local_)*/false
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct PendingReply_TxDefaultTypeInternal {
   PROTOBUF_CONSTEXPR PendingReply_TxDefaultTypeInternal()
@@ -192,9 +192,9 @@ struct StatusRequestDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 StatusRequestDefaultTypeInternal _StatusRequest_default_instance_;
 PROTOBUF_CONSTEXPR StatusReply::StatusReply(
     ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.pendingcount_)*/0u
-  , /*decltype(_impl_.queuedcount_)*/0u
-  , /*decltype(_impl_.basefeecount_)*/0u
+    /*decltype(_impl_.pending_count_)*/0u
+  , /*decltype(_impl_.queued_count_)*/0u
+  , /*decltype(_impl_.base_fee_count_)*/0u
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct StatusReplyDefaultTypeInternal {
   PROTOBUF_CONSTEXPR StatusReplyDefaultTypeInternal()
@@ -251,7 +251,7 @@ const uint32_t TableStruct_txpool_2ftxpool_2eproto::offsets[] PROTOBUF_SECTION_V
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::txpool::AddRequest, _impl_.rlptxs_),
+  PROTOBUF_FIELD_OFFSET(::txpool::AddRequest, _impl_.rlp_txs_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::txpool::AddReply, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -273,7 +273,7 @@ const uint32_t TableStruct_txpool_2ftxpool_2eproto::offsets[] PROTOBUF_SECTION_V
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::txpool::TransactionsReply, _impl_.rlptxs_),
+  PROTOBUF_FIELD_OFFSET(::txpool::TransactionsReply, _impl_.rlp_txs_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::txpool::OnAddRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -286,7 +286,7 @@ const uint32_t TableStruct_txpool_2ftxpool_2eproto::offsets[] PROTOBUF_SECTION_V
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::txpool::OnAddReply, _impl_.rpltxs_),
+  PROTOBUF_FIELD_OFFSET(::txpool::OnAddReply, _impl_.rpl_txs_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::txpool::AllRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -299,9 +299,9 @@ const uint32_t TableStruct_txpool_2ftxpool_2eproto::offsets[] PROTOBUF_SECTION_V
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::txpool::AllReply_Tx, _impl_.txntype_),
+  PROTOBUF_FIELD_OFFSET(::txpool::AllReply_Tx, _impl_.txn_type_),
   PROTOBUF_FIELD_OFFSET(::txpool::AllReply_Tx, _impl_.sender_),
-  PROTOBUF_FIELD_OFFSET(::txpool::AllReply_Tx, _impl_.rlptx_),
+  PROTOBUF_FIELD_OFFSET(::txpool::AllReply_Tx, _impl_.rlp_tx_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::txpool::AllReply, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -316,8 +316,8 @@ const uint32_t TableStruct_txpool_2ftxpool_2eproto::offsets[] PROTOBUF_SECTION_V
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::txpool::PendingReply_Tx, _impl_.sender_),
-  PROTOBUF_FIELD_OFFSET(::txpool::PendingReply_Tx, _impl_.rlptx_),
-  PROTOBUF_FIELD_OFFSET(::txpool::PendingReply_Tx, _impl_.islocal_),
+  PROTOBUF_FIELD_OFFSET(::txpool::PendingReply_Tx, _impl_.rlp_tx_),
+  PROTOBUF_FIELD_OFFSET(::txpool::PendingReply_Tx, _impl_.is_local_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::txpool::PendingReply, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -337,9 +337,9 @@ const uint32_t TableStruct_txpool_2ftxpool_2eproto::offsets[] PROTOBUF_SECTION_V
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::txpool::StatusReply, _impl_.pendingcount_),
-  PROTOBUF_FIELD_OFFSET(::txpool::StatusReply, _impl_.queuedcount_),
-  PROTOBUF_FIELD_OFFSET(::txpool::StatusReply, _impl_.basefeecount_),
+  PROTOBUF_FIELD_OFFSET(::txpool::StatusReply, _impl_.pending_count_),
+  PROTOBUF_FIELD_OFFSET(::txpool::StatusReply, _impl_.queued_count_),
+  PROTOBUF_FIELD_OFFSET(::txpool::StatusReply, _impl_.base_fee_count_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::txpool::NonceRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -397,42 +397,42 @@ static const ::_pb::Message* const file_default_instances[] = {
 const char descriptor_table_protodef_txpool_2ftxpool_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
   "\n\023txpool/txpool.proto\022\006txpool\032\033google/pr"
   "otobuf/empty.proto\032\021types/types.proto\"\'\n"
-  "\010TxHashes\022\033\n\006hashes\030\001 \003(\0132\013.types.H256\"\034"
-  "\n\nAddRequest\022\016\n\006rlpTxs\030\001 \003(\014\"B\n\010AddReply"
-  "\022&\n\010imported\030\001 \003(\0162\024.txpool.ImportResult"
-  "\022\016\n\006errors\030\002 \003(\t\"2\n\023TransactionsRequest\022"
-  "\033\n\006hashes\030\001 \003(\0132\013.types.H256\"#\n\021Transact"
-  "ionsReply\022\016\n\006rlpTxs\030\001 \003(\014\"\016\n\014OnAddReques"
-  "t\"\034\n\nOnAddReply\022\016\n\006rplTxs\030\001 \003(\014\"\014\n\nAllRe"
-  "quest\"\273\001\n\010AllReply\022 \n\003txs\030\001 \003(\0132\023.txpool"
-  ".AllReply.Tx\032[\n\002Tx\022)\n\007txnType\030\001 \001(\0162\030.tx"
-  "pool.AllReply.TxnType\022\033\n\006sender\030\002 \001(\0132\013."
-  "types.H160\022\r\n\005rlpTx\030\003 \001(\014\"0\n\007TxnType\022\013\n\007"
-  "PENDING\020\000\022\n\n\006QUEUED\020\001\022\014\n\010BASE_FEE\020\002\"w\n\014P"
-  "endingReply\022$\n\003txs\030\001 \003(\0132\027.txpool.Pendin"
-  "gReply.Tx\032A\n\002Tx\022\033\n\006sender\030\001 \001(\0132\013.types."
-  "H160\022\r\n\005rlpTx\030\002 \001(\014\022\017\n\007isLocal\030\003 \001(\010\"\017\n\r"
-  "StatusRequest\"N\n\013StatusReply\022\024\n\014pendingC"
-  "ount\030\001 \001(\r\022\023\n\013queuedCount\030\002 \001(\r\022\024\n\014baseF"
-  "eeCount\030\003 \001(\r\",\n\014NonceRequest\022\034\n\007address"
-  "\030\001 \001(\0132\013.types.H160\"*\n\nNonceReply\022\r\n\005fou"
-  "nd\030\001 \001(\010\022\r\n\005nonce\030\002 \001(\004*l\n\014ImportResult\022"
-  "\013\n\007SUCCESS\020\000\022\022\n\016ALREADY_EXISTS\020\001\022\017\n\013FEE_"
-  "TOO_LOW\020\002\022\t\n\005STALE\020\003\022\013\n\007INVALID\020\004\022\022\n\016INT"
-  "ERNAL_ERROR\020\0052\354\003\n\006Txpool\0226\n\007Version\022\026.go"
-  "ogle.protobuf.Empty\032\023.types.VersionReply"
-  "\0221\n\013FindUnknown\022\020.txpool.TxHashes\032\020.txpo"
-  "ol.TxHashes\022+\n\003Add\022\022.txpool.AddRequest\032\020"
-  ".txpool.AddReply\022F\n\014Transactions\022\033.txpoo"
-  "l.TransactionsRequest\032\031.txpool.Transacti"
-  "onsReply\022+\n\003All\022\022.txpool.AllRequest\032\020.tx"
-  "pool.AllReply\0227\n\007Pending\022\026.google.protob"
-  "uf.Empty\032\024.txpool.PendingReply\0223\n\005OnAdd\022"
-  "\024.txpool.OnAddRequest\032\022.txpool.OnAddRepl"
-  "y0\001\0224\n\006Status\022\025.txpool.StatusRequest\032\023.t"
-  "xpool.StatusReply\0221\n\005Nonce\022\024.txpool.Nonc"
-  "eRequest\032\022.txpool.NonceReplyB\021Z\017./txpool"
-  ";txpoolb\006proto3"
+  "\010TxHashes\022\033\n\006hashes\030\001 \003(\0132\013.types.H256\"\035"
+  "\n\nAddRequest\022\017\n\007rlp_txs\030\001 \003(\014\"B\n\010AddRepl"
+  "y\022&\n\010imported\030\001 \003(\0162\024.txpool.ImportResul"
+  "t\022\016\n\006errors\030\002 \003(\t\"2\n\023TransactionsRequest"
+  "\022\033\n\006hashes\030\001 \003(\0132\013.types.H256\"$\n\021Transac"
+  "tionsReply\022\017\n\007rlp_txs\030\001 \003(\014\"\016\n\014OnAddRequ"
+  "est\"\035\n\nOnAddReply\022\017\n\007rpl_txs\030\001 \003(\014\"\014\n\nAl"
+  "lRequest\"\275\001\n\010AllReply\022 \n\003txs\030\001 \003(\0132\023.txp"
+  "ool.AllReply.Tx\032]\n\002Tx\022*\n\010txn_type\030\001 \001(\0162"
+  "\030.txpool.AllReply.TxnType\022\033\n\006sender\030\002 \001("
+  "\0132\013.types.H160\022\016\n\006rlp_tx\030\003 \001(\014\"0\n\007TxnTyp"
+  "e\022\013\n\007PENDING\020\000\022\n\n\006QUEUED\020\001\022\014\n\010BASE_FEE\020\002"
+  "\"y\n\014PendingReply\022$\n\003txs\030\001 \003(\0132\027.txpool.P"
+  "endingReply.Tx\032C\n\002Tx\022\033\n\006sender\030\001 \001(\0132\013.t"
+  "ypes.H160\022\016\n\006rlp_tx\030\002 \001(\014\022\020\n\010is_local\030\003 "
+  "\001(\010\"\017\n\rStatusRequest\"R\n\013StatusReply\022\025\n\rp"
+  "ending_count\030\001 \001(\r\022\024\n\014queued_count\030\002 \001(\r"
+  "\022\026\n\016base_fee_count\030\003 \001(\r\",\n\014NonceRequest"
+  "\022\034\n\007address\030\001 \001(\0132\013.types.H160\"*\n\nNonceR"
+  "eply\022\r\n\005found\030\001 \001(\010\022\r\n\005nonce\030\002 \001(\004*l\n\014Im"
+  "portResult\022\013\n\007SUCCESS\020\000\022\022\n\016ALREADY_EXIST"
+  "S\020\001\022\017\n\013FEE_TOO_LOW\020\002\022\t\n\005STALE\020\003\022\013\n\007INVAL"
+  "ID\020\004\022\022\n\016INTERNAL_ERROR\020\0052\354\003\n\006Txpool\0226\n\007V"
+  "ersion\022\026.google.protobuf.Empty\032\023.types.V"
+  "ersionReply\0221\n\013FindUnknown\022\020.txpool.TxHa"
+  "shes\032\020.txpool.TxHashes\022+\n\003Add\022\022.txpool.A"
+  "ddRequest\032\020.txpool.AddReply\022F\n\014Transacti"
+  "ons\022\033.txpool.TransactionsRequest\032\031.txpoo"
+  "l.TransactionsReply\022+\n\003All\022\022.txpool.AllR"
+  "equest\032\020.txpool.AllReply\0227\n\007Pending\022\026.go"
+  "ogle.protobuf.Empty\032\024.txpool.PendingRepl"
+  "y\0223\n\005OnAdd\022\024.txpool.OnAddRequest\032\022.txpoo"
+  "l.OnAddReply0\001\0224\n\006Status\022\025.txpool.Status"
+  "Request\032\023.txpool.StatusReply\0221\n\005Nonce\022\024."
+  "txpool.NonceRequest\032\022.txpool.NonceReplyB"
+  "\021Z\017./txpool;txpoolb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_txpool_2ftxpool_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fempty_2eproto,
@@ -440,7 +440,7 @@ static const ::_pbi::DescriptorTable* const descriptor_table_txpool_2ftxpool_2ep
 };
 static ::_pbi::once_flag descriptor_table_txpool_2ftxpool_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_txpool_2ftxpool_2eproto = {
-    false, false, 1495, descriptor_table_protodef_txpool_2ftxpool_2eproto,
+    false, false, 1506, descriptor_table_protodef_txpool_2ftxpool_2eproto,
     "txpool/txpool.proto",
     &descriptor_table_txpool_2ftxpool_2eproto_once, descriptor_table_txpool_2ftxpool_2eproto_deps, 2, 16,
     schemas, file_default_instances, TableStruct_txpool_2ftxpool_2eproto::offsets,
@@ -700,7 +700,7 @@ AddRequest::AddRequest(const AddRequest& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   AddRequest* const _this = this; (void)_this;
   new (&_impl_) Impl_{
-      decltype(_impl_.rlptxs_){from._impl_.rlptxs_}
+      decltype(_impl_.rlp_txs_){from._impl_.rlp_txs_}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -712,7 +712,7 @@ inline void AddRequest::SharedCtor(
   (void)arena;
   (void)is_message_owned;
   new (&_impl_) Impl_{
-      decltype(_impl_.rlptxs_){arena}
+      decltype(_impl_.rlp_txs_){arena}
     , /*decltype(_impl_._cached_size_)*/{}
   };
 }
@@ -728,7 +728,7 @@ AddRequest::~AddRequest() {
 
 inline void AddRequest::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.rlptxs_.~RepeatedPtrField();
+  _impl_.rlp_txs_.~RepeatedPtrField();
 }
 
 void AddRequest::SetCachedSize(int size) const {
@@ -741,7 +741,7 @@ void AddRequest::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _impl_.rlptxs_.Clear();
+  _impl_.rlp_txs_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -751,13 +751,13 @@ const char* AddRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ct
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // repeated bytes rlpTxs = 1;
+      // repeated bytes rlp_txs = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
           ptr -= 1;
           do {
             ptr += 1;
-            auto str = _internal_add_rlptxs();
+            auto str = _internal_add_rlp_txs();
             ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
@@ -794,9 +794,9 @@ uint8_t* AddRequest::_InternalSerialize(
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // repeated bytes rlpTxs = 1;
-  for (int i = 0, n = this->_internal_rlptxs_size(); i < n; i++) {
-    const auto& s = this->_internal_rlptxs(i);
+  // repeated bytes rlp_txs = 1;
+  for (int i = 0, n = this->_internal_rlp_txs_size(); i < n; i++) {
+    const auto& s = this->_internal_rlp_txs(i);
     target = stream->WriteBytes(1, s, target);
   }
 
@@ -816,12 +816,12 @@ size_t AddRequest::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // repeated bytes rlpTxs = 1;
+  // repeated bytes rlp_txs = 1;
   total_size += 1 *
-      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_impl_.rlptxs_.size());
-  for (int i = 0, n = _impl_.rlptxs_.size(); i < n; i++) {
+      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_impl_.rlp_txs_.size());
+  for (int i = 0, n = _impl_.rlp_txs_.size(); i < n; i++) {
     total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-      _impl_.rlptxs_.Get(i));
+      _impl_.rlp_txs_.Get(i));
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -842,7 +842,7 @@ void AddRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PRO
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  _this->_impl_.rlptxs_.MergeFrom(from._impl_.rlptxs_);
+  _this->_impl_.rlp_txs_.MergeFrom(from._impl_.rlp_txs_);
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
@@ -860,7 +860,7 @@ bool AddRequest::IsInitialized() const {
 void AddRequest::InternalSwap(AddRequest* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  _impl_.rlptxs_.InternalSwap(&other->_impl_.rlptxs_);
+  _impl_.rlp_txs_.InternalSwap(&other->_impl_.rlp_txs_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata AddRequest::GetMetadata() const {
@@ -1309,7 +1309,7 @@ TransactionsReply::TransactionsReply(const TransactionsReply& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   TransactionsReply* const _this = this; (void)_this;
   new (&_impl_) Impl_{
-      decltype(_impl_.rlptxs_){from._impl_.rlptxs_}
+      decltype(_impl_.rlp_txs_){from._impl_.rlp_txs_}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -1321,7 +1321,7 @@ inline void TransactionsReply::SharedCtor(
   (void)arena;
   (void)is_message_owned;
   new (&_impl_) Impl_{
-      decltype(_impl_.rlptxs_){arena}
+      decltype(_impl_.rlp_txs_){arena}
     , /*decltype(_impl_._cached_size_)*/{}
   };
 }
@@ -1337,7 +1337,7 @@ TransactionsReply::~TransactionsReply() {
 
 inline void TransactionsReply::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.rlptxs_.~RepeatedPtrField();
+  _impl_.rlp_txs_.~RepeatedPtrField();
 }
 
 void TransactionsReply::SetCachedSize(int size) const {
@@ -1350,7 +1350,7 @@ void TransactionsReply::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _impl_.rlptxs_.Clear();
+  _impl_.rlp_txs_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -1360,13 +1360,13 @@ const char* TransactionsReply::_InternalParse(const char* ptr, ::_pbi::ParseCont
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // repeated bytes rlpTxs = 1;
+      // repeated bytes rlp_txs = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
           ptr -= 1;
           do {
             ptr += 1;
-            auto str = _internal_add_rlptxs();
+            auto str = _internal_add_rlp_txs();
             ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
@@ -1403,9 +1403,9 @@ uint8_t* TransactionsReply::_InternalSerialize(
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // repeated bytes rlpTxs = 1;
-  for (int i = 0, n = this->_internal_rlptxs_size(); i < n; i++) {
-    const auto& s = this->_internal_rlptxs(i);
+  // repeated bytes rlp_txs = 1;
+  for (int i = 0, n = this->_internal_rlp_txs_size(); i < n; i++) {
+    const auto& s = this->_internal_rlp_txs(i);
     target = stream->WriteBytes(1, s, target);
   }
 
@@ -1425,12 +1425,12 @@ size_t TransactionsReply::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // repeated bytes rlpTxs = 1;
+  // repeated bytes rlp_txs = 1;
   total_size += 1 *
-      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_impl_.rlptxs_.size());
-  for (int i = 0, n = _impl_.rlptxs_.size(); i < n; i++) {
+      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_impl_.rlp_txs_.size());
+  for (int i = 0, n = _impl_.rlp_txs_.size(); i < n; i++) {
     total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-      _impl_.rlptxs_.Get(i));
+      _impl_.rlp_txs_.Get(i));
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -1451,7 +1451,7 @@ void TransactionsReply::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, cons
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  _this->_impl_.rlptxs_.MergeFrom(from._impl_.rlptxs_);
+  _this->_impl_.rlp_txs_.MergeFrom(from._impl_.rlp_txs_);
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
@@ -1469,7 +1469,7 @@ bool TransactionsReply::IsInitialized() const {
 void TransactionsReply::InternalSwap(TransactionsReply* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  _impl_.rlptxs_.InternalSwap(&other->_impl_.rlptxs_);
+  _impl_.rlp_txs_.InternalSwap(&other->_impl_.rlp_txs_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata TransactionsReply::GetMetadata() const {
@@ -1534,7 +1534,7 @@ OnAddReply::OnAddReply(const OnAddReply& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   OnAddReply* const _this = this; (void)_this;
   new (&_impl_) Impl_{
-      decltype(_impl_.rpltxs_){from._impl_.rpltxs_}
+      decltype(_impl_.rpl_txs_){from._impl_.rpl_txs_}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -1546,7 +1546,7 @@ inline void OnAddReply::SharedCtor(
   (void)arena;
   (void)is_message_owned;
   new (&_impl_) Impl_{
-      decltype(_impl_.rpltxs_){arena}
+      decltype(_impl_.rpl_txs_){arena}
     , /*decltype(_impl_._cached_size_)*/{}
   };
 }
@@ -1562,7 +1562,7 @@ OnAddReply::~OnAddReply() {
 
 inline void OnAddReply::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.rpltxs_.~RepeatedPtrField();
+  _impl_.rpl_txs_.~RepeatedPtrField();
 }
 
 void OnAddReply::SetCachedSize(int size) const {
@@ -1575,7 +1575,7 @@ void OnAddReply::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _impl_.rpltxs_.Clear();
+  _impl_.rpl_txs_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -1585,13 +1585,13 @@ const char* OnAddReply::_InternalParse(const char* ptr, ::_pbi::ParseContext* ct
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // repeated bytes rplTxs = 1;
+      // repeated bytes rpl_txs = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
           ptr -= 1;
           do {
             ptr += 1;
-            auto str = _internal_add_rpltxs();
+            auto str = _internal_add_rpl_txs();
             ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
@@ -1628,9 +1628,9 @@ uint8_t* OnAddReply::_InternalSerialize(
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // repeated bytes rplTxs = 1;
-  for (int i = 0, n = this->_internal_rpltxs_size(); i < n; i++) {
-    const auto& s = this->_internal_rpltxs(i);
+  // repeated bytes rpl_txs = 1;
+  for (int i = 0, n = this->_internal_rpl_txs_size(); i < n; i++) {
+    const auto& s = this->_internal_rpl_txs(i);
     target = stream->WriteBytes(1, s, target);
   }
 
@@ -1650,12 +1650,12 @@ size_t OnAddReply::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // repeated bytes rplTxs = 1;
+  // repeated bytes rpl_txs = 1;
   total_size += 1 *
-      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_impl_.rpltxs_.size());
-  for (int i = 0, n = _impl_.rpltxs_.size(); i < n; i++) {
+      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_impl_.rpl_txs_.size());
+  for (int i = 0, n = _impl_.rpl_txs_.size(); i < n; i++) {
     total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-      _impl_.rpltxs_.Get(i));
+      _impl_.rpl_txs_.Get(i));
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -1676,7 +1676,7 @@ void OnAddReply::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PRO
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  _this->_impl_.rpltxs_.MergeFrom(from._impl_.rpltxs_);
+  _this->_impl_.rpl_txs_.MergeFrom(from._impl_.rpl_txs_);
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
@@ -1694,7 +1694,7 @@ bool OnAddReply::IsInitialized() const {
 void OnAddReply::InternalSwap(OnAddReply* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  _impl_.rpltxs_.InternalSwap(&other->_impl_.rpltxs_);
+  _impl_.rpl_txs_.InternalSwap(&other->_impl_.rpl_txs_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata OnAddReply::GetMetadata() const {
@@ -1770,24 +1770,24 @@ AllReply_Tx::AllReply_Tx(const AllReply_Tx& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   AllReply_Tx* const _this = this; (void)_this;
   new (&_impl_) Impl_{
-      decltype(_impl_.rlptx_){}
+      decltype(_impl_.rlp_tx_){}
     , decltype(_impl_.sender_){nullptr}
-    , decltype(_impl_.txntype_){}
+    , decltype(_impl_.txn_type_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _impl_.rlptx_.InitDefault();
+  _impl_.rlp_tx_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.rlptx_.Set("", GetArenaForAllocation());
+    _impl_.rlp_tx_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_rlptx().empty()) {
-    _this->_impl_.rlptx_.Set(from._internal_rlptx(), 
+  if (!from._internal_rlp_tx().empty()) {
+    _this->_impl_.rlp_tx_.Set(from._internal_rlp_tx(), 
       _this->GetArenaForAllocation());
   }
   if (from._internal_has_sender()) {
     _this->_impl_.sender_ = new ::types::H160(*from._impl_.sender_);
   }
-  _this->_impl_.txntype_ = from._impl_.txntype_;
+  _this->_impl_.txn_type_ = from._impl_.txn_type_;
   // @@protoc_insertion_point(copy_constructor:txpool.AllReply.Tx)
 }
 
@@ -1796,14 +1796,14 @@ inline void AllReply_Tx::SharedCtor(
   (void)arena;
   (void)is_message_owned;
   new (&_impl_) Impl_{
-      decltype(_impl_.rlptx_){}
+      decltype(_impl_.rlp_tx_){}
     , decltype(_impl_.sender_){nullptr}
-    , decltype(_impl_.txntype_){0}
+    , decltype(_impl_.txn_type_){0}
     , /*decltype(_impl_._cached_size_)*/{}
   };
-  _impl_.rlptx_.InitDefault();
+  _impl_.rlp_tx_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.rlptx_.Set("", GetArenaForAllocation());
+    _impl_.rlp_tx_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
@@ -1818,7 +1818,7 @@ AllReply_Tx::~AllReply_Tx() {
 
 inline void AllReply_Tx::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.rlptx_.Destroy();
+  _impl_.rlp_tx_.Destroy();
   if (this != internal_default_instance()) delete _impl_.sender_;
 }
 
@@ -1832,12 +1832,12 @@ void AllReply_Tx::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _impl_.rlptx_.ClearToEmpty();
+  _impl_.rlp_tx_.ClearToEmpty();
   if (GetArenaForAllocation() == nullptr && _impl_.sender_ != nullptr) {
     delete _impl_.sender_;
   }
   _impl_.sender_ = nullptr;
-  _impl_.txntype_ = 0;
+  _impl_.txn_type_ = 0;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -1847,12 +1847,12 @@ const char* AllReply_Tx::_InternalParse(const char* ptr, ::_pbi::ParseContext* c
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // .txpool.AllReply.TxnType txnType = 1;
+      // .txpool.AllReply.TxnType txn_type = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
           uint64_t val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
-          _internal_set_txntype(static_cast<::txpool::AllReply_TxnType>(val));
+          _internal_set_txn_type(static_cast<::txpool::AllReply_TxnType>(val));
         } else
           goto handle_unusual;
         continue;
@@ -1864,10 +1864,10 @@ const char* AllReply_Tx::_InternalParse(const char* ptr, ::_pbi::ParseContext* c
         } else
           goto handle_unusual;
         continue;
-      // bytes rlpTx = 3;
+      // bytes rlp_tx = 3;
       case 3:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
-          auto str = _internal_mutable_rlptx();
+          auto str = _internal_mutable_rlp_tx();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
         } else
@@ -1902,11 +1902,11 @@ uint8_t* AllReply_Tx::_InternalSerialize(
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // .txpool.AllReply.TxnType txnType = 1;
-  if (this->_internal_txntype() != 0) {
+  // .txpool.AllReply.TxnType txn_type = 1;
+  if (this->_internal_txn_type() != 0) {
     target = stream->EnsureSpace(target);
     target = ::_pbi::WireFormatLite::WriteEnumToArray(
-      1, this->_internal_txntype(), target);
+      1, this->_internal_txn_type(), target);
   }
 
   // .types.H160 sender = 2;
@@ -1916,10 +1916,10 @@ uint8_t* AllReply_Tx::_InternalSerialize(
         _Internal::sender(this).GetCachedSize(), target, stream);
   }
 
-  // bytes rlpTx = 3;
-  if (!this->_internal_rlptx().empty()) {
+  // bytes rlp_tx = 3;
+  if (!this->_internal_rlp_tx().empty()) {
     target = stream->WriteBytesMaybeAliased(
-        3, this->_internal_rlptx(), target);
+        3, this->_internal_rlp_tx(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1938,11 +1938,11 @@ size_t AllReply_Tx::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // bytes rlpTx = 3;
-  if (!this->_internal_rlptx().empty()) {
+  // bytes rlp_tx = 3;
+  if (!this->_internal_rlp_tx().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_rlptx());
+        this->_internal_rlp_tx());
   }
 
   // .types.H160 sender = 2;
@@ -1952,10 +1952,10 @@ size_t AllReply_Tx::ByteSizeLong() const {
         *_impl_.sender_);
   }
 
-  // .txpool.AllReply.TxnType txnType = 1;
-  if (this->_internal_txntype() != 0) {
+  // .txpool.AllReply.TxnType txn_type = 1;
+  if (this->_internal_txn_type() != 0) {
     total_size += 1 +
-      ::_pbi::WireFormatLite::EnumSize(this->_internal_txntype());
+      ::_pbi::WireFormatLite::EnumSize(this->_internal_txn_type());
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -1976,15 +1976,15 @@ void AllReply_Tx::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PR
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (!from._internal_rlptx().empty()) {
-    _this->_internal_set_rlptx(from._internal_rlptx());
+  if (!from._internal_rlp_tx().empty()) {
+    _this->_internal_set_rlp_tx(from._internal_rlp_tx());
   }
   if (from._internal_has_sender()) {
     _this->_internal_mutable_sender()->::types::H160::MergeFrom(
         from._internal_sender());
   }
-  if (from._internal_txntype() != 0) {
-    _this->_internal_set_txntype(from._internal_txntype());
+  if (from._internal_txn_type() != 0) {
+    _this->_internal_set_txn_type(from._internal_txn_type());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -2006,12 +2006,12 @@ void AllReply_Tx::InternalSwap(AllReply_Tx* other) {
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.rlptx_, lhs_arena,
-      &other->_impl_.rlptx_, rhs_arena
+      &_impl_.rlp_tx_, lhs_arena,
+      &other->_impl_.rlp_tx_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(AllReply_Tx, _impl_.txntype_)
-      + sizeof(AllReply_Tx::_impl_.txntype_)
+      PROTOBUF_FIELD_OFFSET(AllReply_Tx, _impl_.txn_type_)
+      + sizeof(AllReply_Tx::_impl_.txn_type_)
       - PROTOBUF_FIELD_OFFSET(AllReply_Tx, _impl_.sender_)>(
           reinterpret_cast<char*>(&_impl_.sender_),
           reinterpret_cast<char*>(&other->_impl_.sender_));
@@ -2235,24 +2235,24 @@ PendingReply_Tx::PendingReply_Tx(const PendingReply_Tx& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   PendingReply_Tx* const _this = this; (void)_this;
   new (&_impl_) Impl_{
-      decltype(_impl_.rlptx_){}
+      decltype(_impl_.rlp_tx_){}
     , decltype(_impl_.sender_){nullptr}
-    , decltype(_impl_.islocal_){}
+    , decltype(_impl_.is_local_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _impl_.rlptx_.InitDefault();
+  _impl_.rlp_tx_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.rlptx_.Set("", GetArenaForAllocation());
+    _impl_.rlp_tx_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_rlptx().empty()) {
-    _this->_impl_.rlptx_.Set(from._internal_rlptx(), 
+  if (!from._internal_rlp_tx().empty()) {
+    _this->_impl_.rlp_tx_.Set(from._internal_rlp_tx(), 
       _this->GetArenaForAllocation());
   }
   if (from._internal_has_sender()) {
     _this->_impl_.sender_ = new ::types::H160(*from._impl_.sender_);
   }
-  _this->_impl_.islocal_ = from._impl_.islocal_;
+  _this->_impl_.is_local_ = from._impl_.is_local_;
   // @@protoc_insertion_point(copy_constructor:txpool.PendingReply.Tx)
 }
 
@@ -2261,14 +2261,14 @@ inline void PendingReply_Tx::SharedCtor(
   (void)arena;
   (void)is_message_owned;
   new (&_impl_) Impl_{
-      decltype(_impl_.rlptx_){}
+      decltype(_impl_.rlp_tx_){}
     , decltype(_impl_.sender_){nullptr}
-    , decltype(_impl_.islocal_){false}
+    , decltype(_impl_.is_local_){false}
     , /*decltype(_impl_._cached_size_)*/{}
   };
-  _impl_.rlptx_.InitDefault();
+  _impl_.rlp_tx_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.rlptx_.Set("", GetArenaForAllocation());
+    _impl_.rlp_tx_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
@@ -2283,7 +2283,7 @@ PendingReply_Tx::~PendingReply_Tx() {
 
 inline void PendingReply_Tx::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.rlptx_.Destroy();
+  _impl_.rlp_tx_.Destroy();
   if (this != internal_default_instance()) delete _impl_.sender_;
 }
 
@@ -2297,12 +2297,12 @@ void PendingReply_Tx::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _impl_.rlptx_.ClearToEmpty();
+  _impl_.rlp_tx_.ClearToEmpty();
   if (GetArenaForAllocation() == nullptr && _impl_.sender_ != nullptr) {
     delete _impl_.sender_;
   }
   _impl_.sender_ = nullptr;
-  _impl_.islocal_ = false;
+  _impl_.is_local_ = false;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -2320,19 +2320,19 @@ const char* PendingReply_Tx::_InternalParse(const char* ptr, ::_pbi::ParseContex
         } else
           goto handle_unusual;
         continue;
-      // bytes rlpTx = 2;
+      // bytes rlp_tx = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          auto str = _internal_mutable_rlptx();
+          auto str = _internal_mutable_rlp_tx();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // bool isLocal = 3;
+      // bool is_local = 3;
       case 3:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 24)) {
-          _impl_.islocal_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          _impl_.is_local_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -2373,16 +2373,16 @@ uint8_t* PendingReply_Tx::_InternalSerialize(
         _Internal::sender(this).GetCachedSize(), target, stream);
   }
 
-  // bytes rlpTx = 2;
-  if (!this->_internal_rlptx().empty()) {
+  // bytes rlp_tx = 2;
+  if (!this->_internal_rlp_tx().empty()) {
     target = stream->WriteBytesMaybeAliased(
-        2, this->_internal_rlptx(), target);
+        2, this->_internal_rlp_tx(), target);
   }
 
-  // bool isLocal = 3;
-  if (this->_internal_islocal() != 0) {
+  // bool is_local = 3;
+  if (this->_internal_is_local() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteBoolToArray(3, this->_internal_islocal(), target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(3, this->_internal_is_local(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -2401,11 +2401,11 @@ size_t PendingReply_Tx::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // bytes rlpTx = 2;
-  if (!this->_internal_rlptx().empty()) {
+  // bytes rlp_tx = 2;
+  if (!this->_internal_rlp_tx().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_rlptx());
+        this->_internal_rlp_tx());
   }
 
   // .types.H160 sender = 1;
@@ -2415,8 +2415,8 @@ size_t PendingReply_Tx::ByteSizeLong() const {
         *_impl_.sender_);
   }
 
-  // bool isLocal = 3;
-  if (this->_internal_islocal() != 0) {
+  // bool is_local = 3;
+  if (this->_internal_is_local() != 0) {
     total_size += 1 + 1;
   }
 
@@ -2438,15 +2438,15 @@ void PendingReply_Tx::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const 
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (!from._internal_rlptx().empty()) {
-    _this->_internal_set_rlptx(from._internal_rlptx());
+  if (!from._internal_rlp_tx().empty()) {
+    _this->_internal_set_rlp_tx(from._internal_rlp_tx());
   }
   if (from._internal_has_sender()) {
     _this->_internal_mutable_sender()->::types::H160::MergeFrom(
         from._internal_sender());
   }
-  if (from._internal_islocal() != 0) {
-    _this->_internal_set_islocal(from._internal_islocal());
+  if (from._internal_is_local() != 0) {
+    _this->_internal_set_is_local(from._internal_is_local());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -2468,12 +2468,12 @@ void PendingReply_Tx::InternalSwap(PendingReply_Tx* other) {
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.rlptx_, lhs_arena,
-      &other->_impl_.rlptx_, rhs_arena
+      &_impl_.rlp_tx_, lhs_arena,
+      &other->_impl_.rlp_tx_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(PendingReply_Tx, _impl_.islocal_)
-      + sizeof(PendingReply_Tx::_impl_.islocal_)
+      PROTOBUF_FIELD_OFFSET(PendingReply_Tx, _impl_.is_local_)
+      + sizeof(PendingReply_Tx::_impl_.is_local_)
       - PROTOBUF_FIELD_OFFSET(PendingReply_Tx, _impl_.sender_)>(
           reinterpret_cast<char*>(&_impl_.sender_),
           reinterpret_cast<char*>(&other->_impl_.sender_));
@@ -2726,15 +2726,15 @@ StatusReply::StatusReply(const StatusReply& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   StatusReply* const _this = this; (void)_this;
   new (&_impl_) Impl_{
-      decltype(_impl_.pendingcount_){}
-    , decltype(_impl_.queuedcount_){}
-    , decltype(_impl_.basefeecount_){}
+      decltype(_impl_.pending_count_){}
+    , decltype(_impl_.queued_count_){}
+    , decltype(_impl_.base_fee_count_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  ::memcpy(&_impl_.pendingcount_, &from._impl_.pendingcount_,
-    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.basefeecount_) -
-    reinterpret_cast<char*>(&_impl_.pendingcount_)) + sizeof(_impl_.basefeecount_));
+  ::memcpy(&_impl_.pending_count_, &from._impl_.pending_count_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.base_fee_count_) -
+    reinterpret_cast<char*>(&_impl_.pending_count_)) + sizeof(_impl_.base_fee_count_));
   // @@protoc_insertion_point(copy_constructor:txpool.StatusReply)
 }
 
@@ -2743,9 +2743,9 @@ inline void StatusReply::SharedCtor(
   (void)arena;
   (void)is_message_owned;
   new (&_impl_) Impl_{
-      decltype(_impl_.pendingcount_){0u}
-    , decltype(_impl_.queuedcount_){0u}
-    , decltype(_impl_.basefeecount_){0u}
+      decltype(_impl_.pending_count_){0u}
+    , decltype(_impl_.queued_count_){0u}
+    , decltype(_impl_.base_fee_count_){0u}
     , /*decltype(_impl_._cached_size_)*/{}
   };
 }
@@ -2773,9 +2773,9 @@ void StatusReply::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  ::memset(&_impl_.pendingcount_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&_impl_.basefeecount_) -
-      reinterpret_cast<char*>(&_impl_.pendingcount_)) + sizeof(_impl_.basefeecount_));
+  ::memset(&_impl_.pending_count_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.base_fee_count_) -
+      reinterpret_cast<char*>(&_impl_.pending_count_)) + sizeof(_impl_.base_fee_count_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -2785,26 +2785,26 @@ const char* StatusReply::_InternalParse(const char* ptr, ::_pbi::ParseContext* c
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // uint32 pendingCount = 1;
+      // uint32 pending_count = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
-          _impl_.pendingcount_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          _impl_.pending_count_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // uint32 queuedCount = 2;
+      // uint32 queued_count = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
-          _impl_.queuedcount_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          _impl_.queued_count_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // uint32 baseFeeCount = 3;
+      // uint32 base_fee_count = 3;
       case 3:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 24)) {
-          _impl_.basefeecount_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          _impl_.base_fee_count_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -2838,22 +2838,22 @@ uint8_t* StatusReply::_InternalSerialize(
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // uint32 pendingCount = 1;
-  if (this->_internal_pendingcount() != 0) {
+  // uint32 pending_count = 1;
+  if (this->_internal_pending_count() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(1, this->_internal_pendingcount(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(1, this->_internal_pending_count(), target);
   }
 
-  // uint32 queuedCount = 2;
-  if (this->_internal_queuedcount() != 0) {
+  // uint32 queued_count = 2;
+  if (this->_internal_queued_count() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(2, this->_internal_queuedcount(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(2, this->_internal_queued_count(), target);
   }
 
-  // uint32 baseFeeCount = 3;
-  if (this->_internal_basefeecount() != 0) {
+  // uint32 base_fee_count = 3;
+  if (this->_internal_base_fee_count() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(3, this->_internal_basefeecount(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(3, this->_internal_base_fee_count(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -2872,19 +2872,19 @@ size_t StatusReply::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // uint32 pendingCount = 1;
-  if (this->_internal_pendingcount() != 0) {
-    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_pendingcount());
+  // uint32 pending_count = 1;
+  if (this->_internal_pending_count() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_pending_count());
   }
 
-  // uint32 queuedCount = 2;
-  if (this->_internal_queuedcount() != 0) {
-    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_queuedcount());
+  // uint32 queued_count = 2;
+  if (this->_internal_queued_count() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_queued_count());
   }
 
-  // uint32 baseFeeCount = 3;
-  if (this->_internal_basefeecount() != 0) {
-    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_basefeecount());
+  // uint32 base_fee_count = 3;
+  if (this->_internal_base_fee_count() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_base_fee_count());
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -2905,14 +2905,14 @@ void StatusReply::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PR
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from._internal_pendingcount() != 0) {
-    _this->_internal_set_pendingcount(from._internal_pendingcount());
+  if (from._internal_pending_count() != 0) {
+    _this->_internal_set_pending_count(from._internal_pending_count());
   }
-  if (from._internal_queuedcount() != 0) {
-    _this->_internal_set_queuedcount(from._internal_queuedcount());
+  if (from._internal_queued_count() != 0) {
+    _this->_internal_set_queued_count(from._internal_queued_count());
   }
-  if (from._internal_basefeecount() != 0) {
-    _this->_internal_set_basefeecount(from._internal_basefeecount());
+  if (from._internal_base_fee_count() != 0) {
+    _this->_internal_set_base_fee_count(from._internal_base_fee_count());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -2932,11 +2932,11 @@ void StatusReply::InternalSwap(StatusReply* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(StatusReply, _impl_.basefeecount_)
-      + sizeof(StatusReply::_impl_.basefeecount_)
-      - PROTOBUF_FIELD_OFFSET(StatusReply, _impl_.pendingcount_)>(
-          reinterpret_cast<char*>(&_impl_.pendingcount_),
-          reinterpret_cast<char*>(&other->_impl_.pendingcount_));
+      PROTOBUF_FIELD_OFFSET(StatusReply, _impl_.base_fee_count_)
+      + sizeof(StatusReply::_impl_.base_fee_count_)
+      - PROTOBUF_FIELD_OFFSET(StatusReply, _impl_.pending_count_)>(
+          reinterpret_cast<char*>(&_impl_.pending_count_),
+          reinterpret_cast<char*>(&other->_impl_.pending_count_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata StatusReply::GetMetadata() const {

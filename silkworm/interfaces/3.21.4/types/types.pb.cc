@@ -122,24 +122,25 @@ struct VersionReplyDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 VersionReplyDefaultTypeInternal _VersionReply_default_instance_;
 PROTOBUF_CONSTEXPR ExecutionPayload::ExecutionPayload(
     ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.transactions_)*/{}
+    /*decltype(_impl_._has_bits_)*/{}
+  , /*decltype(_impl_._cached_size_)*/{}
+  , /*decltype(_impl_.transactions_)*/{}
   , /*decltype(_impl_.withdrawals_)*/{}
-  , /*decltype(_impl_.extradata_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.parenthash_)*/nullptr
+  , /*decltype(_impl_.extra_data_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.parent_hash_)*/nullptr
   , /*decltype(_impl_.coinbase_)*/nullptr
-  , /*decltype(_impl_.stateroot_)*/nullptr
-  , /*decltype(_impl_.receiptroot_)*/nullptr
-  , /*decltype(_impl_.logsbloom_)*/nullptr
-  , /*decltype(_impl_.prevrandao_)*/nullptr
-  , /*decltype(_impl_.basefeepergas_)*/nullptr
-  , /*decltype(_impl_.blockhash_)*/nullptr
-  , /*decltype(_impl_.excessdatagas_)*/nullptr
-  , /*decltype(_impl_.blocknumber_)*/uint64_t{0u}
-  , /*decltype(_impl_.gaslimit_)*/uint64_t{0u}
-  , /*decltype(_impl_.gasused_)*/uint64_t{0u}
+  , /*decltype(_impl_.state_root_)*/nullptr
+  , /*decltype(_impl_.receipt_root_)*/nullptr
+  , /*decltype(_impl_.logs_bloom_)*/nullptr
+  , /*decltype(_impl_.prev_randao_)*/nullptr
+  , /*decltype(_impl_.base_fee_per_gas_)*/nullptr
+  , /*decltype(_impl_.block_hash_)*/nullptr
+  , /*decltype(_impl_.excess_data_gas_)*/nullptr
+  , /*decltype(_impl_.block_number_)*/uint64_t{0u}
+  , /*decltype(_impl_.gas_limit_)*/uint64_t{0u}
+  , /*decltype(_impl_.gas_used_)*/uint64_t{0u}
   , /*decltype(_impl_.timestamp_)*/uint64_t{0u}
-  , /*decltype(_impl_.version_)*/0u
-  , /*decltype(_impl_._cached_size_)*/{}} {}
+  , /*decltype(_impl_.version_)*/0u} {}
 struct ExecutionPayloadDefaultTypeInternal {
   PROTOBUF_CONSTEXPR ExecutionPayloadDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
@@ -153,7 +154,7 @@ PROTOBUF_CONSTEXPR Withdrawal::Withdrawal(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.address_)*/nullptr
   , /*decltype(_impl_.index_)*/uint64_t{0u}
-  , /*decltype(_impl_.validatorindex_)*/uint64_t{0u}
+  , /*decltype(_impl_.validator_index_)*/uint64_t{0u}
   , /*decltype(_impl_.amount_)*/uint64_t{0u}
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct WithdrawalDefaultTypeInternal {
@@ -169,7 +170,7 @@ PROTOBUF_CONSTEXPR BlobsBundleV1::BlobsBundleV1(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.kzgs_)*/{}
   , /*decltype(_impl_.blobs_)*/{}
-  , /*decltype(_impl_.blockhash_)*/nullptr
+  , /*decltype(_impl_.block_hash_)*/nullptr
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct BlobsBundleV1DefaultTypeInternal {
   PROTOBUF_CONSTEXPR BlobsBundleV1DefaultTypeInternal()
@@ -200,7 +201,7 @@ PROTOBUF_CONSTEXPR NodeInfoReply::NodeInfoReply(
   , /*decltype(_impl_.name_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.enode_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.enr_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.listeneraddr_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.listener_addr_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.protocols_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.ports_)*/nullptr
   , /*decltype(_impl_._cached_size_)*/{}} {}
@@ -220,11 +221,11 @@ PROTOBUF_CONSTEXPR PeerInfo::PeerInfo(
   , /*decltype(_impl_.name_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.enode_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.enr_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.connlocaladdr_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.connremoteaddr_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.connisinbound_)*/false
-  , /*decltype(_impl_.connistrusted_)*/false
-  , /*decltype(_impl_.connisstatic_)*/false
+  , /*decltype(_impl_.conn_local_addr_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.conn_remote_addr_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.conn_is_inbound_)*/false
+  , /*decltype(_impl_.conn_is_trusted_)*/false
+  , /*decltype(_impl_.conn_is_static_)*/false
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct PeerInfoDefaultTypeInternal {
   PROTOBUF_CONSTEXPR PeerInfoDefaultTypeInternal()
@@ -312,29 +313,46 @@ const uint32_t TableStruct_types_2ftypes_2eproto::offsets[] PROTOBUF_SECTION_VAR
   PROTOBUF_FIELD_OFFSET(::types::VersionReply, _impl_.major_),
   PROTOBUF_FIELD_OFFSET(::types::VersionReply, _impl_.minor_),
   PROTOBUF_FIELD_OFFSET(::types::VersionReply, _impl_.patch_),
-  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_._has_bits_),
   PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.version_),
-  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.parenthash_),
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.parent_hash_),
   PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.coinbase_),
-  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.stateroot_),
-  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.receiptroot_),
-  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.logsbloom_),
-  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.prevrandao_),
-  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.blocknumber_),
-  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.gaslimit_),
-  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.gasused_),
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.state_root_),
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.receipt_root_),
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.logs_bloom_),
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.prev_randao_),
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.block_number_),
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.gas_limit_),
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.gas_used_),
   PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.timestamp_),
-  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.extradata_),
-  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.basefeepergas_),
-  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.blockhash_),
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.extra_data_),
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.base_fee_per_gas_),
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.block_hash_),
   PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.transactions_),
   PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.withdrawals_),
-  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.excessdatagas_),
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.excess_data_gas_),
+  ~0u,
+  ~0u,
+  ~0u,
+  ~0u,
+  ~0u,
+  ~0u,
+  ~0u,
+  ~0u,
+  ~0u,
+  ~0u,
+  ~0u,
+  ~0u,
+  ~0u,
+  ~0u,
+  ~0u,
+  ~0u,
+  0,
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::types::Withdrawal, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -342,7 +360,7 @@ const uint32_t TableStruct_types_2ftypes_2eproto::offsets[] PROTOBUF_SECTION_VAR
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::types::Withdrawal, _impl_.index_),
-  PROTOBUF_FIELD_OFFSET(::types::Withdrawal, _impl_.validatorindex_),
+  PROTOBUF_FIELD_OFFSET(::types::Withdrawal, _impl_.validator_index_),
   PROTOBUF_FIELD_OFFSET(::types::Withdrawal, _impl_.address_),
   PROTOBUF_FIELD_OFFSET(::types::Withdrawal, _impl_.amount_),
   ~0u,  // no _has_bits_
@@ -351,7 +369,7 @@ const uint32_t TableStruct_types_2ftypes_2eproto::offsets[] PROTOBUF_SECTION_VAR
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::types::BlobsBundleV1, _impl_.blockhash_),
+  PROTOBUF_FIELD_OFFSET(::types::BlobsBundleV1, _impl_.block_hash_),
   PROTOBUF_FIELD_OFFSET(::types::BlobsBundleV1, _impl_.kzgs_),
   PROTOBUF_FIELD_OFFSET(::types::BlobsBundleV1, _impl_.blobs_),
   ~0u,  // no _has_bits_
@@ -373,7 +391,7 @@ const uint32_t TableStruct_types_2ftypes_2eproto::offsets[] PROTOBUF_SECTION_VAR
   PROTOBUF_FIELD_OFFSET(::types::NodeInfoReply, _impl_.enode_),
   PROTOBUF_FIELD_OFFSET(::types::NodeInfoReply, _impl_.enr_),
   PROTOBUF_FIELD_OFFSET(::types::NodeInfoReply, _impl_.ports_),
-  PROTOBUF_FIELD_OFFSET(::types::NodeInfoReply, _impl_.listeneraddr_),
+  PROTOBUF_FIELD_OFFSET(::types::NodeInfoReply, _impl_.listener_addr_),
   PROTOBUF_FIELD_OFFSET(::types::NodeInfoReply, _impl_.protocols_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::types::PeerInfo, _internal_metadata_),
@@ -386,11 +404,11 @@ const uint32_t TableStruct_types_2ftypes_2eproto::offsets[] PROTOBUF_SECTION_VAR
   PROTOBUF_FIELD_OFFSET(::types::PeerInfo, _impl_.enode_),
   PROTOBUF_FIELD_OFFSET(::types::PeerInfo, _impl_.enr_),
   PROTOBUF_FIELD_OFFSET(::types::PeerInfo, _impl_.caps_),
-  PROTOBUF_FIELD_OFFSET(::types::PeerInfo, _impl_.connlocaladdr_),
-  PROTOBUF_FIELD_OFFSET(::types::PeerInfo, _impl_.connremoteaddr_),
-  PROTOBUF_FIELD_OFFSET(::types::PeerInfo, _impl_.connisinbound_),
-  PROTOBUF_FIELD_OFFSET(::types::PeerInfo, _impl_.connistrusted_),
-  PROTOBUF_FIELD_OFFSET(::types::PeerInfo, _impl_.connisstatic_),
+  PROTOBUF_FIELD_OFFSET(::types::PeerInfo, _impl_.conn_local_addr_),
+  PROTOBUF_FIELD_OFFSET(::types::PeerInfo, _impl_.conn_remote_addr_),
+  PROTOBUF_FIELD_OFFSET(::types::PeerInfo, _impl_.conn_is_inbound_),
+  PROTOBUF_FIELD_OFFSET(::types::PeerInfo, _impl_.conn_is_trusted_),
+  PROTOBUF_FIELD_OFFSET(::types::PeerInfo, _impl_.conn_is_static_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::types::ExecutionPayloadBodyV1, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -408,13 +426,13 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 32, -1, -1, sizeof(::types::H1024)},
   { 40, -1, -1, sizeof(::types::H2048)},
   { 48, -1, -1, sizeof(::types::VersionReply)},
-  { 57, -1, -1, sizeof(::types::ExecutionPayload)},
-  { 80, -1, -1, sizeof(::types::Withdrawal)},
-  { 90, -1, -1, sizeof(::types::BlobsBundleV1)},
-  { 99, -1, -1, sizeof(::types::NodeInfoPorts)},
-  { 107, -1, -1, sizeof(::types::NodeInfoReply)},
-  { 120, -1, -1, sizeof(::types::PeerInfo)},
-  { 136, -1, -1, sizeof(::types::ExecutionPayloadBodyV1)},
+  { 57, 80, -1, sizeof(::types::ExecutionPayload)},
+  { 97, -1, -1, sizeof(::types::Withdrawal)},
+  { 107, -1, -1, sizeof(::types::BlobsBundleV1)},
+  { 116, -1, -1, sizeof(::types::NodeInfoPorts)},
+  { 124, -1, -1, sizeof(::types::NodeInfoReply)},
+  { 137, -1, -1, sizeof(::types::PeerInfo)},
+  { 153, -1, -1, sizeof(::types::ExecutionPayloadBodyV1)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -445,49 +463,50 @@ const char descriptor_table_protodef_types_2ftypes_2eproto[] PROTOBUF_SECTION_VA
   "es.H512\022\027\n\002lo\030\002 \001(\0132\013.types.H512\";\n\005H204"
   "8\022\030\n\002hi\030\001 \001(\0132\014.types.H1024\022\030\n\002lo\030\002 \001(\0132"
   "\014.types.H1024\";\n\014VersionReply\022\r\n\005major\030\001"
-  " \001(\r\022\r\n\005minor\030\002 \001(\r\022\r\n\005patch\030\003 \001(\r\"\353\003\n\020E"
-  "xecutionPayload\022\017\n\007version\030\001 \001(\r\022\037\n\npare"
-  "ntHash\030\002 \001(\0132\013.types.H256\022\035\n\010coinbase\030\003 "
-  "\001(\0132\013.types.H160\022\036\n\tstateRoot\030\004 \001(\0132\013.ty"
-  "pes.H256\022 \n\013receiptRoot\030\005 \001(\0132\013.types.H2"
-  "56\022\037\n\tlogsBloom\030\006 \001(\0132\014.types.H2048\022\037\n\np"
-  "revRandao\030\007 \001(\0132\013.types.H256\022\023\n\013blockNum"
-  "ber\030\010 \001(\004\022\020\n\010gasLimit\030\t \001(\004\022\017\n\007gasUsed\030\n"
-  " \001(\004\022\021\n\ttimestamp\030\013 \001(\004\022\021\n\textraData\030\014 \001"
-  "(\014\022\"\n\rbaseFeePerGas\030\r \001(\0132\013.types.H256\022\036"
-  "\n\tblockHash\030\016 \001(\0132\013.types.H256\022\024\n\014transa"
-  "ctions\030\017 \003(\014\022&\n\013withdrawals\030\020 \003(\0132\021.type"
-  "s.Withdrawal\022\"\n\rexcessDataGas\030\021 \001(\0132\013.ty"
-  "pes.H256\"a\n\nWithdrawal\022\r\n\005index\030\001 \001(\004\022\026\n"
-  "\016validatorIndex\030\002 \001(\004\022\034\n\007address\030\003 \001(\0132\013"
-  ".types.H160\022\016\n\006amount\030\004 \001(\004\"L\n\rBlobsBund"
-  "leV1\022\036\n\tblockHash\030\001 \001(\0132\013.types.H256\022\014\n\004"
-  "kzgs\030\002 \003(\014\022\r\n\005blobs\030\003 \003(\014\"4\n\rNodeInfoPor"
-  "ts\022\021\n\tdiscovery\030\001 \001(\r\022\020\n\010listener\030\002 \001(\r\""
-  "\223\001\n\rNodeInfoReply\022\n\n\002id\030\001 \001(\t\022\014\n\004name\030\002 "
-  "\001(\t\022\r\n\005enode\030\003 \001(\t\022\013\n\003enr\030\004 \001(\t\022#\n\005ports"
-  "\030\005 \001(\0132\024.types.NodeInfoPorts\022\024\n\014listener"
-  "Addr\030\006 \001(\t\022\021\n\tprotocols\030\007 \001(\014\"\301\001\n\010PeerIn"
-  "fo\022\n\n\002id\030\001 \001(\t\022\014\n\004name\030\002 \001(\t\022\r\n\005enode\030\003 "
-  "\001(\t\022\013\n\003enr\030\004 \001(\t\022\014\n\004caps\030\005 \003(\t\022\025\n\rconnLo"
-  "calAddr\030\006 \001(\t\022\026\n\016connRemoteAddr\030\007 \001(\t\022\025\n"
-  "\rconnIsInbound\030\010 \001(\010\022\025\n\rconnIsTrusted\030\t "
-  "\001(\010\022\024\n\014connIsStatic\030\n \001(\010\"V\n\026ExecutionPa"
-  "yloadBodyV1\022\024\n\014transactions\030\001 \003(\014\022&\n\013wit"
-  "hdrawals\030\002 \003(\0132\021.types.Withdrawal:=\n\025ser"
-  "vice_major_version\022\034.google.protobuf.Fil"
-  "eOptions\030\321\206\003 \001(\r:=\n\025service_minor_versio"
-  "n\022\034.google.protobuf.FileOptions\030\322\206\003 \001(\r:"
-  "=\n\025service_patch_version\022\034.google.protob"
-  "uf.FileOptions\030\323\206\003 \001(\rB\017Z\r./types;typesb"
-  "\006proto3"
+  " \001(\r\022\r\n\005minor\030\002 \001(\r\022\r\n\005patch\030\003 \001(\r\"\223\004\n\020E"
+  "xecutionPayload\022\017\n\007version\030\001 \001(\r\022 \n\013pare"
+  "nt_hash\030\002 \001(\0132\013.types.H256\022\035\n\010coinbase\030\003"
+  " \001(\0132\013.types.H160\022\037\n\nstate_root\030\004 \001(\0132\013."
+  "types.H256\022!\n\014receipt_root\030\005 \001(\0132\013.types"
+  ".H256\022 \n\nlogs_bloom\030\006 \001(\0132\014.types.H2048\022"
+  " \n\013prev_randao\030\007 \001(\0132\013.types.H256\022\024\n\014blo"
+  "ck_number\030\010 \001(\004\022\021\n\tgas_limit\030\t \001(\004\022\020\n\010ga"
+  "s_used\030\n \001(\004\022\021\n\ttimestamp\030\013 \001(\004\022\022\n\nextra"
+  "_data\030\014 \001(\014\022%\n\020base_fee_per_gas\030\r \001(\0132\013."
+  "types.H256\022\037\n\nblock_hash\030\016 \001(\0132\013.types.H"
+  "256\022\024\n\014transactions\030\017 \003(\014\022&\n\013withdrawals"
+  "\030\020 \003(\0132\021.types.Withdrawal\022)\n\017excess_data"
+  "_gas\030\021 \001(\0132\013.types.H256H\000\210\001\001B\022\n\020_excess_"
+  "data_gas\"b\n\nWithdrawal\022\r\n\005index\030\001 \001(\004\022\027\n"
+  "\017validator_index\030\002 \001(\004\022\034\n\007address\030\003 \001(\0132"
+  "\013.types.H160\022\016\n\006amount\030\004 \001(\004\"M\n\rBlobsBun"
+  "dleV1\022\037\n\nblock_hash\030\001 \001(\0132\013.types.H256\022\014"
+  "\n\004kzgs\030\002 \003(\014\022\r\n\005blobs\030\003 \003(\014\"4\n\rNodeInfoP"
+  "orts\022\021\n\tdiscovery\030\001 \001(\r\022\020\n\010listener\030\002 \001("
+  "\r\"\224\001\n\rNodeInfoReply\022\n\n\002id\030\001 \001(\t\022\014\n\004name\030"
+  "\002 \001(\t\022\r\n\005enode\030\003 \001(\t\022\013\n\003enr\030\004 \001(\t\022#\n\005por"
+  "ts\030\005 \001(\0132\024.types.NodeInfoPorts\022\025\n\rlisten"
+  "er_addr\030\006 \001(\t\022\021\n\tprotocols\030\007 \001(\014\"\313\001\n\010Pee"
+  "rInfo\022\n\n\002id\030\001 \001(\t\022\014\n\004name\030\002 \001(\t\022\r\n\005enode"
+  "\030\003 \001(\t\022\013\n\003enr\030\004 \001(\t\022\014\n\004caps\030\005 \003(\t\022\027\n\017con"
+  "n_local_addr\030\006 \001(\t\022\030\n\020conn_remote_addr\030\007"
+  " \001(\t\022\027\n\017conn_is_inbound\030\010 \001(\010\022\027\n\017conn_is"
+  "_trusted\030\t \001(\010\022\026\n\016conn_is_static\030\n \001(\010\"V"
+  "\n\026ExecutionPayloadBodyV1\022\024\n\014transactions"
+  "\030\001 \003(\014\022&\n\013withdrawals\030\002 \003(\0132\021.types.With"
+  "drawal:=\n\025service_major_version\022\034.google"
+  ".protobuf.FileOptions\030\321\206\003 \001(\r:=\n\025service"
+  "_minor_version\022\034.google.protobuf.FileOpt"
+  "ions\030\322\206\003 \001(\r:=\n\025service_patch_version\022\034."
+  "google.protobuf.FileOptions\030\323\206\003 \001(\rB\017Z\r."
+  "/types;typesb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_types_2ftypes_2eproto_deps[1] = {
   &::descriptor_table_google_2fprotobuf_2fdescriptor_2eproto,
 };
 static ::_pbi::once_flag descriptor_table_types_2ftypes_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_types_2ftypes_2eproto = {
-    false, false, 1807, descriptor_table_protodef_types_2ftypes_2eproto,
+    false, false, 1860, descriptor_table_protodef_types_2ftypes_2eproto,
     "types/types.proto",
     &descriptor_table_types_2ftypes_2eproto_once, descriptor_table_types_2ftypes_2eproto_deps, 1, 14,
     schemas, file_default_instances, TableStruct_types_2ftypes_2eproto::offsets,
@@ -2132,52 +2151,56 @@ void VersionReply::InternalSwap(VersionReply* other) {
 
 class ExecutionPayload::_Internal {
  public:
-  static const ::types::H256& parenthash(const ExecutionPayload* msg);
+  using HasBits = decltype(std::declval<ExecutionPayload>()._impl_._has_bits_);
+  static const ::types::H256& parent_hash(const ExecutionPayload* msg);
   static const ::types::H160& coinbase(const ExecutionPayload* msg);
-  static const ::types::H256& stateroot(const ExecutionPayload* msg);
-  static const ::types::H256& receiptroot(const ExecutionPayload* msg);
-  static const ::types::H2048& logsbloom(const ExecutionPayload* msg);
-  static const ::types::H256& prevrandao(const ExecutionPayload* msg);
-  static const ::types::H256& basefeepergas(const ExecutionPayload* msg);
-  static const ::types::H256& blockhash(const ExecutionPayload* msg);
-  static const ::types::H256& excessdatagas(const ExecutionPayload* msg);
+  static const ::types::H256& state_root(const ExecutionPayload* msg);
+  static const ::types::H256& receipt_root(const ExecutionPayload* msg);
+  static const ::types::H2048& logs_bloom(const ExecutionPayload* msg);
+  static const ::types::H256& prev_randao(const ExecutionPayload* msg);
+  static const ::types::H256& base_fee_per_gas(const ExecutionPayload* msg);
+  static const ::types::H256& block_hash(const ExecutionPayload* msg);
+  static const ::types::H256& excess_data_gas(const ExecutionPayload* msg);
+  static void set_has_excess_data_gas(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
 };
 
 const ::types::H256&
-ExecutionPayload::_Internal::parenthash(const ExecutionPayload* msg) {
-  return *msg->_impl_.parenthash_;
+ExecutionPayload::_Internal::parent_hash(const ExecutionPayload* msg) {
+  return *msg->_impl_.parent_hash_;
 }
 const ::types::H160&
 ExecutionPayload::_Internal::coinbase(const ExecutionPayload* msg) {
   return *msg->_impl_.coinbase_;
 }
 const ::types::H256&
-ExecutionPayload::_Internal::stateroot(const ExecutionPayload* msg) {
-  return *msg->_impl_.stateroot_;
+ExecutionPayload::_Internal::state_root(const ExecutionPayload* msg) {
+  return *msg->_impl_.state_root_;
 }
 const ::types::H256&
-ExecutionPayload::_Internal::receiptroot(const ExecutionPayload* msg) {
-  return *msg->_impl_.receiptroot_;
+ExecutionPayload::_Internal::receipt_root(const ExecutionPayload* msg) {
+  return *msg->_impl_.receipt_root_;
 }
 const ::types::H2048&
-ExecutionPayload::_Internal::logsbloom(const ExecutionPayload* msg) {
-  return *msg->_impl_.logsbloom_;
+ExecutionPayload::_Internal::logs_bloom(const ExecutionPayload* msg) {
+  return *msg->_impl_.logs_bloom_;
 }
 const ::types::H256&
-ExecutionPayload::_Internal::prevrandao(const ExecutionPayload* msg) {
-  return *msg->_impl_.prevrandao_;
+ExecutionPayload::_Internal::prev_randao(const ExecutionPayload* msg) {
+  return *msg->_impl_.prev_randao_;
 }
 const ::types::H256&
-ExecutionPayload::_Internal::basefeepergas(const ExecutionPayload* msg) {
-  return *msg->_impl_.basefeepergas_;
+ExecutionPayload::_Internal::base_fee_per_gas(const ExecutionPayload* msg) {
+  return *msg->_impl_.base_fee_per_gas_;
 }
 const ::types::H256&
-ExecutionPayload::_Internal::blockhash(const ExecutionPayload* msg) {
-  return *msg->_impl_.blockhash_;
+ExecutionPayload::_Internal::block_hash(const ExecutionPayload* msg) {
+  return *msg->_impl_.block_hash_;
 }
 const ::types::H256&
-ExecutionPayload::_Internal::excessdatagas(const ExecutionPayload* msg) {
-  return *msg->_impl_.excessdatagas_;
+ExecutionPayload::_Internal::excess_data_gas(const ExecutionPayload* msg) {
+  return *msg->_impl_.excess_data_gas_;
 }
 ExecutionPayload::ExecutionPayload(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
@@ -2189,64 +2212,65 @@ ExecutionPayload::ExecutionPayload(const ExecutionPayload& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   ExecutionPayload* const _this = this; (void)_this;
   new (&_impl_) Impl_{
-      decltype(_impl_.transactions_){from._impl_.transactions_}
+      decltype(_impl_._has_bits_){from._impl_._has_bits_}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.transactions_){from._impl_.transactions_}
     , decltype(_impl_.withdrawals_){from._impl_.withdrawals_}
-    , decltype(_impl_.extradata_){}
-    , decltype(_impl_.parenthash_){nullptr}
+    , decltype(_impl_.extra_data_){}
+    , decltype(_impl_.parent_hash_){nullptr}
     , decltype(_impl_.coinbase_){nullptr}
-    , decltype(_impl_.stateroot_){nullptr}
-    , decltype(_impl_.receiptroot_){nullptr}
-    , decltype(_impl_.logsbloom_){nullptr}
-    , decltype(_impl_.prevrandao_){nullptr}
-    , decltype(_impl_.basefeepergas_){nullptr}
-    , decltype(_impl_.blockhash_){nullptr}
-    , decltype(_impl_.excessdatagas_){nullptr}
-    , decltype(_impl_.blocknumber_){}
-    , decltype(_impl_.gaslimit_){}
-    , decltype(_impl_.gasused_){}
+    , decltype(_impl_.state_root_){nullptr}
+    , decltype(_impl_.receipt_root_){nullptr}
+    , decltype(_impl_.logs_bloom_){nullptr}
+    , decltype(_impl_.prev_randao_){nullptr}
+    , decltype(_impl_.base_fee_per_gas_){nullptr}
+    , decltype(_impl_.block_hash_){nullptr}
+    , decltype(_impl_.excess_data_gas_){nullptr}
+    , decltype(_impl_.block_number_){}
+    , decltype(_impl_.gas_limit_){}
+    , decltype(_impl_.gas_used_){}
     , decltype(_impl_.timestamp_){}
-    , decltype(_impl_.version_){}
-    , /*decltype(_impl_._cached_size_)*/{}};
+    , decltype(_impl_.version_){}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _impl_.extradata_.InitDefault();
+  _impl_.extra_data_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.extradata_.Set("", GetArenaForAllocation());
+    _impl_.extra_data_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_extradata().empty()) {
-    _this->_impl_.extradata_.Set(from._internal_extradata(), 
+  if (!from._internal_extra_data().empty()) {
+    _this->_impl_.extra_data_.Set(from._internal_extra_data(), 
       _this->GetArenaForAllocation());
   }
-  if (from._internal_has_parenthash()) {
-    _this->_impl_.parenthash_ = new ::types::H256(*from._impl_.parenthash_);
+  if (from._internal_has_parent_hash()) {
+    _this->_impl_.parent_hash_ = new ::types::H256(*from._impl_.parent_hash_);
   }
   if (from._internal_has_coinbase()) {
     _this->_impl_.coinbase_ = new ::types::H160(*from._impl_.coinbase_);
   }
-  if (from._internal_has_stateroot()) {
-    _this->_impl_.stateroot_ = new ::types::H256(*from._impl_.stateroot_);
+  if (from._internal_has_state_root()) {
+    _this->_impl_.state_root_ = new ::types::H256(*from._impl_.state_root_);
   }
-  if (from._internal_has_receiptroot()) {
-    _this->_impl_.receiptroot_ = new ::types::H256(*from._impl_.receiptroot_);
+  if (from._internal_has_receipt_root()) {
+    _this->_impl_.receipt_root_ = new ::types::H256(*from._impl_.receipt_root_);
   }
-  if (from._internal_has_logsbloom()) {
-    _this->_impl_.logsbloom_ = new ::types::H2048(*from._impl_.logsbloom_);
+  if (from._internal_has_logs_bloom()) {
+    _this->_impl_.logs_bloom_ = new ::types::H2048(*from._impl_.logs_bloom_);
   }
-  if (from._internal_has_prevrandao()) {
-    _this->_impl_.prevrandao_ = new ::types::H256(*from._impl_.prevrandao_);
+  if (from._internal_has_prev_randao()) {
+    _this->_impl_.prev_randao_ = new ::types::H256(*from._impl_.prev_randao_);
   }
-  if (from._internal_has_basefeepergas()) {
-    _this->_impl_.basefeepergas_ = new ::types::H256(*from._impl_.basefeepergas_);
+  if (from._internal_has_base_fee_per_gas()) {
+    _this->_impl_.base_fee_per_gas_ = new ::types::H256(*from._impl_.base_fee_per_gas_);
   }
-  if (from._internal_has_blockhash()) {
-    _this->_impl_.blockhash_ = new ::types::H256(*from._impl_.blockhash_);
+  if (from._internal_has_block_hash()) {
+    _this->_impl_.block_hash_ = new ::types::H256(*from._impl_.block_hash_);
   }
-  if (from._internal_has_excessdatagas()) {
-    _this->_impl_.excessdatagas_ = new ::types::H256(*from._impl_.excessdatagas_);
+  if (from._internal_has_excess_data_gas()) {
+    _this->_impl_.excess_data_gas_ = new ::types::H256(*from._impl_.excess_data_gas_);
   }
-  ::memcpy(&_impl_.blocknumber_, &from._impl_.blocknumber_,
+  ::memcpy(&_impl_.block_number_, &from._impl_.block_number_,
     static_cast<size_t>(reinterpret_cast<char*>(&_impl_.version_) -
-    reinterpret_cast<char*>(&_impl_.blocknumber_)) + sizeof(_impl_.version_));
+    reinterpret_cast<char*>(&_impl_.block_number_)) + sizeof(_impl_.version_));
   // @@protoc_insertion_point(copy_constructor:types.ExecutionPayload)
 }
 
@@ -2255,28 +2279,29 @@ inline void ExecutionPayload::SharedCtor(
   (void)arena;
   (void)is_message_owned;
   new (&_impl_) Impl_{
-      decltype(_impl_.transactions_){arena}
+      decltype(_impl_._has_bits_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+    , decltype(_impl_.transactions_){arena}
     , decltype(_impl_.withdrawals_){arena}
-    , decltype(_impl_.extradata_){}
-    , decltype(_impl_.parenthash_){nullptr}
+    , decltype(_impl_.extra_data_){}
+    , decltype(_impl_.parent_hash_){nullptr}
     , decltype(_impl_.coinbase_){nullptr}
-    , decltype(_impl_.stateroot_){nullptr}
-    , decltype(_impl_.receiptroot_){nullptr}
-    , decltype(_impl_.logsbloom_){nullptr}
-    , decltype(_impl_.prevrandao_){nullptr}
-    , decltype(_impl_.basefeepergas_){nullptr}
-    , decltype(_impl_.blockhash_){nullptr}
-    , decltype(_impl_.excessdatagas_){nullptr}
-    , decltype(_impl_.blocknumber_){uint64_t{0u}}
-    , decltype(_impl_.gaslimit_){uint64_t{0u}}
-    , decltype(_impl_.gasused_){uint64_t{0u}}
+    , decltype(_impl_.state_root_){nullptr}
+    , decltype(_impl_.receipt_root_){nullptr}
+    , decltype(_impl_.logs_bloom_){nullptr}
+    , decltype(_impl_.prev_randao_){nullptr}
+    , decltype(_impl_.base_fee_per_gas_){nullptr}
+    , decltype(_impl_.block_hash_){nullptr}
+    , decltype(_impl_.excess_data_gas_){nullptr}
+    , decltype(_impl_.block_number_){uint64_t{0u}}
+    , decltype(_impl_.gas_limit_){uint64_t{0u}}
+    , decltype(_impl_.gas_used_){uint64_t{0u}}
     , decltype(_impl_.timestamp_){uint64_t{0u}}
     , decltype(_impl_.version_){0u}
-    , /*decltype(_impl_._cached_size_)*/{}
   };
-  _impl_.extradata_.InitDefault();
+  _impl_.extra_data_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.extradata_.Set("", GetArenaForAllocation());
+    _impl_.extra_data_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
@@ -2293,16 +2318,16 @@ inline void ExecutionPayload::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.transactions_.~RepeatedPtrField();
   _impl_.withdrawals_.~RepeatedPtrField();
-  _impl_.extradata_.Destroy();
-  if (this != internal_default_instance()) delete _impl_.parenthash_;
+  _impl_.extra_data_.Destroy();
+  if (this != internal_default_instance()) delete _impl_.parent_hash_;
   if (this != internal_default_instance()) delete _impl_.coinbase_;
-  if (this != internal_default_instance()) delete _impl_.stateroot_;
-  if (this != internal_default_instance()) delete _impl_.receiptroot_;
-  if (this != internal_default_instance()) delete _impl_.logsbloom_;
-  if (this != internal_default_instance()) delete _impl_.prevrandao_;
-  if (this != internal_default_instance()) delete _impl_.basefeepergas_;
-  if (this != internal_default_instance()) delete _impl_.blockhash_;
-  if (this != internal_default_instance()) delete _impl_.excessdatagas_;
+  if (this != internal_default_instance()) delete _impl_.state_root_;
+  if (this != internal_default_instance()) delete _impl_.receipt_root_;
+  if (this != internal_default_instance()) delete _impl_.logs_bloom_;
+  if (this != internal_default_instance()) delete _impl_.prev_randao_;
+  if (this != internal_default_instance()) delete _impl_.base_fee_per_gas_;
+  if (this != internal_default_instance()) delete _impl_.block_hash_;
+  if (this != internal_default_instance()) delete _impl_.excess_data_gas_;
 }
 
 void ExecutionPayload::SetCachedSize(int size) const {
@@ -2317,51 +2342,54 @@ void ExecutionPayload::Clear() {
 
   _impl_.transactions_.Clear();
   _impl_.withdrawals_.Clear();
-  _impl_.extradata_.ClearToEmpty();
-  if (GetArenaForAllocation() == nullptr && _impl_.parenthash_ != nullptr) {
-    delete _impl_.parenthash_;
+  _impl_.extra_data_.ClearToEmpty();
+  if (GetArenaForAllocation() == nullptr && _impl_.parent_hash_ != nullptr) {
+    delete _impl_.parent_hash_;
   }
-  _impl_.parenthash_ = nullptr;
+  _impl_.parent_hash_ = nullptr;
   if (GetArenaForAllocation() == nullptr && _impl_.coinbase_ != nullptr) {
     delete _impl_.coinbase_;
   }
   _impl_.coinbase_ = nullptr;
-  if (GetArenaForAllocation() == nullptr && _impl_.stateroot_ != nullptr) {
-    delete _impl_.stateroot_;
+  if (GetArenaForAllocation() == nullptr && _impl_.state_root_ != nullptr) {
+    delete _impl_.state_root_;
   }
-  _impl_.stateroot_ = nullptr;
-  if (GetArenaForAllocation() == nullptr && _impl_.receiptroot_ != nullptr) {
-    delete _impl_.receiptroot_;
+  _impl_.state_root_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && _impl_.receipt_root_ != nullptr) {
+    delete _impl_.receipt_root_;
   }
-  _impl_.receiptroot_ = nullptr;
-  if (GetArenaForAllocation() == nullptr && _impl_.logsbloom_ != nullptr) {
-    delete _impl_.logsbloom_;
+  _impl_.receipt_root_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && _impl_.logs_bloom_ != nullptr) {
+    delete _impl_.logs_bloom_;
   }
-  _impl_.logsbloom_ = nullptr;
-  if (GetArenaForAllocation() == nullptr && _impl_.prevrandao_ != nullptr) {
-    delete _impl_.prevrandao_;
+  _impl_.logs_bloom_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && _impl_.prev_randao_ != nullptr) {
+    delete _impl_.prev_randao_;
   }
-  _impl_.prevrandao_ = nullptr;
-  if (GetArenaForAllocation() == nullptr && _impl_.basefeepergas_ != nullptr) {
-    delete _impl_.basefeepergas_;
+  _impl_.prev_randao_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && _impl_.base_fee_per_gas_ != nullptr) {
+    delete _impl_.base_fee_per_gas_;
   }
-  _impl_.basefeepergas_ = nullptr;
-  if (GetArenaForAllocation() == nullptr && _impl_.blockhash_ != nullptr) {
-    delete _impl_.blockhash_;
+  _impl_.base_fee_per_gas_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && _impl_.block_hash_ != nullptr) {
+    delete _impl_.block_hash_;
   }
-  _impl_.blockhash_ = nullptr;
-  if (GetArenaForAllocation() == nullptr && _impl_.excessdatagas_ != nullptr) {
-    delete _impl_.excessdatagas_;
+  _impl_.block_hash_ = nullptr;
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    GOOGLE_DCHECK(_impl_.excess_data_gas_ != nullptr);
+    _impl_.excess_data_gas_->Clear();
   }
-  _impl_.excessdatagas_ = nullptr;
-  ::memset(&_impl_.blocknumber_, 0, static_cast<size_t>(
+  ::memset(&_impl_.block_number_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&_impl_.version_) -
-      reinterpret_cast<char*>(&_impl_.blocknumber_)) + sizeof(_impl_.version_));
+      reinterpret_cast<char*>(&_impl_.block_number_)) + sizeof(_impl_.version_));
+  _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 const char* ExecutionPayload::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  _Internal::HasBits has_bits{};
   while (!ctx->Done(&ptr)) {
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
@@ -2374,10 +2402,10 @@ const char* ExecutionPayload::_InternalParse(const char* ptr, ::_pbi::ParseConte
         } else
           goto handle_unusual;
         continue;
-      // .types.H256 parentHash = 2;
+      // .types.H256 parent_hash = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          ptr = ctx->ParseMessage(_internal_mutable_parenthash(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_parent_hash(), ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -2390,58 +2418,58 @@ const char* ExecutionPayload::_InternalParse(const char* ptr, ::_pbi::ParseConte
         } else
           goto handle_unusual;
         continue;
-      // .types.H256 stateRoot = 4;
+      // .types.H256 state_root = 4;
       case 4:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
-          ptr = ctx->ParseMessage(_internal_mutable_stateroot(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_state_root(), ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // .types.H256 receiptRoot = 5;
+      // .types.H256 receipt_root = 5;
       case 5:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 42)) {
-          ptr = ctx->ParseMessage(_internal_mutable_receiptroot(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_receipt_root(), ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // .types.H2048 logsBloom = 6;
+      // .types.H2048 logs_bloom = 6;
       case 6:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 50)) {
-          ptr = ctx->ParseMessage(_internal_mutable_logsbloom(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_logs_bloom(), ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // .types.H256 prevRandao = 7;
+      // .types.H256 prev_randao = 7;
       case 7:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 58)) {
-          ptr = ctx->ParseMessage(_internal_mutable_prevrandao(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_prev_randao(), ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // uint64 blockNumber = 8;
+      // uint64 block_number = 8;
       case 8:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 64)) {
-          _impl_.blocknumber_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          _impl_.block_number_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // uint64 gasLimit = 9;
+      // uint64 gas_limit = 9;
       case 9:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 72)) {
-          _impl_.gaslimit_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          _impl_.gas_limit_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // uint64 gasUsed = 10;
+      // uint64 gas_used = 10;
       case 10:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 80)) {
-          _impl_.gasused_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          _impl_.gas_used_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -2454,27 +2482,27 @@ const char* ExecutionPayload::_InternalParse(const char* ptr, ::_pbi::ParseConte
         } else
           goto handle_unusual;
         continue;
-      // bytes extraData = 12;
+      // bytes extra_data = 12;
       case 12:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 98)) {
-          auto str = _internal_mutable_extradata();
+          auto str = _internal_mutable_extra_data();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // .types.H256 baseFeePerGas = 13;
+      // .types.H256 base_fee_per_gas = 13;
       case 13:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 106)) {
-          ptr = ctx->ParseMessage(_internal_mutable_basefeepergas(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_base_fee_per_gas(), ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // .types.H256 blockHash = 14;
+      // .types.H256 block_hash = 14;
       case 14:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 114)) {
-          ptr = ctx->ParseMessage(_internal_mutable_blockhash(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_block_hash(), ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -2506,10 +2534,10 @@ const char* ExecutionPayload::_InternalParse(const char* ptr, ::_pbi::ParseConte
         } else
           goto handle_unusual;
         continue;
-      // .types.H256 excessDataGas = 17;
+      // optional .types.H256 excess_data_gas = 17;
       case 17:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 138)) {
-          ptr = ctx->ParseMessage(_internal_mutable_excessdatagas(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_excess_data_gas(), ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -2530,6 +2558,7 @@ const char* ExecutionPayload::_InternalParse(const char* ptr, ::_pbi::ParseConte
     CHK_(ptr != nullptr);
   }  // while
 message_done:
+  _impl_._has_bits_.Or(has_bits);
   return ptr;
 failure:
   ptr = nullptr;
@@ -2549,11 +2578,11 @@ uint8_t* ExecutionPayload::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteUInt32ToArray(1, this->_internal_version(), target);
   }
 
-  // .types.H256 parentHash = 2;
-  if (this->_internal_has_parenthash()) {
+  // .types.H256 parent_hash = 2;
+  if (this->_internal_has_parent_hash()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(2, _Internal::parenthash(this),
-        _Internal::parenthash(this).GetCachedSize(), target, stream);
+      InternalWriteMessage(2, _Internal::parent_hash(this),
+        _Internal::parent_hash(this).GetCachedSize(), target, stream);
   }
 
   // .types.H160 coinbase = 3;
@@ -2563,50 +2592,50 @@ uint8_t* ExecutionPayload::_InternalSerialize(
         _Internal::coinbase(this).GetCachedSize(), target, stream);
   }
 
-  // .types.H256 stateRoot = 4;
-  if (this->_internal_has_stateroot()) {
+  // .types.H256 state_root = 4;
+  if (this->_internal_has_state_root()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(4, _Internal::stateroot(this),
-        _Internal::stateroot(this).GetCachedSize(), target, stream);
+      InternalWriteMessage(4, _Internal::state_root(this),
+        _Internal::state_root(this).GetCachedSize(), target, stream);
   }
 
-  // .types.H256 receiptRoot = 5;
-  if (this->_internal_has_receiptroot()) {
+  // .types.H256 receipt_root = 5;
+  if (this->_internal_has_receipt_root()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(5, _Internal::receiptroot(this),
-        _Internal::receiptroot(this).GetCachedSize(), target, stream);
+      InternalWriteMessage(5, _Internal::receipt_root(this),
+        _Internal::receipt_root(this).GetCachedSize(), target, stream);
   }
 
-  // .types.H2048 logsBloom = 6;
-  if (this->_internal_has_logsbloom()) {
+  // .types.H2048 logs_bloom = 6;
+  if (this->_internal_has_logs_bloom()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(6, _Internal::logsbloom(this),
-        _Internal::logsbloom(this).GetCachedSize(), target, stream);
+      InternalWriteMessage(6, _Internal::logs_bloom(this),
+        _Internal::logs_bloom(this).GetCachedSize(), target, stream);
   }
 
-  // .types.H256 prevRandao = 7;
-  if (this->_internal_has_prevrandao()) {
+  // .types.H256 prev_randao = 7;
+  if (this->_internal_has_prev_randao()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(7, _Internal::prevrandao(this),
-        _Internal::prevrandao(this).GetCachedSize(), target, stream);
+      InternalWriteMessage(7, _Internal::prev_randao(this),
+        _Internal::prev_randao(this).GetCachedSize(), target, stream);
   }
 
-  // uint64 blockNumber = 8;
-  if (this->_internal_blocknumber() != 0) {
+  // uint64 block_number = 8;
+  if (this->_internal_block_number() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(8, this->_internal_blocknumber(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(8, this->_internal_block_number(), target);
   }
 
-  // uint64 gasLimit = 9;
-  if (this->_internal_gaslimit() != 0) {
+  // uint64 gas_limit = 9;
+  if (this->_internal_gas_limit() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(9, this->_internal_gaslimit(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(9, this->_internal_gas_limit(), target);
   }
 
-  // uint64 gasUsed = 10;
-  if (this->_internal_gasused() != 0) {
+  // uint64 gas_used = 10;
+  if (this->_internal_gas_used() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(10, this->_internal_gasused(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(10, this->_internal_gas_used(), target);
   }
 
   // uint64 timestamp = 11;
@@ -2615,24 +2644,24 @@ uint8_t* ExecutionPayload::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteUInt64ToArray(11, this->_internal_timestamp(), target);
   }
 
-  // bytes extraData = 12;
-  if (!this->_internal_extradata().empty()) {
+  // bytes extra_data = 12;
+  if (!this->_internal_extra_data().empty()) {
     target = stream->WriteBytesMaybeAliased(
-        12, this->_internal_extradata(), target);
+        12, this->_internal_extra_data(), target);
   }
 
-  // .types.H256 baseFeePerGas = 13;
-  if (this->_internal_has_basefeepergas()) {
+  // .types.H256 base_fee_per_gas = 13;
+  if (this->_internal_has_base_fee_per_gas()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(13, _Internal::basefeepergas(this),
-        _Internal::basefeepergas(this).GetCachedSize(), target, stream);
+      InternalWriteMessage(13, _Internal::base_fee_per_gas(this),
+        _Internal::base_fee_per_gas(this).GetCachedSize(), target, stream);
   }
 
-  // .types.H256 blockHash = 14;
-  if (this->_internal_has_blockhash()) {
+  // .types.H256 block_hash = 14;
+  if (this->_internal_has_block_hash()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(14, _Internal::blockhash(this),
-        _Internal::blockhash(this).GetCachedSize(), target, stream);
+      InternalWriteMessage(14, _Internal::block_hash(this),
+        _Internal::block_hash(this).GetCachedSize(), target, stream);
   }
 
   // repeated bytes transactions = 15;
@@ -2649,11 +2678,11 @@ uint8_t* ExecutionPayload::_InternalSerialize(
         InternalWriteMessage(16, repfield, repfield.GetCachedSize(), target, stream);
   }
 
-  // .types.H256 excessDataGas = 17;
-  if (this->_internal_has_excessdatagas()) {
+  // optional .types.H256 excess_data_gas = 17;
+  if (_internal_has_excess_data_gas()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(17, _Internal::excessdatagas(this),
-        _Internal::excessdatagas(this).GetCachedSize(), target, stream);
+      InternalWriteMessage(17, _Internal::excess_data_gas(this),
+        _Internal::excess_data_gas(this).GetCachedSize(), target, stream);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -2687,18 +2716,18 @@ size_t ExecutionPayload::ByteSizeLong() const {
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
 
-  // bytes extraData = 12;
-  if (!this->_internal_extradata().empty()) {
+  // bytes extra_data = 12;
+  if (!this->_internal_extra_data().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_extradata());
+        this->_internal_extra_data());
   }
 
-  // .types.H256 parentHash = 2;
-  if (this->_internal_has_parenthash()) {
+  // .types.H256 parent_hash = 2;
+  if (this->_internal_has_parent_hash()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.parenthash_);
+        *_impl_.parent_hash_);
   }
 
   // .types.H160 coinbase = 3;
@@ -2708,68 +2737,69 @@ size_t ExecutionPayload::ByteSizeLong() const {
         *_impl_.coinbase_);
   }
 
-  // .types.H256 stateRoot = 4;
-  if (this->_internal_has_stateroot()) {
+  // .types.H256 state_root = 4;
+  if (this->_internal_has_state_root()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.stateroot_);
+        *_impl_.state_root_);
   }
 
-  // .types.H256 receiptRoot = 5;
-  if (this->_internal_has_receiptroot()) {
+  // .types.H256 receipt_root = 5;
+  if (this->_internal_has_receipt_root()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.receiptroot_);
+        *_impl_.receipt_root_);
   }
 
-  // .types.H2048 logsBloom = 6;
-  if (this->_internal_has_logsbloom()) {
+  // .types.H2048 logs_bloom = 6;
+  if (this->_internal_has_logs_bloom()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.logsbloom_);
+        *_impl_.logs_bloom_);
   }
 
-  // .types.H256 prevRandao = 7;
-  if (this->_internal_has_prevrandao()) {
+  // .types.H256 prev_randao = 7;
+  if (this->_internal_has_prev_randao()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.prevrandao_);
+        *_impl_.prev_randao_);
   }
 
-  // .types.H256 baseFeePerGas = 13;
-  if (this->_internal_has_basefeepergas()) {
+  // .types.H256 base_fee_per_gas = 13;
+  if (this->_internal_has_base_fee_per_gas()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.basefeepergas_);
+        *_impl_.base_fee_per_gas_);
   }
 
-  // .types.H256 blockHash = 14;
-  if (this->_internal_has_blockhash()) {
+  // .types.H256 block_hash = 14;
+  if (this->_internal_has_block_hash()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.blockhash_);
+        *_impl_.block_hash_);
   }
 
-  // .types.H256 excessDataGas = 17;
-  if (this->_internal_has_excessdatagas()) {
+  // optional .types.H256 excess_data_gas = 17;
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
     total_size += 2 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.excessdatagas_);
+        *_impl_.excess_data_gas_);
   }
 
-  // uint64 blockNumber = 8;
-  if (this->_internal_blocknumber() != 0) {
-    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_blocknumber());
+  // uint64 block_number = 8;
+  if (this->_internal_block_number() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_block_number());
   }
 
-  // uint64 gasLimit = 9;
-  if (this->_internal_gaslimit() != 0) {
-    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_gaslimit());
+  // uint64 gas_limit = 9;
+  if (this->_internal_gas_limit() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_gas_limit());
   }
 
-  // uint64 gasUsed = 10;
-  if (this->_internal_gasused() != 0) {
-    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_gasused());
+  // uint64 gas_used = 10;
+  if (this->_internal_gas_used() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_gas_used());
   }
 
   // uint64 timestamp = 11;
@@ -2802,53 +2832,53 @@ void ExecutionPayload::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const
 
   _this->_impl_.transactions_.MergeFrom(from._impl_.transactions_);
   _this->_impl_.withdrawals_.MergeFrom(from._impl_.withdrawals_);
-  if (!from._internal_extradata().empty()) {
-    _this->_internal_set_extradata(from._internal_extradata());
+  if (!from._internal_extra_data().empty()) {
+    _this->_internal_set_extra_data(from._internal_extra_data());
   }
-  if (from._internal_has_parenthash()) {
-    _this->_internal_mutable_parenthash()->::types::H256::MergeFrom(
-        from._internal_parenthash());
+  if (from._internal_has_parent_hash()) {
+    _this->_internal_mutable_parent_hash()->::types::H256::MergeFrom(
+        from._internal_parent_hash());
   }
   if (from._internal_has_coinbase()) {
     _this->_internal_mutable_coinbase()->::types::H160::MergeFrom(
         from._internal_coinbase());
   }
-  if (from._internal_has_stateroot()) {
-    _this->_internal_mutable_stateroot()->::types::H256::MergeFrom(
-        from._internal_stateroot());
+  if (from._internal_has_state_root()) {
+    _this->_internal_mutable_state_root()->::types::H256::MergeFrom(
+        from._internal_state_root());
   }
-  if (from._internal_has_receiptroot()) {
-    _this->_internal_mutable_receiptroot()->::types::H256::MergeFrom(
-        from._internal_receiptroot());
+  if (from._internal_has_receipt_root()) {
+    _this->_internal_mutable_receipt_root()->::types::H256::MergeFrom(
+        from._internal_receipt_root());
   }
-  if (from._internal_has_logsbloom()) {
-    _this->_internal_mutable_logsbloom()->::types::H2048::MergeFrom(
-        from._internal_logsbloom());
+  if (from._internal_has_logs_bloom()) {
+    _this->_internal_mutable_logs_bloom()->::types::H2048::MergeFrom(
+        from._internal_logs_bloom());
   }
-  if (from._internal_has_prevrandao()) {
-    _this->_internal_mutable_prevrandao()->::types::H256::MergeFrom(
-        from._internal_prevrandao());
+  if (from._internal_has_prev_randao()) {
+    _this->_internal_mutable_prev_randao()->::types::H256::MergeFrom(
+        from._internal_prev_randao());
   }
-  if (from._internal_has_basefeepergas()) {
-    _this->_internal_mutable_basefeepergas()->::types::H256::MergeFrom(
-        from._internal_basefeepergas());
+  if (from._internal_has_base_fee_per_gas()) {
+    _this->_internal_mutable_base_fee_per_gas()->::types::H256::MergeFrom(
+        from._internal_base_fee_per_gas());
   }
-  if (from._internal_has_blockhash()) {
-    _this->_internal_mutable_blockhash()->::types::H256::MergeFrom(
-        from._internal_blockhash());
+  if (from._internal_has_block_hash()) {
+    _this->_internal_mutable_block_hash()->::types::H256::MergeFrom(
+        from._internal_block_hash());
   }
-  if (from._internal_has_excessdatagas()) {
-    _this->_internal_mutable_excessdatagas()->::types::H256::MergeFrom(
-        from._internal_excessdatagas());
+  if (from._internal_has_excess_data_gas()) {
+    _this->_internal_mutable_excess_data_gas()->::types::H256::MergeFrom(
+        from._internal_excess_data_gas());
   }
-  if (from._internal_blocknumber() != 0) {
-    _this->_internal_set_blocknumber(from._internal_blocknumber());
+  if (from._internal_block_number() != 0) {
+    _this->_internal_set_block_number(from._internal_block_number());
   }
-  if (from._internal_gaslimit() != 0) {
-    _this->_internal_set_gaslimit(from._internal_gaslimit());
+  if (from._internal_gas_limit() != 0) {
+    _this->_internal_set_gas_limit(from._internal_gas_limit());
   }
-  if (from._internal_gasused() != 0) {
-    _this->_internal_set_gasused(from._internal_gasused());
+  if (from._internal_gas_used() != 0) {
+    _this->_internal_set_gas_used(from._internal_gas_used());
   }
   if (from._internal_timestamp() != 0) {
     _this->_internal_set_timestamp(from._internal_timestamp());
@@ -2875,18 +2905,19 @@ void ExecutionPayload::InternalSwap(ExecutionPayload* other) {
   auto* lhs_arena = GetArenaForAllocation();
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
   _impl_.transactions_.InternalSwap(&other->_impl_.transactions_);
   _impl_.withdrawals_.InternalSwap(&other->_impl_.withdrawals_);
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.extradata_, lhs_arena,
-      &other->_impl_.extradata_, rhs_arena
+      &_impl_.extra_data_, lhs_arena,
+      &other->_impl_.extra_data_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
       PROTOBUF_FIELD_OFFSET(ExecutionPayload, _impl_.version_)
       + sizeof(ExecutionPayload::_impl_.version_)
-      - PROTOBUF_FIELD_OFFSET(ExecutionPayload, _impl_.parenthash_)>(
-          reinterpret_cast<char*>(&_impl_.parenthash_),
-          reinterpret_cast<char*>(&other->_impl_.parenthash_));
+      - PROTOBUF_FIELD_OFFSET(ExecutionPayload, _impl_.parent_hash_)>(
+          reinterpret_cast<char*>(&_impl_.parent_hash_),
+          reinterpret_cast<char*>(&other->_impl_.parent_hash_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata ExecutionPayload::GetMetadata() const {
@@ -2918,7 +2949,7 @@ Withdrawal::Withdrawal(const Withdrawal& from)
   new (&_impl_) Impl_{
       decltype(_impl_.address_){nullptr}
     , decltype(_impl_.index_){}
-    , decltype(_impl_.validatorindex_){}
+    , decltype(_impl_.validator_index_){}
     , decltype(_impl_.amount_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
@@ -2939,7 +2970,7 @@ inline void Withdrawal::SharedCtor(
   new (&_impl_) Impl_{
       decltype(_impl_.address_){nullptr}
     , decltype(_impl_.index_){uint64_t{0u}}
-    , decltype(_impl_.validatorindex_){uint64_t{0u}}
+    , decltype(_impl_.validator_index_){uint64_t{0u}}
     , decltype(_impl_.amount_){uint64_t{0u}}
     , /*decltype(_impl_._cached_size_)*/{}
   };
@@ -2993,10 +3024,10 @@ const char* Withdrawal::_InternalParse(const char* ptr, ::_pbi::ParseContext* ct
         } else
           goto handle_unusual;
         continue;
-      // uint64 validatorIndex = 2;
+      // uint64 validator_index = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
-          _impl_.validatorindex_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          _impl_.validator_index_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -3052,10 +3083,10 @@ uint8_t* Withdrawal::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteUInt64ToArray(1, this->_internal_index(), target);
   }
 
-  // uint64 validatorIndex = 2;
-  if (this->_internal_validatorindex() != 0) {
+  // uint64 validator_index = 2;
+  if (this->_internal_validator_index() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(2, this->_internal_validatorindex(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(2, this->_internal_validator_index(), target);
   }
 
   // .types.H160 address = 3;
@@ -3099,9 +3130,9 @@ size_t Withdrawal::ByteSizeLong() const {
     total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_index());
   }
 
-  // uint64 validatorIndex = 2;
-  if (this->_internal_validatorindex() != 0) {
-    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_validatorindex());
+  // uint64 validator_index = 2;
+  if (this->_internal_validator_index() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_validator_index());
   }
 
   // uint64 amount = 4;
@@ -3134,8 +3165,8 @@ void Withdrawal::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PRO
   if (from._internal_index() != 0) {
     _this->_internal_set_index(from._internal_index());
   }
-  if (from._internal_validatorindex() != 0) {
-    _this->_internal_set_validatorindex(from._internal_validatorindex());
+  if (from._internal_validator_index() != 0) {
+    _this->_internal_set_validator_index(from._internal_validator_index());
   }
   if (from._internal_amount() != 0) {
     _this->_internal_set_amount(from._internal_amount());
@@ -3175,12 +3206,12 @@ void Withdrawal::InternalSwap(Withdrawal* other) {
 
 class BlobsBundleV1::_Internal {
  public:
-  static const ::types::H256& blockhash(const BlobsBundleV1* msg);
+  static const ::types::H256& block_hash(const BlobsBundleV1* msg);
 };
 
 const ::types::H256&
-BlobsBundleV1::_Internal::blockhash(const BlobsBundleV1* msg) {
-  return *msg->_impl_.blockhash_;
+BlobsBundleV1::_Internal::block_hash(const BlobsBundleV1* msg) {
+  return *msg->_impl_.block_hash_;
 }
 BlobsBundleV1::BlobsBundleV1(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
@@ -3194,12 +3225,12 @@ BlobsBundleV1::BlobsBundleV1(const BlobsBundleV1& from)
   new (&_impl_) Impl_{
       decltype(_impl_.kzgs_){from._impl_.kzgs_}
     , decltype(_impl_.blobs_){from._impl_.blobs_}
-    , decltype(_impl_.blockhash_){nullptr}
+    , decltype(_impl_.block_hash_){nullptr}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  if (from._internal_has_blockhash()) {
-    _this->_impl_.blockhash_ = new ::types::H256(*from._impl_.blockhash_);
+  if (from._internal_has_block_hash()) {
+    _this->_impl_.block_hash_ = new ::types::H256(*from._impl_.block_hash_);
   }
   // @@protoc_insertion_point(copy_constructor:types.BlobsBundleV1)
 }
@@ -3211,7 +3242,7 @@ inline void BlobsBundleV1::SharedCtor(
   new (&_impl_) Impl_{
       decltype(_impl_.kzgs_){arena}
     , decltype(_impl_.blobs_){arena}
-    , decltype(_impl_.blockhash_){nullptr}
+    , decltype(_impl_.block_hash_){nullptr}
     , /*decltype(_impl_._cached_size_)*/{}
   };
 }
@@ -3229,7 +3260,7 @@ inline void BlobsBundleV1::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.kzgs_.~RepeatedPtrField();
   _impl_.blobs_.~RepeatedPtrField();
-  if (this != internal_default_instance()) delete _impl_.blockhash_;
+  if (this != internal_default_instance()) delete _impl_.block_hash_;
 }
 
 void BlobsBundleV1::SetCachedSize(int size) const {
@@ -3244,10 +3275,10 @@ void BlobsBundleV1::Clear() {
 
   _impl_.kzgs_.Clear();
   _impl_.blobs_.Clear();
-  if (GetArenaForAllocation() == nullptr && _impl_.blockhash_ != nullptr) {
-    delete _impl_.blockhash_;
+  if (GetArenaForAllocation() == nullptr && _impl_.block_hash_ != nullptr) {
+    delete _impl_.block_hash_;
   }
-  _impl_.blockhash_ = nullptr;
+  _impl_.block_hash_ = nullptr;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -3257,10 +3288,10 @@ const char* BlobsBundleV1::_InternalParse(const char* ptr, ::_pbi::ParseContext*
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // .types.H256 blockHash = 1;
+      // .types.H256 block_hash = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          ptr = ctx->ParseMessage(_internal_mutable_blockhash(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_block_hash(), ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -3322,11 +3353,11 @@ uint8_t* BlobsBundleV1::_InternalSerialize(
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // .types.H256 blockHash = 1;
-  if (this->_internal_has_blockhash()) {
+  // .types.H256 block_hash = 1;
+  if (this->_internal_has_block_hash()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(1, _Internal::blockhash(this),
-        _Internal::blockhash(this).GetCachedSize(), target, stream);
+      InternalWriteMessage(1, _Internal::block_hash(this),
+        _Internal::block_hash(this).GetCachedSize(), target, stream);
   }
 
   // repeated bytes kzgs = 2;
@@ -3373,11 +3404,11 @@ size_t BlobsBundleV1::ByteSizeLong() const {
       _impl_.blobs_.Get(i));
   }
 
-  // .types.H256 blockHash = 1;
-  if (this->_internal_has_blockhash()) {
+  // .types.H256 block_hash = 1;
+  if (this->_internal_has_block_hash()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.blockhash_);
+        *_impl_.block_hash_);
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -3400,9 +3431,9 @@ void BlobsBundleV1::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::
 
   _this->_impl_.kzgs_.MergeFrom(from._impl_.kzgs_);
   _this->_impl_.blobs_.MergeFrom(from._impl_.blobs_);
-  if (from._internal_has_blockhash()) {
-    _this->_internal_mutable_blockhash()->::types::H256::MergeFrom(
-        from._internal_blockhash());
+  if (from._internal_has_block_hash()) {
+    _this->_internal_mutable_block_hash()->::types::H256::MergeFrom(
+        from._internal_block_hash());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -3423,7 +3454,7 @@ void BlobsBundleV1::InternalSwap(BlobsBundleV1* other) {
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   _impl_.kzgs_.InternalSwap(&other->_impl_.kzgs_);
   _impl_.blobs_.InternalSwap(&other->_impl_.blobs_);
-  swap(_impl_.blockhash_, other->_impl_.blockhash_);
+  swap(_impl_.block_hash_, other->_impl_.block_hash_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata BlobsBundleV1::GetMetadata() const {
@@ -3668,7 +3699,7 @@ NodeInfoReply::NodeInfoReply(const NodeInfoReply& from)
     , decltype(_impl_.name_){}
     , decltype(_impl_.enode_){}
     , decltype(_impl_.enr_){}
-    , decltype(_impl_.listeneraddr_){}
+    , decltype(_impl_.listener_addr_){}
     , decltype(_impl_.protocols_){}
     , decltype(_impl_.ports_){nullptr}
     , /*decltype(_impl_._cached_size_)*/{}};
@@ -3706,12 +3737,12 @@ NodeInfoReply::NodeInfoReply(const NodeInfoReply& from)
     _this->_impl_.enr_.Set(from._internal_enr(), 
       _this->GetArenaForAllocation());
   }
-  _impl_.listeneraddr_.InitDefault();
+  _impl_.listener_addr_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.listeneraddr_.Set("", GetArenaForAllocation());
+    _impl_.listener_addr_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_listeneraddr().empty()) {
-    _this->_impl_.listeneraddr_.Set(from._internal_listeneraddr(), 
+  if (!from._internal_listener_addr().empty()) {
+    _this->_impl_.listener_addr_.Set(from._internal_listener_addr(), 
       _this->GetArenaForAllocation());
   }
   _impl_.protocols_.InitDefault();
@@ -3737,7 +3768,7 @@ inline void NodeInfoReply::SharedCtor(
     , decltype(_impl_.name_){}
     , decltype(_impl_.enode_){}
     , decltype(_impl_.enr_){}
-    , decltype(_impl_.listeneraddr_){}
+    , decltype(_impl_.listener_addr_){}
     , decltype(_impl_.protocols_){}
     , decltype(_impl_.ports_){nullptr}
     , /*decltype(_impl_._cached_size_)*/{}
@@ -3758,9 +3789,9 @@ inline void NodeInfoReply::SharedCtor(
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
     _impl_.enr_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  _impl_.listeneraddr_.InitDefault();
+  _impl_.listener_addr_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.listeneraddr_.Set("", GetArenaForAllocation());
+    _impl_.listener_addr_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   _impl_.protocols_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
@@ -3783,7 +3814,7 @@ inline void NodeInfoReply::SharedDtor() {
   _impl_.name_.Destroy();
   _impl_.enode_.Destroy();
   _impl_.enr_.Destroy();
-  _impl_.listeneraddr_.Destroy();
+  _impl_.listener_addr_.Destroy();
   _impl_.protocols_.Destroy();
   if (this != internal_default_instance()) delete _impl_.ports_;
 }
@@ -3802,7 +3833,7 @@ void NodeInfoReply::Clear() {
   _impl_.name_.ClearToEmpty();
   _impl_.enode_.ClearToEmpty();
   _impl_.enr_.ClearToEmpty();
-  _impl_.listeneraddr_.ClearToEmpty();
+  _impl_.listener_addr_.ClearToEmpty();
   _impl_.protocols_.ClearToEmpty();
   if (GetArenaForAllocation() == nullptr && _impl_.ports_ != nullptr) {
     delete _impl_.ports_;
@@ -3865,13 +3896,13 @@ const char* NodeInfoReply::_InternalParse(const char* ptr, ::_pbi::ParseContext*
         } else
           goto handle_unusual;
         continue;
-      // string listenerAddr = 6;
+      // string listener_addr = 6;
       case 6:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 50)) {
-          auto str = _internal_mutable_listeneraddr();
+          auto str = _internal_mutable_listener_addr();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "types.NodeInfoReply.listenerAddr"));
+          CHK_(::_pbi::VerifyUTF8(str, "types.NodeInfoReply.listener_addr"));
         } else
           goto handle_unusual;
         continue;
@@ -3960,14 +3991,14 @@ uint8_t* NodeInfoReply::_InternalSerialize(
         _Internal::ports(this).GetCachedSize(), target, stream);
   }
 
-  // string listenerAddr = 6;
-  if (!this->_internal_listeneraddr().empty()) {
+  // string listener_addr = 6;
+  if (!this->_internal_listener_addr().empty()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_listeneraddr().data(), static_cast<int>(this->_internal_listeneraddr().length()),
+      this->_internal_listener_addr().data(), static_cast<int>(this->_internal_listener_addr().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "types.NodeInfoReply.listenerAddr");
+      "types.NodeInfoReply.listener_addr");
     target = stream->WriteStringMaybeAliased(
-        6, this->_internal_listeneraddr(), target);
+        6, this->_internal_listener_addr(), target);
   }
 
   // bytes protocols = 7;
@@ -4020,11 +4051,11 @@ size_t NodeInfoReply::ByteSizeLong() const {
         this->_internal_enr());
   }
 
-  // string listenerAddr = 6;
-  if (!this->_internal_listeneraddr().empty()) {
+  // string listener_addr = 6;
+  if (!this->_internal_listener_addr().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_listeneraddr());
+        this->_internal_listener_addr());
   }
 
   // bytes protocols = 7;
@@ -4071,8 +4102,8 @@ void NodeInfoReply::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::
   if (!from._internal_enr().empty()) {
     _this->_internal_set_enr(from._internal_enr());
   }
-  if (!from._internal_listeneraddr().empty()) {
-    _this->_internal_set_listeneraddr(from._internal_listeneraddr());
+  if (!from._internal_listener_addr().empty()) {
+    _this->_internal_set_listener_addr(from._internal_listener_addr());
   }
   if (!from._internal_protocols().empty()) {
     _this->_internal_set_protocols(from._internal_protocols());
@@ -4117,8 +4148,8 @@ void NodeInfoReply::InternalSwap(NodeInfoReply* other) {
       &other->_impl_.enr_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.listeneraddr_, lhs_arena,
-      &other->_impl_.listeneraddr_, rhs_arena
+      &_impl_.listener_addr_, lhs_arena,
+      &other->_impl_.listener_addr_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
       &_impl_.protocols_, lhs_arena,
@@ -4154,11 +4185,11 @@ PeerInfo::PeerInfo(const PeerInfo& from)
     , decltype(_impl_.name_){}
     , decltype(_impl_.enode_){}
     , decltype(_impl_.enr_){}
-    , decltype(_impl_.connlocaladdr_){}
-    , decltype(_impl_.connremoteaddr_){}
-    , decltype(_impl_.connisinbound_){}
-    , decltype(_impl_.connistrusted_){}
-    , decltype(_impl_.connisstatic_){}
+    , decltype(_impl_.conn_local_addr_){}
+    , decltype(_impl_.conn_remote_addr_){}
+    , decltype(_impl_.conn_is_inbound_){}
+    , decltype(_impl_.conn_is_trusted_){}
+    , decltype(_impl_.conn_is_static_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -4194,25 +4225,25 @@ PeerInfo::PeerInfo(const PeerInfo& from)
     _this->_impl_.enr_.Set(from._internal_enr(), 
       _this->GetArenaForAllocation());
   }
-  _impl_.connlocaladdr_.InitDefault();
+  _impl_.conn_local_addr_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.connlocaladdr_.Set("", GetArenaForAllocation());
+    _impl_.conn_local_addr_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_connlocaladdr().empty()) {
-    _this->_impl_.connlocaladdr_.Set(from._internal_connlocaladdr(), 
+  if (!from._internal_conn_local_addr().empty()) {
+    _this->_impl_.conn_local_addr_.Set(from._internal_conn_local_addr(), 
       _this->GetArenaForAllocation());
   }
-  _impl_.connremoteaddr_.InitDefault();
+  _impl_.conn_remote_addr_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.connremoteaddr_.Set("", GetArenaForAllocation());
+    _impl_.conn_remote_addr_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_connremoteaddr().empty()) {
-    _this->_impl_.connremoteaddr_.Set(from._internal_connremoteaddr(), 
+  if (!from._internal_conn_remote_addr().empty()) {
+    _this->_impl_.conn_remote_addr_.Set(from._internal_conn_remote_addr(), 
       _this->GetArenaForAllocation());
   }
-  ::memcpy(&_impl_.connisinbound_, &from._impl_.connisinbound_,
-    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.connisstatic_) -
-    reinterpret_cast<char*>(&_impl_.connisinbound_)) + sizeof(_impl_.connisstatic_));
+  ::memcpy(&_impl_.conn_is_inbound_, &from._impl_.conn_is_inbound_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.conn_is_static_) -
+    reinterpret_cast<char*>(&_impl_.conn_is_inbound_)) + sizeof(_impl_.conn_is_static_));
   // @@protoc_insertion_point(copy_constructor:types.PeerInfo)
 }
 
@@ -4226,11 +4257,11 @@ inline void PeerInfo::SharedCtor(
     , decltype(_impl_.name_){}
     , decltype(_impl_.enode_){}
     , decltype(_impl_.enr_){}
-    , decltype(_impl_.connlocaladdr_){}
-    , decltype(_impl_.connremoteaddr_){}
-    , decltype(_impl_.connisinbound_){false}
-    , decltype(_impl_.connistrusted_){false}
-    , decltype(_impl_.connisstatic_){false}
+    , decltype(_impl_.conn_local_addr_){}
+    , decltype(_impl_.conn_remote_addr_){}
+    , decltype(_impl_.conn_is_inbound_){false}
+    , decltype(_impl_.conn_is_trusted_){false}
+    , decltype(_impl_.conn_is_static_){false}
     , /*decltype(_impl_._cached_size_)*/{}
   };
   _impl_.id_.InitDefault();
@@ -4249,13 +4280,13 @@ inline void PeerInfo::SharedCtor(
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
     _impl_.enr_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  _impl_.connlocaladdr_.InitDefault();
+  _impl_.conn_local_addr_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.connlocaladdr_.Set("", GetArenaForAllocation());
+    _impl_.conn_local_addr_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  _impl_.connremoteaddr_.InitDefault();
+  _impl_.conn_remote_addr_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.connremoteaddr_.Set("", GetArenaForAllocation());
+    _impl_.conn_remote_addr_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
@@ -4275,8 +4306,8 @@ inline void PeerInfo::SharedDtor() {
   _impl_.name_.Destroy();
   _impl_.enode_.Destroy();
   _impl_.enr_.Destroy();
-  _impl_.connlocaladdr_.Destroy();
-  _impl_.connremoteaddr_.Destroy();
+  _impl_.conn_local_addr_.Destroy();
+  _impl_.conn_remote_addr_.Destroy();
 }
 
 void PeerInfo::SetCachedSize(int size) const {
@@ -4294,11 +4325,11 @@ void PeerInfo::Clear() {
   _impl_.name_.ClearToEmpty();
   _impl_.enode_.ClearToEmpty();
   _impl_.enr_.ClearToEmpty();
-  _impl_.connlocaladdr_.ClearToEmpty();
-  _impl_.connremoteaddr_.ClearToEmpty();
-  ::memset(&_impl_.connisinbound_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&_impl_.connisstatic_) -
-      reinterpret_cast<char*>(&_impl_.connisinbound_)) + sizeof(_impl_.connisstatic_));
+  _impl_.conn_local_addr_.ClearToEmpty();
+  _impl_.conn_remote_addr_.ClearToEmpty();
+  ::memset(&_impl_.conn_is_inbound_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.conn_is_static_) -
+      reinterpret_cast<char*>(&_impl_.conn_is_inbound_)) + sizeof(_impl_.conn_is_static_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -4363,46 +4394,46 @@ const char* PeerInfo::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx)
         } else
           goto handle_unusual;
         continue;
-      // string connLocalAddr = 6;
+      // string conn_local_addr = 6;
       case 6:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 50)) {
-          auto str = _internal_mutable_connlocaladdr();
+          auto str = _internal_mutable_conn_local_addr();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "types.PeerInfo.connLocalAddr"));
+          CHK_(::_pbi::VerifyUTF8(str, "types.PeerInfo.conn_local_addr"));
         } else
           goto handle_unusual;
         continue;
-      // string connRemoteAddr = 7;
+      // string conn_remote_addr = 7;
       case 7:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 58)) {
-          auto str = _internal_mutable_connremoteaddr();
+          auto str = _internal_mutable_conn_remote_addr();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "types.PeerInfo.connRemoteAddr"));
+          CHK_(::_pbi::VerifyUTF8(str, "types.PeerInfo.conn_remote_addr"));
         } else
           goto handle_unusual;
         continue;
-      // bool connIsInbound = 8;
+      // bool conn_is_inbound = 8;
       case 8:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 64)) {
-          _impl_.connisinbound_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          _impl_.conn_is_inbound_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // bool connIsTrusted = 9;
+      // bool conn_is_trusted = 9;
       case 9:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 72)) {
-          _impl_.connistrusted_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          _impl_.conn_is_trusted_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // bool connIsStatic = 10;
+      // bool conn_is_static = 10;
       case 10:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 80)) {
-          _impl_.connisstatic_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          _impl_.conn_is_static_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -4486,42 +4517,42 @@ uint8_t* PeerInfo::_InternalSerialize(
     target = stream->WriteString(5, s, target);
   }
 
-  // string connLocalAddr = 6;
-  if (!this->_internal_connlocaladdr().empty()) {
+  // string conn_local_addr = 6;
+  if (!this->_internal_conn_local_addr().empty()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_connlocaladdr().data(), static_cast<int>(this->_internal_connlocaladdr().length()),
+      this->_internal_conn_local_addr().data(), static_cast<int>(this->_internal_conn_local_addr().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "types.PeerInfo.connLocalAddr");
+      "types.PeerInfo.conn_local_addr");
     target = stream->WriteStringMaybeAliased(
-        6, this->_internal_connlocaladdr(), target);
+        6, this->_internal_conn_local_addr(), target);
   }
 
-  // string connRemoteAddr = 7;
-  if (!this->_internal_connremoteaddr().empty()) {
+  // string conn_remote_addr = 7;
+  if (!this->_internal_conn_remote_addr().empty()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_connremoteaddr().data(), static_cast<int>(this->_internal_connremoteaddr().length()),
+      this->_internal_conn_remote_addr().data(), static_cast<int>(this->_internal_conn_remote_addr().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "types.PeerInfo.connRemoteAddr");
+      "types.PeerInfo.conn_remote_addr");
     target = stream->WriteStringMaybeAliased(
-        7, this->_internal_connremoteaddr(), target);
+        7, this->_internal_conn_remote_addr(), target);
   }
 
-  // bool connIsInbound = 8;
-  if (this->_internal_connisinbound() != 0) {
+  // bool conn_is_inbound = 8;
+  if (this->_internal_conn_is_inbound() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteBoolToArray(8, this->_internal_connisinbound(), target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(8, this->_internal_conn_is_inbound(), target);
   }
 
-  // bool connIsTrusted = 9;
-  if (this->_internal_connistrusted() != 0) {
+  // bool conn_is_trusted = 9;
+  if (this->_internal_conn_is_trusted() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteBoolToArray(9, this->_internal_connistrusted(), target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(9, this->_internal_conn_is_trusted(), target);
   }
 
-  // bool connIsStatic = 10;
-  if (this->_internal_connisstatic() != 0) {
+  // bool conn_is_static = 10;
+  if (this->_internal_conn_is_static() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteBoolToArray(10, this->_internal_connisstatic(), target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(10, this->_internal_conn_is_static(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -4576,32 +4607,32 @@ size_t PeerInfo::ByteSizeLong() const {
         this->_internal_enr());
   }
 
-  // string connLocalAddr = 6;
-  if (!this->_internal_connlocaladdr().empty()) {
+  // string conn_local_addr = 6;
+  if (!this->_internal_conn_local_addr().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_connlocaladdr());
+        this->_internal_conn_local_addr());
   }
 
-  // string connRemoteAddr = 7;
-  if (!this->_internal_connremoteaddr().empty()) {
+  // string conn_remote_addr = 7;
+  if (!this->_internal_conn_remote_addr().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_connremoteaddr());
+        this->_internal_conn_remote_addr());
   }
 
-  // bool connIsInbound = 8;
-  if (this->_internal_connisinbound() != 0) {
+  // bool conn_is_inbound = 8;
+  if (this->_internal_conn_is_inbound() != 0) {
     total_size += 1 + 1;
   }
 
-  // bool connIsTrusted = 9;
-  if (this->_internal_connistrusted() != 0) {
+  // bool conn_is_trusted = 9;
+  if (this->_internal_conn_is_trusted() != 0) {
     total_size += 1 + 1;
   }
 
-  // bool connIsStatic = 10;
-  if (this->_internal_connisstatic() != 0) {
+  // bool conn_is_static = 10;
+  if (this->_internal_conn_is_static() != 0) {
     total_size += 1 + 1;
   }
 
@@ -4636,20 +4667,20 @@ void PeerInfo::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTO
   if (!from._internal_enr().empty()) {
     _this->_internal_set_enr(from._internal_enr());
   }
-  if (!from._internal_connlocaladdr().empty()) {
-    _this->_internal_set_connlocaladdr(from._internal_connlocaladdr());
+  if (!from._internal_conn_local_addr().empty()) {
+    _this->_internal_set_conn_local_addr(from._internal_conn_local_addr());
   }
-  if (!from._internal_connremoteaddr().empty()) {
-    _this->_internal_set_connremoteaddr(from._internal_connremoteaddr());
+  if (!from._internal_conn_remote_addr().empty()) {
+    _this->_internal_set_conn_remote_addr(from._internal_conn_remote_addr());
   }
-  if (from._internal_connisinbound() != 0) {
-    _this->_internal_set_connisinbound(from._internal_connisinbound());
+  if (from._internal_conn_is_inbound() != 0) {
+    _this->_internal_set_conn_is_inbound(from._internal_conn_is_inbound());
   }
-  if (from._internal_connistrusted() != 0) {
-    _this->_internal_set_connistrusted(from._internal_connistrusted());
+  if (from._internal_conn_is_trusted() != 0) {
+    _this->_internal_set_conn_is_trusted(from._internal_conn_is_trusted());
   }
-  if (from._internal_connisstatic() != 0) {
-    _this->_internal_set_connisstatic(from._internal_connisstatic());
+  if (from._internal_conn_is_static() != 0) {
+    _this->_internal_set_conn_is_static(from._internal_conn_is_static());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -4688,19 +4719,19 @@ void PeerInfo::InternalSwap(PeerInfo* other) {
       &other->_impl_.enr_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.connlocaladdr_, lhs_arena,
-      &other->_impl_.connlocaladdr_, rhs_arena
+      &_impl_.conn_local_addr_, lhs_arena,
+      &other->_impl_.conn_local_addr_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.connremoteaddr_, lhs_arena,
-      &other->_impl_.connremoteaddr_, rhs_arena
+      &_impl_.conn_remote_addr_, lhs_arena,
+      &other->_impl_.conn_remote_addr_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(PeerInfo, _impl_.connisstatic_)
-      + sizeof(PeerInfo::_impl_.connisstatic_)
-      - PROTOBUF_FIELD_OFFSET(PeerInfo, _impl_.connisinbound_)>(
-          reinterpret_cast<char*>(&_impl_.connisinbound_),
-          reinterpret_cast<char*>(&other->_impl_.connisinbound_));
+      PROTOBUF_FIELD_OFFSET(PeerInfo, _impl_.conn_is_static_)
+      + sizeof(PeerInfo::_impl_.conn_is_static_)
+      - PROTOBUF_FIELD_OFFSET(PeerInfo, _impl_.conn_is_inbound_)>(
+          reinterpret_cast<char*>(&_impl_.conn_is_inbound_),
+          reinterpret_cast<char*>(&other->_impl_.conn_is_inbound_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata PeerInfo::GetMetadata() const {

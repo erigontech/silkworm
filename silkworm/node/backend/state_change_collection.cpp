@@ -39,7 +39,7 @@ bool StateChangeCollection::unsubscribe(StateChangeToken token) {
 
 void StateChangeCollection::reset(uint64_t tx_id) {
     tx_id_ = tx_id;
-    state_changes_.clear_changebatch();
+    state_changes_.clear_change_batch();
     latest_change_ = nullptr;
     account_change_index_.clear();
     storage_change_index_.clear();
@@ -52,9 +52,9 @@ void StateChangeCollection::start_new_batch(BlockNum block_height, const evmc::b
 
     SILKWORM_ASSERT(latest_change_ == nullptr);
 
-    latest_change_ = state_changes_.add_changebatch();
-    latest_change_->set_blockheight(block_height);
-    latest_change_->set_allocated_blockhash(rpc::H256_from_bytes32(block_hash).release());
+    latest_change_ = state_changes_.add_change_batch();
+    latest_change_->set_block_height(block_height);
+    latest_change_->set_allocated_block_hash(rpc::H256_from_bytes32(block_hash).release());
     latest_change_->set_direction(unwind ? remote::Direction::UNWIND : remote::Direction::FORWARD);
     for (auto& tx_rlp : tx_rlps) {
         latest_change_->add_txs(to_hex(tx_rlp));
@@ -163,12 +163,12 @@ void StateChangeCollection::change_storage(const evmc::address& address, uint64_
     const auto& loc_it = index_by_location.find(location);
     auto loc_index{loc_it != index_by_location.end() ? std::make_optional(loc_it->second) : std::nullopt};
     if (!loc_index) {
-        loc_index = account_change->storagechanges_size();
-        account_change->add_storagechanges();
+        loc_index = account_change->storage_changes_size();
+        account_change->add_storage_changes();
         index_by_location[location] = loc_index.value();
     }
 
-    remote::StorageChange* storage_change = account_change->mutable_storagechanges(static_cast<int>(loc_index.value()));
+    remote::StorageChange* storage_change = account_change->mutable_storage_changes(static_cast<int>(loc_index.value()));
     storage_change->set_allocated_location(rpc::H256_from_bytes32(location).release());  // takes ownership
     storage_change->set_data(to_hex(data));
 }
@@ -191,16 +191,16 @@ void StateChangeCollection::delete_account(const evmc::address& address) {
     account_change->set_action(remote::Action::REMOVE);
     account_change->clear_code();
     account_change->clear_data();
-    account_change->clear_storagechanges();
+    account_change->clear_storage_changes();
 }
 
 void StateChangeCollection::notify_batch(uint64_t pending_base_fee, uint64_t gas_limit) {
     SILK_TRACE << "StateChangeCollection::notify_batch " << this << " pending_base_fee: " << pending_base_fee
                << " gas_limit:" << gas_limit << " START";
 
-    state_changes_.set_pendingblockbasefee(pending_base_fee);
-    state_changes_.set_blockgaslimit(gas_limit);
-    state_changes_.set_stateversionid(tx_id_);
+    state_changes_.set_pending_block_base_fee(pending_base_fee);
+    state_changes_.set_block_gas_limit(gas_limit);
+    state_changes_.set_state_version_id(tx_id_);
 
     std::unique_lock consumers_lock{consumers_mutex_};
     for (const auto& [_, batch_callback] : consumers_) {

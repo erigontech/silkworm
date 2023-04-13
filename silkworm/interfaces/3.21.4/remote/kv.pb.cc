@@ -23,7 +23,7 @@ namespace _pbi = _pb::internal;
 namespace remote {
 PROTOBUF_CONSTEXPR Cursor::Cursor(
     ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.bucketname_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+    /*decltype(_impl_.bucket_name_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.k_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.v_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.op_)*/0
@@ -42,9 +42,9 @@ PROTOBUF_CONSTEXPR Pair::Pair(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.k_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.v_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.viewid_)*/uint64_t{0u}
-  , /*decltype(_impl_.txid_)*/uint64_t{0u}
-  , /*decltype(_impl_.cursorid_)*/0u
+  , /*decltype(_impl_.view_id_)*/uint64_t{0u}
+  , /*decltype(_impl_.tx_id_)*/uint64_t{0u}
+  , /*decltype(_impl_.cursor_id_)*/0u
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct PairDefaultTypeInternal {
   PROTOBUF_CONSTEXPR PairDefaultTypeInternal()
@@ -71,7 +71,7 @@ struct StorageChangeDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 StorageChangeDefaultTypeInternal _StorageChange_default_instance_;
 PROTOBUF_CONSTEXPR AccountChange::AccountChange(
     ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.storagechanges_)*/{}
+    /*decltype(_impl_.storage_changes_)*/{}
   , /*decltype(_impl_.data_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.code_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.address_)*/nullptr
@@ -89,10 +89,10 @@ struct AccountChangeDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 AccountChangeDefaultTypeInternal _AccountChange_default_instance_;
 PROTOBUF_CONSTEXPR StateChangeBatch::StateChangeBatch(
     ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.changebatch_)*/{}
-  , /*decltype(_impl_.stateversionid_)*/uint64_t{0u}
-  , /*decltype(_impl_.pendingblockbasefee_)*/uint64_t{0u}
-  , /*decltype(_impl_.blockgaslimit_)*/uint64_t{0u}
+    /*decltype(_impl_.change_batch_)*/{}
+  , /*decltype(_impl_.state_version_id_)*/uint64_t{0u}
+  , /*decltype(_impl_.pending_block_base_fee_)*/uint64_t{0u}
+  , /*decltype(_impl_.block_gas_limit_)*/uint64_t{0u}
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct StateChangeBatchDefaultTypeInternal {
   PROTOBUF_CONSTEXPR StateChangeBatchDefaultTypeInternal()
@@ -107,8 +107,8 @@ PROTOBUF_CONSTEXPR StateChange::StateChange(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.changes_)*/{}
   , /*decltype(_impl_.txs_)*/{}
-  , /*decltype(_impl_.blockhash_)*/nullptr
-  , /*decltype(_impl_.blockheight_)*/uint64_t{0u}
+  , /*decltype(_impl_.block_hash_)*/nullptr
+  , /*decltype(_impl_.block_height_)*/uint64_t{0u}
   , /*decltype(_impl_.direction_)*/0
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct StateChangeDefaultTypeInternal {
@@ -122,8 +122,8 @@ struct StateChangeDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 StateChangeDefaultTypeInternal _StateChange_default_instance_;
 PROTOBUF_CONSTEXPR StateChangeRequest::StateChangeRequest(
     ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.withstorage_)*/false
-  , /*decltype(_impl_.withtransactions_)*/false
+    /*decltype(_impl_.with_storage_)*/false
+  , /*decltype(_impl_.with_transactions_)*/false
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct StateChangeRequestDefaultTypeInternal {
   PROTOBUF_CONSTEXPR StateChangeRequestDefaultTypeInternal()
@@ -375,7 +375,7 @@ const uint32_t TableStruct_remote_2fkv_2eproto::offsets[] PROTOBUF_SECTION_VARIA
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::remote::Cursor, _impl_.op_),
-  PROTOBUF_FIELD_OFFSET(::remote::Cursor, _impl_.bucketname_),
+  PROTOBUF_FIELD_OFFSET(::remote::Cursor, _impl_.bucket_name_),
   PROTOBUF_FIELD_OFFSET(::remote::Cursor, _impl_.cursor_),
   PROTOBUF_FIELD_OFFSET(::remote::Cursor, _impl_.k_),
   PROTOBUF_FIELD_OFFSET(::remote::Cursor, _impl_.v_),
@@ -387,9 +387,9 @@ const uint32_t TableStruct_remote_2fkv_2eproto::offsets[] PROTOBUF_SECTION_VARIA
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::remote::Pair, _impl_.k_),
   PROTOBUF_FIELD_OFFSET(::remote::Pair, _impl_.v_),
-  PROTOBUF_FIELD_OFFSET(::remote::Pair, _impl_.cursorid_),
-  PROTOBUF_FIELD_OFFSET(::remote::Pair, _impl_.viewid_),
-  PROTOBUF_FIELD_OFFSET(::remote::Pair, _impl_.txid_),
+  PROTOBUF_FIELD_OFFSET(::remote::Pair, _impl_.cursor_id_),
+  PROTOBUF_FIELD_OFFSET(::remote::Pair, _impl_.view_id_),
+  PROTOBUF_FIELD_OFFSET(::remote::Pair, _impl_.tx_id_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::remote::StorageChange, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -409,17 +409,17 @@ const uint32_t TableStruct_remote_2fkv_2eproto::offsets[] PROTOBUF_SECTION_VARIA
   PROTOBUF_FIELD_OFFSET(::remote::AccountChange, _impl_.action_),
   PROTOBUF_FIELD_OFFSET(::remote::AccountChange, _impl_.data_),
   PROTOBUF_FIELD_OFFSET(::remote::AccountChange, _impl_.code_),
-  PROTOBUF_FIELD_OFFSET(::remote::AccountChange, _impl_.storagechanges_),
+  PROTOBUF_FIELD_OFFSET(::remote::AccountChange, _impl_.storage_changes_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::remote::StateChangeBatch, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::remote::StateChangeBatch, _impl_.stateversionid_),
-  PROTOBUF_FIELD_OFFSET(::remote::StateChangeBatch, _impl_.changebatch_),
-  PROTOBUF_FIELD_OFFSET(::remote::StateChangeBatch, _impl_.pendingblockbasefee_),
-  PROTOBUF_FIELD_OFFSET(::remote::StateChangeBatch, _impl_.blockgaslimit_),
+  PROTOBUF_FIELD_OFFSET(::remote::StateChangeBatch, _impl_.state_version_id_),
+  PROTOBUF_FIELD_OFFSET(::remote::StateChangeBatch, _impl_.change_batch_),
+  PROTOBUF_FIELD_OFFSET(::remote::StateChangeBatch, _impl_.pending_block_base_fee_),
+  PROTOBUF_FIELD_OFFSET(::remote::StateChangeBatch, _impl_.block_gas_limit_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::remote::StateChange, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -427,8 +427,8 @@ const uint32_t TableStruct_remote_2fkv_2eproto::offsets[] PROTOBUF_SECTION_VARIA
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::remote::StateChange, _impl_.direction_),
-  PROTOBUF_FIELD_OFFSET(::remote::StateChange, _impl_.blockheight_),
-  PROTOBUF_FIELD_OFFSET(::remote::StateChange, _impl_.blockhash_),
+  PROTOBUF_FIELD_OFFSET(::remote::StateChange, _impl_.block_height_),
+  PROTOBUF_FIELD_OFFSET(::remote::StateChange, _impl_.block_hash_),
   PROTOBUF_FIELD_OFFSET(::remote::StateChange, _impl_.changes_),
   PROTOBUF_FIELD_OFFSET(::remote::StateChange, _impl_.txs_),
   ~0u,  // no _has_bits_
@@ -437,8 +437,8 @@ const uint32_t TableStruct_remote_2fkv_2eproto::offsets[] PROTOBUF_SECTION_VARIA
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::remote::StateChangeRequest, _impl_.withstorage_),
-  PROTOBUF_FIELD_OFFSET(::remote::StateChangeRequest, _impl_.withtransactions_),
+  PROTOBUF_FIELD_OFFSET(::remote::StateChangeRequest, _impl_.with_storage_),
+  PROTOBUF_FIELD_OFFSET(::remote::StateChangeRequest, _impl_.with_transactions_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::remote::SnapshotsRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -634,82 +634,83 @@ static const ::_pb::Message* const file_default_instances[] = {
 
 const char descriptor_table_protodef_remote_2fkv_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
   "\n\017remote/kv.proto\022\006remote\032\033google/protob"
-  "uf/empty.proto\032\021types/types.proto\"Z\n\006Cur"
-  "sor\022\026\n\002op\030\001 \001(\0162\n.remote.Op\022\022\n\nbucketNam"
-  "e\030\002 \001(\t\022\016\n\006cursor\030\003 \001(\r\022\t\n\001k\030\004 \001(\014\022\t\n\001v\030"
-  "\005 \001(\014\"L\n\004Pair\022\t\n\001k\030\001 \001(\014\022\t\n\001v\030\002 \001(\014\022\020\n\010c"
-  "ursorID\030\003 \001(\r\022\016\n\006viewID\030\004 \001(\004\022\014\n\004txID\030\005 "
-  "\001(\004\"<\n\rStorageChange\022\035\n\010location\030\001 \001(\0132\013"
-  ".types.H256\022\014\n\004data\030\002 \001(\014\"\255\001\n\rAccountCha"
-  "nge\022\034\n\007address\030\001 \001(\0132\013.types.H160\022\023\n\013inc"
-  "arnation\030\002 \001(\004\022\036\n\006action\030\003 \001(\0162\016.remote."
-  "Action\022\014\n\004data\030\004 \001(\014\022\014\n\004code\030\005 \001(\014\022-\n\016st"
-  "orageChanges\030\006 \003(\0132\025.remote.StorageChang"
-  "e\"\210\001\n\020StateChangeBatch\022\026\n\016stateVersionID"
-  "\030\001 \001(\004\022(\n\013changeBatch\030\002 \003(\0132\023.remote.Sta"
-  "teChange\022\033\n\023pendingBlockBaseFee\030\003 \001(\004\022\025\n"
-  "\rblockGasLimit\030\004 \001(\004\"\235\001\n\013StateChange\022$\n\t"
-  "direction\030\001 \001(\0162\021.remote.Direction\022\023\n\013bl"
-  "ockHeight\030\002 \001(\004\022\036\n\tblockHash\030\003 \001(\0132\013.typ"
-  "es.H256\022&\n\007changes\030\004 \003(\0132\025.remote.Accoun"
-  "tChange\022\013\n\003txs\030\005 \003(\014\"C\n\022StateChangeReque"
-  "st\022\023\n\013withStorage\030\001 \001(\010\022\030\n\020withTransacti"
-  "ons\030\002 \001(\010\"\022\n\020SnapshotsRequest\"=\n\016Snapsho"
-  "tsReply\022\024\n\014blocks_files\030\001 \003(\t\022\025\n\rhistory"
-  "_files\030\002 \003(\t\"\234\001\n\010RangeReq\022\r\n\005tx_id\030\001 \001(\004"
-  "\022\r\n\005table\030\002 \001(\t\022\023\n\013from_prefix\030\003 \001(\014\022\021\n\t"
-  "to_prefix\030\004 \001(\014\022\024\n\014order_ascend\030\005 \001(\010\022\r\n"
-  "\005limit\030\006 \001(\022\022\021\n\tpage_size\030\007 \001(\005\022\022\n\npage_"
-  "token\030\010 \001(\t\"_\n\014DomainGetReq\022\r\n\005tx_id\030\001 \001"
-  "(\004\022\r\n\005table\030\002 \001(\t\022\t\n\001k\030\003 \001(\014\022\n\n\002ts\030\004 \001(\004"
-  "\022\n\n\002k2\030\005 \001(\014\022\016\n\006latest\030\006 \001(\010\"\'\n\016DomainGe"
-  "tReply\022\t\n\001v\030\001 \001(\014\022\n\n\002ok\030\002 \001(\010\"D\n\rHistory"
-  "GetReq\022\r\n\005tx_id\030\001 \001(\004\022\r\n\005table\030\002 \001(\t\022\t\n\001"
-  "k\030\003 \001(\014\022\n\n\002ts\030\004 \001(\004\"(\n\017HistoryGetReply\022\t"
-  "\n\001v\030\001 \001(\014\022\n\n\002ok\030\002 \001(\010\"\244\001\n\rIndexRangeReq\022"
-  "\r\n\005tx_id\030\001 \001(\004\022\r\n\005table\030\002 \001(\t\022\t\n\001k\030\003 \001(\014"
-  "\022\017\n\007from_ts\030\004 \001(\022\022\r\n\005to_ts\030\005 \001(\022\022\024\n\014orde"
-  "r_ascend\030\006 \001(\010\022\r\n\005limit\030\007 \001(\022\022\021\n\tpage_si"
-  "ze\030\010 \001(\005\022\022\n\npage_token\030\t \001(\t\">\n\017IndexRan"
-  "geReply\022\022\n\ntimestamps\030\001 \003(\004\022\027\n\017next_page"
-  "_token\030\002 \001(\t\"\233\001\n\017HistoryRangeReq\022\r\n\005tx_i"
-  "d\030\001 \001(\004\022\r\n\005table\030\002 \001(\t\022\017\n\007from_ts\030\004 \001(\022\022"
-  "\r\n\005to_ts\030\005 \001(\022\022\024\n\014order_ascend\030\006 \001(\010\022\r\n\005"
-  "limit\030\007 \001(\022\022\021\n\tpage_size\030\010 \001(\005\022\022\n\npage_t"
-  "oken\030\t \001(\t\"\270\001\n\016DomainRangeReq\022\r\n\005tx_id\030\001"
-  " \001(\004\022\r\n\005table\030\002 \001(\t\022\020\n\010from_key\030\003 \001(\014\022\016\n"
-  "\006to_key\030\004 \001(\014\022\n\n\002ts\030\005 \001(\004\022\016\n\006latest\030\006 \001("
-  "\010\022\024\n\014order_ascend\030\007 \001(\010\022\r\n\005limit\030\010 \001(\022\022\021"
-  "\n\tpage_size\030\t \001(\005\022\022\n\npage_token\030\n \001(\t\">\n"
-  "\005Pairs\022\014\n\004keys\030\001 \003(\014\022\016\n\006values\030\002 \003(\014\022\027\n\017"
-  "next_page_token\030\003 \001(\t\"2\n\017ParisPagination"
-  "\022\020\n\010next_key\030\001 \001(\014\022\r\n\005limit\030\002 \001(\022\"9\n\017Ind"
-  "exPagination\022\027\n\017next_time_stamp\030\001 \001(\022\022\r\n"
-  "\005limit\030\002 \001(\022*\206\002\n\002Op\022\t\n\005FIRST\020\000\022\r\n\tFIRST_"
-  "DUP\020\001\022\010\n\004SEEK\020\002\022\r\n\tSEEK_BOTH\020\003\022\013\n\007CURREN"
-  "T\020\004\022\010\n\004LAST\020\006\022\014\n\010LAST_DUP\020\007\022\010\n\004NEXT\020\010\022\014\n"
-  "\010NEXT_DUP\020\t\022\017\n\013NEXT_NO_DUP\020\013\022\010\n\004PREV\020\014\022\014"
-  "\n\010PREV_DUP\020\r\022\017\n\013PREV_NO_DUP\020\016\022\016\n\nSEEK_EX"
-  "ACT\020\017\022\023\n\017SEEK_BOTH_EXACT\020\020\022\010\n\004OPEN\020\036\022\t\n\005"
-  "CLOSE\020\037\022\021\n\rOPEN_DUP_SORT\020 \022\t\n\005COUNT\020!*H\n"
-  "\006Action\022\013\n\007STORAGE\020\000\022\n\n\006UPSERT\020\001\022\010\n\004CODE"
-  "\020\002\022\017\n\013UPSERT_CODE\020\003\022\n\n\006REMOVE\020\004*$\n\tDirec"
-  "tion\022\013\n\007FORWARD\020\000\022\n\n\006UNWIND\020\0012\272\004\n\002KV\0226\n\007"
-  "Version\022\026.google.protobuf.Empty\032\023.types."
-  "VersionReply\022&\n\002Tx\022\016.remote.Cursor\032\014.rem"
-  "ote.Pair(\0010\001\022F\n\014StateChanges\022\032.remote.St"
-  "ateChangeRequest\032\030.remote.StateChangeBat"
-  "ch0\001\022=\n\tSnapshots\022\030.remote.SnapshotsRequ"
-  "est\032\026.remote.SnapshotsReply\022(\n\005Range\022\020.r"
-  "emote.RangeReq\032\r.remote.Pairs\0229\n\tDomainG"
-  "et\022\024.remote.DomainGetReq\032\026.remote.Domain"
-  "GetReply\022<\n\nHistoryGet\022\025.remote.HistoryG"
-  "etReq\032\027.remote.HistoryGetReply\022<\n\nIndexR"
-  "ange\022\025.remote.IndexRangeReq\032\027.remote.Ind"
-  "exRangeReply\0226\n\014HistoryRange\022\027.remote.Hi"
-  "storyRangeReq\032\r.remote.Pairs\0224\n\013DomainRa"
-  "nge\022\026.remote.DomainRangeReq\032\r.remote.Pai"
-  "rsB\021Z\017./remote;remoteb\006proto3"
+  "uf/empty.proto\032\021types/types.proto\"[\n\006Cur"
+  "sor\022\026\n\002op\030\001 \001(\0162\n.remote.Op\022\023\n\013bucket_na"
+  "me\030\002 \001(\t\022\016\n\006cursor\030\003 \001(\r\022\t\n\001k\030\004 \001(\014\022\t\n\001v"
+  "\030\005 \001(\014\"O\n\004Pair\022\t\n\001k\030\001 \001(\014\022\t\n\001v\030\002 \001(\014\022\021\n\t"
+  "cursor_id\030\003 \001(\r\022\017\n\007view_id\030\004 \001(\004\022\r\n\005tx_i"
+  "d\030\005 \001(\004\"<\n\rStorageChange\022\035\n\010location\030\001 \001"
+  "(\0132\013.types.H256\022\014\n\004data\030\002 \001(\014\"\256\001\n\rAccoun"
+  "tChange\022\034\n\007address\030\001 \001(\0132\013.types.H160\022\023\n"
+  "\013incarnation\030\002 \001(\004\022\036\n\006action\030\003 \001(\0162\016.rem"
+  "ote.Action\022\014\n\004data\030\004 \001(\014\022\014\n\004code\030\005 \001(\014\022."
+  "\n\017storage_changes\030\006 \003(\0132\025.remote.Storage"
+  "Change\"\220\001\n\020StateChangeBatch\022\030\n\020state_ver"
+  "sion_id\030\001 \001(\004\022)\n\014change_batch\030\002 \003(\0132\023.re"
+  "mote.StateChange\022\036\n\026pending_block_base_f"
+  "ee\030\003 \001(\004\022\027\n\017block_gas_limit\030\004 \001(\004\"\237\001\n\013St"
+  "ateChange\022$\n\tdirection\030\001 \001(\0162\021.remote.Di"
+  "rection\022\024\n\014block_height\030\002 \001(\004\022\037\n\nblock_h"
+  "ash\030\003 \001(\0132\013.types.H256\022&\n\007changes\030\004 \003(\0132"
+  "\025.remote.AccountChange\022\013\n\003txs\030\005 \003(\014\"E\n\022S"
+  "tateChangeRequest\022\024\n\014with_storage\030\001 \001(\010\022"
+  "\031\n\021with_transactions\030\002 \001(\010\"\022\n\020SnapshotsR"
+  "equest\"=\n\016SnapshotsReply\022\024\n\014blocks_files"
+  "\030\001 \003(\t\022\025\n\rhistory_files\030\002 \003(\t\"\234\001\n\010RangeR"
+  "eq\022\r\n\005tx_id\030\001 \001(\004\022\r\n\005table\030\002 \001(\t\022\023\n\013from"
+  "_prefix\030\003 \001(\014\022\021\n\tto_prefix\030\004 \001(\014\022\024\n\014orde"
+  "r_ascend\030\005 \001(\010\022\r\n\005limit\030\006 \001(\022\022\021\n\tpage_si"
+  "ze\030\007 \001(\005\022\022\n\npage_token\030\010 \001(\t\"_\n\014DomainGe"
+  "tReq\022\r\n\005tx_id\030\001 \001(\004\022\r\n\005table\030\002 \001(\t\022\t\n\001k\030"
+  "\003 \001(\014\022\n\n\002ts\030\004 \001(\004\022\n\n\002k2\030\005 \001(\014\022\016\n\006latest\030"
+  "\006 \001(\010\"\'\n\016DomainGetReply\022\t\n\001v\030\001 \001(\014\022\n\n\002ok"
+  "\030\002 \001(\010\"D\n\rHistoryGetReq\022\r\n\005tx_id\030\001 \001(\004\022\r"
+  "\n\005table\030\002 \001(\t\022\t\n\001k\030\003 \001(\014\022\n\n\002ts\030\004 \001(\004\"(\n\017"
+  "HistoryGetReply\022\t\n\001v\030\001 \001(\014\022\n\n\002ok\030\002 \001(\010\"\244"
+  "\001\n\rIndexRangeReq\022\r\n\005tx_id\030\001 \001(\004\022\r\n\005table"
+  "\030\002 \001(\t\022\t\n\001k\030\003 \001(\014\022\017\n\007from_ts\030\004 \001(\022\022\r\n\005to"
+  "_ts\030\005 \001(\022\022\024\n\014order_ascend\030\006 \001(\010\022\r\n\005limit"
+  "\030\007 \001(\022\022\021\n\tpage_size\030\010 \001(\005\022\022\n\npage_token\030"
+  "\t \001(\t\">\n\017IndexRangeReply\022\022\n\ntimestamps\030\001"
+  " \003(\004\022\027\n\017next_page_token\030\002 \001(\t\"\233\001\n\017Histor"
+  "yRangeReq\022\r\n\005tx_id\030\001 \001(\004\022\r\n\005table\030\002 \001(\t\022"
+  "\017\n\007from_ts\030\004 \001(\022\022\r\n\005to_ts\030\005 \001(\022\022\024\n\014order"
+  "_ascend\030\006 \001(\010\022\r\n\005limit\030\007 \001(\022\022\021\n\tpage_siz"
+  "e\030\010 \001(\005\022\022\n\npage_token\030\t \001(\t\"\270\001\n\016DomainRa"
+  "ngeReq\022\r\n\005tx_id\030\001 \001(\004\022\r\n\005table\030\002 \001(\t\022\020\n\010"
+  "from_key\030\003 \001(\014\022\016\n\006to_key\030\004 \001(\014\022\n\n\002ts\030\005 \001"
+  "(\004\022\016\n\006latest\030\006 \001(\010\022\024\n\014order_ascend\030\007 \001(\010"
+  "\022\r\n\005limit\030\010 \001(\022\022\021\n\tpage_size\030\t \001(\005\022\022\n\npa"
+  "ge_token\030\n \001(\t\">\n\005Pairs\022\014\n\004keys\030\001 \003(\014\022\016\n"
+  "\006values\030\002 \003(\014\022\027\n\017next_page_token\030\003 \001(\t\"2"
+  "\n\017ParisPagination\022\020\n\010next_key\030\001 \001(\014\022\r\n\005l"
+  "imit\030\002 \001(\022\"9\n\017IndexPagination\022\027\n\017next_ti"
+  "me_stamp\030\001 \001(\022\022\r\n\005limit\030\002 \001(\022*\206\002\n\002Op\022\t\n\005"
+  "FIRST\020\000\022\r\n\tFIRST_DUP\020\001\022\010\n\004SEEK\020\002\022\r\n\tSEEK"
+  "_BOTH\020\003\022\013\n\007CURRENT\020\004\022\010\n\004LAST\020\006\022\014\n\010LAST_D"
+  "UP\020\007\022\010\n\004NEXT\020\010\022\014\n\010NEXT_DUP\020\t\022\017\n\013NEXT_NO_"
+  "DUP\020\013\022\010\n\004PREV\020\014\022\014\n\010PREV_DUP\020\r\022\017\n\013PREV_NO"
+  "_DUP\020\016\022\016\n\nSEEK_EXACT\020\017\022\023\n\017SEEK_BOTH_EXAC"
+  "T\020\020\022\010\n\004OPEN\020\036\022\t\n\005CLOSE\020\037\022\021\n\rOPEN_DUP_SOR"
+  "T\020 \022\t\n\005COUNT\020!*H\n\006Action\022\013\n\007STORAGE\020\000\022\n\n"
+  "\006UPSERT\020\001\022\010\n\004CODE\020\002\022\017\n\013UPSERT_CODE\020\003\022\n\n\006"
+  "REMOVE\020\004*$\n\tDirection\022\013\n\007FORWARD\020\000\022\n\n\006UN"
+  "WIND\020\0012\272\004\n\002KV\0226\n\007Version\022\026.google.protob"
+  "uf.Empty\032\023.types.VersionReply\022&\n\002Tx\022\016.re"
+  "mote.Cursor\032\014.remote.Pair(\0010\001\022F\n\014StateCh"
+  "anges\022\032.remote.StateChangeRequest\032\030.remo"
+  "te.StateChangeBatch0\001\022=\n\tSnapshots\022\030.rem"
+  "ote.SnapshotsRequest\032\026.remote.SnapshotsR"
+  "eply\022(\n\005Range\022\020.remote.RangeReq\032\r.remote"
+  ".Pairs\0229\n\tDomainGet\022\024.remote.DomainGetRe"
+  "q\032\026.remote.DomainGetReply\022<\n\nHistoryGet\022"
+  "\025.remote.HistoryGetReq\032\027.remote.HistoryG"
+  "etReply\022<\n\nIndexRange\022\025.remote.IndexRang"
+  "eReq\032\027.remote.IndexRangeReply\0226\n\014History"
+  "Range\022\027.remote.HistoryRangeReq\032\r.remote."
+  "Pairs\0224\n\013DomainRange\022\026.remote.DomainRang"
+  "eReq\032\r.remote.PairsB\021Z\017./remote;remoteb\006"
+  "proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_remote_2fkv_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fempty_2eproto,
@@ -717,7 +718,7 @@ static const ::_pbi::DescriptorTable* const descriptor_table_remote_2fkv_2eproto
 };
 static ::_pbi::once_flag descriptor_table_remote_2fkv_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_remote_2fkv_2eproto = {
-    false, false, 3069, descriptor_table_protodef_remote_2fkv_2eproto,
+    false, false, 3086, descriptor_table_protodef_remote_2fkv_2eproto,
     "remote/kv.proto",
     &descriptor_table_remote_2fkv_2eproto_once, descriptor_table_remote_2fkv_2eproto_deps, 2, 21,
     schemas, file_default_instances, TableStruct_remote_2fkv_2eproto::offsets,
@@ -810,7 +811,7 @@ Cursor::Cursor(const Cursor& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   Cursor* const _this = this; (void)_this;
   new (&_impl_) Impl_{
-      decltype(_impl_.bucketname_){}
+      decltype(_impl_.bucket_name_){}
     , decltype(_impl_.k_){}
     , decltype(_impl_.v_){}
     , decltype(_impl_.op_){}
@@ -818,12 +819,12 @@ Cursor::Cursor(const Cursor& from)
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _impl_.bucketname_.InitDefault();
+  _impl_.bucket_name_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.bucketname_.Set("", GetArenaForAllocation());
+    _impl_.bucket_name_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_bucketname().empty()) {
-    _this->_impl_.bucketname_.Set(from._internal_bucketname(), 
+  if (!from._internal_bucket_name().empty()) {
+    _this->_impl_.bucket_name_.Set(from._internal_bucket_name(), 
       _this->GetArenaForAllocation());
   }
   _impl_.k_.InitDefault();
@@ -853,16 +854,16 @@ inline void Cursor::SharedCtor(
   (void)arena;
   (void)is_message_owned;
   new (&_impl_) Impl_{
-      decltype(_impl_.bucketname_){}
+      decltype(_impl_.bucket_name_){}
     , decltype(_impl_.k_){}
     , decltype(_impl_.v_){}
     , decltype(_impl_.op_){0}
     , decltype(_impl_.cursor_){0u}
     , /*decltype(_impl_._cached_size_)*/{}
   };
-  _impl_.bucketname_.InitDefault();
+  _impl_.bucket_name_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.bucketname_.Set("", GetArenaForAllocation());
+    _impl_.bucket_name_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   _impl_.k_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
@@ -885,7 +886,7 @@ Cursor::~Cursor() {
 
 inline void Cursor::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.bucketname_.Destroy();
+  _impl_.bucket_name_.Destroy();
   _impl_.k_.Destroy();
   _impl_.v_.Destroy();
 }
@@ -900,7 +901,7 @@ void Cursor::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _impl_.bucketname_.ClearToEmpty();
+  _impl_.bucket_name_.ClearToEmpty();
   _impl_.k_.ClearToEmpty();
   _impl_.v_.ClearToEmpty();
   ::memset(&_impl_.op_, 0, static_cast<size_t>(
@@ -924,13 +925,13 @@ const char* Cursor::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
         } else
           goto handle_unusual;
         continue;
-      // string bucketName = 2;
+      // string bucket_name = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          auto str = _internal_mutable_bucketname();
+          auto str = _internal_mutable_bucket_name();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "remote.Cursor.bucketName"));
+          CHK_(::_pbi::VerifyUTF8(str, "remote.Cursor.bucket_name"));
         } else
           goto handle_unusual;
         continue;
@@ -996,14 +997,14 @@ uint8_t* Cursor::_InternalSerialize(
       1, this->_internal_op(), target);
   }
 
-  // string bucketName = 2;
-  if (!this->_internal_bucketname().empty()) {
+  // string bucket_name = 2;
+  if (!this->_internal_bucket_name().empty()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_bucketname().data(), static_cast<int>(this->_internal_bucketname().length()),
+      this->_internal_bucket_name().data(), static_cast<int>(this->_internal_bucket_name().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "remote.Cursor.bucketName");
+      "remote.Cursor.bucket_name");
     target = stream->WriteStringMaybeAliased(
-        2, this->_internal_bucketname(), target);
+        2, this->_internal_bucket_name(), target);
   }
 
   // uint32 cursor = 3;
@@ -1040,11 +1041,11 @@ size_t Cursor::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // string bucketName = 2;
-  if (!this->_internal_bucketname().empty()) {
+  // string bucket_name = 2;
+  if (!this->_internal_bucket_name().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_bucketname());
+        this->_internal_bucket_name());
   }
 
   // bytes k = 4;
@@ -1090,8 +1091,8 @@ void Cursor::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBU
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (!from._internal_bucketname().empty()) {
-    _this->_internal_set_bucketname(from._internal_bucketname());
+  if (!from._internal_bucket_name().empty()) {
+    _this->_internal_set_bucket_name(from._internal_bucket_name());
   }
   if (!from._internal_k().empty()) {
     _this->_internal_set_k(from._internal_k());
@@ -1125,8 +1126,8 @@ void Cursor::InternalSwap(Cursor* other) {
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.bucketname_, lhs_arena,
-      &other->_impl_.bucketname_, rhs_arena
+      &_impl_.bucket_name_, lhs_arena,
+      &other->_impl_.bucket_name_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
       &_impl_.k_, lhs_arena,
@@ -1168,9 +1169,9 @@ Pair::Pair(const Pair& from)
   new (&_impl_) Impl_{
       decltype(_impl_.k_){}
     , decltype(_impl_.v_){}
-    , decltype(_impl_.viewid_){}
-    , decltype(_impl_.txid_){}
-    , decltype(_impl_.cursorid_){}
+    , decltype(_impl_.view_id_){}
+    , decltype(_impl_.tx_id_){}
+    , decltype(_impl_.cursor_id_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -1190,9 +1191,9 @@ Pair::Pair(const Pair& from)
     _this->_impl_.v_.Set(from._internal_v(), 
       _this->GetArenaForAllocation());
   }
-  ::memcpy(&_impl_.viewid_, &from._impl_.viewid_,
-    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.cursorid_) -
-    reinterpret_cast<char*>(&_impl_.viewid_)) + sizeof(_impl_.cursorid_));
+  ::memcpy(&_impl_.view_id_, &from._impl_.view_id_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.cursor_id_) -
+    reinterpret_cast<char*>(&_impl_.view_id_)) + sizeof(_impl_.cursor_id_));
   // @@protoc_insertion_point(copy_constructor:remote.Pair)
 }
 
@@ -1203,9 +1204,9 @@ inline void Pair::SharedCtor(
   new (&_impl_) Impl_{
       decltype(_impl_.k_){}
     , decltype(_impl_.v_){}
-    , decltype(_impl_.viewid_){uint64_t{0u}}
-    , decltype(_impl_.txid_){uint64_t{0u}}
-    , decltype(_impl_.cursorid_){0u}
+    , decltype(_impl_.view_id_){uint64_t{0u}}
+    , decltype(_impl_.tx_id_){uint64_t{0u}}
+    , decltype(_impl_.cursor_id_){0u}
     , /*decltype(_impl_._cached_size_)*/{}
   };
   _impl_.k_.InitDefault();
@@ -1245,9 +1246,9 @@ void Pair::Clear() {
 
   _impl_.k_.ClearToEmpty();
   _impl_.v_.ClearToEmpty();
-  ::memset(&_impl_.viewid_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&_impl_.cursorid_) -
-      reinterpret_cast<char*>(&_impl_.viewid_)) + sizeof(_impl_.cursorid_));
+  ::memset(&_impl_.view_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.cursor_id_) -
+      reinterpret_cast<char*>(&_impl_.view_id_)) + sizeof(_impl_.cursor_id_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -1275,26 +1276,26 @@ const char* Pair::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
         } else
           goto handle_unusual;
         continue;
-      // uint32 cursorID = 3;
+      // uint32 cursor_id = 3;
       case 3:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 24)) {
-          _impl_.cursorid_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          _impl_.cursor_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // uint64 viewID = 4;
+      // uint64 view_id = 4;
       case 4:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 32)) {
-          _impl_.viewid_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          _impl_.view_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // uint64 txID = 5;
+      // uint64 tx_id = 5;
       case 5:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 40)) {
-          _impl_.txid_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          _impl_.tx_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -1340,22 +1341,22 @@ uint8_t* Pair::_InternalSerialize(
         2, this->_internal_v(), target);
   }
 
-  // uint32 cursorID = 3;
-  if (this->_internal_cursorid() != 0) {
+  // uint32 cursor_id = 3;
+  if (this->_internal_cursor_id() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(3, this->_internal_cursorid(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(3, this->_internal_cursor_id(), target);
   }
 
-  // uint64 viewID = 4;
-  if (this->_internal_viewid() != 0) {
+  // uint64 view_id = 4;
+  if (this->_internal_view_id() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(4, this->_internal_viewid(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(4, this->_internal_view_id(), target);
   }
 
-  // uint64 txID = 5;
-  if (this->_internal_txid() != 0) {
+  // uint64 tx_id = 5;
+  if (this->_internal_tx_id() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(5, this->_internal_txid(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(5, this->_internal_tx_id(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1388,19 +1389,19 @@ size_t Pair::ByteSizeLong() const {
         this->_internal_v());
   }
 
-  // uint64 viewID = 4;
-  if (this->_internal_viewid() != 0) {
-    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_viewid());
+  // uint64 view_id = 4;
+  if (this->_internal_view_id() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_view_id());
   }
 
-  // uint64 txID = 5;
-  if (this->_internal_txid() != 0) {
-    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_txid());
+  // uint64 tx_id = 5;
+  if (this->_internal_tx_id() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_tx_id());
   }
 
-  // uint32 cursorID = 3;
-  if (this->_internal_cursorid() != 0) {
-    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_cursorid());
+  // uint32 cursor_id = 3;
+  if (this->_internal_cursor_id() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_cursor_id());
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -1427,14 +1428,14 @@ void Pair::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_
   if (!from._internal_v().empty()) {
     _this->_internal_set_v(from._internal_v());
   }
-  if (from._internal_viewid() != 0) {
-    _this->_internal_set_viewid(from._internal_viewid());
+  if (from._internal_view_id() != 0) {
+    _this->_internal_set_view_id(from._internal_view_id());
   }
-  if (from._internal_txid() != 0) {
-    _this->_internal_set_txid(from._internal_txid());
+  if (from._internal_tx_id() != 0) {
+    _this->_internal_set_tx_id(from._internal_tx_id());
   }
-  if (from._internal_cursorid() != 0) {
-    _this->_internal_set_cursorid(from._internal_cursorid());
+  if (from._internal_cursor_id() != 0) {
+    _this->_internal_set_cursor_id(from._internal_cursor_id());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -1464,11 +1465,11 @@ void Pair::InternalSwap(Pair* other) {
       &other->_impl_.v_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(Pair, _impl_.cursorid_)
-      + sizeof(Pair::_impl_.cursorid_)
-      - PROTOBUF_FIELD_OFFSET(Pair, _impl_.viewid_)>(
-          reinterpret_cast<char*>(&_impl_.viewid_),
-          reinterpret_cast<char*>(&other->_impl_.viewid_));
+      PROTOBUF_FIELD_OFFSET(Pair, _impl_.cursor_id_)
+      + sizeof(Pair::_impl_.cursor_id_)
+      - PROTOBUF_FIELD_OFFSET(Pair, _impl_.view_id_)>(
+          reinterpret_cast<char*>(&_impl_.view_id_),
+          reinterpret_cast<char*>(&other->_impl_.view_id_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata Pair::GetMetadata() const {
@@ -1750,7 +1751,7 @@ AccountChange::AccountChange(const AccountChange& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   AccountChange* const _this = this; (void)_this;
   new (&_impl_) Impl_{
-      decltype(_impl_.storagechanges_){from._impl_.storagechanges_}
+      decltype(_impl_.storage_changes_){from._impl_.storage_changes_}
     , decltype(_impl_.data_){}
     , decltype(_impl_.code_){}
     , decltype(_impl_.address_){nullptr}
@@ -1789,7 +1790,7 @@ inline void AccountChange::SharedCtor(
   (void)arena;
   (void)is_message_owned;
   new (&_impl_) Impl_{
-      decltype(_impl_.storagechanges_){arena}
+      decltype(_impl_.storage_changes_){arena}
     , decltype(_impl_.data_){}
     , decltype(_impl_.code_){}
     , decltype(_impl_.address_){nullptr}
@@ -1818,7 +1819,7 @@ AccountChange::~AccountChange() {
 
 inline void AccountChange::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.storagechanges_.~RepeatedPtrField();
+  _impl_.storage_changes_.~RepeatedPtrField();
   _impl_.data_.Destroy();
   _impl_.code_.Destroy();
   if (this != internal_default_instance()) delete _impl_.address_;
@@ -1834,7 +1835,7 @@ void AccountChange::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _impl_.storagechanges_.Clear();
+  _impl_.storage_changes_.Clear();
   _impl_.data_.ClearToEmpty();
   _impl_.code_.ClearToEmpty();
   if (GetArenaForAllocation() == nullptr && _impl_.address_ != nullptr) {
@@ -1896,13 +1897,13 @@ const char* AccountChange::_InternalParse(const char* ptr, ::_pbi::ParseContext*
         } else
           goto handle_unusual;
         continue;
-      // repeated .remote.StorageChange storageChanges = 6;
+      // repeated .remote.StorageChange storage_changes = 6;
       case 6:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 50)) {
           ptr -= 1;
           do {
             ptr += 1;
-            ptr = ctx->ParseMessage(_internal_add_storagechanges(), ptr);
+            ptr = ctx->ParseMessage(_internal_add_storage_changes(), ptr);
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
           } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<50>(ptr));
@@ -1970,10 +1971,10 @@ uint8_t* AccountChange::_InternalSerialize(
         5, this->_internal_code(), target);
   }
 
-  // repeated .remote.StorageChange storageChanges = 6;
+  // repeated .remote.StorageChange storage_changes = 6;
   for (unsigned i = 0,
-      n = static_cast<unsigned>(this->_internal_storagechanges_size()); i < n; i++) {
-    const auto& repfield = this->_internal_storagechanges(i);
+      n = static_cast<unsigned>(this->_internal_storage_changes_size()); i < n; i++) {
+    const auto& repfield = this->_internal_storage_changes(i);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
         InternalWriteMessage(6, repfield, repfield.GetCachedSize(), target, stream);
   }
@@ -1994,9 +1995,9 @@ size_t AccountChange::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // repeated .remote.StorageChange storageChanges = 6;
-  total_size += 1UL * this->_internal_storagechanges_size();
-  for (const auto& msg : this->_impl_.storagechanges_) {
+  // repeated .remote.StorageChange storage_changes = 6;
+  total_size += 1UL * this->_internal_storage_changes_size();
+  for (const auto& msg : this->_impl_.storage_changes_) {
     total_size +=
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
@@ -2051,7 +2052,7 @@ void AccountChange::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  _this->_impl_.storagechanges_.MergeFrom(from._impl_.storagechanges_);
+  _this->_impl_.storage_changes_.MergeFrom(from._impl_.storage_changes_);
   if (!from._internal_data().empty()) {
     _this->_internal_set_data(from._internal_data());
   }
@@ -2087,7 +2088,7 @@ void AccountChange::InternalSwap(AccountChange* other) {
   auto* lhs_arena = GetArenaForAllocation();
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  _impl_.storagechanges_.InternalSwap(&other->_impl_.storagechanges_);
+  _impl_.storage_changes_.InternalSwap(&other->_impl_.storage_changes_);
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
       &_impl_.data_, lhs_arena,
       &other->_impl_.data_, rhs_arena
@@ -2126,16 +2127,16 @@ StateChangeBatch::StateChangeBatch(const StateChangeBatch& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   StateChangeBatch* const _this = this; (void)_this;
   new (&_impl_) Impl_{
-      decltype(_impl_.changebatch_){from._impl_.changebatch_}
-    , decltype(_impl_.stateversionid_){}
-    , decltype(_impl_.pendingblockbasefee_){}
-    , decltype(_impl_.blockgaslimit_){}
+      decltype(_impl_.change_batch_){from._impl_.change_batch_}
+    , decltype(_impl_.state_version_id_){}
+    , decltype(_impl_.pending_block_base_fee_){}
+    , decltype(_impl_.block_gas_limit_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  ::memcpy(&_impl_.stateversionid_, &from._impl_.stateversionid_,
-    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.blockgaslimit_) -
-    reinterpret_cast<char*>(&_impl_.stateversionid_)) + sizeof(_impl_.blockgaslimit_));
+  ::memcpy(&_impl_.state_version_id_, &from._impl_.state_version_id_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.block_gas_limit_) -
+    reinterpret_cast<char*>(&_impl_.state_version_id_)) + sizeof(_impl_.block_gas_limit_));
   // @@protoc_insertion_point(copy_constructor:remote.StateChangeBatch)
 }
 
@@ -2144,10 +2145,10 @@ inline void StateChangeBatch::SharedCtor(
   (void)arena;
   (void)is_message_owned;
   new (&_impl_) Impl_{
-      decltype(_impl_.changebatch_){arena}
-    , decltype(_impl_.stateversionid_){uint64_t{0u}}
-    , decltype(_impl_.pendingblockbasefee_){uint64_t{0u}}
-    , decltype(_impl_.blockgaslimit_){uint64_t{0u}}
+      decltype(_impl_.change_batch_){arena}
+    , decltype(_impl_.state_version_id_){uint64_t{0u}}
+    , decltype(_impl_.pending_block_base_fee_){uint64_t{0u}}
+    , decltype(_impl_.block_gas_limit_){uint64_t{0u}}
     , /*decltype(_impl_._cached_size_)*/{}
   };
 }
@@ -2163,7 +2164,7 @@ StateChangeBatch::~StateChangeBatch() {
 
 inline void StateChangeBatch::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.changebatch_.~RepeatedPtrField();
+  _impl_.change_batch_.~RepeatedPtrField();
 }
 
 void StateChangeBatch::SetCachedSize(int size) const {
@@ -2176,10 +2177,10 @@ void StateChangeBatch::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _impl_.changebatch_.Clear();
-  ::memset(&_impl_.stateversionid_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&_impl_.blockgaslimit_) -
-      reinterpret_cast<char*>(&_impl_.stateversionid_)) + sizeof(_impl_.blockgaslimit_));
+  _impl_.change_batch_.Clear();
+  ::memset(&_impl_.state_version_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.block_gas_limit_) -
+      reinterpret_cast<char*>(&_impl_.state_version_id_)) + sizeof(_impl_.block_gas_limit_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -2189,39 +2190,39 @@ const char* StateChangeBatch::_InternalParse(const char* ptr, ::_pbi::ParseConte
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // uint64 stateVersionID = 1;
+      // uint64 state_version_id = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
-          _impl_.stateversionid_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          _impl_.state_version_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // repeated .remote.StateChange changeBatch = 2;
+      // repeated .remote.StateChange change_batch = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
           ptr -= 1;
           do {
             ptr += 1;
-            ptr = ctx->ParseMessage(_internal_add_changebatch(), ptr);
+            ptr = ctx->ParseMessage(_internal_add_change_batch(), ptr);
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
           } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<18>(ptr));
         } else
           goto handle_unusual;
         continue;
-      // uint64 pendingBlockBaseFee = 3;
+      // uint64 pending_block_base_fee = 3;
       case 3:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 24)) {
-          _impl_.pendingblockbasefee_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          _impl_.pending_block_base_fee_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // uint64 blockGasLimit = 4;
+      // uint64 block_gas_limit = 4;
       case 4:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 32)) {
-          _impl_.blockgaslimit_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          _impl_.block_gas_limit_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -2255,30 +2256,30 @@ uint8_t* StateChangeBatch::_InternalSerialize(
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // uint64 stateVersionID = 1;
-  if (this->_internal_stateversionid() != 0) {
+  // uint64 state_version_id = 1;
+  if (this->_internal_state_version_id() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(1, this->_internal_stateversionid(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(1, this->_internal_state_version_id(), target);
   }
 
-  // repeated .remote.StateChange changeBatch = 2;
+  // repeated .remote.StateChange change_batch = 2;
   for (unsigned i = 0,
-      n = static_cast<unsigned>(this->_internal_changebatch_size()); i < n; i++) {
-    const auto& repfield = this->_internal_changebatch(i);
+      n = static_cast<unsigned>(this->_internal_change_batch_size()); i < n; i++) {
+    const auto& repfield = this->_internal_change_batch(i);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
         InternalWriteMessage(2, repfield, repfield.GetCachedSize(), target, stream);
   }
 
-  // uint64 pendingBlockBaseFee = 3;
-  if (this->_internal_pendingblockbasefee() != 0) {
+  // uint64 pending_block_base_fee = 3;
+  if (this->_internal_pending_block_base_fee() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(3, this->_internal_pendingblockbasefee(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(3, this->_internal_pending_block_base_fee(), target);
   }
 
-  // uint64 blockGasLimit = 4;
-  if (this->_internal_blockgaslimit() != 0) {
+  // uint64 block_gas_limit = 4;
+  if (this->_internal_block_gas_limit() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(4, this->_internal_blockgaslimit(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(4, this->_internal_block_gas_limit(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -2297,26 +2298,26 @@ size_t StateChangeBatch::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // repeated .remote.StateChange changeBatch = 2;
-  total_size += 1UL * this->_internal_changebatch_size();
-  for (const auto& msg : this->_impl_.changebatch_) {
+  // repeated .remote.StateChange change_batch = 2;
+  total_size += 1UL * this->_internal_change_batch_size();
+  for (const auto& msg : this->_impl_.change_batch_) {
     total_size +=
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
 
-  // uint64 stateVersionID = 1;
-  if (this->_internal_stateversionid() != 0) {
-    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_stateversionid());
+  // uint64 state_version_id = 1;
+  if (this->_internal_state_version_id() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_state_version_id());
   }
 
-  // uint64 pendingBlockBaseFee = 3;
-  if (this->_internal_pendingblockbasefee() != 0) {
-    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_pendingblockbasefee());
+  // uint64 pending_block_base_fee = 3;
+  if (this->_internal_pending_block_base_fee() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_pending_block_base_fee());
   }
 
-  // uint64 blockGasLimit = 4;
-  if (this->_internal_blockgaslimit() != 0) {
-    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_blockgaslimit());
+  // uint64 block_gas_limit = 4;
+  if (this->_internal_block_gas_limit() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_block_gas_limit());
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -2337,15 +2338,15 @@ void StateChangeBatch::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  _this->_impl_.changebatch_.MergeFrom(from._impl_.changebatch_);
-  if (from._internal_stateversionid() != 0) {
-    _this->_internal_set_stateversionid(from._internal_stateversionid());
+  _this->_impl_.change_batch_.MergeFrom(from._impl_.change_batch_);
+  if (from._internal_state_version_id() != 0) {
+    _this->_internal_set_state_version_id(from._internal_state_version_id());
   }
-  if (from._internal_pendingblockbasefee() != 0) {
-    _this->_internal_set_pendingblockbasefee(from._internal_pendingblockbasefee());
+  if (from._internal_pending_block_base_fee() != 0) {
+    _this->_internal_set_pending_block_base_fee(from._internal_pending_block_base_fee());
   }
-  if (from._internal_blockgaslimit() != 0) {
-    _this->_internal_set_blockgaslimit(from._internal_blockgaslimit());
+  if (from._internal_block_gas_limit() != 0) {
+    _this->_internal_set_block_gas_limit(from._internal_block_gas_limit());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -2364,13 +2365,13 @@ bool StateChangeBatch::IsInitialized() const {
 void StateChangeBatch::InternalSwap(StateChangeBatch* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  _impl_.changebatch_.InternalSwap(&other->_impl_.changebatch_);
+  _impl_.change_batch_.InternalSwap(&other->_impl_.change_batch_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(StateChangeBatch, _impl_.blockgaslimit_)
-      + sizeof(StateChangeBatch::_impl_.blockgaslimit_)
-      - PROTOBUF_FIELD_OFFSET(StateChangeBatch, _impl_.stateversionid_)>(
-          reinterpret_cast<char*>(&_impl_.stateversionid_),
-          reinterpret_cast<char*>(&other->_impl_.stateversionid_));
+      PROTOBUF_FIELD_OFFSET(StateChangeBatch, _impl_.block_gas_limit_)
+      + sizeof(StateChangeBatch::_impl_.block_gas_limit_)
+      - PROTOBUF_FIELD_OFFSET(StateChangeBatch, _impl_.state_version_id_)>(
+          reinterpret_cast<char*>(&_impl_.state_version_id_),
+          reinterpret_cast<char*>(&other->_impl_.state_version_id_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata StateChangeBatch::GetMetadata() const {
@@ -2383,18 +2384,18 @@ void StateChangeBatch::InternalSwap(StateChangeBatch* other) {
 
 class StateChange::_Internal {
  public:
-  static const ::types::H256& blockhash(const StateChange* msg);
+  static const ::types::H256& block_hash(const StateChange* msg);
 };
 
 const ::types::H256&
-StateChange::_Internal::blockhash(const StateChange* msg) {
-  return *msg->_impl_.blockhash_;
+StateChange::_Internal::block_hash(const StateChange* msg) {
+  return *msg->_impl_.block_hash_;
 }
-void StateChange::clear_blockhash() {
-  if (GetArenaForAllocation() == nullptr && _impl_.blockhash_ != nullptr) {
-    delete _impl_.blockhash_;
+void StateChange::clear_block_hash() {
+  if (GetArenaForAllocation() == nullptr && _impl_.block_hash_ != nullptr) {
+    delete _impl_.block_hash_;
   }
-  _impl_.blockhash_ = nullptr;
+  _impl_.block_hash_ = nullptr;
 }
 StateChange::StateChange(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
@@ -2408,18 +2409,18 @@ StateChange::StateChange(const StateChange& from)
   new (&_impl_) Impl_{
       decltype(_impl_.changes_){from._impl_.changes_}
     , decltype(_impl_.txs_){from._impl_.txs_}
-    , decltype(_impl_.blockhash_){nullptr}
-    , decltype(_impl_.blockheight_){}
+    , decltype(_impl_.block_hash_){nullptr}
+    , decltype(_impl_.block_height_){}
     , decltype(_impl_.direction_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  if (from._internal_has_blockhash()) {
-    _this->_impl_.blockhash_ = new ::types::H256(*from._impl_.blockhash_);
+  if (from._internal_has_block_hash()) {
+    _this->_impl_.block_hash_ = new ::types::H256(*from._impl_.block_hash_);
   }
-  ::memcpy(&_impl_.blockheight_, &from._impl_.blockheight_,
+  ::memcpy(&_impl_.block_height_, &from._impl_.block_height_,
     static_cast<size_t>(reinterpret_cast<char*>(&_impl_.direction_) -
-    reinterpret_cast<char*>(&_impl_.blockheight_)) + sizeof(_impl_.direction_));
+    reinterpret_cast<char*>(&_impl_.block_height_)) + sizeof(_impl_.direction_));
   // @@protoc_insertion_point(copy_constructor:remote.StateChange)
 }
 
@@ -2430,8 +2431,8 @@ inline void StateChange::SharedCtor(
   new (&_impl_) Impl_{
       decltype(_impl_.changes_){arena}
     , decltype(_impl_.txs_){arena}
-    , decltype(_impl_.blockhash_){nullptr}
-    , decltype(_impl_.blockheight_){uint64_t{0u}}
+    , decltype(_impl_.block_hash_){nullptr}
+    , decltype(_impl_.block_height_){uint64_t{0u}}
     , decltype(_impl_.direction_){0}
     , /*decltype(_impl_._cached_size_)*/{}
   };
@@ -2450,7 +2451,7 @@ inline void StateChange::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.changes_.~RepeatedPtrField();
   _impl_.txs_.~RepeatedPtrField();
-  if (this != internal_default_instance()) delete _impl_.blockhash_;
+  if (this != internal_default_instance()) delete _impl_.block_hash_;
 }
 
 void StateChange::SetCachedSize(int size) const {
@@ -2465,13 +2466,13 @@ void StateChange::Clear() {
 
   _impl_.changes_.Clear();
   _impl_.txs_.Clear();
-  if (GetArenaForAllocation() == nullptr && _impl_.blockhash_ != nullptr) {
-    delete _impl_.blockhash_;
+  if (GetArenaForAllocation() == nullptr && _impl_.block_hash_ != nullptr) {
+    delete _impl_.block_hash_;
   }
-  _impl_.blockhash_ = nullptr;
-  ::memset(&_impl_.blockheight_, 0, static_cast<size_t>(
+  _impl_.block_hash_ = nullptr;
+  ::memset(&_impl_.block_height_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&_impl_.direction_) -
-      reinterpret_cast<char*>(&_impl_.blockheight_)) + sizeof(_impl_.direction_));
+      reinterpret_cast<char*>(&_impl_.block_height_)) + sizeof(_impl_.direction_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -2490,18 +2491,18 @@ const char* StateChange::_InternalParse(const char* ptr, ::_pbi::ParseContext* c
         } else
           goto handle_unusual;
         continue;
-      // uint64 blockHeight = 2;
+      // uint64 block_height = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
-          _impl_.blockheight_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          _impl_.block_height_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // .types.H256 blockHash = 3;
+      // .types.H256 block_hash = 3;
       case 3:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
-          ptr = ctx->ParseMessage(_internal_mutable_blockhash(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_block_hash(), ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -2569,17 +2570,17 @@ uint8_t* StateChange::_InternalSerialize(
       1, this->_internal_direction(), target);
   }
 
-  // uint64 blockHeight = 2;
-  if (this->_internal_blockheight() != 0) {
+  // uint64 block_height = 2;
+  if (this->_internal_block_height() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(2, this->_internal_blockheight(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(2, this->_internal_block_height(), target);
   }
 
-  // .types.H256 blockHash = 3;
-  if (this->_internal_has_blockhash()) {
+  // .types.H256 block_hash = 3;
+  if (this->_internal_has_block_hash()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(3, _Internal::blockhash(this),
-        _Internal::blockhash(this).GetCachedSize(), target, stream);
+      InternalWriteMessage(3, _Internal::block_hash(this),
+        _Internal::block_hash(this).GetCachedSize(), target, stream);
   }
 
   // repeated .remote.AccountChange changes = 4;
@@ -2627,16 +2628,16 @@ size_t StateChange::ByteSizeLong() const {
       _impl_.txs_.Get(i));
   }
 
-  // .types.H256 blockHash = 3;
-  if (this->_internal_has_blockhash()) {
+  // .types.H256 block_hash = 3;
+  if (this->_internal_has_block_hash()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.blockhash_);
+        *_impl_.block_hash_);
   }
 
-  // uint64 blockHeight = 2;
-  if (this->_internal_blockheight() != 0) {
-    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_blockheight());
+  // uint64 block_height = 2;
+  if (this->_internal_block_height() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_block_height());
   }
 
   // .remote.Direction direction = 1;
@@ -2665,12 +2666,12 @@ void StateChange::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PR
 
   _this->_impl_.changes_.MergeFrom(from._impl_.changes_);
   _this->_impl_.txs_.MergeFrom(from._impl_.txs_);
-  if (from._internal_has_blockhash()) {
-    _this->_internal_mutable_blockhash()->::types::H256::MergeFrom(
-        from._internal_blockhash());
+  if (from._internal_has_block_hash()) {
+    _this->_internal_mutable_block_hash()->::types::H256::MergeFrom(
+        from._internal_block_hash());
   }
-  if (from._internal_blockheight() != 0) {
-    _this->_internal_set_blockheight(from._internal_blockheight());
+  if (from._internal_block_height() != 0) {
+    _this->_internal_set_block_height(from._internal_block_height());
   }
   if (from._internal_direction() != 0) {
     _this->_internal_set_direction(from._internal_direction());
@@ -2697,9 +2698,9 @@ void StateChange::InternalSwap(StateChange* other) {
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
       PROTOBUF_FIELD_OFFSET(StateChange, _impl_.direction_)
       + sizeof(StateChange::_impl_.direction_)
-      - PROTOBUF_FIELD_OFFSET(StateChange, _impl_.blockhash_)>(
-          reinterpret_cast<char*>(&_impl_.blockhash_),
-          reinterpret_cast<char*>(&other->_impl_.blockhash_));
+      - PROTOBUF_FIELD_OFFSET(StateChange, _impl_.block_hash_)>(
+          reinterpret_cast<char*>(&_impl_.block_hash_),
+          reinterpret_cast<char*>(&other->_impl_.block_hash_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata StateChange::GetMetadata() const {
@@ -2724,14 +2725,14 @@ StateChangeRequest::StateChangeRequest(const StateChangeRequest& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   StateChangeRequest* const _this = this; (void)_this;
   new (&_impl_) Impl_{
-      decltype(_impl_.withstorage_){}
-    , decltype(_impl_.withtransactions_){}
+      decltype(_impl_.with_storage_){}
+    , decltype(_impl_.with_transactions_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  ::memcpy(&_impl_.withstorage_, &from._impl_.withstorage_,
-    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.withtransactions_) -
-    reinterpret_cast<char*>(&_impl_.withstorage_)) + sizeof(_impl_.withtransactions_));
+  ::memcpy(&_impl_.with_storage_, &from._impl_.with_storage_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.with_transactions_) -
+    reinterpret_cast<char*>(&_impl_.with_storage_)) + sizeof(_impl_.with_transactions_));
   // @@protoc_insertion_point(copy_constructor:remote.StateChangeRequest)
 }
 
@@ -2740,8 +2741,8 @@ inline void StateChangeRequest::SharedCtor(
   (void)arena;
   (void)is_message_owned;
   new (&_impl_) Impl_{
-      decltype(_impl_.withstorage_){false}
-    , decltype(_impl_.withtransactions_){false}
+      decltype(_impl_.with_storage_){false}
+    , decltype(_impl_.with_transactions_){false}
     , /*decltype(_impl_._cached_size_)*/{}
   };
 }
@@ -2769,9 +2770,9 @@ void StateChangeRequest::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  ::memset(&_impl_.withstorage_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&_impl_.withtransactions_) -
-      reinterpret_cast<char*>(&_impl_.withstorage_)) + sizeof(_impl_.withtransactions_));
+  ::memset(&_impl_.with_storage_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.with_transactions_) -
+      reinterpret_cast<char*>(&_impl_.with_storage_)) + sizeof(_impl_.with_transactions_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -2781,18 +2782,18 @@ const char* StateChangeRequest::_InternalParse(const char* ptr, ::_pbi::ParseCon
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // bool withStorage = 1;
+      // bool with_storage = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
-          _impl_.withstorage_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          _impl_.with_storage_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // bool withTransactions = 2;
+      // bool with_transactions = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
-          _impl_.withtransactions_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          _impl_.with_transactions_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -2826,16 +2827,16 @@ uint8_t* StateChangeRequest::_InternalSerialize(
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // bool withStorage = 1;
-  if (this->_internal_withstorage() != 0) {
+  // bool with_storage = 1;
+  if (this->_internal_with_storage() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteBoolToArray(1, this->_internal_withstorage(), target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(1, this->_internal_with_storage(), target);
   }
 
-  // bool withTransactions = 2;
-  if (this->_internal_withtransactions() != 0) {
+  // bool with_transactions = 2;
+  if (this->_internal_with_transactions() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteBoolToArray(2, this->_internal_withtransactions(), target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(2, this->_internal_with_transactions(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -2854,13 +2855,13 @@ size_t StateChangeRequest::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // bool withStorage = 1;
-  if (this->_internal_withstorage() != 0) {
+  // bool with_storage = 1;
+  if (this->_internal_with_storage() != 0) {
     total_size += 1 + 1;
   }
 
-  // bool withTransactions = 2;
-  if (this->_internal_withtransactions() != 0) {
+  // bool with_transactions = 2;
+  if (this->_internal_with_transactions() != 0) {
     total_size += 1 + 1;
   }
 
@@ -2882,11 +2883,11 @@ void StateChangeRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, con
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from._internal_withstorage() != 0) {
-    _this->_internal_set_withstorage(from._internal_withstorage());
+  if (from._internal_with_storage() != 0) {
+    _this->_internal_set_with_storage(from._internal_with_storage());
   }
-  if (from._internal_withtransactions() != 0) {
-    _this->_internal_set_withtransactions(from._internal_withtransactions());
+  if (from._internal_with_transactions() != 0) {
+    _this->_internal_set_with_transactions(from._internal_with_transactions());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -2906,11 +2907,11 @@ void StateChangeRequest::InternalSwap(StateChangeRequest* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(StateChangeRequest, _impl_.withtransactions_)
-      + sizeof(StateChangeRequest::_impl_.withtransactions_)
-      - PROTOBUF_FIELD_OFFSET(StateChangeRequest, _impl_.withstorage_)>(
-          reinterpret_cast<char*>(&_impl_.withstorage_),
-          reinterpret_cast<char*>(&other->_impl_.withstorage_));
+      PROTOBUF_FIELD_OFFSET(StateChangeRequest, _impl_.with_transactions_)
+      + sizeof(StateChangeRequest::_impl_.with_transactions_)
+      - PROTOBUF_FIELD_OFFSET(StateChangeRequest, _impl_.with_storage_)>(
+          reinterpret_cast<char*>(&_impl_.with_storage_),
+          reinterpret_cast<char*>(&other->_impl_.with_storage_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata StateChangeRequest::GetMetadata() const {

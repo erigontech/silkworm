@@ -16,6 +16,8 @@
 
 #include "sync.hpp"
 
+#include <latch>
+
 #include <magic_enum.hpp>
 
 #include <silkworm/core/types/hash.hpp>
@@ -83,16 +85,29 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
 
     const auto snapshot_config = snapshot::Config::lookup_known_config(config_.chain_id, snapshot_file_names);
     for (const auto& preverified_snapshot : snapshot_config->preverified_snapshots()) {
-        SILK_INFO << "[Snapshots] adding info hash for: " << preverified_snapshot.file_name;
+        SILK_INFO << "[Snapshots] adding info hash for preverified: " << preverified_snapshot.file_name;
         client_.add_info_hash(preverified_snapshot.file_name, preverified_snapshot.torrent_hash);
     }
 
+    auto handle_added = [](const std::filesystem::path& snapshot_file) {
+        SILK_INFO << "[Snapshots] download started for: " << snapshot_file.filename().string();
+    };
+    client_.added_subscription.connect(handle_added);
+
+    const auto num_snapshots{std::ptrdiff_t(snapshot_config->preverified_snapshots().size())};
+    std::latch download_done{num_snapshots};
+    auto handle_completed = [&](const std::filesystem::path& snapshot_file) {
+        static int completed{0};
+        SILK_INFO << "[Snapshots] download completed for: " << snapshot_file.filename().string() << " [" << ++completed
+                  << "/" << num_snapshots << "]";
+        download_done.count_down();
+    };
+    client_.completed_subscription.connect(handle_completed);
+
     client_thread_ = std::thread([&]() { client_.execute_loop(); });
 
-    // TODO(canepat) wait for download completion signalled by client on condition variable
-    // TODO(canepat) currently just wait for loop end: seeding MUST be disabled otherwise we wait forever
-    SILKWORM_ASSERT(!settings_.bittorrent_settings.seeding);
-    if (client_thread_.joinable()) client_thread_.join();
+    // Wait for download completion of all snapshots
+    download_done.wait();
 
     return true;
 }

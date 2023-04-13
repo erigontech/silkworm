@@ -40,10 +40,10 @@ api::api_common::PeerInfo peer_info_from_proto_peer_info(const types::PeerInfo& 
     return api::api_common::PeerInfo{
         sentry::common::EnodeUrl{info.enode()},
         peer_public_key_from_id_string(info.id()),
-        parse_endpoint(info.connlocaladdr()),
-        parse_endpoint(info.connremoteaddr()),
-        info.connisinbound(),
-        info.connisstatic(),
+        parse_endpoint(info.conn_local_addr()),
+        parse_endpoint(info.conn_remote_addr()),
+        info.conn_is_inbound(),
+        info.conn_is_static(),
         info.name(),
         capabilities,
     };
@@ -64,15 +64,15 @@ types::PeerInfo proto_peer_info_from_peer_info(const api::api_common::PeerInfo& 
 
     std::ostringstream local_endpoint_str;
     local_endpoint_str << peer.local_endpoint;
-    info.set_connlocaladdr(local_endpoint_str.str());
+    info.set_conn_local_addr(local_endpoint_str.str());
 
     std::ostringstream remote_endpoint_str;
     remote_endpoint_str << peer.remote_endpoint;
-    info.set_connremoteaddr(remote_endpoint_str.str());
+    info.set_conn_remote_addr(remote_endpoint_str.str());
 
-    info.set_connisinbound(peer.is_inbound);
-    info.set_connistrusted(false);
-    info.set_connisstatic(peer.is_static);
+    info.set_conn_is_inbound(peer.is_inbound);
+    info.set_conn_is_trusted(false);
+    info.set_conn_is_static(peer.is_static);
     return info;
 }
 

@@ -2899,23 +2899,23 @@ class PeerCountReply PROTOBUF_FINAL :
     kCountsPerProtocolFieldNumber = 2,
     kCountFieldNumber = 1,
   };
-  // repeated .sentry.PeerCountPerProtocol countsPerProtocol = 2;
-  int countsperprotocol_size() const;
+  // repeated .sentry.PeerCountPerProtocol counts_per_protocol = 2;
+  int counts_per_protocol_size() const;
   private:
-  int _internal_countsperprotocol_size() const;
+  int _internal_counts_per_protocol_size() const;
   public:
-  void clear_countsperprotocol();
-  ::sentry::PeerCountPerProtocol* mutable_countsperprotocol(int index);
+  void clear_counts_per_protocol();
+  ::sentry::PeerCountPerProtocol* mutable_counts_per_protocol(int index);
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::sentry::PeerCountPerProtocol >*
-      mutable_countsperprotocol();
+      mutable_counts_per_protocol();
   private:
-  const ::sentry::PeerCountPerProtocol& _internal_countsperprotocol(int index) const;
-  ::sentry::PeerCountPerProtocol* _internal_add_countsperprotocol();
+  const ::sentry::PeerCountPerProtocol& _internal_counts_per_protocol(int index) const;
+  ::sentry::PeerCountPerProtocol* _internal_add_counts_per_protocol();
   public:
-  const ::sentry::PeerCountPerProtocol& countsperprotocol(int index) const;
-  ::sentry::PeerCountPerProtocol* add_countsperprotocol();
+  const ::sentry::PeerCountPerProtocol& counts_per_protocol(int index) const;
+  ::sentry::PeerCountPerProtocol* add_counts_per_protocol();
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::sentry::PeerCountPerProtocol >&
-      countsperprotocol() const;
+      counts_per_protocol() const;
 
   // uint64 count = 1;
   void clear_count();
@@ -2933,7 +2933,7 @@ class PeerCountReply PROTOBUF_FINAL :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::sentry::PeerCountPerProtocol > countsperprotocol_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::sentry::PeerCountPerProtocol > counts_per_protocol_;
   ::PROTOBUF_NAMESPACE_ID::uint64 count_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_p2psentry_2fsentry_2eproto;
@@ -5095,43 +5095,43 @@ inline void PeerCountReply::set_count(::PROTOBUF_NAMESPACE_ID::uint64 value) {
   // @@protoc_insertion_point(field_set:sentry.PeerCountReply.count)
 }
 
-// repeated .sentry.PeerCountPerProtocol countsPerProtocol = 2;
-inline int PeerCountReply::_internal_countsperprotocol_size() const {
-  return countsperprotocol_.size();
+// repeated .sentry.PeerCountPerProtocol counts_per_protocol = 2;
+inline int PeerCountReply::_internal_counts_per_protocol_size() const {
+  return counts_per_protocol_.size();
 }
-inline int PeerCountReply::countsperprotocol_size() const {
-  return _internal_countsperprotocol_size();
+inline int PeerCountReply::counts_per_protocol_size() const {
+  return _internal_counts_per_protocol_size();
 }
-inline void PeerCountReply::clear_countsperprotocol() {
-  countsperprotocol_.Clear();
+inline void PeerCountReply::clear_counts_per_protocol() {
+  counts_per_protocol_.Clear();
 }
-inline ::sentry::PeerCountPerProtocol* PeerCountReply::mutable_countsperprotocol(int index) {
-  // @@protoc_insertion_point(field_mutable:sentry.PeerCountReply.countsPerProtocol)
-  return countsperprotocol_.Mutable(index);
+inline ::sentry::PeerCountPerProtocol* PeerCountReply::mutable_counts_per_protocol(int index) {
+  // @@protoc_insertion_point(field_mutable:sentry.PeerCountReply.counts_per_protocol)
+  return counts_per_protocol_.Mutable(index);
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::sentry::PeerCountPerProtocol >*
-PeerCountReply::mutable_countsperprotocol() {
-  // @@protoc_insertion_point(field_mutable_list:sentry.PeerCountReply.countsPerProtocol)
-  return &countsperprotocol_;
+PeerCountReply::mutable_counts_per_protocol() {
+  // @@protoc_insertion_point(field_mutable_list:sentry.PeerCountReply.counts_per_protocol)
+  return &counts_per_protocol_;
 }
-inline const ::sentry::PeerCountPerProtocol& PeerCountReply::_internal_countsperprotocol(int index) const {
-  return countsperprotocol_.Get(index);
+inline const ::sentry::PeerCountPerProtocol& PeerCountReply::_internal_counts_per_protocol(int index) const {
+  return counts_per_protocol_.Get(index);
 }
-inline const ::sentry::PeerCountPerProtocol& PeerCountReply::countsperprotocol(int index) const {
-  // @@protoc_insertion_point(field_get:sentry.PeerCountReply.countsPerProtocol)
-  return _internal_countsperprotocol(index);
+inline const ::sentry::PeerCountPerProtocol& PeerCountReply::counts_per_protocol(int index) const {
+  // @@protoc_insertion_point(field_get:sentry.PeerCountReply.counts_per_protocol)
+  return _internal_counts_per_protocol(index);
 }
-inline ::sentry::PeerCountPerProtocol* PeerCountReply::_internal_add_countsperprotocol() {
-  return countsperprotocol_.Add();
+inline ::sentry::PeerCountPerProtocol* PeerCountReply::_internal_add_counts_per_protocol() {
+  return counts_per_protocol_.Add();
 }
-inline ::sentry::PeerCountPerProtocol* PeerCountReply::add_countsperprotocol() {
-  // @@protoc_insertion_point(field_add:sentry.PeerCountReply.countsPerProtocol)
-  return _internal_add_countsperprotocol();
+inline ::sentry::PeerCountPerProtocol* PeerCountReply::add_counts_per_protocol() {
+  // @@protoc_insertion_point(field_add:sentry.PeerCountReply.counts_per_protocol)
+  return _internal_add_counts_per_protocol();
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::sentry::PeerCountPerProtocol >&
-PeerCountReply::countsperprotocol() const {
-  // @@protoc_insertion_point(field_list:sentry.PeerCountReply.countsPerProtocol)
-  return countsperprotocol_;
+PeerCountReply::counts_per_protocol() const {
+  // @@protoc_insertion_point(field_list:sentry.PeerCountReply.counts_per_protocol)
+  return counts_per_protocol_;
 }
 
 // -------------------------------------------------------------------

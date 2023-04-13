@@ -46,7 +46,11 @@ tests_not_compared = [
    "debug_traceCall/test_10.json",
    "debug_traceCall/test_14.json",
    "debug_traceCall/test_17.json",
+<<<<<<< HEAD
    "eth_maxPriorityFeePerGas/test_1.json"
+=======
+   "eth_feeHistory/test_1.json"
+>>>>>>> 3c9af809 (Added test)
 ]
 
 tests_not_compared_result = [

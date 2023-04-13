@@ -1,0 +1,19 @@
+ {
+-  result: {
+-    baseFeePerGas: [
+-      "0x13c723946e"
+-      "0x163fe26534"
+-    ]
+-    gasUsedRatio: [
+-      0.9998838666666666
+-    ]
+-    oldestBlock: "0x867a80"
+-    reward: [
+-      [
+-        "0x59682f00"
+-        "0x9502f900"
+-      ]
+-    ]
+-  }
++  result: "0x0"
+ }

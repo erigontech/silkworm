@@ -22,9 +22,9 @@
 
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/node/common/test_context.hpp>
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/db/stages.hpp>
+#include <silkworm/node/test/context.hpp>
 
 namespace silkworm {
 

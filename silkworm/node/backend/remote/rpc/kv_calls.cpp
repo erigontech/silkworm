@@ -101,9 +101,9 @@ awaitable<void> TxCall::operator()(const EthereumBackEnd& backend) {
         SILK_DEBUG << "TxCall peer: " << peer() << " started tx: " << read_only_txn_->id();
 
         // Send an unsolicited message containing the transaction ID.
-        remote::Pair txid_pair;
-        txid_pair.set_txid(read_only_txn_->id());
-        if (!co_await agrpc::write(responder_, txid_pair)) {
+        remote::Pair tx_id_pair;
+        tx_id_pair.set_tx_id(read_only_txn_->id());
+        if (!co_await agrpc::write(responder_, tx_id_pair)) {
             SILK_WARN << "Tx closed by peer: " << server_context_.peer() << " error: write failed";
             co_await agrpc::finish(responder_, grpc::Status::OK);
             co_return;
@@ -210,11 +210,11 @@ void TxCall::handle(const remote::Cursor* request, remote::Pair& response) {
 }
 
 void TxCall::handle_cursor_open(const remote::Cursor* request, remote::Pair& response) {
-    const std::string& bucket_name = request->bucketname();
+    const std::string& bucket_name = request->bucket_name();
 
     // Bucket name must be a valid MDBX map name
     if (!db::has_map(read_only_txn_, bucket_name.c_str())) {
-        const auto err = "unknown bucket: " + request->bucketname();
+        const auto err = "unknown bucket: " + request->bucket_name();
         SILK_ERROR << "Tx peer: " << peer() << " op=" << remote::Op_Name(request->op()) << " " << err;
         throw_with_error(grpc::Status{grpc::StatusCode::INVALID_ARGUMENT, err});
     }
@@ -245,8 +245,8 @@ void TxCall::handle_cursor_open(const remote::Cursor* request, remote::Pair& res
     }
 
     // Send the assigned cursor ID back to the client.
-    response.set_cursorid(cursor_it->first);
-    SILK_DEBUG << "Tx peer: " << peer() << " opened cursor: " << response.cursorid();
+    response.set_cursor_id(cursor_it->first);
+    SILK_DEBUG << "Tx peer: " << peer() << " opened cursor: " << response.cursor_id();
 }
 
 void TxCall::handle_cursor_operation(const remote::Cursor* request, remote::Pair& response) {
@@ -669,7 +669,7 @@ void TxCall::throw_with_error(grpc::Status&& status) {
 }
 
 awaitable<void> StateChangesCall::operator()(const EthereumBackEnd& backend) {
-    SILK_TRACE << "StateChangesCall w/ storage: " << request_.withstorage() << " w/ txs: " << request_.withtransactions() << " START";
+    SILK_TRACE << "StateChangesCall w/ storage: " << request_.with_storage() << " w/ txs: " << request_.with_transactions() << " START";
     auto source = backend.state_change_source();
 
     // Create a never-expiring timer whose cancellation will notify our async waiting is completed
@@ -686,7 +686,7 @@ awaitable<void> StateChangesCall::operator()(const EthereumBackEnd& backend) {
             notifying_timer.cancel();
         });
     };
-    StateChangeFilter filter{request_.withstorage(), request_.withtransactions()};
+    StateChangeFilter filter{request_.with_storage(), request_.with_transactions()};
     const auto token = source->subscribe(state_change_consumer, filter);
 
     // The assigned token ID must be valid.
@@ -709,7 +709,7 @@ awaitable<void> StateChangesCall::operator()(const EthereumBackEnd& backend) {
         if (ec == boost::asio::error::operation_aborted) {
             // Notifying timer cancelled => incoming batch available
             if (incoming_batch) {
-                const auto block_height = incoming_batch->changebatch(0).blockheight();
+                const auto block_height = incoming_batch->change_batch(0).block_height();
                 SILK_DEBUG << "Sending state change batch for block: " << block_height;
                 const bool write_ok = co_await agrpc::write(responder_, *incoming_batch);
                 SILK_DEBUG << "State change batch for block: " << block_height << " sent [write_ok=" << write_ok << "]";

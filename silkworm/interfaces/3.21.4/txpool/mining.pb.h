@@ -360,18 +360,18 @@ class OnPendingBlockReply final :
   enum : int {
     kRplBlockFieldNumber = 1,
   };
-  // bytes rplBlock = 1;
-  void clear_rplblock();
-  const std::string& rplblock() const;
+  // bytes rpl_block = 1;
+  void clear_rpl_block();
+  const std::string& rpl_block() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_rplblock(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_rplblock();
-  PROTOBUF_NODISCARD std::string* release_rplblock();
-  void set_allocated_rplblock(std::string* rplblock);
+  void set_rpl_block(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_rpl_block();
+  PROTOBUF_NODISCARD std::string* release_rpl_block();
+  void set_allocated_rpl_block(std::string* rpl_block);
   private:
-  const std::string& _internal_rplblock() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_rplblock(const std::string& value);
-  std::string* _internal_mutable_rplblock();
+  const std::string& _internal_rpl_block() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_rpl_block(const std::string& value);
+  std::string* _internal_mutable_rpl_block();
   public:
 
   // @@protoc_insertion_point(class_scope:txpool.OnPendingBlockReply)
@@ -382,7 +382,7 @@ class OnPendingBlockReply final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr rplblock_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr rpl_block_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -631,18 +631,18 @@ class OnMinedBlockReply final :
   enum : int {
     kRplBlockFieldNumber = 1,
   };
-  // bytes rplBlock = 1;
-  void clear_rplblock();
-  const std::string& rplblock() const;
+  // bytes rpl_block = 1;
+  void clear_rpl_block();
+  const std::string& rpl_block() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_rplblock(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_rplblock();
-  PROTOBUF_NODISCARD std::string* release_rplblock();
-  void set_allocated_rplblock(std::string* rplblock);
+  void set_rpl_block(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_rpl_block();
+  PROTOBUF_NODISCARD std::string* release_rpl_block();
+  void set_allocated_rpl_block(std::string* rpl_block);
   private:
-  const std::string& _internal_rplblock() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_rplblock(const std::string& value);
-  std::string* _internal_mutable_rplblock();
+  const std::string& _internal_rpl_block() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_rpl_block(const std::string& value);
+  std::string* _internal_mutable_rpl_block();
   public:
 
   // @@protoc_insertion_point(class_scope:txpool.OnMinedBlockReply)
@@ -653,7 +653,7 @@ class OnMinedBlockReply final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr rplblock_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr rpl_block_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -902,18 +902,18 @@ class OnPendingLogsReply final :
   enum : int {
     kRplLogsFieldNumber = 1,
   };
-  // bytes rplLogs = 1;
-  void clear_rpllogs();
-  const std::string& rpllogs() const;
+  // bytes rpl_logs = 1;
+  void clear_rpl_logs();
+  const std::string& rpl_logs() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_rpllogs(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_rpllogs();
-  PROTOBUF_NODISCARD std::string* release_rpllogs();
-  void set_allocated_rpllogs(std::string* rpllogs);
+  void set_rpl_logs(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_rpl_logs();
+  PROTOBUF_NODISCARD std::string* release_rpl_logs();
+  void set_allocated_rpl_logs(std::string* rpl_logs);
   private:
-  const std::string& _internal_rpllogs() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_rpllogs(const std::string& value);
-  std::string* _internal_mutable_rpllogs();
+  const std::string& _internal_rpl_logs() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_rpl_logs(const std::string& value);
+  std::string* _internal_mutable_rpl_logs();
   public:
 
   // @@protoc_insertion_point(class_scope:txpool.OnPendingLogsReply)
@@ -924,7 +924,7 @@ class OnPendingLogsReply final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr rpllogs_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr rpl_logs_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -1176,32 +1176,32 @@ class GetWorkReply final :
     kTargetFieldNumber = 3,
     kBlockNumberFieldNumber = 4,
   };
-  // string headerHash = 1;
-  void clear_headerhash();
-  const std::string& headerhash() const;
+  // string header_hash = 1;
+  void clear_header_hash();
+  const std::string& header_hash() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_headerhash(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_headerhash();
-  PROTOBUF_NODISCARD std::string* release_headerhash();
-  void set_allocated_headerhash(std::string* headerhash);
+  void set_header_hash(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_header_hash();
+  PROTOBUF_NODISCARD std::string* release_header_hash();
+  void set_allocated_header_hash(std::string* header_hash);
   private:
-  const std::string& _internal_headerhash() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_headerhash(const std::string& value);
-  std::string* _internal_mutable_headerhash();
+  const std::string& _internal_header_hash() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_header_hash(const std::string& value);
+  std::string* _internal_mutable_header_hash();
   public:
 
-  // string seedHash = 2;
-  void clear_seedhash();
-  const std::string& seedhash() const;
+  // string seed_hash = 2;
+  void clear_seed_hash();
+  const std::string& seed_hash() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_seedhash(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_seedhash();
-  PROTOBUF_NODISCARD std::string* release_seedhash();
-  void set_allocated_seedhash(std::string* seedhash);
+  void set_seed_hash(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_seed_hash();
+  PROTOBUF_NODISCARD std::string* release_seed_hash();
+  void set_allocated_seed_hash(std::string* seed_hash);
   private:
-  const std::string& _internal_seedhash() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_seedhash(const std::string& value);
-  std::string* _internal_mutable_seedhash();
+  const std::string& _internal_seed_hash() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_seed_hash(const std::string& value);
+  std::string* _internal_mutable_seed_hash();
   public:
 
   // string target = 3;
@@ -1218,18 +1218,18 @@ class GetWorkReply final :
   std::string* _internal_mutable_target();
   public:
 
-  // string blockNumber = 4;
-  void clear_blocknumber();
-  const std::string& blocknumber() const;
+  // string block_number = 4;
+  void clear_block_number();
+  const std::string& block_number() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_blocknumber(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_blocknumber();
-  PROTOBUF_NODISCARD std::string* release_blocknumber();
-  void set_allocated_blocknumber(std::string* blocknumber);
+  void set_block_number(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_block_number();
+  PROTOBUF_NODISCARD std::string* release_block_number();
+  void set_allocated_block_number(std::string* block_number);
   private:
-  const std::string& _internal_blocknumber() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_blocknumber(const std::string& value);
-  std::string* _internal_mutable_blocknumber();
+  const std::string& _internal_block_number() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_block_number(const std::string& value);
+  std::string* _internal_mutable_block_number();
   public:
 
   // @@protoc_insertion_point(class_scope:txpool.GetWorkReply)
@@ -1240,10 +1240,10 @@ class GetWorkReply final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr headerhash_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr seedhash_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr header_hash_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr seed_hash_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr target_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr blocknumber_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr block_number_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -1376,32 +1376,32 @@ class SubmitWorkRequest final :
     kPowHashFieldNumber = 2,
     kDigestFieldNumber = 3,
   };
-  // bytes blockNonce = 1;
-  void clear_blocknonce();
-  const std::string& blocknonce() const;
+  // bytes block_nonce = 1;
+  void clear_block_nonce();
+  const std::string& block_nonce() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_blocknonce(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_blocknonce();
-  PROTOBUF_NODISCARD std::string* release_blocknonce();
-  void set_allocated_blocknonce(std::string* blocknonce);
+  void set_block_nonce(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_block_nonce();
+  PROTOBUF_NODISCARD std::string* release_block_nonce();
+  void set_allocated_block_nonce(std::string* block_nonce);
   private:
-  const std::string& _internal_blocknonce() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_blocknonce(const std::string& value);
-  std::string* _internal_mutable_blocknonce();
+  const std::string& _internal_block_nonce() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_block_nonce(const std::string& value);
+  std::string* _internal_mutable_block_nonce();
   public:
 
-  // bytes powHash = 2;
-  void clear_powhash();
-  const std::string& powhash() const;
+  // bytes pow_hash = 2;
+  void clear_pow_hash();
+  const std::string& pow_hash() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_powhash(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_powhash();
-  PROTOBUF_NODISCARD std::string* release_powhash();
-  void set_allocated_powhash(std::string* powhash);
+  void set_pow_hash(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_pow_hash();
+  PROTOBUF_NODISCARD std::string* release_pow_hash();
+  void set_allocated_pow_hash(std::string* pow_hash);
   private:
-  const std::string& _internal_powhash() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_powhash(const std::string& value);
-  std::string* _internal_mutable_powhash();
+  const std::string& _internal_pow_hash() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_pow_hash(const std::string& value);
+  std::string* _internal_mutable_pow_hash();
   public:
 
   // bytes digest = 3;
@@ -1426,8 +1426,8 @@ class SubmitWorkRequest final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr blocknonce_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr powhash_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr block_nonce_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr pow_hash_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr digest_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
@@ -2137,13 +2137,13 @@ class HashRateReply final :
   enum : int {
     kHashRateFieldNumber = 1,
   };
-  // uint64 hashRate = 1;
-  void clear_hashrate();
-  uint64_t hashrate() const;
-  void set_hashrate(uint64_t value);
+  // uint64 hash_rate = 1;
+  void clear_hash_rate();
+  uint64_t hash_rate() const;
+  void set_hash_rate(uint64_t value);
   private:
-  uint64_t _internal_hashrate() const;
-  void _internal_set_hashrate(uint64_t value);
+  uint64_t _internal_hash_rate() const;
+  void _internal_set_hash_rate(uint64_t value);
   public:
 
   // @@protoc_insertion_point(class_scope:txpool.HashRateReply)
@@ -2154,7 +2154,7 @@ class HashRateReply final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    uint64_t hashrate_;
+    uint64_t hash_rate_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -2452,54 +2452,54 @@ class MiningReply final :
 
 // OnPendingBlockReply
 
-// bytes rplBlock = 1;
-inline void OnPendingBlockReply::clear_rplblock() {
-  _impl_.rplblock_.ClearToEmpty();
+// bytes rpl_block = 1;
+inline void OnPendingBlockReply::clear_rpl_block() {
+  _impl_.rpl_block_.ClearToEmpty();
 }
-inline const std::string& OnPendingBlockReply::rplblock() const {
-  // @@protoc_insertion_point(field_get:txpool.OnPendingBlockReply.rplBlock)
-  return _internal_rplblock();
+inline const std::string& OnPendingBlockReply::rpl_block() const {
+  // @@protoc_insertion_point(field_get:txpool.OnPendingBlockReply.rpl_block)
+  return _internal_rpl_block();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void OnPendingBlockReply::set_rplblock(ArgT0&& arg0, ArgT... args) {
+void OnPendingBlockReply::set_rpl_block(ArgT0&& arg0, ArgT... args) {
  
- _impl_.rplblock_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:txpool.OnPendingBlockReply.rplBlock)
+ _impl_.rpl_block_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:txpool.OnPendingBlockReply.rpl_block)
 }
-inline std::string* OnPendingBlockReply::mutable_rplblock() {
-  std::string* _s = _internal_mutable_rplblock();
-  // @@protoc_insertion_point(field_mutable:txpool.OnPendingBlockReply.rplBlock)
+inline std::string* OnPendingBlockReply::mutable_rpl_block() {
+  std::string* _s = _internal_mutable_rpl_block();
+  // @@protoc_insertion_point(field_mutable:txpool.OnPendingBlockReply.rpl_block)
   return _s;
 }
-inline const std::string& OnPendingBlockReply::_internal_rplblock() const {
-  return _impl_.rplblock_.Get();
+inline const std::string& OnPendingBlockReply::_internal_rpl_block() const {
+  return _impl_.rpl_block_.Get();
 }
-inline void OnPendingBlockReply::_internal_set_rplblock(const std::string& value) {
+inline void OnPendingBlockReply::_internal_set_rpl_block(const std::string& value) {
   
-  _impl_.rplblock_.Set(value, GetArenaForAllocation());
+  _impl_.rpl_block_.Set(value, GetArenaForAllocation());
 }
-inline std::string* OnPendingBlockReply::_internal_mutable_rplblock() {
+inline std::string* OnPendingBlockReply::_internal_mutable_rpl_block() {
   
-  return _impl_.rplblock_.Mutable(GetArenaForAllocation());
+  return _impl_.rpl_block_.Mutable(GetArenaForAllocation());
 }
-inline std::string* OnPendingBlockReply::release_rplblock() {
-  // @@protoc_insertion_point(field_release:txpool.OnPendingBlockReply.rplBlock)
-  return _impl_.rplblock_.Release();
+inline std::string* OnPendingBlockReply::release_rpl_block() {
+  // @@protoc_insertion_point(field_release:txpool.OnPendingBlockReply.rpl_block)
+  return _impl_.rpl_block_.Release();
 }
-inline void OnPendingBlockReply::set_allocated_rplblock(std::string* rplblock) {
-  if (rplblock != nullptr) {
+inline void OnPendingBlockReply::set_allocated_rpl_block(std::string* rpl_block) {
+  if (rpl_block != nullptr) {
     
   } else {
     
   }
-  _impl_.rplblock_.SetAllocated(rplblock, GetArenaForAllocation());
+  _impl_.rpl_block_.SetAllocated(rpl_block, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.rplblock_.IsDefault()) {
-    _impl_.rplblock_.Set("", GetArenaForAllocation());
+  if (_impl_.rpl_block_.IsDefault()) {
+    _impl_.rpl_block_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:txpool.OnPendingBlockReply.rplBlock)
+  // @@protoc_insertion_point(field_set_allocated:txpool.OnPendingBlockReply.rpl_block)
 }
 
 // -------------------------------------------------------------------
@@ -2510,54 +2510,54 @@ inline void OnPendingBlockReply::set_allocated_rplblock(std::string* rplblock) {
 
 // OnMinedBlockReply
 
-// bytes rplBlock = 1;
-inline void OnMinedBlockReply::clear_rplblock() {
-  _impl_.rplblock_.ClearToEmpty();
+// bytes rpl_block = 1;
+inline void OnMinedBlockReply::clear_rpl_block() {
+  _impl_.rpl_block_.ClearToEmpty();
 }
-inline const std::string& OnMinedBlockReply::rplblock() const {
-  // @@protoc_insertion_point(field_get:txpool.OnMinedBlockReply.rplBlock)
-  return _internal_rplblock();
+inline const std::string& OnMinedBlockReply::rpl_block() const {
+  // @@protoc_insertion_point(field_get:txpool.OnMinedBlockReply.rpl_block)
+  return _internal_rpl_block();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void OnMinedBlockReply::set_rplblock(ArgT0&& arg0, ArgT... args) {
+void OnMinedBlockReply::set_rpl_block(ArgT0&& arg0, ArgT... args) {
  
- _impl_.rplblock_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:txpool.OnMinedBlockReply.rplBlock)
+ _impl_.rpl_block_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:txpool.OnMinedBlockReply.rpl_block)
 }
-inline std::string* OnMinedBlockReply::mutable_rplblock() {
-  std::string* _s = _internal_mutable_rplblock();
-  // @@protoc_insertion_point(field_mutable:txpool.OnMinedBlockReply.rplBlock)
+inline std::string* OnMinedBlockReply::mutable_rpl_block() {
+  std::string* _s = _internal_mutable_rpl_block();
+  // @@protoc_insertion_point(field_mutable:txpool.OnMinedBlockReply.rpl_block)
   return _s;
 }
-inline const std::string& OnMinedBlockReply::_internal_rplblock() const {
-  return _impl_.rplblock_.Get();
+inline const std::string& OnMinedBlockReply::_internal_rpl_block() const {
+  return _impl_.rpl_block_.Get();
 }
-inline void OnMinedBlockReply::_internal_set_rplblock(const std::string& value) {
+inline void OnMinedBlockReply::_internal_set_rpl_block(const std::string& value) {
   
-  _impl_.rplblock_.Set(value, GetArenaForAllocation());
+  _impl_.rpl_block_.Set(value, GetArenaForAllocation());
 }
-inline std::string* OnMinedBlockReply::_internal_mutable_rplblock() {
+inline std::string* OnMinedBlockReply::_internal_mutable_rpl_block() {
   
-  return _impl_.rplblock_.Mutable(GetArenaForAllocation());
+  return _impl_.rpl_block_.Mutable(GetArenaForAllocation());
 }
-inline std::string* OnMinedBlockReply::release_rplblock() {
-  // @@protoc_insertion_point(field_release:txpool.OnMinedBlockReply.rplBlock)
-  return _impl_.rplblock_.Release();
+inline std::string* OnMinedBlockReply::release_rpl_block() {
+  // @@protoc_insertion_point(field_release:txpool.OnMinedBlockReply.rpl_block)
+  return _impl_.rpl_block_.Release();
 }
-inline void OnMinedBlockReply::set_allocated_rplblock(std::string* rplblock) {
-  if (rplblock != nullptr) {
+inline void OnMinedBlockReply::set_allocated_rpl_block(std::string* rpl_block) {
+  if (rpl_block != nullptr) {
     
   } else {
     
   }
-  _impl_.rplblock_.SetAllocated(rplblock, GetArenaForAllocation());
+  _impl_.rpl_block_.SetAllocated(rpl_block, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.rplblock_.IsDefault()) {
-    _impl_.rplblock_.Set("", GetArenaForAllocation());
+  if (_impl_.rpl_block_.IsDefault()) {
+    _impl_.rpl_block_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:txpool.OnMinedBlockReply.rplBlock)
+  // @@protoc_insertion_point(field_set_allocated:txpool.OnMinedBlockReply.rpl_block)
 }
 
 // -------------------------------------------------------------------
@@ -2568,54 +2568,54 @@ inline void OnMinedBlockReply::set_allocated_rplblock(std::string* rplblock) {
 
 // OnPendingLogsReply
 
-// bytes rplLogs = 1;
-inline void OnPendingLogsReply::clear_rpllogs() {
-  _impl_.rpllogs_.ClearToEmpty();
+// bytes rpl_logs = 1;
+inline void OnPendingLogsReply::clear_rpl_logs() {
+  _impl_.rpl_logs_.ClearToEmpty();
 }
-inline const std::string& OnPendingLogsReply::rpllogs() const {
-  // @@protoc_insertion_point(field_get:txpool.OnPendingLogsReply.rplLogs)
-  return _internal_rpllogs();
+inline const std::string& OnPendingLogsReply::rpl_logs() const {
+  // @@protoc_insertion_point(field_get:txpool.OnPendingLogsReply.rpl_logs)
+  return _internal_rpl_logs();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void OnPendingLogsReply::set_rpllogs(ArgT0&& arg0, ArgT... args) {
+void OnPendingLogsReply::set_rpl_logs(ArgT0&& arg0, ArgT... args) {
  
- _impl_.rpllogs_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:txpool.OnPendingLogsReply.rplLogs)
+ _impl_.rpl_logs_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:txpool.OnPendingLogsReply.rpl_logs)
 }
-inline std::string* OnPendingLogsReply::mutable_rpllogs() {
-  std::string* _s = _internal_mutable_rpllogs();
-  // @@protoc_insertion_point(field_mutable:txpool.OnPendingLogsReply.rplLogs)
+inline std::string* OnPendingLogsReply::mutable_rpl_logs() {
+  std::string* _s = _internal_mutable_rpl_logs();
+  // @@protoc_insertion_point(field_mutable:txpool.OnPendingLogsReply.rpl_logs)
   return _s;
 }
-inline const std::string& OnPendingLogsReply::_internal_rpllogs() const {
-  return _impl_.rpllogs_.Get();
+inline const std::string& OnPendingLogsReply::_internal_rpl_logs() const {
+  return _impl_.rpl_logs_.Get();
 }
-inline void OnPendingLogsReply::_internal_set_rpllogs(const std::string& value) {
+inline void OnPendingLogsReply::_internal_set_rpl_logs(const std::string& value) {
   
-  _impl_.rpllogs_.Set(value, GetArenaForAllocation());
+  _impl_.rpl_logs_.Set(value, GetArenaForAllocation());
 }
-inline std::string* OnPendingLogsReply::_internal_mutable_rpllogs() {
+inline std::string* OnPendingLogsReply::_internal_mutable_rpl_logs() {
   
-  return _impl_.rpllogs_.Mutable(GetArenaForAllocation());
+  return _impl_.rpl_logs_.Mutable(GetArenaForAllocation());
 }
-inline std::string* OnPendingLogsReply::release_rpllogs() {
-  // @@protoc_insertion_point(field_release:txpool.OnPendingLogsReply.rplLogs)
-  return _impl_.rpllogs_.Release();
+inline std::string* OnPendingLogsReply::release_rpl_logs() {
+  // @@protoc_insertion_point(field_release:txpool.OnPendingLogsReply.rpl_logs)
+  return _impl_.rpl_logs_.Release();
 }
-inline void OnPendingLogsReply::set_allocated_rpllogs(std::string* rpllogs) {
-  if (rpllogs != nullptr) {
+inline void OnPendingLogsReply::set_allocated_rpl_logs(std::string* rpl_logs) {
+  if (rpl_logs != nullptr) {
     
   } else {
     
   }
-  _impl_.rpllogs_.SetAllocated(rpllogs, GetArenaForAllocation());
+  _impl_.rpl_logs_.SetAllocated(rpl_logs, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.rpllogs_.IsDefault()) {
-    _impl_.rpllogs_.Set("", GetArenaForAllocation());
+  if (_impl_.rpl_logs_.IsDefault()) {
+    _impl_.rpl_logs_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:txpool.OnPendingLogsReply.rplLogs)
+  // @@protoc_insertion_point(field_set_allocated:txpool.OnPendingLogsReply.rpl_logs)
 }
 
 // -------------------------------------------------------------------
@@ -2626,104 +2626,104 @@ inline void OnPendingLogsReply::set_allocated_rpllogs(std::string* rpllogs) {
 
 // GetWorkReply
 
-// string headerHash = 1;
-inline void GetWorkReply::clear_headerhash() {
-  _impl_.headerhash_.ClearToEmpty();
+// string header_hash = 1;
+inline void GetWorkReply::clear_header_hash() {
+  _impl_.header_hash_.ClearToEmpty();
 }
-inline const std::string& GetWorkReply::headerhash() const {
-  // @@protoc_insertion_point(field_get:txpool.GetWorkReply.headerHash)
-  return _internal_headerhash();
+inline const std::string& GetWorkReply::header_hash() const {
+  // @@protoc_insertion_point(field_get:txpool.GetWorkReply.header_hash)
+  return _internal_header_hash();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void GetWorkReply::set_headerhash(ArgT0&& arg0, ArgT... args) {
+void GetWorkReply::set_header_hash(ArgT0&& arg0, ArgT... args) {
  
- _impl_.headerhash_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:txpool.GetWorkReply.headerHash)
+ _impl_.header_hash_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:txpool.GetWorkReply.header_hash)
 }
-inline std::string* GetWorkReply::mutable_headerhash() {
-  std::string* _s = _internal_mutable_headerhash();
-  // @@protoc_insertion_point(field_mutable:txpool.GetWorkReply.headerHash)
+inline std::string* GetWorkReply::mutable_header_hash() {
+  std::string* _s = _internal_mutable_header_hash();
+  // @@protoc_insertion_point(field_mutable:txpool.GetWorkReply.header_hash)
   return _s;
 }
-inline const std::string& GetWorkReply::_internal_headerhash() const {
-  return _impl_.headerhash_.Get();
+inline const std::string& GetWorkReply::_internal_header_hash() const {
+  return _impl_.header_hash_.Get();
 }
-inline void GetWorkReply::_internal_set_headerhash(const std::string& value) {
+inline void GetWorkReply::_internal_set_header_hash(const std::string& value) {
   
-  _impl_.headerhash_.Set(value, GetArenaForAllocation());
+  _impl_.header_hash_.Set(value, GetArenaForAllocation());
 }
-inline std::string* GetWorkReply::_internal_mutable_headerhash() {
+inline std::string* GetWorkReply::_internal_mutable_header_hash() {
   
-  return _impl_.headerhash_.Mutable(GetArenaForAllocation());
+  return _impl_.header_hash_.Mutable(GetArenaForAllocation());
 }
-inline std::string* GetWorkReply::release_headerhash() {
-  // @@protoc_insertion_point(field_release:txpool.GetWorkReply.headerHash)
-  return _impl_.headerhash_.Release();
+inline std::string* GetWorkReply::release_header_hash() {
+  // @@protoc_insertion_point(field_release:txpool.GetWorkReply.header_hash)
+  return _impl_.header_hash_.Release();
 }
-inline void GetWorkReply::set_allocated_headerhash(std::string* headerhash) {
-  if (headerhash != nullptr) {
+inline void GetWorkReply::set_allocated_header_hash(std::string* header_hash) {
+  if (header_hash != nullptr) {
     
   } else {
     
   }
-  _impl_.headerhash_.SetAllocated(headerhash, GetArenaForAllocation());
+  _impl_.header_hash_.SetAllocated(header_hash, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.headerhash_.IsDefault()) {
-    _impl_.headerhash_.Set("", GetArenaForAllocation());
+  if (_impl_.header_hash_.IsDefault()) {
+    _impl_.header_hash_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:txpool.GetWorkReply.headerHash)
+  // @@protoc_insertion_point(field_set_allocated:txpool.GetWorkReply.header_hash)
 }
 
-// string seedHash = 2;
-inline void GetWorkReply::clear_seedhash() {
-  _impl_.seedhash_.ClearToEmpty();
+// string seed_hash = 2;
+inline void GetWorkReply::clear_seed_hash() {
+  _impl_.seed_hash_.ClearToEmpty();
 }
-inline const std::string& GetWorkReply::seedhash() const {
-  // @@protoc_insertion_point(field_get:txpool.GetWorkReply.seedHash)
-  return _internal_seedhash();
+inline const std::string& GetWorkReply::seed_hash() const {
+  // @@protoc_insertion_point(field_get:txpool.GetWorkReply.seed_hash)
+  return _internal_seed_hash();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void GetWorkReply::set_seedhash(ArgT0&& arg0, ArgT... args) {
+void GetWorkReply::set_seed_hash(ArgT0&& arg0, ArgT... args) {
  
- _impl_.seedhash_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:txpool.GetWorkReply.seedHash)
+ _impl_.seed_hash_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:txpool.GetWorkReply.seed_hash)
 }
-inline std::string* GetWorkReply::mutable_seedhash() {
-  std::string* _s = _internal_mutable_seedhash();
-  // @@protoc_insertion_point(field_mutable:txpool.GetWorkReply.seedHash)
+inline std::string* GetWorkReply::mutable_seed_hash() {
+  std::string* _s = _internal_mutable_seed_hash();
+  // @@protoc_insertion_point(field_mutable:txpool.GetWorkReply.seed_hash)
   return _s;
 }
-inline const std::string& GetWorkReply::_internal_seedhash() const {
-  return _impl_.seedhash_.Get();
+inline const std::string& GetWorkReply::_internal_seed_hash() const {
+  return _impl_.seed_hash_.Get();
 }
-inline void GetWorkReply::_internal_set_seedhash(const std::string& value) {
+inline void GetWorkReply::_internal_set_seed_hash(const std::string& value) {
   
-  _impl_.seedhash_.Set(value, GetArenaForAllocation());
+  _impl_.seed_hash_.Set(value, GetArenaForAllocation());
 }
-inline std::string* GetWorkReply::_internal_mutable_seedhash() {
+inline std::string* GetWorkReply::_internal_mutable_seed_hash() {
   
-  return _impl_.seedhash_.Mutable(GetArenaForAllocation());
+  return _impl_.seed_hash_.Mutable(GetArenaForAllocation());
 }
-inline std::string* GetWorkReply::release_seedhash() {
-  // @@protoc_insertion_point(field_release:txpool.GetWorkReply.seedHash)
-  return _impl_.seedhash_.Release();
+inline std::string* GetWorkReply::release_seed_hash() {
+  // @@protoc_insertion_point(field_release:txpool.GetWorkReply.seed_hash)
+  return _impl_.seed_hash_.Release();
 }
-inline void GetWorkReply::set_allocated_seedhash(std::string* seedhash) {
-  if (seedhash != nullptr) {
+inline void GetWorkReply::set_allocated_seed_hash(std::string* seed_hash) {
+  if (seed_hash != nullptr) {
     
   } else {
     
   }
-  _impl_.seedhash_.SetAllocated(seedhash, GetArenaForAllocation());
+  _impl_.seed_hash_.SetAllocated(seed_hash, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.seedhash_.IsDefault()) {
-    _impl_.seedhash_.Set("", GetArenaForAllocation());
+  if (_impl_.seed_hash_.IsDefault()) {
+    _impl_.seed_hash_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:txpool.GetWorkReply.seedHash)
+  // @@protoc_insertion_point(field_set_allocated:txpool.GetWorkReply.seed_hash)
 }
 
 // string target = 3;
@@ -2776,158 +2776,158 @@ inline void GetWorkReply::set_allocated_target(std::string* target) {
   // @@protoc_insertion_point(field_set_allocated:txpool.GetWorkReply.target)
 }
 
-// string blockNumber = 4;
-inline void GetWorkReply::clear_blocknumber() {
-  _impl_.blocknumber_.ClearToEmpty();
+// string block_number = 4;
+inline void GetWorkReply::clear_block_number() {
+  _impl_.block_number_.ClearToEmpty();
 }
-inline const std::string& GetWorkReply::blocknumber() const {
-  // @@protoc_insertion_point(field_get:txpool.GetWorkReply.blockNumber)
-  return _internal_blocknumber();
+inline const std::string& GetWorkReply::block_number() const {
+  // @@protoc_insertion_point(field_get:txpool.GetWorkReply.block_number)
+  return _internal_block_number();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void GetWorkReply::set_blocknumber(ArgT0&& arg0, ArgT... args) {
+void GetWorkReply::set_block_number(ArgT0&& arg0, ArgT... args) {
  
- _impl_.blocknumber_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:txpool.GetWorkReply.blockNumber)
+ _impl_.block_number_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:txpool.GetWorkReply.block_number)
 }
-inline std::string* GetWorkReply::mutable_blocknumber() {
-  std::string* _s = _internal_mutable_blocknumber();
-  // @@protoc_insertion_point(field_mutable:txpool.GetWorkReply.blockNumber)
+inline std::string* GetWorkReply::mutable_block_number() {
+  std::string* _s = _internal_mutable_block_number();
+  // @@protoc_insertion_point(field_mutable:txpool.GetWorkReply.block_number)
   return _s;
 }
-inline const std::string& GetWorkReply::_internal_blocknumber() const {
-  return _impl_.blocknumber_.Get();
+inline const std::string& GetWorkReply::_internal_block_number() const {
+  return _impl_.block_number_.Get();
 }
-inline void GetWorkReply::_internal_set_blocknumber(const std::string& value) {
+inline void GetWorkReply::_internal_set_block_number(const std::string& value) {
   
-  _impl_.blocknumber_.Set(value, GetArenaForAllocation());
+  _impl_.block_number_.Set(value, GetArenaForAllocation());
 }
-inline std::string* GetWorkReply::_internal_mutable_blocknumber() {
+inline std::string* GetWorkReply::_internal_mutable_block_number() {
   
-  return _impl_.blocknumber_.Mutable(GetArenaForAllocation());
+  return _impl_.block_number_.Mutable(GetArenaForAllocation());
 }
-inline std::string* GetWorkReply::release_blocknumber() {
-  // @@protoc_insertion_point(field_release:txpool.GetWorkReply.blockNumber)
-  return _impl_.blocknumber_.Release();
+inline std::string* GetWorkReply::release_block_number() {
+  // @@protoc_insertion_point(field_release:txpool.GetWorkReply.block_number)
+  return _impl_.block_number_.Release();
 }
-inline void GetWorkReply::set_allocated_blocknumber(std::string* blocknumber) {
-  if (blocknumber != nullptr) {
+inline void GetWorkReply::set_allocated_block_number(std::string* block_number) {
+  if (block_number != nullptr) {
     
   } else {
     
   }
-  _impl_.blocknumber_.SetAllocated(blocknumber, GetArenaForAllocation());
+  _impl_.block_number_.SetAllocated(block_number, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.blocknumber_.IsDefault()) {
-    _impl_.blocknumber_.Set("", GetArenaForAllocation());
+  if (_impl_.block_number_.IsDefault()) {
+    _impl_.block_number_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:txpool.GetWorkReply.blockNumber)
+  // @@protoc_insertion_point(field_set_allocated:txpool.GetWorkReply.block_number)
 }
 
 // -------------------------------------------------------------------
 
 // SubmitWorkRequest
 
-// bytes blockNonce = 1;
-inline void SubmitWorkRequest::clear_blocknonce() {
-  _impl_.blocknonce_.ClearToEmpty();
+// bytes block_nonce = 1;
+inline void SubmitWorkRequest::clear_block_nonce() {
+  _impl_.block_nonce_.ClearToEmpty();
 }
-inline const std::string& SubmitWorkRequest::blocknonce() const {
-  // @@protoc_insertion_point(field_get:txpool.SubmitWorkRequest.blockNonce)
-  return _internal_blocknonce();
+inline const std::string& SubmitWorkRequest::block_nonce() const {
+  // @@protoc_insertion_point(field_get:txpool.SubmitWorkRequest.block_nonce)
+  return _internal_block_nonce();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void SubmitWorkRequest::set_blocknonce(ArgT0&& arg0, ArgT... args) {
+void SubmitWorkRequest::set_block_nonce(ArgT0&& arg0, ArgT... args) {
  
- _impl_.blocknonce_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:txpool.SubmitWorkRequest.blockNonce)
+ _impl_.block_nonce_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:txpool.SubmitWorkRequest.block_nonce)
 }
-inline std::string* SubmitWorkRequest::mutable_blocknonce() {
-  std::string* _s = _internal_mutable_blocknonce();
-  // @@protoc_insertion_point(field_mutable:txpool.SubmitWorkRequest.blockNonce)
+inline std::string* SubmitWorkRequest::mutable_block_nonce() {
+  std::string* _s = _internal_mutable_block_nonce();
+  // @@protoc_insertion_point(field_mutable:txpool.SubmitWorkRequest.block_nonce)
   return _s;
 }
-inline const std::string& SubmitWorkRequest::_internal_blocknonce() const {
-  return _impl_.blocknonce_.Get();
+inline const std::string& SubmitWorkRequest::_internal_block_nonce() const {
+  return _impl_.block_nonce_.Get();
 }
-inline void SubmitWorkRequest::_internal_set_blocknonce(const std::string& value) {
+inline void SubmitWorkRequest::_internal_set_block_nonce(const std::string& value) {
   
-  _impl_.blocknonce_.Set(value, GetArenaForAllocation());
+  _impl_.block_nonce_.Set(value, GetArenaForAllocation());
 }
-inline std::string* SubmitWorkRequest::_internal_mutable_blocknonce() {
+inline std::string* SubmitWorkRequest::_internal_mutable_block_nonce() {
   
-  return _impl_.blocknonce_.Mutable(GetArenaForAllocation());
+  return _impl_.block_nonce_.Mutable(GetArenaForAllocation());
 }
-inline std::string* SubmitWorkRequest::release_blocknonce() {
-  // @@protoc_insertion_point(field_release:txpool.SubmitWorkRequest.blockNonce)
-  return _impl_.blocknonce_.Release();
+inline std::string* SubmitWorkRequest::release_block_nonce() {
+  // @@protoc_insertion_point(field_release:txpool.SubmitWorkRequest.block_nonce)
+  return _impl_.block_nonce_.Release();
 }
-inline void SubmitWorkRequest::set_allocated_blocknonce(std::string* blocknonce) {
-  if (blocknonce != nullptr) {
+inline void SubmitWorkRequest::set_allocated_block_nonce(std::string* block_nonce) {
+  if (block_nonce != nullptr) {
     
   } else {
     
   }
-  _impl_.blocknonce_.SetAllocated(blocknonce, GetArenaForAllocation());
+  _impl_.block_nonce_.SetAllocated(block_nonce, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.blocknonce_.IsDefault()) {
-    _impl_.blocknonce_.Set("", GetArenaForAllocation());
+  if (_impl_.block_nonce_.IsDefault()) {
+    _impl_.block_nonce_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:txpool.SubmitWorkRequest.blockNonce)
+  // @@protoc_insertion_point(field_set_allocated:txpool.SubmitWorkRequest.block_nonce)
 }
 
-// bytes powHash = 2;
-inline void SubmitWorkRequest::clear_powhash() {
-  _impl_.powhash_.ClearToEmpty();
+// bytes pow_hash = 2;
+inline void SubmitWorkRequest::clear_pow_hash() {
+  _impl_.pow_hash_.ClearToEmpty();
 }
-inline const std::string& SubmitWorkRequest::powhash() const {
-  // @@protoc_insertion_point(field_get:txpool.SubmitWorkRequest.powHash)
-  return _internal_powhash();
+inline const std::string& SubmitWorkRequest::pow_hash() const {
+  // @@protoc_insertion_point(field_get:txpool.SubmitWorkRequest.pow_hash)
+  return _internal_pow_hash();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void SubmitWorkRequest::set_powhash(ArgT0&& arg0, ArgT... args) {
+void SubmitWorkRequest::set_pow_hash(ArgT0&& arg0, ArgT... args) {
  
- _impl_.powhash_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:txpool.SubmitWorkRequest.powHash)
+ _impl_.pow_hash_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:txpool.SubmitWorkRequest.pow_hash)
 }
-inline std::string* SubmitWorkRequest::mutable_powhash() {
-  std::string* _s = _internal_mutable_powhash();
-  // @@protoc_insertion_point(field_mutable:txpool.SubmitWorkRequest.powHash)
+inline std::string* SubmitWorkRequest::mutable_pow_hash() {
+  std::string* _s = _internal_mutable_pow_hash();
+  // @@protoc_insertion_point(field_mutable:txpool.SubmitWorkRequest.pow_hash)
   return _s;
 }
-inline const std::string& SubmitWorkRequest::_internal_powhash() const {
-  return _impl_.powhash_.Get();
+inline const std::string& SubmitWorkRequest::_internal_pow_hash() const {
+  return _impl_.pow_hash_.Get();
 }
-inline void SubmitWorkRequest::_internal_set_powhash(const std::string& value) {
+inline void SubmitWorkRequest::_internal_set_pow_hash(const std::string& value) {
   
-  _impl_.powhash_.Set(value, GetArenaForAllocation());
+  _impl_.pow_hash_.Set(value, GetArenaForAllocation());
 }
-inline std::string* SubmitWorkRequest::_internal_mutable_powhash() {
+inline std::string* SubmitWorkRequest::_internal_mutable_pow_hash() {
   
-  return _impl_.powhash_.Mutable(GetArenaForAllocation());
+  return _impl_.pow_hash_.Mutable(GetArenaForAllocation());
 }
-inline std::string* SubmitWorkRequest::release_powhash() {
-  // @@protoc_insertion_point(field_release:txpool.SubmitWorkRequest.powHash)
-  return _impl_.powhash_.Release();
+inline std::string* SubmitWorkRequest::release_pow_hash() {
+  // @@protoc_insertion_point(field_release:txpool.SubmitWorkRequest.pow_hash)
+  return _impl_.pow_hash_.Release();
 }
-inline void SubmitWorkRequest::set_allocated_powhash(std::string* powhash) {
-  if (powhash != nullptr) {
+inline void SubmitWorkRequest::set_allocated_pow_hash(std::string* pow_hash) {
+  if (pow_hash != nullptr) {
     
   } else {
     
   }
-  _impl_.powhash_.SetAllocated(powhash, GetArenaForAllocation());
+  _impl_.pow_hash_.SetAllocated(pow_hash, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.powhash_.IsDefault()) {
-    _impl_.powhash_.Set("", GetArenaForAllocation());
+  if (_impl_.pow_hash_.IsDefault()) {
+    _impl_.pow_hash_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:txpool.SubmitWorkRequest.powHash)
+  // @@protoc_insertion_point(field_set_allocated:txpool.SubmitWorkRequest.pow_hash)
 }
 
 // bytes digest = 3;
@@ -3110,24 +3110,24 @@ inline void SubmitHashRateReply::set_ok(bool value) {
 
 // HashRateReply
 
-// uint64 hashRate = 1;
-inline void HashRateReply::clear_hashrate() {
-  _impl_.hashrate_ = uint64_t{0u};
+// uint64 hash_rate = 1;
+inline void HashRateReply::clear_hash_rate() {
+  _impl_.hash_rate_ = uint64_t{0u};
 }
-inline uint64_t HashRateReply::_internal_hashrate() const {
-  return _impl_.hashrate_;
+inline uint64_t HashRateReply::_internal_hash_rate() const {
+  return _impl_.hash_rate_;
 }
-inline uint64_t HashRateReply::hashrate() const {
-  // @@protoc_insertion_point(field_get:txpool.HashRateReply.hashRate)
-  return _internal_hashrate();
+inline uint64_t HashRateReply::hash_rate() const {
+  // @@protoc_insertion_point(field_get:txpool.HashRateReply.hash_rate)
+  return _internal_hash_rate();
 }
-inline void HashRateReply::_internal_set_hashrate(uint64_t value) {
+inline void HashRateReply::_internal_set_hash_rate(uint64_t value) {
   
-  _impl_.hashrate_ = value;
+  _impl_.hash_rate_ = value;
 }
-inline void HashRateReply::set_hashrate(uint64_t value) {
-  _internal_set_hashrate(value);
-  // @@protoc_insertion_point(field_set:txpool.HashRateReply.hashRate)
+inline void HashRateReply::set_hash_rate(uint64_t value) {
+  _internal_set_hash_rate(value);
+  // @@protoc_insertion_point(field_set:txpool.HashRateReply.hash_rate)
 }
 
 // -------------------------------------------------------------------

@@ -586,7 +586,7 @@ class AsyncClientVersionCall : public AsyncUnaryCall<
         SILK_DEBUG << "AsyncClientVersionCall::handle_finish ok: " << ok << " status: " << status_;
 
         if (ok && status_.ok()) {
-            SILK_INFO << "ClientVersion reply: node name=" << reply_.nodename() << " [latency=" << latency() / 1ns << " ns]";
+            SILK_INFO << "ClientVersion reply: node name=" << reply_.node_name() << " [latency=" << latency() / 1ns << " ns]";
         } else {
             SILK_ERROR << "ClientVersion failed: " << status_;
         }
@@ -627,7 +627,7 @@ class AsyncNodeInfoCall : public AsyncUnaryCall<
         SILK_DEBUG << "AsyncNodeInfoCall::handle_finish ok: " << ok << " status: " << status_;
 
         if (ok && status_.ok()) {
-            SILK_INFO << "NodeInfo reply: nodes info size=" << reply_.nodesinfo_size() << " [latency=" << latency() / 1ns << " ns]";
+            SILK_INFO << "NodeInfo reply: nodes info size=" << reply_.nodes_info_size() << " [latency=" << latency() / 1ns << " ns]";
         } else {
             SILK_ERROR << "NodeInfo failed: " << status_;
         }
@@ -679,11 +679,11 @@ class AsyncTxCall
 
     bool handle_read() override {
         if (view_id_ == kInvalidViewId) {
-            SILK_INFO << "Tx database view: txid=" << reply_.txid();
-            view_id_ = reply_.txid();
+            SILK_INFO << "Tx database view: tx_id=" << reply_.tx_id();
+            view_id_ = reply_.tx_id();
             SILK_INFO << "Tx announced: opening cursor";
             request_.set_op(remote::Op::OPEN);
-            request_.set_bucketname(table_name_);
+            request_.set_bucket_name(table_name_);
             return false;
         }
         if (query_count_ == 0) {
@@ -699,8 +699,8 @@ class AsyncTxCall
             }
         } else {
             if (cursor_id_ == kInvalidCursorId) {
-                SILK_INFO << "Tx opened: cursor=" << reply_.cursorid();
-                cursor_id_ = reply_.cursorid();
+                SILK_INFO << "Tx opened: cursor=" << reply_.cursor_id();
+                cursor_id_ = reply_.cursor_id();
                 SILK_DEBUG << "Tx: prepare request FIRST cursor=" << cursor_id_;
                 request_.set_op(remote::Op::FIRST);
                 request_.set_cursor(cursor_id_);
@@ -766,10 +766,10 @@ class AsyncStateChangesCall
         : AsyncServerStreamingCall(queue, stub) {}
 
     void handle_read() override {
-        SILK_INFO << "StateChanges batch: change batch size=" << reply_.changebatch_size()
-                  << " state version id=" << reply_.stateversionid()
-                  << " pending block base fee=" << reply_.pendingblockbasefee()
-                  << " block gas limit=" << reply_.blockgaslimit();
+        SILK_INFO << "StateChanges batch: change batch size=" << reply_.change_batch_size()
+                  << " state version id=" << reply_.state_version_id()
+                  << " pending block base fee=" << reply_.pending_block_base_fee()
+                  << " block gas limit=" << reply_.block_gas_limit();
     }
 
     void handle_finish() override {

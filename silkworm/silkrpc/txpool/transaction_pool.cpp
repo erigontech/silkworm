@@ -39,7 +39,7 @@ boost::asio::awaitable<OperationResult> TransactionPool::add_transaction(const s
     const auto start_time = clock_time::now();
     SILKRPC_DEBUG << "TransactionPool::add_transaction rlp_tx=" << silkworm::to_hex(rlp_tx) << "\n";
     ::txpool::AddRequest request;
-    request.add_rlptxs(rlp_tx.data(), rlp_tx.size());
+    request.add_rlp_txs(rlp_tx.data(), rlp_tx.size());
     UnaryRpc<&::txpool::Txpool::StubInterface::AsyncAdd> add_transaction_rpc{*stub_, grpc_context_};
     const auto reply = co_await add_transaction_rpc.finish_on(executor_, request);
     const auto imported_size = reply.imported_size();
@@ -86,14 +86,14 @@ boost::asio::awaitable<std::optional<silkworm::Bytes>> TransactionPool::get_tran
     hash_h256->set_allocated_lo(lo);  // take ownership
     UnaryRpc<&::txpool::Txpool::StubInterface::AsyncTransactions> get_transactions_rpc{*stub_, grpc_context_};
     const auto reply = co_await get_transactions_rpc.finish_on(executor_, request);
-    const auto rlptxs_size = reply.rlptxs_size();
-    SILKRPC_DEBUG << "TransactionPool::get_transaction rlptxs_size=" << rlptxs_size << "\n";
-    if (rlptxs_size == 1) {
-        const auto rlptx = reply.rlptxs(0);
+    const auto rlp_txs_size = reply.rlp_txs_size();
+    SILKRPC_DEBUG << "TransactionPool::get_transaction rlp_txs_size=" << rlp_txs_size << "\n";
+    if (rlp_txs_size == 1) {
+        const auto rlp_tx = reply.rlp_txs(0);
         SILKRPC_DEBUG << "TransactionPool::get_transaction t=" << clock_time::since(start_time) << "\n";
-        co_return silkworm::Bytes{rlptx.begin(), rlptx.end()};
+        co_return silkworm::Bytes{rlp_tx.begin(), rlp_tx.end()};
     } else {
-        SILKRPC_WARN << "TransactionPool::get_transaction unexpected rlptxs_size=" << rlptxs_size << "\n";
+        SILKRPC_WARN << "TransactionPool::get_transaction unexpected rlp_txs_size=" << rlp_txs_size << "\n";
         SILKRPC_DEBUG << "TransactionPool::get_transaction t=" << clock_time::since(start_time) << "\n";
         co_return std::nullopt;
     }
@@ -117,9 +117,9 @@ boost::asio::awaitable<StatusInfo> TransactionPool::get_status() {
     UnaryRpc<&::txpool::Txpool::StubInterface::AsyncStatus> status_rpc{*stub_, grpc_context_};
     const auto reply = co_await status_rpc.finish_on(executor_, request);
     StatusInfo status_info{
-        .queued_count = reply.queuedcount(),
-        .pending_count = reply.pendingcount(),
-        .base_fee_count = reply.basefeecount()};
+        .queued_count = reply.queued_count(),
+        .pending_count = reply.pending_count(),
+        .base_fee_count = reply.base_fee_count()};
     SILKRPC_DEBUG << "TransactionPool::get_status t=" << clock_time::since(start_time) << "\n";
     co_return status_info;
 }
@@ -136,11 +136,11 @@ boost::asio::awaitable<TransactionsInPool> TransactionPool::get_transactions() {
         const auto tx = reply.txs(i);
         TransactionInfo element{};
         element.sender = address_from_H160(tx.sender());
-        const auto rlp = tx.rlptx();
+        const auto rlp = tx.rlp_tx();
         element.rlp = silkworm::Bytes{rlp.begin(), rlp.end()};
-        if (tx.txntype() == ::txpool::AllReply_TxnType_PENDING) {
+        if (tx.txn_type() == ::txpool::AllReply_TxnType_PENDING) {
             element.transaction_type = PENDING;
-        } else if (tx.txntype() == ::txpool::AllReply_TxnType_QUEUED) {
+        } else if (tx.txn_type() == ::txpool::AllReply_TxnType_QUEUED) {
             element.transaction_type = QUEUED;
         } else {
             element.transaction_type = BASE_FEE;

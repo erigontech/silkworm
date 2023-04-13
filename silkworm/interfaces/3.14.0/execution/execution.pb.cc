@@ -250,15 +250,15 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_execution_2fexecution_2eproto:
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   PROTOBUF_FIELD_OFFSET(::execution::ForkChoiceReceipt, success_),
-  PROTOBUF_FIELD_OFFSET(::execution::ForkChoiceReceipt, latestvalidhash_),
+  PROTOBUF_FIELD_OFFSET(::execution::ForkChoiceReceipt, latest_valid_hash_),
   PROTOBUF_FIELD_OFFSET(::execution::ValidationReceipt, _has_bits_),
   PROTOBUF_FIELD_OFFSET(::execution::ValidationReceipt, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::execution::ValidationReceipt, validationstatus_),
-  PROTOBUF_FIELD_OFFSET(::execution::ValidationReceipt, latestvalidhash_),
-  PROTOBUF_FIELD_OFFSET(::execution::ValidationReceipt, missinghash_),
+  PROTOBUF_FIELD_OFFSET(::execution::ValidationReceipt, validation_status_),
+  PROTOBUF_FIELD_OFFSET(::execution::ValidationReceipt, latest_valid_hash_),
+  PROTOBUF_FIELD_OFFSET(::execution::ValidationReceipt, missing_hash_),
   ~0u,
   ~0u,
   0,
@@ -273,25 +273,25 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_execution_2fexecution_2eproto:
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::execution::Header, parenthash_),
+  PROTOBUF_FIELD_OFFSET(::execution::Header, parent_hash_),
   PROTOBUF_FIELD_OFFSET(::execution::Header, coinbase_),
-  PROTOBUF_FIELD_OFFSET(::execution::Header, stateroot_),
-  PROTOBUF_FIELD_OFFSET(::execution::Header, receiptroot_),
-  PROTOBUF_FIELD_OFFSET(::execution::Header, logsbloom_),
-  PROTOBUF_FIELD_OFFSET(::execution::Header, mixdigest_),
-  PROTOBUF_FIELD_OFFSET(::execution::Header, blocknumber_),
-  PROTOBUF_FIELD_OFFSET(::execution::Header, gaslimit_),
-  PROTOBUF_FIELD_OFFSET(::execution::Header, gasused_),
+  PROTOBUF_FIELD_OFFSET(::execution::Header, state_root_),
+  PROTOBUF_FIELD_OFFSET(::execution::Header, receipt_root_),
+  PROTOBUF_FIELD_OFFSET(::execution::Header, logs_bloom_),
+  PROTOBUF_FIELD_OFFSET(::execution::Header, mix_digest_),
+  PROTOBUF_FIELD_OFFSET(::execution::Header, block_number_),
+  PROTOBUF_FIELD_OFFSET(::execution::Header, gas_limit_),
+  PROTOBUF_FIELD_OFFSET(::execution::Header, gas_used_),
   PROTOBUF_FIELD_OFFSET(::execution::Header, timestamp_),
   PROTOBUF_FIELD_OFFSET(::execution::Header, nonce_),
-  PROTOBUF_FIELD_OFFSET(::execution::Header, extradata_),
+  PROTOBUF_FIELD_OFFSET(::execution::Header, extra_data_),
   PROTOBUF_FIELD_OFFSET(::execution::Header, difficulty_),
-  PROTOBUF_FIELD_OFFSET(::execution::Header, blockhash_),
-  PROTOBUF_FIELD_OFFSET(::execution::Header, ommerhash_),
-  PROTOBUF_FIELD_OFFSET(::execution::Header, transactionhash_),
-  PROTOBUF_FIELD_OFFSET(::execution::Header, basefeepergas_),
-  PROTOBUF_FIELD_OFFSET(::execution::Header, withdrawalhash_),
-  PROTOBUF_FIELD_OFFSET(::execution::Header, excessdatagas_),
+  PROTOBUF_FIELD_OFFSET(::execution::Header, block_hash_),
+  PROTOBUF_FIELD_OFFSET(::execution::Header, ommer_hash_),
+  PROTOBUF_FIELD_OFFSET(::execution::Header, transaction_hash_),
+  PROTOBUF_FIELD_OFFSET(::execution::Header, base_fee_per_gas_),
+  PROTOBUF_FIELD_OFFSET(::execution::Header, withdrawal_hash_),
+  PROTOBUF_FIELD_OFFSET(::execution::Header, excess_data_gas_),
   ~0u,
   ~0u,
   ~0u,
@@ -316,8 +316,8 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_execution_2fexecution_2eproto:
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::execution::BlockBody, blockhash_),
-  PROTOBUF_FIELD_OFFSET(::execution::BlockBody, blocknumber_),
+  PROTOBUF_FIELD_OFFSET(::execution::BlockBody, block_hash_),
+  PROTOBUF_FIELD_OFFSET(::execution::BlockBody, block_number_),
   PROTOBUF_FIELD_OFFSET(::execution::BlockBody, transactions_),
   PROTOBUF_FIELD_OFFSET(::execution::BlockBody, uncles_),
   PROTOBUF_FIELD_OFFSET(::execution::BlockBody, withdrawals_),
@@ -340,15 +340,15 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_execution_2fexecution_2eproto:
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::execution::GetHeaderHashNumberResponse, blocknumber_),
+  PROTOBUF_FIELD_OFFSET(::execution::GetHeaderHashNumberResponse, block_number_),
   0,
   PROTOBUF_FIELD_OFFSET(::execution::GetSegmentRequest, _has_bits_),
   PROTOBUF_FIELD_OFFSET(::execution::GetSegmentRequest, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::execution::GetSegmentRequest, blocknumber_),
-  PROTOBUF_FIELD_OFFSET(::execution::GetSegmentRequest, blockhash_),
+  PROTOBUF_FIELD_OFFSET(::execution::GetSegmentRequest, block_number_),
+  PROTOBUF_FIELD_OFFSET(::execution::GetSegmentRequest, block_hash_),
   1,
   0,
   ~0u,  // no _has_bits_
@@ -401,64 +401,65 @@ static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] =
 
 const char descriptor_table_protodef_execution_2fexecution_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
   "\n\031execution/execution.proto\022\texecution\032\021"
-  "types/types.proto\"J\n\021ForkChoiceReceipt\022\017"
-  "\n\007success\030\001 \001(\010\022$\n\017latestValidHash\030\002 \001(\013"
-  "2\013.types.H256\"\247\001\n\021ValidationReceipt\0225\n\020v"
-  "alidationStatus\030\001 \001(\0162\033.execution.Valida"
-  "tionStatus\022$\n\017latestValidHash\030\002 \001(\0132\013.ty"
-  "pes.H256\022%\n\013missingHash\030\003 \001(\0132\013.types.H2"
-  "56H\000\210\001\001B\016\n\014_missingHash\"(\n\023IsCanonicalRe"
-  "sponse\022\021\n\tcanonical\030\001 \001(\010\"\362\004\n\006Header\022\037\n\n"
-  "parentHash\030\001 \001(\0132\013.types.H256\022\035\n\010coinbas"
-  "e\030\002 \001(\0132\013.types.H160\022\036\n\tstateRoot\030\003 \001(\0132"
-  "\013.types.H256\022 \n\013receiptRoot\030\004 \001(\0132\013.type"
-  "s.H256\022\037\n\tlogsBloom\030\005 \001(\0132\014.types.H2048\022"
-  "\036\n\tmixDigest\030\006 \001(\0132\013.types.H256\022\023\n\013block"
-  "Number\030\007 \001(\004\022\020\n\010gasLimit\030\010 \001(\004\022\017\n\007gasUse"
-  "d\030\t \001(\004\022\021\n\ttimestamp\030\n \001(\004\022\r\n\005nonce\030\013 \001("
-  "\004\022\021\n\textraData\030\014 \001(\014\022\037\n\ndifficulty\030\r \001(\013"
-  "2\013.types.H256\022\036\n\tblockHash\030\016 \001(\0132\013.types"
-  ".H256\022\036\n\tommerHash\030\017 \001(\0132\013.types.H256\022$\n"
-  "\017transactionHash\030\020 \001(\0132\013.types.H256\022\'\n\rb"
-  "aseFeePerGas\030\021 \001(\0132\013.types.H256H\000\210\001\001\022(\n\016"
-  "withdrawalHash\030\022 \001(\0132\013.types.H256H\001\210\001\001\022\'"
-  "\n\rexcessDataGas\030\023 \001(\0132\013.types.H256H\002\210\001\001B"
-  "\020\n\016_baseFeePerGasB\021\n\017_withdrawalHashB\020\n\016"
-  "_excessDataGas\"\241\001\n\tBlockBody\022\036\n\tblockHas"
-  "h\030\001 \001(\0132\013.types.H256\022\023\n\013blockNumber\030\002 \001("
-  "\004\022\024\n\014transactions\030\003 \003(\014\022!\n\006uncles\030\004 \003(\0132"
-  "\021.execution.Header\022&\n\013withdrawals\030\005 \003(\0132"
-  "\021.types.Withdrawal\"F\n\021GetHeaderResponse\022"
-  "&\n\006header\030\001 \001(\0132\021.execution.HeaderH\000\210\001\001B"
-  "\t\n\007_header\"C\n\017GetBodyResponse\022\'\n\004body\030\001 "
-  "\001(\0132\024.execution.BlockBodyH\000\210\001\001B\007\n\005_body\""
-  "G\n\033GetHeaderHashNumberResponse\022\030\n\013blockN"
-  "umber\030\001 \001(\004H\000\210\001\001B\016\n\014_blockNumber\"p\n\021GetS"
-  "egmentRequest\022\030\n\013blockNumber\030\001 \001(\004H\000\210\001\001\022"
-  "#\n\tblockHash\030\002 \001(\0132\013.types.H256H\001\210\001\001B\016\n\014"
-  "_blockNumberB\014\n\n_blockHash\":\n\024InsertHead"
-  "ersRequest\022\"\n\007headers\030\001 \003(\0132\021.execution."
-  "Header\";\n\023InsertBodiesRequest\022$\n\006bodies\030"
-  "\001 \003(\0132\024.execution.BlockBody\"\016\n\014EmptyMess"
-  "age*U\n\020ValidationStatus\022\013\n\007Success\020\000\022\020\n\014"
-  "InvalidChain\020\001\022\016\n\nTooFarAway\020\002\022\022\n\016Missin"
-  "gSegment\020\0032\367\004\n\tExecution\022I\n\rInsertHeader"
-  "s\022\037.execution.InsertHeadersRequest\032\027.exe"
-  "cution.EmptyMessage\022G\n\014InsertBodies\022\036.ex"
-  "ecution.InsertBodiesRequest\032\027.execution."
-  "EmptyMessage\022:\n\rValidateChain\022\013.types.H2"
-  "56\032\034.execution.ValidationReceipt\022=\n\020Upda"
-  "teForkChoice\022\013.types.H256\032\034.execution.Fo"
-  "rkChoiceReceipt\022A\n\rAssembleBlock\022\027.execu"
-  "tion.EmptyMessage\032\027.types.ExecutionPaylo"
-  "ad\022G\n\tGetHeader\022\034.execution.GetSegmentRe"
-  "quest\032\034.execution.GetHeaderResponse\022C\n\007G"
-  "etBody\022\034.execution.GetSegmentRequest\032\032.e"
-  "xecution.GetBodyResponse\022>\n\017IsCanonicalH"
-  "ash\022\013.types.H256\032\036.execution.IsCanonical"
-  "Response\022J\n\023GetHeaderHashNumber\022\013.types."
-  "H256\032&.execution.GetHeaderHashNumberResp"
-  "onseB\027Z\025./execution;executionb\006proto3"
+  "types/types.proto\"L\n\021ForkChoiceReceipt\022\017"
+  "\n\007success\030\001 \001(\010\022&\n\021latest_valid_hash\030\002 \001"
+  "(\0132\013.types.H256\"\254\001\n\021ValidationReceipt\0226\n"
+  "\021validation_status\030\001 \001(\0162\033.execution.Val"
+  "idationStatus\022&\n\021latest_valid_hash\030\002 \001(\013"
+  "2\013.types.H256\022&\n\014missing_hash\030\003 \001(\0132\013.ty"
+  "pes.H256H\000\210\001\001B\017\n\r_missing_hash\"(\n\023IsCano"
+  "nicalResponse\022\021\n\tcanonical\030\001 \001(\010\"\212\005\n\006Hea"
+  "der\022 \n\013parent_hash\030\001 \001(\0132\013.types.H256\022\035\n"
+  "\010coinbase\030\002 \001(\0132\013.types.H160\022\037\n\nstate_ro"
+  "ot\030\003 \001(\0132\013.types.H256\022!\n\014receipt_root\030\004 "
+  "\001(\0132\013.types.H256\022 \n\nlogs_bloom\030\005 \001(\0132\014.t"
+  "ypes.H2048\022\037\n\nmix_digest\030\006 \001(\0132\013.types.H"
+  "256\022\024\n\014block_number\030\007 \001(\004\022\021\n\tgas_limit\030\010"
+  " \001(\004\022\020\n\010gas_used\030\t \001(\004\022\021\n\ttimestamp\030\n \001("
+  "\004\022\r\n\005nonce\030\013 \001(\004\022\022\n\nextra_data\030\014 \001(\014\022\037\n\n"
+  "difficulty\030\r \001(\0132\013.types.H256\022\037\n\nblock_h"
+  "ash\030\016 \001(\0132\013.types.H256\022\037\n\nommer_hash\030\017 \001"
+  "(\0132\013.types.H256\022%\n\020transaction_hash\030\020 \001("
+  "\0132\013.types.H256\022*\n\020base_fee_per_gas\030\021 \001(\013"
+  "2\013.types.H256H\000\210\001\001\022)\n\017withdrawal_hash\030\022 "
+  "\001(\0132\013.types.H256H\001\210\001\001\022)\n\017excess_data_gas"
+  "\030\023 \001(\0132\013.types.H256H\002\210\001\001B\023\n\021_base_fee_pe"
+  "r_gasB\022\n\020_withdrawal_hashB\022\n\020_excess_dat"
+  "a_gas\"\243\001\n\tBlockBody\022\037\n\nblock_hash\030\001 \001(\0132"
+  "\013.types.H256\022\024\n\014block_number\030\002 \001(\004\022\024\n\014tr"
+  "ansactions\030\003 \003(\014\022!\n\006uncles\030\004 \003(\0132\021.execu"
+  "tion.Header\022&\n\013withdrawals\030\005 \003(\0132\021.types"
+  ".Withdrawal\"F\n\021GetHeaderResponse\022&\n\006head"
+  "er\030\001 \001(\0132\021.execution.HeaderH\000\210\001\001B\t\n\007_hea"
+  "der\"C\n\017GetBodyResponse\022\'\n\004body\030\001 \001(\0132\024.e"
+  "xecution.BlockBodyH\000\210\001\001B\007\n\005_body\"I\n\033GetH"
+  "eaderHashNumberResponse\022\031\n\014block_number\030"
+  "\001 \001(\004H\000\210\001\001B\017\n\r_block_number\"t\n\021GetSegmen"
+  "tRequest\022\031\n\014block_number\030\001 \001(\004H\000\210\001\001\022$\n\nb"
+  "lock_hash\030\002 \001(\0132\013.types.H256H\001\210\001\001B\017\n\r_bl"
+  "ock_numberB\r\n\013_block_hash\":\n\024InsertHeade"
+  "rsRequest\022\"\n\007headers\030\001 \003(\0132\021.execution.H"
+  "eader\";\n\023InsertBodiesRequest\022$\n\006bodies\030\001"
+  " \003(\0132\024.execution.BlockBody\"\016\n\014EmptyMessa"
+  "ge*U\n\020ValidationStatus\022\013\n\007Success\020\000\022\020\n\014I"
+  "nvalidChain\020\001\022\016\n\nTooFarAway\020\002\022\022\n\016Missing"
+  "Segment\020\0032\367\004\n\tExecution\022I\n\rInsertHeaders"
+  "\022\037.execution.InsertHeadersRequest\032\027.exec"
+  "ution.EmptyMessage\022G\n\014InsertBodies\022\036.exe"
+  "cution.InsertBodiesRequest\032\027.execution.E"
+  "mptyMessage\022:\n\rValidateChain\022\013.types.H25"
+  "6\032\034.execution.ValidationReceipt\022=\n\020Updat"
+  "eForkChoice\022\013.types.H256\032\034.execution.For"
+  "kChoiceReceipt\022A\n\rAssembleBlock\022\027.execut"
+  "ion.EmptyMessage\032\027.types.ExecutionPayloa"
+  "d\022G\n\tGetHeader\022\034.execution.GetSegmentReq"
+  "uest\032\034.execution.GetHeaderResponse\022C\n\007Ge"
+  "tBody\022\034.execution.GetSegmentRequest\032\032.ex"
+  "ecution.GetBodyResponse\022>\n\017IsCanonicalHa"
+  "sh\022\013.types.H256\032\036.execution.IsCanonicalR"
+  "esponse\022J\n\023GetHeaderHashNumber\022\013.types.H"
+  "256\032&.execution.GetHeaderHashNumberRespo"
+  "nseB\027Z\025./execution;executionb\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_execution_2fexecution_2eproto_deps[1] = {
   &::descriptor_table_types_2ftypes_2eproto,
@@ -479,7 +480,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_exe
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_execution_2fexecution_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_execution_2fexecution_2eproto = {
-  false, false, descriptor_table_protodef_execution_2fexecution_2eproto, "execution/execution.proto", 2357,
+  false, false, descriptor_table_protodef_execution_2fexecution_2eproto, "execution/execution.proto", 2396,
   &descriptor_table_execution_2fexecution_2eproto_once, descriptor_table_execution_2fexecution_2eproto_sccs, descriptor_table_execution_2fexecution_2eproto_deps, 12, 1,
   schemas, file_default_instances, TableStruct_execution_2fexecution_2eproto::offsets,
   file_level_metadata_execution_2fexecution_2eproto, 12, file_level_enum_descriptors_execution_2fexecution_2eproto, file_level_service_descriptors_execution_2fexecution_2eproto,
@@ -509,18 +510,18 @@ bool ValidationStatus_IsValid(int value) {
 
 class ForkChoiceReceipt::_Internal {
  public:
-  static const ::types::H256& latestvalidhash(const ForkChoiceReceipt* msg);
+  static const ::types::H256& latest_valid_hash(const ForkChoiceReceipt* msg);
 };
 
 const ::types::H256&
-ForkChoiceReceipt::_Internal::latestvalidhash(const ForkChoiceReceipt* msg) {
-  return *msg->latestvalidhash_;
+ForkChoiceReceipt::_Internal::latest_valid_hash(const ForkChoiceReceipt* msg) {
+  return *msg->latest_valid_hash_;
 }
-void ForkChoiceReceipt::clear_latestvalidhash() {
-  if (GetArena() == nullptr && latestvalidhash_ != nullptr) {
-    delete latestvalidhash_;
+void ForkChoiceReceipt::clear_latest_valid_hash() {
+  if (GetArena() == nullptr && latest_valid_hash_ != nullptr) {
+    delete latest_valid_hash_;
   }
-  latestvalidhash_ = nullptr;
+  latest_valid_hash_ = nullptr;
 }
 ForkChoiceReceipt::ForkChoiceReceipt(::PROTOBUF_NAMESPACE_ID::Arena* arena)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
@@ -531,10 +532,10 @@ ForkChoiceReceipt::ForkChoiceReceipt(::PROTOBUF_NAMESPACE_ID::Arena* arena)
 ForkChoiceReceipt::ForkChoiceReceipt(const ForkChoiceReceipt& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  if (from._internal_has_latestvalidhash()) {
-    latestvalidhash_ = new ::types::H256(*from.latestvalidhash_);
+  if (from._internal_has_latest_valid_hash()) {
+    latest_valid_hash_ = new ::types::H256(*from.latest_valid_hash_);
   } else {
-    latestvalidhash_ = nullptr;
+    latest_valid_hash_ = nullptr;
   }
   success_ = from.success_;
   // @@protoc_insertion_point(copy_constructor:execution.ForkChoiceReceipt)
@@ -543,9 +544,9 @@ ForkChoiceReceipt::ForkChoiceReceipt(const ForkChoiceReceipt& from)
 void ForkChoiceReceipt::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_ForkChoiceReceipt_execution_2fexecution_2eproto.base);
   ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
-      reinterpret_cast<char*>(&latestvalidhash_) - reinterpret_cast<char*>(this)),
+      reinterpret_cast<char*>(&latest_valid_hash_) - reinterpret_cast<char*>(this)),
       0, static_cast<size_t>(reinterpret_cast<char*>(&success_) -
-      reinterpret_cast<char*>(&latestvalidhash_)) + sizeof(success_));
+      reinterpret_cast<char*>(&latest_valid_hash_)) + sizeof(success_));
 }
 
 ForkChoiceReceipt::~ForkChoiceReceipt() {
@@ -556,7 +557,7 @@ ForkChoiceReceipt::~ForkChoiceReceipt() {
 
 void ForkChoiceReceipt::SharedDtor() {
   GOOGLE_DCHECK(GetArena() == nullptr);
-  if (this != internal_default_instance()) delete latestvalidhash_;
+  if (this != internal_default_instance()) delete latest_valid_hash_;
 }
 
 void ForkChoiceReceipt::ArenaDtor(void* object) {
@@ -580,10 +581,10 @@ void ForkChoiceReceipt::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  if (GetArena() == nullptr && latestvalidhash_ != nullptr) {
-    delete latestvalidhash_;
+  if (GetArena() == nullptr && latest_valid_hash_ != nullptr) {
+    delete latest_valid_hash_;
   }
-  latestvalidhash_ = nullptr;
+  latest_valid_hash_ = nullptr;
   success_ = false;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
@@ -602,10 +603,10 @@ const char* ForkChoiceReceipt::_InternalParse(const char* ptr, ::PROTOBUF_NAMESP
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H256 latestValidHash = 2;
+      // .types.H256 latest_valid_hash = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
-          ptr = ctx->ParseMessage(_internal_mutable_latestvalidhash(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_latest_valid_hash(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -643,12 +644,12 @@ failure:
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteBoolToArray(1, this->_internal_success(), target);
   }
 
-  // .types.H256 latestValidHash = 2;
-  if (this->has_latestvalidhash()) {
+  // .types.H256 latest_valid_hash = 2;
+  if (this->has_latest_valid_hash()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        2, _Internal::latestvalidhash(this), target, stream);
+        2, _Internal::latest_valid_hash(this), target, stream);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -667,11 +668,11 @@ size_t ForkChoiceReceipt::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // .types.H256 latestValidHash = 2;
-  if (this->has_latestvalidhash()) {
+  // .types.H256 latest_valid_hash = 2;
+  if (this->has_latest_valid_hash()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *latestvalidhash_);
+        *latest_valid_hash_);
   }
 
   // bool success = 1;
@@ -710,8 +711,8 @@ void ForkChoiceReceipt::MergeFrom(const ForkChoiceReceipt& from) {
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from.has_latestvalidhash()) {
-    _internal_mutable_latestvalidhash()->::types::H256::MergeFrom(from._internal_latestvalidhash());
+  if (from.has_latest_valid_hash()) {
+    _internal_mutable_latest_valid_hash()->::types::H256::MergeFrom(from._internal_latest_valid_hash());
   }
   if (from.success() != 0) {
     _internal_set_success(from._internal_success());
@@ -742,9 +743,9 @@ void ForkChoiceReceipt::InternalSwap(ForkChoiceReceipt* other) {
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
       PROTOBUF_FIELD_OFFSET(ForkChoiceReceipt, success_)
       + sizeof(ForkChoiceReceipt::success_)
-      - PROTOBUF_FIELD_OFFSET(ForkChoiceReceipt, latestvalidhash_)>(
-          reinterpret_cast<char*>(&latestvalidhash_),
-          reinterpret_cast<char*>(&other->latestvalidhash_));
+      - PROTOBUF_FIELD_OFFSET(ForkChoiceReceipt, latest_valid_hash_)>(
+          reinterpret_cast<char*>(&latest_valid_hash_),
+          reinterpret_cast<char*>(&other->latest_valid_hash_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata ForkChoiceReceipt::GetMetadata() const {
@@ -757,32 +758,32 @@ void ForkChoiceReceipt::InternalSwap(ForkChoiceReceipt* other) {
 class ValidationReceipt::_Internal {
  public:
   using HasBits = decltype(std::declval<ValidationReceipt>()._has_bits_);
-  static const ::types::H256& latestvalidhash(const ValidationReceipt* msg);
-  static const ::types::H256& missinghash(const ValidationReceipt* msg);
-  static void set_has_missinghash(HasBits* has_bits) {
+  static const ::types::H256& latest_valid_hash(const ValidationReceipt* msg);
+  static const ::types::H256& missing_hash(const ValidationReceipt* msg);
+  static void set_has_missing_hash(HasBits* has_bits) {
     (*has_bits)[0] |= 1u;
   }
 };
 
 const ::types::H256&
-ValidationReceipt::_Internal::latestvalidhash(const ValidationReceipt* msg) {
-  return *msg->latestvalidhash_;
+ValidationReceipt::_Internal::latest_valid_hash(const ValidationReceipt* msg) {
+  return *msg->latest_valid_hash_;
 }
 const ::types::H256&
-ValidationReceipt::_Internal::missinghash(const ValidationReceipt* msg) {
-  return *msg->missinghash_;
+ValidationReceipt::_Internal::missing_hash(const ValidationReceipt* msg) {
+  return *msg->missing_hash_;
 }
-void ValidationReceipt::clear_latestvalidhash() {
-  if (GetArena() == nullptr && latestvalidhash_ != nullptr) {
-    delete latestvalidhash_;
+void ValidationReceipt::clear_latest_valid_hash() {
+  if (GetArena() == nullptr && latest_valid_hash_ != nullptr) {
+    delete latest_valid_hash_;
   }
-  latestvalidhash_ = nullptr;
+  latest_valid_hash_ = nullptr;
 }
-void ValidationReceipt::clear_missinghash() {
-  if (GetArena() == nullptr && missinghash_ != nullptr) {
-    delete missinghash_;
+void ValidationReceipt::clear_missing_hash() {
+  if (GetArena() == nullptr && missing_hash_ != nullptr) {
+    delete missing_hash_;
   }
-  missinghash_ = nullptr;
+  missing_hash_ = nullptr;
   _has_bits_[0] &= ~0x00000001u;
 }
 ValidationReceipt::ValidationReceipt(::PROTOBUF_NAMESPACE_ID::Arena* arena)
@@ -795,26 +796,26 @@ ValidationReceipt::ValidationReceipt(const ValidationReceipt& from)
   : ::PROTOBUF_NAMESPACE_ID::Message(),
       _has_bits_(from._has_bits_) {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  if (from._internal_has_latestvalidhash()) {
-    latestvalidhash_ = new ::types::H256(*from.latestvalidhash_);
+  if (from._internal_has_latest_valid_hash()) {
+    latest_valid_hash_ = new ::types::H256(*from.latest_valid_hash_);
   } else {
-    latestvalidhash_ = nullptr;
+    latest_valid_hash_ = nullptr;
   }
-  if (from._internal_has_missinghash()) {
-    missinghash_ = new ::types::H256(*from.missinghash_);
+  if (from._internal_has_missing_hash()) {
+    missing_hash_ = new ::types::H256(*from.missing_hash_);
   } else {
-    missinghash_ = nullptr;
+    missing_hash_ = nullptr;
   }
-  validationstatus_ = from.validationstatus_;
+  validation_status_ = from.validation_status_;
   // @@protoc_insertion_point(copy_constructor:execution.ValidationReceipt)
 }
 
 void ValidationReceipt::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_ValidationReceipt_execution_2fexecution_2eproto.base);
   ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
-      reinterpret_cast<char*>(&latestvalidhash_) - reinterpret_cast<char*>(this)),
-      0, static_cast<size_t>(reinterpret_cast<char*>(&validationstatus_) -
-      reinterpret_cast<char*>(&latestvalidhash_)) + sizeof(validationstatus_));
+      reinterpret_cast<char*>(&latest_valid_hash_) - reinterpret_cast<char*>(this)),
+      0, static_cast<size_t>(reinterpret_cast<char*>(&validation_status_) -
+      reinterpret_cast<char*>(&latest_valid_hash_)) + sizeof(validation_status_));
 }
 
 ValidationReceipt::~ValidationReceipt() {
@@ -825,8 +826,8 @@ ValidationReceipt::~ValidationReceipt() {
 
 void ValidationReceipt::SharedDtor() {
   GOOGLE_DCHECK(GetArena() == nullptr);
-  if (this != internal_default_instance()) delete latestvalidhash_;
-  if (this != internal_default_instance()) delete missinghash_;
+  if (this != internal_default_instance()) delete latest_valid_hash_;
+  if (this != internal_default_instance()) delete missing_hash_;
 }
 
 void ValidationReceipt::ArenaDtor(void* object) {
@@ -850,18 +851,18 @@ void ValidationReceipt::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  if (GetArena() == nullptr && latestvalidhash_ != nullptr) {
-    delete latestvalidhash_;
+  if (GetArena() == nullptr && latest_valid_hash_ != nullptr) {
+    delete latest_valid_hash_;
   }
-  latestvalidhash_ = nullptr;
+  latest_valid_hash_ = nullptr;
   cached_has_bits = _has_bits_[0];
   if (cached_has_bits & 0x00000001u) {
-    if (GetArena() == nullptr && missinghash_ != nullptr) {
-      delete missinghash_;
+    if (GetArena() == nullptr && missing_hash_ != nullptr) {
+      delete missing_hash_;
     }
-    missinghash_ = nullptr;
+    missing_hash_ = nullptr;
   }
-  validationstatus_ = 0;
+  validation_status_ = 0;
   _has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
@@ -874,25 +875,25 @@ const char* ValidationReceipt::_InternalParse(const char* ptr, ::PROTOBUF_NAMESP
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // .execution.ValidationStatus validationStatus = 1;
+      // .execution.ValidationStatus validation_status = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 8)) {
           ::PROTOBUF_NAMESPACE_ID::uint64 val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
-          _internal_set_validationstatus(static_cast<::execution::ValidationStatus>(val));
+          _internal_set_validation_status(static_cast<::execution::ValidationStatus>(val));
         } else goto handle_unusual;
         continue;
-      // .types.H256 latestValidHash = 2;
+      // .types.H256 latest_valid_hash = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
-          ptr = ctx->ParseMessage(_internal_mutable_latestvalidhash(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_latest_valid_hash(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H256 missingHash = 3;
+      // .types.H256 missing_hash = 3;
       case 3:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 26)) {
-          ptr = ctx->ParseMessage(_internal_mutable_missinghash(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_missing_hash(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -925,27 +926,27 @@ failure:
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // .execution.ValidationStatus validationStatus = 1;
-  if (this->validationstatus() != 0) {
+  // .execution.ValidationStatus validation_status = 1;
+  if (this->validation_status() != 0) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteEnumToArray(
-      1, this->_internal_validationstatus(), target);
+      1, this->_internal_validation_status(), target);
   }
 
-  // .types.H256 latestValidHash = 2;
-  if (this->has_latestvalidhash()) {
+  // .types.H256 latest_valid_hash = 2;
+  if (this->has_latest_valid_hash()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        2, _Internal::latestvalidhash(this), target, stream);
+        2, _Internal::latest_valid_hash(this), target, stream);
   }
 
-  // .types.H256 missingHash = 3;
-  if (_internal_has_missinghash()) {
+  // .types.H256 missing_hash = 3;
+  if (_internal_has_missing_hash()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        3, _Internal::missinghash(this), target, stream);
+        3, _Internal::missing_hash(this), target, stream);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -964,25 +965,25 @@ size_t ValidationReceipt::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // .types.H256 latestValidHash = 2;
-  if (this->has_latestvalidhash()) {
+  // .types.H256 latest_valid_hash = 2;
+  if (this->has_latest_valid_hash()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *latestvalidhash_);
+        *latest_valid_hash_);
   }
 
-  // .types.H256 missingHash = 3;
+  // .types.H256 missing_hash = 3;
   cached_has_bits = _has_bits_[0];
   if (cached_has_bits & 0x00000001u) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *missinghash_);
+        *missing_hash_);
   }
 
-  // .execution.ValidationStatus validationStatus = 1;
-  if (this->validationstatus() != 0) {
+  // .execution.ValidationStatus validation_status = 1;
+  if (this->validation_status() != 0) {
     total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::EnumSize(this->_internal_validationstatus());
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::EnumSize(this->_internal_validation_status());
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1016,14 +1017,14 @@ void ValidationReceipt::MergeFrom(const ValidationReceipt& from) {
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from.has_latestvalidhash()) {
-    _internal_mutable_latestvalidhash()->::types::H256::MergeFrom(from._internal_latestvalidhash());
+  if (from.has_latest_valid_hash()) {
+    _internal_mutable_latest_valid_hash()->::types::H256::MergeFrom(from._internal_latest_valid_hash());
   }
-  if (from._internal_has_missinghash()) {
-    _internal_mutable_missinghash()->::types::H256::MergeFrom(from._internal_missinghash());
+  if (from._internal_has_missing_hash()) {
+    _internal_mutable_missing_hash()->::types::H256::MergeFrom(from._internal_missing_hash());
   }
-  if (from.validationstatus() != 0) {
-    _internal_set_validationstatus(from._internal_validationstatus());
+  if (from.validation_status() != 0) {
+    _internal_set_validation_status(from._internal_validation_status());
   }
 }
 
@@ -1050,11 +1051,11 @@ void ValidationReceipt::InternalSwap(ValidationReceipt* other) {
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
   swap(_has_bits_[0], other->_has_bits_[0]);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(ValidationReceipt, validationstatus_)
-      + sizeof(ValidationReceipt::validationstatus_)
-      - PROTOBUF_FIELD_OFFSET(ValidationReceipt, latestvalidhash_)>(
-          reinterpret_cast<char*>(&latestvalidhash_),
-          reinterpret_cast<char*>(&other->latestvalidhash_));
+      PROTOBUF_FIELD_OFFSET(ValidationReceipt, validation_status_)
+      + sizeof(ValidationReceipt::validation_status_)
+      - PROTOBUF_FIELD_OFFSET(ValidationReceipt, latest_valid_hash_)>(
+          reinterpret_cast<char*>(&latest_valid_hash_),
+          reinterpret_cast<char*>(&other->latest_valid_hash_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata ValidationReceipt::GetMetadata() const {
@@ -1259,87 +1260,87 @@ void IsCanonicalResponse::InternalSwap(IsCanonicalResponse* other) {
 class Header::_Internal {
  public:
   using HasBits = decltype(std::declval<Header>()._has_bits_);
-  static const ::types::H256& parenthash(const Header* msg);
+  static const ::types::H256& parent_hash(const Header* msg);
   static const ::types::H160& coinbase(const Header* msg);
-  static const ::types::H256& stateroot(const Header* msg);
-  static const ::types::H256& receiptroot(const Header* msg);
-  static const ::types::H2048& logsbloom(const Header* msg);
-  static const ::types::H256& mixdigest(const Header* msg);
+  static const ::types::H256& state_root(const Header* msg);
+  static const ::types::H256& receipt_root(const Header* msg);
+  static const ::types::H2048& logs_bloom(const Header* msg);
+  static const ::types::H256& mix_digest(const Header* msg);
   static const ::types::H256& difficulty(const Header* msg);
-  static const ::types::H256& blockhash(const Header* msg);
-  static const ::types::H256& ommerhash(const Header* msg);
-  static const ::types::H256& transactionhash(const Header* msg);
-  static const ::types::H256& basefeepergas(const Header* msg);
-  static void set_has_basefeepergas(HasBits* has_bits) {
+  static const ::types::H256& block_hash(const Header* msg);
+  static const ::types::H256& ommer_hash(const Header* msg);
+  static const ::types::H256& transaction_hash(const Header* msg);
+  static const ::types::H256& base_fee_per_gas(const Header* msg);
+  static void set_has_base_fee_per_gas(HasBits* has_bits) {
     (*has_bits)[0] |= 1u;
   }
-  static const ::types::H256& withdrawalhash(const Header* msg);
-  static void set_has_withdrawalhash(HasBits* has_bits) {
+  static const ::types::H256& withdrawal_hash(const Header* msg);
+  static void set_has_withdrawal_hash(HasBits* has_bits) {
     (*has_bits)[0] |= 2u;
   }
-  static const ::types::H256& excessdatagas(const Header* msg);
-  static void set_has_excessdatagas(HasBits* has_bits) {
+  static const ::types::H256& excess_data_gas(const Header* msg);
+  static void set_has_excess_data_gas(HasBits* has_bits) {
     (*has_bits)[0] |= 4u;
   }
 };
 
 const ::types::H256&
-Header::_Internal::parenthash(const Header* msg) {
-  return *msg->parenthash_;
+Header::_Internal::parent_hash(const Header* msg) {
+  return *msg->parent_hash_;
 }
 const ::types::H160&
 Header::_Internal::coinbase(const Header* msg) {
   return *msg->coinbase_;
 }
 const ::types::H256&
-Header::_Internal::stateroot(const Header* msg) {
-  return *msg->stateroot_;
+Header::_Internal::state_root(const Header* msg) {
+  return *msg->state_root_;
 }
 const ::types::H256&
-Header::_Internal::receiptroot(const Header* msg) {
-  return *msg->receiptroot_;
+Header::_Internal::receipt_root(const Header* msg) {
+  return *msg->receipt_root_;
 }
 const ::types::H2048&
-Header::_Internal::logsbloom(const Header* msg) {
-  return *msg->logsbloom_;
+Header::_Internal::logs_bloom(const Header* msg) {
+  return *msg->logs_bloom_;
 }
 const ::types::H256&
-Header::_Internal::mixdigest(const Header* msg) {
-  return *msg->mixdigest_;
+Header::_Internal::mix_digest(const Header* msg) {
+  return *msg->mix_digest_;
 }
 const ::types::H256&
 Header::_Internal::difficulty(const Header* msg) {
   return *msg->difficulty_;
 }
 const ::types::H256&
-Header::_Internal::blockhash(const Header* msg) {
-  return *msg->blockhash_;
+Header::_Internal::block_hash(const Header* msg) {
+  return *msg->block_hash_;
 }
 const ::types::H256&
-Header::_Internal::ommerhash(const Header* msg) {
-  return *msg->ommerhash_;
+Header::_Internal::ommer_hash(const Header* msg) {
+  return *msg->ommer_hash_;
 }
 const ::types::H256&
-Header::_Internal::transactionhash(const Header* msg) {
-  return *msg->transactionhash_;
+Header::_Internal::transaction_hash(const Header* msg) {
+  return *msg->transaction_hash_;
 }
 const ::types::H256&
-Header::_Internal::basefeepergas(const Header* msg) {
-  return *msg->basefeepergas_;
+Header::_Internal::base_fee_per_gas(const Header* msg) {
+  return *msg->base_fee_per_gas_;
 }
 const ::types::H256&
-Header::_Internal::withdrawalhash(const Header* msg) {
-  return *msg->withdrawalhash_;
+Header::_Internal::withdrawal_hash(const Header* msg) {
+  return *msg->withdrawal_hash_;
 }
 const ::types::H256&
-Header::_Internal::excessdatagas(const Header* msg) {
-  return *msg->excessdatagas_;
+Header::_Internal::excess_data_gas(const Header* msg) {
+  return *msg->excess_data_gas_;
 }
-void Header::clear_parenthash() {
-  if (GetArena() == nullptr && parenthash_ != nullptr) {
-    delete parenthash_;
+void Header::clear_parent_hash() {
+  if (GetArena() == nullptr && parent_hash_ != nullptr) {
+    delete parent_hash_;
   }
-  parenthash_ = nullptr;
+  parent_hash_ = nullptr;
 }
 void Header::clear_coinbase() {
   if (GetArena() == nullptr && coinbase_ != nullptr) {
@@ -1347,29 +1348,29 @@ void Header::clear_coinbase() {
   }
   coinbase_ = nullptr;
 }
-void Header::clear_stateroot() {
-  if (GetArena() == nullptr && stateroot_ != nullptr) {
-    delete stateroot_;
+void Header::clear_state_root() {
+  if (GetArena() == nullptr && state_root_ != nullptr) {
+    delete state_root_;
   }
-  stateroot_ = nullptr;
+  state_root_ = nullptr;
 }
-void Header::clear_receiptroot() {
-  if (GetArena() == nullptr && receiptroot_ != nullptr) {
-    delete receiptroot_;
+void Header::clear_receipt_root() {
+  if (GetArena() == nullptr && receipt_root_ != nullptr) {
+    delete receipt_root_;
   }
-  receiptroot_ = nullptr;
+  receipt_root_ = nullptr;
 }
-void Header::clear_logsbloom() {
-  if (GetArena() == nullptr && logsbloom_ != nullptr) {
-    delete logsbloom_;
+void Header::clear_logs_bloom() {
+  if (GetArena() == nullptr && logs_bloom_ != nullptr) {
+    delete logs_bloom_;
   }
-  logsbloom_ = nullptr;
+  logs_bloom_ = nullptr;
 }
-void Header::clear_mixdigest() {
-  if (GetArena() == nullptr && mixdigest_ != nullptr) {
-    delete mixdigest_;
+void Header::clear_mix_digest() {
+  if (GetArena() == nullptr && mix_digest_ != nullptr) {
+    delete mix_digest_;
   }
-  mixdigest_ = nullptr;
+  mix_digest_ = nullptr;
 }
 void Header::clear_difficulty() {
   if (GetArena() == nullptr && difficulty_ != nullptr) {
@@ -1377,43 +1378,43 @@ void Header::clear_difficulty() {
   }
   difficulty_ = nullptr;
 }
-void Header::clear_blockhash() {
-  if (GetArena() == nullptr && blockhash_ != nullptr) {
-    delete blockhash_;
+void Header::clear_block_hash() {
+  if (GetArena() == nullptr && block_hash_ != nullptr) {
+    delete block_hash_;
   }
-  blockhash_ = nullptr;
+  block_hash_ = nullptr;
 }
-void Header::clear_ommerhash() {
-  if (GetArena() == nullptr && ommerhash_ != nullptr) {
-    delete ommerhash_;
+void Header::clear_ommer_hash() {
+  if (GetArena() == nullptr && ommer_hash_ != nullptr) {
+    delete ommer_hash_;
   }
-  ommerhash_ = nullptr;
+  ommer_hash_ = nullptr;
 }
-void Header::clear_transactionhash() {
-  if (GetArena() == nullptr && transactionhash_ != nullptr) {
-    delete transactionhash_;
+void Header::clear_transaction_hash() {
+  if (GetArena() == nullptr && transaction_hash_ != nullptr) {
+    delete transaction_hash_;
   }
-  transactionhash_ = nullptr;
+  transaction_hash_ = nullptr;
 }
-void Header::clear_basefeepergas() {
-  if (GetArena() == nullptr && basefeepergas_ != nullptr) {
-    delete basefeepergas_;
+void Header::clear_base_fee_per_gas() {
+  if (GetArena() == nullptr && base_fee_per_gas_ != nullptr) {
+    delete base_fee_per_gas_;
   }
-  basefeepergas_ = nullptr;
+  base_fee_per_gas_ = nullptr;
   _has_bits_[0] &= ~0x00000001u;
 }
-void Header::clear_withdrawalhash() {
-  if (GetArena() == nullptr && withdrawalhash_ != nullptr) {
-    delete withdrawalhash_;
+void Header::clear_withdrawal_hash() {
+  if (GetArena() == nullptr && withdrawal_hash_ != nullptr) {
+    delete withdrawal_hash_;
   }
-  withdrawalhash_ = nullptr;
+  withdrawal_hash_ = nullptr;
   _has_bits_[0] &= ~0x00000002u;
 }
-void Header::clear_excessdatagas() {
-  if (GetArena() == nullptr && excessdatagas_ != nullptr) {
-    delete excessdatagas_;
+void Header::clear_excess_data_gas() {
+  if (GetArena() == nullptr && excess_data_gas_ != nullptr) {
+    delete excess_data_gas_;
   }
-  excessdatagas_ = nullptr;
+  excess_data_gas_ = nullptr;
   _has_bits_[0] &= ~0x00000004u;
 }
 Header::Header(::PROTOBUF_NAMESPACE_ID::Arena* arena)
@@ -1426,89 +1427,89 @@ Header::Header(const Header& from)
   : ::PROTOBUF_NAMESPACE_ID::Message(),
       _has_bits_(from._has_bits_) {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  extradata_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  if (!from._internal_extradata().empty()) {
-    extradata_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_extradata(), 
+  extra_data_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_extra_data().empty()) {
+    extra_data_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_extra_data(), 
       GetArena());
   }
-  if (from._internal_has_parenthash()) {
-    parenthash_ = new ::types::H256(*from.parenthash_);
+  if (from._internal_has_parent_hash()) {
+    parent_hash_ = new ::types::H256(*from.parent_hash_);
   } else {
-    parenthash_ = nullptr;
+    parent_hash_ = nullptr;
   }
   if (from._internal_has_coinbase()) {
     coinbase_ = new ::types::H160(*from.coinbase_);
   } else {
     coinbase_ = nullptr;
   }
-  if (from._internal_has_stateroot()) {
-    stateroot_ = new ::types::H256(*from.stateroot_);
+  if (from._internal_has_state_root()) {
+    state_root_ = new ::types::H256(*from.state_root_);
   } else {
-    stateroot_ = nullptr;
+    state_root_ = nullptr;
   }
-  if (from._internal_has_receiptroot()) {
-    receiptroot_ = new ::types::H256(*from.receiptroot_);
+  if (from._internal_has_receipt_root()) {
+    receipt_root_ = new ::types::H256(*from.receipt_root_);
   } else {
-    receiptroot_ = nullptr;
+    receipt_root_ = nullptr;
   }
-  if (from._internal_has_logsbloom()) {
-    logsbloom_ = new ::types::H2048(*from.logsbloom_);
+  if (from._internal_has_logs_bloom()) {
+    logs_bloom_ = new ::types::H2048(*from.logs_bloom_);
   } else {
-    logsbloom_ = nullptr;
+    logs_bloom_ = nullptr;
   }
-  if (from._internal_has_mixdigest()) {
-    mixdigest_ = new ::types::H256(*from.mixdigest_);
+  if (from._internal_has_mix_digest()) {
+    mix_digest_ = new ::types::H256(*from.mix_digest_);
   } else {
-    mixdigest_ = nullptr;
+    mix_digest_ = nullptr;
   }
   if (from._internal_has_difficulty()) {
     difficulty_ = new ::types::H256(*from.difficulty_);
   } else {
     difficulty_ = nullptr;
   }
-  if (from._internal_has_blockhash()) {
-    blockhash_ = new ::types::H256(*from.blockhash_);
+  if (from._internal_has_block_hash()) {
+    block_hash_ = new ::types::H256(*from.block_hash_);
   } else {
-    blockhash_ = nullptr;
+    block_hash_ = nullptr;
   }
-  if (from._internal_has_ommerhash()) {
-    ommerhash_ = new ::types::H256(*from.ommerhash_);
+  if (from._internal_has_ommer_hash()) {
+    ommer_hash_ = new ::types::H256(*from.ommer_hash_);
   } else {
-    ommerhash_ = nullptr;
+    ommer_hash_ = nullptr;
   }
-  if (from._internal_has_transactionhash()) {
-    transactionhash_ = new ::types::H256(*from.transactionhash_);
+  if (from._internal_has_transaction_hash()) {
+    transaction_hash_ = new ::types::H256(*from.transaction_hash_);
   } else {
-    transactionhash_ = nullptr;
+    transaction_hash_ = nullptr;
   }
-  if (from._internal_has_basefeepergas()) {
-    basefeepergas_ = new ::types::H256(*from.basefeepergas_);
+  if (from._internal_has_base_fee_per_gas()) {
+    base_fee_per_gas_ = new ::types::H256(*from.base_fee_per_gas_);
   } else {
-    basefeepergas_ = nullptr;
+    base_fee_per_gas_ = nullptr;
   }
-  if (from._internal_has_withdrawalhash()) {
-    withdrawalhash_ = new ::types::H256(*from.withdrawalhash_);
+  if (from._internal_has_withdrawal_hash()) {
+    withdrawal_hash_ = new ::types::H256(*from.withdrawal_hash_);
   } else {
-    withdrawalhash_ = nullptr;
+    withdrawal_hash_ = nullptr;
   }
-  if (from._internal_has_excessdatagas()) {
-    excessdatagas_ = new ::types::H256(*from.excessdatagas_);
+  if (from._internal_has_excess_data_gas()) {
+    excess_data_gas_ = new ::types::H256(*from.excess_data_gas_);
   } else {
-    excessdatagas_ = nullptr;
+    excess_data_gas_ = nullptr;
   }
-  ::memcpy(&blocknumber_, &from.blocknumber_,
+  ::memcpy(&block_number_, &from.block_number_,
     static_cast<size_t>(reinterpret_cast<char*>(&nonce_) -
-    reinterpret_cast<char*>(&blocknumber_)) + sizeof(nonce_));
+    reinterpret_cast<char*>(&block_number_)) + sizeof(nonce_));
   // @@protoc_insertion_point(copy_constructor:execution.Header)
 }
 
 void Header::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_Header_execution_2fexecution_2eproto.base);
-  extradata_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  extra_data_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
-      reinterpret_cast<char*>(&parenthash_) - reinterpret_cast<char*>(this)),
+      reinterpret_cast<char*>(&parent_hash_) - reinterpret_cast<char*>(this)),
       0, static_cast<size_t>(reinterpret_cast<char*>(&nonce_) -
-      reinterpret_cast<char*>(&parenthash_)) + sizeof(nonce_));
+      reinterpret_cast<char*>(&parent_hash_)) + sizeof(nonce_));
 }
 
 Header::~Header() {
@@ -1519,20 +1520,20 @@ Header::~Header() {
 
 void Header::SharedDtor() {
   GOOGLE_DCHECK(GetArena() == nullptr);
-  extradata_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  if (this != internal_default_instance()) delete parenthash_;
+  extra_data_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (this != internal_default_instance()) delete parent_hash_;
   if (this != internal_default_instance()) delete coinbase_;
-  if (this != internal_default_instance()) delete stateroot_;
-  if (this != internal_default_instance()) delete receiptroot_;
-  if (this != internal_default_instance()) delete logsbloom_;
-  if (this != internal_default_instance()) delete mixdigest_;
+  if (this != internal_default_instance()) delete state_root_;
+  if (this != internal_default_instance()) delete receipt_root_;
+  if (this != internal_default_instance()) delete logs_bloom_;
+  if (this != internal_default_instance()) delete mix_digest_;
   if (this != internal_default_instance()) delete difficulty_;
-  if (this != internal_default_instance()) delete blockhash_;
-  if (this != internal_default_instance()) delete ommerhash_;
-  if (this != internal_default_instance()) delete transactionhash_;
-  if (this != internal_default_instance()) delete basefeepergas_;
-  if (this != internal_default_instance()) delete withdrawalhash_;
-  if (this != internal_default_instance()) delete excessdatagas_;
+  if (this != internal_default_instance()) delete block_hash_;
+  if (this != internal_default_instance()) delete ommer_hash_;
+  if (this != internal_default_instance()) delete transaction_hash_;
+  if (this != internal_default_instance()) delete base_fee_per_gas_;
+  if (this != internal_default_instance()) delete withdrawal_hash_;
+  if (this != internal_default_instance()) delete excess_data_gas_;
 }
 
 void Header::ArenaDtor(void* object) {
@@ -1556,71 +1557,71 @@ void Header::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  extradata_.ClearToEmpty();
-  if (GetArena() == nullptr && parenthash_ != nullptr) {
-    delete parenthash_;
+  extra_data_.ClearToEmpty();
+  if (GetArena() == nullptr && parent_hash_ != nullptr) {
+    delete parent_hash_;
   }
-  parenthash_ = nullptr;
+  parent_hash_ = nullptr;
   if (GetArena() == nullptr && coinbase_ != nullptr) {
     delete coinbase_;
   }
   coinbase_ = nullptr;
-  if (GetArena() == nullptr && stateroot_ != nullptr) {
-    delete stateroot_;
+  if (GetArena() == nullptr && state_root_ != nullptr) {
+    delete state_root_;
   }
-  stateroot_ = nullptr;
-  if (GetArena() == nullptr && receiptroot_ != nullptr) {
-    delete receiptroot_;
+  state_root_ = nullptr;
+  if (GetArena() == nullptr && receipt_root_ != nullptr) {
+    delete receipt_root_;
   }
-  receiptroot_ = nullptr;
-  if (GetArena() == nullptr && logsbloom_ != nullptr) {
-    delete logsbloom_;
+  receipt_root_ = nullptr;
+  if (GetArena() == nullptr && logs_bloom_ != nullptr) {
+    delete logs_bloom_;
   }
-  logsbloom_ = nullptr;
-  if (GetArena() == nullptr && mixdigest_ != nullptr) {
-    delete mixdigest_;
+  logs_bloom_ = nullptr;
+  if (GetArena() == nullptr && mix_digest_ != nullptr) {
+    delete mix_digest_;
   }
-  mixdigest_ = nullptr;
+  mix_digest_ = nullptr;
   if (GetArena() == nullptr && difficulty_ != nullptr) {
     delete difficulty_;
   }
   difficulty_ = nullptr;
-  if (GetArena() == nullptr && blockhash_ != nullptr) {
-    delete blockhash_;
+  if (GetArena() == nullptr && block_hash_ != nullptr) {
+    delete block_hash_;
   }
-  blockhash_ = nullptr;
-  if (GetArena() == nullptr && ommerhash_ != nullptr) {
-    delete ommerhash_;
+  block_hash_ = nullptr;
+  if (GetArena() == nullptr && ommer_hash_ != nullptr) {
+    delete ommer_hash_;
   }
-  ommerhash_ = nullptr;
-  if (GetArena() == nullptr && transactionhash_ != nullptr) {
-    delete transactionhash_;
+  ommer_hash_ = nullptr;
+  if (GetArena() == nullptr && transaction_hash_ != nullptr) {
+    delete transaction_hash_;
   }
-  transactionhash_ = nullptr;
+  transaction_hash_ = nullptr;
   cached_has_bits = _has_bits_[0];
   if (cached_has_bits & 0x00000007u) {
     if (cached_has_bits & 0x00000001u) {
-      if (GetArena() == nullptr && basefeepergas_ != nullptr) {
-        delete basefeepergas_;
+      if (GetArena() == nullptr && base_fee_per_gas_ != nullptr) {
+        delete base_fee_per_gas_;
       }
-      basefeepergas_ = nullptr;
+      base_fee_per_gas_ = nullptr;
     }
     if (cached_has_bits & 0x00000002u) {
-      if (GetArena() == nullptr && withdrawalhash_ != nullptr) {
-        delete withdrawalhash_;
+      if (GetArena() == nullptr && withdrawal_hash_ != nullptr) {
+        delete withdrawal_hash_;
       }
-      withdrawalhash_ = nullptr;
+      withdrawal_hash_ = nullptr;
     }
     if (cached_has_bits & 0x00000004u) {
-      if (GetArena() == nullptr && excessdatagas_ != nullptr) {
-        delete excessdatagas_;
+      if (GetArena() == nullptr && excess_data_gas_ != nullptr) {
+        delete excess_data_gas_;
       }
-      excessdatagas_ = nullptr;
+      excess_data_gas_ = nullptr;
     }
   }
-  ::memset(&blocknumber_, 0, static_cast<size_t>(
+  ::memset(&block_number_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&nonce_) -
-      reinterpret_cast<char*>(&blocknumber_)) + sizeof(nonce_));
+      reinterpret_cast<char*>(&block_number_)) + sizeof(nonce_));
   _has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
@@ -1633,10 +1634,10 @@ const char* Header::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::int
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // .types.H256 parentHash = 1;
+      // .types.H256 parent_hash = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
-          ptr = ctx->ParseMessage(_internal_mutable_parenthash(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_parent_hash(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -1647,52 +1648,52 @@ const char* Header::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::int
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H256 stateRoot = 3;
+      // .types.H256 state_root = 3;
       case 3:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 26)) {
-          ptr = ctx->ParseMessage(_internal_mutable_stateroot(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_state_root(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H256 receiptRoot = 4;
+      // .types.H256 receipt_root = 4;
       case 4:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 34)) {
-          ptr = ctx->ParseMessage(_internal_mutable_receiptroot(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_receipt_root(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H2048 logsBloom = 5;
+      // .types.H2048 logs_bloom = 5;
       case 5:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 42)) {
-          ptr = ctx->ParseMessage(_internal_mutable_logsbloom(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_logs_bloom(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H256 mixDigest = 6;
+      // .types.H256 mix_digest = 6;
       case 6:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 50)) {
-          ptr = ctx->ParseMessage(_internal_mutable_mixdigest(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_mix_digest(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // uint64 blockNumber = 7;
+      // uint64 block_number = 7;
       case 7:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 56)) {
-          blocknumber_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          block_number_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // uint64 gasLimit = 8;
+      // uint64 gas_limit = 8;
       case 8:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 64)) {
-          gaslimit_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          gas_limit_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // uint64 gasUsed = 9;
+      // uint64 gas_used = 9;
       case 9:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 72)) {
-          gasused_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          gas_used_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -1710,10 +1711,10 @@ const char* Header::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::int
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // bytes extraData = 12;
+      // bytes extra_data = 12;
       case 12:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 98)) {
-          auto str = _internal_mutable_extradata();
+          auto str = _internal_mutable_extra_data();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
         } else goto handle_unusual;
@@ -1725,45 +1726,45 @@ const char* Header::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::int
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H256 blockHash = 14;
+      // .types.H256 block_hash = 14;
       case 14:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 114)) {
-          ptr = ctx->ParseMessage(_internal_mutable_blockhash(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_block_hash(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H256 ommerHash = 15;
+      // .types.H256 ommer_hash = 15;
       case 15:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 122)) {
-          ptr = ctx->ParseMessage(_internal_mutable_ommerhash(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_ommer_hash(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H256 transactionHash = 16;
+      // .types.H256 transaction_hash = 16;
       case 16:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 130)) {
-          ptr = ctx->ParseMessage(_internal_mutable_transactionhash(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_transaction_hash(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H256 baseFeePerGas = 17;
+      // .types.H256 base_fee_per_gas = 17;
       case 17:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 138)) {
-          ptr = ctx->ParseMessage(_internal_mutable_basefeepergas(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_base_fee_per_gas(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H256 withdrawalHash = 18;
+      // .types.H256 withdrawal_hash = 18;
       case 18:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 146)) {
-          ptr = ctx->ParseMessage(_internal_mutable_withdrawalhash(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_withdrawal_hash(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H256 excessDataGas = 19;
+      // .types.H256 excess_data_gas = 19;
       case 19:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 154)) {
-          ptr = ctx->ParseMessage(_internal_mutable_excessdatagas(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_excess_data_gas(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -1796,12 +1797,12 @@ failure:
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // .types.H256 parentHash = 1;
-  if (this->has_parenthash()) {
+  // .types.H256 parent_hash = 1;
+  if (this->has_parent_hash()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        1, _Internal::parenthash(this), target, stream);
+        1, _Internal::parent_hash(this), target, stream);
   }
 
   // .types.H160 coinbase = 2;
@@ -1812,54 +1813,54 @@ failure:
         2, _Internal::coinbase(this), target, stream);
   }
 
-  // .types.H256 stateRoot = 3;
-  if (this->has_stateroot()) {
+  // .types.H256 state_root = 3;
+  if (this->has_state_root()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        3, _Internal::stateroot(this), target, stream);
+        3, _Internal::state_root(this), target, stream);
   }
 
-  // .types.H256 receiptRoot = 4;
-  if (this->has_receiptroot()) {
+  // .types.H256 receipt_root = 4;
+  if (this->has_receipt_root()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        4, _Internal::receiptroot(this), target, stream);
+        4, _Internal::receipt_root(this), target, stream);
   }
 
-  // .types.H2048 logsBloom = 5;
-  if (this->has_logsbloom()) {
+  // .types.H2048 logs_bloom = 5;
+  if (this->has_logs_bloom()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        5, _Internal::logsbloom(this), target, stream);
+        5, _Internal::logs_bloom(this), target, stream);
   }
 
-  // .types.H256 mixDigest = 6;
-  if (this->has_mixdigest()) {
+  // .types.H256 mix_digest = 6;
+  if (this->has_mix_digest()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        6, _Internal::mixdigest(this), target, stream);
+        6, _Internal::mix_digest(this), target, stream);
   }
 
-  // uint64 blockNumber = 7;
-  if (this->blocknumber() != 0) {
+  // uint64 block_number = 7;
+  if (this->block_number() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(7, this->_internal_blocknumber(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(7, this->_internal_block_number(), target);
   }
 
-  // uint64 gasLimit = 8;
-  if (this->gaslimit() != 0) {
+  // uint64 gas_limit = 8;
+  if (this->gas_limit() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(8, this->_internal_gaslimit(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(8, this->_internal_gas_limit(), target);
   }
 
-  // uint64 gasUsed = 9;
-  if (this->gasused() != 0) {
+  // uint64 gas_used = 9;
+  if (this->gas_used() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(9, this->_internal_gasused(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(9, this->_internal_gas_used(), target);
   }
 
   // uint64 timestamp = 10;
@@ -1874,10 +1875,10 @@ failure:
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(11, this->_internal_nonce(), target);
   }
 
-  // bytes extraData = 12;
-  if (this->extradata().size() > 0) {
+  // bytes extra_data = 12;
+  if (this->extra_data().size() > 0) {
     target = stream->WriteBytesMaybeAliased(
-        12, this->_internal_extradata(), target);
+        12, this->_internal_extra_data(), target);
   }
 
   // .types.H256 difficulty = 13;
@@ -1888,52 +1889,52 @@ failure:
         13, _Internal::difficulty(this), target, stream);
   }
 
-  // .types.H256 blockHash = 14;
-  if (this->has_blockhash()) {
+  // .types.H256 block_hash = 14;
+  if (this->has_block_hash()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        14, _Internal::blockhash(this), target, stream);
+        14, _Internal::block_hash(this), target, stream);
   }
 
-  // .types.H256 ommerHash = 15;
-  if (this->has_ommerhash()) {
+  // .types.H256 ommer_hash = 15;
+  if (this->has_ommer_hash()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        15, _Internal::ommerhash(this), target, stream);
+        15, _Internal::ommer_hash(this), target, stream);
   }
 
-  // .types.H256 transactionHash = 16;
-  if (this->has_transactionhash()) {
+  // .types.H256 transaction_hash = 16;
+  if (this->has_transaction_hash()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        16, _Internal::transactionhash(this), target, stream);
+        16, _Internal::transaction_hash(this), target, stream);
   }
 
-  // .types.H256 baseFeePerGas = 17;
-  if (_internal_has_basefeepergas()) {
+  // .types.H256 base_fee_per_gas = 17;
+  if (_internal_has_base_fee_per_gas()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        17, _Internal::basefeepergas(this), target, stream);
+        17, _Internal::base_fee_per_gas(this), target, stream);
   }
 
-  // .types.H256 withdrawalHash = 18;
-  if (_internal_has_withdrawalhash()) {
+  // .types.H256 withdrawal_hash = 18;
+  if (_internal_has_withdrawal_hash()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        18, _Internal::withdrawalhash(this), target, stream);
+        18, _Internal::withdrawal_hash(this), target, stream);
   }
 
-  // .types.H256 excessDataGas = 19;
-  if (_internal_has_excessdatagas()) {
+  // .types.H256 excess_data_gas = 19;
+  if (_internal_has_excess_data_gas()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        19, _Internal::excessdatagas(this), target, stream);
+        19, _Internal::excess_data_gas(this), target, stream);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1952,18 +1953,18 @@ size_t Header::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // bytes extraData = 12;
-  if (this->extradata().size() > 0) {
+  // bytes extra_data = 12;
+  if (this->extra_data().size() > 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_extradata());
+        this->_internal_extra_data());
   }
 
-  // .types.H256 parentHash = 1;
-  if (this->has_parenthash()) {
+  // .types.H256 parent_hash = 1;
+  if (this->has_parent_hash()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *parenthash_);
+        *parent_hash_);
   }
 
   // .types.H160 coinbase = 2;
@@ -1973,32 +1974,32 @@ size_t Header::ByteSizeLong() const {
         *coinbase_);
   }
 
-  // .types.H256 stateRoot = 3;
-  if (this->has_stateroot()) {
+  // .types.H256 state_root = 3;
+  if (this->has_state_root()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *stateroot_);
+        *state_root_);
   }
 
-  // .types.H256 receiptRoot = 4;
-  if (this->has_receiptroot()) {
+  // .types.H256 receipt_root = 4;
+  if (this->has_receipt_root()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *receiptroot_);
+        *receipt_root_);
   }
 
-  // .types.H2048 logsBloom = 5;
-  if (this->has_logsbloom()) {
+  // .types.H2048 logs_bloom = 5;
+  if (this->has_logs_bloom()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *logsbloom_);
+        *logs_bloom_);
   }
 
-  // .types.H256 mixDigest = 6;
-  if (this->has_mixdigest()) {
+  // .types.H256 mix_digest = 6;
+  if (this->has_mix_digest()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *mixdigest_);
+        *mix_digest_);
   }
 
   // .types.H256 difficulty = 13;
@@ -2008,70 +2009,70 @@ size_t Header::ByteSizeLong() const {
         *difficulty_);
   }
 
-  // .types.H256 blockHash = 14;
-  if (this->has_blockhash()) {
+  // .types.H256 block_hash = 14;
+  if (this->has_block_hash()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *blockhash_);
+        *block_hash_);
   }
 
-  // .types.H256 ommerHash = 15;
-  if (this->has_ommerhash()) {
+  // .types.H256 ommer_hash = 15;
+  if (this->has_ommer_hash()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *ommerhash_);
+        *ommer_hash_);
   }
 
-  // .types.H256 transactionHash = 16;
-  if (this->has_transactionhash()) {
+  // .types.H256 transaction_hash = 16;
+  if (this->has_transaction_hash()) {
     total_size += 2 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *transactionhash_);
+        *transaction_hash_);
   }
 
   cached_has_bits = _has_bits_[0];
   if (cached_has_bits & 0x00000007u) {
-    // .types.H256 baseFeePerGas = 17;
+    // .types.H256 base_fee_per_gas = 17;
     if (cached_has_bits & 0x00000001u) {
       total_size += 2 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-          *basefeepergas_);
+          *base_fee_per_gas_);
     }
 
-    // .types.H256 withdrawalHash = 18;
+    // .types.H256 withdrawal_hash = 18;
     if (cached_has_bits & 0x00000002u) {
       total_size += 2 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-          *withdrawalhash_);
+          *withdrawal_hash_);
     }
 
-    // .types.H256 excessDataGas = 19;
+    // .types.H256 excess_data_gas = 19;
     if (cached_has_bits & 0x00000004u) {
       total_size += 2 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-          *excessdatagas_);
+          *excess_data_gas_);
     }
 
   }
-  // uint64 blockNumber = 7;
-  if (this->blocknumber() != 0) {
+  // uint64 block_number = 7;
+  if (this->block_number() != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
-        this->_internal_blocknumber());
+        this->_internal_block_number());
   }
 
-  // uint64 gasLimit = 8;
-  if (this->gaslimit() != 0) {
+  // uint64 gas_limit = 8;
+  if (this->gas_limit() != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
-        this->_internal_gaslimit());
+        this->_internal_gas_limit());
   }
 
-  // uint64 gasUsed = 9;
-  if (this->gasused() != 0) {
+  // uint64 gas_used = 9;
+  if (this->gas_used() != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
-        this->_internal_gasused());
+        this->_internal_gas_used());
   }
 
   // uint64 timestamp = 10;
@@ -2119,59 +2120,59 @@ void Header::MergeFrom(const Header& from) {
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from.extradata().size() > 0) {
-    _internal_set_extradata(from._internal_extradata());
+  if (from.extra_data().size() > 0) {
+    _internal_set_extra_data(from._internal_extra_data());
   }
-  if (from.has_parenthash()) {
-    _internal_mutable_parenthash()->::types::H256::MergeFrom(from._internal_parenthash());
+  if (from.has_parent_hash()) {
+    _internal_mutable_parent_hash()->::types::H256::MergeFrom(from._internal_parent_hash());
   }
   if (from.has_coinbase()) {
     _internal_mutable_coinbase()->::types::H160::MergeFrom(from._internal_coinbase());
   }
-  if (from.has_stateroot()) {
-    _internal_mutable_stateroot()->::types::H256::MergeFrom(from._internal_stateroot());
+  if (from.has_state_root()) {
+    _internal_mutable_state_root()->::types::H256::MergeFrom(from._internal_state_root());
   }
-  if (from.has_receiptroot()) {
-    _internal_mutable_receiptroot()->::types::H256::MergeFrom(from._internal_receiptroot());
+  if (from.has_receipt_root()) {
+    _internal_mutable_receipt_root()->::types::H256::MergeFrom(from._internal_receipt_root());
   }
-  if (from.has_logsbloom()) {
-    _internal_mutable_logsbloom()->::types::H2048::MergeFrom(from._internal_logsbloom());
+  if (from.has_logs_bloom()) {
+    _internal_mutable_logs_bloom()->::types::H2048::MergeFrom(from._internal_logs_bloom());
   }
-  if (from.has_mixdigest()) {
-    _internal_mutable_mixdigest()->::types::H256::MergeFrom(from._internal_mixdigest());
+  if (from.has_mix_digest()) {
+    _internal_mutable_mix_digest()->::types::H256::MergeFrom(from._internal_mix_digest());
   }
   if (from.has_difficulty()) {
     _internal_mutable_difficulty()->::types::H256::MergeFrom(from._internal_difficulty());
   }
-  if (from.has_blockhash()) {
-    _internal_mutable_blockhash()->::types::H256::MergeFrom(from._internal_blockhash());
+  if (from.has_block_hash()) {
+    _internal_mutable_block_hash()->::types::H256::MergeFrom(from._internal_block_hash());
   }
-  if (from.has_ommerhash()) {
-    _internal_mutable_ommerhash()->::types::H256::MergeFrom(from._internal_ommerhash());
+  if (from.has_ommer_hash()) {
+    _internal_mutable_ommer_hash()->::types::H256::MergeFrom(from._internal_ommer_hash());
   }
-  if (from.has_transactionhash()) {
-    _internal_mutable_transactionhash()->::types::H256::MergeFrom(from._internal_transactionhash());
+  if (from.has_transaction_hash()) {
+    _internal_mutable_transaction_hash()->::types::H256::MergeFrom(from._internal_transaction_hash());
   }
   cached_has_bits = from._has_bits_[0];
   if (cached_has_bits & 0x00000007u) {
     if (cached_has_bits & 0x00000001u) {
-      _internal_mutable_basefeepergas()->::types::H256::MergeFrom(from._internal_basefeepergas());
+      _internal_mutable_base_fee_per_gas()->::types::H256::MergeFrom(from._internal_base_fee_per_gas());
     }
     if (cached_has_bits & 0x00000002u) {
-      _internal_mutable_withdrawalhash()->::types::H256::MergeFrom(from._internal_withdrawalhash());
+      _internal_mutable_withdrawal_hash()->::types::H256::MergeFrom(from._internal_withdrawal_hash());
     }
     if (cached_has_bits & 0x00000004u) {
-      _internal_mutable_excessdatagas()->::types::H256::MergeFrom(from._internal_excessdatagas());
+      _internal_mutable_excess_data_gas()->::types::H256::MergeFrom(from._internal_excess_data_gas());
     }
   }
-  if (from.blocknumber() != 0) {
-    _internal_set_blocknumber(from._internal_blocknumber());
+  if (from.block_number() != 0) {
+    _internal_set_block_number(from._internal_block_number());
   }
-  if (from.gaslimit() != 0) {
-    _internal_set_gaslimit(from._internal_gaslimit());
+  if (from.gas_limit() != 0) {
+    _internal_set_gas_limit(from._internal_gas_limit());
   }
-  if (from.gasused() != 0) {
-    _internal_set_gasused(from._internal_gasused());
+  if (from.gas_used() != 0) {
+    _internal_set_gas_used(from._internal_gas_used());
   }
   if (from.timestamp() != 0) {
     _internal_set_timestamp(from._internal_timestamp());
@@ -2203,13 +2204,13 @@ void Header::InternalSwap(Header* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
   swap(_has_bits_[0], other->_has_bits_[0]);
-  extradata_.Swap(&other->extradata_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  extra_data_.Swap(&other->extra_data_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
       PROTOBUF_FIELD_OFFSET(Header, nonce_)
       + sizeof(Header::nonce_)
-      - PROTOBUF_FIELD_OFFSET(Header, parenthash_)>(
-          reinterpret_cast<char*>(&parenthash_),
-          reinterpret_cast<char*>(&other->parenthash_));
+      - PROTOBUF_FIELD_OFFSET(Header, parent_hash_)>(
+          reinterpret_cast<char*>(&parent_hash_),
+          reinterpret_cast<char*>(&other->parent_hash_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata Header::GetMetadata() const {
@@ -2221,18 +2222,18 @@ void Header::InternalSwap(Header* other) {
 
 class BlockBody::_Internal {
  public:
-  static const ::types::H256& blockhash(const BlockBody* msg);
+  static const ::types::H256& block_hash(const BlockBody* msg);
 };
 
 const ::types::H256&
-BlockBody::_Internal::blockhash(const BlockBody* msg) {
-  return *msg->blockhash_;
+BlockBody::_Internal::block_hash(const BlockBody* msg) {
+  return *msg->block_hash_;
 }
-void BlockBody::clear_blockhash() {
-  if (GetArena() == nullptr && blockhash_ != nullptr) {
-    delete blockhash_;
+void BlockBody::clear_block_hash() {
+  if (GetArena() == nullptr && block_hash_ != nullptr) {
+    delete block_hash_;
   }
-  blockhash_ = nullptr;
+  block_hash_ = nullptr;
 }
 void BlockBody::clear_withdrawals() {
   withdrawals_.Clear();
@@ -2252,21 +2253,21 @@ BlockBody::BlockBody(const BlockBody& from)
       uncles_(from.uncles_),
       withdrawals_(from.withdrawals_) {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  if (from._internal_has_blockhash()) {
-    blockhash_ = new ::types::H256(*from.blockhash_);
+  if (from._internal_has_block_hash()) {
+    block_hash_ = new ::types::H256(*from.block_hash_);
   } else {
-    blockhash_ = nullptr;
+    block_hash_ = nullptr;
   }
-  blocknumber_ = from.blocknumber_;
+  block_number_ = from.block_number_;
   // @@protoc_insertion_point(copy_constructor:execution.BlockBody)
 }
 
 void BlockBody::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_BlockBody_execution_2fexecution_2eproto.base);
   ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
-      reinterpret_cast<char*>(&blockhash_) - reinterpret_cast<char*>(this)),
-      0, static_cast<size_t>(reinterpret_cast<char*>(&blocknumber_) -
-      reinterpret_cast<char*>(&blockhash_)) + sizeof(blocknumber_));
+      reinterpret_cast<char*>(&block_hash_) - reinterpret_cast<char*>(this)),
+      0, static_cast<size_t>(reinterpret_cast<char*>(&block_number_) -
+      reinterpret_cast<char*>(&block_hash_)) + sizeof(block_number_));
 }
 
 BlockBody::~BlockBody() {
@@ -2277,7 +2278,7 @@ BlockBody::~BlockBody() {
 
 void BlockBody::SharedDtor() {
   GOOGLE_DCHECK(GetArena() == nullptr);
-  if (this != internal_default_instance()) delete blockhash_;
+  if (this != internal_default_instance()) delete block_hash_;
 }
 
 void BlockBody::ArenaDtor(void* object) {
@@ -2304,11 +2305,11 @@ void BlockBody::Clear() {
   transactions_.Clear();
   uncles_.Clear();
   withdrawals_.Clear();
-  if (GetArena() == nullptr && blockhash_ != nullptr) {
-    delete blockhash_;
+  if (GetArena() == nullptr && block_hash_ != nullptr) {
+    delete block_hash_;
   }
-  blockhash_ = nullptr;
-  blocknumber_ = PROTOBUF_ULONGLONG(0);
+  block_hash_ = nullptr;
+  block_number_ = PROTOBUF_ULONGLONG(0);
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -2319,17 +2320,17 @@ const char* BlockBody::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // .types.H256 blockHash = 1;
+      // .types.H256 block_hash = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
-          ptr = ctx->ParseMessage(_internal_mutable_blockhash(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_block_hash(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // uint64 blockNumber = 2;
+      // uint64 block_number = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 16)) {
-          blocknumber_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          block_number_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -2398,18 +2399,18 @@ failure:
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // .types.H256 blockHash = 1;
-  if (this->has_blockhash()) {
+  // .types.H256 block_hash = 1;
+  if (this->has_block_hash()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        1, _Internal::blockhash(this), target, stream);
+        1, _Internal::block_hash(this), target, stream);
   }
 
-  // uint64 blockNumber = 2;
-  if (this->blocknumber() != 0) {
+  // uint64 block_number = 2;
+  if (this->block_number() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(2, this->_internal_blocknumber(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(2, this->_internal_block_number(), target);
   }
 
   // repeated bytes transactions = 3;
@@ -2472,18 +2473,18 @@ size_t BlockBody::ByteSizeLong() const {
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
 
-  // .types.H256 blockHash = 1;
-  if (this->has_blockhash()) {
+  // .types.H256 block_hash = 1;
+  if (this->has_block_hash()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *blockhash_);
+        *block_hash_);
   }
 
-  // uint64 blockNumber = 2;
-  if (this->blocknumber() != 0) {
+  // uint64 block_number = 2;
+  if (this->block_number() != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
-        this->_internal_blocknumber());
+        this->_internal_block_number());
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -2520,11 +2521,11 @@ void BlockBody::MergeFrom(const BlockBody& from) {
   transactions_.MergeFrom(from.transactions_);
   uncles_.MergeFrom(from.uncles_);
   withdrawals_.MergeFrom(from.withdrawals_);
-  if (from.has_blockhash()) {
-    _internal_mutable_blockhash()->::types::H256::MergeFrom(from._internal_blockhash());
+  if (from.has_block_hash()) {
+    _internal_mutable_block_hash()->::types::H256::MergeFrom(from._internal_block_hash());
   }
-  if (from.blocknumber() != 0) {
-    _internal_set_blocknumber(from._internal_blocknumber());
+  if (from.block_number() != 0) {
+    _internal_set_block_number(from._internal_block_number());
   }
 }
 
@@ -2553,11 +2554,11 @@ void BlockBody::InternalSwap(BlockBody* other) {
   uncles_.InternalSwap(&other->uncles_);
   withdrawals_.InternalSwap(&other->withdrawals_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(BlockBody, blocknumber_)
-      + sizeof(BlockBody::blocknumber_)
-      - PROTOBUF_FIELD_OFFSET(BlockBody, blockhash_)>(
-          reinterpret_cast<char*>(&blockhash_),
-          reinterpret_cast<char*>(&other->blockhash_));
+      PROTOBUF_FIELD_OFFSET(BlockBody, block_number_)
+      + sizeof(BlockBody::block_number_)
+      - PROTOBUF_FIELD_OFFSET(BlockBody, block_hash_)>(
+          reinterpret_cast<char*>(&block_hash_),
+          reinterpret_cast<char*>(&other->block_hash_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata BlockBody::GetMetadata() const {
@@ -3016,7 +3017,7 @@ void GetBodyResponse::InternalSwap(GetBodyResponse* other) {
 class GetHeaderHashNumberResponse::_Internal {
  public:
   using HasBits = decltype(std::declval<GetHeaderHashNumberResponse>()._has_bits_);
-  static void set_has_blocknumber(HasBits* has_bits) {
+  static void set_has_block_number(HasBits* has_bits) {
     (*has_bits)[0] |= 1u;
   }
 };
@@ -3031,12 +3032,12 @@ GetHeaderHashNumberResponse::GetHeaderHashNumberResponse(const GetHeaderHashNumb
   : ::PROTOBUF_NAMESPACE_ID::Message(),
       _has_bits_(from._has_bits_) {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  blocknumber_ = from.blocknumber_;
+  block_number_ = from.block_number_;
   // @@protoc_insertion_point(copy_constructor:execution.GetHeaderHashNumberResponse)
 }
 
 void GetHeaderHashNumberResponse::SharedCtor() {
-  blocknumber_ = PROTOBUF_ULONGLONG(0);
+  block_number_ = PROTOBUF_ULONGLONG(0);
 }
 
 GetHeaderHashNumberResponse::~GetHeaderHashNumberResponse() {
@@ -3070,7 +3071,7 @@ void GetHeaderHashNumberResponse::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  blocknumber_ = PROTOBUF_ULONGLONG(0);
+  block_number_ = PROTOBUF_ULONGLONG(0);
   _has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
@@ -3083,11 +3084,11 @@ const char* GetHeaderHashNumberResponse::_InternalParse(const char* ptr, ::PROTO
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // uint64 blockNumber = 1;
+      // uint64 block_number = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 8)) {
-          _Internal::set_has_blocknumber(&has_bits);
-          blocknumber_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          _Internal::set_has_block_number(&has_bits);
+          block_number_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -3120,10 +3121,10 @@ failure:
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // uint64 blockNumber = 1;
-  if (_internal_has_blocknumber()) {
+  // uint64 block_number = 1;
+  if (_internal_has_block_number()) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(1, this->_internal_blocknumber(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(1, this->_internal_block_number(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -3142,12 +3143,12 @@ size_t GetHeaderHashNumberResponse::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // uint64 blockNumber = 1;
+  // uint64 block_number = 1;
   cached_has_bits = _has_bits_[0];
   if (cached_has_bits & 0x00000001u) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
-        this->_internal_blocknumber());
+        this->_internal_block_number());
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -3181,8 +3182,8 @@ void GetHeaderHashNumberResponse::MergeFrom(const GetHeaderHashNumberResponse& f
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from._internal_has_blocknumber()) {
-    _internal_set_blocknumber(from._internal_blocknumber());
+  if (from._internal_has_block_number()) {
+    _internal_set_block_number(from._internal_block_number());
   }
 }
 
@@ -3208,7 +3209,7 @@ void GetHeaderHashNumberResponse::InternalSwap(GetHeaderHashNumberResponse* othe
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
   swap(_has_bits_[0], other->_has_bits_[0]);
-  swap(blocknumber_, other->blocknumber_);
+  swap(block_number_, other->block_number_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata GetHeaderHashNumberResponse::GetMetadata() const {
@@ -3221,24 +3222,24 @@ void GetHeaderHashNumberResponse::InternalSwap(GetHeaderHashNumberResponse* othe
 class GetSegmentRequest::_Internal {
  public:
   using HasBits = decltype(std::declval<GetSegmentRequest>()._has_bits_);
-  static void set_has_blocknumber(HasBits* has_bits) {
+  static void set_has_block_number(HasBits* has_bits) {
     (*has_bits)[0] |= 2u;
   }
-  static const ::types::H256& blockhash(const GetSegmentRequest* msg);
-  static void set_has_blockhash(HasBits* has_bits) {
+  static const ::types::H256& block_hash(const GetSegmentRequest* msg);
+  static void set_has_block_hash(HasBits* has_bits) {
     (*has_bits)[0] |= 1u;
   }
 };
 
 const ::types::H256&
-GetSegmentRequest::_Internal::blockhash(const GetSegmentRequest* msg) {
-  return *msg->blockhash_;
+GetSegmentRequest::_Internal::block_hash(const GetSegmentRequest* msg) {
+  return *msg->block_hash_;
 }
-void GetSegmentRequest::clear_blockhash() {
-  if (GetArena() == nullptr && blockhash_ != nullptr) {
-    delete blockhash_;
+void GetSegmentRequest::clear_block_hash() {
+  if (GetArena() == nullptr && block_hash_ != nullptr) {
+    delete block_hash_;
   }
-  blockhash_ = nullptr;
+  block_hash_ = nullptr;
   _has_bits_[0] &= ~0x00000001u;
 }
 GetSegmentRequest::GetSegmentRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena)
@@ -3251,21 +3252,21 @@ GetSegmentRequest::GetSegmentRequest(const GetSegmentRequest& from)
   : ::PROTOBUF_NAMESPACE_ID::Message(),
       _has_bits_(from._has_bits_) {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  if (from._internal_has_blockhash()) {
-    blockhash_ = new ::types::H256(*from.blockhash_);
+  if (from._internal_has_block_hash()) {
+    block_hash_ = new ::types::H256(*from.block_hash_);
   } else {
-    blockhash_ = nullptr;
+    block_hash_ = nullptr;
   }
-  blocknumber_ = from.blocknumber_;
+  block_number_ = from.block_number_;
   // @@protoc_insertion_point(copy_constructor:execution.GetSegmentRequest)
 }
 
 void GetSegmentRequest::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_GetSegmentRequest_execution_2fexecution_2eproto.base);
   ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
-      reinterpret_cast<char*>(&blockhash_) - reinterpret_cast<char*>(this)),
-      0, static_cast<size_t>(reinterpret_cast<char*>(&blocknumber_) -
-      reinterpret_cast<char*>(&blockhash_)) + sizeof(blocknumber_));
+      reinterpret_cast<char*>(&block_hash_) - reinterpret_cast<char*>(this)),
+      0, static_cast<size_t>(reinterpret_cast<char*>(&block_number_) -
+      reinterpret_cast<char*>(&block_hash_)) + sizeof(block_number_));
 }
 
 GetSegmentRequest::~GetSegmentRequest() {
@@ -3276,7 +3277,7 @@ GetSegmentRequest::~GetSegmentRequest() {
 
 void GetSegmentRequest::SharedDtor() {
   GOOGLE_DCHECK(GetArena() == nullptr);
-  if (this != internal_default_instance()) delete blockhash_;
+  if (this != internal_default_instance()) delete block_hash_;
 }
 
 void GetSegmentRequest::ArenaDtor(void* object) {
@@ -3302,12 +3303,12 @@ void GetSegmentRequest::Clear() {
 
   cached_has_bits = _has_bits_[0];
   if (cached_has_bits & 0x00000001u) {
-    if (GetArena() == nullptr && blockhash_ != nullptr) {
-      delete blockhash_;
+    if (GetArena() == nullptr && block_hash_ != nullptr) {
+      delete block_hash_;
     }
-    blockhash_ = nullptr;
+    block_hash_ = nullptr;
   }
-  blocknumber_ = PROTOBUF_ULONGLONG(0);
+  block_number_ = PROTOBUF_ULONGLONG(0);
   _has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
@@ -3320,18 +3321,18 @@ const char* GetSegmentRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAMESP
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // uint64 blockNumber = 1;
+      // uint64 block_number = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 8)) {
-          _Internal::set_has_blocknumber(&has_bits);
-          blocknumber_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          _Internal::set_has_block_number(&has_bits);
+          block_number_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H256 blockHash = 2;
+      // .types.H256 block_hash = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
-          ptr = ctx->ParseMessage(_internal_mutable_blockhash(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_block_hash(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -3364,18 +3365,18 @@ failure:
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // uint64 blockNumber = 1;
-  if (_internal_has_blocknumber()) {
+  // uint64 block_number = 1;
+  if (_internal_has_block_number()) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(1, this->_internal_blocknumber(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(1, this->_internal_block_number(), target);
   }
 
-  // .types.H256 blockHash = 2;
-  if (_internal_has_blockhash()) {
+  // .types.H256 block_hash = 2;
+  if (_internal_has_block_hash()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        2, _Internal::blockhash(this), target, stream);
+        2, _Internal::block_hash(this), target, stream);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -3396,18 +3397,18 @@ size_t GetSegmentRequest::ByteSizeLong() const {
 
   cached_has_bits = _has_bits_[0];
   if (cached_has_bits & 0x00000003u) {
-    // .types.H256 blockHash = 2;
+    // .types.H256 block_hash = 2;
     if (cached_has_bits & 0x00000001u) {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-          *blockhash_);
+          *block_hash_);
     }
 
-    // uint64 blockNumber = 1;
+    // uint64 block_number = 1;
     if (cached_has_bits & 0x00000002u) {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
-          this->_internal_blocknumber());
+          this->_internal_block_number());
     }
 
   }
@@ -3445,10 +3446,10 @@ void GetSegmentRequest::MergeFrom(const GetSegmentRequest& from) {
   cached_has_bits = from._has_bits_[0];
   if (cached_has_bits & 0x00000003u) {
     if (cached_has_bits & 0x00000001u) {
-      _internal_mutable_blockhash()->::types::H256::MergeFrom(from._internal_blockhash());
+      _internal_mutable_block_hash()->::types::H256::MergeFrom(from._internal_block_hash());
     }
     if (cached_has_bits & 0x00000002u) {
-      blocknumber_ = from.blocknumber_;
+      block_number_ = from.block_number_;
     }
     _has_bits_[0] |= cached_has_bits;
   }
@@ -3477,11 +3478,11 @@ void GetSegmentRequest::InternalSwap(GetSegmentRequest* other) {
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
   swap(_has_bits_[0], other->_has_bits_[0]);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(GetSegmentRequest, blocknumber_)
-      + sizeof(GetSegmentRequest::blocknumber_)
-      - PROTOBUF_FIELD_OFFSET(GetSegmentRequest, blockhash_)>(
-          reinterpret_cast<char*>(&blockhash_),
-          reinterpret_cast<char*>(&other->blockhash_));
+      PROTOBUF_FIELD_OFFSET(GetSegmentRequest, block_number_)
+      + sizeof(GetSegmentRequest::block_number_)
+      - PROTOBUF_FIELD_OFFSET(GetSegmentRequest, block_hash_)>(
+          reinterpret_cast<char*>(&block_hash_),
+          reinterpret_cast<char*>(&other->block_hash_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata GetSegmentRequest::GetMetadata() const {

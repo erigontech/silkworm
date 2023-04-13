@@ -142,7 +142,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::client_version", "[silkrpc][ethbacken
 
     SECTION("call client_version and get version") {
         ::remote::ClientVersionReply response;
-        response.set_nodename("erigon");
+        response.set_node_name("erigon");
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
         const auto client_version = run<&ethbackend::RemoteBackEnd::client_version>();
         CHECK(client_version == "erigon");
@@ -191,13 +191,13 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::node_info", "[silkrpc][ethbackend][ba
     SECTION("call node_info") {
         ::remote::NodesInfoReply response;
         types::NodeInfoPorts ports;
-        auto reply = response.add_nodesinfo();
+        auto reply = response.add_nodes_info();
         const auto ports_ref = ports.New();
         reply->set_id("340e3cda481a935658b86f4987d50d0153a68f97fa2b9e8f70a8e9f5b755eeb6");
         reply->set_name("erigon/v2.32.0-stable-021891a3/linux-amd64/go1.19");
         reply->set_enode("enode://b428a8d89b621a1bea008922f5fb7cd7644e2289f85fc8620f1e497eff767e2bcdc77");
         reply->set_enr("enr:-JK4QJMWPkW7iDLYfevZj80Rcs-B9GkRqptsH0L6hcFKSFJ3bKFlbzjnMk29y0ZD0omRMVDlrzgTThXYcd_");
-        reply->set_listeneraddr("[::]:30303");
+        reply->set_listener_addr("[::]:30303");
         ports_ref->set_discovery(32);
         ports_ref->set_listener(30000);
         reply->set_allocated_ports(ports_ref);
@@ -228,14 +228,14 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_get_payload_v1", "[silkrpc][et
     SECTION("call engine_get_payload_v1 and get payload") {
         const auto p{new ::types::ExecutionPayload};
         p->set_allocated_coinbase(make_h160(0xa94f5374fce5edbc, 0x8e2a8697c1533167, 0x7e6ebf0b));
-        p->set_allocated_blockhash(make_h256(0x3559e851470f6e7b, 0xbed1db474980683e, 0x8c315bfce99b2a6e, 0xf47c057c04de7858));
-        p->set_allocated_basefeepergas(make_h256(0x0, 0x0, 0x0, 0x7));
-        p->set_allocated_stateroot(make_h256(0xca3149fa9e37db08, 0xd1cd49c9061db100, 0x2ef1cd58db2210f2, 0x115c8c989b2bdf45));
-        p->set_allocated_receiptroot(make_h256(0x56e81f171bcc55a6, 0xff8345e692c0f86e, 0x5b48e01b996cadc0, 0x01622fb5e363b421));
-        p->set_allocated_parenthash(make_h256(0x3b8fb240d288781d, 0x4aac94d3fd16809e, 0xe413bc99294a0857, 0x98a589dae51ddd4a));
-        p->set_allocated_prevrandao(make_h256(0x0, 0x0, 0x0, 0x1));
-        p->set_blocknumber(0x1);
-        p->set_gaslimit(0x1c9c380);
+        p->set_allocated_block_hash(make_h256(0x3559e851470f6e7b, 0xbed1db474980683e, 0x8c315bfce99b2a6e, 0xf47c057c04de7858));
+        p->set_allocated_base_fee_per_gas(make_h256(0x0, 0x0, 0x0, 0x7));
+        p->set_allocated_state_root(make_h256(0xca3149fa9e37db08, 0xd1cd49c9061db100, 0x2ef1cd58db2210f2, 0x115c8c989b2bdf45));
+        p->set_allocated_receipt_root(make_h256(0x56e81f171bcc55a6, 0xff8345e692c0f86e, 0x5b48e01b996cadc0, 0x01622fb5e363b421));
+        p->set_allocated_parent_hash(make_h256(0x3b8fb240d288781d, 0x4aac94d3fd16809e, 0xe413bc99294a0857, 0x98a589dae51ddd4a));
+        p->set_allocated_prev_randao(make_h256(0x0, 0x0, 0x0, 0x1));
+        p->set_block_number(0x1);
+        p->set_gas_limit(0x1c9c380);
         p->set_timestamp(0x5);
         const auto tx_bytes{*silkworm::from_hex("0xf92ebdeab45d368f6354e8c5a8ac586c")};
         p->add_transactions(tx_bytes.data(), tx_bytes.size());
@@ -246,10 +246,10 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_get_payload_v1", "[silkrpc][et
         hi_logsbloom->set_allocated_hi(hi_hi_logsbloom);
         const auto logsbloom{new ::types::H2048()};
         logsbloom->set_allocated_hi(hi_logsbloom);
-        p->set_allocated_logsbloom(logsbloom);
+        p->set_allocated_logs_bloom(logsbloom);
 
         ::remote::EngineGetPayloadResponse response;
-        response.set_allocated_executionpayload(p);
+        response.set_allocated_execution_payload(p);
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
 
         const auto payload = run<&ethbackend::RemoteBackEnd::engine_get_payload_v1>(0u);
@@ -306,9 +306,9 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_new_payload_v1", "[silkrpc][et
 
     SECTION("call engine_new_payload_v1 and get VALID status") {
         ::remote::EnginePayloadStatus response;
-        response.set_allocated_latestvalidhash(make_h256(0, 0, 0, 0x40));
+        response.set_allocated_latest_valid_hash(make_h256(0, 0, 0, 0x40));
         response.set_status(::remote::EngineStatus::VALID);
-        response.set_validationerror("some error");
+        response.set_validation_error("some error");
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
         const auto payload_status = run<&ethbackend::RemoteBackEnd::engine_new_payload_v1>(execution_payload);
         CHECK(payload_status.status == "VALID");
@@ -365,11 +365,11 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_forkchoice_updated_v1", "[silk
     SECTION("call engine_forkchoice_updated_v1 and get VALID status") {
         ::remote::EngineForkChoiceUpdatedResponse response;
         auto* engine_payload_status = new ::remote::EnginePayloadStatus();
-        engine_payload_status->set_allocated_latestvalidhash(make_h256(0, 0, 0, 0x40));
-        engine_payload_status->set_validationerror("some error");
+        engine_payload_status->set_allocated_latest_valid_hash(make_h256(0, 0, 0, 0x40));
+        engine_payload_status->set_validation_error("some error");
         engine_payload_status->set_status(::remote::EngineStatus::VALID);
-        response.set_allocated_payloadstatus(engine_payload_status);
-        response.set_payloadid(1);
+        response.set_allocated_payload_status(engine_payload_status);
+        response.set_payload_id(1);
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
         const auto forkchoice_reply = run<&ethbackend::RemoteBackEnd::engine_forkchoice_updated_v1>(forkchoice_request);
         const PayloadStatus payload_status = forkchoice_reply.payload_status;

@@ -120,13 +120,13 @@ awaitable<void> ProtocolVersionCall::operator()(const EthereumBackEnd& /*backend
 remote::ClientVersionReply ClientVersionCall::response_;
 
 void ClientVersionCall::fill_predefined_reply(const EthereumBackEnd& backend) {
-    ClientVersionCall::response_.set_nodename(backend.node_name());
+    ClientVersionCall::response_.set_node_name(backend.node_name());
 }
 
 awaitable<void> ClientVersionCall::operator()(const EthereumBackEnd& /*backend*/) {
     SILK_TRACE << "ClientVersionCall START";
     co_await agrpc::finish(responder_, response_, grpc::Status::OK);
-    SILK_TRACE << "ClientVersionCall END node name: " << response_.nodename();
+    SILK_TRACE << "ClientVersionCall END node name: " << response_.node_name();
 }
 
 awaitable<void> SubscribeCall::operator()(const EthereumBackEnd& /*backend*/) {
@@ -155,7 +155,7 @@ awaitable<void> NodeInfoCall::operator()(const EthereumBackEnd& backend) {
     grpc::Status result_status{grpc::Status::OK};
     try {
         auto node_info = co_await sentry->node_info();
-        response.add_nodesinfo()->CopyFrom(sentry::rpc::interfaces::proto_node_info_from_node_info(node_info));
+        response.add_nodes_info()->CopyFrom(sentry::rpc::interfaces::proto_node_info_from_node_info(node_info));
         SILK_DEBUG << "Reply OK node info: name=" << node_info.client_id;
     } catch (const GrpcStatusError& status_error) {
         result_status = status_error.status();
@@ -164,7 +164,7 @@ awaitable<void> NodeInfoCall::operator()(const EthereumBackEnd& backend) {
 
     if (result_status.ok()) {
         co_await agrpc::finish(responder_, response, grpc::Status::OK);
-        SILK_TRACE << "NodeInfoCall END #nodes: " << response.nodesinfo_size();
+        SILK_TRACE << "NodeInfoCall END #nodes: " << response.nodes_info_size();
     } else {
         co_await agrpc::finish_with_error(responder_, result_status);
         SILK_TRACE << "NodeInfoCall END error: " << result_status;

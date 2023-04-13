@@ -116,7 +116,7 @@ int ethbackend_async(const std::string& target) {
         return -1;
     }
     if (status.ok()) {
-        std::cout << "ETHBACKEND ClientVersion <- " << status << " nodename: " << cv_reply.nodename() << "\n";
+        std::cout << "ETHBACKEND ClientVersion <- " << status << " node name: " << cv_reply.node_name() << "\n";
     } else {
         std::cout << "ETHBACKEND ClientVersion <- " << status << "\n";
     }

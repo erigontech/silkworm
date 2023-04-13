@@ -30,8 +30,8 @@ boost::asio::awaitable<void> RemoteCursor::open_cursor(const std::string& table_
         } else {
             open_message.set_op(remote::Op::OPEN);
         }
-        open_message.set_bucketname(table_name);
-        cursor_id_ = (co_await tx_rpc_.write_and_read(open_message)).cursorid();
+        open_message.set_bucket_name(table_name);
+        cursor_id_ = (co_await tx_rpc_.write_and_read(open_message)).cursor_id();
         SILKRPC_DEBUG << "RemoteCursor::open_cursor cursor: " << cursor_id_ << " for table: " << table_name << "\n";
     }
     SILKRPC_DEBUG << "RemoteCursor::open_cursor [" << table_name << "] c=" << cursor_id_ << " t=" << clock_time::since(start_time) << "\n";

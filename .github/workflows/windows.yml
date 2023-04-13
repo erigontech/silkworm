@@ -58,7 +58,7 @@ jobs:
       env:
         cache-name: cache-conan-modules
       with:
-        path: ${{ env.CONAN_USER_HOME }}/.conan/data
+        path: ${{ env.CONAN_USER_HOME }}/.conan
         key: conan-data-${{ runner.os }}-${{ hashFiles('conanfile.txt') }}
 
     - name: VCPKG packages

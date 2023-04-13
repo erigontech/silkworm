@@ -48,6 +48,7 @@ void ExecutionEngine::insert_block(std::shared_ptr<Block> block) {
     if (block_cache_.get(header_hash)) return;  // ignore repeated blocks
     block_cache_.put(header_hash, block);
 
+    // if we are not tracking forks, just insert the block into the main chain
     if (!fork_tracking_active_) {
         main_chain_.insert_block(*block);
         return;
@@ -57,35 +58,38 @@ void ExecutionEngine::insert_block(std::shared_ptr<Block> block) {
     auto f = find_fork_to_extend(forks_, block->header);
 
     if (f != forks_.end()) {
+        // the block extends a fork
         SILK_DEBUG << "ExecutionEngine: extending a fork";
         f->extend_with(*block);
         return;
     }
+    else {
+        // the block must be put to a new fork
+        // (to avoid complicated code we ignore the case whether the attaching point is inside a current fork)
 
-    // find attachment point within fork blocks
-    f = best_fork_to_branch(forks_, block->header);
+        auto forking_point = find_forking_point(block->header);
+        if (!forking_point) return;  // ignore or raise exception?
+        if (forking_point->number < main_chain_.last_fork_choice().number) return;  // ignore | todo: check if this is correct
 
-    if (f != forks_.end()) {
-        SILK_DEBUG << "ExecutionEngine: branching a fork";
-        forks_.push_back(f->branch_at({block->header.number, header_hash}));
-        return;
-    }
-
-    // create a new fork
-    if (is_viable_fork(block->header)) {
         SILK_DEBUG << "ExecutionEngine: creating new fork";
-        main_chain_.commit();
-        auto& new_fork = forks_.emplace_back(
-            BlockId{block->header.number - 1, block->header.parent_hash},
-            node_settings_, main_chain_);
-        new_fork.extend_with(*block);  // todo: must do unwind if it is below the main head
+
+        auto& new_fork = forks_.emplace_back(*forking_point, node_settings_, main_chain_);
+        // if (new_fork.current_head().number < main_chain_.last_fork_choice().number) new_fork->reduce_down_to(*forking_point);
+        fill_fork(new_fork, block_cache_, BlockId{block->header.number - 1, block->header.parent_hash});
+        new_fork.extend_with(*block);
     }
+
 }
 
 bool ExecutionEngine::is_viable_fork(const BlockHeader& head_header) const {
     auto forking_point = main_chain_.find_forking_point(head_header);
     if (!forking_point) return false;
     return main_chain_.last_fork_choice().number < forking_point->number;  // todo: check if this is correct
+}
+
+std::optional<BlockId> find_forking_point(const BlockHeader& header) const {
+    // todo: implement using block_cache_ and main_chain_
+    return {};
 }
 
 void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<Block>>& blocks) {
@@ -102,7 +106,7 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
 
     if (!fork_tracking_active_) return main_chain_.verify_chain(head_block_hash);
 
-    auto f = find_fork_with_head(forks_, head_block_hash);
+    auto f = find_fork_by_head(forks_, head_block_hash);
     if (f == forks_.end()) {
         SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at verification time";
         return ValidationError{};
@@ -124,7 +128,7 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
         if (finalized_block_hash) last_finalized_block_ = *finalized_block_hash;
     } else {
         // chose the fork with the given head
-        auto f = find_fork_with_head(forks_, head_block_hash);
+        auto f = find_fork_by_head(forks_, head_block_hash);
         if (f == forks_.end()) {
             SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at fork choice update time";
             return false;

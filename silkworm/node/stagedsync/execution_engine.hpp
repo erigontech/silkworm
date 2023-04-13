@@ -50,6 +50,7 @@ class ExecutionEngine : public Stoppable {
     auto last_fork_choice() -> std::optional<BlockId>;
 
   protected:
+    std::optional<BlockId> find_forking_point(const BlockHeader& header) const;
     bool is_viable_fork(const BlockHeader& head_header) const;
     void consolidate_forks();
 

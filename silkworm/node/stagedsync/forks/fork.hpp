@@ -41,18 +41,9 @@ class Fork {
 
     void open();
 
-    // extension
-    void extend_with(const Block&);  // put block over the head of the fork
-    bool extends_head(const BlockHeader&) const;
-
-    // contraction
-    void reduce_down_to(BlockId new_head);
-
-    // branching
-    Fork branch_at(BlockId forking_point);
-    auto find_block(Hash header_hash) const -> std::optional<BlockNum>;
-    auto find_attachment_point(const BlockHeader& header) const -> std::optional<BlockId>;
-    BlockNum distance_from_root(const BlockId&) const;
+    // extension & contraction
+    void extend_with(const Block&);         // put block over the head of the fork (need verify_chain() to add state)
+    void reduce_down_to(BlockId new_head);  // remove blocks & state down to the specified head
 
     // verification
     auto verify_chain() -> VerificationResult;            // verify chain up to current head
@@ -65,9 +56,15 @@ class Fork {
     auto last_head_status() const -> VerificationResult;
     auto last_fork_choice() const -> BlockId;
 
+    // checks
+    bool extends_head(const BlockHeader&) const;
+    auto find_block(Hash header_hash) const -> std::optional<BlockNum>;
+    auto find_attachment_point(const BlockHeader& header) const -> std::optional<BlockId>;
+    BlockNum distance_from_root(const BlockId&) const;
+
   protected:
     Hash insert_header(const BlockHeader&);
-    void insert_body(const Block&);
+    void insert_body(const Block&, const Hash& block_hash);
 
     std::set<Hash> collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain);
 
@@ -94,10 +91,6 @@ auto find_fork_by_head(const std::vector<Fork>& forks, const Hash& requested_hea
 
 // find the fork with the head to extend
 auto find_fork_to_extend(const std::vector<Fork>& forks, const BlockHeader& header)
-    -> std::vector<Fork>::iterator;
-
-// find the best fork to branch from
-auto best_fork_to_branch(const std::vector<Fork>& forks, const BlockHeader& header)
     -> std::vector<Fork>::iterator;
 
 }  // namespace silkworm::stagedsync

@@ -74,7 +74,7 @@ class MainChain {
     friend Fork;
   protected:
     Hash insert_header(const BlockHeader&);
-    void insert_body(const Block&);
+    void insert_body(const Block&, const Hash& block_hash);
 
     std::set<Hash> collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain);
 

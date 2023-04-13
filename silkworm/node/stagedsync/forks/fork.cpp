@@ -93,12 +93,12 @@ VerificationResult Fork::last_head_status() const {
     return last_head_status_;
 }
 
-bool Fork::extends_head(const BlockHeader& header) const {
-    return current_head().hash == header.parent_hash;
-}
-
 BlockId Fork::last_fork_choice() const {
     return last_fork_choice_;
+}
+
+bool Fork::extends_head(const BlockHeader& header) const {
+    return current_head().hash == header.parent_hash;
 }
 
 std::optional<BlockNum> Fork::find_block(Hash header_hash) const {
@@ -129,14 +129,11 @@ BlockNum Fork::distance_from_root(const BlockId& block) const {
 }
 
 Hash Fork::insert_header(const BlockHeader& header) {
-    // skip 'if (!db::has_header(...header.hash())' to avoid hash computing (also write_header does an upsert)
-    return db::write_header_ex(tx_, header, true);  // todo: move?
-
-    // header_cache_.put(header.hash(), header);
+    return db::write_header_ex(tx_, header, true);
 }
 
-void Fork::insert_body(const Block& block) {
-    Hash block_hash = block.header.hash();  // todo: hash() is computationally expensive
+void Fork::insert_body(const Block& block, const Hash& block_hash) {
+    // avoid calculation of block.header.hash() because is computationally expensive
     BlockNum block_num = block.header.number;
 
     if (!db::has_body(tx_, block_num, block_hash)) {
@@ -144,18 +141,11 @@ void Fork::insert_body(const Block& block) {
     }
 }
 
-
-Fork Fork::branch_at(BlockId forking_point) {
-    Fork fork{*this};
-    fork.reduce_down_to(forking_point);
-    return fork;
-}
-
 void Fork::extend_with(const Block& block) {
     ensure_invariant(extends_head(block.header), "inserting block must extend the head");
 
     Hash header_hash = insert_header(block.header);
-    insert_body(block);
+    insert_body(block, header_hash);
 
     canonical_chain_.advance(block.header.number, header_hash);
 
@@ -296,6 +286,7 @@ std::vector<Fork>::iterator find_fork_to_extend(std::vector<Fork>& forks, const 
     return find_fork_by_head(forks, header.parent_hash);
 }
 
+/*
 std::vector<Fork>::iterator best_fork_to_branch(std::vector<Fork>& forks, const BlockHeader& header) {
     auto fork = forks.end();
     BlockNum height = 0;
@@ -311,6 +302,6 @@ std::vector<Fork>::iterator best_fork_to_branch(std::vector<Fork>& forks, const 
 
     return fork;
 }
-
+*/
 
 }  // namespace silkworm::stagedsync

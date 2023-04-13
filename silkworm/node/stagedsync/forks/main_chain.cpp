@@ -55,14 +55,11 @@ std::optional<BlockId> MainChain::find_forking_point(const BlockHeader& header) 
 }
 
 Hash MainChain::insert_header(const BlockHeader& header) {
-    // skip 'if (!db::has_header(...header.hash())' to avoid hash computing (also write_header does an upsert)
-    return db::write_header_ex(tx_, header, true);  // todo: move?
-
-    // header_cache_.put(header.hash(), header);
+    return db::write_header_ex(tx_, header, true);
 }
 
-void MainChain::insert_body(const Block& block) {
-    Hash block_hash = block.header.hash();
+void MainChain::insert_body(const Block& block, const Hash& block_hash) {
+    // avoid calculation of block.header.hash() because is computationally expensive
     BlockNum block_num = block.header.number;
 
     if (db::has_body(tx_, block_num, block_hash)) return;
@@ -76,7 +73,7 @@ void MainChain::insert_body(const Block& block) {
 
 void MainChain::insert_block(const Block& block) {
     Hash header_hash = insert_header(block.header);
-    insert_body(block);
+    insert_body(block, header_hash);
 
     auto parent = get_header(header_hash);  // only for debug
     ensure_invariant(parent.has_value(), "inserting block must have parent");

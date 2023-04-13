@@ -31,10 +31,12 @@
 
 namespace silkworm::stagedsync {
 
+class MainChain;
+
 class Fork {
   public:
-    explicit Fork(BlockId forking_point, NodeSettings&, db::ROTxn*);
-    Fork(const Fork&, db::RWAccess);
+    explicit Fork(BlockId forking_point, NodeSettings&, MainChain&);
+    Fork(const Fork&);
     Fork(Fork&& orig) noexcept;
 
     void open();
@@ -47,7 +49,7 @@ class Fork {
     void reduce_down_to(BlockId new_head);
 
     // branching
-    Fork branch_at(BlockId forking_point, db::RWAccess);
+    Fork branch_at(BlockId forking_point);
     auto find_block(Hash header_hash) const -> std::optional<BlockNum>;
     auto find_attachment_point(const BlockHeader& header) const -> std::optional<BlockId>;
     BlockNum distance_from_root(const BlockId&) const;
@@ -71,6 +73,7 @@ class Fork {
 
     NodeSettings& node_settings_;
 
+    MainChain& main_chain_;
     db::ROTxn db_tx_;
     db::MemoryOverlay overlay_;
     db::MemoryMutation tx_;
@@ -86,11 +89,11 @@ class Fork {
 };
 
 // find the fork with the specified head
-auto find_fork_with_head(const std::vector<Fork>& forks, const Hash& requested_head_hash)
+auto find_fork_by_head(const std::vector<Fork>& forks, const Hash& requested_head_hash)
     -> std::vector<Fork>::iterator;
 
 // find the fork with the head to extend
-auto best_fork_to_extend(const std::vector<Fork>& forks, const BlockHeader& header)
+auto find_fork_to_extend(const std::vector<Fork>& forks, const BlockHeader& header)
     -> std::vector<Fork>::iterator;
 
 // find the best fork to branch from

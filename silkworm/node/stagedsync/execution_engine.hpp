@@ -41,16 +41,16 @@ class ExecutionEngine : public Stoppable {
 
     // actions
     void insert_blocks(std::vector<std::shared_ptr<Block>>& blocks);
-    void insert_block(const Block& block);
+    void insert_block(std::shared_ptr<Block> block);
 
     auto verify_chain(Hash head_block_hash) -> VerificationResult;
 
     bool notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
 
-    auto last_fork_choice() -> BlockId;
+    auto last_fork_choice() -> std::optional<BlockId>;
 
   protected:
-    bool acceptable_fork(const BlockHeader& head_header) const;
+    bool is_viable_fork(const BlockHeader& head_header) const;
     void consolidate_forks();
 
     NodeSettings& node_settings_;
@@ -60,8 +60,13 @@ class ExecutionEngine : public Stoppable {
 
     MainChain main_chain_;
     std::vector<Fork> forks_;
-    BlockId last_fork_choice_;
-    Hash last_finalized_block_;
+
+    static constexpr size_t kDefaultCacheSize = 1000;
+    mutable lru_cache<Hash, std::shared_ptr<Block>> block_cache_;
+
+    bool fork_tracking_active_{false};
+    std::optional<BlockId> last_fork_choice_;
+    std::optional<Hash> last_finalized_block_;
 };
 
 }  // namespace silkworm::stagedsync

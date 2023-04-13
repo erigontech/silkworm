@@ -34,45 +34,55 @@ ExecutionEngine::ExecutionEngine(NodeSettings& ns, db::RWAccess dba)
     : node_settings_{ns},
       db_access_{dba},
       tx_{db_access_.start_rw_tx()},
-      main_chain_(ns, dba) {
+      main_chain_(ns, dba),
+      block_cache_{kDefaultCacheSize} {
 }
 
-auto ExecutionEngine::last_fork_choice() -> BlockId {
+auto ExecutionEngine::last_fork_choice() -> std::optional<BlockId> {
     return last_fork_choice_;
 }
 
-void ExecutionEngine::insert_block(const Block& block) {
+void ExecutionEngine::insert_block(std::shared_ptr<Block> block) {
+    Hash header_hash{block->header.hash()};
+
+    if (block_cache_.get(header_hash)) return;  // ignore repeated blocks
+    block_cache_.put(header_hash, block);
+
+    if (!fork_tracking_active_) {
+        main_chain_.insert_block(*block);
+        return;
+    }
+
     // find attachment point at fork heads
-    auto f = best_fork_to_extend(forks_, block.header);
+    auto f = find_fork_to_extend(forks_, block->header);
 
     if (f != forks_.end()) {
         SILK_DEBUG << "ExecutionEngine: extending a fork";
-        f->extend_with(block);
+        f->extend_with(*block);
         return;
     }
 
     // find attachment point within fork blocks
-    f = best_fork_to_branch(forks_, block.header);
+    f = best_fork_to_branch(forks_, block->header);
 
     if (f != forks_.end()) {
         SILK_DEBUG << "ExecutionEngine: branching a fork";
-        Hash header_hash{block.header.hash()};
-        forks_.push_back(f->branch_at({block.header.number, header_hash}, db_access_));
+        forks_.push_back(f->branch_at({block->header.number, header_hash}));
         return;
     }
 
-    // create a new fork from the past
-
-    if (acceptable_fork(block.header)) {
+    // create a new fork
+    if (is_viable_fork(block->header)) {
         SILK_DEBUG << "ExecutionEngine: creating new fork";
+        main_chain_.commit();
         auto& new_fork = forks_.emplace_back(
-            BlockId{block.header.number - 1, block.header.parent_hash},
-            node_settings_, db_access_);
-        new_fork.extend_with(block);
+            BlockId{block->header.number - 1, block->header.parent_hash},
+            node_settings_, main_chain_);
+        new_fork.extend_with(*block);  // todo: must do unwind if it is below the main head
     }
 }
 
-bool ExecutionEngine::acceptable_fork(const BlockHeader& head_header) const {
+bool ExecutionEngine::is_viable_fork(const BlockHeader& head_header) const {
     auto forking_point = main_chain_.find_forking_point(head_header);
     if (!forking_point) return false;
     return main_chain_.last_fork_choice().number < forking_point->number;  // todo: check if this is correct
@@ -83,14 +93,14 @@ void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<Block>>& blocks)
     if (blocks.empty()) return;
 
     as_range::for_each(blocks, [&, this](const auto& block) {
-        insert_block(*block);
+        insert_block(block);
     });
-
-    if (is_first_sync_) tx_.commit_and_renew();
 }
 
 auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
     SILK_DEBUG << "ExecutionEngine: verifying chain " << head_block_hash.to_hex();
+
+    if (!fork_tracking_active_) return main_chain_.verify_chain(head_block_hash);
 
     auto f = find_fork_with_head(forks_, head_block_hash);
     if (f == forks_.end()) {
@@ -106,31 +116,38 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
 bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
     SILK_DEBUG << "ExecutionEngine: updating fork choice to " << head_block_hash.to_hex();
 
-    // chose the fork with the given head
-    auto f = find_fork_with_head(forks_, head_block_hash);
-    if (f == forks_.end()) {
-        SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at fork choice update time";
-        return false;
+    if (!fork_tracking_active_) {
+        bool updated = main_chain_.notify_fork_choice_update(head_block_hash, finalized_block_hash);
+        if (!updated) return false;
+
+        last_fork_choice_ = main_chain_.canonical_head();
+        if (finalized_block_hash) last_finalized_block_ = *finalized_block_hash;
+    } else {
+        // chose the fork with the given head
+        auto f = find_fork_with_head(forks_, head_block_hash);
+        if (f == forks_.end()) {
+            SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at fork choice update time";
+            return false;
+        }
+        Fork& chosen_fork = *f;
+
+        // notify the fork of the update
+        bool updated = chosen_fork.notify_fork_choice_update(head_block_hash, finalized_block_hash);
+        if (!updated) return false;
+
+        last_fork_choice_ = chosen_fork.current_head();
+        if (finalized_block_hash) last_finalized_block_ = *finalized_block_hash;
+
+        consolidate_forks();  // remove side forks, extend main chain with the chosen fork
     }
-    Fork& chosen_fork = *f;
 
-    // notify the fork of the update
-    bool updated = chosen_fork.notify_fork_choice_update(head_block_hash, finalized_block_hash);
-    if (!updated) return false;
-
-    // update this status and the main chain
-    last_fork_choice_ = chosen_fork.current_head();
-    if (finalized_block_hash) last_finalized_block_ = *finalized_block_hash;
-
-    consolidate_forks();  // remove side forks, extend main chain with the chosen fork
-
+    fork_tracking_active_ = true;
     is_first_sync_ = false;
 
     return true;
 }
 
 void ExecutionEngine::consolidate_forks() {
-
 }
 
 }  // namespace silkworm::stagedsync

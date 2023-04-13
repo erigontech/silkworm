@@ -23,6 +23,8 @@
 #include <silkworm/node/db/db_utils.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
 
+#include "main_chain.hpp"
+
 namespace silkworm::stagedsync {
 
 static void ensure_invariant(bool condition, const std::string& message) {
@@ -31,9 +33,10 @@ static void ensure_invariant(bool condition, const std::string& message) {
     }
 }
 
-Fork::Fork(BlockId forking_point, NodeSettings& ns, db::ROTxn&& db_tx)
+Fork::Fork(BlockId forking_point, NodeSettings& ns, MainChain& main_chain)
     : node_settings_{ns},
-      db_tx_(std::move(db_tx)),
+      main_chain_{main_chain},
+      db_tx_(main_chain.db_access_.start_ro_tx()),
       overlay_{"fork_overlay" + random_string()},
       tx_{overlay_, &db_tx_},
       pipeline_{&ns},
@@ -46,10 +49,11 @@ Fork::Fork(BlockId forking_point, NodeSettings& ns, db::ROTxn&& db_tx)
 
 Fork::Fork(const Fork& copy)
     : node_settings_{copy.node_settings_},
-      db_tx_{copy.db_tx_.db()},
-      overlay_{copy.overlay},  // todo(canepat): we need to copy an overlay
-      tx_{overlay_, &db_tx_},  // db tx cannot be shared between forks
-      pipeline_{&copy.node_settings_},  // warning: pipeline is not copyable, we build a new one here
+      main_chain_{copy.main_chain_},
+      db_tx_{main_chain_.db_access_.start_ro_tx()},  // or copy.db_tx_.db(), create a new db tx from the original one
+      overlay_{copy.overlay_},                       // copy the overlay i.e. create a new overlay from the original one
+      tx_{overlay_, &db_tx_},                        // db tx cannot be shared between forks
+      pipeline_{&copy.node_settings_},               // warning: pipeline is not copyable, we build a new one here
       canonical_chain_{copy.canonical_chain_, tx_},
       current_head_{copy.current_head_},
       last_verified_head_{copy.last_verified_head_},
@@ -60,9 +64,10 @@ Fork::Fork(const Fork& copy)
 
 Fork::Fork(Fork&& orig) noexcept
     : node_settings_{orig.node_settings_},
+      main_chain_{orig.main_chain_},
       db_tx_(std::move(orig.db_tx_)),
       overlay_{std::move(orig.overlay_)},
-      tx_{std::move(orig.tx_)},  // db tx cannot be shared between forks
+      tx_{std::move(orig.tx_)},         // db tx cannot be shared between forks
       pipeline_{&orig.node_settings_},  // warning: pipeline is not movable, we build a new one here
       canonical_chain_{std::move(orig.canonical_chain_)},
       current_head_{std::move(orig.current_head_)},
@@ -73,7 +78,7 @@ Fork::Fork(Fork&& orig) noexcept
 }
 
 void Fork::open() {
-    tx_.reopen();
+    tx_.reopen();  // comply to mdbx limitation: tx must be used from its creation thread
 }
 
 BlockId Fork::current_head() const {
@@ -139,14 +144,14 @@ void Fork::insert_body(const Block& block) {
     }
 }
 
-Fork Fork::branch_at(BlockId forking_point, db::RWAccess db_access) {
-    Fork fork{*this, db_access};
+
+Fork Fork::branch_at(BlockId forking_point) {
+    Fork fork{*this};
     fork.reduce_down_to(forking_point);
     return fork;
 }
 
 void Fork::extend_with(const Block& block) {
-
     ensure_invariant(extends_head(block.header), "inserting block must extend the head");
 
     Hash header_hash = insert_header(block.header);
@@ -281,14 +286,14 @@ std::set<Hash> Fork::collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_ch
     return bad_headers;
 }
 
-std::vector<Fork>::iterator find_fork_with_head(std::vector<Fork>& forks, const Hash& requested_head_hash) {
+std::vector<Fork>::iterator find_fork_by_head(std::vector<Fork>& forks, const Hash& requested_head_hash) {
     return std::find_if(forks.begin(), forks.end(), [&](const auto& fork) {
         return fork.current_head().hash == requested_head_hash;
     });
 }
 
-std::vector<Fork>::iterator best_fork_to_extend(std::vector<Fork>& forks, const BlockHeader& header) {
-    return find_fork_with_head(forks, header.parent_hash);
+std::vector<Fork>::iterator find_fork_to_extend(std::vector<Fork>& forks, const BlockHeader& header) {
+    return find_fork_by_head(forks, header.parent_hash);
 }
 
 std::vector<Fork>::iterator best_fork_to_branch(std::vector<Fork>& forks, const BlockHeader& header) {
@@ -306,5 +311,6 @@ std::vector<Fork>::iterator best_fork_to_branch(std::vector<Fork>& forks, const 
 
     return fork;
 }
+
 
 }  // namespace silkworm::stagedsync

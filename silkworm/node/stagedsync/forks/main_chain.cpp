@@ -35,8 +35,7 @@ MainChain::MainChain(NodeSettings& ns, const db::RWAccess dba)
       db_access_{dba},
       tx_{db_access_.start_rw_tx()},
       pipeline_{&ns},
-      canonical_chain_(tx_)
-{
+      canonical_chain_(tx_) {
 }
 
 auto MainChain::canonical_head() const -> BlockId {
@@ -52,7 +51,7 @@ BlockId MainChain::last_fork_choice() const {
 }
 
 std::optional<BlockId> MainChain::find_forking_point(const BlockHeader& header) const {
-    return canonical_chain_.find_forking_point(tx_, header);
+    return canonical_chain_.find_forking_point(header);
 }
 
 Hash MainChain::insert_header(const BlockHeader& header) {
@@ -70,8 +69,7 @@ void MainChain::insert_body(const Block& block) {
 
     if (db::has_sibling(tx_, block_num)) {
         db::write_sibling(tx_, block, block_hash, block_num);
-    }
-    else {
+    } else {
         db::write_body(tx_, block, block_hash, block_num);
     }
 }
@@ -96,7 +94,7 @@ auto MainChain::verify_chain(Hash head_block_hash) -> VerificationResult {
     if (!commit_at_each_stage) tx_.disable_commit();
 
     // the new head is on a new fork?
-    BlockId forking_point = canonical_chain_.find_forking_point(tx_, *head_header);  // the forking origin
+    BlockId forking_point = canonical_chain_.find_forking_point(*head_header);  // the forking origin
 
     if (forking_point.number < canonical_chain_.current_head().number) {  // if the forking is behind the current head
         // we need to do unwind to change canonical

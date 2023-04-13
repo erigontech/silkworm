@@ -71,6 +71,7 @@ class MainChain {
     auto is_ancestor(BlockId supposed_parent, BlockId block) -> bool;
     auto is_ancestor(Hash supposed_parent, BlockId block) -> bool;
 
+    friend Fork;
   protected:
     Hash insert_header(const BlockHeader&);
     void insert_body(const Block&);

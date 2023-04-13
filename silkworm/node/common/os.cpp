@@ -16,8 +16,6 @@
 
 #include "os.hpp"
 
-#include <limits>
-
 #if defined(__linux__) || defined(__APPLE__)
 #include <sys/resource.h>
 #elif defined(_WIN32)
@@ -33,8 +31,9 @@ uint64_t max_file_descriptors() {
     uint64_t max_descriptors;
 #if defined(__linux__) || defined(__APPLE__)
     rlimit limit{};
-    getrlimit(RLIMIT_NOFILE, &limit);
-    max_descriptors = limit.rlim_max;
+    const auto result = getrlimit(RLIMIT_NOFILE, &limit);
+    if (result == -1) return 0;
+    max_descriptors = limit.rlim_cur;
 #elif defined(_WIN32)
     max_descriptors = _getmaxstdio();
 #else
@@ -46,7 +45,8 @@ uint64_t max_file_descriptors() {
 bool set_max_file_descriptors(uint64_t max_descriptors) {
 #if defined(__linux__) || defined(__APPLE__)
     rlimit limit{
-        .rlim_max = max_descriptors,
+        .rlim_cur = max_descriptors,
+        .rlim_max = RLIM_INFINITY,
     };
     const auto result = setrlimit(RLIMIT_NOFILE, &limit);
     return result == 0;

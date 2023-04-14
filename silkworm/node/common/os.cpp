@@ -44,15 +44,18 @@ uint64_t max_file_descriptors() {
 
 bool set_max_file_descriptors(uint64_t max_descriptors) {
 #if defined(__linux__) || defined(__APPLE__)
-    rlimit limit{
-        .rlim_cur = max_descriptors,
-        .rlim_max = RLIM_INFINITY,
-    };
-    const auto result = setrlimit(RLIMIT_NOFILE, &limit);
-    return result == 0;
+    // Get the current limit
+    rlimit limit{};
+    const auto get_result = getrlimit(RLIMIT_NOFILE, &limit);
+    if (get_result == -1) return false;
+
+    // Try to update the limit to the max allowance
+    limit.rlim_cur = max_descriptors < limit.rlim_max ? max_descriptors : limit.rlim_max;
+    const auto set_result = setrlimit(RLIMIT_NOFILE, &limit);
+    return set_result == 0;
 #elif defined(_WIN32)
-    const auto max_int = std::numeric_limits<int>::max();
-    int num_max_descriptors = max_descriptors > max_int ? max_int : static_cast<int>(max_descriptors);
+    constexpr auto kMaxNumFiles = 16384;
+    const int num_max_descriptors = max_descriptors < kMaxNumFiles ? static_cast<int>(max_descriptors) : kMaxNumFiles;
     const auto result = _setmaxstdio(num_max_descriptors);
     return result == num_max_descriptors;
 #else

@@ -265,6 +265,8 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getTransactionBySenderAndNonc
 
     auto sender_byte_view = full_view(sender);
 
+    SILKRPC_DEBUG << "sender: " << sender << " nonce: " << nonce << "\n";
+
     auto tx = co_await database_->begin();
     ethdb::TransactionDatabase tx_database{*tx};
     try {
@@ -276,7 +278,22 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getTransactionBySenderAndNonc
 
         uint64_t max_block_prev_chunk = 0;
         roaring::Roaring64Map bitmap;
+
         while (true) {
+            if (key_value.key.empty() || !key_value.key.starts_with(sender_byte_view)) {
+                auto plane_state_cursor = co_await tx->cursor(db::table::kPlainStateName);
+                auto account_payload = co_await plane_state_cursor->seek(sender_byte_view);
+                auto account = Account::from_encoded_storage(account_payload.value).value();
+
+                if (account.nonce > nonce) {
+                    break;
+                }
+
+                reply = make_json_content(request["id"], nullptr);
+                co_await tx->close();
+                co_return;
+            }
+
             bitmap = silkworm::db::bitmap::parse(key_value.value);
             auto max_block = bitmap.maximum();
             auto block_key{silkworm::db::block_key(max_block)};
@@ -322,9 +339,11 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getTransactionBySenderAndNonc
                 auto transaction_hash{hash_of_transaction(item)};
                 auto result = silkworm::to_bytes32({transaction_hash.bytes, silkworm::kHashLength});
                 reply = make_json_content(request["id"], result);
+                co_await tx->close();
                 co_return;
             }
         }
+        reply = make_json_content(request["id"], nullptr);
 
     } catch (const std::invalid_argument& iv) {
         SILKRPC_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump() << "\n";

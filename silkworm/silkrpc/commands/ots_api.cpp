@@ -20,6 +20,8 @@
 #include <string>
 
 #include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/node/db/bitmap.hpp>
+#include <silkworm/node/db/tables.hpp>
 #include <silkworm/silkrpc/consensus/ethash.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
@@ -237,6 +239,96 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockTransactions(const nl
     } catch (const std::invalid_argument& iv) {
         SILKRPC_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump() << "\n";
         reply = make_json_content(request["id"], {});
+    } catch (const std::exception& e) {
+        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+    co_return;
+}
+
+boost::asio::awaitable<void> OtsRpcApi::handle_ots_getTransactionBySenderAndNonce(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request["params"];
+    if (params.size() != 2) {
+        const auto error_msg = "invalid ots_getTransactionBySenderAndNonce params: " + params.dump();
+        SILKRPC_ERROR << error_msg << "\n";
+        reply = make_json_error(request["id"], 100, error_msg);
+        co_return;
+    }
+
+    const auto sender = params[0].get<evmc::address>();
+    const auto nonce = params[1].get<uint64_t>();
+
+    auto sender_byte_view = full_view(sender);
+
+    auto tx = co_await database_->begin();
+    ethdb::TransactionDatabase tx_database{*tx};
+    try {
+        auto account_history_cursor = co_await tx->cursor(db::table::kAccountHistoryName);
+        auto account_change_set_cursor = co_await tx->cursor_dup_sort(db::table::kAccountChangeSetName);
+        auto key_value = co_await account_history_cursor->seek(sender_byte_view);
+
+        uint64_t* blocks;
+
+        uint64_t max_block_prev_chunk = 0;
+        roaring::Roaring64Map bitmap;
+        while (true) {
+            bitmap = silkworm::db::bitmap::parse(key_value.value);
+            auto max_block = bitmap.maximum();
+            auto block_key{silkworm::db::block_key(max_block)};
+            auto account_payload = co_await account_change_set_cursor->seek_both(block_key, sender_byte_view);
+            account_payload = account_payload.substr(sender_byte_view.length());
+            auto account = Account::from_encoded_storage(account_payload).value();
+
+            if (account.nonce > nonce) {
+                break;
+            }
+
+            max_block_prev_chunk = max_block;
+            key_value = co_await account_history_cursor->next();
+        }
+
+        uint64_t cardinality = bitmap.cardinality();
+        blocks = new uint64_t[cardinality];
+        bitmap.toUint64Array(blocks);
+
+        uint64_t idx = 0;
+        for (uint64_t i = 0; i < cardinality; i++) {
+            auto bn = blocks[i];
+            auto bk{silkworm::db::block_key(bn)};
+            auto ap = co_await account_change_set_cursor->seek_both(bk, sender_byte_view);
+            ap = ap.substr(sender_byte_view.length());
+            auto a = Account::from_encoded_storage(ap).value();
+
+            if (a.nonce > nonce) {
+                idx = i;
+                break;
+            }
+        }
+
+        auto nonceBlock = max_block_prev_chunk;
+        if (idx > 0) {
+            nonceBlock = blocks[idx - 1];
+        }
+
+        auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, nonceBlock);
+
+        for (const auto& item : block_with_hash.block.transactions) {
+            if (item.from == sender && item.nonce == nonce) {
+                auto transaction_hash{hash_of_transaction(item)};
+                auto result = silkworm::to_bytes32({transaction_hash.bytes, silkworm::kHashLength});
+                reply = make_json_content(request["id"], result);
+                co_return;
+            }
+        }
+
+    } catch (const std::invalid_argument& iv) {
+        SILKRPC_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump() << "\n";
+        reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
         reply = make_json_error(request["id"], 100, e.what());

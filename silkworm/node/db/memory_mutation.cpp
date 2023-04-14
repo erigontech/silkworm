@@ -70,7 +70,6 @@ void MemoryOverlay::update_txn(ROTxn* txn) {
 
 MemoryMutation::MemoryMutation(MemoryOverlay& overlay)
     : RWTxn{overlay.start_rw_txn()}, overlay_(overlay) {
-
     // Initialize sequences
     db::PooledCursor cursor{*overlay_.external_txn(), db::table::kSequence};
     db::PooledCursor memory_cursor{managed_txn_, db::table::kSequence};

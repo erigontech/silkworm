@@ -54,6 +54,12 @@ std::optional<BlockId> MainChain::find_forking_point(const BlockHeader& header) 
     return canonical_chain_.find_forking_point(header);
 }
 
+std::optional<BlockId> MainChain::find_forking_point(const Hash& header_hash) const {
+    auto header = get_header(header_hash);
+    if (!header) return std::nullopt;
+    return find_forking_point(*header);
+}
+
 Hash MainChain::insert_header(const BlockHeader& header) {
     return db::write_header_ex(tx_, header, true);
 }
@@ -199,7 +205,7 @@ std::set<Hash> MainChain::collect_bad_headers(db::RWTxn& tx, InvalidChain& inval
     return bad_headers;
 }
 
-auto MainChain::get_header(Hash header_hash) -> std::optional<BlockHeader> {
+auto MainChain::get_header(Hash header_hash) const -> std::optional<BlockHeader> {
     // const BlockHeader* cached = header_cache_.get(header_hash);
     // if (cached) {
     //     return *cached;
@@ -208,7 +214,7 @@ auto MainChain::get_header(Hash header_hash) -> std::optional<BlockHeader> {
     return header;
 }
 
-auto MainChain::get_header(BlockNum header_height, Hash header_hash) -> std::optional<BlockHeader> {
+auto MainChain::get_header(BlockNum header_height, Hash header_hash) const -> std::optional<BlockHeader> {
     // const BlockHeader* cached = header_cache_.get(header_hash);
     // if (cached) {
     //     return *cached;
@@ -217,22 +223,22 @@ auto MainChain::get_header(BlockNum header_height, Hash header_hash) -> std::opt
     return header;
 }
 
-auto MainChain::get_canonical_hash(BlockNum height) -> std::optional<Hash> {
+auto MainChain::get_canonical_hash(BlockNum height) const -> std::optional<Hash> {
     return canonical_chain_.get_hash(height);
 }
 
-auto MainChain::get_header_td(BlockNum header_height, Hash header_hash) -> std::optional<TotalDifficulty> {
+auto MainChain::get_header_td(BlockNum header_height, Hash header_hash) const -> std::optional<TotalDifficulty> {
     return db::read_total_difficulty(tx_, header_height, header_hash);
 }
 
-auto MainChain::get_body(Hash header_hash) -> std::optional<BlockBody> {
+auto MainChain::get_body(Hash header_hash) const -> std::optional<BlockBody> {
     BlockBody body;
     bool found = read_body(tx_, header_hash, body);
     if (!found) return {};
     return body;
 }
 
-auto MainChain::get_block_progress() -> BlockNum {
+auto MainChain::get_block_progress() const -> BlockNum {
     BlockNum block_progress = 0;
 
     read_headers_in_reverse_order(tx_, 1, [&block_progress](BlockHeader&& header) {
@@ -242,7 +248,7 @@ auto MainChain::get_block_progress() -> BlockNum {
     return block_progress;
 }
 
-auto MainChain::get_last_headers(BlockNum limit) -> std::vector<BlockHeader> {
+auto MainChain::get_last_headers(BlockNum limit) const -> std::vector<BlockHeader> {
     std::vector<BlockHeader> headers;
 
     read_headers_in_reverse_order(tx_, limit, [&headers](BlockHeader&& header) {
@@ -252,15 +258,15 @@ auto MainChain::get_last_headers(BlockNum limit) -> std::vector<BlockHeader> {
     return headers;
 }
 
-auto MainChain::is_ancestor(BlockId supposed_parent, BlockId block) -> bool {
+auto MainChain::is_ancestor(BlockId supposed_parent, BlockId block) const -> bool {
     return extends(block, supposed_parent);
 }
 
-auto MainChain::extends_last_fork_choice(BlockNum height, Hash hash) -> bool {
+auto MainChain::extends_last_fork_choice(BlockNum height, Hash hash) const -> bool {
     return extends({height, hash}, last_fork_choice_);
 }
 
-auto MainChain::extends(BlockId block, BlockId supposed_parent) -> bool {
+auto MainChain::extends(BlockId block, BlockId supposed_parent) const -> bool {
     while (block.number > supposed_parent.number) {
         auto header = get_header(block.number, block.hash);
         if (!header) return false;

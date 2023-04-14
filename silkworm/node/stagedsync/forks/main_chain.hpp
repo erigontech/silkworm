@@ -47,6 +47,7 @@ class MainChain {
     // branching
     Fork branch_at(BlockId forking_point, db::RWAccess);
     std::optional<BlockId> find_forking_point(const BlockHeader& header) const;
+    std::optional<BlockId> find_forking_point(const Hash& header_hash) const;
 
     // verification
     auto verify_chain(Hash head_block_hash) -> VerificationResult;  // verify chain up to head_block_hash
@@ -59,17 +60,17 @@ class MainChain {
     auto last_fork_choice() const -> BlockId;
 
     // header/body retrieval
-    auto get_block_progress() -> BlockNum;
-    auto get_header(Hash) -> std::optional<BlockHeader>;
-    auto get_header(BlockNum, Hash) -> std::optional<BlockHeader>;
-    auto get_canonical_hash(BlockNum) -> std::optional<Hash>;
-    auto get_header_td(BlockNum, Hash) -> std::optional<TotalDifficulty>;
-    auto get_body(Hash) -> std::optional<BlockBody>;
-    auto get_last_headers(BlockNum limit) -> std::vector<BlockHeader>;
-    auto extends_last_fork_choice(BlockNum, Hash) -> bool;
-    auto extends(BlockId block, BlockId supposed_parent) -> bool;
-    auto is_ancestor(BlockId supposed_parent, BlockId block) -> bool;
-    auto is_ancestor(Hash supposed_parent, BlockId block) -> bool;
+    auto get_block_progress() const -> BlockNum;
+    auto get_header(Hash) const -> std::optional<BlockHeader>;
+    auto get_header(BlockNum, Hash) const -> std::optional<BlockHeader>;
+    auto get_canonical_hash(BlockNum) const -> std::optional<Hash>;
+    auto get_header_td(BlockNum, Hash) const -> std::optional<TotalDifficulty>;
+    auto get_body(Hash) const -> std::optional<BlockBody>;
+    auto get_last_headers(BlockNum limit) const -> std::vector<BlockHeader>;
+    auto extends_last_fork_choice(BlockNum, Hash) const -> bool;
+    auto extends(BlockId block, BlockId supposed_parent) const -> bool;
+    auto is_ancestor(BlockId supposed_parent, BlockId block) const -> bool;
+    auto is_ancestor(Hash supposed_parent, BlockId block) const -> bool;
 
     friend Fork;
   protected:
@@ -80,7 +81,7 @@ class MainChain {
 
     NodeSettings& node_settings_;
     db::RWAccess db_access_;
-    db::RWTxn tx_;
+    mutable db::RWTxn tx_;
     bool is_first_sync_{true};
 
     ExecutionPipeline pipeline_;

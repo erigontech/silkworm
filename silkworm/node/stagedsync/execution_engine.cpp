@@ -55,41 +55,55 @@ void ExecutionEngine::insert_block(std::shared_ptr<Block> block) {
     }
 
     // find attachment point at fork heads
-    auto f = find_fork_to_extend(forks_, block->header);
+    auto f = find_fork_to_extend(forks_, block->header);  // todo: SuspendableFork need external data to avoid data race on Fork
 
     if (f != forks_.end()) {
         // the block extends a fork
         SILK_DEBUG << "ExecutionEngine: extending a fork";
+        // todo: execute the follwing in the fork thread
+        f->open();
         f->extend_with(*block);
         return;
-    }
-    else {
+    } else {
         // the block must be put to a new fork
         // (to avoid complicated code we ignore the case whether the attaching point is inside a current fork)
 
-        auto forking_point = find_forking_point(block->header);
-        if (!forking_point) return;  // ignore or raise exception?
-        if (forking_point->number < main_chain_.last_fork_choice().number) return;  // ignore | todo: check if this is correct
+        auto forking_path = find_forking_point(block->header);
+        if (!forking_path) return;                                                 // ignore or raise exception?
+        if (forking_path->forking_point.number < main_chain_.last_finalized_block().number) return;  // ignore | todo: check if this is correct
+        forking_path->blocks.push_back(block);
 
         SILK_DEBUG << "ExecutionEngine: creating new fork";
 
-        auto& new_fork = forks_.emplace_back(*forking_point, node_settings_, main_chain_);
-        // if (new_fork.current_head().number < main_chain_.last_fork_choice().number) new_fork->reduce_down_to(*forking_point);
-        fill_fork(new_fork, block_cache_, BlockId{block->header.number - 1, block->header.parent_hash});
-        new_fork.extend_with(*block);
+        auto& new_fork = forks_.emplace_back(main_chain_.canonical_head(), node_settings_, main_chain_);
+
+        // todo: execute the follwing in the fork thread
+        new_fork.open();
+        new_fork.reduce_down_to(forking_path->forking_point);
+        new_fork.extend_with(forking_path->blocks);
+    }
+}
+
+auto ExecutionEngine::find_forking_point(const BlockHeader& header) const -> std::optional<ForkingPath> {
+    ForkingPath path;
+
+    // search in cache
+    path.forking_point = {.number = header.number - 1, .hash = header.parent_hash};
+    while (path.forking_point.number > main_chain_.canonical_head().number) {
+        auto parent = block_cache_.get_as_copy(path.forking_point.hash);  // parent is a pointer
+        if (!parent) return {};  // not found
+        path.blocks.push_front(*parent);  // in reverse order
+        path.forking_point = {.number = (*parent)->header.number - 1, .hash = (*parent)->header.parent_hash};
     }
 
-}
+    // forking point is on main chain canonical head
+    if (path.forking_point == main_chain_.canonical_head()) return {std::move(path)};
 
-bool ExecutionEngine::is_viable_fork(const BlockHeader& head_header) const {
-    auto forking_point = main_chain_.find_forking_point(head_header);
-    if (!forking_point) return false;
-    return main_chain_.last_fork_choice().number < forking_point->number;  // todo: check if this is correct
-}
+    // search remaining path on main chain
+    auto forking_point = main_chain_.find_forking_point(path.forking_point.hash);
+    if (!forking_point) return {};  // not found
 
-std::optional<BlockId> find_forking_point(const BlockHeader& header) const {
-    // todo: implement using block_cache_ and main_chain_
-    return {};
+    return {std::move(path)};
 }
 
 void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<Block>>& blocks) {

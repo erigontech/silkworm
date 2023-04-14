@@ -50,8 +50,12 @@ class ExecutionEngine : public Stoppable {
     auto last_fork_choice() -> std::optional<BlockId>;
 
   protected:
-    std::optional<BlockId> find_forking_point(const BlockHeader& header) const;
-    bool is_viable_fork(const BlockHeader& head_header) const;
+    struct ForkingPath {
+        BlockId forking_point;
+        std::list<std::shared_ptr<Block>> blocks;   // blocks in reverse order
+    };
+
+    auto find_forking_point(const BlockHeader& header) const -> std::optional<ForkingPath>;
     void consolidate_forks();
 
     NodeSettings& node_settings_;

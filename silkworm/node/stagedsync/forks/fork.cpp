@@ -37,7 +37,7 @@ Fork::Fork(BlockId forking_point, NodeSettings& ns, MainChain& main_chain)
     : node_settings_{ns},
       main_chain_{main_chain},
       db_tx_(main_chain.db_access_.start_ro_tx()),
-      overlay_{"fork_overlay" + random_string()},
+      overlay_{TemporaryDirectory::get_unique_temporary_path(ns.data_directory->path())},
       tx_{overlay_, &db_tx_},
       pipeline_{&ns},
       canonical_chain_(tx_) {
@@ -47,27 +47,12 @@ Fork::Fork(BlockId forking_point, NodeSettings& ns, MainChain& main_chain)
     tx_.commit();
 }
 
-Fork::Fork(const Fork& copy)
-    : node_settings_{copy.node_settings_},
-      main_chain_{copy.main_chain_},
-      db_tx_{main_chain_.db_access_.start_ro_tx()},  // or copy.db_tx_.db(), create a new db tx from the original one
-      overlay_{copy.overlay_},                       // copy the overlay i.e. create a new overlay from the original one
-      tx_{overlay_, &db_tx_},                        // db tx cannot be shared between forks
-      pipeline_{&copy.node_settings_},               // warning: pipeline is not copyable, we build a new one here
-      canonical_chain_{copy.canonical_chain_, tx_},
-      current_head_{copy.current_head_},
-      last_verified_head_{copy.last_verified_head_},
-      last_head_status_{copy.last_head_status_},
-      last_fork_choice_{copy.last_fork_choice_} {
-    tx_.commit();
-}
-
 Fork::Fork(Fork&& orig) noexcept
     : node_settings_{orig.node_settings_},
       main_chain_{orig.main_chain_},
       db_tx_(std::move(orig.db_tx_)),
       overlay_{std::move(orig.overlay_)},
-      tx_{std::move(orig.tx_)},         // db tx cannot be shared between forks
+      tx_{std::move(orig.tx_)},
       pipeline_{&orig.node_settings_},  // warning: pipeline is not movable, we build a new one here
       canonical_chain_{std::move(orig.canonical_chain_)},
       current_head_{std::move(orig.current_head_)},

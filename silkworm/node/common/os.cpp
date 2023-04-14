@@ -30,9 +30,11 @@ namespace silkworm::os {
 uint64_t max_file_descriptors() {
     uint64_t max_descriptors;
 #if defined(__linux__) || defined(__APPLE__)
+    // Get the current limit
     rlimit limit{};
     const auto result = getrlimit(RLIMIT_NOFILE, &limit);
     if (result == -1) return 0;
+    // Current max descriptors is *soft* limit (hard limit is max value of soft limit)
     max_descriptors = limit.rlim_cur;
 #elif defined(_WIN32)
     max_descriptors = _getmaxstdio();
@@ -48,13 +50,14 @@ bool set_max_file_descriptors(uint64_t max_descriptors) {
     rlimit limit{};
     const auto get_result = getrlimit(RLIMIT_NOFILE, &limit);
     if (get_result == -1) return false;
-
-    // Try to update the limit to the max allowance
+    // Try to update the *soft* limit (not over the hard limit i.e. max allowance)
     limit.rlim_cur = max_descriptors < limit.rlim_max ? max_descriptors : limit.rlim_max;
     const auto set_result = setrlimit(RLIMIT_NOFILE, &limit);
     return set_result == 0;
 #elif defined(_WIN32)
+    // Hard limit is hard-coded on Windows
     constexpr auto kMaxNumFiles = 16384;
+    // Try to update the *soft* limit (not over the hard limit i.e. max allowance)
     const int num_max_descriptors = max_descriptors < kMaxNumFiles ? static_cast<int>(max_descriptors) : kMaxNumFiles;
     const auto result = _setmaxstdio(num_max_descriptors);
     return result == num_max_descriptors;

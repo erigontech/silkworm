@@ -455,28 +455,28 @@ class AddRequest final :
   enum : int {
     kRlpTxsFieldNumber = 1,
   };
-  // repeated bytes rlpTxs = 1;
-  int rlptxs_size() const;
+  // repeated bytes rlp_txs = 1;
+  int rlp_txs_size() const;
   private:
-  int _internal_rlptxs_size() const;
+  int _internal_rlp_txs_size() const;
   public:
-  void clear_rlptxs();
-  const std::string& rlptxs(int index) const;
-  std::string* mutable_rlptxs(int index);
-  void set_rlptxs(int index, const std::string& value);
-  void set_rlptxs(int index, std::string&& value);
-  void set_rlptxs(int index, const char* value);
-  void set_rlptxs(int index, const void* value, size_t size);
-  std::string* add_rlptxs();
-  void add_rlptxs(const std::string& value);
-  void add_rlptxs(std::string&& value);
-  void add_rlptxs(const char* value);
-  void add_rlptxs(const void* value, size_t size);
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& rlptxs() const;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_rlptxs();
+  void clear_rlp_txs();
+  const std::string& rlp_txs(int index) const;
+  std::string* mutable_rlp_txs(int index);
+  void set_rlp_txs(int index, const std::string& value);
+  void set_rlp_txs(int index, std::string&& value);
+  void set_rlp_txs(int index, const char* value);
+  void set_rlp_txs(int index, const void* value, size_t size);
+  std::string* add_rlp_txs();
+  void add_rlp_txs(const std::string& value);
+  void add_rlp_txs(std::string&& value);
+  void add_rlp_txs(const char* value);
+  void add_rlp_txs(const void* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& rlp_txs() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_rlp_txs();
   private:
-  const std::string& _internal_rlptxs(int index) const;
-  std::string* _internal_add_rlptxs();
+  const std::string& _internal_rlp_txs(int index) const;
+  std::string* _internal_add_rlp_txs();
   public:
 
   // @@protoc_insertion_point(class_scope:txpool.AddRequest)
@@ -487,7 +487,7 @@ class AddRequest final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> rlptxs_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> rlp_txs_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -958,28 +958,28 @@ class TransactionsReply final :
   enum : int {
     kRlpTxsFieldNumber = 1,
   };
-  // repeated bytes rlpTxs = 1;
-  int rlptxs_size() const;
+  // repeated bytes rlp_txs = 1;
+  int rlp_txs_size() const;
   private:
-  int _internal_rlptxs_size() const;
+  int _internal_rlp_txs_size() const;
   public:
-  void clear_rlptxs();
-  const std::string& rlptxs(int index) const;
-  std::string* mutable_rlptxs(int index);
-  void set_rlptxs(int index, const std::string& value);
-  void set_rlptxs(int index, std::string&& value);
-  void set_rlptxs(int index, const char* value);
-  void set_rlptxs(int index, const void* value, size_t size);
-  std::string* add_rlptxs();
-  void add_rlptxs(const std::string& value);
-  void add_rlptxs(std::string&& value);
-  void add_rlptxs(const char* value);
-  void add_rlptxs(const void* value, size_t size);
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& rlptxs() const;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_rlptxs();
+  void clear_rlp_txs();
+  const std::string& rlp_txs(int index) const;
+  std::string* mutable_rlp_txs(int index);
+  void set_rlp_txs(int index, const std::string& value);
+  void set_rlp_txs(int index, std::string&& value);
+  void set_rlp_txs(int index, const char* value);
+  void set_rlp_txs(int index, const void* value, size_t size);
+  std::string* add_rlp_txs();
+  void add_rlp_txs(const std::string& value);
+  void add_rlp_txs(std::string&& value);
+  void add_rlp_txs(const char* value);
+  void add_rlp_txs(const void* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& rlp_txs() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_rlp_txs();
   private:
-  const std::string& _internal_rlptxs(int index) const;
-  std::string* _internal_add_rlptxs();
+  const std::string& _internal_rlp_txs(int index) const;
+  std::string* _internal_add_rlp_txs();
   public:
 
   // @@protoc_insertion_point(class_scope:txpool.TransactionsReply)
@@ -990,7 +990,7 @@ class TransactionsReply final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> rlptxs_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> rlp_txs_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -1239,28 +1239,28 @@ class OnAddReply final :
   enum : int {
     kRplTxsFieldNumber = 1,
   };
-  // repeated bytes rplTxs = 1;
-  int rpltxs_size() const;
+  // repeated bytes rpl_txs = 1;
+  int rpl_txs_size() const;
   private:
-  int _internal_rpltxs_size() const;
+  int _internal_rpl_txs_size() const;
   public:
-  void clear_rpltxs();
-  const std::string& rpltxs(int index) const;
-  std::string* mutable_rpltxs(int index);
-  void set_rpltxs(int index, const std::string& value);
-  void set_rpltxs(int index, std::string&& value);
-  void set_rpltxs(int index, const char* value);
-  void set_rpltxs(int index, const void* value, size_t size);
-  std::string* add_rpltxs();
-  void add_rpltxs(const std::string& value);
-  void add_rpltxs(std::string&& value);
-  void add_rpltxs(const char* value);
-  void add_rpltxs(const void* value, size_t size);
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& rpltxs() const;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_rpltxs();
+  void clear_rpl_txs();
+  const std::string& rpl_txs(int index) const;
+  std::string* mutable_rpl_txs(int index);
+  void set_rpl_txs(int index, const std::string& value);
+  void set_rpl_txs(int index, std::string&& value);
+  void set_rpl_txs(int index, const char* value);
+  void set_rpl_txs(int index, const void* value, size_t size);
+  std::string* add_rpl_txs();
+  void add_rpl_txs(const std::string& value);
+  void add_rpl_txs(std::string&& value);
+  void add_rpl_txs(const char* value);
+  void add_rpl_txs(const void* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& rpl_txs() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_rpl_txs();
   private:
-  const std::string& _internal_rpltxs(int index) const;
-  std::string* _internal_add_rpltxs();
+  const std::string& _internal_rpl_txs(int index) const;
+  std::string* _internal_add_rpl_txs();
   public:
 
   // @@protoc_insertion_point(class_scope:txpool.OnAddReply)
@@ -1271,7 +1271,7 @@ class OnAddReply final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> rpltxs_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> rpl_txs_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -1522,18 +1522,18 @@ class AllReply_Tx final :
     kSenderFieldNumber = 2,
     kTxnTypeFieldNumber = 1,
   };
-  // bytes rlpTx = 3;
-  void clear_rlptx();
-  const std::string& rlptx() const;
+  // bytes rlp_tx = 3;
+  void clear_rlp_tx();
+  const std::string& rlp_tx() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_rlptx(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_rlptx();
-  PROTOBUF_NODISCARD std::string* release_rlptx();
-  void set_allocated_rlptx(std::string* rlptx);
+  void set_rlp_tx(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_rlp_tx();
+  PROTOBUF_NODISCARD std::string* release_rlp_tx();
+  void set_allocated_rlp_tx(std::string* rlp_tx);
   private:
-  const std::string& _internal_rlptx() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_rlptx(const std::string& value);
-  std::string* _internal_mutable_rlptx();
+  const std::string& _internal_rlp_tx() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_rlp_tx(const std::string& value);
+  std::string* _internal_mutable_rlp_tx();
   public:
 
   // .types.H160 sender = 2;
@@ -1554,13 +1554,13 @@ class AllReply_Tx final :
       ::types::H160* sender);
   ::types::H160* unsafe_arena_release_sender();
 
-  // .txpool.AllReply.TxnType txnType = 1;
-  void clear_txntype();
-  ::txpool::AllReply_TxnType txntype() const;
-  void set_txntype(::txpool::AllReply_TxnType value);
+  // .txpool.AllReply.TxnType txn_type = 1;
+  void clear_txn_type();
+  ::txpool::AllReply_TxnType txn_type() const;
+  void set_txn_type(::txpool::AllReply_TxnType value);
   private:
-  ::txpool::AllReply_TxnType _internal_txntype() const;
-  void _internal_set_txntype(::txpool::AllReply_TxnType value);
+  ::txpool::AllReply_TxnType _internal_txn_type() const;
+  void _internal_set_txn_type(::txpool::AllReply_TxnType value);
   public:
 
   // @@protoc_insertion_point(class_scope:txpool.AllReply.Tx)
@@ -1571,9 +1571,9 @@ class AllReply_Tx final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr rlptx_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr rlp_tx_;
     ::types::H160* sender_;
-    int txntype_;
+    int txn_type_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -1897,18 +1897,18 @@ class PendingReply_Tx final :
     kSenderFieldNumber = 1,
     kIsLocalFieldNumber = 3,
   };
-  // bytes rlpTx = 2;
-  void clear_rlptx();
-  const std::string& rlptx() const;
+  // bytes rlp_tx = 2;
+  void clear_rlp_tx();
+  const std::string& rlp_tx() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_rlptx(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_rlptx();
-  PROTOBUF_NODISCARD std::string* release_rlptx();
-  void set_allocated_rlptx(std::string* rlptx);
+  void set_rlp_tx(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_rlp_tx();
+  PROTOBUF_NODISCARD std::string* release_rlp_tx();
+  void set_allocated_rlp_tx(std::string* rlp_tx);
   private:
-  const std::string& _internal_rlptx() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_rlptx(const std::string& value);
-  std::string* _internal_mutable_rlptx();
+  const std::string& _internal_rlp_tx() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_rlp_tx(const std::string& value);
+  std::string* _internal_mutable_rlp_tx();
   public:
 
   // .types.H160 sender = 1;
@@ -1929,13 +1929,13 @@ class PendingReply_Tx final :
       ::types::H160* sender);
   ::types::H160* unsafe_arena_release_sender();
 
-  // bool isLocal = 3;
-  void clear_islocal();
-  bool islocal() const;
-  void set_islocal(bool value);
+  // bool is_local = 3;
+  void clear_is_local();
+  bool is_local() const;
+  void set_is_local(bool value);
   private:
-  bool _internal_islocal() const;
-  void _internal_set_islocal(bool value);
+  bool _internal_is_local() const;
+  void _internal_set_is_local(bool value);
   public:
 
   // @@protoc_insertion_point(class_scope:txpool.PendingReply.Tx)
@@ -1946,9 +1946,9 @@ class PendingReply_Tx final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr rlptx_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr rlp_tx_;
     ::types::H160* sender_;
-    bool islocal_;
+    bool is_local_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -2358,31 +2358,31 @@ class StatusReply final :
     kQueuedCountFieldNumber = 2,
     kBaseFeeCountFieldNumber = 3,
   };
-  // uint32 pendingCount = 1;
-  void clear_pendingcount();
-  uint32_t pendingcount() const;
-  void set_pendingcount(uint32_t value);
+  // uint32 pending_count = 1;
+  void clear_pending_count();
+  uint32_t pending_count() const;
+  void set_pending_count(uint32_t value);
   private:
-  uint32_t _internal_pendingcount() const;
-  void _internal_set_pendingcount(uint32_t value);
+  uint32_t _internal_pending_count() const;
+  void _internal_set_pending_count(uint32_t value);
   public:
 
-  // uint32 queuedCount = 2;
-  void clear_queuedcount();
-  uint32_t queuedcount() const;
-  void set_queuedcount(uint32_t value);
+  // uint32 queued_count = 2;
+  void clear_queued_count();
+  uint32_t queued_count() const;
+  void set_queued_count(uint32_t value);
   private:
-  uint32_t _internal_queuedcount() const;
-  void _internal_set_queuedcount(uint32_t value);
+  uint32_t _internal_queued_count() const;
+  void _internal_set_queued_count(uint32_t value);
   public:
 
-  // uint32 baseFeeCount = 3;
-  void clear_basefeecount();
-  uint32_t basefeecount() const;
-  void set_basefeecount(uint32_t value);
+  // uint32 base_fee_count = 3;
+  void clear_base_fee_count();
+  uint32_t base_fee_count() const;
+  void set_base_fee_count(uint32_t value);
   private:
-  uint32_t _internal_basefeecount() const;
-  void _internal_set_basefeecount(uint32_t value);
+  uint32_t _internal_base_fee_count() const;
+  void _internal_set_base_fee_count(uint32_t value);
   public:
 
   // @@protoc_insertion_point(class_scope:txpool.StatusReply)
@@ -2393,9 +2393,9 @@ class StatusReply final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    uint32_t pendingcount_;
-    uint32_t queuedcount_;
-    uint32_t basefeecount_;
+    uint32_t pending_count_;
+    uint32_t queued_count_;
+    uint32_t base_fee_count_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -2769,79 +2769,79 @@ TxHashes::hashes() const {
 
 // AddRequest
 
-// repeated bytes rlpTxs = 1;
-inline int AddRequest::_internal_rlptxs_size() const {
-  return _impl_.rlptxs_.size();
+// repeated bytes rlp_txs = 1;
+inline int AddRequest::_internal_rlp_txs_size() const {
+  return _impl_.rlp_txs_.size();
 }
-inline int AddRequest::rlptxs_size() const {
-  return _internal_rlptxs_size();
+inline int AddRequest::rlp_txs_size() const {
+  return _internal_rlp_txs_size();
 }
-inline void AddRequest::clear_rlptxs() {
-  _impl_.rlptxs_.Clear();
+inline void AddRequest::clear_rlp_txs() {
+  _impl_.rlp_txs_.Clear();
 }
-inline std::string* AddRequest::add_rlptxs() {
-  std::string* _s = _internal_add_rlptxs();
-  // @@protoc_insertion_point(field_add_mutable:txpool.AddRequest.rlpTxs)
+inline std::string* AddRequest::add_rlp_txs() {
+  std::string* _s = _internal_add_rlp_txs();
+  // @@protoc_insertion_point(field_add_mutable:txpool.AddRequest.rlp_txs)
   return _s;
 }
-inline const std::string& AddRequest::_internal_rlptxs(int index) const {
-  return _impl_.rlptxs_.Get(index);
+inline const std::string& AddRequest::_internal_rlp_txs(int index) const {
+  return _impl_.rlp_txs_.Get(index);
 }
-inline const std::string& AddRequest::rlptxs(int index) const {
-  // @@protoc_insertion_point(field_get:txpool.AddRequest.rlpTxs)
-  return _internal_rlptxs(index);
+inline const std::string& AddRequest::rlp_txs(int index) const {
+  // @@protoc_insertion_point(field_get:txpool.AddRequest.rlp_txs)
+  return _internal_rlp_txs(index);
 }
-inline std::string* AddRequest::mutable_rlptxs(int index) {
-  // @@protoc_insertion_point(field_mutable:txpool.AddRequest.rlpTxs)
-  return _impl_.rlptxs_.Mutable(index);
+inline std::string* AddRequest::mutable_rlp_txs(int index) {
+  // @@protoc_insertion_point(field_mutable:txpool.AddRequest.rlp_txs)
+  return _impl_.rlp_txs_.Mutable(index);
 }
-inline void AddRequest::set_rlptxs(int index, const std::string& value) {
-  _impl_.rlptxs_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set:txpool.AddRequest.rlpTxs)
+inline void AddRequest::set_rlp_txs(int index, const std::string& value) {
+  _impl_.rlp_txs_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:txpool.AddRequest.rlp_txs)
 }
-inline void AddRequest::set_rlptxs(int index, std::string&& value) {
-  _impl_.rlptxs_.Mutable(index)->assign(std::move(value));
-  // @@protoc_insertion_point(field_set:txpool.AddRequest.rlpTxs)
+inline void AddRequest::set_rlp_txs(int index, std::string&& value) {
+  _impl_.rlp_txs_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:txpool.AddRequest.rlp_txs)
 }
-inline void AddRequest::set_rlptxs(int index, const char* value) {
+inline void AddRequest::set_rlp_txs(int index, const char* value) {
   GOOGLE_DCHECK(value != nullptr);
-  _impl_.rlptxs_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set_char:txpool.AddRequest.rlpTxs)
+  _impl_.rlp_txs_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:txpool.AddRequest.rlp_txs)
 }
-inline void AddRequest::set_rlptxs(int index, const void* value, size_t size) {
-  _impl_.rlptxs_.Mutable(index)->assign(
+inline void AddRequest::set_rlp_txs(int index, const void* value, size_t size) {
+  _impl_.rlp_txs_.Mutable(index)->assign(
     reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_set_pointer:txpool.AddRequest.rlpTxs)
+  // @@protoc_insertion_point(field_set_pointer:txpool.AddRequest.rlp_txs)
 }
-inline std::string* AddRequest::_internal_add_rlptxs() {
-  return _impl_.rlptxs_.Add();
+inline std::string* AddRequest::_internal_add_rlp_txs() {
+  return _impl_.rlp_txs_.Add();
 }
-inline void AddRequest::add_rlptxs(const std::string& value) {
-  _impl_.rlptxs_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add:txpool.AddRequest.rlpTxs)
+inline void AddRequest::add_rlp_txs(const std::string& value) {
+  _impl_.rlp_txs_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:txpool.AddRequest.rlp_txs)
 }
-inline void AddRequest::add_rlptxs(std::string&& value) {
-  _impl_.rlptxs_.Add(std::move(value));
-  // @@protoc_insertion_point(field_add:txpool.AddRequest.rlpTxs)
+inline void AddRequest::add_rlp_txs(std::string&& value) {
+  _impl_.rlp_txs_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:txpool.AddRequest.rlp_txs)
 }
-inline void AddRequest::add_rlptxs(const char* value) {
+inline void AddRequest::add_rlp_txs(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
-  _impl_.rlptxs_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add_char:txpool.AddRequest.rlpTxs)
+  _impl_.rlp_txs_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:txpool.AddRequest.rlp_txs)
 }
-inline void AddRequest::add_rlptxs(const void* value, size_t size) {
-  _impl_.rlptxs_.Add()->assign(reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_add_pointer:txpool.AddRequest.rlpTxs)
+inline void AddRequest::add_rlp_txs(const void* value, size_t size) {
+  _impl_.rlp_txs_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:txpool.AddRequest.rlp_txs)
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
-AddRequest::rlptxs() const {
-  // @@protoc_insertion_point(field_list:txpool.AddRequest.rlpTxs)
-  return _impl_.rlptxs_;
+AddRequest::rlp_txs() const {
+  // @@protoc_insertion_point(field_list:txpool.AddRequest.rlp_txs)
+  return _impl_.rlp_txs_;
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
-AddRequest::mutable_rlptxs() {
-  // @@protoc_insertion_point(field_mutable_list:txpool.AddRequest.rlpTxs)
-  return &_impl_.rlptxs_;
+AddRequest::mutable_rlp_txs() {
+  // @@protoc_insertion_point(field_mutable_list:txpool.AddRequest.rlp_txs)
+  return &_impl_.rlp_txs_;
 }
 
 // -------------------------------------------------------------------
@@ -3011,79 +3011,79 @@ TransactionsRequest::hashes() const {
 
 // TransactionsReply
 
-// repeated bytes rlpTxs = 1;
-inline int TransactionsReply::_internal_rlptxs_size() const {
-  return _impl_.rlptxs_.size();
+// repeated bytes rlp_txs = 1;
+inline int TransactionsReply::_internal_rlp_txs_size() const {
+  return _impl_.rlp_txs_.size();
 }
-inline int TransactionsReply::rlptxs_size() const {
-  return _internal_rlptxs_size();
+inline int TransactionsReply::rlp_txs_size() const {
+  return _internal_rlp_txs_size();
 }
-inline void TransactionsReply::clear_rlptxs() {
-  _impl_.rlptxs_.Clear();
+inline void TransactionsReply::clear_rlp_txs() {
+  _impl_.rlp_txs_.Clear();
 }
-inline std::string* TransactionsReply::add_rlptxs() {
-  std::string* _s = _internal_add_rlptxs();
-  // @@protoc_insertion_point(field_add_mutable:txpool.TransactionsReply.rlpTxs)
+inline std::string* TransactionsReply::add_rlp_txs() {
+  std::string* _s = _internal_add_rlp_txs();
+  // @@protoc_insertion_point(field_add_mutable:txpool.TransactionsReply.rlp_txs)
   return _s;
 }
-inline const std::string& TransactionsReply::_internal_rlptxs(int index) const {
-  return _impl_.rlptxs_.Get(index);
+inline const std::string& TransactionsReply::_internal_rlp_txs(int index) const {
+  return _impl_.rlp_txs_.Get(index);
 }
-inline const std::string& TransactionsReply::rlptxs(int index) const {
-  // @@protoc_insertion_point(field_get:txpool.TransactionsReply.rlpTxs)
-  return _internal_rlptxs(index);
+inline const std::string& TransactionsReply::rlp_txs(int index) const {
+  // @@protoc_insertion_point(field_get:txpool.TransactionsReply.rlp_txs)
+  return _internal_rlp_txs(index);
 }
-inline std::string* TransactionsReply::mutable_rlptxs(int index) {
-  // @@protoc_insertion_point(field_mutable:txpool.TransactionsReply.rlpTxs)
-  return _impl_.rlptxs_.Mutable(index);
+inline std::string* TransactionsReply::mutable_rlp_txs(int index) {
+  // @@protoc_insertion_point(field_mutable:txpool.TransactionsReply.rlp_txs)
+  return _impl_.rlp_txs_.Mutable(index);
 }
-inline void TransactionsReply::set_rlptxs(int index, const std::string& value) {
-  _impl_.rlptxs_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set:txpool.TransactionsReply.rlpTxs)
+inline void TransactionsReply::set_rlp_txs(int index, const std::string& value) {
+  _impl_.rlp_txs_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:txpool.TransactionsReply.rlp_txs)
 }
-inline void TransactionsReply::set_rlptxs(int index, std::string&& value) {
-  _impl_.rlptxs_.Mutable(index)->assign(std::move(value));
-  // @@protoc_insertion_point(field_set:txpool.TransactionsReply.rlpTxs)
+inline void TransactionsReply::set_rlp_txs(int index, std::string&& value) {
+  _impl_.rlp_txs_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:txpool.TransactionsReply.rlp_txs)
 }
-inline void TransactionsReply::set_rlptxs(int index, const char* value) {
+inline void TransactionsReply::set_rlp_txs(int index, const char* value) {
   GOOGLE_DCHECK(value != nullptr);
-  _impl_.rlptxs_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set_char:txpool.TransactionsReply.rlpTxs)
+  _impl_.rlp_txs_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:txpool.TransactionsReply.rlp_txs)
 }
-inline void TransactionsReply::set_rlptxs(int index, const void* value, size_t size) {
-  _impl_.rlptxs_.Mutable(index)->assign(
+inline void TransactionsReply::set_rlp_txs(int index, const void* value, size_t size) {
+  _impl_.rlp_txs_.Mutable(index)->assign(
     reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_set_pointer:txpool.TransactionsReply.rlpTxs)
+  // @@protoc_insertion_point(field_set_pointer:txpool.TransactionsReply.rlp_txs)
 }
-inline std::string* TransactionsReply::_internal_add_rlptxs() {
-  return _impl_.rlptxs_.Add();
+inline std::string* TransactionsReply::_internal_add_rlp_txs() {
+  return _impl_.rlp_txs_.Add();
 }
-inline void TransactionsReply::add_rlptxs(const std::string& value) {
-  _impl_.rlptxs_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add:txpool.TransactionsReply.rlpTxs)
+inline void TransactionsReply::add_rlp_txs(const std::string& value) {
+  _impl_.rlp_txs_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:txpool.TransactionsReply.rlp_txs)
 }
-inline void TransactionsReply::add_rlptxs(std::string&& value) {
-  _impl_.rlptxs_.Add(std::move(value));
-  // @@protoc_insertion_point(field_add:txpool.TransactionsReply.rlpTxs)
+inline void TransactionsReply::add_rlp_txs(std::string&& value) {
+  _impl_.rlp_txs_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:txpool.TransactionsReply.rlp_txs)
 }
-inline void TransactionsReply::add_rlptxs(const char* value) {
+inline void TransactionsReply::add_rlp_txs(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
-  _impl_.rlptxs_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add_char:txpool.TransactionsReply.rlpTxs)
+  _impl_.rlp_txs_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:txpool.TransactionsReply.rlp_txs)
 }
-inline void TransactionsReply::add_rlptxs(const void* value, size_t size) {
-  _impl_.rlptxs_.Add()->assign(reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_add_pointer:txpool.TransactionsReply.rlpTxs)
+inline void TransactionsReply::add_rlp_txs(const void* value, size_t size) {
+  _impl_.rlp_txs_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:txpool.TransactionsReply.rlp_txs)
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
-TransactionsReply::rlptxs() const {
-  // @@protoc_insertion_point(field_list:txpool.TransactionsReply.rlpTxs)
-  return _impl_.rlptxs_;
+TransactionsReply::rlp_txs() const {
+  // @@protoc_insertion_point(field_list:txpool.TransactionsReply.rlp_txs)
+  return _impl_.rlp_txs_;
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
-TransactionsReply::mutable_rlptxs() {
-  // @@protoc_insertion_point(field_mutable_list:txpool.TransactionsReply.rlpTxs)
-  return &_impl_.rlptxs_;
+TransactionsReply::mutable_rlp_txs() {
+  // @@protoc_insertion_point(field_mutable_list:txpool.TransactionsReply.rlp_txs)
+  return &_impl_.rlp_txs_;
 }
 
 // -------------------------------------------------------------------
@@ -3094,79 +3094,79 @@ TransactionsReply::mutable_rlptxs() {
 
 // OnAddReply
 
-// repeated bytes rplTxs = 1;
-inline int OnAddReply::_internal_rpltxs_size() const {
-  return _impl_.rpltxs_.size();
+// repeated bytes rpl_txs = 1;
+inline int OnAddReply::_internal_rpl_txs_size() const {
+  return _impl_.rpl_txs_.size();
 }
-inline int OnAddReply::rpltxs_size() const {
-  return _internal_rpltxs_size();
+inline int OnAddReply::rpl_txs_size() const {
+  return _internal_rpl_txs_size();
 }
-inline void OnAddReply::clear_rpltxs() {
-  _impl_.rpltxs_.Clear();
+inline void OnAddReply::clear_rpl_txs() {
+  _impl_.rpl_txs_.Clear();
 }
-inline std::string* OnAddReply::add_rpltxs() {
-  std::string* _s = _internal_add_rpltxs();
-  // @@protoc_insertion_point(field_add_mutable:txpool.OnAddReply.rplTxs)
+inline std::string* OnAddReply::add_rpl_txs() {
+  std::string* _s = _internal_add_rpl_txs();
+  // @@protoc_insertion_point(field_add_mutable:txpool.OnAddReply.rpl_txs)
   return _s;
 }
-inline const std::string& OnAddReply::_internal_rpltxs(int index) const {
-  return _impl_.rpltxs_.Get(index);
+inline const std::string& OnAddReply::_internal_rpl_txs(int index) const {
+  return _impl_.rpl_txs_.Get(index);
 }
-inline const std::string& OnAddReply::rpltxs(int index) const {
-  // @@protoc_insertion_point(field_get:txpool.OnAddReply.rplTxs)
-  return _internal_rpltxs(index);
+inline const std::string& OnAddReply::rpl_txs(int index) const {
+  // @@protoc_insertion_point(field_get:txpool.OnAddReply.rpl_txs)
+  return _internal_rpl_txs(index);
 }
-inline std::string* OnAddReply::mutable_rpltxs(int index) {
-  // @@protoc_insertion_point(field_mutable:txpool.OnAddReply.rplTxs)
-  return _impl_.rpltxs_.Mutable(index);
+inline std::string* OnAddReply::mutable_rpl_txs(int index) {
+  // @@protoc_insertion_point(field_mutable:txpool.OnAddReply.rpl_txs)
+  return _impl_.rpl_txs_.Mutable(index);
 }
-inline void OnAddReply::set_rpltxs(int index, const std::string& value) {
-  _impl_.rpltxs_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set:txpool.OnAddReply.rplTxs)
+inline void OnAddReply::set_rpl_txs(int index, const std::string& value) {
+  _impl_.rpl_txs_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:txpool.OnAddReply.rpl_txs)
 }
-inline void OnAddReply::set_rpltxs(int index, std::string&& value) {
-  _impl_.rpltxs_.Mutable(index)->assign(std::move(value));
-  // @@protoc_insertion_point(field_set:txpool.OnAddReply.rplTxs)
+inline void OnAddReply::set_rpl_txs(int index, std::string&& value) {
+  _impl_.rpl_txs_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:txpool.OnAddReply.rpl_txs)
 }
-inline void OnAddReply::set_rpltxs(int index, const char* value) {
+inline void OnAddReply::set_rpl_txs(int index, const char* value) {
   GOOGLE_DCHECK(value != nullptr);
-  _impl_.rpltxs_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set_char:txpool.OnAddReply.rplTxs)
+  _impl_.rpl_txs_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:txpool.OnAddReply.rpl_txs)
 }
-inline void OnAddReply::set_rpltxs(int index, const void* value, size_t size) {
-  _impl_.rpltxs_.Mutable(index)->assign(
+inline void OnAddReply::set_rpl_txs(int index, const void* value, size_t size) {
+  _impl_.rpl_txs_.Mutable(index)->assign(
     reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_set_pointer:txpool.OnAddReply.rplTxs)
+  // @@protoc_insertion_point(field_set_pointer:txpool.OnAddReply.rpl_txs)
 }
-inline std::string* OnAddReply::_internal_add_rpltxs() {
-  return _impl_.rpltxs_.Add();
+inline std::string* OnAddReply::_internal_add_rpl_txs() {
+  return _impl_.rpl_txs_.Add();
 }
-inline void OnAddReply::add_rpltxs(const std::string& value) {
-  _impl_.rpltxs_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add:txpool.OnAddReply.rplTxs)
+inline void OnAddReply::add_rpl_txs(const std::string& value) {
+  _impl_.rpl_txs_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:txpool.OnAddReply.rpl_txs)
 }
-inline void OnAddReply::add_rpltxs(std::string&& value) {
-  _impl_.rpltxs_.Add(std::move(value));
-  // @@protoc_insertion_point(field_add:txpool.OnAddReply.rplTxs)
+inline void OnAddReply::add_rpl_txs(std::string&& value) {
+  _impl_.rpl_txs_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:txpool.OnAddReply.rpl_txs)
 }
-inline void OnAddReply::add_rpltxs(const char* value) {
+inline void OnAddReply::add_rpl_txs(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
-  _impl_.rpltxs_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add_char:txpool.OnAddReply.rplTxs)
+  _impl_.rpl_txs_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:txpool.OnAddReply.rpl_txs)
 }
-inline void OnAddReply::add_rpltxs(const void* value, size_t size) {
-  _impl_.rpltxs_.Add()->assign(reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_add_pointer:txpool.OnAddReply.rplTxs)
+inline void OnAddReply::add_rpl_txs(const void* value, size_t size) {
+  _impl_.rpl_txs_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:txpool.OnAddReply.rpl_txs)
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
-OnAddReply::rpltxs() const {
-  // @@protoc_insertion_point(field_list:txpool.OnAddReply.rplTxs)
-  return _impl_.rpltxs_;
+OnAddReply::rpl_txs() const {
+  // @@protoc_insertion_point(field_list:txpool.OnAddReply.rpl_txs)
+  return _impl_.rpl_txs_;
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
-OnAddReply::mutable_rpltxs() {
-  // @@protoc_insertion_point(field_mutable_list:txpool.OnAddReply.rplTxs)
-  return &_impl_.rpltxs_;
+OnAddReply::mutable_rpl_txs() {
+  // @@protoc_insertion_point(field_mutable_list:txpool.OnAddReply.rpl_txs)
+  return &_impl_.rpl_txs_;
 }
 
 // -------------------------------------------------------------------
@@ -3177,24 +3177,24 @@ OnAddReply::mutable_rpltxs() {
 
 // AllReply_Tx
 
-// .txpool.AllReply.TxnType txnType = 1;
-inline void AllReply_Tx::clear_txntype() {
-  _impl_.txntype_ = 0;
+// .txpool.AllReply.TxnType txn_type = 1;
+inline void AllReply_Tx::clear_txn_type() {
+  _impl_.txn_type_ = 0;
 }
-inline ::txpool::AllReply_TxnType AllReply_Tx::_internal_txntype() const {
-  return static_cast< ::txpool::AllReply_TxnType >(_impl_.txntype_);
+inline ::txpool::AllReply_TxnType AllReply_Tx::_internal_txn_type() const {
+  return static_cast< ::txpool::AllReply_TxnType >(_impl_.txn_type_);
 }
-inline ::txpool::AllReply_TxnType AllReply_Tx::txntype() const {
-  // @@protoc_insertion_point(field_get:txpool.AllReply.Tx.txnType)
-  return _internal_txntype();
+inline ::txpool::AllReply_TxnType AllReply_Tx::txn_type() const {
+  // @@protoc_insertion_point(field_get:txpool.AllReply.Tx.txn_type)
+  return _internal_txn_type();
 }
-inline void AllReply_Tx::_internal_set_txntype(::txpool::AllReply_TxnType value) {
+inline void AllReply_Tx::_internal_set_txn_type(::txpool::AllReply_TxnType value) {
   
-  _impl_.txntype_ = value;
+  _impl_.txn_type_ = value;
 }
-inline void AllReply_Tx::set_txntype(::txpool::AllReply_TxnType value) {
-  _internal_set_txntype(value);
-  // @@protoc_insertion_point(field_set:txpool.AllReply.Tx.txnType)
+inline void AllReply_Tx::set_txn_type(::txpool::AllReply_TxnType value) {
+  _internal_set_txn_type(value);
+  // @@protoc_insertion_point(field_set:txpool.AllReply.Tx.txn_type)
 }
 
 // .types.H160 sender = 2;
@@ -3282,54 +3282,54 @@ inline void AllReply_Tx::set_allocated_sender(::types::H160* sender) {
   // @@protoc_insertion_point(field_set_allocated:txpool.AllReply.Tx.sender)
 }
 
-// bytes rlpTx = 3;
-inline void AllReply_Tx::clear_rlptx() {
-  _impl_.rlptx_.ClearToEmpty();
+// bytes rlp_tx = 3;
+inline void AllReply_Tx::clear_rlp_tx() {
+  _impl_.rlp_tx_.ClearToEmpty();
 }
-inline const std::string& AllReply_Tx::rlptx() const {
-  // @@protoc_insertion_point(field_get:txpool.AllReply.Tx.rlpTx)
-  return _internal_rlptx();
+inline const std::string& AllReply_Tx::rlp_tx() const {
+  // @@protoc_insertion_point(field_get:txpool.AllReply.Tx.rlp_tx)
+  return _internal_rlp_tx();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void AllReply_Tx::set_rlptx(ArgT0&& arg0, ArgT... args) {
+void AllReply_Tx::set_rlp_tx(ArgT0&& arg0, ArgT... args) {
  
- _impl_.rlptx_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:txpool.AllReply.Tx.rlpTx)
+ _impl_.rlp_tx_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:txpool.AllReply.Tx.rlp_tx)
 }
-inline std::string* AllReply_Tx::mutable_rlptx() {
-  std::string* _s = _internal_mutable_rlptx();
-  // @@protoc_insertion_point(field_mutable:txpool.AllReply.Tx.rlpTx)
+inline std::string* AllReply_Tx::mutable_rlp_tx() {
+  std::string* _s = _internal_mutable_rlp_tx();
+  // @@protoc_insertion_point(field_mutable:txpool.AllReply.Tx.rlp_tx)
   return _s;
 }
-inline const std::string& AllReply_Tx::_internal_rlptx() const {
-  return _impl_.rlptx_.Get();
+inline const std::string& AllReply_Tx::_internal_rlp_tx() const {
+  return _impl_.rlp_tx_.Get();
 }
-inline void AllReply_Tx::_internal_set_rlptx(const std::string& value) {
+inline void AllReply_Tx::_internal_set_rlp_tx(const std::string& value) {
   
-  _impl_.rlptx_.Set(value, GetArenaForAllocation());
+  _impl_.rlp_tx_.Set(value, GetArenaForAllocation());
 }
-inline std::string* AllReply_Tx::_internal_mutable_rlptx() {
+inline std::string* AllReply_Tx::_internal_mutable_rlp_tx() {
   
-  return _impl_.rlptx_.Mutable(GetArenaForAllocation());
+  return _impl_.rlp_tx_.Mutable(GetArenaForAllocation());
 }
-inline std::string* AllReply_Tx::release_rlptx() {
-  // @@protoc_insertion_point(field_release:txpool.AllReply.Tx.rlpTx)
-  return _impl_.rlptx_.Release();
+inline std::string* AllReply_Tx::release_rlp_tx() {
+  // @@protoc_insertion_point(field_release:txpool.AllReply.Tx.rlp_tx)
+  return _impl_.rlp_tx_.Release();
 }
-inline void AllReply_Tx::set_allocated_rlptx(std::string* rlptx) {
-  if (rlptx != nullptr) {
+inline void AllReply_Tx::set_allocated_rlp_tx(std::string* rlp_tx) {
+  if (rlp_tx != nullptr) {
     
   } else {
     
   }
-  _impl_.rlptx_.SetAllocated(rlptx, GetArenaForAllocation());
+  _impl_.rlp_tx_.SetAllocated(rlp_tx, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.rlptx_.IsDefault()) {
-    _impl_.rlptx_.Set("", GetArenaForAllocation());
+  if (_impl_.rlp_tx_.IsDefault()) {
+    _impl_.rlp_tx_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:txpool.AllReply.Tx.rlpTx)
+  // @@protoc_insertion_point(field_set_allocated:txpool.AllReply.Tx.rlp_tx)
 }
 
 // -------------------------------------------------------------------
@@ -3465,74 +3465,74 @@ inline void PendingReply_Tx::set_allocated_sender(::types::H160* sender) {
   // @@protoc_insertion_point(field_set_allocated:txpool.PendingReply.Tx.sender)
 }
 
-// bytes rlpTx = 2;
-inline void PendingReply_Tx::clear_rlptx() {
-  _impl_.rlptx_.ClearToEmpty();
+// bytes rlp_tx = 2;
+inline void PendingReply_Tx::clear_rlp_tx() {
+  _impl_.rlp_tx_.ClearToEmpty();
 }
-inline const std::string& PendingReply_Tx::rlptx() const {
-  // @@protoc_insertion_point(field_get:txpool.PendingReply.Tx.rlpTx)
-  return _internal_rlptx();
+inline const std::string& PendingReply_Tx::rlp_tx() const {
+  // @@protoc_insertion_point(field_get:txpool.PendingReply.Tx.rlp_tx)
+  return _internal_rlp_tx();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void PendingReply_Tx::set_rlptx(ArgT0&& arg0, ArgT... args) {
+void PendingReply_Tx::set_rlp_tx(ArgT0&& arg0, ArgT... args) {
  
- _impl_.rlptx_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:txpool.PendingReply.Tx.rlpTx)
+ _impl_.rlp_tx_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:txpool.PendingReply.Tx.rlp_tx)
 }
-inline std::string* PendingReply_Tx::mutable_rlptx() {
-  std::string* _s = _internal_mutable_rlptx();
-  // @@protoc_insertion_point(field_mutable:txpool.PendingReply.Tx.rlpTx)
+inline std::string* PendingReply_Tx::mutable_rlp_tx() {
+  std::string* _s = _internal_mutable_rlp_tx();
+  // @@protoc_insertion_point(field_mutable:txpool.PendingReply.Tx.rlp_tx)
   return _s;
 }
-inline const std::string& PendingReply_Tx::_internal_rlptx() const {
-  return _impl_.rlptx_.Get();
+inline const std::string& PendingReply_Tx::_internal_rlp_tx() const {
+  return _impl_.rlp_tx_.Get();
 }
-inline void PendingReply_Tx::_internal_set_rlptx(const std::string& value) {
+inline void PendingReply_Tx::_internal_set_rlp_tx(const std::string& value) {
   
-  _impl_.rlptx_.Set(value, GetArenaForAllocation());
+  _impl_.rlp_tx_.Set(value, GetArenaForAllocation());
 }
-inline std::string* PendingReply_Tx::_internal_mutable_rlptx() {
+inline std::string* PendingReply_Tx::_internal_mutable_rlp_tx() {
   
-  return _impl_.rlptx_.Mutable(GetArenaForAllocation());
+  return _impl_.rlp_tx_.Mutable(GetArenaForAllocation());
 }
-inline std::string* PendingReply_Tx::release_rlptx() {
-  // @@protoc_insertion_point(field_release:txpool.PendingReply.Tx.rlpTx)
-  return _impl_.rlptx_.Release();
+inline std::string* PendingReply_Tx::release_rlp_tx() {
+  // @@protoc_insertion_point(field_release:txpool.PendingReply.Tx.rlp_tx)
+  return _impl_.rlp_tx_.Release();
 }
-inline void PendingReply_Tx::set_allocated_rlptx(std::string* rlptx) {
-  if (rlptx != nullptr) {
+inline void PendingReply_Tx::set_allocated_rlp_tx(std::string* rlp_tx) {
+  if (rlp_tx != nullptr) {
     
   } else {
     
   }
-  _impl_.rlptx_.SetAllocated(rlptx, GetArenaForAllocation());
+  _impl_.rlp_tx_.SetAllocated(rlp_tx, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (_impl_.rlptx_.IsDefault()) {
-    _impl_.rlptx_.Set("", GetArenaForAllocation());
+  if (_impl_.rlp_tx_.IsDefault()) {
+    _impl_.rlp_tx_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:txpool.PendingReply.Tx.rlpTx)
+  // @@protoc_insertion_point(field_set_allocated:txpool.PendingReply.Tx.rlp_tx)
 }
 
-// bool isLocal = 3;
-inline void PendingReply_Tx::clear_islocal() {
-  _impl_.islocal_ = false;
+// bool is_local = 3;
+inline void PendingReply_Tx::clear_is_local() {
+  _impl_.is_local_ = false;
 }
-inline bool PendingReply_Tx::_internal_islocal() const {
-  return _impl_.islocal_;
+inline bool PendingReply_Tx::_internal_is_local() const {
+  return _impl_.is_local_;
 }
-inline bool PendingReply_Tx::islocal() const {
-  // @@protoc_insertion_point(field_get:txpool.PendingReply.Tx.isLocal)
-  return _internal_islocal();
+inline bool PendingReply_Tx::is_local() const {
+  // @@protoc_insertion_point(field_get:txpool.PendingReply.Tx.is_local)
+  return _internal_is_local();
 }
-inline void PendingReply_Tx::_internal_set_islocal(bool value) {
+inline void PendingReply_Tx::_internal_set_is_local(bool value) {
   
-  _impl_.islocal_ = value;
+  _impl_.is_local_ = value;
 }
-inline void PendingReply_Tx::set_islocal(bool value) {
-  _internal_set_islocal(value);
-  // @@protoc_insertion_point(field_set:txpool.PendingReply.Tx.isLocal)
+inline void PendingReply_Tx::set_is_local(bool value) {
+  _internal_set_is_local(value);
+  // @@protoc_insertion_point(field_set:txpool.PendingReply.Tx.is_local)
 }
 
 // -------------------------------------------------------------------
@@ -3587,64 +3587,64 @@ PendingReply::txs() const {
 
 // StatusReply
 
-// uint32 pendingCount = 1;
-inline void StatusReply::clear_pendingcount() {
-  _impl_.pendingcount_ = 0u;
+// uint32 pending_count = 1;
+inline void StatusReply::clear_pending_count() {
+  _impl_.pending_count_ = 0u;
 }
-inline uint32_t StatusReply::_internal_pendingcount() const {
-  return _impl_.pendingcount_;
+inline uint32_t StatusReply::_internal_pending_count() const {
+  return _impl_.pending_count_;
 }
-inline uint32_t StatusReply::pendingcount() const {
-  // @@protoc_insertion_point(field_get:txpool.StatusReply.pendingCount)
-  return _internal_pendingcount();
+inline uint32_t StatusReply::pending_count() const {
+  // @@protoc_insertion_point(field_get:txpool.StatusReply.pending_count)
+  return _internal_pending_count();
 }
-inline void StatusReply::_internal_set_pendingcount(uint32_t value) {
+inline void StatusReply::_internal_set_pending_count(uint32_t value) {
   
-  _impl_.pendingcount_ = value;
+  _impl_.pending_count_ = value;
 }
-inline void StatusReply::set_pendingcount(uint32_t value) {
-  _internal_set_pendingcount(value);
-  // @@protoc_insertion_point(field_set:txpool.StatusReply.pendingCount)
+inline void StatusReply::set_pending_count(uint32_t value) {
+  _internal_set_pending_count(value);
+  // @@protoc_insertion_point(field_set:txpool.StatusReply.pending_count)
 }
 
-// uint32 queuedCount = 2;
-inline void StatusReply::clear_queuedcount() {
-  _impl_.queuedcount_ = 0u;
+// uint32 queued_count = 2;
+inline void StatusReply::clear_queued_count() {
+  _impl_.queued_count_ = 0u;
 }
-inline uint32_t StatusReply::_internal_queuedcount() const {
-  return _impl_.queuedcount_;
+inline uint32_t StatusReply::_internal_queued_count() const {
+  return _impl_.queued_count_;
 }
-inline uint32_t StatusReply::queuedcount() const {
-  // @@protoc_insertion_point(field_get:txpool.StatusReply.queuedCount)
-  return _internal_queuedcount();
+inline uint32_t StatusReply::queued_count() const {
+  // @@protoc_insertion_point(field_get:txpool.StatusReply.queued_count)
+  return _internal_queued_count();
 }
-inline void StatusReply::_internal_set_queuedcount(uint32_t value) {
+inline void StatusReply::_internal_set_queued_count(uint32_t value) {
   
-  _impl_.queuedcount_ = value;
+  _impl_.queued_count_ = value;
 }
-inline void StatusReply::set_queuedcount(uint32_t value) {
-  _internal_set_queuedcount(value);
-  // @@protoc_insertion_point(field_set:txpool.StatusReply.queuedCount)
+inline void StatusReply::set_queued_count(uint32_t value) {
+  _internal_set_queued_count(value);
+  // @@protoc_insertion_point(field_set:txpool.StatusReply.queued_count)
 }
 
-// uint32 baseFeeCount = 3;
-inline void StatusReply::clear_basefeecount() {
-  _impl_.basefeecount_ = 0u;
+// uint32 base_fee_count = 3;
+inline void StatusReply::clear_base_fee_count() {
+  _impl_.base_fee_count_ = 0u;
 }
-inline uint32_t StatusReply::_internal_basefeecount() const {
-  return _impl_.basefeecount_;
+inline uint32_t StatusReply::_internal_base_fee_count() const {
+  return _impl_.base_fee_count_;
 }
-inline uint32_t StatusReply::basefeecount() const {
-  // @@protoc_insertion_point(field_get:txpool.StatusReply.baseFeeCount)
-  return _internal_basefeecount();
+inline uint32_t StatusReply::base_fee_count() const {
+  // @@protoc_insertion_point(field_get:txpool.StatusReply.base_fee_count)
+  return _internal_base_fee_count();
 }
-inline void StatusReply::_internal_set_basefeecount(uint32_t value) {
+inline void StatusReply::_internal_set_base_fee_count(uint32_t value) {
   
-  _impl_.basefeecount_ = value;
+  _impl_.base_fee_count_ = value;
 }
-inline void StatusReply::set_basefeecount(uint32_t value) {
-  _internal_set_basefeecount(value);
-  // @@protoc_insertion_point(field_set:txpool.StatusReply.baseFeeCount)
+inline void StatusReply::set_base_fee_count(uint32_t value) {
+  _internal_set_base_fee_count(value);
+  // @@protoc_insertion_point(field_set:txpool.StatusReply.base_fee_count)
 }
 
 // -------------------------------------------------------------------

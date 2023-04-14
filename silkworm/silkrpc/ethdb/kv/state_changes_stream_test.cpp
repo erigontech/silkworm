@@ -65,8 +65,8 @@ static remote::StateChangeBatch make_batch() {
     static uint64_t block_height{14'000'010};
 
     remote::StateChangeBatch state_changes{};
-    remote::StateChange* latest_change = state_changes.add_changebatch();
-    latest_change->set_blockheight(++block_height);
+    remote::StateChange* latest_change = state_changes.add_change_batch();
+    latest_change->set_block_height(++block_height);
 
     return state_changes;
 }

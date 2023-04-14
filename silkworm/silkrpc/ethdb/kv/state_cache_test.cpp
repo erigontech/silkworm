@@ -101,11 +101,11 @@ TEST_CASE("CoherentCacheConfig", "[silkrpc][ethdb][kv][state_cache]") {
 remote::StateChangeBatch new_batch(uint64_t view_id, silkworm::BlockNum block_height, const evmc::bytes32& block_hash,
                                    const std::vector<silkworm::Bytes>& tx_rlps, bool unwind) {
     remote::StateChangeBatch state_changes;
-    state_changes.set_stateversionid(view_id);
+    state_changes.set_state_version_id(view_id);
 
-    remote::StateChange* latest_change = state_changes.add_changebatch();
-    latest_change->set_blockheight(block_height);
-    latest_change->set_allocated_blockhash(silkworm::rpc::H256_from_bytes32(block_hash).release());
+    remote::StateChange* latest_change = state_changes.add_change_batch();
+    latest_change->set_block_height(block_height);
+    latest_change->set_allocated_block_hash(silkworm::rpc::H256_from_bytes32(block_hash).release());
     latest_change->set_direction(unwind ? remote::Direction::UNWIND : remote::Direction::FORWARD);
     for (auto& tx_rlp : tx_rlps) {
         latest_change->add_txs(silkworm::to_hex(tx_rlp));
@@ -117,7 +117,7 @@ remote::StateChangeBatch new_batch(uint64_t view_id, silkworm::BlockNum block_he
 remote::StateChangeBatch new_batch_with_upsert(uint64_t view_id, silkworm::BlockNum block_height, const evmc::bytes32& block_hash,
                                                const std::vector<silkworm::Bytes>& tx_rlps, bool unwind) {
     remote::StateChangeBatch state_changes = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
-    remote::StateChange* latest_change = state_changes.mutable_changebatch(0);
+    remote::StateChange* latest_change = state_changes.mutable_change_batch(0);
 
     remote::AccountChange* account_change = latest_change->add_changes();
     account_change->set_allocated_address(silkworm::rpc::H160_from_address(kTestAddress1).release());
@@ -132,7 +132,7 @@ remote::StateChangeBatch new_batch_with_upsert_code(uint64_t view_id, silkworm::
                                                     const evmc::bytes32& block_hash, const std::vector<silkworm::Bytes>& tx_rlps,
                                                     bool unwind, uint64_t num_changes, uint64_t offset = 0) {
     remote::StateChangeBatch state_changes = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
-    remote::StateChange* latest_change = state_changes.mutable_changebatch(0);
+    remote::StateChange* latest_change = state_changes.mutable_change_batch(0);
 
     SILKWORM_ASSERT(num_changes <= kTestAddresses.size());
     SILKWORM_ASSERT(num_changes <= kTestCodes.size());
@@ -151,7 +151,7 @@ remote::StateChangeBatch new_batch_with_upsert_code(uint64_t view_id, silkworm::
 remote::StateChangeBatch new_batch_with_delete(uint64_t view_id, silkworm::BlockNum block_height, const evmc::bytes32& block_hash,
                                                const std::vector<silkworm::Bytes>& tx_rlps, bool unwind) {
     remote::StateChangeBatch state_changes = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
-    remote::StateChange* latest_change = state_changes.mutable_changebatch(0);
+    remote::StateChange* latest_change = state_changes.mutable_change_batch(0);
 
     remote::AccountChange* account_change = latest_change->add_changes();
     account_change->set_allocated_address(silkworm::rpc::H160_from_address(kTestAddress1).release());
@@ -164,7 +164,7 @@ remote::StateChangeBatch new_batch_with_storage(uint64_t view_id, silkworm::Bloc
                                                 const evmc::bytes32& block_hash, const std::vector<silkworm::Bytes>& tx_rlps,
                                                 bool unwind, uint64_t num_storage_changes) {
     remote::StateChangeBatch state_changes = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
-    remote::StateChange* latest_change = state_changes.mutable_changebatch(0);
+    remote::StateChange* latest_change = state_changes.mutable_change_batch(0);
 
     remote::AccountChange* account_change = latest_change->add_changes();
     account_change->set_allocated_address(silkworm::rpc::H160_from_address(kTestAddress1).release());
@@ -173,7 +173,7 @@ remote::StateChangeBatch new_batch_with_storage(uint64_t view_id, silkworm::Bloc
     SILKWORM_ASSERT(num_storage_changes <= kTestHashedLocations.size());
     SILKWORM_ASSERT(num_storage_changes <= kTestStorageData.size());
     for (auto i{0u}; i < num_storage_changes; ++i) {
-        remote::StorageChange* storage_change = account_change->add_storagechanges();
+        remote::StorageChange* storage_change = account_change->add_storage_changes();
         storage_change->set_allocated_location(silkworm::rpc::H256_from_bytes32(kTestHashedLocations[i]).release());
         storage_change->set_data(kTestStorageData[i].data(), kTestStorageData[i].size());
     }
@@ -184,7 +184,7 @@ remote::StateChangeBatch new_batch_with_storage(uint64_t view_id, silkworm::Bloc
 remote::StateChangeBatch new_batch_with_code(uint64_t view_id, silkworm::BlockNum block_height, const evmc::bytes32& block_hash,
                                              const std::vector<silkworm::Bytes>& tx_rlps, bool unwind, uint64_t num_code_changes) {
     remote::StateChangeBatch state_changes = new_batch(view_id, block_height, block_hash, tx_rlps, unwind);
-    remote::StateChange* latest_change = state_changes.mutable_changebatch(0);
+    remote::StateChange* latest_change = state_changes.mutable_change_batch(0);
 
     SILKWORM_ASSERT(num_code_changes <= kTestCodes.size());
     for (auto i{0u}; i < num_code_changes; ++i) {

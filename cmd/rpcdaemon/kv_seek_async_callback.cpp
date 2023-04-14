@@ -79,16 +79,16 @@ int kv_seek_async_callback(const std::string& target, const std::string& table_n
     GrpcKvCallbackReactor reactor{*stub, std::chrono::milliseconds{timeout}};
 
     std::cout << "KV Tx START\n";
-    reactor.read_start([&](bool txid_read_ok, const remote::Pair& txid_pair) {
-        if (!txid_read_ok) {
-            std::cout << "KV Tx error reading TXID" << std::flush;
+    reactor.read_start([&](bool tx_id_read_ok, const remote::Pair& tx_id_pair) {
+        if (!tx_id_read_ok) {
+            std::cout << "KV Tx error reading tx ID" << std::flush;
             return;
         }
-        const auto tx_id = txid_pair.cursorid();
-        std::cout << "KV Tx START <- txid: " << tx_id << "\n";
+        const auto tx_id = tx_id_pair.cursor_id();
+        std::cout << "KV Tx START <- tx_id: " << tx_id << "\n";
         auto open_message = remote::Cursor{};
         open_message.set_op(remote::Op::OPEN);
-        open_message.set_bucketname(table_name);
+        open_message.set_bucket_name(table_name);
         reactor.write_start(&open_message, [&](bool open_write_ok) {
             if (!open_write_ok) {
                 std::cout << "error writing OPEN gRPC" << std::flush;
@@ -100,7 +100,7 @@ int kv_seek_async_callback(const std::string& target, const std::string& table_n
                     std::cout << "error reading OPEN gRPC" << std::flush;
                     return;
                 }
-                const auto cursor_id = open_pair.cursorid();
+                const auto cursor_id = open_pair.cursor_id();
                 std::cout << "KV Tx OPEN <- cursor: " << cursor_id << "\n";
                 auto seek_message = remote::Cursor{};
                 seek_message.set_op(remote::Op::SEEK);
@@ -134,7 +134,7 @@ int kv_seek_async_callback(const std::string& target, const std::string& table_n
                                     std::cout << "error reading CLOSE gRPC" << std::flush;
                                     return;
                                 }
-                                std::cout << "KV Tx CLOSE <- cursor: " << close_pair.cursorid() << "\n";
+                                std::cout << "KV Tx CLOSE <- cursor: " << close_pair.cursor_id() << "\n";
                                 context.stop();
                             });
                         });

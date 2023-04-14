@@ -364,20 +364,20 @@ class OnPendingBlockReply PROTOBUF_FINAL :
   enum : int {
     kRplBlockFieldNumber = 1,
   };
-  // bytes rplBlock = 1;
-  void clear_rplblock();
-  const std::string& rplblock() const;
-  void set_rplblock(const std::string& value);
-  void set_rplblock(std::string&& value);
-  void set_rplblock(const char* value);
-  void set_rplblock(const void* value, size_t size);
-  std::string* mutable_rplblock();
-  std::string* release_rplblock();
-  void set_allocated_rplblock(std::string* rplblock);
+  // bytes rpl_block = 1;
+  void clear_rpl_block();
+  const std::string& rpl_block() const;
+  void set_rpl_block(const std::string& value);
+  void set_rpl_block(std::string&& value);
+  void set_rpl_block(const char* value);
+  void set_rpl_block(const void* value, size_t size);
+  std::string* mutable_rpl_block();
+  std::string* release_rpl_block();
+  void set_allocated_rpl_block(std::string* rpl_block);
   private:
-  const std::string& _internal_rplblock() const;
-  void _internal_set_rplblock(const std::string& value);
-  std::string* _internal_mutable_rplblock();
+  const std::string& _internal_rpl_block() const;
+  void _internal_set_rpl_block(const std::string& value);
+  std::string* _internal_mutable_rpl_block();
   public:
 
   // @@protoc_insertion_point(class_scope:txpool.OnPendingBlockReply)
@@ -387,7 +387,7 @@ class OnPendingBlockReply PROTOBUF_FINAL :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr rplblock_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr rpl_block_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_txpool_2fmining_2eproto;
 };
@@ -630,20 +630,20 @@ class OnMinedBlockReply PROTOBUF_FINAL :
   enum : int {
     kRplBlockFieldNumber = 1,
   };
-  // bytes rplBlock = 1;
-  void clear_rplblock();
-  const std::string& rplblock() const;
-  void set_rplblock(const std::string& value);
-  void set_rplblock(std::string&& value);
-  void set_rplblock(const char* value);
-  void set_rplblock(const void* value, size_t size);
-  std::string* mutable_rplblock();
-  std::string* release_rplblock();
-  void set_allocated_rplblock(std::string* rplblock);
+  // bytes rpl_block = 1;
+  void clear_rpl_block();
+  const std::string& rpl_block() const;
+  void set_rpl_block(const std::string& value);
+  void set_rpl_block(std::string&& value);
+  void set_rpl_block(const char* value);
+  void set_rpl_block(const void* value, size_t size);
+  std::string* mutable_rpl_block();
+  std::string* release_rpl_block();
+  void set_allocated_rpl_block(std::string* rpl_block);
   private:
-  const std::string& _internal_rplblock() const;
-  void _internal_set_rplblock(const std::string& value);
-  std::string* _internal_mutable_rplblock();
+  const std::string& _internal_rpl_block() const;
+  void _internal_set_rpl_block(const std::string& value);
+  std::string* _internal_mutable_rpl_block();
   public:
 
   // @@protoc_insertion_point(class_scope:txpool.OnMinedBlockReply)
@@ -653,7 +653,7 @@ class OnMinedBlockReply PROTOBUF_FINAL :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr rplblock_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr rpl_block_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_txpool_2fmining_2eproto;
 };
@@ -896,20 +896,20 @@ class OnPendingLogsReply PROTOBUF_FINAL :
   enum : int {
     kRplLogsFieldNumber = 1,
   };
-  // bytes rplLogs = 1;
-  void clear_rpllogs();
-  const std::string& rpllogs() const;
-  void set_rpllogs(const std::string& value);
-  void set_rpllogs(std::string&& value);
-  void set_rpllogs(const char* value);
-  void set_rpllogs(const void* value, size_t size);
-  std::string* mutable_rpllogs();
-  std::string* release_rpllogs();
-  void set_allocated_rpllogs(std::string* rpllogs);
+  // bytes rpl_logs = 1;
+  void clear_rpl_logs();
+  const std::string& rpl_logs() const;
+  void set_rpl_logs(const std::string& value);
+  void set_rpl_logs(std::string&& value);
+  void set_rpl_logs(const char* value);
+  void set_rpl_logs(const void* value, size_t size);
+  std::string* mutable_rpl_logs();
+  std::string* release_rpl_logs();
+  void set_allocated_rpl_logs(std::string* rpl_logs);
   private:
-  const std::string& _internal_rpllogs() const;
-  void _internal_set_rpllogs(const std::string& value);
-  std::string* _internal_mutable_rpllogs();
+  const std::string& _internal_rpl_logs() const;
+  void _internal_set_rpl_logs(const std::string& value);
+  std::string* _internal_mutable_rpl_logs();
   public:
 
   // @@protoc_insertion_point(class_scope:txpool.OnPendingLogsReply)
@@ -919,7 +919,7 @@ class OnPendingLogsReply PROTOBUF_FINAL :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr rpllogs_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr rpl_logs_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_txpool_2fmining_2eproto;
 };
@@ -1165,36 +1165,36 @@ class GetWorkReply PROTOBUF_FINAL :
     kTargetFieldNumber = 3,
     kBlockNumberFieldNumber = 4,
   };
-  // string headerHash = 1;
-  void clear_headerhash();
-  const std::string& headerhash() const;
-  void set_headerhash(const std::string& value);
-  void set_headerhash(std::string&& value);
-  void set_headerhash(const char* value);
-  void set_headerhash(const char* value, size_t size);
-  std::string* mutable_headerhash();
-  std::string* release_headerhash();
-  void set_allocated_headerhash(std::string* headerhash);
+  // string header_hash = 1;
+  void clear_header_hash();
+  const std::string& header_hash() const;
+  void set_header_hash(const std::string& value);
+  void set_header_hash(std::string&& value);
+  void set_header_hash(const char* value);
+  void set_header_hash(const char* value, size_t size);
+  std::string* mutable_header_hash();
+  std::string* release_header_hash();
+  void set_allocated_header_hash(std::string* header_hash);
   private:
-  const std::string& _internal_headerhash() const;
-  void _internal_set_headerhash(const std::string& value);
-  std::string* _internal_mutable_headerhash();
+  const std::string& _internal_header_hash() const;
+  void _internal_set_header_hash(const std::string& value);
+  std::string* _internal_mutable_header_hash();
   public:
 
-  // string seedHash = 2;
-  void clear_seedhash();
-  const std::string& seedhash() const;
-  void set_seedhash(const std::string& value);
-  void set_seedhash(std::string&& value);
-  void set_seedhash(const char* value);
-  void set_seedhash(const char* value, size_t size);
-  std::string* mutable_seedhash();
-  std::string* release_seedhash();
-  void set_allocated_seedhash(std::string* seedhash);
+  // string seed_hash = 2;
+  void clear_seed_hash();
+  const std::string& seed_hash() const;
+  void set_seed_hash(const std::string& value);
+  void set_seed_hash(std::string&& value);
+  void set_seed_hash(const char* value);
+  void set_seed_hash(const char* value, size_t size);
+  std::string* mutable_seed_hash();
+  std::string* release_seed_hash();
+  void set_allocated_seed_hash(std::string* seed_hash);
   private:
-  const std::string& _internal_seedhash() const;
-  void _internal_set_seedhash(const std::string& value);
-  std::string* _internal_mutable_seedhash();
+  const std::string& _internal_seed_hash() const;
+  void _internal_set_seed_hash(const std::string& value);
+  std::string* _internal_mutable_seed_hash();
   public:
 
   // string target = 3;
@@ -1213,20 +1213,20 @@ class GetWorkReply PROTOBUF_FINAL :
   std::string* _internal_mutable_target();
   public:
 
-  // string blockNumber = 4;
-  void clear_blocknumber();
-  const std::string& blocknumber() const;
-  void set_blocknumber(const std::string& value);
-  void set_blocknumber(std::string&& value);
-  void set_blocknumber(const char* value);
-  void set_blocknumber(const char* value, size_t size);
-  std::string* mutable_blocknumber();
-  std::string* release_blocknumber();
-  void set_allocated_blocknumber(std::string* blocknumber);
+  // string block_number = 4;
+  void clear_block_number();
+  const std::string& block_number() const;
+  void set_block_number(const std::string& value);
+  void set_block_number(std::string&& value);
+  void set_block_number(const char* value);
+  void set_block_number(const char* value, size_t size);
+  std::string* mutable_block_number();
+  std::string* release_block_number();
+  void set_allocated_block_number(std::string* block_number);
   private:
-  const std::string& _internal_blocknumber() const;
-  void _internal_set_blocknumber(const std::string& value);
-  std::string* _internal_mutable_blocknumber();
+  const std::string& _internal_block_number() const;
+  void _internal_set_block_number(const std::string& value);
+  std::string* _internal_mutable_block_number();
   public:
 
   // @@protoc_insertion_point(class_scope:txpool.GetWorkReply)
@@ -1236,10 +1236,10 @@ class GetWorkReply PROTOBUF_FINAL :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr headerhash_;
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr seedhash_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr header_hash_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr seed_hash_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr target_;
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr blocknumber_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr block_number_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_txpool_2fmining_2eproto;
 };
@@ -1361,36 +1361,36 @@ class SubmitWorkRequest PROTOBUF_FINAL :
     kPowHashFieldNumber = 2,
     kDigestFieldNumber = 3,
   };
-  // bytes blockNonce = 1;
-  void clear_blocknonce();
-  const std::string& blocknonce() const;
-  void set_blocknonce(const std::string& value);
-  void set_blocknonce(std::string&& value);
-  void set_blocknonce(const char* value);
-  void set_blocknonce(const void* value, size_t size);
-  std::string* mutable_blocknonce();
-  std::string* release_blocknonce();
-  void set_allocated_blocknonce(std::string* blocknonce);
+  // bytes block_nonce = 1;
+  void clear_block_nonce();
+  const std::string& block_nonce() const;
+  void set_block_nonce(const std::string& value);
+  void set_block_nonce(std::string&& value);
+  void set_block_nonce(const char* value);
+  void set_block_nonce(const void* value, size_t size);
+  std::string* mutable_block_nonce();
+  std::string* release_block_nonce();
+  void set_allocated_block_nonce(std::string* block_nonce);
   private:
-  const std::string& _internal_blocknonce() const;
-  void _internal_set_blocknonce(const std::string& value);
-  std::string* _internal_mutable_blocknonce();
+  const std::string& _internal_block_nonce() const;
+  void _internal_set_block_nonce(const std::string& value);
+  std::string* _internal_mutable_block_nonce();
   public:
 
-  // bytes powHash = 2;
-  void clear_powhash();
-  const std::string& powhash() const;
-  void set_powhash(const std::string& value);
-  void set_powhash(std::string&& value);
-  void set_powhash(const char* value);
-  void set_powhash(const void* value, size_t size);
-  std::string* mutable_powhash();
-  std::string* release_powhash();
-  void set_allocated_powhash(std::string* powhash);
+  // bytes pow_hash = 2;
+  void clear_pow_hash();
+  const std::string& pow_hash() const;
+  void set_pow_hash(const std::string& value);
+  void set_pow_hash(std::string&& value);
+  void set_pow_hash(const char* value);
+  void set_pow_hash(const void* value, size_t size);
+  std::string* mutable_pow_hash();
+  std::string* release_pow_hash();
+  void set_allocated_pow_hash(std::string* pow_hash);
   private:
-  const std::string& _internal_powhash() const;
-  void _internal_set_powhash(const std::string& value);
-  std::string* _internal_mutable_powhash();
+  const std::string& _internal_pow_hash() const;
+  void _internal_set_pow_hash(const std::string& value);
+  std::string* _internal_mutable_pow_hash();
   public:
 
   // bytes digest = 3;
@@ -1416,8 +1416,8 @@ class SubmitWorkRequest PROTOBUF_FINAL :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr blocknonce_;
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr powhash_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr block_nonce_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr pow_hash_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr digest_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_txpool_2fmining_2eproto;
@@ -2087,13 +2087,13 @@ class HashRateReply PROTOBUF_FINAL :
   enum : int {
     kHashRateFieldNumber = 1,
   };
-  // uint64 hashRate = 1;
-  void clear_hashrate();
-  ::PROTOBUF_NAMESPACE_ID::uint64 hashrate() const;
-  void set_hashrate(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  // uint64 hash_rate = 1;
+  void clear_hash_rate();
+  ::PROTOBUF_NAMESPACE_ID::uint64 hash_rate() const;
+  void set_hash_rate(::PROTOBUF_NAMESPACE_ID::uint64 value);
   private:
-  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_hashrate() const;
-  void _internal_set_hashrate(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_hash_rate() const;
+  void _internal_set_hash_rate(::PROTOBUF_NAMESPACE_ID::uint64 value);
   public:
 
   // @@protoc_insertion_point(class_scope:txpool.HashRateReply)
@@ -2103,7 +2103,7 @@ class HashRateReply PROTOBUF_FINAL :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::uint64 hashrate_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 hash_rate_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_txpool_2fmining_2eproto;
 };
@@ -2392,65 +2392,65 @@ class MiningReply PROTOBUF_FINAL :
 
 // OnPendingBlockReply
 
-// bytes rplBlock = 1;
-inline void OnPendingBlockReply::clear_rplblock() {
-  rplblock_.ClearToEmpty();
+// bytes rpl_block = 1;
+inline void OnPendingBlockReply::clear_rpl_block() {
+  rpl_block_.ClearToEmpty();
 }
-inline const std::string& OnPendingBlockReply::rplblock() const {
-  // @@protoc_insertion_point(field_get:txpool.OnPendingBlockReply.rplBlock)
-  return _internal_rplblock();
+inline const std::string& OnPendingBlockReply::rpl_block() const {
+  // @@protoc_insertion_point(field_get:txpool.OnPendingBlockReply.rpl_block)
+  return _internal_rpl_block();
 }
-inline void OnPendingBlockReply::set_rplblock(const std::string& value) {
-  _internal_set_rplblock(value);
-  // @@protoc_insertion_point(field_set:txpool.OnPendingBlockReply.rplBlock)
+inline void OnPendingBlockReply::set_rpl_block(const std::string& value) {
+  _internal_set_rpl_block(value);
+  // @@protoc_insertion_point(field_set:txpool.OnPendingBlockReply.rpl_block)
 }
-inline std::string* OnPendingBlockReply::mutable_rplblock() {
-  // @@protoc_insertion_point(field_mutable:txpool.OnPendingBlockReply.rplBlock)
-  return _internal_mutable_rplblock();
+inline std::string* OnPendingBlockReply::mutable_rpl_block() {
+  // @@protoc_insertion_point(field_mutable:txpool.OnPendingBlockReply.rpl_block)
+  return _internal_mutable_rpl_block();
 }
-inline const std::string& OnPendingBlockReply::_internal_rplblock() const {
-  return rplblock_.Get();
+inline const std::string& OnPendingBlockReply::_internal_rpl_block() const {
+  return rpl_block_.Get();
 }
-inline void OnPendingBlockReply::_internal_set_rplblock(const std::string& value) {
+inline void OnPendingBlockReply::_internal_set_rpl_block(const std::string& value) {
   
-  rplblock_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
+  rpl_block_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
 }
-inline void OnPendingBlockReply::set_rplblock(std::string&& value) {
+inline void OnPendingBlockReply::set_rpl_block(std::string&& value) {
   
-  rplblock_.Set(
+  rpl_block_.Set(
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::move(value), GetArena());
-  // @@protoc_insertion_point(field_set_rvalue:txpool.OnPendingBlockReply.rplBlock)
+  // @@protoc_insertion_point(field_set_rvalue:txpool.OnPendingBlockReply.rpl_block)
 }
-inline void OnPendingBlockReply::set_rplblock(const char* value) {
+inline void OnPendingBlockReply::set_rpl_block(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
   
-  rplblock_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
-  // @@protoc_insertion_point(field_set_char:txpool.OnPendingBlockReply.rplBlock)
+  rpl_block_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
+  // @@protoc_insertion_point(field_set_char:txpool.OnPendingBlockReply.rpl_block)
 }
-inline void OnPendingBlockReply::set_rplblock(const void* value,
+inline void OnPendingBlockReply::set_rpl_block(const void* value,
     size_t size) {
   
-  rplblock_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
+  rpl_block_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
       reinterpret_cast<const char*>(value), size), GetArena());
-  // @@protoc_insertion_point(field_set_pointer:txpool.OnPendingBlockReply.rplBlock)
+  // @@protoc_insertion_point(field_set_pointer:txpool.OnPendingBlockReply.rpl_block)
 }
-inline std::string* OnPendingBlockReply::_internal_mutable_rplblock() {
+inline std::string* OnPendingBlockReply::_internal_mutable_rpl_block() {
   
-  return rplblock_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
+  return rpl_block_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
 }
-inline std::string* OnPendingBlockReply::release_rplblock() {
-  // @@protoc_insertion_point(field_release:txpool.OnPendingBlockReply.rplBlock)
-  return rplblock_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+inline std::string* OnPendingBlockReply::release_rpl_block() {
+  // @@protoc_insertion_point(field_release:txpool.OnPendingBlockReply.rpl_block)
+  return rpl_block_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline void OnPendingBlockReply::set_allocated_rplblock(std::string* rplblock) {
-  if (rplblock != nullptr) {
+inline void OnPendingBlockReply::set_allocated_rpl_block(std::string* rpl_block) {
+  if (rpl_block != nullptr) {
     
   } else {
     
   }
-  rplblock_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), rplblock,
+  rpl_block_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), rpl_block,
       GetArena());
-  // @@protoc_insertion_point(field_set_allocated:txpool.OnPendingBlockReply.rplBlock)
+  // @@protoc_insertion_point(field_set_allocated:txpool.OnPendingBlockReply.rpl_block)
 }
 
 // -------------------------------------------------------------------
@@ -2461,65 +2461,65 @@ inline void OnPendingBlockReply::set_allocated_rplblock(std::string* rplblock) {
 
 // OnMinedBlockReply
 
-// bytes rplBlock = 1;
-inline void OnMinedBlockReply::clear_rplblock() {
-  rplblock_.ClearToEmpty();
+// bytes rpl_block = 1;
+inline void OnMinedBlockReply::clear_rpl_block() {
+  rpl_block_.ClearToEmpty();
 }
-inline const std::string& OnMinedBlockReply::rplblock() const {
-  // @@protoc_insertion_point(field_get:txpool.OnMinedBlockReply.rplBlock)
-  return _internal_rplblock();
+inline const std::string& OnMinedBlockReply::rpl_block() const {
+  // @@protoc_insertion_point(field_get:txpool.OnMinedBlockReply.rpl_block)
+  return _internal_rpl_block();
 }
-inline void OnMinedBlockReply::set_rplblock(const std::string& value) {
-  _internal_set_rplblock(value);
-  // @@protoc_insertion_point(field_set:txpool.OnMinedBlockReply.rplBlock)
+inline void OnMinedBlockReply::set_rpl_block(const std::string& value) {
+  _internal_set_rpl_block(value);
+  // @@protoc_insertion_point(field_set:txpool.OnMinedBlockReply.rpl_block)
 }
-inline std::string* OnMinedBlockReply::mutable_rplblock() {
-  // @@protoc_insertion_point(field_mutable:txpool.OnMinedBlockReply.rplBlock)
-  return _internal_mutable_rplblock();
+inline std::string* OnMinedBlockReply::mutable_rpl_block() {
+  // @@protoc_insertion_point(field_mutable:txpool.OnMinedBlockReply.rpl_block)
+  return _internal_mutable_rpl_block();
 }
-inline const std::string& OnMinedBlockReply::_internal_rplblock() const {
-  return rplblock_.Get();
+inline const std::string& OnMinedBlockReply::_internal_rpl_block() const {
+  return rpl_block_.Get();
 }
-inline void OnMinedBlockReply::_internal_set_rplblock(const std::string& value) {
+inline void OnMinedBlockReply::_internal_set_rpl_block(const std::string& value) {
   
-  rplblock_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
+  rpl_block_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
 }
-inline void OnMinedBlockReply::set_rplblock(std::string&& value) {
+inline void OnMinedBlockReply::set_rpl_block(std::string&& value) {
   
-  rplblock_.Set(
+  rpl_block_.Set(
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::move(value), GetArena());
-  // @@protoc_insertion_point(field_set_rvalue:txpool.OnMinedBlockReply.rplBlock)
+  // @@protoc_insertion_point(field_set_rvalue:txpool.OnMinedBlockReply.rpl_block)
 }
-inline void OnMinedBlockReply::set_rplblock(const char* value) {
+inline void OnMinedBlockReply::set_rpl_block(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
   
-  rplblock_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
-  // @@protoc_insertion_point(field_set_char:txpool.OnMinedBlockReply.rplBlock)
+  rpl_block_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
+  // @@protoc_insertion_point(field_set_char:txpool.OnMinedBlockReply.rpl_block)
 }
-inline void OnMinedBlockReply::set_rplblock(const void* value,
+inline void OnMinedBlockReply::set_rpl_block(const void* value,
     size_t size) {
   
-  rplblock_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
+  rpl_block_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
       reinterpret_cast<const char*>(value), size), GetArena());
-  // @@protoc_insertion_point(field_set_pointer:txpool.OnMinedBlockReply.rplBlock)
+  // @@protoc_insertion_point(field_set_pointer:txpool.OnMinedBlockReply.rpl_block)
 }
-inline std::string* OnMinedBlockReply::_internal_mutable_rplblock() {
+inline std::string* OnMinedBlockReply::_internal_mutable_rpl_block() {
   
-  return rplblock_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
+  return rpl_block_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
 }
-inline std::string* OnMinedBlockReply::release_rplblock() {
-  // @@protoc_insertion_point(field_release:txpool.OnMinedBlockReply.rplBlock)
-  return rplblock_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+inline std::string* OnMinedBlockReply::release_rpl_block() {
+  // @@protoc_insertion_point(field_release:txpool.OnMinedBlockReply.rpl_block)
+  return rpl_block_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline void OnMinedBlockReply::set_allocated_rplblock(std::string* rplblock) {
-  if (rplblock != nullptr) {
+inline void OnMinedBlockReply::set_allocated_rpl_block(std::string* rpl_block) {
+  if (rpl_block != nullptr) {
     
   } else {
     
   }
-  rplblock_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), rplblock,
+  rpl_block_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), rpl_block,
       GetArena());
-  // @@protoc_insertion_point(field_set_allocated:txpool.OnMinedBlockReply.rplBlock)
+  // @@protoc_insertion_point(field_set_allocated:txpool.OnMinedBlockReply.rpl_block)
 }
 
 // -------------------------------------------------------------------
@@ -2530,65 +2530,65 @@ inline void OnMinedBlockReply::set_allocated_rplblock(std::string* rplblock) {
 
 // OnPendingLogsReply
 
-// bytes rplLogs = 1;
-inline void OnPendingLogsReply::clear_rpllogs() {
-  rpllogs_.ClearToEmpty();
+// bytes rpl_logs = 1;
+inline void OnPendingLogsReply::clear_rpl_logs() {
+  rpl_logs_.ClearToEmpty();
 }
-inline const std::string& OnPendingLogsReply::rpllogs() const {
-  // @@protoc_insertion_point(field_get:txpool.OnPendingLogsReply.rplLogs)
-  return _internal_rpllogs();
+inline const std::string& OnPendingLogsReply::rpl_logs() const {
+  // @@protoc_insertion_point(field_get:txpool.OnPendingLogsReply.rpl_logs)
+  return _internal_rpl_logs();
 }
-inline void OnPendingLogsReply::set_rpllogs(const std::string& value) {
-  _internal_set_rpllogs(value);
-  // @@protoc_insertion_point(field_set:txpool.OnPendingLogsReply.rplLogs)
+inline void OnPendingLogsReply::set_rpl_logs(const std::string& value) {
+  _internal_set_rpl_logs(value);
+  // @@protoc_insertion_point(field_set:txpool.OnPendingLogsReply.rpl_logs)
 }
-inline std::string* OnPendingLogsReply::mutable_rpllogs() {
-  // @@protoc_insertion_point(field_mutable:txpool.OnPendingLogsReply.rplLogs)
-  return _internal_mutable_rpllogs();
+inline std::string* OnPendingLogsReply::mutable_rpl_logs() {
+  // @@protoc_insertion_point(field_mutable:txpool.OnPendingLogsReply.rpl_logs)
+  return _internal_mutable_rpl_logs();
 }
-inline const std::string& OnPendingLogsReply::_internal_rpllogs() const {
-  return rpllogs_.Get();
+inline const std::string& OnPendingLogsReply::_internal_rpl_logs() const {
+  return rpl_logs_.Get();
 }
-inline void OnPendingLogsReply::_internal_set_rpllogs(const std::string& value) {
+inline void OnPendingLogsReply::_internal_set_rpl_logs(const std::string& value) {
   
-  rpllogs_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
+  rpl_logs_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
 }
-inline void OnPendingLogsReply::set_rpllogs(std::string&& value) {
+inline void OnPendingLogsReply::set_rpl_logs(std::string&& value) {
   
-  rpllogs_.Set(
+  rpl_logs_.Set(
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::move(value), GetArena());
-  // @@protoc_insertion_point(field_set_rvalue:txpool.OnPendingLogsReply.rplLogs)
+  // @@protoc_insertion_point(field_set_rvalue:txpool.OnPendingLogsReply.rpl_logs)
 }
-inline void OnPendingLogsReply::set_rpllogs(const char* value) {
+inline void OnPendingLogsReply::set_rpl_logs(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
   
-  rpllogs_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
-  // @@protoc_insertion_point(field_set_char:txpool.OnPendingLogsReply.rplLogs)
+  rpl_logs_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
+  // @@protoc_insertion_point(field_set_char:txpool.OnPendingLogsReply.rpl_logs)
 }
-inline void OnPendingLogsReply::set_rpllogs(const void* value,
+inline void OnPendingLogsReply::set_rpl_logs(const void* value,
     size_t size) {
   
-  rpllogs_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
+  rpl_logs_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
       reinterpret_cast<const char*>(value), size), GetArena());
-  // @@protoc_insertion_point(field_set_pointer:txpool.OnPendingLogsReply.rplLogs)
+  // @@protoc_insertion_point(field_set_pointer:txpool.OnPendingLogsReply.rpl_logs)
 }
-inline std::string* OnPendingLogsReply::_internal_mutable_rpllogs() {
+inline std::string* OnPendingLogsReply::_internal_mutable_rpl_logs() {
   
-  return rpllogs_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
+  return rpl_logs_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
 }
-inline std::string* OnPendingLogsReply::release_rpllogs() {
-  // @@protoc_insertion_point(field_release:txpool.OnPendingLogsReply.rplLogs)
-  return rpllogs_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+inline std::string* OnPendingLogsReply::release_rpl_logs() {
+  // @@protoc_insertion_point(field_release:txpool.OnPendingLogsReply.rpl_logs)
+  return rpl_logs_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline void OnPendingLogsReply::set_allocated_rpllogs(std::string* rpllogs) {
-  if (rpllogs != nullptr) {
+inline void OnPendingLogsReply::set_allocated_rpl_logs(std::string* rpl_logs) {
+  if (rpl_logs != nullptr) {
     
   } else {
     
   }
-  rpllogs_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), rpllogs,
+  rpl_logs_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), rpl_logs,
       GetArena());
-  // @@protoc_insertion_point(field_set_allocated:txpool.OnPendingLogsReply.rplLogs)
+  // @@protoc_insertion_point(field_set_allocated:txpool.OnPendingLogsReply.rpl_logs)
 }
 
 // -------------------------------------------------------------------
@@ -2599,126 +2599,126 @@ inline void OnPendingLogsReply::set_allocated_rpllogs(std::string* rpllogs) {
 
 // GetWorkReply
 
-// string headerHash = 1;
-inline void GetWorkReply::clear_headerhash() {
-  headerhash_.ClearToEmpty();
+// string header_hash = 1;
+inline void GetWorkReply::clear_header_hash() {
+  header_hash_.ClearToEmpty();
 }
-inline const std::string& GetWorkReply::headerhash() const {
-  // @@protoc_insertion_point(field_get:txpool.GetWorkReply.headerHash)
-  return _internal_headerhash();
+inline const std::string& GetWorkReply::header_hash() const {
+  // @@protoc_insertion_point(field_get:txpool.GetWorkReply.header_hash)
+  return _internal_header_hash();
 }
-inline void GetWorkReply::set_headerhash(const std::string& value) {
-  _internal_set_headerhash(value);
-  // @@protoc_insertion_point(field_set:txpool.GetWorkReply.headerHash)
+inline void GetWorkReply::set_header_hash(const std::string& value) {
+  _internal_set_header_hash(value);
+  // @@protoc_insertion_point(field_set:txpool.GetWorkReply.header_hash)
 }
-inline std::string* GetWorkReply::mutable_headerhash() {
-  // @@protoc_insertion_point(field_mutable:txpool.GetWorkReply.headerHash)
-  return _internal_mutable_headerhash();
+inline std::string* GetWorkReply::mutable_header_hash() {
+  // @@protoc_insertion_point(field_mutable:txpool.GetWorkReply.header_hash)
+  return _internal_mutable_header_hash();
 }
-inline const std::string& GetWorkReply::_internal_headerhash() const {
-  return headerhash_.Get();
+inline const std::string& GetWorkReply::_internal_header_hash() const {
+  return header_hash_.Get();
 }
-inline void GetWorkReply::_internal_set_headerhash(const std::string& value) {
+inline void GetWorkReply::_internal_set_header_hash(const std::string& value) {
   
-  headerhash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
+  header_hash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
 }
-inline void GetWorkReply::set_headerhash(std::string&& value) {
+inline void GetWorkReply::set_header_hash(std::string&& value) {
   
-  headerhash_.Set(
+  header_hash_.Set(
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::move(value), GetArena());
-  // @@protoc_insertion_point(field_set_rvalue:txpool.GetWorkReply.headerHash)
+  // @@protoc_insertion_point(field_set_rvalue:txpool.GetWorkReply.header_hash)
 }
-inline void GetWorkReply::set_headerhash(const char* value) {
+inline void GetWorkReply::set_header_hash(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
   
-  headerhash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
-  // @@protoc_insertion_point(field_set_char:txpool.GetWorkReply.headerHash)
+  header_hash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
+  // @@protoc_insertion_point(field_set_char:txpool.GetWorkReply.header_hash)
 }
-inline void GetWorkReply::set_headerhash(const char* value,
+inline void GetWorkReply::set_header_hash(const char* value,
     size_t size) {
   
-  headerhash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
+  header_hash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
       reinterpret_cast<const char*>(value), size), GetArena());
-  // @@protoc_insertion_point(field_set_pointer:txpool.GetWorkReply.headerHash)
+  // @@protoc_insertion_point(field_set_pointer:txpool.GetWorkReply.header_hash)
 }
-inline std::string* GetWorkReply::_internal_mutable_headerhash() {
+inline std::string* GetWorkReply::_internal_mutable_header_hash() {
   
-  return headerhash_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
+  return header_hash_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
 }
-inline std::string* GetWorkReply::release_headerhash() {
-  // @@protoc_insertion_point(field_release:txpool.GetWorkReply.headerHash)
-  return headerhash_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+inline std::string* GetWorkReply::release_header_hash() {
+  // @@protoc_insertion_point(field_release:txpool.GetWorkReply.header_hash)
+  return header_hash_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline void GetWorkReply::set_allocated_headerhash(std::string* headerhash) {
-  if (headerhash != nullptr) {
+inline void GetWorkReply::set_allocated_header_hash(std::string* header_hash) {
+  if (header_hash != nullptr) {
     
   } else {
     
   }
-  headerhash_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), headerhash,
+  header_hash_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), header_hash,
       GetArena());
-  // @@protoc_insertion_point(field_set_allocated:txpool.GetWorkReply.headerHash)
+  // @@protoc_insertion_point(field_set_allocated:txpool.GetWorkReply.header_hash)
 }
 
-// string seedHash = 2;
-inline void GetWorkReply::clear_seedhash() {
-  seedhash_.ClearToEmpty();
+// string seed_hash = 2;
+inline void GetWorkReply::clear_seed_hash() {
+  seed_hash_.ClearToEmpty();
 }
-inline const std::string& GetWorkReply::seedhash() const {
-  // @@protoc_insertion_point(field_get:txpool.GetWorkReply.seedHash)
-  return _internal_seedhash();
+inline const std::string& GetWorkReply::seed_hash() const {
+  // @@protoc_insertion_point(field_get:txpool.GetWorkReply.seed_hash)
+  return _internal_seed_hash();
 }
-inline void GetWorkReply::set_seedhash(const std::string& value) {
-  _internal_set_seedhash(value);
-  // @@protoc_insertion_point(field_set:txpool.GetWorkReply.seedHash)
+inline void GetWorkReply::set_seed_hash(const std::string& value) {
+  _internal_set_seed_hash(value);
+  // @@protoc_insertion_point(field_set:txpool.GetWorkReply.seed_hash)
 }
-inline std::string* GetWorkReply::mutable_seedhash() {
-  // @@protoc_insertion_point(field_mutable:txpool.GetWorkReply.seedHash)
-  return _internal_mutable_seedhash();
+inline std::string* GetWorkReply::mutable_seed_hash() {
+  // @@protoc_insertion_point(field_mutable:txpool.GetWorkReply.seed_hash)
+  return _internal_mutable_seed_hash();
 }
-inline const std::string& GetWorkReply::_internal_seedhash() const {
-  return seedhash_.Get();
+inline const std::string& GetWorkReply::_internal_seed_hash() const {
+  return seed_hash_.Get();
 }
-inline void GetWorkReply::_internal_set_seedhash(const std::string& value) {
+inline void GetWorkReply::_internal_set_seed_hash(const std::string& value) {
   
-  seedhash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
+  seed_hash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
 }
-inline void GetWorkReply::set_seedhash(std::string&& value) {
+inline void GetWorkReply::set_seed_hash(std::string&& value) {
   
-  seedhash_.Set(
+  seed_hash_.Set(
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::move(value), GetArena());
-  // @@protoc_insertion_point(field_set_rvalue:txpool.GetWorkReply.seedHash)
+  // @@protoc_insertion_point(field_set_rvalue:txpool.GetWorkReply.seed_hash)
 }
-inline void GetWorkReply::set_seedhash(const char* value) {
+inline void GetWorkReply::set_seed_hash(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
   
-  seedhash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
-  // @@protoc_insertion_point(field_set_char:txpool.GetWorkReply.seedHash)
+  seed_hash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
+  // @@protoc_insertion_point(field_set_char:txpool.GetWorkReply.seed_hash)
 }
-inline void GetWorkReply::set_seedhash(const char* value,
+inline void GetWorkReply::set_seed_hash(const char* value,
     size_t size) {
   
-  seedhash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
+  seed_hash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
       reinterpret_cast<const char*>(value), size), GetArena());
-  // @@protoc_insertion_point(field_set_pointer:txpool.GetWorkReply.seedHash)
+  // @@protoc_insertion_point(field_set_pointer:txpool.GetWorkReply.seed_hash)
 }
-inline std::string* GetWorkReply::_internal_mutable_seedhash() {
+inline std::string* GetWorkReply::_internal_mutable_seed_hash() {
   
-  return seedhash_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
+  return seed_hash_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
 }
-inline std::string* GetWorkReply::release_seedhash() {
-  // @@protoc_insertion_point(field_release:txpool.GetWorkReply.seedHash)
-  return seedhash_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+inline std::string* GetWorkReply::release_seed_hash() {
+  // @@protoc_insertion_point(field_release:txpool.GetWorkReply.seed_hash)
+  return seed_hash_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline void GetWorkReply::set_allocated_seedhash(std::string* seedhash) {
-  if (seedhash != nullptr) {
+inline void GetWorkReply::set_allocated_seed_hash(std::string* seed_hash) {
+  if (seed_hash != nullptr) {
     
   } else {
     
   }
-  seedhash_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), seedhash,
+  seed_hash_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), seed_hash,
       GetArena());
-  // @@protoc_insertion_point(field_set_allocated:txpool.GetWorkReply.seedHash)
+  // @@protoc_insertion_point(field_set_allocated:txpool.GetWorkReply.seed_hash)
 }
 
 // string target = 3;
@@ -2782,191 +2782,191 @@ inline void GetWorkReply::set_allocated_target(std::string* target) {
   // @@protoc_insertion_point(field_set_allocated:txpool.GetWorkReply.target)
 }
 
-// string blockNumber = 4;
-inline void GetWorkReply::clear_blocknumber() {
-  blocknumber_.ClearToEmpty();
+// string block_number = 4;
+inline void GetWorkReply::clear_block_number() {
+  block_number_.ClearToEmpty();
 }
-inline const std::string& GetWorkReply::blocknumber() const {
-  // @@protoc_insertion_point(field_get:txpool.GetWorkReply.blockNumber)
-  return _internal_blocknumber();
+inline const std::string& GetWorkReply::block_number() const {
+  // @@protoc_insertion_point(field_get:txpool.GetWorkReply.block_number)
+  return _internal_block_number();
 }
-inline void GetWorkReply::set_blocknumber(const std::string& value) {
-  _internal_set_blocknumber(value);
-  // @@protoc_insertion_point(field_set:txpool.GetWorkReply.blockNumber)
+inline void GetWorkReply::set_block_number(const std::string& value) {
+  _internal_set_block_number(value);
+  // @@protoc_insertion_point(field_set:txpool.GetWorkReply.block_number)
 }
-inline std::string* GetWorkReply::mutable_blocknumber() {
-  // @@protoc_insertion_point(field_mutable:txpool.GetWorkReply.blockNumber)
-  return _internal_mutable_blocknumber();
+inline std::string* GetWorkReply::mutable_block_number() {
+  // @@protoc_insertion_point(field_mutable:txpool.GetWorkReply.block_number)
+  return _internal_mutable_block_number();
 }
-inline const std::string& GetWorkReply::_internal_blocknumber() const {
-  return blocknumber_.Get();
+inline const std::string& GetWorkReply::_internal_block_number() const {
+  return block_number_.Get();
 }
-inline void GetWorkReply::_internal_set_blocknumber(const std::string& value) {
+inline void GetWorkReply::_internal_set_block_number(const std::string& value) {
   
-  blocknumber_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
+  block_number_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
 }
-inline void GetWorkReply::set_blocknumber(std::string&& value) {
+inline void GetWorkReply::set_block_number(std::string&& value) {
   
-  blocknumber_.Set(
+  block_number_.Set(
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::move(value), GetArena());
-  // @@protoc_insertion_point(field_set_rvalue:txpool.GetWorkReply.blockNumber)
+  // @@protoc_insertion_point(field_set_rvalue:txpool.GetWorkReply.block_number)
 }
-inline void GetWorkReply::set_blocknumber(const char* value) {
+inline void GetWorkReply::set_block_number(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
   
-  blocknumber_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
-  // @@protoc_insertion_point(field_set_char:txpool.GetWorkReply.blockNumber)
+  block_number_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
+  // @@protoc_insertion_point(field_set_char:txpool.GetWorkReply.block_number)
 }
-inline void GetWorkReply::set_blocknumber(const char* value,
+inline void GetWorkReply::set_block_number(const char* value,
     size_t size) {
   
-  blocknumber_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
+  block_number_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
       reinterpret_cast<const char*>(value), size), GetArena());
-  // @@protoc_insertion_point(field_set_pointer:txpool.GetWorkReply.blockNumber)
+  // @@protoc_insertion_point(field_set_pointer:txpool.GetWorkReply.block_number)
 }
-inline std::string* GetWorkReply::_internal_mutable_blocknumber() {
+inline std::string* GetWorkReply::_internal_mutable_block_number() {
   
-  return blocknumber_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
+  return block_number_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
 }
-inline std::string* GetWorkReply::release_blocknumber() {
-  // @@protoc_insertion_point(field_release:txpool.GetWorkReply.blockNumber)
-  return blocknumber_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+inline std::string* GetWorkReply::release_block_number() {
+  // @@protoc_insertion_point(field_release:txpool.GetWorkReply.block_number)
+  return block_number_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline void GetWorkReply::set_allocated_blocknumber(std::string* blocknumber) {
-  if (blocknumber != nullptr) {
+inline void GetWorkReply::set_allocated_block_number(std::string* block_number) {
+  if (block_number != nullptr) {
     
   } else {
     
   }
-  blocknumber_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), blocknumber,
+  block_number_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), block_number,
       GetArena());
-  // @@protoc_insertion_point(field_set_allocated:txpool.GetWorkReply.blockNumber)
+  // @@protoc_insertion_point(field_set_allocated:txpool.GetWorkReply.block_number)
 }
 
 // -------------------------------------------------------------------
 
 // SubmitWorkRequest
 
-// bytes blockNonce = 1;
-inline void SubmitWorkRequest::clear_blocknonce() {
-  blocknonce_.ClearToEmpty();
+// bytes block_nonce = 1;
+inline void SubmitWorkRequest::clear_block_nonce() {
+  block_nonce_.ClearToEmpty();
 }
-inline const std::string& SubmitWorkRequest::blocknonce() const {
-  // @@protoc_insertion_point(field_get:txpool.SubmitWorkRequest.blockNonce)
-  return _internal_blocknonce();
+inline const std::string& SubmitWorkRequest::block_nonce() const {
+  // @@protoc_insertion_point(field_get:txpool.SubmitWorkRequest.block_nonce)
+  return _internal_block_nonce();
 }
-inline void SubmitWorkRequest::set_blocknonce(const std::string& value) {
-  _internal_set_blocknonce(value);
-  // @@protoc_insertion_point(field_set:txpool.SubmitWorkRequest.blockNonce)
+inline void SubmitWorkRequest::set_block_nonce(const std::string& value) {
+  _internal_set_block_nonce(value);
+  // @@protoc_insertion_point(field_set:txpool.SubmitWorkRequest.block_nonce)
 }
-inline std::string* SubmitWorkRequest::mutable_blocknonce() {
-  // @@protoc_insertion_point(field_mutable:txpool.SubmitWorkRequest.blockNonce)
-  return _internal_mutable_blocknonce();
+inline std::string* SubmitWorkRequest::mutable_block_nonce() {
+  // @@protoc_insertion_point(field_mutable:txpool.SubmitWorkRequest.block_nonce)
+  return _internal_mutable_block_nonce();
 }
-inline const std::string& SubmitWorkRequest::_internal_blocknonce() const {
-  return blocknonce_.Get();
+inline const std::string& SubmitWorkRequest::_internal_block_nonce() const {
+  return block_nonce_.Get();
 }
-inline void SubmitWorkRequest::_internal_set_blocknonce(const std::string& value) {
+inline void SubmitWorkRequest::_internal_set_block_nonce(const std::string& value) {
   
-  blocknonce_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
+  block_nonce_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
 }
-inline void SubmitWorkRequest::set_blocknonce(std::string&& value) {
+inline void SubmitWorkRequest::set_block_nonce(std::string&& value) {
   
-  blocknonce_.Set(
+  block_nonce_.Set(
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::move(value), GetArena());
-  // @@protoc_insertion_point(field_set_rvalue:txpool.SubmitWorkRequest.blockNonce)
+  // @@protoc_insertion_point(field_set_rvalue:txpool.SubmitWorkRequest.block_nonce)
 }
-inline void SubmitWorkRequest::set_blocknonce(const char* value) {
+inline void SubmitWorkRequest::set_block_nonce(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
   
-  blocknonce_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
-  // @@protoc_insertion_point(field_set_char:txpool.SubmitWorkRequest.blockNonce)
+  block_nonce_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
+  // @@protoc_insertion_point(field_set_char:txpool.SubmitWorkRequest.block_nonce)
 }
-inline void SubmitWorkRequest::set_blocknonce(const void* value,
+inline void SubmitWorkRequest::set_block_nonce(const void* value,
     size_t size) {
   
-  blocknonce_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
+  block_nonce_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
       reinterpret_cast<const char*>(value), size), GetArena());
-  // @@protoc_insertion_point(field_set_pointer:txpool.SubmitWorkRequest.blockNonce)
+  // @@protoc_insertion_point(field_set_pointer:txpool.SubmitWorkRequest.block_nonce)
 }
-inline std::string* SubmitWorkRequest::_internal_mutable_blocknonce() {
+inline std::string* SubmitWorkRequest::_internal_mutable_block_nonce() {
   
-  return blocknonce_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
+  return block_nonce_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
 }
-inline std::string* SubmitWorkRequest::release_blocknonce() {
-  // @@protoc_insertion_point(field_release:txpool.SubmitWorkRequest.blockNonce)
-  return blocknonce_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+inline std::string* SubmitWorkRequest::release_block_nonce() {
+  // @@protoc_insertion_point(field_release:txpool.SubmitWorkRequest.block_nonce)
+  return block_nonce_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline void SubmitWorkRequest::set_allocated_blocknonce(std::string* blocknonce) {
-  if (blocknonce != nullptr) {
+inline void SubmitWorkRequest::set_allocated_block_nonce(std::string* block_nonce) {
+  if (block_nonce != nullptr) {
     
   } else {
     
   }
-  blocknonce_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), blocknonce,
+  block_nonce_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), block_nonce,
       GetArena());
-  // @@protoc_insertion_point(field_set_allocated:txpool.SubmitWorkRequest.blockNonce)
+  // @@protoc_insertion_point(field_set_allocated:txpool.SubmitWorkRequest.block_nonce)
 }
 
-// bytes powHash = 2;
-inline void SubmitWorkRequest::clear_powhash() {
-  powhash_.ClearToEmpty();
+// bytes pow_hash = 2;
+inline void SubmitWorkRequest::clear_pow_hash() {
+  pow_hash_.ClearToEmpty();
 }
-inline const std::string& SubmitWorkRequest::powhash() const {
-  // @@protoc_insertion_point(field_get:txpool.SubmitWorkRequest.powHash)
-  return _internal_powhash();
+inline const std::string& SubmitWorkRequest::pow_hash() const {
+  // @@protoc_insertion_point(field_get:txpool.SubmitWorkRequest.pow_hash)
+  return _internal_pow_hash();
 }
-inline void SubmitWorkRequest::set_powhash(const std::string& value) {
-  _internal_set_powhash(value);
-  // @@protoc_insertion_point(field_set:txpool.SubmitWorkRequest.powHash)
+inline void SubmitWorkRequest::set_pow_hash(const std::string& value) {
+  _internal_set_pow_hash(value);
+  // @@protoc_insertion_point(field_set:txpool.SubmitWorkRequest.pow_hash)
 }
-inline std::string* SubmitWorkRequest::mutable_powhash() {
-  // @@protoc_insertion_point(field_mutable:txpool.SubmitWorkRequest.powHash)
-  return _internal_mutable_powhash();
+inline std::string* SubmitWorkRequest::mutable_pow_hash() {
+  // @@protoc_insertion_point(field_mutable:txpool.SubmitWorkRequest.pow_hash)
+  return _internal_mutable_pow_hash();
 }
-inline const std::string& SubmitWorkRequest::_internal_powhash() const {
-  return powhash_.Get();
+inline const std::string& SubmitWorkRequest::_internal_pow_hash() const {
+  return pow_hash_.Get();
 }
-inline void SubmitWorkRequest::_internal_set_powhash(const std::string& value) {
+inline void SubmitWorkRequest::_internal_set_pow_hash(const std::string& value) {
   
-  powhash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
+  pow_hash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, value, GetArena());
 }
-inline void SubmitWorkRequest::set_powhash(std::string&& value) {
+inline void SubmitWorkRequest::set_pow_hash(std::string&& value) {
   
-  powhash_.Set(
+  pow_hash_.Set(
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::move(value), GetArena());
-  // @@protoc_insertion_point(field_set_rvalue:txpool.SubmitWorkRequest.powHash)
+  // @@protoc_insertion_point(field_set_rvalue:txpool.SubmitWorkRequest.pow_hash)
 }
-inline void SubmitWorkRequest::set_powhash(const char* value) {
+inline void SubmitWorkRequest::set_pow_hash(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
   
-  powhash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
-  // @@protoc_insertion_point(field_set_char:txpool.SubmitWorkRequest.powHash)
+  pow_hash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(value), GetArena());
+  // @@protoc_insertion_point(field_set_char:txpool.SubmitWorkRequest.pow_hash)
 }
-inline void SubmitWorkRequest::set_powhash(const void* value,
+inline void SubmitWorkRequest::set_pow_hash(const void* value,
     size_t size) {
   
-  powhash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
+  pow_hash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, ::std::string(
       reinterpret_cast<const char*>(value), size), GetArena());
-  // @@protoc_insertion_point(field_set_pointer:txpool.SubmitWorkRequest.powHash)
+  // @@protoc_insertion_point(field_set_pointer:txpool.SubmitWorkRequest.pow_hash)
 }
-inline std::string* SubmitWorkRequest::_internal_mutable_powhash() {
+inline std::string* SubmitWorkRequest::_internal_mutable_pow_hash() {
   
-  return powhash_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
+  return pow_hash_.Mutable(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, GetArena());
 }
-inline std::string* SubmitWorkRequest::release_powhash() {
-  // @@protoc_insertion_point(field_release:txpool.SubmitWorkRequest.powHash)
-  return powhash_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+inline std::string* SubmitWorkRequest::release_pow_hash() {
+  // @@protoc_insertion_point(field_release:txpool.SubmitWorkRequest.pow_hash)
+  return pow_hash_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline void SubmitWorkRequest::set_allocated_powhash(std::string* powhash) {
-  if (powhash != nullptr) {
+inline void SubmitWorkRequest::set_allocated_pow_hash(std::string* pow_hash) {
+  if (pow_hash != nullptr) {
     
   } else {
     
   }
-  powhash_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), powhash,
+  pow_hash_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), pow_hash,
       GetArena());
-  // @@protoc_insertion_point(field_set_allocated:txpool.SubmitWorkRequest.powHash)
+  // @@protoc_insertion_point(field_set_allocated:txpool.SubmitWorkRequest.pow_hash)
 }
 
 // bytes digest = 3;
@@ -3171,24 +3171,24 @@ inline void SubmitHashRateReply::set_ok(bool value) {
 
 // HashRateReply
 
-// uint64 hashRate = 1;
-inline void HashRateReply::clear_hashrate() {
-  hashrate_ = PROTOBUF_ULONGLONG(0);
+// uint64 hash_rate = 1;
+inline void HashRateReply::clear_hash_rate() {
+  hash_rate_ = PROTOBUF_ULONGLONG(0);
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint64 HashRateReply::_internal_hashrate() const {
-  return hashrate_;
+inline ::PROTOBUF_NAMESPACE_ID::uint64 HashRateReply::_internal_hash_rate() const {
+  return hash_rate_;
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint64 HashRateReply::hashrate() const {
-  // @@protoc_insertion_point(field_get:txpool.HashRateReply.hashRate)
-  return _internal_hashrate();
+inline ::PROTOBUF_NAMESPACE_ID::uint64 HashRateReply::hash_rate() const {
+  // @@protoc_insertion_point(field_get:txpool.HashRateReply.hash_rate)
+  return _internal_hash_rate();
 }
-inline void HashRateReply::_internal_set_hashrate(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+inline void HashRateReply::_internal_set_hash_rate(::PROTOBUF_NAMESPACE_ID::uint64 value) {
   
-  hashrate_ = value;
+  hash_rate_ = value;
 }
-inline void HashRateReply::set_hashrate(::PROTOBUF_NAMESPACE_ID::uint64 value) {
-  _internal_set_hashrate(value);
-  // @@protoc_insertion_point(field_set:txpool.HashRateReply.hashRate)
+inline void HashRateReply::set_hash_rate(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_hash_rate(value);
+  // @@protoc_insertion_point(field_set:txpool.HashRateReply.hash_rate)
 }
 
 // -------------------------------------------------------------------

@@ -34,7 +34,7 @@ struct OnPendingBlockRequestDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 OnPendingBlockRequestDefaultTypeInternal _OnPendingBlockRequest_default_instance_;
 PROTOBUF_CONSTEXPR OnPendingBlockReply::OnPendingBlockReply(
     ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.rplblock_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+    /*decltype(_impl_.rpl_block_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct OnPendingBlockReplyDefaultTypeInternal {
   PROTOBUF_CONSTEXPR OnPendingBlockReplyDefaultTypeInternal()
@@ -58,7 +58,7 @@ struct OnMinedBlockRequestDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 OnMinedBlockRequestDefaultTypeInternal _OnMinedBlockRequest_default_instance_;
 PROTOBUF_CONSTEXPR OnMinedBlockReply::OnMinedBlockReply(
     ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.rplblock_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+    /*decltype(_impl_.rpl_block_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct OnMinedBlockReplyDefaultTypeInternal {
   PROTOBUF_CONSTEXPR OnMinedBlockReplyDefaultTypeInternal()
@@ -82,7 +82,7 @@ struct OnPendingLogsRequestDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 OnPendingLogsRequestDefaultTypeInternal _OnPendingLogsRequest_default_instance_;
 PROTOBUF_CONSTEXPR OnPendingLogsReply::OnPendingLogsReply(
     ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.rpllogs_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+    /*decltype(_impl_.rpl_logs_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct OnPendingLogsReplyDefaultTypeInternal {
   PROTOBUF_CONSTEXPR OnPendingLogsReplyDefaultTypeInternal()
@@ -106,10 +106,10 @@ struct GetWorkRequestDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 GetWorkRequestDefaultTypeInternal _GetWorkRequest_default_instance_;
 PROTOBUF_CONSTEXPR GetWorkReply::GetWorkReply(
     ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.headerhash_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.seedhash_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+    /*decltype(_impl_.header_hash_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.seed_hash_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.target_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.blocknumber_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.block_number_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct GetWorkReplyDefaultTypeInternal {
   PROTOBUF_CONSTEXPR GetWorkReplyDefaultTypeInternal()
@@ -122,8 +122,8 @@ struct GetWorkReplyDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 GetWorkReplyDefaultTypeInternal _GetWorkReply_default_instance_;
 PROTOBUF_CONSTEXPR SubmitWorkRequest::SubmitWorkRequest(
     ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.blocknonce_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.powhash_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+    /*decltype(_impl_.block_nonce_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.pow_hash_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.digest_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct SubmitWorkRequestDefaultTypeInternal {
@@ -188,7 +188,7 @@ struct HashRateRequestDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HashRateRequestDefaultTypeInternal _HashRateRequest_default_instance_;
 PROTOBUF_CONSTEXPR HashRateReply::HashRateReply(
     ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.hashrate_)*/uint64_t{0u}
+    /*decltype(_impl_.hash_rate_)*/uint64_t{0u}
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct HashRateReplyDefaultTypeInternal {
   PROTOBUF_CONSTEXPR HashRateReplyDefaultTypeInternal()
@@ -242,7 +242,7 @@ const uint32_t TableStruct_txpool_2fmining_2eproto::offsets[] PROTOBUF_SECTION_V
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::txpool::OnPendingBlockReply, _impl_.rplblock_),
+  PROTOBUF_FIELD_OFFSET(::txpool::OnPendingBlockReply, _impl_.rpl_block_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::txpool::OnMinedBlockRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -255,7 +255,7 @@ const uint32_t TableStruct_txpool_2fmining_2eproto::offsets[] PROTOBUF_SECTION_V
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::txpool::OnMinedBlockReply, _impl_.rplblock_),
+  PROTOBUF_FIELD_OFFSET(::txpool::OnMinedBlockReply, _impl_.rpl_block_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::txpool::OnPendingLogsRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -268,7 +268,7 @@ const uint32_t TableStruct_txpool_2fmining_2eproto::offsets[] PROTOBUF_SECTION_V
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::txpool::OnPendingLogsReply, _impl_.rpllogs_),
+  PROTOBUF_FIELD_OFFSET(::txpool::OnPendingLogsReply, _impl_.rpl_logs_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::txpool::GetWorkRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -281,18 +281,18 @@ const uint32_t TableStruct_txpool_2fmining_2eproto::offsets[] PROTOBUF_SECTION_V
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::txpool::GetWorkReply, _impl_.headerhash_),
-  PROTOBUF_FIELD_OFFSET(::txpool::GetWorkReply, _impl_.seedhash_),
+  PROTOBUF_FIELD_OFFSET(::txpool::GetWorkReply, _impl_.header_hash_),
+  PROTOBUF_FIELD_OFFSET(::txpool::GetWorkReply, _impl_.seed_hash_),
   PROTOBUF_FIELD_OFFSET(::txpool::GetWorkReply, _impl_.target_),
-  PROTOBUF_FIELD_OFFSET(::txpool::GetWorkReply, _impl_.blocknumber_),
+  PROTOBUF_FIELD_OFFSET(::txpool::GetWorkReply, _impl_.block_number_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::txpool::SubmitWorkRequest, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::txpool::SubmitWorkRequest, _impl_.blocknonce_),
-  PROTOBUF_FIELD_OFFSET(::txpool::SubmitWorkRequest, _impl_.powhash_),
+  PROTOBUF_FIELD_OFFSET(::txpool::SubmitWorkRequest, _impl_.block_nonce_),
+  PROTOBUF_FIELD_OFFSET(::txpool::SubmitWorkRequest, _impl_.pow_hash_),
   PROTOBUF_FIELD_OFFSET(::txpool::SubmitWorkRequest, _impl_.digest_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::txpool::SubmitWorkReply, _internal_metadata_),
@@ -328,7 +328,7 @@ const uint32_t TableStruct_txpool_2fmining_2eproto::offsets[] PROTOBUF_SECTION_V
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::txpool::HashRateReply, _impl_.hashrate_),
+  PROTOBUF_FIELD_OFFSET(::txpool::HashRateReply, _impl_.hash_rate_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::txpool::MiningRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -385,38 +385,38 @@ static const ::_pb::Message* const file_default_instances[] = {
 const char descriptor_table_protodef_txpool_2fmining_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
   "\n\023txpool/mining.proto\022\006txpool\032\033google/pr"
   "otobuf/empty.proto\032\021types/types.proto\"\027\n"
-  "\025OnPendingBlockRequest\"\'\n\023OnPendingBlock"
-  "Reply\022\020\n\010rplBlock\030\001 \001(\014\"\025\n\023OnMinedBlockR"
-  "equest\"%\n\021OnMinedBlockReply\022\020\n\010rplBlock\030"
-  "\001 \001(\014\"\026\n\024OnPendingLogsRequest\"%\n\022OnPendi"
-  "ngLogsReply\022\017\n\007rplLogs\030\001 \001(\014\"\020\n\016GetWorkR"
-  "equest\"Y\n\014GetWorkReply\022\022\n\nheaderHash\030\001 \001"
-  "(\t\022\020\n\010seedHash\030\002 \001(\t\022\016\n\006target\030\003 \001(\t\022\023\n\013"
-  "blockNumber\030\004 \001(\t\"H\n\021SubmitWorkRequest\022\022"
-  "\n\nblockNonce\030\001 \001(\014\022\017\n\007powHash\030\002 \001(\014\022\016\n\006d"
-  "igest\030\003 \001(\014\"\035\n\017SubmitWorkReply\022\n\n\002ok\030\001 \001"
-  "(\010\"1\n\025SubmitHashRateRequest\022\014\n\004rate\030\001 \001("
-  "\004\022\n\n\002id\030\002 \001(\014\"!\n\023SubmitHashRateReply\022\n\n\002"
-  "ok\030\001 \001(\010\"\021\n\017HashRateRequest\"!\n\rHashRateR"
-  "eply\022\020\n\010hashRate\030\001 \001(\004\"\017\n\rMiningRequest\""
-  "/\n\013MiningReply\022\017\n\007enabled\030\001 \001(\010\022\017\n\007runni"
-  "ng\030\002 \001(\0102\342\004\n\006Mining\0226\n\007Version\022\026.google."
-  "protobuf.Empty\032\023.types.VersionReply\022N\n\016O"
-  "nPendingBlock\022\035.txpool.OnPendingBlockReq"
-  "uest\032\033.txpool.OnPendingBlockReply0\001\022H\n\014O"
-  "nMinedBlock\022\033.txpool.OnMinedBlockRequest"
-  "\032\031.txpool.OnMinedBlockReply0\001\022K\n\rOnPendi"
-  "ngLogs\022\034.txpool.OnPendingLogsRequest\032\032.t"
-  "xpool.OnPendingLogsReply0\001\0227\n\007GetWork\022\026."
-  "txpool.GetWorkRequest\032\024.txpool.GetWorkRe"
-  "ply\022@\n\nSubmitWork\022\031.txpool.SubmitWorkReq"
-  "uest\032\027.txpool.SubmitWorkReply\022L\n\016SubmitH"
-  "ashRate\022\035.txpool.SubmitHashRateRequest\032\033"
-  ".txpool.SubmitHashRateReply\022:\n\010HashRate\022"
-  "\027.txpool.HashRateRequest\032\025.txpool.HashRa"
-  "teReply\0224\n\006Mining\022\025.txpool.MiningRequest"
-  "\032\023.txpool.MiningReplyB\021Z\017./txpool;txpool"
-  "b\006proto3"
+  "\025OnPendingBlockRequest\"(\n\023OnPendingBlock"
+  "Reply\022\021\n\trpl_block\030\001 \001(\014\"\025\n\023OnMinedBlock"
+  "Request\"&\n\021OnMinedBlockReply\022\021\n\trpl_bloc"
+  "k\030\001 \001(\014\"\026\n\024OnPendingLogsRequest\"&\n\022OnPen"
+  "dingLogsReply\022\020\n\010rpl_logs\030\001 \001(\014\"\020\n\016GetWo"
+  "rkRequest\"\\\n\014GetWorkReply\022\023\n\013header_hash"
+  "\030\001 \001(\t\022\021\n\tseed_hash\030\002 \001(\t\022\016\n\006target\030\003 \001("
+  "\t\022\024\n\014block_number\030\004 \001(\t\"J\n\021SubmitWorkReq"
+  "uest\022\023\n\013block_nonce\030\001 \001(\014\022\020\n\010pow_hash\030\002 "
+  "\001(\014\022\016\n\006digest\030\003 \001(\014\"\035\n\017SubmitWorkReply\022\n"
+  "\n\002ok\030\001 \001(\010\"1\n\025SubmitHashRateRequest\022\014\n\004r"
+  "ate\030\001 \001(\004\022\n\n\002id\030\002 \001(\014\"!\n\023SubmitHashRateR"
+  "eply\022\n\n\002ok\030\001 \001(\010\"\021\n\017HashRateRequest\"\"\n\rH"
+  "ashRateReply\022\021\n\thash_rate\030\001 \001(\004\"\017\n\rMinin"
+  "gRequest\"/\n\013MiningReply\022\017\n\007enabled\030\001 \001(\010"
+  "\022\017\n\007running\030\002 \001(\0102\342\004\n\006Mining\0226\n\007Version\022"
+  "\026.google.protobuf.Empty\032\023.types.VersionR"
+  "eply\022N\n\016OnPendingBlock\022\035.txpool.OnPendin"
+  "gBlockRequest\032\033.txpool.OnPendingBlockRep"
+  "ly0\001\022H\n\014OnMinedBlock\022\033.txpool.OnMinedBlo"
+  "ckRequest\032\031.txpool.OnMinedBlockReply0\001\022K"
+  "\n\rOnPendingLogs\022\034.txpool.OnPendingLogsRe"
+  "quest\032\032.txpool.OnPendingLogsReply0\001\0227\n\007G"
+  "etWork\022\026.txpool.GetWorkRequest\032\024.txpool."
+  "GetWorkReply\022@\n\nSubmitWork\022\031.txpool.Subm"
+  "itWorkRequest\032\027.txpool.SubmitWorkReply\022L"
+  "\n\016SubmitHashRate\022\035.txpool.SubmitHashRate"
+  "Request\032\033.txpool.SubmitHashRateReply\022:\n\010"
+  "HashRate\022\027.txpool.HashRateRequest\032\025.txpo"
+  "ol.HashRateReply\0224\n\006Mining\022\025.txpool.Mini"
+  "ngRequest\032\023.txpool.MiningReplyB\021Z\017./txpo"
+  "ol;txpoolb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_txpool_2fmining_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fempty_2eproto,
@@ -424,7 +424,7 @@ static const ::_pbi::DescriptorTable* const descriptor_table_txpool_2fmining_2ep
 };
 static ::_pbi::once_flag descriptor_table_txpool_2fmining_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_txpool_2fmining_2eproto = {
-    false, false, 1328, descriptor_table_protodef_txpool_2fmining_2eproto,
+    false, false, 1337, descriptor_table_protodef_txpool_2fmining_2eproto,
     "txpool/mining.proto",
     &descriptor_table_txpool_2fmining_2eproto_once, descriptor_table_txpool_2fmining_2eproto_deps, 2, 16,
     schemas, file_default_instances, TableStruct_txpool_2fmining_2eproto::offsets,
@@ -495,16 +495,16 @@ OnPendingBlockReply::OnPendingBlockReply(const OnPendingBlockReply& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   OnPendingBlockReply* const _this = this; (void)_this;
   new (&_impl_) Impl_{
-      decltype(_impl_.rplblock_){}
+      decltype(_impl_.rpl_block_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _impl_.rplblock_.InitDefault();
+  _impl_.rpl_block_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.rplblock_.Set("", GetArenaForAllocation());
+    _impl_.rpl_block_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_rplblock().empty()) {
-    _this->_impl_.rplblock_.Set(from._internal_rplblock(), 
+  if (!from._internal_rpl_block().empty()) {
+    _this->_impl_.rpl_block_.Set(from._internal_rpl_block(), 
       _this->GetArenaForAllocation());
   }
   // @@protoc_insertion_point(copy_constructor:txpool.OnPendingBlockReply)
@@ -515,12 +515,12 @@ inline void OnPendingBlockReply::SharedCtor(
   (void)arena;
   (void)is_message_owned;
   new (&_impl_) Impl_{
-      decltype(_impl_.rplblock_){}
+      decltype(_impl_.rpl_block_){}
     , /*decltype(_impl_._cached_size_)*/{}
   };
-  _impl_.rplblock_.InitDefault();
+  _impl_.rpl_block_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.rplblock_.Set("", GetArenaForAllocation());
+    _impl_.rpl_block_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
@@ -535,7 +535,7 @@ OnPendingBlockReply::~OnPendingBlockReply() {
 
 inline void OnPendingBlockReply::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.rplblock_.Destroy();
+  _impl_.rpl_block_.Destroy();
 }
 
 void OnPendingBlockReply::SetCachedSize(int size) const {
@@ -548,7 +548,7 @@ void OnPendingBlockReply::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _impl_.rplblock_.ClearToEmpty();
+  _impl_.rpl_block_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -558,10 +558,10 @@ const char* OnPendingBlockReply::_InternalParse(const char* ptr, ::_pbi::ParseCo
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // bytes rplBlock = 1;
+      // bytes rpl_block = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          auto str = _internal_mutable_rplblock();
+          auto str = _internal_mutable_rpl_block();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
         } else
@@ -596,10 +596,10 @@ uint8_t* OnPendingBlockReply::_InternalSerialize(
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // bytes rplBlock = 1;
-  if (!this->_internal_rplblock().empty()) {
+  // bytes rpl_block = 1;
+  if (!this->_internal_rpl_block().empty()) {
     target = stream->WriteBytesMaybeAliased(
-        1, this->_internal_rplblock(), target);
+        1, this->_internal_rpl_block(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -618,11 +618,11 @@ size_t OnPendingBlockReply::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // bytes rplBlock = 1;
-  if (!this->_internal_rplblock().empty()) {
+  // bytes rpl_block = 1;
+  if (!this->_internal_rpl_block().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_rplblock());
+        this->_internal_rpl_block());
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -643,8 +643,8 @@ void OnPendingBlockReply::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, co
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (!from._internal_rplblock().empty()) {
-    _this->_internal_set_rplblock(from._internal_rplblock());
+  if (!from._internal_rpl_block().empty()) {
+    _this->_internal_set_rpl_block(from._internal_rpl_block());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -666,8 +666,8 @@ void OnPendingBlockReply::InternalSwap(OnPendingBlockReply* other) {
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.rplblock_, lhs_arena,
-      &other->_impl_.rplblock_, rhs_arena
+      &_impl_.rpl_block_, lhs_arena,
+      &other->_impl_.rpl_block_, rhs_arena
   );
 }
 
@@ -733,16 +733,16 @@ OnMinedBlockReply::OnMinedBlockReply(const OnMinedBlockReply& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   OnMinedBlockReply* const _this = this; (void)_this;
   new (&_impl_) Impl_{
-      decltype(_impl_.rplblock_){}
+      decltype(_impl_.rpl_block_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _impl_.rplblock_.InitDefault();
+  _impl_.rpl_block_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.rplblock_.Set("", GetArenaForAllocation());
+    _impl_.rpl_block_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_rplblock().empty()) {
-    _this->_impl_.rplblock_.Set(from._internal_rplblock(), 
+  if (!from._internal_rpl_block().empty()) {
+    _this->_impl_.rpl_block_.Set(from._internal_rpl_block(), 
       _this->GetArenaForAllocation());
   }
   // @@protoc_insertion_point(copy_constructor:txpool.OnMinedBlockReply)
@@ -753,12 +753,12 @@ inline void OnMinedBlockReply::SharedCtor(
   (void)arena;
   (void)is_message_owned;
   new (&_impl_) Impl_{
-      decltype(_impl_.rplblock_){}
+      decltype(_impl_.rpl_block_){}
     , /*decltype(_impl_._cached_size_)*/{}
   };
-  _impl_.rplblock_.InitDefault();
+  _impl_.rpl_block_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.rplblock_.Set("", GetArenaForAllocation());
+    _impl_.rpl_block_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
@@ -773,7 +773,7 @@ OnMinedBlockReply::~OnMinedBlockReply() {
 
 inline void OnMinedBlockReply::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.rplblock_.Destroy();
+  _impl_.rpl_block_.Destroy();
 }
 
 void OnMinedBlockReply::SetCachedSize(int size) const {
@@ -786,7 +786,7 @@ void OnMinedBlockReply::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _impl_.rplblock_.ClearToEmpty();
+  _impl_.rpl_block_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -796,10 +796,10 @@ const char* OnMinedBlockReply::_InternalParse(const char* ptr, ::_pbi::ParseCont
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // bytes rplBlock = 1;
+      // bytes rpl_block = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          auto str = _internal_mutable_rplblock();
+          auto str = _internal_mutable_rpl_block();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
         } else
@@ -834,10 +834,10 @@ uint8_t* OnMinedBlockReply::_InternalSerialize(
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // bytes rplBlock = 1;
-  if (!this->_internal_rplblock().empty()) {
+  // bytes rpl_block = 1;
+  if (!this->_internal_rpl_block().empty()) {
     target = stream->WriteBytesMaybeAliased(
-        1, this->_internal_rplblock(), target);
+        1, this->_internal_rpl_block(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -856,11 +856,11 @@ size_t OnMinedBlockReply::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // bytes rplBlock = 1;
-  if (!this->_internal_rplblock().empty()) {
+  // bytes rpl_block = 1;
+  if (!this->_internal_rpl_block().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_rplblock());
+        this->_internal_rpl_block());
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -881,8 +881,8 @@ void OnMinedBlockReply::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, cons
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (!from._internal_rplblock().empty()) {
-    _this->_internal_set_rplblock(from._internal_rplblock());
+  if (!from._internal_rpl_block().empty()) {
+    _this->_internal_set_rpl_block(from._internal_rpl_block());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -904,8 +904,8 @@ void OnMinedBlockReply::InternalSwap(OnMinedBlockReply* other) {
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.rplblock_, lhs_arena,
-      &other->_impl_.rplblock_, rhs_arena
+      &_impl_.rpl_block_, lhs_arena,
+      &other->_impl_.rpl_block_, rhs_arena
   );
 }
 
@@ -971,16 +971,16 @@ OnPendingLogsReply::OnPendingLogsReply(const OnPendingLogsReply& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   OnPendingLogsReply* const _this = this; (void)_this;
   new (&_impl_) Impl_{
-      decltype(_impl_.rpllogs_){}
+      decltype(_impl_.rpl_logs_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _impl_.rpllogs_.InitDefault();
+  _impl_.rpl_logs_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.rpllogs_.Set("", GetArenaForAllocation());
+    _impl_.rpl_logs_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_rpllogs().empty()) {
-    _this->_impl_.rpllogs_.Set(from._internal_rpllogs(), 
+  if (!from._internal_rpl_logs().empty()) {
+    _this->_impl_.rpl_logs_.Set(from._internal_rpl_logs(), 
       _this->GetArenaForAllocation());
   }
   // @@protoc_insertion_point(copy_constructor:txpool.OnPendingLogsReply)
@@ -991,12 +991,12 @@ inline void OnPendingLogsReply::SharedCtor(
   (void)arena;
   (void)is_message_owned;
   new (&_impl_) Impl_{
-      decltype(_impl_.rpllogs_){}
+      decltype(_impl_.rpl_logs_){}
     , /*decltype(_impl_._cached_size_)*/{}
   };
-  _impl_.rpllogs_.InitDefault();
+  _impl_.rpl_logs_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.rpllogs_.Set("", GetArenaForAllocation());
+    _impl_.rpl_logs_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
@@ -1011,7 +1011,7 @@ OnPendingLogsReply::~OnPendingLogsReply() {
 
 inline void OnPendingLogsReply::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.rpllogs_.Destroy();
+  _impl_.rpl_logs_.Destroy();
 }
 
 void OnPendingLogsReply::SetCachedSize(int size) const {
@@ -1024,7 +1024,7 @@ void OnPendingLogsReply::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _impl_.rpllogs_.ClearToEmpty();
+  _impl_.rpl_logs_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -1034,10 +1034,10 @@ const char* OnPendingLogsReply::_InternalParse(const char* ptr, ::_pbi::ParseCon
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // bytes rplLogs = 1;
+      // bytes rpl_logs = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          auto str = _internal_mutable_rpllogs();
+          auto str = _internal_mutable_rpl_logs();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
         } else
@@ -1072,10 +1072,10 @@ uint8_t* OnPendingLogsReply::_InternalSerialize(
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // bytes rplLogs = 1;
-  if (!this->_internal_rpllogs().empty()) {
+  // bytes rpl_logs = 1;
+  if (!this->_internal_rpl_logs().empty()) {
     target = stream->WriteBytesMaybeAliased(
-        1, this->_internal_rpllogs(), target);
+        1, this->_internal_rpl_logs(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1094,11 +1094,11 @@ size_t OnPendingLogsReply::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // bytes rplLogs = 1;
-  if (!this->_internal_rpllogs().empty()) {
+  // bytes rpl_logs = 1;
+  if (!this->_internal_rpl_logs().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_rpllogs());
+        this->_internal_rpl_logs());
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -1119,8 +1119,8 @@ void OnPendingLogsReply::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, con
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (!from._internal_rpllogs().empty()) {
-    _this->_internal_set_rpllogs(from._internal_rpllogs());
+  if (!from._internal_rpl_logs().empty()) {
+    _this->_internal_set_rpl_logs(from._internal_rpl_logs());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -1142,8 +1142,8 @@ void OnPendingLogsReply::InternalSwap(OnPendingLogsReply* other) {
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.rpllogs_, lhs_arena,
-      &other->_impl_.rpllogs_, rhs_arena
+      &_impl_.rpl_logs_, lhs_arena,
+      &other->_impl_.rpl_logs_, rhs_arena
   );
 }
 
@@ -1209,27 +1209,27 @@ GetWorkReply::GetWorkReply(const GetWorkReply& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   GetWorkReply* const _this = this; (void)_this;
   new (&_impl_) Impl_{
-      decltype(_impl_.headerhash_){}
-    , decltype(_impl_.seedhash_){}
+      decltype(_impl_.header_hash_){}
+    , decltype(_impl_.seed_hash_){}
     , decltype(_impl_.target_){}
-    , decltype(_impl_.blocknumber_){}
+    , decltype(_impl_.block_number_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _impl_.headerhash_.InitDefault();
+  _impl_.header_hash_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.headerhash_.Set("", GetArenaForAllocation());
+    _impl_.header_hash_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_headerhash().empty()) {
-    _this->_impl_.headerhash_.Set(from._internal_headerhash(), 
+  if (!from._internal_header_hash().empty()) {
+    _this->_impl_.header_hash_.Set(from._internal_header_hash(), 
       _this->GetArenaForAllocation());
   }
-  _impl_.seedhash_.InitDefault();
+  _impl_.seed_hash_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.seedhash_.Set("", GetArenaForAllocation());
+    _impl_.seed_hash_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_seedhash().empty()) {
-    _this->_impl_.seedhash_.Set(from._internal_seedhash(), 
+  if (!from._internal_seed_hash().empty()) {
+    _this->_impl_.seed_hash_.Set(from._internal_seed_hash(), 
       _this->GetArenaForAllocation());
   }
   _impl_.target_.InitDefault();
@@ -1240,12 +1240,12 @@ GetWorkReply::GetWorkReply(const GetWorkReply& from)
     _this->_impl_.target_.Set(from._internal_target(), 
       _this->GetArenaForAllocation());
   }
-  _impl_.blocknumber_.InitDefault();
+  _impl_.block_number_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.blocknumber_.Set("", GetArenaForAllocation());
+    _impl_.block_number_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_blocknumber().empty()) {
-    _this->_impl_.blocknumber_.Set(from._internal_blocknumber(), 
+  if (!from._internal_block_number().empty()) {
+    _this->_impl_.block_number_.Set(from._internal_block_number(), 
       _this->GetArenaForAllocation());
   }
   // @@protoc_insertion_point(copy_constructor:txpool.GetWorkReply)
@@ -1256,27 +1256,27 @@ inline void GetWorkReply::SharedCtor(
   (void)arena;
   (void)is_message_owned;
   new (&_impl_) Impl_{
-      decltype(_impl_.headerhash_){}
-    , decltype(_impl_.seedhash_){}
+      decltype(_impl_.header_hash_){}
+    , decltype(_impl_.seed_hash_){}
     , decltype(_impl_.target_){}
-    , decltype(_impl_.blocknumber_){}
+    , decltype(_impl_.block_number_){}
     , /*decltype(_impl_._cached_size_)*/{}
   };
-  _impl_.headerhash_.InitDefault();
+  _impl_.header_hash_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.headerhash_.Set("", GetArenaForAllocation());
+    _impl_.header_hash_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  _impl_.seedhash_.InitDefault();
+  _impl_.seed_hash_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.seedhash_.Set("", GetArenaForAllocation());
+    _impl_.seed_hash_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   _impl_.target_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
     _impl_.target_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  _impl_.blocknumber_.InitDefault();
+  _impl_.block_number_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.blocknumber_.Set("", GetArenaForAllocation());
+    _impl_.block_number_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
@@ -1291,10 +1291,10 @@ GetWorkReply::~GetWorkReply() {
 
 inline void GetWorkReply::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.headerhash_.Destroy();
-  _impl_.seedhash_.Destroy();
+  _impl_.header_hash_.Destroy();
+  _impl_.seed_hash_.Destroy();
   _impl_.target_.Destroy();
-  _impl_.blocknumber_.Destroy();
+  _impl_.block_number_.Destroy();
 }
 
 void GetWorkReply::SetCachedSize(int size) const {
@@ -1307,10 +1307,10 @@ void GetWorkReply::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _impl_.headerhash_.ClearToEmpty();
-  _impl_.seedhash_.ClearToEmpty();
+  _impl_.header_hash_.ClearToEmpty();
+  _impl_.seed_hash_.ClearToEmpty();
   _impl_.target_.ClearToEmpty();
-  _impl_.blocknumber_.ClearToEmpty();
+  _impl_.block_number_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -1320,23 +1320,23 @@ const char* GetWorkReply::_InternalParse(const char* ptr, ::_pbi::ParseContext* 
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // string headerHash = 1;
+      // string header_hash = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          auto str = _internal_mutable_headerhash();
+          auto str = _internal_mutable_header_hash();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "txpool.GetWorkReply.headerHash"));
+          CHK_(::_pbi::VerifyUTF8(str, "txpool.GetWorkReply.header_hash"));
         } else
           goto handle_unusual;
         continue;
-      // string seedHash = 2;
+      // string seed_hash = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          auto str = _internal_mutable_seedhash();
+          auto str = _internal_mutable_seed_hash();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "txpool.GetWorkReply.seedHash"));
+          CHK_(::_pbi::VerifyUTF8(str, "txpool.GetWorkReply.seed_hash"));
         } else
           goto handle_unusual;
         continue;
@@ -1350,13 +1350,13 @@ const char* GetWorkReply::_InternalParse(const char* ptr, ::_pbi::ParseContext* 
         } else
           goto handle_unusual;
         continue;
-      // string blockNumber = 4;
+      // string block_number = 4;
       case 4:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
-          auto str = _internal_mutable_blocknumber();
+          auto str = _internal_mutable_block_number();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "txpool.GetWorkReply.blockNumber"));
+          CHK_(::_pbi::VerifyUTF8(str, "txpool.GetWorkReply.block_number"));
         } else
           goto handle_unusual;
         continue;
@@ -1389,24 +1389,24 @@ uint8_t* GetWorkReply::_InternalSerialize(
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // string headerHash = 1;
-  if (!this->_internal_headerhash().empty()) {
+  // string header_hash = 1;
+  if (!this->_internal_header_hash().empty()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_headerhash().data(), static_cast<int>(this->_internal_headerhash().length()),
+      this->_internal_header_hash().data(), static_cast<int>(this->_internal_header_hash().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "txpool.GetWorkReply.headerHash");
+      "txpool.GetWorkReply.header_hash");
     target = stream->WriteStringMaybeAliased(
-        1, this->_internal_headerhash(), target);
+        1, this->_internal_header_hash(), target);
   }
 
-  // string seedHash = 2;
-  if (!this->_internal_seedhash().empty()) {
+  // string seed_hash = 2;
+  if (!this->_internal_seed_hash().empty()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_seedhash().data(), static_cast<int>(this->_internal_seedhash().length()),
+      this->_internal_seed_hash().data(), static_cast<int>(this->_internal_seed_hash().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "txpool.GetWorkReply.seedHash");
+      "txpool.GetWorkReply.seed_hash");
     target = stream->WriteStringMaybeAliased(
-        2, this->_internal_seedhash(), target);
+        2, this->_internal_seed_hash(), target);
   }
 
   // string target = 3;
@@ -1419,14 +1419,14 @@ uint8_t* GetWorkReply::_InternalSerialize(
         3, this->_internal_target(), target);
   }
 
-  // string blockNumber = 4;
-  if (!this->_internal_blocknumber().empty()) {
+  // string block_number = 4;
+  if (!this->_internal_block_number().empty()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_blocknumber().data(), static_cast<int>(this->_internal_blocknumber().length()),
+      this->_internal_block_number().data(), static_cast<int>(this->_internal_block_number().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "txpool.GetWorkReply.blockNumber");
+      "txpool.GetWorkReply.block_number");
     target = stream->WriteStringMaybeAliased(
-        4, this->_internal_blocknumber(), target);
+        4, this->_internal_block_number(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1445,18 +1445,18 @@ size_t GetWorkReply::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // string headerHash = 1;
-  if (!this->_internal_headerhash().empty()) {
+  // string header_hash = 1;
+  if (!this->_internal_header_hash().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_headerhash());
+        this->_internal_header_hash());
   }
 
-  // string seedHash = 2;
-  if (!this->_internal_seedhash().empty()) {
+  // string seed_hash = 2;
+  if (!this->_internal_seed_hash().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_seedhash());
+        this->_internal_seed_hash());
   }
 
   // string target = 3;
@@ -1466,11 +1466,11 @@ size_t GetWorkReply::ByteSizeLong() const {
         this->_internal_target());
   }
 
-  // string blockNumber = 4;
-  if (!this->_internal_blocknumber().empty()) {
+  // string block_number = 4;
+  if (!this->_internal_block_number().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_blocknumber());
+        this->_internal_block_number());
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -1491,17 +1491,17 @@ void GetWorkReply::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::P
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (!from._internal_headerhash().empty()) {
-    _this->_internal_set_headerhash(from._internal_headerhash());
+  if (!from._internal_header_hash().empty()) {
+    _this->_internal_set_header_hash(from._internal_header_hash());
   }
-  if (!from._internal_seedhash().empty()) {
-    _this->_internal_set_seedhash(from._internal_seedhash());
+  if (!from._internal_seed_hash().empty()) {
+    _this->_internal_set_seed_hash(from._internal_seed_hash());
   }
   if (!from._internal_target().empty()) {
     _this->_internal_set_target(from._internal_target());
   }
-  if (!from._internal_blocknumber().empty()) {
-    _this->_internal_set_blocknumber(from._internal_blocknumber());
+  if (!from._internal_block_number().empty()) {
+    _this->_internal_set_block_number(from._internal_block_number());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -1523,20 +1523,20 @@ void GetWorkReply::InternalSwap(GetWorkReply* other) {
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.headerhash_, lhs_arena,
-      &other->_impl_.headerhash_, rhs_arena
+      &_impl_.header_hash_, lhs_arena,
+      &other->_impl_.header_hash_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.seedhash_, lhs_arena,
-      &other->_impl_.seedhash_, rhs_arena
+      &_impl_.seed_hash_, lhs_arena,
+      &other->_impl_.seed_hash_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
       &_impl_.target_, lhs_arena,
       &other->_impl_.target_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.blocknumber_, lhs_arena,
-      &other->_impl_.blocknumber_, rhs_arena
+      &_impl_.block_number_, lhs_arena,
+      &other->_impl_.block_number_, rhs_arena
   );
 }
 
@@ -1562,26 +1562,26 @@ SubmitWorkRequest::SubmitWorkRequest(const SubmitWorkRequest& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   SubmitWorkRequest* const _this = this; (void)_this;
   new (&_impl_) Impl_{
-      decltype(_impl_.blocknonce_){}
-    , decltype(_impl_.powhash_){}
+      decltype(_impl_.block_nonce_){}
+    , decltype(_impl_.pow_hash_){}
     , decltype(_impl_.digest_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _impl_.blocknonce_.InitDefault();
+  _impl_.block_nonce_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.blocknonce_.Set("", GetArenaForAllocation());
+    _impl_.block_nonce_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_blocknonce().empty()) {
-    _this->_impl_.blocknonce_.Set(from._internal_blocknonce(), 
+  if (!from._internal_block_nonce().empty()) {
+    _this->_impl_.block_nonce_.Set(from._internal_block_nonce(), 
       _this->GetArenaForAllocation());
   }
-  _impl_.powhash_.InitDefault();
+  _impl_.pow_hash_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.powhash_.Set("", GetArenaForAllocation());
+    _impl_.pow_hash_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_powhash().empty()) {
-    _this->_impl_.powhash_.Set(from._internal_powhash(), 
+  if (!from._internal_pow_hash().empty()) {
+    _this->_impl_.pow_hash_.Set(from._internal_pow_hash(), 
       _this->GetArenaForAllocation());
   }
   _impl_.digest_.InitDefault();
@@ -1600,18 +1600,18 @@ inline void SubmitWorkRequest::SharedCtor(
   (void)arena;
   (void)is_message_owned;
   new (&_impl_) Impl_{
-      decltype(_impl_.blocknonce_){}
-    , decltype(_impl_.powhash_){}
+      decltype(_impl_.block_nonce_){}
+    , decltype(_impl_.pow_hash_){}
     , decltype(_impl_.digest_){}
     , /*decltype(_impl_._cached_size_)*/{}
   };
-  _impl_.blocknonce_.InitDefault();
+  _impl_.block_nonce_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.blocknonce_.Set("", GetArenaForAllocation());
+    _impl_.block_nonce_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  _impl_.powhash_.InitDefault();
+  _impl_.pow_hash_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.powhash_.Set("", GetArenaForAllocation());
+    _impl_.pow_hash_.Set("", GetArenaForAllocation());
   #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   _impl_.digest_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
@@ -1630,8 +1630,8 @@ SubmitWorkRequest::~SubmitWorkRequest() {
 
 inline void SubmitWorkRequest::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.blocknonce_.Destroy();
-  _impl_.powhash_.Destroy();
+  _impl_.block_nonce_.Destroy();
+  _impl_.pow_hash_.Destroy();
   _impl_.digest_.Destroy();
 }
 
@@ -1645,8 +1645,8 @@ void SubmitWorkRequest::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _impl_.blocknonce_.ClearToEmpty();
-  _impl_.powhash_.ClearToEmpty();
+  _impl_.block_nonce_.ClearToEmpty();
+  _impl_.pow_hash_.ClearToEmpty();
   _impl_.digest_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
@@ -1657,19 +1657,19 @@ const char* SubmitWorkRequest::_InternalParse(const char* ptr, ::_pbi::ParseCont
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // bytes blockNonce = 1;
+      // bytes block_nonce = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          auto str = _internal_mutable_blocknonce();
+          auto str = _internal_mutable_block_nonce();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
-      // bytes powHash = 2;
+      // bytes pow_hash = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          auto str = _internal_mutable_powhash();
+          auto str = _internal_mutable_pow_hash();
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
         } else
@@ -1713,16 +1713,16 @@ uint8_t* SubmitWorkRequest::_InternalSerialize(
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // bytes blockNonce = 1;
-  if (!this->_internal_blocknonce().empty()) {
+  // bytes block_nonce = 1;
+  if (!this->_internal_block_nonce().empty()) {
     target = stream->WriteBytesMaybeAliased(
-        1, this->_internal_blocknonce(), target);
+        1, this->_internal_block_nonce(), target);
   }
 
-  // bytes powHash = 2;
-  if (!this->_internal_powhash().empty()) {
+  // bytes pow_hash = 2;
+  if (!this->_internal_pow_hash().empty()) {
     target = stream->WriteBytesMaybeAliased(
-        2, this->_internal_powhash(), target);
+        2, this->_internal_pow_hash(), target);
   }
 
   // bytes digest = 3;
@@ -1747,18 +1747,18 @@ size_t SubmitWorkRequest::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // bytes blockNonce = 1;
-  if (!this->_internal_blocknonce().empty()) {
+  // bytes block_nonce = 1;
+  if (!this->_internal_block_nonce().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_blocknonce());
+        this->_internal_block_nonce());
   }
 
-  // bytes powHash = 2;
-  if (!this->_internal_powhash().empty()) {
+  // bytes pow_hash = 2;
+  if (!this->_internal_pow_hash().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_powhash());
+        this->_internal_pow_hash());
   }
 
   // bytes digest = 3;
@@ -1786,11 +1786,11 @@ void SubmitWorkRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, cons
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (!from._internal_blocknonce().empty()) {
-    _this->_internal_set_blocknonce(from._internal_blocknonce());
+  if (!from._internal_block_nonce().empty()) {
+    _this->_internal_set_block_nonce(from._internal_block_nonce());
   }
-  if (!from._internal_powhash().empty()) {
-    _this->_internal_set_powhash(from._internal_powhash());
+  if (!from._internal_pow_hash().empty()) {
+    _this->_internal_set_pow_hash(from._internal_pow_hash());
   }
   if (!from._internal_digest().empty()) {
     _this->_internal_set_digest(from._internal_digest());
@@ -1815,12 +1815,12 @@ void SubmitWorkRequest::InternalSwap(SubmitWorkRequest* other) {
   auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.blocknonce_, lhs_arena,
-      &other->_impl_.blocknonce_, rhs_arena
+      &_impl_.block_nonce_, lhs_arena,
+      &other->_impl_.block_nonce_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.powhash_, lhs_arena,
-      &other->_impl_.powhash_, rhs_arena
+      &_impl_.pow_hash_, lhs_arena,
+      &other->_impl_.pow_hash_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
       &_impl_.digest_, lhs_arena,
@@ -2471,11 +2471,11 @@ HashRateReply::HashRateReply(const HashRateReply& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   HashRateReply* const _this = this; (void)_this;
   new (&_impl_) Impl_{
-      decltype(_impl_.hashrate_){}
+      decltype(_impl_.hash_rate_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _this->_impl_.hashrate_ = from._impl_.hashrate_;
+  _this->_impl_.hash_rate_ = from._impl_.hash_rate_;
   // @@protoc_insertion_point(copy_constructor:txpool.HashRateReply)
 }
 
@@ -2484,7 +2484,7 @@ inline void HashRateReply::SharedCtor(
   (void)arena;
   (void)is_message_owned;
   new (&_impl_) Impl_{
-      decltype(_impl_.hashrate_){uint64_t{0u}}
+      decltype(_impl_.hash_rate_){uint64_t{0u}}
     , /*decltype(_impl_._cached_size_)*/{}
   };
 }
@@ -2512,7 +2512,7 @@ void HashRateReply::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _impl_.hashrate_ = uint64_t{0u};
+  _impl_.hash_rate_ = uint64_t{0u};
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -2522,10 +2522,10 @@ const char* HashRateReply::_InternalParse(const char* ptr, ::_pbi::ParseContext*
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // uint64 hashRate = 1;
+      // uint64 hash_rate = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
-          _impl_.hashrate_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          _impl_.hash_rate_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -2559,10 +2559,10 @@ uint8_t* HashRateReply::_InternalSerialize(
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // uint64 hashRate = 1;
-  if (this->_internal_hashrate() != 0) {
+  // uint64 hash_rate = 1;
+  if (this->_internal_hash_rate() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(1, this->_internal_hashrate(), target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(1, this->_internal_hash_rate(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -2581,9 +2581,9 @@ size_t HashRateReply::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // uint64 hashRate = 1;
-  if (this->_internal_hashrate() != 0) {
-    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_hashrate());
+  // uint64 hash_rate = 1;
+  if (this->_internal_hash_rate() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_hash_rate());
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -2604,8 +2604,8 @@ void HashRateReply::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from._internal_hashrate() != 0) {
-    _this->_internal_set_hashrate(from._internal_hashrate());
+  if (from._internal_hash_rate() != 0) {
+    _this->_internal_set_hash_rate(from._internal_hash_rate());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -2624,7 +2624,7 @@ bool HashRateReply::IsInitialized() const {
 void HashRateReply::InternalSwap(HashRateReply* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  swap(_impl_.hashrate_, other->_impl_.hashrate_);
+  swap(_impl_.hash_rate_, other->_impl_.hash_rate_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata HashRateReply::GetMetadata() const {

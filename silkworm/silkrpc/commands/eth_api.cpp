@@ -1203,6 +1203,35 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_call_original(const nloh
     co_return;
 }
 
+// https://eth.wiki/json-rpc/API#eth_maxpriorityfeepergas
+awaitable<void> EthereumRpcApi::handle_eth_max_priority_fee_per_gas(const nlohmann::json& request, nlohmann::json& reply) {
+    auto tx = co_await database_->begin();
+
+    try {
+        ethdb::TransactionDatabase tx_database{*tx};
+        const auto latest_block_number = co_await core::get_block_number(core::kLatestBlockId, tx_database);
+        SILKRPC_INFO << "latest_block_number " << latest_block_number << "\n";
+
+        BlockProvider block_provider = [this, &tx_database](uint64_t block_number) {
+            return core::read_block_by_number(*block_cache_, tx_database, block_number);
+        };
+
+        GasPriceOracle gas_price_oracle{block_provider};
+        auto gas_price = co_await gas_price_oracle.suggested_price(latest_block_number);
+
+        reply = make_json_content(request["id"], to_quantity(gas_price));
+    } catch (const std::exception& e) {
+        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+    co_return;
+}
+
 // https://geth.ethereum.org/docs/rpc/ns-eth#eth_createaccesslist
 awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];

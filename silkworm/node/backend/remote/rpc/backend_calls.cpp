@@ -16,15 +16,12 @@
 
 #include "backend_calls.hpp"
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
-
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/rpc/client/call.hpp>
 #include <silkworm/infra/rpc/common/conversion.hpp>
 #include <silkworm/infra/rpc/common/util.hpp>
 #include <silkworm/interfaces/types/types.pb.h>
+#include <silkworm/sentry/rpc/interfaces/node_info.hpp>
 
 namespace silkworm::rpc {
 
@@ -40,7 +37,7 @@ void EtherbaseCall::fill_predefined_reply(const EthereumBackEnd& backend) {
     }
 }
 
-awaitable<void> EtherbaseCall::operator()() {
+awaitable<void> EtherbaseCall::operator()(const EthereumBackEnd& /*backend*/) {
     SILK_TRACE << "EtherbaseCall START";
     if (response_.has_address()) {
         co_await agrpc::finish(responder_, response_, grpc::Status::OK);
@@ -62,46 +59,32 @@ void NetVersionCall::fill_predefined_reply(const EthereumBackEnd& backend) {
     }
 }
 
-awaitable<void> NetVersionCall::operator()() {
+awaitable<void> NetVersionCall::operator()(const EthereumBackEnd& /*backend*/) {
     SILK_TRACE << "NetVersionCall START";
     co_await agrpc::finish(responder_, response_, grpc::Status::OK);
     SILK_TRACE << "NetVersionCall END chain_id: " << response_.id();
 }
 
-std::set<SentryClient*> NetPeerCountCall::sentries_;
+awaitable<void> NetPeerCountCall::operator()(const EthereumBackEnd& backend) {
+    SILK_TRACE << "NetPeerCountCall START";
 
-void NetPeerCountCall::add_sentry(SentryClient* sentry) {
-    NetPeerCountCall::sentries_.insert(sentry);
-}
+    auto sentry_client = backend.sentry_client();
+    auto sentry = sentry_client->service();
 
-void NetPeerCountCall::remove_sentry(SentryClient* sentry) {
-    NetPeerCountCall::sentries_.erase(sentry);
-}
-
-awaitable<void> NetPeerCountCall::operator()() {
-    SILK_TRACE << "NetPeerCountCall START [#sentries: " << sentries_.size() << "]";
-
-    // This sequential implementation is far from ideal when num sentries > 0 because request latencies sum up
-    // We need when_all algorithm for coroutines or make_parallel_group (see *convoluted* parallel_sort in asio examples)
-    uint64_t total_peer_count{0};
+    remote::NetPeerCountReply response;
     grpc::Status result_status{grpc::Status::OK};
-    for (const auto& sentry : sentries_) {
-        try {
-            const auto reply = co_await sentry->peer_count();
-            const uint64_t count = reply.count();
-            total_peer_count += count;
-            SILK_DEBUG << "Reply OK peer count: partial=" << count << " total=" << total_peer_count;
-        } catch (const GrpcStatusError& status_error) {
-            result_status = status_error.status();
-            SILK_DEBUG << "Reply KO result: " << result_status;
-        }
+    try {
+        auto peer_count = co_await sentry->peer_count();
+        response.set_count(peer_count);
+        SILK_DEBUG << "Reply OK peer count = " << peer_count;
+    } catch (const GrpcStatusError& status_error) {
+        result_status = status_error.status();
+        SILK_ERROR << "Reply KO result: " << result_status;
     }
 
     if (result_status.ok()) {
-        remote::NetPeerCountReply response;
-        response.set_count(total_peer_count);
         co_await agrpc::finish(responder_, response, grpc::Status::OK);
-        SILK_TRACE << "NetPeerCountCall END count: " << total_peer_count;
+        SILK_TRACE << "NetPeerCountCall END count: " << response.count();
     } else {
         co_await agrpc::finish_with_error(responder_, result_status);
         SILK_TRACE << "NetPeerCountCall END error: " << result_status;
@@ -116,7 +99,7 @@ void BackEndVersionCall::fill_predefined_reply() {
     BackEndVersionCall::response_.set_patch(std::get<2>(kEthBackEndApiVersion));
 }
 
-awaitable<void> BackEndVersionCall::operator()() {
+awaitable<void> BackEndVersionCall::operator()(const EthereumBackEnd& /*backend*/) {
     SILK_TRACE << "BackEndVersionCall START";
     co_await agrpc::finish(responder_, response_, grpc::Status::OK);
     SILK_TRACE << "BackEndVersionCall END version: " << response_.major() << "." << response_.minor() << "." << response_.patch();
@@ -128,7 +111,7 @@ void ProtocolVersionCall::fill_predefined_reply() {
     ProtocolVersionCall::response_.set_id(kEthDevp2pProtocolVersion);
 }
 
-awaitable<void> ProtocolVersionCall::operator()() {
+awaitable<void> ProtocolVersionCall::operator()(const EthereumBackEnd& /*backend*/) {
     SILK_TRACE << "ProtocolVersionCall START";
     co_await agrpc::finish(responder_, response_, grpc::Status::OK);
     SILK_TRACE << "ProtocolVersionCall END id: " << response_.id();
@@ -137,16 +120,16 @@ awaitable<void> ProtocolVersionCall::operator()() {
 remote::ClientVersionReply ClientVersionCall::response_;
 
 void ClientVersionCall::fill_predefined_reply(const EthereumBackEnd& backend) {
-    ClientVersionCall::response_.set_nodename(backend.node_name());
+    ClientVersionCall::response_.set_node_name(backend.node_name());
 }
 
-awaitable<void> ClientVersionCall::operator()() {
+awaitable<void> ClientVersionCall::operator()(const EthereumBackEnd& /*backend*/) {
     SILK_TRACE << "ClientVersionCall START";
     co_await agrpc::finish(responder_, response_, grpc::Status::OK);
-    SILK_TRACE << "ClientVersionCall END node name: " << response_.nodename();
+    SILK_TRACE << "ClientVersionCall END node name: " << response_.node_name();
 }
 
-awaitable<void> SubscribeCall::operator()() {
+awaitable<void> SubscribeCall::operator()(const EthereumBackEnd& /*backend*/) {
     SILK_TRACE << "SubscribeCall START type: " << request_.type();
 
     // TODO(canepat): remove this example and fill the correct stream responses
@@ -162,101 +145,29 @@ awaitable<void> SubscribeCall::operator()() {
     SILK_TRACE << "SubscribeCall END";
 }
 
-std::set<SentryClient*> NodeInfoCall::sentries_;
+awaitable<void> NodeInfoCall::operator()(const EthereumBackEnd& backend) {
+    SILK_TRACE << "NodeInfoCall START limit: " << request_.limit();
 
-void NodeInfoCall::add_sentry(SentryClient* sentry) {
-    NodeInfoCall::sentries_.insert(sentry);
-}
+    auto sentry_client = backend.sentry_client();
+    auto sentry = sentry_client->service();
 
-void NodeInfoCall::remove_sentry(SentryClient* sentry) {
-    NodeInfoCall::sentries_.erase(sentry);
-}
-
-awaitable<void> NodeInfoCall::operator()() {
-    SILK_TRACE << "NodeInfoCall START limit: " << request_.limit() << " [#sentries: " << sentries_.size() << "]";
-
-    // This sequential implementation is far from ideal when num sentries > 0 because request latencies sum up
-    // We need when_all algorithm for coroutines or make_parallel_group (see *convoluted* parallel_sort in asio examples)
     remote::NodesInfoReply response;
     grpc::Status result_status{grpc::Status::OK};
-    for (const auto& sentry : sentries_) {
-        try {
-            const auto reply = co_await sentry->node_info();
-            types::NodeInfoReply* nodes_info = response.add_nodesinfo();
-            *nodes_info = reply;
-            SILK_DEBUG << "Reply OK node info: name=" << reply.name();
-        } catch (const GrpcStatusError& status_error) {
-            result_status = status_error.status();
-            SILK_DEBUG << "Reply KO result: " << result_status;
-        }
+    try {
+        auto node_info = co_await sentry->node_info();
+        response.add_nodes_info()->CopyFrom(sentry::rpc::interfaces::proto_node_info_from_node_info(node_info));
+        SILK_DEBUG << "Reply OK node info: name=" << node_info.client_id;
+    } catch (const GrpcStatusError& status_error) {
+        result_status = status_error.status();
+        SILK_ERROR << "Reply KO result: " << result_status;
     }
 
     if (result_status.ok()) {
         co_await agrpc::finish(responder_, response, grpc::Status::OK);
-        SILK_TRACE << "NodeInfoCall END #nodes: " << response.nodesinfo_size();
+        SILK_TRACE << "NodeInfoCall END #nodes: " << response.nodes_info_size();
     } else {
         co_await agrpc::finish_with_error(responder_, result_status);
         SILK_TRACE << "NodeInfoCall END error: " << result_status;
-    }
-}
-
-BackEndService::BackEndService(const EthereumBackEnd& backend) {
-    EtherbaseCall::fill_predefined_reply(backend);
-    NetVersionCall::fill_predefined_reply(backend);
-    BackEndVersionCall::fill_predefined_reply();
-    ProtocolVersionCall::fill_predefined_reply();
-    ClientVersionCall::fill_predefined_reply(backend);
-}
-
-void BackEndService::register_backend_request_calls(const ServerContext& context, remote::ETHBACKEND::AsyncService* service) {
-    SILK_DEBUG << "BackEndService::register_backend_request_calls START";
-    const auto grpc_context = context.server_grpc_context();
-    // Register one requested call repeatedly for each RPC: asio-grpc will take care of re-registration on any incoming call
-    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestEtherbase,
-                       [](auto&&... args) -> awaitable<void> {
-                           co_await EtherbaseCall{std::forward<decltype(args)>(args)...}();
-                       });
-    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestNetVersion,
-                       [](auto&&... args) -> awaitable<void> {
-                           co_await NetVersionCall{std::forward<decltype(args)>(args)...}();
-                       });
-    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestNetPeerCount,
-                       [](auto&&... args) -> awaitable<void> {
-                           co_await NetPeerCountCall{std::forward<decltype(args)>(args)...}();
-                       });
-    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestVersion,
-                       [](auto&&... args) -> awaitable<void> {
-                           co_await BackEndVersionCall{std::forward<decltype(args)>(args)...}();
-                       });
-    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestProtocolVersion,
-                       [](auto&&... args) -> awaitable<void> {
-                           co_await ProtocolVersionCall{std::forward<decltype(args)>(args)...}();
-                       });
-    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestClientVersion,
-                       [](auto&&... args) -> awaitable<void> {
-                           co_await ClientVersionCall{std::forward<decltype(args)>(args)...}();
-                       });
-    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestSubscribe,
-                       [](auto&&... args) -> awaitable<void> {
-                           co_await SubscribeCall{std::forward<decltype(args)>(args)...}();
-                       });
-    request_repeatedly(*grpc_context, service, &remote::ETHBACKEND::AsyncService::RequestNodeInfo,
-                       [](auto&&... args) -> awaitable<void> {
-                           co_await NodeInfoCall{std::forward<decltype(args)>(args)...}();
-                       });
-    SILK_DEBUG << "BackEndService::register_backend_request_calls END";
-}
-
-void BackEndService::add_sentry(std::unique_ptr<SentryClient>&& sentry) {
-    NetPeerCountCall::add_sentry(sentry.get());
-    NodeInfoCall::add_sentry(sentry.get());
-    sentries_.push_back(std::move(sentry));
-}
-
-BackEndService::~BackEndService() {
-    for (const auto& sentry : sentries_) {
-        NetPeerCountCall::remove_sentry(sentry.get());
-        NodeInfoCall::remove_sentry(sentry.get());
     }
 }
 

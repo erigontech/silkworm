@@ -40,7 +40,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::open", "[silkrpc][et
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call succeeds setting the specified transaction ID
         remote::Pair pair;
-        pair.set_txid(4);
+        pair.set_tx_id(4);
         EXPECT_CALL(reader_writer_, Read).WillOnce(test::read_success_with(grpc_context_, pair));
 
         // Execute the test: opening a transaction should succeed and transaction should have expected transaction ID
@@ -82,7 +82,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::close", "[silkrpc][e
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call succeeds w/ expected transaction ID set in pair
         remote::Pair pair;
-        pair.set_txid(4);
+        pair.set_tx_id(4);
         EXPECT_CALL(reader_writer_, Read).WillOnce(test::read_success_with(grpc_context_, pair));
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call succeeds
         EXPECT_CALL(reader_writer_, WritesDone).WillOnce(test::writes_done_success(grpc_context_));
@@ -104,7 +104,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::close", "[silkrpc][e
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call succeeds w/ expected transaction ID set in pair
         remote::Pair pair;
-        pair.set_txid(4);
+        pair.set_tx_id(4);
         EXPECT_CALL(reader_writer_, Read).Times(2).WillRepeatedly(test::read_success_with(grpc_context_, pair));
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call succeeds
         EXPECT_CALL(reader_writer_, Write(_, _)).WillOnce(test::write_success(grpc_context_));
@@ -131,7 +131,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::close", "[silkrpc][e
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call succeeds w/ expected transaction ID set in pair
         remote::Pair pair;
-        pair.set_txid(4);
+        pair.set_tx_id(4);
         EXPECT_CALL(reader_writer_, Read).WillOnce(test::read_success_with(grpc_context_, pair));
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call fails
         EXPECT_CALL(reader_writer_, WritesDone).WillOnce(test::writes_done_failure(grpc_context_));
@@ -152,7 +152,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::close", "[silkrpc][e
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call succeeds w/ expected transaction ID set in pair
         remote::Pair pair;
-        pair.set_txid(4);
+        pair.set_tx_id(4);
         EXPECT_CALL(reader_writer_, Read).WillOnce(test::read_success_with(grpc_context_, pair));
         // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call succeeds
         EXPECT_CALL(reader_writer_, WritesDone).WillOnce(test::writes_done_success(grpc_context_));
@@ -179,13 +179,13 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[silkrpc][
         // 1. remote::KV::StubInterface::PrepareAsyncTxRaw call succeeds
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read calls succeed w/ specified transaction and cursor IDs
-        remote::Pair txid_pair;
-        txid_pair.set_txid(4);
-        remote::Pair cursorid_pair;
-        cursorid_pair.set_cursorid(0x23);
+        remote::Pair tx_id_pair;
+        tx_id_pair.set_tx_id(4);
+        remote::Pair cursor_id_pair;
+        cursor_id_pair.set_cursor_id(0x23);
         EXPECT_CALL(reader_writer_, Read)
-            .WillOnce(test::read_success_with(grpc_context_, txid_pair))
-            .WillOnce(test::read_success_with(grpc_context_, cursorid_pair));
+            .WillOnce(test::read_success_with(grpc_context_, tx_id_pair))
+            .WillOnce(test::read_success_with(grpc_context_, cursor_id_pair));
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call succeeds
         EXPECT_CALL(reader_writer_, Write(_, _)).WillOnce(test::write_success(grpc_context_));
         // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call succeeds
@@ -217,10 +217,10 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[silkrpc][
         // 1. remote::KV::StubInterface::PrepareAsyncTxRaw call succeeds
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read 1st call succeeds w/ specified transaction ID, 2nd call fails
-        remote::Pair txid_pair;
-        txid_pair.set_txid(4);
+        remote::Pair tx_id_pair;
+        tx_id_pair.set_tx_id(4);
         EXPECT_CALL(reader_writer_, Read)
-            .WillOnce(test::read_success_with(grpc_context_, txid_pair))
+            .WillOnce(test::read_success_with(grpc_context_, tx_id_pair))
             .WillOnce(test::read_failure(grpc_context_));
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call succeeds
         EXPECT_CALL(reader_writer_, Write(_, _)).WillOnce(test::write_success(grpc_context_));
@@ -246,9 +246,9 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[silkrpc][
         // 1. remote::KV::StubInterface::PrepareAsyncTxRaw call succeeds
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call succeeds w/ specified transaction ID
-        remote::Pair txid_pair;
-        txid_pair.set_txid(4);
-        EXPECT_CALL(reader_writer_, Read).WillOnce(test::read_success_with(grpc_context_, txid_pair));
+        remote::Pair tx_id_pair;
+        tx_id_pair.set_tx_id(4);
+        EXPECT_CALL(reader_writer_, Read).WillOnce(test::read_success_with(grpc_context_, tx_id_pair));
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call fails
         EXPECT_CALL(reader_writer_, Write(_, _)).WillOnce(test::write_failure(grpc_context_));
         // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled
@@ -286,13 +286,13 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
         // 1. remote::KV::StubInterface::PrepareAsyncTxRaw call succeeds
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read calls succeed w/ specified transaction and cursor IDs
-        remote::Pair txid_pair;
-        txid_pair.set_txid(4);
-        remote::Pair cursorid_pair;
-        cursorid_pair.set_cursorid(0x23);
+        remote::Pair tx_id_pair;
+        tx_id_pair.set_tx_id(4);
+        remote::Pair cursor_id_pair;
+        cursor_id_pair.set_cursor_id(0x23);
         EXPECT_CALL(reader_writer_, Read)
-            .WillOnce(test::read_success_with(grpc_context_, txid_pair))
-            .WillOnce(test::read_success_with(grpc_context_, cursorid_pair));
+            .WillOnce(test::read_success_with(grpc_context_, tx_id_pair))
+            .WillOnce(test::read_success_with(grpc_context_, cursor_id_pair));
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call succeeds
         EXPECT_CALL(reader_writer_, Write(_, _)).WillOnce(test::write_success(grpc_context_));
         // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call succeeds
@@ -324,10 +324,10 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
         // 1. remote::KV::StubInterface::PrepareAsyncTxRaw call succeeds
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read 1st call succeeds w/ specified transaction ID, 2nd call fails
-        remote::Pair txid_pair;
-        txid_pair.set_txid(4);
+        remote::Pair tx_id_pair;
+        tx_id_pair.set_tx_id(4);
         EXPECT_CALL(reader_writer_, Read)
-            .WillOnce(test::read_success_with(grpc_context_, txid_pair))
+            .WillOnce(test::read_success_with(grpc_context_, tx_id_pair))
             .WillOnce(test::read_failure(grpc_context_));
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call succeeds
         EXPECT_CALL(reader_writer_, Write(_, _)).WillOnce(test::write_success(grpc_context_));
@@ -353,9 +353,9 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
         // 1. remote::KV::StubInterface::PrepareAsyncTxRaw call succeeds
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call succeeds w/ specified transaction ID
-        remote::Pair txid_pair;
-        txid_pair.set_txid(4);
-        EXPECT_CALL(reader_writer_, Read).WillOnce(test::read_success_with(grpc_context_, txid_pair));
+        remote::Pair tx_id_pair;
+        tx_id_pair.set_tx_id(4);
+        EXPECT_CALL(reader_writer_, Read).WillOnce(test::read_success_with(grpc_context_, tx_id_pair));
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call fails
         EXPECT_CALL(reader_writer_, Write(_, _)).WillOnce(test::write_failure(grpc_context_));
         // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::Finish call succeeds w/ status cancelled

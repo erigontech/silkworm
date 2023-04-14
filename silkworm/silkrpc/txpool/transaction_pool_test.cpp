@@ -129,7 +129,7 @@ TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::get_transaction", "[silk
 
     SECTION("call get_transaction and check success") {
         ::txpool::TransactionsReply response;
-        response.add_rlptxs("0804");
+        response.add_rlp_txs("0804");
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
         const auto tx_rlp = run<&TransactionPool::get_transaction>(tx_hash);
         CHECK(tx_rlp);
@@ -138,16 +138,16 @@ TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::get_transaction", "[silk
         }
     }
 
-    SECTION("call get_transaction and check result is null [rlptxs size is 0]") {
+    SECTION("call get_transaction and check result is null [rlp_txs size is 0]") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_ok(grpc_context_));
         const auto tx_rlp = run<&TransactionPool::get_transaction>(tx_hash);
         CHECK(!tx_rlp);
     }
 
-    SECTION("call get_transaction and check result is null [rlptxs size is greater than 1]") {
+    SECTION("call get_transaction and check result is null [rlp_txs size is greater than 1]") {
         ::txpool::TransactionsReply response;
-        response.add_rlptxs("0804");
-        response.add_rlptxs("0905");
+        response.add_rlp_txs("0804");
+        response.add_rlp_txs("0905");
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
         const auto tx_rlp = run<&TransactionPool::get_transaction>(tx_hash);
         CHECK(!tx_rlp);
@@ -202,9 +202,9 @@ TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::get_status", "[silkrpc][
 
     SECTION("call get_status and check success") {
         ::txpool::StatusReply response;
-        response.set_queuedcount(0x6);
-        response.set_pendingcount(0x5);
-        response.set_basefeecount(0x4);
+        response.set_queued_count(0x6);
+        response.set_pending_count(0x5);
+        response.set_base_fee_count(0x4);
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
         const auto status_info = run<&TransactionPool::get_status>();
         CHECK(status_info.queued_count == 0x6);
@@ -233,10 +233,10 @@ TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::get_transactions", "[sil
     SECTION("call get_transactions and check success [one tx]") {
         ::txpool::AllReply response;
         auto tx = response.add_txs();
-        tx->set_txntype(::txpool::AllReply_TxnType_QUEUED);
+        tx->set_txn_type(::txpool::AllReply_TxnType_QUEUED);
         auto address{grpc::make_h160(0xAAAAEEFFFFEEAAAA, 0x11DDBBAAAABBDD11, 0xCCDDDDCC)};
         tx->set_allocated_sender(address);
-        tx->set_rlptx("0804");
+        tx->set_rlp_tx("0804");
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
         const auto transactions = run<&TransactionPool::get_transactions>();
         CHECK(transactions.size() == 1);
@@ -250,20 +250,20 @@ TEST_CASE_METHOD(TransactionPoolTest, "TransactionPool::get_transactions", "[sil
     SECTION("call get_transactions and check success [more than one tx]") {
         ::txpool::AllReply response;
         auto tx = response.add_txs();
-        tx->set_txntype(::txpool::AllReply_TxnType_QUEUED);
+        tx->set_txn_type(::txpool::AllReply_TxnType_QUEUED);
         auto address{grpc::make_h160(0xAAAAEEFFFFEEAAAA, 0x11DDBBAAAABBDD11, 0xCCDDDDCC)};
         tx->set_allocated_sender(address);
-        tx->set_rlptx("0804");
+        tx->set_rlp_tx("0804");
         tx = response.add_txs();
-        tx->set_txntype(::txpool::AllReply_TxnType_PENDING);
+        tx->set_txn_type(::txpool::AllReply_TxnType_PENDING);
         auto address1{grpc::make_h160(0xAAAAEEFFFFEEAAAA, 0x11DDBBAAAABBDD11, 0xCCDDDDDD)};
         tx->set_allocated_sender(address1);
-        tx->set_rlptx("0806");
+        tx->set_rlp_tx("0806");
         tx = response.add_txs();
-        tx->set_txntype(::txpool::AllReply_TxnType_BASE_FEE);
+        tx->set_txn_type(::txpool::AllReply_TxnType_BASE_FEE);
         auto address2{grpc::make_h160(0xAAAAEEFFFFEEAAAA, 0x11DDBBAAAABBDD11, 0xCCDDDDEE)};
         tx->set_allocated_sender(address2);
-        tx->set_rlptx("0807");
+        tx->set_rlp_tx("0807");
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
         const auto transactions = run<&TransactionPool::get_transactions>();
         CHECK(transactions.size() == 3);

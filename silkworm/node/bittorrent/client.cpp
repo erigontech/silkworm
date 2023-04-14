@@ -264,7 +264,7 @@ bool BitTorrentClient::handle_alert(const lt::alert* alert) {
             SILK_ERROR << "Failed to add torrent: " << (ata->params.ti ? ata->params.ti->name() : ata->params.name)
                        << " message: " << ata->error.message();
         } else {
-            SILK_INFO << "Torrent: " << ata->torrent_name() << " added";
+            SILK_TRACE << "Torrent: " << ata->torrent_name() << " added";
             ata->handle.save_resume_data(lt::torrent_handle::save_info_dict | lt::torrent_handle::only_if_modified);
             ++outstanding_resume_requests_;
 

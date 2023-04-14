@@ -148,6 +148,7 @@ void RpcApiTable::add_eth_handlers() {
     method_handlers_[http::method::k_eth_subscribe] = &commands::RpcApi::handle_eth_subscribe;
     method_handlers_[http::method::k_eth_unsubscribe] = &commands::RpcApi::handle_eth_unsubscribe;
     method_handlers_[http::method::k_eth_getBlockReceipts] = &commands::RpcApi::handle_parity_get_block_receipts;
+    method_handlers_[http::method::k_eth_maxPriorityFeePerGas] = &commands::RpcApi::handle_eth_max_priority_fee_per_gas;
     // method_handlers_glaze_[http::method::k_eth_call] = &commands::RpcApi::handle_eth_call_original;
 
     // GLAZE methods

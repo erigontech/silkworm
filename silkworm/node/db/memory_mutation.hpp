@@ -26,22 +26,39 @@
 
 namespace silkworm::db {
 
-class MemoryOverlay {
+class MemoryDatabase {
   public:
-    explicit MemoryOverlay(const std::filesystem::path& tmp_dir);
-    MemoryOverlay(MemoryOverlay&& other) noexcept;
+    explicit MemoryDatabase(const std::filesystem::path& tmp_dir);
+    MemoryDatabase();
+    MemoryDatabase(MemoryDatabase&& other) noexcept;
 
-    ::mdbx::txn_managed start_rw_tx();
+    ::mdbx::txn_managed start_rw_txn();
 
   private:
     ::mdbx::env_managed memory_env_;
+};
+
+class MemoryOverlay {
+  public:
+    MemoryOverlay(const std::filesystem::path& tmp_dir, ROTxn* txn);
+    explicit MemoryOverlay(ROTxn* txn);
+    MemoryOverlay(MemoryOverlay&& other) noexcept;
+
+    [[nodiscard]] db::ROTxn* external_txn() const { return txn_; }
+    void update_txn(ROTxn* txn);
+
+    ::mdbx::txn_managed start_rw_txn();
+
+  private:
+    MemoryDatabase memory_db_;
+    ROTxn* txn_;
 };
 
 class MemoryMutationCursor;
 
 class MemoryMutation : public RWTxn {
   public:
-    MemoryMutation(MemoryOverlay& memory_db, ROTxn* txn);
+    explicit MemoryMutation(MemoryOverlay& overlay);
     ~MemoryMutation() override;
 
     MemoryMutation(MemoryMutation&& other) noexcept = default;  // Movable
@@ -50,7 +67,7 @@ class MemoryMutation : public RWTxn {
     [[nodiscard]] bool is_entry_deleted(const std::string& table, const Slice& key) const;
     [[nodiscard]] bool has_map(const std::string& bucket_name) const;
 
-    [[nodiscard]] db::ROTxn* external_txn() const { return txn_; }
+    [[nodiscard]] db::ROTxn* external_txn() const { return overlay_.external_txn(); }
 
     void update_txn(ROTxn* txn);
 
@@ -70,8 +87,7 @@ class MemoryMutation : public RWTxn {
   private:
     std::unique_ptr<MemoryMutationCursor> make_cursor(const MapConfig& config);
 
-    MemoryOverlay& memory_db_;
-    db::ROTxn* txn_;
+    MemoryOverlay& overlay_;
     std::map<std::string, std::map<Slice, bool>> deleted_entries_;
     std::map<std::string, bool> cleared_tables_;
 };

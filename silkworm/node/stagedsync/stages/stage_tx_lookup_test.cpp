@@ -17,9 +17,9 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/test_util.hpp>
-#include <silkworm/node/common/test_context.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/stagedsync/stages/stage_tx_lookup.hpp>
+#include <silkworm/node/test/context.hpp>
 
 using namespace evmc::literals;
 

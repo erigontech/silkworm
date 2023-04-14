@@ -23,6 +23,7 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/rlp/decode.hpp>
 
 namespace silkworm {
 

@@ -43,13 +43,12 @@ BlockId ExtendingFork::current_head() const {
     return current_head_;
 }
 
-auto ExtendingFork::verify_chain() -> awaitable<VerificationResult> {
+auto ExtendingFork::open() -> asio::awaitable<void> {
     return co_spawn(
         io_context_,
-        [](ExtendingFork& me) -> awaitable<VerificationResult> {  // avoid using campture in lambda
-            auto result = me.fork_.verify_chain();
+        [](ExtendingFork& me) -> awaitable<void> {
+            me.fork_.open();
             me.current_head_ = me.fork_.current_head();
-            co_return result;
         }(*this),
         use_awaitable);
 }
@@ -64,6 +63,16 @@ auto ExtendingFork::extend_with(std::list<std::shared_ptr<Block>>&& blocks) -> a
         use_awaitable);
 }
 
+auto ExtendingFork::extend_with(const Block& block) -> asio::awaitable<void> {
+    return co_spawn(
+        io_context_,
+        [](ExtendingFork& me, const Block& block) -> awaitable<void> {
+            me.fork_.extend_with(block);
+            me.current_head_ = me.fork_.current_head();
+        }(*this, block),
+        use_awaitable);
+}
+
 auto ExtendingFork::reduce_down_to(BlockId new_head) -> awaitable<void> {
     return co_spawn(
         io_context_,
@@ -71,6 +80,28 @@ auto ExtendingFork::reduce_down_to(BlockId new_head) -> awaitable<void> {
             me.fork_.reduce_down_to(new_head);
             me.current_head_ = me.fork_.current_head();
         }(*this, new_head),
+        use_awaitable);
+}
+
+auto ExtendingFork::verify_chain() -> awaitable<VerificationResult> {
+    return co_spawn(
+        io_context_,
+        [](ExtendingFork& me) -> awaitable<VerificationResult> {  // avoid using campture in lambda
+            auto result = me.fork_.verify_chain();
+            me.current_head_ = me.fork_.current_head();
+            co_return result;
+        }(*this),
+        use_awaitable);
+}
+
+auto ExtendingFork::notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash) -> asio::awaitable<bool> {
+    return co_spawn(
+        io_context_,
+        [](ExtendingFork& me, Hash head, std::optional<Hash> finalized) -> awaitable<bool> {
+            auto result = me.fork_.notify_fork_choice_update(head, finalized);
+            me.current_head_ = me.fork_.current_head();
+            co_return result;
+        }(*this, head_block_hash, finalized_block_hash),
         use_awaitable);
 }
 

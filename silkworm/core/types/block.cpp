@@ -140,7 +140,7 @@ namespace rlp {
             encode(to, *header.base_fee_per_gas);
         }
         if (header.withdrawals_root) {
-            encode(to, *header.withdrawals_root);
+            encode(to, static_cast<ByteView>(*header.withdrawals_root));
         }
         if (header.excess_data_gas) {
             encode(to, *header.excess_data_gas);

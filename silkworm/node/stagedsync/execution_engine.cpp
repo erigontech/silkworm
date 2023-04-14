@@ -44,35 +44,43 @@ auto ExecutionEngine::last_fork_choice() -> std::optional<BlockId> {
     return last_fork_choice_;
 }
 
-void ExecutionEngine::insert_block(std::shared_ptr<Block> block) {
+auto ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<Block>>& blocks) -> awaitable<void> {
+    SILK_DEBUG << "ExecutionEngine: inserting " << blocks.size() << " blocks";
+    if (blocks.empty()) co_return;
+
+    for(const auto& block : blocks) {
+        co_await insert_block(block);
+    }
+}
+
+auto ExecutionEngine::insert_block(std::shared_ptr<Block> block) -> awaitable<void> {
     Hash header_hash{block->header.hash()};
 
-    if (block_cache_.get(header_hash)) return;  // ignore repeated blocks
+    if (block_cache_.get(header_hash)) co_return;  // ignore repeated blocks
     block_cache_.put(header_hash, block);
 
     // if we are not tracking forks, just insert the block into the main chain
     if (!fork_tracking_active_) {
         main_chain_.insert_block(*block);
-        return;
+        co_return;
     }
 
     // find attachment point at fork heads
-    auto f = find_fork_to_extend(forks_, block->header);  // todo: SuspendableFork need external data to avoid data race on Fork
+    auto f = find_fork_to_extend(forks_, block->header);
 
     if (f != forks_.end()) {
         // the block extends a fork
         SILK_DEBUG << "ExecutionEngine: extending a fork";
-        // todo: execute the follwing in the fork thread
-        f->open();
-        f->extend_with(*block);
-        return;
+
+        co_await f->extend_with(*block);
+
     } else {
         // the block must be put to a new fork
         // (to avoid complicated code we ignore the case whether the attaching point is inside a current fork)
 
         auto forking_path = find_forking_point(block->header);
-        if (!forking_path) return;                                                 // ignore or raise exception?
-        if (forking_path->forking_point.number < main_chain_.last_finalized_block().number) return;  // ignore | todo: check if this is correct
+        if (!forking_path) co_return;
+        if (forking_path->forking_point.number < main_chain_.last_finalized_block().number) co_return;  // ignore
         forking_path->blocks.push_back(block);
 
         SILK_DEBUG << "ExecutionEngine: creating new fork";
@@ -80,8 +88,9 @@ void ExecutionEngine::insert_block(std::shared_ptr<Block> block) {
         forks_.push_back(main_chain_.fork());
 
         auto& new_fork = forks_.back();
+        co_await new_fork.open();  // open db rw-tx on the fork thread
         co_await new_fork.reduce_down_to(forking_path->forking_point);
-        co_await new_fork.extend_with(forking_path->blocks);
+        co_await new_fork.extend_with(std::move(forking_path->blocks));
     }
 }
 
@@ -92,8 +101,8 @@ auto ExecutionEngine::find_forking_point(const BlockHeader& header) const -> std
     path.forking_point = {.number = header.number - 1, .hash = header.parent_hash};
     while (path.forking_point.number > main_chain_.canonical_head().number) {
         auto parent = block_cache_.get_as_copy(path.forking_point.hash);  // parent is a pointer
-        if (!parent) return {};  // not found
-        path.blocks.push_front(*parent);  // in reverse order
+        if (!parent) return {};                                           // not found
+        path.blocks.push_front(*parent);                                  // in reverse order
         path.forking_point = {.number = (*parent)->header.number - 1, .hash = (*parent)->header.parent_hash};
     }
 
@@ -107,37 +116,29 @@ auto ExecutionEngine::find_forking_point(const BlockHeader& header) const -> std
     return {std::move(path)};
 }
 
-void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<Block>>& blocks) {
-    SILK_DEBUG << "ExecutionEngine: inserting " << blocks.size() << " blocks";
-    if (blocks.empty()) return;
-
-    as_range::for_each(blocks, [&, this](const auto& block) {
-        insert_block(block);
-    });
-}
-
 auto ExecutionEngine::verify_chain(Hash head_block_hash) -> awaitable<VerificationResult> {
     SILK_DEBUG << "ExecutionEngine: verifying chain " << head_block_hash.to_hex();
 
-    if (!fork_tracking_active_) co_return main_chain_.verify_chain(head_block_hash);
+    if (!fork_tracking_active_) co_return main_chain_.verify_chain(head_block_hash);  // BLOCKING!!
 
     auto f = find_fork_by_head(forks_, head_block_hash);
     if (f == forks_.end()) {
         SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at verification time";
-        return ValidationError{};
+        co_return ValidationError{};
     }
 
     ExtendingFork& fork = *f;
 
-    return fork.verify_chain();
+    co_return co_await fork.verify_chain();  // SUSPENDABLE
 }
 
-bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
+auto ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash)
+    -> awaitable<bool> {
     SILK_DEBUG << "ExecutionEngine: updating fork choice to " << head_block_hash.to_hex();
 
     if (!fork_tracking_active_) {
-        bool updated = main_chain_.notify_fork_choice_update(head_block_hash, finalized_block_hash);
-        if (!updated) return false;
+        bool updated = main_chain_.notify_fork_choice_update(head_block_hash, finalized_block_hash);  // BLOCKING!!
+        if (!updated) co_return false;
 
         last_fork_choice_ = main_chain_.canonical_head();
         if (finalized_block_hash) last_finalized_block_ = *finalized_block_hash;
@@ -146,13 +147,13 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
         auto f = find_fork_by_head(forks_, head_block_hash);
         if (f == forks_.end()) {
             SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at fork choice update time";
-            return false;
+            co_return false;
         }
-        Fork& chosen_fork = *f;
+        ExtendingFork& chosen_fork = *f;
 
         // notify the fork of the update
-        bool updated = chosen_fork.notify_fork_choice_update(head_block_hash, finalized_block_hash);
-        if (!updated) return false;
+        bool updated = co_await chosen_fork.notify_fork_choice_update(head_block_hash, finalized_block_hash);
+        if (!updated) co_return false;
 
         last_fork_choice_ = chosen_fork.current_head();
         if (finalized_block_hash) last_finalized_block_ = *finalized_block_hash;
@@ -162,7 +163,7 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
 
     fork_tracking_active_ = true;
 
-    return true;
+    co_return true;
 }
 
 void ExecutionEngine::consolidate_forks() {

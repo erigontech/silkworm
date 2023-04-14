@@ -47,12 +47,13 @@ class ExecutionEngine : public Stoppable {
     explicit ExecutionEngine(NodeSettings&, db::RWAccess);
 
     // actions
-    void insert_blocks(std::vector<std::shared_ptr<Block>>& blocks);
-    void insert_block(std::shared_ptr<Block> block);
+    auto insert_blocks(std::vector<std::shared_ptr<Block>>& blocks) -> asio::awaitable<void>;
+    auto insert_block(std::shared_ptr<Block> block) -> asio::awaitable<void>;
 
     auto verify_chain(Hash head_block_hash) -> asio::awaitable<VerificationResult>;
 
-    bool notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
+    auto notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt)
+        -> asio::awaitable<bool>;
 
     auto last_fork_choice() -> std::optional<BlockId>;
 

@@ -40,8 +40,8 @@
 #include <silkworm/node/backend/remote/rpc/backend_calls.hpp>
 #include <silkworm/node/backend/remote/rpc/kv_calls.hpp>
 #include <silkworm/node/backend/state_change_collection.hpp>
+#include <silkworm/node/common/os.hpp>
 #include <silkworm/node/db/mdbx.hpp>
-#include <silkworm/node/test/os.hpp>
 #include <silkworm/sentry/api/api_common/sentry_client.hpp>
 
 using namespace std::chrono_literals;
@@ -896,7 +896,7 @@ TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][no
 
 TEST_CASE("BackEndKvServer E2E: Tx max simultaneous readers exceeded", "[silkworm][node][rpc]") {
     // This check can be improved in Catch2 version 3.3.0 where SKIP is available
-    if (test::OS::max_file_descriptors() < 1024) {
+    if (os::max_file_descriptors() < 1024) {
         FAIL("insufficient number of process file descriptors, increase to 1024 at least");
     }
 

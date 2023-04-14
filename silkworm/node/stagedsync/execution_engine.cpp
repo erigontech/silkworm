@@ -24,6 +24,8 @@
 
 namespace silkworm::stagedsync {
 
+using namespace boost::asio;
+
 static void ensure_invariant(bool condition, const std::string& message) {
     if (!condition) {
         throw std::logic_error("Execution invariant violation: " + message);
@@ -75,12 +77,11 @@ void ExecutionEngine::insert_block(std::shared_ptr<Block> block) {
 
         SILK_DEBUG << "ExecutionEngine: creating new fork";
 
-        auto& new_fork = forks_.emplace_back(main_chain_.canonical_head(), node_settings_, main_chain_);
+        forks_.push_back(main_chain_.fork());
 
-        // todo: execute the follwing in the fork thread
-        new_fork.open();
-        new_fork.reduce_down_to(forking_path->forking_point);
-        new_fork.extend_with(forking_path->blocks);
+        auto& new_fork = forks_.back();
+        co_await new_fork.reduce_down_to(forking_path->forking_point);
+        co_await new_fork.extend_with(forking_path->blocks);
     }
 }
 
@@ -115,10 +116,10 @@ void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<Block>>& blocks)
     });
 }
 
-auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
+auto ExecutionEngine::verify_chain(Hash head_block_hash) -> awaitable<VerificationResult> {
     SILK_DEBUG << "ExecutionEngine: verifying chain " << head_block_hash.to_hex();
 
-    if (!fork_tracking_active_) return main_chain_.verify_chain(head_block_hash);
+    if (!fork_tracking_active_) co_return main_chain_.verify_chain(head_block_hash);
 
     auto f = find_fork_by_head(forks_, head_block_hash);
     if (f == forks_.end()) {
@@ -126,7 +127,7 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> VerificationResult {
         return ValidationError{};
     }
 
-    Fork& fork = *f;
+    ExtendingFork& fork = *f;
 
     return fork.verify_chain();
 }
@@ -160,7 +161,6 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
     }
 
     fork_tracking_active_ = true;
-    is_first_sync_ = false;
 
     return true;
 }

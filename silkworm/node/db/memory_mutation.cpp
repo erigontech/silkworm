@@ -52,16 +52,15 @@ MemoryDatabase::MemoryDatabase(MemoryDatabase&& other) noexcept : memory_env_(st
     return memory_env_.start_write();
 }
 
-MemoryOverlay::MemoryOverlay(const std::filesystem::path& tmp_dir, silkworm::db::ROTxn* txn)
-    : memory_db_{tmp_dir}, txn_(txn) {}
-
-MemoryOverlay::MemoryOverlay(silkworm::db::ROTxn* txn) : memory_db_{}, txn_(txn) {}
+MemoryOverlay::MemoryOverlay(MemoryDatabase& memory_db, silkworm::db::ROTxn&& txn)
+    : memory_db_{memory_db}, txn_(std::move(txn)) {}
 
 MemoryOverlay::MemoryOverlay(MemoryOverlay&& other) noexcept
-    : memory_db_(std::move(other.memory_db_)), txn_(other.txn_) {}
+    : memory_db_(other.memory_db_), txn_(std::move(other.txn_)) {}
 
-void MemoryOverlay::update_txn(ROTxn* txn) {
-    txn_ = txn;
+void MemoryOverlay::update_txn(ROTxn&& txn) {
+    txn_.abort();
+    txn_ = std::move(txn);
 }
 
 ::mdbx::txn_managed MemoryOverlay::start_rw_txn() {
@@ -83,7 +82,7 @@ MemoryMutation::~MemoryMutation() {
 }
 
 void MemoryMutation::reopen() {
-    managed_txn_ = memory_db_.start_rw_tx();
+    managed_txn_ = overlay_.start_rw_txn();
 }
 
 bool MemoryMutation::is_table_cleared(const std::string& table) const {
@@ -102,8 +101,8 @@ bool MemoryMutation::has_map(const std::string& bucket_name) const {
     return db::has_map(*overlay_.external_txn(), bucket_name.c_str());
 }
 
-void MemoryMutation::update_txn(ROTxn* txn) {
-    overlay_.update_txn(txn);
+void MemoryMutation::update_txn(ROTxn&& txn) {
+    overlay_.update_txn(std::move(txn));
 }
 
 std::unique_ptr<ROCursor> MemoryMutation::ro_cursor(const MapConfig& config) {

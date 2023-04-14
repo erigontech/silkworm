@@ -31,10 +31,12 @@
 #include <silkworm/node/stagedsync/stages/stage.hpp>
 
 #include "canonical_chain.hpp"
-#include "fork.hpp"
 #include "verification_result.hpp"
 
 namespace silkworm::stagedsync {
+
+class Fork;
+class ExtendingFork;
 
 class MainChain {
   public:
@@ -45,9 +47,10 @@ class MainChain {
     void insert_block(const Block&);
 
     // branching
-    Fork branch_at(BlockId forking_point, db::RWAccess);
-    std::optional<BlockId> find_forking_point(const BlockHeader& header) const;
-    std::optional<BlockId> find_forking_point(const Hash& header_hash) const;
+    auto fork() -> ExtendingFork;                 // fort at the current head
+    void reintegrate_fork(ExtendingFork&& fork);  // reintegrate fork into the main chain changing the head
+    auto find_forking_point(const BlockHeader& header) const -> std::optional<BlockId>;
+    auto find_forking_point(const Hash& header_hash) const -> std::optional<BlockId>;
 
     // verification
     auto verify_chain(Hash head_block_hash) -> VerificationResult;  // verify chain up to head_block_hash
@@ -73,6 +76,7 @@ class MainChain {
     auto is_ancestor(Hash supposed_parent, BlockId block) const -> bool;
 
     friend Fork;
+
   protected:
     Hash insert_header(const BlockHeader&);
     void insert_body(const Block&, const Hash& block_hash);

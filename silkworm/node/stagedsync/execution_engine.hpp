@@ -22,6 +22,11 @@
 #include <variant>
 #include <vector>
 
+#include <silkworm/infra/concurrency/coroutine.hpp>
+
+#include <boost/asio.hpp>
+#include <boost/asio/awaitable.hpp>
+
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
@@ -30,10 +35,12 @@
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
 
-#include "forks/fork.hpp"
 #include "forks/main_chain.hpp"
+#include "forks/suspendable_fork.hpp"
 
 namespace silkworm::stagedsync {
+
+namespace asio = boost::asio;
 
 class ExecutionEngine : public Stoppable {
   public:
@@ -43,7 +50,7 @@ class ExecutionEngine : public Stoppable {
     void insert_blocks(std::vector<std::shared_ptr<Block>>& blocks);
     void insert_block(std::shared_ptr<Block> block);
 
-    auto verify_chain(Hash head_block_hash) -> VerificationResult;
+    auto verify_chain(Hash head_block_hash) -> asio::awaitable<VerificationResult>;
 
     bool notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
 
@@ -52,7 +59,7 @@ class ExecutionEngine : public Stoppable {
   protected:
     struct ForkingPath {
         BlockId forking_point;
-        std::list<std::shared_ptr<Block>> blocks;   // blocks in reverse order
+        std::list<std::shared_ptr<Block>> blocks;  // blocks in reverse order
     };
 
     auto find_forking_point(const BlockHeader& header) const -> std::optional<ForkingPath>;
@@ -61,10 +68,9 @@ class ExecutionEngine : public Stoppable {
     NodeSettings& node_settings_;
     db::RWAccess db_access_;
     db::RWTxn tx_;
-    bool is_first_sync_{true};
 
     MainChain main_chain_;
-    std::vector<Fork> forks_;
+    std::vector<ExtendingFork> forks_;
 
     static constexpr size_t kDefaultCacheSize = 1000;
     mutable lru_cache<Hash, std::shared_ptr<Block>> block_cache_;

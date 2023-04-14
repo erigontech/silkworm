@@ -33,12 +33,11 @@ static void ensure_invariant(bool condition, const std::string& message) {
     }
 }
 
-Fork::Fork(BlockId forking_point, NodeSettings& ns, MainChain& main_chain)
+Fork::Fork(BlockId forking_point, NodeSettings& ns, MainChain& main_chain, db::MemoryDatabase& db)
     : node_settings_{ns},
       main_chain_{main_chain},
-      db_tx_(main_chain.db_access_.start_ro_tx()),
-      overlay_{TemporaryDirectory::get_unique_temporary_path(ns.data_directory->path())},
-      tx_{overlay_, &db_tx_},
+      overlay_{db, main_chain_.db_access_.start_ro_tx()},
+      tx_{overlay_},
       pipeline_{&ns},
       canonical_chain_(tx_) {
     ensure_invariant(canonical_chain_.initial_head() == forking_point,
@@ -50,7 +49,6 @@ Fork::Fork(BlockId forking_point, NodeSettings& ns, MainChain& main_chain)
 Fork::Fork(Fork&& orig) noexcept
     : node_settings_{orig.node_settings_},
       main_chain_{orig.main_chain_},
-      db_tx_(std::move(orig.db_tx_)),
       overlay_{std::move(orig.overlay_)},
       tx_{std::move(orig.tx_)},
       pipeline_{&orig.node_settings_},  // warning: pipeline is not movable, we build a new one here

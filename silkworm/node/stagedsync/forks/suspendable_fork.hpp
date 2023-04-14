@@ -22,29 +22,51 @@
 #include <boost/asio/awaitable.hpp>
 
 #include "fork.hpp"
+#include "silkworm/node/db/memory_mutation.hpp"
 
 namespace silkworm::stagedsync {
 
-using boost::asio::awaitable;
-using boost::asio::io_context;
+namespace asio = boost::asio;
 
-class SuspendableFork {
+// ExtendingFork is a composition of a Fork, a in-memory database and an io_context.
+// It executes the fork operations on the private io_context, so we can:
+// - parallelize operations on different forks to improve performances
+// - put operations on the same fork in sequence to avoid races
+// The in-memory database is used to store the forked blocks & states.
+
+class ExtendingFork {
   public:
-    explicit SuspendableFork(BlockId forking_point, NodeSettings&, MainChain&);
-    SuspendableFork(const SuspendableFork&);
-    SuspendableFork(SuspendableFork&& orig) noexcept;
+    explicit ExtendingFork(BlockId forking_point, NodeSettings&, MainChain&);
+    ExtendingFork(const ExtendingFork&) = delete;
+    ExtendingFork(ExtendingFork&& orig) noexcept;
 
-    // contraction
-    auto reduce_down_to(BlockId new_head) -> awaitable<void>;
+    // extension & contraction
+    auto extend_with(std::list<std::shared_ptr<Block>>&&) -> asio::awaitable<void>;
+    auto reduce_down_to(BlockId new_head) -> asio::awaitable<void>;
 
     // verification
-    auto verify_chain() -> awaitable<VerificationResult>;
+    auto verify_chain() -> asio::awaitable<VerificationResult>;
     auto notify_fork_choice_update(Hash head_block_hash,
-                                   std::optional<Hash> finalized_block_hash = std::nullopt) -> awaitable<bool>;
+                                   std::optional<Hash> finalized_block_hash = std::nullopt) -> asio::awaitable<bool>;
+
+    // state
+    auto current_head() const -> BlockId;
 
   protected:
+    db::MemoryDatabase memory_db_;
     Fork fork_;
-    io_context& io_context_;
+    asio::io_context io_context_;
+
+    // cached values provided to avoid thread synchronization
+    BlockId current_head_{};
 };
+
+// find the fork with the specified head
+auto find_fork_by_head(const std::vector<ExtendingFork>& forks, const Hash& requested_head_hash)
+    -> std::vector<ExtendingFork>::iterator;
+
+// find the fork with the head to extend
+auto find_fork_to_extend(const std::vector<ExtendingFork>& forks, const BlockHeader& header)
+    -> std::vector<ExtendingFork>::iterator;
 
 }  // namespace silkworm::stagedsync

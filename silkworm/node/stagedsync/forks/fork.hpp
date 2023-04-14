@@ -35,7 +35,7 @@ class MainChain;
 
 class Fork {
   public:
-    explicit Fork(BlockId forking_point, NodeSettings&, MainChain&);
+    explicit Fork(BlockId forking_point, NodeSettings&, MainChain&, db::MemoryDatabase&);
     Fork(const Fork&) = delete;
     Fork(Fork&& orig) noexcept;
 
@@ -72,7 +72,6 @@ class Fork {
     NodeSettings& node_settings_;
 
     MainChain& main_chain_;
-    db::ROTxn db_tx_;
     db::MemoryOverlay overlay_;
     db::MemoryMutation tx_;
 

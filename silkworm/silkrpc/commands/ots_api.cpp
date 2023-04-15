@@ -272,7 +272,7 @@ namespace silkworm::rpc::commands {
             auto sender_byte_view = full_view(sender);
             auto key_value = co_await account_history_cursor->seek(sender_byte_view);
 
-            std::vector<uint64_t> blocks;  // uint64_t* blocks;
+            std::vector<uint64_t> account_block_numbers;  // uint64_t* blocks;
 
             uint64_t max_block_prev_chunk = 0;
             roaring::Roaring64Map bitmap;
@@ -292,42 +292,45 @@ namespace silkworm::rpc::commands {
                     co_return;
                 }
 
-                bitmap = silkworm::db::bitmap::parse(key_value.value);
-                auto max_block = bitmap.maximum();
-                auto block_key{silkworm::db::block_key(max_block)};
+                bitmap = db::bitmap::parse(key_value.value);
+                auto const max_block = bitmap.maximum();
+                auto block_key{db::block_key(max_block)};
                 auto account_payload = co_await account_change_set_cursor->seek_both(block_key, sender_byte_view);
-                account_payload = account_payload.substr(sender_byte_view.length());
-                auto account = Account::from_encoded_storage(account_payload);
+                if (account_payload.starts_with(sender_byte_view)){
+                    account_payload = account_payload.substr(sender_byte_view.length());
+                    auto account = Account::from_encoded_storage(account_payload);
 
-                if (account.has_value() && account.value().nonce > nonce) {
-                    break;
+                    if (account.has_value() && account.value().nonce > nonce) {
+                        break;
+                    }
                 }
-
                 max_block_prev_chunk = max_block;
                 key_value = co_await account_history_cursor->next();
             }
 
             uint64_t cardinality = bitmap.cardinality();
-            blocks.reserve(cardinality);
-            bitmap.toUint64Array(blocks.data());
+            account_block_numbers.reserve(cardinality);
+            bitmap.toUint64Array(account_block_numbers.data());
 
             uint64_t idx = 0;
             for (uint64_t i = 0; i < cardinality; i++) {
-                auto bn = blocks[i];
-                auto bk{silkworm::db::block_key(bn)};
-                auto ap = co_await account_change_set_cursor->seek_both(bk, sender_byte_view);
-                ap = ap.substr(sender_byte_view.length());
-                auto a = Account::from_encoded_storage(ap);
+                auto block_number = account_block_numbers[i];
+                auto block_key{db::block_key(block_number)};
+                auto account_payload = co_await account_change_set_cursor->seek_both(block_key, sender_byte_view);
+                if (account_payload.starts_with(sender_byte_view)){
+                    account_payload = account_payload.substr(sender_byte_view.length());
+                    auto account = Account::from_encoded_storage(account_payload);
 
-                if (a.has_value() && a.value().nonce > nonce) {
-                    idx = i;
-                    break;
+                    if (account.has_value() && account.value().nonce > nonce) {
+                        idx = i;
+                        break;
+                    }
                 }
             }
 
             auto nonce_block = max_block_prev_chunk;
             if (idx > 0) {
-                nonce_block = blocks[idx - 1];
+                nonce_block = account_block_numbers[idx - 1];
             }
 
             ethdb::TransactionDatabase tx_database{*tx};

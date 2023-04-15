@@ -75,10 +75,10 @@ void output_memory(std::vector<std::string>& vect, const evmone::Memory& memory)
 void insert_error(DebugLog& log, evmc_status_code status_code) {
     switch (status_code) {
         case evmc_status_code::EVMC_FAILURE:
-        case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
         case evmc_status_code::EVMC_OUT_OF_GAS:
             log.error = true;
             break;
+        case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
         default:
             log.error = false;
             break;
@@ -185,6 +185,7 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
             log.storage[entry.first] = entry.second;
         }
     }
+
     insert_error(log, execution_state.status);
 
     logs_.push_back(log);
@@ -207,7 +208,7 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
 
         switch (result.status_code) {
             case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
-                log.gas_cost = start_gas_ - log.gas;
+                log.gas_cost = 0;
                 break;
 
             case evmc_status_code::EVMC_REVERT:

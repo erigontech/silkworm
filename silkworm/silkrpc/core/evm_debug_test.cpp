@@ -1204,9 +1204,8 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
             },
             {
                 "depth": 1,
-                "error": {},
                 "gas": 156080,
-                "gasCost": 2,
+                "gasCost": 0,
                 "memory": [],
                 "op": "opcode 0x4b not defined",
                 "pc": 1,

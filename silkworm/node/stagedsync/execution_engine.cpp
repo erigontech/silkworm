@@ -38,10 +38,22 @@ ExecutionEngine::ExecutionEngine(NodeSettings& ns, db::RWAccess dba)
       tx_{db_access_.start_rw_tx()},
       main_chain_(ns, dba),
       block_cache_{kDefaultCacheSize} {
+
+    // To initialize canonical_head_status_ & last_fork_choice_ we need to call verify_chain(). Enable?
+    // verify_chain(canonical_chain_.current_head().hash);
+
+    // At start-up we can let last_finalized_block_ point to the genesis block so to accept all forking points
+    last_finalized_block_ = {0, ns.chain_config.value().genesis_hash.value()};
+
+    block_progress_ = main_chain_.get_block_progress();
 }
 
-auto ExecutionEngine::last_fork_choice() -> std::optional<BlockId> {
+auto ExecutionEngine::last_fork_choice() const -> std::optional<BlockId> {
     return last_fork_choice_;
+}
+
+auto ExecutionEngine::last_finalized_block() const -> BlockId {
+    return last_finalized_block_;
 }
 
 auto ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<Block>>& blocks) -> awaitable<void> {
@@ -58,6 +70,8 @@ auto ExecutionEngine::insert_block(std::shared_ptr<Block> block) -> awaitable<vo
 
     if (block_cache_.get(header_hash)) co_return;  // ignore repeated blocks
     block_cache_.put(header_hash, block);
+
+    if (block_progress_ < block->header.number) block_progress_ = block->header.number;
 
     // if we are not tracking forks, just insert the block into the main chain
     if (!fork_tracking_active_) {
@@ -80,13 +94,14 @@ auto ExecutionEngine::insert_block(std::shared_ptr<Block> block) -> awaitable<vo
 
         auto forking_path = find_forking_point(block->header);
         if (!forking_path) co_return;
-        if (forking_path->forking_point.number < main_chain_.last_finalized_block().number) co_return;  // ignore
+        if (forking_path->forking_point.number < last_finalized_block().number) co_return;  // ignore
         forking_path->blocks.push_back(block);
 
         SILK_DEBUG << "ExecutionEngine: creating new fork";
 
         forks_.push_back(main_chain_.fork());
 
+        // todo: do we want to wait here?
         auto& new_fork = forks_.back();
         co_await new_fork.open();  // open db rw-tx on the fork thread
         co_await new_fork.reduce_down_to(forking_path->forking_point);
@@ -129,6 +144,7 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> awaitable<Verificati
 
     ExtendingFork& fork = *f;
 
+    // todo: do we want to wait here?
     co_return co_await fork.verify_chain();  // SUSPENDABLE
 }
 
@@ -141,7 +157,6 @@ auto ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
         if (!updated) co_return false;
 
         last_fork_choice_ = main_chain_.canonical_head();
-        if (finalized_block_hash) last_finalized_block_ = *finalized_block_hash;
     } else {
         // chose the fork with the given head
         auto f = find_fork_by_head(forks_, head_block_hash);
@@ -155,10 +170,17 @@ auto ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
         bool updated = co_await chosen_fork.notify_fork_choice_update(head_block_hash, finalized_block_hash);
         if (!updated) co_return false;
 
-        last_fork_choice_ = chosen_fork.current_head();
-        if (finalized_block_hash) last_finalized_block_ = *finalized_block_hash;
-
         consolidate_forks();  // remove side forks, extend main chain with the chosen fork
+
+        last_fork_choice_ = chosen_fork.current_head();
+    }
+
+    if (finalized_block_hash) {
+        auto finalized_header = main_chain_.get_header(*finalized_block_hash);  // BLOCKING!!
+        ensure_invariant(finalized_header.has_value(), "finalized block not found in main chain");
+
+        last_finalized_block_.hash = *finalized_block_hash;
+        last_finalized_block_.number = finalized_header->number;
     }
 
     fork_tracking_active_ = true;
@@ -167,6 +189,11 @@ auto ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
 }
 
 void ExecutionEngine::consolidate_forks() {
+    ensure_invariant(false, "implementation pending");
+}
+
+auto ExecutionEngine::get_block_progress() const -> BlockNum {
+    return block_progress_;  // main_chain_.get_block_progress() or forks block progress
 }
 
 }  // namespace silkworm::stagedsync

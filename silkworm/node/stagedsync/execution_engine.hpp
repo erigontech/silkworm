@@ -55,7 +55,12 @@ class ExecutionEngine : public Stoppable {
     auto notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt)
         -> asio::awaitable<bool>;
 
-    auto last_fork_choice() -> std::optional<BlockId>;
+    // state
+    auto last_finalized_block() const -> BlockId;
+    auto last_fork_choice() const -> std::optional<BlockId>;
+
+    // header/body retrieval
+    auto get_block_progress() const -> BlockNum;
 
   protected:
     struct ForkingPath {
@@ -76,9 +81,11 @@ class ExecutionEngine : public Stoppable {
     static constexpr size_t kDefaultCacheSize = 1000;
     mutable lru_cache<Hash, std::shared_ptr<Block>> block_cache_;
 
+    BlockNum block_progress_{0};
     bool fork_tracking_active_{false};
+    BlockId last_finalized_block_;
     std::optional<BlockId> last_fork_choice_;
-    std::optional<Hash> last_finalized_block_;
+
 };
 
 }  // namespace silkworm::stagedsync

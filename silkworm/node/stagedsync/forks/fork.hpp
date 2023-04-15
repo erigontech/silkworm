@@ -72,6 +72,7 @@ class Fork {
     NodeSettings& node_settings_;
 
     MainChain& main_chain_;
+    db::ROTxn main_txn_;
     db::MemoryOverlay overlay_;
     db::MemoryMutation tx_;
 

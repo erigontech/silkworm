@@ -15,13 +15,14 @@
 */
 
 #include "main_chain.hpp"
-#include "suspendable_fork.hpp"
 
 #include <set>
 
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/db_utils.hpp>
+
+#include "suspendable_fork.hpp"
 
 namespace silkworm::stagedsync {
 
@@ -37,18 +38,12 @@ MainChain::MainChain(NodeSettings& ns, const db::RWAccess dba)
       tx_{db_access_.start_rw_tx()},
       pipeline_{&ns},
       canonical_chain_(tx_) {
+    // To initialize canonical_head_status_ & last_fork_choice_ we need to call verify_chain()
+    // but they are not used at the moment
 }
 
 auto MainChain::canonical_head() const -> BlockId {
     return canonical_chain_.current_head();
-}
-
-auto MainChain::canonical_status() const -> VerificationResult {
-    return canonical_head_status_;
-}
-
-BlockId MainChain::last_fork_choice() const {
-    return last_fork_choice_;
 }
 
 std::optional<BlockId> MainChain::find_forking_point(const BlockHeader& header) const {

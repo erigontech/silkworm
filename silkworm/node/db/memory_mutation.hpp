@@ -40,17 +40,17 @@ class MemoryDatabase {
 
 class MemoryOverlay {
   public:
-    MemoryOverlay(MemoryDatabase& memory_db, ROTxn&& txn);
+    MemoryOverlay(MemoryDatabase& memory_db, ROTxn& txn);
     MemoryOverlay(MemoryOverlay&& other) noexcept;
 
-    [[nodiscard]] db::ROTxn* external_txn() const { return &txn_; }
-    void update_txn(ROTxn&& txn);
+    [[nodiscard]] db::ROTxn* external_txn() const { return txn_; }
+    void update_txn(ROTxn* txn);
 
     ::mdbx::txn_managed start_rw_txn();
 
   private:
     MemoryDatabase& memory_db_;
-    mutable ROTxn txn_;
+    ROTxn* txn_;
 };
 
 class MemoryMutationCursor;
@@ -67,7 +67,7 @@ class MemoryMutation : public RWTxn {
 
     [[nodiscard]] db::ROTxn* external_txn() const { return overlay_.external_txn(); }
 
-    void update_txn(ROTxn&& txn);
+    void update_txn(ROTxn* txn);
 
     std::unique_ptr<ROCursor> ro_cursor(const MapConfig& config) override;
     std::unique_ptr<ROCursorDupSort> ro_cursor_dup_sort(const MapConfig& config) override;

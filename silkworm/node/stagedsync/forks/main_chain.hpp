@@ -59,8 +59,6 @@ class MainChain {
 
     // state
     auto canonical_head() const -> BlockId;
-    auto canonical_status() const -> VerificationResult;
-    auto last_fork_choice() const -> BlockId;
 
     // header/body retrieval
     auto get_block_progress() const -> BlockNum;

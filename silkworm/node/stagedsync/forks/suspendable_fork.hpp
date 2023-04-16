@@ -40,17 +40,15 @@ class ExtendingFork {
     ExtendingFork(const ExtendingFork&) = delete;
     ExtendingFork(ExtendingFork&& orig) noexcept;
 
-    auto open() -> asio::awaitable<void>;
+    // opening
+    auto start_with(BlockId new_head, std::list<std::shared_ptr<Block>>&&) -> asio::awaitable<void>;
 
-    // extension & contraction
-    auto extend_with(std::list<std::shared_ptr<Block>>&&) -> asio::awaitable<void>;
-    auto extend_with(const Block&) -> asio::awaitable<void>;
-    auto reduce_down_to(BlockId new_head) -> asio::awaitable<void>;
+    // extension
+    auto extend_with(Hash head_hash, const Block& head) -> asio::awaitable<void>;
 
     // verification
     auto verify_chain() -> asio::awaitable<VerificationResult>;
-    auto notify_fork_choice_update(Hash head_block_hash,
-                                   std::optional<Hash> finalized_block_hash = std::nullopt) -> asio::awaitable<bool>;
+    bool notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
 
     // state
     auto current_head() const -> BlockId;

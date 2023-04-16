@@ -27,6 +27,12 @@ namespace silkworm::stagedsync {
 
 using namespace boost::asio;
 
+static void ensure(bool condition, const std::string& message) {
+    if (!condition) {
+        throw std::logic_error("ExtendingFork condition violation: " + message);
+    }
+}
+
 ExtendingFork::ExtendingFork(BlockId forking_point, NodeSettings& ns, MainChain& main_chain)
     : memory_db_{TemporaryDirectory::get_unique_temporary_path(ns.data_directory->path())},
       fork_{forking_point, ns, main_chain, memory_db_},
@@ -43,43 +49,25 @@ BlockId ExtendingFork::current_head() const {
     return current_head_;
 }
 
-auto ExtendingFork::open() -> asio::awaitable<void> {
-    return co_spawn(
+auto ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block>>&& blocks) -> asio::awaitable<void> {
+    current_head_ = new_head;  // setting this here is important for find_fork_by_head() due to the fact that block
+    return co_spawn(           // insertion and head computation is delayed but find_fork_by_head() is called immediately
         io_context_,
-        [](ExtendingFork& me) -> awaitable<void> {
+        [](ExtendingFork& me, BlockId new_head, std::list<std::shared_ptr<Block>>&& blocks) -> awaitable<void> {
             me.fork_.open();
-            me.current_head_ = me.fork_.current_head();
-        }(*this),
-        use_awaitable);
-}
-
-auto ExtendingFork::extend_with(std::list<std::shared_ptr<Block>>&& blocks) -> asio::awaitable<void> {
-    return co_spawn(
-        io_context_,
-        [](ExtendingFork& me, std::list<std::shared_ptr<Block>>&& blocks) -> awaitable<void> {
             me.fork_.extend_with(blocks);
-            me.current_head_ = me.fork_.current_head();
-        }(*this, std::move(blocks)),
+            ensure(me.fork_.current_head() == new_head, "fork head mismatch");
+        }(*this, new_head, std::move(blocks)),
         use_awaitable);
 }
 
-auto ExtendingFork::extend_with(const Block& block) -> asio::awaitable<void> {
+auto ExtendingFork::extend_with(Hash head_hash, const Block& block) -> asio::awaitable<void> {
+    current_head_ = {block.header.number, head_hash};  // setting this here is important, same as above
     return co_spawn(
         io_context_,
         [](ExtendingFork& me, const Block& block) -> awaitable<void> {
             me.fork_.extend_with(block);
-            me.current_head_ = me.fork_.current_head();
         }(*this, block),
-        use_awaitable);
-}
-
-auto ExtendingFork::reduce_down_to(BlockId new_head) -> awaitable<void> {
-    return co_spawn(
-        io_context_,
-        [](ExtendingFork& me, BlockId new_head) -> awaitable<void> {
-            me.fork_.reduce_down_to(new_head);
-            me.current_head_ = me.fork_.current_head();
-        }(*this, new_head),
         use_awaitable);
 }
 
@@ -94,15 +82,10 @@ auto ExtendingFork::verify_chain() -> awaitable<VerificationResult> {
         use_awaitable);
 }
 
-auto ExtendingFork::notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash) -> asio::awaitable<bool> {
-    return co_spawn(
-        io_context_,
-        [](ExtendingFork& me, Hash head, std::optional<Hash> finalized) -> awaitable<bool> {
-            auto result = me.fork_.notify_fork_choice_update(head, finalized);
-            me.current_head_ = me.fork_.current_head();
-            co_return result;
-        }(*this, head_block_hash, finalized_block_hash),
-        use_awaitable);
+bool ExtendingFork::notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
+    auto result = fork_.notify_fork_choice_update(head_block_hash, finalized_block_hash);
+    current_head_ = fork_.current_head();
+    return result;
 }
 
 std::vector<ExtendingFork>::iterator find_fork_by_head(std::vector<ExtendingFork>& forks, const Hash& requested_head_hash) {

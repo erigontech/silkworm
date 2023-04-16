@@ -201,8 +201,8 @@ std::set<Hash> MainChain::collect_bad_headers(db::RWTxn& tx, InvalidChain& inval
     return bad_headers;
 }
 
-auto MainChain::fork() -> ExtendingFork {
-    return ExtendingFork{canonical_head(), node_settings_, *this};
+auto MainChain::fork(BlockId forking_point) -> ExtendingFork {
+    return ExtendingFork{forking_point, node_settings_, *this};
 }
 
 auto MainChain::get_header(Hash header_hash) const -> std::optional<BlockHeader> {

@@ -38,7 +38,6 @@ ExecutionEngine::ExecutionEngine(NodeSettings& ns, db::RWAccess dba)
       tx_{db_access_.start_rw_tx()},
       main_chain_(ns, dba),
       block_cache_{kDefaultCacheSize} {
-
     // To initialize canonical_head_status_ & last_fork_choice_ we need to call verify_chain(). Enable?
     // verify_chain(canonical_chain_.current_head().hash);
 
@@ -60,7 +59,7 @@ auto ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<Block>>& blocks)
     SILK_DEBUG << "ExecutionEngine: inserting " << blocks.size() << " blocks";
     if (blocks.empty()) co_return;
 
-    for(const auto& block : blocks) {
+    for (const auto& block : blocks) {
         co_await insert_block(block);
     }
 }
@@ -86,7 +85,7 @@ auto ExecutionEngine::insert_block(std::shared_ptr<Block> block) -> awaitable<vo
         // the block extends a fork
         SILK_DEBUG << "ExecutionEngine: extending a fork";
 
-        co_await f->extend_with(*block);
+        co_await f->extend_with(header_hash, *block);
 
     } else {
         // the block must be put to a new fork
@@ -99,13 +98,11 @@ auto ExecutionEngine::insert_block(std::shared_ptr<Block> block) -> awaitable<vo
 
         SILK_DEBUG << "ExecutionEngine: creating new fork";
 
-        forks_.push_back(main_chain_.fork());
+        forks_.push_back(main_chain_.fork(forking_path->forking_point));
 
-        // todo: do we want to wait here?
         auto& new_fork = forks_.back();
-        co_await new_fork.open();  // open db rw-tx on the fork thread
-        co_await new_fork.reduce_down_to(forking_path->forking_point);
-        co_await new_fork.extend_with(std::move(forking_path->blocks));
+        BlockId new_head = {.number = block->header.number, .hash = header_hash};
+        co_await new_fork.start_with(new_head, std::move(forking_path->blocks));
     }
 }
 
@@ -134,7 +131,7 @@ auto ExecutionEngine::find_forking_point(const BlockHeader& header) const -> std
 auto ExecutionEngine::verify_chain(Hash head_block_hash) -> awaitable<VerificationResult> {
     SILK_DEBUG << "ExecutionEngine: verifying chain " << head_block_hash.to_hex();
 
-    if (!fork_tracking_active_) co_return main_chain_.verify_chain(head_block_hash);  // BLOCKING!!
+    if (!fork_tracking_active_) co_return main_chain_.verify_chain(head_block_hash);  // BLOCKING
 
     auto f = find_fork_by_head(forks_, head_block_hash);
     if (f == forks_.end()) {
@@ -144,7 +141,6 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> awaitable<Verificati
 
     ExtendingFork& fork = *f;
 
-    // todo: do we want to wait here?
     co_return co_await fork.verify_chain();  // SUSPENDABLE
 }
 
@@ -153,10 +149,11 @@ auto ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
     SILK_DEBUG << "ExecutionEngine: updating fork choice to " << head_block_hash.to_hex();
 
     if (!fork_tracking_active_) {
-        bool updated = main_chain_.notify_fork_choice_update(head_block_hash, finalized_block_hash);  // BLOCKING!!
+        bool updated = main_chain_.notify_fork_choice_update(head_block_hash, finalized_block_hash);  // BLOCKING
         if (!updated) co_return false;
 
         last_fork_choice_ = main_chain_.canonical_head();
+        fork_tracking_active_ = true;
     } else {
         // chose the fork with the given head
         auto f = find_fork_by_head(forks_, head_block_hash);
@@ -164,32 +161,28 @@ auto ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
             SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at fork choice update time";
             co_return false;
         }
-        ExtendingFork& chosen_fork = *f;
+        ExtendingFork& fork = *f;
+
+        remove_all_except(fork);  // remove all other forks
 
         // notify the fork of the update
-        bool updated = co_await chosen_fork.notify_fork_choice_update(head_block_hash, finalized_block_hash);
-        if (!updated) co_return false;
+        bool updated = fork.notify_fork_choice_update(head_block_hash, finalized_block_hash);  // BLOCKING
+        if (!updated) co_return false;  // is more like an invariant
 
-        consolidate_forks();  // remove side forks, extend main chain with the chosen fork
+        last_fork_choice_ = fork.current_head();
 
-        last_fork_choice_ = chosen_fork.current_head();
+        main_chain_.reintegrate_fork(std::move(fork));  // BLOCKING
     }
 
     if (finalized_block_hash) {
-        auto finalized_header = main_chain_.get_header(*finalized_block_hash);  // BLOCKING!!
+        auto finalized_header = main_chain_.get_header(*finalized_block_hash);  // BLOCKING
         ensure_invariant(finalized_header.has_value(), "finalized block not found in main chain");
 
         last_finalized_block_.hash = *finalized_block_hash;
         last_finalized_block_.number = finalized_header->number;
     }
 
-    fork_tracking_active_ = true;
-
     co_return true;
-}
-
-void ExecutionEngine::consolidate_forks() {
-    ensure_invariant(false, "implementation pending");
 }
 
 auto ExecutionEngine::get_block_progress() const -> BlockNum {

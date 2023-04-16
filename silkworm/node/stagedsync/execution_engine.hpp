@@ -69,7 +69,6 @@ class ExecutionEngine : public Stoppable {
     };
 
     auto find_forking_point(const BlockHeader& header) const -> std::optional<ForkingPath>;
-    void consolidate_forks();
 
     NodeSettings& node_settings_;
     db::RWAccess db_access_;

@@ -83,6 +83,21 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
         return ValidationResult::kMaxInitCodeSizeExceeded;
     }
 
+    // EIP-4844: Shard Blob Transactions
+    if (txn.type == Transaction::Type::kEip4844) {
+        if (txn.blob_versioned_hashes.empty()) {
+            return ValidationResult::kNoBlobs;
+        }
+        for (const Hash& h : txn.blob_versioned_hashes) {
+            if (h.bytes[0] != param::kBlobCommitmentVersionKzg) {
+                return ValidationResult::kWrongBlobCommitmentVersion;
+            }
+        }
+        // TODO(yperbasis): There is an equal amount of versioned hashes, kzg commitments and blobs.
+        // The KZG commitments hash to the versioned hashes, i.e. kzg_to_versioned_hash(kzg[i]) == versioned_hash[i]
+        // The KZG commitments match the blob contents.
+    }
+
     return ValidationResult::kOk;
 }
 

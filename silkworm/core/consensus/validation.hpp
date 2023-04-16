@@ -84,6 +84,9 @@ enum class [[nodiscard]] ValidationResult{
     // EIP-4844: Shard Blob Transactions
     kMissingExcessDataGas,
     kUnexpectedExcessDataGas,
+    kNoBlobs,
+    kTooManyBlobs,
+    kWrongBlobCommitmentVersion,
 };
 
 }  // namespace silkworm

@@ -53,6 +53,14 @@ ValidationResult EngineBase::pre_validate_block_body(const Block& block, const B
         }
     }
 
+    size_t total_blobs{0};
+    for (const Transaction& tx : block.transactions) {
+        total_blobs += tx.blob_versioned_hashes.size();
+    }
+    if (total_blobs > param::kMaxDataGasPerBlock / param::kDataGasPerBlock) {
+        return ValidationResult::kTooManyBlobs;
+    }
+
     if (block.ommers.empty()) {
         return header.ommers_hash == kEmptyListHash ? ValidationResult::kOk : ValidationResult::kWrongOmmersHash;
     } else if (prohibit_ommers_) {

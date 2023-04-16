@@ -61,9 +61,12 @@ struct Transaction {
 
     std::vector<AccessListEntry> access_list{};  // EIP-2930
 
-    std::vector<Hash> blob_versioned_hashes{};  // EIP-4844
+    // EIP-4844: Shard Blob Transactions
+    std::optional<intx::uint256> max_fee_per_data_gas{std::nullopt};
+    std::vector<Hash> blob_versioned_hashes{};
 
-    std::optional<evmc::address> from{std::nullopt};  // sender recovered from the signature
+    // sender recovered from the signature
+    std::optional<evmc::address> from{std::nullopt};
 
     [[nodiscard]] intx::uint256 v() const;  // EIP-155
 

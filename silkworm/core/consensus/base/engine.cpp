@@ -57,8 +57,17 @@ ValidationResult EngineBase::pre_validate_block_body(const Block& block, const B
     for (const Transaction& tx : block.transactions) {
         total_blobs += tx.blob_versioned_hashes.size();
     }
-    if (total_blobs > param::kMaxDataGasPerBlock / param::kDataGasPerBlock) {
+    if (total_blobs > param::kMaxDataGasPerBlock / param::kDataGasPerBlob) {
         return ValidationResult::kTooManyBlobs;
+    }
+
+    const std::optional<BlockHeader> parent{get_parent_header(state, header)};
+    if (!parent) {
+        return ValidationResult::kUnknownParent;
+    }
+
+    if (header.excess_data_gas != calc_excess_data_gas(header, *parent, total_blobs)) {
+        return ValidationResult::kWrongExcessDataGas;
     }
 
     if (block.ommers.empty()) {
@@ -197,13 +206,6 @@ ValidationResult EngineBase::validate_block_header(const BlockHeader& header, co
         return ValidationResult::kMissingWithdrawals;
     }
 
-    if (rev < EVMC_CANCUN && header.excess_data_gas) {
-        return ValidationResult::kUnexpectedExcessDataGas;
-    }
-    if (rev >= EVMC_CANCUN && !header.excess_data_gas) {
-        return ValidationResult::kMissingExcessDataGas;
-    }
-
     return validate_seal(header);
 }
 
@@ -245,7 +247,8 @@ evmc::address EngineBase::get_beneficiary(const BlockHeader& header) { return he
 
 std::optional<intx::uint256> EngineBase::expected_base_fee_per_gas(const BlockHeader& header,
                                                                    const BlockHeader& parent) {
-    if (chain_config_.revision(header.number, header.timestamp) < EVMC_LONDON) {
+    const evmc_revision rev{chain_config_.revision(header.number, header.timestamp)};
+    if (rev < EVMC_LONDON) {
         return std::nullopt;
     }
 
@@ -279,6 +282,24 @@ std::optional<intx::uint256> EngineBase::expected_base_fee_per_gas(const BlockHe
         } else {
             return 0;
         }
+    }
+}
+
+std::optional<intx::uint256> EngineBase::calc_excess_data_gas(const BlockHeader& header,
+                                                              const BlockHeader& parent,
+                                                              std::size_t num_blobs) {
+    const evmc_revision rev{chain_config_.revision(header.number, header.timestamp)};
+    if (rev < EVMC_CANCUN) {
+        return std::nullopt;
+    }
+
+    const uint64_t consumed_data_gas{num_blobs * param::kDataGasPerBlob};
+    const intx::uint256 parent_excess_data_gas{parent.excess_data_gas.value_or(0)};
+
+    if (parent_excess_data_gas + consumed_data_gas < param::kTargetDataGasPerBlock) {
+        return 0;
+    } else {
+        return parent_excess_data_gas + consumed_data_gas - param::kTargetDataGasPerBlock;
     }
 }
 

@@ -82,8 +82,7 @@ enum class [[nodiscard]] ValidationResult{
     kWrongWithdrawalsRoot,
 
     // EIP-4844: Shard Blob Transactions
-    kMissingExcessDataGas,
-    kUnexpectedExcessDataGas,
+    kWrongExcessDataGas,
     kNoBlobs,
     kTooManyBlobs,
     kWrongBlobCommitmentVersion,

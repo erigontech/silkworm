@@ -58,8 +58,12 @@ class EngineBase : public IEngine {
     //! \brief Validates the difficulty of the header
     virtual ValidationResult validate_difficulty(const BlockHeader& header, const BlockHeader& parent) = 0;
 
-    //! \brief See https://eips.ethereum.org/EIPS/eip-1559
+    //! \see EIP-1559: Fee market change for ETH 1.0 chain
     std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& header, const BlockHeader& parent);
+
+    //! \see EIP-4844: Shard Blob Transactions
+    std::optional<intx::uint256> calc_excess_data_gas(const BlockHeader& header, const BlockHeader& parent,
+                                                      std::size_t num_blobs);
 
     //! \brief Returns parent header (if any) of provided header
     static std::optional<BlockHeader> get_parent_header(const BlockState& state, const BlockHeader& header);

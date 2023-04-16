@@ -63,8 +63,9 @@ namespace param {
 
     // EIP-4844: Shard Blob Transactions
     inline constexpr uint8_t kBlobCommitmentVersionKzg{1};
-    inline constexpr uint64_t kMaxDataGasPerBlock{0x80000};  // 2^19
-    inline constexpr uint64_t kDataGasPerBlock{0x20000};     // 2^17
+    inline constexpr uint64_t kMaxDataGasPerBlock{0x80000};     // 2^19
+    inline constexpr uint64_t kTargetDataGasPerBlock{0x40000};  // 2^18
+    inline constexpr uint64_t kDataGasPerBlob{0x20000};         // 2^17
 
 }  // namespace param
 

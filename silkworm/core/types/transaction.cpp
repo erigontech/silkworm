@@ -20,6 +20,7 @@
 
 #include <ethash/keccak.hpp>
 
+#include <silkworm/core/chain/protocol_param.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/crypto/ecdsa.h>
 #include <silkworm/core/rlp/encode_vector.hpp>
@@ -448,6 +449,10 @@ intx::uint256 Transaction::priority_fee_per_gas(const intx::uint256& base_fee_pe
 
 intx::uint256 Transaction::effective_gas_price(const intx::uint256& base_fee_per_gas) const {
     return priority_fee_per_gas(base_fee_per_gas) + base_fee_per_gas;
+}
+
+uint64_t Transaction::total_data_gas() const {
+    return param::kDataGasPerBlob * blob_versioned_hashes.size();
 }
 
 }  // namespace silkworm

@@ -48,7 +48,7 @@ struct Transaction {
     Type type{Type::kLegacy};
 
     uint64_t nonce{0};
-    intx::uint256 max_priority_fee_per_gas{0};
+    intx::uint256 max_priority_fee_per_gas{0};  // EIP-1559
     intx::uint256 max_fee_per_gas{0};
     uint64_t gas_limit{0};
     std::optional<evmc::address> to{std::nullopt};
@@ -82,6 +82,8 @@ struct Transaction {
 
     [[nodiscard]] intx::uint256 priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const;  // EIP-1559
     [[nodiscard]] intx::uint256 effective_gas_price(const intx::uint256& base_fee_per_gas) const;   // EIP-1559
+
+    [[nodiscard]] uint64_t total_data_gas() const;  // EIP-4844
 };
 
 bool operator==(const Transaction& a, const Transaction& b);

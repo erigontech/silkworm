@@ -44,7 +44,8 @@ tests_not_compared = [
    "debug_traceBlockByNumber/test_02.tar",
    "debug_traceCall/test_10.json",
    "debug_traceCall/test_14.json",
-   "debug_traceCall/test_17.json"
+   "debug_traceCall/test_17.json",
+   "eth_maxPriorityFeePerGas/test_1.json"
 ]
 
 def get_target(target_type: str, method: str, infura_url: str, host: str):

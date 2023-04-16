@@ -22,8 +22,8 @@
 #include <absl/container/btree_map.h>
 #include <catch2/catch.hpp>
 
-#include <silkworm/node/common/test_context.hpp>
 #include <silkworm/node/etl/collector.hpp>
+#include <silkworm/node/test/context.hpp>
 
 namespace silkworm::db::bitmap {
 

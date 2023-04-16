@@ -22,8 +22,8 @@
 
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/common/cast.hpp>
-#include <silkworm/node/common/test_context.hpp>
 #include <silkworm/node/db/genesis.hpp>
+#include <silkworm/node/test/context.hpp>
 #include <silkworm/sync/sentry_client.hpp>
 
 namespace silkworm {

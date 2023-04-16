@@ -19,11 +19,11 @@
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/core/types/account.hpp>
-#include <silkworm/node/common/test_context.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/etl/collector.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_cursor.hpp>
 #include <silkworm/node/stagedsync/stages/stage_interhashes/trie_loader.hpp>
+#include <silkworm/node/test/context.hpp>
 
 namespace silkworm::trie {
 

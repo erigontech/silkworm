@@ -71,6 +71,8 @@ class IEngine {
     virtual evmc::address get_beneficiary(const BlockHeader& header) = 0;
 };
 
+bool transaction_type_is_supported(Transaction::Type, evmc_revision);
+
 //! \brief Performs validation of a transaction that can be done prior to sender recovery and block execution.
 //! \return Any of kIntrinsicGas, kInvalidSignature, kWrongChainId, kUnsupportedTransactionType, or kOk.
 //! \remarks Should sender of transaction not yet recovered a check on signature's validity is performed

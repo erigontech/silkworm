@@ -33,7 +33,7 @@ bool operator==(const Transaction& a, const Transaction& b) {
     return a.type == b.type && a.nonce == b.nonce && a.max_priority_fee_per_gas == b.max_priority_fee_per_gas &&
            a.max_fee_per_gas == b.max_fee_per_gas && a.gas_limit == b.gas_limit && a.to == b.to && a.value == b.value &&
            a.data == b.data && a.odd_y_parity == b.odd_y_parity && a.chain_id == b.chain_id && a.r == b.r &&
-           a.s == b.s && a.access_list == b.access_list;
+           a.s == b.s && a.access_list == b.access_list && a.blob_versioned_hashes == b.blob_versioned_hashes;
 }
 
 // https://eips.ethereum.org/EIPS/eip-155

@@ -28,6 +28,17 @@
 
 namespace silkworm::consensus {
 
+bool transaction_type_is_supported(Transaction::Type type, evmc_revision rev) {
+    static constexpr evmc_revision kMinRevisionByType[]{
+        EVMC_FRONTIER,  // kLegacy
+        EVMC_BERLIN,    // kEip2930
+        EVMC_LONDON,    // kEip1559
+        EVMC_CANCUN,    // kEip4844
+    };
+    const auto n{static_cast<std::size_t>(type)};
+    return n < std::size(kMinRevisionByType) && rev >= kMinRevisionByType[n];
+}
+
 ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_revision rev, const uint64_t chain_id,
                                           const std::optional<intx::uint256>& base_fee_per_gas) {
     if (txn.chain_id.has_value()) {
@@ -36,15 +47,7 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
         }
     }
 
-    if (txn.type == Transaction::Type::kEip2930) {
-        if (rev < EVMC_BERLIN) {
-            return ValidationResult::kUnsupportedTransactionType;
-        }
-    } else if (txn.type == Transaction::Type::kEip1559) {
-        if (rev < EVMC_LONDON) {
-            return ValidationResult::kUnsupportedTransactionType;
-        }
-    } else if (txn.type != Transaction::Type::kLegacy) {
+    if (!transaction_type_is_supported(txn.type, rev)) {
         return ValidationResult::kUnsupportedTransactionType;
     }
 

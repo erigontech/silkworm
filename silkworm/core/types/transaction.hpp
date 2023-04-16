@@ -23,6 +23,7 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/rlp/decode.hpp>
+#include <silkworm/core/types/hash.hpp>
 
 namespace silkworm {
 
@@ -41,6 +42,7 @@ struct Transaction {
         kLegacy = 0,
         kEip2930 = 1,
         kEip1559 = 2,
+        kEip4844 = 3,
     };
 
     Type type{Type::kLegacy};
@@ -58,6 +60,8 @@ struct Transaction {
     intx::uint256 r{0}, s{0};                             // signature
 
     std::vector<AccessListEntry> access_list{};  // EIP-2930
+
+    std::vector<Hash> blob_versioned_hashes{};  // EIP-4844
 
     std::optional<evmc::address> from{std::nullopt};  // sender recovered from the signature
 

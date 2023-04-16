@@ -799,25 +799,25 @@ void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::In
             trace.trace_result->gas_used = start_gas - result.gas_left;
             break;
         case evmc_status_code::EVMC_REVERT:
-            trace.error = "Reverted";
+            trace.error = "reverted";
             trace.trace_result->gas_used = start_gas - result.gas_left;
             break;
         case evmc_status_code::EVMC_OUT_OF_GAS:
         case evmc_status_code::EVMC_STACK_OVERFLOW:
-            trace.error = "Out of gas";
+            trace.error = "out of gas";
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
         case evmc_status_code::EVMC_INVALID_INSTRUCTION:
-            trace.error = "Bad instruction";
+            trace.error = "bad instruction";
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_STACK_UNDERFLOW:
-            trace.error = "Stack underflow";
+            trace.error = "stack underflow";
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_BAD_JUMP_DESTINATION:
-            trace.error = "Bad jump destination";
+            trace.error = "bad jump destination";
             trace.trace_result.reset();
             break;
         default:
@@ -870,7 +870,7 @@ void TraceTracer::on_reward_granted(const silkworm::CallResult& result, const si
             }
             break;
         case evmc_status_code::EVMC_REVERT:
-            trace.error = "Reverted";
+            trace.error = "reverted";
             trace.trace_result->gas_used = initial_gas_ - int64_t(result.gas_left);
             if (!result.data.empty()) {
                 if (trace.trace_result->code) {
@@ -882,20 +882,20 @@ void TraceTracer::on_reward_granted(const silkworm::CallResult& result, const si
             break;
         case evmc_status_code::EVMC_OUT_OF_GAS:
         case evmc_status_code::EVMC_STACK_OVERFLOW:
-            trace.error = "Out of gas";
+            trace.error = "out of gas";
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
         case evmc_status_code::EVMC_INVALID_INSTRUCTION:
-            trace.error = "Bad instruction";
+            trace.error = "bad instruction";
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_STACK_UNDERFLOW:
-            trace.error = "Stack underflow";
+            trace.error = "stack underflow";
             trace.trace_result.reset();
             break;
         case evmc_status_code::EVMC_BAD_JUMP_DESTINATION:
-            trace.error = "Bad jump destination";
+            trace.error = "bad jump destination";
             trace.trace_result.reset();
             break;
         default:

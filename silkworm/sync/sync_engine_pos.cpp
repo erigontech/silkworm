@@ -117,7 +117,7 @@ Block PoSSync::make_execution_block(const ExecutionPayload& payload) {
         }
         block.transactions.push_back(tx);
     }
-    header.transactions_root = consensus::EngineBase::compute_transaction_root(block);
+    header.transactions_root = consensus::compute_transaction_root(block);
 
     // as per EIP-3675
     header.ommers_hash = kEmptyListHash;  // = Keccak256(RLP([]))

@@ -47,7 +47,7 @@ TEST_CASE("Proof-of-Stake consensus engine") {
     EthashEngine ethash_engine{kMainnetConfig};
     ProofOfStakeEngine pos_engine{kMainnetConfig};
 
-    header.base_fee_per_gas = pos_engine.expected_base_fee_per_gas(header, parent.header);
+    header.base_fee_per_gas = expected_base_fee_per_gas(parent.header, EVMC_LONDON);
 
     InMemoryState state;
     state.insert_block(parent, header.parent_hash);

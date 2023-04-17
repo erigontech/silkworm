@@ -25,7 +25,7 @@
 #include <ethash/keccak.hpp>
 #include <intx/intx.hpp>
 
-//#include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/base.hpp>
 
 namespace silkworm {
 

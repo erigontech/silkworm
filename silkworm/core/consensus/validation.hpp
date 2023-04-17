@@ -86,6 +86,7 @@ enum class [[nodiscard]] ValidationResult{
     kNoBlobs,
     kTooManyBlobs,
     kWrongBlobCommitmentVersion,
+    kMaxFeePerDataGasTooLow,  // max_fee_per_data_gas < data_gas_price
 };
 
 }  // namespace silkworm

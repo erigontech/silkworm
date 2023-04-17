@@ -66,6 +66,8 @@ namespace param {
     inline constexpr uint64_t kMaxDataGasPerBlock{1u << 19};
     inline constexpr uint64_t kTargetDataGasPerBlock{1u << 18};
     inline constexpr uint64_t kDataGasPerBlob{1u << 17};
+    inline constexpr uint64_t kMinDataGasPrice{1};
+    inline constexpr uint64_t kDataGasPriceUpdateFraction{2225652};
 
 }  // namespace param
 

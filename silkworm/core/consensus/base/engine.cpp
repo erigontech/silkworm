@@ -88,9 +88,11 @@ ValidationResult EngineBase::pre_validate_transactions(const Block& block) {
     const BlockHeader& header{block.header};
 
     const evmc_revision rev{chain_config_.revision(header.number, header.timestamp)};
+    const std::optional<intx::uint256> data_gas_price{header.data_gas_price()};
     for (const Transaction& txn : block.transactions) {
-        if (ValidationResult err{pre_validate_transaction(txn, rev, chain_config_.chain_id, header.base_fee_per_gas)};
-            err != ValidationResult::kOk) {
+        ValidationResult err{pre_validate_transaction(txn, rev, chain_config_.chain_id,
+                                                      header.base_fee_per_gas, data_gas_price)};
+        if (err != ValidationResult::kOk) {
             return err;
         }
     }

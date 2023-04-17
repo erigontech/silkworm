@@ -42,9 +42,8 @@
                     "pc": 1,
                     "op": "opcode 0x4b not defined",
                     "gas": 156080,
-                    "gasCost": 2,
+                    "gasCost": 0,
                     "depth": 1,
-                    "error": {},
                     "stack": [
                          "0x8b24eb4e6aae906058242d83e51fb077370c4720"
                     ],

@@ -799,7 +799,7 @@ void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::In
             trace.trace_result->gas_used = start_gas - result.gas_left;
             break;
         case evmc_status_code::EVMC_REVERT:
-            trace.error = "reverted";
+            trace.error = "Reverted";
             trace.trace_result->gas_used = start_gas - result.gas_left;
             break;
         case evmc_status_code::EVMC_OUT_OF_GAS:
@@ -870,7 +870,7 @@ void TraceTracer::on_reward_granted(const silkworm::CallResult& result, const si
             }
             break;
         case evmc_status_code::EVMC_REVERT:
-            trace.error = "reverted";
+            trace.error = "Reverted";
             trace.trace_result->gas_used = initial_gas_ - int64_t(result.gas_left);
             if (!result.data.empty()) {
                 if (trace.trace_result->code) {

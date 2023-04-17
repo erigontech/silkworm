@@ -21,6 +21,8 @@
 #include <boost/asio/detached.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
+#include <silkworm/infra/concurrency/awaitable_future.hpp>
+
 #include "main_chain.hpp"
 
 namespace silkworm::stagedsync {
@@ -51,7 +53,8 @@ BlockId ExtendingFork::current_head() const {
 
 auto ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block>>&& blocks) -> asio::awaitable<void> {
     current_head_ = new_head;  // setting this here is important for find_fork_by_head() due to the fact that block
-    return co_spawn(           // insertion and head computation is delayed but find_fork_by_head() is called immediately
+                               // insertion and head computation is delayed but find_fork_by_head() is called immediately
+    return co_spawn(
         io_context_,
         [](ExtendingFork& me, BlockId new_head, std::list<std::shared_ptr<Block>>&& blocks) -> awaitable<void> {
             me.fork_.open();
@@ -71,15 +74,19 @@ auto ExtendingFork::extend_with(Hash head_hash, const Block& block) -> asio::awa
         use_awaitable);
 }
 
-auto ExtendingFork::verify_chain() -> awaitable<VerificationResult> {
-    return co_spawn(
-        io_context_,
-        [](ExtendingFork& me) -> awaitable<VerificationResult> {  // avoid using campture in lambda
+auto ExtendingFork::verify_chain() -> concurrency::AwaitableFuture<VerificationResult> {
+
+    concurrency::AwaitablePromise<VerificationResult> promise{io_context_};
+    auto awaitable_future = promise.get_future();
+
+    io_context_.post(
+        [](ExtendingFork& me, concurrency::AwaitablePromise<VerificationResult>&& promise) -> awaitable<VerificationResult> {  // avoid using campture in lambda
             auto result = me.fork_.verify_chain();
             me.current_head_ = me.fork_.current_head();
-            co_return result;
-        }(*this),
-        use_awaitable);
+            promise.set_value(result);
+        }(*this, std::move(promise)));
+
+    return awaitable_future;
 }
 
 bool ExtendingFork::notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {

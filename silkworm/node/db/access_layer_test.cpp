@@ -26,12 +26,12 @@
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/infra/test/log.hpp>
-#include <silkworm/node/common/test_context.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/db/prune_mode.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
 #include <silkworm/node/stagedsync/stages/stage_history_index.hpp>
+#include <silkworm/node/test/context.hpp>
 
 namespace silkworm {
 

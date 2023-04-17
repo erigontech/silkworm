@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "test_context.hpp"
+#include "context.hpp"
 
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/node/db/genesis.hpp>
@@ -22,7 +22,7 @@
 
 namespace silkworm::test {
 
-Context::Context(bool with_create_tables, bool inmemory) {
+Context::Context(bool with_create_tables, bool in_memory) {
     node_settings_.data_directory = std::make_unique<DataDirectory>(tmp_dir_.path(), /*create=*/true);
     node_settings_.chain_config = silkworm::kMainnetConfig;
     node_settings_.chain_config->genesis_hash.emplace(kMainnetGenesisHash);
@@ -31,7 +31,7 @@ Context::Context(bool with_create_tables, bool inmemory) {
                       .create = true,
                       .readonly = false,
                       .exclusive = false,
-                      .in_memory = inmemory};
+                      .in_memory = in_memory};
     node_settings_.prune_mode = std::make_unique<db::PruneMode>();
     env_ = db::open_env(node_settings_.chaindata_env_config);
     txn_ = std::make_unique<db::RWTxn>(env_);

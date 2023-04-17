@@ -21,7 +21,7 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test/log.hpp>
-#include <silkworm/node/common/test_context.hpp>
+#include <silkworm/node/test/context.hpp>
 #include <silkworm/node/test/files.hpp>
 
 namespace silkworm {

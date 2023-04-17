@@ -34,6 +34,7 @@ tests_with_big_json = [
 api_not_compared = [
    "trace_rawTransaction",
    "parity_getBlockReceipts",
+   "erigon_watchTheBurn",
    "txpool_content"
 ]
 

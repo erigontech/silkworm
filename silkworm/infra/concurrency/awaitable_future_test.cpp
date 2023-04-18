@@ -105,7 +105,8 @@ TEST_CASE("awaitable future") {
         int value;
         std::thread concurrent([&](AwaitableFuture<int>&& future) {
             value = future.get();
-        }, std::move(future));
+        },
+                               std::move(future));
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
 

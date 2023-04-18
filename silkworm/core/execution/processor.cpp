@@ -45,15 +45,8 @@ ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn
         return ValidationResult::kWrongNonce;
     }
 
-    // See https://github.com/ethereum/EIPs/pull/3594
-    intx::uint512 max_gas_cost{intx::umul(intx::uint256{txn.gas_limit}, txn.max_fee_per_gas)};
-    // and https://eips.ethereum.org/EIPS/eip-4844#gas-accounting
-    if (txn.max_fee_per_data_gas) {
-        max_gas_cost += intx::umul(intx::uint256{txn.total_data_gas()}, *txn.max_fee_per_data_gas);
-    }
-
-    // See YP, Eq (57) in Section 6.2 "Execution"
-    const intx::uint512 v0{max_gas_cost + txn.value};
+    // See YP, Eq (61) in Section 6.2 "Execution"
+    const intx::uint512 v0{txn.up_front_gas_cost() + txn.value};
     if (state_.get_balance(*txn.from) < v0) {
         return ValidationResult::kInsufficientFunds;
     }

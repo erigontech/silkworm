@@ -442,6 +442,16 @@ void Transaction::recover_sender() {
     }
 }
 
+intx::uint512 Transaction::up_front_gas_cost() const {
+    // See https://github.com/ethereum/EIPs/pull/3594
+    intx::uint512 max_gas_cost{intx::umul(intx::uint256{gas_limit}, max_fee_per_gas)};
+    // and https://eips.ethereum.org/EIPS/eip-4844#gas-accounting
+    if (max_fee_per_data_gas) {
+        max_gas_cost += intx::umul(intx::uint256{total_data_gas()}, *max_fee_per_data_gas);
+    }
+    return max_gas_cost;
+}
+
 intx::uint256 Transaction::priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const {
     assert(max_fee_per_gas >= base_fee_per_gas);
     return std::min(max_priority_fee_per_gas, max_fee_per_gas - base_fee_per_gas);

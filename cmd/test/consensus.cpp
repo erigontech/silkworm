@@ -610,19 +610,6 @@ RunResults transaction_test(const nlohmann::json& j) {
             }
         }
 
-        // TODO(yperbasis): move to pre_validate_transaction and switch to uint256 in validate_transaction?
-        const intx::uint512 max_gas_cost{intx::umul(intx::uint256{txn.gas_limit}, txn.max_fee_per_gas)};
-        // A corollary check of the following assertion from EIP-1559:
-        // signer.balance >= transaction.gas_limit * transaction.max_fee_per_gas
-        if (intx::count_significant_bytes(max_gas_cost) > 32) {
-            if (should_be_valid) {
-                std::cout << "gas_limit * max_fee_per_gas overflow\n";
-                return Status::kFailed;
-            } else {
-                continue;
-            }
-        }
-
         txn.recover_sender();
         if (should_be_valid && !txn.from.has_value()) {
             std::cout << "Failed to recover sender" << std::endl;

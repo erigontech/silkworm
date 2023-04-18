@@ -73,6 +73,10 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
         return ValidationResult::kIntrinsicGas;
     }
 
+    if (intx::count_significant_bytes(txn.up_front_gas_cost()) > 32) {
+        return ValidationResult::kInsufficientFunds;
+    }
+
     // EIP-2681: Limit account nonce to 2^64-1
     if (txn.nonce >= UINT64_MAX) {
         return ValidationResult::kNonceTooHigh;

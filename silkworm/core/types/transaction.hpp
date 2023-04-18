@@ -74,11 +74,15 @@ struct Transaction {
     [[nodiscard]] bool set_v(const intx::uint256& v);
 
     //! \brief Populates the from field with recovered sender.
-    //! See Yellow Paper, Appendix F "Signing Transactions",
+    //! \see Yellow Paper, Appendix F "Signing Transactions",
     //! https://eips.ethereum.org/EIPS/eip-2 and
     //! https://eips.ethereum.org/EIPS/eip-155.
     //! If recovery fails the from field is set to null.
     void recover_sender();
+
+    //! \brief Corresponds to the up-front gas cost Tg*Tp in the Yellow Paper
+    //! \see Eq (61) in Section 6.2 "Execution"
+    [[nodiscard]] intx::uint512 up_front_gas_cost() const;
 
     [[nodiscard]] intx::uint256 priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const;  // EIP-1559
     [[nodiscard]] intx::uint256 effective_gas_price(const intx::uint256& base_fee_per_gas) const;   // EIP-1559

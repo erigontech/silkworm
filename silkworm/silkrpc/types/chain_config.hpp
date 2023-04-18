@@ -35,7 +35,7 @@ struct ChainConfig {
 struct Forks {
     const evmc::bytes32& genesis_hash;
     std::vector<uint64_t> block_numbers;
-    std::vector<uint64_t> time_list;
+    std::vector<uint64_t> block_times;
 
     explicit Forks(const ChainConfig& chain_config) : genesis_hash(chain_config.genesis_hash) {
         const auto cc{silkworm::ChainConfig::from_json(chain_config.config)};
@@ -48,10 +48,10 @@ struct Forks {
             }
         }
         if (cc->shanghai_time) {
-            time_list.push_back(*cc->shanghai_time);
+            block_times.push_back(*cc->shanghai_time);
         }
         if (cc->cancun_time) {
-            time_list.push_back(*cc->cancun_time);
+            block_times.push_back(*cc->cancun_time);
         }
     }
 };

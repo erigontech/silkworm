@@ -86,14 +86,14 @@ TEST_CASE("awaitable future") {
     }
 
     SECTION("blocking get - promise destroyed first (2)") {
-        auto future = [&]() {
+        auto get_future = [&]() {
             concurrency::AwaitablePromise<int> promise{io};
             auto future = promise.get_future();
             promise.set_value(42);
             return future;
         }();
 
-        auto value = future.get();
+        auto value = get_future.get();
 
         CHECK(value == 42);
     }
@@ -103,8 +103,8 @@ TEST_CASE("awaitable future") {
         auto future = promise.get_future();
 
         int value;
-        std::thread concurrent([&](AwaitableFuture<int>&& future) {
-            value = future.get();
+        std::thread concurrent([&](AwaitableFuture<int>&& moved_future) {
+            value = moved_future.get();
         },
                                std::move(future));
 
@@ -141,8 +141,8 @@ TEST_CASE("awaitable future") {
         int value;
         auto spawned_exec = asio::co_spawn(
             io,
-            [&](AwaitableFuture<int>&& future) -> asio::awaitable<void> {
-                value = co_await future.get(asio::use_awaitable);
+            [&](AwaitableFuture<int>&& moved_future) -> asio::awaitable<void> {
+                value = co_await moved_future.get(asio::use_awaitable);
             }(std::move(future)),
             asio::use_future);
 

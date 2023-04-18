@@ -66,6 +66,8 @@ class SnapshotPath {
                                            BlockNum block_to,
                                            SnapshotType type);
 
+    [[nodiscard]] std::string filename() const { return path_.filename().string(); }
+
     [[nodiscard]] std::filesystem::path path() const { return path_; }
 
     [[nodiscard]] uint8_t version() const { return version_; }

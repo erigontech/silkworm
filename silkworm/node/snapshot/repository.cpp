@@ -48,8 +48,8 @@ void SnapshotRepository::build_missing_indexes() {
 
     SnapshotPathList segment_files = get_segment_files();
     for (const auto& seg_file : segment_files) {
-        SILK_INFO << "Segment file: " << seg_file.path() << " has index: " << seg_file.index_file().path();
-        const auto& index_file = seg_file.index_file();
+        const auto index_file = seg_file.index_file();
+        SILK_INFO << "Segment file: " << seg_file.filename() << " has index: " << index_file.filename();
         if (!std::filesystem::exists(index_file.path())) {
             std::shared_ptr<Index> index;
             switch (seg_file.type()) {
@@ -69,13 +69,16 @@ void SnapshotRepository::build_missing_indexes() {
                     SILKWORM_ASSERT(false);
                 }
             }
-            if (index) {
-                workers.submit([&index]() {
-                    log::Info() << "[Snapshots] Build index: " << index->path().path().string() << " start";
+            log::Info() << "[Snapshots] Build index: " << index->path().filename() << " start";
+            index->build();
+            log::Info() << "[Snapshots] Build index: " << index->path().filename() << " end";
+            /*if (index) {
+                workers.submit([index = std::move(index)]() {
+                    log::Info() << "[Snapshots] Build index: " << index->path().filename() << " start";
                     index->build();
-                    log::Info() << "[Snapshots] Build index: " << index->path().path().string() << " end";
+                    log::Info() << "[Snapshots] Build index: " << index->path().filename() << " end";
                 });
-            }
+            }*/
         }
     }
 

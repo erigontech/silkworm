@@ -314,14 +314,14 @@ void Decompressor::open() {
 
     // Read patterns from compressed file
     const auto pattern_dict_length = endian::load_big_u64(address + kWordsCountSize + kEmptyWordsCountSize);
-    SILK_INFO << "Decompress pattern dictionary length: " << pattern_dict_length;
+    SILK_DEBUG << "Decompress pattern dictionary length: " << pattern_dict_length;
 
     const std::size_t patterns_dict_offset{kWordsCountSize + kEmptyWordsCountSize + kDictionaryLengthSize};
     read_patterns(ByteView{address + patterns_dict_offset, pattern_dict_length});
 
     // Read positions from compressed file
     const auto position_dict_length = endian::load_big_u64(address + patterns_dict_offset + pattern_dict_length);
-    SILK_INFO << "Decompress position dictionary length: " << position_dict_length;
+    SILK_DEBUG << "Decompress position dictionary length: " << position_dict_length;
 
     const std::size_t positions_dict_offset{patterns_dict_offset + pattern_dict_length + kDictionaryLengthSize};
     read_positions(ByteView{address + positions_dict_offset, position_dict_length});
@@ -402,14 +402,14 @@ void Decompressor::read_patterns(ByteView dict) {
         throw std::runtime_error{"pattern stream not exhausted: " + std::to_string(raw_input.ByteCount() - coded_input.CurrentPosition())};
     }
 
-    SILK_INFO << "Pattern count: " << pattern_count << " highest depth: " << pattern_highest_depth;
+    SILK_DEBUG << "Pattern count: " << pattern_count << " highest depth: " << pattern_highest_depth;
 
     pattern_dict_ = std::make_unique<PatternTable>(pattern_highest_depth);
     if (dict.length() > 0) {
         pattern_dict_->build_condensed({patterns.begin(), pattern_count});
     }
 
-    SILK_INFO << "#codewords: " << pattern_dict_->num_codewords();
+    SILK_DEBUG << "#codewords: " << pattern_dict_->num_codewords();
     SILK_TRACE << *pattern_dict_;
 }
 
@@ -458,14 +458,14 @@ void Decompressor::read_positions(ByteView dict) {
         throw std::runtime_error{"position stream not exhausted: " + std::to_string(raw_input.ByteCount() - coded_input.CurrentPosition())};
     }
 
-    SILK_INFO << "Position count: " << position_count << " highest depth: " << position_highest_depth;
+    SILK_DEBUG << "Position count: " << position_count << " highest depth: " << position_highest_depth;
 
     position_dict_ = std::make_unique<PositionTable>(position_highest_depth);
     if (dict.length() > 0) {
         position_dict_->build({positions.begin(), position_count});
     }
 
-    SILK_INFO << "#positions: " << position_dict_->num_positions();
+    SILK_DEBUG << "#positions: " << position_dict_->num_positions();
     SILK_TRACE << *position_dict_;
 }
 

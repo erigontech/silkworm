@@ -41,6 +41,8 @@ class SnapshotSync {
     void stop();
 
   private:
+    void open_and_verify();
+
     SnapshotSettings settings_;
     const ChainConfig& config_;
     SnapshotRepository repository_;

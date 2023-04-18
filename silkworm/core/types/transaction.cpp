@@ -440,7 +440,7 @@ void Transaction::recover_sender() {
     }
 }
 
-intx::uint512 Transaction::up_front_gas_cost() const {
+intx::uint512 Transaction::maximum_gas_cost() const {
     // See https://github.com/ethereum/EIPs/pull/3594
     intx::uint512 max_gas_cost{intx::umul(intx::uint256{gas_limit}, max_fee_per_gas)};
     // and https://eips.ethereum.org/EIPS/eip-4844#gas-accounting

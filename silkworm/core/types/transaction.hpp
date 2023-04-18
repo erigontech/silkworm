@@ -80,9 +80,8 @@ struct Transaction {
     //! If recovery fails the from field is set to null.
     void recover_sender();
 
-    //! \brief Corresponds to the up-front gas cost Tg*Tp in the Yellow Paper
-    //! \see Eq (61) in Section 6.2 "Execution"
-    [[nodiscard]] intx::uint512 up_front_gas_cost() const;
+    //! \brief Maximum possible cost of normal and data (EIP-4844) gas
+    [[nodiscard]] intx::uint512 maximum_gas_cost() const;
 
     [[nodiscard]] intx::uint256 priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const;  // EIP-1559
     [[nodiscard]] intx::uint256 effective_gas_price(const intx::uint256& base_fee_per_gas) const;   // EIP-1559

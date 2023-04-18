@@ -46,7 +46,7 @@ ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn
     }
 
     // See YP, Eq (61) in Section 6.2 "Execution"
-    const intx::uint512 v0{txn.up_front_gas_cost() + txn.value};
+    const intx::uint512 v0{txn.maximum_gas_cost() + txn.value};
     if (state_.get_balance(*txn.from) < v0) {
         return ValidationResult::kInsufficientFunds;
     }

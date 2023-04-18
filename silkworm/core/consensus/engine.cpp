@@ -73,7 +73,7 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
         return ValidationResult::kIntrinsicGas;
     }
 
-    if (intx::count_significant_bytes(txn.up_front_gas_cost()) > 32) {
+    if (intx::count_significant_bytes(txn.maximum_gas_cost()) > 32) {
         return ValidationResult::kInsufficientFunds;
     }
 

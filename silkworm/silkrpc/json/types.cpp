@@ -759,7 +759,7 @@ void from_json(const nlohmann::json& json, TransitionConfiguration& transition_c
 void to_json(nlohmann::json& json, const Forks& forks) {
     json["genesis"] = forks.genesis_hash;
     json["heightForks"] = forks.block_numbers;
-    json["timeForks"] = forks.time_list;
+    json["timeForks"] = forks.block_times;
 }
 
 void to_json(nlohmann::json& json, const Issuance& issuance) {

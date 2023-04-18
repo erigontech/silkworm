@@ -16,8 +16,6 @@
 
 #include "transaction.hpp"
 
-#include <cassert>
-
 #include <ethash/keccak.hpp>
 
 #include <silkworm/core/chain/protocol_param.hpp>
@@ -113,7 +111,7 @@ namespace rlp {
         h.payload_length += length(txn.data);
 
         if (txn.type != Transaction::Type::kLegacy) {
-            assert(txn.type == Transaction::Type::kEip2930 || txn.type == Transaction::Type::kEip1559);
+            SILKWORM_ASSERT(txn.type == Transaction::Type::kEip2930 || txn.type == Transaction::Type::kEip1559);
             h.payload_length += length(txn.access_list);
         }
 
@@ -169,7 +167,7 @@ namespace rlp {
     }
 
     static void eip2718_encode(Bytes& to, const Transaction& txn, bool for_signing, bool wrap_into_array) {
-        assert(txn.type == Transaction::Type::kEip2930 || txn.type == Transaction::Type::kEip1559);
+        SILKWORM_ASSERT(txn.type == Transaction::Type::kEip2930 || txn.type == Transaction::Type::kEip1559);
 
         Header rlp_head{rlp_header(txn, for_signing)};
 
@@ -453,7 +451,7 @@ intx::uint512 Transaction::up_front_gas_cost() const {
 }
 
 intx::uint256 Transaction::priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const {
-    assert(max_fee_per_gas >= base_fee_per_gas);
+    SILKWORM_ASSERT(max_fee_per_gas >= base_fee_per_gas);
     return std::min(max_priority_fee_per_gas, max_fee_per_gas - base_fee_per_gas);
 }
 

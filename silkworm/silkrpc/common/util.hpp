@@ -35,8 +35,8 @@
 namespace silkworm {
 
 struct KeyValue {
-    silkworm::Bytes key;
-    silkworm::Bytes value;
+    Bytes key;
+    Bytes value;
 };
 
 inline bool operator<(const KeyValue& lhs, const KeyValue& rhs) {
@@ -47,34 +47,30 @@ inline bool operator==(const KeyValue& lhs, const KeyValue& rhs) {
     return lhs.key == rhs.key;
 }
 
-std::string base64_encode(const uint8_t* bytes_to_encode, size_t len, bool url);
+std::string base64_encode(ByteView bytes_to_encode, bool url);
 
 std::string to_dec(intx::uint256 number);
 
 bool check_tx_fee_less_cap(float cap, intx::uint256 max_fee_per_gas, uint64_t gas_limit);
 
-bool is_replay_protected(const silkworm::Transaction& txn);
+bool is_replay_protected(const Transaction& txn);
 
-std::string decoding_result_to_string(silkworm::DecodingError decode_result);
+std::string decoding_result_to_string(DecodingError decode_result);
 
 template <unsigned N>
-silkworm::ByteView full_view(const uint8_t (&bytes)[N]) {
+ByteView full_view(const uint8_t (&bytes)[N]) {
     return {bytes, N};
 }
 
-inline silkworm::ByteView full_view(const evmc::address& address) { return {address.bytes, silkworm::kAddressLength}; }
+inline ByteView full_view(const evmc::address& address) { return {address.bytes, kAddressLength}; }
 
-inline silkworm::ByteView full_view(const evmc::bytes32& hash) { return {hash.bytes, silkworm::kHashLength}; }
+inline ByteView full_view(const evmc::bytes32& hash) { return {hash.bytes, kHashLength}; }
 
-inline silkworm::ByteView full_view(const silkworm::Bloom& bloom) { return {bloom.data(), silkworm::kBloomByteLength}; }
+inline ByteView full_view(const Bloom& bloom) { return {bloom.data(), kBloomByteLength}; }
 
-inline silkworm::ByteView full_view(const ethash::hash256& hash) { return {hash.bytes, silkworm::kHashLength}; }
+inline ByteView full_view(const ethash::hash256& hash) { return {hash.bytes, kHashLength}; }
 
-const silkworm::ChainConfig* lookup_chain_config(uint64_t chain_id);
-
-}  // namespace silkworm
-
-namespace silkworm {
+const ChainConfig* lookup_chain_config(uint64_t chain_id);
 
 inline std::ostream& operator<<(std::ostream& out, ByteView bytes) {
     for (const auto& b : bytes) {
@@ -93,12 +89,12 @@ inline Bytes bytes_of_string(const std::string& s) {
 }
 
 inline evmc::bytes32 bytes32_from_hex(const std::string& s) {
-    const auto b32_bytes = silkworm::from_hex(s);
-    return silkworm::to_bytes32(b32_bytes.value_or(silkworm::Bytes{}));
+    const auto b32_bytes = from_hex(s);
+    return to_bytes32(b32_bytes.value_or(silkworm::Bytes{}));
 }
 
 inline std::ostream& operator<<(std::ostream& out, const Bytes& bytes) {
-    out << silkworm::to_hex(bytes);
+    out << to_hex(bytes);
     return out;
 }
 

@@ -57,7 +57,7 @@
                          "to": "0x07aaec0b237ccf56b03a7c43c1c7a783da560642",
                          "value": "0x0"
                     },
-                    "error": "Out of gas",
+                    "error": "out of gas",
                     "result": null,
                     "subtraces": 0,
                     "traceAddress": [],

@@ -20,6 +20,8 @@
 #include <string>
 
 #include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/node/db/bitmap.hpp>
+#include <silkworm/node/db/tables.hpp>
 #include <silkworm/silkrpc/consensus/ethash.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
@@ -237,6 +239,117 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockTransactions(const nl
     } catch (const std::invalid_argument& iv) {
         SILKRPC_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump() << "\n";
         reply = make_json_content(request["id"], {});
+    } catch (const std::exception& e) {
+        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+    co_return;
+}
+
+boost::asio::awaitable<void> OtsRpcApi::handle_ots_getTransactionBySenderAndNonce(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request["params"];
+    if (params.size() != 2) {
+        const auto error_msg = "invalid ots_getTransactionBySenderAndNonce params: " + params.dump();
+        SILKRPC_ERROR << error_msg << "\n";
+        reply = make_json_error(request["id"], 100, error_msg);
+        co_return;
+    }
+
+    const auto sender = params[0].get<evmc::address>();
+    const auto nonce = params[1].get<uint64_t>();
+
+    SILKRPC_DEBUG << "sender: " << sender << " nonce: " << nonce << "\n";
+    auto tx = co_await database_->begin();
+
+    try {
+        auto account_history_cursor = co_await tx->cursor(db::table::kAccountHistoryName);
+        auto account_change_set_cursor = co_await tx->cursor_dup_sort(db::table::kAccountChangeSetName);
+        auto sender_byte_view = full_view(sender);
+        auto key_value = co_await account_history_cursor->seek(sender_byte_view);
+
+        std::vector<uint64_t> account_block_numbers;
+
+        uint64_t max_block_prev_chunk = 0;
+        roaring::Roaring64Map bitmap;
+
+        while (true) {
+            if (key_value.key.empty() || !key_value.key.starts_with(sender_byte_view)) {
+                auto plain_state_cursor = co_await tx->cursor(db::table::kPlainStateName);
+                auto account_payload = co_await plain_state_cursor->seek(sender_byte_view);
+                auto account = Account::from_encoded_storage(account_payload.value);
+
+                if (account.has_value() && account.value().nonce > nonce) {
+                    break;
+                }
+
+                reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+                co_await tx->close();
+                co_return;
+            }
+
+            bitmap = db::bitmap::parse(key_value.value);
+            auto const max_block = bitmap.maximum();
+            auto block_key{db::block_key(max_block)};
+            auto account_payload = co_await account_change_set_cursor->seek_both(block_key, sender_byte_view);
+            if (account_payload.starts_with(sender_byte_view)) {
+                account_payload = account_payload.substr(sender_byte_view.length());
+                auto account = Account::from_encoded_storage(account_payload);
+
+                if (account.has_value() && account.value().nonce > nonce) {
+                    break;
+                }
+            }
+            max_block_prev_chunk = max_block;
+            key_value = co_await account_history_cursor->next();
+        }
+
+        uint64_t cardinality = bitmap.cardinality();
+        account_block_numbers.reserve(cardinality);
+        bitmap.toUint64Array(account_block_numbers.data());
+
+        uint64_t idx = 0;
+        for (uint64_t i = 0; i < cardinality; i++) {
+            auto block_number = account_block_numbers[i];
+            auto block_key{db::block_key(block_number)};
+            auto account_payload = co_await account_change_set_cursor->seek_both(block_key, sender_byte_view);
+            if (account_payload.starts_with(sender_byte_view)) {
+                account_payload = account_payload.substr(sender_byte_view.length());
+                auto account = Account::from_encoded_storage(account_payload);
+
+                if (account.has_value() && account.value().nonce > nonce) {
+                    idx = i;
+                    break;
+                }
+            }
+        }
+
+        auto nonce_block = max_block_prev_chunk;
+        if (idx > 0) {
+            nonce_block = account_block_numbers[idx - 1];
+        }
+
+        ethdb::TransactionDatabase tx_database{*tx};
+        auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, nonce_block);
+
+        for (const auto& transaction : block_with_hash.block.transactions) {
+            if (transaction.from == sender && transaction.nonce == nonce) {
+                auto const transaction_hash{hash_of_transaction(transaction)};
+                auto result = to_bytes32({transaction_hash.bytes, kHashLength});
+                reply = make_json_content(request["id"], result);
+                co_await tx->close();
+                co_return;
+            }
+        }
+        reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+
+    } catch (const std::invalid_argument& iv) {
+        SILKRPC_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump() << "\n";
+        reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
         reply = make_json_error(request["id"], 100, e.what());

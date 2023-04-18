@@ -23,7 +23,7 @@
           },
           "blockHash": "0xe64899e6fe64ebb72b8f65565e9dd765776da064aff9af4601c1efa445dbb0a1",
           "blockNumber": 5415091,
-          "error": "Out of gas",
+          "error": "out of gas",
           "result": null,
           "subtraces": 0,
           "traceAddress": [],

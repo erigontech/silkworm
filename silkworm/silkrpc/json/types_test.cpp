@@ -1353,7 +1353,8 @@ TEST_CASE("serialize zero forks", "[silkworm::json][to_json]") {
     nlohmann::json j = f;
     CHECK(j == R"({
         "genesis":"0x0000000000000000000000000000000000000000000000000000000000000000",
-        "forks":[]
+        "heightForks":[],
+        "timeForks":[]
     })"_json);
 }
 
@@ -1373,14 +1374,16 @@ TEST_CASE("serialize forks", "[silkworm::json][to_json]") {
             "istanbulBlock":9069000,
             "londonBlock":12965000,
             "muirGlacierBlock":9200000,
-            "petersburgBlock":7280000
+            "petersburgBlock":7280000,
+            "shanghaiTime":1678832736
         })"_json};
     silkworm::rpc::Forks f{cc};
     nlohmann::json j = f;
     CHECK(j == R"({
         "genesis":"0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c",
-        "forks":[1150000,1920000,2463000,2675000,4370000,7280000,9069000,9200000,
-  12244000,12965000]
+        "heightForks":[1150000,1920000,2463000,2675000,4370000,7280000,9069000,9200000,
+  12244000,12965000],
+        "timeForks":[1678832736]
     })"_json);
 }
 

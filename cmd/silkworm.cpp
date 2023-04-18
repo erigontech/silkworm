@@ -534,7 +534,7 @@ int main(int argc, char* argv[]) {
             // TODO: uncomment when sync_sentry_client is refactored to use the sentry client
             // sentry_settings.api_address = "";
 
-            *sentry_server = std::make_shared<silkworm::sentry::Sentry>(std::move(sentry_settings), context_pool);
+            sentry_server = std::make_shared<silkworm::sentry::Sentry>(std::move(sentry_settings), context_pool);
 
             // direct client
             sentry_client = sentry_server.value();

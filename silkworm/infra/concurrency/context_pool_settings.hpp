@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <silkworm/infra/rpc/server/wait_strategy.hpp>
+#include <silkworm/infra/grpc/server/wait_strategy.hpp>
 
 namespace silkworm::concurrency {
 

@@ -26,7 +26,7 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/rpc/client/call.hpp>
+#include <silkworm/infra/grpc/client/call.hpp>
 #include <silkworm/interfaces/p2psentry/sentry.grpc.pb.h>
 
 #include "../interfaces/eth_version.hpp"

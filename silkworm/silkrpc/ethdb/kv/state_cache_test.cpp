@@ -31,7 +31,7 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/infra/rpc/common/conversion.hpp>
+#include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/core/rawdb/util.hpp>
 #include <silkworm/silkrpc/test/dummy_transaction.hpp>

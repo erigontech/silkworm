@@ -25,8 +25,8 @@
 #include <silkworm/buildinfo.h>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
-#include <silkworm/infra/rpc/common/util.hpp>
-#include <silkworm/infra/rpc/server/server_context_pool.hpp>
+#include <silkworm/infra/grpc/common/util.hpp>
+#include <silkworm/infra/grpc/server/server_context_pool.hpp>
 #include <silkworm/sentry/sentry.hpp>
 #include <silkworm/sentry/settings.hpp>
 

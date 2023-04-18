@@ -22,7 +22,7 @@
 
 #include <boost/asio/awaitable.hpp>
 
-#include <silkworm/infra/rpc/server/server_context_pool.hpp>
+#include <silkworm/infra/grpc/server/server_context_pool.hpp>
 
 #include "api/api_common/sentry_client.hpp"
 #include "settings.hpp"

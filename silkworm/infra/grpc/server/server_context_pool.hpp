@@ -29,7 +29,7 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
-#include <silkworm/infra/rpc/server/wait_strategy.hpp>
+#include <silkworm/infra/grpc/server/wait_strategy.hpp>
 
 namespace silkworm::rpc {
 

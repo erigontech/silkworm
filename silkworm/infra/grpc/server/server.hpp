@@ -27,8 +27,8 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/async_thread.hpp>
-#include <silkworm/infra/rpc/server/server_config.hpp>
-#include <silkworm/infra/rpc/server/server_context_pool.hpp>
+#include <silkworm/infra/grpc/server/server_config.hpp>
+#include <silkworm/infra/grpc/server/server_context_pool.hpp>
 
 namespace silkworm::rpc {
 

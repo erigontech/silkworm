@@ -19,9 +19,9 @@
 #include <silkworm/core/types/bloom.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/rpc/client/call.hpp>
-#include <silkworm/infra/rpc/common/conversion.hpp>
-#include <silkworm/infra/rpc/interfaces/types.hpp>
+#include <silkworm/infra/grpc/client/call.hpp>
+#include <silkworm/infra/grpc/common/conversion.hpp>
+#include <silkworm/infra/grpc/interfaces/types.hpp>
 #include <silkworm/interfaces/execution/execution.grpc.pb.h>
 
 namespace silkworm::execution {

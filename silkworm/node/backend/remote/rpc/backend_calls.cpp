@@ -17,9 +17,9 @@
 #include "backend_calls.hpp"
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/rpc/client/call.hpp>
-#include <silkworm/infra/rpc/common/conversion.hpp>
-#include <silkworm/infra/rpc/common/util.hpp>
+#include <silkworm/infra/grpc/client/call.hpp>
+#include <silkworm/infra/grpc/common/conversion.hpp>
+#include <silkworm/infra/grpc/common/util.hpp>
 #include <silkworm/interfaces/types/types.pb.h>
 #include <silkworm/sentry/rpc/interfaces/node_info.hpp>
 

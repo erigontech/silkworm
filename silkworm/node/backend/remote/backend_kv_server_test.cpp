@@ -32,8 +32,8 @@
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
-#include <silkworm/infra/rpc/common/conversion.hpp>
-#include <silkworm/infra/rpc/common/util.hpp>
+#include <silkworm/infra/grpc/common/conversion.hpp>
+#include <silkworm/infra/grpc/common/util.hpp>
 #include <silkworm/infra/test/log.hpp>
 #include <silkworm/interfaces/types/types.pb.h>
 #include <silkworm/node/backend/ethereum_backend.hpp>

@@ -20,7 +20,7 @@
 #include <vector>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/infra/rpc/interfaces/types.hpp>
+#include <silkworm/infra/grpc/interfaces/types.hpp>
 #include <silkworm/sentry/eth/fork_id.hpp>
 
 namespace silkworm::sentry::rpc::interfaces {

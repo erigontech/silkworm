@@ -25,8 +25,8 @@
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/transaction.hpp>
-#include <silkworm/infra/rpc/common/conversion.hpp>
-#include <silkworm/infra/rpc/common/util.hpp>
+#include <silkworm/infra/grpc/common/conversion.hpp>
+#include <silkworm/infra/grpc/common/util.hpp>
 
 namespace silkworm::rpc {
 

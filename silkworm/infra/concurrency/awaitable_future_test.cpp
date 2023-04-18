@@ -18,11 +18,33 @@
 
 #include <catch2/catch.hpp>
 
+#include "active_component.hpp"
+
 namespace silkworm {
 
 namespace asio = boost::asio;
 using concurrency::AwaitableFuture;
 using concurrency::AwaitablePromise;
+
+class IOExecution : public ActiveComponent {
+  public:
+    IOExecution(asio::io_context& io) : io_(io) {
+        thread_ = std::thread{[this] { execution_loop(); }};
+    }
+    void wait_exiting() { thread_.join(); }
+    ~IOExecution() {
+        stop();
+        wait_exiting();
+    }
+
+  private:
+    virtual void execution_loop() {
+        while (!is_stopping()) io_.run();
+    }
+
+    asio::io_context& io_;
+    std::thread thread_;
+};
 
 auto create_promise_and_set_value(asio::io_context& io, int value) {
     concurrency::AwaitablePromise<int> promise{io};
@@ -32,11 +54,7 @@ auto create_promise_and_set_value(asio::io_context& io, int value) {
 
 TEST_CASE("awaitable future") {
     asio::io_context io;
-
-    std::jthread execution([&](std::stop_token stop_token) {
-        while (!stop_token.stop_requested())
-            io.run();
-    });
+    IOExecution execution{io};
 
     SECTION("blocking get - normal") {
         AwaitablePromise<int> promise{io};
@@ -47,7 +65,7 @@ TEST_CASE("awaitable future") {
 
         CHECK(value == 42);
 
-        // The destructor of jthread calls request_stop() and join()
+        // The destructor of Executor calls stop() and join()
     }
 
     SECTION("blocking get - exception") {
@@ -85,7 +103,7 @@ TEST_CASE("awaitable future") {
         auto future = promise.get_future();
 
         int value;
-        std::jthread concurrent([&](AwaitableFuture<int>&& future) {
+        std::thread concurrent([&](AwaitableFuture<int>&& future) {
             value = future.get();
         }, std::move(future));
 

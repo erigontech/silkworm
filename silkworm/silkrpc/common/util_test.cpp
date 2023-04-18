@@ -98,10 +98,10 @@ TEST_CASE("print Account", "[silkrpc][common][util]") {
 
 TEST_CASE("base64 encode", "[silkrpc][common][util]") {
     uint8_t plain[] = "deadbeaf";
-    auto encoded = base64_encode(plain, sizeof(plain), false);
+    auto encoded = base64_encode({plain, sizeof(plain)}, false);
     CHECK(encoded == "ZGVhZGJlYWYA");
 
-    encoded = base64_encode(plain, sizeof(plain), true);
+    encoded = base64_encode({plain, sizeof(plain)}, true);
     CHECK(encoded == "ZGVhZGJlYWYA");
 }
 

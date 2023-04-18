@@ -198,9 +198,14 @@ bool BitTorrentClient::all_torrents_seeding() const {
 void BitTorrentClient::execute_loop() {
     SILK_TRACE << "BitTorrentClient::execute_loop start";
 
+    stats_metrics_ = lt::session_stats_metrics();
+
+    int poll_count{0};
     bool stopped{false};
     while (!stopped && (settings_.seeding || !all_torrents_seeding())) {
-        request_torrent_updates();
+        poll_count = poll_count % settings_.number_of_polls_between_stats;
+
+        request_torrent_updates(!poll_count);
         process_alerts();
 
         std::unique_lock stop_lock{stop_mutex_};
@@ -223,10 +228,13 @@ void BitTorrentClient::execute_loop() {
     SILK_TRACE << "BitTorrentClient::execute_loop end";
 }
 
-void BitTorrentClient::request_torrent_updates() {
+void BitTorrentClient::request_torrent_updates(bool stats_included) {
     SILK_TRACE << "BitTorrentClient::request_torrent_updates start";
     // Ask the session to post update alerts for our torrents
     session_.post_torrent_updates();
+    if (stats_included) {
+        session_.post_session_stats();
+    }
 
     // Save resume data every once in a while
     if (std::chrono::steady_clock::now() - last_save_resume_ >= settings_.resume_data_save_interval) {
@@ -327,6 +335,12 @@ bool BitTorrentClient::handle_alert(const lt::alert* alert) {
         } else {
             SILK_DEBUG << "Empty state update alert:" << sta->message();
         }
+        handled = true;
+    }
+
+    // When we receive any session stats alert, report stats
+    if (const auto ssa = lt::alert_cast<lt::session_stats_alert>(alert)) {
+        stats_subscription(ssa->counters());
         handled = true;
     }
 

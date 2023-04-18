@@ -24,6 +24,7 @@
 #include <mutex>
 #include <optional>
 #include <set>
+#include <span>
 #include <string>
 #include <thread>
 #include <vector>
@@ -36,6 +37,7 @@
 #pragma GCC diagnostic ignored "-Wsign-conversion"
 #include <libtorrent/session.hpp>
 #include <libtorrent/session_params.hpp>
+#include <libtorrent/session_stats.hpp>
 #pragma GCC diagnostic pop
 
 #include <silkworm/node/bittorrent/settings.hpp>
@@ -51,6 +53,7 @@ class BitTorrentClient {
     constexpr static const char* kResumeFileExt{".resume"};
 
     using FileCallback = void(const std::filesystem::path&);
+    using StatsCallback = void(lt::span<const int64_t> counters);
 
     explicit BitTorrentClient(BitTorrentSettings settings = {});
     ~BitTorrentClient();
@@ -58,8 +61,13 @@ class BitTorrentClient {
     //! Subscription for torrent added announcements
     boost::signals2::signal<FileCallback> added_subscription;
 
+    //! Subscription for torrent metrics' announcements
+    boost::signals2::signal<StatsCallback> stats_subscription;
+
     //! Subscription for torrent completion announcements
     boost::signals2::signal<FileCallback> completed_subscription;
+
+    [[nodiscard]] const std::vector<lt::stats_metric>& stats_metrics() const { return stats_metrics_; }
 
     //! Add the specified info hash to the download list
     void add_info_hash(const std::string& name, const std::string& info_hash);
@@ -80,7 +88,7 @@ class BitTorrentClient {
     [[nodiscard]] bool exists_resume_file(const lt::info_hash_t& info_hashes) const;
     [[nodiscard]] inline bool all_torrents_seeding() const;
 
-    void request_torrent_updates();
+    void request_torrent_updates(bool stats_included);
     void request_save_resume_data(lt::resume_data_flags_t flags);
     void process_alerts();
     bool handle_alert(const lt::alert* alert);
@@ -97,6 +105,9 @@ class BitTorrentClient {
 
     //! The BitTorrent client session
     lt::session session_;
+
+    //! The session statistics
+    std::vector<lt::stats_metric> stats_metrics_;
 
     //! The number of save resume data requests still outstanding
     int outstanding_resume_requests_{0};

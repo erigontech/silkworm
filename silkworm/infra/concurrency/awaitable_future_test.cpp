@@ -80,14 +80,15 @@ TEST_CASE("awaitable future") {
         CHECK(value == 42);
     }
 
-    SECTION("blocking get - promise destroyed second") {
+    SECTION("blocking get - movable future") {
         AwaitablePromise<int> promise{io};
-        int value;
+        auto future = promise.get_future();
 
-        std::jthread concurrent([&]() {
-            auto future = promise.get_future();
+        int value;
+        std::jthread concurrent([&](AwaitableFuture<int>&& future) {
             value = future.get();
-        });
+        }, std::move(future));
+
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
         promise.set_value(42);
@@ -106,6 +107,24 @@ TEST_CASE("awaitable future") {
                 auto future = promise.get_future();
                 value = co_await future.get(asio::use_awaitable);
             },
+            asio::use_future);
+
+        promise.set_value(42);
+        spawned_exec.get();
+
+        CHECK(value == 42);
+    }
+
+    SECTION("awaitable get - movable future") {
+        AwaitablePromise<int> promise{io};
+        auto future = promise.get_future();
+
+        int value;
+        auto spawned_exec = asio::co_spawn(
+            io,
+            [&](AwaitableFuture<int>&& future) -> asio::awaitable<void> {
+                value = co_await future.get(asio::use_awaitable);
+            }(std::move(future)),
             asio::use_future);
 
         promise.set_value(42);

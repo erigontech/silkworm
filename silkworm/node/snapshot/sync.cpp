@@ -89,20 +89,33 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
         client_.add_info_hash(preverified_snapshot.file_name, preverified_snapshot.torrent_hash);
     }
 
-    auto handle_added = [](const std::filesystem::path& snapshot_file) {
+    auto log_added = [](const std::filesystem::path& snapshot_file) {
         SILK_INFO << "[Snapshots] download started for: " << snapshot_file.filename().string();
     };
-    client_.added_subscription.connect(handle_added);
+    client_.added_subscription.connect(log_added);
+
+    auto log_stats = [&](lt::span<const int64_t> counters) {
+        std::string counters_dump;
+        for (int i{0}; i < counters.size(); ++i) {
+            const auto& stats_metric = client_.stats_metrics().at(static_cast<std::size_t>(i));
+            counters_dump.append(stats_metric.name);
+            counters_dump.append("=");
+            counters_dump.append(std::to_string(counters[i]));
+            if (i != counters.size() - 1) counters_dump.append(", ");
+        }
+        SILK_DEBUG << "[Snapshots] download progress: [" << counters_dump << "]";
+    };
+    client_.stats_subscription.connect(log_stats);
 
     const auto num_snapshots{std::ptrdiff_t(snapshot_config->preverified_snapshots().size())};
     std::latch download_done{num_snapshots};
-    auto handle_completed = [&](const std::filesystem::path& snapshot_file) {
+    auto log_completed = [&](const std::filesystem::path& snapshot_file) {
         static int completed{0};
         SILK_INFO << "[Snapshots] download completed for: " << snapshot_file.filename().string() << " [" << ++completed
                   << "/" << num_snapshots << "]";
         download_done.count_down();
     };
-    client_.completed_subscription.connect(handle_completed);
+    client_.completed_subscription.connect(log_completed);
 
     client_thread_ = std::thread([&]() { client_.execute_loop(); });
 

@@ -45,10 +45,8 @@ ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn
         return ValidationResult::kWrongNonce;
     }
 
-    // https://github.com/ethereum/EIPs/pull/3594
-    const intx::uint512 max_gas_cost{intx::umul(intx::uint256{txn.gas_limit}, txn.max_fee_per_gas)};
-    // See YP, Eq (57) in Section 6.2 "Execution"
-    const intx::uint512 v0{max_gas_cost + txn.value};
+    // See YP, Eq (61) in Section 6.2 "Execution"
+    const intx::uint512 v0{txn.maximum_gas_cost() + txn.value};
     if (state_.get_balance(*txn.from) < v0) {
         return ValidationResult::kInsufficientFunds;
     }
@@ -71,10 +69,10 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
 
     state_.clear_journal_and_substate();
 
-    assert(txn.from.has_value());
+    assert(txn.from);
     state_.access_account(*txn.from);
 
-    if (txn.to.has_value()) {
+    if (txn.to) {
         state_.access_account(*txn.to);
         // EVM itself increments the nonce for contract creation
         state_.set_nonce(*txn.from, txn.nonce + 1);
@@ -93,9 +91,14 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         state_.access_account(evm_.beneficiary);
     }
 
+    // EIP-1559 normal gas cost
     const intx::uint256 base_fee_per_gas{evm_.block().header.base_fee_per_gas.value_or(0)};
     const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
     state_.subtract_from_balance(*txn.from, txn.gas_limit * effective_gas_price);
+
+    // EIP-4844 data gas cost (calc_data_fee)
+    const intx::uint256 data_gas_price{evm_.block().header.data_gas_price().value_or(0)};
+    state_.subtract_from_balance(*txn.from, txn.total_data_gas() * data_gas_price);
 
     const intx::uint128 g0{intrinsic_gas(txn, rev)};
     assert(g0 <= UINT64_MAX);  // true due to the precondition (transaction must be valid)

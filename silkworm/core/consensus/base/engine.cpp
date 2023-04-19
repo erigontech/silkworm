@@ -26,6 +26,7 @@ namespace silkworm::consensus {
 
 ValidationResult EngineBase::pre_validate_block_body(const Block& block, const BlockState& state) {
     const BlockHeader& header{block.header};
+    const evmc_revision rev{chain_config_.revision(header.number, header.timestamp)};
 
     const evmc::bytes32 txn_root{compute_transaction_root(block)};
     if (txn_root != header.transactions_root) {
@@ -36,7 +37,6 @@ ValidationResult EngineBase::pre_validate_block_body(const Block& block, const B
         return err;
     }
 
-    const evmc_revision rev{chain_config_.revision(header.number, header.timestamp)};
     if (rev < EVMC_SHANGHAI && block.withdrawals) {
         return ValidationResult::kUnexpectedWithdrawals;
     }
@@ -51,6 +51,23 @@ ValidationResult EngineBase::pre_validate_block_body(const Block& block, const B
         if (withdrawals_root != header.withdrawals_root) {
             return ValidationResult::kWrongWithdrawalsRoot;
         }
+    }
+
+    size_t total_blobs{0};
+    for (const Transaction& tx : block.transactions) {
+        total_blobs += tx.blob_versioned_hashes.size();
+    }
+    if (total_blobs > param::kMaxDataGasPerBlock / param::kDataGasPerBlob) {
+        return ValidationResult::kTooManyBlobs;
+    }
+
+    const std::optional<BlockHeader> parent{get_parent_header(state, header)};
+    if (!parent) {
+        return ValidationResult::kUnknownParent;
+    }
+
+    if (header.excess_data_gas != calc_excess_data_gas(*parent, total_blobs, rev)) {
+        return ValidationResult::kWrongExcessDataGas;
     }
 
     if (block.ommers.empty()) {
@@ -71,9 +88,11 @@ ValidationResult EngineBase::pre_validate_transactions(const Block& block) {
     const BlockHeader& header{block.header};
 
     const evmc_revision rev{chain_config_.revision(header.number, header.timestamp)};
+    const std::optional<intx::uint256> data_gas_price{header.data_gas_price()};
     for (const Transaction& txn : block.transactions) {
-        if (ValidationResult err{pre_validate_transaction(txn, rev, chain_config_.chain_id, header.base_fee_per_gas)};
-            err != ValidationResult::kOk) {
+        ValidationResult err{pre_validate_transaction(txn, rev, chain_config_.chain_id,
+                                                      header.base_fee_per_gas, data_gas_price)};
+        if (err != ValidationResult::kOk) {
             return err;
         }
     }
@@ -176,11 +195,12 @@ ValidationResult EngineBase::validate_block_header(const BlockHeader& header, co
         }
     }
 
-    if (header.base_fee_per_gas != expected_base_fee_per_gas(header, parent.value())) {
+    const evmc_revision rev{chain_config_.revision(header.number, header.timestamp)};
+
+    if (header.base_fee_per_gas != expected_base_fee_per_gas(*parent, rev)) {
         return ValidationResult::kWrongBaseFee;
     }
 
-    const evmc_revision rev{chain_config_.revision(header.number, header.timestamp)};
     if (rev < EVMC_SHANGHAI && header.withdrawals_root) {
         return ValidationResult::kUnexpectedWithdrawals;
     }
@@ -227,20 +247,17 @@ bool EngineBase::is_kin(const BlockHeader& branch_header, const BlockHeader& mai
 
 evmc::address EngineBase::get_beneficiary(const BlockHeader& header) { return header.beneficiary; }
 
-std::optional<intx::uint256> EngineBase::expected_base_fee_per_gas(const BlockHeader& header,
-                                                                   const BlockHeader& parent) {
-    if (chain_config_.revision(header.number, header.timestamp) < EVMC_LONDON) {
+std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& parent, const evmc_revision rev) {
+    if (rev < EVMC_LONDON) {
         return std::nullopt;
     }
 
-    if (header.number == chain_config_.london_block) {
+    if (!parent.base_fee_per_gas) {
         return param::kInitialBaseFee;
     }
 
     const uint64_t parent_gas_target{parent.gas_limit / param::kElasticityMultiplier};
-
-    assert(parent.base_fee_per_gas.has_value());
-    const intx::uint256 parent_base_fee_per_gas{parent.base_fee_per_gas.value()};
+    const intx::uint256& parent_base_fee_per_gas{*parent.base_fee_per_gas};
 
     if (parent.gas_used == parent_gas_target) {
         return parent_base_fee_per_gas;
@@ -266,14 +283,31 @@ std::optional<intx::uint256> EngineBase::expected_base_fee_per_gas(const BlockHe
     }
 }
 
-evmc::bytes32 EngineBase::compute_transaction_root(const BlockBody& body) {
+std::optional<intx::uint256> calc_excess_data_gas(const BlockHeader& parent,
+                                                  std::size_t num_blobs,
+                                                  const evmc_revision rev) {
+    if (rev < EVMC_CANCUN) {
+        return std::nullopt;
+    }
+
+    const uint64_t consumed_data_gas{num_blobs * param::kDataGasPerBlob};
+    const intx::uint256 parent_excess_data_gas{parent.excess_data_gas.value_or(0)};
+
+    if (parent_excess_data_gas + consumed_data_gas < param::kTargetDataGasPerBlock) {
+        return 0;
+    } else {
+        return parent_excess_data_gas + consumed_data_gas - param::kTargetDataGasPerBlock;
+    }
+}
+
+evmc::bytes32 compute_transaction_root(const BlockBody& body) {
     static constexpr auto kEncoder = [](Bytes& to, const Transaction& txn) {
         rlp::encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_into_string=*/false);
     };
     return trie::root_hash(body.transactions, kEncoder);
 }
 
-evmc::bytes32 EngineBase::compute_ommers_hash(const BlockBody& body) {
+evmc::bytes32 compute_ommers_hash(const BlockBody& body) {
     if (body.ommers.empty()) {
         return kEmptyListHash;
     }

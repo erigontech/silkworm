@@ -28,23 +28,27 @@
 
 namespace silkworm::consensus {
 
+bool transaction_type_is_supported(Transaction::Type type, evmc_revision rev) {
+    static constexpr evmc_revision kMinRevisionByType[]{
+        EVMC_FRONTIER,  // kLegacy
+        EVMC_BERLIN,    // kEip2930
+        EVMC_LONDON,    // kEip1559
+        EVMC_CANCUN,    // kEip4844
+    };
+    const auto n{static_cast<std::size_t>(type)};
+    return n < std::size(kMinRevisionByType) && rev >= kMinRevisionByType[n];
+}
+
 ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_revision rev, const uint64_t chain_id,
-                                          const std::optional<intx::uint256>& base_fee_per_gas) {
+                                          const std::optional<intx::uint256>& base_fee_per_gas,
+                                          const std::optional<intx::uint256>& data_gas_price) {
     if (txn.chain_id.has_value()) {
         if (rev < EVMC_SPURIOUS_DRAGON || txn.chain_id.value() != chain_id) {
             return ValidationResult::kWrongChainId;
         }
     }
 
-    if (txn.type == Transaction::Type::kEip2930) {
-        if (rev < EVMC_BERLIN) {
-            return ValidationResult::kUnsupportedTransactionType;
-        }
-    } else if (txn.type == Transaction::Type::kEip1559) {
-        if (rev < EVMC_LONDON) {
-            return ValidationResult::kUnsupportedTransactionType;
-        }
-    } else if (txn.type != Transaction::Type::kLegacy) {
+    if (!transaction_type_is_supported(txn.type, rev)) {
         return ValidationResult::kUnsupportedTransactionType;
     }
 
@@ -69,6 +73,10 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
         return ValidationResult::kIntrinsicGas;
     }
 
+    if (intx::count_significant_bytes(txn.maximum_gas_cost()) > 32) {
+        return ValidationResult::kInsufficientFunds;
+    }
+
     // EIP-2681: Limit account nonce to 2^64-1
     if (txn.nonce >= UINT64_MAX) {
         return ValidationResult::kNonceTooHigh;
@@ -78,6 +86,26 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
     const bool contract_creation{!txn.to};
     if (rev >= EVMC_SHANGHAI && contract_creation && txn.data.size() > param::kMaxInitCodeSize) {
         return ValidationResult::kMaxInitCodeSizeExceeded;
+    }
+
+    // EIP-4844: Shard Blob Transactions
+    if (txn.type == Transaction::Type::kEip4844) {
+        if (txn.blob_versioned_hashes.empty()) {
+            return ValidationResult::kNoBlobs;
+        }
+        for (const Hash& h : txn.blob_versioned_hashes) {
+            if (h.bytes[0] != param::kBlobCommitmentVersionKzg) {
+                return ValidationResult::kWrongBlobCommitmentVersion;
+            }
+        }
+        SILKWORM_ASSERT(txn.max_fee_per_data_gas);
+        SILKWORM_ASSERT(data_gas_price);
+        if (txn.max_fee_per_data_gas < data_gas_price) {
+            return ValidationResult::kMaxFeePerDataGasTooLow;
+        }
+        // TODO(yperbasis): There is an equal amount of versioned hashes, kzg commitments and blobs.
+        // The KZG commitments hash to the versioned hashes, i.e. kzg_to_versioned_hash(kzg[i]) == versioned_hash[i]
+        // The KZG commitments match the blob contents.
     }
 
     return ValidationResult::kOk;

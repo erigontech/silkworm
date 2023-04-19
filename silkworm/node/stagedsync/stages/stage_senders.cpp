@@ -23,6 +23,7 @@
 #include <gsl/util>
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/consensus/engine.hpp>
 #include <silkworm/core/crypto/ecdsa.h>
 #include <silkworm/core/crypto/secp256k1n.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
@@ -453,28 +454,13 @@ Stage::Result Senders::add_to_batch(BlockNum block_num, std::vector<Transaction>
     const evmc_revision rev{node_settings_->chain_config->revision(block_num, /*block_time=*/0)};
     const bool has_homestead{rev >= EVMC_HOMESTEAD};
     const bool has_spurious_dragon{rev >= EVMC_SPURIOUS_DRAGON};
-    const bool has_berlin{rev >= EVMC_BERLIN};
-    const bool has_london{rev >= EVMC_LONDON};
 
     uint32_t tx_id{0};
     for (const auto& transaction : transactions) {
-        switch (transaction.type) {
-            case Transaction::Type::kLegacy:
-                break;
-            case Transaction::Type::kEip2930:
-                if (!has_berlin) {
-                    log::Error(log_prefix_) << "Transaction type " << magic_enum::enum_name<Transaction::Type>(transaction.type)
-                                            << " for transaction #" << tx_id << " in block #" << block_num << " before Berlin";
-                    return Stage::Result::kInvalidTransaction;
-                }
-                break;
-            case Transaction::Type::kEip1559:
-                if (!has_london) {
-                    log::Error(log_prefix_) << "Transaction type " << magic_enum::enum_name<Transaction::Type>(transaction.type)
-                                            << " for transaction #" << tx_id << " in block #" << block_num << " before London";
-                    return Stage::Result::kInvalidTransaction;
-                }
-                break;
+        if (!consensus::transaction_type_is_supported(transaction.type, rev)) {
+            log::Error(log_prefix_) << "Transaction type " << magic_enum::enum_name<Transaction::Type>(transaction.type)
+                                    << " for transaction #" << tx_id << " in block #" << block_num << " before it's supported";
+            return Stage::Result::kInvalidTransaction;
         }
 
         if (!is_valid_signature(transaction.r, transaction.s, has_homestead)) {

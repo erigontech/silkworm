@@ -599,22 +599,11 @@ RunResults transaction_test(const nlohmann::json& j) {
         txn.from.reset();
 
         if (ValidationResult err{
-                pre_validate_transaction(txn, rev, config.chain_id, /*base_fee_per_gas=*/std::nullopt)};
+                pre_validate_transaction(txn, rev, config.chain_id, /*base_fee_per_gas=*/std::nullopt,
+                                         /*data_gas_price=*/std::nullopt)};
             err != ValidationResult::kOk) {
             if (should_be_valid) {
                 std::cout << "Validation error " << magic_enum::enum_name<ValidationResult>(err) << std::endl;
-                return Status::kFailed;
-            } else {
-                continue;
-            }
-        }
-
-        const intx::uint512 max_gas_cost{intx::umul(intx::uint256{txn.gas_limit}, txn.max_fee_per_gas)};
-        // A corollary check of the following assertion from EIP-1559:
-        // signer.balance >= transaction.gas_limit * transaction.max_fee_per_gas
-        if (intx::count_significant_bytes(max_gas_cost) > 32) {
-            if (should_be_valid) {
-                std::cout << "gas_limit * max_fee_per_gas overflow\n";
                 return Status::kFailed;
             } else {
                 continue;

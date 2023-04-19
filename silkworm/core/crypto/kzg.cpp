@@ -18,6 +18,7 @@
 
 #include <blst.h>
 
+#include <silkworm/core/chain/protocol_param.hpp>
 #include <silkworm/core/crypto/sha256.h>
 
 // Based on https://github.com/ethereum/c-kzg-4844/blob/main/src/c_kzg_4844.c
@@ -61,7 +62,7 @@ static const G2 kKzgSetupG2_1{
 Hash kzg_to_versioned_hash(ByteView kzg) {
     Hash hash;
     silkworm_sha256(hash.bytes, kzg.data(), kzg.length(), /*use_cpu_extensions=*/true);
-    hash.bytes[0] = 0x1;
+    hash.bytes[0] = param::kBlobCommitmentVersionKzg;
     return hash;
 }
 

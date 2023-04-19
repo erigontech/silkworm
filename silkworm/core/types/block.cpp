@@ -16,6 +16,7 @@
 
 #include "block.hpp"
 
+#include <silkworm/core/chain/protocol_param.hpp>
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 
@@ -33,6 +34,31 @@ ethash::hash256 BlockHeader::boundary() const {
     auto result{difficulty > 1u ? intx::uint256{dividend / difficulty}
                                 : 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff_u256};
     return intx::be::store<ethash::hash256>(result);
+}
+
+// Approximates factor*e^(numerator/denominator) using Taylor expansion.
+// See https://eips.ethereum.org/EIPS/eip-4844#helpers
+static intx::uint256 fake_exponential(const intx::uint256& factor,
+                                      const intx::uint256& numerator,
+                                      const intx::uint256& denominator) {
+    intx::uint256 output{0};
+    intx::uint256 numerator_accum{factor * denominator};
+    for (unsigned i{1}; numerator_accum > 0; ++i) {
+        output += numerator_accum;
+        numerator_accum = (numerator_accum * numerator) / (denominator * i);
+    }
+    return output / denominator;
+}
+
+std::optional<intx::uint256> BlockHeader::data_gas_price() const {
+    if (!excess_data_gas) {
+        return std::nullopt;
+    }
+
+    return fake_exponential(
+        param::kMinDataGasPrice,
+        *excess_data_gas,
+        param::kDataGasPriceUpdateFraction);
 }
 
 //! \brief Recover transaction senders for each block.
@@ -74,6 +100,10 @@ namespace rlp {
         if (header.withdrawals_root) {
             rlp_head.payload_length += kHashLength + 1;
         }
+        if (header.excess_data_gas) {
+            rlp_head.payload_length += length(*header.excess_data_gas);
+        }
+
         return rlp_head;
     }
 
@@ -111,6 +141,9 @@ namespace rlp {
         }
         if (header.withdrawals_root) {
             encode(to, *header.withdrawals_root);
+        }
+        if (header.excess_data_gas) {
+            encode(to, *header.excess_data_gas);
         }
     }
 
@@ -187,6 +220,15 @@ namespace rlp {
                 return res;
             }
             to.withdrawals_root = withdrawals_root;
+        }
+
+        to.excess_data_gas = std::nullopt;
+        if (from.length() > leftover) {
+            intx::uint256 excess_data_gas;
+            if (DecodingResult res{decode(from, excess_data_gas)}; !res) {
+                return res;
+            }
+            to.excess_data_gas = excess_data_gas;
         }
 
         if (from.length() != leftover) {

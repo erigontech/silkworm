@@ -58,17 +58,8 @@ class EngineBase : public IEngine {
     //! \brief Validates the difficulty of the header
     virtual ValidationResult validate_difficulty(const BlockHeader& header, const BlockHeader& parent) = 0;
 
-    //! \brief See https://eips.ethereum.org/EIPS/eip-1559
-    std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& header, const BlockHeader& parent);
-
     //! \brief Returns parent header (if any) of provided header
     static std::optional<BlockHeader> get_parent_header(const BlockState& state, const BlockHeader& header);
-
-    //! \brief Calculate the transaction root of a block body
-    static evmc::bytes32 compute_transaction_root(const BlockBody& body);
-
-    //! \brief Calculate the hash of ommers of a block body
-    static evmc::bytes32 compute_ommers_hash(const BlockBody& body);
 
   protected:
     const ChainConfig& chain_config_;
@@ -79,5 +70,18 @@ class EngineBase : public IEngine {
                 const evmc::bytes32& mainline_hash, unsigned int n, const BlockState& state,
                 std::vector<BlockHeader>& old_ommers);
 };
+
+//! \see EIP-1559: Fee market change for ETH 1.0 chain
+std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& parent, const evmc_revision);
+
+//! \see EIP-4844: Shard Blob Transactions
+std::optional<intx::uint256> calc_excess_data_gas(const BlockHeader& parent, std::size_t num_blobs,
+                                                  const evmc_revision);
+
+//! \brief Calculate the transaction root of a block body
+evmc::bytes32 compute_transaction_root(const BlockBody& body);
+
+//! \brief Calculate the hash of ommers of a block body
+evmc::bytes32 compute_ommers_hash(const BlockBody& body);
 
 }  // namespace silkworm::consensus

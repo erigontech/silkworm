@@ -79,6 +79,11 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
 
+  if(SILKWORM_SANITIZE)
+    add_compile_options(-fno-omit-frame-pointer -fsanitize=${SILKWORM_SANITIZE} -DSILKWORM_SANITIZE)
+    add_link_options(-fno-omit-frame-pointer -fsanitize=${SILKWORM_SANITIZE} -DSILKWORM_SANITIZE)
+  endif()
+
   if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options(-g1)
   endif()
@@ -92,6 +97,11 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
   if(SILKWORM_CLANG_COVERAGE)
     add_compile_options(-fprofile-instr-generate -fcoverage-mapping)
     add_link_options(-fprofile-instr-generate -fcoverage-mapping)
+  endif()
+
+  if(SILKWORM_SANITIZE)
+    add_compile_options(-fno-omit-frame-pointer -fsanitize=${SILKWORM_SANITIZE} -DSILKWORM_SANITIZE)
+    add_link_options(-fno-omit-frame-pointer -fsanitize=${SILKWORM_SANITIZE} -DSILKWORM_SANITIZE --rtlib=compiler-rt)
   endif()
 
   if(CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -109,11 +119,6 @@ else()
 
   message(WARNING "${CMAKE_CXX_COMPILER_ID} is not tested. Should you stumble into any issue please report at https://github.com/torquem-ch/silkworm/issues")
 
-endif()
-
-if(SILKWORM_SANITIZE)
-  add_compile_options(-fno-omit-frame-pointer -fsanitize=${SILKWORM_SANITIZE} -DSILKWORM_SANITIZE)
-  add_link_options(-fno-omit-frame-pointer -fsanitize=${SILKWORM_SANITIZE} -DSILKWORM_SANITIZE)
 endif()
 
 # cmake-format: on

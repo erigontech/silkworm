@@ -44,6 +44,7 @@
 #include <silkworm/silkrpc/core/estimate_gas_oracle.hpp>
 #include <silkworm/silkrpc/core/evm_access_list_tracer.hpp>
 #include <silkworm/silkrpc/core/evm_executor.hpp>
+#include <silkworm/silkrpc/core/fee_history_oracle.hpp>
 #include <silkworm/silkrpc/core/gas_price_oracle.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/core/receipts.hpp>
@@ -2033,7 +2034,7 @@ awaitable<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request
         block_count = params[0].get<uint64_t>();
     }
     const auto newest_block = params[1].get<std::string>();
-    const auto reward_percentile = params[2].get<std::vector<uint64_t>>();
+    const auto reward_percentile = params[2].get<std::vector<int32_t>>();
 
     SILKRPC_LOG << "block_count: " << block_count
                 << ", newest_block: " << newest_block
@@ -2043,6 +2044,26 @@ awaitable<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+
+        rpc::fee_history::BlockProvider block_provider = [this, &tx_database](uint64_t block_number) {
+            return core::read_block_by_number(*block_cache_, tx_database, block_number);
+        };
+        rpc::fee_history::ReceiptsProvider receipts_provider = [this, &tx_database](const BlockWithHash& block_with_hash) {
+            return core::get_receipts(tx_database, block_with_hash);
+        };
+
+        rpc::fee_history::FeeHistoryOracle oracle{block_provider, receipts_provider};
+
+        // uint64_t block_number;
+        // if (newest_block == kLatestBlockId) {
+        //     block_number = rpc::fee_history::kLatestBlockNumber;
+        // } else if (newest_block == kPendingBlockId) {
+        //     block_number = rpc::fee_history::kPendingBlockNumber;
+        // } else {
+        //     block_number = co_await core::get_block_number(newest_block, tx_database);
+        // }
+        const auto block_number = co_await core::get_block_number(newest_block, tx_database);
+        auto fee_history = co_await oracle.fee_history(block_number, block_count, reward_percentile);
 
         reply = make_json_content(request["id"], to_quantity(0));
     } catch (const std::exception& e) {

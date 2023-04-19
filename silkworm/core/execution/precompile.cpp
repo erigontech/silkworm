@@ -528,7 +528,7 @@ bool is_precompile(const evmc::address& address, evmc_revision rev) noexcept {
     }
 
     const uint8_t num{address.bytes[kAddressLength - 1]};
-    if (num >= std::size(kContracts) || !kContracts[num]) {
+    if (!kContracts[num]) {
         return false;
     }
 

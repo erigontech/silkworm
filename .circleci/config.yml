@@ -177,7 +177,7 @@ jobs:
       TOOLCHAIN: clang_libcxx
       CLANG_VERSION: 13
       BUILD_TYPE: Debug
-      BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=address
+      BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=address,undefined
     docker:
       - image: ethereum/cpp-build-env:18-clang-13
     resource_class: xlarge

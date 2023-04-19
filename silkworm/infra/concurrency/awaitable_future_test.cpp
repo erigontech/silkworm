@@ -135,8 +135,8 @@ TEST_CASE("awaitable future") {
         std::thread concurrent([&](AwaitableFuture<int>&& moved_future) {
             auto spawned_exec = asio::co_spawn(
                 io,
-                [](int& value, AwaitableFuture<int>&& further_moved_future) -> asio::awaitable<void> {
-                    value = co_await further_moved_future.get(asio::use_awaitable);
+                [](int& value_ref, AwaitableFuture<int>&& further_moved_future) -> asio::awaitable<void> {
+                    value_ref = co_await further_moved_future.get(asio::use_awaitable);
                 }(value, std::move(moved_future)),
                 asio::use_future);
             spawned_exec.get();

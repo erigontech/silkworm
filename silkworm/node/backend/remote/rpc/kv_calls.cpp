@@ -25,7 +25,7 @@
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/rpc/common/util.hpp>
+#include <silkworm/infra/grpc/common/util.hpp>
 
 namespace silkworm::rpc {
 

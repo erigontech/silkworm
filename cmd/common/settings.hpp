@@ -17,7 +17,7 @@
 #pragma once
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/rpc/server/server_config.hpp>
+#include <silkworm/infra/grpc/server/server_config.hpp>
 #include <silkworm/node/common/settings.hpp>
 #include <silkworm/node/snapshot/settings.hpp>
 #include <silkworm/sentry/settings.hpp>

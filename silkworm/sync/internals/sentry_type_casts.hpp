@@ -18,7 +18,7 @@
 
 #include <memory>
 
-#include <silkworm/infra/rpc/interfaces/types.hpp>
+#include <silkworm/infra/grpc/interfaces/types.hpp>
 #include <silkworm/interfaces/types/types.pb.h>
 
 #include "types.hpp"

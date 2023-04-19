@@ -28,9 +28,9 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/infra/rpc/server/call.hpp>
-#include <silkworm/infra/rpc/server/server.hpp>
-#include <silkworm/infra/rpc/server/server_context_pool.hpp>
+#include <silkworm/infra/grpc/server/call.hpp>
+#include <silkworm/infra/grpc/server/server.hpp>
+#include <silkworm/infra/grpc/server/server_context_pool.hpp>
 #include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>
 #include <silkworm/interfaces/remote/ethbackend.pb.h>
 #include <silkworm/node/backend/ethereum_backend.hpp>

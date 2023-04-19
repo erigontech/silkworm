@@ -19,9 +19,9 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/rpc/client/call.hpp>
-#include <silkworm/infra/rpc/common/util.hpp>
-#include <silkworm/infra/rpc/server/server_context_pool.hpp>
+#include <silkworm/infra/grpc/client/call.hpp>
+#include <silkworm/infra/grpc/common/util.hpp>
+#include <silkworm/infra/grpc/server/server_context_pool.hpp>
 #include <silkworm/sentry/api/api_common/sentry_client.hpp>
 #include <silkworm/sentry/rpc/client/sentry_client.hpp>
 #include <silkworm/sentry/sentry.hpp>

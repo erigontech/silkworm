@@ -31,8 +31,8 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/infra/rpc/server/call.hpp>
-#include <silkworm/infra/rpc/server/server.hpp>
+#include <silkworm/infra/grpc/server/call.hpp>
+#include <silkworm/infra/grpc/server/server.hpp>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/state_change_collection.hpp>

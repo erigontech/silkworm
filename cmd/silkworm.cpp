@@ -34,7 +34,7 @@
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
-#include <silkworm/infra/rpc/server/server_context_pool.hpp>
+#include <silkworm/infra/grpc/server/server_context_pool.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
 #include <silkworm/node/common/settings.hpp>

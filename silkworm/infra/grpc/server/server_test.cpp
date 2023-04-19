@@ -25,7 +25,7 @@
 #include <grpcpp/impl/codegen/service_type.h>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/rpc/common/util.hpp>
+#include <silkworm/infra/grpc/common/util.hpp>
 #include <silkworm/infra/test/log.hpp>
 
 namespace silkworm::rpc {

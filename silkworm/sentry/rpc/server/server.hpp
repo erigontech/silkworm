@@ -22,7 +22,7 @@
 
 #include <boost/asio/awaitable.hpp>
 
-#include <silkworm/infra/rpc/server/server_config.hpp>
+#include <silkworm/infra/grpc/server/server_config.hpp>
 #include <silkworm/sentry/api/router/service_router.hpp>
 
 namespace silkworm::sentry::rpc::server {

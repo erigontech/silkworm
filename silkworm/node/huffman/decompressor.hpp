@@ -171,7 +171,7 @@ class PositionTable : public DecodingTable {
 class Decompressor {
   public:
     //! The max number of patterns in decoding tables
-    constexpr static std::size_t kMaxTablePatterns = (1 << DecodingTable::kMaxTableBitLength) * 100;
+    constexpr static std::size_t kMaxTablePatterns = (1 << DecodingTable::kMaxTableBitLength) * 510;
 
     //! The max number of positions in decoding tables
     constexpr static std::size_t kMaxTablePositions = (1 << DecodingTable::kMaxTableBitLength) * 100;

@@ -37,6 +37,7 @@
 #include <silkworm/infra/grpc/server/server_context_pool.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
+#include <silkworm/node/common/os.hpp>
 #include <silkworm/node/common/settings.hpp>
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/db/stages.hpp>
@@ -285,6 +286,16 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
     server_settings.set_context_pool_settings(context_pool_settings);
 
     snapshot_settings.bittorrent_settings.repository_path = snapshot_settings.repository_dir;
+}
+
+//! Raise allowed max file descriptors in the current process
+void raise_max_file_descriptors() {
+    constexpr uint64_t kMaxFileDescriptors{10'240};
+
+    const bool set_fd_result = silkworm::os::set_max_file_descriptors(kMaxFileDescriptors);
+    if (!set_fd_result) {
+        throw std::runtime_error{"Cannot increase max file descriptor up to " + std::to_string(kMaxFileDescriptors)};
+    }
 }
 
 //! \brief Ensure database is ready to take off and consistent with command line arguments
@@ -578,6 +589,9 @@ int main(int argc, char* argv[]) {
         BlockExchange block_exchange{sync_sentry_client, sw_db::ROAccess{chaindata_db}, node_settings.chain_config.value()};
 
         if (snapshot_settings.enabled) {
+            // Raise file descriptor limit per process
+            raise_max_file_descriptors();
+
             sw_db::RWTxn rw_txn{chaindata_db};
 
             // Snapshot sync - download chain from peers using snapshot files

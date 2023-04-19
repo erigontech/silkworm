@@ -48,10 +48,7 @@ bool SnapshotSync::download_and_index_snapshots(db::RWTxn& txn) {
     log::Info() << "[Snapshots] snapshot repository: " << settings_.repository_dir.string();
 
     if (settings_.no_downloader) {
-        repository_.reopen_folder();
-        if (settings_.verify_on_startup) {
-            repository_.verify();
-        }
+        open_and_verify();
         return true;
     }
 
@@ -60,9 +57,23 @@ bool SnapshotSync::download_and_index_snapshots(db::RWTxn& txn) {
     const bool download_completed = download_snapshots(snapshot_file_names);
     if (!download_completed) return false;
 
+    open_and_verify();
+
     db::write_snapshots(txn, snapshot_file_names);
 
+    log::Info() << "[Snapshots] file names saved into db" << log::Args{"count", std::to_string(snapshot_file_names.size())};
+
     return index_snapshots(txn, snapshot_file_names);
+}
+
+void SnapshotSync::open_and_verify() {
+    repository_.reopen_folder();
+    if (settings_.verify_on_startup) {
+        repository_.verify();
+    }
+    log::Info() << "[Snapshots] open_and_verify completed"
+                << log::Args{"segment_max_block", std::to_string(repository_.segment_max_block()),
+                             "idx_max_block", std::to_string(repository_.idx_max_block())};
 }
 
 bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_file_names) {
@@ -84,6 +95,10 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
     }
 
     const auto snapshot_config = snapshot::Config::lookup_known_config(config_.chain_id, snapshot_file_names);
+    if (snapshot_config->preverified_snapshots().empty()) {
+        log::Error() << "[Snapshots] no preverified snapshots found";
+        return false;
+    }
     for (const auto& preverified_snapshot : snapshot_config->preverified_snapshots()) {
         SILK_INFO << "[Snapshots] adding info hash for preverified: " << preverified_snapshot.file_name;
         client_.add_info_hash(preverified_snapshot.file_name, preverified_snapshot.torrent_hash);
@@ -108,6 +123,8 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
     client_.stats_subscription.connect(log_stats);
 
     const auto num_snapshots{std::ptrdiff_t(snapshot_config->preverified_snapshots().size())};
+    SILK_INFO << "[Snapshots] sync started: [0/" << num_snapshots << "]";
+
     std::latch download_done{num_snapshots};
     auto log_completed = [&](const std::filesystem::path& snapshot_file) {
         static int completed{0};
@@ -121,6 +138,8 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
 
     // Wait for download completion of all snapshots
     download_done.wait();
+
+    SILK_INFO << "[Snapshots] sync completed: [" << num_snapshots << "/" << num_snapshots << "]";
 
     return true;
 }

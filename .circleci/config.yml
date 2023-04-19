@@ -172,14 +172,14 @@ jobs:
       - build
       - test
 
-  linux-clang-13-address-sanitizer:
+  linux-clang-15-address-sanitizer:
     environment:
       TOOLCHAIN: clang_libcxx
-      CLANG_VERSION: 13
+      CLANG_VERSION: 15
       BUILD_TYPE: Debug
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=address,undefined
     docker:
-      - image: ethereum/cpp-build-env:18-clang-13
+      - image: ethereum/cpp-build-env:19-clang-15
     resource_class: xlarge
     steps:
       - checkout_with_submodules
@@ -330,6 +330,6 @@ workflows:
       - linux-gcc-11-conan
       - linux-gcc-11-thread-sanitizer
       - linux-clang-13-coverage
-      - linux-clang-13-address-sanitizer
+      - linux-clang-15-address-sanitizer
       - linux-wasm-build
       - linux-default-build

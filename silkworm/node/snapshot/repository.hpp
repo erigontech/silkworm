@@ -25,6 +25,7 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/node/snapshot/index.hpp>
 #include <silkworm/node/snapshot/path.hpp>
 #include <silkworm/node/snapshot/settings.hpp>
 #include <silkworm/node/snapshot/snapshot.hpp>
@@ -57,7 +58,6 @@ class SnapshotRepository {
 
     void verify();
     void reopen_folder();
-    void build_missing_indexes();
 
     [[nodiscard]] std::filesystem::path path() const { return settings_.repository_dir; }
 
@@ -77,6 +77,8 @@ class SnapshotRepository {
     ViewResult view_header_segment(BlockNum number, const HeaderSnapshotWalker& walker);
     ViewResult view_body_segment(BlockNum number, const BodySnapshotWalker& walker);
     ViewResult view_tx_segment(BlockNum number, const TransactionSnapshotWalker& walker);
+
+    [[nodiscard]] std::vector<std::shared_ptr<Index>> missing_indexes() const;
 
     [[nodiscard]] BlockNum segment_max_block() const { return segment_max_block_; }
     [[nodiscard]] BlockNum idx_max_block() const { return idx_max_block_; }

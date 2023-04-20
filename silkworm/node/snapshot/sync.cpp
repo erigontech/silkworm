@@ -16,18 +16,23 @@
 
 #include "sync.hpp"
 
+#include <chrono>
 #include <latch>
 
 #include <magic_enum.hpp>
 
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/etl/collector.hpp>
 #include <silkworm/node/snapshot/config.hpp>
 #include <silkworm/node/snapshot/path.hpp>
 
 namespace silkworm {
+
+//! Interval between successive checks for either completion or stop requested
+static constexpr std::chrono::seconds kCheckCompletionInterval{1};
 
 SnapshotSync::SnapshotSync(const SnapshotSettings& settings, const ChainConfig& config)
     : settings_(settings),
@@ -136,8 +141,10 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
 
     client_thread_ = std::thread([&]() { client_.execute_loop(); });
 
-    // Wait for download completion of all snapshots
-    download_done.wait();
+    // Wait for download completion of all snapshots or stop request
+    while (not download_done.try_wait() and not is_stopping()) {
+        std::this_thread::sleep_for(kCheckCompletionInterval);
+    }
 
     SILK_INFO << "[Snapshots] sync completed: [" << num_snapshots << "/" << num_snapshots << "]";
 
@@ -146,22 +153,28 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
 
 bool SnapshotSync::index_snapshots(db::RWTxn& txn, const std::vector<std::string>& snapshot_file_names) {
     if (!settings_.enabled) {
-        log::Info() << "snapshot sync disabled, no index must be created";
+        log::Info() << "[Snapshots] snapshot sync disabled, no index must be created";
         return true;
     }
 
+    // Build any missing snapshot index if needed, then reopen
     if (repository_.idx_max_block() < repository_.segment_max_block()) {
-        repository_.build_missing_indexes();
+        log::Info() << "[Snapshots] missing indexes detected, rebuild started";
+        build_missing_indexes();
         repository_.reopen_folder();
     }
 
     const auto max_block_available = repository_.max_block_available();
+    log::Info() << "[Snapshots] max block available: " << max_block_available;
+
     const auto snapshot_config = snapshot::Config::lookup_known_config(config_.chain_id, snapshot_file_names);
     const auto configured_max_block_number = snapshot_config->max_block_number();
+    log::Info() << "[Snapshots] configured max block: " << configured_max_block_number;
     if (max_block_available < configured_max_block_number) {
         // Iterate on block header snapshots and write header-related tables
         etl::Collector hash2bn_collector{};
         intx::uint256 total_difficulty{0};
+        uint64_t block_count{0};
         repository_.for_each_header([&](const BlockHeader* header) -> bool {
             SILK_DEBUG << "Header number: " << header->number << " hash: " << to_hex(header->hash());
             const auto block_number = header->number;
@@ -178,6 +191,12 @@ bool SnapshotSync::index_snapshots(db::RWTxn& txn, const std::vector<std::string
             Bytes encoded_block_number{sizeof(uint64_t), '\0'};
             endian::store_big_u64(encoded_block_number.data(), block_number);
             hash2bn_collector.collect({block_hash.bytes, encoded_block_number});
+
+            if (++block_count % 1'000'000 == 0) {
+                log::Info() << "[Snapshots] processing block header: " << block_number << " count=" << block_count;
+                if (is_stopping()) return false;
+            }
+
             return true;
         });
         db::PooledCursor header_numbers_cursor{txn, db::table::kHeaderNumbers};
@@ -191,7 +210,7 @@ bool SnapshotSync::index_snapshots(db::RWTxn& txn, const std::vector<std::string
             return true;
         });
         if (view_result != SnapshotRepository::ViewResult::kWalkSuccess) {
-            log::Error() << "snapshot not found for block: " << max_block_available;
+            log::Error() << "[Snapshots] snapshot not found for block: " << max_block_available;
             return false;
         }
 
@@ -201,6 +220,7 @@ bool SnapshotSync::index_snapshots(db::RWTxn& txn, const std::vector<std::string
         db::write_head_header_hash(txn, canonical_hash);
 
         // Update progress for related stages
+        db::stages::write_stage_progress(txn, db::stages::kHeadersKey, max_block_available);
         db::stages::write_stage_progress(txn, db::stages::kBlockBodiesKey, max_block_available);
         db::stages::write_stage_progress(txn, db::stages::kBlockHashesKey, max_block_available);
         db::stages::write_stage_progress(txn, db::stages::kSendersKey, max_block_available);
@@ -211,11 +231,38 @@ bool SnapshotSync::index_snapshots(db::RWTxn& txn, const std::vector<std::string
     return true;
 }
 
-void SnapshotSync::stop() {
+bool SnapshotSync::stop() {
+    const bool result = Stoppable::stop();
     client_.stop();
     if (client_thread_.joinable()) {
         client_thread_.join();
     }
+    return result;
+}
+
+void SnapshotSync::build_missing_indexes() {
+    thread_pool workers;
+
+    // Determine the missing indexes and build them in parallel
+    const auto missing_indexes = repository_.missing_indexes();
+    for (const auto& index : missing_indexes) {
+        log::Info() << "[Snapshots] Build index: " << index->path().filename() << " start";
+        index->build();
+        log::Info() << "[Snapshots] Build index: " << index->path().filename() << " end";
+        /*workers.submit([index]() {
+            log::Info() << "[Snapshots] Build index: " << index->path().filename() << " start";
+            index->build();
+            log::Info() << "[Snapshots] Build index: " << index->path().filename() << " end";
+        });*/
+    }
+
+    // Wait for all missing indexes to be built or stop request
+    while (workers.get_tasks_total() and not is_stopping()) {
+        std::this_thread::sleep_for(kCheckCompletionInterval);
+    }
+    // Wait for any already-started-but-unfinished work in case of stop request
+    workers.paused = true;
+    workers.wait_for_tasks();
 }
 
 }  // namespace silkworm

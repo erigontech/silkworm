@@ -14,6 +14,8 @@
    limitations under the License.
 ]]
 
+set(SILKWORM_SANITIZE_COMPILER_OPTIONS -fno-omit-frame-pointer -fsanitize=${SILKWORM_SANITIZE} -fno-sanitize-recover=all)
+
 # cmake-format: off
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
@@ -80,8 +82,9 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
 
   if(SILKWORM_SANITIZE)
-    add_compile_options(-fno-omit-frame-pointer -fsanitize=${SILKWORM_SANITIZE} -DSILKWORM_SANITIZE)
-    add_link_options(-fno-omit-frame-pointer -fsanitize=${SILKWORM_SANITIZE} -DSILKWORM_SANITIZE)
+    add_compile_options(${SILKWORM_SANITIZE_COMPILER_OPTIONS})
+    add_link_options(${SILKWORM_SANITIZE_COMPILER_OPTIONS})
+    add_definitions(-DSILKWORM_SANITIZE)
   endif()
 
   if(CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -100,8 +103,9 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
   endif()
 
   if(SILKWORM_SANITIZE)
-    add_compile_options(-fno-omit-frame-pointer -fsanitize=${SILKWORM_SANITIZE} -DSILKWORM_SANITIZE)
-    add_link_options(-fno-omit-frame-pointer -fsanitize=${SILKWORM_SANITIZE} -DSILKWORM_SANITIZE --rtlib=compiler-rt)
+    add_compile_options(${SILKWORM_SANITIZE_COMPILER_OPTIONS})
+    add_link_options(${SILKWORM_SANITIZE_COMPILER_OPTIONS} --rtlib=compiler-rt)
+    add_definitions(-DSILKWORM_SANITIZE)
   endif()
 
   if(CMAKE_BUILD_TYPE STREQUAL "Release")

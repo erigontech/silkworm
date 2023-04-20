@@ -16,8 +16,14 @@
 
 #include "sentry_client.hpp"
 
+#include <exception>
+#include <future>
+#include <optional>
+
+#include <boost/asio/bind_cancellation_slot.hpp>
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/use_future.hpp>
+#include <boost/system/errc.hpp>
+#include <boost/system/system_error.hpp>
 
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -42,6 +48,7 @@ SentryClient::SentryClient(
     const ChainConfig& chain_config)
     : io_context_{io_context},
       sentry_client_{std::move(sentry_client)},
+      tasks_{io_context, 1000},
       db_access_{db_access},
       chain_config_{chain_config} {
 }
@@ -131,6 +138,32 @@ static silkworm::sentry::api::api_common::MessageIdSet make_message_id_filter() 
     return ids;
 }
 
+template <typename T>
+static awaitable<void> resolve_promise_with_awaitable_result(std::promise<T>& promise, awaitable<T> task) {
+    try {
+        promise.set_value(co_await std::move(task));
+    } catch (...) {
+        promise.set_exception(std::current_exception());
+    }
+}
+
+template <>
+awaitable<void> resolve_promise_with_awaitable_result(std::promise<void>& promise, awaitable<void> task) {
+    try {
+        co_await std::move(task);
+        promise.set_value();
+    } catch (...) {
+        promise.set_exception(std::current_exception());
+    }
+}
+
+template <typename T>
+static T sync_spawn(concurrency::TaskGroup& tasks, io_context& io_context, awaitable<T> task) {
+    std::promise<T> promise;
+    tasks.spawn(io_context, resolve_promise_with_awaitable_result(promise, std::move(task)));
+    return promise.get_future().get();
+}
+
 void SentryClient::set_status(BlockNum head_block_num, Hash head_hash, BigInt head_td, const ChainConfig& chain_config) {
     auto fork_block_numbers = chain_config.distinct_fork_numbers();
     auto best_block_hash = Bytes{ByteView{head_hash}};
@@ -151,7 +184,7 @@ void SentryClient::set_status(BlockNum head_block_num, Hash head_hash, BigInt he
         std::move(status_message),
     };
 
-    co_spawn(io_context_, sentry_client_->service()->set_status(std::move(status_data)), use_future).get();
+    sync_spawn(tasks_, io_context_, sentry_client_->service()->set_status(std::move(status_data)));
 
     SILK_TRACE << "SentryClient, set_status sent";
 }
@@ -169,7 +202,7 @@ void SentryClient::set_status() {
 }
 
 void SentryClient::handshake() {
-    auto supported_protocol = co_spawn(io_context_, sentry_client_->service()->handshake(), use_future).get();
+    auto supported_protocol = sync_spawn(tasks_, io_context_, sentry_client_->service()->handshake());
 
     if (supported_protocol < 66) {
         log::Critical(kLogTitle) << "remote sentry do not support eth/66 protocol, stopping...";
@@ -196,35 +229,52 @@ static SentryClient::PeerIds peer_ids_from_peer_keys(const silkworm::sentry::api
 SentryClient::PeerIds SentryClient::send_message_by_id(const OutboundMessage& outbound_message, const PeerId& peer_id) {
     auto message = sentry_message_from_outbound_message(outbound_message);
     auto peer_public_key = sentry::common::EccPublicKey::deserialize(peer_id);
-    auto peer_keys = co_spawn(io_context_, sentry_client_->service()->send_message_by_id(std::move(message), std::move(peer_public_key)), use_future).get();
+    auto peer_keys = sync_spawn(tasks_, io_context_, sentry_client_->service()->send_message_by_id(std::move(message), std::move(peer_public_key)));
     return peer_ids_from_peer_keys(peer_keys);
 }
 
 SentryClient::PeerIds SentryClient::send_message_to_random_peers(const OutboundMessage& outbound_message, size_t max_peers) {
     auto message = sentry_message_from_outbound_message(outbound_message);
-    auto peer_keys = co_spawn(io_context_, sentry_client_->service()->send_message_to_random_peers(std::move(message), max_peers), use_future).get();
+    auto peer_keys = sync_spawn(tasks_, io_context_, sentry_client_->service()->send_message_to_random_peers(std::move(message), max_peers));
     return peer_ids_from_peer_keys(peer_keys);
 }
 
 SentryClient::PeerIds SentryClient::send_message_to_all(const OutboundMessage& outbound_message) {
     auto message = sentry_message_from_outbound_message(outbound_message);
-    auto peer_keys = co_spawn(io_context_, sentry_client_->service()->send_message_to_all(std::move(message)), use_future).get();
+    auto peer_keys = sync_spawn(tasks_, io_context_, sentry_client_->service()->send_message_to_all(std::move(message)));
     return peer_ids_from_peer_keys(peer_keys);
 }
 
 SentryClient::PeerIds SentryClient::send_message_by_min_block(const OutboundMessage& outbound_message, BlockNum /*min_block*/, size_t max_peers) {
     auto message = sentry_message_from_outbound_message(outbound_message);
-    auto peer_keys = co_spawn(io_context_, sentry_client_->service()->send_message_by_min_block(std::move(message), max_peers), use_future).get();
+    auto peer_keys = sync_spawn(tasks_, io_context_, sentry_client_->service()->send_message_by_min_block(std::move(message), max_peers));
     return peer_ids_from_peer_keys(peer_keys);
 }
 
 void SentryClient::peer_min_block(const PeerId& peer_id, BlockNum /*min_block*/) {
     auto peer_public_key = sentry::common::EccPublicKey::deserialize(peer_id);
-    co_spawn(io_context_, sentry_client_->service()->peer_min_block(std::move(peer_public_key)), use_future).get();
+    sync_spawn(tasks_, io_context_, sentry_client_->service()->peer_min_block(std::move(peer_public_key)));
 }
 
 void SentryClient::execution_loop() {
     log::set_thread_name("sentry-recv   ");
+
+    auto tasks_completion = [](const std::exception_ptr& ex_ptr) {
+        try {
+            if (ex_ptr) std::rethrow_exception(ex_ptr);
+        } catch (const boost::system::system_error& ex) {
+            if (ex.code() == boost::system::errc::operation_canceled) {
+                log::Debug(kLogTitle) << "execution_loop tasks.wait completed";
+            } else {
+                log::Error(kLogTitle) << "execution_loop tasks.wait system_error: " << ex.what();
+                throw;
+            }
+        } catch (...) {
+            log::Error(kLogTitle) << "execution_loop tasks.wait unexpected exception";
+            throw;
+        }
+    };
+    co_spawn(io_context_, tasks_.wait(), bind_cancellation_slot(tasks_cancellation_signal_.slot(), tasks_completion));
 
     while (!is_stopping()) {
         try {
@@ -247,7 +297,7 @@ void SentryClient::execution_loop() {
                 }
             };
 
-            co_spawn(io_context_, sentry_client_->service()->messages(make_message_id_filter(), consumer), use_future).get();
+            sync_spawn(tasks_, io_context_, sentry_client_->service()->messages(make_message_id_filter(), consumer));
 
         } catch (const std::exception& e) {
             if (!is_stopping()) log::Error(kLogTitle) << "exception: " << e.what();
@@ -304,7 +354,7 @@ void SentryClient::stats_receiving_loop() {
                                      << ", info: " << info;
             };
 
-            co_spawn(io_context_, sentry_client_->service()->peer_events(consumer), use_future).get();
+            sync_spawn(tasks_, io_context_, sentry_client_->service()->peer_events(consumer));
 
         } catch (const std::exception& e) {
             if (!is_stopping()) log::Warning(kLogTitle) << "exception: " << e.what();
@@ -316,7 +366,7 @@ void SentryClient::stats_receiving_loop() {
 }
 
 uint64_t SentryClient::count_active_peers() {
-    size_t peer_count = co_spawn(io_context_, sentry_client_->service()->peer_count(), use_future).get();
+    size_t peer_count = sync_spawn(tasks_, io_context_, sentry_client_->service()->peer_count());
     active_peers_.store(peer_count);
     return peer_count;
 }
@@ -335,7 +385,7 @@ boost::asio::awaitable<std::string> SentryClient::request_peer_info_async(PeerId
 }
 
 std::string SentryClient::request_peer_info(PeerId peer_id) {
-    return co_spawn(io_context_, this->request_peer_info_async(std::move(peer_id)), use_future).get();
+    return sync_spawn(tasks_, io_context_, this->request_peer_info_async(std::move(peer_id)));
 }
 
 boost::asio::awaitable<void> SentryClient::penalize_peer_async(PeerId peer_id, Penalty penalty) {
@@ -347,7 +397,7 @@ boost::asio::awaitable<void> SentryClient::penalize_peer_async(PeerId peer_id, P
 }
 
 void SentryClient::penalize_peer(PeerId peer_id, Penalty penalty) {
-    co_spawn(io_context_, this->penalize_peer_async(std::move(peer_id), penalty), use_future).get();
+    sync_spawn(tasks_, io_context_, this->penalize_peer_async(std::move(peer_id), penalty));
 }
 
 uint64_t SentryClient::active_peers() {
@@ -356,7 +406,7 @@ uint64_t SentryClient::active_peers() {
 
 bool SentryClient::stop() {
     bool expected = Stoppable::stop();
-    // TODO: stop futures
+    tasks_cancellation_signal_.emit(cancellation_type::all);
     return expected;
 }
 

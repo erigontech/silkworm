@@ -24,10 +24,12 @@
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/cancellation_signal.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/signals2.hpp>
 
 #include <silkworm/infra/concurrency/active_component.hpp>
+#include <silkworm/infra/concurrency/task_group.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/sentry/api/api_common/message_from_peer.hpp>
 #include <silkworm/sentry/api/api_common/sentry_client.hpp>
@@ -108,6 +110,8 @@ class SentryClient : public ActiveComponent {
 
     boost::asio::io_context& io_context_;
     std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> sentry_client_;
+    concurrency::TaskGroup tasks_;
+    boost::asio::cancellation_signal tasks_cancellation_signal_;
 
     db::ROAccess db_access_;
     const ChainConfig& chain_config_;

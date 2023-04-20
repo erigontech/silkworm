@@ -290,8 +290,6 @@ bool BitTorrentClient::handle_alert(const lt::alert* alert) {
                   << " in " << (status.completed_time - status.added_time) << " sec at "
                   << std::put_time(std::gmtime(&status.completed_time), "%c %Z");
 
-        // TODO(canepat) check if improves download speed
-        tfa->handle.set_max_connections(tfa->handle.max_connections() / 2);
         tfa->handle.save_resume_data(lt::torrent_handle::save_info_dict);
 
         // Notify that torrent file has been downloaded to registered subscribers

@@ -52,7 +52,9 @@ Bytes Node::encode_for_storage() const {
         pos += kHashLength;
     }
 
-    std::memcpy(&buf[pos], hashes_.data(), hashes_.size() * kHashLength);
+    if (!hashes_.empty()) {
+        std::memcpy(&buf[pos], hashes_.data(), hashes_.size() * kHashLength);
+    }
     return buf;
 }
 

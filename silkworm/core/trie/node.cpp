@@ -96,7 +96,9 @@ DecodingResult Node::decode_from_storage(ByteView raw, Node& node) {
     }
 
     node.hashes_.resize(effective_num_hashes);
-    std::memcpy(node.hashes_.data(), raw.data(), raw.length());
+    if (effective_num_hashes) {
+        std::memcpy(node.hashes_.data(), raw.data(), raw.length());
+    }
     return {};
 }
 

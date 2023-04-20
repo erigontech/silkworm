@@ -198,7 +198,6 @@ jobs:
     resource_class: xlarge
     steps:
       - checkout_with_submodules
-      - format
       - install_libcxx
       - build
       - run:
@@ -289,6 +288,7 @@ jobs:
     resource_class: xlarge
     steps:
       - checkout_with_submodules
+      - format
       - run:
           name: "Install dependencies"
           command: |

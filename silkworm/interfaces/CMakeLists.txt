@@ -42,7 +42,7 @@ add_dependencies(
 # cmake-format: on
 
 if(NOT MSVC)
-  target_compile_options(silkworm_interfaces PRIVATE -Wno-sign-conversion)
+  target_compile_options(silkworm_interfaces PRIVATE -Wno-sign-conversion -Wno-deprecated-pragma)
 endif(NOT MSVC)
 
 # Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers See

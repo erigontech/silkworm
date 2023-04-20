@@ -107,10 +107,10 @@ static bool calc_chunk(uint8_t chunk[CHUNK_SIZE], struct buffer_state* state) {
         return true;
     }
 
-    memcpy(chunk, state->p, state->len);
-    chunk += state->len;
     size_t space_in_chunk = CHUNK_SIZE - state->len;
     if (state->len) {  // avoid adding 0 to nullptr
+        memcpy(chunk, state->p, state->len);
+        chunk += state->len;
         state->p += state->len;
     }
     state->len = 0;

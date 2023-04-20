@@ -108,7 +108,7 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
 
   if(SILKWORM_SANITIZE)
     add_compile_options(${SILKWORM_SANITIZE_COMPILER_OPTIONS})
-    add_link_options(${SILKWORM_SANITIZE_COMPILER_OPTIONS} --rtlib=compiler-rt)
+    add_link_options(${SILKWORM_SANITIZE_COMPILER_OPTIONS})
     add_definitions(-DSILKWORM_SANITIZE)
   endif()
 

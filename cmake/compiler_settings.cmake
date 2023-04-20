@@ -81,7 +81,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /VERBOSE /TIME")    # Debug linker
   endif()
 
-# cmake-format: on
+  # cmake-format: on
 
 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
 

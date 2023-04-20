@@ -14,14 +14,16 @@
    limitations under the License.
 ]]
 
-set(SILKWORM_SANITIZE_COMPILER_OPTIONS -fno-omit-frame-pointer -fsanitize=${SILKWORM_SANITIZE} -fno-sanitize-recover=all)
-
-# cmake-format: off
+set(SILKWORM_SANITIZE_COMPILER_OPTIONS -fno-omit-frame-pointer -fno-sanitize-recover=all
+                                       -fsanitize=${SILKWORM_SANITIZE}
+)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
   message("MSVC_VERSION = ${MSVC_VERSION}")
   message("MSVC_CXX_ARCHITECTURE_ID = ${MSVC_CXX_ARCHITECTURE_ID}")
+
+  # cmake-format: off
 
   add_definitions(-D_WIN32_WINNT=0x0602)  # Min Windows 8
   add_definitions(-DVC_EXTRALEAN)         # Process windows headers faster ...
@@ -79,6 +81,8 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /VERBOSE /TIME")    # Debug linker
   endif()
 
+# cmake-format: on
+
 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
 
   if(SILKWORM_SANITIZE)
@@ -121,8 +125,9 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
 
 else()
 
-  message(WARNING "${CMAKE_CXX_COMPILER_ID} is not tested. Should you stumble into any issue please report at https://github.com/torquem-ch/silkworm/issues")
+  message(
+    WARNING
+      "${CMAKE_CXX_COMPILER_ID} is not tested. Should you stumble into any issue please report at https://github.com/torquem-ch/silkworm/issues"
+  )
 
 endif()
-
-# cmake-format: on

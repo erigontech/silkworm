@@ -27,10 +27,10 @@
 
 #include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/infra/concurrency/event_notifier.hpp>
+#include <silkworm/infra/concurrency/task_group.hpp>
 #include <silkworm/sentry/api/api_common/message_from_peer.hpp>
 #include <silkworm/sentry/api/api_common/message_id_set.hpp>
 #include <silkworm/sentry/api/router/messages_call.hpp>
-#include <silkworm/sentry/common/task_group.hpp>
 
 #include "peer_manager.hpp"
 
@@ -64,8 +64,8 @@ class MessageReceiver : public PeerManagerObserver {
 
     concurrency::Channel<api::router::MessagesCall> message_calls_channel_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
-    common::TaskGroup peer_tasks_;
-    common::TaskGroup unsubscription_tasks_;
+    concurrency::TaskGroup peer_tasks_;
+    concurrency::TaskGroup unsubscription_tasks_;
 
     struct Subscription {
         std::shared_ptr<concurrency::Channel<api::api_common::MessageFromPeer>> messages_channel;

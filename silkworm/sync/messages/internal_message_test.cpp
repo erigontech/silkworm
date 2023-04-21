@@ -23,6 +23,7 @@
 
 namespace silkworm {
 
+// Switch off the null sanitizer because nullptr SentryClient is formally dereferenced in command->execute.
 [[clang::no_sanitize("null")]] TEST_CASE("internal message") {
     test::Context context;
     db::ROAccess dba(context.env());  // not used in the test execution

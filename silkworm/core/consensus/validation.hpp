@@ -107,6 +107,8 @@ namespace consensus {
                                               const std::optional<intx::uint256>& base_fee_per_gas,
                                               const std::optional<intx::uint256>& data_gas_price);
 
+    ValidationResult pre_validate_transactions(const Block& block, const ChainConfig& config);
+
     //! \see EIP-1559: Fee market change for ETH 1.0 chain
     std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& parent, const evmc_revision);
 

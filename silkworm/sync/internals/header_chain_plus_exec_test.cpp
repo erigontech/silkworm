@@ -53,8 +53,6 @@ class DummyConsensusEngine : public consensus::IEngine {
   public:
     ValidationResult pre_validate_block_body(const Block&, const BlockState&) override { return ValidationResult::kOk; }
 
-    ValidationResult pre_validate_transactions(const Block&) override { return ValidationResult::kOk; }
-
     ValidationResult validate_ommers(const Block&, const BlockState&) override { return ValidationResult::kOk; }
 
     ValidationResult validate_block_header(const BlockHeader&, const BlockState&, bool) override { return ValidationResult::kOk; }

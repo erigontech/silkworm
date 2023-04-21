@@ -31,7 +31,7 @@ ValidationResult EngineBase::pre_validate_block_body(const Block& block, const B
         return ValidationResult::kWrongTransactionsRoot;
     }
 
-    if (ValidationResult err{pre_validate_transactions(block)}; err != ValidationResult::kOk) {
+    if (ValidationResult err{pre_validate_transactions(block, chain_config_)}; err != ValidationResult::kOk) {
         return err;
     }
 
@@ -82,24 +82,13 @@ ValidationResult EngineBase::pre_validate_block_body(const Block& block, const B
     return validate_ommers(block, state);
 }
 
-ValidationResult EngineBase::pre_validate_transactions(const Block& block) {
-    const BlockHeader& header{block.header};
-
-    const evmc_revision rev{chain_config_.revision(header.number, header.timestamp)};
-    const std::optional<intx::uint256> data_gas_price{header.data_gas_price()};
-    for (const Transaction& txn : block.transactions) {
-        ValidationResult err{pre_validate_transaction(txn, rev, chain_config_.chain_id,
-                                                      header.base_fee_per_gas, data_gas_price)};
-        if (err != ValidationResult::kOk) {
-            return err;
-        }
-    }
-
-    return ValidationResult::kOk;
-}
-
+// TODO(yperbasis) make free-standing
 ValidationResult EngineBase::validate_ommers(const Block& block, const BlockState& state) {
     const BlockHeader& header{block.header};
+
+    if (prohibit_ommers_ && !block.ommers.empty()) {
+        return ValidationResult::kTooManyOmmers;
+    }
 
     if (block.ommers.size() > 2) {
         return ValidationResult::kTooManyOmmers;

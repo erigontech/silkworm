@@ -66,6 +66,7 @@ class BodiesStage : public Stage {
         using ConsensusEnginePtr = std::unique_ptr<consensus::IEngine>;
 
         ConsensusEnginePtr consensus_engine_;
+        const ChainConfig& chain_config_;
         db::Buffer chain_state_;
 
         BlockNum initial_height_{0};

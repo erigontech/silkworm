@@ -100,13 +100,6 @@ ValidationResult MergeEngine::validate_ommers(const Block& block, const BlockSta
     return EngineBase::validate_ommers(block, state);
 }
 
-ValidationResult MergeEngine::pre_validate_transactions(const Block& block) {
-    if (block.header.difficulty != 0) {
-        return pre_merge_engine_->pre_validate_transactions(block);
-    }
-    return EngineBase::pre_validate_transactions(block);
-}
-
 ValidationResult MergeEngine::validate_difficulty(const BlockHeader& header, const BlockHeader&) {
     return header.difficulty == 0 ? ValidationResult::kOk : ValidationResult::kWrongDifficulty;
 }

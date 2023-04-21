@@ -108,6 +108,22 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
     return ValidationResult::kOk;
 }
 
+ValidationResult pre_validate_transactions(const Block& block, const ChainConfig& config) {
+    const BlockHeader& header{block.header};
+    const evmc_revision rev{config.revision(header.number, header.timestamp)};
+    const std::optional<intx::uint256> data_gas_price{header.data_gas_price()};
+
+    for (const Transaction& txn : block.transactions) {
+        ValidationResult err{pre_validate_transaction(txn, rev, config.chain_id,
+                                                      header.base_fee_per_gas, data_gas_price)};
+        if (err != ValidationResult::kOk) {
+            return err;
+        }
+    }
+
+    return ValidationResult::kOk;
+}
+
 std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& parent, const evmc_revision rev) {
     if (rev < EVMC_LONDON) {
         return std::nullopt;

@@ -35,7 +35,7 @@ class SentryClient : public api::api_common::SentryClient {
     SentryClient(SentryClient&&) = default;
     SentryClient& operator=(SentryClient&&) = default;
 
-    std::shared_ptr<api::api_common::Service> service() override;
+    boost::asio::awaitable<std::shared_ptr<api::api_common::Service>> service() override;
 
   private:
     std::shared_ptr<SentryClientImpl> p_impl_;

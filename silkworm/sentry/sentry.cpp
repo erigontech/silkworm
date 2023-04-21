@@ -268,8 +268,8 @@ boost::asio::awaitable<void> Sentry::run() {
     return p_impl_->run();
 }
 
-std::shared_ptr<api::api_common::Service> Sentry::service() {
-    return p_impl_->service();
+boost::asio::awaitable<std::shared_ptr<api::api_common::Service>> Sentry::service() {
+    co_return p_impl_->service();
 }
 
 }  // namespace silkworm::sentry

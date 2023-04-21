@@ -164,7 +164,7 @@ static T sync_spawn(concurrency::TaskGroup& tasks, io_context& io_context, await
     return promise.get_future().get();
 }
 
-void SentryClient::set_status(BlockNum head_block_num, Hash head_hash, BigInt head_td, const ChainConfig& chain_config) {
+awaitable<void> SentryClient::set_status_async(BlockNum head_block_num, Hash head_hash, BigInt head_td, const ChainConfig& chain_config) {
     auto fork_block_numbers = chain_config.distinct_fork_numbers();
     auto best_block_hash = Bytes{ByteView{head_hash}};
     auto genesis_hash = ByteView{chain_config.genesis_hash.value()};
@@ -184,9 +184,14 @@ void SentryClient::set_status(BlockNum head_block_num, Hash head_hash, BigInt he
         std::move(status_message),
     };
 
-    sync_spawn(tasks_, io_context_, sentry_client_->service()->set_status(std::move(status_data)));
+    auto service = co_await sentry_client_->service();
+    co_await service->set_status(std::move(status_data));
 
     SILK_TRACE << "SentryClient, set_status sent";
+}
+
+void SentryClient::set_status(BlockNum head_block_num, Hash head_hash, BigInt head_td, const ChainConfig& chain_config) {
+    sync_spawn(tasks_, io_context_, set_status_async(head_block_num, std::move(head_hash), std::move(head_td), chain_config));
 }
 
 void SentryClient::set_status() {
@@ -201,13 +206,22 @@ void SentryClient::set_status() {
     set_status(head_height, head_hash, head_td, chain_config_);
 }
 
-void SentryClient::handshake() {
-    auto supported_protocol = sync_spawn(tasks_, io_context_, sentry_client_->service()->handshake());
+awaitable<void> SentryClient::handshake_async() {
+    auto service = co_await sentry_client_->service();
+    auto supported_protocol = co_await service->handshake();
 
     if (supported_protocol < 66) {
         log::Critical(kLogTitle) << "remote sentry do not support eth/66 protocol, stopping...";
-        stop();
         throw SentryClientException("SentryClient exception, cause: sentry do not support eth/66 protocol");
+    }
+}
+
+void SentryClient::handshake() {
+    try {
+        sync_spawn(tasks_, io_context_, handshake_async());
+    } catch (const SentryClientException&) {
+        stop();
+        throw;
     }
 }
 
@@ -226,34 +240,59 @@ static SentryClient::PeerIds peer_ids_from_peer_keys(const silkworm::sentry::api
     return peer_ids;
 }
 
-SentryClient::PeerIds SentryClient::send_message_by_id(const OutboundMessage& outbound_message, const PeerId& peer_id) {
+awaitable<SentryClient::PeerIds> SentryClient::send_message_by_id_async(const OutboundMessage& outbound_message, const PeerId& peer_id) {
     auto message = sentry_message_from_outbound_message(outbound_message);
     auto peer_public_key = sentry::common::EccPublicKey::deserialize(peer_id);
-    auto peer_keys = sync_spawn(tasks_, io_context_, sentry_client_->service()->send_message_by_id(std::move(message), std::move(peer_public_key)));
-    return peer_ids_from_peer_keys(peer_keys);
+    auto service = co_await sentry_client_->service();
+    auto peer_keys = co_await service->send_message_by_id(std::move(message), std::move(peer_public_key));
+    co_return peer_ids_from_peer_keys(peer_keys);
+}
+
+SentryClient::PeerIds SentryClient::send_message_by_id(const OutboundMessage& outbound_message, const PeerId& peer_id) {
+    return sync_spawn(tasks_, io_context_, send_message_by_id_async(outbound_message, peer_id));
+}
+
+awaitable<SentryClient::PeerIds> SentryClient::send_message_to_random_peers_async(const OutboundMessage& outbound_message, size_t max_peers) {
+    auto message = sentry_message_from_outbound_message(outbound_message);
+    auto service = co_await sentry_client_->service();
+    auto peer_keys = co_await service->send_message_to_random_peers(std::move(message), max_peers);
+    co_return peer_ids_from_peer_keys(peer_keys);
 }
 
 SentryClient::PeerIds SentryClient::send_message_to_random_peers(const OutboundMessage& outbound_message, size_t max_peers) {
+    return sync_spawn(tasks_, io_context_, send_message_to_random_peers_async(outbound_message, max_peers));
+}
+
+awaitable<SentryClient::PeerIds> SentryClient::send_message_to_all_async(const OutboundMessage& outbound_message) {
     auto message = sentry_message_from_outbound_message(outbound_message);
-    auto peer_keys = sync_spawn(tasks_, io_context_, sentry_client_->service()->send_message_to_random_peers(std::move(message), max_peers));
-    return peer_ids_from_peer_keys(peer_keys);
+    auto service = co_await sentry_client_->service();
+    auto peer_keys = co_await service->send_message_to_all(std::move(message));
+    co_return peer_ids_from_peer_keys(peer_keys);
 }
 
 SentryClient::PeerIds SentryClient::send_message_to_all(const OutboundMessage& outbound_message) {
-    auto message = sentry_message_from_outbound_message(outbound_message);
-    auto peer_keys = sync_spawn(tasks_, io_context_, sentry_client_->service()->send_message_to_all(std::move(message)));
-    return peer_ids_from_peer_keys(peer_keys);
+    return sync_spawn(tasks_, io_context_, send_message_to_all_async(outbound_message));
 }
 
-SentryClient::PeerIds SentryClient::send_message_by_min_block(const OutboundMessage& outbound_message, BlockNum /*min_block*/, size_t max_peers) {
+awaitable<SentryClient::PeerIds> SentryClient::send_message_by_min_block_async(const OutboundMessage& outbound_message, BlockNum /*min_block*/, size_t max_peers) {
     auto message = sentry_message_from_outbound_message(outbound_message);
-    auto peer_keys = sync_spawn(tasks_, io_context_, sentry_client_->service()->send_message_by_min_block(std::move(message), max_peers));
-    return peer_ids_from_peer_keys(peer_keys);
+    auto service = co_await sentry_client_->service();
+    auto peer_keys = co_await service->send_message_by_min_block(std::move(message), max_peers);
+    co_return peer_ids_from_peer_keys(peer_keys);
 }
 
-void SentryClient::peer_min_block(const PeerId& peer_id, BlockNum /*min_block*/) {
+SentryClient::PeerIds SentryClient::send_message_by_min_block(const OutboundMessage& outbound_message, BlockNum min_block, size_t max_peers) {
+    return sync_spawn(tasks_, io_context_, send_message_by_min_block_async(outbound_message, min_block, max_peers));
+}
+
+awaitable<void> SentryClient::peer_min_block_async(const PeerId& peer_id, BlockNum /*min_block*/) {
     auto peer_public_key = sentry::common::EccPublicKey::deserialize(peer_id);
-    sync_spawn(tasks_, io_context_, sentry_client_->service()->peer_min_block(std::move(peer_public_key)));
+    auto service = co_await sentry_client_->service();
+    co_await service->peer_min_block(std::move(peer_public_key));
+}
+
+void SentryClient::peer_min_block(const PeerId& peer_id, BlockNum min_block) {
+    sync_spawn(tasks_, io_context_, peer_min_block_async(peer_id, min_block));
 }
 
 void SentryClient::execution_loop() {
@@ -297,7 +336,12 @@ void SentryClient::execution_loop() {
                 }
             };
 
-            sync_spawn(tasks_, io_context_, sentry_client_->service()->messages(make_message_id_filter(), consumer));
+            auto receive_messages = [sentry_client = sentry_client_, consumer = std::move(consumer)]() -> awaitable<void> {
+                auto service = co_await sentry_client->service();
+                co_await service->messages(make_message_id_filter(), consumer);
+            };
+
+            sync_spawn(tasks_, io_context_, receive_messages());
 
         } catch (const std::exception& e) {
             if (!is_stopping()) log::Error(kLogTitle) << "exception: " << e.what();
@@ -354,7 +398,12 @@ void SentryClient::stats_receiving_loop() {
                                      << ", info: " << info;
             };
 
-            sync_spawn(tasks_, io_context_, sentry_client_->service()->peer_events(consumer));
+            auto receive_peer_events = [sentry_client = sentry_client_, consumer = std::move(consumer)]() -> awaitable<void> {
+                auto service = co_await sentry_client->service();
+                co_await service->peer_events(consumer);
+            };
+
+            sync_spawn(tasks_, io_context_, receive_peer_events());
 
         } catch (const std::exception& e) {
             if (!is_stopping()) log::Warning(kLogTitle) << "exception: " << e.what();
@@ -365,15 +414,21 @@ void SentryClient::stats_receiving_loop() {
     stop();
 }
 
-uint64_t SentryClient::count_active_peers() {
-    size_t peer_count = sync_spawn(tasks_, io_context_, sentry_client_->service()->peer_count());
+awaitable<uint64_t> SentryClient::count_active_peers_async() {
+    auto service = co_await sentry_client_->service();
+    size_t peer_count = co_await service->peer_count();
     active_peers_.store(peer_count);
-    return peer_count;
+    co_return peer_count;
+}
+
+uint64_t SentryClient::count_active_peers() {
+    return sync_spawn(tasks_, io_context_, count_active_peers_async());
 }
 
 boost::asio::awaitable<std::string> SentryClient::request_peer_info_async(PeerId peer_id) {
     auto peer_public_key = sentry::common::EccPublicKey::deserialize(peer_id);
-    auto peer_info_opt = co_await sentry_client_->service()->peer_by_id(std::move(peer_public_key));
+    auto service = co_await sentry_client_->service();
+    auto peer_info_opt = co_await service->peer_by_id(std::move(peer_public_key));
 
     if (!peer_info_opt) {
         co_return "-info-not-found-";
@@ -393,7 +448,8 @@ boost::asio::awaitable<void> SentryClient::penalize_peer_async(PeerId peer_id, P
         co_return;
     }
     auto peer_public_key = sentry::common::EccPublicKey::deserialize(peer_id);
-    co_await sentry_client_->service()->penalize_peer(std::move(peer_public_key));
+    auto service = co_await sentry_client_->service();
+    co_await service->penalize_peer(std::move(peer_public_key));
 }
 
 void SentryClient::penalize_peer(PeerId peer_id, Penalty penalty) {

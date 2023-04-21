@@ -1,0 +1,63 @@
+/*
+   Copyright 2023 The Silkworm Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+#include "session_sentry_client.hpp"
+
+#include <boost/asio/this_coro.hpp>
+
+namespace silkworm::sentry {
+
+using namespace boost::asio;
+
+SessionSentryClient::SessionSentryClient(
+    std::shared_ptr<api::api_common::SentryClient> sentry_client,
+    StatusDataProvider status_data_provider)
+    : sentry_client_(std::move(sentry_client)),
+      status_data_provider_(std::move(status_data_provider)) {
+}
+
+awaitable<void> SessionSentryClient::start_session() {
+    auto service = co_await sentry_client_->service();
+    auto eth_version = co_await service->handshake();
+    auto status_data = co_await status_data_provider_(eth_version);
+    co_await service->set_status(std::move(status_data));
+}
+
+awaitable<std::shared_ptr<api::api_common::Service>> SessionSentryClient::service() {
+    auto executor = co_await this_coro::executor;
+    bool is_needed_to_start_session = false;
+
+    {
+        std::scoped_lock lock(session_started_promise_mutex_);
+        if (!session_started_promise_) {
+            session_started_promise_ = std::make_unique<common::Promise<bool>>(executor);
+            is_needed_to_start_session = true;
+        }
+    }
+
+    if (is_needed_to_start_session) {
+        // TODO: what if it fails?
+        co_await start_session();
+        session_started_promise_->set_value(true);
+    } else {
+        // TODO: can't be called by multiple clients!
+        co_await session_started_promise_->wait();
+    }
+
+    co_return (co_await sentry_client_->service());
+}
+
+}  // namespace silkworm::sentry

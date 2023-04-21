@@ -57,14 +57,25 @@ class SentryClient : public ActiveComponent {
     void set_status();
 
     // handshake & check of the protocol version
+    boost::asio::awaitable<void> handshake_async();
     void handshake();
 
     // sending messages
     using PeerIds = std::vector<PeerId>;
+
+    boost::asio::awaitable<SentryClient::PeerIds> send_message_by_id_async(const OutboundMessage& outbound_message, const PeerId& peer_id);
     PeerIds send_message_by_id(const OutboundMessage& message, const PeerId& peer_id);
+
+    boost::asio::awaitable<PeerIds> send_message_to_random_peers_async(const OutboundMessage& message, size_t max_peers);
     PeerIds send_message_to_random_peers(const OutboundMessage& message, size_t max_peers);
+
+    boost::asio::awaitable<PeerIds> send_message_to_all_async(const OutboundMessage& message);
     PeerIds send_message_to_all(const OutboundMessage& message);
+
+    boost::asio::awaitable<PeerIds> send_message_by_min_block_async(const OutboundMessage& message, BlockNum min_block, size_t max_peers);
     PeerIds send_message_by_min_block(const OutboundMessage& message, BlockNum min_block, size_t max_peers);
+
+    boost::asio::awaitable<void> peer_min_block_async(const PeerId& peer_id, BlockNum min_block);
     void peer_min_block(const PeerId& peer_id, BlockNum min_block);
 
     // receiving messages
@@ -80,6 +91,7 @@ class SentryClient : public ActiveComponent {
     boost::signals2::signal<void()> malformed_message_subscription;
 
     // ask the remote sentry for active peers
+    boost::asio::awaitable<uint64_t> count_active_peers_async();
     uint64_t count_active_peers();
 
     // ask the remote sentry for peer info
@@ -106,7 +118,8 @@ class SentryClient : public ActiveComponent {
     // notifying registered subscribers
     boost::asio::awaitable<void> publish(const silkworm::sentry::api::api_common::MessageFromPeer& message_from_peer);
 
-    void set_status(BlockNum head_block_num, Hash head_hash, BigInt head_td, const ChainConfig&);
+    boost::asio::awaitable<void> set_status_async(BlockNum head_block_num, Hash head_hash, BigInt head_td, const ChainConfig& chain_config);
+    void set_status(BlockNum head_block_num, Hash head_hash, BigInt head_td, const ChainConfig& chain_config);
 
     boost::asio::io_context& io_context_;
     std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> sentry_client_;

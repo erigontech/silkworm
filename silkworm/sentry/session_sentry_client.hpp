@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,35 +16,37 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
+#include <mutex>
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 
-#include <silkworm/infra/grpc/server/server_context_pool.hpp>
-
-#include "api/api_common/sentry_client.hpp"
-#include "settings.hpp"
+#include <silkworm/sentry/api/api_common/sentry_client.hpp>
+#include <silkworm/sentry/common/promise.hpp>
+#include <silkworm/sentry/eth/status_data.hpp>
 
 namespace silkworm::sentry {
 
-class SentryImpl;
-
-class Sentry final : public api::api_common::SentryClient {
+class SessionSentryClient : public api::api_common::SentryClient {
   public:
-    explicit Sentry(Settings settings, silkworm::rpc::ServerContextPool& context_pool);
-    ~Sentry() override;
+    using StatusDataProvider = std::function<boost::asio::awaitable<eth::StatusData>(uint8_t eth_version)>;
 
-    Sentry(const Sentry&) = delete;
-    Sentry& operator=(const Sentry&) = delete;
-
-    boost::asio::awaitable<void> run();
+    SessionSentryClient(
+        std::shared_ptr<api::api_common::SentryClient> sentry_client,
+        StatusDataProvider status_data_provider);
 
     boost::asio::awaitable<std::shared_ptr<api::api_common::Service>> service() override;
 
   private:
-    std::unique_ptr<SentryImpl> p_impl_;
+    boost::asio::awaitable<void> start_session();
+
+    std::shared_ptr<api::api_common::SentryClient> sentry_client_;
+    StatusDataProvider status_data_provider_;
+    std::unique_ptr<common::Promise<bool>> session_started_promise_;
+    std::mutex session_started_promise_mutex_;
 };
 
 }  // namespace silkworm::sentry

@@ -225,8 +225,8 @@ SentryClient::~SentryClient() {
     log::Trace("sentry") << "silkworm::sentry::rpc::client::SentryClient::~SentryClient";
 }
 
-std::shared_ptr<api::api_common::Service> SentryClient::service() {
-    return p_impl_;
+boost::asio::awaitable<std::shared_ptr<api::api_common::Service>> SentryClient::service() {
+    co_return p_impl_;
 }
 
 }  // namespace silkworm::sentry::rpc::client

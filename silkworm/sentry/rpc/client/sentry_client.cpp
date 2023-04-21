@@ -222,7 +222,7 @@ SentryClient::SentryClient(const std::string& address_uri, agrpc::GrpcContext& g
     : p_impl_(std::make_shared<SentryClientImpl>(address_uri, grpc_context)) {}
 
 SentryClient::~SentryClient() {
-    log::Trace() << "silkworm::sentry::rpc::client::SentryClient::~SentryClient";
+    log::Trace("sentry") << "silkworm::sentry::rpc::client::SentryClient::~SentryClient";
 }
 
 std::shared_ptr<api::api_common::Service> SentryClient::service() {

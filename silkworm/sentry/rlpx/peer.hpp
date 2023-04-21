@@ -117,7 +117,7 @@ class Peer {
 
     class DisconnectedError : public std::runtime_error {
       public:
-        DisconnectedError() : std::runtime_error("Peer is disconnected") {}
+        DisconnectedError() : std::runtime_error("rlpx::Peer is disconnected") {}
     };
 
     std::optional<common::EnodeUrl> url() {

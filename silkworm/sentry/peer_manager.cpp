@@ -57,7 +57,7 @@ awaitable<void> PeerManager::start_in_strand(concurrency::Channel<std::shared_pt
                 drop_peer_tasks_count_++;
                 drop_peer_tasks_.spawn(strand_, drop_peer(peer, rlpx::rlpx_common::DisconnectReason::TooManyPeers));
             } else {
-                log::Warning() << "PeerManager::start_in_strand too many extra peers to disconnect gracefully, dropping a peer on the floor";
+                log::Warning("sentry") << "PeerManager::start_in_strand too many extra peers to disconnect gracefully, dropping a peer on the floor";
             }
             continue;
         }
@@ -74,12 +74,12 @@ boost::asio::awaitable<void> PeerManager::start_peer(std::shared_ptr<rlpx::Peer>
         co_await (rlpx::Peer::start(peer) && wait_for_peer_handshake(peer));
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled) {
-            log::Debug() << "PeerManager::start_peer Peer::start cancelled";
+            log::Debug("sentry") << "PeerManager::start_peer Peer::start cancelled";
         } else {
-            log::Error() << "PeerManager::start_peer Peer::start system_error: " << ex.what();
+            log::Error("sentry") << "PeerManager::start_peer Peer::start system_error: " << ex.what();
         }
     } catch (const std::exception& ex) {
-        log::Error() << "PeerManager::start_peer Peer::start exception: " << ex.what();
+        log::Error("sentry") << "PeerManager::start_peer Peer::start exception: " << ex.what();
     }
 
     starting_peers_.remove(peer);
@@ -107,12 +107,12 @@ boost::asio::awaitable<void> PeerManager::drop_peer(
         co_await rlpx::Peer::drop(peer, reason);
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled) {
-            log::Debug() << "PeerManager::drop_peer Peer::drop cancelled";
+            log::Debug("sentry") << "PeerManager::drop_peer Peer::drop cancelled";
         } else {
-            log::Error() << "PeerManager::drop_peer Peer::drop system_error: " << ex.what();
+            log::Error("sentry") << "PeerManager::drop_peer Peer::drop system_error: " << ex.what();
         }
     } catch (const std::exception& ex) {
-        log::Error() << "PeerManager::drop_peer Peer::drop exception: " << ex.what();
+        log::Error("sentry") << "PeerManager::drop_peer Peer::drop exception: " << ex.what();
     }
 }
 
@@ -222,12 +222,12 @@ awaitable<void> PeerManager::connect_peer(common::EnodeUrl peer_url, bool is_sta
         co_await client_peer_channel_.send(peer);
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled) {
-            log::Debug() << "PeerManager::connect_peer cancelled";
+            log::Debug("sentry") << "PeerManager::connect_peer cancelled";
         } else {
-            log::Error() << "PeerManager::connect_peer system_error: " << ex.what();
+            log::Error("sentry") << "PeerManager::connect_peer system_error: " << ex.what();
         }
     } catch (const std::exception& ex) {
-        log::Error() << "PeerManager::connect_peer exception: " << ex.what();
+        log::Error("sentry") << "PeerManager::connect_peer exception: " << ex.what();
     }
 }
 

@@ -44,7 +44,7 @@ EccPublicKey EccKeyPair::public_key() const {
     secp256k1_pubkey public_key;
     bool ok = ctx.create_public_key(&public_key, private_key_);
     if (!ok) {
-        throw std::runtime_error("Failed to create a corresponding public key");
+        throw std::runtime_error("EccKeyPair::public_key failed to create a corresponding public key");
     }
     return EccPublicKey(Bytes{public_key.data, sizeof(public_key.data)});
 }

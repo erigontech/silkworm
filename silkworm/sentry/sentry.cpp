@@ -156,8 +156,9 @@ void SentryImpl::setup_node_key() {
 boost::asio::awaitable<void> SentryImpl::run_tasks() {
     using namespace concurrency::awaitable_wait_for_all;
 
-    log::Info() << "Waiting for status message...";
+    log::Info("sentry") << "Sentry is waiting for status message...";
     co_await status_manager_.wait_for_status();
+    log::Info("sentry") << "Sentry received initial status message";
 
     co_await (
         start_status_manager() &&
@@ -260,7 +261,7 @@ Sentry::Sentry(Settings settings, silkworm::rpc::ServerContextPool& context_pool
 }
 
 Sentry::~Sentry() {
-    log::Trace() << "silkworm::sentry::Sentry::~Sentry";
+    log::Trace("sentry") << "silkworm::sentry::Sentry::~Sentry";
 }
 
 boost::asio::awaitable<void> Sentry::run() {

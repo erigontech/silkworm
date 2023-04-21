@@ -21,10 +21,7 @@
 #include <utility>
 
 #include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/concurrency/thread_pool.hpp>
-#include <silkworm/node/snapshot/index.hpp>
 
 namespace silkworm {
 
@@ -41,48 +38,6 @@ void SnapshotRepository::reopen_folder() {
 void SnapshotRepository::verify() {
     SILK_INFO << "Verify snapshots in repository folder: " << settings_.repository_dir.string();
     // TODO(canepat) implement
-}
-
-void SnapshotRepository::build_missing_indexes() {
-    thread_pool workers;
-
-    SnapshotPathList segment_files = get_segment_files();
-    for (const auto& seg_file : segment_files) {
-        const auto index_file = seg_file.index_file();
-        SILK_INFO << "Segment file: " << seg_file.filename() << " has index: " << index_file.filename();
-        if (!std::filesystem::exists(index_file.path())) {
-            std::shared_ptr<Index> index;
-            switch (seg_file.type()) {
-                case SnapshotType::headers: {
-                    index = std::make_shared<HeaderIndex>(seg_file);
-                    break;
-                }
-                case SnapshotType::bodies: {
-                    index = std::make_shared<BodyIndex>(seg_file);
-                    break;
-                }
-                case SnapshotType::transactions: {
-                    index = std::make_shared<TransactionIndex>(seg_file);
-                    break;
-                }
-                default: {
-                    SILKWORM_ASSERT(false);
-                }
-            }
-            log::Info() << "[Snapshots] Build index: " << index->path().filename() << " start";
-            index->build();
-            log::Info() << "[Snapshots] Build index: " << index->path().filename() << " end";
-            /*if (index) {
-                workers.submit([index = std::move(index)]() {
-                    log::Info() << "[Snapshots] Build index: " << index->path().filename() << " start";
-                    index->build();
-                    log::Info() << "[Snapshots] Build index: " << index->path().filename() << " end";
-                });
-            }*/
-        }
-    }
-
-    workers.wait_for_tasks();
 }
 
 std::vector<BlockNumRange> SnapshotRepository::missing_block_ranges() const {
@@ -132,6 +87,38 @@ SnapshotRepository::ViewResult SnapshotRepository::view_body_segment(BlockNum nu
 
 SnapshotRepository::ViewResult SnapshotRepository::view_tx_segment(BlockNum number, const TransactionSnapshotWalker& walker) {
     return view(tx_segments_, number, walker);
+}
+
+std::vector<std::shared_ptr<Index>> SnapshotRepository::missing_indexes() const {
+    SnapshotPathList segment_files = get_segment_files();
+    std::vector<std::shared_ptr<Index>> missing_index_list;
+    missing_index_list.reserve(segment_files.size());
+    for (const auto& seg_file : segment_files) {
+        const auto index_file = seg_file.index_file();
+        SILK_INFO << "Segment file: " << seg_file.filename() << " has index: " << index_file.filename();
+        if (!std::filesystem::exists(index_file.path())) {
+            std::shared_ptr<Index> index;
+            switch (seg_file.type()) {
+                case SnapshotType::headers: {
+                    index = std::make_shared<HeaderIndex>(seg_file);
+                    break;
+                }
+                case SnapshotType::bodies: {
+                    index = std::make_shared<BodyIndex>(seg_file);
+                    break;
+                }
+                case SnapshotType::transactions: {
+                    index = std::make_shared<TransactionIndex>(seg_file);
+                    break;
+                }
+                default: {
+                    SILKWORM_ASSERT(false);
+                }
+            }
+            missing_index_list.push_back(index);
+        }
+    }
+    return missing_index_list;
 }
 
 void SnapshotRepository::reopen_list(const SnapshotPathList& segment_files, bool optimistic) {

@@ -21,6 +21,7 @@
 #include <vector>
 
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/infra/concurrency/stoppable.hpp>
 #include <silkworm/node/bittorrent/client.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/snapshot/repository.hpp>
@@ -28,20 +29,21 @@
 
 namespace silkworm {
 
-class SnapshotSync {
+class SnapshotSync : public Stoppable {
   public:
     SnapshotSync(const SnapshotSettings& settings, const ChainConfig& config);
-    ~SnapshotSync();
+    ~SnapshotSync() override;
 
     [[nodiscard]] SnapshotRepository& repository() { return repository_; }
 
     bool download_and_index_snapshots(db::RWTxn& txn);
     bool download_snapshots(const std::vector<std::string>& snapshot_file_names);
     bool index_snapshots(db::RWTxn& txn, const std::vector<std::string>& snapshot_file_names);
-    void stop();
+    bool stop() override;
 
   private:
     void open_and_verify();
+    void build_missing_indexes();
 
     SnapshotSettings settings_;
     const ChainConfig& config_;

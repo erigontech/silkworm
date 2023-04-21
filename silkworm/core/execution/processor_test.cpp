@@ -21,7 +21,6 @@
 
 #include <silkworm/core/chain/protocol_param.hpp>
 #include <silkworm/core/common/test_util.hpp>
-#include <silkworm/core/consensus/ethash/engine.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
 
 #include "address.hpp"

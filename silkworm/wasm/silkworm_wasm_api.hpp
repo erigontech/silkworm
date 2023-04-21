@@ -28,7 +28,6 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/consensus/blockchain.hpp>
-#include <silkworm/core/consensus/ethash/engine.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/transaction.hpp>

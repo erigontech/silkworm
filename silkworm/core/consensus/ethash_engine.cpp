@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "engine.hpp"
+#include "ethash_engine.hpp"
 
 #include <silkworm/core/chain/difficulty.hpp>
 #include <silkworm/core/chain/protocol_param.hpp>

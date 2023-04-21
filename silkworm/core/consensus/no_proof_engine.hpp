@@ -14,10 +14,20 @@
    limitations under the License.
 */
 
-#include "engine.hpp"
+#pragma once
+
+#include <silkworm/core/consensus/ethash_engine.hpp>
 
 namespace silkworm::consensus {
 
-ValidationResult NoProofEngine::validate_seal(const BlockHeader&) { return ValidationResult::kOk; }
+// This consensus engine does not validate PoW seal.
+// It is used in the consensus tests.
+class NoProofEngine : public EthashEngine {
+  public:
+    explicit NoProofEngine(const ChainConfig& chain_config) : EthashEngine(chain_config) {}
+
+    //! \brief Validates the seal of the header
+    ValidationResult validate_seal(const BlockHeader& header) final;
+};
 
 }  // namespace silkworm::consensus

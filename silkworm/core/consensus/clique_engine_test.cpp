@@ -14,12 +14,11 @@
    limitations under the License.
 */
 
-#include "engine.hpp"
+#include "clique_engine.hpp"
 
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/cast.hpp>
-#include <silkworm/core/consensus/ethash/engine.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
 
 namespace silkworm::consensus {

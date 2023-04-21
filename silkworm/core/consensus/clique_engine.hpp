@@ -16,18 +16,20 @@
 
 #pragma once
 
-#include <silkworm/core/consensus/ethash/engine.hpp>
+#include <silkworm/core/consensus/ethash_engine.hpp>
 
 namespace silkworm::consensus {
 
 // This consensus engine does not validate PoW seal.
 // It is used in the consensus tests.
-class NoProofEngine : public EthashEngine {
+class CliqueEngine : public EthashEngine {
   public:
-    explicit NoProofEngine(const ChainConfig& chain_config) : EthashEngine(chain_config) {}
+    explicit CliqueEngine(const ChainConfig& chain_config) : EthashEngine(chain_config) {}
 
     //! \brief Validates the seal of the header
     ValidationResult validate_seal(const BlockHeader& header) final;
+
+    evmc::address get_beneficiary(const BlockHeader& header) final;
 };
 
 }  // namespace silkworm::consensus

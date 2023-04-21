@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "engine.hpp"
+#include "clique_engine.hpp"
 
 #include <silkworm/core/crypto/ecdsa.h>
 

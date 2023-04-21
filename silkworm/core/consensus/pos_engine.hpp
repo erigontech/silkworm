@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <silkworm/core/consensus/base/engine.hpp>
+#include <silkworm/core/consensus/base_engine.hpp>
 
 namespace silkworm::consensus {
 

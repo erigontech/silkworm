@@ -16,10 +16,17 @@
 
 #pragma once
 
+#include <optional>
+
+#include <evmc/evmc.h>
+
+#include <silkworm/core/types/block.hpp>
+#include <silkworm/core/types/transaction.hpp>
+
 namespace silkworm {
 
 // Classification of invalid transactions and blocks.
-enum class [[nodiscard]] ValidationResult{
+enum class [[nodiscard]] ValidationResult {
     kOk,                      // All checks passed
     kUnknownConsensusEngine,  // Undetectable consensus engine
     kFutureBlock,             // Block has a timestamp in the future
@@ -88,5 +95,31 @@ enum class [[nodiscard]] ValidationResult{
     kWrongBlobCommitmentVersion,
     kMaxFeePerDataGasTooLow,  // max_fee_per_data_gas < data_gas_price
 };
+
+namespace consensus {
+
+    bool transaction_type_is_supported(Transaction::Type, evmc_revision);
+
+    //! \brief Performs validation of a transaction that can be done prior to sender recovery and block execution.
+    //! \remarks Should sender of transaction not yet recovered a check on signature's validity is performed
+    //! \remarks These function is agnostic to whole block validity
+    ValidationResult pre_validate_transaction(const Transaction& txn, evmc_revision revision, uint64_t chain_id,
+                                              const std::optional<intx::uint256>& base_fee_per_gas,
+                                              const std::optional<intx::uint256>& data_gas_price);
+
+    //! \see EIP-1559: Fee market change for ETH 1.0 chain
+    std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& parent, const evmc_revision);
+
+    //! \see EIP-4844: Shard Blob Transactions
+    std::optional<intx::uint256> calc_excess_data_gas(const BlockHeader& parent, std::size_t num_blobs,
+                                                      const evmc_revision);
+
+    //! \brief Calculate the transaction root of a block body
+    evmc::bytes32 compute_transaction_root(const BlockBody& body);
+
+    //! \brief Calculate the hash of ommers of a block body
+    evmc::bytes32 compute_ommers_hash(const BlockBody& body);
+
+}  // namespace consensus
 
 }  // namespace silkworm

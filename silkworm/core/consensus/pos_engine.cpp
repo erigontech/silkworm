@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "engine.hpp"
+#include "pos_engine.hpp"
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/types/withdrawal.hpp>

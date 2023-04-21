@@ -18,7 +18,7 @@
 
 #include <memory>
 
-#include <silkworm/core/consensus/pos/engine.hpp>
+#include <silkworm/core/consensus/pos_engine.hpp>
 
 namespace silkworm::consensus {
 

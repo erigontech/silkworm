@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "engine.hpp"
+#include "merge_engine.hpp"
 
 #include <optional>
 #include <utility>

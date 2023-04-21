@@ -14,12 +14,10 @@
    limitations under the License.
 */
 
-#include "engine.hpp"
+#include "base_engine.hpp"
 
 #include <silkworm/core/chain/protocol_param.hpp>
 #include <silkworm/core/common/as_range.hpp>
-#include <silkworm/core/common/cast.hpp>
-#include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
 
 namespace silkworm::consensus {
@@ -246,75 +244,5 @@ bool EngineBase::is_kin(const BlockHeader& branch_header, const BlockHeader& mai
 }
 
 evmc::address EngineBase::get_beneficiary(const BlockHeader& header) { return header.beneficiary; }
-
-std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& parent, const evmc_revision rev) {
-    if (rev < EVMC_LONDON) {
-        return std::nullopt;
-    }
-
-    if (!parent.base_fee_per_gas) {
-        return param::kInitialBaseFee;
-    }
-
-    const uint64_t parent_gas_target{parent.gas_limit / param::kElasticityMultiplier};
-    const intx::uint256& parent_base_fee_per_gas{*parent.base_fee_per_gas};
-
-    if (parent.gas_used == parent_gas_target) {
-        return parent_base_fee_per_gas;
-    }
-
-    if (parent.gas_used > parent_gas_target) {
-        const intx::uint256 gas_used_delta{parent.gas_used - parent_gas_target};
-        intx::uint256 base_fee_per_gas_delta{parent_base_fee_per_gas * gas_used_delta / parent_gas_target /
-                                             param::kBaseFeeMaxChangeDenominator};
-        if (base_fee_per_gas_delta < 1) {
-            base_fee_per_gas_delta = 1;
-        }
-        return parent_base_fee_per_gas + base_fee_per_gas_delta;
-    } else {
-        const intx::uint256 gas_used_delta{parent_gas_target - parent.gas_used};
-        const intx::uint256 base_fee_per_gas_delta{parent_base_fee_per_gas * gas_used_delta / parent_gas_target /
-                                                   param::kBaseFeeMaxChangeDenominator};
-        if (parent_base_fee_per_gas > base_fee_per_gas_delta) {
-            return parent_base_fee_per_gas - base_fee_per_gas_delta;
-        } else {
-            return 0;
-        }
-    }
-}
-
-std::optional<intx::uint256> calc_excess_data_gas(const BlockHeader& parent,
-                                                  std::size_t num_blobs,
-                                                  const evmc_revision rev) {
-    if (rev < EVMC_CANCUN) {
-        return std::nullopt;
-    }
-
-    const uint64_t consumed_data_gas{num_blobs * param::kDataGasPerBlob};
-    const intx::uint256 parent_excess_data_gas{parent.excess_data_gas.value_or(0)};
-
-    if (parent_excess_data_gas + consumed_data_gas < param::kTargetDataGasPerBlock) {
-        return 0;
-    } else {
-        return parent_excess_data_gas + consumed_data_gas - param::kTargetDataGasPerBlock;
-    }
-}
-
-evmc::bytes32 compute_transaction_root(const BlockBody& body) {
-    static constexpr auto kEncoder = [](Bytes& to, const Transaction& txn) {
-        rlp::encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_into_string=*/false);
-    };
-    return trie::root_hash(body.transactions, kEncoder);
-}
-
-evmc::bytes32 compute_ommers_hash(const BlockBody& body) {
-    if (body.ommers.empty()) {
-        return kEmptyListHash;
-    }
-
-    Bytes ommers_rlp;
-    rlp::encode(ommers_rlp, body.ommers);
-    return bit_cast<evmc_bytes32>(keccak256(ommers_rlp));
-}
 
 }  // namespace silkworm::consensus

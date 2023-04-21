@@ -18,7 +18,6 @@
 
 #include <thread>
 
-#include <silkworm/core/consensus/base/engine.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/measure.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>

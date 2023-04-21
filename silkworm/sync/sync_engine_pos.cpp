@@ -19,7 +19,6 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/core/common/as_range.hpp>
-#include <silkworm/core/consensus/base/engine.hpp>
 #include <silkworm/infra/common/measure.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
 

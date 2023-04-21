@@ -55,15 +55,15 @@ class EngineBase : public IEngine {
     //! \param [in] header: Current block to get beneficiary from
     evmc::address get_beneficiary(const BlockHeader& header) override;
 
-    //! \brief Validates the difficulty of the header
-    virtual ValidationResult validate_difficulty(const BlockHeader& header, const BlockHeader& parent) = 0;
-
     //! \brief Returns parent header (if any) of provided header
     static std::optional<BlockHeader> get_parent_header(const BlockState& state, const BlockHeader& header);
 
   protected:
     const ChainConfig& chain_config_;
     bool prohibit_ommers_{false};
+
+    //! \brief Validates the difficulty of the header
+    virtual ValidationResult validate_difficulty(const BlockHeader& header, const BlockHeader& parent) = 0;
 
     //! \brief See [YP] Section 11.1 "Ommer Validation"
     bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,

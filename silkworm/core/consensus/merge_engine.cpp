@@ -22,16 +22,15 @@
 namespace silkworm::consensus {
 
 MergeEngine::MergeEngine(std::unique_ptr<IEngine> eth1_engine, const ChainConfig& chain_config)
-    : terminal_total_difficulty_{*chain_config.terminal_total_difficulty},
-      pre_merge_engine_{std::move(eth1_engine)},
-      post_merge_engine_{chain_config} {}
+    : EngineBase{chain_config, /*prohibit_ommers=*/true},
+      terminal_total_difficulty_{*chain_config.terminal_total_difficulty},
+      pre_merge_engine_{std::move(eth1_engine)} {}
 
 ValidationResult MergeEngine::pre_validate_block_body(const Block& block, const BlockState& state) {
     if (block.header.difficulty != 0) {
         return pre_merge_engine_->pre_validate_block_body(block, state);
-    } else {
-        return post_merge_engine_.pre_validate_block_body(block, state);
     }
+    return EngineBase::pre_validate_block_body(block, state);
 }
 
 ValidationResult MergeEngine::validate_block_header(const BlockHeader& header, const BlockState& state,
@@ -43,83 +42,73 @@ ValidationResult MergeEngine::validate_block_header(const BlockHeader& header, c
         return ValidationResult::kUnknownParent;
     }
 
+    const std::optional<intx::uint256> parent_total_difficulty{
+        state.total_difficulty(parent->number, header.parent_hash)};
+    if (parent_total_difficulty == std::nullopt) {
+        return ValidationResult::kUnknownParentTotalDifficulty;
+    }
+
     if (header.difficulty != 0) {
-        const std::optional<intx::uint256> parent_total_difficulty{
-            state.total_difficulty(parent->number, header.parent_hash)};
-        if (parent_total_difficulty == std::nullopt) {
-            return ValidationResult::kUnknownParentTotalDifficulty;
-        }
         if (parent_total_difficulty >= terminal_total_difficulty_) {
             return ValidationResult::kPoWBlockAfterMerge;
         }
         return pre_merge_engine_->validate_block_header(header, state, with_future_timestamp_check);
-    } else {
-        if (parent->difficulty != 0 && !terminal_pow_block(*parent, state)) {
-            return ValidationResult::kPoSBlockBeforeMerge;
-        }
-        return post_merge_engine_.validate_block_header(header, state, with_future_timestamp_check);
-    }
-}
-
-bool MergeEngine::terminal_pow_block(const BlockHeader& header, const BlockState& state) const {
-    if (header.difficulty == 0) {
-        return false;  // PoS block
     }
 
-    const std::optional<BlockHeader> parent{EngineBase::get_parent_header(state, header)};
-    if (parent == std::nullopt) {
-        return false;
+    // PoS block
+    if (parent_total_difficulty < terminal_total_difficulty_) {
+        return ValidationResult::kPoSBlockBeforeMerge;
     }
-
-    const std::optional<intx::uint256> parent_total_difficulty{
-        state.total_difficulty(parent->number, header.parent_hash)};
-    if (parent_total_difficulty == std::nullopt) {
-        // TODO (Andrew) should return kUnknownParentTotalDifficulty instead
-        return false;
-    }
-
-    return parent_total_difficulty < terminal_total_difficulty_ &&
-           *parent_total_difficulty + header.difficulty >= terminal_total_difficulty_;
+    return EngineBase::validate_block_header(header, state, with_future_timestamp_check);
 }
 
 ValidationResult MergeEngine::validate_seal(const BlockHeader& header) {
     if (header.difficulty != 0) {
         return pre_merge_engine_->validate_seal(header);
-    } else {
-        return post_merge_engine_.validate_seal(header);
     }
+    return header.nonce == BlockHeader::NonceType{} ? ValidationResult::kOk : ValidationResult::kInvalidNonce;
 }
 
 void MergeEngine::finalize(IntraBlockState& state, const Block& block, evmc_revision revision) {
     if (block.header.difficulty != 0) {
         pre_merge_engine_->finalize(state, block, revision);
-    } else {
-        post_merge_engine_.finalize(state, block, revision);
+        return;
+    }
+
+    if (!block.withdrawals) {
+        return;
+    }
+
+    // See EIP-4895: Beacon chain push withdrawals as operations
+    for (const Withdrawal& w : *block.withdrawals) {
+        const auto amount_in_wei{intx::uint256{w.amount} * intx::uint256{kGiga}};
+        state.add_to_balance(w.address, amount_in_wei);
     }
 }
 
 evmc::address MergeEngine::get_beneficiary(const BlockHeader& header) {
     if (header.difficulty != 0) {
         return pre_merge_engine_->get_beneficiary(header);
-    } else {
-        return post_merge_engine_.get_beneficiary(header);
     }
+    return EngineBase::get_beneficiary(header);
 }
 
 ValidationResult MergeEngine::validate_ommers(const Block& block, const BlockState& state) {
     if (block.header.difficulty != 0) {
         return pre_merge_engine_->validate_ommers(block, state);
-    } else {
-        return post_merge_engine_.validate_ommers(block, state);
     }
+    return EngineBase::validate_ommers(block, state);
 }
 
 ValidationResult MergeEngine::pre_validate_transactions(const Block& block) {
     if (block.header.difficulty != 0) {
         return pre_merge_engine_->pre_validate_transactions(block);
-    } else {
-        return post_merge_engine_.pre_validate_transactions(block);
     }
+    return EngineBase::pre_validate_transactions(block);
+}
+
+ValidationResult MergeEngine::validate_difficulty(const BlockHeader& header, const BlockHeader&) {
+    return header.difficulty == 0 ? ValidationResult::kOk : ValidationResult::kWrongDifficulty;
 }
 
 }  // namespace silkworm::consensus

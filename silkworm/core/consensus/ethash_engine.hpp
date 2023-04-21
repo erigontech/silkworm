@@ -30,13 +30,14 @@ class EthashEngine : public EngineBase {
     //! \brief Validates the seal of the header
     ValidationResult validate_seal(const BlockHeader& header) override;
 
-    ValidationResult validate_difficulty(const BlockHeader& header, const BlockHeader& parent) override;
-
     //! \brief See [YP] Section 11.3 "Reward Application".
     //! \param [in] state: current state.
     //! \param [in] block: current block to apply rewards for.
     //! \param [in] revision: EVM fork.
     void finalize(IntraBlockState& state, const Block& block, evmc_revision revision) override;
+
+  protected:
+    ValidationResult validate_difficulty(const BlockHeader& header, const BlockHeader& parent) override;
 
   private:
     ethash::epoch_context_ptr epoch_context_{nullptr, ethash_destroy_epoch_context};

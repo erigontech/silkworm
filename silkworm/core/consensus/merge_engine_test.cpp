@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "pos_engine.hpp"
+#include "merge_engine.hpp"
 
 #include <catch2/catch.hpp>
 
@@ -31,7 +31,6 @@ TEST_CASE("Proof-of-Stake consensus engine") {
     header.state_root = 0x1e9e5c33cff9f79838862632235f310c4b378c69b2778b24f506a4898c6d00ef_bytes32;
     header.transactions_root = kEmptyRoot;
     header.receipts_root = kEmptyRoot;
-    header.difficulty = 0;
     header.number = 14'000'000;
     header.gas_limit = 30'000'000;
     header.gas_used = 0;
@@ -43,23 +42,23 @@ TEST_CASE("Proof-of-Stake consensus engine") {
     parent.header.number = header.number - 1;
     parent.header.gas_limit = header.gas_limit;
     parent.header.base_fee_per_gas = 1'000'000'000;
+    parent.header.difficulty = 1000;
 
-    EthashEngine ethash_engine{kMainnetConfig};
-    ProofOfStakeEngine pos_engine{kMainnetConfig};
+    ChainConfig config{kMainnetConfig};
+    config.terminal_total_difficulty = parent.header.difficulty;
+
+    MergeEngine engine{std::make_unique<EthashEngine>(config), config};
 
     header.base_fee_per_gas = expected_base_fee_per_gas(parent.header, EVMC_LONDON);
 
     InMemoryState state;
     state.insert_block(parent, header.parent_hash);
 
-    CHECK(ethash_engine.validate_block_header(header, state, /*with_future_timestamp_check=*/false) ==
-          ValidationResult::kWrongDifficulty);
-
-    CHECK(pos_engine.validate_block_header(header, state, /*with_future_timestamp_check=*/false) ==
+    CHECK(engine.validate_block_header(header, state, /*with_future_timestamp_check=*/false) ==
           ValidationResult::kOk);
 
     header.nonce[2] = 5;
-    CHECK(pos_engine.validate_block_header(header, state, /*with_future_timestamp_check=*/false) ==
+    CHECK(engine.validate_block_header(header, state, /*with_future_timestamp_check=*/false) ==
           ValidationResult::kInvalidNonce);
 }
 

@@ -667,8 +667,8 @@ Status individual_difficulty_test(const nlohmann::json& j, const ChainConfig& co
         }
     }
 
-    intx::uint256 calculated_difficulty{canonical_difficulty(block_number, current_timestamp, parent_difficulty,
-                                                             parent_timestamp, parent_has_uncles, config)};
+    intx::uint256 calculated_difficulty{proof_of_work_difficulty(block_number, current_timestamp, parent_difficulty,
+                                                                 parent_timestamp, parent_has_uncles, config)};
     if (calculated_difficulty == current_difficulty) {
         return Status::kPassed;
     } else {

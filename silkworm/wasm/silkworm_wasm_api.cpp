@@ -71,8 +71,8 @@ void config_set_dao_block(ChainConfig* config, uint64_t block) { config->dao_blo
 
 void difficulty(intx::uint256* in_out, uint64_t block_number, uint64_t block_timestamp, uint64_t parent_timestamp,
                 bool parent_has_uncles, const ChainConfig* config) {
-    *in_out = canonical_difficulty(block_number, block_timestamp, /*parent_difficulty=*/*in_out, parent_timestamp,
-                                   parent_has_uncles, *config);
+    *in_out = proof_of_work_difficulty(block_number, block_timestamp, /*parent_difficulty=*/*in_out, parent_timestamp,
+                                       parent_has_uncles, *config);
 }
 
 Transaction* new_transaction(const Bytes* rlp) {

@@ -94,11 +94,12 @@ TEST_CASE("awaitable future") {
         auto future = promise.get_future();
 
         int value;
-        std::thread concurrent([&](AwaitableFuture<int>&& moved_future) {
-            value = moved_future.get();
-            io.stop();
-        },
-                               std::move(future));
+        std::thread concurrent(
+            [&](AwaitableFuture<int>&& moved_future) {
+                value = moved_future.get();
+                io.stop();
+            },
+            std::move(future));
 
         promise.set_value(42);
 
@@ -113,11 +114,12 @@ TEST_CASE("awaitable future") {
         auto future = promise.get_future();
 
         int value;
-        std::thread concurrent([&](AwaitableFuture<int>&& moved_future) {
-            value = moved_future.get();
-            io.stop();
-        },
-                               std::move(future));
+        std::thread concurrent(
+            [&](AwaitableFuture<int>&& moved_future) {
+                value = moved_future.get();
+                io.stop();
+            },
+            std::move(future));
 
         asio::co_spawn(
             io,
@@ -131,51 +133,7 @@ TEST_CASE("awaitable future") {
         CHECK(value == 42);
     }
 
-    /*SECTION("using coroutines in read from different threads") {
-        AwaitablePromise<int> promise{io};
-        auto future = promise.get_future();
-
-        int value;
-        std::thread concurrent([&](AwaitableFuture<int>&& moved_future) {
-            auto spawned_exec = asio::co_spawn(
-                io,
-                [](int& value_ref, AwaitableFuture<int>&& further_moved_future) -> asio::awaitable<void> {
-                    value_ref = co_await further_moved_future.get(asio::use_awaitable);
-                }(value, std::move(moved_future)),
-                asio::use_future);
-            spawned_exec.get();
-        },
-                               std::move(future));
-
-        //std::this_thread::sleep_for(std::chrono::milliseconds(300));
-
-        promise.set_value(42);
-
-        // CHECK(value == 42);  // wrong
-
-        concurrent.join();
-        CHECK(value == 42);
-    }*/
-
-    /*SECTION("using coroutines in read in the same io_context") {  // broken
-        AwaitablePromise<int> promise{io};
-        std::atomic_int value;
-
-        asio::co_spawn(
-            io,
-            [&]() -> asio::awaitable<void> {
-                auto future = promise.get_future();
-                value = co_await future.get(asio::use_awaitable);
-            },
-            asio::detached);
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(300));
-
-        promise.set_value(42);
-
-        CHECK(value == 42);
-    }*/
-    SECTION("using coroutines in read in the same io_context") {  // fixed
+    SECTION("using coroutines in read in the same io_context, write before read") {
         AwaitablePromise<int> promise{io};
         int value;
 
@@ -190,6 +148,7 @@ TEST_CASE("awaitable future") {
 
         promise.set_value(42);
         io.run();
+
         CHECK(value == 42);
     }
 
@@ -200,7 +159,26 @@ TEST_CASE("awaitable future") {
         int value;
         asio::co_spawn(
             io,
-            [&](AwaitableFuture<int>&& moved_future) -> asio::awaitable<void> {
+            [&]() -> asio::awaitable<void> {  // <====
+                value = co_await future.get(asio::use_awaitable);
+                io.stop();
+            },
+            asio::detached);
+
+        promise.set_value(42);
+        io.run();
+
+        CHECK(value == 42);
+    }
+
+    SECTION("moving AwaitableFuture") {
+        AwaitablePromise<int> promise{io};
+        auto future = promise.get_future();
+
+        int value;
+        asio::co_spawn(  // <==== AddressSanitizer warn: stack-use-after-scope
+            io,
+            [&](AwaitableFuture<int>&& moved_future) -> asio::awaitable<void> {  // <====
                 value = co_await moved_future.get(asio::use_awaitable);
                 io.stop();
             }(std::move(future)),
@@ -208,6 +186,7 @@ TEST_CASE("awaitable future") {
 
         promise.set_value(42);
         io.run();
+
         CHECK(value == 42);
     }
 
@@ -233,6 +212,7 @@ TEST_CASE("awaitable future") {
             asio::detached);
 
         io.run();
+
         CHECK(value == 42);
     }
 }

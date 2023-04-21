@@ -120,9 +120,6 @@ void PoWSync::unwind(UnwindPoint) {
 
 void PoWSync::execution_loop() {
     using namespace stagedsync;
-    using ValidChain = ExecutionEngine::ValidChain;
-    using ValidationError = ExecutionEngine::ValidationError;
-    using InvalidChain = ExecutionEngine::InvalidChain;
     bool is_starting_up = true;
 
     while (!is_stopping()) {

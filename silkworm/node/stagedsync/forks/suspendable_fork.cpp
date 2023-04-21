@@ -21,8 +21,6 @@
 #include <boost/asio/detached.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
-#include <silkworm/infra/concurrency/awaitable_future.hpp>
-
 #include "main_chain.hpp"
 
 namespace silkworm::stagedsync {
@@ -79,12 +77,14 @@ auto ExtendingFork::verify_chain() -> concurrency::AwaitableFuture<VerificationR
     concurrency::AwaitablePromise<VerificationResult> promise{io_context_};
     auto awaitable_future = promise.get_future();
 
-    io_context_.post(
-        [](ExtendingFork& me, concurrency::AwaitablePromise<VerificationResult>&& promise) -> awaitable<VerificationResult> {  // avoid using campture in lambda
+    co_spawn(
+        io_context_,
+        [](ExtendingFork& me, concurrency::AwaitablePromise<VerificationResult>&& promise) -> awaitable<void> {  // avoid using campture in lambda
             auto result = me.fork_.verify_chain();
             me.current_head_ = me.fork_.current_head();
             promise.set_value(result);
-        }(*this, std::move(promise)));
+        }(*this, std::move(promise)),
+        detached);
 
     return awaitable_future;
 }

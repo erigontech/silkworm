@@ -17,6 +17,7 @@
 #pragma once
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/awaitable_future.hpp>
 
 #include <boost/asio.hpp>
 #include <boost/asio/awaitable.hpp>
@@ -47,7 +48,7 @@ class ExtendingFork {
     auto extend_with(Hash head_hash, const Block& head) -> asio::awaitable<void>;
 
     // verification
-    auto verify_chain() -> asio::awaitable<VerificationResult>;
+    auto verify_chain() -> concurrency::AwaitableFuture<VerificationResult>;
     bool notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
 
     // state

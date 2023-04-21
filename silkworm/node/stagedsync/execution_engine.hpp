@@ -50,7 +50,7 @@ class ExecutionEngine : public Stoppable {
     auto insert_blocks(std::vector<std::shared_ptr<Block>>& blocks) -> asio::awaitable<void>;
     auto insert_block(std::shared_ptr<Block> block) -> asio::awaitable<void>;
 
-    auto verify_chain(Hash head_block_hash) -> asio::awaitable<VerificationResult>;
+    auto verify_chain(Hash head_block_hash) -> concurrency::AwaitableFuture<VerificationResult>;
 
     auto notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt)
         -> asio::awaitable<bool>;
@@ -62,6 +62,19 @@ class ExecutionEngine : public Stoppable {
     // header/body retrieval
     auto get_block_progress() const -> BlockNum;
 
+    // TO REMOVE OR REWORK ############################
+    auto get_header(Hash) const -> std::optional<BlockHeader>;
+    auto get_header(BlockNum, Hash) const -> std::optional<BlockHeader>;
+    auto get_canonical_head() const -> ChainHead;
+    auto get_canonical_hash(BlockNum) const -> std::optional<Hash>;
+    auto get_header_td(BlockNum, Hash) const -> std::optional<TotalDifficulty>;
+    auto get_body(Hash) const -> std::optional<BlockBody>;
+    auto get_last_headers(BlockNum limit) const -> std::vector<BlockHeader>;
+    auto extends_last_fork_choice(BlockNum, Hash) const -> bool;
+    auto extends(BlockId block, BlockId supposed_parent) const -> bool;
+    auto is_ancestor(BlockId supposed_parent, BlockId block) const -> bool;
+    auto is_ancestor(Hash supposed_parent, BlockId block) const -> bool;
+    // ################################################
   protected:
     struct ForkingPath {
         BlockId forking_point;
@@ -69,6 +82,7 @@ class ExecutionEngine : public Stoppable {
     };
 
     auto find_forking_point(const BlockHeader& header) const -> std::optional<ForkingPath>;
+    void discard_all_forks_except(ExtendingFork& fork);
 
     NodeSettings& node_settings_;
     db::RWAccess db_access_;

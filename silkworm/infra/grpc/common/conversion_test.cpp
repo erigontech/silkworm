@@ -114,6 +114,22 @@ TEST_CASE("address_from_H160", "[silkworm][rpc][util]") {
     }
 }
 
+TEST_CASE("bytes_from_H128", "[silkworm][rpc][util]") {
+    SECTION("empty H128", "[silkworm][rpc][util]") {
+        CHECK_NOTHROW(bytes_from_H128(::types::H128{}).empty());
+    }
+
+    SECTION("non-empty H128", "[silkworm][rpc][util]") {
+        ::types::H128* hi = new types::H128();
+        hi->set_lo(0x07);
+        hi->set_hi(0x7F);
+        auto h128_ptr = std::make_unique<::types::H128>();
+        h128_ptr->set_lo(0x07);
+        h128_ptr->set_hi(0x7F);
+        CHECK(bytes_from_H128(*h128_ptr) == *from_hex("0x000000000000007f0000000000000007"));
+    }
+}
+
 TEST_CASE("invertibility", "[silkworm][rpc][util]") {
     SECTION("H512<->string", "[silkworm][rpc][util]") {
         types::H128* hi_hi = new types::H128();

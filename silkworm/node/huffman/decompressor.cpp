@@ -360,7 +360,8 @@ void Decompressor::read_patterns(ByteView dict) {
     pb::ArrayInputStream raw_input{dict.data(), static_cast<int>(dict.length())};
     pb::CodedInputStream coded_input{&raw_input};
 
-    std::array<Pattern, kMaxTablePatterns> patterns{};
+    std::vector<Pattern> patterns;
+    patterns.reserve(kMaxTablePatterns);
     uint64_t pattern_highest_depth{0};
     std::size_t pattern_count{0};
     for (; pattern_count < kMaxTablePatterns && coded_input.CurrentPosition() < raw_input.ByteCount(); ++pattern_count) {
@@ -406,7 +407,7 @@ void Decompressor::read_patterns(ByteView dict) {
 
     pattern_dict_ = std::make_unique<PatternTable>(pattern_highest_depth);
     if (dict.length() > 0) {
-        pattern_dict_->build_condensed({patterns.begin(), pattern_count});
+        pattern_dict_->build_condensed({patterns.data(), pattern_count});
     }
 
     SILK_DEBUG << "#codewords: " << pattern_dict_->num_codewords();
@@ -423,7 +424,8 @@ void Decompressor::read_positions(ByteView dict) {
     pb::ArrayInputStream raw_input{dict.data(), static_cast<int>(dict.length())};
     pb::CodedInputStream coded_input{&raw_input};
 
-    std::array<Position, kMaxTablePositions> positions{};
+    std::vector<Position> positions;
+    positions.reserve(kMaxTablePositions);
     uint64_t position_highest_depth{0};
     std::size_t position_count{0};
     for (; position_count < kMaxTablePositions && coded_input.CurrentPosition() < raw_input.ByteCount(); ++position_count) {
@@ -462,7 +464,7 @@ void Decompressor::read_positions(ByteView dict) {
 
     position_dict_ = std::make_unique<PositionTable>(position_highest_depth);
     if (dict.length() > 0) {
-        position_dict_->build({positions.begin(), position_count});
+        position_dict_->build({positions.data(), position_count});
     }
 
     SILK_DEBUG << "#positions: " << position_dict_->num_positions();

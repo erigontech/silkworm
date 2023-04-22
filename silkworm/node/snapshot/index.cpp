@@ -32,7 +32,7 @@ using RecSplitSettings = succinct::RecSplitSettings;
 using RecSplit8 = succinct::RecSplit8;
 
 void Index::build() {
-    SILK_TRACE << "Index::build path: " << segment_path_.path().string() << " start";
+    SILK_INFO << "Index::build path: " << segment_path_.path().string() << " start";
 
     Decompressor decoder{segment_path_.path()};
     decoder.open();

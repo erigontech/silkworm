@@ -26,6 +26,7 @@
 namespace silkworm {
 
 TEST_CASE("SnapshotRepository::SnapshotRepository", "[silkworm][snapshot][snapshot]") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
     CHECK_NOTHROW(SnapshotRepository{SnapshotSettings{}});
 }
 

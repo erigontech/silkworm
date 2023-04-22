@@ -2046,9 +2046,9 @@ awaitable<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request
         ethdb::TransactionDatabase tx_database{*tx};
 
         rpc::fee_history::BlockProvider block_provider = [this, &tx_database](uint64_t block_number) {
-            return core::read_block_by_number(*block_cache_, tx_database, block_number);
+            return core::read_block_by_number(*(this->block_cache_), tx_database, block_number);
         };
-        rpc::fee_history::ReceiptsProvider receipts_provider = [this, &tx_database](const BlockWithHash& block_with_hash) {
+        rpc::fee_history::ReceiptsProvider receipts_provider = [&tx_database](const BlockWithHash& block_with_hash) {
             return core::get_receipts(tx_database, block_with_hash);
         };
 

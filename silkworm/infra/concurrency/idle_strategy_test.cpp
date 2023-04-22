@@ -14,11 +14,9 @@
    limitations under the License.
 */
 
-#include "wait_strategy.hpp"
+#include "idle_strategy.hpp"
 
 #include <atomic>
-#include <cstddef>
-#include <stdexcept>
 #include <string>
 #include <thread>
 #include <vector>
@@ -26,13 +24,11 @@
 #include <catch2/catch.hpp>
 #include <grpcpp/grpcpp.h>
 
-using namespace std::chrono_literals;  // NOLINT(build/namespaces)
-
-namespace silkworm::rpc {
+namespace silkworm::concurrency {
 
 using Catch::Matchers::Message;
 
-TEST_CASE("parse wait mode", "[silkrpc][common][log]") {
+TEST_CASE("parse wait mode", "[silkworm][infra][concurrency][idle_strategy]") {
     std::vector<absl::string_view> input_texts{
         "backoff", "blocking", "sleeping", "yielding", "busy_spin"};
     std::vector<WaitMode> expected_wait_modes{
@@ -52,7 +48,7 @@ TEST_CASE("parse wait mode", "[silkrpc][common][log]") {
     }
 }
 
-TEST_CASE("parse invalid wait mode", "[silkrpc][common][log]") {
+TEST_CASE("parse invalid wait mode", "[silkworm][infra][concurrency][idle_strategy]") {
     WaitMode wait_mode;
     std::string error;
     const auto success{AbslParseFlag("abc", &wait_mode, &error)};
@@ -60,7 +56,7 @@ TEST_CASE("parse invalid wait mode", "[silkrpc][common][log]") {
     CHECK(!error.empty());
 }
 
-TEST_CASE("unparse wait mode", "[silkrpc][common][log]") {
+TEST_CASE("unparse wait mode", "[silkworm][infra][concurrency][idle_strategy]") {
     std::vector<WaitMode> input_wait_modes{
         WaitMode::backoff,
         WaitMode::blocking,
@@ -82,28 +78,28 @@ inline void sleep_then_check_wait(W& w, const std::chrono::duration<R, P>& t, st
     CHECK_NOTHROW(w.idle(executed_count));
 }
 
-TEST_CASE("SleepingWaitStrategy", "[silkrpc][context_pool]") {
-    SleepingWaitStrategy wait_strategy{1ms};
+TEST_CASE("SleepingWaitStrategy", "[silkworm][infra][concurrency][idle_strategy]") {
+    SleepingIdleStrategy wait_strategy{1ms};
     sleep_then_check_wait(wait_strategy, 10ms, 1);
     sleep_then_check_wait(wait_strategy, 20ms, 0);
     sleep_then_check_wait(wait_strategy, 20ms, 0);
     sleep_then_check_wait(wait_strategy, 10ms, 1);
 }
 
-TEST_CASE("YieldingWaitStrategy", "[silkrpc][context_pool]") {
-    YieldingWaitStrategy wait_strategy;
+TEST_CASE("YieldingWaitStrategy", "[silkworm][context_pool]") {
+    YieldingIdleStrategy wait_strategy;
     sleep_then_check_wait(wait_strategy, 10ms, 1);
     sleep_then_check_wait(wait_strategy, 20ms, 0);
     sleep_then_check_wait(wait_strategy, 20ms, 0);
     sleep_then_check_wait(wait_strategy, 10ms, 1);
 }
 
-TEST_CASE("BusySpinWaitStrategy", "[silkrpc][context_pool]") {
-    BusySpinWaitStrategy wait_strategy;
+TEST_CASE("BusySpinWaitStrategy", "[silkworm][infra][concurrency][idle_strategy]") {
+    BusySpinIdleStrategy wait_strategy;
     sleep_then_check_wait(wait_strategy, 10ms, 1);
     sleep_then_check_wait(wait_strategy, 20ms, 0);
     sleep_then_check_wait(wait_strategy, 20ms, 0);
     sleep_then_check_wait(wait_strategy, 10ms, 1);
 }
 
-}  // namespace silkworm::rpc
+}  // namespace silkworm::concurrency

@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,13 +14,11 @@
    limitations under the License.
 */
 
-#include "wait_strategy.hpp"
-
-#include <utility>
+#include "idle_strategy.hpp"
 
 #include <absl/strings/str_cat.h>
 
-namespace silkworm::rpc {
+namespace silkworm::concurrency {
 
 bool AbslParseFlag(absl::string_view text, WaitMode* wait_mode, std::string* error) {
     if (text == "backoff") {
@@ -64,4 +62,4 @@ std::string AbslUnparseFlag(WaitMode wait_mode) {
     }
 }
 
-}  // namespace silkworm::rpc
+}  // namespace silkworm::concurrency

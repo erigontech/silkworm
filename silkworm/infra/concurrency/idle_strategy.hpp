@@ -42,13 +42,13 @@
 
 #include <absl/strings/string_view.h>
 
-namespace silkworm::rpc {
+namespace silkworm::concurrency {
 
 using namespace std::chrono_literals;  // NOLINT(build/namespaces)
 
-class SleepingWaitStrategy {
+class SleepingIdleStrategy {
   public:
-    explicit SleepingWaitStrategy(std::chrono::milliseconds duration = 1ms) : duration_(duration) {}
+    explicit SleepingIdleStrategy(std::chrono::milliseconds duration = 1ms) : duration_(duration) {}
 
     inline void idle(std::size_t work_count) {
         if (work_count > 0) {
@@ -62,9 +62,9 @@ class SleepingWaitStrategy {
     std::chrono::milliseconds duration_;
 };
 
-class YieldingWaitStrategy {
+class YieldingIdleStrategy {
   public:
-    inline void idle(std::size_t work_count) {
+    static inline void idle(std::size_t work_count) {
         if (work_count > 0) {
             return;
         }
@@ -73,14 +73,14 @@ class YieldingWaitStrategy {
     }
 };
 
-class BusySpinWaitStrategy {
+class BusySpinIdleStrategy {
   public:
     inline void idle(std::size_t /*work_count*/) {
     }
 };
 
 enum class WaitMode {
-    backoff, /* Wait strategy implemented in asio-grpc's agrpc::run */
+    backoff,
     blocking,
     sleeping,
     yielding,
@@ -90,4 +90,4 @@ enum class WaitMode {
 bool AbslParseFlag(absl::string_view text, WaitMode* wait_mode, std::string* error);
 std::string AbslUnparseFlag(WaitMode wait_mode);
 
-}  // namespace silkworm::rpc
+}  // namespace silkworm::concurrency

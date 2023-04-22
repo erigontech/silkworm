@@ -28,6 +28,8 @@
 
 namespace silkworm::rpc {
 
+using namespace concurrency;
+
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("ServerContext", "[silkworm][rpc][server_context]") {

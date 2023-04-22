@@ -231,7 +231,8 @@ def run_shell_command(command: str, command1: str, expected_response: str, verbo
         os.remove(silk_file)
         os.remove(exp_rsp_file)
         os.remove(diff_file)
-        os.rmdir(output_dir)
+        if not os.listdir(output_dir):
+            os.rmdir(output_dir)
     else:
         if verbose:
             print("OK")

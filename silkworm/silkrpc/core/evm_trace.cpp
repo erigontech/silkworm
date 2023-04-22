@@ -662,7 +662,7 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
 
         case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
             op.trace_ex.used = op.gas_cost;
-            op.gas_cost = start_gas - op.gas_cost;
+            op.gas_cost = 0;
             op.trace_ex.used -= op.gas_cost;
             break;
 

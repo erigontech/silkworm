@@ -107,12 +107,12 @@
                               "idx": "0-0"
                          },
                          {
-                              "cost": 2,
+                              "cost": 0,
                               "ex": {
                                    "mem": null,
                                    "push": [],
                                    "store": null,
-                                   "used": 1204654
+                                   "used": 1204656
                               },
                               "pc": 1,
                               "sub": null,

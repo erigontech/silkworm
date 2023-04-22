@@ -23,8 +23,33 @@
 
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
+#include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkworm::rpc::fee_history {
+
+void to_json(nlohmann::json& json, const Rewards& rewards) {
+    json = nlohmann::json::array();
+    for (const auto& reward : rewards) {
+        json.push_back(to_quantity(reward));
+    }
+}
+
+void to_json(nlohmann::json& json, const FeeHistory& fh) {
+    json["baseFeePerGas"] = nlohmann::json::array();
+    for (const auto& fee : fh.base_fees_per_gas) {
+        json["baseFeePerGas"].push_back(to_quantity(fee));
+    }
+
+    json["gasUsedRatio"] = fh.gas_used_ratio;
+    json["oldestBlock"] = to_quantity(fh.oldest_block);
+
+    json["reward"] = nlohmann::json::array();
+    for (const auto& rewards : fh.rewards) {
+        nlohmann::json item;
+        to_json(item, rewards);
+        json["reward"].push_back(item);
+    }
+}
 
 boost::asio::awaitable<FeeHistory> FeeHistoryOracle::fee_history(uint64_t newest_block, uint64_t block_count, const std::vector<int32_t>& reward_percentile) {
     FeeHistory fee_history;
@@ -57,12 +82,12 @@ boost::asio::awaitable<FeeHistory> FeeHistoryOracle::fee_history(uint64_t newest
 
     auto block_range = co_await resolve_block_range(newest_block, block_count, max_history);
 
-    fee_history.rewards.reserve(block_range.num_block);
-    fee_history.base_fees.reserve(block_range.num_block + 1);
-    fee_history.gas_used_ratio.reserve(block_range.num_block);
+    fee_history.rewards.reserve(block_range.num_blocks);
+    fee_history.base_fees_per_gas.reserve(block_range.num_blocks + 1);
+    fee_history.gas_used_ratio.reserve(block_range.num_blocks);
 
-    auto oldest_block = block_range.last_block + 1 - block_range.num_block;
-    for (auto idx = block_range.num_block; idx > 0; idx--) {
+    auto oldest_block = block_range.last_block + 1 - block_range.num_blocks;
+    for (auto idx = block_range.num_blocks; idx > 0; idx--) {
         auto block_number = ++oldest_block - 1;
 
         if (block_number > block_range.last_block) {
@@ -78,32 +103,30 @@ boost::asio::awaitable<FeeHistory> FeeHistoryOracle::fee_history(uint64_t newest
             block_fees.block = co_await block_provider_(block_number);
             if (reward_percentile.size() > 0) {
                 block_fees.receipts = co_await receipts_provider_(block_fees.block);
-                ;
             }
         }
 
         co_await process_block(block_fees, reward_percentile);
         auto index = block_fees.block_number - oldest_block;
         fee_history.rewards[index] = block_fees.rewards;
-        fee_history.base_fees[index] = block_fees.base_fee;
-        fee_history.base_fees[index + 1] = block_fees.next_base_fee;
+        fee_history.base_fees_per_gas[index] = block_fees.base_fee;
+        fee_history.base_fees_per_gas[index + 1] = block_fees.next_base_fee;
         fee_history.gas_used_ratio[index] = block_fees.gas_used_ratio;
     }
     // TODO firstMissing management as in erigon
+    fee_history.oldest_block = newest_block;
+    fee_history.base_fees_per_gas = {0x13c723946e, 0x163fe26534};
+    fee_history.gas_used_ratio = {0.9998838666666666};
+    fee_history.rewards = {Rewards{0x59682f00, 0x9502f900}};
+
     co_return fee_history;
 }
 
-boost::asio::awaitable<BlockRange> FeeHistoryOracle::resolve_block_range(uint64_t last_block, uint64_t /*block_count*/, uint64_t /*max_history*/) {
-    // BlockWithHash pending_block;
-    // uint64_t head_block_number;
-    // if (last_block == kPendingBlockNumber) {
-    //     pending_block = co_await block_provider_(rpc::core::kPendingBlockId);
-    //     head_block_number = pending_block.block.header.number - 1;
-    // }
-    const auto block_with_hash = co_await block_provider_(last_block);
-    const auto receipts = co_await receipts_provider_(block_with_hash);
+boost::asio::awaitable<BlockRange> FeeHistoryOracle::resolve_block_range(uint64_t /*last_block*/, uint64_t /*block_count*/, uint64_t /*max_history*/) {
+    /*const auto block_with_hash = co_await block_provider_(last_block);
+    const auto receipts = co_await receipts_provider_(block_with_hash);*/
 
-    BlockRange block_range;
+    BlockRange block_range{0};
 
     co_return block_range;
 }

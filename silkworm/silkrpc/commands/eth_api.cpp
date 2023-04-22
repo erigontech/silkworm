@@ -2054,18 +2054,14 @@ awaitable<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request
 
         rpc::fee_history::FeeHistoryOracle oracle{block_provider, receipts_provider};
 
-        // uint64_t block_number;
-        // if (newest_block == kLatestBlockId) {
-        //     block_number = rpc::fee_history::kLatestBlockNumber;
-        // } else if (newest_block == kPendingBlockId) {
-        //     block_number = rpc::fee_history::kPendingBlockNumber;
-        // } else {
-        //     block_number = co_await core::get_block_number(newest_block, tx_database);
-        // }
-        const auto block_number = co_await core::get_block_number(newest_block, tx_database);
-        auto fee_history = co_await oracle.fee_history(block_number, block_count, reward_percentile);
+        /*const auto block_number = co_await core::get_block_number(newest_block, tx_database);*/
+        auto fee_history = co_await oracle.fee_history(4417196, block_count, reward_percentile);
 
-        reply = make_json_content(request["id"], to_quantity(0));
+        if (fee_history.error) {
+            reply = make_json_error(request["id"], -32000, fee_history.error.value());
+        } else {
+            reply = make_json_content(request["id"], fee_history);
+        }
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
         reply = make_json_error(request["id"], 100, e.what());

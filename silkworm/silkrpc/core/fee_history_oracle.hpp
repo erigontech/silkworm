@@ -43,17 +43,20 @@ typedef std::function<boost::asio::awaitable<rpc::Receipts>(const BlockWithHash&
 typedef std::vector<std::uint64_t> Rewards;
 
 struct FeeHistory {
-    std::optional<std::string> error{std::nullopt};
-    std::vector<Rewards> rewards;
-    std::vector<std::uint64_t> base_fees;
+    uint64_t oldest_block{0};
+    std::vector<std::uint64_t> base_fees_per_gas;
     std::vector<double> gas_used_ratio;
+    std::vector<Rewards> rewards;
+    std::optional<std::string> error{std::nullopt};
 };
 
+void to_json(nlohmann::json& json, const FeeHistory& fh);
+
 struct BlockRange {
+    uint64_t num_blocks;
+    uint64_t last_block;
     BlockWithHash block;
     rpc::Receipts receipts;
-    uint64_t last_block;
-    uint64_t num_block;
 };
 
 struct BlockFees {

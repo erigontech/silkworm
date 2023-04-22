@@ -350,7 +350,6 @@ struct Filter {
     std::uint32_t count{std::numeric_limits<uint32_t>::max()};
 };
 
-template <typename WorldState = silkworm::IntraBlockState, typename VM = silkworm::EVM>
 class TraceCallExecutor {
   public:
     explicit TraceCallExecutor(boost::asio::io_context& io_context,
@@ -382,4 +381,5 @@ class TraceCallExecutor {
     const core::rawdb::DatabaseReader& database_reader_;
     boost::asio::thread_pool& workers_;
 };
+
 }  // namespace silkworm::rpc::trace

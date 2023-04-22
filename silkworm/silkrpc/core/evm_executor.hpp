@@ -44,24 +44,22 @@ namespace silkworm::rpc {
 struct ExecutionResult {
     int64_t error_code;
     uint64_t gas_left;
-    silkworm::Bytes data;
+    Bytes data;
     std::optional<std::string> pre_check_error{std::nullopt};
 };
 
-using Tracers = std::vector<std::shared_ptr<silkworm::EvmTracer>>;
+using Tracers = std::vector<std::shared_ptr<EvmTracer>>;
 
-template <typename WorldState = silkworm::IntraBlockState, typename VM = silkworm::EVM>
 class EVMExecutor {
   public:
-    static std::string get_error_message(int64_t error_code, const silkworm::Bytes& error_data, bool full_error = true);
+    static std::string get_error_message(int64_t error_code, const Bytes& error_data, bool full_error = true);
 
-    EVMExecutor(
-        boost::asio::io_context& io_context,
-        const silkworm::ChainConfig& config,
-        boost::asio::thread_pool& workers,
-        state::RemoteState& remote_state)
-        : io_context_(io_context), config_(config), workers_{workers}, remote_state_{remote_state}, state_{remote_state_} {
-        consensus_engine_ = silkworm::consensus::engine_factory(config);
+    EVMExecutor(const silkworm::ChainConfig& config, boost::asio::thread_pool& workers, state::RemoteState& remote_state)
+        : config_(config),
+          workers_{workers},
+          remote_state_{remote_state},
+          state_{remote_state_} {
+        consensus_engine_ = consensus::engine_factory(config);
         SILKWORM_ASSERT(consensus_engine_ != nullptr);
     }
     virtual ~EVMExecutor() = default;
@@ -69,19 +67,20 @@ class EVMExecutor {
     EVMExecutor(const EVMExecutor&) = delete;
     EVMExecutor& operator=(const EVMExecutor&) = delete;
 
-    boost::asio::awaitable<ExecutionResult> call(const silkworm::Block& block, const silkworm::Transaction& txn, Tracers tracers = {}, bool refund = true, bool gas_bailout = false);
+    boost::asio::awaitable<ExecutionResult> call(const silkworm::Block& block, const silkworm::Transaction& txn, Tracers tracers = {},
+                                                 bool refund = true, bool gas_bailout = false);
     void reset();
 
   private:
-    std::optional<std::string> pre_check(const VM& evm, const silkworm::Transaction& txn, const intx::uint256& base_fee_per_gas, const intx::uint128& g0);
-    uint64_t refund_gas(const VM& evm, const silkworm::Transaction& txn, uint64_t gas_left, uint64_t gas_refund);
+    static std::optional<std::string> pre_check(const EVM& evm, const silkworm::Transaction& txn,
+                                                const intx::uint256& base_fee_per_gas, const intx::uint128& g0);
+    uint64_t refund_gas(const EVM& evm, const silkworm::Transaction& txn, uint64_t gas_left, uint64_t gas_refund);
 
-    boost::asio::io_context& io_context_;
     const silkworm::ChainConfig& config_;
     boost::asio::thread_pool& workers_;
     state::RemoteState& remote_state_;
-    WorldState state_;
-    std::unique_ptr<silkworm::consensus::IEngine> consensus_engine_;
+    IntraBlockState state_;
+    std::unique_ptr<consensus::IEngine> consensus_engine_;
 };
 
 }  // namespace silkworm::rpc

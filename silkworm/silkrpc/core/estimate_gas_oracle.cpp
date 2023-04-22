@@ -116,7 +116,7 @@ boost::asio::awaitable<bool> EstimateGasOracle::try_execution(const silkworm::Tr
     } else if (result.error_code == evmc_status_code::EVMC_INSUFFICIENT_BALANCE) {
         SILKRPC_DEBUG << "result INSUFFICIENTE BALANCE\n";
     } else {
-        const auto error_message = EVMExecutor<>::get_error_message(result.error_code, result.data);
+        const auto error_message = EVMExecutor::get_error_message(result.error_code, result.data);
         SILKRPC_DEBUG << "result message " << error_message << ", code " << result.error_code << "\n";
         if (result.data.empty()) {
             throw EstimateGasException{-32000, error_message};

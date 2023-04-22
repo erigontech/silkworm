@@ -35,12 +35,12 @@
 
 namespace silkworm::rpc {
 
-static silkworm::Bytes build_abi_selector(const std::string& signature) {
-    const auto signature_hash = hash_of(silkworm::byte_view_of_string(signature));
+static Bytes build_abi_selector(const std::string& signature) {
+    const auto signature_hash = hash_of(byte_view_of_string(signature));
     return {std::begin(signature_hash.bytes), std::begin(signature_hash.bytes) + 4};
 }
 
-static std::optional<std::string> decode_error_reason(const silkworm::Bytes& error_data) {
+static std::optional<std::string> decode_error_reason(const Bytes& error_data) {
     static const auto kRevertSelector{build_abi_selector("Error(string)")};
     static const auto kAbiStringOffsetSize{32};
 
@@ -48,14 +48,14 @@ static std::optional<std::string> decode_error_reason(const silkworm::Bytes& err
         return std::nullopt;
     }
 
-    silkworm::ByteView encoded_msg{error_data.data() + kRevertSelector.size(), error_data.size() - kRevertSelector.size()};
-    SILKRPC_TRACE << "silkworm::decode_error_reason size: " << encoded_msg.size() << " error_message: " << silkworm::to_hex(encoded_msg) << "\n";
+    ByteView encoded_msg{error_data.data() + kRevertSelector.size(), error_data.size() - kRevertSelector.size()};
+    SILKRPC_TRACE << "decode_error_reason size: " << encoded_msg.size() << " error_message: " << to_hex(encoded_msg) << "\n";
     if (encoded_msg.size() < kAbiStringOffsetSize) {
         return std::nullopt;
     }
 
     const auto offset_uint256{intx::be::unsafe::load<intx::uint256>(encoded_msg.data())};
-    SILKRPC_TRACE << "silkworm::decode_error_reason offset_uint256: " << intx::to_string(offset_uint256) << "\n";
+    SILKRPC_TRACE << "decode_error_reason offset_uint256: " << intx::to_string(offset_uint256) << "\n";
     const auto offset = static_cast<uint64_t>(offset_uint256);
     if (encoded_msg.size() < kAbiStringOffsetSize + offset) {
         return std::nullopt;
@@ -63,7 +63,7 @@ static std::optional<std::string> decode_error_reason(const silkworm::Bytes& err
 
     const uint64_t message_offset{kAbiStringOffsetSize + offset};
     const auto length_uint256{intx::be::unsafe::load<intx::uint256>(encoded_msg.data() + offset)};
-    SILKRPC_TRACE << "silkworm::decode_error_reason length_uint256: " << intx::to_string(length_uint256) << "\n";
+    SILKRPC_TRACE << "decode_error_reason length_uint256: " << intx::to_string(length_uint256) << "\n";
     const auto length = static_cast<uint64_t>(length_uint256);
     if (encoded_msg.size() < message_offset + length) {
         return std::nullopt;
@@ -72,9 +72,8 @@ static std::optional<std::string> decode_error_reason(const silkworm::Bytes& err
     return std::string{std::begin(encoded_msg) + message_offset, std::begin(encoded_msg) + message_offset + length};
 }
 
-template <typename WorldState, typename VM>
-std::string EVMExecutor<WorldState, VM>::get_error_message(int64_t error_code, const silkworm::Bytes& error_data, bool full_error) {
-    SILKRPC_DEBUG << "EVMExecutor::get_error_message error_data: " << silkworm::to_hex(error_data) << "\n";
+std::string EVMExecutor::get_error_message(int64_t error_code, const Bytes& error_data, bool full_error) {
+    SILKRPC_DEBUG << "EVMExecutor::get_error_message error_data: " << to_hex(error_data) << "\n";
 
     std::string error_message;
     switch (error_code) {
@@ -152,11 +151,10 @@ std::string EVMExecutor<WorldState, VM>::get_error_message(int64_t error_code, c
     return error_message;
 }
 
-template <typename WorldState, typename VM>
-uint64_t EVMExecutor<WorldState, VM>::refund_gas(const VM& evm, const silkworm::Transaction& txn, uint64_t gas_left, uint64_t gas_refund) {
+uint64_t EVMExecutor::refund_gas(const EVM& evm, const silkworm::Transaction& txn, uint64_t gas_left, uint64_t gas_refund) {
     const evmc_revision rev{evm.revision()};
-    const uint64_t max_refund_quotient{rev >= EVMC_LONDON ? silkworm::param::kMaxRefundQuotientLondon
-                                                          : silkworm::param::kMaxRefundQuotientFrontier};
+    const uint64_t max_refund_quotient{rev >= EVMC_LONDON ? param::kMaxRefundQuotientLondon
+                                                          : param::kMaxRefundQuotientFrontier};
     const uint64_t max_refund{(txn.gas_limit - gas_left) / max_refund_quotient};
     uint64_t refund = gas_refund < max_refund ? gas_refund : max_refund;  // min
     gas_left += refund;
@@ -170,25 +168,24 @@ uint64_t EVMExecutor<WorldState, VM>::refund_gas(const VM& evm, const silkworm::
     return gas_left;
 }
 
-template <typename WorldState, typename VM>
-void EVMExecutor<WorldState, VM>::reset() {
+void EVMExecutor::reset() {
     state_.clear_journal_and_substate();
 }
-template <typename WorldState, typename VM>
-std::optional<std::string> EVMExecutor<WorldState, VM>::pre_check(const VM& evm, const silkworm::Transaction& txn, const intx::uint256& base_fee_per_gas, const intx::uint128& g0) {
+
+std::optional<std::string> EVMExecutor::pre_check(const EVM& evm, const silkworm::Transaction& txn, const intx::uint256& base_fee_per_gas, const intx::uint128& g0) {
     const evmc_revision rev{evm.revision()};
 
     if (rev >= EVMC_LONDON) {
         if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
             if (txn.max_fee_per_gas < base_fee_per_gas) {
-                std::string from = silkworm::to_hex(*txn.from);
+                std::string from = to_hex(*txn.from);
                 std::string error = "fee cap less than block base fee: address 0x" + from + ", gasFeeCap: " + intx::to_string(txn.max_fee_per_gas) + " baseFee: " +
                                     intx::to_string(base_fee_per_gas);
                 return error;
             }
 
             if (txn.max_fee_per_gas < txn.max_priority_fee_per_gas) {
-                std::string from = silkworm::to_hex(*txn.from);
+                std::string from = to_hex(*txn.from);
                 std::string error = "tip higher than fee cap: address 0x" + from + ", tip: " + intx::to_string(txn.max_priority_fee_per_gas) + " gasFeeCap: " +
                                     intx::to_string(txn.max_fee_per_gas);
                 return error;
@@ -196,15 +193,14 @@ std::optional<std::string> EVMExecutor<WorldState, VM>::pre_check(const VM& evm,
         }
     }
     if (txn.gas_limit < g0) {
-        std::string from = silkworm::to_hex(*txn.from);
+        std::string from = to_hex(*txn.from);
         std::string error = "intrinsic gas too low: have " + std::to_string(txn.gas_limit) + ", want " + intx::to_string(g0);
         return error;
     }
     return std::nullopt;
 }
 
-template <typename WorldState, typename VM>
-boost::asio::awaitable<ExecutionResult> EVMExecutor<WorldState, VM>::call(
+boost::asio::awaitable<ExecutionResult> EVMExecutor::call(
     const silkworm::Block& block,
     const silkworm::Transaction& txn,
     Tracers tracers,
@@ -219,24 +215,24 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor<WorldState, VM>::call(
         [this, this_executor, &block, &txn, &tracers, &refund, &gas_bailout](auto&& self) {
             SILKRPC_TRACE << "EVMExecutor::call post block: " << block.header.number << " txn: " << &txn << "\n";
             boost::asio::post(workers_, [this, this_executor, &block, &txn, &tracers, &refund, &gas_bailout, self = std::move(self)]() mutable {
-                VM evm{block, state_, config_};
+                EVM evm{block, state_, config_};
                 evm.beneficiary = consensus_engine_->get_beneficiary(block.header);
 
                 for (auto& tracer : tracers) {
                     evm.add_tracer(*tracer);
                 }
 
-                assert(txn.from.has_value());
+                SILKWORM_ASSERT(txn.from.has_value());
                 state_.access_account(*txn.from);
 
                 const evmc_revision rev{evm.revision()};
                 const intx::uint256 base_fee_per_gas{evm.block().header.base_fee_per_gas.value_or(0)};
-                const intx::uint128 g0{silkworm::intrinsic_gas(txn, rev)};
-                assert(g0 <= UINT64_MAX);  // true due to the precondition (transaction must be valid)
+                const intx::uint128 g0{intrinsic_gas(txn, rev)};
+                SILKWORM_ASSERT(g0 <= UINT64_MAX);  // true due to the precondition (transaction must be valid)
 
                 const auto error = pre_check(evm, txn, base_fee_per_gas, g0);
                 if (error) {
-                    silkworm::Bytes data{};
+                    Bytes data{};
                     ExecutionResult exec_result{1000, txn.gas_limit, data, *error};
                     boost::asio::post(this_executor, [exec_result, self = std::move(self)]() mutable {
                         self.complete(exec_result);
@@ -255,8 +251,8 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor<WorldState, VM>::call(
                 const auto have = state_.get_balance(*txn.from);
                 if (have < want + txn.value) {
                     if (!gas_bailout) {
-                        silkworm::Bytes data{};
-                        std::string from = silkworm::to_hex(*txn.from);
+                        Bytes data{};
+                        std::string from = to_hex(*txn.from);
                         std::string msg = "insufficient funds for gas * price + value: address 0x" + from + " have " + intx::to_string(have) + " want " + intx::to_string(want + txn.value);
                         ExecutionResult exec_result{1000, txn.gas_limit, data, msg};
                         boost::asio::post(this_executor, [exec_result, self = std::move(self)]() mutable {
@@ -273,7 +269,7 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor<WorldState, VM>::call(
                     // EVM itself increments the nonce for contract creation
                     state_.set_nonce(*txn.from, state_.get_nonce(*txn.from) + 1);
                 }
-                for (const silkworm::AccessListEntry& ae : txn.access_list) {
+                for (const AccessListEntry& ae : txn.access_list) {
                     state_.access_account(ae.account);
                     for (const evmc::bytes32& key : ae.storage_keys) {
                         state_.access_storage(ae.account, key);
@@ -313,7 +309,5 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor<WorldState, VM>::call(
 
     co_return call_result;
 }
-
-template class EVMExecutor<silkworm::IntraBlockState, silkworm::EVM>;
 
 }  // namespace silkworm::rpc

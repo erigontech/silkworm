@@ -94,7 +94,6 @@ class DebugTracer : public silkworm::EvmTracer {
     std::int64_t gas_on_precompiled_{0};
 };
 
-template <typename WorldState = silkworm::IntraBlockState, typename VM = silkworm::EVM>
 class DebugExecutor {
   public:
     explicit DebugExecutor(

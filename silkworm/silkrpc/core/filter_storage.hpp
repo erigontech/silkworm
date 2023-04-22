@@ -70,7 +70,7 @@ class FilterStorage {
     }
 
   private:
-    static const std::size_t DEFAULT_MAX_FILTER_AGE = 0x800;
+    static const std::size_t DEFAULT_MAX_FILTER_AGE = 600;  // lasting time for unused filters in seconds
 
     void clean_up();
 

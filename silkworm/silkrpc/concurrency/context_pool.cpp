@@ -126,7 +126,7 @@ void Context::stop() {
 }
 
 ContextPool::ContextPool(std::size_t pool_size, ChannelFactory create_channel, std::optional<std::string> datadir, WaitMode wait_mode)
-    : next_index_{0}, filter_storage_{pool_size * DEFAULT_POOL_STORAGE_SIZE} {
+    : next_index_{0}, filter_storage_{pool_size * DEFAULT_FILTER_STORAGE_SIZE} {
     if (pool_size == 0) {
         throw std::logic_error("ContextPool::ContextPool pool_size is 0");
     }

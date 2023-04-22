@@ -392,6 +392,39 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_forkchoice_updated_v1", "[silk
         CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::engine_forkchoice_updated_v1>(forkchoice_request)), boost::system::system_error);
     }
 }
+
+TEST_CASE_METHOD(EthBackendTest, "BackEnd::peers", "[silkrpc][ethbackend][backend]") {
+    test::StrictMockAsyncResponseReader<::remote::PeersReply> reader;
+    EXPECT_CALL(*stub_, AsyncPeersRaw).WillOnce(testing::Return(&reader));
+
+    SECTION("call peers") {
+        ::remote::PeersReply response;
+        auto reply = response.add_peers();
+        reply->set_id("340e3cda481a935658b86f4987d50d0153a68f97fa2b9e8f70a8e9f5b755eeb6");
+        reply->set_name("erigon/v2.32.0-stable-021891a3/linux-amd64/go1.19");
+        reply->set_enode("enode://b428a8d89b621a1bea008922f5fb7cd7644e2289f85fc8620f1e497eff767e2bcdc77");
+        reply->set_enr("enr:-JK4QJMWPkW7iDLYfevZj80Rcs-B9GkRqptsH0L6hcFKSFJ3bKFlbzjnMk29y0ZD0omRMVDlrzgTThXYcd_");
+        reply->set_conn_local_addr("[::]:30303");
+        reply->set_conn_remote_addr("[::]:30302");
+        reply->set_conn_is_inbound(false);
+        reply->set_conn_is_trusted(true);
+        reply->set_conn_is_static(true);
+        EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
+        const auto peer_infos = run<&ethbackend::RemoteBackEnd::peers>();
+        CHECK(peer_infos.size() == 1);
+        const auto& peer_info = peer_infos[0];
+        CHECK(peer_info.id == "340e3cda481a935658b86f4987d50d0153a68f97fa2b9e8f70a8e9f5b755eeb6");
+        CHECK(peer_info.name == "erigon/v2.32.0-stable-021891a3/linux-amd64/go1.19");
+        CHECK(peer_info.enode == "enode://b428a8d89b621a1bea008922f5fb7cd7644e2289f85fc8620f1e497eff767e2bcdc77");
+        CHECK(peer_info.enr == "enr:-JK4QJMWPkW7iDLYfevZj80Rcs-B9GkRqptsH0L6hcFKSFJ3bKFlbzjnMk29y0ZD0omRMVDlrzgTThXYcd_");
+        CHECK(peer_info.caps.empty());
+        CHECK(peer_info.local_address == "[::]:30303");
+        CHECK(peer_info.remote_address == "[::]:30302");
+        CHECK(!peer_info.is_connection_inbound);
+        CHECK(peer_info.is_connection_trusted);
+        CHECK(peer_info.is_connection_static);
+    }
+}
 #endif  // SILKWORM_SANITIZE
 
 }  // namespace silkworm::rpc

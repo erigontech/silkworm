@@ -21,21 +21,19 @@
 
 namespace silkworm::rpc {
 
-struct NodeInfoPorts {
-    uint64_t discovery;
-    uint64_t listener;
-};
-
-struct NodeInfo {
+struct PeerInfo {
     std::string id;
     std::string name;
     std::string enode;
     std::string enr;
-    std::string listener_addr;
-    std::string protocols;
-    NodeInfoPorts ports;
+    std::vector<std::string> caps;
+    std::string local_address;
+    std::string remote_address;
+    bool is_connection_inbound{false};
+    bool is_connection_trusted{false};
+    bool is_connection_static{false};
 };
 
-using NodeInfos = std::vector<NodeInfo>;
+using PeerInfos = std::vector<PeerInfo>;
 
 }  // namespace silkworm::rpc

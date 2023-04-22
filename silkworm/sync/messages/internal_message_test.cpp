@@ -19,14 +19,16 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/node/test/context.hpp>
+#include <silkworm/sync/internals/body_sequence.hpp>
 
 namespace silkworm {
 
-TEST_CASE("internal message") {
+// Switch off the null sanitizer because nullptr SentryClient is formally dereferenced in command->execute.
+[[clang::no_sanitize("null")]] TEST_CASE("internal message") {
     test::Context context;
     db::ROAccess dba(context.env());  // not used in the test execution
-    HeaderChain* hc = nullptr;        // not used in the test execution
-    BodySequence* bs = nullptr;       // not used in the test execution
+    HeaderChain hc(kMainnetConfig);   // not used in the test execution
+    BodySequence bs;                  // not used in the test execution
     SentryClient* sc = nullptr;       // not used in the test execution
 
     using result_t = std::vector<int>;
@@ -37,7 +39,7 @@ TEST_CASE("internal message") {
 
     REQUIRE(!command->completed_and_read());
 
-    command->execute(dba, *hc, *bs, *sc);
+    command->execute(dba, hc, bs, *sc);
 
     REQUIRE(!command->completed_and_read());
 

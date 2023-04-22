@@ -52,7 +52,9 @@ Bytes Node::encode_for_storage() const {
         pos += kHashLength;
     }
 
-    std::memcpy(&buf[pos], hashes_.data(), hashes_.size() * kHashLength);
+    if (!hashes_.empty()) {
+        std::memcpy(&buf[pos], hashes_.data(), hashes_.size() * kHashLength);
+    }
     return buf;
 }
 
@@ -96,7 +98,9 @@ DecodingResult Node::decode_from_storage(ByteView raw, Node& node) {
     }
 
     node.hashes_.resize(effective_num_hashes);
-    std::memcpy(node.hashes_.data(), raw.data(), raw.length());
+    if (effective_num_hashes) {
+        std::memcpy(node.hashes_.data(), raw.data(), raw.length());
+    }
     return {};
 }
 

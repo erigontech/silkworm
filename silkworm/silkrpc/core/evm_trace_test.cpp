@@ -1472,12 +1472,12 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with erro
                 "sub": null
             },
             {
-                "cost": 2,
+                "cost": 0,
                 "ex": {
                 "mem": null,
                 "push": [],
                 "store": null,
-                "used": 156078
+                "used": 156080
                 },
                 "idx": "1",
                 "op": "opcode 0x4b not defined",

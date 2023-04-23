@@ -26,7 +26,7 @@
 namespace silkworm {
 
 // Classification of invalid transactions and blocks.
-enum class [[nodiscard]] ValidationResult {
+enum class [[nodiscard]] ValidationResult{
     kOk,             // All checks passed
     kUnknownEngine,  // Unsupported consensus protocol engine
     kFutureBlock,    // Block has a timestamp in the future

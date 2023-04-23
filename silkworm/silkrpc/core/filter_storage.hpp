@@ -31,6 +31,9 @@
 
 namespace silkworm::rpc {
 
+static const std::size_t kDefaultFilterStorageSize = 1024;  // default filter storage size, ie max num for filters in storage
+static const std::size_t kDefaultMaxFilterAge = 900;        // lasting time for unused filters in seconds (15 min)
+
 enum FilterType {
     logs,
     block
@@ -55,8 +58,8 @@ typedef std::function<std::uint64_t()> Generator;
 
 class FilterStorage {
   public:
-    explicit FilterStorage(std::size_t max_size, double max_filter_age = DEFAULT_MAX_FILTER_AGE);
-    explicit FilterStorage(Generator& generator, std::size_t max_size, double max_filter_age = DEFAULT_MAX_FILTER_AGE);
+    explicit FilterStorage(std::size_t max_size, double max_filter_age = kDefaultMaxFilterAge);
+    explicit FilterStorage(Generator& generator, std::size_t max_size, double max_filter_age = kDefaultMaxFilterAge);
 
     FilterStorage(const FilterStorage&) = delete;
     FilterStorage& operator=(const FilterStorage&) = delete;
@@ -70,8 +73,6 @@ class FilterStorage {
     }
 
   private:
-    static const std::size_t DEFAULT_MAX_FILTER_AGE = 600;  // lasting time for unused filters in seconds
-
     void clean_up();
 
     Generator& generator_;

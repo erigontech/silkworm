@@ -130,8 +130,6 @@ class ContextPool {
     boost::asio::io_context& next_io_context();
 
   private:
-    static const std::size_t DEFAULT_FILTER_STORAGE_SIZE = 1024;  // default filter storage size, ie max num for filters in storage
-
     // The pool of contexts
     std::vector<Context> contexts_;
 

@@ -27,7 +27,7 @@ namespace silkworm {
 
 ExecutionProcessor::ExecutionProcessor(const Block& block, protocol::IEngine& engine, State& state,
                                        const ChainConfig& config)
-    : state_{state}, consensus_engine_{engine}, evm_{block, state_, config} {
+    : state_{state}, engine_{engine}, evm_{block, state_, config} {
     evm_.beneficiary = engine.get_beneficiary(block.header);
 }
 
@@ -168,7 +168,7 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
     }
 
     const evmc_revision rev{evm_.revision()};
-    consensus_engine_.finalize(state_, block, rev);
+    engine_.finalize(state_, block, rev);
 
     if (rev >= EVMC_SPURIOUS_DRAGON) {
         state_.destruct_touched_dead();

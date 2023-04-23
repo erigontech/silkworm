@@ -20,7 +20,7 @@
 
 namespace silkworm::protocol {
 
-// This consensus engine does not validate PoW seal.
+// This engine does not validate PoW seal.
 // It is used in the consensus tests.
 class NoProofEngine : public EthashEngine {
   public:

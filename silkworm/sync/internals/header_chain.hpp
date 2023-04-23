@@ -173,7 +173,7 @@ class HeaderChain {
     using Ignore = int;
     lru_cache<Hash, Ignore> seen_announces_;
     std::vector<Announce> announces_to_do_;
-    protocol::EnginePtr consensus_engine_;
+    protocol::EnginePtr engine_;
     CustomHeaderOnlyChainState chain_state_;
     time_point_t last_skeleton_request_;
     time_point_t last_nack_;

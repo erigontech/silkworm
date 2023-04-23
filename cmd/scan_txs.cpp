@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
         }
         auto engine{protocol::engine_factory(chain_config.value())};
         if (!engine) {
-            throw std::runtime_error("Unable to retrieve consensus engine");
+            throw std::runtime_error("Unable to retrieve engine");
         }
 
         // counters

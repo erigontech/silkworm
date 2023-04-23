@@ -59,8 +59,8 @@ class EVMExecutor {
           workers_{workers},
           remote_state_{remote_state},
           state_{remote_state_} {
-        consensus_engine_ = protocol::engine_factory(config);
-        SILKWORM_ASSERT(consensus_engine_ != nullptr);
+        engine_ = protocol::engine_factory(config);
+        SILKWORM_ASSERT(engine_ != nullptr);
     }
     virtual ~EVMExecutor() = default;
 
@@ -80,7 +80,7 @@ class EVMExecutor {
     boost::asio::thread_pool& workers_;
     state::RemoteState& remote_state_;
     IntraBlockState state_;
-    protocol::EnginePtr consensus_engine_;
+    protocol::EnginePtr engine_;
 };
 
 }  // namespace silkworm::rpc

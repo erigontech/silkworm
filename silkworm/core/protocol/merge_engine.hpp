@@ -22,7 +22,7 @@
 
 namespace silkworm::protocol {
 
-// Mainnet consensus engine that can handle blocks before, during, and after the Merge.
+// Mainnet consensus protocol engine that can handle blocks before, during, and after the Merge.
 // See EIP-3675: Upgrade consensus to Proof-of-Stake.
 class MergeEngine : public EngineBase {
   public:

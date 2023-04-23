@@ -63,7 +63,7 @@ class BodiesStage : public Stage {
         void set_preverified_height(BlockNum height);
 
       private:
-        protocol::EnginePtr consensus_engine_;
+        protocol::EnginePtr engine_;
         const ChainConfig& chain_config_;
         db::Buffer chain_state_;
 

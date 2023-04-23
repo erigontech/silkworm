@@ -20,8 +20,8 @@
 
 namespace silkworm::protocol {
 
-// This consensus engine does not validate PoW seal.
-// It is used in the consensus tests.
+// Warning: most Clique (EIP-225) logic is not implemented yet.
+// This engine is just a dummy!
 class CliqueEngine : public EthashEngine {
   public:
     explicit CliqueEngine(const ChainConfig& chain_config) : EthashEngine(chain_config) {}

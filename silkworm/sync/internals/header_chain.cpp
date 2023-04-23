@@ -38,16 +38,16 @@ class segment_cut_and_paste_error : public std::logic_error {
 
 HeaderChain::HeaderChain(const ChainConfig& chain_config) : HeaderChain(protocol::engine_factory(chain_config)) {}
 
-HeaderChain::HeaderChain(protocol::EnginePtr consensus_engine)
+HeaderChain::HeaderChain(protocol::EnginePtr engine)
     : highest_in_db_(0),
       top_seen_height_(0),
       preverified_hashes_(PreverifiedHashes::current),
       seen_announces_(1000),
-      consensus_engine_{std::move(consensus_engine)},
+      engine_{std::move(engine)},
       chain_state_(persisted_link_queue_) {  // Erigon reads past headers from db, we hope to find them from this queue
-    if (!consensus_engine_) {
-        throw std::logic_error("HeaderChain exception, cause: unknown consensus engine");
-        // or must the sync go on and return StageResult::kUnknownConsensusEngine?
+    if (!engine_) {
+        throw std::logic_error("HeaderChain exception, cause: unknown engine");
+        // or must the sync go on and return StageResult::kUnknownEngine?
     }
 
     // User can specify to stop downloading process at some block
@@ -231,7 +231,7 @@ auto HeaderChain::verify(const Link& link) -> VerificationResult {
     }
 
     bool with_future_timestamp_check = true;
-    auto result = consensus_engine_->validate_block_header(*link.header, chain_state_, with_future_timestamp_check);
+    auto result = engine_->validate_block_header(*link.header, chain_state_, with_future_timestamp_check);
 
     if (result != ValidationResult::kOk) {
         if (result == ValidationResult::kUnknownParent) {

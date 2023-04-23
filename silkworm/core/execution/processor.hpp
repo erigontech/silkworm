@@ -65,7 +65,7 @@ class ExecutionProcessor {
 
     uint64_t cumulative_gas_used_{0};
     IntraBlockState state_;
-    protocol::IEngine& consensus_engine_;
+    protocol::IEngine& engine_;
     EVM evm_;
 };
 

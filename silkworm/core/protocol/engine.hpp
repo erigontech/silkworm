@@ -56,7 +56,7 @@ class IEngine {
     //! \param [in] state: current state.
     virtual ValidationResult validate_ommers(const Block& block, const BlockState& state) = 0;
 
-    //! \brief Finalizes block execution by applying changes in the state of accounts or of the consensus itself
+    //! \brief Finalizes block execution by applying changes in the state of accounts or of the consensus protocol itself
     //! \param [in] state: current state.
     //! \param [in] block: current block to apply rewards for.
     //! \param [in] revision: EVM fork.
@@ -70,7 +70,7 @@ class IEngine {
 
 using EnginePtr = std::unique_ptr<IEngine>;
 
-//! \brief Creates an instance of proper Consensus Engine on behalf of chain configuration
+//! \brief Creates an instance of the proper Engine on behalf of chain configuration
 EnginePtr engine_factory(const ChainConfig& chain_config);
 
 }  // namespace silkworm::protocol

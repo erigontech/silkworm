@@ -42,11 +42,11 @@ namespace silkworm {
  */
 [[nodiscard]] inline ValidationResult execute_block(const Block& block, State& state,
                                                     const ChainConfig& chain_config) noexcept {
-    auto consensus_engine{protocol::engine_factory(chain_config)};
-    if (!consensus_engine) {
-        return ValidationResult::kUnknownConsensusEngine;
+    auto engine{protocol::engine_factory(chain_config)};
+    if (!engine) {
+        return ValidationResult::kUnknownEngine;
     }
-    ExecutionProcessor processor{block, *consensus_engine, state, chain_config};
+    ExecutionProcessor processor{block, *engine, state, chain_config};
     std::vector<Receipt> receipts;
     return processor.execute_and_write_block(receipts);
 }

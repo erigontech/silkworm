@@ -28,12 +28,12 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/core/chain/difficulty.hpp>
 #include <silkworm/core/chain/intrinsic_gas.hpp>
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/consensus/blockchain.hpp>
+#include <silkworm/core/consensus/ethash_engine.cpp>
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
@@ -667,8 +667,8 @@ Status individual_difficulty_test(const nlohmann::json& j, const ChainConfig& co
         }
     }
 
-    intx::uint256 calculated_difficulty{proof_of_work_difficulty(block_number, current_timestamp, parent_difficulty,
-                                                                 parent_timestamp, parent_has_uncles, config)};
+    intx::uint256 calculated_difficulty{consensus::EthashEngine::difficulty(block_number, current_timestamp, parent_difficulty,
+                                                                            parent_timestamp, parent_has_uncles, config)};
     if (calculated_difficulty == current_difficulty) {
         return Status::kPassed;
     } else {

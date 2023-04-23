@@ -14,11 +14,11 @@
    limitations under the License.
 */
 
-#include "difficulty.hpp"
+#include "ethash_engine.hpp"
 
 #include <catch2/catch.hpp>
 
-namespace silkworm {
+namespace silkworm::consensus {
 
 TEST_CASE("DifficultyTest34") {
     uint64_t block_number{0x33e140};
@@ -27,8 +27,9 @@ TEST_CASE("DifficultyTest34") {
     uint64_t parent_timestamp{0x04bdbdaf};
     bool parent_has_uncles{false};
 
-    intx::uint256 difficulty{proof_of_work_difficulty(block_number, block_timestamp, parent_difficulty, parent_timestamp,
+    intx::uint256 difficulty{EthashEngine::difficulty(block_number, block_timestamp, parent_difficulty, parent_timestamp,
                                                       parent_has_uncles, kMainnetConfig)};
     CHECK(difficulty == 0x72772897b619876a);
 }
-}  // namespace silkworm
+
+}  // namespace silkworm::consensus

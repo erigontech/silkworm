@@ -129,7 +129,7 @@ TEST_CASE("Headers receiving and saving") {
         header1.difficulty = 1'000'000;
         // header1.gas_limit = 5000;
         // header1.timestamp = ++timestamp;
-        // header1.difficulty = proof_of_work_difficulty(header1.number, header1.timestamp, header0->difficulty,
+        // header1.difficulty = EthashEngine::difficulty(header1.number, header1.timestamp, header0->difficulty,
         // header0->timestamp, false, kMainnetIdentity.config);
         header1.parent_hash = header0_hash;
         auto header1_hash = header1.hash();

@@ -29,7 +29,7 @@
 namespace silkworm::protocol {
 
 /// Reference implementation of Ethereum blockchain logic.
-/// Used for running consensus tests; the real node will use staged sync instead
+/// Used for running Ethereum EL tests; the real node will use staged sync instead
 /// (https://github.com/ledgerwatch/erigon/blob/devel/eth/stagedsync/README.md)
 class Blockchain {
   public:

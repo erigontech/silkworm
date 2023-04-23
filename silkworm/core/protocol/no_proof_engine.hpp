@@ -21,7 +21,7 @@
 namespace silkworm::protocol {
 
 // This engine does not validate PoW seal.
-// It is used in the consensus tests.
+// It is used in the Ethereum EL tests.
 class NoProofEngine : public EthashEngine {
   public:
     explicit NoProofEngine(const ChainConfig& chain_config) : EthashEngine(chain_config) {}

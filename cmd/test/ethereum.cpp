@@ -707,12 +707,12 @@ int main(int argc, char* argv[]) {
     StopWatch sw;
     sw.start();
 
-    CLI::App app{"Run Ethereum consensus tests"};
+    CLI::App app{"Run Ethereum EL tests"};
 
     std::string evm_path{};
     app.add_option("--evm", evm_path, "Path to EVMC-compliant VM");
-    std::string tests_path{SILKWORM_CONSENSUS_TEST_DIR};
-    app.add_option("--tests", tests_path, "Path to consensus tests")
+    std::string tests_path{SILKWORM_ETHEREUM_TESTS_DIR};
+    app.add_option("--tests", tests_path, "Path to Ethereum EL tests")
         ->capture_default_str()
         ->check(CLI::ExistingDirectory);
     unsigned num_threads{std::thread::hardware_concurrency()};

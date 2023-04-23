@@ -25,10 +25,10 @@
 
 namespace silkworm {
 
-ExecutionProcessor::ExecutionProcessor(const Block& block, consensus::IEngine& consensus_engine, State& state,
+ExecutionProcessor::ExecutionProcessor(const Block& block, protocol::IEngine& engine, State& state,
                                        const ChainConfig& config)
-    : state_{state}, consensus_engine_{consensus_engine}, evm_{block, state_, config} {
-    evm_.beneficiary = consensus_engine.get_beneficiary(block.header);
+    : state_{state}, consensus_engine_{engine}, evm_{block, state_, config} {
+    evm_.beneficiary = engine.get_beneficiary(block.header);
 }
 
 ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn) const noexcept {

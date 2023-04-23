@@ -16,8 +16,8 @@
 
 #include "no_proof_engine.hpp"
 
-namespace silkworm::consensus {
+namespace silkworm::protocol {
 
 ValidationResult NoProofEngine::validate_seal(const BlockHeader&) { return ValidationResult::kOk; }
 
-}  // namespace silkworm::consensus
+}  // namespace silkworm::protocol

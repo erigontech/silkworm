@@ -18,12 +18,13 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/core/consensus/ethash_engine.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
 
-namespace silkworm::consensus {
+#include "ethash_engine.hpp"
 
-TEST_CASE("Proof-of-Stake consensus engine") {
+namespace silkworm::protocol {
+
+TEST_CASE("Proof-of-Stake engine") {
     BlockHeader header;
     header.parent_hash = 0xfe92df9ede9d5074e5439198607f01714d6ed665f92d63df8764c1d46e65e795_bytes32;
     header.ommers_hash = kEmptyListHash;
@@ -62,4 +63,4 @@ TEST_CASE("Proof-of-Stake consensus engine") {
           ValidationResult::kInvalidNonce);
 }
 
-}  // namespace silkworm::consensus
+}  // namespace silkworm::protocol

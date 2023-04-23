@@ -20,7 +20,6 @@
 
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/cast.hpp>
-#include <silkworm/core/consensus/engine.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test/log.hpp>
@@ -49,7 +48,7 @@ class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
     using stagedsync::ExecutionEngine::tx_;
 };
 
-class DummyConsensusEngine : public consensus::IEngine {
+class DummyEngine : public protocol::IEngine {
   public:
     ValidationResult pre_validate_block_body(const Block&, const BlockState&) override { return ValidationResult::kOk; }
 
@@ -94,7 +93,7 @@ TEST_CASE("Headers receiving and saving") {
 
     // creating the working chain to simulate a bit of the sync
     BlockNum highest_in_db = 0;
-    HeaderChain_ForTest header_chain(std::make_unique<DummyConsensusEngine>());
+    HeaderChain_ForTest header_chain(std::make_unique<DummyEngine>());
     header_chain.initial_state(last_headers);
     header_chain.current_state(highest_in_db);
     auto request_id = header_chain.generate_request_id();

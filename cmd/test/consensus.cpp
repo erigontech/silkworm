@@ -32,9 +32,9 @@
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/common/test_util.hpp>
-#include <silkworm/core/consensus/blockchain.hpp>
-#include <silkworm/core/consensus/ethash_engine.cpp>
 #include <silkworm/core/execution/evm.hpp>
+#include <silkworm/core/protocol/blockchain.hpp>
+#include <silkworm/core/protocol/ethash_engine.cpp>
 #include <silkworm/core/state/in_memory_state.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/common/terminal.hpp>
@@ -43,7 +43,7 @@
 // See https://ethereum-tests.readthedocs.io
 
 using namespace silkworm;
-using namespace silkworm::consensus;
+using namespace silkworm::protocol;
 
 namespace fs = std::filesystem;
 
@@ -667,8 +667,8 @@ Status individual_difficulty_test(const nlohmann::json& j, const ChainConfig& co
         }
     }
 
-    intx::uint256 calculated_difficulty{consensus::EthashEngine::difficulty(block_number, current_timestamp, parent_difficulty,
-                                                                            parent_timestamp, parent_has_uncles, config)};
+    intx::uint256 calculated_difficulty{EthashEngine::difficulty(block_number, current_timestamp, parent_difficulty,
+                                                                 parent_timestamp, parent_has_uncles, config)};
     if (calculated_difficulty == current_difficulty) {
         return Status::kPassed;
     } else {

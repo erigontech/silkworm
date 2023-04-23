@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <silkworm/core/consensus/ethash_engine.hpp>
+#include <silkworm/core/protocol/ethash_engine.hpp>
 
-namespace silkworm::consensus {
+namespace silkworm::protocol {
 
 // This consensus engine does not validate PoW seal.
 // It is used in the consensus tests.
@@ -32,4 +32,4 @@ class CliqueEngine : public EthashEngine {
     evmc::address get_beneficiary(const BlockHeader& header) final;
 };
 
-}  // namespace silkworm::consensus
+}  // namespace silkworm::protocol

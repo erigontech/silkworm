@@ -21,11 +21,11 @@
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
 
-namespace silkworm::consensus {
+namespace silkworm::protocol {
 
 TEST_CASE("Consensus Engine Clique activation") {
     BlockHeader fake_header{};
-    auto consensus_engine = engine_factory(kGoerliConfig);  // Clique consensus engine
+    auto consensus_engine = engine_factory(kGoerliConfig);  // Clique engine
     CHECK(consensus_engine);
 }
 
@@ -44,7 +44,7 @@ TEST_CASE("Clique engine validate_seal") {
     header.mix_hash = 0x2f73f29450aad18c0956ec6350524c2910f3be67ec6e80b7b597240a195788e1_bytes32;
     header.nonce = {};
 
-    auto consensus_engine = engine_factory(ChainConfig{.seal_engine = SealEngineType::kClique});  // Clique consensus engine
+    auto consensus_engine = engine_factory(ChainConfig{.seal_engine = SealEngineType::kClique});  // Clique engine
     CHECK(consensus_engine->validate_seal(header) == ValidationResult::kOk);
 }
 
@@ -94,4 +94,4 @@ TEST_CASE("get_beneficiary() && extra_data no seal") {
     CHECK(consensus_engine->get_beneficiary(header) == 0x0000000000000000000000000000000000000000_address);
 }
 
-}  // namespace silkworm::consensus
+}  // namespace silkworm::protocol

@@ -21,12 +21,12 @@
 
 #include <evmc/evmc.h>
 
-#include <silkworm/core/consensus/engine.hpp>
 #include <silkworm/core/execution/evm.hpp>
+#include <silkworm/core/protocol/engine.hpp>
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/core/types/receipt.hpp>
 
-namespace silkworm::consensus {
+namespace silkworm::protocol {
 
 /// Reference implementation of Ethereum blockchain logic.
 /// Used for running consensus tests; the real node will use staged sync instead
@@ -64,9 +64,9 @@ class Blockchain {
 
     State& state_;
     const ChainConfig& config_;
-    std::unique_ptr<IEngine> engine_;
+    EnginePtr engine_;
     std::unordered_map<evmc::bytes32, ValidationResult> bad_blocks_;
     std::vector<Receipt> receipts_;
 };
 
-}  // namespace silkworm::consensus
+}  // namespace silkworm::protocol

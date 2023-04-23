@@ -19,8 +19,8 @@
 
 #include <CLI/CLI.hpp>
 
-#include <silkworm/core/consensus/engine.hpp>
 #include <silkworm/core/execution/execution.hpp>
+#include <silkworm/core/protocol/engine.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
         if (!chain_config) {
             throw std::runtime_error("Unable to retrieve chain config");
         }
-        auto engine{consensus::engine_factory(chain_config.value())};
+        auto engine{protocol::engine_factory(chain_config.value())};
         if (!engine) {
             throw std::runtime_error("Unable to retrieve consensus engine");
         }

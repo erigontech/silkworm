@@ -36,9 +36,9 @@ class segment_cut_and_paste_error : public std::logic_error {
     explicit segment_cut_and_paste_error(const std::string& reason) : std::logic_error(reason) {}
 };
 
-HeaderChain::HeaderChain(const ChainConfig& chain_config) : HeaderChain(consensus::engine_factory(chain_config)) {}
+HeaderChain::HeaderChain(const ChainConfig& chain_config) : HeaderChain(protocol::engine_factory(chain_config)) {}
 
-HeaderChain::HeaderChain(ConsensusEnginePtr consensus_engine)
+HeaderChain::HeaderChain(protocol::EnginePtr consensus_engine)
     : highest_in_db_(0),
       top_seen_height_(0),
       preverified_hashes_(PreverifiedHashes::current),

@@ -19,9 +19,9 @@
 #include <optional>
 #include <utility>
 
-namespace silkworm::consensus {
+namespace silkworm::protocol {
 
-MergeEngine::MergeEngine(std::unique_ptr<IEngine> eth1_engine, const ChainConfig& chain_config)
+MergeEngine::MergeEngine(EnginePtr eth1_engine, const ChainConfig& chain_config)
     : EngineBase{chain_config, /*prohibit_ommers=*/true},
       terminal_total_difficulty_{*chain_config.terminal_total_difficulty},
       pre_merge_engine_{std::move(eth1_engine)} {}
@@ -104,4 +104,4 @@ intx::uint256 MergeEngine::difficulty(const BlockHeader&, const BlockHeader&) {
     return 0;
 }
 
-}  // namespace silkworm::consensus
+}  // namespace silkworm::protocol

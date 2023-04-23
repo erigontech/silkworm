@@ -52,7 +52,7 @@ TEST_CASE("Zero gas price") {
     };
 
     InMemoryState state;
-    auto engine{consensus::engine_factory(kMainnetConfig)};
+    auto engine{protocol::engine_factory(kMainnetConfig)};
     ExecutionProcessor processor{block, *engine, state, kMainnetConfig};
 
     CHECK(processor.validate_transaction(txn) == ValidationResult::kMissingSender);
@@ -75,7 +75,7 @@ TEST_CASE("EIP-3607: Reject transactions from senders with deployed code") {
     txn.from = sender;
 
     InMemoryState state;
-    auto engine{consensus::engine_factory(kMainnetConfig)};
+    auto engine{protocol::engine_factory(kMainnetConfig)};
     ExecutionProcessor processor{block, *engine, state, kMainnetConfig};
 
     processor.evm().state().add_to_balance(sender, 10 * kEther);
@@ -116,7 +116,7 @@ TEST_CASE("No refund on error") {
     */
 
     InMemoryState state;
-    auto engine{consensus::engine_factory(kMainnetConfig)};
+    auto engine{protocol::engine_factory(kMainnetConfig)};
     ExecutionProcessor processor{block, *engine, state, kMainnetConfig};
 
     Transaction txn{
@@ -215,7 +215,7 @@ TEST_CASE("Self-destruct") {
     */
 
     InMemoryState state;
-    auto engine{consensus::engine_factory(kMainnetConfig)};
+    auto engine{protocol::engine_factory(kMainnetConfig)};
     ExecutionProcessor processor{block, *engine, state, kMainnetConfig};
 
     processor.evm().state().add_to_balance(originator, kEther);
@@ -373,7 +373,7 @@ TEST_CASE("Out of Gas during account re-creation") {
     };
     txn.from = caller;
 
-    auto engine{consensus::engine_factory(kMainnetConfig)};
+    auto engine{protocol::engine_factory(kMainnetConfig)};
     ExecutionProcessor processor{block, *engine, state, kMainnetConfig};
     processor.evm().state().add_to_balance(caller, kEther);
 
@@ -421,7 +421,7 @@ TEST_CASE("Empty suicide beneficiary") {
 
     InMemoryState state;
 
-    auto engine{consensus::engine_factory(kMainnetConfig)};
+    auto engine{protocol::engine_factory(kMainnetConfig)};
     ExecutionProcessor processor{block, *engine, state, kMainnetConfig};
     processor.evm().state().add_to_balance(caller, kEther);
 

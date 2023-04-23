@@ -18,9 +18,9 @@
 
 #include <ethash/ethash.hpp>
 
-#include <silkworm/core/consensus/base_engine.hpp>
+#include <silkworm/core/protocol/base_engine.hpp>
 
-namespace silkworm::consensus {
+namespace silkworm::protocol {
 
 // Proof of Work implementation
 class EthashEngine : public EngineBase {
@@ -50,4 +50,4 @@ class EthashEngine : public EngineBase {
     ethash::epoch_context_ptr epoch_context_{nullptr, ethash_destroy_epoch_context};
 };
 
-}  // namespace silkworm::consensus
+}  // namespace silkworm::protocol

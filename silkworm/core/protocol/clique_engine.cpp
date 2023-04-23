@@ -18,7 +18,7 @@
 
 #include <silkworm/core/crypto/ecdsa.h>
 
-namespace silkworm::consensus {
+namespace silkworm::protocol {
 
 ValidationResult CliqueEngine::validate_seal(const BlockHeader&) {
     return ValidationResult::kOk;
@@ -45,4 +45,4 @@ evmc::address CliqueEngine::get_beneficiary(const BlockHeader& header) {
     return ecrecover(header);
 }
 
-}  // namespace silkworm::consensus
+}  // namespace silkworm::protocol

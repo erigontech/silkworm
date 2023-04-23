@@ -16,14 +16,16 @@
 
 #pragma once
 
+#include <memory>
+
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/core/consensus/validation.hpp>
+#include <silkworm/core/protocol/validation.hpp>
 #include <silkworm/core/state/intra_block_state.hpp>
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/receipt.hpp>
 
-namespace silkworm::consensus {
+namespace silkworm::protocol {
 
 class IEngine {
   public:
@@ -66,7 +68,9 @@ class IEngine {
     virtual evmc::address get_beneficiary(const BlockHeader& header) = 0;
 };
 
-//! \brief Creates an instance of proper Consensus Engine on behalf of chain configuration
-std::unique_ptr<IEngine> engine_factory(const ChainConfig& chain_config);
+using EnginePtr = std::unique_ptr<IEngine>;
 
-}  // namespace silkworm::consensus
+//! \brief Creates an instance of proper Consensus Engine on behalf of chain configuration
+EnginePtr engine_factory(const ChainConfig& chain_config);
+
+}  // namespace silkworm::protocol

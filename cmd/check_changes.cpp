@@ -84,7 +84,7 @@ int main(int argc, char* argv[]) {
         AdvancedAnalysisCache analysis_cache;
         ObjectPool<EvmoneExecutionState> state_pool;
         std::vector<Receipt> receipts;
-        auto engine{consensus::engine_factory(chain_config.value())};
+        auto engine{protocol::engine_factory(chain_config.value())};
         Block block;
         for (; block_num < to; ++block_num) {
             txn->renew_reading();

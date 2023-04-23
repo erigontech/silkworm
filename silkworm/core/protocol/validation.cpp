@@ -23,7 +23,7 @@
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
 
-namespace silkworm::consensus {
+namespace silkworm::protocol {
 
 bool transaction_type_is_supported(Transaction::Type type, evmc_revision rev) {
     static constexpr evmc_revision kMinRevisionByType[]{
@@ -194,4 +194,4 @@ evmc::bytes32 compute_ommers_hash(const BlockBody& body) {
     return bit_cast<evmc_bytes32>(keccak256(ommers_rlp));
 }
 
-}  // namespace silkworm::consensus
+}  // namespace silkworm::protocol

@@ -28,7 +28,7 @@
 namespace silkworm::stagedsync {
 
 BodiesStage::BodyDataModel::BodyDataModel(db::RWTxn& tx, BlockNum bodies_stage_height, const ChainConfig& chain_config)
-    : consensus_engine_{consensus::engine_factory(chain_config)},
+    : consensus_engine_{protocol::engine_factory(chain_config)},
       chain_config_{chain_config},
       chain_state_{tx, /*prune_history_threshold=*/0, /*historical_block=null*/} {
     initial_height_ = bodies_stage_height;
@@ -56,7 +56,7 @@ void BodiesStage::BodyDataModel::update_tables(const Block& block) {
         // Here we skip a full body pre-validation like
         // validation_result = consensus_engine_->pre_validate_block_body(block, chain_state_);
         // because we assume that the sync (BlockExchange) has already checked transaction & ommers root hash
-        validation_result = consensus::pre_validate_transactions(block, chain_config_);
+        validation_result = protocol::pre_validate_transactions(block, chain_config_);
         if (validation_result == ValidationResult::kOk) {
             validation_result = consensus_engine_->validate_ommers(block, chain_state_);
         }

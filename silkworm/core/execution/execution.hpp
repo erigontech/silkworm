@@ -19,8 +19,8 @@
 #include <vector>
 
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/core/consensus/engine.hpp>
 #include <silkworm/core/execution/processor.hpp>
+#include <silkworm/core/protocol/engine.hpp>
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/receipt.hpp>
@@ -42,7 +42,7 @@ namespace silkworm {
  */
 [[nodiscard]] inline ValidationResult execute_block(const Block& block, State& state,
                                                     const ChainConfig& chain_config) noexcept {
-    auto consensus_engine{consensus::engine_factory(chain_config)};
+    auto consensus_engine{protocol::engine_factory(chain_config)};
     if (!consensus_engine) {
         return ValidationResult::kUnknownConsensusEngine;
     }

@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-namespace silkworm::consensus {
+namespace silkworm::protocol {
 
 TEST_CASE("DifficultyTest34") {
     uint64_t block_number{0x33e140};
@@ -32,4 +32,4 @@ TEST_CASE("DifficultyTest34") {
     CHECK(difficulty == 0x72772897b619876a);
 }
 
-}  // namespace silkworm::consensus
+}  // namespace silkworm::protocol

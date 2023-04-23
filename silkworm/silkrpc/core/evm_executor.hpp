@@ -32,7 +32,7 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/consensus/engine.hpp>
+#include <silkworm/core/protocol/engine.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
@@ -59,7 +59,7 @@ class EVMExecutor {
           workers_{workers},
           remote_state_{remote_state},
           state_{remote_state_} {
-        consensus_engine_ = consensus::engine_factory(config);
+        consensus_engine_ = protocol::engine_factory(config);
         SILKWORM_ASSERT(consensus_engine_ != nullptr);
     }
     virtual ~EVMExecutor() = default;
@@ -80,7 +80,7 @@ class EVMExecutor {
     boost::asio::thread_pool& workers_;
     state::RemoteState& remote_state_;
     IntraBlockState state_;
-    std::unique_ptr<consensus::IEngine> consensus_engine_;
+    protocol::EnginePtr consensus_engine_;
 };
 
 }  // namespace silkworm::rpc

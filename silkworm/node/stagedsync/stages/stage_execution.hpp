@@ -18,9 +18,9 @@
 
 #include <boost/circular_buffer.hpp>
 
-#include <silkworm/core/consensus/engine.hpp>
 #include <silkworm/core/execution/analysis_cache.hpp>
 #include <silkworm/core/execution/evm.hpp>
+#include <silkworm/core/protocol/engine.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
 
 namespace silkworm::stagedsync {
@@ -29,7 +29,7 @@ class Execution final : public Stage {
   public:
     explicit Execution(NodeSettings* node_settings, SyncContext* sync_context)
         : Stage(sync_context, db::stages::kExecutionKey, node_settings),
-          consensus_engine_{consensus::engine_factory(node_settings->chain_config.value())} {}
+          consensus_engine_{protocol::engine_factory(node_settings->chain_config.value())} {}
 
     ~Execution() override = default;
 
@@ -41,7 +41,7 @@ class Execution final : public Stage {
   private:
     static constexpr size_t kMaxPrefetchedBlocks{10240};
 
-    std::unique_ptr<consensus::IEngine> consensus_engine_;
+    protocol::EnginePtr consensus_engine_;
     BlockNum block_num_{0};
     boost::circular_buffer<Block> prefetched_blocks_{/*buffer_capacity=*/kMaxPrefetchedBlocks};
 

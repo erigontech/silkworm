@@ -20,26 +20,26 @@
 
 #include <silkworm/core/common/test_util.hpp>
 
-namespace silkworm::consensus {
+namespace silkworm::protocol {
 
-TEST_CASE("Consensus Engine factory") {
-    std::unique_ptr<IEngine> consensus_engine;
-    consensus_engine = engine_factory(kMainnetConfig);  // Ethash consensus engine
+TEST_CASE("Engine factory") {
+    EnginePtr consensus_engine;
+    consensus_engine = engine_factory(kMainnetConfig);  // Ethash engine
     CHECK(consensus_engine != nullptr);
-    consensus_engine = engine_factory(kSepoliaConfig);  // Ethash consensus engine
+    consensus_engine = engine_factory(kSepoliaConfig);  // Ethash engine
     CHECK(consensus_engine != nullptr);
-    consensus_engine = engine_factory(test::kLondonConfig);  // Noproof consensus engine
+    consensus_engine = engine_factory(test::kLondonConfig);  // No-proof engine
     CHECK(consensus_engine != nullptr);
-    consensus_engine = engine_factory(kRinkebyConfig);  // Clique consensus engine
+    consensus_engine = engine_factory(kRinkebyConfig);  // Clique engine
     CHECK(consensus_engine != nullptr);
-    consensus_engine = engine_factory(kGoerliConfig);  // Clique consensus engine
+    consensus_engine = engine_factory(kGoerliConfig);  // Clique engine
     CHECK(consensus_engine != nullptr);
     consensus_engine = engine_factory(ChainConfig{.seal_engine = SealEngineType::kAuRA});
     CHECK(consensus_engine == nullptr);
 }
 
 TEST_CASE("Consensus Engine Seal") {
-    std::unique_ptr<IEngine> consensus_engine{engine_factory(ChainConfig{.seal_engine = SealEngineType::kEthash})};
+    EnginePtr consensus_engine{engine_factory(ChainConfig{.seal_engine = SealEngineType::kEthash})};
     BlockHeader fake_header{};
     CHECK(consensus_engine->validate_seal(fake_header) != ValidationResult::kOk);
     consensus_engine = engine_factory(ChainConfig{.seal_engine = SealEngineType::kNoProof});
@@ -112,4 +112,4 @@ TEST_CASE("Validate max_fee_per_gas") {
           ValidationResult::kMaxPriorityFeeGreaterThanMax);
 }
 
-}  // namespace silkworm::consensus
+}  // namespace silkworm::protocol

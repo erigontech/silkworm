@@ -96,7 +96,7 @@ enum class [[nodiscard]] ValidationResult {
     kMaxFeePerDataGasTooLow,  // max_fee_per_data_gas < data_gas_price
 };
 
-namespace consensus {
+namespace protocol {
 
     bool transaction_type_is_supported(Transaction::Type, evmc_revision);
 
@@ -122,6 +122,6 @@ namespace consensus {
     //! \brief Calculate the hash of ommers of a block body
     evmc::bytes32 compute_ommers_hash(const BlockBody& body);
 
-}  // namespace consensus
+}  // namespace protocol
 
 }  // namespace silkworm

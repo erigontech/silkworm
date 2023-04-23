@@ -20,7 +20,7 @@
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
 
-namespace silkworm::consensus {
+namespace silkworm::protocol {
 
 ValidationResult EngineBase::pre_validate_block_body(const Block& block, const BlockState& state) {
     const BlockHeader& header{block.header};
@@ -233,4 +233,4 @@ bool EngineBase::is_kin(const BlockHeader& branch_header, const BlockHeader& mai
 
 evmc::address EngineBase::get_beneficiary(const BlockHeader& header) { return header.beneficiary; }
 
-}  // namespace silkworm::consensus
+}  // namespace silkworm::protocol

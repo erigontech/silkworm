@@ -18,15 +18,15 @@
 
 #include <memory>
 
-#include <silkworm/core/consensus/base_engine.hpp>
+#include <silkworm/core/protocol/base_engine.hpp>
 
-namespace silkworm::consensus {
+namespace silkworm::protocol {
 
 // Mainnet consensus engine that can handle blocks before, during, and after the Merge.
 // See EIP-3675: Upgrade consensus to Proof-of-Stake.
 class MergeEngine : public EngineBase {
   public:
-    explicit MergeEngine(std::unique_ptr<IEngine> pre_merge_engine, const ChainConfig& chain_config);
+    explicit MergeEngine(EnginePtr pre_merge_engine, const ChainConfig& chain_config);
 
     ValidationResult pre_validate_block_body(const Block& block, const BlockState& state) override;
 
@@ -46,7 +46,7 @@ class MergeEngine : public EngineBase {
 
   private:
     intx::uint256 terminal_total_difficulty_;
-    std::unique_ptr<IEngine> pre_merge_engine_;
+    EnginePtr pre_merge_engine_;
 };
 
-}  // namespace silkworm::consensus
+}  // namespace silkworm::protocol

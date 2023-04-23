@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <silkworm/core/consensus/engine.hpp>
+#include <silkworm/core/protocol/engine.hpp>
 
-namespace silkworm::consensus {
+namespace silkworm::protocol {
 
 class EngineBase : public IEngine {
   public:
@@ -66,4 +66,4 @@ class EngineBase : public IEngine {
                 std::vector<BlockHeader>& old_ommers);
 };
 
-}  // namespace silkworm::consensus
+}  // namespace silkworm::protocol

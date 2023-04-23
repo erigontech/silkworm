@@ -23,9 +23,9 @@
 #include <gsl/util>
 
 #include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/consensus/engine.hpp>
 #include <silkworm/core/crypto/ecdsa.h>
 #include <silkworm/core/crypto/secp256k1n.hpp>
+#include <silkworm/core/protocol/validation.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 
@@ -457,7 +457,7 @@ Stage::Result Senders::add_to_batch(BlockNum block_num, std::vector<Transaction>
 
     uint32_t tx_id{0};
     for (const auto& transaction : transactions) {
-        if (!consensus::transaction_type_is_supported(transaction.type, rev)) {
+        if (!protocol::transaction_type_is_supported(transaction.type, rev)) {
             log::Error(log_prefix_) << "Transaction type " << magic_enum::enum_name<Transaction::Type>(transaction.type)
                                     << " for transaction #" << tx_id << " in block #" << block_num << " before it's supported";
             return Stage::Result::kInvalidTransaction;

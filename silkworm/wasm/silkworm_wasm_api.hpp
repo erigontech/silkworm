@@ -27,7 +27,7 @@
 #include <intx/intx.hpp>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/core/consensus/blockchain.hpp>
+#include <silkworm/core/protocol/blockchain.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/transaction.hpp>
@@ -124,11 +124,11 @@ SILKWORM_EXPORT void state_update_storage(silkworm::State* state, const uint8_t*
                                           const silkworm::Account* account, const silkworm::Bytes* location,
                                           const silkworm::Bytes* value);
 
-SILKWORM_EXPORT silkworm::consensus::Blockchain* new_blockchain(silkworm::State* state,
-                                                                const silkworm::ChainConfig* config,
-                                                                const silkworm::Block* genesis_block);
-SILKWORM_EXPORT void delete_blockchain(silkworm::consensus::Blockchain* x);
+SILKWORM_EXPORT silkworm::protocol::Blockchain* new_blockchain(silkworm::State* state,
+                                                               const silkworm::ChainConfig* config,
+                                                               const silkworm::Block* genesis_block);
+SILKWORM_EXPORT void delete_blockchain(silkworm::protocol::Blockchain* x);
 
-SILKWORM_EXPORT silkworm::ValidationResult blockchain_insert_block(silkworm::consensus::Blockchain* chain,
+SILKWORM_EXPORT silkworm::ValidationResult blockchain_insert_block(silkworm::protocol::Blockchain* chain,
                                                                    silkworm::Block* block, bool check_state_root);
 }

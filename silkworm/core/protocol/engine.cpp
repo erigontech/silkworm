@@ -16,16 +16,14 @@
 
 #include "engine.hpp"
 
-#include <memory>
+#include "clique_engine.hpp"
+#include "ethash_engine.hpp"
+#include "merge_engine.hpp"
+#include "no_proof_engine.hpp"
 
-#include <silkworm/core/consensus/clique_engine.hpp>
-#include <silkworm/core/consensus/ethash_engine.hpp>
-#include <silkworm/core/consensus/merge_engine.hpp>
-#include <silkworm/core/consensus/no_proof_engine.hpp>
+namespace silkworm::protocol {
 
-namespace silkworm::consensus {
-
-static std::unique_ptr<IEngine> pre_merge_engine(const ChainConfig& chain_config) {
+static EnginePtr pre_merge_engine(const ChainConfig& chain_config) {
     switch (chain_config.seal_engine) {
         case SealEngineType::kEthash:
             return std::make_unique<EthashEngine>(chain_config);
@@ -38,8 +36,8 @@ static std::unique_ptr<IEngine> pre_merge_engine(const ChainConfig& chain_config
     }
 }
 
-std::unique_ptr<IEngine> engine_factory(const ChainConfig& chain_config) {
-    std::unique_ptr<IEngine> engine{pre_merge_engine(chain_config)};
+EnginePtr engine_factory(const ChainConfig& chain_config) {
+    EnginePtr engine{pre_merge_engine(chain_config)};
     if (!engine) {
         return nullptr;
     }
@@ -51,4 +49,4 @@ std::unique_ptr<IEngine> engine_factory(const ChainConfig& chain_config) {
     return engine;
 }
 
-}  // namespace silkworm::consensus
+}  // namespace silkworm::protocol

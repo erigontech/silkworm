@@ -19,7 +19,7 @@
 #include <silkworm/core/chain/protocol_param.hpp>
 #include <silkworm/core/common/endian.hpp>
 
-namespace silkworm::consensus {
+namespace silkworm::protocol {
 
 void EthashEngine::finalize(IntraBlockState& state, const Block& block, const evmc_revision revision) {
     intx::uint256 block_reward;
@@ -139,4 +139,4 @@ intx::uint256 EthashEngine::difficulty(uint64_t block_number, const uint64_t blo
     return difficulty;
 }
 
-}  // namespace silkworm::consensus
+}  // namespace silkworm::protocol

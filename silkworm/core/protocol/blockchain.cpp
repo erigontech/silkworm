@@ -19,10 +19,10 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/execution/processor.hpp>
 
-namespace silkworm::consensus {
+namespace silkworm::protocol {
 
 Blockchain::Blockchain(State& state, const ChainConfig& config, const Block& genesis_block)
-    : state_{state}, config_{config}, engine_{consensus::engine_factory(config)} {
+    : state_{state}, config_{config}, engine_{engine_factory(config)} {
     prime_state_with_genesis(genesis_block);
 }
 
@@ -179,4 +179,4 @@ uint64_t Blockchain::canonical_ancestor(const BlockHeader& header, const evmc::b
     return canonical_ancestor(*parent, header.parent_hash);
 }
 
-}  // namespace silkworm::consensus
+}  // namespace silkworm::protocol

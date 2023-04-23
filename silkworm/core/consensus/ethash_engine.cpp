@@ -61,11 +61,10 @@ ValidationResult EthashEngine::validate_seal(const BlockHeader& header) {
     return ec ? ValidationResult::kInvalidSeal : ValidationResult::kOk;
 }
 
-ValidationResult EthashEngine::validate_difficulty(const BlockHeader& header, const BlockHeader& parent) {
+intx::uint256 EthashEngine::difficulty(const BlockHeader& header, const BlockHeader& parent) {
     const bool parent_has_uncles{parent.ommers_hash != kEmptyListHash};
-    const intx::uint256 difficulty{proof_of_work_difficulty(header.number, header.timestamp, parent.difficulty,
-                                                            parent.timestamp, parent_has_uncles, chain_config_)};
-    return difficulty == header.difficulty ? ValidationResult::kOk : ValidationResult::kWrongDifficulty;
+    return proof_of_work_difficulty(header.number, header.timestamp, parent.difficulty,
+                                    parent.timestamp, parent_has_uncles, chain_config_);
 }
 
 }  // namespace silkworm::consensus

@@ -57,8 +57,8 @@ class EngineBase : public IEngine {
     const ChainConfig& chain_config_;
     bool prohibit_ommers_{false};
 
-    //! \brief Validates the difficulty of the header
-    virtual ValidationResult validate_difficulty(const BlockHeader& header, const BlockHeader& parent) = 0;
+    //! \brief Calculates the difficulty of the header
+    virtual intx::uint256 difficulty(const BlockHeader& header, const BlockHeader& parent) = 0;
 
     //! \brief See [YP] Section 11.1 "Ommer Validation"
     bool is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,

@@ -37,7 +37,7 @@ class EthashEngine : public EngineBase {
     void finalize(IntraBlockState& state, const Block& block, evmc_revision revision) override;
 
   protected:
-    ValidationResult validate_difficulty(const BlockHeader& header, const BlockHeader& parent) override;
+    intx::uint256 difficulty(const BlockHeader& header, const BlockHeader& parent) override;
 
   private:
     ethash::epoch_context_ptr epoch_context_{nullptr, ethash_destroy_epoch_context};

@@ -82,7 +82,6 @@ ValidationResult EngineBase::pre_validate_block_body(const Block& block, const B
     return validate_ommers(block, state);
 }
 
-// TODO(yperbasis) make free-standing
 ValidationResult EngineBase::validate_ommers(const Block& block, const BlockState& state) {
     const BlockHeader& header{block.header};
 
@@ -169,8 +168,8 @@ ValidationResult EngineBase::validate_block_header(const BlockHeader& header, co
         return ValidationResult::kInvalidGasLimit;
     }
 
-    if (ValidationResult res{validate_difficulty(header, *parent)}; res != ValidationResult::kOk) {
-        return res;
+    if (header.difficulty != difficulty(header, *parent)) {
+        return ValidationResult::kWrongDifficulty;
     }
 
     // https://eips.ethereum.org/EIPS/eip-779

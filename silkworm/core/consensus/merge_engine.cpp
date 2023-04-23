@@ -100,8 +100,8 @@ ValidationResult MergeEngine::validate_ommers(const Block& block, const BlockSta
     return EngineBase::validate_ommers(block, state);
 }
 
-ValidationResult MergeEngine::validate_difficulty(const BlockHeader& header, const BlockHeader&) {
-    return header.difficulty == 0 ? ValidationResult::kOk : ValidationResult::kWrongDifficulty;
+intx::uint256 MergeEngine::difficulty(const BlockHeader&, const BlockHeader&) {
+    return 0;
 }
 
 }  // namespace silkworm::consensus

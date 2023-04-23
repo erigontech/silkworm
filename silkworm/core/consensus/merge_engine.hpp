@@ -35,16 +35,16 @@ class MergeEngine : public EngineBase {
 
     ValidationResult validate_seal(const BlockHeader& header) override;
 
+    ValidationResult validate_ommers(const Block& block, const BlockState& state) override;
+
     void finalize(IntraBlockState& state, const Block& block, evmc_revision revision) override;
 
     evmc::address get_beneficiary(const BlockHeader& header) override;
 
   protected:
-    ValidationResult validate_difficulty(const BlockHeader& header, const BlockHeader& parent) override;
+    intx::uint256 difficulty(const BlockHeader& header, const BlockHeader& parent) override;
 
   private:
-    ValidationResult validate_ommers(const Block& block, const BlockState& state) override;
-
     intx::uint256 terminal_total_difficulty_;
     std::unique_ptr<IEngine> pre_merge_engine_;
 };

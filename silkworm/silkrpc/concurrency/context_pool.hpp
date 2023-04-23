@@ -130,8 +130,6 @@ class ContextPool {
     boost::asio::io_context& next_io_context();
 
   private:
-    static const std::size_t DEFAULT_POOL_STORAGE_SIZE = 0x400;
-
     // The pool of contexts
     std::vector<Context> contexts_;
 

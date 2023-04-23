@@ -21,6 +21,7 @@
 #include <utility>
 
 #include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/silkrpc/core/filter_storage.hpp>
 #include <silkworm/silkrpc/ethbackend/remote_backend.hpp>
 #include <silkworm/silkrpc/ethdb/file/local_database.hpp>
 #include <silkworm/silkrpc/ethdb/kv/remote_database.hpp>
@@ -126,7 +127,7 @@ void Context::stop() {
 }
 
 ContextPool::ContextPool(std::size_t pool_size, ChannelFactory create_channel, std::optional<std::string> datadir, WaitMode wait_mode)
-    : next_index_{0}, filter_storage_{pool_size * DEFAULT_POOL_STORAGE_SIZE} {
+    : next_index_{0}, filter_storage_{pool_size * silkworm::rpc::kDefaultFilterStorageSize} {
     if (pool_size == 0) {
         throw std::logic_error("ContextPool::ContextPool pool_size is 0");
     }

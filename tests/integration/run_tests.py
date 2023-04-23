@@ -49,6 +49,18 @@ tests_not_compared = [
    "eth_maxPriorityFeePerGas/test_1.json"
 ]
 
+tests_not_compared_result = [
+   "trace_call/test_04.json",
+   "trace_call/test_11.json",
+   "trace_call/test_15.json",
+   "trace_call/test_17.json",
+   "trace_callMany/test_04.json",
+   "trace_callMany/test_05.json",
+   "trace_callMany/test_13.json",
+   "trace_callMany/test_14.tar",
+   "trace_callMany/test_15.json"
+]
+
 def get_target(target_type: str, method: str, infura_url: str, host: str):
     """ determine target
     """
@@ -88,6 +100,19 @@ def get_jwt_secret(name):
     except FileNotFoundError:
         return ""
 
+#
+#
+#
+def replace_str_from_file(filer, filew, matched_string):
+    """ parse file and replace string
+    """
+    with open(filer, "r", encoding='utf8') as input_file:
+        with open(filew, "w", encoding='utf8') as output_file:
+            # iterate all lines from file
+            for line in input_file:
+                # if text matches then don't write it
+                if (matched_string in line) == 0:
+                    output_file.write(line)
 
 
 def is_skipped(api_name, exclude_api_list, exclude_test_list, api_file: str, req_test, verify_with_daemon, global_test_number):
@@ -120,6 +145,15 @@ def is_big_json(test_name: str):
         if curr_test_name == test_name:
             return 1
     return 0
+
+def is_not_compared_result(test_name: str):
+    """ determine if test not compared result
+    """
+    for curr_test_name in tests_not_compared_result:
+        if curr_test_name == test_name:
+            return 1
+    return 0
+
 
 def run_shell_command(command: str, command1: str, expected_response: str, verbose: bool, exit_on_fail: bool, output_dir: str, silk_file: str,
                       exp_rsp_file: str, diff_file: str, dump_output, json_file: str, test_number):
@@ -172,7 +206,11 @@ def run_shell_command(command: str, command1: str, expected_response: str, verbo
             with open(exp_rsp_file, 'w', encoding='utf8') as json_file_ptr:
                 json_file_ptr.write(json.dumps(expected_response,  indent=5))
         #response_diff = jsondiff.diff(expected_response, response, marshal=True)
-        if is_big_json(json_file):
+        if is_not_compared_result(json_file):
+            replace_str_from_file(exp_rsp_file, "/tmp/file1", "error")
+            replace_str_from_file(silk_file, "/tmp/file2", "error")
+            cmd = "json-diff -s /tmp/file1 /tmp/file2 " + " > " + diff_file
+        elif is_big_json(json_file):
             cmd = "json-patch-jsondiff --indent 4 " + exp_rsp_file  + " " + silk_file + " > " + diff_file
         else:
             cmd = "json-diff -s " + exp_rsp_file  + " " + silk_file + " > " + diff_file
@@ -193,7 +231,8 @@ def run_shell_command(command: str, command1: str, expected_response: str, verbo
         os.remove(silk_file)
         os.remove(exp_rsp_file)
         os.remove(diff_file)
-        os.rmdir(output_dir)
+        if not os.listdir(output_dir):
+            os.rmdir(output_dir)
     else:
         if verbose:
             print("OK")

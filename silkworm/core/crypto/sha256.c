@@ -107,10 +107,10 @@ static bool calc_chunk(uint8_t chunk[CHUNK_SIZE], struct buffer_state* state) {
         return true;
     }
 
-    memcpy(chunk, state->p, state->len);
-    chunk += state->len;
     size_t space_in_chunk = CHUNK_SIZE - state->len;
     if (state->len) {  // avoid adding 0 to nullptr
+        memcpy(chunk, state->p, state->len);
+        chunk += state->len;
         state->p += state->len;
     }
     state->len = 0;
@@ -456,7 +456,7 @@ static void cpuid(int info[4], int InfoType) {
     __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
 }
 
-__attribute__((constructor)) static void select_sha256_implementation() {
+__attribute__((constructor)) static void select_sha256_implementation(void) {
     int info[4];
     cpuid(info, 0);
     int nIds = info[0];
@@ -654,7 +654,7 @@ static void sha_256_arm_v8(uint32_t h[8], const void* input, size_t len) {
     vst1q_u32(&h[4], STATE1);
 }
 
-__attribute__((constructor)) static void select_sha256_implementation() {
+__attribute__((constructor)) static void select_sha256_implementation(void) {
 #if defined(__linux__)
     if ((getauxval(AT_HWCAP) & HWCAP_SHA2) != 0) {
         sha_256_best = sha_256_arm_v8;

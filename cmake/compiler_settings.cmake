@@ -14,12 +14,12 @@
    limitations under the License.
 ]]
 
-# cmake-format: off
-
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
   message("MSVC_VERSION = ${MSVC_VERSION}")
   message("MSVC_CXX_ARCHITECTURE_ID = ${MSVC_CXX_ARCHITECTURE_ID}")
+
+  # cmake-format: off
 
   add_definitions(-D_WIN32_WINNT=0x0602)  # Min Windows 8
   add_definitions(-DVC_EXTRALEAN)         # Process windows headers faster ...
@@ -77,12 +77,9 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /VERBOSE /TIME")    # Debug linker
   endif()
 
-elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
+  # cmake-format: on
 
-  if(SILKWORM_SANITIZE)
-    add_compile_options(-fno-omit-frame-pointer -fsanitize=${SILKWORM_SANITIZE} -DSILKWORM_SANITIZE)
-    add_link_options(-fno-omit-frame-pointer -fsanitize=${SILKWORM_SANITIZE} -DSILKWORM_SANITIZE)
-  endif()
+elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
 
   if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options(-g1)
@@ -99,11 +96,6 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
     add_link_options(-fprofile-instr-generate -fcoverage-mapping)
   endif()
 
-  if(SILKWORM_SANITIZE)
-    add_compile_options(-fno-omit-frame-pointer -fsanitize=${SILKWORM_SANITIZE} -DSILKWORM_SANITIZE)
-    add_link_options(-fno-omit-frame-pointer -fsanitize=${SILKWORM_SANITIZE} -DSILKWORM_SANITIZE)
-  endif()
-
   if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options(-gline-tables-only)
   endif()
@@ -117,8 +109,18 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
 
 else()
 
-  message(WARNING "${CMAKE_CXX_COMPILER_ID} is not tested. Should you stumble into any issue please report at https://github.com/torquem-ch/silkworm/issues")
+  message(
+    WARNING
+      "${CMAKE_CXX_COMPILER_ID} is not tested. Should you stumble into any issue please report at https://github.com/torquem-ch/silkworm/issues"
+  )
 
 endif()
 
-# cmake-format: on
+if(SILKWORM_SANITIZE)
+  set(SILKWORM_SANITIZE_COMPILER_OPTIONS -fno-omit-frame-pointer -fno-sanitize-recover=all
+                                         -fsanitize=${SILKWORM_SANITIZE}
+  )
+  add_compile_options(${SILKWORM_SANITIZE_COMPILER_OPTIONS})
+  add_link_options(${SILKWORM_SANITIZE_COMPILER_OPTIONS})
+  add_definitions(-DSILKWORM_SANITIZE)
+endif()

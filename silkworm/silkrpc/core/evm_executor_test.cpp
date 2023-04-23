@@ -74,7 +74,7 @@ TEST_CASE("EVMExecutor") {
         boost::asio::io_context& io_context = my_pool.next_io_context();
 
         state::RemoteState remote_state{io_context, tx_database, block_number};
-        EVMExecutor executor{io_context, *chain_config_ptr, workers, remote_state};
+        EVMExecutor executor{*chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}), boost::asio::use_future);
         auto result = execution_result.get();
         my_pool.stop();
@@ -103,7 +103,7 @@ TEST_CASE("EVMExecutor") {
 
         boost::asio::io_context& io_context = my_pool.next_io_context();
         state::RemoteState remote_state{io_context, tx_database, block_number};
-        EVMExecutor executor{io_context, *chain_config_ptr, workers, remote_state};
+        EVMExecutor executor{*chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}), boost::asio::use_future);
         auto result = execution_result.get();
         my_pool.stop();
@@ -133,7 +133,7 @@ TEST_CASE("EVMExecutor") {
 
         boost::asio::io_context& io_context = my_pool.next_io_context();
         state::RemoteState remote_state{io_context, tx_database, block_number};
-        EVMExecutor executor{io_context, *chain_config_ptr, workers, remote_state};
+        EVMExecutor executor{*chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}), boost::asio::use_future);
         auto result = execution_result.get();
         my_pool.stop();
@@ -163,7 +163,7 @@ TEST_CASE("EVMExecutor") {
 
         boost::asio::io_context& io_context = my_pool.next_io_context();
         state::RemoteState remote_state{io_context, tx_database, block_number};
-        EVMExecutor executor{io_context, *chain_config_ptr, workers, remote_state};
+        EVMExecutor executor{*chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}), boost::asio::use_future);
         auto result = execution_result.get();
         my_pool.stop();
@@ -193,7 +193,7 @@ TEST_CASE("EVMExecutor") {
 
         boost::asio::io_context& io_context = my_pool.next_io_context();
         state::RemoteState remote_state{io_context, tx_database, block_number};
-        EVMExecutor executor{io_context, *chain_config_ptr, workers, remote_state};
+        EVMExecutor executor{*chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}, false, /* gasBailout */ true), boost::asio::use_future);
         auto result = execution_result.get();
         executor.reset();
@@ -231,7 +231,7 @@ TEST_CASE("EVMExecutor") {
 
         boost::asio::io_context& io_context = my_pool.next_io_context();
         state::RemoteState remote_state{io_context, tx_database, block_number};
-        EVMExecutor executor{io_context, *chain_config_ptr, workers, remote_state};
+        EVMExecutor executor{*chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}, true, true), boost::asio::use_future);
         auto result = execution_result.get();
         my_pool.stop();
@@ -263,112 +263,112 @@ TEST_CASE("EVMExecutor") {
         0x20, 0x63, 0x61, 0x6c, 0x6c, 0x65, 0x72, 0x20, 0x69, 0x73, 0x20};
 
     SECTION("get_error_message(EVMC_FAILURE) with short error_data_1") {
-        const auto error_message = EVMExecutor<>::get_error_message(evmc_status_code::EVMC_FAILURE, short_error_data_1);
+        const auto error_message = EVMExecutor::get_error_message(evmc_status_code::EVMC_FAILURE, short_error_data_1);
         CHECK(error_message == "execution failed");  // only short answer because error_data is too short */
     }
 
     SECTION("get_error_message(EVMC_FAILURE) with short error_data_2") {
-        const auto error_message = EVMExecutor<>::get_error_message(evmc_status_code::EVMC_FAILURE, short_error_data_2);
+        const auto error_message = EVMExecutor::get_error_message(evmc_status_code::EVMC_FAILURE, short_error_data_2);
         CHECK(error_message == "execution failed");  // only short answer because error_data is too short */
     }
 
     SECTION("get_error_message(EVMC_FAILURE) with short error_data_3") {
-        const auto error_message = EVMExecutor<>::get_error_message(evmc_status_code::EVMC_FAILURE, short_error_data_3);
+        const auto error_message = EVMExecutor::get_error_message(evmc_status_code::EVMC_FAILURE, short_error_data_3);
         CHECK(error_message == "execution failed");  // only short answer because error_data is too short */
     }
 
     SECTION("get_error_message(EVMC_FAILURE) with short error_data_4") {
-        const auto error_message = EVMExecutor<>::get_error_message(evmc_status_code::EVMC_FAILURE, short_error_data_4);
+        const auto error_message = EVMExecutor::get_error_message(evmc_status_code::EVMC_FAILURE, short_error_data_4);
         CHECK(error_message == "execution failed");  // only short answer because error_data is too short */
     }
 
     SECTION("get_error_message(EVMC_FAILURE) with full error") {
-        const auto error_message = EVMExecutor<>::get_error_message(evmc_status_code::EVMC_FAILURE, error_data);
+        const auto error_message = EVMExecutor::get_error_message(evmc_status_code::EVMC_FAILURE, error_data);
         CHECK(error_message == "execution failed: Ownable: caller is not the owner");
     }
 
     SECTION("get_error_message(EVMC_FAILURE) with short error") {
-        const auto error_message = EVMExecutor<>::get_error_message(evmc_status_code::EVMC_FAILURE, error_data, false);
+        const auto error_message = EVMExecutor::get_error_message(evmc_status_code::EVMC_FAILURE, error_data, false);
         CHECK(error_message == "execution failed");
     }
 
     SECTION("get_error_message(EVMC_REVERT) with short error") {
-        const auto error_message = EVMExecutor<>::get_error_message(evmc_status_code::EVMC_REVERT, error_data, false);
+        const auto error_message = EVMExecutor::get_error_message(evmc_status_code::EVMC_REVERT, error_data, false);
         CHECK(error_message == "execution reverted");
     }
 
     SECTION("get_error_message(EVMC_OUT_OF_GAS) with short error") {
-        const auto error_message = EVMExecutor<>::get_error_message(evmc_status_code::EVMC_OUT_OF_GAS, error_data, false);
+        const auto error_message = EVMExecutor::get_error_message(evmc_status_code::EVMC_OUT_OF_GAS, error_data, false);
         CHECK(error_message == "out of gas");
     }
 
     SECTION("get_error_message(EVMC_INVALID_INSTRUCTION) with short error") {
-        const auto error_message = EVMExecutor<>::get_error_message(evmc_status_code::EVMC_INVALID_INSTRUCTION, error_data, false);
+        const auto error_message = EVMExecutor::get_error_message(evmc_status_code::EVMC_INVALID_INSTRUCTION, error_data, false);
         CHECK(error_message == "invalid instruction");
     }
 
     SECTION("get_error_message(EVMC_UNDEFINED_INSTRUCTION) with short error") {
-        const auto error_message = EVMExecutor<>::get_error_message(evmc_status_code::EVMC_UNDEFINED_INSTRUCTION, error_data, false);
+        const auto error_message = EVMExecutor::get_error_message(evmc_status_code::EVMC_UNDEFINED_INSTRUCTION, error_data, false);
         CHECK(error_message == "invalid opcode");
     }
 
     SECTION("get_error_message(EVMC_STACK_OVERFLOW) with short error") {
-        const auto error_message = EVMExecutor<>::get_error_message(evmc_status_code::EVMC_STACK_OVERFLOW, error_data, false);
+        const auto error_message = EVMExecutor::get_error_message(evmc_status_code::EVMC_STACK_OVERFLOW, error_data, false);
         CHECK(error_message == "stack overflow");
     }
 
     SECTION("get_error_message(EVMC_STACK_UNDERFLOW) with short error") {
-        const auto error_message = EVMExecutor<>::get_error_message(evmc_status_code::EVMC_STACK_UNDERFLOW, error_data, false);
+        const auto error_message = EVMExecutor::get_error_message(evmc_status_code::EVMC_STACK_UNDERFLOW, error_data, false);
         CHECK(error_message == "stack underflow");
     }
 
     SECTION("get_error_message(EVMC_BAD_JUMP_DESTINATION) with short error") {
-        const auto error_message = EVMExecutor<>::get_error_message(evmc_status_code::EVMC_BAD_JUMP_DESTINATION, error_data, false);
+        const auto error_message = EVMExecutor::get_error_message(evmc_status_code::EVMC_BAD_JUMP_DESTINATION, error_data, false);
         CHECK(error_message == "invalid jump destination");
     }
 
     SECTION("get_error_message(EVMC_INVALID_MEMORY_ACCESS) with short error") {
-        const auto error_message = EVMExecutor<>::get_error_message(evmc_status_code::EVMC_INVALID_MEMORY_ACCESS, error_data, false);
+        const auto error_message = EVMExecutor::get_error_message(evmc_status_code::EVMC_INVALID_MEMORY_ACCESS, error_data, false);
         CHECK(error_message == "invalid memory access");
     }
 
     SECTION("get_error_message(EVMC_CALL_DEPTH_EXCEEDED) with short error") {
-        const auto error_message = EVMExecutor<>::get_error_message(evmc_status_code::EVMC_CALL_DEPTH_EXCEEDED, error_data, false);
+        const auto error_message = EVMExecutor::get_error_message(evmc_status_code::EVMC_CALL_DEPTH_EXCEEDED, error_data, false);
         CHECK(error_message == "call depth exceeded");
     }
 
     SECTION("get_error_message(EVMC_STATIC_MODE_VIOLATION) with short error") {
-        const auto error_message = EVMExecutor<>::get_error_message(evmc_status_code::EVMC_STATIC_MODE_VIOLATION, error_data, false);
+        const auto error_message = EVMExecutor::get_error_message(evmc_status_code::EVMC_STATIC_MODE_VIOLATION, error_data, false);
         CHECK(error_message == "static mode violation");
     }
 
     SECTION("get_error_message(EVMC_PRECOMPILE_FAILURE) with short error") {
-        const auto error_message = EVMExecutor<>::get_error_message(evmc_status_code::EVMC_PRECOMPILE_FAILURE, error_data, false);
+        const auto error_message = EVMExecutor::get_error_message(evmc_status_code::EVMC_PRECOMPILE_FAILURE, error_data, false);
         CHECK(error_message == "precompile failure");
     }
 
     SECTION("get_error_message(EVMC_CONTRACT_VALIDATION_FAILURE) with short error") {
-        const auto error_message = EVMExecutor<>::get_error_message(evmc_status_code::EVMC_CONTRACT_VALIDATION_FAILURE, error_data, false);
+        const auto error_message = EVMExecutor::get_error_message(evmc_status_code::EVMC_CONTRACT_VALIDATION_FAILURE, error_data, false);
         CHECK(error_message == "contract validation failure");
     }
 
     SECTION("get_error_message(EVMC_ARGUMENT_OUT_OF_RANGE) with short error") {
-        const auto error_message = EVMExecutor<>::get_error_message(evmc_status_code::EVMC_ARGUMENT_OUT_OF_RANGE, error_data, false);
+        const auto error_message = EVMExecutor::get_error_message(evmc_status_code::EVMC_ARGUMENT_OUT_OF_RANGE, error_data, false);
         CHECK(error_message == "argument out of range");
     }
 
     SECTION("get_error_message(wrong status_code) with short error") {
-        const auto error_message = EVMExecutor<>::get_error_message(8888, error_data, false);
+        const auto error_message = EVMExecutor::get_error_message(8888, error_data, false);
         CHECK(error_message == "unknown error code");
     }
 
     SECTION("get_error_message(EVMC_WASM_UNREACHABLE_INSTRUCTION) with short error") {
-        const auto error_message = EVMExecutor<>::get_error_message(evmc_status_code::EVMC_WASM_UNREACHABLE_INSTRUCTION, error_data, false);
+        const auto error_message = EVMExecutor::get_error_message(evmc_status_code::EVMC_WASM_UNREACHABLE_INSTRUCTION, error_data, false);
         CHECK(error_message == "wasm unreachable instruction");
     }
 
     SECTION("get_error_message(EVMC_WASM_TRAP) with short error") {
-        const auto error_message = EVMExecutor<>::get_error_message(evmc_status_code::EVMC_WASM_TRAP, error_data, false);
+        const auto error_message = EVMExecutor::get_error_message(evmc_status_code::EVMC_WASM_TRAP, error_data, false);
         CHECK(error_message == "wasm trap");
     }
 }

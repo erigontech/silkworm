@@ -53,10 +53,10 @@ TEST_CASE("string_from_H512", "[silkworm][rpc][util]") {
     }
 
     SECTION("non-empty H512", "[silkworm][rpc][util]") {
-        types::H128* hi_hi = new types::H128();
-        types::H128* hi_lo = new types::H128();
-        types::H128* lo_hi = new types::H128();
-        types::H128* lo_lo = new types::H128();
+        auto hi_hi = new types::H128();
+        auto hi_lo = new types::H128();
+        auto lo_hi = new types::H128();
+        auto lo_lo = new types::H128();
         hi_hi->set_hi(0x7F);
         hi_hi->set_lo(0x07);
         hi_lo->set_hi(0x6F);
@@ -65,8 +65,8 @@ TEST_CASE("string_from_H512", "[silkworm][rpc][util]") {
         lo_hi->set_lo(0x02);
         lo_lo->set_hi(0x1F);
         lo_lo->set_lo(0x01);
-        types::H256* hi = new types::H256{};
-        types::H256* lo = new types::H256{};
+        auto hi = new types::H256{};
+        auto lo = new types::H256{};
         hi->set_allocated_hi(hi_hi);
         hi->set_allocated_lo(hi_lo);
         lo->set_allocated_hi(lo_hi);
@@ -85,8 +85,8 @@ TEST_CASE("bytes32_from_H256", "[silkworm][rpc][util]") {
     }
 
     SECTION("non-empty H256", "[silkworm][rpc][util]") {
-        types::H128* hi = new types::H128();
-        types::H128* lo = new types::H128();
+        auto hi = new types::H128();
+        auto lo = new types::H128();
         hi->set_hi(0x7F);
         hi->set_lo(0x07);
         lo->set_hi(0x6F);
@@ -104,7 +104,7 @@ TEST_CASE("address_from_H160", "[silkworm][rpc][util]") {
     }
 
     SECTION("non-empty H160", "[silkworm][rpc][util]") {
-        types::H128* hi = new types::H128();
+        auto hi = new types::H128();
         hi->set_lo(0x07);
         hi->set_hi(0x7F);
         auto h160_ptr = std::make_unique<types::H160>();
@@ -114,12 +114,25 @@ TEST_CASE("address_from_H160", "[silkworm][rpc][util]") {
     }
 }
 
+TEST_CASE("bytes_from_H128", "[silkworm][rpc][util]") {
+    SECTION("empty H128", "[silkworm][rpc][util]") {
+        CHECK_NOTHROW(bytes_from_H128(::types::H128{}).empty());
+    }
+
+    SECTION("non-empty H128", "[silkworm][rpc][util]") {
+        auto h128_ptr = std::make_unique<::types::H128>();
+        h128_ptr->set_lo(0x07);
+        h128_ptr->set_hi(0x7F);
+        CHECK(bytes_from_H128(*h128_ptr) == *from_hex("0x000000000000007f0000000000000007"));
+    }
+}
+
 TEST_CASE("invertibility", "[silkworm][rpc][util]") {
     SECTION("H512<->string", "[silkworm][rpc][util]") {
-        types::H128* hi_hi = new types::H128();
-        types::H128* hi_lo = new types::H128();
-        types::H128* lo_hi = new types::H128();
-        types::H128* lo_lo = new types::H128();
+        auto hi_hi = new types::H128();
+        auto hi_lo = new types::H128();
+        auto lo_hi = new types::H128();
+        auto lo_lo = new types::H128();
         hi_hi->set_hi(0x7F);
         hi_hi->set_lo(0x07);
         hi_lo->set_hi(0x6F);
@@ -128,8 +141,8 @@ TEST_CASE("invertibility", "[silkworm][rpc][util]") {
         lo_hi->set_lo(0x02);
         lo_lo->set_hi(0x1F);
         lo_lo->set_lo(0x01);
-        types::H256* hi = new types::H256{};
-        types::H256* lo = new types::H256{};
+        auto hi = new types::H256{};
+        auto lo = new types::H256{};
         hi->set_allocated_hi(hi_hi);
         hi->set_allocated_lo(hi_lo);
         lo->set_allocated_hi(lo_hi);
@@ -147,8 +160,8 @@ TEST_CASE("invertibility", "[silkworm][rpc][util]") {
     }
 
     SECTION("H256<->bytes32", "[silkworm][rpc][util]") {
-        types::H128* hi = new types::H128();
-        types::H128* lo = new types::H128();
+        auto hi = new types::H128();
+        auto lo = new types::H128();
         hi->set_hi(0x7F);
         hi->set_lo(0x07);
         lo->set_hi(0x6F);
@@ -166,7 +179,7 @@ TEST_CASE("invertibility", "[silkworm][rpc][util]") {
     }
 
     SECTION("H160<->address", "[silkworm][rpc][util]") {
-        types::H128* hi = new types::H128();
+        auto hi = new types::H128();
         hi->set_hi(0x7F);
         auto h160_ptr1 = std::make_unique<types::H160>();
         h160_ptr1->set_lo(0xFF);

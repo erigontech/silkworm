@@ -51,17 +51,17 @@ void to_json(nlohmann::json& json, const FeeHistory& fh) {
     }
 }
 
-boost::asio::awaitable<FeeHistory> FeeHistoryOracle::fee_history(uint64_t newest_block, uint64_t block_count, const std::vector<int32_t>& reward_percentile) {
+boost::asio::awaitable<FeeHistory> FeeHistoryOracle::fee_history(uint64_t newest_block, uint64_t block_count, const std::vector<std::int8_t>& reward_percentile) {
     FeeHistory fee_history;
     if (block_count < 1) {
         co_return fee_history;
     }
-    if (block_count > DEFAULT_MAX_FEE_HISTORY) {
-        SILKRPC_WARN << "FeeHistoryOracle::fee_history fee history length to long: requested " << block_count << " truncated to " << DEFAULT_MAX_FEE_HISTORY << "\n";
-        block_count = DEFAULT_MAX_FEE_HISTORY;
+    if (block_count > kDefaultMaxFeeHistory) {
+        SILKRPC_WARN << "FeeHistoryOracle::fee_history fee history length to long: requested " << block_count << " truncated to " << kDefaultMaxFeeHistory << "\n";
+        block_count = kDefaultMaxFeeHistory;
     }
 
-    for (uint32_t idx = 0; idx < reward_percentile.size(); idx++) {
+    for (size_t idx = 0; idx < reward_percentile.size(); idx++) {
         if (reward_percentile[idx] < 0 || reward_percentile[idx] > 100) {
             std::ostringstream ss;
             ss << "ErrInvalidPercentile: " << std::dec << reward_percentile[idx];
@@ -78,7 +78,7 @@ boost::asio::awaitable<FeeHistory> FeeHistoryOracle::fee_history(uint64_t newest
         }
     }
 
-    auto max_history = reward_percentile.size() > 0 ? DEFAULT_MAX_BLOCK_HISTORY : DEFAULT_MAX_HEADER_HISTORY;
+    auto max_history = reward_percentile.size() > 0 ? kDefaultMaxBlockHistory : kDefaultMaxHeaderHistory;
 
     auto block_range = co_await resolve_block_range(newest_block, block_count, max_history);
 
@@ -114,25 +114,89 @@ boost::asio::awaitable<FeeHistory> FeeHistoryOracle::fee_history(uint64_t newest
         fee_history.gas_used_ratio[index] = block_fees.gas_used_ratio;
     }
     // TODO firstMissing management as in erigon
-    fee_history.oldest_block = newest_block;
-    fee_history.base_fees_per_gas = {0x13c723946e, 0x163fe26534};
-    fee_history.gas_used_ratio = {0.9998838666666666};
-    fee_history.rewards = {Rewards{0x59682f00, 0x9502f900}};
 
     co_return fee_history;
 }
 
-boost::asio::awaitable<BlockRange> FeeHistoryOracle::resolve_block_range(uint64_t /*last_block*/, uint64_t /*block_count*/, uint64_t /*max_history*/) {
-    /*const auto block_with_hash = co_await block_provider_(last_block);
-    const auto receipts = co_await receipts_provider_(block_with_hash);*/
+boost::asio::awaitable<BlockRange> FeeHistoryOracle::resolve_block_range(uint64_t last_block, uint64_t block_count, uint64_t max_history) {
+    const auto block_with_hash = co_await block_provider_(last_block);
+    const auto receipts = co_await receipts_provider_(block_with_hash);
 
-    BlockRange block_range{0};
+    if (max_history != 0) {
+        // limit retrieval to the given number of latest blocks
+        const auto too_old_count = last_block - max_history + block_count;
+        if (too_old_count > 0) {
+            // tooOldCount is the number of requested blocks that are too old to be served
+            if (block_count > too_old_count) {
+                block_count -= too_old_count;
+            } else {
+                co_return BlockRange{0};
+            }
+        }
+    }
+
+    BlockRange block_range{block_count, last_block, block_with_hash, receipts};
 
     co_return block_range;
 }
 
-boost::asio::awaitable<void> FeeHistoryOracle::process_block(BlockFees& /*block_fees*/, const std::vector<int32_t>& /*reward_percentile*/) {
+boost::asio::awaitable<void> FeeHistoryOracle::process_block(BlockFees& block_fees, const std::vector<std::int8_t>& reward_percentile) {
+    auto& header = block_fees.block.block.header;
+
+    block_fees.base_fee = header.base_fee_per_gas.value_or(0);
+    block_fees.gas_used_ratio = header.gas_used / header.gas_limit;
+
+    if (is_london(header.number + 1)) {
+        block_fees.next_base_fee = calculate_base_fee(header);
+    }
+
+    if (reward_percentile.size() == 0) {
+        co_return;
+    }
+    if (block_fees.receipts.size() != block_fees.block.block.transactions.size()) {
+        co_return;
+    }
+
+    if (block_fees.block.block.transactions.size() == 0) {
+        std::fill(block_fees.rewards.begin(), block_fees.rewards.end(), 0);
+        co_return;
+    }
+
+    std::map<intx::uint256, std::uint64_t> gas_and_rewards;
+    for (size_t idx = 0; idx < block_fees.block.block.transactions.size(); idx++) {
+        const auto reward = block_fees.block.block.transactions[idx].effective_gas_price(block_fees.base_fee);
+        gas_and_rewards.emplace(reward, block_fees.receipts[idx].gas_used);
+    }
+
+    auto index = gas_and_rewards.begin();
+    auto last = --gas_and_rewards.end();
+    auto sum_gas_used = index->second;
+    for (size_t idx = 0; idx < reward_percentile.size(); idx++) {
+        std::uint8_t percentile = static_cast<std::uint8_t>(reward_percentile[idx]);
+        std::uint64_t threshold_gas_used = header.gas_used * percentile / 100;
+        while (index != last) {
+            index++;
+            if (sum_gas_used < threshold_gas_used) {
+                sum_gas_used += index->second;
+            }
+        }
+        block_fees.rewards[idx] = index->first;
+    }
+
     co_return;
+}
+
+bool FeeHistoryOracle::is_london(uint64_t number) {
+    const auto london = config_.london_block.value_or(0);
+    return london < number ? false : true;
+}
+
+intx::uint256 FeeHistoryOracle::calculate_base_fee(const BlockHeader& header) {
+    if (!is_london(header.number)) {
+        return 0;  // TODO (sixtysixter) get initial base fee from params
+    }
+
+    return header.base_fee_per_gas.value_or(0);
 }
 
 }  // namespace silkworm::rpc::fee_history

@@ -2034,7 +2034,7 @@ awaitable<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request
         block_count = params[0].get<uint64_t>();
     }
     const auto newest_block = params[1].get<std::string>();
-    const auto reward_percentile = params[2].get<std::vector<int32_t>>();
+    const auto reward_percentile = params[2].get<std::vector<std::int8_t>>();
 
     SILKRPC_LOG << "block_count: " << block_count
                 << ", newest_block: " << newest_block
@@ -2052,10 +2052,13 @@ awaitable<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request
             return core::get_receipts(tx_database, block_with_hash);
         };
 
-        rpc::fee_history::FeeHistoryOracle oracle{block_provider, receipts_provider};
+        const auto chain_id = co_await core::rawdb::read_chain_id(tx_database);
+        const auto chain_config_ptr = lookup_chain_config(chain_id);
 
-        /*const auto block_number = co_await core::get_block_number(newest_block, tx_database);*/
-        auto fee_history = co_await oracle.fee_history(4417196, block_count, reward_percentile);
+        rpc::fee_history::FeeHistoryOracle oracle{*chain_config_ptr, block_provider, receipts_provider};
+
+        const auto block_number = co_await core::get_block_number(newest_block, tx_database);
+        auto fee_history = co_await oracle.fee_history(block_number, block_count, reward_percentile);
 
         if (fee_history.error) {
             reply = make_json_error(request["id"], -32000, fee_history.error.value());

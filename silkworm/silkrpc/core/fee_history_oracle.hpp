@@ -34,17 +34,17 @@
 
 namespace silkworm::rpc::fee_history {
 
-constexpr uint64_t kLatestBlockNumber{std::numeric_limits<uint64_t>::max()};
-constexpr uint64_t kPendingBlockNumber{std::numeric_limits<uint64_t>::max() - 1};
+// constexpr uint64_t kLatestBlockNumber{std::numeric_limits<uint64_t>::max()};
+// constexpr uint64_t kPendingBlockNumber{std::numeric_limits<uint64_t>::max() - 1};
 
 typedef std::function<boost::asio::awaitable<silkworm::BlockWithHash>(uint64_t)> BlockProvider;
 typedef std::function<boost::asio::awaitable<rpc::Receipts>(const BlockWithHash&)> ReceiptsProvider;
 
-typedef std::vector<std::uint64_t> Rewards;
+typedef std::vector<intx::uint256> Rewards;
 
 struct FeeHistory {
     uint64_t oldest_block{0};
-    std::vector<std::uint64_t> base_fees_per_gas;
+    std::vector<intx::uint256> base_fees_per_gas;
     std::vector<double> gas_used_ratio;
     std::vector<Rewards> rewards;
     std::optional<std::string> error{std::nullopt};
@@ -64,30 +64,33 @@ struct BlockFees {
     BlockWithHash block;
     rpc::Receipts receipts;
     Rewards rewards;
-    std::uint64_t base_fee;
-    std::uint64_t next_base_fee;
+    intx::uint256 base_fee;
+    intx::uint256 next_base_fee;
     double gas_used_ratio;
 };
 
 class FeeHistoryOracle {
   public:
-    explicit FeeHistoryOracle(const BlockProvider& block_provider, ReceiptsProvider& receipts_provider)
-        : block_provider_(block_provider), receipts_provider_(receipts_provider) {}
+    explicit FeeHistoryOracle(const silkworm::ChainConfig& config, const BlockProvider& block_provider, ReceiptsProvider& receipts_provider)
+        : config_{config}, block_provider_(block_provider), receipts_provider_(receipts_provider) {}
     virtual ~FeeHistoryOracle() {}
 
     FeeHistoryOracle(const FeeHistoryOracle&) = delete;
     FeeHistoryOracle& operator=(const FeeHistoryOracle&) = delete;
 
-    boost::asio::awaitable<FeeHistory> fee_history(uint64_t newest_block, uint64_t block_count, const std::vector<int32_t>& reward_percentile);
+    boost::asio::awaitable<FeeHistory> fee_history(uint64_t newest_block, uint64_t block_count, const std::vector<std::int8_t>& reward_percentile);
 
   private:
-    static const std::uint32_t DEFAULT_MAX_FEE_HISTORY = 1024;
-    static const std::uint32_t DEFAULT_MAX_HEADER_HISTORY = 300;
-    static const std::uint32_t DEFAULT_MAX_BLOCK_HISTORY = 5;
+    static const std::uint32_t kDefaultMaxFeeHistory = 1024;
+    static const std::uint32_t kDefaultMaxHeaderHistory = 300;
+    static const std::uint32_t kDefaultMaxBlockHistory = 5;
 
     boost::asio::awaitable<BlockRange> resolve_block_range(uint64_t newest_block, uint64_t block_count, uint64_t max_history);
-    boost::asio::awaitable<void> process_block(BlockFees& block_fees, const std::vector<int32_t>& reward_percentile);
+    boost::asio::awaitable<void> process_block(BlockFees& block_fees, const std::vector<std::int8_t>& reward_percentile);
+    bool is_london(uint64_t number);
+    intx::uint256 calculate_base_fee(const BlockHeader& header);
 
+    const silkworm::ChainConfig& config_;
     const BlockProvider& block_provider_;
     const ReceiptsProvider& receipts_provider_;
 };

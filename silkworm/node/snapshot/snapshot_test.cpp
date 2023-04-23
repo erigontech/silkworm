@@ -21,7 +21,6 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/core/common/endian.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/test/log.hpp>
@@ -68,7 +67,7 @@ TEST_CASE("Snapshot::reopen_segment", "[silkworm][snapshot][snapshot]") {
 TEST_CASE("Snapshot::for_each_item", "[silkworm][snapshot][snapshot]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     test::HelloWorldSnapshotFile hello_world_snapshot_file{};
-    Decompressor decoder{hello_world_snapshot_file.path()};
+    huffman::Decompressor decoder{hello_world_snapshot_file.path()};
     Snapshot_ForTest tmp_snapshot{hello_world_snapshot_file.path(), 1'000, 2'000};
     tmp_snapshot.reopen_segment();
     CHECK(!tmp_snapshot.empty());
@@ -84,7 +83,7 @@ TEST_CASE("Snapshot::for_each_item", "[silkworm][snapshot][snapshot]") {
 TEST_CASE("Snapshot::close", "[silkworm][snapshot][snapshot]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     test::HelloWorldSnapshotFile hello_world_snapshot_file{};
-    Decompressor decoder{hello_world_snapshot_file.path()};
+    huffman::Decompressor decoder{hello_world_snapshot_file.path()};
     Snapshot_ForTest tmp_snapshot{hello_world_snapshot_file.path(), 1'000, 2'000};
     tmp_snapshot.reopen_segment();
     CHECK_NOTHROW(tmp_snapshot.close());

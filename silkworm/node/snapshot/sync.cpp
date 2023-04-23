@@ -165,7 +165,9 @@ bool SnapshotSync::index_snapshots(db::RWTxn& txn, const std::vector<std::string
     }
 
     const auto max_block_available = repository_.max_block_available();
-    log::Info() << "[Snapshots] max block available: " << max_block_available;
+    log::Info() << "[Snapshots] max block available: " << max_block_available
+                << " (segment max block: " << repository_.segment_max_block()
+                << ", idx max block: " << repository_.idx_max_block() << ")";
 
     const auto snapshot_config = snapshot::Config::lookup_known_config(config_.chain_id, snapshot_file_names);
     const auto configured_max_block_number = snapshot_config->max_block_number();
@@ -246,14 +248,11 @@ void SnapshotSync::build_missing_indexes() {
     // Determine the missing indexes and build them in parallel
     const auto missing_indexes = repository_.missing_indexes();
     for (const auto& index : missing_indexes) {
-        log::Info() << "[Snapshots] Build index: " << index->path().filename() << " start";
-        index->build();
-        log::Info() << "[Snapshots] Build index: " << index->path().filename() << " end";
-        /*workers.submit([index]() {
+        workers.submit([=]() {
             log::Info() << "[Snapshots] Build index: " << index->path().filename() << " start";
             index->build();
             log::Info() << "[Snapshots] Build index: " << index->path().filename() << " end";
-        });*/
+        });
     }
 
     // Wait for all missing indexes to be built or stop request

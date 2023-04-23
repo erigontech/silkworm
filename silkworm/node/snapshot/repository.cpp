@@ -29,10 +29,27 @@ namespace fs = std::filesystem;
 
 SnapshotRepository::SnapshotRepository(SnapshotSettings settings) : settings_(std::move(settings)) {}
 
+SnapshotRepository::~SnapshotRepository() {
+    close();
+}
+
 void SnapshotRepository::reopen_folder() {
     SILK_INFO << "Reopen snapshot repository folder: " << settings_.repository_dir.string();
     SnapshotPathList segment_files = get_segment_files();
     reopen_list(segment_files, /*.optimistic=*/false);
+}
+
+void SnapshotRepository::close() {
+    SILK_INFO << "Close snapshot repository folder: " << settings_.repository_dir.string();
+    for (const auto& [_, header_seg] : this->header_segments_) {
+        header_seg->close();
+    }
+    for (const auto& [_, body_seg] : this->body_segments_) {
+        body_seg->close();
+    }
+    for (const auto& [_, tx_seg] : this->tx_segments_) {
+        tx_seg->close();
+    }
 }
 
 void SnapshotRepository::verify() {

@@ -69,7 +69,7 @@ class Snapshot {
     std::filesystem::path path_;
     BlockNum block_from_{0};
     BlockNum block_to_{0};
-    Decompressor decoder_;
+    huffman::Decompressor decoder_;
 };
 
 class HeaderSnapshot : public Snapshot {

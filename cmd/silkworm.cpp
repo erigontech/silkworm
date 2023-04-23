@@ -597,6 +597,7 @@ int main(int argc, char* argv[]) {
             // Snapshot sync - download chain from peers using snapshot files
             SnapshotSync snapshot_sync{snapshot_settings, node_settings.chain_config.value()};
             snapshot_sync.download_and_index_snapshots(rw_txn);
+            rw_txn.commit_and_stop();
         } else {
             sw_log::Info() << "Snapshot sync disabled, no snapshot must be downloaded";
         }

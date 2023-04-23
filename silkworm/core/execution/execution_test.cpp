@@ -19,9 +19,9 @@
 #include <catch2/catch.hpp>
 #include <ethash/keccak.hpp>
 
-#include <silkworm/core/chain/protocol_param.hpp>
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/execution/address.hpp>
+#include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
 #include <silkworm/core/types/account.hpp>
@@ -95,7 +95,7 @@ TEST_CASE("Execute two blocks") {
 
     std::optional<Account> miner_account{state.read_account(miner)};
     REQUIRE(miner_account);
-    CHECK(miner_account->balance == param::kBlockRewardConstantinople);
+    CHECK(miner_account->balance == protocol::kBlockRewardConstantinople);
 
     // ---------------------------------------
     // Execute second block
@@ -121,7 +121,7 @@ TEST_CASE("Execute two blocks") {
 
     miner_account = state.read_account(miner);
     REQUIRE(miner_account != std::nullopt);
-    CHECK(miner_account->balance > 2 * param::kBlockRewardConstantinople);
-    CHECK(miner_account->balance < 3 * param::kBlockRewardConstantinople);
+    CHECK(miner_account->balance > 2 * protocol::kBlockRewardConstantinople);
+    CHECK(miner_account->balance < 3 * protocol::kBlockRewardConstantinople);
 }
 }  // namespace silkworm

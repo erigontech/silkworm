@@ -17,11 +17,12 @@
 #include "validation.hpp"
 
 #include <silkworm/core/chain/intrinsic_gas.hpp>
-#include <silkworm/core/chain/protocol_param.hpp>
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/crypto/secp256k1n.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
+
+#include "param.hpp"
 
 namespace silkworm::protocol {
 
@@ -81,7 +82,7 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
 
     // EIP-3860: Limit and meter initcode
     const bool contract_creation{!txn.to};
-    if (rev >= EVMC_SHANGHAI && contract_creation && txn.data.size() > param::kMaxInitCodeSize) {
+    if (rev >= EVMC_SHANGHAI && contract_creation && txn.data.size() > kMaxInitCodeSize) {
         return ValidationResult::kMaxInitCodeSizeExceeded;
     }
 
@@ -91,7 +92,7 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
             return ValidationResult::kNoBlobs;
         }
         for (const Hash& h : txn.blob_versioned_hashes) {
-            if (h.bytes[0] != param::kBlobCommitmentVersionKzg) {
+            if (h.bytes[0] != kBlobCommitmentVersionKzg) {
                 return ValidationResult::kWrongBlobCommitmentVersion;
             }
         }
@@ -130,10 +131,10 @@ std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& parent
     }
 
     if (!parent.base_fee_per_gas) {
-        return param::kInitialBaseFee;
+        return kInitialBaseFee;
     }
 
-    const uint64_t parent_gas_target{parent.gas_limit / param::kElasticityMultiplier};
+    const uint64_t parent_gas_target{parent.gas_limit / kElasticityMultiplier};
     const intx::uint256& parent_base_fee_per_gas{*parent.base_fee_per_gas};
 
     if (parent.gas_used == parent_gas_target) {
@@ -143,7 +144,7 @@ std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& parent
     if (parent.gas_used > parent_gas_target) {
         const intx::uint256 gas_used_delta{parent.gas_used - parent_gas_target};
         intx::uint256 base_fee_per_gas_delta{parent_base_fee_per_gas * gas_used_delta / parent_gas_target /
-                                             param::kBaseFeeMaxChangeDenominator};
+                                             kBaseFeeMaxChangeDenominator};
         if (base_fee_per_gas_delta < 1) {
             base_fee_per_gas_delta = 1;
         }
@@ -151,7 +152,7 @@ std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& parent
     } else {
         const intx::uint256 gas_used_delta{parent_gas_target - parent.gas_used};
         const intx::uint256 base_fee_per_gas_delta{parent_base_fee_per_gas * gas_used_delta / parent_gas_target /
-                                                   param::kBaseFeeMaxChangeDenominator};
+                                                   kBaseFeeMaxChangeDenominator};
         if (parent_base_fee_per_gas > base_fee_per_gas_delta) {
             return parent_base_fee_per_gas - base_fee_per_gas_delta;
         } else {
@@ -167,13 +168,13 @@ std::optional<intx::uint256> calc_excess_data_gas(const BlockHeader& parent,
         return std::nullopt;
     }
 
-    const uint64_t consumed_data_gas{num_blobs * param::kDataGasPerBlob};
+    const uint64_t consumed_data_gas{num_blobs * kDataGasPerBlob};
     const intx::uint256 parent_excess_data_gas{parent.excess_data_gas.value_or(0)};
 
-    if (parent_excess_data_gas + consumed_data_gas < param::kTargetDataGasPerBlock) {
+    if (parent_excess_data_gas + consumed_data_gas < kTargetDataGasPerBlock) {
         return 0;
     } else {
-        return parent_excess_data_gas + consumed_data_gas - param::kTargetDataGasPerBlock;
+        return parent_excess_data_gas + consumed_data_gas - kTargetDataGasPerBlock;
     }
 }
 

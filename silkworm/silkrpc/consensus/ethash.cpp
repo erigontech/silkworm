@@ -16,7 +16,7 @@
 
 #include "ethash.hpp"
 
-#include <silkworm/core/chain/protocol_param.hpp>
+#include <silkworm/core/protocol/param.hpp>
 
 namespace silkworm::rpc::ethash {
 
@@ -28,12 +28,12 @@ BlockReward compute_reward(const rpc::ChainConfig& config, const silkworm::Block
     const auto chain_config = cc_optional.value();
     const auto revision = chain_config.revision(block.header.number, /*block_time=*/0);
     BlockReward block_reward;
-    block_reward.miner_reward = silkworm::param::kBlockRewardFrontier;
+    block_reward.miner_reward = protocol::kBlockRewardFrontier;
     if (revision > evmc_revision::EVMC_BYZANTIUM) {
-        block_reward.miner_reward = silkworm::param::kBlockRewardByzantium;
+        block_reward.miner_reward = protocol::kBlockRewardByzantium;
     }
     if (revision > evmc_revision::EVMC_CONSTANTINOPLE) {
-        block_reward.miner_reward = silkworm::param::kBlockRewardConstantinople;
+        block_reward.miner_reward = protocol::kBlockRewardConstantinople;
     }
 
     // Accumulate the rewards for the miner and any included uncles

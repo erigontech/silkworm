@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/core/chain/protocol_param.hpp>
+#include <silkworm/core/protocol/param.hpp>
 
 namespace silkworm {
 
@@ -49,7 +49,7 @@ TEST_CASE("EIP-2930 intrinsic gas") {
     };
 
     intx::uint128 g0{intrinsic_gas(txn, EVMC_ISTANBUL)};
-    CHECK(g0 == fee::kGTransaction + 2 * fee::kAccessListAddressCost + 2 * fee::kAccessListStorageKeyCost);
+    CHECK(g0 == protocol::fee::kGTransaction + 2 * protocol::fee::kAccessListAddressCost + 2 * protocol::fee::kAccessListStorageKeyCost);
 }
 
 }  // namespace silkworm

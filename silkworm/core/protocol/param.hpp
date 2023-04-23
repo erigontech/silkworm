@@ -20,7 +20,7 @@
 
 #include <silkworm/core/common/base.hpp>
 
-namespace silkworm {
+namespace silkworm::protocol {
 
 // Gas fee schedule—see Appendix G of the Yellow Paper
 // https://ethereum.github.io/yellowpaper/paper.pdf
@@ -41,34 +41,30 @@ namespace fee {
 
 }  // namespace fee
 
-namespace param {
+inline constexpr size_t kMaxCodeSize{0x6000};                // EIP-170
+inline constexpr size_t kMaxInitCodeSize{2 * kMaxCodeSize};  // EIP-3860
 
-    inline constexpr size_t kMaxCodeSize{0x6000};                // EIP-170
-    inline constexpr size_t kMaxInitCodeSize{2 * kMaxCodeSize};  // EIP-3860
+inline constexpr uint64_t kMaxExtraDataBytes{32};
 
-    inline constexpr uint64_t kMaxExtraDataBytes{32};
+inline constexpr uint64_t kBlockRewardFrontier{5 * kEther};
+inline constexpr uint64_t kBlockRewardByzantium{3 * kEther};       // EIP-649
+inline constexpr uint64_t kBlockRewardConstantinople{2 * kEther};  // EIP-1234
 
-    inline constexpr uint64_t kBlockRewardFrontier{5 * kEther};
-    inline constexpr uint64_t kBlockRewardByzantium{3 * kEther};       // EIP-649
-    inline constexpr uint64_t kBlockRewardConstantinople{2 * kEther};  // EIP-1234
+// EIP-3529: Reduction in refunds
+inline constexpr uint64_t kMaxRefundQuotientFrontier{2};
+inline constexpr uint64_t kMaxRefundQuotientLondon{5};
 
-    // EIP-3529: Reduction in refunds
-    inline constexpr uint64_t kMaxRefundQuotientFrontier{2};
-    inline constexpr uint64_t kMaxRefundQuotientLondon{5};
+// EIP-1559: Fee market change for ETH 1.0 chain
+inline constexpr uint64_t kInitialBaseFee{kGiga};
+inline constexpr uint64_t kBaseFeeMaxChangeDenominator{8};
+inline constexpr uint64_t kElasticityMultiplier{2};
 
-    // EIP-1559: Fee market change for ETH 1.0 chain
-    inline constexpr uint64_t kInitialBaseFee{kGiga};
-    inline constexpr uint64_t kBaseFeeMaxChangeDenominator{8};
-    inline constexpr uint64_t kElasticityMultiplier{2};
+// EIP-4844: Shard Blob Transactions
+inline constexpr uint8_t kBlobCommitmentVersionKzg{1};
+inline constexpr uint64_t kMaxDataGasPerBlock{1u << 19};
+inline constexpr uint64_t kTargetDataGasPerBlock{1u << 18};
+inline constexpr uint64_t kDataGasPerBlob{1u << 17};
+inline constexpr uint64_t kMinDataGasPrice{1};
+inline constexpr uint64_t kDataGasPriceUpdateFraction{2225652};
 
-    // EIP-4844: Shard Blob Transactions
-    inline constexpr uint8_t kBlobCommitmentVersionKzg{1};
-    inline constexpr uint64_t kMaxDataGasPerBlock{1u << 19};
-    inline constexpr uint64_t kTargetDataGasPerBlock{1u << 18};
-    inline constexpr uint64_t kDataGasPerBlob{1u << 17};
-    inline constexpr uint64_t kMinDataGasPrice{1};
-    inline constexpr uint64_t kDataGasPriceUpdateFraction{2225652};
-
-}  // namespace param
-
-}  // namespace silkworm
+}  // namespace silkworm::protocol

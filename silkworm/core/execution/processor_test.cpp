@@ -19,8 +19,8 @@
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 
-#include <silkworm/core/chain/protocol_param.hpp>
 #include <silkworm/core/common/test_util.hpp>
+#include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
 
 #include "address.hpp"
@@ -150,7 +150,7 @@ TEST_CASE("No refund on error") {
     txn.data.clear();
 
     // But then there's not enough gas for the BALANCE operation
-    txn.gas_limit = fee::kGTransaction + 5'020;
+    txn.gas_limit = protocol::fee::kGTransaction + 5'020;
 
     Receipt receipt2;
     processor.execute_transaction(txn, receipt2);
@@ -259,7 +259,7 @@ TEST_CASE("Self-destruct") {
     CHECK(processor.evm().state().exists(suicidal_address));
     CHECK(processor.evm().state().get_balance(suicidal_address) == 0);
 
-    CHECK(receipt2.cumulative_gas_used == receipt1.cumulative_gas_used + fee::kGTransaction);
+    CHECK(receipt2.cumulative_gas_used == receipt1.cumulative_gas_used + protocol::fee::kGTransaction);
 }
 
 TEST_CASE("Out of Gas during account re-creation") {

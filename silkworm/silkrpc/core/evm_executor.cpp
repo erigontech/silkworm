@@ -27,8 +27,8 @@
 #include <intx/intx.hpp>
 
 #include <silkworm/core/chain/intrinsic_gas.hpp>
-#include <silkworm/core/chain/protocol_param.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/protocol/param.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
@@ -153,8 +153,8 @@ std::string EVMExecutor::get_error_message(int64_t error_code, const Bytes& erro
 
 uint64_t EVMExecutor::refund_gas(const EVM& evm, const silkworm::Transaction& txn, uint64_t gas_left, uint64_t gas_refund) {
     const evmc_revision rev{evm.revision()};
-    const uint64_t max_refund_quotient{rev >= EVMC_LONDON ? param::kMaxRefundQuotientLondon
-                                                          : param::kMaxRefundQuotientFrontier};
+    const uint64_t max_refund_quotient{rev >= EVMC_LONDON ? protocol::kMaxRefundQuotientLondon
+                                                          : protocol::kMaxRefundQuotientFrontier};
     const uint64_t max_refund{(txn.gas_limit - gas_left) / max_refund_quotient};
     uint64_t refund = gas_refund < max_refund ? gas_refund : max_refund;  // min
     gas_left += refund;

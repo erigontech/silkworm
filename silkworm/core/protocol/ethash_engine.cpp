@@ -16,19 +16,20 @@
 
 #include "ethash_engine.hpp"
 
-#include <silkworm/core/chain/protocol_param.hpp>
 #include <silkworm/core/common/endian.hpp>
+
+#include "param.hpp"
 
 namespace silkworm::protocol {
 
 void EthashEngine::finalize(IntraBlockState& state, const Block& block, const evmc_revision revision) {
     intx::uint256 block_reward;
     if (revision >= EVMC_CONSTANTINOPLE) {
-        block_reward = param::kBlockRewardConstantinople;
+        block_reward = kBlockRewardConstantinople;
     } else if (revision >= EVMC_BYZANTIUM) {
-        block_reward = param::kBlockRewardByzantium;
+        block_reward = kBlockRewardByzantium;
     } else {
-        block_reward = param::kBlockRewardFrontier;
+        block_reward = kBlockRewardFrontier;
     }
 
     const uint64_t block_number{block.header.number};

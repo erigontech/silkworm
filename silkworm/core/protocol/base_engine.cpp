@@ -16,9 +16,10 @@
 
 #include "base_engine.hpp"
 
-#include <silkworm/core/chain/protocol_param.hpp>
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
+
+#include "param.hpp"
 
 namespace silkworm::protocol {
 
@@ -55,7 +56,7 @@ ValidationResult EngineBase::pre_validate_block_body(const Block& block, const B
     for (const Transaction& tx : block.transactions) {
         total_blobs += tx.blob_versioned_hashes.size();
     }
-    if (total_blobs > param::kMaxDataGasPerBlock / param::kDataGasPerBlob) {
+    if (total_blobs > kMaxDataGasPerBlock / kDataGasPerBlob) {
         return ValidationResult::kTooManyBlobs;
     }
 
@@ -140,7 +141,7 @@ ValidationResult EngineBase::validate_block_header(const BlockHeader& header, co
         return ValidationResult::kInvalidGasLimit;
     }
 
-    if (header.extra_data.length() > param::kMaxExtraDataBytes) {
+    if (header.extra_data.length() > kMaxExtraDataBytes) {
         return ValidationResult::kExtraDataTooLong;
     }
 
@@ -159,7 +160,7 @@ ValidationResult EngineBase::validate_block_header(const BlockHeader& header, co
 
     uint64_t parent_gas_limit{parent->gas_limit};
     if (header.number == chain_config_.london_block) {
-        parent_gas_limit = parent->gas_limit * param::kElasticityMultiplier;  // EIP-1559
+        parent_gas_limit = parent->gas_limit * kElasticityMultiplier;  // EIP-1559
     }
 
     const uint64_t gas_delta{header.gas_limit > parent_gas_limit ? header.gas_limit - parent_gas_limit

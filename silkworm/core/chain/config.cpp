@@ -79,7 +79,7 @@ nlohmann::json ChainConfig::to_json() const noexcept {
     member_to_json(ret, "arrowGlacierBlock", arrow_glacier_block);
     member_to_json(ret, "grayGlacierBlock", gray_glacier_block);
 
-    if (terminal_total_difficulty.has_value()) {
+    if (terminal_total_difficulty) {
         // TODO (Andrew) geth probably treats terminalTotalDifficulty as a JSON number
         ret[kTerminalTotalDifficulty] = to_string(*terminal_total_difficulty);
     }

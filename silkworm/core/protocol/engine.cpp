@@ -42,7 +42,7 @@ EnginePtr engine_factory(const ChainConfig& chain_config) {
         return nullptr;
     }
 
-    if (chain_config.terminal_total_difficulty.has_value()) {
+    if (chain_config.terminal_total_difficulty) {
         engine = std::make_unique<MergeEngine>(std::move(engine), chain_config);
     }
 

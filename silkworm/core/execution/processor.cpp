@@ -19,7 +19,7 @@
 #include <cassert>
 
 #include <silkworm/core/chain/dao.hpp>
-#include <silkworm/core/chain/intrinsic_gas.hpp>
+#include <silkworm/core/protocol/intrinsic_gas.hpp>
 #include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
 
@@ -100,7 +100,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     const intx::uint256 data_gas_price{evm_.block().header.data_gas_price().value_or(0)};
     state_.subtract_from_balance(*txn.from, txn.total_data_gas() * data_gas_price);
 
-    const intx::uint128 g0{intrinsic_gas(txn, rev)};
+    const intx::uint128 g0{protocol::intrinsic_gas(txn, rev)};
     assert(g0 <= UINT64_MAX);  // true due to the precondition (transaction must be valid)
 
     const CallResult vm_res{evm_.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0))};

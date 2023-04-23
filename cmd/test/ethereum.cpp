@@ -28,13 +28,13 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/core/chain/intrinsic_gas.hpp>
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/protocol/blockchain.hpp>
 #include <silkworm/core/protocol/ethash_engine.cpp>
+#include <silkworm/core/protocol/intrinsic_gas.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/common/terminal.hpp>

@@ -19,25 +19,26 @@
 #include <algorithm>
 
 #include <silkworm/core/common/as_range.hpp>
-#include <silkworm/core/protocol/param.hpp>
 
-namespace silkworm {
+#include "param.hpp"
+
+namespace silkworm::protocol {
 
 intx::uint128 intrinsic_gas(const Transaction& txn, const evmc_revision rev) noexcept {
-    intx::uint128 gas{protocol::fee::kGTransaction};
+    intx::uint128 gas{fee::kGTransaction};
 
     const bool contract_creation{!txn.to};
     if (contract_creation && rev >= EVMC_HOMESTEAD) {
-        gas += protocol::fee::kGTxCreate;
+        gas += fee::kGTxCreate;
     }
 
     // EIP-2930: Optional access lists
-    gas += intx::uint128{txn.access_list.size()} * protocol::fee::kAccessListAddressCost;
+    gas += intx::uint128{txn.access_list.size()} * fee::kAccessListAddressCost;
     intx::uint128 total_num_of_storage_keys{0};
     for (const AccessListEntry& e : txn.access_list) {
         total_num_of_storage_keys += e.storage_keys.size();
     }
-    gas += total_num_of_storage_keys * protocol::fee::kAccessListStorageKeyCost;
+    gas += total_num_of_storage_keys * fee::kAccessListStorageKeyCost;
 
     const intx::uint128 data_len{txn.data.length()};
     if (data_len == 0) {
@@ -45,18 +46,18 @@ intx::uint128 intrinsic_gas(const Transaction& txn, const evmc_revision rev) noe
     }
 
     const intx::uint128 non_zero_bytes{as_range::count_if(txn.data, [](uint8_t c) { return c != 0; })};
-    const intx::uint128 nonZeroGas{rev >= EVMC_ISTANBUL ? protocol::fee::kGTxDataNonZeroIstanbul : protocol::fee::kGTxDataNonZeroFrontier};
+    const intx::uint128 nonZeroGas{rev >= EVMC_ISTANBUL ? fee::kGTxDataNonZeroIstanbul : fee::kGTxDataNonZeroFrontier};
     gas += non_zero_bytes * nonZeroGas;
     const intx::uint128 zero_bytes{data_len - non_zero_bytes};
-    gas += zero_bytes * protocol::fee::kGTxDataZero;
+    gas += zero_bytes * fee::kGTxDataZero;
 
     // EIP-3860: Limit and meter initcode
     if (contract_creation && rev >= EVMC_SHANGHAI) {
         const intx::uint128 num_words{(data_len + 31) / 32};
-        gas += num_words * protocol::fee::kInitCodeWordCost;
+        gas += num_words * fee::kInitCodeWordCost;
     }
 
     return gas;
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::protocol

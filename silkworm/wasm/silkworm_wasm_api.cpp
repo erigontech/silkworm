@@ -18,9 +18,9 @@
 
 #include <cstdlib>
 
-#include <silkworm/core/chain/intrinsic_gas.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/protocol/ethash_engine.cpp>
+#include <silkworm/core/protocol/intrinsic_gas.hpp>
 
 void* new_buffer(size_t size) { return std::malloc(size); }
 
@@ -88,7 +88,7 @@ Transaction* new_transaction(const Bytes* rlp) {
 void delete_transaction(Transaction* x) { delete x; }
 
 bool check_intrinsic_gas(const Transaction* txn, evmc_revision rev) {
-    intx::uint128 g0{intrinsic_gas(*txn, rev)};
+    intx::uint128 g0{protocol::intrinsic_gas(*txn, rev)};
     return txn->gas_limit >= g0;
 }
 

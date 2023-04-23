@@ -16,12 +16,12 @@
 
 #include "validation.hpp"
 
-#include <silkworm/core/chain/intrinsic_gas.hpp>
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/crypto/secp256k1n.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
 
+#include "intrinsic_gas.hpp"
 #include "param.hpp"
 
 namespace silkworm::protocol {

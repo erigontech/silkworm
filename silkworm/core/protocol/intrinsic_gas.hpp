@@ -20,11 +20,11 @@
 
 #include <silkworm/core/types/transaction.hpp>
 
-namespace silkworm {
+namespace silkworm::protocol {
 
 // Returns the intrinsic gas of a transaction.
 // Refer to g0 in Section 6.2 "Execution" of the Yellow Paper
 // and EIP-3860 "Limit and meter initcode".
 intx::uint128 intrinsic_gas(const Transaction& txn, evmc_revision rev) noexcept;
 
-}  // namespace silkworm
+}  // namespace silkworm::protocol

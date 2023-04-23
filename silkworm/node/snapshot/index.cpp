@@ -34,7 +34,7 @@ using RecSplit8 = succinct::RecSplit8;
 void Index::build() {
     SILK_INFO << "Index::build path: " << segment_path_.path().string() << " start";
 
-    Decompressor decoder{segment_path_.path()};
+    huffman::Decompressor decoder{segment_path_.path()};
     decoder.open();
 
     const SnapshotPath index_file = segment_path_.index_file();
@@ -51,7 +51,7 @@ void Index::build() {
     do {
         iterations++;
         SILK_INFO << "Process snapshot items to prepare index build for: " << segment_path_.path().string();
-        const bool read_ok = decoder.read_ahead([&](Decompressor::Iterator it) {
+        const bool read_ok = decoder.read_ahead([&](huffman::Decompressor::Iterator it) {
             Bytes word{};
             word.reserve(kPageSize);
             uint64_t i{0}, offset{0};
@@ -107,7 +107,7 @@ void TransactionIndex::build() {
     const auto [first_tx_id, expected_tx_count] = bodies_snapshot.compute_txs_amount();
     SILK_INFO << "TransactionIndex::build first_tx_id: " << first_tx_id << " expected_tx_count: " << expected_tx_count;
 
-    Decompressor txs_decoder{segment_path_.path()};
+    huffman::Decompressor txs_decoder{segment_path_.path()};
     txs_decoder.open();
 
     const auto tx_count = txs_decoder.words_count();
@@ -140,13 +140,13 @@ void TransactionIndex::build() {
         .etl_optimal_size = etl::kOptimalBufferSize / 2};
     RecSplit8 tx_hash_to_block_rs{tx_hash_to_block_rs_settings, 1};
 
-    Decompressor bodies_decoder{bodies_segment.path()};
+    huffman::Decompressor bodies_decoder{bodies_segment.path()};
     bodies_decoder.open();
 
-    using DoubleReadAheadFunc = std::function<bool(Decompressor::Iterator, Decompressor::Iterator)>;
+    using DoubleReadAheadFunc = std::function<bool(huffman::Decompressor::Iterator, huffman::Decompressor::Iterator)>;
     auto double_read_ahead = [&txs_decoder, &bodies_decoder](const DoubleReadAheadFunc& fn) -> bool {
-        return txs_decoder.read_ahead([fn, &bodies_decoder](Decompressor::Iterator tx_it) -> bool {
-            return bodies_decoder.read_ahead([fn, &tx_it](Decompressor::Iterator body_it) {
+        return txs_decoder.read_ahead([fn, &bodies_decoder](auto tx_it) -> bool {
+            return bodies_decoder.read_ahead([fn, &tx_it](auto body_it) {
                 return fn(tx_it, body_it);
             });
         });

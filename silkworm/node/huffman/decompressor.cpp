@@ -32,7 +32,7 @@
 
 namespace pb = google::protobuf::io;
 
-namespace silkworm {
+namespace silkworm::huffman {
 
 //! Size in bytes of metadata header fields in compressed file
 constexpr std::size_t kWordsCountSize{sizeof(uint64_t)};
@@ -363,8 +363,7 @@ void Decompressor::read_patterns(ByteView dict) {
     std::vector<Pattern> patterns;
     patterns.reserve(kMaxTablePatterns);
     uint64_t pattern_highest_depth{0};
-    std::size_t pattern_count{0};
-    for (; pattern_count < kMaxTablePatterns && coded_input.CurrentPosition() < raw_input.ByteCount(); ++pattern_count) {
+    while (coded_input.CurrentPosition() < raw_input.ByteCount()) {
         uint64_t pattern_depth{0};
         bool read_ok = coded_input.ReadVarint64(&pattern_depth);
         if (!read_ok) {
@@ -395,19 +394,19 @@ void Decompressor::read_patterns(ByteView dict) {
         if (!read_ok) {
             throw std::runtime_error{"pattern dict is invalid: data skip failed at " + std::to_string(coded_input.CurrentPosition())};
         }
-        SILK_DEBUG << "count: " << pattern_count << " #pattern: " << pattern_data.size() << " coded input position: " << coded_input.CurrentPosition();
+        SILK_DEBUG << "count: " << patterns.size() << " data size: " << pattern_data.size() << " coded input position: " << coded_input.CurrentPosition();
 
-        patterns[pattern_count] = {pattern_depth, pattern_data};
+        patterns.emplace_back(Pattern{pattern_depth, pattern_data});
     }
     if (coded_input.CurrentPosition() != raw_input.ByteCount()) {
         throw std::runtime_error{"pattern stream not exhausted: " + std::to_string(raw_input.ByteCount() - coded_input.CurrentPosition())};
     }
 
-    SILK_DEBUG << "Pattern count: " << pattern_count << " highest depth: " << pattern_highest_depth;
+    SILK_DEBUG << "Pattern count: " << patterns.size() << " highest depth: " << pattern_highest_depth;
 
     pattern_dict_ = std::make_unique<PatternTable>(pattern_highest_depth);
     if (dict.length() > 0) {
-        pattern_dict_->build_condensed({patterns.data(), pattern_count});
+        pattern_dict_->build_condensed({patterns.data(), patterns.size()});
     }
 
     SILK_DEBUG << "#codewords: " << pattern_dict_->num_codewords();
@@ -427,8 +426,7 @@ void Decompressor::read_positions(ByteView dict) {
     std::vector<Position> positions;
     positions.reserve(kMaxTablePositions);
     uint64_t position_highest_depth{0};
-    std::size_t position_count{0};
-    for (; position_count < kMaxTablePositions && coded_input.CurrentPosition() < raw_input.ByteCount(); ++position_count) {
+    while (coded_input.CurrentPosition() < raw_input.ByteCount()) {
         uint64_t position_depth{0};
         bool read_ok = coded_input.ReadVarint64(&position_depth);
         if (!read_ok) {
@@ -452,19 +450,19 @@ void Decompressor::read_positions(ByteView dict) {
         if (position > std::numeric_limits<int>::max()) {
             throw std::runtime_error("position is too long: " + std::to_string(position));
         }
-        SILK_DEBUG << "count: " << position_count << " position: " << position << " coded input position: " << coded_input.CurrentPosition();
+        SILK_DEBUG << "count: " << positions.size() << " position: " << position << " coded input position: " << coded_input.CurrentPosition();
 
-        positions[position_count] = {position_depth, position};
+        positions.emplace_back(Position{position_depth, position});
     }
     if (coded_input.CurrentPosition() != raw_input.ByteCount()) {
         throw std::runtime_error{"position stream not exhausted: " + std::to_string(raw_input.ByteCount() - coded_input.CurrentPosition())};
     }
 
-    SILK_DEBUG << "Position count: " << position_count << " highest depth: " << position_highest_depth;
+    SILK_DEBUG << "Position count: " << positions.size() << " highest depth: " << position_highest_depth;
 
     position_dict_ = std::make_unique<PositionTable>(position_highest_depth);
     if (dict.length() > 0) {
-        position_dict_->build({positions.data(), position_count});
+        position_dict_->build({positions.data(), positions.size()});
     }
 
     SILK_DEBUG << "#positions: " << position_dict_->num_positions();
@@ -668,7 +666,7 @@ ByteView Decompressor::Iterator::next_pattern() {
         length = codeword->code_length();
         if (length == 0) {
             table = codeword->table();
-            bit_position_ += 9;  // TODO(canepat) remove hard-coded value
+            bit_position_ += 9;  // CHAR_BIT + 1
         } else {
             bit_position_ += length;
             pattern = codeword->pattern();
@@ -695,7 +693,7 @@ uint64_t Decompressor::Iterator::next_position(bool clean) {
         length = table->length(code);
         if (length == 0) {
             table = table->child(code);
-            bit_position_ += 9;  // TODO(canepat) remove hard-coded value
+            bit_position_ += 9;  // CHAR_BIT + 1
         } else {
             bit_position_ += length;
             position = table->position(code);
@@ -715,4 +713,4 @@ uint16_t Decompressor::Iterator::next_code(std::size_t bit_length) {
     return code;
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::huffman

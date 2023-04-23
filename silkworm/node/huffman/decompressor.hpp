@@ -30,7 +30,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
-namespace silkworm {
+namespace silkworm::huffman {
 
 class DecodingTable {
   public:
@@ -276,4 +276,4 @@ class Decompressor {
     uint64_t words_length_{0};
 };
 
-}  // namespace silkworm
+}  // namespace silkworm::huffman

@@ -28,6 +28,7 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/silkrpc/json/log.hpp>
+#include <silkworm/silkrpc/json/receipt.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/call.hpp>
 #include <silkworm/silkrpc/types/chain_config.hpp>
@@ -106,9 +107,6 @@ void to_json(nlohmann::json& json, const BlockTransactionsResponse& b);
 void to_json(nlohmann::json& json, const Transaction& transaction);
 
 void from_json(const nlohmann::json& json, Call& call);
-
-void to_json(nlohmann::json& json, const Receipt& receipt);
-void from_json(const nlohmann::json& json, Receipt& receipt);
 
 void to_json(nlohmann::json& json, const Filter& filter);
 void from_json(const nlohmann::json& json, Filter& filter);

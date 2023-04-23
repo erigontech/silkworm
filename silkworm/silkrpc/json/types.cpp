@@ -530,57 +530,6 @@ void from_json(const nlohmann::json& json, Call& call) {
     }
 }
 
-void to_json(nlohmann::json& json, const Receipt& receipt) {
-    json["blockHash"] = receipt.block_hash;
-    json["blockNumber"] = to_quantity(receipt.block_number);
-    json["transactionHash"] = receipt.tx_hash;
-    json["transactionIndex"] = to_quantity(receipt.tx_index);
-    json["from"] = receipt.from.value_or(evmc::address{});
-    json["to"] = receipt.to.value_or(evmc::address{});
-    json["type"] = to_quantity(receipt.type ? receipt.type.value() : 0);
-    json["gasUsed"] = to_quantity(receipt.gas_used);
-    json["cumulativeGasUsed"] = to_quantity(receipt.cumulative_gas_used);
-    json["effectiveGasPrice"] = to_quantity(receipt.effective_gas_price);
-    if (receipt.contract_address) {
-        json["contractAddress"] = receipt.contract_address;
-    } else {
-        json["contractAddress"] = nlohmann::json{};
-    }
-    json["logs"] = receipt.logs;
-    json["logsBloom"] = "0x" + silkworm::to_hex(full_view(receipt.bloom));
-    json["status"] = to_quantity(receipt.success ? 1 : 0);
-}
-
-void from_json(const nlohmann::json& json, Receipt& receipt) {
-    SILKRPC_TRACE << "from_json<Receipt> json: " << json.dump() << "\n";
-    if (json.is_array()) {
-        if (json.size() < 4) {
-            throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Receipt CBOR: missing entries"};
-        }
-        if (!json[0].is_number()) {
-            throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Receipt CBOR: number expected in [0]"};
-        }
-        receipt.type = json[0];
-
-        if (!json[1].is_null()) {
-            throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Receipt CBOR: null expected in [1]"};
-        }
-
-        if (!json[2].is_number()) {
-            throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Receipt CBOR: number expected in [2]"};
-        }
-        receipt.success = json[2] == 1u;
-
-        if (!json[3].is_number()) {
-            throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Receipt CBOR: number expected in [3]"};
-        }
-        receipt.cumulative_gas_used = json[3];
-    } else {
-        receipt.success = json.at("success").get<bool>();
-        receipt.cumulative_gas_used = json.at("cumulative_gas_used").get<uint64_t>();
-    }
-}
-
 void to_json(nlohmann::json& json, const Filter& filter) {
     if (filter.from_block != std::nullopt) {
         json["fromBlock"] = filter.from_block.value();

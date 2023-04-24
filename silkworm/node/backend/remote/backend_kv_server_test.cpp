@@ -17,13 +17,12 @@
 #include "backend_kv_server.hpp"
 
 #include <chrono>
-#include <condition_variable>  // DO NOT remove: CLion bug in suggestion 'Unused "#include <condition_variable>"'
-#include <functional>
+#include <condition_variable>  // DO NOT remove: used for std::condition_variable, CLion suggestion is buggy
+#include <functional>   // DO NOT remove: used for std::function, CLion suggestion is buggy
 #include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
-#include <utility>
 #include <vector>
 
 #include <catch2/catch.hpp>
@@ -37,8 +36,8 @@
 #include <silkworm/infra/test/log.hpp>
 #include <silkworm/interfaces/types/types.pb.h>
 #include <silkworm/node/backend/ethereum_backend.hpp>
-#include <silkworm/node/backend/remote/rpc/backend_calls.hpp>
-#include <silkworm/node/backend/remote/rpc/kv_calls.hpp>
+#include <silkworm/node/backend/remote/grpc/backend_calls.hpp>
+#include <silkworm/node/backend/remote/grpc/kv_calls.hpp>
 #include <silkworm/node/backend/state_change_collection.hpp>
 #include <silkworm/node/common/os.hpp>
 #include <silkworm/node/db/mdbx.hpp>
@@ -2119,16 +2118,16 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
 
 class TxMaxTimeToLiveGuard {
   public:
-    explicit TxMaxTimeToLiveGuard(uint8_t t) { TxCall::set_max_ttl_duration(std::chrono::milliseconds{t}); }
+    explicit TxMaxTimeToLiveGuard(uint16_t t) { TxCall::set_max_ttl_duration(std::chrono::milliseconds{t}); }
     ~TxMaxTimeToLiveGuard() { TxCall::set_max_ttl_duration(kMaxTxDuration); }
 };
 
 TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][node][rpc]") {
-    constexpr uint8_t kCustomMaxTimeToLive{200};
-    TxMaxTimeToLiveGuard ttl_guard{kCustomMaxTimeToLive};
     BackEndKvE2eTest test;
     test.fill_tables();
     auto kv_client = *test.kv_client;
+    constexpr uint16_t kCustomMaxTimeToLive{400};
+    TxMaxTimeToLiveGuard ttl_guard{kCustomMaxTimeToLive};
 
     SECTION("Tx: cursor NEXT ops across renew are consecutive") {
         grpc::ClientContext context;

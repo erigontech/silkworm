@@ -39,6 +39,7 @@
 #include <silkworm/silkrpc/types/issuance.hpp>
 #include <silkworm/silkrpc/types/log.hpp>
 #include <silkworm/silkrpc/types/node_info.hpp>
+#include <silkworm/silkrpc/types/peer_info.hpp>
 #include <silkworm/silkrpc/types/receipt.hpp>
 #include <silkworm/silkrpc/types/syncing_data.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
@@ -81,6 +82,8 @@ inline constexpr auto ethCallResultFixedSize = 2048;
 void to_json(nlohmann::json& json, const struct NodeInfo& node_info);
 
 void to_json(nlohmann::json& json, const struct NodeInfoPorts& node_info_ports);
+
+void to_json(nlohmann::json& json, const PeerInfo& peer_info);
 
 void to_json(nlohmann::json& json, const struct ChainTraffic& chain_traffic);
 

@@ -20,6 +20,7 @@
 
 #include <boost/asio/thread_pool.hpp>
 
+#include <silkworm/silkrpc/commands/admin_api.hpp>
 #include <silkworm/silkrpc/commands/debug_api.hpp>
 #include <silkworm/silkrpc/commands/engine_api.hpp>
 #include <silkworm/silkrpc/commands/erigon_api.hpp>
@@ -39,11 +40,12 @@ namespace silkworm::rpc::commands {
 
 class RpcApiTable;
 
-class RpcApi : protected EthereumRpcApi, NetRpcApi, Web3RpcApi, DebugRpcApi, ParityRpcApi, ErigonRpcApi, TraceRpcApi, EngineRpcApi, TxPoolRpcApi, OtsRpcApi {
+class RpcApi : protected EthereumRpcApi, NetRpcApi, AdminRpcApi, Web3RpcApi, DebugRpcApi, ParityRpcApi, ErigonRpcApi, TraceRpcApi, EngineRpcApi, TxPoolRpcApi, OtsRpcApi {
   public:
     explicit RpcApi(Context& context, boost::asio::thread_pool& workers)
         : EthereumRpcApi{context, workers},
           NetRpcApi{context.backend()},
+          AdminRpcApi{context.backend()},
           Web3RpcApi{context},
           DebugRpcApi{context, workers},
           ParityRpcApi{context},

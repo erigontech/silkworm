@@ -62,6 +62,11 @@ TEST_CASE("Proof-of-Stake RuleSet") {
     header.nonce[2] = 5;
     CHECK(rule_set.validate_block_header(header, state, /*with_future_timestamp_check=*/false) ==
           ValidationResult::kInvalidNonce);
+    header.nonce[2] = 0;
+
+    header.difficulty = 1000;
+    CHECK(rule_set.validate_block_header(header, state, /*with_future_timestamp_check=*/false) ==
+          ValidationResult::kPoWBlockAfterMerge);
 }
 
 }  // namespace silkworm::protocol

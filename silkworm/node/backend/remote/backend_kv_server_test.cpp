@@ -18,7 +18,7 @@
 
 #include <chrono>
 #include <condition_variable>  // DO NOT remove: used for std::condition_variable, CLion suggestion is buggy
-#include <functional>   // DO NOT remove: used for std::function, CLion suggestion is buggy
+#include <functional>          // DO NOT remove: used for std::function, CLion suggestion is buggy
 #include <memory>
 #include <mutex>
 #include <string>

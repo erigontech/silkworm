@@ -309,6 +309,19 @@ void to_json(nlohmann::json& json, const NodeInfo& node_info) {
     json["protocols"] = nlohmann::json::parse(node_info.protocols, nullptr, /* allow_exceptions = */ false);
 }
 
+void to_json(nlohmann::json& json, const PeerInfo& info) {
+    json["id"] = info.id;
+    json["name"] = info.name;
+    json["enode"] = info.enode;
+    json["enr"] = info.enr;
+    json["caps"] = info.caps;
+    json["network"]["localAddress"] = info.local_address;
+    json["network"]["remoteAddress"] = info.remote_address;
+    json["network"]["inbound"] = info.is_connection_inbound;
+    json["network"]["static"] = info.is_connection_static;
+    json["network"]["trusted"] = info.is_connection_trusted;
+}
+
 void to_json(nlohmann::json& json, const struct CallBundleTxInfo& tx_info) {
     json["gasUsed"] = tx_info.gas_used;
     json["txHash"] = silkworm::to_bytes32({tx_info.hash.bytes, silkworm::kHashLength});

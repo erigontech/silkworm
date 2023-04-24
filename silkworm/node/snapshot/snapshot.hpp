@@ -28,7 +28,7 @@
 #include <silkworm/node/db/util.hpp>
 #include <silkworm/node/huffman/decompressor.hpp>
 
-namespace silkworm {
+namespace silkworm::snapshot {
 
 class Snapshot {
   public:
@@ -131,4 +131,4 @@ class TransactionSnapshot : public Snapshot {
     // uint64_t* idx_txn_hash_2_block_{nullptr}; // TODO(canepat) recsplit.Index
 };
 
-}  // namespace silkworm
+}  // namespace silkworm::snapshot

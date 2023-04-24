@@ -38,6 +38,7 @@
 
 using namespace silkworm;
 using namespace silkworm::cmd::common;
+using namespace silkworm::snapshot;
 
 const std::vector<std::string> kDefaultSnapshotFiles{
     "v1-000000-000500-bodies.seg",

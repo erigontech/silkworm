@@ -29,7 +29,7 @@
 #include <silkworm/node/snapshot/config.hpp>
 #include <silkworm/node/snapshot/path.hpp>
 
-namespace silkworm {
+namespace silkworm::snapshot {
 
 //! Interval between successive checks for either completion or stop requested
 static constexpr std::chrono::seconds kCheckCompletionInterval{1};
@@ -264,4 +264,4 @@ void SnapshotSync::build_missing_indexes() {
     workers.wait_for_tasks();
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::snapshot

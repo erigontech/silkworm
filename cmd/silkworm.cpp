@@ -71,7 +71,6 @@ using silkworm::NodeSettings;
 using silkworm::parse_size;
 using silkworm::PreverifiedHashes;
 using silkworm::read_genesis_data;
-using silkworm::SnapshotSync;
 using silkworm::StopWatch;
 using silkworm::cmd::common::add_context_pool_options;
 using silkworm::cmd::common::add_logging_options;
@@ -85,6 +84,7 @@ using silkworm::cmd::common::get_node_name_from_build_info;
 using silkworm::cmd::common::HumanSizeParserValidator;
 using silkworm::cmd::common::ShutdownSignal;
 using silkworm::cmd::common::SilkwormSettings;
+using silkworm::snapshot::SnapshotSync;
 
 // progress log
 class ResourceUsageLog : public ActiveComponent {

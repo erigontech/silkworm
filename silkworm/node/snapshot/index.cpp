@@ -26,7 +26,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/test/snapshots.hpp>
 
-namespace silkworm {
+namespace silkworm::snapshot {
 
 using RecSplitSettings = succinct::RecSplitSettings;
 using RecSplit8 = succinct::RecSplit8;
@@ -265,4 +265,4 @@ bool TransactionIndex::walk(RecSplit8& /*rec_split*/, uint64_t /*i*/, uint64_t /
     return true;
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::snapshot

@@ -21,7 +21,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 
-namespace silkworm {
+namespace silkworm::snapshot {
 
 namespace fs = std::filesystem;
 
@@ -140,4 +140,4 @@ void TransactionSnapshot::close_index() {
     // TODO(canepat): implement
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::snapshot

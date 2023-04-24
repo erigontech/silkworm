@@ -206,9 +206,12 @@ def run_shell_command(command: str, command1: str, expected_response: str, verbo
             with open(exp_rsp_file, 'w', encoding='utf8') as json_file_ptr:
                 json_file_ptr.write(json.dumps(expected_response,  indent=5))
         #response_diff = jsondiff.diff(expected_response, response, marshal=True)
+        temp_file1 = "/tmp/file1"
+        temp_file2 = "/tmp/file2"
         if is_not_compared_result(json_file):
-            replace_str_from_file(exp_rsp_file, "/tmp/file1", "error")
-            replace_str_from_file(silk_file, "/tmp/file2", "error")
+            removed_line_string = "error"
+            replace_str_from_file(exp_rsp_file, temp_file1, removed_line_string)
+            replace_str_from_file(silk_file, temp_file2, removed_line_string)
             cmd = "json-diff -s /tmp/file1 /tmp/file2 " + " > " + diff_file
         elif is_big_json(json_file):
             cmd = "json-patch-jsondiff --indent 4 " + exp_rsp_file  + " " + silk_file + " > " + diff_file
@@ -228,6 +231,10 @@ def run_shell_command(command: str, command1: str, expected_response: str, verbo
             return 1
         if verbose:
             print("OK")
+        if os.path.exists(temp_file1):
+            os.remove(temp_file1)
+        if os.path.exists(temp_file2):
+            os.remove(temp_file2)
         os.remove(silk_file)
         os.remove(exp_rsp_file)
         os.remove(diff_file)

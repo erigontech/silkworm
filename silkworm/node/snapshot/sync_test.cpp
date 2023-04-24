@@ -24,7 +24,7 @@
 #include <silkworm/node/test/context.hpp>
 #include <silkworm/node/test/files.hpp>
 
-namespace silkworm {
+namespace silkworm::snapshot {
 
 TEST_CASE("SnapshotSync::SnapshotSync", "[silkworm][snapshot][sync]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
@@ -71,4 +71,4 @@ TEST_CASE("SnapshotSync::download_and_index_snapshots", "[silkworm][snapshot][sy
     }
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::snapshot

@@ -27,7 +27,7 @@
 #include <silkworm/node/snapshot/repository.hpp>
 #include <silkworm/node/snapshot/settings.hpp>
 
-namespace silkworm {
+namespace silkworm::snapshot {
 
 class SnapshotSync : public Stoppable {
   public:
@@ -52,4 +52,4 @@ class SnapshotSync : public Stoppable {
     std::thread client_thread_;
 };
 
-}  // namespace silkworm
+}  // namespace silkworm::snapshot

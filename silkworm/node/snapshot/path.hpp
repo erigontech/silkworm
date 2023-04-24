@@ -26,7 +26,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block.hpp>
 
-namespace silkworm {
+namespace silkworm::snapshot {
 
 //! The scale factor to convert the block numbers to/from the values in snapshot file names
 constexpr int kFileNameBlockScaleFactor{1'000};
@@ -120,4 +120,4 @@ class SnapshotPath {
 
 using SnapshotPathList = std::vector<SnapshotPath>;
 
-}  // namespace silkworm
+}  // namespace silkworm::snapshot

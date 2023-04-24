@@ -26,6 +26,9 @@
 
 namespace silkworm::test {
 
+using snapshot::SnapshotPath;
+using snapshot::SnapshotType;
+
 //! Big-endian int encoder
 template <typename int_t = uint64_t>
 std::size_t encode_big_endian(int_t value, Bytes& output) {
@@ -51,7 +54,7 @@ std::size_t encode_varint(int_t value, Bytes& output) {
 //! Snapshot header encoder
 struct SnapshotPattern {
     uint64_t depth;
-    silkworm::Bytes data;
+    Bytes data;
 };
 
 struct SnapshotPosition {
@@ -65,7 +68,7 @@ struct SnapshotHeader {
     std::vector<SnapshotPattern> patterns;
     std::vector<SnapshotPosition> positions;
 
-    void encode(silkworm::Bytes& output) const {
+    void encode(Bytes& output) const {
         encode_big_endian<uint64_t>(words_count, output);
         encode_big_endian<uint64_t>(empty_words_count, output);
         encode_big_endian<uint64_t>(compute_patterns_size(), output);

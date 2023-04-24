@@ -41,17 +41,19 @@ inline constexpr std::string_view kDbDataFileName{"mdbx.dat"};
 
 inline constexpr size_t kMdbxMaxPages{2147483648ull};
 
+using MoveOperation = ::mdbx::cursor::move_operation;
+using CursorResult = ::mdbx::pair_result;
+using MoveResult = ::mdbx::cursor::move_result;
+using Slice = ::mdbx::slice;
+
 namespace detail {
     struct cursor_handle_deleter {  // default deleter for pooled cursors
         constexpr cursor_handle_deleter() noexcept = default;
         void operator()(MDBX_cursor* ptr) const noexcept { mdbx_cursor_close(ptr); }
     };
-}  // namespace detail
 
-using MoveOperation = ::mdbx::cursor::move_operation;
-using CursorResult = ::mdbx::pair_result;
-using MoveResult = ::mdbx::cursor::move_result;
-using Slice = ::mdbx::slice;
+    std::string dump_mdbx_result(const db::CursorResult& result);
+}  // namespace detail
 
 class ROTxn;
 struct MapConfig;

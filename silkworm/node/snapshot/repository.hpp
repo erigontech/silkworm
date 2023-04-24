@@ -30,7 +30,7 @@
 #include <silkworm/node/snapshot/settings.hpp>
 #include <silkworm/node/snapshot/snapshot.hpp>
 
-namespace silkworm {
+namespace silkworm::snapshot {
 
 template <typename T>
 concept ConcreteSnapshot = std::is_base_of<Snapshot, T>::value;
@@ -53,11 +53,13 @@ using TransactionSnapshotWalker = SnapshotWalker<TransactionSnapshot>;
 class SnapshotRepository {
   public:
     explicit SnapshotRepository(SnapshotSettings settings = {});
+    ~SnapshotRepository();
 
     [[nodiscard]] BlockNum max_block_available() const { return std::min(segment_max_block_, idx_max_block_); }
 
     void verify();
     void reopen_folder();
+    void close();
 
     [[nodiscard]] std::filesystem::path path() const { return settings_.repository_dir; }
 
@@ -129,4 +131,4 @@ class SnapshotRepository {
     SnapshotsByPath<TransactionSnapshot> tx_segments_;
 };
 
-}  // namespace silkworm
+}  // namespace silkworm::snapshot

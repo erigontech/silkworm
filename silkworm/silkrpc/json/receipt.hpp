@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include <CLI/CLI.hpp>
+#include <nlohmann/json.hpp>
 
-#include <silkworm/node/snapshot/settings.hpp>
+#include <silkworm/silkrpc/types/receipt.hpp>
 
-namespace silkworm::cmd::common {
+namespace silkworm::rpc {
 
-//! \brief Setup options to populate snapshot settings after cli.parse()
-void add_snapshot_options(CLI::App& cli, snapshot::SnapshotSettings& snapshot_settings);
+void to_json(nlohmann::json& json, const Receipt& receipt);
+void from_json(const nlohmann::json& json, Receipt& receipt);
 
-}  // namespace silkworm::cmd::common
+}  // namespace silkworm::rpc

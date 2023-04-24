@@ -35,7 +35,7 @@
 
 using Catch::Matchers::Message;
 
-namespace silkworm {
+namespace silkworm::huffman {
 
 //! DecodingTable exposed for white-box testing
 class DecodingTable_ForTest : public DecodingTable {
@@ -73,9 +73,9 @@ TEST_CASE("DecodingTable::DecodingTable", "[silkworm][snapshot][decompressor]") 
 
 TEST_CASE("CodeWord::CodeWord", "[silkworm][snapshot][decompressor]") {
     std::vector<CodeWord> codewords{};
-    codewords.emplace_back(CodeWord{});
-    codewords.emplace_back(CodeWord{0, 0, ByteView{}});
-    codewords.emplace_back(CodeWord{0, 0, ByteView{}, nullptr, nullptr});
+    codewords.emplace_back();
+    codewords.emplace_back(0, 0, ByteView{});
+    codewords.emplace_back(0, 0, ByteView{}, nullptr, nullptr);
     for (const auto& cw : codewords) {
         CHECK(cw.code() == 0);
         CHECK(cw.code_length() == 0);
@@ -454,4 +454,4 @@ TEST_CASE("Decompressor: lorem ipsum skip", "[silkworm][snapshot][decompressor]"
     });
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::huffman

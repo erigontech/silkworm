@@ -18,7 +18,7 @@
 
 namespace silkworm::cmd::common {
 
-void add_snapshot_options(CLI::App& cli, SnapshotSettings& snapshot_settings) {
+void add_snapshot_options(CLI::App& cli, snapshot::SnapshotSettings& snapshot_settings) {
     cli.add_flag("--snapshots.enabled", snapshot_settings.enabled,
                  "Flag indicating if usage of snapshots should be enabled or disable");
     cli.add_flag("--snapshots.no_downloader", snapshot_settings.no_downloader,

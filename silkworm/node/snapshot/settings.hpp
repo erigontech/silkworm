@@ -22,7 +22,7 @@
 #include <silkworm/node/bittorrent/settings.hpp>
 #include <silkworm/node/snapshot/path.hpp>
 
-namespace silkworm {
+namespace silkworm::snapshot {
 
 struct SnapshotSettings {
     std::filesystem::path repository_dir{DataDirectory{}.snapshots().path()};  // Path to the snapshot repository on disk
@@ -33,4 +33,4 @@ struct SnapshotSettings {
     BitTorrentSettings bittorrent_settings;                                    // The Bittorrent protocol settings
 };
 
-}  // namespace silkworm
+}  // namespace silkworm::snapshot

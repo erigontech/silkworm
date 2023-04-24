@@ -22,7 +22,7 @@
 #include <silkworm/infra/test/log.hpp>
 #include <silkworm/node/test/snapshots.hpp>
 
-namespace silkworm {
+namespace silkworm::snapshot {
 
 TEST_CASE("Index::Index", "[silkworm][snapshot][index]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
@@ -125,4 +125,4 @@ TEST_CASE("TransactionIndex::build OK", "[silkworm][snapshot][index]") {
     CHECK_NOTHROW(tx_index.build());
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::snapshot

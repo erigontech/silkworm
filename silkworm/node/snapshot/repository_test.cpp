@@ -23,7 +23,7 @@
 #include <silkworm/infra/test/log.hpp>
 #include <silkworm/node/test/snapshots.hpp>
 
-namespace silkworm {
+namespace silkworm::snapshot {
 
 TEST_CASE("SnapshotRepository::SnapshotRepository", "[silkworm][snapshot][snapshot]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
@@ -110,4 +110,4 @@ TEST_CASE("SnapshotRepository::missing_block_ranges", "[silkworm][snapshot][snap
                                                    BlockNumRange{12'000'000, 14'500'000}});
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::snapshot

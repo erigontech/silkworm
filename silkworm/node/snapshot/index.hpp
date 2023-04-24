@@ -23,7 +23,7 @@
 #include <silkworm/node/recsplit/rec_split.hpp>
 #include <silkworm/node/snapshot/path.hpp>
 
-namespace silkworm {
+namespace silkworm::snapshot {
 
 class Index {
   public:
@@ -72,4 +72,4 @@ class TransactionIndex : public Index {
     bool walk(succinct::RecSplit8& rec_split, uint64_t i, uint64_t offset, ByteView word) override;
 };
 
-}  // namespace silkworm
+}  // namespace silkworm::snapshot

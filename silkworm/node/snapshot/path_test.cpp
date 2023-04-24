@@ -21,7 +21,7 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/infra/common/directories.hpp>
 
-namespace silkworm {
+namespace silkworm::snapshot {
 
 TEST_CASE("SnapshotPath::segment_size", "[silkworm][snapshot][snapshot]") {
     CHECK(SnapshotPath::segment_size() == kDefaultSegmentSize);
@@ -89,4 +89,4 @@ TEST_CASE("SnapshotPath::SnapshotPath", "[silkworm][snapshot][snapshot]") {
     }
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::snapshot

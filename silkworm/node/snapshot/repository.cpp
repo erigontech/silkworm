@@ -23,7 +23,7 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/infra/common/log.hpp>
 
-namespace silkworm {
+namespace silkworm::snapshot {
 
 namespace fs = std::filesystem;
 
@@ -247,4 +247,4 @@ uint64_t SnapshotRepository::max_idx_available() const {
     return 0;
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::snapshot

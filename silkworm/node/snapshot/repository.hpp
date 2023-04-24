@@ -30,7 +30,7 @@
 #include <silkworm/node/snapshot/settings.hpp>
 #include <silkworm/node/snapshot/snapshot.hpp>
 
-namespace silkworm {
+namespace silkworm::snapshot {
 
 template <typename T>
 concept ConcreteSnapshot = std::is_base_of<Snapshot, T>::value;
@@ -131,4 +131,4 @@ class SnapshotRepository {
     SnapshotsByPath<TransactionSnapshot> tx_segments_;
 };
 
-}  // namespace silkworm
+}  // namespace silkworm::snapshot

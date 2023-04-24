@@ -29,7 +29,7 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/common/log.hpp>
 
-namespace silkworm {
+namespace silkworm::snapshot {
 
 namespace fs = std::filesystem;
 
@@ -117,4 +117,4 @@ bool operator<(const SnapshotPath& lhs, const SnapshotPath& rhs) {
     return lhs.path_.extension() < rhs.path_.extension();
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::snapshot

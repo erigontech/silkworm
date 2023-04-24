@@ -26,7 +26,7 @@
 #include <silkworm/infra/test/log.hpp>
 #include <silkworm/node/test/snapshots.hpp>
 
-namespace silkworm {
+namespace silkworm::snapshot {
 
 class Snapshot_ForTest : public Snapshot {
   public:
@@ -89,4 +89,4 @@ TEST_CASE("Snapshot::close", "[silkworm][snapshot][snapshot]") {
     CHECK_NOTHROW(tmp_snapshot.close());
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::snapshot

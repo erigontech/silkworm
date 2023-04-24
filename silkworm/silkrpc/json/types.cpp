@@ -313,13 +313,16 @@ void to_json(nlohmann::json& json, const PeerInfo& info) {
     json["id"] = info.id;
     json["name"] = info.name;
     json["enode"] = info.enode;
-    json["enr"] = info.enr;
+    if (!info.enr.empty()) {
+        json["enr"] = info.enr;
+    }
     json["caps"] = info.caps;
     json["network"]["localAddress"] = info.local_address;
     json["network"]["remoteAddress"] = info.remote_address;
     json["network"]["inbound"] = info.is_connection_inbound;
     json["network"]["static"] = info.is_connection_static;
     json["network"]["trusted"] = info.is_connection_trusted;
+    json["protocols"] = nullptr;
 }
 
 void to_json(nlohmann::json& json, const struct CallBundleTxInfo& tx_info) {

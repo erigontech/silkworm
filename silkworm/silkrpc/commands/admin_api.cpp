@@ -25,8 +25,12 @@ namespace silkworm::rpc::commands {
 // https://eth.wiki/json-rpc/API#admin_nodeinfo
 awaitable<void> AdminRpcApi::handle_admin_node_info(const nlohmann::json& request, nlohmann::json& reply) {
     try {
-        const auto node_info = co_await backend_->engine_node_info();
-        reply = make_json_content(request["id"], node_info);
+        const auto node_infos = co_await backend_->engine_node_info();
+        if (node_infos.size() > 0) {
+            reply = make_json_content(request["id"], node_infos[0]);
+        } else {
+            reply = make_json_content(request["id"], nlohmann::json::object());
+        }
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
         reply = make_json_error(request["id"], -32000, e.what());

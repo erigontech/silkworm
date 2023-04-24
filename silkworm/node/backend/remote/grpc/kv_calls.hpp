@@ -159,10 +159,4 @@ class StateChangesCall : public server::ServerStreamingCall<remote::StateChangeR
     boost::asio::awaitable<void> operator()(const EthereumBackEnd& backend);
 };
 
-namespace detail {
-
-    std::string dump_mdbx_result(const db::CursorResult& result);
-
-}  // namespace detail
-
 }  // namespace silkworm::rpc

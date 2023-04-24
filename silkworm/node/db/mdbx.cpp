@@ -22,6 +22,18 @@
 
 namespace silkworm::db {
 
+namespace detail {
+    std::string dump_mdbx_result(const db::CursorResult& result) {
+        std::string dump{"done="};
+        dump.append(std::to_string(result.done));
+        dump.append(" bool(key)=");
+        dump.append(std::to_string(bool(result.key)));
+        dump.append(" bool(value)=");
+        dump.append(std::to_string(bool(result.value)));
+        return dump;
+    }
+}  // namespace detail
+
 //! \brief Returns data of current cursor position or moves it to the beginning or the end of the table based on
 //! provided direction if the cursor is not positioned.
 //! \param [in] c : A reference to an open cursor

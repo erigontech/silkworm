@@ -34,10 +34,10 @@
 
 namespace silkworm::rpc::fee_history {
 
-typedef std::function<boost::asio::awaitable<silkworm::BlockWithHash>(uint64_t)> BlockProvider;
-typedef std::function<boost::asio::awaitable<rpc::Receipts>(const BlockWithHash&)> ReceiptsProvider;
+using BlockProvider = std::function<boost::asio::awaitable<silkworm::BlockWithHash>(uint64_t)>;
+using ReceiptsProvider = std::function<boost::asio::awaitable<rpc::Receipts>(const BlockWithHash&)>;
 
-typedef std::vector<intx::uint256> Rewards;
+using Rewards = std::vector<intx::uint256>;
 
 struct FeeHistory {
     uint64_t oldest_block{0};

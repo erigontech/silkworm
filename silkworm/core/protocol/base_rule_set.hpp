@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include <silkworm/core/protocol/engine.hpp>
+#include <silkworm/core/protocol/rule_set.hpp>
 
 namespace silkworm::protocol {
 
-class EngineBase : public IEngine {
+class BaseRuleSet : public IRuleSet {
   public:
-    explicit EngineBase(const ChainConfig& chain_config, bool prohibit_ommers)
+    explicit BaseRuleSet(const ChainConfig& chain_config, bool prohibit_ommers)
         : chain_config_{chain_config}, prohibit_ommers_{prohibit_ommers} {}
 
     //! \brief Performs validation of block body that can be done prior to sender recovery and execution.

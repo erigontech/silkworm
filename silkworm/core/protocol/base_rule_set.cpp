@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "base_engine.hpp"
+#include "base_rule_set.hpp"
 
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
@@ -23,7 +23,7 @@
 
 namespace silkworm::protocol {
 
-ValidationResult EngineBase::pre_validate_block_body(const Block& block, const BlockState& state) {
+ValidationResult BaseRuleSet::pre_validate_block_body(const Block& block, const BlockState& state) {
     const BlockHeader& header{block.header};
     const evmc_revision rev{chain_config_.revision(header.number, header.timestamp)};
 
@@ -83,7 +83,7 @@ ValidationResult EngineBase::pre_validate_block_body(const Block& block, const B
     return validate_ommers(block, state);
 }
 
-ValidationResult EngineBase::validate_ommers(const Block& block, const BlockState& state) {
+ValidationResult BaseRuleSet::validate_ommers(const Block& block, const BlockState& state) {
     const BlockHeader& header{block.header};
 
     if (prohibit_ommers_ && !block.ommers.empty()) {
@@ -118,8 +118,8 @@ ValidationResult EngineBase::validate_ommers(const Block& block, const BlockStat
     return ValidationResult::kOk;
 }
 
-ValidationResult EngineBase::validate_block_header(const BlockHeader& header, const BlockState& state,
-                                                   bool with_future_timestamp_check) {
+ValidationResult BaseRuleSet::validate_block_header(const BlockHeader& header, const BlockState& state,
+                                                    bool with_future_timestamp_check) {
     if (with_future_timestamp_check) {
         const std::time_t now{std::time(nullptr)};
         if (header.timestamp > static_cast<uint64_t>(now)) {
@@ -198,16 +198,16 @@ ValidationResult EngineBase::validate_block_header(const BlockHeader& header, co
     return validate_seal(header);
 }
 
-std::optional<BlockHeader> EngineBase::get_parent_header(const BlockState& state, const BlockHeader& header) {
+std::optional<BlockHeader> BaseRuleSet::get_parent_header(const BlockState& state, const BlockHeader& header) {
     if (header.number == 0) {
         return std::nullopt;
     }
     return state.read_header(header.number - 1, header.parent_hash);
 }
 
-bool EngineBase::is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
-                        const evmc::bytes32& mainline_hash, unsigned int n, const BlockState& state,
-                        std::vector<BlockHeader>& old_ommers) {
+bool BaseRuleSet::is_kin(const BlockHeader& branch_header, const BlockHeader& mainline_header,
+                         const evmc::bytes32& mainline_hash, unsigned int n, const BlockState& state,
+                         std::vector<BlockHeader>& old_ommers) {
     if (n == 0 || branch_header == mainline_header) {
         return false;
     }
@@ -232,6 +232,6 @@ bool EngineBase::is_kin(const BlockHeader& branch_header, const BlockHeader& mai
     return is_kin(branch_header, mainline_parent.value(), mainline_header.parent_hash, n - 1, state, old_ommers);
 }
 
-evmc::address EngineBase::get_beneficiary(const BlockHeader& header) { return header.beneficiary; }
+evmc::address BaseRuleSet::get_beneficiary(const BlockHeader& header) { return header.beneficiary; }
 
 }  // namespace silkworm::protocol

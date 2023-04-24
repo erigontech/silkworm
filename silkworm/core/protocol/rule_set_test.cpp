@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "engine.hpp"
+#include "rule_set.hpp"
 
 #include <catch2/catch.hpp>
 
@@ -22,28 +22,28 @@
 
 namespace silkworm::protocol {
 
-TEST_CASE("Engine factory") {
-    EnginePtr engine;
-    engine = engine_factory(kMainnetConfig);  // Ethash engine
-    CHECK(engine != nullptr);
-    engine = engine_factory(kSepoliaConfig);  // Ethash engine
-    CHECK(engine != nullptr);
-    engine = engine_factory(test::kLondonConfig);  // No-proof engine
-    CHECK(engine != nullptr);
-    engine = engine_factory(kRinkebyConfig);  // Clique engine
-    CHECK(engine != nullptr);
-    engine = engine_factory(kGoerliConfig);  // Clique engine
-    CHECK(engine != nullptr);
-    engine = engine_factory(ChainConfig{.seal_engine = SealEngineType::kAuRA});
-    CHECK(engine == nullptr);
+TEST_CASE("RuleSet factory") {
+    RuleSetPtr rule_set;
+    rule_set = rule_set_factory(kMainnetConfig);  // Ethash rule set
+    CHECK(rule_set != nullptr);
+    rule_set = rule_set_factory(kSepoliaConfig);  // Ethash rule set
+    CHECK(rule_set != nullptr);
+    rule_set = rule_set_factory(test::kLondonConfig);  // No-proof rule set
+    CHECK(rule_set != nullptr);
+    rule_set = rule_set_factory(kRinkebyConfig);  // Clique rule set
+    CHECK(rule_set != nullptr);
+    rule_set = rule_set_factory(kGoerliConfig);  // Clique rule set
+    CHECK(rule_set != nullptr);
+    rule_set = rule_set_factory(ChainConfig{.protocol_rule_set = RuleSetType::kAuRa});
+    CHECK(rule_set == nullptr);
 }
 
-TEST_CASE("Engine Seal") {
-    EnginePtr engine{engine_factory(ChainConfig{.seal_engine = SealEngineType::kEthash})};
+TEST_CASE("RuleSet Seal") {
+    RuleSetPtr rule_set{rule_set_factory(ChainConfig{.protocol_rule_set = RuleSetType::kEthash})};
     BlockHeader fake_header{};
-    CHECK(engine->validate_seal(fake_header) != ValidationResult::kOk);
-    engine = engine_factory(ChainConfig{.seal_engine = SealEngineType::kNoProof});
-    CHECK(engine->validate_seal(fake_header) == ValidationResult::kOk);
+    CHECK(rule_set->validate_seal(fake_header) != ValidationResult::kOk);
+    rule_set = rule_set_factory(ChainConfig{.protocol_rule_set = RuleSetType::kNoProof});
+    CHECK(rule_set->validate_seal(fake_header) == ValidationResult::kOk);
 }
 
 TEST_CASE("Validate transaction types") {

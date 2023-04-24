@@ -14,37 +14,37 @@
    limitations under the License.
 */
 
-#include "merge_engine.hpp"
+#include "merge_rule_set.hpp"
 
 #include <optional>
 #include <utility>
 
 namespace silkworm::protocol {
 
-MergeEngine::MergeEngine(EnginePtr eth1_engine, const ChainConfig& chain_config)
-    : EngineBase{chain_config, /*prohibit_ommers=*/true},
+MergeRuleSet::MergeRuleSet(RuleSetPtr pre_merge_rule_set, const ChainConfig& chain_config)
+    : BaseRuleSet{chain_config, /*prohibit_ommers=*/true},
       terminal_total_difficulty_{*chain_config.terminal_total_difficulty},
-      pre_merge_engine_{std::move(eth1_engine)} {}
+      pre_merge_rule_set_{std::move(pre_merge_rule_set)} {}
 
-ValidationResult MergeEngine::pre_validate_block_body(const Block& block, const BlockState& state) {
+ValidationResult MergeRuleSet::pre_validate_block_body(const Block& block, const BlockState& state) {
     if (block.header.difficulty != 0) {
-        return pre_merge_engine_->pre_validate_block_body(block, state);
+        return pre_merge_rule_set_->pre_validate_block_body(block, state);
     }
-    return EngineBase::pre_validate_block_body(block, state);
+    return BaseRuleSet::pre_validate_block_body(block, state);
 }
 
-ValidationResult MergeEngine::validate_block_header(const BlockHeader& header, const BlockState& state,
-                                                    bool with_future_timestamp_check) {
+ValidationResult MergeRuleSet::validate_block_header(const BlockHeader& header, const BlockState& state,
+                                                     bool with_future_timestamp_check) {
     // TODO (Andrew) how will all this work with backwards sync?
 
-    const std::optional<BlockHeader> parent{EngineBase::get_parent_header(state, header)};
-    if (!parent.has_value()) {
+    const std::optional<BlockHeader> parent{BaseRuleSet::get_parent_header(state, header)};
+    if (!parent) {
         return ValidationResult::kUnknownParent;
     }
 
     const std::optional<intx::uint256> parent_total_difficulty{
         state.total_difficulty(parent->number, header.parent_hash)};
-    if (parent_total_difficulty == std::nullopt) {
+    if (!parent_total_difficulty) {
         return ValidationResult::kUnknownParentTotalDifficulty;
     }
 
@@ -52,26 +52,26 @@ ValidationResult MergeEngine::validate_block_header(const BlockHeader& header, c
         if (parent_total_difficulty >= terminal_total_difficulty_) {
             return ValidationResult::kPoWBlockAfterMerge;
         }
-        return pre_merge_engine_->validate_block_header(header, state, with_future_timestamp_check);
+        return pre_merge_rule_set_->validate_block_header(header, state, with_future_timestamp_check);
     }
 
     // PoS block
     if (parent_total_difficulty < terminal_total_difficulty_) {
         return ValidationResult::kPoSBlockBeforeMerge;
     }
-    return EngineBase::validate_block_header(header, state, with_future_timestamp_check);
+    return BaseRuleSet::validate_block_header(header, state, with_future_timestamp_check);
 }
 
-ValidationResult MergeEngine::validate_seal(const BlockHeader& header) {
+ValidationResult MergeRuleSet::validate_seal(const BlockHeader& header) {
     if (header.difficulty != 0) {
-        return pre_merge_engine_->validate_seal(header);
+        return pre_merge_rule_set_->validate_seal(header);
     }
     return header.nonce == BlockHeader::NonceType{} ? ValidationResult::kOk : ValidationResult::kInvalidNonce;
 }
 
-void MergeEngine::finalize(IntraBlockState& state, const Block& block, evmc_revision revision) {
+void MergeRuleSet::finalize(IntraBlockState& state, const Block& block, evmc_revision revision) {
     if (block.header.difficulty != 0) {
-        pre_merge_engine_->finalize(state, block, revision);
+        pre_merge_rule_set_->finalize(state, block, revision);
         return;
     }
 
@@ -86,21 +86,21 @@ void MergeEngine::finalize(IntraBlockState& state, const Block& block, evmc_revi
     }
 }
 
-evmc::address MergeEngine::get_beneficiary(const BlockHeader& header) {
+evmc::address MergeRuleSet::get_beneficiary(const BlockHeader& header) {
     if (header.difficulty != 0) {
-        return pre_merge_engine_->get_beneficiary(header);
+        return pre_merge_rule_set_->get_beneficiary(header);
     }
-    return EngineBase::get_beneficiary(header);
+    return BaseRuleSet::get_beneficiary(header);
 }
 
-ValidationResult MergeEngine::validate_ommers(const Block& block, const BlockState& state) {
+ValidationResult MergeRuleSet::validate_ommers(const Block& block, const BlockState& state) {
     if (block.header.difficulty != 0) {
-        return pre_merge_engine_->validate_ommers(block, state);
+        return pre_merge_rule_set_->validate_ommers(block, state);
     }
-    return EngineBase::validate_ommers(block, state);
+    return BaseRuleSet::validate_ommers(block, state);
 }
 
-intx::uint256 MergeEngine::difficulty(const BlockHeader&, const BlockHeader&) {
+intx::uint256 MergeRuleSet::difficulty(const BlockHeader&, const BlockHeader&) {
     return 0;
 }
 

@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "ethash_engine.hpp"
+#include "ethash_rule_set.hpp"
 
 #include <silkworm/core/common/endian.hpp>
 
@@ -22,7 +22,7 @@
 
 namespace silkworm::protocol {
 
-void EthashEngine::finalize(IntraBlockState& state, const Block& block, const evmc_revision revision) {
+void EthashRuleSet::finalize(IntraBlockState& state, const Block& block, const evmc_revision revision) {
     intx::uint256 block_reward;
     if (revision >= EVMC_CONSTANTINOPLE) {
         block_reward = kBlockRewardConstantinople;
@@ -44,7 +44,7 @@ void EthashEngine::finalize(IntraBlockState& state, const Block& block, const ev
 }
 
 // Ethash ProofOfWork verification
-ValidationResult EthashEngine::validate_seal(const BlockHeader& header) {
+ValidationResult EthashRuleSet::validate_seal(const BlockHeader& header) {
     const int epoch_number{static_cast<int>(header.number / ethash::epoch_length)};
     if (!epoch_context_ || epoch_context_->epoch_number != epoch_number) {
         epoch_context_.reset();  // Firstly release the obsoleted context
@@ -61,15 +61,15 @@ ValidationResult EthashEngine::validate_seal(const BlockHeader& header) {
     return ec ? ValidationResult::kInvalidSeal : ValidationResult::kOk;
 }
 
-intx::uint256 EthashEngine::difficulty(const BlockHeader& header, const BlockHeader& parent) {
+intx::uint256 EthashRuleSet::difficulty(const BlockHeader& header, const BlockHeader& parent) {
     const bool parent_has_uncles{parent.ommers_hash != kEmptyListHash};
     return difficulty(header.number, header.timestamp, parent.difficulty,
                       parent.timestamp, parent_has_uncles, chain_config_);
 }
 
-intx::uint256 EthashEngine::difficulty(uint64_t block_number, const uint64_t block_timestamp,
-                                       const intx::uint256& parent_difficulty, const uint64_t parent_timestamp,
-                                       const bool parent_has_uncles, const ChainConfig& config) {
+intx::uint256 EthashRuleSet::difficulty(uint64_t block_number, const uint64_t block_timestamp,
+                                        const intx::uint256& parent_difficulty, const uint64_t parent_timestamp,
+                                        const bool parent_has_uncles, const ChainConfig& config) {
     const evmc_revision rev{config.revision(block_number, block_timestamp)};
 
     intx::uint256 difficulty{parent_difficulty};

@@ -84,7 +84,7 @@ int main(int argc, char* argv[]) {
         AdvancedAnalysisCache analysis_cache;
         ObjectPool<EvmoneExecutionState> state_pool;
         std::vector<Receipt> receipts;
-        auto engine{protocol::engine_factory(chain_config.value())};
+        auto rule_set{protocol::rule_set_factory(chain_config.value())};
         Block block;
         for (; block_num < to; ++block_num) {
             txn->renew_reading();
@@ -94,7 +94,7 @@ int main(int argc, char* argv[]) {
 
             db::Buffer buffer{txn, /*prune_history_threshold=*/0, /*historical_block=*/block_num};
 
-            ExecutionProcessor processor{block, *engine, buffer, *chain_config};
+            ExecutionProcessor processor{block, *rule_set, buffer, *chain_config};
             processor.evm().advanced_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 

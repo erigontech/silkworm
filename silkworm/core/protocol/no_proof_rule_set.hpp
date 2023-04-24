@@ -14,10 +14,20 @@
    limitations under the License.
 */
 
-#include "no_proof_engine.hpp"
+#pragma once
+
+#include <silkworm/core/protocol/ethash_rule_set.hpp>
 
 namespace silkworm::protocol {
 
-ValidationResult NoProofEngine::validate_seal(const BlockHeader&) { return ValidationResult::kOk; }
+// This rule set does not validate PoW seal.
+// It is used in the Ethereum EL tests.
+class NoProofRuleSet : public EthashRuleSet {
+  public:
+    explicit NoProofRuleSet(const ChainConfig& chain_config) : EthashRuleSet(chain_config) {}
+
+    //! \brief Validates the seal of the header
+    ValidationResult validate_seal(const BlockHeader& header) final;
+};
 
 }  // namespace silkworm::protocol

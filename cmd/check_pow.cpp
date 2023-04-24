@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
         if (!config.has_value()) {
             throw std::runtime_error("Invalid chain config");
         }
-        if (config->seal_engine != SealEngineType::kEthash) {
+        if (config->protocol_rule_set != protocol::RuleSetType::kEthash) {
             throw std::runtime_error("Not an Ethash PoW chain");
         }
 

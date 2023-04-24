@@ -19,7 +19,7 @@
 #include <cstdlib>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/protocol/ethash_engine.cpp>
+#include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/core/protocol/intrinsic_gas.hpp>
 
 void* new_buffer(size_t size) { return std::malloc(size); }
@@ -70,8 +70,8 @@ void config_set_dao_block(ChainConfig* config, uint64_t block) { config->dao_blo
 
 void difficulty(intx::uint256* in_out, uint64_t block_number, uint64_t block_timestamp, uint64_t parent_timestamp,
                 bool parent_has_uncles, const ChainConfig* config) {
-    *in_out = protocol::EthashEngine::difficulty(block_number, block_timestamp, /*parent_difficulty=*/*in_out, parent_timestamp,
-                                                 parent_has_uncles, *config);
+    *in_out = protocol::EthashRuleSet::difficulty(block_number, block_timestamp, /*parent_difficulty=*/*in_out, parent_timestamp,
+                                                  parent_has_uncles, *config);
 }
 
 Transaction* new_transaction(const Bytes* rlp) {

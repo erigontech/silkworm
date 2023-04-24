@@ -25,14 +25,14 @@
 
 namespace silkworm {
 
-ExecutionProcessor::ExecutionProcessor(const Block& block, protocol::IEngine& engine, State& state,
+ExecutionProcessor::ExecutionProcessor(const Block& block, protocol::IRuleSet& rule_set, State& state,
                                        const ChainConfig& config)
-    : state_{state}, engine_{engine}, evm_{block, state_, config} {
-    evm_.beneficiary = engine.get_beneficiary(block.header);
+    : state_{state}, rule_set_{rule_set}, evm_{block, state_, config} {
+    evm_.beneficiary = rule_set.get_beneficiary(block.header);
 }
 
 ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn) const noexcept {
-    if (!txn.from.has_value()) {
+    if (!txn.from) {
         return ValidationResult::kMissingSender;
     }
 
@@ -168,7 +168,7 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
     }
 
     const evmc_revision rev{evm_.revision()};
-    engine_.finalize(state_, block, rev);
+    rule_set_.finalize(state_, block, rev);
 
     if (rev >= EVMC_SPURIOUS_DRAGON) {
         state_.destruct_touched_dead();

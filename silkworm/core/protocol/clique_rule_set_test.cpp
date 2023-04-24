@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "clique_engine.hpp"
+#include "clique_rule_set.hpp"
 
 #include <catch2/catch.hpp>
 
@@ -23,13 +23,13 @@
 
 namespace silkworm::protocol {
 
-TEST_CASE("Clique Engine activation") {
+TEST_CASE("Clique activation") {
     BlockHeader fake_header{};
-    auto engine = engine_factory(kGoerliConfig);  // Clique engine
-    CHECK(engine);
+    auto rule_set = rule_set_factory(kGoerliConfig);  // Clique rule set
+    CHECK(rule_set);
 }
 
-TEST_CASE("Clique engine validate_seal") {
+TEST_CASE("Clique validate_seal") {
     BlockHeader header{};
     header.parent_hash = 0x3df0148d8efc77d4dbc56ceccf0ac7cd2bb8d52527654dc533fb59de3461bec2_bytes32;
     header.ommers_hash = 0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347_bytes32;
@@ -44,8 +44,8 @@ TEST_CASE("Clique engine validate_seal") {
     header.mix_hash = 0x2f73f29450aad18c0956ec6350524c2910f3be67ec6e80b7b597240a195788e1_bytes32;
     header.nonce = {};
 
-    auto engine = engine_factory(ChainConfig{.seal_engine = SealEngineType::kClique});  // Clique engine
-    CHECK(engine->validate_seal(header) == ValidationResult::kOk);
+    auto rule_set = rule_set_factory(ChainConfig{.protocol_rule_set = RuleSetType::kClique});  // Clique rule set
+    CHECK(rule_set->validate_seal(header) == ValidationResult::kOk);
 }
 
 TEST_CASE("get_beneficiary() && extra_data with seal") {
@@ -71,8 +71,8 @@ TEST_CASE("get_beneficiary() && extra_data with seal") {
     std::string extra_data_str = "d883010a0d846765746888676f312e31372e33856c696e7578000000000000002ab85c52944f7ced556a";
     extra_data_str.append("389a8044be45c006fca6ab41adf927f05f8c66a5debd68218cc4cf4e578581ca7db3c77efd6bbdabf0d435c5cfa68b5e80aa0798fece01");
     header.extra_data = *from_hex(extra_data_str);
-    auto engine = engine_factory(ChainConfig{.seal_engine = SealEngineType::kClique});  // Clique engine
-    CHECK(engine->get_beneficiary(header) == 0xa6dd2974b96e959f2c8930024451a30afec24203_address);
+    auto rule_set = rule_set_factory(ChainConfig{.protocol_rule_set = RuleSetType::kClique});  // Clique rule set
+    CHECK(rule_set->get_beneficiary(header) == 0xa6dd2974b96e959f2c8930024451a30afec24203_address);
 }
 
 TEST_CASE("get_beneficiary() && extra_data no seal") {
@@ -90,8 +90,8 @@ TEST_CASE("get_beneficiary() && extra_data no seal") {
     header.mix_hash = 0x2f73f29450aad18c0956ec6350524c2910f3be67ec6e80b7b597240a195788e1_bytes32;
     header.nonce = {};
     header.extra_data = string_view_to_byte_view("d883010a0d84");
-    auto engine = engine_factory(ChainConfig{.seal_engine = SealEngineType::kClique});  // Clique engine
-    CHECK(engine->get_beneficiary(header) == 0x0000000000000000000000000000000000000000_address);
+    auto rule_set = rule_set_factory(ChainConfig{.protocol_rule_set = RuleSetType::kClique});  // Clique rule set
+    CHECK(rule_set->get_beneficiary(header) == 0x0000000000000000000000000000000000000000_address);
 }
 
 }  // namespace silkworm::protocol

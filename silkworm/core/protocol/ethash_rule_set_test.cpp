@@ -14,20 +14,22 @@
    limitations under the License.
 */
 
-#pragma once
+#include "ethash_rule_set.hpp"
 
-#include <silkworm/core/protocol/ethash_engine.hpp>
+#include <catch2/catch.hpp>
 
 namespace silkworm::protocol {
 
-// This engine does not validate PoW seal.
-// It is used in the Ethereum EL tests.
-class NoProofEngine : public EthashEngine {
-  public:
-    explicit NoProofEngine(const ChainConfig& chain_config) : EthashEngine(chain_config) {}
+TEST_CASE("DifficultyTest34") {
+    uint64_t block_number{0x33e140};
+    uint64_t block_timestamp{0x04bdbdaf};
+    uint64_t parent_difficulty{0x7268db7b46b0b154};
+    uint64_t parent_timestamp{0x04bdbdaf};
+    bool parent_has_uncles{false};
 
-    //! \brief Validates the seal of the header
-    ValidationResult validate_seal(const BlockHeader& header) final;
-};
+    intx::uint256 difficulty{EthashRuleSet::difficulty(block_number, block_timestamp, parent_difficulty, parent_timestamp,
+                                                       parent_has_uncles, kMainnetConfig)};
+    CHECK(difficulty == 0x72772897b619876a);
+}
 
 }  // namespace silkworm::protocol

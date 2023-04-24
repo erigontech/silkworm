@@ -18,14 +18,14 @@
 
 #include <ethash/ethash.hpp>
 
-#include <silkworm/core/protocol/base_engine.hpp>
+#include <silkworm/core/protocol/base_rule_set.hpp>
 
 namespace silkworm::protocol {
 
 // Proof of Work implementation
-class EthashEngine : public EngineBase {
+class EthashRuleSet : public BaseRuleSet {
   public:
-    explicit EthashEngine(const ChainConfig& chain_config) : EngineBase(chain_config, /*prohibit_ommers=*/false) {}
+    explicit EthashRuleSet(const ChainConfig& chain_config) : BaseRuleSet(chain_config, /*prohibit_ommers=*/false) {}
 
     //! \brief Validates the seal of the header
     ValidationResult validate_seal(const BlockHeader& header) override;

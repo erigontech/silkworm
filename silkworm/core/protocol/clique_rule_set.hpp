@@ -16,15 +16,15 @@
 
 #pragma once
 
-#include <silkworm/core/protocol/ethash_engine.hpp>
+#include <silkworm/core/protocol/ethash_rule_set.hpp>
 
 namespace silkworm::protocol {
 
 // Warning: most Clique (EIP-225) logic is not implemented yet.
-// This engine is just a dummy!
-class CliqueEngine : public EthashEngine {
+// This rule set is just a dummy!
+class CliqueRuleSet : public EthashRuleSet {
   public:
-    explicit CliqueEngine(const ChainConfig& chain_config) : EthashEngine(chain_config) {}
+    explicit CliqueRuleSet(const ChainConfig& chain_config) : EthashRuleSet(chain_config) {}
 
     //! \brief Validates the seal of the header
     ValidationResult validate_seal(const BlockHeader& header) final;

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <silkworm/core/protocol/engine.hpp>
+#include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/concurrency/containers.hpp>
 #include <silkworm/node/db/access_layer.hpp>
@@ -63,7 +63,7 @@ class BodiesStage : public Stage {
         void set_preverified_height(BlockNum height);
 
       private:
-        protocol::EnginePtr engine_;
+        protocol::RuleSetPtr rule_set_;
         const ChainConfig& chain_config_;
         db::Buffer chain_state_;
 

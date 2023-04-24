@@ -48,7 +48,7 @@ class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
     using stagedsync::ExecutionEngine::tx_;
 };
 
-class DummyEngine : public protocol::IEngine {
+class DummyEngine : public protocol::IRuleSet {
   public:
     ValidationResult pre_validate_block_body(const Block&, const BlockState&) override { return ValidationResult::kOk; }
 

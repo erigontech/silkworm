@@ -56,23 +56,23 @@ struct SyncContext {
 class Stage : public Stoppable {
   public:
     enum class [[nodiscard]] Result{
-        kSuccess,             //
-        kUnknownChainId,      //
-        kUnknownEngine,       //
-        kBadBlockHash,        //
-        kBadChainSequence,    //
-        kInvalidRange,        //
-        kInvalidProgress,     //
-        kInvalidBlock,        //
-        kInvalidTransaction,  //
-        kDecodingError,       //
-        kWrongFork,           // The persisted canonical chain must be changed
-        kWrongStateRoot,      //
-        kUnexpectedError,     //
-        kUnknownError,        //
-        kDbError,             //
-        kAborted,             //
-        kStoppedByEnv,        // Encountered "STOP_BEFORE_STAGE" env var
+        kSuccess,                 //
+        kUnknownChainId,          //
+        kUnknownProtocolRuleSet,  //
+        kBadBlockHash,            //
+        kBadChainSequence,        //
+        kInvalidRange,            //
+        kInvalidProgress,         //
+        kInvalidBlock,            //
+        kInvalidTransaction,      //
+        kDecodingError,           //
+        kWrongFork,               // The persisted canonical chain must be changed
+        kWrongStateRoot,          //
+        kUnexpectedError,         //
+        kUnknownError,            //
+        kDbError,                 //
+        kAborted,                 //
+        kStoppedByEnv,            // Encountered "STOP_BEFORE_STAGE" env var
         kUnspecified,
     };
 

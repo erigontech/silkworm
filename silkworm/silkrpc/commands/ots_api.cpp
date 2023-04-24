@@ -365,7 +365,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getTransactionBySenderAndNonc
 IssuanceDetails OtsRpcApi::get_issuance(const ChainConfig& chain_config, const silkworm::BlockWithHash& block) {
     auto config = silkworm::ChainConfig::from_json(chain_config.config).value();
 
-    if (config.seal_engine != silkworm::SealEngineType::kEthash) {
+    if (config.protocol_rule_set != protocol::RuleSetType::kEthash) {
         return IssuanceDetails{};
     }
 

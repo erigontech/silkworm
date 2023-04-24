@@ -22,7 +22,7 @@
 #include <evmc/evmc.h>
 
 #include <silkworm/core/execution/evm.hpp>
-#include <silkworm/core/protocol/engine.hpp>
+#include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/core/types/receipt.hpp>
 
@@ -64,7 +64,7 @@ class Blockchain {
 
     State& state_;
     const ChainConfig& config_;
-    EnginePtr engine_;
+    RuleSetPtr rule_set_;
     std::unordered_map<evmc::bytes32, ValidationResult> bad_blocks_;
     std::vector<Receipt> receipts_;
 };

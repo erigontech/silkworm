@@ -14,13 +14,13 @@
    limitations under the License.
 */
 
-#include "clique_engine.hpp"
+#include "clique_rule_set.hpp"
 
 #include <silkworm/core/crypto/ecdsa.h>
 
 namespace silkworm::protocol {
 
-ValidationResult CliqueEngine::validate_seal(const BlockHeader&) {
+ValidationResult CliqueRuleSet::validate_seal(const BlockHeader&) {
     return ValidationResult::kOk;
 }
 
@@ -38,9 +38,9 @@ static evmc::address ecrecover(const BlockHeader& header) {
     return beneficiary;
 }
 
-evmc::address CliqueEngine::get_beneficiary(const BlockHeader& header) {
+evmc::address CliqueRuleSet::get_beneficiary(const BlockHeader& header) {
     if (header.extra_data.length() < kExtraSealSize) {
-        return EngineBase::get_beneficiary(header);
+        return BaseRuleSet::get_beneficiary(header);
     }
     return ecrecover(header);
 }

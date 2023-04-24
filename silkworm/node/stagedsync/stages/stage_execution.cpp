@@ -36,8 +36,8 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
         if (!node_settings_->chain_config.has_value()) {
             throw StageError(Stage::Result::kUnknownChainId);
         }
-        if (!engine_) {
-            throw StageError(Stage::Result::kUnknownEngine);
+        if (!rule_set_) {
+            throw StageError(Stage::Result::kUnknownProtocolRuleSet);
         }
 
         StopWatch commit_stopwatch;
@@ -235,7 +235,7 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, B
                 log_time = now + 5s;
             }
 
-            ExecutionProcessor processor(block, *engine_, buffer, node_settings_->chain_config.value());
+            ExecutionProcessor processor(block, *rule_set_, buffer, node_settings_->chain_config.value());
             processor.evm().baseline_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 

@@ -22,16 +22,16 @@
 namespace silkworm::protocol {
 
 Blockchain::Blockchain(State& state, const ChainConfig& config, const Block& genesis_block)
-    : state_{state}, config_{config}, engine_{engine_factory(config)} {
+    : state_{state}, config_{config}, rule_set_{rule_set_factory(config)} {
     prime_state_with_genesis(genesis_block);
 }
 
 ValidationResult Blockchain::insert_block(Block& block, bool check_state_root) {
-    ValidationResult err{engine_->validate_block_header(block.header, state_, /*with_future_timestamp_check=*/true)};
+    ValidationResult err{rule_set_->validate_block_header(block.header, state_, /*with_future_timestamp_check=*/true)};
     if (err != ValidationResult::kOk) {
         return err;
     }
-    err = engine_->pre_validate_block_body(block, state_);
+    err = rule_set_->pre_validate_block_body(block, state_);
     if (err != ValidationResult::kOk) {
         return err;
     }
@@ -91,7 +91,7 @@ ValidationResult Blockchain::insert_block(Block& block, bool check_state_root) {
 }
 
 ValidationResult Blockchain::execute_block(const Block& block, bool check_state_root) {
-    ExecutionProcessor processor{block, *engine_, state_, config_};
+    ExecutionProcessor processor{block, *rule_set_, state_, config_};
     processor.evm().state_pool = state_pool;
     processor.evm().exo_evm = exo_evm;
 

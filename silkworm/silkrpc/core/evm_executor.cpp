@@ -216,7 +216,7 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor::call(
             SILKRPC_TRACE << "EVMExecutor::call post block: " << block.header.number << " txn: " << &txn << "\n";
             boost::asio::post(workers_, [this, this_executor, &block, &txn, &tracers, &refund, &gas_bailout, self = std::move(self)]() mutable {
                 EVM evm{block, state_, config_};
-                evm.beneficiary = engine_->get_beneficiary(block.header);
+                evm.beneficiary = rule_set_->get_beneficiary(block.header);
 
                 for (auto& tracer : tracers) {
                     evm.add_tracer(*tracer);

@@ -27,9 +27,9 @@
 
 namespace silkworm::protocol {
 
-class IEngine {
+class IRuleSet {
   public:
-    virtual ~IEngine() = default;
+    virtual ~IRuleSet() = default;
 
     //! \brief Performs validation of block body that can be done prior to sender recovery and execution.
     //! \brief See [YP] Sections 4.3.2 "Holistic Validity" and 11.1 "Ommer Validation".
@@ -68,9 +68,9 @@ class IEngine {
     virtual evmc::address get_beneficiary(const BlockHeader& header) = 0;
 };
 
-using EnginePtr = std::unique_ptr<IEngine>;
+using RuleSetPtr = std::unique_ptr<IRuleSet>;
 
-//! \brief Creates an instance of the proper Engine on behalf of chain configuration
-EnginePtr engine_factory(const ChainConfig& chain_config);
+//! \brief Creates an instance of the proper RuleSet on behalf of chain configuration
+RuleSetPtr rule_set_factory(const ChainConfig& chain_config);
 
 }  // namespace silkworm::protocol

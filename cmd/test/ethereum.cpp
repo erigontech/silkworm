@@ -33,7 +33,7 @@
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/protocol/blockchain.hpp>
-#include <silkworm/core/protocol/ethash_engine.cpp>
+#include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/core/protocol/intrinsic_gas.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
@@ -70,40 +70,40 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"Homestead",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
      }},
     {"FrontierToHomesteadAt5",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 5,
      }},
     {"HomesteadToDaoAt5",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .dao_block = 5,
      }},
     {"EIP150",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
      }},
     {"HomesteadToEIP150At5",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 5,
      }},
     {"EIP158",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -111,7 +111,7 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"Byzantium",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -120,7 +120,7 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"EIP158ToByzantiumAt5",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -129,7 +129,7 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"Constantinople",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -139,7 +139,7 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"ConstantinopleFix",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -150,7 +150,7 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"ByzantiumToConstantinopleFixAt5",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -161,7 +161,7 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"Istanbul",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -173,7 +173,7 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"EIP2384",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -186,7 +186,7 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"Berlin",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -201,7 +201,7 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"BerlinToLondonAt5",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -216,7 +216,7 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"ArrowGlacier",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -231,7 +231,7 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"GrayGlacier",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -246,7 +246,7 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"Merge",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -261,7 +261,7 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"ArrowGlacierToMergeAtDiffC0000",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -278,7 +278,7 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"MergeToShanghaiAtTime15k",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -667,8 +667,8 @@ Status individual_difficulty_test(const nlohmann::json& j, const ChainConfig& co
         }
     }
 
-    intx::uint256 calculated_difficulty{EthashEngine::difficulty(block_number, current_timestamp, parent_difficulty,
-                                                                 parent_timestamp, parent_has_uncles, config)};
+    intx::uint256 calculated_difficulty{EthashRuleSet::difficulty(block_number, current_timestamp, parent_difficulty,
+                                                                  parent_timestamp, parent_has_uncles, config)};
     if (calculated_difficulty == current_difficulty) {
         return Status::kPassed;
     } else {

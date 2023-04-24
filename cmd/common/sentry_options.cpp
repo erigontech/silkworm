@@ -29,8 +29,6 @@
 namespace silkworm::cmd::common {
 
 void add_sentry_options(CLI::App& cli, silkworm::sentry::Settings& settings) {
-    add_logging_options(cli, settings.log_settings);
-
     add_option_ip_endpoint(cli, "--sentry.api.addr", settings.api_address, "GRPC API endpoint");
 
     cli.add_option("--port", settings.port)

@@ -18,6 +18,7 @@
 
 #include <functional>
 #include <limits>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -26,7 +27,6 @@
 #include <boost/asio/awaitable.hpp>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/consensus/ethash/engine.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
@@ -69,7 +69,7 @@ struct BlockFees {
 class FeeHistoryOracle {
   public:
     explicit FeeHistoryOracle(const silkworm::ChainConfig& config, const BlockProvider& block_provider, ReceiptsProvider& receipts_provider)
-        : engine_{config}, block_provider_(block_provider), receipts_provider_(receipts_provider) {}
+        : config_{config}, block_provider_(block_provider), receipts_provider_(receipts_provider) {}
     virtual ~FeeHistoryOracle() {}
 
     FeeHistoryOracle(const FeeHistoryOracle&) = delete;
@@ -85,8 +85,7 @@ class FeeHistoryOracle {
     boost::asio::awaitable<BlockRange> resolve_block_range(uint64_t newest_block, uint64_t block_count, uint64_t max_history);
     boost::asio::awaitable<void> process_block(BlockFees& block_fees, const std::vector<std::int8_t>& reward_percentile);
 
-    consensus::EthashEngine engine_;
-    // const silkworm::ChainConfig& config_;
+    const silkworm::ChainConfig& config_;
     const BlockProvider& block_provider_;
     const ReceiptsProvider& receipts_provider_;
 };

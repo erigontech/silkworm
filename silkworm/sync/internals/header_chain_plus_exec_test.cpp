@@ -20,6 +20,7 @@
 
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/cast.hpp>
+#include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test/log.hpp>
@@ -32,7 +33,7 @@
 
 namespace silkworm {
 
-class HeaderChain_ForTest : public HeaderChain {
+class HeaderChainForTest : public HeaderChain {
   public:  // publication of internal members to test methods functioning
     using HeaderChain::generate_request_id;
     using HeaderChain::HeaderChain;
@@ -48,7 +49,7 @@ class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
     using stagedsync::ExecutionEngine::tx_;
 };
 
-class DummyEngine : public protocol::IRuleSet {
+class DummyRuleSet : public protocol::IRuleSet {
   public:
     ValidationResult pre_validate_block_body(const Block&, const BlockState&) override { return ValidationResult::kOk; }
 
@@ -93,7 +94,7 @@ TEST_CASE("Headers receiving and saving") {
 
     // creating the working chain to simulate a bit of the sync
     BlockNum highest_in_db = 0;
-    HeaderChain_ForTest header_chain(std::make_unique<DummyEngine>());
+    HeaderChainForTest header_chain(std::make_unique<DummyRuleSet>());
     header_chain.initial_state(last_headers);
     header_chain.current_state(highest_in_db);
     auto request_id = header_chain.generate_request_id();

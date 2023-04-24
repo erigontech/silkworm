@@ -216,8 +216,8 @@ TEST_CASE("Self-destruct") {
         .to = caller_address,
         .r = 1,
         .s = 1,
+        .from = originator,
     };
-    txn.from = originator;
 
     evmc::bytes32 address_as_hash{to_bytes32(suicidal_address)};
     txn.data = ByteView{address_as_hash};

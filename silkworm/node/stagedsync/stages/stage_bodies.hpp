@@ -63,8 +63,8 @@ class BodiesStage : public Stage {
         void set_preverified_height(BlockNum height);
 
       private:
-        protocol::RuleSetPtr rule_set_;
         const ChainConfig& chain_config_;
+        protocol::RuleSetPtr rule_set_;
         db::Buffer chain_state_;
 
         BlockNum initial_height_{0};

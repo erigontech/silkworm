@@ -25,17 +25,14 @@
 
 #include <boost/asio/awaitable.hpp>
 
-#include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/consensus/ethash/engine.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 
 namespace silkworm::rpc::fee_history {
-
-// constexpr uint64_t kLatestBlockNumber{std::numeric_limits<uint64_t>::max()};
-// constexpr uint64_t kPendingBlockNumber{std::numeric_limits<uint64_t>::max() - 1};
 
 typedef std::function<boost::asio::awaitable<silkworm::BlockWithHash>(uint64_t)> BlockProvider;
 typedef std::function<boost::asio::awaitable<rpc::Receipts>(const BlockWithHash&)> ReceiptsProvider;
@@ -72,7 +69,7 @@ struct BlockFees {
 class FeeHistoryOracle {
   public:
     explicit FeeHistoryOracle(const silkworm::ChainConfig& config, const BlockProvider& block_provider, ReceiptsProvider& receipts_provider)
-        : config_{config}, block_provider_(block_provider), receipts_provider_(receipts_provider) {}
+        : engine_{config}, block_provider_(block_provider), receipts_provider_(receipts_provider) {}
     virtual ~FeeHistoryOracle() {}
 
     FeeHistoryOracle(const FeeHistoryOracle&) = delete;
@@ -87,10 +84,9 @@ class FeeHistoryOracle {
 
     boost::asio::awaitable<BlockRange> resolve_block_range(uint64_t newest_block, uint64_t block_count, uint64_t max_history);
     boost::asio::awaitable<void> process_block(BlockFees& block_fees, const std::vector<std::int8_t>& reward_percentile);
-    bool is_london(uint64_t number);
-    intx::uint256 calculate_base_fee(const BlockHeader& header);
 
-    const silkworm::ChainConfig& config_;
+    consensus::EthashEngine engine_;
+    // const silkworm::ChainConfig& config_;
     const BlockProvider& block_provider_;
     const ReceiptsProvider& receipts_provider_;
 };

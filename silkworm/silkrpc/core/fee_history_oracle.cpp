@@ -113,7 +113,7 @@ boost::asio::awaitable<FeeHistory> FeeHistoryOracle::fee_history(uint64_t newest
         fee_history.base_fees_per_gas[index + 1] = block_fees.next_base_fee;
         fee_history.gas_used_ratio[index] = block_fees.gas_used_ratio;
     }
-    // TODO firstMissing management as in erigon
+    // TODO(sixtysixter) firstMissing management as in erigon
 
     co_return fee_history;
 }
@@ -146,9 +146,9 @@ boost::asio::awaitable<void> FeeHistoryOracle::process_block(BlockFees& block_fe
     block_fees.base_fee = header.base_fee_per_gas.value_or(0);
     block_fees.gas_used_ratio = header.gas_used / header.gas_limit;
 
-    if (is_london(header.number + 1)) {
-        block_fees.next_base_fee = calculate_base_fee(header);
-    }
+    const auto parent_block = co_await block_provider_(header.number - 1);
+
+    block_fees.next_base_fee = engine_.expected_base_fee_per_gas(header, parent_block.block.header).value_or(0);
 
     if (reward_percentile.size() == 0) {
         co_return;
@@ -185,18 +185,4 @@ boost::asio::awaitable<void> FeeHistoryOracle::process_block(BlockFees& block_fe
 
     co_return;
 }
-
-bool FeeHistoryOracle::is_london(uint64_t number) {
-    const auto london = config_.london_block.value_or(0);
-    return london < number ? false : true;
-}
-
-intx::uint256 FeeHistoryOracle::calculate_base_fee(const BlockHeader& header) {
-    if (!is_london(header.number)) {
-        return 0;  // TODO (sixtysixter) get initial base fee from params
-    }
-
-    return header.base_fee_per_gas.value_or(0);
-}
-
 }  // namespace silkworm::rpc::fee_history

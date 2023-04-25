@@ -64,7 +64,9 @@ void RpcApiTable::build_handlers(const std::string& api_spec) {
 }
 
 void RpcApiTable::add_handlers(const std::string& api_namespace) {
-    if (api_namespace == kDebugApiNamespace) {
+    if (api_namespace == kAdminApiNamespace) {
+        add_admin_handlers();
+    } else if (api_namespace == kDebugApiNamespace) {
         add_debug_handlers();
     } else if (api_namespace == kEthApiNamespace) {
         add_eth_handlers();
@@ -87,6 +89,11 @@ void RpcApiTable::add_handlers(const std::string& api_namespace) {
     } else {
         SILKRPC_WARN << "Server::add_handlers invalid namespace [" << api_namespace << "] ignored\n";
     }
+}
+
+void RpcApiTable::add_admin_handlers() {
+    method_handlers_[http::method::k_admin_nodeInfo] = &commands::RpcApi::handle_admin_node_info;
+    method_handlers_[http::method::k_admin_peers] = &commands::RpcApi::handle_admin_peers;
 }
 
 void RpcApiTable::add_debug_handlers() {
@@ -149,6 +156,7 @@ void RpcApiTable::add_eth_handlers() {
     method_handlers_[http::method::k_eth_unsubscribe] = &commands::RpcApi::handle_eth_unsubscribe;
     method_handlers_[http::method::k_eth_getBlockReceipts] = &commands::RpcApi::handle_parity_get_block_receipts;
     method_handlers_[http::method::k_eth_maxPriorityFeePerGas] = &commands::RpcApi::handle_eth_max_priority_fee_per_gas;
+    method_handlers_[http::method::k_eth_feeHistory] = &commands::RpcApi::handle_fee_history;
     // method_handlers_glaze_[http::method::k_eth_call] = &commands::RpcApi::handle_eth_call_original;
 
     // GLAZE methods

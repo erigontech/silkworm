@@ -4,8 +4,8 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 
 | Command                                    | Availability | Notes                                      |
 | :------------------------------------------| :----------: | -----------------------------------------: |
-| admin_nodeInfo                             | -            | not yet implemented                        |
-| admin_peers                                | -            | not yet implemented                        |
+| admin_nodeInfo                             | Yes          |                                            |
+| admin_peers                                | Yes          |                                            |
 |                                            |              |                                            |
 | web3_clientVersion                         | Yes          |                                            |
 | web3_sha3                                  | Yes          |                                            |
@@ -20,7 +20,7 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | eth_syncing                                | Yes          |                                            |
 | eth_gasPrice                               | Yes          |                                            |
 | eth_maxPriorityFeePerGas                   | Yes          |                                            |
-| eth_feeHistory                             | -            | not yet implemented                        |
+| eth_feeHistory                             | Yes          |                                            |
 |                                            |              |                                            |
 | eth_getBlockByHash                         | Yes          |                                            |
 | eth_getBlockByNumber                       | Yes          |                                            |

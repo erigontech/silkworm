@@ -48,6 +48,7 @@ class RpcApiTable {
   private:
     void build_handlers(const std::string& api_spec);
     void add_handlers(const std::string& api_namespace);
+    void add_admin_handlers();
     void add_debug_handlers();
     void add_eth_handlers();
     void add_net_handlers();

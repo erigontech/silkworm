@@ -44,6 +44,7 @@
 #include <silkworm/silkrpc/core/estimate_gas_oracle.hpp>
 #include <silkworm/silkrpc/core/evm_access_list_tracer.hpp>
 #include <silkworm/silkrpc/core/evm_executor.hpp>
+#include <silkworm/silkrpc/core/fee_history_oracle.hpp>
 #include <silkworm/silkrpc/core/gas_price_oracle.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/core/receipts.hpp>
@@ -2003,6 +2004,67 @@ awaitable<void> EthereumRpcApi::handle_eth_unsubscribe(const nlohmann::json& req
         ethdb::TransactionDatabase tx_database{*tx};
 
         reply = make_json_content(request["id"], to_quantity(0));
+    } catch (const std::exception& e) {
+        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+    co_return;
+}
+
+// https://eth.wiki/json-rpc/API#eth_feehistory
+awaitable<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request["params"];
+    if (params.size() != 3) {
+        const auto error_msg = "invalid eth_feeHistory params: " + params.dump();
+        SILKRPC_ERROR << error_msg << "\n";
+        reply = make_json_error(request["id"], 100, error_msg);
+        co_return;
+    }
+
+    uint64_t block_count;
+    if (params[0].is_string()) {
+        const auto value = params[0].get<std::string>();
+        block_count = std::stoul(value, nullptr, 16);
+    } else {
+        block_count = params[0].get<uint64_t>();
+    }
+    const auto newest_block = params[1].get<std::string>();
+    const auto reward_percentile = params[2].get<std::vector<std::int8_t>>();
+
+    SILKRPC_LOG << "block_count: " << block_count
+                << ", newest_block: " << newest_block
+                << ", reward_percentile size: " << reward_percentile.size() << "\n";
+
+    auto tx = co_await database_->begin();
+
+    try {
+        ethdb::TransactionDatabase tx_database{*tx};
+
+        rpc::fee_history::BlockProvider block_provider = [this, &tx_database](uint64_t block_number) {
+            return core::read_block_by_number(*(this->block_cache_), tx_database, block_number);
+        };
+        rpc::fee_history::ReceiptsProvider receipts_provider = [&tx_database](const BlockWithHash& block_with_hash) {
+            return core::get_receipts(tx_database, block_with_hash);
+        };
+
+        const auto chain_id = co_await core::rawdb::read_chain_id(tx_database);
+        const auto chain_config_ptr = lookup_chain_config(chain_id);
+
+        rpc::fee_history::FeeHistoryOracle oracle{*chain_config_ptr, block_provider, receipts_provider};
+
+        const auto block_number = co_await core::get_block_number(newest_block, tx_database);
+        auto fee_history = co_await oracle.fee_history(block_number, block_count, reward_percentile);
+
+        if (fee_history.error) {
+            reply = make_json_error(request["id"], -32000, fee_history.error.value());
+        } else {
+            reply = make_json_content(request["id"], fee_history);
+        }
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
         reply = make_json_error(request["id"], 100, e.what());

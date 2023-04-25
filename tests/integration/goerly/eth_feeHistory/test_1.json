@@ -1,0 +1,34 @@
+[
+    {
+        "request": {
+            "jsonrpc": "2.0",
+            "method": "eth_feeHistory",
+            "params": [
+                1,
+                "0x867A80",
+                [25, 75]
+            ],
+            "id": 1
+        },
+        "response": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+                "baseFeePerGas": [
+                    "0x13c723946e",
+                    "0x163fe26534"
+                ],
+                "gasUsedRatio": [
+                    0.9998838666666666
+                ],
+                "oldestBlock": "0x867a80",
+                "reward": [
+                    [
+                        "0x59682f00",
+                        "0x9502f900"
+                    ]
+                ]
+            }
+        }
+    }
+]

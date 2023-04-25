@@ -18,13 +18,13 @@ limitations under the License.
 #include <stdexcept>
 
 #include <CLI/CLI.hpp>
+#include <ethash/keccak.hpp>
 #include <nlohmann/json.hpp>
+#include <secp256k1_recovery.h>
 
-#include <silkworm/core/consensus/engine.hpp>
+#include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/execution/execution.hpp>
-#include <silkworm/infra/common/directories.hpp>
-#include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/db/buffer.hpp>
+#include <silkworm/infra/common/secp256k1_context.hpp>
 
 #include "ExpectedState.hpp"
 #include "silkworm/core/state/in_memory_state.hpp"
@@ -33,8 +33,6 @@ limitations under the License.
 
 namespace {
 class StateTransition {
-    nlohmann::json baseJson;
-
     nlohmann::json testData;
     std::string testName;
 
@@ -42,6 +40,7 @@ class StateTransition {
     explicit StateTransition(const std::string& fileName) noexcept {
         std::string basePath = "/home/jacek/dev/silkworm/cmd/";
         std::ifstream input_file(basePath + fileName);
+        nlohmann::json baseJson;
         input_file >> baseJson;
         auto testObject = baseJson.begin();
         testName = testObject.key();
@@ -55,40 +54,80 @@ class StateTransition {
     std::string getEnv(const std::string& key) {
         return testData.at("env").at(key);
     }
-
-    // get transaction
-    ExpectedState getExpectedState() {
-        auto expectedState = testData.at("post").begin();
-        nlohmann::json data = expectedState.value();
-        const std::string& key = expectedState.key();
-        return ExpectedState(data, key);
+    bool containsEnv(const std::string& key) {
+        return testData.at("env").contains(key);
     }
 
-    silkworm::Transaction getTransaction() {
-        return silkworm::Transaction();
+    // get transaction
+    std::vector<ExpectedState> getExpectedStates() {
+        std::vector<ExpectedState> expectedStates;
+
+        auto post = testData.at("post");
+
+        for (const auto& postState : post.items()) {
+            nlohmann::json data = postState.value();
+            const std::string& key = postState.key();
+            expectedStates.emplace_back(data, key);
+        }
+
+        return expectedStates;
+    }
+
+    static evmc::address toEvmcAddress(const std::string& address) {
+        evmc::address out;
+        if (!address.empty()) {
+            auto bytes = silkworm::from_hex(address);
+            out = silkworm::to_evmc_address(bytes.value_or(Bytes{}));
+        }
+
+        return out;
     }
 
     // get block
     silkworm::Block getBlock() {
-        auto block = testData.at("pre").at("block");
-        return silkworm::Block();
+        auto block = silkworm::Block();
+
+        block.header.beneficiary = toEvmcAddress(getEnv("currentCoinbase"));
+        block.header.difficulty = intx::from_string<intx::uint256>(getEnv("currentDifficulty"));
+        block.header.gas_limit = std::stoull(getEnv("currentGasLimit"), nullptr, /*base=*/16);
+        block.header.number = std::stoull(getEnv("currentNumber"), nullptr, /*base=*/16);
+        block.header.timestamp = std::stoull(getEnv("currentTimestamp"), nullptr, /*base=*/16);
+        block.header.parent_hash = to_bytes32(silkworm::from_hex(getEnv("previousHash")).value_or(silkworm::Bytes{}));
+
+        if (containsEnv("currentRandom")) {
+            block.header.mix_hash = to_bytes32(silkworm::from_hex(getEnv("currentRandom")).value_or(silkworm::Bytes{}));
+        }
+
+        if (containsEnv("currentBaseFee")) {
+            block.header.base_fee_per_gas = intx::from_string<intx::uint256>(getEnv("currentBaseFee"));
+        }
+
+        return block;
     }
 
-    void setInitialState(silkworm::InMemoryState* /*pState*/) {
+    void setInitialState(silkworm::InMemoryState* pState) {
+        auto pre = testData["pre"];
 
-        for (auto it = testData.at("pre").begin(); it != testData.at("pre").end(); ++it) {
-            auto key = it.key();
-            auto value = it.value();
-            if (key == "block") {
-                continue;
+        for (const auto& preState : pre.items()) {
+            const auto address = toEvmcAddress(preState.key());
+            const nlohmann::json preStateValue = preState.value();
+
+            auto account = silkworm::Account();
+            account.balance = intx::from_string<intx::uint256>(preStateValue.at("balance"));
+            account.nonce = std::stoull(std::string(preStateValue.at("nonce")), nullptr, 16);
+
+            const Bytes code{from_hex(std::string(preStateValue.at("code"))).value()};
+            account.code_hash = silkworm::bit_cast<evmc_bytes32>(keccak256(code));
+            account.incarnation = kDefaultIncarnation;
+
+            pState->update_account(address, /*initial=*/std::nullopt, account);
+            pState->update_account_code(address, account.incarnation, account.code_hash, code);
+
+            for (const auto& storage : preStateValue.at("storage").items()) {
+                Bytes key{from_hex(storage.key()).value()};
+                Bytes value{from_hex(storage.value().get<std::string>()).value()};
+                pState->update_storage(address, account.incarnation, to_bytes32(key), /*initial=*/{}, to_bytes32(value));
             }
-            auto address = silkworm::from_hex(key);
-//            auto account = silkworm::Account();
-//
-//            account.balance = 0;
-//            pState->update_account(address, account, tr);
-//            pState->update_account_code(address, account);
-//            pState->update_storage(address, account);
         }
     }
 
@@ -100,23 +139,106 @@ class StateTransition {
         return state;
     }
 
-    void validateTransation(silkworm::Receipt /*receipt*/, ExpectedState /*state*/) {
-        throw "not implemented";
+    bool privateKeyToAddress(evmc::address& address, const std::string& privateKey) {
+        SecP256K1Context ctx{/* allow_verify = */ false, /* allow_sign = */ true};
+        secp256k1_pubkey public_key;
+        auto private_key = from_hex(privateKey);
+        ctx.create_public_key(&public_key, private_key.value());
+
+        auto key_hash = ethash::keccak256(public_key.data, 64);
+        uint8_t out[20];
+        memcpy(out, &key_hash.bytes[12], 20);
+        address = silkworm::to_evmc_address(out);
+        return true;
+    }
+
+    silkworm::Transaction getTransaction(const ExpectedStateTransaction expectedStateTransaction) {
+        silkworm::Transaction txn;
+        auto jTransaction = testData["transaction"];
+
+        txn.nonce = std::stoull(jTransaction.at("nonce").get<std::string>(), nullptr, 16);
+        txn.to = toEvmcAddress(jTransaction.at("to").get<std::string>());
+        evmc::address from_address;
+        privateKeyToAddress(from_address, jTransaction["secretKey"]);
+        txn.from = from_address;
+
+        txn.from = toEvmcAddress("0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b");
+
+        //        if (jTransaction.contains("gasPrice")) {
+        //            txn.type = silkworm::Transaction::Type::kLegacy;
+        //            txn.max_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("gasPrice").get<std::string>());
+        //            txn.max_priority_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("gasPrice").get<std::string>());
+        //        } else {
+        //            txn.type = silkworm::Transaction::Type::kEip1559;
+        //            txn.max_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("maxFeePerGas").get<std::string>());
+        //            txn.max_priority_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("maxPriorityFeePerGas").get<std::string>());
+        //        }
+        if (jTransaction.contains("gasPrice")) {
+            txn.type = silkworm::Transaction::Type::kLegacy;
+            txn.max_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("gasPrice").get<std::string>());
+            txn.max_priority_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("gasPrice").get<std::string>());
+        } else {
+            txn.type = silkworm::Transaction::Type::kEip1559;
+            txn.max_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("maxFeePerGas").get<std::string>());
+            txn.max_priority_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("maxPriorityFeePerGas").get<std::string>());
+        }
+
+        if (expectedStateTransaction.dataIndex >= jTransaction.at("data").size()) {
+            throw std::runtime_error("data index out of range");
+        } else {
+            txn.data = from_hex(jTransaction.at("data").at(expectedStateTransaction.dataIndex).get<std::string>()).value();
+        }
+
+        if (expectedStateTransaction.gasIndex >= jTransaction.at("gasLimit").size()) {
+            throw std::runtime_error("gas limit index out of range");
+        } else {
+            txn.gas_limit = std::stoull(jTransaction.at("gasLimit").at(expectedStateTransaction.gasIndex).get<std::string>(), nullptr, 16);
+        }
+
+        if (expectedStateTransaction.valueIndex >= jTransaction.at("value").size()) {
+            throw std::runtime_error("value index out of range");
+        } else {
+            txn.value = intx::from_string<intx::uint256>(jTransaction.at("value").at(expectedStateTransaction.valueIndex).get<std::string>());
+        }
+
+        return txn;
+    }
+
+    static void validateTransition(const silkworm::Receipt& /*receipt*/, const ExpectedState& /*state*/) {
+        throw std::runtime_error("not implemented");
     }
 
     void run() {
-        auto expectedState = getExpectedState();
-        auto block = getBlock();
-        auto state = getState();
-        auto engine = expectedState.getEngine();
+        for (auto& expectedState : getExpectedStates()) {
+            auto config = expectedState.getConfig();
+            auto engine = expectedState.getEngine();
+            for (const auto& expectedStateTransaction : expectedState.getTransactions()) {
+                auto block = getBlock();
+                auto state = getState();
 
-        silkworm::ExecutionProcessor processor{block, *engine, *state, expectedState.getConfig()};
+                silkworm::ExecutionProcessor processor{block, *engine, *state, config};
+                silkworm::Receipt receipt;
 
-        silkworm::Receipt receipt;
-        auto txn = getTransaction();
-        processor.execute_transaction(txn, receipt);
+                auto txn = getTransaction(expectedStateTransaction);
 
-        validateTransation(receipt, expectedState);
+                processor.execute_transaction(txn, receipt);
+                validateTransition(receipt, expectedState);
+            }
+        }
+
+        //        auto expectedState = getExpectedState();
+        //        auto config = expectedState.getConfig();
+        //        auto engine = expectedState.getEngine();
+        //        auto block = getBlock();
+        //        auto state = getState();
+        //
+        //        silkworm::ExecutionProcessor processor{block, *engine, *state, config};
+        //
+        //        silkworm::Receipt receipt;
+        //        auto txn = getTransaction();
+        //        processor.execute_transaction(txn, receipt);
+        //
+        //        validateTransition(receipt, expectedState);
     }
 
     //    void run()  {
@@ -127,12 +249,24 @@ class StateTransition {
 
 int main(int argc, char* argv[]) {
     CLI::App app{"Executes Ethereum state transition tests"};
-    using namespace silkworm;
-    CLI11_PARSE(app, argc, argv);
+    CLI11_PARSE(app, argc, argv)
 
     auto stateTransition = new StateTransition("state_transition_sample.json");
     std::cout << stateTransition->name() << std::endl;
     std::cout << stateTransition->getEnv("currentCoinbase") << std::endl;
 
+    try {
+        stateTransition->run();
+    } catch (const std::exception& e) {
+        // code to handle exceptions of type std::exception and its derived classes
+        const auto desc = e.what();
+        std::cerr << desc << std::endl;
+    } catch (int e) {
+        // code to handle exceptions of type int
+        std::cerr << "An integer exception occurred: " << e << std::endl;
+    } catch (...) {
+        // code to handle any other type of exception
+        std::cerr << "An unknown exception occurred" << std::endl;
+    }
     std::cout << "Hello world";
 }

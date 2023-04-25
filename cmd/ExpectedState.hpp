@@ -10,7 +10,6 @@
 #include <silkworm/core/common/test_util.hpp>
 
 using namespace silkworm;
-using namespace silkworm::consensus;
 
 static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"Frontier", test::kFrontierConfig},
@@ -240,6 +239,15 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
      }},
 };
 
+class ExpectedStateTransaction {
+public:
+    evmc::bytes32 txHash;
+    evmc::bytes32 logsHash;
+    unsigned long dataIndex{};
+    unsigned long gasIndex{};
+    unsigned long valueIndex{};
+};
+
 class ExpectedState {
     nlohmann::json stateData;
     std::string forkName;
@@ -271,4 +279,21 @@ class ExpectedState {
 
         return engine;
     }
+
+    std::vector<ExpectedStateTransaction> getTransactions() {
+        std::vector<ExpectedStateTransaction> transactions;
+
+        for (auto& tx : stateData) {
+            ExpectedStateTransaction transaction;
+
+            transaction.txHash = silkworm::to_bytes32(from_hex(tx["hash"].get<std::string>()).value_or(Bytes{}));
+            transaction.logsHash = silkworm::to_bytes32(from_hex(tx["logs"].get<std::string>()).value_or(Bytes{}));
+            transaction.dataIndex = tx["indexes"]["data"].get<unsigned long>();
+            transaction.gasIndex = tx["indexes"]["gas"].get<unsigned long>();
+            transaction.valueIndex = tx["indexes"]["value"].get<unsigned long>();
+            transactions.push_back(transaction);
+        }
+
+        return transactions;
+    }    
 };

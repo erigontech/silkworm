@@ -192,6 +192,18 @@ std::vector<BlockNum> ChainConfig::distinct_fork_numbers() const {
     return {ret.cbegin(), ret.cend()};
 }
 
+bool ChainConfig::is_london_fork() const noexcept {
+    return london_block.has_value();
+}
+
+bool ChainConfig::is_shanghai_fork() const noexcept {
+    return shanghai_time.has_value();
+}
+
+bool ChainConfig::is_cancun_fork() const noexcept {
+    return cancun_time.has_value();
+}
+
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj) { return out << obj.to_json(); }
 
 std::optional<std::pair<const std::string, const ChainConfig*>> lookup_known_chain(const uint64_t chain_id) noexcept {

@@ -28,32 +28,35 @@
 #include <boost/asio/io_context.hpp>
 #include <grpcpp/grpcpp.h>
 
+#include <silkworm/infra/concurrency/context_pool.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
-#include <silkworm/infra/grpc/server/wait_strategy.hpp>
 
 namespace silkworm::rpc {
+
+using ServerCompletionQueuePtr = std::unique_ptr<::grpc::ServerCompletionQueue>;
+using ServerCompletionQueueFactory = std::function<ServerCompletionQueuePtr()>;
 
 //! Asynchronous server scheduler running an execution loop.
 class ServerContext {
   public:
-    explicit ServerContext(std::size_t context_id, std::unique_ptr<grpc::ServerCompletionQueue>&& server_queue,
-                           WaitMode wait_mode = WaitMode::blocking);
+    ServerContext(std::size_t context_id, ServerCompletionQueuePtr&& server_queue,
+                  concurrency::WaitMode wait_mode = concurrency::WaitMode::blocking);
 
-    [[nodiscard]] boost::asio::io_context* io_context() const noexcept { return io_context_.get(); }
-    [[nodiscard]] grpc::ServerCompletionQueue* server_queue() const noexcept { return server_grpc_context_->get_server_completion_queue(); }
+    [[nodiscard]] boost::asio::io_context* io_context() const noexcept { return context_.io_context(); }
+    [[nodiscard]] concurrency::WaitMode wait_mode() const noexcept { return context_.wait_mode(); }
+    [[nodiscard]] std::size_t id() const noexcept { return context_.id(); }
     [[nodiscard]] agrpc::GrpcContext* server_grpc_context() const noexcept { return server_grpc_context_.get(); }
     [[nodiscard]] agrpc::GrpcContext* client_grpc_context() const noexcept { return client_grpc_context_.get(); }
-    [[nodiscard]] WaitMode wait_mode() const noexcept { return wait_mode_; }
 
     //! Execute the scheduler loop until stopped.
     void execute_loop();
 
     //! Stop the execution loop.
-    void stop();
+    void stop() { context_.stop(); }
 
   private:
-    //! Execute asio-grpc loop until stopped.
-    void execute_loop_agrpc();
+    //! Execute back-off loop until stopped.
+    void execute_loop_backoff();
 
     //! Execute single-threaded loop until stopped.
     template <typename WaitStrategy>
@@ -62,14 +65,8 @@ class ServerContext {
     //! Execute multi-threaded loop until stopped.
     void execute_loop_multi_threaded();
 
-    //! The unique scheduler identifier.
-    std::size_t context_id_;
-
-    //! The asio asynchronous event loop scheduler.
-    std::shared_ptr<boost::asio::io_context> io_context_;
-
-    //! The work-tracking executor that keep the asio scheduler running.
-    boost::asio::execution::any_executor<> work_;
+    //! The execution context.
+    concurrency::Context context_;
 
     //! The asio-grpc asynchronous event schedulers.
     std::unique_ptr<agrpc::GrpcContext> server_grpc_context_;
@@ -78,9 +75,6 @@ class ServerContext {
     //! The work-tracking executors that keep the asio-grpc scheduler running.
     boost::asio::executor_work_guard<agrpc::GrpcContext::executor_type> server_grpc_context_work_;
     boost::asio::executor_work_guard<agrpc::GrpcContext::executor_type> client_grpc_context_work_;
-
-    //! The waiting mode used by execution loops during idle cycles.
-    WaitMode wait_mode_;
 };
 
 std::ostream& operator<<(std::ostream& out, const ServerContext& c);
@@ -91,44 +85,38 @@ class ServerContextPool {
     explicit ServerContextPool(std::size_t pool_size);
     ServerContextPool(
         concurrency::ContextPoolSettings settings,
-        const std::function<std::unique_ptr<grpc::ServerCompletionQueue>()>& queue_factory);
+        const ServerCompletionQueueFactory& queue_factory);
     ~ServerContextPool();
 
     ServerContextPool(const ServerContextPool&) = delete;
     ServerContextPool& operator=(const ServerContextPool&) = delete;
 
     //! Add a new \ref ServerContext to the pool.
-    void add_context(std::unique_ptr<grpc::ServerCompletionQueue> queue, WaitMode wait_mode);
+    void add_context(ServerCompletionQueuePtr queue, concurrency::WaitMode wait_mode);
+
+    //! Add a new \ref ServerContext to the pool.
+    const ServerContext& add_context(ServerContext&& context);
 
     //! Start one execution thread for each server context.
-    void start();
+    void start() { execution_pool_.start(); }
 
     //! Wait for termination of all execution threads. This will block until \ref stop() is called.
-    void join();
+    void join() { execution_pool_.join(); }
 
     //! Stop all execution threads. This does *NOT* wait for termination: use \ref join() for that.
-    void stop();
+    void stop() { execution_pool_.stop(); }
 
-    void run();
+    void run() { execution_pool_.run(); }
 
-    [[nodiscard]] std::size_t num_contexts() const { return contexts_.size(); }
+    [[nodiscard]] std::size_t num_contexts() const { return execution_pool_.num_contexts(); }
 
-    ServerContext const& next_context();
+    ServerContext const& next_context() { return execution_pool_.next_context(); }
 
-    boost::asio::io_context& next_io_context();
+    boost::asio::io_context& next_io_context() { return execution_pool_.next_io_context(); }
 
   private:
     //! The pool of execution contexts.
-    std::vector<ServerContext> contexts_;
-
-    //! The pool of threads running the execution contexts.
-    boost::asio::detail::thread_group context_threads_;
-
-    //! The index for obtaining next context to use (round-robin).
-    std::atomic_size_t next_index_;
-
-    //! Flag indicating if pool has been stopped.
-    std::atomic_bool stopped_{false};
+    concurrency::ContextPool<ServerContext> execution_pool_;
 };
 
 }  // namespace silkworm::rpc

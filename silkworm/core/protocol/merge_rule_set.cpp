@@ -70,9 +70,9 @@ ValidationResult MergeRuleSet::validate_seal(const BlockHeader& header) {
     return header.nonce == BlockHeader::NonceType{} ? ValidationResult::kOk : ValidationResult::kInvalidNonce;
 }
 
-void MergeRuleSet::finalize(IntraBlockState& state, const Block& block, evmc_revision revision) {
+void MergeRuleSet::finalize(IntraBlockState& state, const Block& block) {
     if (block.header.difficulty != 0) {
-        pre_merge_rule_set_->finalize(state, block, revision);
+        pre_merge_rule_set_->finalize(state, block);
         return;
     }
 

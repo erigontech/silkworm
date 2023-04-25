@@ -16,11 +16,18 @@
 
 #pragma once
 
+#include <ostream>
+
 #include <ethash/ethash.hpp>
 
 #include <silkworm/core/protocol/base_rule_set.hpp>
 
 namespace silkworm::protocol {
+
+struct BlockReward {
+    intx::uint256 miner;
+    std::vector<intx::uint256> ommers;
+};
 
 // Proof of Work implementation
 class EthashRuleSet : public BaseRuleSet {
@@ -33,8 +40,9 @@ class EthashRuleSet : public BaseRuleSet {
     //! \brief See [YP] Section 11.3 "Reward Application".
     //! \param [in] state: current state.
     //! \param [in] block: current block to apply rewards for.
-    //! \param [in] revision: EVM fork.
-    void finalize(IntraBlockState& state, const Block& block, evmc_revision revision) override;
+    void finalize(IntraBlockState& state, const Block& block) override;
+
+    static BlockReward compute_reward(const ChainConfig& config, const Block& block);
 
     // Canonical difficulty of a Proof-of-Work block header.
     // See Section 4.3.4 "Block Header Validity" of the Yellow Paper and also
@@ -49,5 +57,7 @@ class EthashRuleSet : public BaseRuleSet {
   private:
     ethash::epoch_context_ptr epoch_context_{nullptr, ethash_destroy_epoch_context};
 };
+
+std::ostream& operator<<(std::ostream& out, const BlockReward& reward);
 
 }  // namespace silkworm::protocol

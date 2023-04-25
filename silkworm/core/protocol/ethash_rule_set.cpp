@@ -22,27 +22,6 @@
 
 namespace silkworm::protocol {
 
-void EthashRuleSet::finalize(IntraBlockState& state, const Block& block, const evmc_revision revision) {
-    intx::uint256 block_reward;
-    if (revision >= EVMC_CONSTANTINOPLE) {
-        block_reward = kBlockRewardConstantinople;
-    } else if (revision >= EVMC_BYZANTIUM) {
-        block_reward = kBlockRewardByzantium;
-    } else {
-        block_reward = kBlockRewardFrontier;
-    }
-
-    const uint64_t block_number{block.header.number};
-    intx::uint256 miner_reward{block_reward};
-    for (const BlockHeader& ommer : block.ommers) {
-        const intx::uint256 ommer_reward{((8 + ommer.number - block_number) * block_reward) >> 3};
-        state.add_to_balance(ommer.beneficiary, ommer_reward);
-        miner_reward += block_reward >> 5;  // div 32
-    }
-
-    state.add_to_balance(block.header.beneficiary, miner_reward);
-}
-
 // Ethash ProofOfWork verification
 ValidationResult EthashRuleSet::validate_seal(const BlockHeader& header) {
     const int epoch_number{static_cast<int>(header.number / ethash::epoch_length)};
@@ -65,6 +44,41 @@ intx::uint256 EthashRuleSet::difficulty(const BlockHeader& header, const BlockHe
     const bool parent_has_uncles{parent.ommers_hash != kEmptyListHash};
     return difficulty(header.number, header.timestamp, parent.difficulty,
                       parent.timestamp, parent_has_uncles, chain_config_);
+}
+
+void EthashRuleSet::finalize(IntraBlockState& state, const Block& block) {
+    const BlockReward reward{compute_reward(chain_config_, block)};
+    state.add_to_balance(get_beneficiary(block.header), reward.miner);
+    for (size_t i{0}; i < block.ommers.size(); ++i) {
+        state.add_to_balance(block.ommers[i].beneficiary, reward.ommers[i]);
+    }
+}
+
+static intx::uint256 block_reward_base(const evmc_revision rev) {
+    if (rev >= EVMC_CONSTANTINOPLE) {
+        return kBlockRewardConstantinople;
+    } else if (rev >= EVMC_BYZANTIUM) {
+        return kBlockRewardByzantium;
+    }
+    return kBlockRewardFrontier;
+}
+
+BlockReward EthashRuleSet::compute_reward(const ChainConfig& config, const Block& block) {
+    const BlockNum block_number{block.header.number};
+    const evmc_revision rev{config.revision(block_number, block.header.timestamp)};
+    const intx::uint256 base{block_reward_base(rev)};
+
+    intx::uint256 miner_reward{base};
+    std::vector<intx::uint256> ommer_rewards;
+    ommer_rewards.reserve(block.ommers.size());
+    // Accumulate the rewards for the miner and any included uncles
+    for (const BlockHeader& ommer : block.ommers) {
+        const intx::uint256 ommer_reward{((8 + ommer.number - block_number) * base) >> 3};
+        ommer_rewards.push_back(ommer_reward);
+        miner_reward += base >> 5;  // div 32
+    }
+
+    return {miner_reward, ommer_rewards};
 }
 
 intx::uint256 EthashRuleSet::difficulty(uint64_t block_number, const uint64_t block_timestamp,
@@ -138,6 +152,18 @@ intx::uint256 EthashRuleSet::difficulty(uint64_t block_number, const uint64_t bl
         difficulty = kMinDifficulty;
     }
     return difficulty;
+}
+
+std::ostream& operator<<(std::ostream& out, const BlockReward& reward) {
+    out << "miner_reward: " << intx::to_string(reward.miner) << " ommer_rewards: [";
+    for (std::size_t i{0}; i < reward.ommers.size(); ++i) {
+        out << intx::to_string(reward.ommers[i]);
+        if (i != reward.ommers.size() - 1) {
+            out << " ";
+        }
+    }
+    out << "]";
+    return out;
 }
 
 }  // namespace silkworm::protocol

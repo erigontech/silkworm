@@ -59,9 +59,8 @@ class IRuleSet {
     //! \brief Finalizes block execution by applying changes stipulated by the protocol (e.g. block rewards, withdrawals)
     //! \param [in] state: current state.
     //! \param [in] block: current block to apply rewards for.
-    //! \param [in] revision: EVM fork.
     //! \remarks For Ethash See [YP] Section 11.3 "Reward Application".
-    virtual void finalize(IntraBlockState& state, const Block& block, evmc_revision revision) = 0;
+    virtual void finalize(IntraBlockState& state, const Block& block) = 0;
 
     //! \brief See [YP] Section 11.3 "Reward Application".
     //! \param [in] header: Current block to get beneficiary from

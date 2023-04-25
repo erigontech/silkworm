@@ -167,10 +167,9 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
         ++receipt_it;
     }
 
-    const evmc_revision rev{evm_.revision()};
-    rule_set_.finalize(state_, block, rev);
+    rule_set_.finalize(state_, block);
 
-    if (rev >= EVMC_SPURIOUS_DRAGON) {
+    if (evm_.revision() >= EVMC_SPURIOUS_DRAGON) {
         state_.destruct_touched_dead();
     }
 

@@ -77,14 +77,14 @@ int main(int argc, char* argv[]) {
         auto env{db::open_env(db_config)};
         db::RWTxn txn{env};
         auto chain_config{db::read_chain_config(txn)};
-        if (!chain_config.has_value()) {
+        if (!chain_config) {
             throw std::runtime_error("Unable to retrieve chain config");
         }
 
         AdvancedAnalysisCache analysis_cache;
         ObjectPool<EvmoneExecutionState> state_pool;
         std::vector<Receipt> receipts;
-        auto rule_set{protocol::rule_set_factory(chain_config.value())};
+        auto rule_set{protocol::rule_set_factory(*chain_config)};
         Block block;
         for (; block_num < to; ++block_num) {
             txn->renew_reading();

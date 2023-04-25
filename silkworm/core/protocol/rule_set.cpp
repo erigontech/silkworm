@@ -45,7 +45,6 @@ RuleSetPtr rule_set_factory(const ChainConfig& chain_config) {
     if (chain_config.terminal_total_difficulty) {
         rule_set = std::make_unique<MergeRuleSet>(std::move(rule_set), chain_config);
     }
-
     return rule_set;
 }
 

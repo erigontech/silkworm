@@ -22,7 +22,7 @@
 
 namespace silkworm::protocol {
 
-TEST_CASE("RuleSet factory") {
+TEST_CASE("Rule Set factory") {
     RuleSetPtr rule_set;
     rule_set = rule_set_factory(kMainnetConfig);  // Ethash rule set
     CHECK(rule_set != nullptr);
@@ -38,7 +38,7 @@ TEST_CASE("RuleSet factory") {
     CHECK(rule_set == nullptr);
 }
 
-TEST_CASE("RuleSet Seal") {
+TEST_CASE("Rule Set Seal") {
     RuleSetPtr rule_set{rule_set_factory(ChainConfig{.protocol_rule_set = RuleSetType::kEthash})};
     BlockHeader fake_header{};
     CHECK(rule_set->validate_seal(fake_header) != ValidationResult::kOk);

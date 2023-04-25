@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
         if (!chain_config) {
             throw std::runtime_error("Unable to retrieve chain config");
         }
-        auto rule_set{protocol::rule_set_factory(chain_config.value())};
+        auto rule_set{protocol::rule_set_factory(*chain_config)};
         if (!rule_set) {
             throw std::runtime_error("Unable to retrieve protocol rule set");
         }

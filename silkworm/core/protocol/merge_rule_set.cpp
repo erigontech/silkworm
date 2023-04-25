@@ -47,16 +47,17 @@ ValidationResult MergeRuleSet::validate_block_header(const BlockHeader& header, 
     if (!parent_total_difficulty) {
         return ValidationResult::kUnknownParentTotalDifficulty;
     }
+    const bool ttd_reached{parent_total_difficulty >= terminal_total_difficulty_};
 
     if (header.difficulty != 0) {
-        if (parent_total_difficulty >= terminal_total_difficulty_) {
+        if (ttd_reached) {
             return ValidationResult::kPoWBlockAfterMerge;
         }
         return pre_merge_rule_set_->validate_block_header(header, state, with_future_timestamp_check);
     }
 
     // PoS block
-    if (parent_total_difficulty < terminal_total_difficulty_) {
+    if (!ttd_reached) {
         return ValidationResult::kPoSBlockBeforeMerge;
     }
     return BaseRuleSet::validate_block_header(header, state, with_future_timestamp_check);

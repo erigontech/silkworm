@@ -56,7 +56,7 @@ class IRuleSet {
     //! \param [in] state: current state.
     virtual ValidationResult validate_ommers(const Block& block, const BlockState& state) = 0;
 
-    //! \brief Finalizes block execution by applying changes in the state of accounts or of the consensus protocol itself
+    //! \brief Finalizes block execution by applying changes stipulated by the protocol (e.g. block rewards, withdrawals)
     //! \param [in] state: current state.
     //! \param [in] block: current block to apply rewards for.
     //! \param [in] revision: EVM fork.
@@ -70,7 +70,7 @@ class IRuleSet {
 
 using RuleSetPtr = std::unique_ptr<IRuleSet>;
 
-//! \brief Creates an instance of the proper RuleSet on behalf of chain configuration
+//! \brief Creates an instance of the proper Rule Set on behalf of chain configuration
 RuleSetPtr rule_set_factory(const ChainConfig& chain_config);
 
 }  // namespace silkworm::protocol

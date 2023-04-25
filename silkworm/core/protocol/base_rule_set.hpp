@@ -58,6 +58,7 @@ class BaseRuleSet : public IRuleSet {
     bool prohibit_ommers_{false};
 
     //! \brief Calculates the difficulty of the header
+    //! \note Used by validate_block_header
     virtual intx::uint256 difficulty(const BlockHeader& header, const BlockHeader& parent) = 0;
 
     //! \brief See [YP] Section 11.1 "Ommer Validation"

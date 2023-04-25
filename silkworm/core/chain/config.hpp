@@ -49,7 +49,7 @@ struct ChainConfig {
     //! \brief Holds the hash of genesis block
     std::optional<evmc::bytes32> genesis_hash;
 
-    //! \brief Returns the type of the protocol rule set
+    //! \brief Returns the type of the (pre-Merge) protocol rule set
     protocol::RuleSetType protocol_rule_set{protocol::RuleSetType::kNoProof};
 
     // https://github.com/ethereum/execution-specs/tree/master/network-upgrades/mainnet-upgrades

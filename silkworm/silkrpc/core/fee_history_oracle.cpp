@@ -21,7 +21,7 @@
 #include <boost/asio/post.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
-#include <silkworm/core/consensus/base/engine.hpp>
+#include <silkworm/core/protocol/validation.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
@@ -150,7 +150,7 @@ boost::asio::awaitable<void> FeeHistoryOracle::process_block(BlockFees& block_fe
     const auto parent_block = co_await block_provider_(header.number - 1);
 
     const auto evmc_revision = config_.revision(parent_block.block.header.number, parent_block.block.header.timestamp);
-    block_fees.next_base_fee = silkworm::consensus::expected_base_fee_per_gas(parent_block.block.header, evmc_revision).value_or(0);
+    block_fees.next_base_fee = protocol::expected_base_fee_per_gas(parent_block.block.header, evmc_revision).value_or(0);
 
     if (reward_percentile.size() == 0) {
         co_return;

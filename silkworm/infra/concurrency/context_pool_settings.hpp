@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <silkworm/infra/grpc/server/wait_strategy.hpp>
+#include <silkworm/infra/concurrency/idle_strategy.hpp>
 
 namespace silkworm::concurrency {
 
@@ -24,7 +24,7 @@ struct ContextPoolSettings {
     // initialized in the constructor based on hardware_concurrency
     uint32_t num_contexts{0};
 
-    silkworm::rpc::WaitMode wait_mode{silkworm::rpc::WaitMode::blocking};
+    WaitMode wait_mode{WaitMode::blocking};
 
     ContextPoolSettings();
 };

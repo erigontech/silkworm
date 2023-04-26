@@ -51,14 +51,14 @@ nlohmann::json ChainConfig::to_json() const noexcept {
     ret["chainId"] = chain_id;
 
     nlohmann::json empty_object(nlohmann::json::value_t::object);
-    switch (seal_engine) {
-        case silkworm::SealEngineType::kEthash:
+    switch (protocol_rule_set) {
+        case protocol::RuleSetType::kEthash:
             ret.emplace("ethash", empty_object);
             break;
-        case silkworm::SealEngineType::kClique:
+        case protocol::RuleSetType::kClique:
             ret.emplace("clique", empty_object);
             break;
-        case silkworm::SealEngineType::kAuRA:
+        case protocol::RuleSetType::kAuRa:
             ret.emplace("aura", empty_object);
             break;
         default:
@@ -79,7 +79,7 @@ nlohmann::json ChainConfig::to_json() const noexcept {
     member_to_json(ret, "arrowGlacierBlock", arrow_glacier_block);
     member_to_json(ret, "grayGlacierBlock", gray_glacier_block);
 
-    if (terminal_total_difficulty.has_value()) {
+    if (terminal_total_difficulty) {
         // TODO (Andrew) geth probably treats terminalTotalDifficulty as a JSON number
         ret[kTerminalTotalDifficulty] = to_string(*terminal_total_difficulty);
     }
@@ -104,13 +104,13 @@ std::optional<ChainConfig> ChainConfig::from_json(const nlohmann::json& json) no
     config.chain_id = json["chainId"].get<uint64_t>();
 
     if (json.contains("ethash")) {
-        config.seal_engine = SealEngineType::kEthash;
+        config.protocol_rule_set = protocol::RuleSetType::kEthash;
     } else if (json.contains("clique")) {
-        config.seal_engine = SealEngineType::kClique;
+        config.protocol_rule_set = protocol::RuleSetType::kClique;
     } else if (json.contains("aura")) {
-        config.seal_engine = SealEngineType::kAuRA;
+        config.protocol_rule_set = protocol::RuleSetType::kAuRa;
     } else {
-        config.seal_engine = SealEngineType::kNoProof;
+        config.protocol_rule_set = protocol::RuleSetType::kNoProof;
     }
 
     read_json_config_member(json, "homesteadBlock", config.homestead_block);

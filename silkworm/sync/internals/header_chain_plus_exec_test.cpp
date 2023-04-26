@@ -20,7 +20,7 @@
 
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/cast.hpp>
-#include <silkworm/core/consensus/engine.hpp>
+#include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test/log.hpp>
@@ -33,7 +33,7 @@
 
 namespace silkworm {
 
-class HeaderChain_ForTest : public HeaderChain {
+class HeaderChainForTest : public HeaderChain {
   public:  // publication of internal members to test methods functioning
     using HeaderChain::generate_request_id;
     using HeaderChain::HeaderChain;
@@ -49,11 +49,9 @@ class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
     using stagedsync::ExecutionEngine::tx_;
 };
 
-class DummyConsensusEngine : public consensus::IEngine {
+class DummyRuleSet : public protocol::IRuleSet {
   public:
     ValidationResult pre_validate_block_body(const Block&, const BlockState&) override { return ValidationResult::kOk; }
-
-    ValidationResult pre_validate_transactions(const Block&) override { return ValidationResult::kOk; }
 
     ValidationResult validate_ommers(const Block&, const BlockState&) override { return ValidationResult::kOk; }
 
@@ -61,7 +59,7 @@ class DummyConsensusEngine : public consensus::IEngine {
 
     ValidationResult validate_seal(const BlockHeader&) override { return ValidationResult::kOk; }
 
-    void finalize(IntraBlockState&, const Block&, evmc_revision) override {}
+    void finalize(IntraBlockState&, const Block&) override {}
 
     evmc::address get_beneficiary(const BlockHeader&) override { return {}; }
 };
@@ -96,7 +94,7 @@ TEST_CASE("Headers receiving and saving") {
 
     // creating the working chain to simulate a bit of the sync
     BlockNum highest_in_db = 0;
-    HeaderChain_ForTest header_chain(std::make_unique<DummyConsensusEngine>());
+    HeaderChainForTest header_chain(std::make_unique<DummyRuleSet>());
     header_chain.initial_state(last_headers);
     header_chain.current_state(highest_in_db);
     auto request_id = header_chain.generate_request_id();
@@ -131,7 +129,7 @@ TEST_CASE("Headers receiving and saving") {
         header1.difficulty = 1'000'000;
         // header1.gas_limit = 5000;
         // header1.timestamp = ++timestamp;
-        // header1.difficulty = canonical_difficulty(header1.number, header1.timestamp, header0->difficulty,
+        // header1.difficulty = EthashEngine::difficulty(header1.number, header1.timestamp, header0->difficulty,
         // header0->timestamp, false, kMainnetIdentity.config);
         header1.parent_hash = header0_hash;
         auto header1_hash = header1.hash();

@@ -26,13 +26,13 @@ namespace silkworm::test {
 /// Always Frontier rules.
 inline constexpr ChainConfig kFrontierConfig{
     .chain_id = 1,
-    .seal_engine = SealEngineType::kNoProof,
+    .protocol_rule_set = protocol::RuleSetType::kNoProof,
 };
 
 /// Enables London from genesis.
 inline constexpr ChainConfig kLondonConfig{
     .chain_id = 1,
-    .seal_engine = SealEngineType::kNoProof,
+    .protocol_rule_set = protocol::RuleSetType::kNoProof,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
     .spurious_dragon_block = 0,
@@ -47,7 +47,7 @@ inline constexpr ChainConfig kLondonConfig{
 /// Enables Shanghai from genesis.
 inline constexpr ChainConfig kShanghaiConfig{
     .chain_id = 1,
-    .seal_engine = SealEngineType::kNoProof,
+    .protocol_rule_set = protocol::RuleSetType::kNoProof,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
     .spurious_dragon_block = 0,

@@ -19,7 +19,7 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/core/common/as_range.hpp>
-#include <silkworm/core/consensus/base/engine.hpp>
+#include <silkworm/core/protocol/validation.hpp>
 #include <silkworm/infra/common/measure.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
 
@@ -117,7 +117,7 @@ Block PoSSync::make_execution_block(const ExecutionPayload& payload) {
         }
         block.transactions.push_back(tx);
     }
-    header.transactions_root = consensus::compute_transaction_root(block);
+    header.transactions_root = protocol::compute_transaction_root(block);
 
     // as per EIP-3675
     header.ommers_hash = kEmptyListHash;  // = Keccak256(RLP([]))

@@ -100,14 +100,14 @@ if(NOT SILKWORM_CORE_ONLY)
   endif()
   target_link_libraries(sync_test silkworm_node silkworm_sync Catch2::Catch2)
 
-  # Ethereum Consensus Tests
+  # Ethereum EL Tests (https://github.com/ethereum/tests)
   if(NOT CONAN_PACKAGE_MANAGER)
     hunter_add_package(CLI11)
   endif()
   find_package(CLI11 REQUIRED)
-  add_executable(consensus consensus.cpp)
-  target_compile_definitions(consensus PRIVATE SILKWORM_CONSENSUS_TEST_DIR="${SILKWORM_MAIN_DIR}/third_party/tests")
-  target_link_libraries(consensus PRIVATE silkworm_node evmc::loader CLI11::CLI11)
+  add_executable(ethereum ethereum.cpp)
+  target_compile_definitions(ethereum PRIVATE SILKWORM_ETHEREUM_TESTS_DIR="${SILKWORM_MAIN_DIR}/third_party/tests")
+  target_link_libraries(ethereum PRIVATE silkworm_node evmc::loader CLI11::CLI11)
 
   # BE&KV Tests
   add_executable(backend_kv_test "backend_kv_test.cpp" "../common/shutdown_signal.hpp" "../common/shutdown_signal.cpp")

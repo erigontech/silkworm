@@ -572,7 +572,7 @@ void VmTraceTracer::on_execution_start(evmc_revision rev, const evmc_message& ms
                   << "\n";
 }
 
-void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int /*stack_height*/,
+void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int /*stack_height*/, const int64_t gas,
                                          const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
     const auto op_code = execution_state.original_code[pc];
     auto op_name = get_op_name(opcode_names_, op_code);
@@ -583,9 +583,9 @@ void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack
         if (op.precompiled_call_gas) {
             op.gas_cost = op.gas_cost - op.precompiled_call_gas.value();
         } else if (op.depth == execution_state.msg->depth) {
-            op.gas_cost = op.gas_cost - execution_state.gas_left;
+            op.gas_cost = op.gas_cost - gas;
         }
-        op.trace_ex.used = execution_state.gas_left;
+        op.trace_ex.used = gas;
 
         copy_memory(execution_state.memory, op.trace_ex.memory);
         copy_stack(op.op_code, stack_top, op.trace_ex.stack);
@@ -594,7 +594,7 @@ void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack
     auto index_prefix = index_prefix_.top() + std::to_string(vm_trace.ops.size());
 
     TraceOp trace_op;
-    trace_op.gas_cost = execution_state.gas_left;
+    trace_op.gas_cost = gas;
     trace_op.idx = index_prefix;
     trace_op.depth = execution_state.msg->depth;
     trace_op.op_code = op_code;
@@ -611,7 +611,7 @@ void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack
                   << ", opcode_name: " << op_name
                   << ", index_prefix: " << index_prefix
                   << ", execution_state: {"
-                  << "   gas_left: " << std::dec << execution_state.gas_left
+                  << "   gas_left: " << std::dec << gas
                   << ",   status: " << execution_state.status
                   << ",   msg.gas: " << std::dec << execution_state.msg->gas
                   << ",   msg.depth: " << std::dec << execution_state.msg->depth
@@ -756,7 +756,7 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
                   << "\n";
 }
 
-void TraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* /*stack_top*/, const int /*stack_height*/,
+void TraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* /*stack_top*/, const int /*stack_height*/, const int64_t gas,
                                        const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
     const auto opcode = execution_state.original_code[pc];
     auto opcode_name = get_op_name(opcode_names_, opcode);
@@ -768,7 +768,7 @@ void TraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* /*stack
                   << ", recipient: " << evmc::address{execution_state.msg->recipient}
                   << ", sender: " << evmc::address{execution_state.msg->sender}
                   << ", execution_state: {"
-                  << "   gas_left: " << std::dec << execution_state.gas_left
+                  << "   gas_left: " << std::dec << gas
                   << ",   status: " << execution_state.status
                   << ",   msg.gas: " << std::dec << execution_state.msg->gas
                   << ",   msg.depth: " << std::dec << execution_state.msg->depth
@@ -948,7 +948,7 @@ void StateDiffTracer::on_execution_start(evmc_revision rev, const evmc_message& 
                   << "\n";
 }
 
-void StateDiffTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int /*stack_height*/,
+void StateDiffTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int /*stack_height*/, const int64_t gas,
                                            const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
     const auto opcode = execution_state.original_code[pc];
     auto opcode_name = get_op_name(opcode_names_, opcode);
@@ -967,7 +967,7 @@ void StateDiffTracer::on_instruction_start(uint32_t pc, const intx::uint256* sta
                   << ", recipient: " << evmc::address{execution_state.msg->recipient}
                   << ", sender: " << evmc::address{execution_state.msg->sender}
                   << ", execution_state: {"
-                  << "   gas_left: " << std::dec << execution_state.gas_left
+                  << "   gas_left: " << std::dec << gas
                   << ",   status: " << execution_state.status
                   << ",   msg.gas: " << std::dec << execution_state.msg->gas
                   << ",   msg.depth: " << std::dec << execution_state.msg->depth

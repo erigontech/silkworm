@@ -15,16 +15,19 @@ limitations under the License.
 */
 
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 
 #include <CLI/CLI.hpp>
+#include <ethash/keccak.h>
 #include <ethash/keccak.hpp>
 #include <nlohmann/json.hpp>
-#include <secp256k1_recovery.h>
 
 #include <silkworm/core/common/cast.hpp>
+#include <silkworm/core/crypto/ecdsa.c>
 #include <silkworm/core/execution/execution.hpp>
-#include <silkworm/infra/common/secp256k1_context.hpp>
+#include <silkworm/sentry/common/ecc_key_pair.hpp>
+#include <silkworm/sentry/common/ecc_public_key.hpp>
 
 #include "ExpectedState.hpp"
 #include "silkworm/core/state/in_memory_state.hpp"
@@ -105,7 +108,9 @@ class StateTransition {
         return block;
     }
 
-    void setInitialState(silkworm::InMemoryState* pState) {
+    std::unique_ptr<silkworm::State> getState() {
+        auto state = std::make_unique<silkworm::InMemoryState>();
+
         auto pre = testData["pre"];
 
         for (const auto& preState : pre.items()) {
@@ -120,36 +125,46 @@ class StateTransition {
             account.code_hash = silkworm::bit_cast<evmc_bytes32>(keccak256(code));
             account.incarnation = kDefaultIncarnation;
 
-            pState->update_account(address, /*initial=*/std::nullopt, account);
-            pState->update_account_code(address, account.incarnation, account.code_hash, code);
+            state->update_account(address, /*initial=*/std::nullopt, account);
+            state->update_account_code(address, account.incarnation, account.code_hash, code);
 
             for (const auto& storage : preStateValue.at("storage").items()) {
                 Bytes key{from_hex(storage.key()).value()};
                 Bytes value{from_hex(storage.value().get<std::string>()).value()};
-                pState->update_storage(address, account.incarnation, to_bytes32(key), /*initial=*/{}, to_bytes32(value));
+                state->update_storage(address, account.incarnation, to_bytes32(key), /*initial=*/{}, to_bytes32(value));
             }
         }
-    }
-
-    silkworm::State* getState() {
-        auto state = new silkworm::InMemoryState();
-
-        setInitialState(state);
 
         return state;
     }
 
-    bool privateKeyToAddress(evmc::address& address, const std::string& privateKey) {
-        SecP256K1Context ctx{/* allow_verify = */ false, /* allow_sign = */ true};
-        secp256k1_pubkey public_key;
-        auto private_key = from_hex(privateKey);
-        ctx.create_public_key(&public_key, private_key.value());
+    static std::unique_ptr<evmc::address> privateKeyToAddress(const std::string& privateKey) {
+        /// Example 1
+        // private key: 0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8
+        // public key : 043a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d8072e77939dc03ba44790779b7a1025baf3003f6732430e20cd9b76d953391b3
+        // address    : 0xa94f5374Fce5edBC8E2a8697C15331677e6EbF0B
+        /// Example 2
+        // private key: 0x227dbb8586117d55284e26620bc76534dfbd2394be34cf4a09cb775d593b6f2b
+        // public key : 04aa931f5ee58735270821b3722866d8882d1948909532cf8ac2b3ef144ae8043363d1d3728b49f10c7cd78c38289c8012477473879f3b53169f2a677b7fbed0c7
+        // address    : 0xe16C1623c1AA7D919cd2241d8b36d9E79C1Be2A2
 
-        auto key_hash = ethash::keccak256(public_key.data, 64);
+        auto private_key = from_hex(privateKey).value();
+
+        silkworm::sentry::common::EccKeyPair pair = silkworm::sentry::common::EccKeyPair(private_key);
+        auto public_key_str = pair.public_key().hex();
+        const char* public_key_char = public_key_str.c_str();
+
+        uint8_t public_key_bytes[64];
+        for (int i = 0; i < 64; i++) {
+            sscanf(public_key_char + i * 2, "%2hhx", &public_key_bytes[i]);
+        }
+
+        ethash::hash256 hash = ethash::keccak256(public_key_bytes, sizeof(public_key_bytes));
+
         uint8_t out[20];
-        memcpy(out, &key_hash.bytes[12], 20);
-        address = silkworm::to_evmc_address(out);
-        return true;
+        std::memcpy(out, hash.bytes + 12, sizeof(out));
+
+        return std::make_unique<evmc::address>(silkworm::to_evmc_address(out));
     }
 
     silkworm::Transaction getTransaction(const ExpectedStateTransaction expectedStateTransaction) {
@@ -158,21 +173,8 @@ class StateTransition {
 
         txn.nonce = std::stoull(jTransaction.at("nonce").get<std::string>(), nullptr, 16);
         txn.to = toEvmcAddress(jTransaction.at("to").get<std::string>());
-        evmc::address from_address;
-        privateKeyToAddress(from_address, jTransaction["secretKey"]);
-        txn.from = from_address;
+        txn.from = *privateKeyToAddress(jTransaction["secretKey"]);
 
-        txn.from = toEvmcAddress("0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b");
-
-        //        if (jTransaction.contains("gasPrice")) {
-        //            txn.type = silkworm::Transaction::Type::kLegacy;
-        //            txn.max_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("gasPrice").get<std::string>());
-        //            txn.max_priority_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("gasPrice").get<std::string>());
-        //        } else {
-        //            txn.type = silkworm::Transaction::Type::kEip1559;
-        //            txn.max_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("maxFeePerGas").get<std::string>());
-        //            txn.max_priority_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("maxPriorityFeePerGas").get<std::string>());
-        //        }
         if (jTransaction.contains("gasPrice")) {
             txn.type = silkworm::Transaction::Type::kLegacy;
             txn.max_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("gasPrice").get<std::string>());
@@ -225,25 +227,7 @@ class StateTransition {
                 validateTransition(receipt, expectedState);
             }
         }
-
-        //        auto expectedState = getExpectedState();
-        //        auto config = expectedState.getConfig();
-        //        auto engine = expectedState.getEngine();
-        //        auto block = getBlock();
-        //        auto state = getState();
-        //
-        //        silkworm::ExecutionProcessor processor{block, *engine, *state, config};
-        //
-        //        silkworm::Receipt receipt;
-        //        auto txn = getTransaction();
-        //        processor.execute_transaction(txn, receipt);
-        //
-        //        validateTransition(receipt, expectedState);
     }
-
-    //    void run()  {
-    //        silkworm::ExecutionProcessor processor{block, *engine, buffer, *chain_config};
-    //    }
 };
 }  // namespace
 

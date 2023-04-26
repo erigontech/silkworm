@@ -30,9 +30,9 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
-#include <silkworm/silkrpc/consensus/ethash.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/evm_executor.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
@@ -1167,12 +1167,16 @@ awaitable<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash
 
     if (filter.count > 0 && filter.after == 0) {
         const rpc::ChainConfig chain_config{co_await core::rawdb::read_chain_config(database_reader_)};
-        const auto block_rewards = ethash::compute_reward(chain_config, block_with_hash.block);
+        const auto cc{silkworm::ChainConfig::from_json(chain_config.config)};
+        if (!cc) {
+            throw std::runtime_error("Invalid chain config");
+        }
+        const auto block_rewards = protocol::EthashRuleSet::compute_reward(*cc, block_with_hash.block);
 
         RewardAction action;
         action.author = block_with_hash.block.header.beneficiary;
         action.reward_type = "block";
-        action.value = block_rewards.miner_reward;
+        action.value = block_rewards.miner;
 
         Trace trace;
         trace.block_number = block_with_hash.block.header.number;

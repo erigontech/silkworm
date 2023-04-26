@@ -517,15 +517,21 @@ int main(int argc, char* argv[]) {
 
         PreverifiedHashes::load(node_settings.chain_config->chain_id);
 
-        // Start boost asio
-        using asio_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
-        auto asio_guard = std::make_unique<asio_guard_type>(node_settings.asio_context.get_executor());
-        std::thread asio_thread{[&node_settings]() -> void {
-            sw_log::set_thread_name("Asio");
-            sw_log::Trace("Boost Asio", {"state", "started"});
-            node_settings.asio_context.run();
-            sw_log::Trace("Boost Asio", {"state", "stopped"});
-        }};
+        // Start boost asio context for execution timers // TODO(canepat) we need a better solution
+        // The following async-thread executor is needed to have graceful shutdown in case of any run exception
+        auto timer_executor = [&node_settings]() -> boost::asio::awaitable<void> {
+            using asio_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
+            auto asio_guard = std::make_unique<asio_guard_type>(node_settings.asio_context.get_executor());
+
+            auto run = [&] {
+                sw_log::set_thread_name("asio_ctx_timer");
+                sw_log::Trace("Asio Timers", {"state", "started"});
+                node_settings.asio_context.run();
+                sw_log::Trace("Asio Timers", {"state", "stopped"});
+            };
+            auto stop = [&] { asio_guard.reset(); };
+            co_await silkworm::concurrency::async_thread(std::move(run), std::move(stop));
+        };
         silkworm::rpc::ServerContextPool context_pool{
             settings.server_settings.context_pool_settings(),
             [] { return std::make_unique<DummyServerCompletionQueue>(); },
@@ -625,6 +631,7 @@ int main(int argc, char* argv[]) {
         };
 
         auto tasks =
+            timer_executor() &&
             resource_usage_log.async_run() &&
             rpc_server.async_run() &&
             embedded_sentry_run_if_needed() &&
@@ -642,38 +649,24 @@ int main(int argc, char* argv[]) {
             std::move(tasks) || shutdown_signal.wait(),
             boost::asio::use_future);
         context_pool.start();
+        sw_log::Message() << "Silkworm is now running";
 
-        // Wait for shutdown_signal or an exception from tasks
+        // Wait for shutdown signal or an exception from tasks
         run_future.get();
 
-        // Close all resources
-        asio_guard.reset();
-        asio_thread.join();
-
-        context_pool.stop();
-        context_pool.join();
-
-        backend.close();
-
+        // Graceful exit after user shutdown signal
         sw_log::Message() << "Exiting Silkworm";
-
         return 0;
     } catch (const CLI::ParseError& ex) {
+        // Let CLI11 handle any error occurred parsing command-line args
         return cli.exit(ex);
-    } catch (const std::runtime_error& ex) {
-        sw_log::Error() << ex.what();
-        return -1;
-    } catch (const std::invalid_argument& ex) {
-        std::cerr << "\tInvalid argument :" << ex.what() << "\n"
-                  << std::endl;
-        return -3;
     } catch (const std::exception& ex) {
-        std::cerr << "\tUnexpected error : " << ex.what() << "\n"
-                  << std::endl;
-        return -4;
+        // Any exception during run leads to termination
+        sw_log::Critical("Unrecoverable failure: exit", {"error", ex.what()});
+        return -1;
     } catch (...) {
-        std::cerr << "\tUnexpected undefined error\n"
-                  << std::endl;
-        return -99;
+        // Any unknown exception during run leads to termination
+        sw_log::Critical("Unrecoverable failure: exit", {"error", "unexpected exception"});
+        return -2;
     }
 }

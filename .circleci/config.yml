@@ -115,10 +115,10 @@ commands:
           working_directory: ~/build
           command: cmd/test/sync_test
       - run:
-          name: "Ethereum consensus tests"
+          name: "Ethereum EL tests"
           working_directory: ~/build
           no_output_timeout: 30m
-          command: cmd/test/consensus --threads 4 # out of memory with 8 threads under thread sanitizer
+          command: cmd/test/ethereum --threads 4 # out of memory with 8 threads under thread sanitizer
 
 jobs:
   linux-gcc-11-thread-sanitizer:
@@ -214,18 +214,18 @@ jobs:
             cmd/test/node_test
             mv default.profraw node_test.profraw
       - run:
-          name: "Ethereum consensus tests"
+          name: "Ethereum EL tests"
           working_directory: ~/build
           no_output_timeout: 30m
           command: |
-            cmd/test/consensus
-            mv default.profraw consensus.profraw
+            cmd/test/ethereum
+            mv default.profraw ethereum.profraw
       - run:
           name: "Coverage"
           working_directory: ~/build
           command: |
             llvm-profdata merge *.profraw -o profdata
-            llvm-cov export -instr-profile profdata -format=lcov cmd/test/node_test -object cmd/test/consensus > silkworm.lcov
+            llvm-cov export -instr-profile profdata -format=lcov cmd/test/node_test -object cmd/test/ethereum > silkworm.lcov
       - run:
           name: "Upload to Codecov"
           command: |

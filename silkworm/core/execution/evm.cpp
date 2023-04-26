@@ -28,9 +28,9 @@
 #include <evmone/tracing.hpp>
 #include <evmone/vm.hpp>
 
-#include <silkworm/core/chain/protocol_param.hpp>
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/execution/precompile.hpp>
+#include <silkworm/core/protocol/param.hpp>
 
 namespace silkworm {
 
@@ -154,9 +154,9 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
 
     if (evm_res.status_code == EVMC_SUCCESS) {
         const size_t code_len{evm_res.output_size};
-        const uint64_t code_deploy_gas{code_len * fee::kGCodeDeposit};
+        const uint64_t code_deploy_gas{code_len * protocol::fee::kGCodeDeposit};
 
-        if (rev >= EVMC_SPURIOUS_DRAGON && code_len > param::kMaxCodeSize) {
+        if (rev >= EVMC_SPURIOUS_DRAGON && code_len > protocol::kMaxCodeSize) {
             // EIP-170: Contract code size limit
             evm_res.status_code = EVMC_OUT_OF_GAS;
         } else if (rev >= EVMC_LONDON && code_len > 0 && evm_res.output_data[0] == 0xEF) {

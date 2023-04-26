@@ -19,8 +19,8 @@
 #include <vector>
 
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/core/consensus/engine.hpp>
 #include <silkworm/core/execution/processor.hpp>
+#include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/receipt.hpp>
@@ -42,11 +42,11 @@ namespace silkworm {
  */
 [[nodiscard]] inline ValidationResult execute_block(const Block& block, State& state,
                                                     const ChainConfig& chain_config) noexcept {
-    auto consensus_engine{consensus::engine_factory(chain_config)};
-    if (!consensus_engine) {
-        return ValidationResult::kUnknownConsensusEngine;
+    auto rule_set{protocol::rule_set_factory(chain_config)};
+    if (!rule_set) {
+        return ValidationResult::kUnknownProtocolRuleSet;
     }
-    ExecutionProcessor processor{block, *consensus_engine, state, chain_config};
+    ExecutionProcessor processor{block, *rule_set, state, chain_config};
     std::vector<Receipt> receipts;
     return processor.execute_and_write_block(receipts);
 }

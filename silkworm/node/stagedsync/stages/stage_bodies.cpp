@@ -18,7 +18,6 @@
 
 #include <thread>
 
-#include <silkworm/core/consensus/base/engine.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/measure.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
@@ -29,7 +28,8 @@
 namespace silkworm::stagedsync {
 
 BodiesStage::BodyDataModel::BodyDataModel(db::RWTxn& tx, BlockNum bodies_stage_height, const ChainConfig& chain_config)
-    : consensus_engine_{consensus::engine_factory(chain_config)},
+    : chain_config_{chain_config},
+      rule_set_{protocol::rule_set_factory(chain_config)},
       chain_state_{tx, /*prune_history_threshold=*/0, /*historical_block=null*/} {
     initial_height_ = bodies_stage_height;
     highest_height_ = bodies_stage_height;
@@ -54,11 +54,12 @@ void BodiesStage::BodyDataModel::update_tables(const Block& block) {
     // Body validation
     if (block_num > preverified_height_) {
         // Here we skip a full body pre-validation like
-        // validation_result = consensus_engine_->pre_validate_block_body(block, chain_state_);
+        // validation_result = rule_set_->pre_validate_block_body(block, chain_state_);
         // because we assume that the sync (BlockExchange) has already checked transaction & ommers root hash
-        validation_result = consensus_engine_->pre_validate_transactions(block);
-        if (validation_result == ValidationResult::kOk)
-            validation_result = consensus_engine_->validate_ommers(block, chain_state_);
+        validation_result = protocol::pre_validate_transactions(block, chain_config_);
+        if (validation_result == ValidationResult::kOk) {
+            validation_result = rule_set_->validate_ommers(block, chain_state_);
+        }
     }
     // There is no need to validate a body if its header is on the chain of the pre-verified hashes.
     // Note that here we expect:

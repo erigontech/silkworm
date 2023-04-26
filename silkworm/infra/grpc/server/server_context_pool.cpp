@@ -131,7 +131,7 @@ ServerContextPool::ServerContextPool(std::size_t pool_size) : execution_pool_{po
 ServerContextPool::ServerContextPool(concurrency::ContextPoolSettings settings,
                                      const ServerCompletionQueueFactory& queue_factory)
     : ServerContextPool(settings.num_contexts) {
-    for (size_t i = 0; i < settings.num_contexts; i++) {
+    for (size_t i{0}; i < settings.num_contexts; i++) {
         add_context(queue_factory(), settings.wait_mode);
     }
 }
@@ -139,6 +139,7 @@ ServerContextPool::ServerContextPool(concurrency::ContextPoolSettings settings,
 ServerContextPool::~ServerContextPool() {
     SILK_TRACE << "ServerContextPool::~ServerContextPool START " << this;
     stop();
+    join();
     SILK_TRACE << "ServerContextPool::~ServerContextPool END " << this;
 }
 

@@ -27,7 +27,7 @@ namespace silkworm {
 // Useful definitions
 // ----------------------------------------------------------------------------
 
-class HeaderChain_ForTest : public HeaderChain {
+class HeaderChainForTest : public HeaderChain {
   public:  // publication of internal members to test methods functioning
     using HeaderChain::anchor_extension_request;
     using HeaderChain::anchor_queue_;
@@ -356,7 +356,7 @@ TEST_CASE("HeaderChain - process_segment - (1) simple chain") {
     ChainConfig chain_config{kMainnetConfig};
     chain_config.genesis_hash.emplace(kMainnetGenesisHash);
 
-    HeaderChain_ForTest chain(chain_config);
+    HeaderChainForTest chain(chain_config);
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
     PeerId peer_id{byte_ptr_cast("1")};
@@ -584,7 +584,7 @@ TEST_CASE("HeaderChain - process_segment - (2) extending down with 2 siblings") 
     ChainConfig chain_config{kMainnetConfig};
     chain_config.genesis_hash.emplace(kMainnetGenesisHash);
 
-    HeaderChain_ForTest chain(chain_config);
+    HeaderChainForTest chain(chain_config);
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
     PeerId peer_id{byte_ptr_cast("1")};
@@ -643,7 +643,7 @@ TEST_CASE("HeaderChain - process_segment - (3) chain with branches") {
     ChainConfig chain_config{kMainnetConfig};
     chain_config.genesis_hash.emplace(kMainnetGenesisHash);
 
-    HeaderChain_ForTest chain(chain_config);
+    HeaderChainForTest chain(chain_config);
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
     PeerId peer_id{byte_ptr_cast("1")};
@@ -859,7 +859,7 @@ TEST_CASE("HeaderChain - process_segment - (4) pre-verified hashes on canonical 
     ChainConfig chain_config{kMainnetConfig};
     chain_config.genesis_hash.emplace(kMainnetGenesisHash);
 
-    HeaderChain_ForTest chain(chain_config);
+    HeaderChainForTest chain(chain_config);
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
     PeerId peer_id{byte_ptr_cast("1")};
@@ -950,7 +950,7 @@ TEST_CASE("HeaderChain - process_segment - (5) pre-verified hashes") {
     ChainConfig chain_config{kMainnetConfig};
     chain_config.genesis_hash.emplace(kMainnetGenesisHash);
 
-    HeaderChain_ForTest chain(chain_config);
+    HeaderChainForTest chain(chain_config);
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
     PeerId peer_id{byte_ptr_cast("1")};
@@ -1028,7 +1028,7 @@ TEST_CASE("HeaderChain - process_segment - (5') pre-verified hashes with canonic
     ChainConfig chain_config{kMainnetConfig};
     chain_config.genesis_hash.emplace(kMainnetGenesisHash);
 
-    HeaderChain_ForTest chain(chain_config);
+    HeaderChainForTest chain(chain_config);
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
     PeerId peer_id{byte_ptr_cast("1")};
@@ -1088,7 +1088,7 @@ TEST_CASE("HeaderChain - process_segment - (6) (malicious) siblings") {
     ChainConfig chain_config{kMainnetConfig};
     chain_config.genesis_hash.emplace(kMainnetGenesisHash);
 
-    HeaderChain_ForTest chain(chain_config);
+    HeaderChainForTest chain(chain_config);
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
     PeerId peer_id{byte_ptr_cast("1")};
@@ -1227,7 +1227,7 @@ TEST_CASE("HeaderChain - process_segment - (7) invalidating anchor") {
     ChainConfig chain_config{kMainnetConfig};
     chain_config.genesis_hash.emplace(kMainnetGenesisHash);
 
-    HeaderChain_ForTest chain(chain_config);
+    HeaderChainForTest chain(chain_config);
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
     PeerId peer_id{byte_ptr_cast("1")};
@@ -1272,7 +1272,7 @@ TEST_CASE("HeaderChain - process_segment - (7) invalidating anchor") {
         using namespace std::literals::chrono_literals;
 
         time_point_t now = std::chrono::system_clock::now();
-        seconds_t timeout = HeaderChain_ForTest::extension_req_timeout;
+        seconds_t timeout = HeaderChainForTest::extension_req_timeout;
 
         auto anchor = chain.anchor_queue_.top();
         anchor->timeouts = 10;
@@ -1325,7 +1325,7 @@ TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation 
     ChainConfig chain_config{kMainnetConfig};
     chain_config.genesis_hash.emplace(kMainnetGenesisHash);
 
-    HeaderChain_ForTest chain(chain_config);
+    HeaderChainForTest chain(chain_config);
     chain.top_seen_block_height(1'000'000);
     auto request_id = chain.generate_request_id();
     PeerId peer_id{byte_ptr_cast("1")};
@@ -1458,7 +1458,7 @@ TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation 
         std::shared_ptr<Anchor> anchor = chain.anchor_queue_.top();
         auto prev_timeouts = anchor->timeouts;
         auto prev_timestamp = anchor->timestamp;
-        auto timeout = HeaderChain_ForTest::extension_req_timeout;
+        auto timeout = HeaderChainForTest::extension_req_timeout;
         auto now = prev_timestamp + timeout;
 
         // request an anchor extension
@@ -1493,7 +1493,7 @@ TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation 
         using namespace std::literals::chrono_literals;
 
         time_point_t now = std::chrono::system_clock::now();
-        seconds_t timeout = HeaderChain_ForTest::extension_req_timeout;
+        seconds_t timeout = HeaderChainForTest::extension_req_timeout;
 
         chain.last_nack_ = now - timeout;  // otherwise the request is ignored
 

@@ -16,8 +16,8 @@
 
 #include "block.hpp"
 
-#include <silkworm/core/chain/protocol_param.hpp>
 #include <silkworm/core/common/cast.hpp>
+#include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 
 namespace silkworm {
@@ -56,9 +56,9 @@ std::optional<intx::uint256> BlockHeader::data_gas_price() const {
     }
 
     return fake_exponential(
-        param::kMinDataGasPrice,
+        protocol::kMinDataGasPrice,
         *excess_data_gas,
-        param::kDataGasPriceUpdateFraction);
+        protocol::kDataGasPriceUpdateFraction);
 }
 
 //! \brief Recover transaction senders for each block.

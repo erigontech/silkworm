@@ -37,6 +37,7 @@ class EthereumBackEnd {
         const NodeSettings& node_settings,
         mdbx::env* chaindata_env,
         std::shared_ptr<sentry::api::api_common::SentryClient> sentry_client);
+    ~EthereumBackEnd();
 
     EthereumBackEnd(const EthereumBackEnd&) = delete;
     EthereumBackEnd& operator=(const EthereumBackEnd&) = delete;

@@ -87,6 +87,7 @@ class ContextPool {
     ~ContextPool() {
         SILK_TRACE << "ContextPool::~ContextPool START " << this;
         stop();
+        join();
         SILK_TRACE << "ContextPool::~ContextPool END " << this;
     }
 

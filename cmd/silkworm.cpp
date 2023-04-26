@@ -51,7 +51,7 @@
 #include <silkworm/sentry/settings.hpp>
 #include <silkworm/sync/block_exchange.hpp>
 #include <silkworm/sync/sentry_client.hpp>
-#include <silkworm/sync/sync_engine_pow.hpp>
+#include <silkworm/sync/sync_pow.hpp>
 
 #include "common/common.hpp"
 #include "common/human_size_parser_validator.hpp"

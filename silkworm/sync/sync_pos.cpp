@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "sync_engine_pos.hpp"
+#include "sync_pos.hpp"
 
 #include <magic_enum.hpp>
 
@@ -23,7 +23,7 @@
 #include <silkworm/infra/common/measure.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
 
-namespace silkworm::chainsync::pos {
+namespace silkworm::chainsync {
 
 static void ensure_invariant(bool condition, std::string message) {
     if (!condition)
@@ -326,4 +326,4 @@ TransitionConfiguration PoSSync::exchange_transition_config(const TransitionConf
     return {};
 }
 
-}  // namespace silkworm::chainsync::pos
+}  // namespace silkworm::chainsync

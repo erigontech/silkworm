@@ -26,7 +26,7 @@
 
 #include "block_exchange.hpp"
 
-namespace silkworm::chainsync::pos {
+namespace silkworm::chainsync {
 
 class PoSSync : public ActiveComponent {
   public:
@@ -51,4 +51,4 @@ class PoSSync : public ActiveComponent {
     ChainForkView chain_fork_view_;
 };
 
-}  // namespace silkworm::chainsync::pos
+}  // namespace silkworm::chainsync

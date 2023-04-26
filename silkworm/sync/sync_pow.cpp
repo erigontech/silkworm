@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "sync_engine_pow.hpp"
+#include "sync_pow.hpp"
 
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/infra/common/measure.hpp>

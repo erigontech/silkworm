@@ -107,7 +107,7 @@ if(NOT SILKWORM_CORE_ONLY)
   find_package(CLI11 REQUIRED)
   add_executable(ethereum ethereum.cpp)
   target_compile_definitions(ethereum PRIVATE SILKWORM_ETHEREUM_TESTS_DIR="${SILKWORM_MAIN_DIR}/third_party/tests")
-  target_link_libraries(ethereum PRIVATE silkworm_node evmc::loader CLI11::CLI11)
+  target_link_libraries(ethereum PRIVATE silkworm_infra evmc::loader CLI11::CLI11)
 
   # BE&KV Tests
   add_executable(backend_kv_test "backend_kv_test.cpp" "../common/shutdown_signal.hpp" "../common/shutdown_signal.cpp")

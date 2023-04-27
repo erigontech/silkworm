@@ -24,8 +24,8 @@
 
 #include <boost/asio/awaitable.hpp>
 
+#include <silkworm/infra/concurrency/awaitable_condition_variable.hpp>
 #include <silkworm/sentry/api/api_common/sentry_client.hpp>
-#include <silkworm/sentry/common/promise.hpp>
 #include <silkworm/sentry/eth/status_data.hpp>
 
 namespace silkworm::sentry {
@@ -45,8 +45,7 @@ class SessionSentryClient : public api::api_common::SentryClient {
 
     std::shared_ptr<api::api_common::SentryClient> sentry_client_;
     StatusDataProvider status_data_provider_;
-    std::unique_ptr<common::Promise<bool>> session_started_promise_;
-    std::mutex session_started_promise_mutex_;
+    concurrency::AwaitableConditionVariable session_started_cond_var_;
 };
 
 }  // namespace silkworm::sentry

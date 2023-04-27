@@ -30,6 +30,7 @@ namespace silkworm::concurrency {
 
 // A simplified condition variable similar to Rust Tokio Notify:
 // https://docs.rs/tokio/1.25.0/tokio/sync/struct.Notify.html
+// Only one waiter is supported.
 class EventNotifier {
   public:
     explicit EventNotifier(boost::asio::any_io_executor&& executor) : channel_(executor, 1) {}

@@ -16,8 +16,6 @@
 
 #include "session_sentry_client.hpp"
 
-#include <boost/asio/this_coro.hpp>
-
 namespace silkworm::sentry {
 
 using namespace boost::asio;
@@ -34,28 +32,14 @@ awaitable<void> SessionSentryClient::start_session() {
     auto eth_version = co_await service->handshake();
     auto status_data = co_await status_data_provider_(eth_version);
     co_await service->set_status(std::move(status_data));
+    // TODO: synchronize
+    session_started_cond_var_.notify_all();
 }
 
 awaitable<std::shared_ptr<api::api_common::Service>> SessionSentryClient::service() {
-    auto executor = co_await this_coro::executor;
-    bool is_needed_to_start_session = false;
-
-    {
-        std::scoped_lock lock(session_started_promise_mutex_);
-        if (!session_started_promise_) {
-            session_started_promise_ = std::make_unique<common::Promise<bool>>(executor);
-            is_needed_to_start_session = true;
-        }
-    }
-
-    if (is_needed_to_start_session) {
-        // TODO: what if it fails?
-        co_await start_session();
-        session_started_promise_->set_value(true);
-    } else {
-        // TODO: can't be called by multiple clients!
-        co_await session_started_promise_->wait();
-    }
+    // TODO: synchronize
+    auto waiter = session_started_cond_var_.waiter();
+    co_await waiter();
 
     co_return (co_await sentry_client_->service());
 }

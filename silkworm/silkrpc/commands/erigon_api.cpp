@@ -23,11 +23,11 @@
 #include <intx/intx.hpp>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/silkrpc/common/binary_search.hpp>
 #include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
-#include <silkworm/silkrpc/consensus/ethash.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
@@ -276,13 +276,17 @@ awaitable<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nlohmann::json&
         if (chain_config.config.count("ethash") != 0) {
             const auto block_number = co_await core::get_block_number(block_id, tx_database);
             const auto block_with_hash{co_await core::rawdb::read_block_by_number(tx_database, block_number)};
-            const auto block_reward{ethash::compute_reward(chain_config, block_with_hash.block)};
+            const auto cc{silkworm::ChainConfig::from_json(chain_config.config)};
+            if (!cc) {
+                throw std::runtime_error("Invalid chain config");
+            }
+            const auto block_reward{protocol::EthashRuleSet::compute_reward(*cc, block_with_hash.block)};
             intx::uint256 total_ommer_reward = 0;
-            for (const auto ommer_reward : block_reward.ommer_rewards) {
+            for (const auto ommer_reward : block_reward.ommers) {
                 total_ommer_reward += ommer_reward;
             }
-            intx::uint256 block_issuance = block_reward.miner_reward + total_ommer_reward;
-            issuance.block_reward = "0x" + intx::hex(block_reward.miner_reward);
+            intx::uint256 block_issuance = block_reward.miner + total_ommer_reward;
+            issuance.block_reward = "0x" + intx::hex(block_reward.miner);
             issuance.ommer_reward = "0x" + intx::hex(total_ommer_reward);
             issuance.issuance = "0x" + intx::hex(block_issuance);
             intx::uint256 burnt;

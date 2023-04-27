@@ -19,20 +19,20 @@
 #include <cassert>
 
 #include <silkworm/core/chain/dao.hpp>
-#include <silkworm/core/chain/intrinsic_gas.hpp>
-#include <silkworm/core/chain/protocol_param.hpp>
+#include <silkworm/core/protocol/intrinsic_gas.hpp>
+#include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
 
 namespace silkworm {
 
-ExecutionProcessor::ExecutionProcessor(const Block& block, consensus::IEngine& consensus_engine, State& state,
+ExecutionProcessor::ExecutionProcessor(const Block& block, protocol::IRuleSet& rule_set, State& state,
                                        const ChainConfig& config)
-    : state_{state}, consensus_engine_{consensus_engine}, evm_{block, state_, config} {
-    evm_.beneficiary = consensus_engine.get_beneficiary(block.header);
+    : state_{state}, rule_set_{rule_set}, evm_{block, state_, config} {
+    evm_.beneficiary = rule_set.get_beneficiary(block.header);
 }
 
 ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn) const noexcept {
-    if (!txn.from.has_value()) {
+    if (!txn.from) {
         return ValidationResult::kMissingSender;
     }
 
@@ -45,10 +45,8 @@ ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn
         return ValidationResult::kWrongNonce;
     }
 
-    // https://github.com/ethereum/EIPs/pull/3594
-    const intx::uint512 max_gas_cost{intx::umul(intx::uint256{txn.gas_limit}, txn.max_fee_per_gas)};
-    // See YP, Eq (57) in Section 6.2 "Execution"
-    const intx::uint512 v0{max_gas_cost + txn.value};
+    // See YP, Eq (61) in Section 6.2 "Execution"
+    const intx::uint512 v0{txn.maximum_gas_cost() + txn.value};
     if (state_.get_balance(*txn.from) < v0) {
         return ValidationResult::kInsufficientFunds;
     }
@@ -71,10 +69,10 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
 
     state_.clear_journal_and_substate();
 
-    assert(txn.from.has_value());
+    assert(txn.from);
     state_.access_account(*txn.from);
 
-    if (txn.to.has_value()) {
+    if (txn.to) {
         state_.access_account(*txn.to);
         // EVM itself increments the nonce for contract creation
         state_.set_nonce(*txn.from, txn.nonce + 1);
@@ -93,11 +91,16 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
         state_.access_account(evm_.beneficiary);
     }
 
+    // EIP-1559 normal gas cost
     const intx::uint256 base_fee_per_gas{evm_.block().header.base_fee_per_gas.value_or(0)};
     const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
     state_.subtract_from_balance(*txn.from, txn.gas_limit * effective_gas_price);
 
-    const intx::uint128 g0{intrinsic_gas(txn, rev)};
+    // EIP-4844 data gas cost (calc_data_fee)
+    const intx::uint256 data_gas_price{evm_.block().header.data_gas_price().value_or(0)};
+    state_.subtract_from_balance(*txn.from, txn.total_data_gas() * data_gas_price);
+
+    const intx::uint128 g0{protocol::intrinsic_gas(txn, rev)};
     assert(g0 <= UINT64_MAX);  // true due to the precondition (transaction must be valid)
 
     const CallResult vm_res{evm_.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0))};
@@ -131,8 +134,8 @@ uint64_t ExecutionProcessor::available_gas() const noexcept {
 uint64_t ExecutionProcessor::refund_gas(const Transaction& txn, uint64_t gas_left, uint64_t gas_refund) noexcept {
     const evmc_revision rev{evm_.revision()};
 
-    const uint64_t max_refund_quotient{rev >= EVMC_LONDON ? param::kMaxRefundQuotientLondon
-                                                          : param::kMaxRefundQuotientFrontier};
+    const uint64_t max_refund_quotient{rev >= EVMC_LONDON ? protocol::kMaxRefundQuotientLondon
+                                                          : protocol::kMaxRefundQuotientFrontier};
     const uint64_t max_refund{(txn.gas_limit - gas_left) / max_refund_quotient};
     uint64_t refund = std::min(gas_refund, max_refund);
     gas_left += refund;
@@ -164,10 +167,9 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
         ++receipt_it;
     }
 
-    const evmc_revision rev{evm_.revision()};
-    consensus_engine_.finalize(state_, block, rev);
+    rule_set_.finalize(state_, block);
 
-    if (rev >= EVMC_SPURIOUS_DRAGON) {
+    if (evm_.revision() >= EVMC_SPURIOUS_DRAGON) {
         state_.destruct_touched_dead();
     }
 

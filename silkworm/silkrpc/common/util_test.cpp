@@ -98,10 +98,10 @@ TEST_CASE("print Account", "[silkrpc][common][util]") {
 
 TEST_CASE("base64 encode", "[silkrpc][common][util]") {
     uint8_t plain[] = "deadbeaf";
-    auto encoded = base64_encode(plain, sizeof(plain), false);
+    auto encoded = base64_encode({plain, sizeof(plain)}, false);
     CHECK(encoded == "ZGVhZGJlYWYA");
 
-    encoded = base64_encode(plain, sizeof(plain), true);
+    encoded = base64_encode({plain, sizeof(plain)}, true);
     CHECK(encoded == "ZGVhZGJlYWYA");
 }
 
@@ -133,19 +133,18 @@ TEST_CASE("check_tx_fee_less_cap returns false", "[silkrpc][common][util]") {
 }
 
 TEST_CASE("is_replay_protected(tx legacy) returns true", "[silkrpc][common][util]") {
-    const silkworm::Transaction txn{
-        silkworm::Transaction::Type::kEip2930,
-        0,                                                                                                       // nonce
-        50'000 * kGiga,                                                                                          // max_priority_fee_per_gas
-        50'000 * kGiga,                                                                                          // max_fee_per_gas
-        21'000,                                                                                                  // gas_limit
-        0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,                                                      // to
-        31337,                                                                                                   // value
-        {},                                                                                                      // data
-        true,                                                                                                    // odd_y_parity
-        std::nullopt,                                                                                            // chain_id
-        intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),  // r
-        intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),  // s
+    const Transaction txn{
+        .type = Transaction::Type::kEip2930,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 50'000 * kGiga,
+        .max_fee_per_gas = 50'000 * kGiga,
+        .gas_limit = 21'000,
+        .to = 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,
+        .value = 31337,
+        .odd_y_parity = true,
+        .chain_id = std::nullopt,
+        .r = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),
+        .s = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),
     };
 
     auto check = is_replay_protected(txn);
@@ -153,39 +152,38 @@ TEST_CASE("is_replay_protected(tx legacy) returns true", "[silkrpc][common][util
 }
 
 TEST_CASE("is_replay_protected returns true", "[silkrpc][common][util]") {
-    silkworm::Transaction txn{
-        silkworm::Transaction::Type::kLegacy,  // type
-        0,
-        20000000000,
-        20000000000,
-        uint64_t{0},
-        0x0715a7794a1dc8e42615f059dd6e406a6594651a_address,
-        intx::uint256{8},
-        *silkworm::from_hex("001122aabbcc"),
-        false,
-        intx::uint256{9},
-        intx::uint256{18},
-        intx::uint256{36},
-        std::vector<silkworm::AccessListEntry>{},
-        0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address};
+    Transaction txn{
+        .type = Transaction::Type::kLegacy,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 20000000000,
+        .max_fee_per_gas = 20000000000,
+        .gas_limit = 0,
+        .to = 0x0715a7794a1dc8e42615f059dd6e406a6594651a_address,
+        .value = 8,
+        .data = *from_hex("001122aabbcc"),
+        .odd_y_parity = false,
+        .chain_id = 9,
+        .r = 18,
+        .s = 36,
+        .from = 0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address,
+    };
     auto check = is_replay_protected(txn);
     CHECK(check == true);
 }
 
 TEST_CASE("is_replay_protected returns false", "[silkrpc][common][util]") {
-    const silkworm::Transaction txn{
-        silkworm::Transaction::Type::kLegacy,                                                                    // type
-        0,                                                                                                       // nonce
-        50'000 * kGiga,                                                                                          // max_priority_fee_per_gas
-        50'000 * kGiga,                                                                                          // max_fee_per_gas
-        21'000,                                                                                                  // gas_limit
-        0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,                                                      // to
-        31337,                                                                                                   // value
-        {},                                                                                                      // data
-        true,                                                                                                    // odd_y_parity
-        std::nullopt,                                                                                            // chain_id
-        intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),  // r
-        intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),  // s
+    const Transaction txn{
+        .type = Transaction::Type::kLegacy,
+        .nonce = 0,
+        .max_priority_fee_per_gas = 50'000 * kGiga,
+        .max_fee_per_gas = 50'000 * kGiga,
+        .gas_limit = 21'000,
+        .to = 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,
+        .value = 31337,
+        .odd_y_parity = true,
+        .chain_id = std::nullopt,
+        .r = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),
+        .s = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),
     };
 
     auto check = is_replay_protected(txn);

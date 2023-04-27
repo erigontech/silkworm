@@ -31,7 +31,6 @@
                "structLogs": [
                   {
                         "depth": 1,
-                        "error": {},
                         "gas": 20579,
                         "gasCost": 0,
                         "memory": [],

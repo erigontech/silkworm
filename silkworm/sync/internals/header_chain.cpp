@@ -36,18 +36,18 @@ class segment_cut_and_paste_error : public std::logic_error {
     explicit segment_cut_and_paste_error(const std::string& reason) : std::logic_error(reason) {}
 };
 
-HeaderChain::HeaderChain(const ChainConfig& chain_config) : HeaderChain(consensus::engine_factory(chain_config)) {}
+HeaderChain::HeaderChain(const ChainConfig& chain_config) : HeaderChain(protocol::rule_set_factory(chain_config)) {}
 
-HeaderChain::HeaderChain(ConsensusEnginePtr consensus_engine)
+HeaderChain::HeaderChain(protocol::RuleSetPtr rule_set)
     : highest_in_db_(0),
       top_seen_height_(0),
       preverified_hashes_(PreverifiedHashes::current),
       seen_announces_(1000),
-      consensus_engine_{std::move(consensus_engine)},
+      rule_set_{std::move(rule_set)},
       chain_state_(persisted_link_queue_) {  // Erigon reads past headers from db, we hope to find them from this queue
-    if (!consensus_engine_) {
-        throw std::logic_error("HeaderChain exception, cause: unknown consensus engine");
-        // or must the sync go on and return StageResult::kUnknownConsensusEngine?
+    if (!rule_set_) {
+        throw std::logic_error("HeaderChain exception, cause: unknown protocol rule set");
+        // or must the sync go on and return StageResult::kUnknownProtocolRuleSet?
     }
 
     // User can specify to stop downloading process at some block
@@ -231,7 +231,7 @@ auto HeaderChain::verify(const Link& link) -> VerificationResult {
     }
 
     bool with_future_timestamp_check = true;
-    auto result = consensus_engine_->validate_block_header(*link.header, chain_state_, with_future_timestamp_check);
+    auto result = rule_set_->validate_block_header(*link.header, chain_state_, with_future_timestamp_check);
 
     if (result != ValidationResult::kOk) {
         if (result == ValidationResult::kUnknownParent) {

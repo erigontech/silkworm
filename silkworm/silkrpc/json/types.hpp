@@ -28,6 +28,7 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/silkrpc/json/log.hpp>
+#include <silkworm/silkrpc/json/receipt.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/call.hpp>
 #include <silkworm/silkrpc/types/chain_config.hpp>
@@ -38,6 +39,7 @@
 #include <silkworm/silkrpc/types/issuance.hpp>
 #include <silkworm/silkrpc/types/log.hpp>
 #include <silkworm/silkrpc/types/node_info.hpp>
+#include <silkworm/silkrpc/types/peer_info.hpp>
 #include <silkworm/silkrpc/types/receipt.hpp>
 #include <silkworm/silkrpc/types/syncing_data.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
@@ -81,6 +83,8 @@ void to_json(nlohmann::json& json, const struct NodeInfo& node_info);
 
 void to_json(nlohmann::json& json, const struct NodeInfoPorts& node_info_ports);
 
+void to_json(nlohmann::json& json, const PeerInfo& peer_info);
+
 void to_json(nlohmann::json& json, const struct ChainTraffic& chain_traffic);
 
 void to_json(nlohmann::json& json, const struct TxPoolStatusInfo& status_info);
@@ -106,9 +110,6 @@ void to_json(nlohmann::json& json, const BlockTransactionsResponse& b);
 void to_json(nlohmann::json& json, const Transaction& transaction);
 
 void from_json(const nlohmann::json& json, Call& call);
-
-void to_json(nlohmann::json& json, const Receipt& receipt);
-void from_json(const nlohmann::json& json, Receipt& receipt);
 
 void to_json(nlohmann::json& json, const Filter& filter);
 void from_json(const nlohmann::json& json, Filter& filter);

@@ -25,11 +25,12 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/node/snapshot/index.hpp>
 #include <silkworm/node/snapshot/path.hpp>
 #include <silkworm/node/snapshot/settings.hpp>
 #include <silkworm/node/snapshot/snapshot.hpp>
 
-namespace silkworm {
+namespace silkworm::snapshot {
 
 template <typename T>
 concept ConcreteSnapshot = std::is_base_of<Snapshot, T>::value;
@@ -52,12 +53,13 @@ using TransactionSnapshotWalker = SnapshotWalker<TransactionSnapshot>;
 class SnapshotRepository {
   public:
     explicit SnapshotRepository(SnapshotSettings settings = {});
+    ~SnapshotRepository();
 
     [[nodiscard]] BlockNum max_block_available() const { return std::min(segment_max_block_, idx_max_block_); }
 
     void verify();
     void reopen_folder();
-    void build_missing_indexes();
+    void close();
 
     [[nodiscard]] std::filesystem::path path() const { return settings_.repository_dir; }
 
@@ -77,6 +79,8 @@ class SnapshotRepository {
     ViewResult view_header_segment(BlockNum number, const HeaderSnapshotWalker& walker);
     ViewResult view_body_segment(BlockNum number, const BodySnapshotWalker& walker);
     ViewResult view_tx_segment(BlockNum number, const TransactionSnapshotWalker& walker);
+
+    [[nodiscard]] std::vector<std::shared_ptr<Index>> missing_indexes() const;
 
     [[nodiscard]] BlockNum segment_max_block() const { return segment_max_block_; }
     [[nodiscard]] BlockNum idx_max_block() const { return idx_max_block_; }
@@ -127,4 +131,4 @@ class SnapshotRepository {
     SnapshotsByPath<TransactionSnapshot> tx_segments_;
 };
 
-}  // namespace silkworm
+}  // namespace silkworm::snapshot

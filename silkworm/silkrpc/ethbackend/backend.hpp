@@ -25,6 +25,7 @@
 
 #include <silkworm/silkrpc/types/execution_payload.hpp>
 #include <silkworm/silkrpc/types/node_info.hpp>
+#include <silkworm/silkrpc/types/peer_info.hpp>
 
 namespace silkworm::rpc::ethbackend {
 
@@ -39,7 +40,8 @@ class BackEnd {
     virtual boost::asio::awaitable<ExecutionPayload> engine_get_payload_v1(uint64_t payload_id) = 0;
     virtual boost::asio::awaitable<PayloadStatus> engine_new_payload_v1(ExecutionPayload payload) = 0;
     virtual boost::asio::awaitable<ForkChoiceUpdatedReply> engine_forkchoice_updated_v1(ForkChoiceUpdatedRequest forkchoice_updated_request) = 0;
-    virtual boost::asio::awaitable<std::vector<NodeInfo>> engine_node_info() = 0;
+    virtual boost::asio::awaitable<NodeInfos> engine_node_info() = 0;
+    virtual boost::asio::awaitable<PeerInfos> peers() = 0;
 };
 
 }  // namespace silkworm::rpc::ethbackend

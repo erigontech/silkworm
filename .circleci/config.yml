@@ -115,10 +115,10 @@ commands:
           working_directory: ~/build
           command: cmd/test/sync_test
       - run:
-          name: "Ethereum consensus tests"
+          name: "Ethereum EL tests"
           working_directory: ~/build
           no_output_timeout: 30m
-          command: cmd/test/consensus --threads 4 # out of memory with 8 threads under thread sanitizer
+          command: cmd/test/ethereum --threads 4 # out of memory with 8 threads under thread sanitizer
 
 jobs:
   linux-gcc-11-thread-sanitizer:
@@ -172,18 +172,17 @@ jobs:
       - build
       - test
 
-  linux-clang-13-address-sanitizer:
+  linux-clang-15-address-sanitizer:
     environment:
       TOOLCHAIN: clang_libcxx
-      CLANG_VERSION: 13
+      CLANG_VERSION: 15
       BUILD_TYPE: Debug
-      BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=address
+      BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=address,undefined
     docker:
-      - image: ethereum/cpp-build-env:18-clang-13
+      - image: ethereum/cpp-build-env:19-clang-15
     resource_class: xlarge
     steps:
       - checkout_with_submodules
-      - format
       - install_libcxx
       - build
       - test
@@ -199,6 +198,7 @@ jobs:
     resource_class: xlarge
     steps:
       - checkout_with_submodules
+      - format
       - install_libcxx
       - build
       - run:
@@ -214,18 +214,18 @@ jobs:
             cmd/test/node_test
             mv default.profraw node_test.profraw
       - run:
-          name: "Ethereum consensus tests"
+          name: "Ethereum EL tests"
           working_directory: ~/build
           no_output_timeout: 30m
           command: |
-            cmd/test/consensus
-            mv default.profraw consensus.profraw
+            cmd/test/ethereum
+            mv default.profraw ethereum.profraw
       - run:
           name: "Coverage"
           working_directory: ~/build
           command: |
             llvm-profdata merge *.profraw -o profdata
-            llvm-cov export -instr-profile profdata -format=lcov cmd/test/node_test -object cmd/test/consensus > silkworm.lcov
+            llvm-cov export -instr-profile profdata -format=lcov cmd/test/node_test -object cmd/test/ethereum > silkworm.lcov
       - run:
           name: "Upload to Codecov"
           command: |
@@ -330,6 +330,6 @@ workflows:
       - linux-gcc-11-conan
       - linux-gcc-11-thread-sanitizer
       - linux-clang-13-coverage
-      - linux-clang-13-address-sanitizer
+      - linux-clang-15-address-sanitizer
       - linux-wasm-build
       - linux-default-build

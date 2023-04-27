@@ -30,9 +30,9 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
-#include <silkworm/silkrpc/consensus/ethash.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/evm_executor.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
@@ -40,6 +40,7 @@
 
 namespace silkworm::rpc::trace {
 
+using boost::asio::awaitable;
 using evmc::literals::operator""_address;
 
 void from_json(const nlohmann::json& json, TraceConfig& tc) {
@@ -489,15 +490,15 @@ void push_memory_offset_len(std::uint8_t op_code, const evmone::uint256* stack, 
     switch (op_code) {
         case evmc_opcode::OP_STATICCALL:
         case evmc_opcode::OP_DELEGATECALL:
-            tms.push(TraceMemory{stack[-4][0], stack[-5][0]});
+            tms.emplace(TraceMemory{stack[-4][0], stack[-5][0]});
             break;
         case evmc_opcode::OP_CALL:
         case evmc_opcode::OP_CALLCODE:
-            tms.push(TraceMemory{stack[-5][0], stack[-6][0]});
+            tms.emplace(TraceMemory{stack[-5][0], stack[-6][0]});
             break;
         case evmc_opcode::OP_CREATE:
         case evmc_opcode::OP_CREATE2:
-            tms.push(TraceMemory{0, 0});
+            tms.emplace(TraceMemory{0, 0});
             break;
         default:
             break;
@@ -662,7 +663,7 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
 
         case evmc_status_code::EVMC_UNDEFINED_INSTRUCTION:
             op.trace_ex.used = op.gas_cost;
-            op.gas_cost = start_gas - op.gas_cost;
+            op.gas_cost = 0;
             op.trace_ex.used -= op.gas_cost;
             break;
 
@@ -799,7 +800,7 @@ void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::In
             trace.trace_result->gas_used = start_gas - result.gas_left;
             break;
         case evmc_status_code::EVMC_REVERT:
-            trace.error = "reverted";
+            trace.error = "Reverted";
             trace.trace_result->gas_used = start_gas - result.gas_left;
             break;
         case evmc_status_code::EVMC_OUT_OF_GAS:
@@ -870,7 +871,7 @@ void TraceTracer::on_reward_granted(const silkworm::CallResult& result, const si
             }
             break;
         case evmc_status_code::EVMC_REVERT:
-            trace.error = "reverted";
+            trace.error = "Reverted";
             trace.trace_result->gas_used = initial_gas_ - int64_t(result.gas_left);
             if (!result.data.empty()) {
                 if (trace.trace_result->code) {
@@ -1102,8 +1103,7 @@ void IntraBlockStateTracer::on_reward_granted(const silkworm::CallResult& result
     }
 }
 
-template <typename WorldState, typename VM>
-boost::asio::awaitable<std::vector<Trace>> TraceCallExecutor<WorldState, VM>::trace_block(const BlockWithHash& block_with_hash, Filter& filter, json::Stream* stream) {
+awaitable<std::vector<Trace>> TraceCallExecutor::trace_block(const BlockWithHash& block_with_hash, Filter& filter, json::Stream* stream) {
     std::vector<Trace> traces;
 
     const auto trace_call_results = co_await trace_block_transactions(block_with_hash.block, {false, true, false});
@@ -1167,12 +1167,16 @@ boost::asio::awaitable<std::vector<Trace>> TraceCallExecutor<WorldState, VM>::tr
 
     if (filter.count > 0 && filter.after == 0) {
         const rpc::ChainConfig chain_config{co_await core::rawdb::read_chain_config(database_reader_)};
-        const auto block_rewards = ethash::compute_reward(chain_config, block_with_hash.block);
+        const auto cc{silkworm::ChainConfig::from_json(chain_config.config)};
+        if (!cc) {
+            throw std::runtime_error("Invalid chain config");
+        }
+        const auto block_rewards = protocol::EthashRuleSet::compute_reward(*cc, block_with_hash.block);
 
         RewardAction action;
         action.author = block_with_hash.block.header.beneficiary;
         action.reward_type = "block";
-        action.value = block_rewards.miner_reward;
+        action.value = block_rewards.miner;
 
         Trace trace;
         trace.block_number = block_with_hash.block.header.number;
@@ -1193,24 +1197,23 @@ boost::asio::awaitable<std::vector<Trace>> TraceCallExecutor<WorldState, VM>::tr
     co_return traces;
 }
 
-template <typename WorldState, typename VM>
-boost::asio::awaitable<std::vector<TraceCallResult>> TraceCallExecutor<WorldState, VM>::trace_block_transactions(const silkworm::Block& block, const TraceConfig& config) {
+awaitable<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transactions(const silkworm::Block& block, const TraceConfig& config) {
     auto block_number = block.header.number;
     const auto& transactions = block.transactions;
 
     SILKRPC_INFO << "execute: block_number: " << std::dec << block_number << " #txns: " << transactions.size() << " config: " << config << "\n";
 
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
-    const auto chain_config_ptr = lookup_chain_config(chain_id);
+    auto chain_config_ptr = lookup_chain_config(chain_id);
 
     state::RemoteState remote_state{io_context_, database_reader_, block_number - 1};
-    silkworm::IntraBlockState initial_ibs{remote_state};
+    IntraBlockState initial_ibs{remote_state};
 
     StateAddresses state_addresses(initial_ibs);
-    std::shared_ptr<silkworm::EvmTracer> ibsTracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
+    std::shared_ptr<EvmTracer> ibsTracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
 
     state::RemoteState curr_remote_state{io_context_, database_reader_, block_number - 1};
-    EVMExecutor<WorldState, VM> executor{io_context_, *chain_config_ptr, workers_, curr_remote_state};
+    EVMExecutor executor{*chain_config_ptr, workers_, curr_remote_state};
 
     std::vector<TraceCallResult> trace_call_result(transactions.size());
     for (std::uint64_t index = 0; index < transactions.size(); index++) {
@@ -1254,15 +1257,13 @@ boost::asio::awaitable<std::vector<TraceCallResult>> TraceCallExecutor<WorldStat
     co_return trace_call_result;
 }
 
-template <typename WorldState, typename VM>
-boost::asio::awaitable<TraceCallResult> TraceCallExecutor<WorldState, VM>::trace_call(const silkworm::Block& block, const Call& call, const TraceConfig& config) {
+awaitable<TraceCallResult> TraceCallExecutor::trace_call(const silkworm::Block& block, const Call& call, const TraceConfig& config) {
     rpc::Transaction transaction{call.to_transaction()};
     auto result = co_await execute(block.header.number, block, transaction, -1, config);
     co_return result;
 }
 
-template <typename WorldState, typename VM>
-boost::asio::awaitable<TraceManyCallResult> TraceCallExecutor<WorldState, VM>::trace_calls(const silkworm::Block& block, const std::vector<TraceCall>& calls) {
+awaitable<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Block& block, const std::vector<TraceCall>& calls) {
     const auto block_number = block.header.number;
     SILKRPC_DEBUG << "trace_call_many: "
                   << " block_number: " << block_number
@@ -1277,7 +1278,7 @@ boost::asio::awaitable<TraceManyCallResult> TraceCallExecutor<WorldState, VM>::t
     StateAddresses state_addresses(initial_ibs);
 
     state::RemoteState curr_remote_state{io_context_, database_reader_, block_number};
-    EVMExecutor<WorldState, VM> executor{io_context_, *chain_config_ptr, workers_, remote_state};
+    EVMExecutor executor{*chain_config_ptr, workers_, remote_state};
 
     std::shared_ptr<silkworm::EvmTracer> ibsTracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
 
@@ -1322,11 +1323,11 @@ boost::asio::awaitable<TraceManyCallResult> TraceCallExecutor<WorldState, VM>::t
     co_return result;
 }
 
-template <typename WorldState, typename VM>
-boost::asio::awaitable<std::vector<Trace>> TraceCallExecutor<WorldState, VM>::trace_transaction(const BlockWithHash& block_with_hash, const rpc::Transaction& transaction) {
+awaitable<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWithHash& block_with_hash, const rpc::Transaction& transaction) {
     std::vector<Trace> traces;
 
-    const auto result = co_await execute(block_with_hash.block.header.number - 1, block_with_hash.block, transaction, transaction.transaction_index, {false, true, false});
+    const auto result = co_await execute(block_with_hash.block.header.number - 1, block_with_hash.block, transaction,
+                                         transaction.transaction_index, {false, true, false});
     const auto& trace_result = result.traces.trace;
 
     const auto hash = hash_of_transaction(transaction);
@@ -1346,8 +1347,7 @@ boost::asio::awaitable<std::vector<Trace>> TraceCallExecutor<WorldState, VM>::tr
     co_return traces;
 }
 
-template <typename WorldState, typename VM>
-boost::asio::awaitable<void> TraceCallExecutor<WorldState, VM>::trace_filter(const TraceFilter& trace_filter, json::Stream* stream) {
+awaitable<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, json::Stream* stream) {
     SILKRPC_INFO << "TraceCallExecutor::trace_filter: filter " << trace_filter << "\n";
 
     const auto from_block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, database_reader_, trace_filter.from_block);
@@ -1397,9 +1397,8 @@ boost::asio::awaitable<void> TraceCallExecutor<WorldState, VM>::trace_filter(con
     co_return;
 }
 
-template <typename WorldState, typename VM>
-boost::asio::awaitable<TraceCallResult> TraceCallExecutor<WorldState, VM>::execute(std::uint64_t block_number, const silkworm::Block& block,
-                                                                                   const rpc::Transaction& transaction, std::int32_t index, const TraceConfig& config) {
+awaitable<TraceCallResult> TraceCallExecutor::execute(std::uint64_t block_number, const silkworm::Block& block,
+                                                      const rpc::Transaction& transaction, std::int32_t index, const TraceConfig& config) {
     SILKRPC_DEBUG << "execute: "
                   << " block_number: " << std::dec << block_number
                   << " transaction: {" << transaction << "}"
@@ -1419,7 +1418,7 @@ boost::asio::awaitable<TraceCallResult> TraceCallExecutor<WorldState, VM>::execu
     tracers.push_back(tracer);
 
     state::RemoteState curr_remote_state{io_context_, database_reader_, block_number};
-    EVMExecutor<WorldState, VM> executor{io_context_, *chain_config_ptr, workers_, curr_remote_state};
+    EVMExecutor executor{*chain_config_ptr, workers_, curr_remote_state};
     for (std::size_t idx{0}; idx < transaction.transaction_index; idx++) {
         silkworm::Transaction txn{block.transactions[idx]};
 
@@ -1458,7 +1457,5 @@ boost::asio::awaitable<TraceCallResult> TraceCallExecutor<WorldState, VM>::execu
 
     co_return result;
 }
-
-template class TraceCallExecutor<>;
 
 }  // namespace silkworm::rpc::trace

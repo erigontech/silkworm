@@ -74,6 +74,10 @@ class MemoryMappedFile {
     explicit MemoryMappedFile(const char* path, bool read_only = true);
     ~MemoryMappedFile();
 
+    [[nodiscard]] const char* path() const {
+        return path_;
+    }
+
     [[nodiscard]] uint8_t* address() const {
         return address_;
     }
@@ -82,6 +86,7 @@ class MemoryMappedFile {
         return length_;
     }
 
+    void advise_normal();
     void advise_random();
     void advise_sequential();
 

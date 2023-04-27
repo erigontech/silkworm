@@ -255,9 +255,9 @@ TEST_CASE("BitTorrentClient::request_torrent_updates", "[silkworm][snapshot][bit
         settings.magnets_file_path = repo.magnets_file_path().string();
         settings.resume_data_save_interval = kResumeDataSaveInterval;
         BitTorrentClient_ForTest client{settings};
-        CHECK_NOTHROW(client.request_torrent_updates());
+        CHECK_NOTHROW(client.request_torrent_updates(false));
         std::this_thread::sleep_for(kResumeDataSaveInterval);
-        CHECK_NOTHROW(client.request_torrent_updates());
+        CHECK_NOTHROW(client.request_torrent_updates(false));
     }
 }
 
@@ -303,7 +303,7 @@ TEST_CASE("BitTorrentClient::handle_alert", "[silkworm][snapshot][bittorrent]") 
         CHECK_NOTHROW(client.handle_alert(&alert));
     }
     SECTION("lt::save_resume_data_alert is handled") {
-        lt::save_resume_data_alert alert{allocator, std::move(params), handle};
+        lt::save_resume_data_alert alert{allocator, lt::add_torrent_params{params}, handle};
         CHECK_NOTHROW(client.handle_alert(&alert));
     }
     SECTION("lt::save_resume_data_failed_alert is handled") {
@@ -320,7 +320,6 @@ TEST_CASE("BitTorrentClient::handle_alert", "[silkworm][snapshot][bittorrent]") 
         lt::performance_alert alert{allocator, handle, lt::performance_alert::outstanding_request_limit_reached};
         CHECK_NOTHROW(client.handle_alert(&alert));
     }
-
     SECTION("other alerts are NOT handled") {
         lt::torrent_removed_alert alert1{allocator, handle, lt::info_hash_t{}, lt::client_data_t{}};
         CHECK_NOTHROW(!client.handle_alert(&alert1));
@@ -336,7 +335,17 @@ TEST_CASE("BitTorrentClient::handle_alert", "[silkworm][snapshot][bittorrent]") 
         lt::error_code ec;
         lt::add_torrent_alert alert{allocator, handle, params, ec};
         REQUIRE(client.handle_alert(&alert));
-        CHECK_NOTHROW(added_promise.get_future());
+        CHECK_NOTHROW(added_promise.get_future().get());
+    }
+    SECTION("stats_subscription is notified") {
+        std::promise<lt::span<const int64_t>> stats_promise;
+        auto handle_stats = [&](lt::span<const int64_t> counters) {
+            stats_promise.set_value(counters);
+        };
+        client.stats_subscription.connect(handle_stats);
+        lt::session_stats_alert alert{allocator, lt::counters{}};
+        REQUIRE(client.handle_alert(&alert));
+        CHECK_NOTHROW(stats_promise.get_future().get());
     }
     SECTION("completed_subscription is notified") {
         std::promise<std::filesystem::path> completed_promise;
@@ -346,7 +355,7 @@ TEST_CASE("BitTorrentClient::handle_alert", "[silkworm][snapshot][bittorrent]") 
         client.completed_subscription.connect(handle_completed);
         lt::torrent_finished_alert alert{allocator, handle};
         REQUIRE(client.handle_alert(&alert));
-        CHECK_NOTHROW(completed_promise.get_future());
+        CHECK_NOTHROW(completed_promise.get_future().get());
     }
 }
 

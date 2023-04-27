@@ -34,9 +34,10 @@
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
-#include <silkworm/infra/rpc/server/server_context_pool.hpp>
+#include <silkworm/infra/grpc/server/server_context_pool.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
+#include <silkworm/node/common/os.hpp>
 #include <silkworm/node/common/settings.hpp>
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/db/stages.hpp>
@@ -70,7 +71,6 @@ using silkworm::NodeSettings;
 using silkworm::parse_size;
 using silkworm::PreverifiedHashes;
 using silkworm::read_genesis_data;
-using silkworm::SnapshotSync;
 using silkworm::StopWatch;
 using silkworm::cmd::common::add_context_pool_options;
 using silkworm::cmd::common::add_logging_options;
@@ -84,6 +84,7 @@ using silkworm::cmd::common::get_node_name_from_build_info;
 using silkworm::cmd::common::HumanSizeParserValidator;
 using silkworm::cmd::common::ShutdownSignal;
 using silkworm::cmd::common::SilkwormSettings;
+using silkworm::snapshot::SnapshotSync;
 
 // progress log
 class ResourceUsageLog : public ActiveComponent {
@@ -285,6 +286,16 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
     server_settings.set_context_pool_settings(context_pool_settings);
 
     snapshot_settings.bittorrent_settings.repository_path = snapshot_settings.repository_dir;
+}
+
+//! Raise allowed max file descriptors in the current process
+void raise_max_file_descriptors() {
+    constexpr uint64_t kMaxFileDescriptors{10'240};
+
+    const bool set_fd_result = silkworm::os::set_max_file_descriptors(kMaxFileDescriptors);
+    if (!set_fd_result) {
+        throw std::runtime_error{"Cannot increase max file descriptor up to " + std::to_string(kMaxFileDescriptors)};
+    }
 }
 
 //! \brief Ensure database is ready to take off and consistent with command line arguments
@@ -506,15 +517,21 @@ int main(int argc, char* argv[]) {
 
         PreverifiedHashes::load(node_settings.chain_config->chain_id);
 
-        // Start boost asio
-        using asio_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
-        auto asio_guard = std::make_unique<asio_guard_type>(node_settings.asio_context.get_executor());
-        std::thread asio_thread{[&node_settings]() -> void {
-            sw_log::set_thread_name("Asio");
-            sw_log::Trace("Boost Asio", {"state", "started"});
-            node_settings.asio_context.run();
-            sw_log::Trace("Boost Asio", {"state", "stopped"});
-        }};
+        // Start boost asio context for execution timers // TODO(canepat) we need a better solution
+        // The following async-thread executor is needed to have graceful shutdown in case of any run exception
+        auto timer_executor = [&node_settings]() -> boost::asio::awaitable<void> {
+            using asio_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
+            auto asio_guard = std::make_unique<asio_guard_type>(node_settings.asio_context.get_executor());
+
+            auto run = [&] {
+                sw_log::set_thread_name("asio_ctx_timer");
+                sw_log::Trace("Asio Timers", {"state", "started"});
+                node_settings.asio_context.run();
+                sw_log::Trace("Asio Timers", {"state", "stopped"});
+            };
+            auto stop = [&] { asio_guard.reset(); };
+            co_await silkworm::concurrency::async_thread(std::move(run), std::move(stop));
+        };
         silkworm::rpc::ServerContextPool context_pool{
             settings.server_settings.context_pool_settings(),
             [] { return std::make_unique<DummyServerCompletionQueue>(); },
@@ -534,7 +551,7 @@ int main(int argc, char* argv[]) {
             // TODO: uncomment when sync_sentry_client is refactored to use the sentry client
             // sentry_settings.api_address = "";
 
-            *sentry_server = std::make_shared<silkworm::sentry::Sentry>(std::move(sentry_settings), context_pool);
+            sentry_server = std::make_shared<silkworm::sentry::Sentry>(std::move(sentry_settings), context_pool);
 
             // direct client
             sentry_client = sentry_server.value();
@@ -578,11 +595,15 @@ int main(int argc, char* argv[]) {
         BlockExchange block_exchange{sync_sentry_client, sw_db::ROAccess{chaindata_db}, node_settings.chain_config.value()};
 
         if (snapshot_settings.enabled) {
+            // Raise file descriptor limit per process
+            raise_max_file_descriptors();
+
             sw_db::RWTxn rw_txn{chaindata_db};
 
             // Snapshot sync - download chain from peers using snapshot files
             SnapshotSync snapshot_sync{snapshot_settings, node_settings.chain_config.value()};
             snapshot_sync.download_and_index_snapshots(rw_txn);
+            rw_txn.commit_and_stop();
         } else {
             sw_log::Info() << "Snapshot sync disabled, no snapshot must be downloaded";
         }
@@ -610,6 +631,7 @@ int main(int argc, char* argv[]) {
         };
 
         auto tasks =
+            timer_executor() &&
             resource_usage_log.async_run() &&
             rpc_server.async_run() &&
             embedded_sentry_run_if_needed() &&
@@ -627,38 +649,24 @@ int main(int argc, char* argv[]) {
             std::move(tasks) || shutdown_signal.wait(),
             boost::asio::use_future);
         context_pool.start();
+        sw_log::Message() << "Silkworm is now running";
 
-        // Wait for shutdown_signal or an exception from tasks
+        // Wait for shutdown signal or an exception from tasks
         run_future.get();
 
-        // Close all resources
-        asio_guard.reset();
-        asio_thread.join();
-
-        context_pool.stop();
-        context_pool.join();
-
-        backend.close();
-
+        // Graceful exit after user shutdown signal
         sw_log::Message() << "Exiting Silkworm";
-
         return 0;
     } catch (const CLI::ParseError& ex) {
+        // Let CLI11 handle any error occurred parsing command-line args
         return cli.exit(ex);
-    } catch (const std::runtime_error& ex) {
-        sw_log::Error() << ex.what();
-        return -1;
-    } catch (const std::invalid_argument& ex) {
-        std::cerr << "\tInvalid argument :" << ex.what() << "\n"
-                  << std::endl;
-        return -3;
     } catch (const std::exception& ex) {
-        std::cerr << "\tUnexpected error : " << ex.what() << "\n"
-                  << std::endl;
-        return -4;
+        // Any exception during run leads to termination
+        sw_log::Critical("Unrecoverable failure: exit", {"error", ex.what()});
+        return -1;
     } catch (...) {
-        std::cerr << "\tUnexpected undefined error\n"
-                  << std::endl;
-        return -99;
+        // Any unknown exception during run leads to termination
+        sw_log::Critical("Unrecoverable failure: exit", {"error", "unexpected exception"});
+        return -2;
     }
 }

@@ -16,10 +16,8 @@
 
 #pragma once
 
-#include <optional>
 #include <string>
-
-#include <evmc/evmc.hpp>
+#include <vector>
 
 namespace silkworm::rpc {
 
@@ -37,5 +35,7 @@ struct NodeInfo {
     std::string protocols;
     NodeInfoPorts ports;
 };
+
+using NodeInfos = std::vector<NodeInfo>;
 
 }  // namespace silkworm::rpc

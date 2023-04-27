@@ -19,9 +19,9 @@
 #include <silkworm/core/types/bloom.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/rpc/client/call.hpp>
-#include <silkworm/infra/rpc/common/conversion.hpp>
-#include <silkworm/infra/rpc/interfaces/types.hpp>
+#include <silkworm/infra/grpc/client/call.hpp>
+#include <silkworm/infra/grpc/common/conversion.hpp>
+#include <silkworm/infra/grpc/interfaces/types.hpp>
 #include <silkworm/interfaces/execution/execution.grpc.pb.h>
 
 namespace silkworm::execution {
@@ -52,6 +52,9 @@ static void serialize_header(const BlockHeader& bh, ::execution::Header* header)
     if (bh.withdrawals_root) {
         header->set_allocated_withdrawal_hash(rpc::H256_from_bytes32(*bh.withdrawals_root).release());
     }
+    if (bh.excess_data_gas) {
+        header->set_allocated_excess_data_gas(rpc::H256_from_uint256(*bh.excess_data_gas).release());
+    }
 }
 
 static void deserialize_header(const ::execution::Header& received_header, BlockHeader& header) {
@@ -76,6 +79,9 @@ static void deserialize_header(const ::execution::Header& received_header, Block
     }
     if (received_header.has_withdrawal_hash()) {
         header.withdrawals_root = rpc::bytes32_from_H256(received_header.withdrawal_hash());
+    }
+    if (received_header.has_excess_data_gas()) {
+        header.excess_data_gas = rpc::uint256_from_H256(received_header.excess_data_gas());
     }
 }
 

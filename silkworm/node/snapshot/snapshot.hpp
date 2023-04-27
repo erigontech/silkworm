@@ -28,7 +28,7 @@
 #include <silkworm/node/db/util.hpp>
 #include <silkworm/node/huffman/decompressor.hpp>
 
-namespace silkworm {
+namespace silkworm::snapshot {
 
 class Snapshot {
   public:
@@ -69,7 +69,7 @@ class Snapshot {
     std::filesystem::path path_;
     BlockNum block_from_{0};
     BlockNum block_to_{0};
-    Decompressor decoder_;
+    huffman::Decompressor decoder_;
 };
 
 class HeaderSnapshot : public Snapshot {
@@ -131,4 +131,4 @@ class TransactionSnapshot : public Snapshot {
     // uint64_t* idx_txn_hash_2_block_{nullptr}; // TODO(canepat) recsplit.Index
 };
 
-}  // namespace silkworm
+}  // namespace silkworm::snapshot

@@ -309,6 +309,22 @@ void to_json(nlohmann::json& json, const NodeInfo& node_info) {
     json["protocols"] = nlohmann::json::parse(node_info.protocols, nullptr, /* allow_exceptions = */ false);
 }
 
+void to_json(nlohmann::json& json, const PeerInfo& info) {
+    json["id"] = info.id;
+    json["name"] = info.name;
+    json["enode"] = info.enode;
+    if (!info.enr.empty()) {
+        json["enr"] = info.enr;
+    }
+    json["caps"] = info.caps;
+    json["network"]["localAddress"] = info.local_address;
+    json["network"]["remoteAddress"] = info.remote_address;
+    json["network"]["inbound"] = info.is_connection_inbound;
+    json["network"]["static"] = info.is_connection_static;
+    json["network"]["trusted"] = info.is_connection_trusted;
+    json["protocols"] = nullptr;
+}
+
 void to_json(nlohmann::json& json, const struct CallBundleTxInfo& tx_info) {
     json["gasUsed"] = tx_info.gas_used;
     json["stateHash"] = silkworm::to_bytes32({tx_info.hash.bytes, silkworm::kHashLength});
@@ -530,57 +546,6 @@ void from_json(const nlohmann::json& json, Call& call) {
     }
 }
 
-void to_json(nlohmann::json& json, const Receipt& receipt) {
-    json["blockHash"] = receipt.block_hash;
-    json["blockNumber"] = to_quantity(receipt.block_number);
-    json["transactionHash"] = receipt.tx_hash;
-    json["transactionIndex"] = to_quantity(receipt.tx_index);
-    json["from"] = receipt.from.value_or(evmc::address{});
-    json["to"] = receipt.to.value_or(evmc::address{});
-    json["type"] = to_quantity(receipt.type ? receipt.type.value() : 0);
-    json["gasUsed"] = to_quantity(receipt.gas_used);
-    json["cumulativeGasUsed"] = to_quantity(receipt.cumulative_gas_used);
-    json["effectiveGasPrice"] = to_quantity(receipt.effective_gas_price);
-    if (receipt.contract_address) {
-        json["contractAddress"] = receipt.contract_address;
-    } else {
-        json["contractAddress"] = nlohmann::json{};
-    }
-    json["logs"] = receipt.logs;
-    json["logsBloom"] = "0x" + silkworm::to_hex(full_view(receipt.bloom));
-    json["status"] = to_quantity(receipt.success ? 1 : 0);
-}
-
-void from_json(const nlohmann::json& json, Receipt& receipt) {
-    SILKRPC_TRACE << "from_json<Receipt> json: " << json.dump() << "\n";
-    if (json.is_array()) {
-        if (json.size() < 4) {
-            throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Receipt CBOR: missing entries"};
-        }
-        if (!json[0].is_number()) {
-            throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Receipt CBOR: number expected in [0]"};
-        }
-        receipt.type = json[0];
-
-        if (!json[1].is_null()) {
-            throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Receipt CBOR: null expected in [1]"};
-        }
-
-        if (!json[2].is_number()) {
-            throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Receipt CBOR: number expected in [2]"};
-        }
-        receipt.success = json[2] == 1u;
-
-        if (!json[3].is_number()) {
-            throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Receipt CBOR: number expected in [3]"};
-        }
-        receipt.cumulative_gas_used = json[3];
-    } else {
-        receipt.success = json.at("success").get<bool>();
-        receipt.cumulative_gas_used = json.at("cumulative_gas_used").get<uint64_t>();
-    }
-}
-
 void to_json(nlohmann::json& json, const Filter& filter) {
     if (filter.from_block != std::nullopt) {
         json["fromBlock"] = filter.from_block.value();
@@ -758,7 +723,8 @@ void from_json(const nlohmann::json& json, TransitionConfiguration& transition_c
 
 void to_json(nlohmann::json& json, const Forks& forks) {
     json["genesis"] = forks.genesis_hash;
-    json["forks"] = forks.block_numbers;
+    json["heightForks"] = forks.block_numbers;
+    json["timeForks"] = forks.block_times;
 }
 
 void to_json(nlohmann::json& json, const Issuance& issuance) {

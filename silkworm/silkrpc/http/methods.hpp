@@ -25,6 +25,9 @@ namespace silkworm::rpc::http::method {
 constexpr const char* k_web3_clientVersion{"web3_clientVersion"};
 constexpr const char* k_web3_sha3{"web3_sha3"};
 
+constexpr const char* k_admin_nodeInfo{"admin_nodeInfo"};
+constexpr const char* k_admin_peers{"admin_peers"};
+
 constexpr const char* k_net_listening{"net_listening"};
 constexpr const char* k_net_peerCount{"net_peerCount"};
 constexpr const char* k_net_version{"net_version"};
@@ -78,6 +81,7 @@ constexpr const char* k_eth_getBlockByNumber{"eth_getBlockByNumber"};
 constexpr const char* k_eth_getBlockTransactionCountByNumber{"eth_getBlockTransactionCountByNumber"};
 constexpr const char* k_eth_getBlockReceipts{"eth_getBlockReceipts"};
 constexpr const char* k_eth_maxPriorityFeePerGas{"eth_maxPriorityFeePerGas"};
+constexpr const char* k_eth_feeHistory{"eth_feeHistory"};
 
 constexpr const char* k_debug_accountRange{"debug_accountRange"};
 constexpr const char* k_debug_getModifiedAccountsByNumber{"debug_getModifiedAccountsByNumber"};

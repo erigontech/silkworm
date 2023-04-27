@@ -28,8 +28,8 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/rpc/interfaces/types.hpp>
-#include <silkworm/infra/rpc/server/call.hpp>
+#include <silkworm/infra/grpc/interfaces/types.hpp>
+#include <silkworm/infra/grpc/server/call.hpp>
 #include <silkworm/sentry/api/api_common/message_id_set.hpp>
 #include <silkworm/sentry/api/api_common/node_info.hpp>
 #include <silkworm/sentry/api/api_common/peer_event.hpp>

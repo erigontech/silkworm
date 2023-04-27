@@ -33,6 +33,8 @@
 
 namespace silkworm::rpc::debug {
 
+using boost::asio::awaitable;
+
 void from_json(const nlohmann::json& json, DebugConfig& tc) {
     json.at("disableStorage").get_to(tc.disableStorage);
     json.at("disableMemory").get_to(tc.disableMemory);
@@ -262,8 +264,7 @@ void DebugTracer::write_log(const DebugLog& log) {
     stream_.write_json(json);
 }
 
-template <typename WorldState, typename VM>
-boost::asio::awaitable<void> DebugExecutor<WorldState, VM>::execute(json::Stream& stream, const silkworm::Block& block) {
+awaitable<void> DebugExecutor::execute(json::Stream& stream, const silkworm::Block& block) {
     auto block_number = block.header.number;
     const auto& transactions = block.transactions;
 
@@ -272,7 +273,7 @@ boost::asio::awaitable<void> DebugExecutor<WorldState, VM>::execute(json::Stream
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     const auto chain_config_ptr = lookup_chain_config(chain_id);
     state::RemoteState remote_state{io_context_, database_reader_, block_number - 1};
-    EVMExecutor<WorldState, VM> executor{io_context_, *chain_config_ptr, workers_, remote_state};
+    EVMExecutor executor{*chain_config_ptr, workers_, remote_state};
 
     for (std::uint64_t idx = 0; idx < transactions.size(); idx++) {
         rpc::Transaction txn{block.transactions[idx]};
@@ -310,16 +311,14 @@ boost::asio::awaitable<void> DebugExecutor<WorldState, VM>::execute(json::Stream
     co_return;
 }
 
-template <typename WorldState, typename VM>
-boost::asio::awaitable<void> DebugExecutor<WorldState, VM>::execute(json::Stream& stream, const silkworm::Block& block, const Call& call) {
+awaitable<void> DebugExecutor::execute(json::Stream& stream, const silkworm::Block& block, const Call& call) {
     rpc::Transaction transaction{call.to_transaction()};
     co_await execute(stream, block.header.number, block, transaction, -1);
     co_return;
 }
 
-template <typename WorldState, typename VM>
-boost::asio::awaitable<void> DebugExecutor<WorldState, VM>::execute(json::Stream& stream, uint64_t block_number,
-                                                                    const silkworm::Block& block, const Transaction& transaction, int32_t index) {
+awaitable<void> DebugExecutor::execute(json::Stream& stream, uint64_t block_number,
+                                       const silkworm::Block& block, const Transaction& transaction, int32_t index) {
     SILKRPC_INFO << "DebugExecutor::execute: "
                  << " block_number: " << block_number
                  << " transaction: {" << transaction << "}"
@@ -330,7 +329,7 @@ boost::asio::awaitable<void> DebugExecutor<WorldState, VM>::execute(json::Stream
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     const auto chain_config_ptr = lookup_chain_config(chain_id);
     state::RemoteState remote_state{io_context_, database_reader_, block_number};
-    EVMExecutor<WorldState, VM> executor{io_context_, *chain_config_ptr, workers_, remote_state};
+    EVMExecutor executor{*chain_config_ptr, workers_, remote_state};
 
     for (auto idx{0}; idx < index; idx++) {
         silkworm::Transaction txn{block.transactions[std::size_t(idx)]};
@@ -364,7 +363,5 @@ boost::asio::awaitable<void> DebugExecutor<WorldState, VM>::execute(json::Stream
 
     co_return;
 }
-
-template class DebugExecutor<>;
 
 }  // namespace silkworm::rpc::debug

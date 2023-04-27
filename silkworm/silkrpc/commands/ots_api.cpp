@@ -19,10 +19,10 @@
 #include <numeric>
 #include <string>
 
+#include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/bitmap.hpp>
 #include <silkworm/node/db/tables.hpp>
-#include <silkworm/silkrpc/consensus/ethash.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
@@ -365,18 +365,18 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getTransactionBySenderAndNonc
 IssuanceDetails OtsRpcApi::get_issuance(const ChainConfig& chain_config, const silkworm::BlockWithHash& block) {
     auto config = silkworm::ChainConfig::from_json(chain_config.config).value();
 
-    if (config.seal_engine != silkworm::SealEngineType::kEthash) {
+    if (config.protocol_rule_set != protocol::RuleSetType::kEthash) {
         return IssuanceDetails{};
     }
 
-    auto block_reward = ethash::compute_reward(chain_config, block.block);
+    auto block_reward = protocol::EthashRuleSet::compute_reward(config, block.block);
 
-    intx::uint256 ommers_reward = std::accumulate(block_reward.ommer_rewards.begin(), block_reward.ommer_rewards.end(), intx::uint256{0});
+    intx::uint256 ommers_reward = std::accumulate(block_reward.ommers.begin(), block_reward.ommers.end(), intx::uint256{0});
 
     IssuanceDetails issuance{
-        .miner_reward = block_reward.miner_reward,
+        .miner_reward = block_reward.miner,
         .ommers_reward = ommers_reward,
-        .total_reward = block_reward.miner_reward + ommers_reward};
+        .total_reward = block_reward.miner + ommers_reward};
 
     return issuance;
 }

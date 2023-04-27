@@ -29,12 +29,17 @@
 
 namespace silkworm {
 
-enum class SealEngineType {
-    kNoProof,
-    kEthash,
-    kClique,
-    kAuRA,
-};
+namespace protocol {
+
+    //! \see IRuleSet
+    enum class RuleSetType {
+        kNoProof,
+        kEthash,
+        kClique,
+        kAuRa,
+    };
+
+}  // namespace protocol
 
 struct ChainConfig {
     //! \brief Returns the chain identifier
@@ -44,8 +49,8 @@ struct ChainConfig {
     //! \brief Holds the hash of genesis block
     std::optional<evmc::bytes32> genesis_hash;
 
-    //! \brief Returns the type of seal engine
-    SealEngineType seal_engine{SealEngineType::kNoProof};
+    //! \brief Returns the type of the (pre-Merge) protocol rule set
+    protocol::RuleSetType protocol_rule_set{protocol::RuleSetType::kNoProof};
 
     // https://github.com/ethereum/execution-specs/tree/master/network-upgrades/mainnet-upgrades
     std::optional<BlockNum> homestead_block{std::nullopt};
@@ -112,7 +117,7 @@ std::ostream& operator<<(std::ostream& out, const ChainConfig& obj);
 inline constexpr evmc::bytes32 kMainnetGenesisHash{0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3_bytes32};
 inline constexpr ChainConfig kMainnetConfig{
     .chain_id = 1,
-    .seal_engine = SealEngineType::kEthash,
+    .protocol_rule_set = protocol::RuleSetType::kEthash,
     .homestead_block = 1'150'000,
     .dao_block = 1'920'000,
     .tangerine_whistle_block = 2'463'000,
@@ -133,7 +138,7 @@ inline constexpr ChainConfig kMainnetConfig{
 inline constexpr evmc::bytes32 kRinkebyGenesisHash{0x6341fd3daf94b748c72ced5a5b26028f2474f5f00d824504e4fa37a75767e177_bytes32};
 inline constexpr ChainConfig kRinkebyConfig{
     .chain_id = 4,
-    .seal_engine = SealEngineType::kClique,
+    .protocol_rule_set = protocol::RuleSetType::kClique,
     .homestead_block = 1,
     .tangerine_whistle_block = 2,
     .spurious_dragon_block = 3,
@@ -148,7 +153,7 @@ inline constexpr ChainConfig kRinkebyConfig{
 inline constexpr evmc::bytes32 kGoerliGenesisHash{0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a_bytes32};
 inline constexpr ChainConfig kGoerliConfig{
     .chain_id = 5,
-    .seal_engine = SealEngineType::kClique,
+    .protocol_rule_set = protocol::RuleSetType::kClique,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
     .spurious_dragon_block = 0,
@@ -165,7 +170,7 @@ inline constexpr ChainConfig kGoerliConfig{
 inline constexpr evmc::bytes32 kSepoliaGenesisHash{0x25a5cc106eea7138acab33231d7160d69cb777ee0c2c553fcddf5138993e6dd9_bytes32};
 inline constexpr ChainConfig kSepoliaConfig{
     .chain_id = 11155111,
-    .seal_engine = SealEngineType::kEthash,
+    .protocol_rule_set = protocol::RuleSetType::kEthash,
     .homestead_block = 0,
     .tangerine_whistle_block = 0,
     .spurious_dragon_block = 0,

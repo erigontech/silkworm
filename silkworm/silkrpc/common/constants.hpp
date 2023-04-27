@@ -21,6 +21,7 @@
 
 namespace silkworm {
 
+constexpr const char* kAdminApiNamespace{"admin"};
 constexpr const char* kDebugApiNamespace{"debug"};
 constexpr const char* kEngineApiNamespace{"engine"};
 constexpr const char* kEthApiNamespace{"eth"};

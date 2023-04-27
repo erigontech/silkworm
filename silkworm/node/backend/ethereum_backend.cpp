@@ -40,6 +40,10 @@ EthereumBackEnd::EthereumBackEnd(
     }
 }
 
+EthereumBackEnd::~EthereumBackEnd() {
+    close();
+}
+
 void EthereumBackEnd::set_node_name(const std::string& node_name) noexcept {
     node_name_ = node_name;
 }

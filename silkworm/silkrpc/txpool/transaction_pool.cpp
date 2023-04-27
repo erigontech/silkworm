@@ -16,17 +16,19 @@
 
 #include "transaction_pool.hpp"
 
-#include <boost/endian/conversion.hpp>
-
+#include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/silkrpc/common/clock_time.hpp>
 #include <silkworm/silkrpc/grpc/unary_rpc.hpp>
 
 namespace silkworm::rpc::txpool {
 
-TransactionPool::TransactionPool(boost::asio::io_context& context, std::shared_ptr<grpc::Channel> channel, agrpc::GrpcContext& grpc_context)
+TransactionPool::TransactionPool(boost::asio::io_context& context, const std::shared_ptr<grpc::Channel>& channel,
+                                 agrpc::GrpcContext& grpc_context)
     : TransactionPool(context.get_executor(), ::txpool::Txpool::NewStub(channel, grpc::StubOptions()), grpc_context) {}
 
-TransactionPool::TransactionPool(boost::asio::io_context::executor_type executor, std::unique_ptr<::txpool::Txpool::StubInterface> stub, agrpc::GrpcContext& grpc_context)
+TransactionPool::TransactionPool(boost::asio::io_context::executor_type executor,
+                                 std::unique_ptr<::txpool::Txpool::StubInterface> stub,
+                                 agrpc::GrpcContext& grpc_context)
     : executor_(std::move(executor)), stub_(std::move(stub)), grpc_context_(grpc_context) {
     SILKRPC_TRACE << "TransactionPool::ctor " << this << "\n";
 }
@@ -103,7 +105,7 @@ boost::asio::awaitable<std::optional<uint64_t>> TransactionPool::nonce(const evm
     const auto start_time = clock_time::now();
     SILKRPC_DEBUG << "TransactionPool::nonce address=" << address << "\n";
     ::txpool::NonceRequest request;
-    request.set_allocated_address(H160_from_address(address));
+    request.set_allocated_address(H160_from_address(address).release());
     UnaryRpc<&::txpool::Txpool::StubInterface::AsyncNonce> nonce_rpc{*stub_, grpc_context_};
     const auto reply = co_await nonce_rpc.finish_on(executor_, request);
     SILKRPC_DEBUG << "TransactionPool::nonce found:" << reply.found() << " nonce: " << reply.nonce() << " t=" << clock_time::since(start_time) << "\n";
@@ -149,32 +151,6 @@ boost::asio::awaitable<TransactionsInPool> TransactionPool::get_transactions() {
     }
     SILKRPC_DEBUG << "TransactionPool::get_transactions t=" << clock_time::since(start_time) << "\n";
     co_return transactions_in_pool;
-}
-
-evmc::address TransactionPool::address_from_H160(const types::H160& h160) {
-    uint64_t hi_hi = h160.hi().hi();
-    uint64_t hi_lo = h160.hi().lo();
-    uint32_t lo = h160.lo();
-    evmc::address address{};
-    boost::endian::store_big_u64(address.bytes + 0, hi_hi);
-    boost::endian::store_big_u64(address.bytes + 8, hi_lo);
-    boost::endian::store_big_u32(address.bytes + 16, lo);
-    return address;
-}
-
-types::H160* TransactionPool::H160_from_address(const evmc::address& address) {
-    auto h160{new types::H160()};
-    auto hi{H128_from_bytes(address.bytes)};
-    h160->set_allocated_hi(hi);
-    h160->set_lo(boost::endian::load_big_u32(address.bytes + 16));
-    return h160;
-}
-
-types::H128* TransactionPool::H128_from_bytes(const uint8_t* bytes) {
-    auto h128{new types::H128()};
-    h128->set_hi(boost::endian::load_big_u64(bytes));
-    h128->set_lo(boost::endian::load_big_u64(bytes + 8));
-    return h128;
 }
 
 }  // namespace silkworm::rpc::txpool

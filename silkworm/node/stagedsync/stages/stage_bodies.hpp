@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <silkworm/core/consensus/engine.hpp>
+#include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/concurrency/containers.hpp>
 #include <silkworm/node/db/access_layer.hpp>
@@ -63,9 +63,8 @@ class BodiesStage : public Stage {
         void set_preverified_height(BlockNum height);
 
       private:
-        using ConsensusEnginePtr = std::unique_ptr<consensus::IEngine>;
-
-        ConsensusEnginePtr consensus_engine_;
+        const ChainConfig& chain_config_;
+        protocol::RuleSetPtr rule_set_;
         db::Buffer chain_state_;
 
         BlockNum initial_height_{0};

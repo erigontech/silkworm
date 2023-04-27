@@ -16,12 +16,11 @@
 
 #include "transaction.hpp"
 
-#include <cassert>
-
 #include <ethash/keccak.hpp>
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/crypto/ecdsa.h>
+#include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 
 #include "y_parity_and_chain_id.hpp"
@@ -33,7 +32,8 @@ bool operator==(const Transaction& a, const Transaction& b) {
     return a.type == b.type && a.nonce == b.nonce && a.max_priority_fee_per_gas == b.max_priority_fee_per_gas &&
            a.max_fee_per_gas == b.max_fee_per_gas && a.gas_limit == b.gas_limit && a.to == b.to && a.value == b.value &&
            a.data == b.data && a.odd_y_parity == b.odd_y_parity && a.chain_id == b.chain_id && a.r == b.r &&
-           a.s == b.s && a.access_list == b.access_list;
+           a.s == b.s && a.access_list == b.access_list && a.max_fee_per_data_gas == b.max_fee_per_data_gas &&
+           a.blob_versioned_hashes == b.blob_versioned_hashes;
 }
 
 // https://eips.ethereum.org/EIPS/eip-155
@@ -111,7 +111,7 @@ namespace rlp {
         h.payload_length += length(txn.data);
 
         if (txn.type != Transaction::Type::kLegacy) {
-            assert(txn.type == Transaction::Type::kEip2930 || txn.type == Transaction::Type::kEip1559);
+            SILKWORM_ASSERT(txn.type == Transaction::Type::kEip2930 || txn.type == Transaction::Type::kEip1559);
             h.payload_length += length(txn.access_list);
         }
 
@@ -167,7 +167,7 @@ namespace rlp {
     }
 
     static void eip2718_encode(Bytes& to, const Transaction& txn, bool for_signing, bool wrap_into_array) {
-        assert(txn.type == Transaction::Type::kEip2930 || txn.type == Transaction::Type::kEip1559);
+        SILKWORM_ASSERT(txn.type == Transaction::Type::kEip2930 || txn.type == Transaction::Type::kEip1559);
 
         Header rlp_head{rlp_header(txn, for_signing)};
 
@@ -440,13 +440,27 @@ void Transaction::recover_sender() {
     }
 }
 
+intx::uint512 Transaction::maximum_gas_cost() const {
+    // See https://github.com/ethereum/EIPs/pull/3594
+    intx::uint512 max_gas_cost{intx::umul(intx::uint256{gas_limit}, max_fee_per_gas)};
+    // and https://eips.ethereum.org/EIPS/eip-4844#gas-accounting
+    if (max_fee_per_data_gas) {
+        max_gas_cost += intx::umul(intx::uint256{total_data_gas()}, *max_fee_per_data_gas);
+    }
+    return max_gas_cost;
+}
+
 intx::uint256 Transaction::priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const {
-    assert(max_fee_per_gas >= base_fee_per_gas);
+    SILKWORM_ASSERT(max_fee_per_gas >= base_fee_per_gas);
     return std::min(max_priority_fee_per_gas, max_fee_per_gas - base_fee_per_gas);
 }
 
 intx::uint256 Transaction::effective_gas_price(const intx::uint256& base_fee_per_gas) const {
     return priority_fee_per_gas(base_fee_per_gas) + base_fee_per_gas;
+}
+
+uint64_t Transaction::total_data_gas() const {
+    return protocol::kDataGasPerBlob * blob_versioned_hashes.size();
 }
 
 }  // namespace silkworm

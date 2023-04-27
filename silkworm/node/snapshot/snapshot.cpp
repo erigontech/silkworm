@@ -21,7 +21,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 
-namespace silkworm {
+namespace silkworm::snapshot {
 
 namespace fs = std::filesystem;
 
@@ -41,7 +41,7 @@ void Snapshot::reopen_segment() {
 }
 
 bool Snapshot::for_each_item(const Snapshot::WordItemFunc& fn) {
-    return decoder_.read_ahead([fn](Decompressor::Iterator it) -> bool {
+    return decoder_.read_ahead([fn](huffman::Decompressor::Iterator it) -> bool {
         uint64_t word_count{0};
         WordItem item{};
         while (it.has_next()) {
@@ -140,4 +140,4 @@ void TransactionSnapshot::close_index() {
     // TODO(canepat): implement
 }
 
-}  // namespace silkworm
+}  // namespace silkworm::snapshot

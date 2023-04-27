@@ -90,6 +90,9 @@ void MemoryMappedFile::map_existing(bool read_only) {
     fd = INVALID_HANDLE_VALUE;
 }
 
+void MemoryMappedFile::advise_normal() {
+}
+
 void MemoryMappedFile::advise_random() {
 }
 
@@ -145,6 +148,10 @@ void MemoryMappedFile::map_existing(bool read_only) {
     length_ = static_cast<std::size_t>(stat_buffer.st_size);
 
     address_ = static_cast<uint8_t*>(mmap(fd, read_only));
+}
+
+void MemoryMappedFile::advise_normal() {
+    advise(MADV_NORMAL);
 }
 
 void MemoryMappedFile::advise_random() {

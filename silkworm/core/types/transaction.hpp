@@ -23,6 +23,7 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/rlp/decode.hpp>
+#include <silkworm/core/types/hash.hpp>
 
 namespace silkworm {
 
@@ -41,12 +42,13 @@ struct Transaction {
         kLegacy = 0,
         kEip2930 = 1,
         kEip1559 = 2,
+        kEip4844 = 3,
     };
 
     Type type{Type::kLegacy};
 
     uint64_t nonce{0};
-    intx::uint256 max_priority_fee_per_gas{0};
+    intx::uint256 max_priority_fee_per_gas{0};  // EIP-1559
     intx::uint256 max_fee_per_gas{0};
     uint64_t gas_limit{0};
     std::optional<evmc::address> to{std::nullopt};
@@ -59,7 +61,12 @@ struct Transaction {
 
     std::vector<AccessListEntry> access_list{};  // EIP-2930
 
-    std::optional<evmc::address> from{std::nullopt};  // sender recovered from the signature
+    // EIP-4844: Shard Blob Transactions
+    std::optional<intx::uint256> max_fee_per_data_gas{std::nullopt};
+    std::vector<Hash> blob_versioned_hashes{};
+
+    // sender recovered from the signature
+    std::optional<evmc::address> from{std::nullopt};
 
     [[nodiscard]] intx::uint256 v() const;  // EIP-155
 
@@ -67,14 +74,19 @@ struct Transaction {
     [[nodiscard]] bool set_v(const intx::uint256& v);
 
     //! \brief Populates the from field with recovered sender.
-    //! See Yellow Paper, Appendix F "Signing Transactions",
+    //! \see Yellow Paper, Appendix F "Signing Transactions",
     //! https://eips.ethereum.org/EIPS/eip-2 and
     //! https://eips.ethereum.org/EIPS/eip-155.
     //! If recovery fails the from field is set to null.
     void recover_sender();
 
+    //! \brief Maximum possible cost of normal and data (EIP-4844) gas
+    [[nodiscard]] intx::uint512 maximum_gas_cost() const;
+
     [[nodiscard]] intx::uint256 priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const;  // EIP-1559
     [[nodiscard]] intx::uint256 effective_gas_price(const intx::uint256& base_fee_per_gas) const;   // EIP-1559
+
+    [[nodiscard]] uint64_t total_data_gas() const;  // EIP-4844
 };
 
 bool operator==(const Transaction& a, const Transaction& b);

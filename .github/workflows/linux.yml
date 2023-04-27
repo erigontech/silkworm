@@ -91,4 +91,4 @@ jobs:
         cmd/test/rpcdaemon_test
         cmd/test/sentry_test
         cmd/test/sync_test
-        cmd/test/consensus --threads 4
+        cmd/test/ethereum --threads 4

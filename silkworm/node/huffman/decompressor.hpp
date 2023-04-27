@@ -30,7 +30,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
-namespace silkworm {
+namespace silkworm::huffman {
 
 class DecodingTable {
   public:
@@ -171,7 +171,7 @@ class PositionTable : public DecodingTable {
 class Decompressor {
   public:
     //! The max number of patterns in decoding tables
-    constexpr static std::size_t kMaxTablePatterns = (1 << DecodingTable::kMaxTableBitLength) * 100;
+    constexpr static std::size_t kMaxTablePatterns = (1 << DecodingTable::kMaxTableBitLength) * 510;
 
     //! The max number of positions in decoding tables
     constexpr static std::size_t kMaxTablePositions = (1 << DecodingTable::kMaxTableBitLength) * 100;
@@ -276,4 +276,4 @@ class Decompressor {
     uint64_t words_length_{0};
 };
 
-}  // namespace silkworm
+}  // namespace silkworm::huffman

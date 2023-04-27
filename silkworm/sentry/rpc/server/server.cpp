@@ -24,8 +24,8 @@
 #include <boost/asio/awaitable.hpp>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/rpc/server/call.hpp>
-#include <silkworm/infra/rpc/server/server.hpp>
+#include <silkworm/infra/grpc/server/call.hpp>
+#include <silkworm/infra/grpc/server/server.hpp>
 #include <silkworm/interfaces/p2psentry/sentry.grpc.pb.h>
 
 #include "server_calls.hpp"

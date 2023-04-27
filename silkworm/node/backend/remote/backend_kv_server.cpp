@@ -21,8 +21,8 @@
 #include <boost/asio/awaitable.hpp>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/backend/remote/rpc/backend_calls.hpp>
-#include <silkworm/node/backend/remote/rpc/kv_calls.hpp>
+#include <silkworm/node/backend/remote/grpc/backend_calls.hpp>
+#include <silkworm/node/backend/remote/grpc/kv_calls.hpp>
 
 namespace silkworm::rpc {
 

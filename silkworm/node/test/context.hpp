@@ -35,7 +35,7 @@ class Context {
 
     void add_genesis_data();
 
-    [[nodiscard]] silkworm::NodeSettings& node_settings() { return node_settings_; }
+    [[nodiscard]] NodeSettings& node_settings() { return node_settings_; }
 
     [[nodiscard]] const DataDirectory& dir() const { return *(node_settings_.data_directory); }
 
@@ -51,7 +51,7 @@ class Context {
 
   private:
     TemporaryDirectory tmp_dir_{};
-    silkworm::NodeSettings node_settings_;
+    NodeSettings node_settings_;
     mdbx::env_managed env_;
     std::unique_ptr<db::RWTxn> txn_;
 };

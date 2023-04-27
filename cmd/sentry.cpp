@@ -25,8 +25,8 @@
 #include <silkworm/buildinfo.h>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
-#include <silkworm/infra/rpc/common/util.hpp>
-#include <silkworm/infra/rpc/server/server_context_pool.hpp>
+#include <silkworm/infra/grpc/common/util.hpp>
+#include <silkworm/infra/grpc/server/server_context_pool.hpp>
 #include <silkworm/sentry/sentry.hpp>
 #include <silkworm/sentry/settings.hpp>
 
@@ -44,6 +44,7 @@ Settings sentry_parse_cli_settings(int argc, char* argv[]) {
     Settings settings;
     settings.build_info = silkworm_get_buildinfo();
 
+    add_logging_options(cli, settings.log_settings);
     add_option_data_dir(cli, settings.data_dir_path);
     add_context_pool_options(cli, settings.context_pool_settings);
     add_sentry_options(cli, settings);

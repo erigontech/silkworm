@@ -23,6 +23,6 @@
 namespace silkworm::cmd::common {
 
 //! \brief Setup options to populate snapshot settings after cli.parse()
-void add_snapshot_options(CLI::App& cli, SnapshotSettings& snapshot_settings);
+void add_snapshot_options(CLI::App& cli, snapshot::SnapshotSettings& snapshot_settings);
 
 }  // namespace silkworm::cmd::common

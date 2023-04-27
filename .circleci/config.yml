@@ -260,7 +260,7 @@ jobs:
       - run:
           name: "Install Wasmer"
           working_directory: ~/tmp2
-          command: curl https://get.wasmer.io -sSfL | sh
+          command: curl https://get.wasmer.io -sSfL | sh -s "v3.2.1"
       - run:
           name: "Build GMP"
           working_directory: ~/tmp3
@@ -281,7 +281,7 @@ jobs:
       - run:
           name: "Core unit tests"
           working_directory: ~/build
-          command: wasmer cmd/test/core_test
+          command: wasmer cmd/test/core_test --stack-size 16777216
 
   linux-default-build:
     docker:

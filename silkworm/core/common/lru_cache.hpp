@@ -40,6 +40,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <cstddef>
 #include <list>
+#include <mutex>
 #include <optional>
 #include <unordered_map>
 
@@ -51,9 +52,57 @@ class lru_cache {
     typedef typename std::pair<key_t, value_t> key_value_pair_t;
     typedef typename std::list<key_value_pair_t>::iterator list_iterator_t;
 
-    explicit lru_cache(size_t max_size) : _max_size(max_size) {}
-
+    explicit lru_cache(size_t max_size, bool thread_safe = false) : _max_size(max_size), _thread_safe(thread_safe) {}
     void put(const key_t& key, const value_t& value) {
+        if (_thread_safe) {
+            const std::lock_guard<std::mutex> lock(_access);
+            return _put(key, value);
+        }
+        return _put(key, value);
+    }
+
+    const value_t* get(const key_t& key) {
+        if (_thread_safe) {
+            const std::lock_guard<std::mutex> lock(_access);
+            return _get(key);
+        }
+        return _get(key);
+    }
+
+    bool remove(const key_t& key) {
+        if (_thread_safe) {
+            const std::lock_guard<std::mutex> lock(_access);
+            return _remove(key);
+        }
+        return _remove(key);
+    }
+
+    std::optional<value_t> get_as_copy(const key_t& key) {
+        auto val = get(key);
+        if (val == nullptr) {
+            return std::nullopt;
+        }
+        return {*val};
+    }
+
+    void clear() {
+        if (_thread_safe) {
+            const std::lock_guard<std::mutex> lock(_access);
+            _clear();
+        }
+        _clear();
+    }
+
+    [[nodiscard]] size_t size() const noexcept {
+        if (_thread_safe) {
+            const std::lock_guard<std::mutex> lock(_access);
+            return _cache_items_map.size();
+        }
+        return _cache_items_map.size();
+    }
+
+  private:
+    void _put(const key_t& key, const value_t& value) {
         auto it = _cache_items_map.find(key);
         _cache_items_list.push_front(key_value_pair_t(key, value));
         if (it != _cache_items_map.end()) {
@@ -70,7 +119,7 @@ class lru_cache {
         }
     }
 
-    const value_t* get(const key_t& key) {
+    const value_t* _get(const key_t& key) {
         auto it = _cache_items_map.find(key);
         if (it == _cache_items_map.end()) {
             return nullptr;
@@ -80,15 +129,7 @@ class lru_cache {
         }
     }
 
-    std::optional<value_t> get_as_copy(const key_t& key) {
-        auto val = get(key);
-        if (val == nullptr) {
-            return std::nullopt;
-        }
-        return {*val};
-    }
-
-    bool remove(const key_t& key) {
+    bool _remove(const key_t& key) {
         auto it = _cache_items_map.find(key);
         if (it == _cache_items_map.end())
             return false;
@@ -99,9 +140,9 @@ class lru_cache {
         return true;
     }
 
-    [[nodiscard]] size_t size() const noexcept { return _cache_items_map.size(); }
+    [[nodiscard]] size_t _size() const noexcept { return _cache_items_map.size(); }
 
-    void clear() noexcept {
+    void _clear() noexcept {
         _cache_items_map.clear();
         _cache_items_list.clear();
     }
@@ -110,6 +151,8 @@ class lru_cache {
     std::list<key_value_pair_t> _cache_items_list;
     std::unordered_map<key_t, list_iterator_t> _cache_items_map;
     size_t _max_size;
+    mutable std::mutex _access;
+    bool _thread_safe;
 };
 
 }  // namespace silkworm

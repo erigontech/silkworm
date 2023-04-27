@@ -176,13 +176,12 @@ TEST_CASE("awaitable future") {
         auto future = promise.get_future();
 
         int value;
-        asio::co_spawn(  // <==== AddressSanitizer warn: stack-use-after-scope
-            io,
-            [&](AwaitableFuture<int>&& moved_future) -> asio::awaitable<void> {  // <====
-                value = co_await moved_future.get(asio::use_awaitable);
-                io.stop();
-            }(std::move(future)),
-            asio::detached);
+        auto lambda = [&](AwaitableFuture<int>&& moved_future) -> asio::awaitable<void> {
+            value = co_await moved_future.get(asio::use_awaitable);
+            io.stop();
+        };
+
+        asio::co_spawn(io, lambda(std::move(future)), asio::detached);
 
         promise.set_value(42);
         io.run();

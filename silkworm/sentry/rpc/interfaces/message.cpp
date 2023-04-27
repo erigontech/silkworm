@@ -107,15 +107,11 @@ uint8_t message_id_from_proto_message_id(proto::MessageId proto_id) {
     if (!eth_id)
         return eth::StatusMessage::kId;
 
-    return (static_cast<uint8_t>(eth_id.value()) + eth::StatusMessage::kId);
+    return eth::common_message_id_from_eth_id(eth_id.value());
 }
 
 proto::MessageId proto_message_id_from_message_id(uint8_t message_id) {
-    assert(message_id >= eth::StatusMessage::kId);
-    if (message_id < eth::StatusMessage::kId)
-        return proto::STATUS_66;
-
-    return proto_message_id_from_eth_id(static_cast<eth::MessageId>(message_id - eth::StatusMessage::kId));
+    return proto_message_id_from_eth_id(eth::eth_message_id_from_common_id(message_id));
 }
 
 static Bytes bytes_from_string(const std::string& s) {

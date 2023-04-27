@@ -21,12 +21,9 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/sync/internals/body_sequence.hpp>
 #include <silkworm/sync/internals/header_chain.hpp>
-#include <silkworm/sync/rpc/penalize_peer.hpp>
-#include <silkworm/sync/rpc/send_message_by_min_block.hpp>
+#include <silkworm/sync/sentry_client.hpp>
 
 namespace silkworm {
-
-OutboundGetBlockBodies::OutboundGetBlockBodies() {}
 
 GetBlockBodiesPacket66& OutboundGetBlockBodies::packet() { return packet_; }
 std::vector<PeerPenalization>& OutboundGetBlockBodies::penalties() { return penalizations_; }
@@ -34,17 +31,13 @@ BlockNum& OutboundGetBlockBodies::min_block() { return min_block_; }
 bool OutboundGetBlockBodies::packet_present() const { return !packet_.request.empty(); }
 
 void OutboundGetBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence& bs, SentryClient& sentry) {
-    using namespace std::literals::chrono_literals;
-
-    seconds_t timeout = 1s;
-
     if (packet_present()) {
-        auto send_outcome = send_packet(sentry, timeout);
+        auto send_outcome = send_packet(sentry);
 
         SILK_TRACE << "Bodies request sent (OutboundGetBlockBodies/" << packet_ << "), min_block " << min_block_
-                   << ", received by " << send_outcome.peers_size() << "/" << sentry.active_peers() << " peer(s)";
+                   << ", received by " << send_outcome.size() << "/" << sentry.active_peers() << " peer(s)";
 
-        if (send_outcome.peers_size() == 0) {
+        if (send_outcome.empty()) {
             bs.request_nack(packet_);
             nack_reqs_++;
         } else {
@@ -54,47 +47,25 @@ void OutboundGetBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence& b
 
     for (auto& penalization : penalizations_) {
         SILK_TRACE << "Penalizing " << penalization;
-        send_penalization(sentry, penalization, 1s);
+        sentry.penalize_peer(penalization.peerId, penalization.penalty);
     }
 }
 
-::sentry::SentPeers OutboundGetBlockBodies::send_packet(SentryClient& sentry, seconds_t timeout) {
-    auto request = std::make_unique<::sentry::OutboundMessageData>();  // create header request
-
-    request->set_id(::sentry::MessageId::GET_BLOCK_BODIES_66);
-
+Bytes OutboundGetBlockBodies::message_data() const {
     Bytes rlp_encoding;
     rlp::encode(rlp_encoding, packet_);
-    request->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
-
-    // SILK_TRACE << "Sending message OutboundGetBlockBodies with send_message_by_min_block, content:" << packet_;
-
-    rpc::SendMessageByMinBlock rpc{min_block_, std::move(request)};
-
-    rpc.timeout(timeout);
-    rpc.do_not_throw_on_failure();
-
-    sentry.exec_remotely(rpc);
-
-    if (!rpc.status().ok()) {
-        SILK_TRACE << "Failure of rpc OutboundGetBlockBodies " << packet_ << ": " << rpc.status().error_message();
-        return {};
-    }
-
-    ::sentry::SentPeers peers = rpc.reply();
-    // SILK_TRACE << "Received rpc result of OutboundGetBlockBodies reqId=" << packet_.requestId << ": "
-    //            << std::to_string(peers.peers_size()) + " peer(s)";
-
-    return peers;
+    return rlp_encoding;
 }
 
-void OutboundGetBlockBodies::send_penalization(SentryClient& sentry, const PeerPenalization& penalization,
-                                               seconds_t timeout) {
-    rpc::PenalizePeer rpc{penalization.peerId, penalization.penalty};
+std::vector<PeerId> OutboundGetBlockBodies::send_packet(SentryClient& sentry) {
+    // SILK_TRACE << "Sending message OutboundGetBlockBodies with send_message_by_min_block, content:" << packet_;
 
-    rpc.timeout(timeout);
+    auto peers = sentry.send_message_by_min_block(*this, min_block_, 0);
 
-    sentry.exec_remotely(rpc);
+    // SILK_TRACE << "Received sentry result of OutboundGetBlockBodies reqId=" << packet_.requestId << ": "
+    //            << std::to_string(peers.size()) + " peer(s)";
+
+    return peers;
 }
 
 std::string OutboundGetBlockBodies::content() const {

@@ -32,9 +32,9 @@
 
 #include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/infra/concurrency/event_notifier.hpp>
+#include <silkworm/infra/concurrency/task_group.hpp>
 #include <silkworm/infra/grpc/server/server_context_pool.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
-#include <silkworm/sentry/common/task_group.hpp>
 #include <silkworm/sentry/discovery/discovery.hpp>
 #include <silkworm/sentry/rlpx/client.hpp>
 #include <silkworm/sentry/rlpx/peer.hpp>
@@ -104,14 +104,14 @@ class PeerManager {
     std::list<std::shared_ptr<rlpx::Peer>> starting_peers_;
     size_t max_peers_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
-    common::TaskGroup peer_tasks_;
-    common::TaskGroup drop_peer_tasks_;
+    concurrency::TaskGroup peer_tasks_;
+    concurrency::TaskGroup drop_peer_tasks_;
     size_t drop_peer_tasks_count_{0};
 
     std::set<common::EnodeUrl> connecting_peer_urls_;
     silkworm::rpc::ServerContextPool& context_pool_;
     concurrency::EventNotifier need_peers_notifier_;
-    common::TaskGroup connect_peer_tasks_;
+    concurrency::TaskGroup connect_peer_tasks_;
     concurrency::Channel<std::shared_ptr<rlpx::Peer>> client_peer_channel_;
 
     std::list<std::weak_ptr<PeerManagerObserver>> observers_;

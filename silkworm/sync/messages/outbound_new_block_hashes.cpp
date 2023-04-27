@@ -20,15 +20,13 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/sync/internals/body_sequence.hpp>
 #include <silkworm/sync/internals/header_chain.hpp>
-#include <silkworm/sync/rpc/send_message_to_all.hpp>
+#include <silkworm/sync/sentry_client.hpp>
 
 namespace silkworm {
 
 OutboundNewBlockHashes::OutboundNewBlockHashes(bool f) : is_first_sync_{f} {}
 
 void OutboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
-    using namespace std::literals::chrono_literals;
-
     auto& announces_to_do = hc.announces_to_do();
 
     if (is_first_sync_) {
@@ -46,35 +44,21 @@ void OutboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence
         packet_.push_back({announce.hash, announce.number});
     }
 
-    auto request = std::make_unique<::sentry::OutboundMessageData>();  // create request
-
-    request->set_id(::sentry::MessageId::NEW_BLOCK_HASHES_66);
-
-    Bytes rlp_encoding;
-    rlp::encode(rlp_encoding, packet_);
-    request->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
-
     SILK_TRACE << "Sending message OutboundNewBlockHashes (announcements) with send_message_to_all, content:"
                << packet_;
 
-    rpc::SendMessageToAll rpc{std::move(request)};
+    [[maybe_unused]] auto peers = sentry.send_message_to_all(*this);
 
-    seconds_t timeout = 1s;
-    rpc.timeout(timeout);
-    rpc.do_not_throw_on_failure();
-
-    sentry.exec_remotely(rpc);
-
-    if (!rpc.status().ok()) {
-        SILK_TRACE << "Failure of rpc OutboundNewBlockHashes " << packet_ << ": " << rpc.status().error_message();
-        return;
-    }
-
-    ::sentry::SentPeers peers = rpc.reply();
-    SILK_TRACE << "Received rpc result of OutboundNewBlockHashes: "
-               << std::to_string(peers.peers_size()) + " peer(s)";
+    SILK_TRACE << "Received sentry result of OutboundNewBlockHashes: "
+               << std::to_string(peers.size()) + " peer(s)";
 
     announces_to_do.clear();  // clear announces from the queue
+}
+
+Bytes OutboundNewBlockHashes::message_data() const {
+    Bytes rlp_encoding;
+    rlp::encode(rlp_encoding, packet_);
+    return rlp_encoding;
 }
 
 std::string OutboundNewBlockHashes::content() const {

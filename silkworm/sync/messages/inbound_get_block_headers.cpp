@@ -16,27 +16,19 @@
 
 #include "inbound_get_block_headers.hpp"
 
-#include <silkworm/core/common/cast.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/sync/internals/body_sequence.hpp>
-#include <silkworm/sync/internals/header_chain.hpp>
 #include <silkworm/sync/internals/header_retrieval.hpp>
+#include <silkworm/sync/messages/outbound_block_headers.hpp>
 #include <silkworm/sync/packets/block_headers_packet.hpp>
-#include <silkworm/sync/rpc/send_message_by_id.hpp>
+#include <silkworm/sync/sentry_client.hpp>
 
 namespace silkworm {
 
-InboundGetBlockHeaders::InboundGetBlockHeaders(const ::sentry::InboundMessage& msg) {
-    if (msg.id() != ::sentry::MessageId::GET_BLOCK_HEADERS_66) {
-        throw std::logic_error("InboundGetBlockHeaders received wrong InboundMessage");
-    }
-
-    peerId_ = bytes_from_H512(msg.peer_id());
-
-    ByteView data = string_view_to_byte_view(msg.data());
+InboundGetBlockHeaders::InboundGetBlockHeaders(ByteView data, PeerId peer_id)
+    : peerId_(std::move(peer_id)) {
     success_or_throw(rlp::decode(data, packet_));
-
     SILK_TRACE << "Received message " << *this;
 }
 
@@ -66,28 +58,14 @@ void InboundGetBlockHeaders::execute(db::ROAccess db, HeaderChain&, BodySequence
         return;
     }
 
-    Bytes rlp_encoding;
-    rlp::encode(rlp_encoding, reply);
-
-    auto msg_reply = std::make_unique<::sentry::OutboundMessageData>();
-    msg_reply->set_id(::sentry::MessageId::BLOCK_HEADERS_66);
-    msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
-
     SILK_TRACE << "Replying to " << identify(*this) << " using send_message_by_id with "
                << reply.request.size() << " headers";
 
-    rpc::SendMessageById rpc{peerId_, std::move(msg_reply)};
-    rpc.do_not_throw_on_failure();
-    sentry.exec_remotely(rpc);
+    OutboundBlockHeaders reply_message{std::move(reply)};
+    [[maybe_unused]] auto peers = sentry.send_message_by_id(reply_message, peerId_);
 
-    if (rpc.status().ok()) {
-        sentry::SentPeers peers = rpc.reply();
-        SILK_TRACE << "Received rpc result of " << identify(*this) << ": "
-                   << std::to_string(peers.peers_size()) + " peer(s)";
-    } else {
-        SILK_TRACE << "Failure of rpc " << identify(*this) << ": "
-                   << rpc.status().error_message();
-    }
+    SILK_TRACE << "Received sentry result of " << identify(*this) << ": "
+               << std::to_string(peers.size()) + " peer(s)";
 }
 
 uint64_t InboundGetBlockHeaders::reqId() const { return packet_.requestId; }

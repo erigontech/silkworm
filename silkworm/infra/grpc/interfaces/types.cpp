@@ -103,6 +103,10 @@ std::unique_ptr<types::H256> H256_from_hash(const Hash& orig) {
     return rpc::H256_from_bytes32(orig);
 }
 
+std::unique_ptr<types::H256> H256_from_bytes(ByteView orig) {
+    return H256_from_hash(Hash{orig});
+}
+
 constexpr uint64_t& lo_lo(intx::uint256& x) { return x[0]; }
 constexpr uint64_t& lo_hi(intx::uint256& x) { return x[1]; }
 constexpr uint64_t& hi_lo(intx::uint256& x) { return x[2]; }

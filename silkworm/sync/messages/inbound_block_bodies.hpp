@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <silkworm/sync/internals/types.hpp>
 #include <silkworm/sync/packets/block_bodies_packet.hpp>
 
 #include "inbound_message.hpp"
@@ -24,11 +25,11 @@ namespace silkworm {
 
 class InboundBlockBodies : public InboundMessage {
   public:
-    InboundBlockBodies(const ::sentry::InboundMessage& msg);
+    InboundBlockBodies(ByteView data, PeerId peer_id);
 
-    std::string name() const override { return "InboundBlockBodies"; }
-    std::string content() const override;
-    uint64_t reqId() const override;
+    [[nodiscard]] std::string name() const override { return "InboundBlockBodies"; }
+    [[nodiscard]] std::string content() const override;
+    [[nodiscard]] uint64_t reqId() const override;
 
     void execute(db::ROAccess db, HeaderChain&, BodySequence&, SentryClient&) override;
 

@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,27 +16,29 @@
 
 #pragma once
 
-#include <silkworm/sync/internals/types.hpp>
-#include <silkworm/sync/packets/new_block_hashes_packet.hpp>
+#include <silkworm/sync/packets/block_bodies_packet.hpp>
 
-#include "inbound_message.hpp"
+#include "outbound_message.hpp"
 
 namespace silkworm {
 
-class InboundNewBlockHashes : public InboundMessage {
+class OutboundBlockBodies : public OutboundMessage {
   public:
-    InboundNewBlockHashes(ByteView data, PeerId peer_id);
+    explicit OutboundBlockBodies(BlockBodiesPacket66 packet) : packet_(std::move(packet)) {}
 
-    [[nodiscard]] std::string name() const override { return "InboundNewBlockHashes"; }
+    [[nodiscard]] std::string name() const override { return "OutboundBlockBodies"; }
     [[nodiscard]] std::string content() const override;
-    [[nodiscard]] uint64_t reqId() const override;
 
     void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override;
 
+    [[nodiscard]] silkworm::sentry::eth::MessageId eth_message_id() const override {
+        return silkworm::sentry::eth::MessageId::kBlockBodies;
+    }
+
+    [[nodiscard]] Bytes message_data() const override;
+
   private:
-    PeerId peerId_;
-    NewBlockHashesPacket packet_;
-    uint64_t reqId_;
+    BlockBodiesPacket66 packet_{};
 };
 
 }  // namespace silkworm

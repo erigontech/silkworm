@@ -31,7 +31,7 @@
 
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 
-namespace silkworm::sentry::common {
+namespace silkworm::concurrency {
 
 using namespace boost::asio;
 using namespace std::chrono_literals;
@@ -134,4 +134,4 @@ TEST_CASE("TaskGroup.spawn_after_close") {
     CHECK_THROWS_AS(group.spawn(context, async_ok()), TaskGroup::SpawnAfterCloseError);
 }
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::concurrency

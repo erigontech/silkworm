@@ -18,28 +18,20 @@
 
 #include <algorithm>
 
-#include <silkworm/core/common/cast.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/sync/internals/body_sequence.hpp>
 #include <silkworm/sync/internals/header_chain.hpp>
 #include <silkworm/sync/internals/random_number.hpp>
-#include <silkworm/sync/packets/rlp_eth66_packet_coding.hpp>
-#include <silkworm/sync/rpc/send_message_by_id.hpp>
+#include <silkworm/sync/sentry_client.hpp>
+
+#include "outbound_get_block_headers.hpp"
 
 namespace silkworm {
 
-InboundNewBlockHashes::InboundNewBlockHashes(const ::sentry::InboundMessage& msg) {
-    if (msg.id() != ::sentry::MessageId::NEW_BLOCK_HASHES_66)
-        throw std::logic_error("InboundNewBlockHashes received wrong InboundMessage");
-
+InboundNewBlockHashes::InboundNewBlockHashes(ByteView data, PeerId peer_id)
+    : peerId_(std::move(peer_id)) {
     reqId_ = RANDOM_NUMBER.generate_one();  // for trace purposes
-
-    peerId_ = bytes_from_H512(msg.peer_id());
-
-    ByteView data = string_view_to_byte_view(msg.data());  // copy for consumption
     success_or_throw(rlp::decode(data, packet_));
-
     SILK_TRACE << "Received message " << *this;
 }
 
@@ -50,34 +42,24 @@ void InboundNewBlockHashes::execute(db::ROAccess, HeaderChain& hc, BodySequence&
 
     BlockNum max = hc.top_seen_block_height();
 
-    for (size_t i = 0; i < packet_.size(); i++) {
-        Hash hash = packet_[i].hash;
+    for (auto& new_block_hash : packet_) {
+        Hash hash = new_block_hash.hash;
 
         // calculate top seen block height
-        max = std::max(max, packet_[i].number);
+        max = std::max(max, new_block_hash.number);
 
         // save announcement
         auto packet = hc.save_external_announce(hash);
         if (!packet) continue;
 
         // request header
-        Bytes rlp_encoding;
-        rlp::encode(rlp_encoding, *packet);
-
-        auto msg_reply = std::make_unique<::sentry::OutboundMessageData>();
-        msg_reply->set_id(::sentry::MessageId::GET_BLOCK_HEADERS_66);
-        msg_reply->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
-
-        // send msg_reply
         SILK_TRACE << "Replying to " << identify(*this) << " requesting header with send_message_by_id, content: " << *packet;
-        rpc::SendMessageById rpc(peerId_, std::move(msg_reply));
-        rpc.do_not_throw_on_failure();
 
-        sentry.exec_remotely(rpc);
+        OutboundGetBlockHeaders request_message{packet.value()};
+        [[maybe_unused]] auto peers = sentry.send_message_by_id(request_message, peerId_);
 
-        [[maybe_unused]] sentry::SentPeers peers = rpc.reply();
-        SILK_TRACE << "Received rpc result of " << identify(*this) << ": "
-                   << std::to_string(peers.peers_size()) + " peer(s)";
+        SILK_TRACE << "Received sentry result of " << identify(*this) << ": "
+                   << std::to_string(peers.size()) + " peer(s)";
     }
 
     hc.top_seen_block_height(max);

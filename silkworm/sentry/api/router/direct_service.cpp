@@ -34,6 +34,7 @@ namespace silkworm::sentry::api::router {
 using namespace boost::asio;
 
 awaitable<void> DirectService::set_status(eth::StatusData status_data) {
+    status_data.message.version = router_.eth_version;
     co_await router_.status_channel.send(std::move(status_data));
 }
 

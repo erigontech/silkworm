@@ -142,6 +142,8 @@ awaitable<void> PeerManagerApi::handle_peer_events_calls() {
     while (true) {
         auto call = co_await peer_events_calls_channel_.receive();
 
+        log::Trace() << "PeerManagerApi::handle_peer_events_calls adding subscription";
+
         auto events_channel = std::make_shared<concurrency::Channel<api::api_common::PeerEvent>>(executor);
 
         events_subscriptions_.push_back({
@@ -183,6 +185,8 @@ awaitable<void> PeerManagerApi::forward_peer_events() {
     // loop until receive() throws a cancelled exception
     while (true) {
         auto event = co_await peer_events_channel_.receive();
+
+        log::Trace() << "PeerManagerApi::forward_peer_events forwarding an event to subscribers";
 
         for (auto& subscription : events_subscriptions_) {
             try {

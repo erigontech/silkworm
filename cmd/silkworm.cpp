@@ -223,8 +223,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
         ->check(CLI::Range(0u, UINT32_MAX));
 
     // Logging options
-    auto& log_settings = settings.log_settings;
-    add_logging_options(cli, log_settings);
+    add_logging_options(cli, settings.log_settings);
 
     // RPC server options
     auto& server_settings = settings.server_settings;
@@ -548,16 +547,12 @@ int main(int argc, char* argv[]) {
             sentry_settings.data_dir_path = node_settings.data_directory->path();
             sentry_settings.context_pool_settings = settings.server_settings.context_pool_settings();
             // disable GRPC in the embedded sentry
-            // TODO: uncomment when sync_sentry_client is refactored to use the sentry client
-            // sentry_settings.api_address = "";
+            sentry_settings.api_address = "";
 
             sentry_server = std::make_shared<silkworm::sentry::Sentry>(std::move(sentry_settings), context_pool);
 
             // direct client
             sentry_client = sentry_server.value();
-
-            // TODO: remove when sync_sentry_client is refactored to use the sentry client
-            node_settings.external_sentry_addr = "127.0.0.1:9091";
         } else {
             // remote client
             sentry_client = std::make_shared<silkworm::sentry::rpc::client::SentryClient>(
@@ -583,7 +578,8 @@ int main(int argc, char* argv[]) {
 
         // Sentry client - connects to sentry
         silkworm::SentryClient sync_sentry_client{
-            node_settings.external_sentry_addr,
+            context_pool.next_io_context(),
+            sentry_client,
             sw_db::ROAccess{chaindata_db},
             node_settings.chain_config.value(),
         };

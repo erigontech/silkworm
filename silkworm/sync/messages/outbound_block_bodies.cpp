@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,26 +14,28 @@
    limitations under the License.
 */
 
-#pragma once
+#include "outbound_block_bodies.hpp"
 
-#include <string>
+#include <sstream>
 
-#include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/infra/common/log.hpp>
 
 namespace silkworm {
 
-class HeaderChain;
-class BodySequence;
-class SentryClient;
+void OutboundBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) {
+}
 
-class Message {
-  public:
-    [[nodiscard]] virtual std::string name() const = 0;
+Bytes OutboundBlockBodies::message_data() const {
+    Bytes rlp_encoding;
+    rlp::encode(rlp_encoding, packet_);
+    return rlp_encoding;
+}
 
-    // execute: inbound message send a reply, outbound message send a request
-    virtual void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) = 0;
-
-    virtual ~Message() = default;
-};
+std::string OutboundBlockBodies::content() const {
+    std::stringstream content;
+    log::prepare_for_logging(content);
+    content << packet_;
+    return content.str();
+}
 
 }  // namespace silkworm

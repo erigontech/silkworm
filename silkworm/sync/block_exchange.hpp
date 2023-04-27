@@ -16,24 +16,27 @@
 
 #pragma once
 
+#include <memory>
 #include <variant>
 
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/concurrency/active_component.hpp>
 #include <silkworm/infra/concurrency/containers.hpp>
 #include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/sentry/api/api_common/message_from_peer.hpp>
 #include <silkworm/sync/internals/body_sequence.hpp>
 #include <silkworm/sync/internals/header_chain.hpp>
-#include <silkworm/sync/messages/message.hpp>
-#include <silkworm/sync/sentry_client.hpp>
+#include <silkworm/sync/messages/inbound_message.hpp>
 
 namespace silkworm {
+
+class SentryClient;
 
 //! \brief Implement the logic needed to download headers and bodies
 class BlockExchange final : public ActiveComponent {
   public:
     BlockExchange(SentryClient&, const db::ROAccess&, const ChainConfig&);
-    virtual ~BlockExchange() override;
+    ~BlockExchange() override;
 
     // public interface for block downloading
 
@@ -66,15 +69,12 @@ class BlockExchange final : public ActiveComponent {
   private:
     using MessageQueue = ConcurrentQueue<std::shared_ptr<Message>>;  // used internally to store new messages
 
-    void receive_message(const ::sentry::InboundMessage& raw_message);
-    void send_penalization(PeerId id, Penalty p) noexcept;
+    void receive_message(std::shared_ptr<InboundMessage> message);
     size_t request_headers(time_point_t tp, size_t max_requests);
     size_t request_bodies(time_point_t tp, size_t max_requests);
     void collect_headers();
     void collect_bodies();
     void log_status();
-
-    static constexpr seconds_t kRpcTimeout = std::chrono::seconds(1);
 
     db::ROAccess db_access_;  // only to reply remote peer's requests
     SentryClient& sentry_;

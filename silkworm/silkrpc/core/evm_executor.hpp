@@ -23,6 +23,7 @@
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/impl/execution_context.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/thread_pool.hpp>
 #pragma GCC diagnostic push
@@ -48,6 +49,21 @@ struct ExecutionResult {
     std::optional<std::string> pre_check_error{std::nullopt};
 };
 
+constexpr int kCacheSize = 32000;
+
+using BaseService = boost::asio::detail::execution_context_service_base<int>;
+class BaselineAnalysisCacheService : public BaseService {
+  public:
+    explicit BaselineAnalysisCacheService(boost::asio::execution_context& owner) : BaseService(owner) {}
+    void shutdown() override {}
+    ObjectPool<EvmoneExecutionState>* get_object_pool() { return &_state_pool; }
+    BaselineAnalysisCache* get_baseline_analysis_cache() { return &_analysis_cache; }
+
+  private:
+    ObjectPool<EvmoneExecutionState> _state_pool;
+    BaselineAnalysisCache _analysis_cache{kCacheSize, true};
+};
+
 using Tracers = std::vector<std::shared_ptr<EvmTracer>>;
 
 class EVMExecutor {
@@ -61,6 +77,9 @@ class EVMExecutor {
           state_{remote_state_} {
         consensus_engine_ = consensus::engine_factory(config);
         SILKWORM_ASSERT(consensus_engine_ != nullptr);
+        if (!has_service<BaselineAnalysisCacheService>(workers_)) {
+            make_service<BaselineAnalysisCacheService>(workers_);
+        }
     }
     virtual ~EVMExecutor() = default;
 

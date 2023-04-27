@@ -68,6 +68,14 @@ TEST_CASE("awaitable future") {
         CHECK_THROWS(future.get());
     }
 
+    SECTION("setting value two times") {
+        AwaitablePromise<int> promise{io};
+
+        promise.set_value(42);
+
+        CHECK_THROWS(promise.set_value(43));
+    }
+
     SECTION("returning the future from a function") {
         auto future = create_promise_and_set_value(io, 42);
 
@@ -206,7 +214,6 @@ TEST_CASE("awaitable future") {
             io,
             [&]() -> asio::awaitable<void> {
                 co_await promise.set_value(42, asio::use_awaitable);
-                io.stop();
             },
             asio::detached);
 

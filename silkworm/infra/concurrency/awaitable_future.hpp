@@ -80,8 +80,10 @@ class AwaitablePromise {
     auto set_value(T value, CompletionToken completion_token) {
         return channel_->async_send(nullptr, std::move(value), completion_token);
     }
+
     void set_value(T value) {
-        set_value(std::move(value), asio::detached);
+        bool sent = channel_->try_send(nullptr, std::move(value));
+        if (!sent) throw std::runtime_error("AwaitablePromise::set_value: channel is full");
     }
 
     template <typename CompletionToken>

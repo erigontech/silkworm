@@ -19,8 +19,8 @@
 #include <cstdint>
 #include <vector>
 
-#include <silkworm/core/consensus/engine.hpp>
 #include <silkworm/core/execution/evm.hpp>
+#include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/state/state.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/receipt.hpp>
@@ -33,10 +33,10 @@ class ExecutionProcessor {
     ExecutionProcessor(const ExecutionProcessor&) = delete;
     ExecutionProcessor& operator=(const ExecutionProcessor&) = delete;
 
-    ExecutionProcessor(const Block& block, consensus::IEngine& engine, State& state, const ChainConfig& config);
+    ExecutionProcessor(const Block& block, protocol::IRuleSet& rule_set, State& state, const ChainConfig& config);
 
     // Preconditions:
-    // 1) consensus' pre_validate_transaction(txn) must return kOk
+    // 1) RuleSet's pre_validate_transaction(txn) must return kOk
     // 2) txn.from must be recovered, otherwise kMissingSender will be returned
     ValidationResult validate_transaction(const Transaction& txn) const noexcept;
 
@@ -46,7 +46,7 @@ class ExecutionProcessor {
 
     //! \brief Execute the block and write the result to the DB.
     //! \remarks Warning: This method does not verify state root; pre-Byzantium receipt root isn't validated either.
-    //! \pre consensus_engine's validate_block_header & pre_validate_block_body must return kOk.
+    //! \pre RuleSet's validate_block_header & pre_validate_block_body must return kOk.
     [[nodiscard]] ValidationResult execute_and_write_block(std::vector<Receipt>& receipts) noexcept;
 
     uint64_t cumulative_gas_used() const noexcept { return cumulative_gas_used_; }
@@ -65,7 +65,7 @@ class ExecutionProcessor {
 
     uint64_t cumulative_gas_used_{0};
     IntraBlockState state_;
-    consensus::IEngine& consensus_engine_;
+    protocol::IRuleSet& rule_set_;
     EVM evm_;
 };
 

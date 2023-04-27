@@ -86,9 +86,9 @@ Now you can run the unit tests. There's one for core and one for node.
 cmd/test/core_test
 cmd/test/node_test
 ```
-or [Ethereum Consensus Tests]
+or [Ethereum EL Tests]
 ```
-cmd/test/consensus
+cmd/test/ethereum
 ```
 
 <a name="build_on_windows"></a>
@@ -228,7 +228,7 @@ See [LICENSE](LICENSE) for more information.
 
 
 [CMake]: http://cmake.org
-[Ethereum Consensus Tests]: https://github.com/ethereum/tests
+[Ethereum EL Tests]: https://github.com/ethereum/tests
 [Erigon]: https://github.com/ledgerwatch/erigon
 [Erigon Thorax architecture]: https://github.com/ledgerwatch/erigon#key-features
 [GMP]: http://gmplib.org

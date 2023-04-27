@@ -18,9 +18,9 @@
 
 #include <cstdlib>
 
-#include <silkworm/core/chain/difficulty.hpp>
-#include <silkworm/core/chain/intrinsic_gas.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/protocol/ethash_rule_set.hpp>
+#include <silkworm/core/protocol/intrinsic_gas.hpp>
 
 void* new_buffer(size_t size) { return std::malloc(size); }
 
@@ -28,7 +28,6 @@ void delete_buffer(void* ptr) { std::free(ptr); }
 
 using namespace silkworm;
 
-// silkworm::consensus::Ethash engine;
 Bytes* new_bytes_from_hex(const char* data, size_t size) {
     std::optional<Bytes> res{from_hex(std::string_view{data, size})};
     if (!res) {
@@ -71,8 +70,8 @@ void config_set_dao_block(ChainConfig* config, uint64_t block) { config->dao_blo
 
 void difficulty(intx::uint256* in_out, uint64_t block_number, uint64_t block_timestamp, uint64_t parent_timestamp,
                 bool parent_has_uncles, const ChainConfig* config) {
-    *in_out = canonical_difficulty(block_number, block_timestamp, /*parent_difficulty=*/*in_out, parent_timestamp,
-                                   parent_has_uncles, *config);
+    *in_out = protocol::EthashRuleSet::difficulty(block_number, block_timestamp, /*parent_difficulty=*/*in_out, parent_timestamp,
+                                                  parent_has_uncles, *config);
 }
 
 Transaction* new_transaction(const Bytes* rlp) {
@@ -89,7 +88,7 @@ Transaction* new_transaction(const Bytes* rlp) {
 void delete_transaction(Transaction* x) { delete x; }
 
 bool check_intrinsic_gas(const Transaction* txn, evmc_revision rev) {
-    intx::uint128 g0{intrinsic_gas(*txn, rev)};
+    intx::uint128 g0{protocol::intrinsic_gas(*txn, rev)};
     return txn->gas_limit >= g0;
 }
 
@@ -205,13 +204,13 @@ void state_update_storage(State* state, const uint8_t* address, const Account* a
                           to_bytes32(*value));
 }
 
-consensus::Blockchain* new_blockchain(State* state, const ChainConfig* config, const Block* genesis_block) {
-    return new consensus::Blockchain{*state, *config, *genesis_block};
+protocol::Blockchain* new_blockchain(State* state, const ChainConfig* config, const Block* genesis_block) {
+    return new protocol::Blockchain{*state, *config, *genesis_block};
 }
 
-void delete_blockchain(consensus::Blockchain* x) { delete x; }
+void delete_blockchain(protocol::Blockchain* x) { delete x; }
 
-ValidationResult blockchain_insert_block(consensus::Blockchain* chain, Block* block, bool check_state_root) {
+ValidationResult blockchain_insert_block(protocol::Blockchain* chain, Block* block, bool check_state_root) {
     return chain->insert_block(*block, check_state_root);
 }
 

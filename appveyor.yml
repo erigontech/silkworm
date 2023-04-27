@@ -50,4 +50,4 @@ test_script:
   - cmd\test\%CONFIGURATION%\rpcdaemon_test.exe
   - cmd\test\%CONFIGURATION%\sentry_test.exe
   - cmd\test\%CONFIGURATION%\sync_test.exe
-  - IF "%CONFIGURATION%" == "Release" cmd\test\%CONFIGURATION%\consensus.exe
+  - IF "%CONFIGURATION%" == "Release" cmd\test\%CONFIGURATION%\ethereum.exe

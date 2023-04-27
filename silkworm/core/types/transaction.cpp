@@ -18,9 +18,9 @@
 
 #include <ethash/keccak.hpp>
 
-#include <silkworm/core/chain/protocol_param.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/crypto/ecdsa.h>
+#include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 
 #include "y_parity_and_chain_id.hpp"
@@ -460,7 +460,7 @@ intx::uint256 Transaction::effective_gas_price(const intx::uint256& base_fee_per
 }
 
 uint64_t Transaction::total_data_gas() const {
-    return param::kDataGasPerBlob * blob_versioned_hashes.size();
+    return protocol::kDataGasPerBlob * blob_versioned_hashes.size();
 }
 
 }  // namespace silkworm

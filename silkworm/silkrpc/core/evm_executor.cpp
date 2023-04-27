@@ -26,9 +26,9 @@
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 
-#include <silkworm/core/chain/intrinsic_gas.hpp>
-#include <silkworm/core/chain/protocol_param.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/protocol/intrinsic_gas.hpp>
+#include <silkworm/core/protocol/param.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
@@ -153,8 +153,8 @@ std::string EVMExecutor::get_error_message(int64_t error_code, const Bytes& erro
 
 uint64_t EVMExecutor::refund_gas(const EVM& evm, const silkworm::Transaction& txn, uint64_t gas_left, uint64_t gas_refund) {
     const evmc_revision rev{evm.revision()};
-    const uint64_t max_refund_quotient{rev >= EVMC_LONDON ? param::kMaxRefundQuotientLondon
-                                                          : param::kMaxRefundQuotientFrontier};
+    const uint64_t max_refund_quotient{rev >= EVMC_LONDON ? protocol::kMaxRefundQuotientLondon
+                                                          : protocol::kMaxRefundQuotientFrontier};
     const uint64_t max_refund{(txn.gas_limit - gas_left) / max_refund_quotient};
     uint64_t refund = gas_refund < max_refund ? gas_refund : max_refund;  // min
     gas_left += refund;
@@ -220,7 +220,7 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor::call(
 
                 EVM evm{block, state_, config_};
                 evm.baseline_analysis_cache = &analysis_cache;
-                evm.beneficiary = consensus_engine_->get_beneficiary(block.header);
+                evm.beneficiary = rule_set_->get_beneficiary(block.header);
 
                 for (auto& tracer : tracers) {
                     evm.add_tracer(*tracer);
@@ -231,7 +231,7 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor::call(
 
                 const evmc_revision rev{evm.revision()};
                 const intx::uint256 base_fee_per_gas{evm.block().header.base_fee_per_gas.value_or(0)};
-                const intx::uint128 g0{intrinsic_gas(txn, rev)};
+                const intx::uint128 g0{protocol::intrinsic_gas(txn, rev)};
                 SILKWORM_ASSERT(g0 <= UINT64_MAX);  // true due to the precondition (transaction must be valid)
 
                 const auto error = pre_check(evm, txn, base_fee_per_gas, g0);

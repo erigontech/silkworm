@@ -1,0 +1,63 @@
+/*
+   Copyright 2022 The Silkworm Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+#pragma once
+
+#include <ostream>
+
+#include <ethash/ethash.hpp>
+
+#include <silkworm/core/protocol/base_rule_set.hpp>
+
+namespace silkworm::protocol {
+
+struct BlockReward {
+    intx::uint256 miner;
+    std::vector<intx::uint256> ommers;
+};
+
+// Proof of Work implementation
+class EthashRuleSet : public BaseRuleSet {
+  public:
+    explicit EthashRuleSet(const ChainConfig& chain_config) : BaseRuleSet(chain_config, /*prohibit_ommers=*/false) {}
+
+    //! \brief Validates the seal of the header
+    ValidationResult validate_seal(const BlockHeader& header) override;
+
+    //! \brief See [YP] Section 11.3 "Reward Application".
+    //! \param [in] state: current state.
+    //! \param [in] block: current block to apply rewards for.
+    void finalize(IntraBlockState& state, const Block& block) override;
+
+    static BlockReward compute_reward(const ChainConfig& config, const Block& block);
+
+    // Canonical difficulty of a Proof-of-Work block header.
+    // See Section 4.3.4 "Block Header Validity" of the Yellow Paper and also
+    // EIP-2, EIP-100, EIP-649, EIP-1234, EIP-2384, EIP-3554, EIP-4345.
+    static intx::uint256 difficulty(uint64_t block_number, uint64_t block_timestamp,
+                                    const intx::uint256& parent_difficulty, uint64_t parent_timestamp,
+                                    bool parent_has_uncles, const ChainConfig& config);
+
+  protected:
+    intx::uint256 difficulty(const BlockHeader& header, const BlockHeader& parent) override;
+
+  private:
+    ethash::epoch_context_ptr epoch_context_{nullptr, ethash_destroy_epoch_context};
+};
+
+std::ostream& operator<<(std::ostream& out, const BlockReward& reward);
+
+}  // namespace silkworm::protocol

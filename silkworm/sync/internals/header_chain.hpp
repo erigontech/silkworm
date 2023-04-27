@@ -19,7 +19,7 @@
 #include <cstdio>
 
 #include <silkworm/core/common/lru_cache.hpp>
-#include <silkworm/core/consensus/engine.hpp>
+#include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/sync/messages/outbound_get_block_headers.hpp>
 
@@ -58,8 +58,7 @@ class HeaderChain {
   public:
     explicit HeaderChain(const ChainConfig&);
 
-    using ConsensusEnginePtr = std::unique_ptr<consensus::IEngine>;
-    explicit HeaderChain(ConsensusEnginePtr);  // alternative constructor
+    explicit HeaderChain(protocol::RuleSetPtr);  // alternative constructor
 
     // sync current state - this must be done at header forward
     void initial_state(const std::vector<BlockHeader>& last_headers);
@@ -174,7 +173,7 @@ class HeaderChain {
     using Ignore = int;
     lru_cache<Hash, Ignore> seen_announces_;
     std::vector<Announce> announces_to_do_;
-    ConsensusEnginePtr consensus_engine_;
+    protocol::RuleSetPtr rule_set_;
     CustomHeaderOnlyChainState chain_state_;
     time_point_t last_skeleton_request_;
     time_point_t last_nack_;

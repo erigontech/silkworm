@@ -21,10 +21,10 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/chain/genesis.hpp>
-#include <silkworm/core/chain/protocol_param.hpp>
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/execution/execution.hpp>
+#include <silkworm/core/protocol/param.hpp>
 #include <silkworm/infra/test/log.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/db/prune_mode.hpp>
@@ -603,11 +603,11 @@ namespace db {
 
         std::optional<Account> current_account{read_account(txn, miner_a)};
         REQUIRE(current_account.has_value());
-        CHECK(current_account->balance == 2 * param::kBlockRewardFrontier);
+        CHECK(current_account->balance == 2 * protocol::kBlockRewardFrontier);
 
         std::optional<Account> historical_account{read_account(txn, miner_a, /*block_number=*/2)};
         REQUIRE(historical_account.has_value());
-        CHECK(intx::to_string(historical_account->balance) == std::to_string(param::kBlockRewardFrontier));
+        CHECK(intx::to_string(historical_account->balance) == std::to_string(protocol::kBlockRewardFrontier));
     }
 
     TEST_CASE("Storage") {

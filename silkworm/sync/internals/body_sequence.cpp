@@ -16,8 +16,7 @@
 
 #include "body_sequence.hpp"
 
-#include <silkworm/core/chain/difficulty.hpp>
-#include <silkworm/core/consensus/base/engine.hpp>
+#include <silkworm/core/protocol/validation.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/sync/sentry_client.hpp>
 
@@ -71,8 +70,8 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
     auto matching_requests = body_requests_.find_by_request_id(packet.requestId);
 
     for (auto& body : packet.request) {
-        Hash oh = consensus::compute_ommers_hash(body);
-        Hash tr = consensus::compute_transaction_root(body);
+        Hash oh = protocol::compute_ommers_hash(body);
+        Hash tr = protocol::compute_transaction_root(body);
 
         auto exact_request = body_requests_.end();  // = no request
 
@@ -283,10 +282,10 @@ void BodySequence::request_nack(const GetBlockBodiesPacket66& packet) {
 }
 
 bool BodySequence::is_valid_body(const BlockHeader& header, const BlockBody& body) {
-    if (header.ommers_hash != consensus::compute_ommers_hash(body)) {
+    if (header.ommers_hash != protocol::compute_ommers_hash(body)) {
         return false;
     }
-    if (header.transactions_root != consensus::compute_transaction_root(body)) {
+    if (header.transactions_root != protocol::compute_transaction_root(body)) {
         return false;
     }
     return true;

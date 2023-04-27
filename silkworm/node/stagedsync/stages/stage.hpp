@@ -58,7 +58,7 @@ class Stage : public Stoppable {
     enum class [[nodiscard]] Result{
         kSuccess,                 //
         kUnknownChainId,          //
-        kUnknownConsensusEngine,  //
+        kUnknownProtocolRuleSet,  //
         kBadBlockHash,            //
         kBadChainSequence,        //
         kInvalidRange,            //

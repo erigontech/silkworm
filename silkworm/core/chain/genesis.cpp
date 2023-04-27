@@ -20,9 +20,9 @@
 #include <stdexcept>
 
 #include <silkworm/core/chain/config.hpp>
-#include <silkworm/core/chain/protocol_param.hpp>
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/cast.hpp>
+#include <silkworm/core/protocol/param.hpp>
 
 extern const char* genesis_mainnet_data();
 extern size_t sizeof_genesis_mainnet_data();
@@ -94,7 +94,7 @@ BlockHeader read_genesis_header(const nlohmann::json& genesis_json, const evmc::
     const std::optional<ChainConfig> chain_config{ChainConfig::from_json(genesis_json["config"])};
     SILKWORM_ASSERT(chain_config.has_value());
     if (chain_config->revision(0, header.timestamp) >= EVMC_LONDON) {
-        header.base_fee_per_gas = param::kInitialBaseFee;
+        header.base_fee_per_gas = protocol::kInitialBaseFee;
     }
 
     return header;

@@ -63,7 +63,20 @@ TEST_CASE("awaitable future") {
         AwaitablePromise<int> promise{io};
         auto future = promise.get_future();
 
-        promise.set_exception(std::make_exception_ptr(new std::exception()));
+        promise.set_exception(std::make_exception_ptr(std::exception()));
+
+        CHECK_THROWS(future.get());
+    }
+
+    SECTION("variation of setting exception instead of value") {
+        AwaitablePromise<int> promise{io};
+        auto future = promise.get_future();
+
+        try {
+            throw std::exception();
+        } catch (...) {
+            promise.set_exception(std::current_exception());
+        }
 
         CHECK_THROWS(future.get());
     }

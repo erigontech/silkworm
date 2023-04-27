@@ -91,7 +91,8 @@ class AwaitablePromise {
         return channel_->async_send(ptr, T{}, completion_token);
     }
     void set_exception(std::exception_ptr ptr) {
-        set_exception(ptr, asio::detached);
+        bool sent = channel_->try_send(ptr, T{});
+        if (!sent) throw std::runtime_error("AwaitablePromise::set_exception: channel is full");
     }
 
     AwaitableFuture<T> get_future() { return AwaitableFuture<T>(channel_); }

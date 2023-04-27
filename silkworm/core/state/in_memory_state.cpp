@@ -255,6 +255,7 @@ evmc::bytes32 InMemoryState::state_root_hash() const {
     trie::HashBuilder hb;
     for (const auto& [hash, rlp] : account_rlp) {
         hb.add_leaf(trie::unpack_nibbles(hash), rlp);
+        hb.
     }
 
     return hb.root_hash();

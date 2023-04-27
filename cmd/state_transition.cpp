@@ -19,15 +19,13 @@ limitations under the License.
 #include <stdexcept>
 
 #include <CLI/CLI.hpp>
-#include <ethash/keccak.h>
 #include <ethash/keccak.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/cast.hpp>
-#include <silkworm/core/crypto/ecdsa.c>
 #include <silkworm/core/execution/execution.hpp>
+#include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
-#include <silkworm/sentry/common/ecc_public_key.hpp>
 
 #include "ExpectedState.hpp"
 #include "silkworm/core/state/in_memory_state.hpp"
@@ -139,35 +137,23 @@ class StateTransition {
     }
 
     static std::unique_ptr<evmc::address> privateKeyToAddress(const std::string& privateKey) {
-        /// Example 1
+        /// Example
         // private key: 0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8
         // public key : 043a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d8072e77939dc03ba44790779b7a1025baf3003f6732430e20cd9b76d953391b3
         // address    : 0xa94f5374Fce5edBC8E2a8697C15331677e6EbF0B
-        /// Example 2
-        // private key: 0x227dbb8586117d55284e26620bc76534dfbd2394be34cf4a09cb775d593b6f2b
-        // public key : 04aa931f5ee58735270821b3722866d8882d1948909532cf8ac2b3ef144ae8043363d1d3728b49f10c7cd78c38289c8012477473879f3b53169f2a677b7fbed0c7
-        // address    : 0xe16C1623c1AA7D919cd2241d8b36d9E79C1Be2A2
 
         auto private_key = from_hex(privateKey).value();
 
         silkworm::sentry::common::EccKeyPair pair = silkworm::sentry::common::EccKeyPair(private_key);
-        auto public_key_str = pair.public_key().hex();
-        const char* public_key_char = public_key_str.c_str();
-
-        uint8_t public_key_bytes[64];
-        for (int i = 0; i < 64; i++) {
-            sscanf(public_key_char + i * 2, "%2hhx", &public_key_bytes[i]);
-        }
-
-        ethash::hash256 hash = ethash::keccak256(public_key_bytes, sizeof(public_key_bytes));
 
         uint8_t out[20];
-        std::memcpy(out, hash.bytes + 12, sizeof(out));
+        auto public_key_hash = keccak256(pair.public_key().serialized());
+        std::memcpy(out, public_key_hash.bytes + 12, sizeof(out));
 
         return std::make_unique<evmc::address>(silkworm::to_evmc_address(out));
     }
 
-    silkworm::Transaction getTransaction(const ExpectedStateTransaction expectedStateTransaction) {
+    silkworm::Transaction getTransaction(const ExpectedSubState expectedStateTransaction) {
         silkworm::Transaction txn;
         auto jTransaction = testData["transaction"];
 
@@ -206,25 +192,33 @@ class StateTransition {
         return txn;
     }
 
-    static void validateTransition(const silkworm::Receipt& /*receipt*/, const ExpectedState& /*state*/) {
-        throw std::runtime_error("not implemented");
+    static void validateTransition(const silkworm::Receipt& receipt, const ExpectedState& /*state*/, const ExpectedSubState& subState, const State& state) {
+        if (state.state_root_hash() != subState.stateHash) {
+            throw std::runtime_error("State root hash does not match");
+        }
+
+        Bytes encoded;
+        rlp::encode(encoded, receipt.logs);
+        if (silkworm::to_bytes32(keccak256(encoded).bytes) != subState.logsHash) {
+            throw std::runtime_error("Logs hash does not match");
+        }
     }
 
     void run() {
         for (auto& expectedState : getExpectedStates()) {
-            auto config = expectedState.getConfig();
-            auto engine = expectedState.getEngine();
-            for (const auto& expectedStateTransaction : expectedState.getTransactions()) {
+            for (const auto& expectedSubState : expectedState.getSubStates()) {
+                auto config = expectedState.getConfig();
+                auto engine = expectedState.getEngine();
                 auto block = getBlock();
                 auto state = getState();
 
                 silkworm::ExecutionProcessor processor{block, *engine, *state, config};
                 silkworm::Receipt receipt;
-
-                auto txn = getTransaction(expectedStateTransaction);
+                auto txn = getTransaction(expectedSubState);
 
                 processor.execute_transaction(txn, receipt);
-                validateTransition(receipt, expectedState);
+
+                validateTransition(receipt, expectedState, expectedSubState, *state);
             }
         }
     }
@@ -244,7 +238,7 @@ int main(int argc, char* argv[]) {
     } catch (const std::exception& e) {
         // code to handle exceptions of type std::exception and its derived classes
         const auto desc = e.what();
-        std::cerr << desc << std::endl;
+        std::cerr << "Exception: " << desc << std::endl;
     } catch (int e) {
         // code to handle exceptions of type int
         std::cerr << "An integer exception occurred: " << e << std::endl;

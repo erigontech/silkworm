@@ -239,9 +239,9 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
      }},
 };
 
-class ExpectedStateTransaction {
+class ExpectedSubState {
 public:
-    evmc::bytes32 txHash;
+    evmc::bytes32 stateHash;
     evmc::bytes32 logsHash;
     unsigned long dataIndex{};
     unsigned long gasIndex{};
@@ -280,13 +280,13 @@ class ExpectedState {
         return engine;
     }
 
-    std::vector<ExpectedStateTransaction> getTransactions() {
-        std::vector<ExpectedStateTransaction> transactions;
+    std::vector<ExpectedSubState> getSubStates() {
+        std::vector<ExpectedSubState> transactions;
 
         for (auto& tx : stateData) {
-            ExpectedStateTransaction transaction;
+            ExpectedSubState transaction;
 
-            transaction.txHash = silkworm::to_bytes32(from_hex(tx["hash"].get<std::string>()).value_or(Bytes{}));
+            transaction.stateHash = silkworm::to_bytes32(from_hex(tx["hash"].get<std::string>()).value_or(Bytes{}));
             transaction.logsHash = silkworm::to_bytes32(from_hex(tx["logs"].get<std::string>()).value_or(Bytes{}));
             transaction.dataIndex = tx["indexes"]["data"].get<unsigned long>();
             transaction.gasIndex = tx["indexes"]["gas"].get<unsigned long>();

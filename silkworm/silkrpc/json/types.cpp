@@ -311,7 +311,7 @@ void to_json(nlohmann::json& json, const NodeInfo& node_info) {
 
 void to_json(nlohmann::json& json, const struct CallBundleTxInfo& tx_info) {
     json["gasUsed"] = tx_info.gas_used;
-    json["txHash"] = silkworm::to_bytes32({tx_info.hash.bytes, silkworm::kHashLength});
+    json["stateHash"] = silkworm::to_bytes32({tx_info.hash.bytes, silkworm::kHashLength});
     if (!tx_info.error_message.empty())
         json["error"] = tx_info.error_message;
     else

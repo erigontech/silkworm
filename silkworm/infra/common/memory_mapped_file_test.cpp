@@ -48,6 +48,7 @@ TEST_CASE("MemoryMappedFile", "[silkworm][infra][common][memory_mapped_file]") {
         CHECK_NOTHROW(MemoryMappedFile{tmp_file.string(), false});
     }
 
+    const auto now = std::filesystem::file_time_type::clock::now();
     const std::string kFileContent{"\x01\x02\x03"};
     const auto tmp_file = TemporaryDirectory::get_unique_temporary_path();
     std::ofstream tmp_stream{tmp_file, std::ios_base::binary};
@@ -58,7 +59,7 @@ TEST_CASE("MemoryMappedFile", "[silkworm][infra][common][memory_mapped_file]") {
     SECTION("has expected memory address and size") {
         CHECK(mmf.address() != nullptr);
         CHECK(mmf.length() == kFileContent.size());
-        CHECK(mmf.last_write_time() > std::filesystem::file_time_type{});
+        CHECK(mmf.last_write_time() >= now);
     }
 
     SECTION("has expected content") {

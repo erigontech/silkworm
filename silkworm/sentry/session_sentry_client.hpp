@@ -41,6 +41,7 @@ class SessionSentryClient : public api::api_common::SentryClient {
 
     boost::asio::awaitable<std::shared_ptr<api::api_common::Service>> service() override;
     void on_disconnect(std::function<boost::asio::awaitable<void>()> callback) override;
+    boost::asio::awaitable<void> reconnect() override;
 
   private:
     std::unique_ptr<SessionSentryClientImpl> p_impl_;

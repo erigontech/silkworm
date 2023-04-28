@@ -35,6 +35,8 @@
 
 #include <silkworm/infra/common/log.hpp>
 
+#include "reconnect.hpp"
+
 namespace silkworm::rpc {
 
 class GrpcStatusError : public std::runtime_error {
@@ -110,11 +112,6 @@ boost::asio::awaitable<void> streaming_rpc(
     }
 }
 
-namespace detail {
-    bool is_disconnect_error(const GrpcStatusError& ex, grpc::Channel& channel);
-    boost::asio::awaitable<void> reconnect_channel(grpc::Channel& channel);
-}  // namespace detail
-
 template <class Stub, class Request, class Response>
 boost::asio::awaitable<Response> unary_rpc_with_retries(
     agrpc::detail::ClientUnaryRequest<Stub, Request, grpc::ClientAsyncResponseReader<Response>> rpc,
@@ -128,7 +125,7 @@ boost::asio::awaitable<Response> unary_rpc_with_retries(
         try {
             co_return (co_await unary_rpc(rpc, stub, request, grpc_context));
         } catch (const GrpcStatusError& ex) {
-            if (detail::is_disconnect_error(ex, channel)) {
+            if (is_disconnect_error(ex.status(), channel)) {
                 log::Warning() << "GRPC call failed: " << ex.what();
             } else {
                 throw;
@@ -137,7 +134,7 @@ boost::asio::awaitable<Response> unary_rpc_with_retries(
 
         co_await on_disconnect();
         if (channel.GetState(false) != GRPC_CHANNEL_READY) {
-            co_await detail::reconnect_channel(channel);
+            co_await reconnect_channel(channel);
         }
     }
 }
@@ -157,7 +154,7 @@ boost::asio::awaitable<void> streaming_rpc_with_retries(
             co_await streaming_rpc(rpc, stub, request, grpc_context, consumer);
             break;
         } catch (const GrpcStatusError& ex) {
-            if (detail::is_disconnect_error(ex, channel)) {
+            if (is_disconnect_error(ex.status(), channel)) {
                 log::Warning() << "GRPC streaming call failed: " << ex.what();
             } else {
                 throw;
@@ -166,7 +163,7 @@ boost::asio::awaitable<void> streaming_rpc_with_retries(
 
         co_await on_disconnect();
         if (channel.GetState(false) != GRPC_CHANNEL_READY) {
-            co_await detail::reconnect_channel(channel);
+            co_await reconnect_channel(channel);
         }
     }
 }

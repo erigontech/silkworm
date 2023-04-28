@@ -27,6 +27,7 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/call.hpp>
+#include <silkworm/infra/grpc/client/reconnect.hpp>
 #include <silkworm/interfaces/p2psentry/sentry.grpc.pb.h>
 
 #include "../interfaces/eth_version.hpp"
@@ -63,8 +64,12 @@ class SentryClientImpl final : public api::api_common::Service {
     SentryClientImpl(const SentryClientImpl&) = delete;
     SentryClientImpl& operator=(const SentryClientImpl&) = delete;
 
-    void on_disconnect(std::function<boost::asio::awaitable<void>()> callback) {
+    void on_disconnect(std::function<awaitable<void>()> callback) {
         on_disconnect_ = std::move(callback);
+    }
+
+    awaitable<void> reconnect() {
+        co_await sw_rpc::reconnect_channel(*channel_);
     }
 
   private:
@@ -223,7 +228,7 @@ class SentryClientImpl final : public api::api_common::Service {
     std::shared_ptr<grpc::Channel> channel_;
     std::unique_ptr<Stub> stub_;
     agrpc::GrpcContext& grpc_context_;
-    std::function<boost::asio::awaitable<void>()> on_disconnect_;
+    std::function<awaitable<void>()> on_disconnect_;
 };
 
 SentryClient::SentryClient(const std::string& address_uri, agrpc::GrpcContext& grpc_context)
@@ -233,12 +238,16 @@ SentryClient::~SentryClient() {
     log::Trace("sentry") << "silkworm::sentry::rpc::client::SentryClient::~SentryClient";
 }
 
-boost::asio::awaitable<std::shared_ptr<api::api_common::Service>> SentryClient::service() {
+awaitable<std::shared_ptr<api::api_common::Service>> SentryClient::service() {
     co_return p_impl_;
 }
 
-void SentryClient::on_disconnect(std::function<boost::asio::awaitable<void>()> callback) {
+void SentryClient::on_disconnect(std::function<awaitable<void>()> callback) {
     p_impl_->on_disconnect(std::move(callback));
+}
+
+awaitable<void> SentryClient::reconnect() {
+    return p_impl_->reconnect();
 }
 
 }  // namespace silkworm::sentry::rpc::client

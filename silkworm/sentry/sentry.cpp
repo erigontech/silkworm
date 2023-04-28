@@ -276,4 +276,9 @@ void Sentry::on_disconnect(std::function<boost::asio::awaitable<void>()> /*callb
     // the direct client never disconnects
 }
 
+boost::asio::awaitable<void> Sentry::reconnect() {
+    // the direct client never disconnects
+    co_return;
+}
+
 }  // namespace silkworm::sentry

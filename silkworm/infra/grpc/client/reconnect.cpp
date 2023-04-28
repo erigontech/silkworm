@@ -14,14 +14,17 @@
    limitations under the License.
 */
 
-#include "call.hpp"
+#include "reconnect.hpp"
 
+#include <functional>
+
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/async_thread.hpp>
 
-namespace silkworm::rpc::detail {
+namespace silkworm::rpc {
 
-bool is_disconnect_error(const GrpcStatusError& ex, grpc::Channel& channel) {
-    auto code = ex.status().error_code();
+bool is_disconnect_error(const grpc::Status& status, grpc::Channel& channel) {
+    auto code = status.error_code();
     return (code == grpc::StatusCode::UNAVAILABLE) ||
            ((code == grpc::StatusCode::DEADLINE_EXCEEDED) && (channel.GetState(false) != GRPC_CHANNEL_READY) && (channel.GetState(false) != GRPC_CHANNEL_SHUTDOWN));
 }
@@ -45,4 +48,4 @@ boost::asio::awaitable<void> reconnect_channel(grpc::Channel& channel) {
     co_await concurrency::async_thread(std::move(run), std::move(stop));
 }
 
-}  // namespace silkworm::rpc::detail
+}  // namespace silkworm::rpc

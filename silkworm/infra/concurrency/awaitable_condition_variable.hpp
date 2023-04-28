@@ -57,7 +57,9 @@ class AwaitableConditionVariable {
     AwaitableConditionVariable();
     virtual ~AwaitableConditionVariable();
 
-    std::function<boost::asio::awaitable<void>()> waiter();
+    using Waiter = std::function<boost::asio::awaitable<void>()>;
+
+    Waiter waiter();
     void notify_all();
 
   private:

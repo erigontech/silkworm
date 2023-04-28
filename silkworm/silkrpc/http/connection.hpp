@@ -41,48 +41,48 @@
 
 namespace silkworm::rpc::http {
 
-/// Represents a single connection from a client.
+//! Represents a single connection from a client.
 class Connection {
   public:
     Connection(const Connection&) = delete;
     Connection& operator=(const Connection&) = delete;
 
-    /// Construct a connection running within the given execution context.
+    //! Construct a connection running within the given execution context.
     Connection(Context& context, boost::asio::thread_pool& workers, commands::RpcApiTable& handler_table, std::optional<std::string> jwt_secret);
 
     ~Connection();
 
     boost::asio::ip::tcp::socket& socket() { return socket_; }
 
-    /// Start the asynchronous read loop for the connection.
+    //! Start the asynchronous read loop for the connection.
     boost::asio::awaitable<void> read_loop();
 
   private:
-    /// Reset connection data
+    //! Reset connection data
     void clean();
 
-    /// Perform an asynchronous read operation.
+    //! Perform an asynchronous read operation.
     boost::asio::awaitable<void> do_read();
 
-    /// Perform an asynchronous write operation.
+    //! Perform an asynchronous write operation.
     boost::asio::awaitable<void> do_write();
 
-    /// Socket for the connection.
+    //! Socket for the connection.
     boost::asio::ip::tcp::socket socket_;
 
-    /// The handler used to process the incoming request.
+    //! The handler used to process the incoming request.
     RequestHandler request_handler_;
 
-    /// Buffer for incoming data.
+    //! Buffer for incoming data.
     std::array<char, kHttpIncomingBufferSize> buffer_;
 
-    /// The incoming request.
+    //! The incoming request.
     Request request_;
 
-    /// The parser for the incoming request.
+    //! The parser for the incoming request.
     RequestParser request_parser_;
 
-    /// The reply to be sent back to the client.
+    //! The reply to be sent back to the client.
     Reply reply_;
 };
 

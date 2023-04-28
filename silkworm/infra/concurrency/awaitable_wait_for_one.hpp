@@ -58,7 +58,7 @@ namespace detail {
     using boost::asio::experimental::awaitable_operators::detail::widen_variant;
 }  // namespace detail
 
-/// Wait for one operation to succeed.
+//! Wait for one operation to succeed.
 /**
  * If one operations succeeds, the other is cancelled as the OR-condition is
  * already satisfied.
@@ -81,7 +81,7 @@ awaitable<std::variant<std::monostate, std::monostate>, Executor> operator||(awa
     }
 }
 
-/// Wait for one operation to succeed.
+//! Wait for one operation to succeed.
 /**
  * If one operations succeeds, the other is cancelled as the OR-condition is
  * already satisfied.
@@ -106,7 +106,7 @@ awaitable<std::variant<std::monostate, U>, Executor> operator||(awaitable<void, 
     }
 }
 
-/// Wait for one operation to succeed.
+//! Wait for one operation to succeed.
 /**
  * If one operations succeeds, the other is cancelled as the OR-condition is
  * already satisfied.
@@ -131,7 +131,7 @@ awaitable<std::variant<T, std::monostate>, Executor> operator||(awaitable<T, Exe
     }
 }
 
-/// Wait for one operation to succeed.
+//! Wait for one operation to succeed.
 /**
  * If one operations succeeds, the other is cancelled as the OR-condition is
  * already satisfied.
@@ -154,7 +154,7 @@ awaitable<std::variant<T, U>, Executor> operator||(awaitable<T, Executor> t, awa
     }
 }
 
-/// Wait for one operation to succeed.
+//! Wait for one operation to succeed.
 /**
  * If one operations succeeds, the other is cancelled as the OR-condition is
  * already satisfied.
@@ -179,7 +179,7 @@ awaitable<std::variant<T..., std::monostate>, Executor> operator||(awaitable<std
     }
 }
 
-/// Wait for one operation to succeed.
+//! Wait for one operation to succeed.
 /**
  * If one operations succeeds, the other is cancelled as the OR-condition is
  * already satisfied.

@@ -32,7 +32,7 @@ class State : public BlockState {
     virtual ~State() = default;
 
     /** @name Readers */
-    ///@{
+    //!@{
 
     virtual std::optional<Account> read_account(const evmc::address& address) const noexcept = 0;
 
@@ -50,7 +50,7 @@ class State : public BlockState {
 
     virtual std::optional<evmc::bytes32> canonical_hash(uint64_t block_number) const = 0;
 
-    ///@}
+    //!@}
 
     virtual void insert_block(const Block& block, const evmc::bytes32& hash) = 0;
 
@@ -63,7 +63,7 @@ class State : public BlockState {
     /** @name State changes
      *  Change sets are backward changes of the state, i.e. account/storage values <em>at the beginning of a block</em>.
      */
-    ///@{
+    //!@{
 
     /** Mark the beginning of a new block.
      * Must be called prior to calling update_account/update_account_code/update_storage.
@@ -81,7 +81,7 @@ class State : public BlockState {
 
     virtual void unwind_state_changes(uint64_t block_number) = 0;
 
-    ///@}
+    //!@}
 };
 
 }  // namespace silkworm

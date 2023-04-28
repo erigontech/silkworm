@@ -35,13 +35,17 @@ class ExecutionProcessor {
 
     ExecutionProcessor(const Block& block, protocol::IRuleSet& rule_set, State& state, const ChainConfig& config);
 
-    // Preconditions:
-    // 1) RuleSet's pre_validate_transaction(txn) must return kOk
-    // 2) txn.from must be recovered, otherwise kMissingSender will be returned
+    /**
+     * Preconditions:
+     * 1) RuleSet's pre_validate_transaction(txn) must return kOk
+     * 2) txn.from must be recovered, otherwise kMissingSender will be returned
+     */
     ValidationResult validate_transaction(const Transaction& txn) const noexcept;
 
-    // Execute a transaction, but do not write to the DB yet.
-    // Precondition: transaction must be valid.
+    /**
+     * Execute a transaction, but do not write to the DB yet.
+     * Precondition: transaction must be valid.
+     */
     void execute_transaction(const Transaction& txn, Receipt& receipt) noexcept;
 
     //! \brief Execute the block and write the result to the DB.
@@ -55,9 +59,11 @@ class ExecutionProcessor {
     const EVM& evm() const noexcept { return evm_; }
 
   private:
-    /// Execute the block, but do not write to the DB yet.
-    /// Does not perform any post-execution validation (for example, receipt root is not checked).
-    /// Precondition: validate_block_header & pre_validate_block_body must return kOk.
+    /**
+     * Execute the block, but do not write to the DB yet.
+     * Does not perform any post-execution validation (for example, receipt root is not checked).
+     * Precondition: validate_block_header & pre_validate_block_body must return kOk.
+     */
     [[nodiscard]] ValidationResult execute_block_no_post_validation(std::vector<Receipt>& receipts) noexcept;
 
     uint64_t available_gas() const noexcept;

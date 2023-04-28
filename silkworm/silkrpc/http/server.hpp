@@ -38,7 +38,7 @@
 
 namespace silkworm::rpc::http {
 
-/// The top-level class of the HTTP server.
+//! The top-level class of the HTTP server.
 class Server {
   public:
     Server(const Server&) = delete;

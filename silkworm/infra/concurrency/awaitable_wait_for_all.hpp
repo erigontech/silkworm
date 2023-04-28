@@ -62,7 +62,7 @@ namespace detail {
 
 }  // namespace detail
 
-/// Wait for both operations to succeed.
+//! Wait for both operations to succeed.
 /**
  * If one operations fails, the other is cancelled as the AND-condition can no
  * longer be satisfied.
@@ -84,7 +84,7 @@ awaitable<void, Executor> operator&&(
     co_return;
 }
 
-/// Wait for both operations to succeed.
+//! Wait for both operations to succeed.
 /**
  * If one operations fails, the other is cancelled as the AND-condition can no
  * longer be satisfied.
@@ -106,7 +106,7 @@ awaitable<U, Executor> operator&&(
     co_return std::move(detail::awaitable_unwrap<U>(r1));
 }
 
-/// Wait for both operations to succeed.
+//! Wait for both operations to succeed.
 /**
  * If one operations fails, the other is cancelled as the AND-condition can no
  * longer be satisfied.
@@ -128,7 +128,7 @@ awaitable<T, Executor> operator&&(
     co_return std::move(detail::awaitable_unwrap<T>(r0));
 }
 
-/// Wait for both operations to succeed.
+//! Wait for both operations to succeed.
 /**
  * If one operations fails, the other is cancelled as the AND-condition can no
  * longer be satisfied.
@@ -152,7 +152,7 @@ awaitable<std::tuple<T, U>, Executor> operator&&(
         std::move(detail::awaitable_unwrap<U>(r1)));
 }
 
-/// Wait for both operations to succeed.
+//! Wait for both operations to succeed.
 /**
  * If one operations fails, the other is cancelled as the AND-condition can no
  * longer be satisfied.
@@ -174,7 +174,7 @@ awaitable<std::tuple<T..., std::monostate>, Executor> operator&&(
     co_return std::move(detail::awaitable_unwrap<std::tuple<T...>>(r0));
 }
 
-/// Wait for both operations to succeed.
+//! Wait for both operations to succeed.
 /**
  * If one operations fails, the other is cancelled as the AND-condition can no
  * longer be satisfied.

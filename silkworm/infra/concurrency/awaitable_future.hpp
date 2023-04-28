@@ -55,27 +55,27 @@ class AwaitableFuture {
   private:
     friend class AwaitablePromise<T>;
 
-    using async_channel = asio::experimental::concurrent_channel<void(std::exception_ptr, T)>;
+    using AsyncChannel = asio::experimental::concurrent_channel<void(std::exception_ptr, T)>;
 
-    explicit AwaitableFuture(std::shared_ptr<async_channel> channel) : channel_(channel) {}
+    explicit AwaitableFuture(std::shared_ptr<AsyncChannel> channel) : channel_(channel) {}
 
     template <typename CompletionToken>
     auto get(CompletionToken completion_token) {
         return channel_->async_receive(completion_token);
     }
 
-    std::shared_ptr<async_channel> channel_;
+    std::shared_ptr<AsyncChannel> channel_;
 };
 
 template <typename T>
 class AwaitablePromise {
     inline static size_t one_shot_channel = 1;
-    using async_channel = typename AwaitableFuture<T>::async_channel;
+    using AsyncChannel = typename AwaitableFuture<T>::AsyncChannel;
 
   public:
-    explicit AwaitablePromise(asio::any_io_executor&& executor) : channel_(std::make_shared<async_channel>(executor, one_shot_channel)) {}
-    explicit AwaitablePromise(asio::any_io_executor& executor) : channel_(std::make_shared<async_channel>(executor, one_shot_channel)) {}
-    explicit AwaitablePromise(asio::io_context& io_context) : channel_(std::make_shared<async_channel>(io_context, one_shot_channel)) {}
+    explicit AwaitablePromise(asio::any_io_executor&& executor) : channel_(std::make_shared<AsyncChannel>(executor, one_shot_channel)) {}
+    explicit AwaitablePromise(asio::any_io_executor& executor) : channel_(std::make_shared<AsyncChannel>(executor, one_shot_channel)) {}
+    explicit AwaitablePromise(asio::io_context& io_context) : channel_(std::make_shared<AsyncChannel>(io_context, one_shot_channel)) {}
 
     AwaitablePromise(const AwaitablePromise&) = delete;
     AwaitablePromise(AwaitablePromise&& orig) : channel_(std::move(orig.channel_)) {}
@@ -93,7 +93,7 @@ class AwaitablePromise {
     AwaitableFuture<T> get_future() { return AwaitableFuture<T>(channel_); }
 
   private:
-    std::shared_ptr<async_channel> channel_;
+    std::shared_ptr<AsyncChannel> channel_;
 };
 
 }  // namespace silkworm::concurrency

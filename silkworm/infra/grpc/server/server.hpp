@@ -40,8 +40,10 @@ class Server {
         : config_(config),
           context_pool_{config.context_pool_settings().num_contexts} {}
 
-    /// No need to explicitly shutdown the server because this destructor takes care.
-    /// Use \ref shutdown() if you want explicit control over termination before destruction.
+    /**
+     * No need to explicitly shutdown the server because this destructor takes care.
+     * Use \ref shutdown() if you want explicit control over termination before destruction.
+     */
     virtual ~Server() {
         SILK_TRACE << "Server::~Server " << this << " START";
         shutdown();

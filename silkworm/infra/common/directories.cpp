@@ -108,10 +108,10 @@ DataDirectory DataDirectory::from_chaindata(const std::filesystem::path& chainda
         !std::filesystem::is_directory(chaindata_path)) {
         throw std::invalid_argument("Bad or not existent chaindata directory");
     }
-    /// Ensure we treat path as absolute
+    //! Ensure we treat path as absolute
     auto chaindata_path_absolute{std::filesystem::absolute(chaindata_path)};
 
-    /// Chaindata must be at least 2 levels deep
+    //! Chaindata must be at least 2 levels deep
     /*
 <datadir>
 ├───chaindata
@@ -199,7 +199,7 @@ std::filesystem::path TemporaryDirectory::get_unique_temporary_path(const std::f
         throw std::invalid_argument("Path " + absolute_base_path.string() + " does not exist or is not a directory");
     }
 
-    /// Build random paths appending random strings of fixed length to base path
+    //! Build random paths appending random strings of fixed length to base path
     for (int i = 0; i < 1000; ++i) {
         auto new_absolute_base_path{absolute_base_path / random_string(10)};
         if (!std::filesystem::exists(new_absolute_base_path)) {
@@ -207,7 +207,7 @@ std::filesystem::path TemporaryDirectory::get_unique_temporary_path(const std::f
         }
     }
 
-    /// We were unable to find a valid unique non-existent path
+    //! We were unable to find a valid unique non-existent path
     throw std::runtime_error("Unable to find a valid unique non-existent path");
 }
 

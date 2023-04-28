@@ -24,7 +24,7 @@
 
 namespace silkworm {
 
-/// InMemoryState holds the entire state in memory.
+//! InMemoryState holds the entire state in memory.
 class InMemoryState : public State {
   private:
     // address -> initial value

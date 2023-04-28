@@ -41,7 +41,7 @@ class Buffer : public State {
         : txn_{txn}, prune_history_threshold_{prune_history_threshold}, historical_block_{historical_block} {}
 
     /** @name Readers */
-    ///@{
+    //!@{
 
     [[nodiscard]] std::optional<Account> read_account(const evmc::address& address) const noexcept override;
 
@@ -68,7 +68,7 @@ class Buffer : public State {
 
     [[nodiscard]] std::optional<evmc::bytes32> canonical_hash(uint64_t block_number) const override;
 
-    ///@}
+    //!@}
 
     void insert_block(const Block& block, const evmc::bytes32& hash) override;
 
@@ -81,7 +81,7 @@ class Buffer : public State {
     /** @name State changes
      *  Change sets are backward changes of the state, i.e. account/storage values <em>at the beginning of a block</em>.
      */
-    ///@{
+    //!@{
 
     /** Mark the beginning of a new block.
      * Must be called prior to calling update_account/update_account_code/update_storage.
@@ -99,14 +99,14 @@ class Buffer : public State {
 
     void unwind_state_changes(uint64_t block_number) override;
 
-    ///@}
+    //!@}
 
-    /// Account (backward) changes per block
+    //! Account (backward) changes per block
     [[nodiscard]] const absl::btree_map<uint64_t, AccountChanges>& account_changes() const {
         return block_account_changes_;
     }
 
-    /// Storage (backward) changes per block
+    //! Storage (backward) changes per block
     [[nodiscard]] const absl::btree_map<uint64_t, StorageChanges>& storage_changes() const {
         return block_storage_changes_;
     }

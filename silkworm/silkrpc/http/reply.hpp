@@ -34,7 +34,7 @@
 
 namespace silkworm::rpc::http {
 
-/// The status of the reply.
+//! The status of the reply.
 enum class StatusType {
     processing_continue = 100,
     ok = 200,
@@ -59,23 +59,25 @@ boost::asio::const_buffer to_buffer(StatusType status);
 std::vector<boost::asio::const_buffer> to_buffers(const std::vector<Header>& headers);
 std::vector<boost::asio::const_buffer> to_buffers(StatusType status, const std::vector<Header>& headers);
 
-/// A reply to be sent to a client.
+//! A reply to be sent to a client.
 struct Reply {
-    /// The status of the reply.
+    //! The status of the reply.
     StatusType status;
 
-    /// The headers to be included in the reply.
+    //! The headers to be included in the reply.
     std::vector<Header> headers;
 
-    /// The content to be sent in the reply.
+    //! The content to be sent in the reply.
     std::string content;
 
-    /// Convert the reply into a vector of buffers. The buffers do not own the
-    /// underlying memory blocks, therefore the reply object must remain valid and
-    /// not be changed until the write operation has completed.
+    /**
+     * Convert the reply into a vector of buffers. The buffers do not own the
+     * underlying memory blocks, therefore the reply object must remain valid and
+     * not be changed until the write operation has completed.
+     */
     [[nodiscard]] std::vector<boost::asio::const_buffer> to_buffers() const;
 
-    /// Get a stock reply.
+    //! Get a stock reply.
     static Reply stock_reply(StatusType status);
 
     // reset Reply data

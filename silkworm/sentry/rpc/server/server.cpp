@@ -81,7 +81,7 @@ void ServerImpl::register_async_services(grpc::ServerBuilder& builder) {
     builder.RegisterService(&async_service_);
 }
 
-/// Start server-side RPC requests as required by gRPC async model: one RPC per type is requested in advance.
+//! Start server-side RPC requests as required by gRPC async model: one RPC per type is requested in advance.
 void ServerImpl::register_request_calls() {
     for (std::size_t i = 0; i < num_contexts(); i++) {
         const auto& context = next_context();

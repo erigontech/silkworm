@@ -44,13 +44,12 @@ class AwaitableFuture {
     AwaitableFuture(const AwaitableFuture&) = delete;
     AwaitableFuture(AwaitableFuture&& orig) : channel_(std::move(orig.channel_)) {}
 
-    template <typename CompletionToken>
-    auto get(CompletionToken completion_token) {
-        return channel_->async_receive(completion_token);
+    asio::awaitable<T> get_async() {
+        return get(asio::use_awaitable);
     }
 
     T get() {
-        return channel_->async_receive(asio::use_future).get();
+        return get(asio::use_future).get();
     }
 
   private:
@@ -59,6 +58,11 @@ class AwaitableFuture {
     using async_channel = asio::experimental::concurrent_channel<void(std::exception_ptr, T)>;
 
     explicit AwaitableFuture(std::shared_ptr<async_channel> channel) : channel_(channel) {}
+
+    template <typename CompletionToken>
+    auto get(CompletionToken completion_token) {
+        return channel_->async_receive(completion_token);
+    }
 
     std::shared_ptr<async_channel> channel_;
 };
@@ -76,20 +80,11 @@ class AwaitablePromise {
     AwaitablePromise(const AwaitablePromise&) = delete;
     AwaitablePromise(AwaitablePromise&& orig) : channel_(std::move(orig.channel_)) {}
 
-    template <typename CompletionToken>
-    auto set_value(T value, CompletionToken completion_token) {
-        return channel_->async_send(nullptr, std::move(value), completion_token);
-    }
-
     void set_value(T value) {
         bool sent = channel_->try_send(nullptr, std::move(value));
         if (!sent) throw std::runtime_error("AwaitablePromise::set_value: channel is full");
     }
 
-    template <typename CompletionToken>
-    auto set_exception(std::exception_ptr ptr, CompletionToken completion_token) {
-        return channel_->async_send(ptr, T{}, completion_token);
-    }
     void set_exception(std::exception_ptr ptr) {
         bool sent = channel_->try_send(ptr, T{});
         if (!sent) throw std::runtime_error("AwaitablePromise::set_exception: channel is full");

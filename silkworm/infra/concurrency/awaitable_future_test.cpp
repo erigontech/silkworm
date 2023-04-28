@@ -145,9 +145,11 @@ TEST_CASE("awaitable future") {
         asio::co_spawn(
             io,
             [&]() -> asio::awaitable<void> {
-                co_await promise.set_value(42, asio::use_awaitable);
+                promise.set_value(42);
+                co_return;
             },
             asio::detached);
+
         io.run();
         concurrent.join();
 
@@ -162,7 +164,7 @@ TEST_CASE("awaitable future") {
             io,
             [&]() -> asio::awaitable<void> {
                 auto future = promise.get_future();
-                value = co_await future.get(asio::use_awaitable);
+                value = co_await future.get_async();
                 io.stop();
             },
             asio::detached);
@@ -180,8 +182,8 @@ TEST_CASE("awaitable future") {
         int value;
         asio::co_spawn(
             io,
-            [&]() -> asio::awaitable<void> {  // <====
-                value = co_await future.get(asio::use_awaitable);
+            [&]() -> asio::awaitable<void> {
+                value = co_await future.get_async();
                 io.stop();
             },
             asio::detached);
@@ -198,7 +200,7 @@ TEST_CASE("awaitable future") {
 
         int value;
         auto lambda = [&](AwaitableFuture<int>&& moved_future) -> asio::awaitable<void> {
-            value = co_await moved_future.get(asio::use_awaitable);
+            value = co_await moved_future.get_async();
             io.stop();
         };
 
@@ -218,7 +220,7 @@ TEST_CASE("awaitable future") {
             io,
             [&]() -> asio::awaitable<void> {
                 auto future = promise.get_future();
-                value = co_await future.get(asio::use_awaitable);
+                value = co_await future.get_async();
                 io.stop();
             },
             asio::detached);
@@ -226,7 +228,8 @@ TEST_CASE("awaitable future") {
         asio::co_spawn(
             io,
             [&]() -> asio::awaitable<void> {
-                co_await promise.set_value(42, asio::use_awaitable);
+                promise.set_value(42);
+                co_return;
             },
             asio::detached);
 

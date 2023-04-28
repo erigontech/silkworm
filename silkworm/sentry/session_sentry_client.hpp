@@ -18,17 +18,17 @@
 
 #include <functional>
 #include <memory>
-#include <mutex>
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
 
-#include <silkworm/infra/concurrency/awaitable_condition_variable.hpp>
 #include <silkworm/sentry/api/api_common/sentry_client.hpp>
 #include <silkworm/sentry/eth/status_data.hpp>
 
 namespace silkworm::sentry {
+
+class SessionSentryClientImpl;
 
 class SessionSentryClient : public api::api_common::SentryClient {
   public:
@@ -37,18 +37,13 @@ class SessionSentryClient : public api::api_common::SentryClient {
     SessionSentryClient(
         std::shared_ptr<api::api_common::SentryClient> sentry_client,
         StatusDataProvider status_data_provider);
-    ~SessionSentryClient();
+    ~SessionSentryClient() override;
 
     boost::asio::awaitable<std::shared_ptr<api::api_common::Service>> service() override;
     void on_disconnect(std::function<boost::asio::awaitable<void>()> callback) override;
 
   private:
-    boost::asio::awaitable<void> start_session();
-    boost::asio::awaitable<void> handle_disconnect();
-
-    std::shared_ptr<api::api_common::SentryClient> sentry_client_;
-    StatusDataProvider status_data_provider_;
-    concurrency::AwaitableConditionVariable session_started_cond_var_;
+    std::unique_ptr<SessionSentryClientImpl> p_impl_;
 };
 
 }  // namespace silkworm::sentry

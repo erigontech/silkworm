@@ -16,45 +16,77 @@
 
 #include "session_sentry_client.hpp"
 
+#include <mutex>
+
+#include <silkworm/infra/concurrency/awaitable_condition_variable.hpp>
+
 namespace silkworm::sentry {
 
 using namespace boost::asio;
 
+class SessionSentryClientImpl : public api::api_common::SentryClient {
+  public:
+    using StatusDataProvider = std::function<boost::asio::awaitable<eth::StatusData>(uint8_t eth_version)>;
+
+    SessionSentryClientImpl(
+        std::shared_ptr<api::api_common::SentryClient> sentry_client,
+        StatusDataProvider status_data_provider)
+        : sentry_client_(std::move(sentry_client)),
+          status_data_provider_(std::move(status_data_provider)) {
+        sentry_client_->on_disconnect([this] { return this->handle_disconnect(); });
+    }
+
+    ~SessionSentryClientImpl() override {
+        sentry_client_->on_disconnect([]() -> awaitable<void> { co_return; });
+    }
+
+    boost::asio::awaitable<std::shared_ptr<api::api_common::Service>> service() override {
+        // TODO: synchronize
+        auto waiter = session_started_cond_var_.waiter();
+        co_await waiter();
+
+        co_return (co_await sentry_client_->service());
+    }
+
+    void on_disconnect(std::function<boost::asio::awaitable<void>()> /*callback*/) override {
+        assert(false);
+    }
+
+  private:
+    awaitable<void> start_session() {
+        auto service = co_await sentry_client_->service();
+        auto eth_version = co_await service->handshake();
+        auto status_data = co_await status_data_provider_(eth_version);
+        co_await service->set_status(std::move(status_data));
+        // TODO: synchronize
+        session_started_cond_var_.notify_all();
+    }
+
+    awaitable<void> handle_disconnect() {
+        co_return;
+    }
+
+    std::shared_ptr<api::api_common::SentryClient> sentry_client_;
+    StatusDataProvider status_data_provider_;
+    concurrency::AwaitableConditionVariable session_started_cond_var_;
+};
+
 SessionSentryClient::SessionSentryClient(
     std::shared_ptr<api::api_common::SentryClient> sentry_client,
     StatusDataProvider status_data_provider)
-    : sentry_client_(std::move(sentry_client)),
-      status_data_provider_(std::move(status_data_provider)) {
-    sentry_client_->on_disconnect([this] { return this->handle_disconnect(); });
+    : p_impl_(std::make_unique<SessionSentryClientImpl>(sentry_client, status_data_provider)) {
 }
 
 SessionSentryClient::~SessionSentryClient() {
-    sentry_client_->on_disconnect([]() -> awaitable<void> { co_return; });
-}
-
-awaitable<void> SessionSentryClient::start_session() {
-    auto service = co_await sentry_client_->service();
-    auto eth_version = co_await service->handshake();
-    auto status_data = co_await status_data_provider_(eth_version);
-    co_await service->set_status(std::move(status_data));
-    // TODO: synchronize
-    session_started_cond_var_.notify_all();
-}
-
-awaitable<void> SessionSentryClient::handle_disconnect() {
-    co_return;
+    [[maybe_unused]] int non_trivial_destructor;  // silent clang-tidy
 }
 
 awaitable<std::shared_ptr<api::api_common::Service>> SessionSentryClient::service() {
-    // TODO: synchronize
-    auto waiter = session_started_cond_var_.waiter();
-    co_await waiter();
-
-    co_return (co_await sentry_client_->service());
+    return p_impl_->service();
 }
 
-void SessionSentryClient::on_disconnect(std::function<boost::asio::awaitable<void>()> /*callback*/) {
-    assert(false);
+void SessionSentryClient::on_disconnect(std::function<boost::asio::awaitable<void>()> callback) {
+    p_impl_->on_disconnect(callback);
 }
 
 }  // namespace silkworm::sentry

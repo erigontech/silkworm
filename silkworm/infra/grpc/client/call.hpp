@@ -121,6 +121,7 @@ boost::asio::awaitable<Response> unary_rpc_with_retries(
     std::unique_ptr<Stub>& stub,
     Request request,
     agrpc::GrpcContext& grpc_context,
+    std::function<boost::asio::awaitable<void>()>& on_disconnect,
     grpc::Channel& channel) {
     // loop until a successful return or cancellation
     while (true) {
@@ -134,7 +135,10 @@ boost::asio::awaitable<Response> unary_rpc_with_retries(
             }
         }
 
-        co_await detail::reconnect_channel(channel);
+        co_await on_disconnect();
+        if (channel.GetState(false) != GRPC_CHANNEL_READY) {
+            co_await detail::reconnect_channel(channel);
+        }
     }
 }
 
@@ -144,6 +148,7 @@ boost::asio::awaitable<void> streaming_rpc_with_retries(
     std::unique_ptr<Stub>& stub,
     Request request,
     agrpc::GrpcContext& grpc_context,
+    std::function<boost::asio::awaitable<void>()>& on_disconnect,
     grpc::Channel& channel,
     std::function<boost::asio::awaitable<void>(Response)> consumer) {
     // loop until a successful return or cancellation
@@ -159,7 +164,10 @@ boost::asio::awaitable<void> streaming_rpc_with_retries(
             }
         }
 
-        co_await detail::reconnect_channel(channel);
+        co_await on_disconnect();
+        if (channel.GetState(false) != GRPC_CHANNEL_READY) {
+            co_await detail::reconnect_channel(channel);
+        }
     }
 }
 

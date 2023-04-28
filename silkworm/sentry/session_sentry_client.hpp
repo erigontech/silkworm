@@ -37,11 +37,14 @@ class SessionSentryClient : public api::api_common::SentryClient {
     SessionSentryClient(
         std::shared_ptr<api::api_common::SentryClient> sentry_client,
         StatusDataProvider status_data_provider);
+    ~SessionSentryClient();
 
     boost::asio::awaitable<std::shared_ptr<api::api_common::Service>> service() override;
+    void on_disconnect(std::function<boost::asio::awaitable<void>()> callback) override;
 
   private:
     boost::asio::awaitable<void> start_session();
+    boost::asio::awaitable<void> handle_disconnect();
 
     std::shared_ptr<api::api_common::SentryClient> sentry_client_;
     StatusDataProvider status_data_provider_;

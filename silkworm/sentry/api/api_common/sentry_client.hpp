@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
@@ -30,6 +31,8 @@ struct SentryClient {
     virtual ~SentryClient() = default;
 
     virtual boost::asio::awaitable<std::shared_ptr<Service>> service() = 0;
+
+    virtual void on_disconnect(std::function<boost::asio::awaitable<void>()> callback) = 0;
 };
 
 }  // namespace silkworm::sentry::api::api_common

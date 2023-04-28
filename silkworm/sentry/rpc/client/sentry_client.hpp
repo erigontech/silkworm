@@ -37,6 +37,8 @@ class SentryClient : public api::api_common::SentryClient {
 
     boost::asio::awaitable<std::shared_ptr<api::api_common::Service>> service() override;
 
+    void on_disconnect(std::function<boost::asio::awaitable<void>()> callback) override;
+
   private:
     std::shared_ptr<SentryClientImpl> p_impl_;
 };

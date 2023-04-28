@@ -272,4 +272,8 @@ boost::asio::awaitable<std::shared_ptr<api::api_common::Service>> Sentry::servic
     co_return p_impl_->service();
 }
 
+void Sentry::on_disconnect(std::function<boost::asio::awaitable<void>()> /*callback*/) {
+    // the direct client never disconnects
+}
+
 }  // namespace silkworm::sentry

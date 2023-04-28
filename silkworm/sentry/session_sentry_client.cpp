@@ -25,6 +25,11 @@ SessionSentryClient::SessionSentryClient(
     StatusDataProvider status_data_provider)
     : sentry_client_(std::move(sentry_client)),
       status_data_provider_(std::move(status_data_provider)) {
+    sentry_client_->on_disconnect([this] { return this->handle_disconnect(); });
+}
+
+SessionSentryClient::~SessionSentryClient() {
+    sentry_client_->on_disconnect([]() -> awaitable<void> { co_return; });
 }
 
 awaitable<void> SessionSentryClient::start_session() {
@@ -36,12 +41,20 @@ awaitable<void> SessionSentryClient::start_session() {
     session_started_cond_var_.notify_all();
 }
 
+awaitable<void> SessionSentryClient::handle_disconnect() {
+    co_return;
+}
+
 awaitable<std::shared_ptr<api::api_common::Service>> SessionSentryClient::service() {
     // TODO: synchronize
     auto waiter = session_started_cond_var_.waiter();
     co_await waiter();
 
     co_return (co_await sentry_client_->service());
+}
+
+void SessionSentryClient::on_disconnect(std::function<boost::asio::awaitable<void>()> /*callback*/) {
+    assert(false);
 }
 
 }  // namespace silkworm::sentry

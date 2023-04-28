@@ -51,17 +51,21 @@ struct ExecutionResult {
 
 constexpr int kCacheSize = 32000;
 
-using BaseService = boost::asio::detail::execution_context_service_base<int>;
-class BaselineAnalysisCacheService : public BaseService {
+template <typename T>
+using ServiceBase = boost::asio::detail::execution_context_service_base<T>;
+
+class BaselineAnalysisCacheService : public ServiceBase<BaselineAnalysisCacheService> {
   public:
-    explicit BaselineAnalysisCacheService(boost::asio::execution_context& owner) : BaseService(owner) {}
+    explicit BaselineAnalysisCacheService(boost::asio::execution_context& owner)
+        : ServiceBase<BaselineAnalysisCacheService>(owner) {}
+
     void shutdown() override {}
-    ObjectPool<EvmoneExecutionState>* get_object_pool() { return &_state_pool; }
-    BaselineAnalysisCache* get_baseline_analysis_cache() { return &_analysis_cache; }
+    ObjectPool<EvmoneExecutionState>* get_object_pool() { return &state_pool_; }
+    BaselineAnalysisCache* get_baseline_analysis_cache() { return &analysis_cache_; }
 
   private:
-    ObjectPool<EvmoneExecutionState> _state_pool{true};
-    BaselineAnalysisCache _analysis_cache{kCacheSize, true};
+    ObjectPool<EvmoneExecutionState> state_pool_{true};
+    BaselineAnalysisCache analysis_cache_{kCacheSize, true};
 };
 
 using Tracers = std::vector<std::shared_ptr<EvmTracer>>;

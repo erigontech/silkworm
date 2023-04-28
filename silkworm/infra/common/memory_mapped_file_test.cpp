@@ -58,7 +58,7 @@ TEST_CASE("MemoryMappedFile", "[silkworm][infra][common][memory_mapped_file]") {
     SECTION("has expected memory address and size") {
         CHECK(mmf.address() != nullptr);
         CHECK(mmf.length() == kFileContent.size());
-        CHECK(mmf.last_write_time().time_since_epoch().count() > 0);
+        CHECK(mmf.last_write_time() > std::filesystem::file_time_type{});
     }
 
     SECTION("has expected content") {

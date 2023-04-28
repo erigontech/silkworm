@@ -118,4 +118,18 @@ class MemoryMappedFile {
 #endif
 };
 
+struct MemoryMappedStreamBuf : std::streambuf {
+    MemoryMappedStreamBuf(char const* base, std::size_t size) {
+        char* p{const_cast<char*>(base)};
+        this->setg(p, p, p + size);
+    }
+};
+
+struct MemoryMappedInputStream : virtual MemoryMappedStreamBuf, std::istream {
+    MemoryMappedInputStream(char const* base, std::size_t size)
+        : MemoryMappedStreamBuf(base, size), std::istream(static_cast<std::streambuf*>(this)) {}
+    MemoryMappedInputStream(unsigned char const* base, std::size_t size)
+        : MemoryMappedInputStream(reinterpret_cast<char const*>(base), size) {}
+};
+
 }  // namespace silkworm

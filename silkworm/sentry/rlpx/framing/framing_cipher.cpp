@@ -138,7 +138,7 @@ Bytes FramingCipherImpl::serialize_frame_size(size_t size) {
 
 size_t FramingCipherImpl::deserialize_frame_size(ByteView data) {
     if (data.size() < sizeof(uint32_t) - 1)
-        throw std::runtime_error("Frame size data is too short");
+        throw std::runtime_error("rlpx::framing::FramingCipher: frame size data is too short");
     Bytes data1(sizeof(uint32_t), 0);
     std::copy(data.cbegin(), data.cbegin() + (data1.size() - 1), data1.begin() + 1);
     return endian::load_big_u32(data1.data());
@@ -177,7 +177,7 @@ Bytes FramingCipherImpl::encrypt_frame(Bytes frame_data) {
 size_t FramingCipherImpl::decrypt_header(ByteView header_cipher_text, ByteView header_mac) {
     Bytes expected_header_mac = this->header_mac(ingress_mac_hasher_, header_cipher_text);
     if (header_mac != expected_header_mac)
-        throw std::runtime_error("Invalid header MAC");
+        throw std::runtime_error("rlpx::framing::FramingCipher: invalid header MAC");
 
     Bytes header = ingress_data_cipher_.decrypt(header_cipher_text);
     return deserialize_frame_size(header);
@@ -188,7 +188,7 @@ Bytes FramingCipherImpl::decrypt_frame(ByteView frame_cipher_text, ByteView fram
 
     Bytes expected_frame_mac = this->frame_mac(ingress_mac_hasher_, frame_cipher_text);
     if (frame_mac != expected_frame_mac)
-        throw std::runtime_error("Invalid frame MAC");
+        throw std::runtime_error("rlpx::framing::FramingCipher: invalid frame MAC");
 
     Bytes frame_data = ingress_data_cipher_.decrypt(frame_cipher_text);
     frame_data.resize(frame_size);
@@ -224,7 +224,7 @@ size_t FramingCipher::header_size() {
 
 size_t FramingCipher::decrypt_header(ByteView data) {
     if (data.size() < FramingCipher::header_size())
-        throw std::runtime_error("Header size data is too short");
+        throw std::runtime_error("rlpx::framing::FramingCipher: header size data is too short");
     return impl_->decrypt_header(
         ByteView{data.data(), kAESBlockSize},
         ByteView{data.data() + kAESBlockSize, kAESBlockSize});
@@ -237,7 +237,7 @@ size_t FramingCipher::frame_size(size_t header_frame_size) {
 
 Bytes FramingCipher::decrypt_frame(ByteView data, size_t header_frame_size) {
     if (data.size() < FramingCipher::frame_size(header_frame_size))
-        throw std::runtime_error("Frame size data is too short");
+        throw std::runtime_error("rlpx::framing::FramingCipher: frame size data is too short");
     return impl_->decrypt_frame(
         ByteView{data.data(), data.size() - kAESBlockSize},
         ByteView{data.data() + data.size() - kAESBlockSize, kAESBlockSize},

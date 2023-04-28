@@ -23,7 +23,7 @@ namespace silkworm::sentry {
 boost::asio::awaitable<void> StatusManager::wait_for_status() {
     auto status = co_await status_channel_.receive();
     status_.set(status);
-    log::Info() << "Status received: network ID = " << status.message.network_id;
+    log::Debug("sentry") << "StatusManager received status: network ID = " << status.message.network_id;
 }
 
 boost::asio::awaitable<void> StatusManager::start() {

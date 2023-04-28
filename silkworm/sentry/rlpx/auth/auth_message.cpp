@@ -36,7 +36,7 @@ static Bytes sign(ByteView data, ByteView private_key) {
     secp256k1_ecdsa_recoverable_signature signature;
     bool ok = ctx.sign_recoverable(&signature, data, private_key);
     if (!ok) {
-        throw std::runtime_error("Failed to sign an AuthMessage");
+        throw std::runtime_error("rlpx::auth::sign failed to sign an AuthMessage");
     }
 
     auto [signature_data, recovery_id] = ctx.serialize_recoverable_signature(&signature);
@@ -46,7 +46,7 @@ static Bytes sign(ByteView data, ByteView private_key) {
 
 static common::EccPublicKey recover_and_verify(ByteView data, ByteView signature_and_recovery_id) {
     if (signature_and_recovery_id.empty()) {
-        throw std::runtime_error("AuthMessage signature is empty");
+        throw std::runtime_error("rlpx::auth::recover_and_verify: AuthMessage signature is empty");
     }
     uint8_t recovery_id = signature_and_recovery_id.back();
     ByteView signature_data = {signature_and_recovery_id.data(), signature_and_recovery_id.size() - 1};
@@ -55,13 +55,13 @@ static common::EccPublicKey recover_and_verify(ByteView data, ByteView signature
     secp256k1_ecdsa_recoverable_signature signature;
     bool ok = ctx.parse_recoverable_signature(&signature, signature_data, recovery_id);
     if (!ok) {
-        throw std::runtime_error("Failed to parse an AuthMessage signature");
+        throw std::runtime_error("rlpx::auth::recover_and_verify: failed to parse an AuthMessage signature");
     }
 
     secp256k1_pubkey public_key;
     ok = ctx.recover_signature_public_key(&public_key, &signature, data);
     if (!ok) {
-        throw std::runtime_error("Failed to recover a public key from an AuthMessage signature");
+        throw std::runtime_error("rlpx::auth::recover_and_verify: failed to recover a public key from an AuthMessage signature");
     }
     return common::EccPublicKey{Bytes{public_key.data, sizeof(public_key.data)}};
 }
@@ -95,7 +95,7 @@ AuthMessage::AuthMessage(ByteView data, const common::EccKeyPair& recipient_key_
     Bytes shared_secret = EciesCipher::compute_shared_secret(initiator_public_key_, recipient_private_key);
 
     if (shared_secret.size() != nonce_.size())
-        throw std::runtime_error("AuthMessage: invalid nonce size");
+        throw std::runtime_error("rlpx::auth::AuthMessage: invalid nonce size");
 
     // shared_secret ^= nonce_
     crypto::xor_bytes(shared_secret, nonce_);

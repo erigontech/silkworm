@@ -48,7 +48,7 @@ EccPublicKey EccPublicKey::deserialize_std(ByteView serialized_data) {
     secp256k1_pubkey public_key;
     bool ok = ctx.parse_public_key(&public_key, serialized_data);
     if (!ok) {
-        throw std::runtime_error("Failed to parse a public key");
+        throw std::runtime_error("EccPublicKey::deserialize_std failed to parse a public key");
     }
     return EccPublicKey{Bytes{public_key.data, sizeof(public_key.data)}};
 }
@@ -64,7 +64,7 @@ EccPublicKey EccPublicKey::deserialize(ByteView serialized_data) {
 EccPublicKey EccPublicKey::deserialize_hex(std::string_view hex) {
     auto data_opt = ::silkworm::from_hex(hex);
     if (!data_opt)
-        throw std::runtime_error("Failed to parse a hex public key");
+        throw std::runtime_error("EccPublicKey::deserialize_hex failed to parse a hex public key");
     return deserialize(data_opt.value());
 }
 

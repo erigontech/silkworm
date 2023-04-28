@@ -42,7 +42,7 @@ NodeKey NodeKeyConfig::load() const {
 
     auto data = from_hex(contents);
     if (!data)
-        throw runtime_error("Failed to parse a hex string in the node key file");
+        throw runtime_error("NodeKeyConfig::load failed to parse a hex string in the node key file");
 
     return common::EccKeyPair{data.value()};
 }

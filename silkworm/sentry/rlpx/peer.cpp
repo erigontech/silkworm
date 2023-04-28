@@ -71,7 +71,7 @@ Peer::Peer(
 }
 
 Peer::~Peer() {
-    log::Debug() << "silkworm::sentry::rlpx::Peer::~Peer";
+    log::Debug("sentry") << "silkworm::sentry::rlpx::Peer::~Peer";
 }
 
 awaitable<void> Peer::start(std::shared_ptr<Peer> peer) {
@@ -93,7 +93,7 @@ static const std::chrono::milliseconds kPeerPingInterval = 15s;
 
 class PingTimeoutError : public std::runtime_error {
   public:
-    PingTimeoutError() : std::runtime_error("Peer ping timed out") {}
+    PingTimeoutError() : std::runtime_error("rlpx::Peer ping timed out") {}
 };
 
 awaitable<void> Peer::handle(std::shared_ptr<Peer> peer) {
@@ -104,7 +104,7 @@ awaitable<void> Peer::handle() {
     using namespace concurrency::awaitable_wait_for_all;
     using namespace concurrency::awaitable_wait_for_one;
 
-    log::Debug() << "Peer::handle";
+    log::Debug("sentry") << "Peer::handle";
     auto _ = gsl::finally([this] {
         this->handshake_promise_.set_value(false);
         this->close();
@@ -115,7 +115,7 @@ awaitable<void> Peer::handle() {
 
         co_await message_stream.send(protocol_->first_message());
         auto first_message = co_await message_stream.receive();
-        log::Debug() << "Peer::handle first_message: " << int(first_message.id);
+        log::Debug("sentry") << "Peer::handle first_message: " << int(first_message.id);
 
         bool is_incompatible = false;
         try {
@@ -125,7 +125,7 @@ awaitable<void> Peer::handle() {
         }
 
         if (is_incompatible) {
-            log::Debug() << "Peer::handle IncompatiblePeerError";
+            log::Debug("sentry") << "Peer::handle IncompatiblePeerError";
             co_await (message_stream.send(DisconnectMessage{DisconnectReason::UselessPeer}.to_message()) ||
                       common::Timeout::after(kPeerDisconnectTimeout));
             co_return;
@@ -155,14 +155,14 @@ awaitable<void> Peer::handle() {
         }
 
         if (is_disconnecting) {
-            log::Debug() << "Peer::handle disconnecting";
+            log::Debug("sentry") << "Peer::handle disconnecting";
             auto reason = disconnect_reason_.get().value_or(DisconnectReason::DisconnectRequested);
             co_await (message_stream.send(DisconnectMessage{reason}.to_message()) ||
                       common::Timeout::after(kPeerDisconnectTimeout));
         }
 
         if (is_cancelled) {
-            log::Debug() << "Peer::handle cancelled - quitting gracefully";
+            log::Debug("sentry") << "Peer::handle cancelled - quitting gracefully";
             co_await boost::asio::this_coro::reset_cancellation_state();
             co_await (message_stream.send(DisconnectMessage{DisconnectReason::ClientQuitting}.to_message()) ||
                       common::Timeout::after(kPeerDisconnectTimeout));
@@ -170,27 +170,27 @@ awaitable<void> Peer::handle() {
         }
 
         if (is_ping_timed_out) {
-            log::Debug() << "Peer::handle ping timed out";
+            log::Debug("sentry") << "Peer::handle ping timed out";
             co_await (message_stream.send(DisconnectMessage{DisconnectReason::PingTimeout}.to_message()) ||
                       common::Timeout::after(kPeerDisconnectTimeout));
         }
 
     } catch (const auth::Handshake::DisconnectError&) {
-        log::Debug() << "Peer::handle DisconnectError";
+        log::Debug("sentry") << "Peer::handle DisconnectError";
     } catch (const common::Timeout::ExpiredError&) {
-        log::Debug() << "Peer::handle timeout expired";
+        log::Debug("sentry") << "Peer::handle timeout expired";
     } catch (const boost::system::system_error& ex) {
         if (is_fatal_network_error(ex)) {
-            log::Debug() << "Peer::handle network error: " << ex.what();
+            log::Debug("sentry") << "Peer::handle network error: " << ex.what();
             co_return;
         } else if (ex.code() == boost::system::errc::operation_canceled) {
-            log::Debug() << "Peer::handle cancelled";
+            log::Debug("sentry") << "Peer::handle cancelled";
             co_return;
         }
-        log::Error() << "Peer::handle system_error: " << ex.what();
+        log::Error("sentry") << "Peer::handle system_error: " << ex.what();
         throw;
     } catch (const std::exception& ex) {
-        log::Error() << "Peer::handle exception: " << ex.what();
+        log::Error("sentry") << "Peer::handle exception: " << ex.what();
         throw;
     }
 }
@@ -206,7 +206,7 @@ awaitable<void> Peer::drop_in_strand(std::shared_ptr<Peer> self, DisconnectReaso
 awaitable<void> Peer::drop(DisconnectReason reason) {
     using namespace concurrency::awaitable_wait_for_one;
 
-    log::Debug() << "Peer::drop reason " << static_cast<int>(reason);
+    log::Debug("sentry") << "Peer::drop reason " << static_cast<int>(reason);
     auto _ = gsl::finally([this] { this->close(); });
 
     try {
@@ -214,27 +214,27 @@ awaitable<void> Peer::drop(DisconnectReason reason) {
         co_await (message_stream.send(DisconnectMessage{reason}.to_message()) ||
                   common::Timeout::after(kPeerDisconnectTimeout));
     } catch (const auth::Handshake::DisconnectError&) {
-        log::Debug() << "Peer::drop DisconnectError";
+        log::Debug("sentry") << "Peer::drop DisconnectError";
     } catch (const common::Timeout::ExpiredError&) {
-        log::Debug() << "Peer::drop timeout expired";
+        log::Debug("sentry") << "Peer::drop timeout expired";
     } catch (const boost::system::system_error& ex) {
         if (is_fatal_network_error(ex)) {
-            log::Debug() << "Peer::drop network error: " << ex.what();
+            log::Debug("sentry") << "Peer::drop network error: " << ex.what();
             co_return;
         } else if (ex.code() == boost::system::errc::operation_canceled) {
-            log::Debug() << "Peer::drop cancelled";
+            log::Debug("sentry") << "Peer::drop cancelled";
             co_return;
         }
-        log::Error() << "Peer::drop system_error: " << ex.what();
+        log::Error("sentry") << "Peer::drop system_error: " << ex.what();
         throw;
     } catch (const std::exception& ex) {
-        log::Error() << "Peer::drop exception: " << ex.what();
+        log::Error("sentry") << "Peer::drop exception: " << ex.what();
         throw;
     }
 }
 
 void Peer::disconnect(DisconnectReason reason) {
-    log::Debug() << "Peer::disconnect reason " << static_cast<int>(reason);
+    log::Debug("sentry") << "Peer::disconnect reason " << static_cast<int>(reason);
     disconnect_reason_.set({reason});
     this->close();
 }
@@ -263,7 +263,7 @@ void Peer::close() {
         receive_message_channel_.close();
         pong_channel_.close();
     } catch (const std::exception& ex) {
-        log::Warning() << "Peer::close exception: " << ex.what();
+        log::Warning("sentry") << "Peer::close exception: " << ex.what();
     }
 }
 
@@ -279,16 +279,16 @@ awaitable<void> Peer::send_message(std::shared_ptr<Peer> peer, common::Message m
     try {
         co_await peer->send_message(std::move(message));
     } catch (const DisconnectedError& ex) {
-        log::Debug() << "Peer::send_message: " << ex.what();
+        log::Debug("sentry") << "Peer::send_message: " << ex.what();
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled) {
-            log::Debug() << "Peer::send_message cancelled";
+            log::Debug("sentry") << "Peer::send_message cancelled";
             co_return;
         }
-        log::Error() << "Peer::send_message system_error: " << ex.what();
+        log::Error("sentry") << "Peer::send_message system_error: " << ex.what();
         throw;
     } catch (const std::exception& ex) {
-        log::Error() << "Peer::send_message exception: " << ex.what();
+        log::Error("sentry") << "Peer::send_message exception: " << ex.what();
         throw;
     }
 }

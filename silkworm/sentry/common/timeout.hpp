@@ -32,7 +32,7 @@ class Timeout {
     Timeout(const Timeout&) = delete;
     Timeout& operator=(const Timeout&) = delete;
 
-    boost::asio::awaitable<void> schedule() const;
+    [[nodiscard]] boost::asio::awaitable<void> schedule() const;
     boost::asio::awaitable<void> operator()() const { return schedule(); }
 
     static boost::asio::awaitable<void> after(std::chrono::milliseconds duration) {

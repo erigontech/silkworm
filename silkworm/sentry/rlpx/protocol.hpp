@@ -33,7 +33,7 @@ struct Protocol {
 
     class IncompatiblePeerError : public std::runtime_error {
       public:
-        IncompatiblePeerError() : std::runtime_error("Protocol: incompatible peer") {}
+        IncompatiblePeerError() : std::runtime_error("rlpx::Protocol: incompatible peer") {}
     };
 };
 

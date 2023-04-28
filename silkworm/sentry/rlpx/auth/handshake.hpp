@@ -60,7 +60,7 @@ class Handshake {
 
     class DisconnectError : public std::runtime_error {
       public:
-        DisconnectError() : std::runtime_error("Handshake: Disconnect received") {}
+        DisconnectError() : std::runtime_error("rlpx::auth::Handshake: Disconnect received") {}
     };
 
   private:

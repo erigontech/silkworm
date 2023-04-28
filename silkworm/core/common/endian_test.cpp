@@ -16,6 +16,8 @@
 
 #include "endian.hpp"
 
+#include <bit>
+
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/util.hpp>
@@ -94,7 +96,7 @@ TEST_CASE("Block as key and compact form") {
         // Check the sequence of bytes in memory
         ByteView block_number_view(reinterpret_cast<uint8_t*>(&block_number), sizeof(uint64_t));
 
-        if constexpr (intx::byte_order_is_little_endian) {
+        if constexpr (std::endian::native == std::endian::little) {
             // Check we've switched to native endianness
             CHECK(to_hex(block_number_view) == block_number_hex_rev);
         } else {
@@ -108,7 +110,7 @@ TEST_CASE("Block as key and compact form") {
         // Check data value is byte swapped if endianness requires
         auto block_number_from_key{*reinterpret_cast<uint64_t*>(block_number_as_key)};
 
-        if constexpr (intx::byte_order_is_little_endian) {
+        if constexpr (std::endian::native == std::endian::little) {
             CHECK(block_number_from_key != block_number);
         } else {
             CHECK(block_number_from_key == block_number);

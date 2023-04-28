@@ -137,7 +137,7 @@ tl::expected<Account, DecodingError> Account::from_encoded_storage(ByteView enco
                     std::memcpy(a.code_hash.bytes, &encoded_value[0], kHashLength);
                     break;
                 default:
-                    len = 0;  // TODO(C++23) std::unreachable();
+                    intx::unreachable();
             }
             pos += len;
         }
@@ -172,12 +172,12 @@ tl::expected<uint64_t, DecodingError> Account::incarnation_from_encoded_storage(
                     }
                     return incarnation;
                 default:
-                    len = 0;  // TODO(C++23) std::unreachable();
+                    intx::unreachable();
             }
             pos += len;
         }
     }
-    return incarnation;  // TODO(C++23) std::unreachable();
+    intx::unreachable();
 }
 
 Bytes Account::rlp(const evmc::bytes32& storage_root) const {

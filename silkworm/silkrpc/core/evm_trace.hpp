@@ -136,7 +136,8 @@ class VmTraceTracer : public silkworm::EvmTracer {
     VmTraceTracer& operator=(const VmTraceTracer&) = delete;
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
-    void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height, const evmone::ExecutionState& execution_state,
+    void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height,
+                              int64_t gas, const evmone::ExecutionState& execution_state,
                               const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_precompiled_run(const evmc_result& result, int64_t gas, const silkworm::IntraBlockState& intra_block_state) noexcept override;
@@ -216,7 +217,8 @@ class TraceTracer : public silkworm::EvmTracer {
     TraceTracer& operator=(const TraceTracer&) = delete;
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
-    void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height, const evmone::ExecutionState& execution_state,
+    void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height,
+                              int64_t gas, const evmone::ExecutionState& execution_state,
                               const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
@@ -286,7 +288,8 @@ class StateDiffTracer : public silkworm::EvmTracer {
     StateDiffTracer& operator=(const StateDiffTracer&) = delete;
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
-    void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height, const evmone::ExecutionState& execution_state,
+    void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height,
+                              int64_t gas, const evmone::ExecutionState& execution_state,
                               const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
@@ -332,7 +335,8 @@ class IntraBlockStateTracer : public silkworm::EvmTracer {
 
     void on_execution_start(evmc_revision /*rev*/, const evmc_message& /*msg*/, evmone::bytes_view /*code*/) noexcept override {}
     void on_instruction_start(uint32_t /*pc*/, const intx::uint256* /*stack_top*/, int /*stack_height*/,
-                              const evmone::ExecutionState& /*execution_state*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+                              int64_t /*gas*/, const evmone::ExecutionState& /*execution_state*/,
+                              const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_execution_end(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_reward_granted(const silkworm::CallResult& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;

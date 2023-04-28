@@ -15,9 +15,9 @@
 ]]
 
 if(MSVC)
-  add_link_options(/STACK:10000000)
+  add_link_options(/STACK:${SILKWORM_STACK_SIZE})
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  add_link_options(-Wl,-stack_size -Wl,0x1000000)
+  add_link_options(-Wl,-stack_size -Wl,${SILKWORM_STACK_SIZE})
 endif()
 
 if(NOT SILKWORM_CORE_ONLY)

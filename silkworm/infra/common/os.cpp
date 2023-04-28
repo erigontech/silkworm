@@ -67,4 +67,14 @@ bool set_max_file_descriptors(uint64_t max_descriptors) {
 #endif
 }
 
+std::size_t page_size() noexcept {
+#ifdef _WIN32
+    SYSTEM_INFO system_info;
+    ::GetSystemInfo(&system_info);
+    return static_cast<std::size_t>(system_info.dwPageSize);
+#else
+    return static_cast<std::size_t>(::getpagesize());
+#endif  // _WIN32
+}
+
 }  // namespace silkworm::os

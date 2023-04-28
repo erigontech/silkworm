@@ -29,6 +29,7 @@
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/common/mem_usage.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/common/os.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/async_thread.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
@@ -37,7 +38,6 @@
 #include <silkworm/infra/grpc/server/server_context_pool.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
-#include <silkworm/node/common/os.hpp>
 #include <silkworm/node/common/settings.hpp>
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/db/stages.hpp>

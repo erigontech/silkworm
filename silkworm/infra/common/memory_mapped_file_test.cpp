@@ -25,11 +25,7 @@
 
 namespace silkworm {
 
-TEST_CASE("MemoryMappedFile::kPageSize", "[silkworm][common][memory_mapped_file]") {
-    CHECK(MemoryMappedFile::kPageSize >= 4096);
-}
-
-TEST_CASE("MemoryMappedFile", "[silkworm][common][memory_mapped_file]") {
+TEST_CASE("MemoryMappedFile", "[silkworm][infra][common][memory_mapped_file]") {
     SECTION("constructor fails for nonexistent file") {
         CHECK_THROWS_AS(MemoryMappedFile{"nonexistent.txt"}, std::runtime_error);
     }
@@ -62,6 +58,7 @@ TEST_CASE("MemoryMappedFile", "[silkworm][common][memory_mapped_file]") {
     SECTION("has expected memory address and size") {
         CHECK(mmf.address() != nullptr);
         CHECK(mmf.length() == kFileContent.size());
+        CHECK(mmf.last_write_time().time_since_epoch().count() > 0);
     }
 
     SECTION("has expected content") {
@@ -77,6 +74,13 @@ TEST_CASE("MemoryMappedFile", "[silkworm][common][memory_mapped_file]") {
 
     SECTION("advise_random") {
         CHECK_NOTHROW(mmf.advise_random());
+    }
+
+    SECTION("input stream") {
+        MemoryMappedInputStream mmis{mmf.address(), mmf.length()};
+        std::string s;
+        mmis >> s;
+        CHECK(s == kFileContent);
     }
 }
 

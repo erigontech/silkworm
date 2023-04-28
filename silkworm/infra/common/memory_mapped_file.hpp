@@ -45,6 +45,8 @@
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>
+#include <istream>
+#include <streambuf>
 #include <tuple>
 
 #ifndef _WIN32
@@ -68,13 +70,10 @@ using FileDescriptor = int;
 
 class MemoryMappedFile {
   public:
-    static const std::size_t kPageSize;
-
-    explicit MemoryMappedFile(const std::filesystem::path& path, bool read_only = true);
-    explicit MemoryMappedFile(const char* path, bool read_only = true);
+    explicit MemoryMappedFile(std::filesystem::path path, bool read_only = true);
     ~MemoryMappedFile();
 
-    [[nodiscard]] const char* path() const {
+    [[nodiscard]] std::filesystem::path path() const {
         return path_;
     }
 
@@ -86,20 +85,22 @@ class MemoryMappedFile {
         return length_;
     }
 
+    [[nodiscard]] std::filesystem::file_time_type last_write_time() const {
+        return std::filesystem::last_write_time(path_);
+    }
+
     void advise_normal();
     void advise_random();
     void advise_sequential();
 
   private:
-    [[nodiscard]] static std::size_t get_page_size() noexcept;
-
     void map_existing(bool read_only);
 
     void* mmap(FileDescriptor fd, bool read_only);
     void unmap();
 
     //! The path to the file
-    const char* path_;
+    std::filesystem::path path_;
 
     //! The address of the mapped area
     uint8_t* address_{nullptr};

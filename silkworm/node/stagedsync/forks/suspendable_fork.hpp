@@ -17,10 +17,11 @@
 #pragma once
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
-#include <silkworm/infra/concurrency/awaitable_future.hpp>
 
 #include <boost/asio.hpp>
 #include <boost/asio/awaitable.hpp>
+
+#include <silkworm/infra/concurrency/awaitable_future.hpp>
 
 #include "fork.hpp"
 #include "silkworm/node/db/memory_mutation.hpp"
@@ -37,7 +38,7 @@ namespace asio = boost::asio;
 
 class ExtendingFork {
   public:
-    explicit ExtendingFork(BlockId forking_point, NodeSettings&, MainChain&);
+    explicit ExtendingFork(BlockId forking_point, MainChain&, asio::io_context&);
     ExtendingFork(const ExtendingFork&) = delete;
     ExtendingFork(ExtendingFork&& orig) noexcept;
 
@@ -57,7 +58,8 @@ class ExtendingFork {
   protected:
     db::MemoryDatabase memory_db_;
     Fork fork_;
-    asio::io_context io_context_;
+    asio::io_context& io_context_;  // for io
+    asio::any_io_executor executor_;   // for pipeline execution
 
     // cached values provided to avoid thread synchronization
     BlockId current_head_{};

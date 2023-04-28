@@ -40,7 +40,7 @@ class PayloadValidationError : public std::logic_error {
 PoSSync::PoSSync(BlockExchange& be, stagedsync::ExecutionEngine& ee)
     : block_exchange_{be},
       exec_engine_{ee},
-      chain_fork_view_{ee.get_canonical_head(), ee} {
+      chain_fork_view_{ee.get_canonical_head()} {
     // BlockExchange need a starting point to start downloading from
     block_exchange_.initial_state(exec_engine_.get_last_headers(65536));
 }

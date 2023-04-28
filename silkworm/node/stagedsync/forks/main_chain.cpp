@@ -32,8 +32,9 @@ static void ensure_invariant(bool condition, const std::string& message) {
     }
 }
 
-MainChain::MainChain(NodeSettings& ns, const db::RWAccess dba)
-    : node_settings_{ns},
+MainChain::MainChain(asio::io_context& ctx, NodeSettings& ns, const db::RWAccess dba)
+    : io_context_{ctx},
+      node_settings_{ns},
       db_access_{dba},
       tx_{db_access_.start_rw_tx()},
       pipeline_{&ns},
@@ -202,7 +203,11 @@ std::set<Hash> MainChain::collect_bad_headers(db::RWTxn& tx, InvalidChain& inval
 }
 
 auto MainChain::fork(BlockId forking_point) -> ExtendingFork {
-    return ExtendingFork{forking_point, node_settings_, *this};
+    return ExtendingFork{forking_point, *this, io_context_};
+}
+
+auto MainChain::node_settings() -> NodeSettings& {
+    return node_settings_;
 }
 
 auto MainChain::get_header(Hash header_hash) const -> std::optional<BlockHeader> {

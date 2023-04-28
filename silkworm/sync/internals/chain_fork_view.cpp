@@ -22,8 +22,7 @@
 
 namespace silkworm::chainsync {
 
-ChainForkView::ChainForkView(ChainHead head, stagedsync::ExecutionEngine& ee)
-    : initial_head_{head}, exec_engine_{ee}, td_cache_{kCacheSize} {
+ChainForkView::ChainForkView(ChainHead head) : initial_head_{head}, td_cache_{kCacheSize} {
     current_head_ = initial_head_;
 }
 
@@ -42,10 +41,8 @@ TotalDifficulty ChainForkView::add(const BlockHeader& header) {  // try to modul
     Hash hash = header.hash();
 
     // Calculate total difficulty
-    auto parent_td = td_cache_.get_as_copy(header.parent_hash);  // find in cache
-    if (!parent_td)
-        parent_td = exec_engine_.get_header_td(height - 1, header.parent_hash);  // ask execution engine
-    if (!parent_td) {                                                            /* clang-format off */
+    auto parent_td = get_total_difficulty(height - 1, header.parent_hash);  // search in cache, then ask execution engine
+    if (!parent_td) {                                                       /* clang-format off */
         std::string error_message = "Consensus: parent's total difficulty not found on Execution,"
             " hash= " + to_hex(header.parent_hash) +
             " height= " + std::to_string(height - 1) +
@@ -67,6 +64,13 @@ TotalDifficulty ChainForkView::add(const BlockHeader& header) {  // try to modul
     td_cache_.put(hash, td);
 
     return td;
+}
+
+std::optional<TotalDifficulty> ChainForkView::get_total_difficulty(BlockNum height, const Hash& hash) {
+    auto parent_td = td_cache_.get_as_copy(hash);  // find in cache
+    if (!parent_td) //parent_td = db.get_header_td(height, hash);
+        parent_td = 0; // todo: implement total difficulty save/load from db #########################################
+    return parent_td;
 }
 
 }  // namespace silkworm::chainsync

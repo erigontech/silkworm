@@ -39,13 +39,12 @@ static void ensure(bool condition, const std::string& message) {
     }
 }
 
-Fork::Fork(BlockId forking_point, NodeSettings& ns, MainChain& main_chain, db::MemoryDatabase& db)
-    : node_settings_{ns},
-      main_chain_{main_chain},
+Fork::Fork(BlockId forking_point, MainChain& main_chain, db::MemoryDatabase& db)
+    : main_chain_{main_chain},
       main_txn_{main_chain_.db_access_.start_ro_tx()},
       overlay_{db, main_txn_},
       tx_{overlay_},
-      pipeline_{&ns},
+      pipeline_{&(main_chain.node_settings())},
       canonical_chain_(tx_) {
     // setting forking point
     if (canonical_chain_.initial_head() != forking_point) {
@@ -58,12 +57,11 @@ Fork::Fork(BlockId forking_point, NodeSettings& ns, MainChain& main_chain, db::M
 }
 
 Fork::Fork(Fork&& orig) noexcept
-    : node_settings_{orig.node_settings_},
-      main_chain_{orig.main_chain_},
+    : main_chain_{orig.main_chain_},
       main_txn_{std::move(orig.main_txn_)},
       overlay_{std::move(orig.overlay_)},
       tx_{std::move(orig.tx_)},
-      pipeline_{&orig.node_settings_},  // warning: pipeline is not movable, we build a new one here
+      pipeline_{&(main_chain_.node_settings())},  // warning: pipeline is not movable, we build a new one here
       canonical_chain_{std::move(orig.canonical_chain_)},
       current_head_{std::move(orig.current_head_)},
       last_verified_head_{std::move(orig.last_verified_head_)},

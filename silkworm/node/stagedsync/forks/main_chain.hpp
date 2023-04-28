@@ -22,6 +22,8 @@
 #include <variant>
 #include <vector>
 
+#include <boost/asio.hpp>
+
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
@@ -35,12 +37,14 @@
 
 namespace silkworm::stagedsync {
 
+namespace asio = boost::asio;
+
 class Fork;
 class ExtendingFork;
 
 class MainChain {
   public:
-    explicit MainChain(NodeSettings&, db::RWAccess);
+    explicit MainChain(asio::io_context&, NodeSettings&, db::RWAccess);
     MainChain(MainChain&&);
 
     // extension
@@ -48,7 +52,7 @@ class MainChain {
 
     // branching
     auto fork(BlockId forking_point) -> ExtendingFork;  // fort at the current head
-    void reintegrate_fork(ExtendingFork&& fork);  // reintegrate fork into the main chain changing the head
+    void reintegrate_fork(ExtendingFork&& fork);        // reintegrate fork into the main chain changing the head
     auto find_forking_point(const BlockHeader& header) const -> std::optional<BlockId>;
     auto find_forking_point(const Hash& header_hash) const -> std::optional<BlockId>;
 
@@ -73,6 +77,7 @@ class MainChain {
     auto is_ancestor(BlockId supposed_parent, BlockId block) const -> bool;
     auto is_ancestor(Hash supposed_parent, BlockId block) const -> bool;
 
+    NodeSettings& node_settings();
     friend Fork;
 
   protected:
@@ -81,6 +86,7 @@ class MainChain {
 
     std::set<Hash> collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain);
 
+    asio::io_context& io_context_;
     NodeSettings& node_settings_;
     db::RWAccess db_access_;
     mutable db::RWTxn tx_;

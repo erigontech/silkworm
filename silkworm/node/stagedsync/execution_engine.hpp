@@ -42,17 +42,19 @@ namespace silkworm::stagedsync {
 
 namespace asio = boost::asio;
 
+#define ERIGON_API
+
 class ExecutionEngine : public Stoppable {
   public:
-    explicit ExecutionEngine(NodeSettings&, db::RWAccess);
+    explicit ExecutionEngine(asio::io_context&, NodeSettings&, db::RWAccess);
 
     // actions
-    auto insert_blocks(std::vector<std::shared_ptr<Block>>& blocks) -> asio::awaitable<void>;
-    auto insert_block(std::shared_ptr<Block> block) -> asio::awaitable<void>;
+    ERIGON_API auto insert_blocks(std::vector<std::shared_ptr<Block>>& blocks) -> asio::awaitable<void>;
+    ERIGON_API auto insert_block(std::shared_ptr<Block> block) -> asio::awaitable<void>;
 
-    auto verify_chain(Hash head_block_hash) -> concurrency::AwaitableFuture<VerificationResult>;
+    ERIGON_API auto verify_chain(Hash head_block_hash) -> concurrency::AwaitableFuture<VerificationResult>;
 
-    auto notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt)
+    ERIGON_API auto notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt)
         -> asio::awaitable<bool>;
 
     // state
@@ -60,11 +62,14 @@ class ExecutionEngine : public Stoppable {
     auto last_fork_choice() const -> std::optional<BlockId>;
 
     // header/body retrieval
+    ERIGON_API auto get_header(BlockNum, Hash) const -> std::optional<BlockHeader>;
+    ERIGON_API auto get_body(BlockNum, Hash) const -> std::optional<BlockBody>;
+    ERIGON_API bool is_canonical_hash(Hash) const;
+    ERIGON_API auto get_block_number(Hash) const -> std::optional<BlockNum>;
+
     auto get_block_progress() const -> BlockNum;
 
-    // TO REMOVE OR REWORK ############################
     auto get_header(Hash) const -> std::optional<BlockHeader>;
-    auto get_header(BlockNum, Hash) const -> std::optional<BlockHeader>;
     auto get_canonical_head() const -> ChainHead;
     auto get_canonical_hash(BlockNum) const -> std::optional<Hash>;
     auto get_header_td(BlockNum, Hash) const -> std::optional<TotalDifficulty>;
@@ -74,7 +79,7 @@ class ExecutionEngine : public Stoppable {
     auto extends(BlockId block, BlockId supposed_parent) const -> bool;
     auto is_ancestor(BlockId supposed_parent, BlockId block) const -> bool;
     auto is_ancestor(Hash supposed_parent, BlockId block) const -> bool;
-    // ################################################
+
   protected:
     struct ForkingPath {
         BlockId forking_point;
@@ -84,6 +89,7 @@ class ExecutionEngine : public Stoppable {
     auto find_forking_point(const BlockHeader& header) const -> std::optional<ForkingPath>;
     void discard_all_forks_except(ExtendingFork& fork);
 
+    asio::io_context& io_context_;
     NodeSettings& node_settings_;
     db::RWAccess db_access_;
     db::RWTxn tx_;
@@ -98,7 +104,6 @@ class ExecutionEngine : public Stoppable {
     bool fork_tracking_active_{false};
     BlockId last_finalized_block_;
     std::optional<BlockId> last_fork_choice_;
-
 };
 
 }  // namespace silkworm::stagedsync

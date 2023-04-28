@@ -32,11 +32,12 @@ static void ensure_invariant(bool condition, const std::string& message) {
     }
 }
 
-ExecutionEngine::ExecutionEngine(NodeSettings& ns, db::RWAccess dba)
-    : node_settings_{ns},
+ExecutionEngine::ExecutionEngine(asio::io_context& ctx, NodeSettings& ns, db::RWAccess dba)
+    : io_context_{ctx},
+      node_settings_{ns},
       db_access_{dba},
       tx_{db_access_.start_rw_tx()},
-      main_chain_(ns, dba),
+      main_chain_(ctx, ns, dba),
       block_cache_{kDefaultCacheSize} {
     // To initialize canonical_head_status_ & last_fork_choice_ we need to call verify_chain(). Enable?
     // verify_chain(canonical_chain_.current_head().hash);

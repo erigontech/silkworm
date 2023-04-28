@@ -62,7 +62,7 @@ eth::StatusData status_data_from_proto(const proto::StatusData& data, uint8_t et
 
 static proto::Forks make_proto_forks(ByteView genesis_hash, const std::vector<BlockNum>& fork_block_numbers) {
     proto::Forks forks;
-    forks.mutable_genesis()->CopyFrom(*H512_from_bytes(genesis_hash));
+    forks.mutable_genesis()->CopyFrom(*H256_from_bytes(genesis_hash));
 
     for (auto block_number : fork_block_numbers) {
         forks.add_height_forks(block_number);

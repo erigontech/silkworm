@@ -28,13 +28,13 @@
 
 #include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/infra/concurrency/event_notifier.hpp>
+#include <silkworm/infra/concurrency/task_group.hpp>
 #include <silkworm/sentry/api/api_common/peer_event.hpp>
 #include <silkworm/sentry/api/api_common/peer_info.hpp>
 #include <silkworm/sentry/api/router/peer_call.hpp>
 #include <silkworm/sentry/api/router/peer_events_call.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/promise.hpp>
-#include <silkworm/sentry/common/task_group.hpp>
 
 #include "peer_manager.hpp"
 #include "rlpx/peer.hpp"
@@ -109,7 +109,7 @@ class PeerManagerApi : public PeerManagerObserver {
 
     std::list<Subscription> events_subscriptions_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
-    common::TaskGroup events_unsubscription_tasks_;
+    concurrency::TaskGroup events_unsubscription_tasks_;
     Channel<api::api_common::PeerEvent> peer_events_channel_;
 };
 

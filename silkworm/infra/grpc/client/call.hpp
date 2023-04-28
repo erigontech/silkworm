@@ -84,7 +84,6 @@ boost::asio::awaitable<void> streaming_rpc(
     std::function<boost::asio::awaitable<void>(Response)> consumer,
     const std::string& error_message = "") {
     grpc::ClientContext client_context;
-    client_context.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(10));
 
     std::unique_ptr<grpc::ClientAsyncReader<Response>> reader;
     bool ok = co_await agrpc::request(

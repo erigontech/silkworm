@@ -42,9 +42,7 @@ Threading model:
 Directories:
 
 - downloader: contains the main classes that are exposed outside
-- rpc & packets: contains the code that wraps the gRPC interface with the Sentry
-  - rpc: each class embodies a remote procedure call of the Sentry interface
-  - packets: each class is a data packet that can be sent or received via one rpc
+- packets: each class is an eth data packet that can be sent or received via sentry
 - messages: divided in inbound messages and outbound messages
   - inbound msgs: modularize the code to handle incoming packets
   - outbound msgs: modularize the code that makes requests generating outgoing packets

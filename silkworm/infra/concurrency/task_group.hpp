@@ -30,7 +30,7 @@
 
 #include <silkworm/infra/concurrency/channel.hpp>
 
-namespace silkworm::sentry::common {
+namespace silkworm::concurrency {
 
 class TaskGroup {
   public:
@@ -73,4 +73,4 @@ class TaskGroup {
     concurrency::Channel<std::size_t> completions_;
 };
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::concurrency

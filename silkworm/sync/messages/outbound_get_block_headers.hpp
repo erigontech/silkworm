@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include <silkworm/sync/packets/get_block_headers_packet.hpp>
 
 #include "outbound_message.hpp"
@@ -24,20 +26,26 @@ namespace silkworm {
 
 class OutboundGetBlockHeaders : public OutboundMessage {
   public:
-    OutboundGetBlockHeaders();
+    OutboundGetBlockHeaders() = default;
+    explicit OutboundGetBlockHeaders(GetBlockHeadersPacket66 packet) : packet_(packet) {}
 
-    std::string name() const override { return "OutboundGetBlockHeaders"; }
-    std::string content() const override;
+    [[nodiscard]] std::string name() const override { return "OutboundGetBlockHeaders"; }
+    [[nodiscard]] std::string content() const override;
 
     void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override;
 
+    [[nodiscard]] silkworm::sentry::eth::MessageId eth_message_id() const override {
+        return silkworm::sentry::eth::MessageId::kGetBlockHeaders;
+    }
+
+    [[nodiscard]] Bytes message_data() const override;
+
     GetBlockHeadersPacket66& packet();
     std::vector<PeerPenalization>& penalties();
-    bool packet_present() const;
+    [[nodiscard]] bool packet_present() const;
 
   private:
-    ::sentry::SentPeers send_packet(SentryClient&, seconds_t timeout);
-    void send_penalization(SentryClient&, const PeerPenalization&, seconds_t timeout);
+    std::vector<PeerId> send_packet(SentryClient&);
 
     GetBlockHeadersPacket66 packet_{};
     std::vector<PeerPenalization> penalizations_;

@@ -28,7 +28,7 @@
 
 #include <silkworm/infra/common/log.hpp>
 
-namespace silkworm::sentry::common {
+namespace silkworm::concurrency {
 
 using namespace boost::asio;
 
@@ -122,4 +122,4 @@ bool TaskGroup::is_completed() {
     return is_closed_ && tasks_.empty();
 }
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::concurrency

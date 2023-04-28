@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include <silkworm/sync/internals/body_sequence.hpp>
 #include <silkworm/sync/packets/new_block_packet.hpp>
 
@@ -27,20 +29,26 @@ class OutboundNewBlock : public OutboundMessage {
   public:
     OutboundNewBlock(Blocks, bool is_first_sync);
 
-    std::string name() const override { return "OutboundNewBlock"; }
-    std::string content() const override;
+    [[nodiscard]] std::string name() const override { return "OutboundNewBlock"; }
+    [[nodiscard]] std::string content() const override;
 
     void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override;
 
+    [[nodiscard]] silkworm::sentry::eth::MessageId eth_message_id() const override {
+        return silkworm::sentry::eth::MessageId::kNewBlock;
+    }
+
+    [[nodiscard]] Bytes message_data() const override;
+
   private:
-    ::sentry::SentPeers send_packet(SentryClient& sentry, const NewBlockPacket& packet, seconds_t timeout);
+    std::vector<PeerId> send_packet(SentryClient& sentry, NewBlockPacket packet);
 
     static constexpr uint64_t kMaxPeers = 1024;
 
     long sent_packets_{0};
     Blocks blocks_to_announce_;
     bool is_first_sync_;
-    // NewBlockPacket packet_;
+    NewBlockPacket packet_;
 };
 
 }  // namespace silkworm

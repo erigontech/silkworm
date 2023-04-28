@@ -18,15 +18,19 @@
 
 #include <chrono>
 
+#include <boost/signals2.hpp>
+
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/sync/internals/random_number.hpp>
 #include <silkworm/sync/messages/inbound_message.hpp>
 #include <silkworm/sync/messages/internal_message.hpp>
-#include <silkworm/sync/rpc/penalize_peer.hpp>
+#include <silkworm/sync/sentry_client.hpp>
 
 namespace silkworm {
+
+using silkworm::sentry::api::api_common::MessageFromPeer;
 
 BlockExchange::BlockExchange(SentryClient& sentry, const db::ROAccess& dba, const ChainConfig& chain_config)
     : db_access_{dba},
@@ -49,26 +53,15 @@ BlockNum BlockExchange::current_height() const { return current_height_; }
 
 void BlockExchange::accept(std::shared_ptr<Message> message) {
     statistics_.internal_msgs++;
-    messages_.push(message);
+    messages_.push(std::move(message));
 }
 
-void BlockExchange::receive_message(const sentry::InboundMessage& raw_message) {
-    try {
-        statistics_.received_msgs++;
-        statistics_.received_bytes += raw_message.ByteSizeLong();
+void BlockExchange::receive_message(std::shared_ptr<InboundMessage> message) {
+    statistics_.received_msgs++;
 
-        auto message = InboundMessage::make(raw_message);
+    SILK_TRACE << "BlockExchange received message " << *message;
 
-        SILK_TRACE << "BlockExchange received message " << *message;
-
-        messages_.push(message);
-    } catch (DecodingException& error) {
-        PeerId peer_id = bytes_from_H512(raw_message.peer_id()); /* clang-format off */
-        log::Warning("BlockExchange") << "received and ignored a malformed message, peer= " << human_readable_id(peer_id)
-            << ", msg-id= " << raw_message.id() << "/" << sentry::MessageId_Name(raw_message.id()) << " - " << error.what();
-        send_penalization(peer_id, BadBlockPenalty);
-        statistics_.malformed_msgs++;
-    }
+    messages_.push(std::move(message));
 }
 
 void BlockExchange::execution_loop() {
@@ -76,17 +69,25 @@ void BlockExchange::execution_loop() {
     using namespace std::chrono_literals;
     log::set_thread_name("block-exchange");
 
-    auto announcement_receiving_callback = [this](const sentry::InboundMessage& msg) {
+    auto announcement_receiving_callback = [this](std::shared_ptr<InboundMessage> msg) {
         statistics_.nonsolic_msgs++;
-        receive_message(msg);
+        receive_message(std::move(msg));
     };
-    auto response_receiving_callback = [this](const sentry::InboundMessage& msg) {
-        receive_message(msg);
+    auto response_receiving_callback = [this](std::shared_ptr<InboundMessage> msg) {
+        receive_message(std::move(msg));
+    };
+    auto sentry_received_message_size_callback = [this](size_t message_size) {
+        statistics_.received_bytes += message_size;
+    };
+    auto sentry_malformed_message_callback = [this]() {
+        statistics_.malformed_msgs++;
     };
 
     try {
         boost::signals2::scoped_connection c1(sentry_.announcements_subscription.connect(announcement_receiving_callback));
         boost::signals2::scoped_connection c2(sentry_.requests_subscription.connect(response_receiving_callback));
+        boost::signals2::scoped_connection c3(sentry_.received_message_size_subscription.connect(sentry_received_message_size_callback));
+        boost::signals2::scoped_connection c4(sentry_.malformed_message_subscription.connect(sentry_malformed_message_callback));
 
         time_point_t last_update = system_clock::now();
 
@@ -124,7 +125,7 @@ void BlockExchange::execution_loop() {
             request_bodies(now, room_for_new_requests);  // if headers do not used all the room we use it for body requests
 
             // todo: check if it is better to apply a policy based on the current sync status
-            // for example: if (header_chain_.current_heigth() - body_sequence_.current_heigth() > stride) { ... }
+            // for example: if (header_chain_.current_height() - body_sequence_.current_height() > stride) { ... }
 
             // collect downloaded headers & bodies
             collect_headers();
@@ -256,14 +257,6 @@ void BlockExchange::log_status() {
     prev_statistic.inaccurate_copy(statistics_);  // save values
 }
 
-void BlockExchange::send_penalization(PeerId id, Penalty p) noexcept {
-    rpc::PenalizePeer penalize_peer(id, p);
-    penalize_peer.do_not_throw_on_failure();
-    penalize_peer.timeout(kRpcTimeout);
-
-    sentry_.exec_remotely(penalize_peer);
-}
-
 void BlockExchange::initial_state(std::vector<BlockHeader> last_headers) {
     auto message = std::make_shared<InternalMessage<void>>(
         [h = std::move(last_headers)](HeaderChain& hc, BodySequence&) {
@@ -290,8 +283,7 @@ void BlockExchange::stop_downloading() {
     downloading_active_ = false;
 }
 
-void BlockExchange::new_target_block(const Block& block)
-{
+void BlockExchange::new_target_block(const Block& block) {
     auto message = std::make_shared<InternalMessage<void>>(
         [=](HeaderChain& hc, BodySequence& bc) {
             hc.add_header(block.header, std::chrono::system_clock::now());

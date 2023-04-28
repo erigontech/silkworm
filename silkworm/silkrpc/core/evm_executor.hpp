@@ -60,7 +60,7 @@ class BaselineAnalysisCacheService : public BaseService {
     BaselineAnalysisCache* get_baseline_analysis_cache() { return &_analysis_cache; }
 
   private:
-    ObjectPool<EvmoneExecutionState> _state_pool;
+    ObjectPool<EvmoneExecutionState> _state_pool{true};
     BaselineAnalysisCache _analysis_cache{kCacheSize, true};
 };
 

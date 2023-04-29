@@ -93,6 +93,8 @@ class SessionSentryClientImpl : public api::api_common::SentryClient {
             case State::kReady:
                 return State::kReady;
         }
+        assert(false);
+        return state;
     }
 
     std::tuple<State, std::optional<Waiter>> proceed_to_next_state(Event event) {

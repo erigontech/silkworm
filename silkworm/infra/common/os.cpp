@@ -17,8 +17,12 @@
 #include "os.hpp"
 
 #if defined(__linux__) || defined(__APPLE__)
+#include <unistd.h>
+
 #include <sys/resource.h>
 #elif defined(_WIN32)
+#include <windows.h>
+
 #include <cstdio>
 #include <limits>
 #else
@@ -65,6 +69,16 @@ bool set_max_file_descriptors(uint64_t max_descriptors) {
     (void)max_descriptors;
     return false;
 #endif
+}
+
+std::size_t page_size() noexcept {
+#ifdef _WIN32
+    SYSTEM_INFO system_info;
+    ::GetSystemInfo(&system_info);
+    return static_cast<std::size_t>(system_info.dwPageSize);
+#else
+    return static_cast<std::size_t>(::getpagesize());
+#endif  // _WIN32
 }
 
 }  // namespace silkworm::os

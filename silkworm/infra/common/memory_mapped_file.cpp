@@ -20,7 +20,6 @@
 #include <windows.h>
 #else
 #include <fcntl.h>
-#include <ftw.h>
 #include <unistd.h>
 
 #include <cstring>
@@ -35,12 +34,7 @@
 
 namespace silkworm {
 
-const std::size_t MemoryMappedFile::kPageSize{MemoryMappedFile::get_page_size()};
-
-MemoryMappedFile::MemoryMappedFile(const std::filesystem::path& path, bool read_only)
-    : MemoryMappedFile(path.string().c_str(), read_only) {}
-
-MemoryMappedFile::MemoryMappedFile(const char* path, bool read_only) : path_(path) {
+MemoryMappedFile::MemoryMappedFile(std::filesystem::path path, bool read_only) : path_(std::move(path)) {
     map_existing(read_only);
 }
 
@@ -53,19 +47,12 @@ MemoryMappedFile::~MemoryMappedFile() {
 }
 
 #ifdef _WIN32
-std::size_t MemoryMappedFile::get_page_size() noexcept {
-    SYSTEM_INFO system_info;
-    ::GetSystemInfo(&system_info);
-
-    return static_cast<std::size_t>(system_info.dwPageSize);
-}
-
 void MemoryMappedFile::map_existing(bool read_only) {
     DWORD desired_access = read_only ? GENERIC_READ : (GENERIC_READ | GENERIC_WRITE);
     DWORD shared_mode = FILE_SHARE_READ | FILE_SHARE_WRITE;
     FileDescriptor fd = {};
     fd = ::CreateFile(
-        path_,
+        path_.string().c_str(),
         desired_access,
         shared_mode,
         nullptr,
@@ -74,17 +61,12 @@ void MemoryMappedFile::map_existing(bool read_only) {
         nullptr);
 
     if (INVALID_HANDLE_VALUE == fd) {
-        throw std::runtime_error{"Failed to create existing file: " + std::string{path_} + " error: " + std::to_string(GetLastError())};
+        throw std::runtime_error{"Failed to create existing file: " + path_.string() + " error: " + std::to_string(GetLastError())};
     }
 
     auto _ = gsl::finally([fd]() { if (INVALID_HANDLE_VALUE != fd) ::CloseHandle(fd); });
 
-    LARGE_INTEGER file_size;
-    if (!::GetFileSizeEx(fd, &file_size)) {
-        throw std::runtime_error{"GetFileSizeEx failed for: " + std::string{path_} + " error: " + std::to_string(GetLastError())};
-    }
-
-    length_ = static_cast<std::size_t>(file_size.QuadPart);
+    length_ = std::filesystem::file_size(path_);
 
     address_ = static_cast<uint8_t*>(mmap(fd, read_only));
     fd = INVALID_HANDLE_VALUE;
@@ -103,7 +85,7 @@ void* MemoryMappedFile::mmap(FileDescriptor fd, bool read_only) {
     DWORD protection = static_cast<DWORD>(read_only ? PAGE_READONLY : PAGE_READWRITE);
     mapping_ = ::CreateFileMapping(fd, nullptr, protection, 0, static_cast<DWORD>(length_), nullptr);
     if (nullptr == mapping_) {
-        throw std::runtime_error{"CreateFileMapping failed for: " + std::string{path_} + " error: " + std::to_string(GetLastError())};
+        throw std::runtime_error{"CreateFileMapping failed for: " + path_.string() + " error: " + std::to_string(GetLastError())};
     }
 
     DWORD desired_access = static_cast<DWORD>(read_only ? FILE_MAP_READ : FILE_MAP_ALL_ACCESS);
@@ -130,22 +112,14 @@ void MemoryMappedFile::cleanup() {
     }
 }
 #else
-std::size_t MemoryMappedFile::get_page_size() noexcept {
-    return static_cast<std::size_t>(::getpagesize());
-}
-
 void MemoryMappedFile::map_existing(bool read_only) {
-    FileDescriptor fd = ::open(path_, read_only ? O_RDONLY : O_RDWR);
+    FileDescriptor fd = ::open(path_.c_str(), read_only ? O_RDONLY : O_RDWR);
     if (fd == -1) {
-        throw std::runtime_error{"open failed for: " + std::string{path_} + " error: " + strerror(errno)};
+        throw std::runtime_error{"open failed for: " + path_.string() + " error: " + strerror(errno)};
     }
     auto _ = gsl::finally([fd]() { ::close(fd); });
 
-    struct stat stat_buffer {};
-    if (::fstat(fd, &stat_buffer) == -1) {
-        throw std::runtime_error{"fstat failed for: " + std::string{path_} + " error: " + strerror(errno)};
-    }
-    length_ = static_cast<std::size_t>(stat_buffer.st_size);
+    length_ = std::filesystem::file_size(path_);
 
     address_ = static_cast<uint8_t*>(mmap(fd, read_only));
 }
@@ -167,7 +141,7 @@ void* MemoryMappedFile::mmap(FileDescriptor fd, bool read_only) {
 
     const auto address = ::mmap(nullptr, length_, read_only ? PROT_READ : (PROT_READ | PROT_WRITE), flags, fd, 0);
     if (address == MAP_FAILED) {
-        throw std::runtime_error{"mmap failed for: " + std::string{path_} + " error: " + strerror(errno)};
+        throw std::runtime_error{"mmap failed for: " + path_.string() + " error: " + strerror(errno)};
     }
 
     return address;
@@ -177,7 +151,7 @@ void MemoryMappedFile::unmap() {
     if (address_ != nullptr) {
         const int result = ::munmap(address_, length_);
         if (result == -1) {
-            throw std::runtime_error{"munmap failed for: " + std::string{path_} + " error: " + strerror(errno)};
+            throw std::runtime_error{"munmap failed for: " + path_.string() + " error: " + strerror(errno)};
         }
     }
 }
@@ -187,7 +161,7 @@ void MemoryMappedFile::advise(int advice) {
     if (result == -1) {
         // Ignore not implemented in kernel error because it still works (from Erigon)
         if (errno != ENOSYS) {
-            throw std::runtime_error{"madvise failed for: " + std::string{path_} + " error: " + strerror(errno)};
+            throw std::runtime_error{"madvise failed for: " + path_.string() + " error: " + strerror(errno)};
         }
     }
 }

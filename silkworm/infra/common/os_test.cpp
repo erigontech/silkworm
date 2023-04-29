@@ -14,15 +14,24 @@
    limitations under the License.
 */
 
-#pragma once
+#include "os.hpp"
 
-#include <cstdint>
+#include <catch2/catch.hpp>
 
-//! Low-level OS utilities
 namespace silkworm::os {
 
-uint64_t max_file_descriptors();
+TEST_CASE("os::max_file_descriptors", "[silkworm][infra][common][os]") {
+    const auto current_max_descriptors = max_file_descriptors();
+    CHECK(current_max_descriptors > 0);
+}
 
-bool set_max_file_descriptors(uint64_t max_descriptors);
+TEST_CASE("os::set_max_file_descriptors", "[silkworm][infra][common][os]") {
+    const auto current_max_descriptors = max_file_descriptors();
+    CHECK(set_max_file_descriptors(current_max_descriptors - 1));
+}
+
+TEST_CASE("os::page_size", "[silkworm][infra][common][os]") {
+    CHECK(page_size() >= 4096);
+}
 
 }  // namespace silkworm::os

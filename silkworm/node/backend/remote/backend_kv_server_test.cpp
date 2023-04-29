@@ -30,6 +30,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/common/os.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/infra/grpc/common/util.hpp>
@@ -39,7 +40,6 @@
 #include <silkworm/node/backend/remote/grpc/backend_calls.hpp>
 #include <silkworm/node/backend/remote/grpc/kv_calls.hpp>
 #include <silkworm/node/backend/state_change_collection.hpp>
-#include <silkworm/node/common/os.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/sentry/api/api_common/sentry_client.hpp>
 
@@ -2118,7 +2118,7 @@ TEST_CASE("BackEndKvServer E2E: Tx cursor invalid operations", "[silkworm][node]
 
 class TxMaxTimeToLiveGuard {
   public:
-    explicit TxMaxTimeToLiveGuard(uint16_t t) { TxCall::set_max_ttl_duration(std::chrono::milliseconds{t}); }
+    explicit TxMaxTimeToLiveGuard(std::chrono::milliseconds t) { TxCall::set_max_ttl_duration(t); }
     ~TxMaxTimeToLiveGuard() { TxCall::set_max_ttl_duration(kMaxTxDuration); }
 };
 
@@ -2126,7 +2126,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
     BackEndKvE2eTest test;
     test.fill_tables();
     auto kv_client = *test.kv_client;
-    constexpr uint16_t kCustomMaxTimeToLive{400};
+    constexpr auto kCustomMaxTimeToLive{1000ms};
     TxMaxTimeToLiveGuard ttl_guard{kCustomMaxTimeToLive};
 
     SECTION("Tx: cursor NEXT ops across renew are consecutive") {
@@ -2151,7 +2151,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         CHECK(tx_reader_writer->Read(&response));
         CHECK(response.k() == "AA");
         CHECK(response.v() == "00");
-        std::this_thread::sleep_for(std::chrono::milliseconds{kCustomMaxTimeToLive});
+        std::this_thread::sleep_for(kCustomMaxTimeToLive);
         remote::Cursor next2;
         next2.set_op(remote::Op::NEXT);
         next2.set_cursor(cursor_id);
@@ -2187,7 +2187,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         CHECK(tx_reader_writer->Read(&response));
         CHECK(response.k() == "AA");
         CHECK(response.v() == "00");
-        std::this_thread::sleep_for(std::chrono::milliseconds{kCustomMaxTimeToLive});
+        std::this_thread::sleep_for(kCustomMaxTimeToLive);
         remote::Cursor next_dup2;
         next_dup2.set_op(remote::Op::NEXT_DUP);
         next_dup2.set_cursor(cursor_id);
@@ -2240,7 +2240,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         CHECK(response.k().empty());
         CHECK(response.v().empty());
         // Let the max TTL timer expire causing server-side tx renewal
-        std::this_thread::sleep_for(std::chrono::milliseconds{kCustomMaxTimeToLive});
+        std::this_thread::sleep_for(kCustomMaxTimeToLive);
         // Now the already existing cursor (i.e. same cursor_id) can see the changes
         remote::Cursor first;
         first.set_op(remote::Op::FIRST);
@@ -2315,7 +2315,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         CHECK(response.k().empty());
         CHECK(response.v().empty());
         // Let the max TTL timer expire causing server-side tx renewal
-        std::this_thread::sleep_for(std::chrono::milliseconds{kCustomMaxTimeToLive});
+        std::this_thread::sleep_for(kCustomMaxTimeToLive);
         // Now the already existing cursor (i.e. same cursor_id) can see the changes
         remote::Cursor first;
         first.set_op(remote::Op::FIRST);

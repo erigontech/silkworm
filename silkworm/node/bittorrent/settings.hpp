@@ -28,6 +28,7 @@ struct BitTorrentSettings {
     constexpr static std::chrono::seconds kDefaultWaitBetweenAlertPolls{10};
     constexpr static int kDefaultNumberOfPollsBetweenStats{3};
     constexpr static std::chrono::seconds kDefaultResumeDataSaveInterval{60};
+    constexpr static bool kDefaultVerifyOnStartup{false};
     constexpr static bool kDefaultSeeding{false};
 
     constexpr static int kDefaultDownloadRateLimit{64 * 1024 * 1024};  // 64MiB
@@ -40,16 +41,25 @@ struct BitTorrentSettings {
     /* BitTorrentClient configuration settings */
     //! Directory path where torrent files will be stored
     std::filesystem::path repository_path{kDefaultTorrentRepoPath};
+
     //! Path for magnet links
     std::optional<std::string> magnets_file_path;
+
     //! Time interval between two alert polling loopsErigon forks 242
     std::chrono::seconds wait_between_alert_polls{kDefaultWaitBetweenAlertPolls};
+
     //! The number of alert polls between two contiguous stats requests
     int number_of_polls_between_stats{kDefaultNumberOfPollsBetweenStats};
+
     //! Time interval between two resume data savings
     std::chrono::seconds resume_data_save_interval{kDefaultResumeDataSaveInterval};
+
+    //! Flag indicating if snapshots will be verified on startup
+    bool verify_on_startup{kDefaultVerifyOnStartup};
+
     //! Flag indicating if the client should seed torrents when done or not
     bool seeding{kDefaultSeeding};
+
     /* BitTorrent protocol settings */
     int download_rate_limit{kDefaultDownloadRateLimit};
     int upload_rate_limit{kDefaultUploadRateLimit};

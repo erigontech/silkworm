@@ -38,12 +38,6 @@ class HeaderRetrieval {
     std::vector<BlockHeader> recover_by_hash(Hash origin, uint64_t amount, uint64_t skip, bool reverse);
     std::vector<BlockHeader> recover_by_number(BlockNum origin, uint64_t amount, uint64_t skip, bool reverse);
 
-    // Node current status
-    BlockNum head_height();
-
-    // Head block height, hash and total difficulty
-    std::tuple<BlockNum, Hash, BigInt> head_info();
-
     // Ancestor
     std::tuple<Hash, BlockNum> get_ancestor(Hash hash, BlockNum block_num, BlockNum ancestor_delta,
                                             uint64_t& max_non_canonical);

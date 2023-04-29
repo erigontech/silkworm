@@ -28,7 +28,6 @@
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/sentry/eth/message_id.hpp>
-#include <silkworm/sync/internals/header_retrieval.hpp>
 
 #include "messages/inbound_block_bodies.hpp"
 #include "messages/inbound_block_headers.hpp"
@@ -43,14 +42,10 @@ using namespace boost::asio;
 
 SentryClient::SentryClient(
     boost::asio::io_context& io_context,
-    std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> sentry_client,
-    const db::ROAccess& db_access,
-    const ChainConfig& chain_config)
+    std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> sentry_client)
     : io_context_{io_context},
       sentry_client_{std::move(sentry_client)},
-      tasks_{io_context, 1000},
-      db_access_{db_access},
-      chain_config_{chain_config} {
+      tasks_{io_context, 1000} {
 }
 
 static std::unique_ptr<InboundMessage> decode_inbound_message(const silkworm::sentry::api::api_common::MessageFromPeer& message_from_peer) {
@@ -164,67 +159,6 @@ static T sync_spawn(concurrency::TaskGroup& tasks, io_context& io_context, await
     return promise.get_future().get();
 }
 
-awaitable<void> SentryClient::set_status_async(BlockNum head_block_num, Hash head_hash, BigInt head_td, const ChainConfig& chain_config) {
-    auto fork_block_numbers = chain_config.distinct_fork_numbers();
-    auto best_block_hash = Bytes{ByteView{head_hash}};
-    auto genesis_hash = ByteView{chain_config.genesis_hash.value()};
-
-    silkworm::sentry::eth::StatusMessage status_message = {
-        0,  // the eth protocol version is replaced on the sentry end
-        chain_config.chain_id,
-        head_td,
-        best_block_hash,
-        Bytes{genesis_hash},
-        silkworm::sentry::eth::ForkId(genesis_hash, fork_block_numbers, head_block_num),
-    };
-
-    silkworm::sentry::eth::StatusData status_data = {
-        std::move(fork_block_numbers),
-        head_block_num,
-        std::move(status_message),
-    };
-
-    auto service = co_await sentry_client_->service();
-    co_await service->set_status(std::move(status_data));
-
-    SILK_TRACE << "SentryClient, set_status sent";
-}
-
-void SentryClient::set_status(BlockNum head_block_num, Hash head_hash, BigInt head_td, const ChainConfig& chain_config) {
-    sync_spawn(tasks_, io_context_, set_status_async(head_block_num, std::move(head_hash), std::move(head_td), chain_config));
-}
-
-void SentryClient::set_status() {
-    HeaderRetrieval headers(db_access_);
-    auto [head_height, head_hash, head_td] = headers.head_info();
-    headers.close();
-
-    log::Debug("Chain/db status", {"head hash", head_hash.to_hex()});
-    log::Debug("Chain/db status", {"head td", intx::to_string(head_td)});
-    log::Debug("Chain/db status", {"head height", std::to_string(head_height)});
-
-    set_status(head_height, head_hash, head_td, chain_config_);
-}
-
-awaitable<void> SentryClient::handshake_async() {
-    auto service = co_await sentry_client_->service();
-    auto supported_protocol = co_await service->handshake();
-
-    if (supported_protocol < 66) {
-        log::Critical(kLogTitle) << "remote sentry do not support eth/66 protocol, stopping...";
-        throw SentryClientException("SentryClient exception, cause: sentry do not support eth/66 protocol");
-    }
-}
-
-void SentryClient::handshake() {
-    try {
-        sync_spawn(tasks_, io_context_, handshake_async());
-    } catch (const SentryClientException&) {
-        stop();
-        throw;
-    }
-}
-
 static sentry::common::Message sentry_message_from_outbound_message(const OutboundMessage& outbound_message) {
     return sentry::common::Message{
         sentry::eth::common_message_id_from_eth_id(outbound_message.eth_message_id()),
@@ -317,17 +251,6 @@ void SentryClient::execution_loop() {
 
     while (!is_stopping()) {
         try {
-            connected_ = false;
-            log::Info(kLogTitle) << "connecting ...";
-
-            // send current status of the chain
-            handshake();
-            set_status();
-
-            connected_ = true;
-            connected_.notify_all();
-            log::Info(kLogTitle) << "connected";
-
             // receive messages
 
             std::function<awaitable<void>(silkworm::sentry::api::api_common::MessageFromPeer)> consumer = [this](auto message_from_peer) -> awaitable<void> {
@@ -348,13 +271,8 @@ void SentryClient::execution_loop() {
         }
     }
 
-    // note: do we need to handle connection loss with an outer loop that wait and then re-try hand_shake and so on?
-    // (we would redo set_status & hand-shake too)
     log::Warning(kLogTitle) << "execution loop is stopping...";
     stop();
-
-    connected_ = false;
-    connected_.notify_all();
 }
 
 void SentryClient::stats_receiving_loop() {
@@ -363,8 +281,6 @@ void SentryClient::stats_receiving_loop() {
 
     while (!is_stopping()) {
         try {
-            connected_.wait(false);
-
             // ask the remote sentry about the current active peers
             log::Info(kLogTitle) << count_active_peers() << " active peers";
 

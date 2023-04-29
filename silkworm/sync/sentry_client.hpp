@@ -18,7 +18,6 @@
 
 #include <atomic>
 #include <memory>
-#include <stdexcept>
 #include <vector>
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
@@ -46,19 +45,10 @@ class SentryClient : public ActiveComponent {
   public:
     explicit SentryClient(
         boost::asio::io_context& io_context,
-        std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> sentry_client,
-        const db::ROAccess& db_access,
-        const ChainConfig& chain_config);
+        std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> sentry_client);
 
     SentryClient(const SentryClient&) = delete;
     SentryClient(SentryClient&&) = delete;
-
-    // init the remote sentry
-    void set_status();
-
-    // handshake & check of the protocol version
-    boost::asio::awaitable<void> handshake_async();
-    void handshake();
 
     // sending messages
     using PeerIds = std::vector<PeerId>;
@@ -118,26 +108,12 @@ class SentryClient : public ActiveComponent {
     // notifying registered subscribers
     boost::asio::awaitable<void> publish(const silkworm::sentry::api::api_common::MessageFromPeer& message_from_peer);
 
-    boost::asio::awaitable<void> set_status_async(BlockNum head_block_num, Hash head_hash, BigInt head_td, const ChainConfig& chain_config);
-    void set_status(BlockNum head_block_num, Hash head_hash, BigInt head_td, const ChainConfig& chain_config);
-
     boost::asio::io_context& io_context_;
     std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> sentry_client_;
     concurrency::TaskGroup tasks_;
     boost::asio::cancellation_signal tasks_cancellation_signal_;
 
-    db::ROAccess db_access_;
-    const ChainConfig& chain_config_;
-
-    std::atomic<bool> connected_{false};
-
     std::atomic<uint64_t> active_peers_{0};
-};
-
-// custom exception
-class SentryClientException : public std::runtime_error {
-  public:
-    explicit SentryClientException(const std::string& cause) : std::runtime_error(cause) {}
 };
 
 }  // namespace silkworm

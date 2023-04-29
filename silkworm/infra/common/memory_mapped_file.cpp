@@ -52,7 +52,7 @@ void MemoryMappedFile::map_existing(bool read_only) {
     DWORD shared_mode = FILE_SHARE_READ | FILE_SHARE_WRITE;
     FileDescriptor fd = {};
     fd = ::CreateFile(
-        path_.c_str(),
+        path_.string().c_str(),
         desired_access,
         shared_mode,
         nullptr,

@@ -40,7 +40,8 @@ TEST_CASE("EliasFanoList32", "[silkworm][recsplit][elias_fano]") {
 
     CHECK(ef_list.min() == offsets.at(0));
     CHECK(ef_list.max() == max_offset);
-    CHECK(ef_list.count() == offsets.size());
+    CHECK(ef_list.count() == offsets.size() - 1);
+    CHECK(ef_list.sequence_length() == offsets.size());
 
     for (uint64_t i{0}; i < offsets.size(); i++) {
         const uint64_t x = ef_list.get(i);

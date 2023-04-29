@@ -18,8 +18,8 @@
 
 #include <cstddef>
 #include <mutex>
+#include <optional>
 
-#include <boost/optional.hpp>
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/chain/config.hpp>

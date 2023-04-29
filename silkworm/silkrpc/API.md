@@ -170,6 +170,6 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | ots_traceTransaction                       | -            | not yet implemented                        |
 | ots_getTransactionError                    | -            | not yet implemented                        |
 | ots_getTransactionBySenderAndNonce         | Yes          |                                            |
-| ots_getContractCreator                     | -            | not yet implemented                        |
+| ots_getContractCreator                     | Yes          |                                            |
 
 This table is constantly updated. Please visit again.

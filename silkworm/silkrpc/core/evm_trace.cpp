@@ -34,7 +34,6 @@
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
-#include <silkworm/silkrpc/core/evm_executor.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
@@ -280,6 +279,11 @@ void to_json(nlohmann::json& json, const TraceManyCallResult& result) {
         json.push_back(nlohmann::json::value_t::null);
         to_json(json.at(json.size() - 1), trace);
     }
+}
+
+void to_json(nlohmann::json& json, const TraceDeployResult& result) {
+    json["hash"] = result.transaction_hash.value();
+    json["creator"] = result.contract_creator.value();
 }
 
 int get_stack_count(std::uint8_t op_code) {
@@ -1323,6 +1327,46 @@ awaitable<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Bl
     co_return result;
 }
 
+boost::asio::awaitable<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkworm::Block& block, const evmc::address& contract_address) {
+    auto block_number = block.header.number;
+    const auto& transactions = block.transactions;
+
+    SILKRPC_INFO << "execute: block_number: " << std::dec << block_number << " #txns: " << transactions.size() << "\n";
+
+    const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
+    const auto chain_config_ptr = lookup_chain_config(chain_id);
+
+    state::RemoteState remote_state{io_context_, database_reader_, block_number - 1};
+    silkworm::IntraBlockState initial_ibs{remote_state};
+
+    state::RemoteState curr_remote_state{io_context_, database_reader_, block_number - 1};
+    EVMExecutor executor{*chain_config_ptr, workers_, curr_remote_state};
+
+    TraceDeployResult result;
+
+    auto create_tracer = std::make_shared<trace::CreateTracer>(contract_address, initial_ibs);
+
+    Tracers tracers{create_tracer};
+
+    for (std::uint64_t index = 0; index < transactions.size(); index++) {
+        silkworm::Transaction transaction{block.transactions[index]};
+        if (!transaction.from) {
+            transaction.recover_sender();
+        }
+
+        co_await executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+        executor.reset();
+
+        if (create_tracer->found()) {
+            auto hash{hash_of_transaction(transaction)};
+            result.transaction_hash = to_bytes32({hash.bytes, kHashLength});
+            result.contract_creator = transaction.from;
+            break;
+        }
+    }
+    co_return result;
+}
+
 awaitable<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWithHash& block_with_hash, const rpc::Transaction& transaction) {
     std::vector<Trace> traces;
 
@@ -1456,6 +1500,32 @@ awaitable<TraceCallResult> TraceCallExecutor::execute(std::uint64_t block_number
     }
 
     co_return result;
+}
+
+void CreateTracer::on_execution_start(evmc_revision, const evmc_message& msg, evmone::bytes_view code) noexcept {
+    if (found_) {
+        return;
+    }
+    auto sender = evmc::address{msg.sender};
+    auto recipient = evmc::address{msg.recipient};
+    auto code_address = evmc::address{msg.code_address};
+
+    bool create = (!initial_ibs_.exists(recipient) && recipient != code_address);
+
+    if (create && recipient == contract_address_) {
+        this->found_ = true;
+    }
+
+    SILKRPC_DEBUG << "CreateTracer::on_execution_start: gas: " << std::dec << msg.gas
+                  << " create: " << create
+                  << ", msg.depth: " << msg.depth
+                  << ", msg.kind: " << msg.kind
+                  << ", sender: " << sender
+                  << ", recipient: " << recipient << " (created: " << create << ")"
+                  << ", code_address: " << code_address
+                  << ", msg.value: " << intx::hex(intx::be::load<intx::uint256>(msg.value))
+                  << ", code: " << silkworm::to_hex(code)
+                  << "\n";
 }
 
 }  // namespace silkworm::rpc::trace

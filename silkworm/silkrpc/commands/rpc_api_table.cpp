@@ -224,6 +224,7 @@ void RpcApiTable::add_ots_handlers() {
     method_handlers_[http::method::k_ots_getBlockDetailsByHash] = &commands::RpcApi::handle_ots_getBlockDetailsByHash;
     method_handlers_[http::method::k_ots_getBlockTransactions] = &commands::RpcApi::handle_ots_getBlockTransactions;
     method_handlers_[http::method::k_ots_getTransactionBySenderAndNonce] = &commands::RpcApi::handle_ots_getTransactionBySenderAndNonce;
+    method_handlers_[http::method::k_ots_getContractCreator] = &commands::RpcApi::handle_ots_getContractCreator;
 }
 
 }  // namespace silkworm::rpc::commands

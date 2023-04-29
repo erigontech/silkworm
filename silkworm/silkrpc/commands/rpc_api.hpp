@@ -53,7 +53,7 @@ class RpcApi : protected EthereumRpcApi, NetRpcApi, AdminRpcApi, Web3RpcApi, Deb
           TraceRpcApi{context, workers},
           EngineRpcApi(context.database(), context.backend()),
           TxPoolRpcApi(context),
-          OtsRpcApi{context} {}
+          OtsRpcApi{context, workers} {}
 
     ~RpcApi() override = default;
 

@@ -122,7 +122,7 @@ class GolombRiceVector {
 
     class Reader {
       public:
-        explicit Reader(Uint64Sequence& input_data) : data(input_data) {}
+        explicit Reader(const Uint64Sequence& input_data) : data(input_data) {}
 
         uint64_t read_next(const uint64_t log2golomb) {
             uint64_t result = 0;
@@ -179,14 +179,14 @@ class GolombRiceVector {
         }
 
       private:
-        Uint64Sequence& data;
+        const Uint64Sequence& data;
         std::size_t curr_fixed_offset{0};
         uint64_t curr_window_unary{0};
-        uint64_t* curr_ptr_unary{nullptr};
+        uint64_t const* curr_ptr_unary{nullptr};
         std::size_t valid_lower_bits_unary{0};
     };
 
-    Reader reader() { return Reader{data}; }
+    [[nodiscard]] Reader reader() const { return Reader{data}; }
 
   private:
     Uint64Sequence data;

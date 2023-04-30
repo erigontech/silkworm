@@ -27,6 +27,8 @@
 
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
+#include <silkworm/silkrpc/json/execution_payload.hpp>
+#include <silkworm/silkrpc/json/filter.hpp>
 #include <silkworm/silkrpc/json/log.hpp>
 #include <silkworm/silkrpc/json/receipt.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
@@ -110,12 +112,6 @@ void to_json(nlohmann::json& json, const BlockTransactionsResponse& b);
 void to_json(nlohmann::json& json, const Transaction& transaction);
 
 void from_json(const nlohmann::json& json, Call& call);
-
-void to_json(nlohmann::json& json, const Filter& filter);
-void from_json(const nlohmann::json& json, Filter& filter);
-
-void to_json(nlohmann::json& json, const ExecutionPayload& execution_payload);
-void from_json(const nlohmann::json& json, ExecutionPayload& execution_payload);
 
 void to_json(nlohmann::json& json, const ForkChoiceState& forkchoice_state);
 void from_json(const nlohmann::json& json, ForkChoiceState& forkchoice_state);

@@ -35,17 +35,17 @@ asio::awaitable<void> dummy_task() {
 }
 
 class DummyEngine {
-    asio::io_context& io;
+    asio::io_context& io_;
 
   public:
-    DummyEngine(asio::io_context& io) : io{io} {}
+    DummyEngine(asio::io_context& io) : io_{io} {}
 
     asio::awaitable<int> do_work() {
         co_return 42;
     }
 
     asio::io_context& get_executor() {
-        return io;
+        return io_;
     }
 };
 

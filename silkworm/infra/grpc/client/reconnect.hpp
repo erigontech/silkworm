@@ -16,24 +16,14 @@
 
 #pragma once
 
-#include <functional>
-#include <memory>
-
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
+#include <grpcpp/grpcpp.h>
 
-#include "service.hpp"
+namespace silkworm::rpc {
 
-namespace silkworm::sentry::api::api_common {
+bool is_disconnect_error(const grpc::Status& status, grpc::Channel& channel);
+boost::asio::awaitable<void> reconnect_channel(grpc::Channel& channel);
 
-struct SentryClient {
-    virtual ~SentryClient() = default;
-
-    virtual boost::asio::awaitable<std::shared_ptr<Service>> service() = 0;
-
-    virtual void on_disconnect(std::function<boost::asio::awaitable<void>()> callback) = 0;
-    virtual boost::asio::awaitable<void> reconnect() = 0;
-};
-
-}  // namespace silkworm::sentry::api::api_common
+}  // namespace silkworm::rpc

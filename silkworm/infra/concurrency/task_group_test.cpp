@@ -18,6 +18,7 @@
 
 #include <array>
 #include <chrono>
+#include <future>
 #include <stdexcept>
 
 #include <boost/asio/co_spawn.hpp>

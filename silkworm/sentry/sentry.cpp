@@ -268,8 +268,17 @@ boost::asio::awaitable<void> Sentry::run() {
     return p_impl_->run();
 }
 
-std::shared_ptr<api::api_common::Service> Sentry::service() {
-    return p_impl_->service();
+boost::asio::awaitable<std::shared_ptr<api::api_common::Service>> Sentry::service() {
+    co_return p_impl_->service();
+}
+
+void Sentry::on_disconnect(std::function<boost::asio::awaitable<void>()> /*callback*/) {
+    // the direct client never disconnects
+}
+
+boost::asio::awaitable<void> Sentry::reconnect() {
+    // the direct client never disconnects
+    co_return;
 }
 
 }  // namespace silkworm::sentry

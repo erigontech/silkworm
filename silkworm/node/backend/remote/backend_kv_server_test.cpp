@@ -210,9 +210,11 @@ class MockSentryClient
     : public std::enable_shared_from_this<MockSentryClient>,
       public silkworm::sentry::api::api_common::SentryClient,
       public silkworm::sentry::api::api_common::Service {
-    std::shared_ptr<silkworm::sentry::api::api_common::Service> service() override {
-        return shared_from_this();
+    boost::asio::awaitable<std::shared_ptr<silkworm::sentry::api::api_common::Service>> service() override {
+        co_return shared_from_this();
     }
+    void on_disconnect(std::function<boost::asio::awaitable<void>()> /*callback*/) override {}
+    boost::asio::awaitable<void> reconnect() override { co_return; }
 
     boost::asio::awaitable<void> set_status(silkworm::sentry::eth::StatusData /*status_data*/) override {
         throw std::runtime_error("not implemented");

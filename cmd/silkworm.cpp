@@ -39,6 +39,7 @@
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
 #include <silkworm/node/common/settings.hpp>
+#include <silkworm/node/db/eth_status_data_provider.hpp>
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/snapshot/sync.hpp>
@@ -46,6 +47,7 @@
 #include <silkworm/sentry/api/api_common/sentry_client.hpp>
 #include <silkworm/sentry/rpc/client/sentry_client.hpp>
 #include <silkworm/sentry/sentry.hpp>
+#include <silkworm/sentry/session_sentry_client.hpp>
 #include <silkworm/sentry/settings.hpp>
 #include <silkworm/sync/block_exchange.hpp>
 #include <silkworm/sync/sentry_client.hpp>
@@ -564,6 +566,9 @@ int main(int argc, char* argv[]) {
                 co_await sentry_server.value()->run();
             }
         };
+        sentry_client = std::make_shared<silkworm::sentry::SessionSentryClient>(
+            std::move(sentry_client),
+            sw_db::EthStatusDataProvider(sw_db::ROAccess(chaindata_db), node_settings.chain_config.value()).to_factory_function());
 
         // BackEnd & KV server
         silkworm::EthereumBackEnd backend{
@@ -580,8 +585,6 @@ int main(int argc, char* argv[]) {
         silkworm::SentryClient sync_sentry_client{
             context_pool.next_io_context(),
             sentry_client,
-            sw_db::ROAccess{chaindata_db},
-            node_settings.chain_config.value(),
         };
         auto sync_sentry_client_stats_receiving_loop = silkworm::concurrency::async_thread(
             [&sentry_client = sync_sentry_client]() { sentry_client.stats_receiving_loop(); },

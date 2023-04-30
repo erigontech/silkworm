@@ -16,32 +16,35 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
-#include <string>
 
-#include <agrpc/detail/forward.hpp>
+#include <silkworm/infra/concurrency/coroutine.hpp>
+
+#include <boost/asio/awaitable.hpp>
 
 #include <silkworm/sentry/api/api_common/sentry_client.hpp>
+#include <silkworm/sentry/eth/status_data.hpp>
 
-namespace silkworm::sentry::rpc::client {
+namespace silkworm::sentry {
 
-class SentryClientImpl;
+class SessionSentryClientImpl;
 
-class SentryClient : public api::api_common::SentryClient {
+class SessionSentryClient : public api::api_common::SentryClient {
   public:
-    explicit SentryClient(const std::string& address_uri, agrpc::GrpcContext& grpc_context);
-    ~SentryClient() override;
+    using StatusDataProvider = std::function<boost::asio::awaitable<eth::StatusData>(uint8_t eth_version)>;
 
-    SentryClient(SentryClient&&) = default;
-    SentryClient& operator=(SentryClient&&) = default;
+    SessionSentryClient(
+        std::shared_ptr<api::api_common::SentryClient> sentry_client,
+        StatusDataProvider status_data_provider);
+    ~SessionSentryClient() override;
 
     boost::asio::awaitable<std::shared_ptr<api::api_common::Service>> service() override;
-
     void on_disconnect(std::function<boost::asio::awaitable<void>()> callback) override;
     boost::asio::awaitable<void> reconnect() override;
 
   private:
-    std::shared_ptr<SentryClientImpl> p_impl_;
+    std::unique_ptr<SessionSentryClientImpl> p_impl_;
 };
 
-}  // namespace silkworm::sentry::rpc::client
+}  // namespace silkworm::sentry

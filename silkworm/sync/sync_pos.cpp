@@ -157,8 +157,6 @@ auto PoSSync::has_bad_ancestor(const Hash&) -> std::tuple<bool, Hash> {
 
 PayloadStatus PoSSync::new_payload(const ExecutionPayload& payload, seconds_t /*timeout*/) {
     // Implementation of engine_new_payloadV1 method
-    using ValidChain = stagedsync::ExecutionEngine::ValidChain;
-    using InvalidChain = stagedsync::ExecutionEngine::InvalidChain;
     constexpr evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
     auto terminal_total_difficulty = block_exchange_.chain_config().terminal_total_difficulty;
     auto no_latest_valid_hash = std::nullopt;
@@ -221,8 +219,6 @@ PayloadStatus PoSSync::new_payload(const ExecutionPayload& payload, seconds_t /*
 ForkChoiceUpdateReply PoSSync::fork_choice_update(const ForkChoiceState& state,
                                                   const std::optional<PayloadAttributes>& attributes, seconds_t /*timeout*/) {
     // Implementation of engine_forkchoiceUpdatedV1 method
-    using ValidChain = stagedsync::ExecutionEngine::ValidChain;
-    using InvalidChain = stagedsync::ExecutionEngine::InvalidChain;
     constexpr evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
     auto terminal_total_difficulty = block_exchange_.chain_config().terminal_total_difficulty;
     auto no_latest_valid_hash = std::nullopt;

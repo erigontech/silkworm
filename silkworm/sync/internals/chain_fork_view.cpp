@@ -66,7 +66,7 @@ TotalDifficulty ChainForkView::add(const BlockHeader& header) {  // try to modul
     return td;
 }
 
-std::optional<TotalDifficulty> ChainForkView::get_total_difficulty(BlockNum height, const Hash& hash) {
+std::optional<TotalDifficulty> ChainForkView::get_total_difficulty([[maybe_unused]] BlockNum height, const Hash& hash) {
     auto parent_td = td_cache_.get_as_copy(hash);  // find in cache
     if (!parent_td) //parent_td = db.get_header_td(height, hash);
         parent_td = 0; // todo: implement total difficulty save/load from db #########################################

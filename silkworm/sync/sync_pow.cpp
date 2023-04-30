@@ -18,6 +18,7 @@
 
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/infra/common/measure.hpp>
+#include <silkworm/infra/concurrency/sync_wait.hpp>
 #include <silkworm/sync/messages/outbound_new_block.hpp>
 #include <silkworm/sync/messages/outbound_new_block_hashes.hpp>
 
@@ -90,7 +91,7 @@ auto PoWSync::forward_and_insert_blocks() -> NewHeight {
         });
 
         // insert blocks into database
-        exec_engine_.insert_blocks(blocks);
+        sync_wait(in(exec_engine_), exec_engine_.insert_blocks(to_plain_blocks(blocks)));
 
         // send announcement to peers
         send_new_block_announcements(std::move(announcements_to_do));  // according to eth/67 they must be done here,
@@ -111,10 +112,10 @@ auto PoWSync::forward_and_insert_blocks() -> NewHeight {
                       << ", head=" << chain_fork_view_.head_height()
                       << ", tot.duration=" << StopWatch::format(duration);
 
-    return {.block_num = chain_fork_view_.head_height(), .hash = chain_fork_view_.head_hash()};
+    return {.number = chain_fork_view_.head_height(), .hash = chain_fork_view_.head_hash()};
 }
 
-void PoWSync::unwind(UnwindPoint) {
+void PoWSync::unwind(UnwindPoint, std::optional<Hash>) {
     // does nothing
 }
 
@@ -127,40 +128,40 @@ void PoWSync::execution_loop() {
         NewHeight new_height = is_starting_up
                                    ? resume()                      // resuming, the following verify_chain is needed to check all stages
                                    : forward_and_insert_blocks();  // downloads new blocks and inserts them into the db
-        if (new_height.block_num == 0) {
+        if (new_height.number == 0) {
             // When starting from empty db there is no chain to verify, so go on downloading new blocks
             is_starting_up = false;
             continue;
         }
 
         // verify the new section of the chain
-        log::Info("Sync") << "Verifying chain, head=" << new_height.block_num;
-        auto verification = exec_engine_.verify_chain(new_height.hash);
+        log::Info("Sync") << "Verifying chain, head=" << new_height.number;
+        auto verification = sync_wait(in(exec_engine_), exec_engine_.verify_chain(new_height.hash));
 
         if (std::holds_alternative<InvalidChain>(verification)) {
             auto invalid_chain = std::get<InvalidChain>(verification);
-            log::Info("Sync") << "Invalid chain, unwinding down to=" << invalid_chain.unwind_point;
+            log::Info("Sync") << "Invalid chain, unwinding down to=" << invalid_chain.unwind_point.number;
 
             // if it is not valid, unwind the chain
-            unwind({invalid_chain.unwind_point});
+            unwind(invalid_chain.unwind_point, invalid_chain.bad_block);
 
             if (!invalid_chain.bad_headers.empty()) {
                 update_bad_headers(std::move(invalid_chain.bad_headers));
             }
 
             // notify fork choice update
-            log::Info("Sync") << "Notifying fork choice updated, head=" << invalid_chain.unwind_point;
-            exec_engine_.notify_fork_choice_update(invalid_chain.unwind_head);
+            log::Info("Sync") << "Notifying fork choice updated, head=" << invalid_chain.unwind_point.number;
+            exec_engine_.notify_fork_choice_update(invalid_chain.unwind_point.hash);
 
         } else if (std::holds_alternative<ValidChain>(verification)) {
             auto valid_chain = std::get<ValidChain>(verification);
-            log::Info("Sync") << "Valid chain, new head=" << valid_chain.current_point;
+            log::Info("Sync") << "Valid chain, new head=" << valid_chain.current_head.number;
 
             // if it is valid, do nothing, only check invariant
-            ensure_invariant(valid_chain.current_point == new_height.block_num, "Invalid verify_chain result");
+            ensure_invariant(valid_chain.current_head == new_height, "Invalid verify_chain result");
 
             // notify fork choice update
-            log::Info("Sync") << "Notifying fork choice updated, new head=" << new_height.block_num;
+            log::Info("Sync") << "Notifying fork choice updated, new head=" << new_height.number;
             exec_engine_.notify_fork_choice_update(new_height.hash);
 
             send_new_block_hash_announcements();  // according to eth/67 they must be done after a full block verification
@@ -168,7 +169,7 @@ void PoWSync::execution_loop() {
         } else if (std::holds_alternative<ValidationError>(verification)) {
             // if it returned a validation error, raise an exception
             auto error = std::get<ValidationError>(verification);
-            throw std::logic_error("Consensus, validation error, last point=" + std::to_string(error.last_point));
+            throw std::logic_error("Consensus, validation error, last point=" + std::to_string(error.latest_valid_head.number));
 
         } else {
             throw std::logic_error("Consensus, unknown error");

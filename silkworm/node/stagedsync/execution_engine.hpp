@@ -48,8 +48,10 @@ class ExecutionEngine : public Stoppable {
   public:
     explicit ExecutionEngine(asio::io_context&, NodeSettings&, db::RWAccess);
 
+    asio::io_context& get_executor() { return io_context_; }
+
     // actions
-    ERIGON_API auto insert_blocks(std::vector<std::shared_ptr<Block>>& blocks) -> asio::awaitable<void>;
+    ERIGON_API auto insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks) -> asio::awaitable<void>;
     ERIGON_API auto insert_block(std::shared_ptr<Block> block) -> asio::awaitable<void>;
 
     ERIGON_API auto verify_chain(Hash head_block_hash) -> concurrency::AwaitableFuture<VerificationResult>;

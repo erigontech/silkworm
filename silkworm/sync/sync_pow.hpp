@@ -34,19 +34,12 @@ class PoWSync : public ActiveComponent {
     void execution_loop() final; /*[[long_running]]*/
 
   private:
-    struct NewHeight {
-        BlockNum block_num;
-        Hash hash;
-    };
-    struct UnwindPoint {
-        BlockNum block_num;
-        Hash hash;
-        std::optional<Hash> bad_block;
-    };
+    using NewHeight = BlockId;
+    using UnwindPoint = BlockId;
 
     auto resume() -> NewHeight;
     auto forward_and_insert_blocks() -> NewHeight;
-    void unwind(UnwindPoint);
+    void unwind(UnwindPoint, std::optional<Hash> bad_block);
     auto update_bad_headers(std::set<Hash>) -> std::shared_ptr<InternalMessage<void>>;
 
     void send_new_block_announcements(Blocks&& blocks);

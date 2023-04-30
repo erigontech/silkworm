@@ -56,7 +56,7 @@ auto ExecutionEngine::last_finalized_block() const -> BlockId {
     return last_finalized_block_;
 }
 
-auto ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<Block>>& blocks) -> awaitable<void> {
+auto ExecutionEngine::insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks) -> awaitable<void> {
     SILK_DEBUG << "ExecutionEngine: inserting " << blocks.size() << " blocks";
     if (blocks.empty()) co_return;
 
@@ -65,7 +65,7 @@ auto ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<Block>>& blocks)
     }
 }
 
-auto ExecutionEngine::insert_block(std::shared_ptr<Block> block) -> awaitable<void> {
+auto ExecutionEngine::insert_block(const std::shared_ptr<Block> block) -> awaitable<void> {
     Hash header_hash{block->header.hash()};
 
     if (block_cache_.get(header_hash)) co_return;  // ignore repeated blocks

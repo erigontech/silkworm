@@ -610,10 +610,12 @@ int main(int argc, char* argv[]) {
         // 3) PoWSync has sync execution_loop using execution methods which in turn use r/w tx
         // so basically ExecutionEngine ctor + PoWSync::execution_loop must happen in the same thread
         auto sync_executor = [&]() -> boost::asio::awaitable<void> {
+            boost::asio::io_context io_context;  // todo: provide thread for running this
+
             std::shared_ptr<silkworm::chainsync::PoWSync> sync;
             auto run = [&] {
                 // ExecutionEngine executes transactions and builds state validating chain slices
-                silkworm::stagedsync::ExecutionEngine execution{node_settings, sw_db::RWAccess{chaindata_db}};
+                silkworm::stagedsync::ExecutionEngine execution{io_context, node_settings, sw_db::RWAccess{chaindata_db}};
 
                 // ConsensusEngine drives headers and bodies sync, implementing fork choice rules
                 // currently sync & execution are on the same process, sync calls execution so due to

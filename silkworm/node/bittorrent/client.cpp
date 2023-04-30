@@ -198,6 +198,10 @@ bool BitTorrentClient::all_torrents_seeding() const {
 void BitTorrentClient::execute_loop() {
     SILK_TRACE << "BitTorrentClient::execute_loop start";
 
+    if (settings_.verify_on_startup) {
+        recheck_all_finished_torrents();
+    }
+
     stats_metrics_ = lt::session_stats_metrics();
 
     int poll_count{0};
@@ -226,6 +230,17 @@ void BitTorrentClient::execute_loop() {
     SILK_DEBUG << "Session saved after execution loop completion";
 
     SILK_TRACE << "BitTorrentClient::execute_loop end";
+}
+
+void BitTorrentClient::recheck_all_finished_torrents() {
+    int rechecked_count{0};
+    for (const auto& torrent_handle : session_.get_torrents()) {  // NOLINT(readability-use-anyofallof)
+        if (torrent_handle.status().is_finished) {
+            torrent_handle.force_recheck();
+            ++rechecked_count;
+        }
+    }
+    SILK_DEBUG << "Recheck finished torrents count=" << rechecked_count;
 }
 
 void BitTorrentClient::request_torrent_updates(bool stats_included) {

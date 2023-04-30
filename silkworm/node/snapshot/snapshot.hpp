@@ -27,6 +27,8 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/node/db/util.hpp>
 #include <silkworm/node/huffman/decompressor.hpp>
+#include <silkworm/node/recsplit/rec_split.hpp>
+#include <silkworm/node/snapshot/path.hpp>
 
 namespace silkworm::snapshot {
 
@@ -37,7 +39,8 @@ class Snapshot {
     explicit Snapshot(std::filesystem::path path, BlockNum block_from, BlockNum block_to);
     virtual ~Snapshot() = default;
 
-    [[nodiscard]] std::filesystem::path path() const { return path_; }
+    [[nodiscard]] virtual SnapshotPath path() const = 0;
+    [[nodiscard]] std::filesystem::path fs_path() const { return path_; }
 
     [[nodiscard]] BlockNum block_from() const { return block_from_; }
     [[nodiscard]] BlockNum block_to() const { return block_to_; }
@@ -78,6 +81,9 @@ class HeaderSnapshot : public Snapshot {
         : Snapshot(std::move(path), block_from, block_to) {}
     ~HeaderSnapshot() override { close(); }
 
+    [[nodiscard]] SnapshotPath path() const override;
+    [[nodiscard]] const succinct::RecSplitIndex* idx_header_hash() const { return idx_header_hash_.get(); }
+
     using Walker = std::function<bool(const BlockHeader* header)>;
     bool for_each_header(const Walker& walker);
 
@@ -88,7 +94,7 @@ class HeaderSnapshot : public Snapshot {
 
   private:
     //! Index header_hash -> headers_segment_offset
-    // uint64_t* idx_header_hash_{nullptr}; // TODO(canepat) recsplit.Index
+    std::unique_ptr<succinct::RecSplitIndex> idx_header_hash_;
 };
 
 class BodySnapshot : public Snapshot {
@@ -96,6 +102,9 @@ class BodySnapshot : public Snapshot {
     explicit BodySnapshot(std::filesystem::path path, BlockNum block_from, BlockNum block_to)
         : Snapshot(std::move(path), block_from, block_to) {}
     ~BodySnapshot() override { close(); }
+
+    [[nodiscard]] SnapshotPath path() const override;
+    [[nodiscard]] const succinct::RecSplitIndex* idx_body_number() const { return idx_body_number_.get(); }
 
     using Walker = std::function<bool(BlockNum number, const db::detail::BlockBodyForStorage* body)>;
     bool for_each_body(const Walker& walker);
@@ -109,7 +118,7 @@ class BodySnapshot : public Snapshot {
 
   private:
     //! Index block_num_u64 -> bodies_segment_offset
-    // uint64_t* idx_body_number_{nullptr}; // TODO(canepat) recsplit.Index
+    std::unique_ptr<succinct::RecSplitIndex> idx_body_number_;
 };
 
 class TransactionSnapshot : public Snapshot {
@@ -118,6 +127,10 @@ class TransactionSnapshot : public Snapshot {
         : Snapshot(std::move(path), block_from, block_to) {}
     ~TransactionSnapshot() override { close(); }
 
+    [[nodiscard]] SnapshotPath path() const override;
+    [[nodiscard]] const succinct::RecSplitIndex* idx_txn_hash() const { return idx_txn_hash_.get(); }
+    [[nodiscard]] const succinct::RecSplitIndex* idx_txn_hash_2_block() const { return idx_txn_hash_2_block_.get(); }
+
     void reopen_index() override;
 
   protected:
@@ -125,10 +138,10 @@ class TransactionSnapshot : public Snapshot {
 
   private:
     //! Index transaction_hash -> transactions_segment_offset
-    // uint64_t* idx_txn_hash_{nullptr}; // TODO(canepat) recsplit.Index
+    std::unique_ptr<succinct::RecSplitIndex> idx_txn_hash_;
 
     //! Index transaction_hash -> block_number
-    // uint64_t* idx_txn_hash_2_block_{nullptr}; // TODO(canepat) recsplit.Index
+    std::unique_ptr<succinct::RecSplitIndex> idx_txn_hash_2_block_;
 };
 
 }  // namespace silkworm::snapshot

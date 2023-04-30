@@ -22,11 +22,9 @@
 #include <utility>
 
 #include <absl/strings/str_split.h>
-#include <absl/strings/string_view.h>
 #include <boost/format.hpp>
 #include <magic_enum.hpp>
 
-#include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::snapshot {

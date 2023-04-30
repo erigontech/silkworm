@@ -42,8 +42,9 @@ class SnapshotSync : public Stoppable {
     bool stop() override;
 
   private:
-    void open_and_verify();
+    void reopen();
     void build_missing_indexes();
+    bool save(db::RWTxn& txn, BlockNum max_block_available);
 
     SnapshotSettings settings_;
     const ChainConfig& config_;

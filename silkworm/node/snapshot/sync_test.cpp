@@ -63,9 +63,9 @@ TEST_CASE("SnapshotSync::download_and_index_snapshots", "[silkworm][snapshot][sy
         SnapshotSettings settings{
             .repository_dir = tmp_dir,
             .no_downloader = true,
-            .verify_on_startup = true,
             .bittorrent_settings = bittorrent_settings,
         };
+        settings.bittorrent_settings.verify_on_startup = true;
         SnapshotSync sync{settings, kMainnetConfig};
         CHECK(sync.download_and_index_snapshots(context.rw_txn()));
     }

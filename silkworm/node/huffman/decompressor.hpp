@@ -239,6 +239,10 @@ class Decompressor {
 
     [[nodiscard]] uint64_t empty_words_count() const { return empty_words_count_; }
 
+    [[nodiscard]] std::filesystem::file_time_type last_write_time() const {
+        return compressed_file_->last_write_time();
+    }
+
     void open();
 
     //! Read the data stream eagerly applying the specified function, expected read in sequential order

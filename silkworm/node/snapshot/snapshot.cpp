@@ -20,6 +20,7 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/node/snapshot/path.hpp>
 
 namespace silkworm::snapshot {
 
@@ -69,6 +70,10 @@ void Snapshot::close_segment() {
     decoder_.close();
 }
 
+SnapshotPath HeaderSnapshot::path() const {
+    return SnapshotPath::from(path_.parent_path(), kSnapshotV1, block_from_, block_to_, SnapshotType::headers);
+}
+
 bool HeaderSnapshot::for_each_header(const Walker& walker) {
     return for_each_item([walker](const WordItem& item) -> bool {
         ByteView encoded_header{item.value.data() + 1, item.value.length() - 1};
@@ -85,11 +90,24 @@ bool HeaderSnapshot::for_each_header(const Walker& walker) {
 }
 
 void HeaderSnapshot::reopen_index() {
-    // TODO(canepat): implement
+    close_index();
+
+    const auto header_index_path = path().index_file();
+    if (header_index_path.exists()) {
+        idx_header_hash_ = std::make_unique<succinct::RecSplitIndex>(header_index_path.path());
+        if (idx_header_hash_->last_write_time() < decoder_.last_write_time()) {
+            // Index has been created before the segment file, needs to be ignored (and rebuilt) as inconsistent
+            close_index();
+        }
+    }
 }
 
 void HeaderSnapshot::close_index() {
-    // TODO(canepat): implement
+    idx_header_hash_.reset();
+}
+
+SnapshotPath BodySnapshot::path() const {
+    return SnapshotPath::from(path_.parent_path(), kSnapshotV1, block_from_, block_to_, SnapshotType::bodies);
 }
 
 bool BodySnapshot::for_each_body(const Walker& walker) {
@@ -125,19 +143,51 @@ std::pair<uint64_t, uint64_t> BodySnapshot::compute_txs_amount() {
 }
 
 void BodySnapshot::reopen_index() {
-    // TODO(canepat): implement
+    close_index();
+
+    const auto body_index_path = path().index_file();
+    if (body_index_path.exists()) {
+        idx_body_number_ = std::make_unique<succinct::RecSplitIndex>(body_index_path.path());
+        if (idx_body_number_->last_write_time() < decoder_.last_write_time()) {
+            // Index has been created before the segment file, needs to be ignored (and rebuilt) as inconsistent
+            close_index();
+        }
+    }
 }
 
 void BodySnapshot::close_index() {
-    // TODO(canepat): implement
+    idx_body_number_.reset();
+}
+
+SnapshotPath TransactionSnapshot::path() const {
+    return SnapshotPath::from(path_.parent_path(), kSnapshotV1, block_from_, block_to_, SnapshotType::transactions);
 }
 
 void TransactionSnapshot::reopen_index() {
-    // TODO(canepat): implement
+    close_index();
+
+    const auto tx_hash_index_path = path().index_file_for_type(SnapshotType::transactions);
+    if (tx_hash_index_path.exists()) {
+        idx_txn_hash_ = std::make_unique<succinct::RecSplitIndex>(tx_hash_index_path.path());
+        if (idx_txn_hash_->last_write_time() < decoder_.last_write_time()) {
+            // Index has been created before the segment file, needs to be ignored (and rebuilt) as inconsistent
+            close_index();
+        }
+    }
+
+    const auto tx_hash_2_block_index_path = path().index_file_for_type(SnapshotType::transactions2block);
+    if (tx_hash_2_block_index_path.exists()) {
+        idx_txn_hash_2_block_ = std::make_unique<succinct::RecSplitIndex>(tx_hash_2_block_index_path.path());
+        if (idx_txn_hash_2_block_->last_write_time() < decoder_.last_write_time()) {
+            // Index has been created before the segment file, needs to be ignored (and rebuilt) as inconsistent
+            close_index();
+        }
+    }
 }
 
 void TransactionSnapshot::close_index() {
-    // TODO(canepat): implement
+    idx_txn_hash_.reset();
+    idx_txn_hash_2_block_.reset();
 }
 
 }  // namespace silkworm::snapshot

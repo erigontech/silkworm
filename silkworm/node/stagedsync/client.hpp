@@ -32,11 +32,9 @@ class Client {
   public:
     virtual ~Client() = default;
 
-    virtual auto start() -> awaitable<void> = 0;
-
     virtual auto get_block_progress() -> awaitable<BlockNum>;
 
-    virtual auto get_header(BlockNum block_number, Hash block_hash) -> awaitable<BlockHeader> = 0;
+    virtual auto get_header(BlockNum block_number, Hash block_hash) -> awaitable<std::optional<BlockHeader>> = 0;
     virtual auto get_body(BlockNum block_number, Hash block_hash) -> awaitable<BlockBody> = 0;
 
     virtual auto is_canonical(Hash block_hash) -> awaitable<bool> = 0;

@@ -111,11 +111,7 @@ static void match_or_throw(BlockNum block_number, uint64_t received_number) {
 RemoteClient::RemoteClient(agrpc::GrpcContext& grpc_context, const std::shared_ptr<grpc::Channel>& channel)
     : grpc_context_(grpc_context), stub_(::execution::Execution::NewStub(channel)) {}
 
-awaitable<void> RemoteClient::start() {
-    throw std::runtime_error{"RemoteClient::start not implemented"};
-}
-
-awaitable<BlockHeader> RemoteClient::get_header(BlockNum block_number, Hash block_hash) {
+awaitable<std::optional<BlockHeader>> RemoteClient::get_header(BlockNum block_number, Hash block_hash) {
     BlockHeader header;
     ::execution::GetSegmentRequest request;
     request.set_block_number(block_number);
@@ -123,6 +119,10 @@ awaitable<BlockHeader> RemoteClient::get_header(BlockNum block_number, Hash bloc
 
     const auto response = co_await rpc::unary_rpc(
         &::execution::Execution::Stub::AsyncGetHeader, stub_, request, grpc_context_, "failure getting header");
+
+    if (!response.has_header()) {
+        co_return std::nullopt;
+    }
 
     const auto& received_header = response.header();
     match_or_throw(block_hash, received_header.block_hash());

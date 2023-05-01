@@ -60,6 +60,8 @@ class ExecutionEngine : public Stoppable {
   public:
     explicit ExecutionEngine(asio::io_context&, NodeSettings&, db::RWAccess);
 
+    void open();  // needed to circumvent mdbx threading model limitations
+
     asio::io_context& get_executor() { return io_context_; }
 
     // actions

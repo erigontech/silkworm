@@ -39,7 +39,7 @@ class Fork {
     Fork(const Fork&) = delete;
     Fork(Fork&& orig) noexcept;
 
-    void open();
+    void open();  // needed to circumvent mdbx threading model limitations
 
     // extension & contraction
     void extend_with(const std::list<std::shared_ptr<Block>>&);

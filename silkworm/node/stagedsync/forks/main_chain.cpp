@@ -39,8 +39,13 @@ MainChain::MainChain(asio::io_context& ctx, NodeSettings& ns, const db::RWAccess
       tx_{db_access_.start_rw_tx()},
       pipeline_{&ns},
       canonical_chain_(tx_) {
+    tx_.commit_and_stop();
     // To initialize canonical_head_status_ & last_fork_choice_ we need to call verify_chain()
     // but they are not used at the moment
+}
+
+void MainChain::open() {
+    tx_.reopen(*db_access_);  // comply to mdbx limitation: tx must be used from its creation thread
 }
 
 auto MainChain::canonical_head() const -> BlockId {

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <silkworm/node/stagedsync/local_server.hpp>
+#include <silkworm/node/stagedsync/server.hpp>
 
 #include "client.hpp"
 
@@ -24,11 +24,9 @@ namespace silkworm::execution {
 
 class LocalClient : public Client {
   public:
-    explicit LocalClient(Server* local_server);
+    explicit LocalClient(Server& local_server);
 
-    auto start() -> awaitable<void> override;
-
-    auto get_header(BlockNum block_number, Hash block_hash) -> awaitable<BlockHeader> override;
+    auto get_header(BlockNum block_number, Hash block_hash) -> awaitable<std::optional<BlockHeader>> override;
 
     auto get_body(BlockNum block_number, Hash block_hash) -> awaitable<BlockBody> override;
 
@@ -46,7 +44,7 @@ class LocalClient : public Client {
                             std::optional<Hash> finalized_block_hash = std::nullopt) -> awaitable<ForkChoiceApplication> override;
 
   private:
-    Server* local_server_;
+    Server& local_server_;
 };
 
 }  // namespace silkworm::execution

@@ -67,7 +67,7 @@ Fork::Fork(Fork&& orig) noexcept
       last_verified_head_{std::move(orig.last_verified_head_)},
       last_head_status_{std::move(orig.last_head_status_)},
       last_fork_choice_{std::move(orig.last_fork_choice_)} {
-    tx_.commit();
+    tx_.commit_and_stop();
 }
 
 void Fork::open() {

@@ -19,7 +19,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/active_component.hpp>
 #include <silkworm/node/common/settings.hpp>
-#include <silkworm/node/stagedsync/execution_engine.hpp>
+#include <silkworm/node/stagedsync/client.hpp>
 #include <silkworm/sync/internals/chain_fork_view.hpp>
 #include <silkworm/sync/messages/internal_message.hpp>
 
@@ -29,7 +29,7 @@ namespace silkworm::chainsync {
 
 class PoWSync : public ActiveComponent {
   public:
-    PoWSync(BlockExchange&, stagedsync::ExecutionEngine&);
+    PoWSync(BlockExchange&, execution::Client&);
 
     void execution_loop() final; /*[[long_running]]*/
 
@@ -46,7 +46,7 @@ class PoWSync : public ActiveComponent {
     void send_new_block_hash_announcements();
 
     BlockExchange& block_exchange_;
-    stagedsync::ExecutionEngine& exec_engine_;
+    execution::Client& exec_engine_;
     ChainForkView chain_fork_view_;
     bool is_first_sync_{true};
 };

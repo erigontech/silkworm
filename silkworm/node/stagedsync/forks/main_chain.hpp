@@ -47,6 +47,8 @@ class MainChain {
     explicit MainChain(asio::io_context&, NodeSettings&, db::RWAccess);
     MainChain(MainChain&&);
 
+    void open();  // needed to circumvent mdbx threading model limitations
+
     // extension
     void insert_block(const Block&);
 

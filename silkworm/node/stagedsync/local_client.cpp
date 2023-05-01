@@ -21,42 +21,39 @@ namespace silkworm::execution {
 using namespace std::chrono;
 using namespace boost::asio;
 
-LocalClient::LocalClient(Server* local_server) : local_server_(local_server) {}
+LocalClient::LocalClient(Server& local_server) : local_server_(local_server) {}
 
-awaitable<void> LocalClient::start() {
-    throw std::runtime_error{"LocalClient::start not implemented"};
-}
 
-awaitable<BlockHeader> LocalClient::get_header(BlockNum block_number, Hash block_hash) {
-    co_return co_await local_server_->get_header(block_number, block_hash);
+awaitable<std::optional<BlockHeader>> LocalClient::get_header(BlockNum block_number, Hash block_hash) {
+    co_return co_await local_server_.get_header(block_number, block_hash);
 }
 
 awaitable<BlockBody> LocalClient::get_body(BlockNum block_number, Hash block_hash) {
-    co_return co_await local_server_->get_body(block_number, block_hash);
+    co_return co_await local_server_.get_body(block_number, block_hash);
 }
 
 awaitable<bool> LocalClient::is_canonical(Hash block_hash) {
-    co_return co_await local_server_->is_canonical(block_hash);
+    co_return co_await local_server_.is_canonical(block_hash);
 }
 
 awaitable<BlockNum> LocalClient::get_block_num(Hash block_hash) {
-    co_return co_await local_server_->get_block_num(block_hash);
+    co_return co_await local_server_.get_block_num(block_hash);
 }
 
 awaitable<void> LocalClient::insert_headers(const BlockVector& blocks) {
-    co_await local_server_->insert_headers(blocks);
+    co_await local_server_.insert_headers(blocks);
 }
 
 awaitable<void> LocalClient::insert_bodies(const BlockVector& blocks) {
-    co_await local_server_->insert_bodies(blocks);
+    co_await local_server_.insert_bodies(blocks);
 }
 
 awaitable<ValidationResult> LocalClient::validate_chain(Hash head_block_hash) {
-    return local_server_->validate_chain(head_block_hash);
+    return local_server_.validate_chain(head_block_hash);
 }
 
 awaitable<ForkChoiceApplication> LocalClient::update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
-    return local_server_->update_fork_choice(head_block_hash, finalized_block_hash);
+    return local_server_.update_fork_choice(head_block_hash, finalized_block_hash);
 }
 
 }  // namespace silkworm::execution

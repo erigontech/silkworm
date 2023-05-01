@@ -33,9 +33,7 @@ class RemoteClient : public Client {
   public:
     RemoteClient(agrpc::GrpcContext& grpc_context, const std::shared_ptr<grpc::Channel>& channel);
 
-    auto start() -> awaitable<void> override;
-
-    auto get_header(BlockNum block_number, Hash block_hash) -> awaitable<BlockHeader> override;
+    auto get_header(BlockNum block_number, Hash block_hash) -> awaitable<std::optional<BlockHeader>> override;
 
     auto get_body(BlockNum block_number, Hash block_hash) -> awaitable<BlockBody> override;
 

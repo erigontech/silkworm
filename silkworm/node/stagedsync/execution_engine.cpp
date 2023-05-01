@@ -46,6 +46,13 @@ ExecutionEngine::ExecutionEngine(asio::io_context& ctx, NodeSettings& ns, db::RW
     last_finalized_block_ = {0, ns.chain_config.value().genesis_hash.value()};
 
     block_progress_ = main_chain_.get_block_progress();
+
+    tx_.commit_and_stop();
+}
+
+void ExecutionEngine::open() {  // needed to circumvent mdbx threading model limitations
+    tx_.reopen(*db_access_);
+    main_chain_.open();
 }
 
 auto ExecutionEngine::last_fork_choice() const -> std::optional<BlockId> {

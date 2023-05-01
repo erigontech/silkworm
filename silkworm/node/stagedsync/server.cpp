@@ -1,0 +1,127 @@
+/*
+   Copyright 2023 The Silkworm Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+#include "server.hpp"
+
+#include <boost/asio.hpp>
+
+namespace silkworm::execution {
+
+using namespace std::chrono;
+namespace asio = boost::asio;
+
+Server::Server(NodeSettings& ns, db::RWAccess dba) : exec_engine_{io_context_, ns, dba} {
+}
+
+bool Server::stop() {
+    io_context_.stop();
+    return ActiveComponent::stop();
+}
+
+void Server::execution_loop() {
+    asio::io_context::work work{io_context_};
+    io_context_.run();
+}
+
+void Server::handle_exception(std::exception_ptr e) {
+    // todo: dummy implementation, change it to save exception and rethrow it later
+    try {
+        if (e) {
+            std::rethrow_exception(e);
+        }
+    } catch (const std::exception& ex) {
+        std::cerr << "Exception in ExtendingFork::verify_chain(): " << ex.what() << "\n";
+    }
+}
+
+void Server::open() {
+    auto lambda = [](Server* me) -> asio::awaitable<void> {
+        me->exec_engine_.open();
+        co_return;
+    };
+    return co_spawn(io_context_, lambda(this), asio::detached);
+}
+
+asio::awaitable<std::optional<BlockHeader>> Server::get_header(BlockNum block_number, Hash block_hash) {
+    auto lambda = [](Server* me, BlockNum n, Hash h) -> asio::awaitable<std::optional<BlockHeader>> {
+        co_return me->exec_engine_.get_header(n, h);
+    };
+    return co_spawn(io_context_, lambda(this, block_number, block_hash), asio::use_awaitable);
+}
+
+asio::awaitable<BlockBody> Server::get_body(BlockNum /*block_number*/, Hash /*block_hash*/) {
+    throw std::runtime_error{"Server::get_body not implemented"};
+}
+
+asio::awaitable<bool> Server::is_canonical(Hash /*block_hash*/) {
+    throw std::runtime_error{"Server::is_canonical not implemented"};
+}
+
+asio::awaitable<BlockNum> Server::get_block_num(Hash /*block_hash*/) {
+    throw std::runtime_error{"Server::get_block_num not implemented"};
+}
+
+asio::awaitable<void> Server::insert_headers(const BlockVector& /*blocks*/) {
+    throw std::runtime_error{"Server::insert_headers not implemented"};
+}
+
+asio::awaitable<void> Server::insert_bodies(const BlockVector& /*blocks*/) {
+    throw std::runtime_error{"Server::insert_bodies not implemented"};
+}
+
+asio::awaitable<ValidationResult> Server::validate_chain(Hash head_block_hash) {
+    auto lambda = [](Server* me, Hash h) -> asio::awaitable<ValidationResult> {
+        auto future_result = me->exec_engine_.verify_chain(h);
+        auto verification = co_await future_result.get(asio::use_awaitable);
+
+        ValidationResult validation;
+        if (std::holds_alternative<stagedsync::ValidChain>(verification)) {
+            auto valid_chain = std::get<stagedsync::ValidChain>(verification);
+            validation = ValidChain{.current_head = valid_chain.current_head.hash};
+        } else if (std::holds_alternative<stagedsync::InvalidChain>(verification)) {
+            auto invalid_chain = std::get<stagedsync::InvalidChain>(verification);
+            validation = InvalidChain{
+                .latest_valid_head = invalid_chain.unwind_point.hash,
+                .bad_block = invalid_chain.bad_block,
+                .bad_headers = invalid_chain.bad_headers};
+        } else if (std::holds_alternative<stagedsync::ValidationError>(verification)) {
+            auto validation_error = std::get<stagedsync::ValidationError>(verification);
+            validation = ValidationError{.latest_valid_head = validation_error.latest_valid_head.hash,
+                                         .missing_block = {} };  // todo: provide missing_block
+        } else {
+            throw std::logic_error("Execution Server, unknown error");
+        }
+        co_return validation;
+    };
+    return co_spawn(io_context_, lambda(this, head_block_hash), asio::use_awaitable);
+}
+
+asio::awaitable<ForkChoiceApplication> Server::update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
+    auto lambda = [](Server* me, Hash h, std::optional<Hash> f) -> asio::awaitable<ForkChoiceApplication> {
+        bool updated = me->exec_engine_.notify_fork_choice_update(h, f);  // BLOCKING, will block the entire io_context thread
+
+        auto last_fc = me->exec_engine_.last_fork_choice();
+        ForkChoiceApplication application{.success = updated};
+        if (last_fc) {
+            application.current_head = last_fc->hash;
+            application.current_height = last_fc->number;
+        }
+        co_return application;
+    };
+    return co_spawn(io_context_, lambda(this, head_block_hash, finalized_block_hash), asio::use_awaitable);
+}
+
+}  // namespace silkworm::execution

@@ -505,47 +505,6 @@ void to_json(nlohmann::json& json, const Transaction& transaction) {
     }
 }
 
-void from_json(const nlohmann::json& json, Call& call) {
-    if (json.count("from") != 0) {
-        call.from = json.at("from").get<evmc::address>();
-    }
-    if (json.count("to") != 0) {
-        const auto& to = json.at("to");
-        if (!to.is_null()) {
-            call.to = json.at("to").get<evmc::address>();
-        }
-    }
-    if (json.count("nonce") != 0) {
-        const auto& json_nonce = json.at("nonce");
-        if (json_nonce.is_string()) {
-            call.nonce = std::stol(json_nonce.get<std::string>(), nullptr, 16);
-        } else {
-            call.nonce = json_nonce.get<uint64_t>();
-        }
-    }
-    if (json.count("gas") != 0) {
-        const auto& json_gas = json.at("gas");
-        if (json_gas.is_string()) {
-            call.gas = std::stol(json_gas.get<std::string>(), nullptr, 16);
-        } else {
-            call.gas = json_gas.get<uint64_t>();
-        }
-    }
-    if (json.count("gasPrice") != 0) {
-        call.gas_price = json.at("gasPrice").get<intx::uint256>();
-    }
-    if (json.count("value") != 0) {
-        call.value = json.at("value").get<intx::uint256>();
-    }
-    if (json.count("data") != 0) {
-        const auto json_data = json.at("data").get<std::string>();
-        call.data = silkworm::from_hex(json_data);
-    }
-    if (json.count("accessList") != 0) {
-        call.access_list = json.at("accessList").get<AccessList>();
-    }
-}
-
 void to_json(nlohmann::json& json, const ForkChoiceState& forkchoice_state) {
     json["headBlockHash"] = forkchoice_state.head_block_hash;
     json["safeBlockHash"] = forkchoice_state.safe_block_hash;
@@ -747,47 +706,6 @@ void make_glaze_json_error(std::string& reply, uint32_t id, const RevertError& e
     std::strncpy(glaze_json_revert.revert_data.message, error.message.c_str(), error.message.size() > errorMessageSize ? errorMessageSize : error.message.size() + 1);
     glaze_json_revert.revert_data.data = "0x" + silkworm::to_hex(error.data);
     glz::write_json(glaze_json_revert, reply);
-}
-
-struct GlazeJsonCall {
-    char jsonrpc[jsonVersionSize] = "2.0";
-    uint32_t id;
-    char result[2048];
-    struct glaze {
-        using T = GlazeJsonCall;
-        static constexpr auto value = glz::object(
-            "jsonrpc", &T::jsonrpc,
-            "id", &T::id,
-            "result", &T::result);
-    };
-};
-
-struct GlazeJsonCallResultAsString {
-    char jsonrpc[jsonVersionSize] = "2.0";
-    uint32_t id;
-    std::string result;
-    struct glaze {
-        using T = GlazeJsonCallResultAsString;
-        static constexpr auto value = glz::object(
-            "jsonrpc", &T::jsonrpc,
-            "id", &T::id,
-            "result", &T::result);
-    };
-};
-
-void make_glaze_json_content(std::string& reply, uint32_t id, const silkworm::Bytes& call_result) {
-    if (call_result.size() * 2 + 2 + 1 > ethCallResultFixedSize) {
-        GlazeJsonCallResultAsString log_json_data{};
-        log_json_data.result.reserve(call_result.size() * 2 + 2);
-        log_json_data.id = id;
-        log_json_data.result = "0x" + silkworm::to_hex(call_result);
-        glz::write_json(std::move(log_json_data), reply);
-    } else {
-        GlazeJsonCall log_json_data{};
-        log_json_data.id = id;
-        to_hex(log_json_data.result, call_result);
-        glz::write_json(std::move(log_json_data), reply);
-    }
 }
 
 }  // namespace silkworm::rpc

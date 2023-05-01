@@ -38,14 +38,14 @@ inline static std::string build_thread_name(const char name_tag[11], size_t id) 
 }
 
 ServerContext::ServerContext(std::size_t context_id, ServerCompletionQueuePtr&& queue, concurrency::WaitMode wait_mode)
-    : context_{context_id, wait_mode},
+    : Context(context_id, wait_mode),
       server_grpc_context_{std::make_unique<agrpc::GrpcContext>(std::move(queue))},
       client_grpc_context_{std::make_unique<agrpc::GrpcContext>(std::make_unique<grpc::CompletionQueue>())},
       server_grpc_context_work_{boost::asio::make_work_guard(server_grpc_context_->get_executor())},
       client_grpc_context_work_{boost::asio::make_work_guard(client_grpc_context_->get_executor())} {}
 
 void ServerContext::execute_loop() {
-    switch (context_.wait_mode()) {
+    switch (wait_mode_) {
         case WaitMode::backoff:
             execute_loop_backoff();
             break;
@@ -146,12 +146,8 @@ ServerContextPool::~ServerContextPool() {
 void ServerContextPool::add_context(ServerCompletionQueuePtr queue, concurrency::WaitMode wait_mode) {
     const auto num_contexts = execution_pool_.num_contexts();
     const auto& server_context = execution_pool_.add_context(
-        {num_contexts, std::move(queue), wait_mode});
+        std::make_unique<ServerContext>(num_contexts, std::move(queue), wait_mode));
     SILK_DEBUG << "ServerContextPool::add_context context[" << num_contexts << "] " << server_context;
-}
-
-const ServerContext& ServerContextPool::add_context(ServerContext&& context) {
-    return execution_pool_.add_context(std::move(context));
 }
 
 }  // namespace silkworm::rpc

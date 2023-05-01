@@ -80,6 +80,4 @@ void Context::execute_loop_multi_threaded() {
     SILK_DEBUG << "Multi-thread execution loop end [" << std::this_thread::get_id() << "]";
 }
 
-template class ContextPool<>;
-
 }  // namespace silkworm::concurrency

@@ -28,9 +28,15 @@
 
 namespace silkworm::concurrency {
 
+class ContextPool_ForTest : public ContextPool {
+  public:
+    using ContextPool::ContextPool;
+    using ContextPool::add_context;
+};
+
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
-TEST_CASE("Context", "[silkworm][rpc][server_context]") {
+TEST_CASE("Context", "[silkworm][concurrency][server_context]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     Context ctx{0};
 
@@ -82,18 +88,18 @@ TEST_CASE("ContextPool", "[silkworm][concurrency][Context]") {
     }
 
     SECTION("add_context") {
-        ContextPool context_pool{2};
+        ContextPool_ForTest context_pool{2};
         REQUIRE(context_pool.num_contexts() == 0);
-        context_pool.add_context(Context{0, WaitMode::blocking});
-        context_pool.add_context(Context{1, WaitMode::blocking});
+        context_pool.add_context(std::make_unique<Context>(0, WaitMode::blocking));
+        context_pool.add_context(std::make_unique<Context>(1, WaitMode::blocking));
         CHECK(context_pool.num_contexts() == 2);
     }
 
     SECTION("next_context") {
-        ContextPool context_pool{2};
+        ContextPool_ForTest context_pool{2};
         REQUIRE(context_pool.num_contexts() == 0);
-        context_pool.add_context(Context{0, WaitMode::blocking});
-        context_pool.add_context(Context{1, WaitMode::blocking});
+        context_pool.add_context(std::make_unique<Context>(0, WaitMode::blocking));
+        context_pool.add_context(std::make_unique<Context>(1, WaitMode::blocking));
         CHECK(context_pool.num_contexts() == 2);
         auto& context1 = context_pool.next_context();
         CHECK(context1.io_context() != nullptr);
@@ -102,10 +108,10 @@ TEST_CASE("ContextPool", "[silkworm][concurrency][Context]") {
     }
 
     SECTION("next_io_context") {
-        ContextPool context_pool{2};
+        ContextPool_ForTest context_pool{2};
         REQUIRE(context_pool.num_contexts() == 0);
-        context_pool.add_context(Context{0, WaitMode::blocking});
-        context_pool.add_context(Context{1, WaitMode::blocking});
+        context_pool.add_context(std::make_unique<Context>(0, WaitMode::blocking));
+        context_pool.add_context(std::make_unique<Context>(1, WaitMode::blocking));
         CHECK(context_pool.num_contexts() == 2);
         auto& context1 = context_pool.next_context();
         auto& context2 = context_pool.next_context();
@@ -121,17 +127,17 @@ TEST_CASE("ContextPool", "[silkworm][concurrency][Context]") {
     }
 
     SECTION("start/stop w/ contexts") {
-        ContextPool context_pool{2};
-        context_pool.add_context(Context{0, WaitMode::blocking});
-        context_pool.add_context(Context{1, WaitMode::blocking});
+        ContextPool_ForTest context_pool{2};
+        context_pool.add_context(std::make_unique<Context>(0, WaitMode::blocking));
+        context_pool.add_context(std::make_unique<Context>(1, WaitMode::blocking));
         CHECK_NOTHROW(context_pool.start());
         CHECK_NOTHROW(context_pool.stop());
     }
 
     SECTION("join") {
-        ContextPool context_pool{2};
-        context_pool.add_context(Context{0, WaitMode::blocking});
-        context_pool.add_context(Context{1, WaitMode::blocking});
+        ContextPool_ForTest context_pool{2};
+        context_pool.add_context(std::make_unique<Context>(0, WaitMode::blocking));
+        context_pool.add_context(std::make_unique<Context>(1, WaitMode::blocking));
         context_pool.start();
         std::thread joining_thread{[&]() { context_pool.join(); }};
         context_pool.stop();
@@ -139,9 +145,9 @@ TEST_CASE("ContextPool", "[silkworm][concurrency][Context]") {
     }
 
     SECTION("join after stop") {
-        ContextPool context_pool{2};
-        context_pool.add_context(Context{0, WaitMode::blocking});
-        context_pool.add_context(Context{1, WaitMode::blocking});
+        ContextPool_ForTest context_pool{2};
+        context_pool.add_context(std::make_unique<Context>(0, WaitMode::blocking));
+        context_pool.add_context(std::make_unique<Context>(1, WaitMode::blocking));
         context_pool.start();
         context_pool.stop();
         CHECK_NOTHROW(context_pool.join());

@@ -32,6 +32,7 @@
 #include "api/router/service_router.hpp"
 #include "discovery/discovery.hpp"
 #include "eth/protocol.hpp"
+#include "grpc/server/server.hpp"
 #include "message_receiver.hpp"
 #include "message_sender.hpp"
 #include "node_key_config.hpp"
@@ -40,7 +41,6 @@
 #include "rlpx/client.hpp"
 #include "rlpx/protocol.hpp"
 #include "rlpx/server.hpp"
-#include "grpc/server/server.hpp"
 #include "status_manager.hpp"
 
 namespace silkworm::sentry {

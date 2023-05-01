@@ -16,6 +16,11 @@
 
 #pragma once
 
+#include <silkworm/infra/concurrency/coroutine.hpp>
+
+#include <boost/asio.hpp>
+#include <boost/asio/awaitable.hpp>
+
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/active_component.hpp>
 #include <silkworm/node/common/settings.hpp>
@@ -27,6 +32,8 @@
 #include "block_exchange.hpp"
 
 namespace silkworm::chainsync {
+
+namespace asio = boost::asio;
 
 class PoSSync : public ActiveComponent {
   public:
@@ -41,7 +48,7 @@ class PoSSync : public ActiveComponent {
     TransitionConfiguration exchange_transition_config(const TransitionConfiguration&, seconds_t timeout = 1s);
 
   private:
-    Block make_execution_block(const ExecutionPayload& payload);
+    auto make_execution_block(const ExecutionPayload& payload) -> std::shared_ptr<Block>;
     void do_sanity_checks(const BlockHeader& header, const BlockHeader& parent, TotalDifficulty parent_td);
     bool extends_canonical(const Block& block, Hash block_hash);
     auto has_bad_ancestor(const Hash& block_hash) -> std::tuple<bool, Hash>;

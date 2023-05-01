@@ -32,6 +32,7 @@ struct ForkChoiceApplication {
     BlockNum current_height{0};
 };
 
+/*  todo: use those definitions in place of the ones in forks/verification_result.hpp
 struct ValidChain {
     Hash current_head;
 };
@@ -48,5 +49,6 @@ struct ValidationError {
 };
 
 using ValidationResult = std::variant<ValidChain, InvalidChain, ValidationError>;
+*/
 
 }  // namespace silkworm::execution

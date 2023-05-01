@@ -18,7 +18,6 @@
 
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/infra/common/measure.hpp>
-#include <silkworm/infra/concurrency/sync_wait.hpp>
 #include <silkworm/sync/messages/outbound_new_block.hpp>
 #include <silkworm/sync/messages/outbound_new_block_hashes.hpp>
 
@@ -91,7 +90,7 @@ auto PoWSync::forward_and_insert_blocks() -> NewHeight {
         });
 
         // insert blocks into database
-        sync_wait(in(exec_engine_), exec_engine_.insert_blocks(to_plain_blocks(blocks)));
+        exec_engine_.insert_blocks(to_plain_blocks(blocks));
 
         // send announcement to peers
         send_new_block_announcements(std::move(announcements_to_do));  // according to eth/67 they must be done here,
@@ -136,7 +135,7 @@ void PoWSync::execution_loop() {
 
         // verify the new section of the chain
         log::Info("Sync") << "Verifying chain, head=" << new_height.number;
-        auto verification = sync_wait(in(exec_engine_), exec_engine_.verify_chain(new_height.hash));
+        auto verification = exec_engine_.verify_chain(new_height.hash).get();  // BLOCKING
 
         if (std::holds_alternative<InvalidChain>(verification)) {
             auto invalid_chain = std::get<InvalidChain>(verification);

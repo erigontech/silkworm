@@ -74,7 +74,7 @@ void PoSSync::execution_loop() {
         });
 
         // insert blocks into database
-        exec_engine_.insert_blocks(blocks);
+        exec_engine_.insert_blocks(to_plain_blocks(blocks));
 
         downloaded_headers.set(block_progress);
         log::Info("Sync") << "Downloading progress: +" << downloaded_headers.delta() << " blocks downloaded, "
@@ -90,9 +90,9 @@ void PoSSync::execution_loop() {
 }
 
 // Convert an ExecutionPayload to a Block as per "Engine API - Paris" specs
-Block PoSSync::make_execution_block(const ExecutionPayload& payload) {
-    Block block;
-    BlockHeader& header = block.header;
+std::shared_ptr<Block> PoSSync::make_execution_block(const ExecutionPayload& payload) {
+    std::shared_ptr<Block> block = std::make_shared<Block>();
+    BlockHeader& header = block->header;
 
     header.number = payload.number;
     header.timestamp = payload.timestamp;
@@ -115,7 +115,7 @@ Block PoSSync::make_execution_block(const ExecutionPayload& payload) {
             std::string reason{magic_enum::enum_name<DecodingError>(decoding_result.error())};
             throw PayloadValidationError("tx rlp decoding error: " + reason);
         }
-        block.transactions.push_back(tx);
+        block->transactions.push_back(tx);
     }
     header.transactions_root = protocol::compute_transaction_root(block);
 
@@ -124,7 +124,7 @@ Block PoSSync::make_execution_block(const ExecutionPayload& payload) {
     header.difficulty = 0;
     header.mix_hash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
     header.nonce = {0, 0, 0, 0, 0, 0, 0, 0};
-    block.ommers = {};  // RLP([]) = 0xc0
+    block->ommers = {};  // RLP([]) = 0xc0
 
     // as per EIP-4399
     header.mix_hash = payload.prev_randao;
@@ -155,41 +155,43 @@ auto PoSSync::has_bad_ancestor(const Hash&) -> std::tuple<bool, Hash> {
     return {false, Hash()};  // todo: implement, return if it is valid or the first valid ancestor
 }
 
-PayloadStatus PoSSync::new_payload(const ExecutionPayload& payload, seconds_t /*timeout*/) {
+PayloadStatus PoSSync::new_payload(const ExecutionPayload& payload, seconds_t timeout) {
     // Implementation of engine_new_payloadV1 method
+    using namespace stagedsync;
     constexpr evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
     auto terminal_total_difficulty = block_exchange_.chain_config().terminal_total_difficulty;
     auto no_latest_valid_hash = std::nullopt;
 
     try {
-        Block block = make_execution_block(payload);  // as per the EngineAPI spec
+        auto block = make_execution_block(payload);  // as per the EngineAPI spec
 
-        Hash block_hash = block.header.hash();
+        Hash block_hash = block->header.hash();
         if (payload.block_hash != block_hash) return {.status = PayloadStatus::kInvalidBlockHash};
 
         auto [valid, last_valid] = has_bad_ancestor(block_hash);
         if (!valid) return {PayloadStatus::kInvalid, last_valid, "bad ancestor"};
 
-        auto parent = exec_engine_.get_header(block.header.parent_hash);  // todo: decide whether to use chain_fork_view_ cache instead
+        auto parent = exec_engine_.get_header(block->header.parent_hash);  // todo: decide whether to use chain_fork_view_ cache instead
         if (!parent) {
             // send payload to the block exchange to extend the chain up to it
-            block_exchange_.new_target_block(block);
+            block_exchange_.new_target_block(*block);
             return {.status = PayloadStatus::kSyncing};
         }
-        auto parent_td = exec_engine_.get_header_td(block.header.number - 1, block.header.parent_hash);
+        auto parent_td = exec_engine_.get_header_td(block->header.number - 1, block->header.parent_hash);
         if (!parent_td) {
             return {.status = PayloadStatus::kSyncing};
         }
 
-        do_sanity_checks(block.header, *parent, *parent_td);
+        do_sanity_checks(block->header, *parent, *parent_td);
 
         exec_engine_.insert_block(block);
 
-        if (!extends_canonical(block, block_hash)) {
+        if (!extends_canonical(*block, block_hash)) {
             return {PayloadStatus::kAccepted};
         }
 
-        auto verification = exec_engine_.verify_chain(block_hash);  // todo: use timeout here
+        // WARNING: from here the method execution can be cancelled
+        auto verification = exec_engine_.verify_chain(block_hash).get(timeout);
 
         if (std::holds_alternative<ValidChain>(verification)) {
             // VALID
@@ -217,8 +219,9 @@ PayloadStatus PoSSync::new_payload(const ExecutionPayload& payload, seconds_t /*
 }
 
 ForkChoiceUpdateReply PoSSync::fork_choice_update(const ForkChoiceState& state,
-                                                  const std::optional<PayloadAttributes>& attributes, seconds_t /*timeout*/) {
+                                                  const std::optional<PayloadAttributes>& attributes, seconds_t timeout) {
     // Implementation of engine_forkchoiceUpdatedV1 method
+    using namespace stagedsync;
     constexpr evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
     auto terminal_total_difficulty = block_exchange_.chain_config().terminal_total_difficulty;
     auto no_latest_valid_hash = std::nullopt;
@@ -228,7 +231,7 @@ ForkChoiceUpdateReply PoSSync::fork_choice_update(const ForkChoiceState& state,
             return {{PayloadStatus::kInvalid, no_latest_valid_hash, "invalid head block hash"}, no_payload_id};
         }
 
-        auto head_header_hash = state.head_block_hash;
+        Hash head_header_hash = state.head_block_hash;
         auto head_header = exec_engine_.get_header(head_header_hash);  // todo: decide whether to use chain_fork_view_ cache instead
         if (!head_header) {
             auto [valid, last_valid] = has_bad_ancestor(head_header_hash);
@@ -253,11 +256,12 @@ ForkChoiceUpdateReply PoSSync::fork_choice_update(const ForkChoiceState& state,
         do_sanity_checks(*head_header, *parent, *parent_td);
 
         auto last_fcu = exec_engine_.last_fork_choice();
-        if (exec_engine_.is_ancestor(head, last_fcu)) {
+        if (exec_engine_.is_ancestor(head, *last_fcu)) {
             return {{PayloadStatus::kValid, state.head_block_hash}, no_payload_id};
         }
 
-        auto verification = exec_engine_.verify_chain(head_header_hash);  // todo: use timeout here
+        // WARNING: from here the method execution can be cancelled
+        auto verification = exec_engine_.verify_chain(head_header_hash).get(timeout);
 
         if (std::holds_alternative<InvalidChain>(verification)) {
             // INVALID

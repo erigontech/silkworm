@@ -44,6 +44,18 @@ namespace asio = boost::asio;
 
 #define ERIGON_API
 
+/**
+ * ExecutionEngine is the main component of the staged sync.
+ * It is responsible for:
+ * - inserting blocks keeping track of forks
+ * - verifying forks managing some parallel executions of the pipeline
+ * - exposing a consistent view of the chain
+ *
+ * Its interface is sync to maintain a simple and consistent state but on forks:
+ * - block insertion & chain verification immediately return
+ * - notify_fork_choice_update need to block to set a consistent view of the chain
+ * On main-chain operations are blocking because when there are no forks we do not need async execution
+ */
 class ExecutionEngine : public Stoppable {
   public:
     explicit ExecutionEngine(asio::io_context&, NodeSettings&, db::RWAccess);
@@ -51,13 +63,12 @@ class ExecutionEngine : public Stoppable {
     asio::io_context& get_executor() { return io_context_; }
 
     // actions
-    ERIGON_API auto insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks) -> asio::awaitable<void>;
-    ERIGON_API auto insert_block(std::shared_ptr<Block> block) -> asio::awaitable<void>;
+    ERIGON_API void insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks);
+    ERIGON_API void insert_block(std::shared_ptr<Block> block);
 
     ERIGON_API auto verify_chain(Hash head_block_hash) -> concurrency::AwaitableFuture<VerificationResult>;
 
-    ERIGON_API auto notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt)
-        -> asio::awaitable<bool>;
+    ERIGON_API bool notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
 
     // state
     auto last_finalized_block() const -> BlockId;

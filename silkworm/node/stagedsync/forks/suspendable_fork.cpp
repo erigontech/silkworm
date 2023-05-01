@@ -51,50 +51,62 @@ BlockId ExtendingFork::current_head() const {
     return current_head_;
 }
 
-auto ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block>>&& blocks) -> asio::awaitable<void> {
+void ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block>>&& blocks) {
     current_head_ = new_head;  // setting this here is important for find_fork_by_head() due to the fact that block
                                // insertion and head computation is delayed but find_fork_by_head() is called immediately
-    return co_spawn(
-        io_context_,
-        [](ExtendingFork& me, BlockId new_head, std::list<std::shared_ptr<Block>>&& blocks) -> awaitable<void> {
-            me.fork_.open();
-            me.fork_.extend_with(blocks);
-            ensure(me.fork_.current_head() == new_head, "fork head mismatch");
-        }(*this, new_head, std::move(blocks)),
-        use_awaitable);
+    auto lambda = [](ExtendingFork& me, BlockId new_head, std::list<std::shared_ptr<Block>>&& blocks) -> awaitable<void> {
+        me.fork_.open();
+        me.fork_.extend_with(blocks);
+        ensure(me.fork_.current_head() == new_head, "fork head mismatch");
+        co_return;
+    };
+
+    co_spawn(io_context_, lambda(*this, new_head, std::move(blocks)), handle_exception);
 }
 
-auto ExtendingFork::extend_with(Hash head_hash, const Block& block) -> asio::awaitable<void> {
+void ExtendingFork::extend_with(Hash head_hash, const Block& block) {
     current_head_ = {block.header.number, head_hash};  // setting this here is important, same as above
-    return co_spawn(
-        io_context_,
-        [](ExtendingFork& me, const Block& block) -> awaitable<void> {
-            me.fork_.extend_with(block);
-        }(*this, block),
-        use_awaitable);
+
+    auto lambda = [](ExtendingFork& me, const Block& block) -> awaitable<void> {
+        me.fork_.extend_with(block);
+        co_return;
+    };
+
+    co_spawn(io_context_, lambda(*this, block), handle_exception);
 }
 
 auto ExtendingFork::verify_chain() -> concurrency::AwaitableFuture<VerificationResult> {
-
     concurrency::AwaitablePromise<VerificationResult> promise{io_context_};
     auto awaitable_future = promise.get_future();
 
-    co_spawn(
-        io_context_,
-        [](ExtendingFork& me, concurrency::AwaitablePromise<VerificationResult>&& promise) -> awaitable<void> {  // avoid using campture in lambda
-            auto result = me.fork_.verify_chain();
-            me.current_head_ = me.fork_.current_head();
-            promise.set_value(result);
-        }(*this, std::move(promise)),
-        detached);
+    auto lambda = [](ExtendingFork& me, concurrency::AwaitablePromise<VerificationResult>&& promise) -> awaitable<void> {
+        auto result = me.fork_.verify_chain();
+        me.current_head_ = me.fork_.current_head();
+        promise.set_value(result);
+        co_return;
+    };
+
+    co_spawn(io_context_, lambda(*this, std::move(promise)), handle_exception);
 
     return awaitable_future;
 }
 
-bool ExtendingFork::notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
-    auto result = fork_.notify_fork_choice_update(head_block_hash, finalized_block_hash);
-    current_head_ = fork_.current_head();
-    return result;
+auto ExtendingFork::notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash)
+    -> concurrency::AwaitableFuture<bool> {
+    concurrency::AwaitablePromise<bool> promise{io_context_};
+    auto awaitable_future = promise.get_future();
+
+    auto lambda = [](ExtendingFork& me, concurrency::AwaitablePromise<bool>&& promise,
+                     Hash head, std::optional<Hash> finalized) -> awaitable<void> {
+        auto result = me.fork_.notify_fork_choice_update(head, finalized);
+        me.current_head_ = me.fork_.current_head();
+        promise.set_value(result);
+        co_return;
+    };
+
+    co_spawn(io_context_, lambda(*this, std::move(promise), head_block_hash, finalized_block_hash), handle_exception);
+
+    return awaitable_future;
 }
 
 std::vector<ExtendingFork>::iterator find_fork_by_head(std::vector<ExtendingFork>& forks, const Hash& requested_head_hash) {
@@ -105,6 +117,17 @@ std::vector<ExtendingFork>::iterator find_fork_by_head(std::vector<ExtendingFork
 
 std::vector<ExtendingFork>::iterator find_fork_to_extend(std::vector<ExtendingFork>& forks, const BlockHeader& header) {
     return find_fork_by_head(forks, header.parent_hash);
+}
+
+void ExtendingFork::handle_exception(std::exception_ptr e) {
+    // todo: dummy implementation, change it to save exception and rethrow it later
+    try {
+        if (e) {
+            std::rethrow_exception(e);
+        }
+    } catch (const std::exception& ex) {
+        std::cerr << "Exception in ExtendingFork::verify_chain(): " << ex.what() << "\n";
+    }
 }
 
 }  // namespace silkworm::stagedsync

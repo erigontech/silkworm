@@ -30,7 +30,7 @@ namespace silkworm::stagedsync {
 
 namespace asio = boost::asio;
 
-// ExtendingFork is a composition of a Fork, a in-memory database and an io_context.
+// ExtendingFork is a composition of a Fork, an in-memory database and an io_context.
 // It executes the fork operations on the private io_context, so we can:
 // - parallelize operations on different forks to improve performances
 // - put operations on the same fork in sequence to avoid races
@@ -43,23 +43,27 @@ class ExtendingFork {
     ExtendingFork(ExtendingFork&& orig) noexcept;
 
     // opening
-    auto start_with(BlockId new_head, std::list<std::shared_ptr<Block>>&&) -> asio::awaitable<void>;
+    void start_with(BlockId new_head, std::list<std::shared_ptr<Block>>&&);
 
     // extension
-    auto extend_with(Hash head_hash, const Block& head) -> asio::awaitable<void>;
+    void extend_with(Hash head_hash, const Block& head);
 
     // verification
-    auto verify_chain() -> concurrency::AwaitableFuture<VerificationResult>;
-    bool notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
+    auto verify_chain()
+        -> concurrency::AwaitableFuture<VerificationResult>;
+    auto notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt)
+        -> concurrency::AwaitableFuture<bool>;
 
     // state
     auto current_head() const -> BlockId;
 
   protected:
+    static void handle_exception(std::exception_ptr);
+
     db::MemoryDatabase memory_db_;
     Fork fork_;
-    asio::io_context& io_context_;  // for io
-    asio::any_io_executor executor_;   // for pipeline execution
+    asio::io_context& io_context_;    // for io
+    asio::any_io_executor executor_;  // for pipeline execution
 
     // cached values provided to avoid thread synchronization
     BlockId current_head_{};

@@ -44,6 +44,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <optional>
 #include <unordered_map>
 
+#include <silkworm/core/common/assert.hpp>
+
 namespace silkworm {
 
 #ifndef __wasm__
@@ -82,19 +84,15 @@ class lru_cache {
         }
     }
 
+    // this method is not thread-safe. Returns address of the element in the internal map
     const value_t* get(const key_t& key) {
-        SILKWORM_LRU_CACHE_GUARD
-        auto it = _cache_items_map.find(key);
-        if (it == _cache_items_map.end()) {
-            return nullptr;
-        } else {
-            _cache_items_list.splice(_cache_items_list.begin(), _cache_items_list, it->second);
-            return &(it->second->second);
-        }
+        SILKWORM_ASSERT(_thread_safe == false);
+        return _get(key);
     }
 
     std::optional<value_t> get_as_copy(const key_t& key) {
-        auto val = get(key);
+        SILKWORM_LRU_CACHE_GUARD
+        auto val = _get(key);
         if (val == nullptr) {
             return std::nullopt;
         }
@@ -125,6 +123,16 @@ class lru_cache {
     }
 
   private:
+    const value_t* _get(const key_t& key) {
+        auto it = _cache_items_map.find(key);
+        if (it == _cache_items_map.end()) {
+            return nullptr;
+        } else {
+            _cache_items_list.splice(_cache_items_list.begin(), _cache_items_list, it->second);
+            return &(it->second->second);
+        }
+    }
+
     std::list<key_value_pair_t> _cache_items_list;
     std::unordered_map<key_t, list_iterator_t> _cache_items_map;
     size_t _max_size;

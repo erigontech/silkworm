@@ -291,9 +291,9 @@ evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc
     std::shared_ptr<evmone::baseline::CodeAnalysis> analysis;
     const bool use_cache{code_hash && baseline_analysis_cache};
     if (use_cache) {
-        const auto* ptr{baseline_analysis_cache->get(*code_hash)};
-        if (ptr) {
-            analysis = *ptr;
+        const auto optional_analysis{baseline_analysis_cache->get_as_copy(*code_hash)};
+        if (optional_analysis) {
+            analysis = *optional_analysis;
         }
     }
     if (!analysis) {

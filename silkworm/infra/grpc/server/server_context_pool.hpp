@@ -36,7 +36,7 @@ using ServerCompletionQueuePtr = std::unique_ptr<::grpc::ServerCompletionQueue>;
 using ServerCompletionQueueFactory = std::function<ServerCompletionQueuePtr()>;
 
 //! Asynchronous server scheduler running an execution loop w/ integrated gRPC.
-class ServerContext :public concurrency::Context {
+class ServerContext : public concurrency::Context {
   public:
     ServerContext(std::size_t context_id, ServerCompletionQueuePtr&& server_queue,
                   concurrency::WaitMode wait_mode = concurrency::WaitMode::blocking);

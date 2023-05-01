@@ -30,8 +30,8 @@ namespace silkworm::concurrency {
 
 class ContextPool_ForTest : public ContextPool {
   public:
-    using ContextPool::ContextPool;
     using ContextPool::add_context;
+    using ContextPool::ContextPool;
 };
 
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library

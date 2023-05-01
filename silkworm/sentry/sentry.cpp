@@ -40,7 +40,7 @@
 #include "rlpx/client.hpp"
 #include "rlpx/protocol.hpp"
 #include "rlpx/server.hpp"
-#include "rpc/server/server.hpp"
+#include "grpc/server/server.hpp"
 #include "status_manager.hpp"
 
 namespace silkworm::sentry {

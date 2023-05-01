@@ -21,7 +21,7 @@
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/infra/grpc/common/util.hpp>
 #include <silkworm/interfaces/types/types.pb.h>
-#include <silkworm/sentry/rpc/interfaces/node_info.hpp>
+#include <silkworm/sentry/grpc/interfaces/node_info.hpp>
 
 namespace silkworm::rpc {
 

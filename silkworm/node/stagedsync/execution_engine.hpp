@@ -38,11 +38,11 @@
 #include "forks/main_chain.hpp"
 #include "forks/suspendable_fork.hpp"
 
+#define ERIGON_API
+
 namespace silkworm::stagedsync {
 
 namespace asio = boost::asio;
-
-#define ERIGON_API
 
 /**
  * ExecutionEngine is the main component of the staged sync.
@@ -61,8 +61,6 @@ class ExecutionEngine : public Stoppable {
     explicit ExecutionEngine(asio::io_context&, NodeSettings&, db::RWAccess);
 
     void open();  // needed to circumvent mdbx threading model limitations
-
-    asio::io_context& get_executor() { return io_context_; }
 
     // actions
     ERIGON_API void insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks);

@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <boost/asio/io_context.hpp>
+
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/active_component.hpp>
 #include <silkworm/node/common/settings.hpp>
@@ -26,6 +28,8 @@
 #include "block_exchange.hpp"
 
 namespace silkworm::chainsync {
+
+namespace asio = boost::asio;
 
 class PoWSync : public ActiveComponent {
   public:
@@ -45,6 +49,7 @@ class PoWSync : public ActiveComponent {
     void send_new_block_announcements(Blocks&& blocks);
     void send_new_block_hash_announcements();
 
+    asio::io_context io_context_;
     BlockExchange& block_exchange_;
     execution::Client& exec_engine_;
     ChainForkView chain_fork_view_;

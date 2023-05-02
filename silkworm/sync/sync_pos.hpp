@@ -24,7 +24,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/active_component.hpp>
 #include <silkworm/node/common/settings.hpp>
-#include <silkworm/node/stagedsync/execution_engine.hpp>
+#include <silkworm/node/stagedsync/client.hpp>
 #include <silkworm/sync/engine_apis/structs.hpp>
 #include <silkworm/sync/internals/chain_fork_view.hpp>
 #include <silkworm/sync/messages/internal_message.hpp>
@@ -37,7 +37,7 @@ namespace asio = boost::asio;
 
 class PoSSync : public ActiveComponent {
   public:
-    PoSSync(BlockExchange&, stagedsync::ExecutionEngine&);
+    PoSSync(BlockExchange&, execution::Client&);
 
     void execution_loop() final; /*[[long_running]]*/
 
@@ -54,7 +54,7 @@ class PoSSync : public ActiveComponent {
     auto has_bad_ancestor(const Hash& block_hash) -> std::tuple<bool, Hash>;
 
     BlockExchange& block_exchange_;
-    stagedsync::ExecutionEngine& exec_engine_;
+    execution::Client& exec_engine_;
     ChainForkView chain_fork_view_;
 };
 

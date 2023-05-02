@@ -17,6 +17,7 @@
 #include "server.hpp"
 
 #include <boost/asio.hpp>
+#include <boost/asio/io_context.hpp>
 
 namespace silkworm::execution {
 
@@ -32,7 +33,7 @@ bool Server::stop() {
 }
 
 void Server::execution_loop() {
-    asio::io_context::work work{io_context_};
+    asio::executor_work_guard<decltype(io_context_.get_executor())> work{io_context_.get_executor()};
     io_context_.run();
 }
 
@@ -82,10 +83,17 @@ asio::awaitable<void> Server::insert_bodies(const BlockVector& /*blocks*/) {
     throw std::runtime_error{"Server::insert_bodies not implemented"};
 }
 
+asio::awaitable<void> Server::insert_blocks(const BlockVector& blocks) {
+    auto lambda = [](Server* me, const BlockVector& b) -> asio::awaitable<void> {
+        co_return me->exec_engine_.insert_blocks(b);
+    };
+    return co_spawn(io_context_, lambda(this, blocks), asio::use_awaitable);
+}
+
 asio::awaitable<ValidationResult> Server::validate_chain(Hash head_block_hash) {
     auto lambda = [](Server* me, Hash h) -> asio::awaitable<ValidationResult> {
         auto future_result = me->exec_engine_.verify_chain(h);
-        auto verification = co_await future_result.get(asio::use_awaitable);
+        auto verification = co_await future_result.get_async();
 
         ValidationResult validation;
         if (std::holds_alternative<stagedsync::ValidChain>(verification)) {

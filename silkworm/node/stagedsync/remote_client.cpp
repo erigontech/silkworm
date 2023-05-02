@@ -179,7 +179,7 @@ awaitable<void> RemoteClient::insert_headers(const BlockVector& blocks) {
     ::execution::InsertHeadersRequest request;
     for (const auto& b : blocks) {
         ::execution::Header* header = request.add_headers();
-        serialize_header(b.header, header);
+        serialize_header(b->header, header);
     }
     co_await rpc::unary_rpc(
         &::execution::Execution::Stub::AsyncInsertHeaders, stub_, request, grpc_context_, "failure inserting headers");
@@ -189,19 +189,19 @@ awaitable<void> RemoteClient::insert_bodies(const BlockVector& blocks) {
     ::execution::InsertBodiesRequest request;
     for (const auto& b : blocks) {
         ::execution::BlockBody* body = request.add_bodies();
-        body->set_allocated_block_hash(rpc::H256_from_bytes32(b.header.hash()).release());
-        body->set_block_number(b.header.number);
-        for (const auto& transaction : b.transactions) {
+        body->set_allocated_block_hash(rpc::H256_from_bytes32(b->header.hash()).release());
+        body->set_block_number(b->header.number);
+        for (const auto& transaction : b->transactions) {
             Bytes tx_rlp;
             rlp::encode(tx_rlp, transaction);
             body->add_transactions(tx_rlp.data(), tx_rlp.size());
         }
-        for (const auto& ommer : b.ommers) {
+        for (const auto& ommer : b->ommers) {
             ::execution::Header* uncle = body->add_uncles();
             serialize_header(ommer, uncle);
         }
-        if (b.withdrawals) {
-            for (const auto& withdrawal : *b.withdrawals) {
+        if (b->withdrawals) {
+            for (const auto& withdrawal : *b->withdrawals) {
                 ::types::Withdrawal* w = body->add_withdrawals();
                 w->set_index(withdrawal.index);
                 w->set_validator_index(withdrawal.validator_index);
@@ -212,6 +212,10 @@ awaitable<void> RemoteClient::insert_bodies(const BlockVector& blocks) {
     }
     co_await rpc::unary_rpc(
         &::execution::Execution::Stub::AsyncInsertBodies, stub_, request, grpc_context_, "failure inserting bodies");
+}
+
+awaitable<void> RemoteClient::insert_blocks(const BlockVector&) {
+    throw std::runtime_error{"RemoteClient::insert_blocks not implemented"};
 }
 
 awaitable<bool> RemoteClient::is_canonical(Hash block_hash) {

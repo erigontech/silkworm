@@ -37,8 +37,9 @@ class CanonicalChain {
     static constexpr size_t kNoCache = 0;
 
     explicit CanonicalChain(db::RWTxn&, size_t cache_size = kDefaultCacheSize);
-    CanonicalChain(const CanonicalChain&, db::RWTxn&);
-    CanonicalChain(CanonicalChain&&) noexcept = default;
+    CanonicalChain(CanonicalChain&) = delete;           // tx is not copiable
+    CanonicalChain(const CanonicalChain&, db::RWTxn&);  // we can copy a CanonicalChain giving a new tx
+    CanonicalChain(CanonicalChain&&) noexcept;
 
     BlockId find_forking_point(Hash header_hash) const;
     BlockId find_forking_point(const BlockHeader& header) const;

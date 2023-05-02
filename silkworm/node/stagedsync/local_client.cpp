@@ -23,7 +23,6 @@ using namespace boost::asio;
 
 LocalClient::LocalClient(Server& local_server) : local_server_(local_server) {}
 
-
 awaitable<std::optional<BlockHeader>> LocalClient::get_header(BlockNum block_number, Hash block_hash) {
     co_return co_await local_server_.get_header(block_number, block_hash);
 }
@@ -46,6 +45,10 @@ awaitable<void> LocalClient::insert_headers(const BlockVector& blocks) {
 
 awaitable<void> LocalClient::insert_bodies(const BlockVector& blocks) {
     co_await local_server_.insert_bodies(blocks);
+}
+
+awaitable<void> LocalClient::insert_blocks(const BlockVector& blocks) {
+    co_await local_server_.insert_blocks(blocks);
 }
 
 awaitable<ValidationResult> LocalClient::validate_chain(Hash head_block_hash) {

@@ -50,12 +50,12 @@ class Hash : public evmc::bytes32 {
 
 // RLP
 namespace rlp {
-    inline size_t length(const Hash&) { return kHashLength + 1; }
+    //inline size_t length(const Hash&) { return kHashLength + 1; }
 
-    void encode(Bytes& to, const Hash& h);
+    //void encode(Bytes& to, const Hash& h);
 
-    template <>
-    DecodingResult decode(ByteView& from, Hash& to) noexcept;
+    //template <>
+    //DecodingResult decode(ByteView& from, Hash& to) noexcept;
 
 }  // namespace rlp
 

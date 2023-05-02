@@ -33,24 +33,31 @@ class Server : public ActiveComponent {
   public:
     Server(NodeSettings&, db::RWAccess);
 
-    auto open() -> asio::awaitable<void>;
+    void open();
 
-    auto get_header(BlockNum block_number, Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>>;
+    // actions
+    ERIGON_API auto insert_headers(const BlockVector& blocks) -> asio::awaitable<void>;
+    ERIGON_API auto insert_bodies(const BlockVector& blocks) -> asio::awaitable<void>;
+    ERIGON_API auto insert_blocks(const BlockVector& blocks) -> asio::awaitable<void>;
 
-    auto get_body(BlockNum block_number, Hash block_hash) -> asio::awaitable<BlockBody>;
+    ERIGON_API auto validate_chain(Hash head_block_hash) -> asio::awaitable<execution::ValidationResult>;
 
-    auto is_canonical(Hash block_hash) -> asio::awaitable<bool>;
-
-    auto get_block_num(Hash block_hash) -> asio::awaitable<BlockNum>;
-
-    auto insert_headers(const BlockVector& blocks) -> asio::awaitable<void>;
-
-    auto insert_bodies(const BlockVector& blocks) -> asio::awaitable<void>;
-
-    auto validate_chain(Hash head_block_hash) -> asio::awaitable<execution::ValidationResult>;
-
-    auto update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt)
+    ERIGON_API auto update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt)
         -> asio::awaitable<ForkChoiceApplication>;
+
+    // state
+    auto get_block_progress() -> asio::awaitable<BlockNum>;
+
+    // header/body retrieval
+    ERIGON_API auto get_header(BlockNum block_number, Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>>;
+    ERIGON_API auto get_body(BlockNum block_number, Hash block_hash) -> asio::awaitable<BlockBody>;
+
+    ERIGON_API auto is_canonical(Hash block_hash) -> asio::awaitable<bool>;
+    ERIGON_API auto get_block_num(Hash block_hash) -> asio::awaitable<BlockNum>;
+
+    auto get_last_headers(BlockNum limit) const -> std::vector<BlockHeader>;
+
+    asio::io_context& get_executor() { return io_context_; }
 
   private:
     void execution_loop() override;

@@ -37,7 +37,7 @@ class PayloadValidationError : public std::logic_error {
     explicit PayloadValidationError(const std::string& reason) : std::logic_error(reason) {}
 };
 
-PoSSync::PoSSync(BlockExchange& be, stagedsync::ExecutionEngine& ee)
+PoSSync::PoSSync(BlockExchange& be, execution::Client& ee)
     : block_exchange_{be},
       exec_engine_{ee},
       chain_fork_view_{ee.get_canonical_head()} {

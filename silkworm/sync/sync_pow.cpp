@@ -18,6 +18,7 @@
 
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/infra/common/measure.hpp>
+#include <silkworm/infra/concurrency/sync_wait.hpp>
 #include <silkworm/sync/messages/outbound_new_block.hpp>
 #include <silkworm/sync/messages/outbound_new_block_hashes.hpp>
 
@@ -28,17 +29,17 @@ static void ensure_invariant(bool condition, std::string message) {
         throw std::logic_error("Consensus invariant violation: " + message);
 }
 
-PoWSync::PoWSync(BlockExchange& be, stagedsync::ExecutionEngine& ee)
+PoWSync::PoWSync(BlockExchange& be, execution::Client& ee)
     : block_exchange_{be},
       exec_engine_{ee},
-      chain_fork_view_{ee.get_canonical_head()} {
+      chain_fork_view_{ee.get_canonical_head()} { // ### at this point ee is not started, we cannot block and wait
     // BlockExchange need a starting point to start downloading from
-    block_exchange_.initial_state(exec_engine_.get_last_headers(65536));
+    block_exchange_.initial_state(exec_engine_.get_last_headers(65536));  // ### same as above
 }
 
 auto PoWSync::resume() -> NewHeight {  // find the point (head) where we left off
-    auto canonical_head = exec_engine_.get_canonical_head();
-    auto block_progress = exec_engine_.get_block_progress();
+    auto canonical_head = sync_wait(in(exec_engine_), exec_engine_.get_canonical_head());
+    auto block_progress = sync_wait(in(exec_engine_), exec_engine_.get_block_progress());
 
     ensure_invariant(canonical_head.height <= block_progress, "canonical head beyond block progress");
 
@@ -50,7 +51,7 @@ auto PoWSync::resume() -> NewHeight {  // find the point (head) where we left of
 
     // ... else we have to re-compute the canonical head parsing the last N headers
 
-    auto prev_headers = exec_engine_.get_last_headers(128);  // are 128 headers enough?
+    auto prev_headers = sync_wait(in(exec_engine_), exec_engine_.get_last_headers(128));  // are 128 headers enough?
     as_range::for_each(prev_headers, [&, this](const auto& header) {
         chain_fork_view_.add(header);
     });
@@ -63,7 +64,7 @@ auto PoWSync::forward_and_insert_blocks() -> NewHeight {
 
     ResultQueue& downloading_queue = block_exchange_.result_queue();
 
-    auto initial_block_progress = exec_engine_.get_block_progress();
+    auto initial_block_progress = sync_wait(in(exec_engine_), exec_engine_.get_block_progress());
     auto block_progress = initial_block_progress;
 
     block_exchange_.download_blocks(initial_block_progress, BlockExchange::Target_Tracking::kByAnnouncements);
@@ -90,7 +91,7 @@ auto PoWSync::forward_and_insert_blocks() -> NewHeight {
         });
 
         // insert blocks into database
-        exec_engine_.insert_blocks(to_plain_blocks(blocks));
+        sync_wait(in(exec_engine_), exec_engine_.insert_blocks(to_plain_blocks(blocks)));
 
         // send announcement to peers
         send_new_block_announcements(std::move(announcements_to_do));  // according to eth/67 they must be done here,
@@ -135,7 +136,7 @@ void PoWSync::execution_loop() {
 
         // verify the new section of the chain
         log::Info("Sync") << "Verifying chain, head=" << new_height.number;
-        auto verification = exec_engine_.verify_chain(new_height.hash).get();  // BLOCKING
+        auto verification = sync_wait(in(exec_engine_), exec_engine_.verify_chain(new_height.hash));  // BLOCKING
 
         if (std::holds_alternative<InvalidChain>(verification)) {
             auto invalid_chain = std::get<InvalidChain>(verification);
@@ -150,7 +151,7 @@ void PoWSync::execution_loop() {
 
             // notify fork choice update
             log::Info("Sync") << "Notifying fork choice updated, head=" << invalid_chain.unwind_point.number;
-            exec_engine_.notify_fork_choice_update(invalid_chain.unwind_point.hash);
+            sync_wait(in(exec_engine_), exec_engine_.update_fork_choice(invalid_chain.unwind_point.hash));
 
         } else if (std::holds_alternative<ValidChain>(verification)) {
             auto valid_chain = std::get<ValidChain>(verification);
@@ -161,7 +162,7 @@ void PoWSync::execution_loop() {
 
             // notify fork choice update
             log::Info("Sync") << "Notifying fork choice updated, new head=" << new_height.number;
-            exec_engine_.notify_fork_choice_update(new_height.hash);
+            sync_wait(in(exec_engine_), exec_engine_.update_fork_choice(new_height.hash));
 
             send_new_block_hash_announcements();  // according to eth/67 they must be done after a full block verification
 

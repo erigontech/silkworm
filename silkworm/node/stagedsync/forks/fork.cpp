@@ -62,7 +62,7 @@ Fork::Fork(Fork&& orig) noexcept
       overlay_{std::move(orig.overlay_)},
       tx_{std::move(orig.tx_)},
       pipeline_{&(main_chain_.node_settings())},  // warning: pipeline is not movable, we build a new one here
-      canonical_chain_{std::move(orig.canonical_chain_)},
+      canonical_chain_{std::move(orig.canonical_chain_), tx_},
       current_head_{std::move(orig.current_head_)},
       last_verified_head_{std::move(orig.last_verified_head_)},
       last_head_status_{std::move(orig.last_head_status_)},

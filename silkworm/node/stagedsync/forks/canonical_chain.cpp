@@ -50,6 +50,17 @@ CanonicalChain::CanonicalChain(const CanonicalChain& copy, db::RWTxn& new_tx)
     current_head_ = initial_head_;
 }
 
+CanonicalChain::CanonicalChain(CanonicalChain&& orig) noexcept
+    : tx_{orig.tx_},
+      initial_head_{orig.initial_head_},
+      current_head_{orig.current_head_},
+      canonical_hash_cache_{std::move(orig.canonical_hash_cache_)} {
+    // Read head of canonical chain
+    std::tie(initial_head_.number, initial_head_.hash) = db::read_canonical_head(tx_);
+    // Set current status
+    current_head_ = initial_head_;
+}
+
 BlockId CanonicalChain::initial_head() const { return initial_head_; }
 BlockId CanonicalChain::current_head() const { return current_head_; }
 

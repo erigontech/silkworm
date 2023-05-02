@@ -1397,7 +1397,7 @@ awaitable<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter,
     const auto from_block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, database_reader_, trace_filter.from_block);
     const auto to_block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, database_reader_, trace_filter.to_block);
 
-    if (from_block_with_hash.block.header.number > to_block_with_hash.block.header.number) {
+    if (from_block_with_hash->block.header.number > to_block_with_hash->block.header.number) {
         const Error error{-32000, "invalid parameters: fromBlock cannot be greater than toBlock"};
         stream->write_field("error", error);
         co_return;
@@ -1412,22 +1412,22 @@ awaitable<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter,
     filter.after = trace_filter.after;
     filter.count = trace_filter.count;
 
-    auto block_number = from_block_with_hash.block.header.number;
+    auto block_number = from_block_with_hash->block.header.number;
     auto block_with_hash = from_block_with_hash;
-    while (block_number++ <= to_block_with_hash.block.header.number) {
-        const Block block{block_with_hash, {}, false};
+    while (block_number++ <= to_block_with_hash->block.header.number) {
+        const Block block{*block_with_hash, {}, false};
         SILKRPC_INFO << "TraceCallExecutor::trace_filter: processing "
                      << " block_number: " << block_number - 1
                      << " block: " << block
                      << "\n";
 
-        co_await trace_block(block_with_hash, filter, stream);
+        co_await trace_block(*block_with_hash, filter, stream);
 
         if (filter.count == 0) {
             break;
         }
 
-        if (block_number == to_block_with_hash.block.header.number) {
+        if (block_number == to_block_with_hash->block.header.number) {
             block_with_hash = to_block_with_hash;
         } else {
             block_with_hash = co_await core::read_block_by_number(block_cache_, database_reader_, block_number);

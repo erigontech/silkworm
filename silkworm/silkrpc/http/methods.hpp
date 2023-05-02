@@ -80,6 +80,7 @@ constexpr const char* k_eth_getBlockTransactionCountByHash{"eth_getBlockTransact
 constexpr const char* k_eth_getBlockByNumber{"eth_getBlockByNumber"};
 constexpr const char* k_eth_getBlockTransactionCountByNumber{"eth_getBlockTransactionCountByNumber"};
 constexpr const char* k_eth_getBlockReceipts{"eth_getBlockReceipts"};
+constexpr const char* k_eth_getTransactionReceiptsByBlock{"eth_getTransactionReceiptsByBlock"};
 constexpr const char* k_eth_maxPriorityFeePerGas{"eth_maxPriorityFeePerGas"};
 constexpr const char* k_eth_feeHistory{"eth_feeHistory"};
 

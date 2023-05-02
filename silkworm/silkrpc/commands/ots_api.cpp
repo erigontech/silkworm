@@ -107,16 +107,16 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetails(const nlohman
         const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_hash, block_number);
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
 
-        const Block extended_block{block_with_hash, total_difficulty, false};
+        const Block extended_block{*block_with_hash, total_difficulty, false};
         auto block_size = extended_block.get_block_size();
 
-        const BlockDetails block_details{block_size, block_hash, block_with_hash.block.header, total_difficulty, block_with_hash.block.transactions.size(), block_with_hash.block.ommers};
+        const BlockDetails block_details{block_size, block_hash, block_with_hash->block.header, total_difficulty, block_with_hash->block.transactions.size(), block_with_hash->block.ommers};
 
-        auto receipts = co_await core::get_receipts(tx_database, block_with_hash);
+        auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
         auto chain_config = co_await core::rawdb::read_chain_config(tx_database);
 
-        IssuanceDetails issuance = get_issuance(chain_config, block_with_hash);
-        intx::uint256 total_fees = get_block_fees(chain_config, block_with_hash, receipts, block_number);
+        IssuanceDetails issuance = get_issuance(chain_config, *block_with_hash);
+        intx::uint256 total_fees = get_block_fees(chain_config, *block_with_hash, receipts, block_number);
 
         const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
 
@@ -157,16 +157,16 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetailsByHash(const n
         const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_hash, block_number);
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
 
-        const Block extended_block{block_with_hash, total_difficulty, false};
+        const Block extended_block{*block_with_hash, total_difficulty, false};
         auto block_size = extended_block.get_block_size();
 
-        const BlockDetails block_details{block_size, block_hash, block_with_hash.block.header, total_difficulty, block_with_hash.block.transactions.size(), block_with_hash.block.ommers};
+        const BlockDetails block_details{block_size, block_hash, block_with_hash->block.header, total_difficulty, block_with_hash->block.transactions.size(), block_with_hash->block.ommers};
 
-        auto receipts = co_await core::get_receipts(tx_database, block_with_hash);
+        auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
         auto chain_config = co_await core::rawdb::read_chain_config(tx_database);
 
-        IssuanceDetails issuance = get_issuance(chain_config, block_with_hash);
-        intx::uint256 total_fees = get_block_fees(chain_config, block_with_hash, receipts, block_number);
+        IssuanceDetails issuance = get_issuance(chain_config, *block_with_hash);
+        intx::uint256 total_fees = get_block_fees(chain_config, *block_with_hash, receipts, block_number);
 
         const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
 
@@ -208,19 +208,19 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockTransactions(const nl
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
-        const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_with_hash.hash, block_number);
-        auto receipts = co_await core::get_receipts(tx_database, block_with_hash);
+        const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_with_hash->hash, block_number);
+        auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
 
-        const Block extended_block{block_with_hash, total_difficulty, false};
+        const Block extended_block{*block_with_hash, total_difficulty, false};
         auto block_size = extended_block.get_block_size();
 
-        auto transaction_count = block_with_hash.block.transactions.size();
+        auto transaction_count = block_with_hash->block.transactions.size();
 
-        BlockTransactionsResponse block_transactions{block_size, block_with_hash.hash, block_with_hash.block.header, total_difficulty, transaction_count, block_with_hash.block.ommers};
+        BlockTransactionsResponse block_transactions{block_size, block_with_hash->hash, block_with_hash->block.header, total_difficulty, transaction_count, block_with_hash->block.ommers};
 
-        auto page_end = block_with_hash.block.transactions.size() - (page_size * page_number);
+        auto page_end = block_with_hash->block.transactions.size() - (page_size * page_number);
 
-        if (page_end > block_with_hash.block.transactions.size()) {
+        if (page_end > block_with_hash->block.transactions.size()) {
             page_end = 0;
         }
 
@@ -232,7 +232,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockTransactions(const nl
 
         for (auto i = page_start; i < page_end; i++) {
             block_transactions.receipts.push_back(receipts.at(i));
-            block_transactions.transactions.push_back(block_with_hash.block.transactions.at(i));
+            block_transactions.transactions.push_back(block_with_hash->block.transactions.at(i));
         }
 
         reply = make_json_content(request["id"], block_transactions);
@@ -337,7 +337,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getTransactionBySenderAndNonc
         ethdb::TransactionDatabase tx_database{*tx};
         auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, nonce_block);
 
-        for (const auto& transaction : block_with_hash.block.transactions) {
+        for (const auto& transaction : block_with_hash->block.transactions) {
             if (transaction.from == sender && transaction.nonce == nonce) {
                 auto const transaction_hash{hash_of_transaction(transaction)};
                 auto result = to_bytes32({transaction_hash.bytes, kHashLength});
@@ -478,7 +478,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getContractCreator(const nloh
         auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_found);
 
         trace::TraceCallExecutor executor{*context_.io_context(), *context_.block_cache(), tx_database, workers_};
-        const auto result = co_await executor.trace_deploy_transaction(block_with_hash.block, contract_address);
+        const auto result = co_await executor.trace_deploy_transaction(block_with_hash->block, contract_address);
 
         reply = make_json_content(request["id"], result);
 

@@ -34,6 +34,10 @@ class Snapshot_ForTest : public Snapshot {
         : Snapshot(std::move(path), block_from, block_to) {}
     ~Snapshot_ForTest() override { close(); }
 
+    [[nodiscard]] SnapshotPath path() const override {
+        return SnapshotPath::from(path_.parent_path(), kSnapshotV1, block_from_, block_to_, SnapshotType::headers);
+    }
+
     void reopen_index() override {}
     void close_index() override {}
 };
@@ -45,7 +49,7 @@ TEST_CASE("Snapshot::Snapshot", "[silkworm][snapshot][snapshot]") {
             {1'000, 2'000}};
         for (const auto& [block_from, block_to] : block_ranges) {
             Snapshot_ForTest snapshot{std::filesystem::path{}, block_from, block_to};
-            CHECK(snapshot.path().empty());
+            CHECK(snapshot.fs_path().empty());
             CHECK(snapshot.block_from() == block_from);
             CHECK(snapshot.block_to() == block_to);
             CHECK(snapshot.item_count() == 0);

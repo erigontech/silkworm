@@ -53,7 +53,7 @@ bool SnapshotSync::download_and_index_snapshots(db::RWTxn& txn) {
     log::Info() << "[Snapshots] snapshot repository: " << settings_.repository_dir.string();
 
     if (settings_.no_downloader) {
-        open_and_verify();
+        reopen();
         return true;
     }
 
@@ -62,7 +62,7 @@ bool SnapshotSync::download_and_index_snapshots(db::RWTxn& txn) {
     const bool download_completed = download_snapshots(snapshot_file_names);
     if (!download_completed) return false;
 
-    open_and_verify();
+    reopen();
 
     db::write_snapshots(txn, snapshot_file_names);
 
@@ -71,11 +71,8 @@ bool SnapshotSync::download_and_index_snapshots(db::RWTxn& txn) {
     return index_snapshots(txn, snapshot_file_names);
 }
 
-void SnapshotSync::open_and_verify() {
+void SnapshotSync::reopen() {
     repository_.reopen_folder();
-    if (settings_.verify_on_startup) {
-        repository_.verify();
-    }
     log::Info() << "[Snapshots] open_and_verify completed"
                 << log::Args{"segment_max_block", std::to_string(repository_.segment_max_block()),
                              "idx_max_block", std::to_string(repository_.idx_max_block())};
@@ -174,58 +171,7 @@ bool SnapshotSync::index_snapshots(db::RWTxn& txn, const std::vector<std::string
     log::Info() << "[Snapshots] configured max block: " << configured_max_block_number;
     if (max_block_available < configured_max_block_number) {
         // Iterate on block header snapshots and write header-related tables
-        etl::Collector hash2bn_collector{};
-        intx::uint256 total_difficulty{0};
-        uint64_t block_count{0};
-        repository_.for_each_header([&](const BlockHeader* header) -> bool {
-            SILK_DEBUG << "Header number: " << header->number << " hash: " << to_hex(header->hash());
-            const auto block_number = header->number;
-            const auto block_hash = header->hash();
-
-            // Write block header into kDifficulty table
-            total_difficulty += header->difficulty;
-            db::write_total_difficulty(txn, block_number, block_hash, total_difficulty);
-
-            // Write block header into kCanonicalHashes table
-            db::write_canonical_hash(txn, block_number, block_hash);
-
-            // Collect entries for later loading kHeaderNumbers table
-            Bytes encoded_block_number{sizeof(uint64_t), '\0'};
-            endian::store_big_u64(encoded_block_number.data(), block_number);
-            hash2bn_collector.collect({block_hash.bytes, encoded_block_number});
-
-            if (++block_count % 1'000'000 == 0) {
-                log::Info() << "[Snapshots] processing block header: " << block_number << " count=" << block_count;
-                if (is_stopping()) return false;
-            }
-
-            return true;
-        });
-        db::PooledCursor header_numbers_cursor{txn, db::table::kHeaderNumbers};
-        hash2bn_collector.load(header_numbers_cursor);
-
-        // Reset sequence for kBlockTransactions table
-        const auto view_result = repository_.view_tx_segment(max_block_available, [&](const auto* tx_sn) {
-            // TODO(canepat) implement recsplit.Index
-            const auto last_tx_id = /*tx_sn->idx_txn_hash()->base_data_id() +*/ tx_sn->item_count();
-            db::reset_map_sequence(txn, db::table::kBlockTransactions.name, last_tx_id + 1);
-            return true;
-        });
-        if (view_result != SnapshotRepository::ViewResult::kWalkSuccess) {
-            log::Error() << "[Snapshots] snapshot not found for block: " << max_block_available;
-            return false;
-        }
-
-        // Update head block header in kHeadHeader table
-        // TODO(canepat) Get canonical hash from block reader
-        const Hash canonical_hash{};
-        db::write_head_header_hash(txn, canonical_hash);
-
-        // Update progress for related stages
-        db::stages::write_stage_progress(txn, db::stages::kHeadersKey, max_block_available);
-        db::stages::write_stage_progress(txn, db::stages::kBlockBodiesKey, max_block_available);
-        db::stages::write_stage_progress(txn, db::stages::kBlockHashesKey, max_block_available);
-        db::stages::write_stage_progress(txn, db::stages::kSendersKey, max_block_available);
+        return save(txn, max_block_available);
     }
 
     // TODO(canepat) add_headers_from_snapshots towards header downloader persisted link queue
@@ -262,6 +208,63 @@ void SnapshotSync::build_missing_indexes() {
     // Wait for any already-started-but-unfinished work in case of stop request
     workers.paused = true;
     workers.wait_for_tasks();
+}
+
+bool SnapshotSync::save(db::RWTxn& txn, BlockNum max_block_available) {
+    // Iterate on block header snapshots and write header-related tables
+    etl::Collector hash2bn_collector{};
+    intx::uint256 total_difficulty{0};
+    uint64_t block_count{0};
+    repository_.for_each_header([&](const BlockHeader* header) -> bool {
+        SILK_DEBUG << "Header number: " << header->number << " hash: " << to_hex(header->hash());
+        const auto block_number = header->number;
+        const auto block_hash = header->hash();
+
+        // Write block header into kDifficulty table
+        total_difficulty += header->difficulty;
+        db::write_total_difficulty(txn, block_number, block_hash, total_difficulty);
+
+        // Write block header into kCanonicalHashes table
+        db::write_canonical_hash(txn, block_number, block_hash);
+
+        // Collect entries for later loading kHeaderNumbers table
+        Bytes encoded_block_number{sizeof(uint64_t), '\0'};
+        endian::store_big_u64(encoded_block_number.data(), block_number);
+        hash2bn_collector.collect({block_hash.bytes, encoded_block_number});
+
+        if (++block_count % 1'000'000 == 0) {
+            log::Info() << "[Snapshots] processing block header: " << block_number << " count=" << block_count;
+            if (is_stopping()) return false;
+        }
+
+        return true;
+    });
+    db::PooledCursor header_numbers_cursor{txn, db::table::kHeaderNumbers};
+    hash2bn_collector.load(header_numbers_cursor);
+
+    // Reset sequence for kBlockTransactions table
+    const auto view_result = repository_.view_tx_segment(max_block_available, [&](const auto* tx_sn) {
+        const auto last_tx_id = tx_sn->idx_txn_hash()->base_data_id() + tx_sn->item_count();
+        db::reset_map_sequence(txn, db::table::kBlockTransactions.name, last_tx_id + 1);
+        return true;
+    });
+    if (view_result != SnapshotRepository::ViewResult::kWalkSuccess) {
+        log::Error() << "[Snapshots] snapshot not found for block: " << max_block_available;
+        return false;
+    }
+
+    // Update head block header in kHeadHeader table
+    // TODO(canepat) Get canonical hash from block reader
+    const Hash canonical_hash{};
+    db::write_head_header_hash(txn, canonical_hash);
+
+    // Update progress for related stages
+    db::stages::write_stage_progress(txn, db::stages::kHeadersKey, max_block_available);
+    db::stages::write_stage_progress(txn, db::stages::kBlockBodiesKey, max_block_available);
+    db::stages::write_stage_progress(txn, db::stages::kBlockHashesKey, max_block_available);
+    db::stages::write_stage_progress(txn, db::stages::kSendersKey, max_block_available);
+
+    return true;
 }
 
 }  // namespace silkworm::snapshot

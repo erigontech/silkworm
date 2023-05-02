@@ -52,11 +52,6 @@ void SnapshotRepository::close() {
     }
 }
 
-void SnapshotRepository::verify() {
-    SILK_INFO << "Verify snapshots in repository folder: " << settings_.repository_dir.string();
-    // TODO(canepat) implement
-}
-
 std::vector<BlockNumRange> SnapshotRepository::missing_block_ranges() const {
     const auto ordered_segments = get_segment_files();
 
@@ -74,7 +69,7 @@ std::vector<BlockNumRange> SnapshotRepository::missing_block_ranges() const {
 
 bool SnapshotRepository::for_each_header(const HeaderSnapshot::Walker& fn) {
     for (const auto& [_, header_snapshot] : header_segments_) {
-        SILK_DEBUG << "for_each_header header_snapshot: " << header_snapshot->path().string();
+        SILK_DEBUG << "for_each_header header_snapshot: " << header_snapshot->fs_path().string();
         const auto keep_going = header_snapshot->for_each_header([fn](const auto* header) {
             return fn(header);
         });
@@ -85,7 +80,7 @@ bool SnapshotRepository::for_each_header(const HeaderSnapshot::Walker& fn) {
 
 bool SnapshotRepository::for_each_body(const BodySnapshot::Walker& fn) {
     for (const auto& [_, body_snapshot] : body_segments_) {
-        SILK_DEBUG << "for_each_body body_snapshot: " << body_snapshot->path().string();
+        SILK_DEBUG << "for_each_body body_snapshot: " << body_snapshot->fs_path().string();
         const auto keep_going = body_snapshot->for_each_body([fn](BlockNum number, const auto* body) {
             return fn(number, body);
         });
@@ -148,14 +143,29 @@ void SnapshotRepository::reopen_list(const SnapshotPathList& segment_files, bool
             bool snapshot_added{false};
             switch (seg_file.type()) {
                 case SnapshotType::headers: {
+                    const auto header_it = header_segments_.find(seg_file.path());
+                    if (header_it != header_segments_.end()) {
+                        header_it->second->reopen_index();
+                        continue;
+                    }
                     snapshot_added = reopen_header(seg_file);
                     break;
                 }
                 case SnapshotType::bodies: {
+                    const auto body_it = body_segments_.find(seg_file.path());
+                    if (body_it != body_segments_.end()) {
+                        body_it->second->reopen_index();
+                        continue;
+                    }
                     snapshot_added = reopen_body(seg_file);
                     break;
                 }
                 case SnapshotType::transactions: {
+                    const auto tx_it = tx_segments_.find(seg_file.path());
+                    if (tx_it != tx_segments_.end()) {
+                        tx_it->second->reopen_index();
+                        continue;
+                    }
                     snapshot_added = reopen_transaction(seg_file);
                     break;
                 }
@@ -165,7 +175,7 @@ void SnapshotRepository::reopen_list(const SnapshotPathList& segment_files, bool
             }
 
             if (snapshot_added && seg_file.block_to() > segment_max_block) {
-                segment_max_block = seg_file.block_to();
+                segment_max_block = seg_file.block_to() - 1;
             }
         } catch (const std::exception& exc) {
             SILK_WARN << "Reopen failed for: " << seg_file.path() << " [" << exc.what() << "]";
@@ -242,9 +252,24 @@ SnapshotPathList SnapshotRepository::get_files(const std::string& ext) const {
     return snapshot_files;
 }
 
-uint64_t SnapshotRepository::max_idx_available() const {
-    // TODO(canepat): implement
-    return 0;
+BlockNum SnapshotRepository::max_idx_available() const {
+    BlockNum max_block_headers{0};
+    for (auto& [_, header_seg] : header_segments_) {
+        if (not header_seg->idx_header_hash()) break;
+        max_block_headers = header_seg->block_to() - 1;
+    }
+    BlockNum max_block_bodies{0};
+    for (auto& [_, body_seg] : body_segments_) {
+        if (not body_seg->idx_body_number()) break;
+        max_block_bodies = body_seg->block_to() - 1;
+    }
+    BlockNum max_block_txs{0};
+    for (auto& [_, tx_seg] : tx_segments_) {
+        if (not tx_seg->idx_txn_hash() or not tx_seg->idx_txn_hash_2_block()) break;
+        max_block_txs = tx_seg->block_to() - 1;
+    }
+
+    return std::min(max_block_headers, std::min(max_block_bodies, max_block_txs));
 }
 
 }  // namespace silkworm::snapshot

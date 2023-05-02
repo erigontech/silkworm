@@ -80,6 +80,10 @@ class SnapshotPath {
 
     [[nodiscard]] bool is_segment() const { return path_.extension().string() == kSegmentExtension; }
 
+    [[nodiscard]] bool exists() const {
+        return std::filesystem::exists(std::filesystem::path{path_});
+    }
+
     [[nodiscard]] bool exists_torrent_file() const {
         return std::filesystem::exists(std::filesystem::path{path_ / kTorrentExtension});
     }

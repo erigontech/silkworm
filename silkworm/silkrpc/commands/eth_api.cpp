@@ -203,7 +203,7 @@ awaitable<void> EthereumRpcApi::handle_eth_gas_price(const nlohmann::json& reque
         auto gas_price = co_await gas_price_oracle.suggested_price(latest_block_number);
 
         const auto block_with_hash = co_await block_provider(latest_block_number);
-        const auto base_fee = block_with_hash.block.header.base_fee_per_gas.value_or(0);
+        const auto base_fee = block_with_hash->block.header.base_fee_per_gas.value_or(0);
         gas_price += base_fee;
         reply = make_json_content(request["id"], to_quantity(gas_price));
     } catch (const std::exception& e) {
@@ -237,9 +237,9 @@ awaitable<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::jso
         ethdb::TransactionDatabase tx_database{*tx};
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
-        const auto block_number = block_with_hash.block.header.number;
+        const auto block_number = block_with_hash->block.header.number;
         const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_hash, block_number);
-        const Block extended_block{block_with_hash, total_difficulty, full_tx};
+        const Block extended_block{*block_with_hash, total_difficulty, full_tx};
 
         reply = make_json_content(request["id"], extended_block);
     } catch (const std::invalid_argument& iv) {
@@ -277,8 +277,8 @@ awaitable<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::j
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
-        const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_with_hash.hash, block_number);
-        const Block extended_block{block_with_hash, total_difficulty, full_tx};
+        const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_with_hash->hash, block_number);
+        const Block extended_block{*block_with_hash, total_difficulty, full_tx};
 
         reply = make_json_content(request["id"], extended_block);
     } catch (const std::invalid_argument& iv) {
@@ -314,7 +314,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_hash(c
         ethdb::TransactionDatabase tx_database{*tx};
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
-        const auto tx_count = block_with_hash.block.transactions.size();
+        const auto tx_count = block_with_hash->block.transactions.size();
 
         reply = make_json_content(request["id"], to_quantity(tx_count));
     } catch (const std::exception& e) {
@@ -349,7 +349,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_number
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
 
-        reply = make_json_content(request["id"], to_quantity(block_with_hash.block.transactions.size()));
+        reply = make_json_content(request["id"], to_quantity(block_with_hash->block.transactions.size()));
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
         reply = make_json_error(request["id"], 100, e.what());
@@ -381,14 +381,14 @@ awaitable<void> EthereumRpcApi::handle_eth_get_uncle_by_block_hash_and_index(con
         ethdb::TransactionDatabase tx_database{*tx};
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
-        const auto ommers = block_with_hash.block.ommers;
+        const auto ommers = block_with_hash->block.ommers;
 
         const auto idx = std::stoul(index, nullptr, 16);
         if (idx >= ommers.size()) {
             SILKRPC_WARN << "invalid_argument: index not found processing request: " << request.dump() << "\n";
             reply = make_json_content(request["id"], nullptr);
         } else {
-            const auto block_number = block_with_hash.block.header.number;
+            const auto block_number = block_with_hash->block.header.number;
             const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_hash, block_number);
             auto uncle = ommers[idx];
 
@@ -429,14 +429,14 @@ awaitable<void> EthereumRpcApi::handle_eth_get_uncle_by_block_number_and_index(c
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
-        const auto ommers = block_with_hash.block.ommers;
+        const auto ommers = block_with_hash->block.ommers;
 
         const auto idx = std::stoul(index, nullptr, 16);
         if (idx >= ommers.size()) {
             SILKRPC_WARN << "invalid_argument: index not found processing request: " << request.dump() << "\n";
             reply = make_json_content(request["id"], nullptr);
         } else {
-            const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_with_hash.hash, block_number);
+            const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_with_hash->hash, block_number);
             auto uncle = ommers[idx];
 
             silkworm::BlockWithHash uncle_block_with_hash{{{}, uncle}, uncle.hash()};
@@ -474,7 +474,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_hash(const n
         ethdb::TransactionDatabase tx_database{*tx};
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
-        const auto ommers = block_with_hash.block.ommers;
+        const auto ommers = block_with_hash->block.ommers;
 
         reply = make_json_content(request["id"], to_quantity(ommers.size()));
     } catch (const std::exception& e) {
@@ -508,7 +508,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_number(const
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
-        const auto ommers = block_with_hash.block.ommers;
+        const auto ommers = block_with_hash->block.ommers;
 
         reply = make_json_content(request["id"], to_quantity(ommers.size()));
     } catch (const std::exception& e) {
@@ -643,15 +643,15 @@ awaitable<void> EthereumRpcApi::handle_eth_get_transaction_by_block_hash_and_ind
         ethdb::TransactionDatabase tx_database{*tx};
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
-        const auto transactions = block_with_hash.block.transactions;
+        const auto transactions = block_with_hash->block.transactions;
 
         const auto idx = std::stoul(index, nullptr, 16);
         if (idx >= transactions.size()) {
             SILKRPC_WARN << "Transaction not found for index: " << index << "\n";
             reply = make_json_content(request["id"], nullptr);
         } else {
-            const auto block_header = block_with_hash.block.header;
-            rpc::Transaction txn{transactions[idx], block_with_hash.hash, block_header.number, block_header.base_fee_per_gas, idx};
+            const auto block_header = block_with_hash->block.header;
+            rpc::Transaction txn{transactions[idx], block_with_hash->hash, block_header.number, block_header.base_fee_per_gas, idx};
             reply = make_json_content(request["id"], txn);
         }
     } catch (const std::exception& e) {
@@ -685,7 +685,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_hash_and
         ethdb::TransactionDatabase tx_database{*tx};
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
-        const auto transactions = block_with_hash.block.transactions;
+        const auto transactions = block_with_hash->block.transactions;
 
         const auto idx = std::stoul(index, nullptr, 16);
         if (idx >= transactions.size()) {
@@ -732,15 +732,15 @@ awaitable<void> EthereumRpcApi::handle_eth_get_transaction_by_block_number_and_i
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
-        const auto transactions = block_with_hash.block.transactions;
+        const auto transactions = block_with_hash->block.transactions;
 
         const auto idx = std::stoul(index, nullptr, 16);
         if (idx >= transactions.size()) {
             SILKRPC_WARN << "Transaction not found for index: " << index << "\n";
             reply = make_json_content(request["id"], nullptr);
         } else {
-            const auto block_header = block_with_hash.block.header;
-            rpc::Transaction txn{transactions[idx], block_with_hash.hash, block_header.number, block_header.base_fee_per_gas, idx};
+            const auto block_header = block_with_hash->block.header;
+            rpc::Transaction txn{transactions[idx], block_with_hash->hash, block_header.number, block_header.base_fee_per_gas, idx};
             reply = make_json_content(request["id"], txn);
         }
     } catch (const std::exception& e) {
@@ -775,7 +775,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_number_a
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
-        const auto transactions = block_with_hash.block.transactions;
+        const auto transactions = block_with_hash->block.transactions;
 
         const auto idx = std::stoul(index, nullptr, 16);
         if (idx >= transactions.size()) {
@@ -883,7 +883,7 @@ awaitable<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& re
         SILKRPC_DEBUG << "chain_id: " << chain_id << ", latest_block_number: " << latest_block_number << "\n";
 
         const auto latest_block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, latest_block_number);
-        const auto latest_block = latest_block_with_hash.block;
+        const auto latest_block = latest_block_with_hash->block;
         StateReader state_reader(cached_database);
         state::RemoteState remote_state{*context_.io_context(), cached_database, latest_block.header.number};
 
@@ -1123,7 +1123,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
         EVMExecutor executor{*chain_config_ptr, workers_, remote_state};
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
         silkworm::Transaction txn{call.to_transaction()};
-        const auto execution_result = co_await executor.call(block_with_hash.block, txn);
+        const auto execution_result = co_await executor.call(block_with_hash->block, txn);
 
         if (execution_result.pre_check_error) {
             make_glaze_json_error(reply, request["id"], -32000, execution_result.pre_check_error.value());
@@ -1178,7 +1178,7 @@ boost::asio::awaitable<void> EthereumRpcApi::handle_eth_call_original(const nloh
         EVMExecutor executor{*chain_config_ptr, workers_, remote_state};
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
         silkworm::Transaction txn{call.to_transaction()};
-        const auto execution_result = co_await executor.call(block_with_hash.block, txn);
+        const auto execution_result = co_await executor.call(block_with_hash->block, txn);
 
         if (execution_result.pre_check_error) {
             reply = make_json_error(request["id"], -32000, execution_result.pre_check_error.value());
@@ -1257,11 +1257,11 @@ awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::js
         const auto chain_id = co_await core::rawdb::read_chain_id(tx_database);
         const auto chain_config_ptr = lookup_chain_config(chain_id);
 
-        const bool is_latest_block = co_await core::get_latest_executed_block_number(tx_database) == block_with_hash.block.header.number;
+        const bool is_latest_block = co_await core::get_latest_executed_block_number(tx_database) == block_with_hash->block.header.number;
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
         StateReader state_reader(db_reader);
-        state::RemoteState remote_state{*context_.io_context(), db_reader, block_with_hash.block.header.number};
+        state::RemoteState remote_state{*context_.io_context(), db_reader, block_with_hash->block.header.number};
 
         evmc::address to{};
         if (call.to) {
@@ -1272,7 +1272,7 @@ awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::js
                 // Retrieve nonce by txpool
                 auto nonce_option = co_await tx_pool_->nonce(*call.from);
                 if (!nonce_option) {
-                    std::optional<silkworm::Account> account{co_await state_reader.read_account(*call.from, block_with_hash.block.header.number + 1)};
+                    std::optional<silkworm::Account> account{co_await state_reader.read_account(*call.from, block_with_hash->block.header.number + 1)};
                     if (account) {
                         nonce = (*account).nonce;  // NOLINT
                     }
@@ -1294,7 +1294,7 @@ awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::js
             EVMExecutor executor{*chain_config_ptr, workers_, remote_state};
             const auto txn = call.to_transaction();
             tracer->reset_access_list();
-            const auto execution_result = co_await executor.call(block_with_hash.block, txn, tracers, /* refund */ true, /* gasBailout */ false);
+            const auto execution_result = co_await executor.call(block_with_hash->block, txn, tracers, /* refund */ true, /* gasBailout */ false);
             if (execution_result.pre_check_error) {
                 reply = make_json_error(request["id"], -32000, execution_result.pre_check_error.value());
                 break;
@@ -1359,10 +1359,10 @@ awaitable<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& req
         const auto chain_id = co_await core::rawdb::read_chain_id(tx_database);
         const auto chain_config_ptr = lookup_chain_config(chain_id);
 
-        const bool is_latest_block = co_await core::get_latest_executed_block_number(tx_database) == block_with_hash.block.header.number;
+        const bool is_latest_block = co_await core::get_latest_executed_block_number(tx_database) == block_with_hash->block.header.number;
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
-        auto block_number = block_with_hash.block.header.number;
+        auto block_number = block_with_hash->block.header.number;
         state::RemoteState remote_state{*context_.io_context(), db_reader, block_number};
 
         const auto start_time = clock_time::now();
@@ -1383,7 +1383,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& req
             }
 
             EVMExecutor executor{*chain_config_ptr, workers_, remote_state};
-            const auto execution_result = co_await executor.call(block_with_hash.block, tx_with_block->transaction);
+            const auto execution_result = co_await executor.call(block_with_hash->block, tx_with_block->transaction);
             if (execution_result.pre_check_error) {
                 reply = make_json_error(request["id"], -32000, execution_result.pre_check_error.value());
                 error = true;
@@ -2192,11 +2192,11 @@ awaitable<void> EthereumRpcApi::get_logs(ethdb::TransactionDatabase& tx_database
 
         if (!filtered_block_logs.empty()) {
             const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_to_match);
-            SILKRPC_DEBUG << "block_hash: " << silkworm::to_hex(block_with_hash.hash) << "\n";
+            SILKRPC_DEBUG << "block_hash: " << silkworm::to_hex(block_with_hash->hash) << "\n";
             for (auto& log : filtered_block_logs) {
-                const auto tx_hash{hash_of_transaction(block_with_hash.block.transactions[log.tx_index])};
+                const auto tx_hash{hash_of_transaction(block_with_hash->block.transactions[log.tx_index])};
                 log.block_number = block_to_match;
-                log.block_hash = block_with_hash.hash;
+                log.block_hash = block_with_hash->hash;
                 log.tx_hash = silkworm::to_bytes32({tx_hash.bytes, silkworm::kHashLength});
             }
             logs.insert(logs.end(), filtered_block_logs.begin(), filtered_block_logs.end());

@@ -119,8 +119,8 @@ TEST_CASE("read_block_by_number_or_hash") {
         EXPECT_CALL(db_reader, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> { co_return kBody; }));
         EXPECT_CALL(db_reader, walk(db::table::kBlockTransactionsName, _, _, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<void> { co_return; }));
         auto result = boost::asio::co_spawn(pool, read_block_by_number_or_hash(cache, db_reader, bnoh), boost::asio::use_future);
-        const silkworm::BlockWithHash bwh = result.get();
-        check_expected_block_with_hash(bwh);
+        const std::shared_ptr<silkworm::BlockWithHash> bwh = result.get();
+        check_expected_block_with_hash(*bwh);
     }
 
     SECTION("using valid hash") {
@@ -130,8 +130,8 @@ TEST_CASE("read_block_by_number_or_hash") {
         EXPECT_CALL(db_reader, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> { co_return kBody; }));
         EXPECT_CALL(db_reader, walk(db::table::kBlockTransactionsName, _, _, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<void> { co_return; }));
         auto result = boost::asio::co_spawn(pool, read_block_by_number_or_hash(cache, db_reader, bnoh), boost::asio::use_future);
-        const silkworm::BlockWithHash bwh = result.get();
-        check_expected_block_with_hash(bwh);
+        const std::shared_ptr<silkworm::BlockWithHash> bwh = result.get();
+        check_expected_block_with_hash(*bwh);
     }
 
     SECTION("using tag kEarliestBlockId") {
@@ -141,8 +141,8 @@ TEST_CASE("read_block_by_number_or_hash") {
         EXPECT_CALL(db_reader, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> { co_return kBody; }));
         EXPECT_CALL(db_reader, walk(db::table::kBlockTransactionsName, _, _, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<void> { co_return; }));
         auto result = boost::asio::co_spawn(pool, read_block_by_number_or_hash(cache, db_reader, bnoh), boost::asio::use_future);
-        const silkworm::BlockWithHash bwh = result.get();
-        check_expected_block_with_hash(bwh);
+        const std::shared_ptr<silkworm::BlockWithHash> bwh = result.get();
+        check_expected_block_with_hash(*bwh);
     }
 }
 
@@ -158,8 +158,8 @@ TEST_CASE("silkworm::core::read_block_by_number") {
         EXPECT_CALL(db_reader, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> { co_return kBody; }));
         EXPECT_CALL(db_reader, walk(db::table::kBlockTransactionsName, _, _, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<void> { co_return; }));
         auto result = boost::asio::co_spawn(pool, core::read_block_by_number(cache, db_reader, bn), boost::asio::use_future);
-        const BlockWithHash bwh = result.get();
-        check_expected_block_with_hash(bwh);
+        const std::shared_ptr<silkworm::BlockWithHash> bwh = result.get();
+        check_expected_block_with_hash(*bwh);
     }
 
     SECTION("using valid block_number and hit cache") {
@@ -180,12 +180,12 @@ TEST_CASE("silkworm::core::read_block_by_number") {
             co_return *silkworm::from_hex("70A5C9D346416f901826581d423Cd5B92d44Ff5a");
         }));
         auto result = boost::asio::co_spawn(pool, core::read_block_by_number(cache, db_reader, bn), boost::asio::use_future);
-        const silkworm::BlockWithHash bwh = result.get();
-        check_expected_block_with_hash(bwh);
+        const std::shared_ptr<silkworm::BlockWithHash> bwh = result.get();
+        check_expected_block_with_hash(*bwh);
 
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> { co_return kBlockHash; }));
         auto result1 = boost::asio::co_spawn(pool, core::read_block_by_number(cache, db_reader, bn), boost::asio::use_future);
-        const silkworm::BlockWithHash bwh1 = result1.get();
+        const std::shared_ptr<silkworm::BlockWithHash> bwh1 = result1.get();
     }
 
     SECTION("using valid block_number and empty txs (miss cache)") {
@@ -194,15 +194,15 @@ TEST_CASE("silkworm::core::read_block_by_number") {
         EXPECT_CALL(db_reader, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> { co_return kBody; }));
         EXPECT_CALL(db_reader, walk(db::table::kBlockTransactionsName, _, _, _)).WillOnce(Invoke([]() -> boost::asio::awaitable<void> { co_return; }));
         auto result = boost::asio::co_spawn(pool, core::read_block_by_number(cache, db_reader, bn), boost::asio::use_future);
-        const silkworm::BlockWithHash bwh = result.get();
-        check_expected_block_with_hash(bwh);
+        const std::shared_ptr<silkworm::BlockWithHash> bwh = result.get();
+        check_expected_block_with_hash(*bwh);
 
         EXPECT_CALL(db_reader, get_one(db::table::kCanonicalHashesName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> { co_return kBlockHash; }));
         EXPECT_CALL(db_reader, get_one(db::table::kHeadersName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> { co_return kHeader; }));
         EXPECT_CALL(db_reader, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> { co_return kBody; }));
         EXPECT_CALL(db_reader, walk(db::table::kBlockTransactionsName, _, _, _)).WillOnce(Invoke([]() -> boost::asio::awaitable<void> { co_return; }));
         auto result1 = boost::asio::co_spawn(pool, core::read_block_by_number(cache, db_reader, bn), boost::asio::use_future);
-        const silkworm::BlockWithHash bwh1 = result1.get();
+        const std::shared_ptr<silkworm::BlockWithHash> bwh1 = result1.get();
     }
 }
 
@@ -230,8 +230,8 @@ TEST_CASE("silkworm::core::read_block_by_hash") {
             co_return *silkworm::from_hex("70A5C9D346416f901826581d423Cd5B92d44Ff5a");
         }));
         auto result = boost::asio::co_spawn(pool, core::read_block_by_hash(cache, db_reader, bh), boost::asio::use_future);
-        const silkworm::BlockWithHash bwh = result.get();
-        check_expected_block_with_hash(bwh);
+        const std::shared_ptr<silkworm::BlockWithHash> bwh = result.get();
+        check_expected_block_with_hash(*bwh);
     }
 
     SECTION("using valid block_hash and hit cache") {
@@ -252,10 +252,10 @@ TEST_CASE("silkworm::core::read_block_by_hash") {
             co_return *silkworm::from_hex("70A5C9D346416f901826581d423Cd5B92d44Ff5a");
         }));
         auto result = boost::asio::co_spawn(pool, core::read_block_by_hash(cache, db_reader, bh), boost::asio::use_future);
-        const silkworm::BlockWithHash bwh = result.get();
-        check_expected_block_with_hash(bwh);
+        const std::shared_ptr<silkworm::BlockWithHash> bwh = result.get();
+        check_expected_block_with_hash(*bwh);
         auto result1 = boost::asio::co_spawn(pool, core::read_block_by_hash(cache, db_reader, bh), boost::asio::use_future);
-        const silkworm::BlockWithHash bwh1 = result1.get();
+        const std::shared_ptr<silkworm::BlockWithHash> bwh1 = result1.get();
     }
 
     SECTION("using valid block_hash no txs (miss cache)") {
@@ -264,15 +264,15 @@ TEST_CASE("silkworm::core::read_block_by_hash") {
         EXPECT_CALL(db_reader, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> { co_return kBody; }));
         EXPECT_CALL(db_reader, walk(db::table::kBlockTransactionsName, _, _, _)).WillOnce(Invoke([]() -> boost::asio::awaitable<void> { co_return; }));
         auto result = boost::asio::co_spawn(pool, core::read_block_by_hash(cache, db_reader, bh), boost::asio::use_future);
-        const silkworm::BlockWithHash bwh = result.get();
-        check_expected_block_with_hash(bwh);
+        const std::shared_ptr<silkworm::BlockWithHash> bwh = result.get();
+        check_expected_block_with_hash(*bwh);
 
         EXPECT_CALL(db_reader, get_one(db::table::kHeaderNumbersName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> { co_return kNumber; }));
         EXPECT_CALL(db_reader, get_one(db::table::kHeadersName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> { co_return kHeader; }));
         EXPECT_CALL(db_reader, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<Bytes> { co_return kBody; }));
         EXPECT_CALL(db_reader, walk(db::table::kBlockTransactionsName, _, _, _)).WillOnce(Invoke([]() -> boost::asio::awaitable<void> { co_return; }));
         auto result1 = boost::asio::co_spawn(pool, core::read_block_by_hash(cache, db_reader, bh), boost::asio::use_future);
-        const silkworm::BlockWithHash bwh1 = result1.get();
+        const std::shared_ptr<silkworm::BlockWithHash> bwh1 = result1.get();
     }
 }
 

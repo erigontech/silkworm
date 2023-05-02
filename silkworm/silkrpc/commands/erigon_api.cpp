@@ -95,8 +95,8 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohman
 
         // Lookup and return the matching block
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
-        const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_with_hash.hash, block_number);
-        const Block extended_block{block_with_hash, total_difficulty, full_tx};
+        const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_with_hash->hash, block_number);
+        const Block extended_block{*block_with_hash, total_difficulty, full_tx};
 
         reply = make_json_content(request["id"], extended_block);
     } catch (const std::exception& e) {
@@ -203,7 +203,7 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const nlohmann::jso
         ethdb::TransactionDatabase tx_database{*tx};
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
-        const auto receipts{co_await core::get_receipts(tx_database, block_with_hash)};
+        const auto receipts{co_await core::get_receipts(tx_database, *block_with_hash)};
 
         SILKRPC_DEBUG << "receipts.size(): " << receipts.size() << "\n";
         std::vector<Logs> logs{};
@@ -275,12 +275,12 @@ awaitable<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nlohmann::json&
         Issuance issuance{};  // default is empty: no PoW => no issuance
         if (chain_config.config.count("ethash") != 0) {
             const auto block_number = co_await core::get_block_number(block_id, tx_database);
-            const auto block_with_hash{co_await core::rawdb::read_block_by_number(tx_database, block_number)};
+            const auto block_with_hash{co_await core::read_block_by_number(*block_cache_, tx_database, block_number)};
             const auto cc{silkworm::ChainConfig::from_json(chain_config.config)};
             if (!cc) {
                 throw std::runtime_error("Invalid chain config");
             }
-            const auto block_reward{protocol::EthashRuleSet::compute_reward(*cc, block_with_hash.block)};
+            const auto block_reward{protocol::EthashRuleSet::compute_reward(*cc, block_with_hash->block)};
             intx::uint256 total_ommer_reward = 0;
             for (const auto ommer_reward : block_reward.ommers) {
                 total_ommer_reward += ommer_reward;
@@ -290,8 +290,8 @@ awaitable<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nlohmann::json&
             issuance.ommer_reward = "0x" + intx::hex(total_ommer_reward);
             issuance.issuance = "0x" + intx::hex(block_issuance);
             intx::uint256 burnt;
-            if (block_with_hash.block.header.base_fee_per_gas) {
-                burnt = *block_with_hash.block.header.base_fee_per_gas * block_with_hash.block.header.gas_used;
+            if (block_with_hash->block.header.base_fee_per_gas) {
+                burnt = *block_with_hash->block.header.base_fee_per_gas * block_with_hash->block.header.gas_used;
             } else {
                 burnt = 0;
             }
@@ -303,9 +303,9 @@ awaitable<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nlohmann::json&
             issuance.total_issued = "0x" + intx::hex(total_issued);
             issuance.total_burnt = "0x" + intx::hex(total_burnt);
             intx::uint256 tips = 0;
-            if (block_with_hash.block.header.base_fee_per_gas) {
-                const auto receipts{co_await core::get_receipts(tx_database, block_with_hash)};
-                const auto block{block_with_hash.block};
+            if (block_with_hash->block.header.base_fee_per_gas) {
+                const auto receipts{co_await core::get_receipts(tx_database, *block_with_hash)};
+                const auto block{block_with_hash->block};
                 for (size_t i{0}; i < block.transactions.size(); i++) {
                     auto tip = block.transactions[i].effective_gas_price(block.header.base_fee_per_gas.value_or(0));
                     tips += tip * receipts[i].gas_used;

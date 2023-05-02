@@ -38,16 +38,16 @@ class BlockCache {
     explicit BlockCache(std::size_t capacity = 1024, bool shared_cache = true)
         : block_cache_(capacity, shared_cache) {}
 
-    std::optional<silkworm::BlockWithHash> get(const evmc::bytes32& key) {
+    std::optional<std::shared_ptr<silkworm::BlockWithHash>> get(const evmc::bytes32& key) {
         return block_cache_.get_as_copy(key);
     }
 
-    void insert(const evmc::bytes32& key, silkworm::BlockWithHash block) {
+    void insert(const evmc::bytes32& key, const std::shared_ptr<silkworm::BlockWithHash> block) {
         block_cache_.put(key, block);
     }
 
   private:
-    lru_cache<evmc::bytes32, silkworm::BlockWithHash> block_cache_;
+    lru_cache<evmc::bytes32, std::shared_ptr<silkworm::BlockWithHash>> block_cache_;
 };
 
 }  // namespace silkworm

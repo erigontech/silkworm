@@ -101,7 +101,7 @@ boost::asio::awaitable<FeeHistory> FeeHistoryOracle::fee_history(uint64_t newest
             block_fees.receipts = co_await receipts_provider_(block_fees.block);
             ;
         } else {
-            block_fees.block = co_await block_provider_(block_number);
+            block_fees.block = *co_await block_provider_(block_number);
             if (reward_percentile.size() > 0) {
                 block_fees.receipts = co_await receipts_provider_(block_fees.block);
             }
@@ -121,7 +121,7 @@ boost::asio::awaitable<FeeHistory> FeeHistoryOracle::fee_history(uint64_t newest
 
 boost::asio::awaitable<BlockRange> FeeHistoryOracle::resolve_block_range(uint64_t last_block, uint64_t block_count, uint64_t max_history) {
     const auto block_with_hash = co_await block_provider_(last_block);
-    const auto receipts = co_await receipts_provider_(block_with_hash);
+    const auto receipts = co_await receipts_provider_(*block_with_hash);
 
     if (max_history != 0) {
         // limit retrieval to the given number of latest blocks
@@ -136,7 +136,7 @@ boost::asio::awaitable<BlockRange> FeeHistoryOracle::resolve_block_range(uint64_
         }
     }
 
-    BlockRange block_range{block_count, last_block, block_with_hash, receipts};
+    BlockRange block_range{block_count, last_block, *block_with_hash, receipts};
 
     co_return block_range;
 }
@@ -149,8 +149,8 @@ boost::asio::awaitable<void> FeeHistoryOracle::process_block(BlockFees& block_fe
 
     const auto parent_block = co_await block_provider_(header.number - 1);
 
-    const auto evmc_revision = config_.revision(parent_block.block.header.number, parent_block.block.header.timestamp);
-    block_fees.next_base_fee = protocol::expected_base_fee_per_gas(parent_block.block.header, evmc_revision).value_or(0);
+    const auto evmc_revision = config_.revision(parent_block->block.header.number, parent_block->block.header.timestamp);
+    block_fees.next_base_fee = protocol::expected_base_fee_per_gas(parent_block->block.header, evmc_revision).value_or(0);
 
     if (reward_percentile.size() == 0) {
         co_return;

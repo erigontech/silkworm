@@ -98,12 +98,12 @@ boost::asio::awaitable<intx::uint256> read_total_difficulty(const DatabaseReader
     co_return total_difficulty;
 }
 
-boost::asio::awaitable<silkworm::BlockWithHash> read_block_by_hash(const DatabaseReader& reader, const evmc::bytes32& block_hash) {
+boost::asio::awaitable<std::shared_ptr<BlockWithHash>> read_block_by_hash(const DatabaseReader& reader, const evmc::bytes32& block_hash) {
     const auto block_number = co_await read_header_number(reader, block_hash);
     co_return co_await read_block(reader, block_hash, block_number);
 }
 
-boost::asio::awaitable<silkworm::BlockWithHash> read_block_by_number(const DatabaseReader& reader, uint64_t block_number) {
+boost::asio::awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(const DatabaseReader& reader, uint64_t block_number) {
     const auto block_hash = co_await read_canonical_block_hash(reader, block_number);
     co_return co_await read_block(reader, block_hash, block_number);
 }
@@ -118,20 +118,16 @@ boost::asio::awaitable<uint64_t> read_block_number_by_transaction_hash(const Dat
     co_return std::stoul(silkworm::to_hex(block_number_bytes), 0, 16);
 }
 
-boost::asio::awaitable<silkworm::BlockWithHash> read_block(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number) {
-    auto header = co_await read_header(reader, block_hash, block_number);
-    SILKRPC_INFO << "header: number=" << header.number << "\n";
+boost::asio::awaitable<std::shared_ptr<BlockWithHash>> read_block(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number) {
+    auto block_with_hash_ptr = std::make_shared<silkworm::BlockWithHash>();
+    block_with_hash_ptr->block.header = co_await read_header(reader, block_hash, block_number);
+    SILKRPC_INFO << "header: number=" << block_with_hash_ptr->block.header.number << "\n";
     auto body = co_await read_body(reader, block_hash, block_number);
     SILKRPC_INFO << "body: #txn=" << body.transactions.size() << " #ommers=" << body.ommers.size() << "\n";
-    silkworm::BlockWithHash block{
-        .block = {
-            {
-                .transactions = body.transactions,
-                .ommers = body.ommers,
-            },
-            header},
-        .hash = block_hash};
-    co_return block;
+    block_with_hash_ptr->block.transactions = std::move(body.transactions);
+    block_with_hash_ptr->block.ommers = std::move(body.ommers),
+    block_with_hash_ptr->hash = block_hash;
+    co_return block_with_hash_ptr;
 }
 
 boost::asio::awaitable<silkworm::BlockHeader> read_header_by_hash(const DatabaseReader& reader, const evmc::bytes32& block_hash) {

@@ -109,8 +109,9 @@ TEST_CASE("suggested price") {
 
     std::vector<silkworm::BlockWithHash> blocks;
 
-    BlockProvider block_provider = [&](uint64_t block_number) -> boost::asio::awaitable<silkworm::BlockWithHash> {
-        silkworm::BlockWithHash block_with_hash = blocks[block_number];
+    BlockProvider block_provider = [&](uint64_t block_number) -> boost::asio::awaitable<std::shared_ptr<silkworm::BlockWithHash>> {
+        auto block_with_hash = std::make_shared<silkworm::BlockWithHash>();
+        *block_with_hash = blocks[block_number];
         co_return block_with_hash;
     };
     GasPriceOracle gas_price_oracle{block_provider};

@@ -34,7 +34,7 @@
 
 namespace silkworm::rpc::fee_history {
 
-using BlockProvider = std::function<boost::asio::awaitable<silkworm::BlockWithHash>(uint64_t)>;
+using BlockProvider = std::function<boost::asio::awaitable<std::shared_ptr<silkworm::BlockWithHash>>(uint64_t)>;
 using ReceiptsProvider = std::function<boost::asio::awaitable<rpc::Receipts>(const BlockWithHash&)>;
 
 using Rewards = std::vector<intx::uint256>;

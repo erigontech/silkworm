@@ -33,6 +33,8 @@ class ChainForkView {
   public:
     ChainForkView(ChainHead headers_head);
 
+    void reset_head(ChainHead headers_head);
+
     TotalDifficulty add(const BlockHeader&);
 
     ChainHead head() const;

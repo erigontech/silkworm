@@ -230,10 +230,8 @@ auto ExecutionEngine::get_canonical_hash([[maybe_unused]] BlockNum height) const
     return {};
 }
 
-auto ExecutionEngine::get_canonical_head() const -> ChainHead {
-    // read from cache, then from main_chain_
-    throw std::runtime_error("not implemented");
-    return {};
+auto ExecutionEngine::get_canonical_head() const -> BlockId {
+    return main_chain_.canonical_head();
 }
 
 auto ExecutionEngine::get_header_td([[maybe_unused]] BlockNum header_height, [[maybe_unused]] Hash header_hash) const -> std::optional<TotalDifficulty> {

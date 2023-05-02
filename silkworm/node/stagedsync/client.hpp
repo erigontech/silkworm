@@ -52,7 +52,7 @@ class Client {
     ERIGON_API virtual auto is_canonical(Hash block_hash) -> awaitable<bool> = 0;
     ERIGON_API virtual auto get_block_num(Hash block_hash) -> awaitable<BlockNum> = 0;
 
-    virtual auto get_last_headers(BlockNum limit) const -> std::vector<BlockHeader>;
+    virtual auto get_last_headers(BlockNum limit) const -> awaitable<std::vector<BlockHeader>>;
 };
 
 }  // namespace silkworm::execution

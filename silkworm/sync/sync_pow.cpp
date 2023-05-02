@@ -32,14 +32,14 @@ static void ensure_invariant(bool condition, std::string message) {
 PoWSync::PoWSync(BlockExchange& be, execution::Client& ee)
     : block_exchange_{be},
       exec_engine_{ee},
-      chain_fork_view_{ee.get_canonical_head()} { // ### at this point ee is not started, we cannot block and wait
-    // BlockExchange need a starting point to start downloading from
-    block_exchange_.initial_state(exec_engine_.get_last_headers(65536));  // ### same as above
+      chain_fork_view_{ChainHead{}} { // we cannot call ee.get_canonical_head() at this point becase ee is not started
 }
 
 auto PoWSync::resume() -> NewHeight {  // find the point (head) where we left off
     auto canonical_head = sync_wait(in(exec_engine_), exec_engine_.get_canonical_head());
     auto block_progress = sync_wait(in(exec_engine_), exec_engine_.get_block_progress());
+
+    chain_fork_view_.reset_head(canonical_head);
 
     ensure_invariant(canonical_head.height <= block_progress, "canonical head beyond block progress");
 
@@ -123,6 +123,9 @@ void PoWSync::execution_loop() {
     using namespace stagedsync;
     bool is_starting_up = true;
 
+    auto last_headers = sync_wait(in(exec_engine_), exec_engine_.get_last_headers(65536));
+    block_exchange_.initial_state(last_headers);  // BlockExchange need a starting point to start downloading from
+    
     while (!is_stopping()) {
         // resume from previous run or download new blocks
         NewHeight new_height = is_starting_up

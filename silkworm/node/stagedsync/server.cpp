@@ -63,6 +63,13 @@ asio::awaitable<std::optional<BlockHeader>> Server::get_header(BlockNum block_nu
     return co_spawn(io_context_, lambda(this, block_number, block_hash), asio::use_awaitable);
 }
 
+auto Server::get_last_headers(BlockNum limit) const -> asio::awaitable<std::vector<BlockHeader>> {
+    auto lambda = [](Server* me, BlockNum l) -> asio::awaitable<std::vector<BlockHeader>> {
+            co_return co_await me->exec_engine_.get_last_headers(l);
+    };
+    return co_spawn(io_context_, lambda(this, limit), asio::use_awaitable);
+}
+
 asio::awaitable<BlockBody> Server::get_body(BlockNum /*block_number*/, Hash /*block_hash*/) {
     throw std::runtime_error{"Server::get_body not implemented"};
 }

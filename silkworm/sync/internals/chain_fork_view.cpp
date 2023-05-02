@@ -26,6 +26,10 @@ ChainForkView::ChainForkView(ChainHead head) : initial_head_{head}, td_cache_{kC
     current_head_ = initial_head_;
 }
 
+void ChainForkView::reset_head(ChainHead headers_head) {
+    current_head_ = headers_head;
+}
+
 bool ChainForkView::head_changed() const { return current_head_.total_difficulty != initial_head_.total_difficulty; }
 
 BlockNum ChainForkView::head_height() const { return current_head_.height; }

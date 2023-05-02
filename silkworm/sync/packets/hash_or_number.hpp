@@ -32,14 +32,14 @@ namespace rlp {
 
     inline void encode(Bytes& to, const HashOrNumber& from) {
         if (std::holds_alternative<Hash>(from))
-            rlp::encode(to, std::get<Hash>(from));
+            rlp::encode_hash(to, std::get<Hash>(from));
         else
             rlp::encode(to, std::get<BlockNum>(from));
     }
 
     inline size_t length(const HashOrNumber& from) {
         if (std::holds_alternative<Hash>(from))
-            return rlp::length(std::get<Hash>(from));
+            return rlp::length_hash(std::get<Hash>(from));
         else
             return rlp::length(std::get<BlockNum>(from));
     }

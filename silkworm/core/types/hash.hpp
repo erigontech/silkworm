@@ -48,14 +48,14 @@ class Hash : public evmc::bytes32 {
     static_assert(sizeof(evmc::bytes32) == 32);
 };
 
-// RLP
+// RLP encoding: usually same as ByteView, some tricks for MSVC overload resolution
 namespace rlp {
-    //inline size_t length(const Hash&) { return kHashLength + 1; }
+    inline size_t length_hash(const Hash&) { return kHashLength + 1; }
 
-    //void encode(Bytes& to, const Hash& h);
+    void encode_hash(Bytes& to, const Hash& h);
 
     //template <>
-    //DecodingResult decode(ByteView& from, Hash& to) noexcept;
+    DecodingResult decode_hash(ByteView& from, Hash& to) noexcept;
 
 }  // namespace rlp
 

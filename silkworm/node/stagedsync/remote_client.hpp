@@ -53,6 +53,8 @@ class RemoteClient : public Client {
     ERIGON_API auto is_canonical(Hash block_hash) -> awaitable<bool> override;
     ERIGON_API auto get_block_num(Hash block_hash) -> awaitable<BlockNum> override;
 
+    auto get_last_headers(BlockNum limit) const -> awaitable<std::vector<BlockHeader>> override;
+
   private:
     agrpc::GrpcContext& grpc_context_;
     std::unique_ptr<::execution::Execution::Stub> stub_;

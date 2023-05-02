@@ -55,7 +55,7 @@ class Server : public ActiveComponent {
     ERIGON_API auto is_canonical(Hash block_hash) -> asio::awaitable<bool>;
     ERIGON_API auto get_block_num(Hash block_hash) -> asio::awaitable<BlockNum>;
 
-    auto get_last_headers(BlockNum limit) const -> std::vector<BlockHeader>;
+    auto get_last_headers(BlockNum limit) const -> asio::awaitable<std::vector<BlockHeader>>;
 
     asio::io_context& get_executor() { return io_context_; }
 

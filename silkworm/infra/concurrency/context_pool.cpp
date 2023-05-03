@@ -32,7 +32,7 @@ std::ostream& operator<<(std::ostream& out, const Context& c) {
 Context::Context(std::size_t context_id, WaitMode wait_mode)
     : context_id_(context_id),
       io_context_{std::make_shared<boost::asio::io_context>()},
-      work_{boost::asio::require(io_context_->get_executor(), boost::asio::execution::outstanding_work_t::tracked)},
+      work_{boost::asio::make_work_guard(*io_context_)},
       wait_mode_(wait_mode) {}
 
 void Context::execute_loop() {

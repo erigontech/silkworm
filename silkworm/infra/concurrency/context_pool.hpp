@@ -35,7 +35,7 @@ namespace silkworm::concurrency {
 class Context {
   public:
     explicit Context(std::size_t context_id, WaitMode wait_mode = WaitMode::blocking);
-    virtual ~Context() { stop(); }
+    virtual ~Context() = default;
 
     [[nodiscard]] boost::asio::io_context* io_context() const noexcept { return io_context_.get(); }
     [[nodiscard]] WaitMode wait_mode() const noexcept { return wait_mode_; }
@@ -55,7 +55,7 @@ class Context {
     std::shared_ptr<boost::asio::io_context> io_context_;
 
     //! The work-tracking executor that keep the asio scheduler running.
-    boost::asio::execution::any_executor<> work_;
+    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work_;
 
     //! The waiting mode used by execution loops during idle cycles.
     WaitMode wait_mode_;

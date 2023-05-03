@@ -26,8 +26,10 @@ ChainForkView::ChainForkView(ChainHead head) : initial_head_{head}, td_cache_{kC
     current_head_ = initial_head_;
 }
 
-void ChainForkView::reset_head(ChainHead headers_head) {
-    current_head_ = headers_head;
+void ChainForkView::reset_head(BlockId new_head) {
+    auto td = get_total_difficulty(new_head.number, new_head.hash);
+    if (!td) throw std::logic_error("ChainForkView resetting head to unknown header");
+    current_head_ = {new_head.number, new_head.hash, *td};
 }
 
 bool ChainForkView::head_changed() const { return current_head_.total_difficulty != initial_head_.total_difficulty; }
@@ -71,6 +73,10 @@ TotalDifficulty ChainForkView::add(const BlockHeader& header) {  // try to modul
 }
 
 std::optional<TotalDifficulty> ChainForkView::get_total_difficulty([[maybe_unused]] BlockNum height, const Hash& hash) {
+    return get_total_difficulty(hash);
+}
+
+std::optional<TotalDifficulty> ChainForkView::get_total_difficulty(const Hash& hash) {
     auto parent_td = td_cache_.get_as_copy(hash);  // find in cache
     if (!parent_td) //parent_td = db.get_header_td(height, hash);
         parent_td = 0; // todo: implement total difficulty save/load from db #########################################

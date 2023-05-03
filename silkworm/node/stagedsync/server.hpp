@@ -46,16 +46,17 @@ class Server : public ActiveComponent {
         -> asio::awaitable<ForkChoiceApplication>;
 
     // state
-    auto get_block_progress() -> asio::awaitable<BlockNum>;
+    auto block_progress() -> asio::awaitable<BlockNum>;
+    auto last_fork_choice() -> asio::awaitable<BlockId>;
 
     // header/body retrieval
-    ERIGON_API auto get_header(BlockNum block_number, Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>>;
-    ERIGON_API auto get_body(BlockNum block_number, Hash block_hash) -> asio::awaitable<BlockBody>;
+    ERIGON_API auto get_header(Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>>;
+    ERIGON_API auto get_body(Hash block_hash) -> asio::awaitable<BlockBody>;
 
     ERIGON_API auto is_canonical(Hash block_hash) -> asio::awaitable<bool>;
     ERIGON_API auto get_block_num(Hash block_hash) -> asio::awaitable<BlockNum>;
 
-    auto get_last_headers(BlockNum limit) const -> asio::awaitable<std::vector<BlockHeader>>;
+    auto get_last_headers(BlockNum limit) -> asio::awaitable<std::vector<BlockHeader>>;
 
     asio::io_context& get_executor() { return io_context_; }
 

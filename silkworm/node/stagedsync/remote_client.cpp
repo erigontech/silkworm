@@ -111,7 +111,8 @@ static void match_or_throw(BlockNum block_number, uint64_t received_number) {
 RemoteClient::RemoteClient(agrpc::GrpcContext& grpc_context, const std::shared_ptr<grpc::Channel>& channel)
     : grpc_context_(grpc_context), stub_(::execution::Execution::NewStub(channel)) {}
 
-awaitable<std::optional<BlockHeader>> RemoteClient::get_header(BlockNum block_number, Hash block_hash) {
+awaitable<std::optional<BlockHeader>> RemoteClient::get_header(Hash block_hash) {
+    BlockNum block_number = 0;  // proto file support get_header by block number, but we don't use it
     BlockHeader header;
     ::execution::GetSegmentRequest request;
     request.set_block_number(block_number);
@@ -133,7 +134,8 @@ awaitable<std::optional<BlockHeader>> RemoteClient::get_header(BlockNum block_nu
     co_return header;
 }
 
-awaitable<BlockBody> RemoteClient::get_body(BlockNum block_number, Hash block_hash) {
+awaitable<BlockBody> RemoteClient::get_body(Hash block_hash) {
+    BlockNum block_number = 0;  // proto file support get_body by block number, but we don't use it
     BlockBody body;
     ::execution::GetSegmentRequest request;
     request.set_block_number(block_number);

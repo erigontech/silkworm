@@ -76,10 +76,12 @@ struct PayloadStatus {
 
     static const PayloadStatus Syncing;
     static const PayloadStatus Accepted;
+    static const PayloadStatus InvalidBlockHash;
 };
 
 inline const PayloadStatus PayloadStatus::Syncing{.status = PayloadStatus::kSyncing};
 inline const PayloadStatus PayloadStatus::Accepted{.status = PayloadStatus::kAccepted};
+inline const PayloadStatus PayloadStatus::InvalidBlockHash{.status = PayloadStatus::kInvalidBlockHash};
 
 struct ForkChoiceUpdateRequest {
     ForkChoiceState fork_choice_state;

@@ -18,41 +18,44 @@
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
+#include <boost/asio.hpp>
 #include <boost/asio/awaitable.hpp>
 
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/node/stagedsync/types.hpp>
 
 namespace silkworm::execution {
 
-using boost::asio::awaitable;
+namespace asio = boost::asio;
 
 class Client {
   public:
     virtual ~Client() = default;
 
-    // actions
-    ERIGON_API virtual auto insert_headers(const BlockVector& blocks) -> awaitable<void> = 0;
-    ERIGON_API virtual auto insert_bodies(const BlockVector& blocks) -> awaitable<void> = 0;
-               virtual auto insert_blocks(const BlockVector& blocks) -> awaitable<void> = 0;
+    virtual asio::io_context& get_executor() = 0;
 
-    ERIGON_API virtual auto validate_chain(Hash head_block_hash) -> awaitable<ValidationResult> = 0;
+    // actions
+    ERIGON_API virtual auto insert_headers(const BlockVector& blocks) -> asio::awaitable<void> = 0;
+    ERIGON_API virtual auto insert_bodies(const BlockVector& blocks) -> asio::awaitable<void> = 0;
+    virtual auto insert_blocks(const BlockVector& blocks) -> asio::awaitable<void> = 0;
+
+    ERIGON_API virtual auto validate_chain(Hash head_block_hash) -> asio::awaitable<ValidationResult> = 0;
 
     ERIGON_API virtual auto update_fork_choice(
-        Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt) -> awaitable<ForkChoiceApplication> = 0;
+        Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt) -> asio::awaitable<ForkChoiceApplication> = 0;
 
     // state
-    virtual auto get_block_progress() -> awaitable<BlockNum>;
+    virtual auto block_progress() -> asio::awaitable<BlockNum>;
+    virtual auto last_fork_choice() -> asio::awaitable<BlockId>;
 
     // header/body retrieval
-    ERIGON_API virtual auto get_header(BlockNum block_number, Hash block_hash) -> awaitable<std::optional<BlockHeader>> = 0;
-    ERIGON_API virtual auto get_body(BlockNum block_number, Hash block_hash) -> awaitable<BlockBody> = 0;
+    ERIGON_API virtual auto get_header(Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>> = 0;
+    ERIGON_API virtual auto get_body(Hash block_hash) -> asio::awaitable<BlockBody> = 0;
 
-    ERIGON_API virtual auto is_canonical(Hash block_hash) -> awaitable<bool> = 0;
-    ERIGON_API virtual auto get_block_num(Hash block_hash) -> awaitable<BlockNum> = 0;
+    ERIGON_API virtual auto is_canonical(Hash block_hash) -> asio::awaitable<bool> = 0;
+    ERIGON_API virtual auto get_block_num(Hash block_hash) -> asio::awaitable<BlockNum> = 0;
 
-    virtual auto get_last_headers(BlockNum limit) const -> awaitable<std::vector<BlockHeader>>;
+    virtual auto get_last_headers(BlockNum limit) -> asio::awaitable<std::vector<BlockHeader>>;
 };
 
 }  // namespace silkworm::execution

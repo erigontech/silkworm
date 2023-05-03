@@ -22,6 +22,8 @@
 
 #include <silkworm/core/types/block.hpp>
 
+#define ERIGON_API
+
 namespace silkworm::execution {
 
 using BlockVector = std::vector<std::shared_ptr<Block>>;

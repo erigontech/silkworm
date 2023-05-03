@@ -33,7 +33,7 @@ class ChainForkView {
   public:
     ChainForkView(ChainHead headers_head);
 
-    void reset_head(ChainHead headers_head);
+    void reset_head(BlockId headers_head);
 
     TotalDifficulty add(const BlockHeader&);
 
@@ -44,6 +44,8 @@ class ChainForkView {
 
     bool head_changed() const;
 
+    std::optional<TotalDifficulty> get_total_difficulty(const Hash& hash);
+    std::optional<TotalDifficulty> get_total_difficulty(BlockNum height, const Hash& hash);
   private:
     ChainHead initial_head_{};
     ChainHead current_head_{};  // current head of the chain
@@ -51,8 +53,6 @@ class ChainForkView {
 
     static constexpr size_t kCacheSize = 4096;
     lru_cache<Hash, TotalDifficulty> td_cache_;  // this is not for performance
-
-    std::optional<TotalDifficulty> get_total_difficulty(BlockNum height, const Hash& hash);
 };
 
 }  // namespace silkworm::chainsync

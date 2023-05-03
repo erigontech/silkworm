@@ -44,6 +44,7 @@ ExecutionEngine::ExecutionEngine(asio::io_context& ctx, NodeSettings& ns, db::RW
 
     // At start-up we can let last_finalized_block_ point to the genesis block so to accept all forking points
     last_finalized_block_ = {0, ns.chain_config.value().genesis_hash.value()};
+    last_fork_choice_ = last_finalized_block_;
 
     block_progress_ = main_chain_.get_block_progress();
 
@@ -55,7 +56,11 @@ void ExecutionEngine::open() {  // needed to circumvent mdbx threading model lim
     main_chain_.open();
 }
 
-auto ExecutionEngine::last_fork_choice() const -> std::optional<BlockId> {
+auto ExecutionEngine::block_progress() const -> BlockNum {
+    return block_progress_;  // main_chain_.get_block_progress() or forks block progress
+}
+
+auto ExecutionEngine::last_fork_choice() const -> BlockId {
     return last_fork_choice_;
 }
 
@@ -72,10 +77,10 @@ void ExecutionEngine::insert_blocks(const std::vector<std::shared_ptr<Block>>& b
     }
 }
 
-void ExecutionEngine::insert_block(const std::shared_ptr<Block> block) {
+bool ExecutionEngine::insert_block(const std::shared_ptr<Block> block) {
     Hash header_hash{block->header.hash()};
 
-    if (block_cache_.get(header_hash)) return;  // ignore repeated blocks
+    if (block_cache_.get(header_hash)) return true;  // ignore repeated blocks
     block_cache_.put(header_hash, block);
 
     if (block_progress_ < block->header.number) block_progress_ = block->header.number;
@@ -83,7 +88,7 @@ void ExecutionEngine::insert_block(const std::shared_ptr<Block> block) {
     // if we are not tracking forks, just insert the block into the main chain
     if (!fork_tracking_active_) {
         main_chain_.insert_block(*block);  // BLOCKING
-        return;
+        return true;
     }
 
     // find attachment point at fork heads
@@ -100,8 +105,8 @@ void ExecutionEngine::insert_block(const std::shared_ptr<Block> block) {
         // (to avoid complicated code we ignore the case whether the attaching point is inside a current fork)
 
         auto forking_path = find_forking_point(block->header);
-        if (!forking_path) return;
-        if (forking_path->forking_point.number < last_finalized_block().number) return;  // ignore
+        if (!forking_path) return false;
+        if (forking_path->forking_point.number < last_finalized_block().number) return false;  // ignore
         forking_path->blocks.push_back(block);
 
         SILK_DEBUG << "ExecutionEngine: creating new fork";
@@ -112,6 +117,8 @@ void ExecutionEngine::insert_block(const std::shared_ptr<Block> block) {
         BlockId new_head = {.number = block->header.number, .hash = header_hash};
         new_fork.start_with(new_head, std::move(forking_path->blocks));
     }
+
+    return true;
 }
 
 auto ExecutionEngine::find_forking_point(const BlockHeader& header) const -> std::optional<ForkingPath> {
@@ -208,21 +215,41 @@ void ExecutionEngine::discard_all_forks_except(ExtendingFork&) {
 
 // TO IMPLEMENT OR REWORK ---------------------------------------------------------------------------------------------
 
-auto ExecutionEngine::get_block_progress() const -> BlockNum {
-    return block_progress_;  // main_chain_.get_block_progress() or forks block progress
-}
-
 auto ExecutionEngine::get_header([[maybe_unused]] Hash header_hash) const -> std::optional<BlockHeader> {
     // read from cache, then from main_chain_
     throw std::runtime_error("not implemented");
     return {};
 }
 
-auto ExecutionEngine::get_header([[maybe_unused]] BlockNum header_height, [[maybe_unused]] Hash header_hash) const -> std::optional<BlockHeader> {
+auto ExecutionEngine::get_header([[maybe_unused]] BlockNum header_height) const -> std::optional<BlockHeader> {
     // read from cache, then from main_chain_
     throw std::runtime_error("not implemented");
     return {};
 }
+
+auto ExecutionEngine::get_last_headers([[maybe_unused]] BlockNum limit) const -> std::vector<BlockHeader> {
+    // read from cache, then from main_chain_
+    throw std::runtime_error("not implemented");
+    return {};
+}
+
+auto ExecutionEngine::get_body([[maybe_unused]] Hash header_hash) const -> std::optional<BlockBody> {
+    // read from cache, then from main_chain_
+    throw std::runtime_error("not implemented");
+    return {};
+}
+
+auto ExecutionEngine::get_block_number([[maybe_unused]] Hash header_hash) const -> std::optional<BlockNum> {
+    throw std::runtime_error("not implemented");
+    return {};
+}
+
+bool ExecutionEngine::is_canonical_hash([[maybe_unused]] Hash header_hash) const {
+    throw std::runtime_error("not implemented");
+    return {};
+}
+
+/*
 
 auto ExecutionEngine::get_canonical_hash([[maybe_unused]] BlockNum height) const -> std::optional<Hash> {
     // read from cache, then from main_chain_
@@ -236,18 +263,6 @@ auto ExecutionEngine::get_canonical_head() const -> BlockId {
 
 auto ExecutionEngine::get_header_td([[maybe_unused]] BlockNum header_height, [[maybe_unused]] Hash header_hash) const -> std::optional<TotalDifficulty> {
     // implement...
-    throw std::runtime_error("not implemented");
-    return {};
-}
-
-auto ExecutionEngine::get_body([[maybe_unused]] Hash header_hash) const -> std::optional<BlockBody> {
-    // read from cache, then from main_chain_
-    throw std::runtime_error("not implemented");
-    return {};
-}
-
-auto ExecutionEngine::get_last_headers([[maybe_unused]] BlockNum limit) const -> std::vector<BlockHeader> {
-    // read from cache, then from main_chain_
     throw std::runtime_error("not implemented");
     return {};
 }
@@ -269,5 +284,6 @@ auto ExecutionEngine::extends([[maybe_unused]] BlockId block, [[maybe_unused]] B
     throw std::runtime_error("not implemented");
     return {};
 }
+*/
 
 }  // namespace silkworm::stagedsync

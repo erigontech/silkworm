@@ -64,35 +64,36 @@ class ExecutionEngine : public Stoppable {
 
     // actions
     ERIGON_API void insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks);
-    ERIGON_API void insert_block(std::shared_ptr<Block> block);
+    ERIGON_API bool insert_block(std::shared_ptr<Block> block);
 
     ERIGON_API auto verify_chain(Hash head_block_hash) -> concurrency::AwaitableFuture<VerificationResult>;
 
     ERIGON_API bool notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
 
     // state
+    auto block_progress() const -> BlockNum;
     auto last_finalized_block() const -> BlockId;
-    auto last_fork_choice() const -> std::optional<BlockId>;
+    auto last_fork_choice() const -> BlockId;
 
     // header/body retrieval
-    ERIGON_API auto get_header(BlockNum, Hash) const -> std::optional<BlockHeader>;
-    ERIGON_API auto get_body(BlockNum, Hash) const -> std::optional<BlockBody>;
+    ERIGON_API auto get_header(Hash) const -> std::optional<BlockHeader>;
+    ERIGON_API auto get_header(BlockNum) const -> std::optional<BlockHeader>;
+    ERIGON_API auto get_body(Hash) const -> std::optional<BlockBody>;
+    ERIGON_API auto get_body(BlockNum) const -> std::optional<BlockBody>;
     ERIGON_API bool is_canonical_hash(Hash) const;
     ERIGON_API auto get_block_number(Hash) const -> std::optional<BlockNum>;
+    auto get_last_headers(BlockNum limit) const -> std::vector<BlockHeader>;
 
-    auto get_block_progress() const -> BlockNum;
-
-    auto get_header(Hash) const -> std::optional<BlockHeader>;
-    auto get_canonical_head() const -> ChainHead;
+    /*
+    auto get_canonical_head() const -> BlockId;
     auto get_canonical_hash(BlockNum) const -> std::optional<Hash>;
     auto get_header_td(BlockNum, Hash) const -> std::optional<TotalDifficulty>;
     auto get_body(Hash) const -> std::optional<BlockBody>;
-    auto get_last_headers(BlockNum limit) const -> std::vector<BlockHeader>;
     auto extends_last_fork_choice(BlockNum, Hash) const -> bool;
     auto extends(BlockId block, BlockId supposed_parent) const -> bool;
     auto is_ancestor(BlockId supposed_parent, BlockId block) const -> bool;
     auto is_ancestor(Hash supposed_parent, BlockId block) const -> bool;
-
+    */
   protected:
     struct ForkingPath {
         BlockId forking_point;
@@ -116,7 +117,7 @@ class ExecutionEngine : public Stoppable {
     BlockNum block_progress_{0};
     bool fork_tracking_active_{false};
     BlockId last_finalized_block_;
-    std::optional<BlockId> last_fork_choice_;
+    BlockId last_fork_choice_;
 };
 
 }  // namespace silkworm::stagedsync

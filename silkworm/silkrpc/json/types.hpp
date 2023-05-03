@@ -31,6 +31,7 @@
 #include <silkworm/silkrpc/json/execution_payload.hpp>
 #include <silkworm/silkrpc/json/filter.hpp>
 #include <silkworm/silkrpc/json/log.hpp>
+#include <silkworm/silkrpc/json/payload_attributes.hpp>
 #include <silkworm/silkrpc/json/receipt.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/call.hpp>
@@ -114,9 +115,6 @@ void to_json(nlohmann::json& json, const Transaction& transaction);
 
 void to_json(nlohmann::json& json, const ForkChoiceState& forkchoice_state);
 void from_json(const nlohmann::json& json, ForkChoiceState& forkchoice_state);
-
-void to_json(nlohmann::json& json, const PayloadAttributes& payload_attributes);
-void from_json(const nlohmann::json& json, PayloadAttributes& payload_attributes);
 
 void to_json(nlohmann::json& json, const ForkChoiceUpdatedReply& forkchoice_updated_reply);
 

@@ -458,7 +458,7 @@ Stage::Result Senders::add_to_batch(BlockNum block_num, std::vector<Transaction>
     uint32_t tx_id{0};
     for (const auto& transaction : transactions) {
         if (!protocol::transaction_type_is_supported(transaction.type, rev)) {
-            log::Error(log_prefix_) << "Transaction type " << magic_enum::enum_name<Transaction::Type>(transaction.type)
+            log::Error(log_prefix_) << "Transaction type " << magic_enum::enum_name<TransactionType>(transaction.type)
                                     << " for transaction #" << tx_id << " in block #" << block_num << " before it's supported";
             return Stage::Result::kInvalidTransaction;
         }

@@ -33,7 +33,7 @@ const std::vector<AccessListEntry> access_list{
 
 TEST_CASE("Legacy Transaction RLP") {
     Transaction txn{
-        Transaction::Type::kLegacy,                          // type
+        TransactionType::kLegacy,                          // type
         12,                                                  // nonce
         20000000000,                                         // max_priority_fee_per_gas
         20000000000,                                         // max_fee_per_gas
@@ -69,7 +69,7 @@ TEST_CASE("Legacy Transaction RLP") {
 
 TEST_CASE("EIP-2930 Transaction RLP") {
     Transaction txn{
-        Transaction::Type::kEip2930,                                                                             // type
+        TransactionType::kEip2930,                                                                             // type
         7,                                                                                                       // nonce
         30000000000,                                                                                             // max_priority_fee_per_gas
         30000000000,                                                                                             // max_fee_per_gas
@@ -124,7 +124,7 @@ TEST_CASE("EIP-2930 Transaction RLP") {
 
 TEST_CASE("EIP-1559 Transaction RLP") {
     Transaction txn{
-        Transaction::Type::kEip1559,                                                                             // type
+        TransactionType::kEip1559,                                                                             // type
         7,                                                                                                       // nonce
         10000000000,                                                                                             // max_priority_fee_per_gas
         30000000000,                                                                                             // max_fee_per_gas
@@ -153,7 +153,7 @@ TEST_CASE("Recover sender 1") {
     // https://etherscan.io/tx/0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060
     // Block 46147
     Transaction txn{
-        Transaction::Type::kLegacy,                                                                              // type
+        TransactionType::kLegacy,                                                                              // type
         0,                                                                                                       // nonce
         50'000 * kGiga,                                                                                          // max_priority_fee_per_gas
         50'000 * kGiga,                                                                                          // max_fee_per_gas
@@ -176,7 +176,7 @@ TEST_CASE("Recover sender 2") {
     // https://etherscan.io/tx/0xe17d4d0c4596ea7d5166ad5da600a6fdc49e26e0680135a2f7300eedfd0d8314
     // Block 46214
     Transaction txn{
-        Transaction::Type::kLegacy,                                                                              // type
+        TransactionType::kLegacy,                                                                              // type
         1,                                                                                                       // nonce
         50'000 * kGiga,                                                                                          // max_priority_fee_per_gas
         50'000 * kGiga,                                                                                          // max_fee_per_gas

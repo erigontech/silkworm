@@ -99,7 +99,7 @@ enum class [[nodiscard]] ValidationResult{
 
 namespace protocol {
 
-    bool transaction_type_is_supported(Transaction::Type, evmc_revision);
+    bool transaction_type_is_supported(TransactionType, evmc_revision);
 
     //! \brief Performs validation of a transaction that can be done prior to sender recovery and block execution.
     //! \remarks Should sender of transaction not yet recovered a check on signature's validity is performed

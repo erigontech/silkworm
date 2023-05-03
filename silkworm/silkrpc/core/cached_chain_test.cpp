@@ -104,7 +104,7 @@ static void check_expected_transaction(const Transaction& transaction) {
     CHECK(transaction.max_fee_per_gas == 0x77359400);
     CHECK(transaction.gas_limit == 5000000);
     CHECK(transaction.transaction_index == 0);
-    CHECK(transaction.type == Transaction::Type::kLegacy);
+    CHECK(transaction.type == TransactionType::kLegacy);
 }
 
 TEST_CASE("read_block_by_number_or_hash") {

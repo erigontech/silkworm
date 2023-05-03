@@ -52,7 +52,7 @@ TEST_CASE("print type-2 transaction", "[silkrpc][types][transaction]") {
     // https://etherscan.io/tx/0x4b408a48f927f03a63502fb63f7d42c5c4783737ebe8d084cef157575d40f344
     Transaction txn{
         {
-            .type = Transaction::Type::kEip1559,
+            .type = TransactionType::kEip1559,
             .nonce = 371,
             .max_priority_fee_per_gas = 1 * kGiga,
             .max_fee_per_gas = 217'914'097'876,
@@ -77,7 +77,7 @@ TEST_CASE("print type-2 transaction", "[silkrpc][types][transaction]") {
 TEST_CASE("print type-2 silkworm::transaction", "[silkrpc][types][silkworm::transaction]") {
     // https://etherscan.io/tx/0x4b408a48f927f03a63502fb63f7d42c5c4783737ebe8d084cef157575d40f344
     silkworm::Transaction txn{
-        .type = Transaction::Type::kEip1559,
+        .type = TransactionType::kEip1559,
         .nonce = 371,
         .max_priority_fee_per_gas = 1 * kGiga,
         .max_fee_per_gas = 217'914'097'876,
@@ -98,7 +98,7 @@ TEST_CASE("create legacy transaction", "[silkrpc][types][transaction]") {
     // https://etherscan.io/tx/0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060
     Transaction txn{
         {
-            .type = Transaction::Type::kLegacy,
+            .type = TransactionType::kLegacy,
             .nonce = 0,
             .max_priority_fee_per_gas = 50'000 * kGiga,
             .max_fee_per_gas = 50'000 * kGiga,
@@ -123,7 +123,7 @@ TEST_CASE("create legacy transaction", "[silkrpc][types][transaction]") {
 TEST_CASE("create legacy silkworm::transaction", "[silkrpc][types][silkworm::transaction]") {
     // https://etherscan.io/tx/0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060
     silkworm::Transaction txn{
-        .type = Transaction::Type::kLegacy,
+        .type = TransactionType::kLegacy,
         .nonce = 0,
         .max_priority_fee_per_gas = 50'000 * kGiga,
         .max_fee_per_gas = 50'000 * kGiga,

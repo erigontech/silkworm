@@ -244,11 +244,11 @@ void to_json(nlohmann::json& json, const Transaction& transaction) {
     }
     json["type"] = rpc::to_quantity(uint64_t(transaction.type));
 
-    if (transaction.type == silkworm::Transaction::Type::kEip1559) {
+    if (transaction.type == silkworm::TransactionType::kEip1559) {
         json["maxPriorityFeePerGas"] = rpc::to_quantity(transaction.max_priority_fee_per_gas);
         json["maxFeePerGas"] = rpc::to_quantity(transaction.max_fee_per_gas);
     }
-    if (transaction.type != silkworm::Transaction::Type::kLegacy) {
+    if (transaction.type != silkworm::TransactionType::kLegacy) {
         json["chainId"] = rpc::to_quantity(*transaction.chain_id);
         json["v"] = rpc::to_quantity(uint64_t(transaction.odd_y_parity));
         json["accessList"] = transaction.access_list;  // EIP2930

@@ -1163,7 +1163,7 @@ TEST_CASE("read_canonical_transactions") {
         auto result = boost::asio::co_spawn(pool, read_canonical_transactions(db_reader, base_txn_id, txn_count), boost::asio::use_future);
 
         CHECK(result.get() == Transactions{silkworm::Transaction{
-                                  Transaction::Type::kLegacy,                          // type
+                                  TransactionType::kLegacy,                            // type
                                   416268,                                              // nonce
                                   5'000'000'000,                                       // max_priority_fee_per_gas
                                   5'000'000'000,                                       // max_fee_per_gas
@@ -1231,7 +1231,7 @@ TEST_CASE("read_canonical_transactions") {
         auto result = boost::asio::co_spawn(pool, read_canonical_transactions(db_reader, base_txn_id, txn_count), boost::asio::use_future);
         CHECK(result.get() == Transactions{
                                   silkworm::Transaction{
-                                      Transaction::Type::kLegacy,                          // type
+                                      TransactionType::kLegacy,                            // type
                                       13202,                                               // nonce
                                       1'000'000'000,                                       // max_priority_fee_per_gas
                                       1'000'000'000,                                       // max_fee_per_gas
@@ -1246,7 +1246,7 @@ TEST_CASE("read_canonical_transactions") {
                                       intx::from_string<intx::uint256>("0x67d93fbedbb12048fc8d70c5b99dddaaf04a109894671a57f1285f48a9e3b3e9"),                           // s
                                   },
                                   silkworm::Transaction{
-                                      Transaction::Type::kLegacy,                          // type
+                                      TransactionType::kLegacy,                            // type
                                       13203,                                               // nonce
                                       1'000'000'000,                                       // max_priority_fee_per_gas
                                       1'000'000'000,                                       // max_fee_per_gas
@@ -1295,7 +1295,7 @@ TEST_CASE("read_noncanonical_transactions") {
         }));
         auto result = boost::asio::co_spawn(pool, read_noncanonical_transactions(db_reader, base_txn_id, txn_count), boost::asio::use_future);
         CHECK(result.get() == Transactions{silkworm::Transaction{
-                                  Transaction::Type::kLegacy,                          // type
+                                  TransactionType::kLegacy,                            // type
                                   416268,                                              // nonce
                                   5'000'000'000,                                       // max_priority_fee_per_gas
                                   5'000'000'000,                                       // max_fee_per_gas
@@ -1363,7 +1363,7 @@ TEST_CASE("read_noncanonical_transactions") {
 
         CHECK(result.get() == Transactions{
                                   silkworm::Transaction{
-                                      Transaction::Type::kLegacy,                          // type
+                                      TransactionType::kLegacy,                            // type
                                       13202,                                               // nonce
                                       1'000'000'000,                                       // max_priority_fee_per_gas
                                       1'000'000'000,                                       // max_fee_per_gas
@@ -1378,7 +1378,7 @@ TEST_CASE("read_noncanonical_transactions") {
                                       intx::from_string<intx::uint256>("0x67d93fbedbb12048fc8d70c5b99dddaaf04a109894671a57f1285f48a9e3b3e9"),                           // s
                                   },
                                   silkworm::Transaction{
-                                      Transaction::Type::kLegacy,                          // type
+                                      TransactionType::kLegacy,                            // type
                                       13203,                                               // nonce
                                       1'000'000'000,                                       // max_priority_fee_per_gas
                                       1'000'000'000,                                       // max_fee_per_gas

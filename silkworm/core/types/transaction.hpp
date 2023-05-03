@@ -35,17 +35,17 @@ struct AccessListEntry {
     friend bool operator==(const AccessListEntry&, const AccessListEntry&) = default;
 };
 
-struct Transaction {
-    // EIP-2718 transaction type
-    // https://github.com/ethereum/eth1.0-specs/tree/master/lists/signature-types
-    enum class Type : uint8_t {
-        kLegacy = 0,
-        kEip2930 = 1,
-        kEip1559 = 2,
-        kEip4844 = 3,
-    };
+// EIP-2718 transaction type
+// https://github.com/ethereum/eth1.0-specs/tree/master/lists/signature-types
+enum class TransactionType : uint8_t {
+    kLegacy = 0,
+    kEip2930 = 1,
+    kEip1559 = 2,
+    kEip4844 = 3,
+};
 
-    Type type{Type::kLegacy};
+struct Transaction {
+    TransactionType type{TransactionType::kLegacy};
 
     uint64_t nonce{0};
     intx::uint256 max_priority_fee_per_gas{0};  // EIP-1559
@@ -125,7 +125,7 @@ namespace rlp {
         return decode_transaction(from, to, Eip2718Wrapping::kString);
     }
 
-    DecodingResult decode_transaction_header_and_type(ByteView& from, Header& header, Transaction::Type& type) noexcept;
+    DecodingResult decode_transaction_header_and_type(ByteView& from, Header& header, TransactionType& type) noexcept;
 }  // namespace rlp
 
 }  // namespace silkworm

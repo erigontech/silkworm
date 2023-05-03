@@ -134,7 +134,7 @@ TEST_CASE("check_tx_fee_less_cap returns false", "[silkrpc][common][util]") {
 
 TEST_CASE("is_replay_protected(tx legacy) returns true", "[silkrpc][common][util]") {
     const Transaction txn{
-        .type = Transaction::Type::kEip2930,
+        .type = TransactionType::kEip2930,
         .nonce = 0,
         .max_priority_fee_per_gas = 50'000 * kGiga,
         .max_fee_per_gas = 50'000 * kGiga,
@@ -153,7 +153,7 @@ TEST_CASE("is_replay_protected(tx legacy) returns true", "[silkrpc][common][util
 
 TEST_CASE("is_replay_protected returns true", "[silkrpc][common][util]") {
     Transaction txn{
-        .type = Transaction::Type::kLegacy,
+        .type = TransactionType::kLegacy,
         .nonce = 0,
         .max_priority_fee_per_gas = 20000000000,
         .max_fee_per_gas = 20000000000,
@@ -173,7 +173,7 @@ TEST_CASE("is_replay_protected returns true", "[silkrpc][common][util]") {
 
 TEST_CASE("is_replay_protected returns false", "[silkrpc][common][util]") {
     const Transaction txn{
-        .type = Transaction::Type::kLegacy,
+        .type = TransactionType::kLegacy,
         .nonce = 0,
         .max_priority_fee_per_gas = 50'000 * kGiga,
         .max_fee_per_gas = 50'000 * kGiga,

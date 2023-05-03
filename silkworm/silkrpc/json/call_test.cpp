@@ -98,4 +98,94 @@ TEST_CASE("deserialize full call", "[silkworm::json][from_json]") {
     CHECK(c2.nonce == intx::uint256{1});
 }
 
+TEST_CASE("Bundle", "[silkworm::json][from_json]") {
+    SECTION("Only 1 transaction") {
+        auto json = R"({
+            "transactions": [
+                {
+                    "from":"0x52c24586c31cff0485a6208bb63859290fba5bce",
+                    "to":"0x0715a7794a1dc8e42615f059dd6e406a6594651a",
+                    "gas":1000000,
+                    "gasPrice":"0x10C388C00",
+                    "data":"0xdaa6d5560000000000000000000000000000000000000000000000000000000000000000",
+                    "value":"0x124F80",
+                    "nonce": 1
+                }
+            ]
+        })"_json;
+
+        auto bundle = json.get<Bundle>();
+
+        CHECK(bundle.transactions.size() == 1);
+
+        auto& call = bundle.transactions[0];
+        CHECK(call.from == evmc::address{0x52c24586c31cff0485a6208bb63859290fba5bce_address});
+        CHECK(call.to == evmc::address{0x0715a7794a1dc8e42615f059dd6e406a6594651a_address});
+        CHECK(call.gas == intx::uint256{1000000});
+        CHECK(call.gas_price == intx::uint256{4499999744});
+        CHECK(call.data == silkworm::from_hex("0xdaa6d5560000000000000000000000000000000000000000000000000000000000000000"));
+        CHECK(call.value == intx::uint256{1200000});
+        CHECK(call.nonce == intx::uint256{1});
+
+        auto& bo = bundle.block_override;
+        CHECK(bo.block_number == std::nullopt);
+        CHECK(bo.coin_base == std::nullopt);
+        CHECK(bo.timestamp == std::nullopt);
+        CHECK(bo.difficulty == std::nullopt);
+        CHECK(bo.gas_limit == std::nullopt);
+        CHECK(bo.base_fee == std::nullopt);
+    }
+
+    SECTION("2 transaction") {
+        auto json = R"({
+            "transactions": [
+                {
+                    "from":"0x52c24586c31cff0485a6208bb63859290fba5bce"
+                },
+                {
+                    "from":"0x52c24586c31cff0485a6208bb63859290fba5baa"
+                }
+            ]
+        })"_json;
+
+        auto bundle = json.get<Bundle>();
+
+        CHECK(bundle.transactions.size() == 2);
+        CHECK(bundle.transactions[0].from == evmc::address{0x52c24586c31cff0485a6208bb63859290fba5bce_address});
+        CHECK(bundle.transactions[1].from == evmc::address{0x52c24586c31cff0485a6208bb63859290fba5baa_address});
+    }
+
+    SECTION("Simple transaction and block overrides") {
+        auto json = R"({
+            "transactions": [
+                {
+                    "from":"0x52c24586c31cff0485a6208bb63859290fba5bce"
+                }
+            ],
+            "blockOverride": {
+                "blockNumber": 10,
+                "coinbase": "0x52c24586c31cff0485a6208bb63859290fba5baa",
+                "timestamp": 1000,
+                "difficulty": "0x1000000",
+                "gasLimit": 3,
+                "baseFee": 4
+            }
+        })"_json;
+
+        auto bundle = json.get<Bundle>();
+
+        CHECK(bundle.transactions.size() == 1);
+
+        auto& call = bundle.transactions[0];
+        CHECK(call.from == evmc::address{0x52c24586c31cff0485a6208bb63859290fba5bce_address});
+
+        auto& bo = bundle.block_override;
+        CHECK(bo.block_number == 10);
+        CHECK(bo.coin_base == evmc::address{0x52c24586c31cff0485a6208bb63859290fba5baa_address});
+        CHECK(bo.timestamp == 1000);
+        CHECK(bo.difficulty == intx::uint256{16777216});
+        CHECK(bo.gas_limit == 3);
+        CHECK(bo.base_fee == 4);
+    }
+}
 }  // namespace silkworm::rpc

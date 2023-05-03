@@ -86,7 +86,7 @@ TEST_CASE("EIP-2930 Transaction RLP") {
 
     // Raw serialization
     Bytes encoded_raw;
-    rlp::encode(encoded_raw, txn, /*for_signing=*/false, /*wrap_eip2718_into_string=*/false);
+    rlp::encode(encoded_raw, txn, /*wrap_eip2718_into_string=*/false);
 
     Transaction decoded;
     ByteView view{encoded_raw};
@@ -105,7 +105,7 @@ TEST_CASE("EIP-2930 Transaction RLP") {
 
     // Wrap into an RLP string
     Bytes encoded_wrapped;
-    rlp::encode(encoded_wrapped, txn, /*for_signing=*/false, /*wrap_eip2718_into_string=*/true);
+    rlp::encode(encoded_wrapped, txn, /*wrap_eip2718_into_string=*/true);
 
     view = encoded_wrapped;
     CHECK(rlp::decode_transaction(view, decoded, rlp::Eip2718Wrapping::kNone) ==

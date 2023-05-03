@@ -84,8 +84,8 @@ namespace rlp {
         return {};
     }
 
-    static Header rlp_header(const Transaction& txn, bool for_signing) {
-        Header h{true, 0};
+    static Header rlp_header_base(const UnsignedTransaction& txn) {
+        Header h{.list = true};
 
         if (txn.type != TransactionType::kLegacy) {
             h.payload_length += length(txn.chain_id.value_or(0));
@@ -106,34 +106,43 @@ namespace rlp {
             h.payload_length += length(txn.access_list);
         }
 
-        if (!for_signing) {
-            if (txn.type != TransactionType::kLegacy) {
-                h.payload_length += length(txn.odd_y_parity);
-            } else {
-                h.payload_length += length(txn.v());
-            }
-            h.payload_length += length(txn.r);
-            h.payload_length += length(txn.s);
-        } else if (txn.type == TransactionType::kLegacy && txn.chain_id) {
+        return h;
+    }
+
+    static Header rlp_header(const UnsignedTransaction& txn) {
+        Header h{rlp_header_base(txn)};
+        if (txn.type == TransactionType::kLegacy && txn.chain_id) {
             h.payload_length += length(*txn.chain_id) + 2;
         }
+        return h;
+    }
+
+    static Header rlp_header(const Transaction& txn) {
+        Header h{rlp_header_base(txn)};
+
+        if (txn.type != TransactionType::kLegacy) {
+            h.payload_length += length(txn.odd_y_parity);
+        } else {
+            h.payload_length += length(txn.v());
+        }
+        h.payload_length += length(txn.r);
+        h.payload_length += length(txn.s);
 
         return h;
     }
 
-    size_t length(const Transaction& txn) {
-        Header rlp_head{rlp_header(txn, /*for_signing=*/false)};
+    size_t length(const Transaction& txn, bool wrap_eip2718_into_string) {
+        Header rlp_head{rlp_header(txn)};
         auto rlp_len{static_cast<size_t>(length_of_length(rlp_head.payload_length) + rlp_head.payload_length)};
-        if (txn.type != TransactionType::kLegacy) {
-            // EIP-2718 transactions are wrapped into byte array in block RLP
+        if (txn.type != TransactionType::kLegacy && wrap_eip2718_into_string) {
             return length_of_length(rlp_len + 1) + rlp_len + 1;
         } else {
             return rlp_len;
         }
     }
 
-    static void legacy_encode(Bytes& to, const Transaction& txn, bool for_signing) {
-        encode_header(to, rlp_header(txn, for_signing));
+    static void legacy_encode_base(Bytes& to, const UnsignedTransaction& txn, const Header rlp_head) {
+        encode_header(to, rlp_head);
 
         encode(to, txn.nonce);
         encode(to, txn.max_fee_per_gas);
@@ -145,22 +154,10 @@ namespace rlp {
         }
         encode(to, txn.value);
         encode(to, txn.data);
-
-        if (!for_signing) {
-            encode(to, txn.v());
-            encode(to, txn.r);
-            encode(to, txn.s);
-        } else if (txn.chain_id) {
-            encode(to, *txn.chain_id);
-            encode(to, 0u);
-            encode(to, 0u);
-        }
     }
 
-    static void eip2718_encode(Bytes& to, const Transaction& txn, bool for_signing, bool wrap_into_array) {
+    static void eip2718_encode(Bytes& to, const UnsignedTransaction& txn, const Header rlp_head, bool wrap_into_array) {
         SILKWORM_ASSERT(txn.type == TransactionType::kEip2930 || txn.type == TransactionType::kEip1559);
-
-        Header rlp_head{rlp_header(txn, for_signing)};
 
         if (wrap_into_array) {
             auto rlp_len{static_cast<size_t>(length_of_length(rlp_head.payload_length) + rlp_head.payload_length)};
@@ -187,19 +184,32 @@ namespace rlp {
         encode(to, txn.value);
         encode(to, txn.data);
         encode(to, txn.access_list);
+    }
 
-        if (!for_signing) {
-            encode(to, txn.odd_y_parity);
-            encode(to, txn.r);
-            encode(to, txn.s);
+    void encode(Bytes& to, const UnsignedTransaction& txn) {
+        if (txn.type == TransactionType::kLegacy) {
+            legacy_encode_base(to, txn, rlp_header(txn));
+            if (txn.chain_id) {
+                encode(to, *txn.chain_id);
+                encode(to, 0u);
+                encode(to, 0u);
+            }
+        } else {
+            eip2718_encode(to, txn, rlp_header(txn), /*wrap_eip2718_into_string=*/false);
         }
     }
 
-    void encode(Bytes& to, const Transaction& txn, bool for_signing, bool wrap_eip2718_into_string) {
+    void encode(Bytes& to, const Transaction& txn, bool wrap_eip2718_into_string) {
         if (txn.type == TransactionType::kLegacy) {
-            legacy_encode(to, txn, for_signing);
+            legacy_encode_base(to, txn, rlp_header(txn));
+            encode(to, txn.v());
+            encode(to, txn.r);
+            encode(to, txn.s);
         } else {
-            eip2718_encode(to, txn, for_signing, wrap_eip2718_into_string);
+            eip2718_encode(to, txn, rlp_header(txn), wrap_eip2718_into_string);
+            encode(to, txn.odd_y_parity);
+            encode(to, txn.r);
+            encode(to, txn.s);
         }
     }
 
@@ -417,7 +427,8 @@ void Transaction::recover_sender() {
         return;
     }
     Bytes rlp{};
-    rlp::encode(rlp, *this, /*for_signing=*/true, /*wrap_eip2718_into_string=*/false);
+    const UnsignedTransaction& unsigned_txn{*this};
+    rlp::encode(rlp, unsigned_txn);  // encode for signing
     ethash::hash256 hash{keccak256(rlp)};
 
     uint8_t signature[kHashLength * 2];

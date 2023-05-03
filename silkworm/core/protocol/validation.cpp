@@ -180,7 +180,7 @@ std::optional<intx::uint256> calc_excess_data_gas(const BlockHeader& parent,
 
 evmc::bytes32 compute_transaction_root(const BlockBody& body) {
     static constexpr auto kEncoder = [](Bytes& to, const Transaction& txn) {
-        rlp::encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_into_string=*/false);
+        rlp::encode(to, txn, /*wrap_eip2718_into_string=*/false);
     };
     return trie::root_hash(body.transactions, kEncoder);
 }

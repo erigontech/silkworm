@@ -26,7 +26,7 @@ namespace silkworm::trie {
 
 TEST_CASE("Empty root hash") {
     static constexpr auto kEncoder = [](Bytes& to, const Transaction& txn) {
-        rlp::encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_into_string=*/false);
+        rlp::encode(to, txn, /*wrap_eip2718_into_string=*/false);
     };
     CHECK(root_hash(std::vector<Transaction>{}, kEncoder) == kEmptyRoot);
 }

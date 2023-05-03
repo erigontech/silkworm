@@ -27,15 +27,6 @@
 
 namespace silkworm {
 
-bool operator==(const Transaction& a, const Transaction& b) {
-    // from is omitted since it's derived from the signature
-    return a.type == b.type && a.nonce == b.nonce && a.max_priority_fee_per_gas == b.max_priority_fee_per_gas &&
-           a.max_fee_per_gas == b.max_fee_per_gas && a.gas_limit == b.gas_limit && a.to == b.to && a.value == b.value &&
-           a.data == b.data && a.odd_y_parity == b.odd_y_parity && a.chain_id == b.chain_id && a.r == b.r &&
-           a.s == b.s && a.access_list == b.access_list && a.max_fee_per_data_gas == b.max_fee_per_data_gas &&
-           a.blob_versioned_hashes == b.blob_versioned_hashes;
-}
-
 // https://eips.ethereum.org/EIPS/eip-155
 intx::uint256 Transaction::v() const { return y_parity_and_chain_id_to_v(odd_y_parity, chain_id); }
 
@@ -440,7 +431,7 @@ void Transaction::recover_sender() {
     }
 }
 
-intx::uint512 Transaction::maximum_gas_cost() const {
+intx::uint512 UnsignedTransaction::maximum_gas_cost() const {
     // See https://github.com/ethereum/EIPs/pull/3594
     intx::uint512 max_gas_cost{intx::umul(intx::uint256{gas_limit}, max_fee_per_gas)};
     // and https://eips.ethereum.org/EIPS/eip-4844#gas-accounting
@@ -450,16 +441,16 @@ intx::uint512 Transaction::maximum_gas_cost() const {
     return max_gas_cost;
 }
 
-intx::uint256 Transaction::priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const {
+intx::uint256 UnsignedTransaction::priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const {
     SILKWORM_ASSERT(max_fee_per_gas >= base_fee_per_gas);
     return std::min(max_priority_fee_per_gas, max_fee_per_gas - base_fee_per_gas);
 }
 
-intx::uint256 Transaction::effective_gas_price(const intx::uint256& base_fee_per_gas) const {
+intx::uint256 UnsignedTransaction::effective_gas_price(const intx::uint256& base_fee_per_gas) const {
     return priority_fee_per_gas(base_fee_per_gas) + base_fee_per_gas;
 }
 
-uint64_t Transaction::total_data_gas() const {
+uint64_t UnsignedTransaction::total_data_gas() const {
     return protocol::kDataGasPerBlob * blob_versioned_hashes.size();
 }
 

@@ -25,6 +25,7 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/transaction.hpp>
+#include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
 
 namespace silkworm::rpc {
@@ -77,4 +78,24 @@ struct Call {
 
 std::ostream& operator<<(std::ostream& out, const Call& call);
 
+struct BlockOverride {
+    std::optional<std::uint64_t> block_number;
+    std::optional<evmc::address> coin_base;
+    std::optional<std::uint64_t> timestamp;
+    std::optional<intx::uint256> difficulty;
+    std::optional<std::uint64_t> gas_limit;
+    std::optional<std::uint64_t> base_fee;
+};
+
+struct StateContext {
+    BlockNumberOrHash block_number;
+    std::int32_t transaction_index{-1};
+};
+
+struct Bundle {
+    std::vector<Call> transactions;
+    BlockOverride block_override;
+};
+
+using Bundles = std::vector<Bundle>;
 }  // namespace silkworm::rpc

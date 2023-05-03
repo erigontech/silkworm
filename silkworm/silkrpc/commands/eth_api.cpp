@@ -1147,6 +1147,53 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
     co_return;
 }
 
+// https://eth.wiki/json-rpc/API#eth_callMany
+awaitable<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& request, std::string& reply) {
+    if (!request.contains("params")) {
+        auto error_msg = "missing value for required arguments";
+        SILKRPC_ERROR << error_msg << request.dump() << "\n";
+        make_glaze_json_error(reply, request["id"], -32602, error_msg);
+        co_return;
+    }
+    const auto& params = request["params"];
+    if (params.size() != 3) {
+        auto error_msg = "invalid eth_callMany params: " + params.dump();
+        SILKRPC_ERROR << error_msg << "\n";
+        make_glaze_json_error(reply, request["id"], -32602, error_msg);
+        co_return;
+    }
+    auto bundles = params[0].get<Bundles>();
+    const auto block_number_or_hash = params[1].get<BlockNumberOrHash>();
+    const auto timeout = params[2].get<uint64_t>();
+
+    if (bundles.empty()) {
+        const auto error_msg = "invalid eth_callMany bundle list: " + params.dump();
+        SILKRPC_ERROR << error_msg << "\n";
+        reply = make_json_error(request["id"], 100, error_msg);
+        co_return;
+    }
+
+    SILKRPC_DEBUG << "block_number_or_hash: " << block_number_or_hash << " timeout: " << timeout << "\n";
+
+    auto tx = co_await database_->begin();
+
+    try {
+        ethdb::kv::CachedDatabase tx_database{block_number_or_hash, *tx, *state_cache_};
+        ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
+
+        reply = make_json_content(request["id"], "0x0");
+    } catch (const std::exception& e) {
+        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+    co_return;
+}
+
 // https://eth.wiki/json-rpc/API#eth_maxpriorityfeepergas
 awaitable<void> EthereumRpcApi::handle_eth_max_priority_fee_per_gas(const nlohmann::json& request, nlohmann::json& reply) {
     auto tx = co_await database_->begin();
@@ -1180,8 +1227,8 @@ awaitable<void> EthereumRpcApi::handle_eth_max_priority_fee_per_gas(const nlohma
 awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 2) {
-        auto error_msg = "invalid eth_call params: " + params.dump();
-        SILK_ERROR << error_msg;
+        auto error_msg = "invalid eth_createAccessList params: " + params.dump();
+        SILKRPC_ERROR << error_msg << "\n";
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }

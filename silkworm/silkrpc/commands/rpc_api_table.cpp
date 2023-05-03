@@ -162,6 +162,7 @@ void RpcApiTable::add_eth_handlers() {
     // GLAZE methods
     method_handlers_glaze_[http::method::k_eth_getLogs] = &commands::RpcApi::handle_eth_get_logs;
     method_handlers_glaze_[http::method::k_eth_call] = &commands::RpcApi::handle_eth_call;
+    method_handlers_glaze_[http::method::k_eth_callMany] = &commands::RpcApi::handle_eth_call_many;
 }
 
 void RpcApiTable::add_net_handlers() {

@@ -107,4 +107,39 @@ void make_glaze_json_content(std::string& reply, uint32_t id, const silkworm::By
     }
 }
 
+void from_json(const nlohmann::json& json, Bundle& call) {
+    call.transactions = json.at("transactions").get<std::vector<Call>>();
+    if (json.count("blockOverride") != 0) {
+        call.block_override = json.at("blockOverride").get<BlockOverride>();
+    }
+}
+
+void from_json(const nlohmann::json& json, StateContext& state_context) {
+    state_context.block_number = json.at("blockNumber").get<BlockNumberOrHash>();
+
+    if (json.count("transactionIndex ") != 0) {
+        state_context.transaction_index = json.at("transactionIndex ").get<std::int32_t>();
+    }
+}
+
+void from_json(const nlohmann::json& json, BlockOverride& block_override) {
+    if (json.count("blockNumber") != 0) {
+        block_override.block_number = json.at("blockNumber").get<std::uint64_t>();
+    }
+    if (json.count("coinbase") != 0) {
+        block_override.coin_base = json.at("coinbase").get<evmc::address>();
+    }
+    if (json.count("timestamp") != 0) {
+        block_override.timestamp = json.at("timestamp").get<std::uint64_t>();
+    }
+    if (json.count("difficulty") != 0) {
+        block_override.difficulty = json.at("difficulty").get<intx::uint256>();
+    }
+    if (json.count("gasLimit") != 0) {
+        block_override.gas_limit = json.at("gasLimit").get<std::uint64_t>();
+    }
+    if (json.count("baseFee") != 0) {
+        block_override.base_fee = json.at("baseFee").get<std::uint64_t>();
+    }
+}
 }  // namespace silkworm::rpc

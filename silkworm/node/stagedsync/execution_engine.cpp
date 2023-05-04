@@ -182,17 +182,16 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
             SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at fork choice update time";
             return false;
         }
-        ExtendingFork& fork = *f;
+        ExtendingFork&& fork = std::move(*f);
 
-        discard_all_forks_except(fork);  // remove all other forks
+        discard_all_forks();  // remove all other forks
 
         // notify the fork of the update - we need to block here to restore the invariant
         auto updated = fork.notify_fork_choice_update(head_block_hash, finalized_block_hash).get();  // BLOCKING
         if (!updated) return false;
 
         last_fork_choice_ = fork.current_head();
-
-        main_chain_.reintegrate_fork(std::move(fork));  // BLOCKING
+        fork.close();
     }
 
     if (finalized_block_hash) {
@@ -206,19 +205,24 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
     return true;
 }
 
-void ExecutionEngine::discard_all_forks_except(ExtendingFork&) {
-    throw std::runtime_error("not implemented");
+void ExecutionEngine::discard_all_forks() {
     // remove all forks except the given one from forks_
     // ensure a clean exit of all those forks that can be busy in a VerifyChain
     // method or something else; maybe use a sweeper thread
+
+    for (auto it = forks_.begin(); it != forks_.end();) {
+        it->close();  // todo: maybe we should wait for the fork to close in another thread, a sweeper thread
+    }
+    forks_.clear();
 }
 
 // TO IMPLEMENT OR REWORK ---------------------------------------------------------------------------------------------
 
 auto ExecutionEngine::get_header([[maybe_unused]] Hash header_hash) const -> std::optional<BlockHeader> {
     // read from cache, then from main_chain_
-    throw std::runtime_error("not implemented");
-    return {};
+    auto header = block_cache_.get_as_copy(header_hash);
+    if (header) return (*header)->header;
+    return main_chain_.get_header(header_hash);
 }
 
 auto ExecutionEngine::get_header([[maybe_unused]] BlockNum header_height) const -> std::optional<BlockHeader> {
@@ -227,10 +231,9 @@ auto ExecutionEngine::get_header([[maybe_unused]] BlockNum header_height) const 
     return {};
 }
 
-auto ExecutionEngine::get_last_headers([[maybe_unused]] BlockNum limit) const -> std::vector<BlockHeader> {
-    // read from cache, then from main_chain_
-    throw std::runtime_error("not implemented");
-    return {};
+auto ExecutionEngine::get_last_headers(BlockNum limit) const -> std::vector<BlockHeader> {
+    ensure_invariant(block_cache_.size() == 0, "actual get_last_headers() impl assume it is called only at beginning");
+    return main_chain_.get_last_headers(limit);
 }
 
 auto ExecutionEngine::get_body([[maybe_unused]] Hash header_hash) const -> std::optional<BlockBody> {
@@ -239,17 +242,31 @@ auto ExecutionEngine::get_body([[maybe_unused]] Hash header_hash) const -> std::
     return {};
 }
 
-auto ExecutionEngine::get_block_number([[maybe_unused]] Hash header_hash) const -> std::optional<BlockNum> {
+auto ExecutionEngine::get_body([[maybe_unused]] BlockNum) const -> std::optional<BlockBody> {
+    // read from cache, then from main_chain_
     throw std::runtime_error("not implemented");
     return {};
 }
 
+auto ExecutionEngine::get_block_number(Hash header_hash) const -> std::optional<BlockNum> {
+    auto cached_block = block_cache_.get_as_copy(header_hash);
+    if (cached_block) return (*cached_block)->header.number;
+    auto header = main_chain_.get_header(header_hash);
+    if (!header) return {};
+    return header->number;
+}
+
 bool ExecutionEngine::is_canonical_hash([[maybe_unused]] Hash header_hash) const {
+    // read from cache, then from main_chain_
     throw std::runtime_error("not implemented");
     return {};
 }
 
 /*
+auto ExecutionEngine::is_ancestor(BlockId supposed_parent, BlockId block) const -> bool {
+    // todo: before asking main_chain_ navigate block_cache_ to find the ancestor
+    return main_chain_.is_ancestor(supposed_parent, block);
+}
 
 auto ExecutionEngine::get_canonical_hash([[maybe_unused]] BlockNum height) const -> std::optional<Hash> {
     // read from cache, then from main_chain_
@@ -263,12 +280,6 @@ auto ExecutionEngine::get_canonical_head() const -> BlockId {
 
 auto ExecutionEngine::get_header_td([[maybe_unused]] BlockNum header_height, [[maybe_unused]] Hash header_hash) const -> std::optional<TotalDifficulty> {
     // implement...
-    throw std::runtime_error("not implemented");
-    return {};
-}
-
-auto ExecutionEngine::is_ancestor([[maybe_unused]] BlockId supposed_parent, [[maybe_unused]] BlockId block) const -> bool {
-    // read from cache, then from main_chain_
     throw std::runtime_error("not implemented");
     return {};
 }

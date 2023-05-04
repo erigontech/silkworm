@@ -215,8 +215,11 @@ auto MainChain::fork(BlockId forking_point) -> ExtendingFork {
     return ExtendingFork{forking_point, *this, io_context_};
 }
 
-void MainChain::reintegrate_fork(ExtendingFork&&) {
-    throw std::runtime_error("not implemented");
+void MainChain::reintegrate_fork(Fork& fork, db::MemoryMutation& mutation_tx) {
+    mutation_tx.flush(tx_);
+    canonical_chain_.set_current_head(fork.current_head());
+    canonical_head_status_ = fork.last_head_status();
+    last_fork_choice_ = fork.last_fork_choice();
 }
 
 auto MainChain::get_header(Hash header_hash) const -> std::optional<BlockHeader> {

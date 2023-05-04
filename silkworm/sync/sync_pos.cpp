@@ -278,13 +278,14 @@ auto PoSSync::fork_choice_update(const ForkChoiceState& state,
 
         do_sanity_checks(*head_header, /**parent,*/ *parent_td);
 
-        /* this is not working due to proto interface limitations
+        /* todo: enable this check
         auto last_fcu = co_await exec_engine_.last_fork_choice();
-        auto already_valid = exec_engine_.is_ancestor(head, *last_fcu) */
-        auto already_valid = co_await exec_engine_.is_canonical(head_header_hash);
+        auto already_valid = co_await exec_engine_.is_ancestor(head, last_fcu);
+        //non ERIGON_API, maybe replace with co_await exec_engine_.is_canonical(head_header_hash);
         if (already_valid) {
             co_return ForkChoiceUpdateReply{{PayloadStatus::kValid, state.head_block_hash}, no_payload_id};
         }
+        */
 
         // NOTE: from here the method execution can be cancelled
         auto verification = co_await exec_engine_.validate_chain(head_header_hash);
@@ -310,16 +311,18 @@ auto PoSSync::fork_choice_update(const ForkChoiceState& state,
             co_return ForkChoiceUpdateReply{{PayloadStatus::kInvalid, application.current_head, "invalid fork choice update"}, no_payload_id};
         }
 
-        //auto is_ancestor = co_await exec_engine_.is_ancestor(state.finalized_block_hash, head); this is not working due to proto interface limitations
-        auto is_ancestor = co_await exec_engine_.is_canonical(state.finalized_block_hash);
+        /* todo: enable those checks
+        auto is_ancestor = co_await exec_engine_.is_ancestor(state.finalized_block_hash, head);
+        // non ERIGON_API, maybe replace with exec_engine_.is_canonical(state.finalized_block_hash) ?
         if (!is_ancestor) {
             co_return ForkChoiceUpdateReply{{PayloadStatus::kInvalid, no_latest_valid_hash, "invalid fork choice state"}, no_payload_id};  // todo: return error code -38002
         }
         if (state.safe_block_hash != Hash()) {
-            //auto is_ancestor = exec_engine_.is_ancestor(state.safe_block_hash, head); this is not working due to proto interface limitations
-            auto ancestor = co_await exec_engine_.is_canonical(state.safe_block_hash);
+            auto ancestor = exec_engine_.is_ancestor(state.safe_block_hash, head);
+            // non ERIGON_API, maybe replace with exec_engine_.is_canonical(state.safe_block_hash);
             if (!ancestor) co_return ForkChoiceUpdateReply{{PayloadStatus::kInvalid, no_latest_valid_hash, "invalid fork choice state"}, no_payload_id};  // todo: return error code -38002
         }
+        */
 
         PayloadId buildProcessId = 0;
 

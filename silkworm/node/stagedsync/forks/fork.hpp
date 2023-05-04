@@ -40,6 +40,8 @@ class Fork {
     Fork(Fork&& orig) noexcept;
 
     void open();  // needed to circumvent mdbx threading model limitations
+    void reintegrate();
+    void close();
 
     // extension & contraction
     void extend_with(const std::list<std::shared_ptr<Block>>&);

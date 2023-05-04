@@ -48,7 +48,7 @@ class LocalClient : public Client {
     ERIGON_API auto get_body(Hash block_hash) -> asio::awaitable<BlockBody> override;
 
     ERIGON_API auto is_canonical(Hash block_hash) -> asio::awaitable<bool> override;
-    ERIGON_API auto get_block_num(Hash block_hash) -> asio::awaitable<BlockNum> override;
+    ERIGON_API auto get_block_num(Hash block_hash) -> asio::awaitable<std::optional<BlockNum>> override;
 
     auto get_last_headers(BlockNum limit) -> asio::awaitable<std::vector<BlockHeader>> override;
 

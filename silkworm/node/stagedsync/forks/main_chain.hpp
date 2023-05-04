@@ -29,6 +29,7 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/common/asio_timer.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
+#include <silkworm/node/db/memory_mutation.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
 
@@ -53,8 +54,8 @@ class MainChain {
     void insert_block(const Block&);
 
     // branching
-    auto fork(BlockId forking_point) -> ExtendingFork;  // fort at the current head
-    void reintegrate_fork(ExtendingFork&& fork);        // reintegrate fork into the main chain changing the head
+    auto fork(BlockId forking_point) -> ExtendingFork;                   // fort at the current head
+    void reintegrate_fork(Fork&, db::MemoryMutation&);  // reintegrate fork into the main chain
     auto find_forking_point(const BlockHeader& header) const -> std::optional<BlockId>;
     auto find_forking_point(const Hash& header_hash) const -> std::optional<BlockId>;
 
@@ -77,7 +78,6 @@ class MainChain {
     auto extends_last_fork_choice(BlockNum, Hash) const -> bool;
     auto extends(BlockId block, BlockId supposed_parent) const -> bool;
     auto is_ancestor(BlockId supposed_parent, BlockId block) const -> bool;
-    auto is_ancestor(Hash supposed_parent, BlockId block) const -> bool;
 
     NodeSettings& node_settings();
     friend Fork;

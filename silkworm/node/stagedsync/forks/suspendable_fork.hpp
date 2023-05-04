@@ -42,8 +42,9 @@ class ExtendingFork {
     ExtendingFork(const ExtendingFork&) = delete;
     ExtendingFork(ExtendingFork&& orig) noexcept;
 
-    // opening
+    // opening & closing
     void start_with(BlockId new_head, std::list<std::shared_ptr<Block>>&&);
+    void close();
 
     // extension
     void extend_with(Hash head_hash, const Block& head);
@@ -64,6 +65,7 @@ class ExtendingFork {
     Fork fork_;
     asio::io_context& io_context_;    // for io
     asio::any_io_executor executor_;  // for pipeline execution
+    std::thread thread_;              // for executor
 
     // cached values provided to avoid thread synchronization
     BlockId current_head_{};

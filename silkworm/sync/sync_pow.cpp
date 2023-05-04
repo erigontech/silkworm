@@ -159,10 +159,12 @@ void PoWSync::execution_loop() {
             auto invalid_chain = std::get<InvalidChain>(verification);
 
             auto latest_valid_height = sync_wait(in(exec_engine_), exec_engine_.get_block_num(invalid_chain.latest_valid_head));
-            log::Info("Sync") << "Invalid chain, unwinding down to=" << latest_valid_height;
+            ensure_invariant(latest_valid_height.has_value(), "Invalid latest_valid_head");
+
+            log::Info("Sync") << "Invalid chain, unwinding down to=" << *latest_valid_height;
 
             // if it is not valid, unwind the chain
-            unwind({latest_valid_height, invalid_chain.latest_valid_head}, invalid_chain.bad_block);
+            unwind({*latest_valid_height, invalid_chain.latest_valid_head}, invalid_chain.bad_block);
 
             if (!invalid_chain.bad_headers.empty()) {
                 update_bad_headers(std::move(invalid_chain.bad_headers));

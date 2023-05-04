@@ -74,6 +74,14 @@ void Fork::open() {
     tx_.reopen();  // comply to mdbx limitation: tx must be used from its creation thread
 }
 
+void Fork::reintegrate() {
+    main_chain_.reintegrate_fork(*this, tx_);
+}
+
+void Fork::close() {
+    tx_.abort();
+}
+
 BlockId Fork::current_head() const {
     return current_head_;
 }

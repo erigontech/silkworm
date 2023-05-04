@@ -228,11 +228,12 @@ awaitable<bool> RemoteClient::is_canonical(Hash block_hash) {
     co_return response.canonical();
 }
 
-awaitable<BlockNum> RemoteClient::get_block_num(Hash block_hash) {
+asio::awaitable<std::optional<BlockNum>> RemoteClient::get_block_num(Hash block_hash) {
     std::unique_ptr<types::H256> request = rpc::H256_from_bytes32(block_hash);
     const auto response = co_await rpc::unary_rpc(
         &::execution::Execution::Stub::AsyncGetHeaderHashNumber, stub_, *request, grpc_context_, "failure getting block number");
 
+    if (!response.has_block_number()) co_return std::nullopt;
     co_return response.block_number();
 }
 

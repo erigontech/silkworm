@@ -614,8 +614,8 @@ int main(int argc, char* argv[]) {
         execution::Server execution_server{node_settings, sw_db::RWAccess{chaindata_db}};
 
         execution::LocalClient execution_client(execution_server);
-        //PoWSync sync(block_exchange, execution_client);
-        PoSSync sync(block_exchange, execution_client);
+        PoWSync sync(block_exchange, execution_client);
+        //PoSSync sync(block_exchange, execution_client);
 
         auto tasks =
             timer_executor() &&

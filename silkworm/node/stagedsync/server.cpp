@@ -150,8 +150,11 @@ asio::awaitable<bool> Server::is_canonical(Hash /*block_hash*/) {
     throw std::runtime_error{"Server::is_canonical not implemented"};
 }
 
-asio::awaitable<BlockNum> Server::get_block_num(Hash /*block_hash*/) {
-    throw std::runtime_error{"Server::get_block_num not implemented"};
+asio::awaitable<std::optional<BlockNum>> Server::get_block_num(Hash block_hash) {
+    auto lambda = [](Server* me, Hash h) -> asio::awaitable<std::optional<BlockNum>> {
+        co_return me->exec_engine_.get_block_number(h);
+    };
+    return co_spawn(io_context_, lambda(this, block_hash), asio::use_awaitable);
 }
 
 }  // namespace silkworm::execution

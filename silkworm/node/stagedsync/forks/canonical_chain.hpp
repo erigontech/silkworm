@@ -47,6 +47,7 @@ class CanonicalChain {
     void advance(BlockNum height, Hash header_hash);
     void update_up_to(BlockNum height, Hash header_hash);
     void delete_down_to(BlockNum unwind_point);
+    void set_current_head(BlockId);
 
     BlockId initial_head() const;
     BlockId current_head() const;

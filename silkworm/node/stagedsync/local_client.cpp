@@ -68,7 +68,7 @@ awaitable<bool> LocalClient::is_canonical(Hash block_hash) {
     co_return co_await local_server_.is_canonical(block_hash);
 }
 
-awaitable<BlockNum> LocalClient::get_block_num(Hash block_hash) {
+awaitable<std::optional<BlockNum>> LocalClient::get_block_num(Hash block_hash) {
     co_return co_await local_server_.get_block_num(block_hash);
 }
 

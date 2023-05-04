@@ -64,6 +64,15 @@ void ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block
     co_spawn(io_context_, lambda(*this, new_head, std::move(blocks)), handle_exception);
 }
 
+void ExtendingFork::close() {
+    // todo: implement
+    //work_guard_.reset();
+    //executor.stop();
+    //if (thread_.joinable()) {
+    //    thread_.join();
+    //}
+}
+
 void ExtendingFork::extend_with(Hash head_hash, const Block& block) {
     current_head_ = {block.header.number, head_hash};  // setting this here is important, same as above
 
@@ -98,9 +107,11 @@ auto ExtendingFork::notify_fork_choice_update(Hash head_block_hash, std::optiona
 
     auto lambda = [](ExtendingFork& me, concurrency::AwaitablePromise<bool>&& promise,
                      Hash head, std::optional<Hash> finalized) -> awaitable<void> {
-        auto result = me.fork_.notify_fork_choice_update(head, finalized);
+        auto updated = me.fork_.notify_fork_choice_update(head, finalized);
         me.current_head_ = me.fork_.current_head();
-        promise.set_value(result);
+        promise.set_value(updated);
+        if (updated) me.fork_.reintegrate();
+        me.fork_.close();
         co_return;
     };
 

@@ -61,6 +61,10 @@ CanonicalChain::CanonicalChain(CanonicalChain&& orig) noexcept
     current_head_ = initial_head_;
 }
 
+void CanonicalChain::set_current_head(BlockId head) {
+    current_head_ = head;
+}
+
 BlockId CanonicalChain::initial_head() const { return initial_head_; }
 BlockId CanonicalChain::current_head() const { return current_head_; }
 
@@ -169,7 +173,8 @@ void CanonicalChain::delete_down_to(BlockNum unwind_point) {
 auto CanonicalChain::get_hash(BlockNum height) const -> std::optional<Hash> {
     auto canon_hash = canonical_hash_cache_->get_as_copy(height);  // look in the cache first
     if (!canon_hash) {
-        canon_hash = db::read_canonical_hash(tx_, height);  // then look in the db
+        canon_hash = db::read_canonical_hash(tx_, height);                // then look in the db
+        if (canon_hash) canonical_hash_cache_->put(height, *canon_hash);  // and cache it
     }
     return canon_hash;
 }

@@ -91,8 +91,6 @@ class ExecutionEngine : public Stoppable {
     auto get_body(Hash) const -> std::optional<BlockBody>;
     auto extends_last_fork_choice(BlockNum, Hash) const -> bool;
     auto extends(BlockId block, BlockId supposed_parent) const -> bool;
-    auto is_ancestor(BlockId supposed_parent, BlockId block) const -> bool;
-    auto is_ancestor(Hash supposed_parent, BlockId block) const -> bool;
     */
   protected:
     struct ForkingPath {
@@ -101,7 +99,7 @@ class ExecutionEngine : public Stoppable {
     };
 
     auto find_forking_point(const BlockHeader& header) const -> std::optional<ForkingPath>;
-    void discard_all_forks_except(ExtendingFork& fork);
+    void discard_all_forks();
 
     asio::io_context& io_context_;
     NodeSettings& node_settings_;

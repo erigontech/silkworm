@@ -27,7 +27,7 @@ class LocalClient : public Client {
   public:
     explicit LocalClient(Server& local_server);
 
-    virtual asio::io_context& get_executor();
+    asio::io_context& get_executor() override;
 
     // actions
     ERIGON_API auto insert_headers(const BlockVector& blocks) -> asio::awaitable<void> override;

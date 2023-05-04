@@ -357,7 +357,7 @@ auto HeaderChain::anchor_skeleton_request(time_point_t time_point) -> std::share
                 skeleton_condition_ = "near the top";
                 auto request_message = std::make_shared<OutboundGetBlockHeaders>();
                 request_message->packet().requestId = generate_request_id();
-                request_message->packet().request = {top, max_len, 0, true};  // request top header only
+                request_message->packet().request = {{top}, max_len, 0, true};  // request top header only
                 return request_message;
             } else {
                 skeleton_condition_ = "wait tip announce";
@@ -378,7 +378,7 @@ auto HeaderChain::anchor_skeleton_request(time_point_t time_point) -> std::share
     auto request_message = std::make_shared<OutboundGetBlockHeaders>();
     auto& packet = request_message->packet();
     packet.requestId = generate_request_id();
-    packet.request.origin = highest_in_db_ + stride;
+    packet.request.origin = {highest_in_db_ + stride};
     packet.request.amount = length;
     packet.request.skip = length > 1 ? stride - 1 : 0;
     packet.request.reverse = false;
@@ -458,7 +458,7 @@ auto HeaderChain::anchor_extension_request(time_point_t time_point) -> std::shar
             auto request_message = send_penalties;
             auto& packet = request_message->packet();
             packet.requestId = generate_request_id();
-            packet.request = {anchor->blockHeight,  // requesting from origin=blockHeight-1 make debugging difficult
+            packet.request = {{anchor->blockHeight},  // requesting from origin=blockHeight-1 make debugging difficult
                               max_len, 0,
                               true};  // we use blockHeight in place of parentHash to get also ommers if presents
 
@@ -503,7 +503,7 @@ auto HeaderChain::save_external_announce(Hash hash) -> std::optional<GetBlockHea
 
     GetBlockHeadersPacket66 request;
     request.requestId = RANDOM_NUMBER.generate_one();
-    request.request.origin = hash;
+    request.request.origin = {hash};
     request.request.amount = 1;
     request.request.skip = 0;
     request.request.reverse = false;

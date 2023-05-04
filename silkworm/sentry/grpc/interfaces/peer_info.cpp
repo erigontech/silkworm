@@ -26,7 +26,7 @@
 
 #include "peer_id.hpp"
 
-namespace silkworm::sentry::rpc::interfaces {
+namespace silkworm::sentry::grpc::interfaces {
 
 boost::asio::ip::tcp::endpoint parse_endpoint(const std::string& address);
 
@@ -109,4 +109,4 @@ std::optional<api::api_common::PeerInfo> peer_info_opt_from_proto_peer_reply(con
     return reply;
 }
 
-}  // namespace silkworm::sentry::rpc::interfaces
+}  // namespace silkworm::sentry::grpc::interfaces

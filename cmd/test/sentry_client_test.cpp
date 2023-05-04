@@ -26,7 +26,7 @@
 #include <silkworm/sentry/grpc/client/sentry_client.hpp>
 #include <silkworm/sentry/sentry.hpp>
 
-using namespace silkworm::sentry::rpc::client;
+using namespace silkworm::sentry::grpc::client;
 using namespace silkworm;
 
 class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {

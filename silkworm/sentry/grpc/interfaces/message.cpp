@@ -22,7 +22,7 @@
 #include <silkworm/sentry/eth/message_id.hpp>
 #include <silkworm/sentry/eth/status_message.hpp>
 
-namespace silkworm::sentry::rpc::interfaces {
+namespace silkworm::sentry::grpc::interfaces {
 
 namespace proto = ::sentry;
 
@@ -163,4 +163,4 @@ proto::MessagesRequest messages_request_from_message_id_set(const api::api_commo
     return result;
 }
 
-}  // namespace silkworm::sentry::rpc::interfaces
+}  // namespace silkworm::sentry::grpc::interfaces

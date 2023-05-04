@@ -16,7 +16,7 @@
 
 #include "eth_version.hpp"
 
-namespace silkworm::sentry::rpc::interfaces {
+namespace silkworm::sentry::grpc::interfaces {
 
 namespace proto = ::sentry;
 
@@ -30,4 +30,4 @@ proto::Protocol protocol_from_eth_version(uint8_t version) {
     return static_cast<proto::Protocol>(version - 65);
 }
 
-}  // namespace silkworm::sentry::rpc::interfaces
+}  // namespace silkworm::sentry::grpc::interfaces

@@ -18,7 +18,7 @@
 
 #include <silkworm/infra/grpc/interfaces/types.hpp>
 
-namespace silkworm::sentry::rpc::interfaces {
+namespace silkworm::sentry::grpc::interfaces {
 
 namespace proto_types = ::types;
 
@@ -38,4 +38,4 @@ std::string peer_id_string_from_public_key(const sentry::common::EccPublicKey& k
     return key.hex();
 }
 
-}  // namespace silkworm::sentry::rpc::interfaces
+}  // namespace silkworm::sentry::grpc::interfaces

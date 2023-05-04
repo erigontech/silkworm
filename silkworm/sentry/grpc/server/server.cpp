@@ -30,7 +30,7 @@
 
 #include "server_calls.hpp"
 
-namespace silkworm::sentry::rpc::server {
+namespace silkworm::sentry::grpc::server {
 
 using namespace silkworm::log;
 using AsyncService = ::sentry::Sentry::AsyncService;
@@ -46,7 +46,7 @@ class ServerImpl final : public silkworm::rpc::Server {
     ServerImpl& operator=(const ServerImpl&) = delete;
 
   private:
-    void register_async_services(grpc::ServerBuilder& builder) override;
+    void register_async_services(::grpc::ServerBuilder& builder) override;
     void register_request_calls() override;
     void register_request_calls(agrpc::GrpcContext* grpc_context);
 
@@ -77,7 +77,7 @@ ServerImpl::ServerImpl(
 }
 
 // Register the gRPC services: they must exist for the lifetime of the server built by builder.
-void ServerImpl::register_async_services(grpc::ServerBuilder& builder) {
+void ServerImpl::register_async_services(::grpc::ServerBuilder& builder) {
     builder.RegisterService(&async_service_);
 }
 
@@ -114,11 +114,11 @@ Server::Server(
     : p_impl_(std::make_unique<ServerImpl>(config, std::move(router))) {}
 
 Server::~Server() {
-    log::Trace("sentry") << "silkworm::sentry::rpc::server::Server::~Server";
+    log::Trace("sentry") << "silkworm::sentry::grpc::server::Server::~Server";
 }
 
 boost::asio::awaitable<void> Server::async_run() {
     return p_impl_->async_run();
 }
 
-}  // namespace silkworm::sentry::rpc::server
+}  // namespace silkworm::sentry::grpc::server

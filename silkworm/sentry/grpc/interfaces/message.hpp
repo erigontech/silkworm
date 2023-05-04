@@ -20,7 +20,7 @@
 #include <silkworm/sentry/api/api_common/message_id_set.hpp>
 #include <silkworm/sentry/common/message.hpp>
 
-namespace silkworm::sentry::rpc::interfaces {
+namespace silkworm::sentry::grpc::interfaces {
 
 sentry::common::Message message_from_outbound_data(const ::sentry::OutboundMessageData& message_data);
 ::sentry::OutboundMessageData outbound_data_from_message(const sentry::common::Message& message);
@@ -34,4 +34,4 @@ uint8_t message_id_from_proto_message_id(::sentry::MessageId message_id);
 api::api_common::MessageIdSet message_id_set_from_messages_request(const ::sentry::MessagesRequest& request);
 ::sentry::MessagesRequest messages_request_from_message_id_set(const api::api_common::MessageIdSet& message_ids);
 
-}  // namespace silkworm::sentry::rpc::interfaces
+}  // namespace silkworm::sentry::grpc::interfaces

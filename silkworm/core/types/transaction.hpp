@@ -71,6 +71,8 @@ struct UnsignedTransaction {
 
     [[nodiscard]] uint64_t total_data_gas() const;  // EIP-4844
 
+    void encode_for_signing(Bytes& into) const;
+
     friend bool operator==(const UnsignedTransaction&, const UnsignedTransaction&) = default;
 };
 
@@ -97,9 +99,6 @@ struct Transaction : public UnsignedTransaction {
 namespace rlp {
     void encode(Bytes& to, const AccessListEntry&);
     size_t length(const AccessListEntry&);
-
-    // Encode transaction for signing
-    void encode(Bytes& to, const UnsignedTransaction& txn);
 
     // According to EIP-2718, serialized transactions are prepended with 1 byte containing the type
     // (0x02 for EIP-1559 transactions); the same goes for receipts. This is true for signing and

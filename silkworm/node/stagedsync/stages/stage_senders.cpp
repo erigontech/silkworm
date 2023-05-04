@@ -480,8 +480,7 @@ Stage::Result Senders::add_to_batch(BlockNum block_num, std::vector<Transaction>
         }
 
         Bytes rlp{};
-        const UnsignedTransaction& unsigned_txn{transaction};
-        rlp::encode(rlp, unsigned_txn);  // encode for signing
+        transaction.encode_for_signing(rlp);
 
         batch_->push_back(AddressRecovery{block_num, transaction.odd_y_parity});
         intx::be::unsafe::store(batch_->back().tx_signature, transaction.r);

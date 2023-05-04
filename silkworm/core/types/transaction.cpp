@@ -43,33 +43,31 @@ bool Transaction::set_v(const intx::uint256& v) {
 
 namespace rlp {
 
-    static Header rlp_header(const AccessListEntry& e) {
-        Header h{true, kAddressLength + 1};
-        h.payload_length += length(e.storage_keys);
-        return h;
+    static Header header(const AccessListEntry& e) {
+        return {.list = true, .payload_length = kAddressLength + 1 + length(e.storage_keys)};
     }
 
     size_t length(const AccessListEntry& e) {
-        Header rlp_head{rlp_header(e)};
-        return length_of_length(rlp_head.payload_length) + rlp_head.payload_length;
+        Header h{header(e)};
+        return length_of_length(h.payload_length) + h.payload_length;
     }
 
     void encode(Bytes& to, const AccessListEntry& e) {
-        encode_header(to, rlp_header(e));
+        encode_header(to, header(e));
         encode(to, e.account.bytes);
         encode(to, e.storage_keys);
     }
 
     template <>
     DecodingResult decode(ByteView& from, AccessListEntry& to) noexcept {
-        const auto rlp_head{decode_header(from)};
-        if (!rlp_head) {
-            return tl::unexpected{rlp_head.error()};
+        const auto h{decode_header(from)};
+        if (!h) {
+            return tl::unexpected{h.error()};
         }
-        if (!rlp_head->list) {
+        if (!h->list) {
             return tl::unexpected{DecodingError::kUnexpectedString};
         }
-        uint64_t leftover{from.length() - rlp_head->payload_length};
+        uint64_t leftover{from.length() - h->payload_length};
 
         if (DecodingResult res{decode(from, to.account.bytes)}; !res) {
             return res;
@@ -84,7 +82,7 @@ namespace rlp {
         return {};
     }
 
-    static Header rlp_header_base(const UnsignedTransaction& txn) {
+    static Header header_base(const UnsignedTransaction& txn) {
         Header h{.list = true};
 
         if (txn.type != TransactionType::kLegacy) {
@@ -109,16 +107,16 @@ namespace rlp {
         return h;
     }
 
-    static Header rlp_header(const UnsignedTransaction& txn) {
-        Header h{rlp_header_base(txn)};
+    static Header header(const UnsignedTransaction& txn) {
+        Header h{header_base(txn)};
         if (txn.type == TransactionType::kLegacy && txn.chain_id) {
             h.payload_length += length(*txn.chain_id) + 2;
         }
         return h;
     }
 
-    static Header rlp_header(const Transaction& txn) {
-        Header h{rlp_header_base(txn)};
+    static Header header(const Transaction& txn) {
+        Header h{header_base(txn)};
 
         if (txn.type != TransactionType::kLegacy) {
             h.payload_length += length(txn.odd_y_parity);
@@ -132,8 +130,8 @@ namespace rlp {
     }
 
     size_t length(const Transaction& txn, bool wrap_eip2718_into_string) {
-        Header rlp_head{rlp_header(txn)};
-        auto rlp_len{static_cast<size_t>(length_of_length(rlp_head.payload_length) + rlp_head.payload_length)};
+        Header h{header(txn)};
+        auto rlp_len{static_cast<size_t>(length_of_length(h.payload_length) + h.payload_length)};
         if (txn.type != TransactionType::kLegacy && wrap_eip2718_into_string) {
             return length_of_length(rlp_len + 1) + rlp_len + 1;
         } else {
@@ -141,9 +139,7 @@ namespace rlp {
         }
     }
 
-    static void legacy_encode_base(Bytes& to, const UnsignedTransaction& txn, const Header rlp_head) {
-        encode_header(to, rlp_head);
-
+    static void legacy_encode_base(Bytes& to, const UnsignedTransaction& txn) {
         encode(to, txn.nonce);
         encode(to, txn.max_fee_per_gas);
         encode(to, txn.gas_limit);
@@ -156,17 +152,17 @@ namespace rlp {
         encode(to, txn.data);
     }
 
-    static void eip2718_encode(Bytes& to, const UnsignedTransaction& txn, const Header rlp_head, bool wrap_into_array) {
+    static void eip2718_encode_for_signing(Bytes& to, const UnsignedTransaction& txn, const Header h, bool wrap_into_array) {
         SILKWORM_ASSERT(txn.type == TransactionType::kEip2930 || txn.type == TransactionType::kEip1559);
 
         if (wrap_into_array) {
-            auto rlp_len{static_cast<size_t>(length_of_length(rlp_head.payload_length) + rlp_head.payload_length)};
+            auto rlp_len{static_cast<size_t>(length_of_length(h.payload_length) + h.payload_length)};
             encode_header(to, {false, rlp_len + 1});
         }
 
         to.push_back(static_cast<uint8_t>(txn.type));
 
-        encode_header(to, rlp_head);
+        encode_header(to, h);
 
         encode(to, txn.chain_id.value_or(0));
 
@@ -186,27 +182,15 @@ namespace rlp {
         encode(to, txn.access_list);
     }
 
-    void encode(Bytes& to, const UnsignedTransaction& txn) {
-        if (txn.type == TransactionType::kLegacy) {
-            legacy_encode_base(to, txn, rlp_header(txn));
-            if (txn.chain_id) {
-                encode(to, *txn.chain_id);
-                encode(to, 0u);
-                encode(to, 0u);
-            }
-        } else {
-            eip2718_encode(to, txn, rlp_header(txn), /*wrap_eip2718_into_string=*/false);
-        }
-    }
-
     void encode(Bytes& to, const Transaction& txn, bool wrap_eip2718_into_string) {
         if (txn.type == TransactionType::kLegacy) {
-            legacy_encode_base(to, txn, rlp_header(txn));
+            encode_header(to, header(txn));
+            legacy_encode_base(to, txn);
             encode(to, txn.v());
             encode(to, txn.r);
             encode(to, txn.s);
         } else {
-            eip2718_encode(to, txn, rlp_header(txn), wrap_eip2718_into_string);
+            eip2718_encode_for_signing(to, txn, header(txn), wrap_eip2718_into_string);
             encode(to, txn.odd_y_parity);
             encode(to, txn.r);
             encode(to, txn.s);
@@ -422,13 +406,26 @@ namespace rlp {
 
 }  // namespace rlp
 
+void UnsignedTransaction::encode_for_signing(Bytes& into) const {
+    if (type == TransactionType::kLegacy) {
+        rlp::encode_header(into, rlp::header(*this));
+        rlp::legacy_encode_base(into, *this);
+        if (chain_id) {
+            rlp::encode(into, *chain_id);
+            rlp::encode(into, 0u);
+            rlp::encode(into, 0u);
+        }
+    } else {
+        rlp::eip2718_encode_for_signing(into, *this, rlp::header(*this), /*wrap_eip2718_into_string=*/false);
+    }
+}
+
 void Transaction::recover_sender() {
     if (from.has_value()) {
         return;
     }
     Bytes rlp{};
-    const UnsignedTransaction& unsigned_txn{*this};
-    rlp::encode(rlp, unsigned_txn);  // encode for signing
+    encode_for_signing(rlp);
     ethash::hash256 hash{keccak256(rlp)};
 
     uint8_t signature[kHashLength * 2];

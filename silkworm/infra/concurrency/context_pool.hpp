@@ -35,25 +35,19 @@ namespace silkworm::concurrency {
 class Context {
   public:
     explicit Context(std::size_t context_id, WaitMode wait_mode = WaitMode::blocking);
+    virtual ~Context() = default;
 
     [[nodiscard]] boost::asio::io_context* io_context() const noexcept { return io_context_.get(); }
     [[nodiscard]] WaitMode wait_mode() const noexcept { return wait_mode_; }
     [[nodiscard]] std::size_t id() const noexcept { return context_id_; }
 
     //! Execute the scheduler loop until stopped.
-    void execute_loop();
+    virtual void execute_loop();
 
     //! Stop the execution loop.
     void stop();
 
   protected:
-    //! Execute single-threaded loop until stopped.
-    template <typename WaitStrategy>
-    void execute_loop_single_threaded(WaitStrategy&& wait_strategy);
-
-    //! Execute multi-threaded loop until stopped.
-    void execute_loop_multi_threaded();
-
     //! The unique scheduler identifier.
     std::size_t context_id_;
 
@@ -61,10 +55,18 @@ class Context {
     std::shared_ptr<boost::asio::io_context> io_context_;
 
     //! The work-tracking executor that keep the asio scheduler running.
-    boost::asio::execution::any_executor<> work_;
+    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work_;
 
     //! The waiting mode used by execution loops during idle cycles.
     WaitMode wait_mode_;
+
+  private:
+    //! Execute single-threaded loop until stopped.
+    template <typename IdleStrategy>
+    void execute_loop_single_threaded(IdleStrategy&& idle_strategy);
+
+    //! Execute multi-threaded loop until stopped.
+    void execute_loop_multi_threaded();
 };
 
 std::ostream& operator<<(std::ostream& out, const Context& c);
@@ -158,7 +160,7 @@ class ContextPool {
     [[nodiscard]] std::size_t num_contexts() const { return contexts_.size(); }
 
     //! Use a round-robin scheme to choose the next context to use
-    const T& next_context() {
+    T& next_context() {
         // Increment the next index first to make sure that different calling threads get different contexts.
         size_t index = next_index_.fetch_add(1) % contexts_.size();
         return contexts_[index];
@@ -169,7 +171,7 @@ class ContextPool {
         return *context.io_context();
     }
 
-  private:
+  protected:
     //! The pool of execution contexts.
     std::vector<T> contexts_;
 

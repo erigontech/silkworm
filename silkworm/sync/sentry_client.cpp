@@ -16,17 +16,14 @@
 
 #include "sentry_client.hpp"
 
-#include <exception>
 #include <future>
 #include <optional>
 
-#include <boost/asio/bind_cancellation_slot.hpp>
 #include <boost/asio/co_spawn.hpp>
-#include <boost/system/errc.hpp>
-#include <boost/system/system_error.hpp>
 
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/sentry/eth/message_id.hpp>
 
 #include "messages/inbound_block_bodies.hpp"
@@ -229,105 +226,57 @@ void SentryClient::peer_min_block(const PeerId& peer_id, BlockNum min_block) {
     sync_spawn(tasks_, io_context_, peer_min_block_async(peer_id, min_block));
 }
 
-void SentryClient::execution_loop() {
-    log::set_thread_name("sentry-recv   ");
+boost::asio::awaitable<void> SentryClient::async_run() {
+    using namespace concurrency::awaitable_wait_for_all;
 
-    auto tasks_completion = [](const std::exception_ptr& ex_ptr) {
-        try {
-            if (ex_ptr) std::rethrow_exception(ex_ptr);
-        } catch (const boost::system::system_error& ex) {
-            if (ex.code() == boost::system::errc::operation_canceled) {
-                log::Debug(kLogTitle) << "execution_loop tasks.wait completed";
-            } else {
-                log::Error(kLogTitle) << "execution_loop tasks.wait system_error: " << ex.what();
-                throw;
-            }
-        } catch (...) {
-            log::Error(kLogTitle) << "execution_loop tasks.wait unexpected exception";
-            throw;
-        }
-    };
-    co_spawn(io_context_, tasks_.wait(), bind_cancellation_slot(tasks_cancellation_signal_.slot(), tasks_completion));
-
-    while (!is_stopping()) {
-        try {
-            // receive messages
-
-            std::function<awaitable<void>(silkworm::sentry::api::api_common::MessageFromPeer)> consumer = [this](auto message_from_peer) -> awaitable<void> {
-                if (!this->is_stopping()) {
-                    co_await this->publish(message_from_peer);
-                }
-            };
-
-            auto receive_messages = [sentry_client = sentry_client_, consumer = std::move(consumer)]() -> awaitable<void> {
-                auto service = co_await sentry_client->service();
-                co_await service->messages(make_message_id_filter(), consumer);
-            };
-
-            sync_spawn(tasks_, io_context_, receive_messages());
-
-        } catch (const std::exception& e) {
-            if (!is_stopping()) log::Error(kLogTitle) << "exception: " << e.what();
-        }
-    }
-
-    log::Warning(kLogTitle) << "execution loop is stopping...";
-    stop();
+    co_await (receive_messages() && receive_peer_events() && tasks_.wait());
 }
 
-void SentryClient::stats_receiving_loop() {
-    log::set_thread_name("sentry-stats  ");
-    std::map<PeerId, std::string> peer_infos;
+boost::asio::awaitable<void> SentryClient::receive_messages() {
+    std::function<awaitable<void>(silkworm::sentry::api::api_common::MessageFromPeer)> consumer = [this](auto message_from_peer) -> awaitable<void> {
+        co_await this->publish(message_from_peer);
+    };
 
-    while (!is_stopping()) {
-        try {
-            // ask the remote sentry about the current active peers
-            log::Info(kLogTitle) << count_active_peers() << " active peers";
+    auto service = co_await sentry_client_->service();
+    co_await service->messages(make_message_id_filter(), std::move(consumer));
+}
 
-            // receive stats
+boost::asio::awaitable<void> SentryClient::on_peer_event(silkworm::sentry::api::api_common::PeerEvent event) {
+    auto peer_id = event.peer_public_key->serialized();
+    std::string event_desc;
+    std::string info;
 
-            std::function<awaitable<void>(silkworm::sentry::api::api_common::PeerEvent)> consumer = [this, &peer_infos](auto stat) -> awaitable<void> {
-                if (this->is_stopping()) {
-                    co_return;
-                }
+    if (event.event_id == silkworm::sentry::api::api_common::PeerEventId::kAdded) {
+        event_desc = "connected";
+        active_peers_++;
 
-                auto peer_id = stat.peer_public_key->serialized();
-                std::string event;
-                std::string info;
-                if (stat.event_id == silkworm::sentry::api::api_common::PeerEventId::kAdded) {
-                    event = "connected";
-                    active_peers_++;
+        info = co_await request_peer_info_async(peer_id);
+        peer_infos_[peer_id] = info;
+    } else {
+        event_desc = "disconnected";
+        if (active_peers_ > 0) active_peers_--;
 
-                    info = co_await request_peer_info_async(peer_id);
-                    peer_infos[peer_id] = info;
-                } else {
-                    event = "disconnected";
-                    if (active_peers_ > 0) active_peers_--;
-
-                    info = peer_infos[peer_id];
-                    peer_infos.erase(peer_id);
-                }
-
-                log::Info(kLogTitle) << "Peer " << human_readable_id(peer_id)
-                                     << " " << event
-                                     << ", active " << active_peers()
-                                     << ", info: " << info;
-            };
-
-            auto receive_peer_events = [sentry_client = sentry_client_, consumer = std::move(consumer)]() -> awaitable<void> {
-                auto service = co_await sentry_client->service();
-                co_await service->peer_events(consumer);
-            };
-
-            sync_spawn(tasks_, io_context_, receive_peer_events());
-
-        } catch (const std::exception& e) {
-            if (!is_stopping()) log::Warning(kLogTitle) << "exception: " << e.what();
-        }
+        info = peer_infos_[peer_id];
+        peer_infos_.erase(peer_id);
     }
 
-    log::Warning(kLogTitle) << "stats loop is stopping...";
-    stop();
+    log::Info(kLogTitle) << "Peer " << human_readable_id(peer_id)
+                         << " " << event_desc
+                         << ", active " << active_peers()
+                         << ", info: " << info;
+}
+
+boost::asio::awaitable<void> SentryClient::receive_peer_events() {
+    // Get the current active peers count.
+    // This initial value is later updated by on_peer_event.
+    log::Info(kLogTitle) << (co_await count_active_peers_async()) << " active peers";
+
+    std::function<awaitable<void>(silkworm::sentry::api::api_common::PeerEvent)> consumer = [this](auto event) -> awaitable<void> {
+        co_await this->on_peer_event(event);
+    };
+
+    auto service = co_await sentry_client_->service();
+    co_await service->peer_events(std::move(consumer));
 }
 
 awaitable<uint64_t> SentryClient::count_active_peers_async() {
@@ -374,12 +323,6 @@ void SentryClient::penalize_peer(PeerId peer_id, Penalty penalty) {
 
 uint64_t SentryClient::active_peers() {
     return active_peers_.load();
-}
-
-bool SentryClient::stop() {
-    bool expected = Stoppable::stop();
-    tasks_cancellation_signal_.emit(cancellation_type::all);
-    return expected;
 }
 
 }  // namespace silkworm

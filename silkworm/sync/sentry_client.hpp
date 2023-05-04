@@ -17,20 +17,20 @@
 #pragma once
 
 #include <atomic>
+#include <map>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
-#include <boost/asio/cancellation_signal.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/signals2.hpp>
 
-#include <silkworm/infra/concurrency/active_component.hpp>
 #include <silkworm/infra/concurrency/task_group.hpp>
-#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/sentry/api/api_common/message_from_peer.hpp>
+#include <silkworm/sentry/api/api_common/peer_event.hpp>
 #include <silkworm/sentry/api/api_common/sentry_client.hpp>
 #include <silkworm/sync/internals/types.hpp>
 #include <silkworm/sync/messages/inbound_message.hpp>
@@ -41,7 +41,7 @@ namespace silkworm {
 /*
  * A SentryClient wrapper for the sync module.
  */
-class SentryClient : public ActiveComponent {
+class SentryClient {
   public:
     explicit SentryClient(
         boost::asio::io_context& io_context,
@@ -93,10 +93,8 @@ class SentryClient : public ActiveComponent {
 
     uint64_t active_peers();  // return cached peers count
 
-    bool stop() override;
-
-    /*[[long_running]]*/ void execution_loop() override;  // do a long-running loop to wait for messages
-    /*[[long_running]]*/ void stats_receiving_loop();     // do a long-running loop to wait for peer statistics
+    // receive messages and peer events
+    boost::asio::awaitable<void> async_run();
 
     static constexpr seconds_t kRequestDeadline = std::chrono::seconds(30);          // time beyond which the remote sentry
                                                                                      // considers an answer lost
@@ -105,15 +103,20 @@ class SentryClient : public ActiveComponent {
     static constexpr size_t kPerPeerMaxOutstandingRequests = 4;                      // max number of outstanding requests per peer
 
   protected:
+    boost::asio::awaitable<void> receive_messages();
+    boost::asio::awaitable<void> receive_peer_events();
+
     // notifying registered subscribers
     boost::asio::awaitable<void> publish(const silkworm::sentry::api::api_common::MessageFromPeer& message_from_peer);
+
+    boost::asio::awaitable<void> on_peer_event(silkworm::sentry::api::api_common::PeerEvent event);
 
     boost::asio::io_context& io_context_;
     std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> sentry_client_;
     concurrency::TaskGroup tasks_;
-    boost::asio::cancellation_signal tasks_cancellation_signal_;
 
     std::atomic<uint64_t> active_peers_{0};
+    std::map<PeerId, std::string> peer_infos_;
 };
 
 }  // namespace silkworm

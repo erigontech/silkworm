@@ -586,9 +586,6 @@ int main(int argc, char* argv[]) {
             context_pool.next_io_context(),
             sentry_client,
         };
-        auto sync_sentry_client_stats_receiving_loop = silkworm::concurrency::async_thread(
-            [&sentry_client = sync_sentry_client]() { sentry_client.stats_receiving_loop(); },
-            [&sentry_client = sync_sentry_client]() { sentry_client.stop(); });
 
         // BlockExchange - download headers and bodies from remote peers using the sentry
         BlockExchange block_exchange{sync_sentry_client, sw_db::ROAccess{chaindata_db}, node_settings.chain_config.value()};
@@ -635,7 +632,6 @@ int main(int argc, char* argv[]) {
             rpc_server.async_run() &&
             embedded_sentry_run_if_needed() &&
             sync_sentry_client.async_run() &&
-            std::move(sync_sentry_client_stats_receiving_loop) &&
             block_exchange.async_run() &&
             sync_executor();
 

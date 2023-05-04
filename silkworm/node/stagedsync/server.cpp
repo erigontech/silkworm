@@ -25,6 +25,7 @@ using namespace std::chrono;
 namespace asio = boost::asio;
 
 Server::Server(NodeSettings& ns, db::RWAccess dba) : exec_engine_{io_context_, ns, dba} {
+    open();
 }
 
 bool Server::stop() {

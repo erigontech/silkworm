@@ -70,11 +70,11 @@ class ExtendingFork {
 };
 
 // find the fork with the specified head
-auto find_fork_by_head(const std::vector<ExtendingFork>& forks, const Hash& requested_head_hash)
+auto find_fork_by_head(std::vector<ExtendingFork>& forks, const Hash& requested_head_hash)
     -> std::vector<ExtendingFork>::iterator;
 
 // find the fork with the head to extend
-auto find_fork_to_extend(const std::vector<ExtendingFork>& forks, const BlockHeader& header)
+auto find_fork_to_extend(std::vector<ExtendingFork>& forks, const BlockHeader& header)
     -> std::vector<ExtendingFork>::iterator;
 
 }  // namespace silkworm::stagedsync

@@ -44,8 +44,12 @@ PoSSync::PoSSync(BlockExchange& be, execution::Client& ee)
       chain_fork_view_{ChainHead{}} {  // we cannot call ee.get_canonical_head() at this point because ee is not started
 }
 
+awaitable<void> PoSSync::async_run() {
+    co_await download_blocks();
+}
+
 // Wait for blocks arrival from BlockExchange and insert them into ExecutionEngine
-awaitable<void> PoSSync::execution_loop() {
+awaitable<void> PoSSync::download_blocks() {
     using ResultQueue = BlockExchange::ResultQueue;
     ResultQueue& downloading_queue = block_exchange_.result_queue();
 
@@ -71,7 +75,7 @@ awaitable<void> PoSSync::execution_loop() {
     asio::steady_timer timer(executor);
 
     // main loop
-    while (!executor.stopped()) {
+    while (true) {
         Blocks blocks;
 
         // wait for a batch of blocks
@@ -101,7 +105,7 @@ awaitable<void> PoSSync::execution_loop() {
 
     block_exchange_.stop_downloading();
 
-    log::Warning("Sync") << "PoS sync loop exited";
+    log::Warning("Sync") << "PoS sync block downloading stopped";
 }
 
 // Convert an ExecutionPayload to a Block as per "Engine API - Paris" specs
@@ -147,7 +151,7 @@ std::shared_ptr<Block> PoSSync::make_execution_block(const ExecutionPayload& pay
     return block;
 }
 
-void PoSSync::do_sanity_checks(const BlockHeader& pos_header, /*const BlockHeader& parent,*/ TotalDifficulty parent_td) {
+void PoSSync::do_sanity_checks(const BlockHeader&, /*const BlockHeader& parent,*/ TotalDifficulty parent_td) {
     auto terminal_total_difficulty = block_exchange_.chain_config().terminal_total_difficulty;
 
     if (parent_td < terminal_total_difficulty) throw PayloadValidationError("ignoring pre-merge payload");
@@ -261,7 +265,7 @@ auto PoSSync::fork_choice_update(const ForkChoiceState& state,
             co_return ForkChoiceUpdateReply{PayloadStatus::Syncing, no_payload_id};
         }
 
-        BlockId head{head_header->number, head_header_hash};
+        //BlockId head{head_header->number, head_header_hash};
 
         auto parent = co_await exec_engine_.get_header(head_header->parent_hash);  // todo: decide whether to use chain_fork_view_ cache instead
         if (!parent) {

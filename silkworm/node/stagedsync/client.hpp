@@ -41,12 +41,12 @@ class Client {
 
     ERIGON_API virtual auto validate_chain(Hash head_block_hash) -> asio::awaitable<ValidationResult> = 0;
 
-    ERIGON_API virtual auto update_fork_choice(
-        Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt) -> asio::awaitable<ForkChoiceApplication> = 0;
+    ERIGON_API virtual auto update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt)
+        -> asio::awaitable<ForkChoiceApplication> = 0;
 
     // state
-    virtual auto block_progress() -> asio::awaitable<BlockNum>;
-    virtual auto last_fork_choice() -> asio::awaitable<BlockId>;
+    virtual auto block_progress() -> asio::awaitable<BlockNum> = 0;
+    virtual auto last_fork_choice() -> asio::awaitable<BlockId> = 0;
 
     // header/body retrieval
     ERIGON_API virtual auto get_header(Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>> = 0;
@@ -55,7 +55,7 @@ class Client {
     ERIGON_API virtual auto is_canonical(Hash block_hash) -> asio::awaitable<bool> = 0;
     ERIGON_API virtual auto get_block_num(Hash block_hash) -> asio::awaitable<BlockNum> = 0;
 
-    virtual auto get_last_headers(BlockNum limit) -> asio::awaitable<std::vector<BlockHeader>>;
+    virtual auto get_last_headers(BlockNum limit) -> asio::awaitable<std::vector<BlockHeader>> = 0;
 };
 
 }  // namespace silkworm::execution

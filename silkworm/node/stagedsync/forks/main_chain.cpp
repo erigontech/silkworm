@@ -48,6 +48,10 @@ void MainChain::open() {
     tx_.reopen(*db_access_);  // comply to mdbx limitation: tx must be used from its creation thread
 }
 
+auto MainChain::node_settings() -> NodeSettings& {
+    return node_settings_;
+}
+
 auto MainChain::canonical_head() const -> BlockId {
     return canonical_chain_.current_head();
 }
@@ -211,8 +215,8 @@ auto MainChain::fork(BlockId forking_point) -> ExtendingFork {
     return ExtendingFork{forking_point, *this, io_context_};
 }
 
-auto MainChain::node_settings() -> NodeSettings& {
-    return node_settings_;
+void MainChain::reintegrate_fork(ExtendingFork&&) {
+    throw std::runtime_error("not implemented");
 }
 
 auto MainChain::get_header(Hash header_hash) const -> std::optional<BlockHeader> {

@@ -39,7 +39,10 @@ class PoSSync {
   public:
     PoSSync(BlockExchange&, execution::Client&);
 
-    auto execution_loop() -> asio::awaitable<void>; /*[[long_running]]*/
+    asio::awaitable<void> async_run();
+
+    // public interface to download blocks
+    auto download_blocks() -> asio::awaitable<void>; /*[[long_running]]*/
 
     // public interface called by the external PoS client
     auto new_payload(const ExecutionPayload&) -> asio::awaitable<PayloadStatus>;

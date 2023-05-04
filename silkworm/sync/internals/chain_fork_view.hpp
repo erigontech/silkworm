@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+#pragma once
+
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>

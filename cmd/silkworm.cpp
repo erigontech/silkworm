@@ -43,8 +43,8 @@
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/snapshot/sync.hpp>
-#include <silkworm/node/stagedsync/server.hpp>
 #include <silkworm/node/stagedsync/local_client.hpp>
+#include <silkworm/node/stagedsync/server.hpp>
 #include <silkworm/sentry/api/api_common/sentry_client.hpp>
 #include <silkworm/sentry/grpc/client/sentry_client.hpp>
 #include <silkworm/sentry/sentry.hpp>
@@ -52,6 +52,7 @@
 #include <silkworm/sentry/settings.hpp>
 #include <silkworm/sync/block_exchange.hpp>
 #include <silkworm/sync/sentry_client.hpp>
+#include <silkworm/sync/sync_pos.hpp>
 #include <silkworm/sync/sync_pow.hpp>
 
 #include "common/common.hpp"
@@ -75,9 +76,10 @@ using silkworm::lookup_known_chain;
 using silkworm::NodeSettings;
 using silkworm::parse_size;
 using silkworm::PreverifiedHashes;
-using silkworm::chainsync::PoWSync;
 using silkworm::read_genesis_data;
 using silkworm::StopWatch;
+using silkworm::chainsync::PoSSync;
+using silkworm::chainsync::PoWSync;
 using silkworm::cmd::common::add_context_pool_options;
 using silkworm::cmd::common::add_logging_options;
 using silkworm::cmd::common::add_option_chain;
@@ -610,10 +612,10 @@ int main(int argc, char* argv[]) {
         }
 
         execution::Server execution_server{node_settings, sw_db::RWAccess{chaindata_db}};
-        execution_server.open();
 
         execution::LocalClient execution_client(execution_server);
-        PoWSync sync(block_exchange, execution_client);
+        //PoWSync sync(block_exchange, execution_client);
+        PoSSync sync(block_exchange, execution_client);
 
         auto tasks =
             timer_executor() &&

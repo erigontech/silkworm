@@ -33,8 +33,6 @@ class Server : public ActiveComponent {
   public:
     Server(NodeSettings&, db::RWAccess);
 
-    void open();
-
     // actions
     ERIGON_API auto insert_headers(const BlockVector& blocks) -> asio::awaitable<void>;
     ERIGON_API auto insert_bodies(const BlockVector& blocks) -> asio::awaitable<void>;
@@ -61,6 +59,7 @@ class Server : public ActiveComponent {
     asio::io_context& get_executor() { return io_context_; }
 
   private:
+    void open();
     void execution_loop() override;
     bool stop() override;
     static void handle_exception(std::exception_ptr e);

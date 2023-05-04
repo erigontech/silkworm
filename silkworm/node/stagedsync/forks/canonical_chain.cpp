@@ -32,7 +32,7 @@ static void ensure_invariant(bool condition, const std::string& message) {
 
 CanonicalChain::CanonicalChain(db::RWTxn& tx, size_t cache_size)
     : tx_{tx},
-      canonical_hash_cache_{cache_size} {
+      canonical_hash_cache_{std::make_unique<lru_cache<BlockNum, Hash>>(cache_size)} {
     // Read head of canonical chain
     std::tie(initial_head_.number, initial_head_.hash) = db::read_canonical_head(tx_);
     // Set current status
@@ -43,7 +43,7 @@ CanonicalChain::CanonicalChain(const CanonicalChain& copy, db::RWTxn& new_tx)
     : tx_{new_tx},
       initial_head_{copy.initial_head_},
       current_head_{copy.current_head_},
-      canonical_hash_cache_{copy.canonical_hash_cache_} {
+      canonical_hash_cache_{std::make_unique<lru_cache<BlockNum, Hash>>(copy.canonical_hash_cache_->size())} {
     // Read head of canonical chain
     std::tie(initial_head_.number, initial_head_.hash) = db::read_canonical_head(tx_);
     // Set current status
@@ -64,7 +64,7 @@ CanonicalChain::CanonicalChain(CanonicalChain&& orig) noexcept
 BlockId CanonicalChain::initial_head() const { return initial_head_; }
 BlockId CanonicalChain::current_head() const { return current_head_; }
 
-bool CanonicalChain::cache_enabled() const { return canonical_hash_cache_.size() > 0; }
+bool CanonicalChain::cache_enabled() const { return canonical_hash_cache_->size() > 0; }
 
 BlockId CanonicalChain::find_forking_point(Hash header_hash) const {
     std::optional<BlockHeader> header = db::read_header(tx_, header_hash);
@@ -118,7 +118,7 @@ void CanonicalChain::advance(BlockNum height, Hash header_hash) {
                          " expected head " + std::to_string(height - 1));
 
     db::write_canonical_hash(tx_, height, header_hash);
-    if (cache_enabled()) canonical_hash_cache_.put(height, header_hash);
+    if (cache_enabled()) canonical_hash_cache_->put(height, header_hash);
 
     current_head_.number = height;
     current_head_.hash = header_hash;
@@ -135,7 +135,7 @@ void CanonicalChain::update_up_to(BlockNum height, Hash hash) {  // hash can be 
     while (!persisted_canon_hash ||
            std::memcmp(persisted_canon_hash.value().bytes, ancestor_hash.bytes, kHashLength) != 0) {
         db::write_canonical_hash(tx_, ancestor_height, ancestor_hash);
-        if (cache_enabled()) canonical_hash_cache_.put(ancestor_height, ancestor_hash);
+        if (cache_enabled()) canonical_hash_cache_->put(ancestor_height, ancestor_hash);
 
         auto ancestor = db::read_header(tx_, ancestor_height, ancestor_hash);
         ensure_invariant(ancestor.has_value(),
@@ -155,7 +155,7 @@ void CanonicalChain::update_up_to(BlockNum height, Hash hash) {  // hash can be 
 void CanonicalChain::delete_down_to(BlockNum unwind_point) {
     for (BlockNum current_height = current_head_.number; current_height > unwind_point; current_height--) {
         db::delete_canonical_hash(tx_, current_height);  // do not throw if not found
-        if (cache_enabled()) canonical_hash_cache_.remove(current_height);
+        if (cache_enabled()) canonical_hash_cache_->remove(current_height);
     }
 
     current_head_.number = unwind_point;
@@ -167,7 +167,7 @@ void CanonicalChain::delete_down_to(BlockNum unwind_point) {
 }
 
 auto CanonicalChain::get_hash(BlockNum height) const -> std::optional<Hash> {
-    auto canon_hash = canonical_hash_cache_.get_as_copy(height);  // look in the cache first
+    auto canon_hash = canonical_hash_cache_->get_as_copy(height);  // look in the cache first
     if (!canon_hash) {
         canon_hash = db::read_canonical_hash(tx_, height);  // then look in the db
     }

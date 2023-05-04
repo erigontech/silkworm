@@ -14,14 +14,15 @@
    limitations under the License.
 */
 
-#include "context_pool_settings.hpp"
+#pragma once
 
-#include <thread>
+#include <nlohmann/json.hpp>
 
-namespace silkworm::concurrency {
+#include <silkworm/silkrpc/types/execution_payload.hpp>
 
-ContextPoolSettings::ContextPoolSettings() {
-    num_contexts = std::thread::hardware_concurrency() / 2;
-}
+namespace silkworm::rpc {
 
-}  // namespace silkworm::concurrency
+void to_json(nlohmann::json& json, const PayloadAttributes& payload_attributes);
+void from_json(const nlohmann::json& json, PayloadAttributes& payload_attributes);
+
+}  // namespace silkworm::rpc

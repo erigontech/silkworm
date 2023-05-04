@@ -518,20 +518,6 @@ void from_json(const nlohmann::json& json, ForkChoiceState& forkchoice_state) {
         .finalized_block_hash = json.at("finalizedBlockHash").get<evmc::bytes32>()};
 }
 
-void to_json(nlohmann::json& json, const PayloadAttributes& payload_attributes) {
-    json["timestamp"] = to_quantity(payload_attributes.timestamp);
-    json["prevRandao"] = payload_attributes.prev_randao;
-    json["feeRecipient"] = payload_attributes.suggested_fee_recipient;
-}
-
-void from_json(const nlohmann::json& json, PayloadAttributes& payload_attributes) {
-    payload_attributes = PayloadAttributes{
-        .timestamp = static_cast<uint64_t>(std::stol(json.at("timestamp").get<std::string>(), nullptr, 16)),
-        .prev_randao = json.at("prevRandao").get<evmc::bytes32>(),
-        .suggested_fee_recipient = json.at("feeRecipient").get<evmc::address>(),
-    };
-}
-
 void to_json(nlohmann::json& json, const ForkChoiceUpdatedReply& forkchoice_updated_reply) {
     nlohmann::json json_payload_status = forkchoice_updated_reply.payload_status;
     json["payloadStatus"] = json_payload_status;

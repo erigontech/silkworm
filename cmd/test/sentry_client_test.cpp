@@ -23,7 +23,7 @@
 #include <silkworm/infra/grpc/common/util.hpp>
 #include <silkworm/infra/grpc/server/server_context_pool.hpp>
 #include <silkworm/sentry/api/api_common/sentry_client.hpp>
-#include <silkworm/sentry/rpc/client/sentry_client.hpp>
+#include <silkworm/sentry/grpc/client/sentry_client.hpp>
 #include <silkworm/sentry/sentry.hpp>
 
 using namespace silkworm::sentry::rpc::client;

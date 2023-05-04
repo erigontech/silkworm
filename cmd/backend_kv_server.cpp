@@ -39,7 +39,7 @@
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/eth_status_data_provider.hpp>
 #include <silkworm/node/db/mdbx.hpp>
-#include <silkworm/sentry/rpc/client/sentry_client.hpp>
+#include <silkworm/sentry/grpc/client/sentry_client.hpp>
 #include <silkworm/sentry/session_sentry_client.hpp>
 
 #include "common/common.hpp"

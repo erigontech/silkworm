@@ -45,7 +45,7 @@
 #include <silkworm/node/snapshot/sync.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/sentry/api/api_common/sentry_client.hpp>
-#include <silkworm/sentry/rpc/client/sentry_client.hpp>
+#include <silkworm/sentry/grpc/client/sentry_client.hpp>
 #include <silkworm/sentry/sentry.hpp>
 #include <silkworm/sentry/session_sentry_client.hpp>
 #include <silkworm/sentry/settings.hpp>

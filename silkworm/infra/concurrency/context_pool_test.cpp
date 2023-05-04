@@ -30,7 +30,7 @@ namespace silkworm::concurrency {
 
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
-TEST_CASE("Context", "[silkworm][rpc][server_context]") {
+TEST_CASE("Context", "[silkworm][concurrency][server_context]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     Context ctx{0};
 

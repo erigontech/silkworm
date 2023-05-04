@@ -57,7 +57,6 @@ class SnapshotRepository {
 
     [[nodiscard]] BlockNum max_block_available() const { return std::min(segment_max_block_, idx_max_block_); }
 
-    void verify();
     void reopen_folder();
     void close();
 
@@ -110,7 +109,7 @@ class SnapshotRepository {
 
     [[nodiscard]] SnapshotPathList get_files(const std::string& ext) const;
 
-    [[nodiscard]] uint64_t max_idx_available() const;
+    [[nodiscard]] BlockNum max_idx_available() const;
 
     //! The configuration settings for snapshots
     SnapshotSettings settings_;

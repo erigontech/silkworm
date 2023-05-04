@@ -44,7 +44,7 @@ boost::asio::awaitable<AuthKeys> Handshake::auth(common::SocketStream& stream) {
 
 boost::asio::awaitable<Handshake::HandshakeResult> Handshake::execute(common::SocketStream& stream) {
     auto auth_keys = co_await auth(stream);
-    log::Debug() << "AuthKeys.peer_ephemeral_public_key: " << auth_keys.peer_ephemeral_public_key.hex();
+    log::Debug("sentry") << "rlpx::auth::Handshake AuthKeys.peer_ephemeral_public_key: " << auth_keys.peer_ephemeral_public_key.hex();
 
     framing::FramingCipher framing_cipher{
         framing::FramingCipher::KeyMaterial{
@@ -78,16 +78,16 @@ boost::asio::awaitable<Handshake::HandshakeResult> Handshake::execute(common::So
         if (reply_message.id == rlpx_common::DisconnectMessage::kId) {
             throw DisconnectError();
         } else {
-            throw std::runtime_error("Handshake: unexpected RLPx message");
+            throw std::runtime_error("rlpx::auth::Handshake: unexpected RLPx message");
         }
     }
 
     HelloMessage hello_reply_message = HelloMessage::from_message(reply_message);
-    log::Debug() << "Handshake success: peer Hello: " << hello_reply_message.client_id()
-                 << " with " << hello_reply_message.capabilities_description();
+    log::Debug("sentry") << "rlpx::auth::Handshake success: peer Hello: " << hello_reply_message.client_id()
+                         << " with " << hello_reply_message.capabilities_description();
 
     if (!hello_reply_message.contains_capability(HelloMessage::Capability{required_capability_}))
-        throw std::runtime_error("Handshake: no matching required capability");
+        throw std::runtime_error("rlpx::auth::Handshake: no matching required capability");
 
     message_stream.enable_compression();
 

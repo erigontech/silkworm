@@ -115,7 +115,7 @@ void BackEndKvServer::register_kv_request_calls(agrpc::GrpcContext* grpc_context
     SILK_DEBUG << "BackEndKvServer::register_kv_request_calls END";
 }
 
-/// Start server-side RPC requests as required by gRPC async model: one RPC per type is requested in advance.
+//! Start server-side RPC requests as required by gRPC async model: one RPC per type is requested in advance.
 void BackEndKvServer::register_request_calls() {
     // Start all server-side RPC requests for each available server context
     for (std::size_t i = 0; i < num_contexts(); i++) {

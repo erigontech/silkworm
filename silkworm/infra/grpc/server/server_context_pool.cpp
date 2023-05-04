@@ -16,7 +16,6 @@
 
 #include "server_context_pool.hpp"
 
-#include <stdexcept>
 #include <thread>
 #include <utility>
 
@@ -38,14 +37,14 @@ inline static std::string build_thread_name(const char name_tag[11], size_t id) 
 }
 
 ServerContext::ServerContext(std::size_t context_id, ServerCompletionQueuePtr&& queue, concurrency::WaitMode wait_mode)
-    : context_{context_id, wait_mode},
+    : Context(context_id, wait_mode),
       server_grpc_context_{std::make_unique<agrpc::GrpcContext>(std::move(queue))},
       client_grpc_context_{std::make_unique<agrpc::GrpcContext>(std::make_unique<grpc::CompletionQueue>())},
       server_grpc_context_work_{boost::asio::make_work_guard(server_grpc_context_->get_executor())},
       client_grpc_context_work_{boost::asio::make_work_guard(client_grpc_context_->get_executor())} {}
 
 void ServerContext::execute_loop() {
-    switch (context_.wait_mode()) {
+    switch (wait_mode_) {
         case WaitMode::backoff:
             execute_loop_backoff();
             break;
@@ -84,14 +83,14 @@ void ServerContext::execute_loop_backoff() {
     SILK_DEBUG << "Back-off execution loop end [" << std::this_thread::get_id() << "]";
 }
 
-template <typename WaitStrategy>
-void ServerContext::execute_loop_single_threaded(WaitStrategy&& wait_strategy) {
+template <typename IdleStrategy>
+void ServerContext::execute_loop_single_threaded(IdleStrategy&& idle_strategy) {
     SILK_DEBUG << "Single-thread execution loop start [" << std::this_thread::get_id() << "]";
     while (!io_context()->stopped()) {
         std::size_t work_count = server_grpc_context_->poll();
         work_count += client_grpc_context_->poll_completion_queue();
         work_count += io_context()->poll();
-        wait_strategy.idle(work_count);
+        idle_strategy.idle(work_count);
     }
     SILK_DEBUG << "Single-thread execution loop end [" << std::this_thread::get_id() << "]";
 }
@@ -121,37 +120,22 @@ void ServerContext::execute_loop_multi_threaded() {
     SILK_DEBUG << "Multi-thread execution loop end [" << std::this_thread::get_id() << "]";
 }
 
-ServerContextPool::ServerContextPool(std::size_t pool_size) : execution_pool_{pool_size} {
-    if (pool_size == 0) {
-        throw std::logic_error("ServerContextPool::ServerContextPool pool_size is 0");
-    }
-    SILK_INFO << "Creating server context pool with size: " << pool_size;
-}
+ServerContextPool::ServerContextPool(std::size_t pool_size) : ContextPool(pool_size) {}
 
 ServerContextPool::ServerContextPool(concurrency::ContextPoolSettings settings,
                                      const ServerCompletionQueueFactory& queue_factory)
     : ServerContextPool(settings.num_contexts) {
-    for (size_t i{0}; i < settings.num_contexts; i++) {
+    // Create as many execution contexts as required by the pool size
+    for (std::size_t i{0}; i < settings.num_contexts; ++i) {
         add_context(queue_factory(), settings.wait_mode);
     }
 }
 
-ServerContextPool::~ServerContextPool() {
-    SILK_TRACE << "ServerContextPool::~ServerContextPool START " << this;
-    stop();
-    join();
-    SILK_TRACE << "ServerContextPool::~ServerContextPool END " << this;
-}
-
 void ServerContextPool::add_context(ServerCompletionQueuePtr queue, concurrency::WaitMode wait_mode) {
-    const auto num_contexts = execution_pool_.num_contexts();
-    const auto& server_context = execution_pool_.add_context(
-        {num_contexts, std::move(queue), wait_mode});
-    SILK_DEBUG << "ServerContextPool::add_context context[" << num_contexts << "] " << server_context;
-}
-
-const ServerContext& ServerContextPool::add_context(ServerContext&& context) {
-    return execution_pool_.add_context(std::move(context));
+    const auto context_count = num_contexts();
+    const auto& server_context = ContextPool::add_context(
+        ServerContext{context_count, std::move(queue), wait_mode});
+    SILK_DEBUG << "ServerContextPool::add_context context[" << context_count << "] " << server_context;
 }
 
 }  // namespace silkworm::rpc

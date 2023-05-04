@@ -134,12 +134,12 @@ class RWCursor : public virtual ROCursor {
     virtual void upsert(const Slice& key, const Slice& value) = 0;
     virtual void update(const Slice& key, const Slice& value) = 0;
 
-    /// \brief Remove single key-value pair at the current cursor position.
+    //! \brief Remove single key-value pair at the current cursor position.
     virtual bool erase() = 0;
     virtual bool erase(bool whole_multivalue) = 0;
 
-    /// \brief Seek and remove first value of the given key.
-    /// \return true if the key is found and a value(s) is removed.
+    //! \brief Seek and remove first value of the given key.
+    //! \return true if the key is found and a value(s) is removed.
     virtual bool erase(const Slice& key) = 0;
     virtual bool erase(const Slice& key, bool whole_multivalue) = 0;
 };
@@ -149,17 +149,17 @@ class RWCursorDupSort : public RWCursor, public ROCursorDupSort {
   public:
     virtual ~RWCursorDupSort() = default;
 
-    /// \brief Remove all multi-values at the current cursor position.
+    //! \brief Remove all multi-values at the current cursor position.
     virtual bool erase() = 0;
     virtual bool erase(bool whole_multivalue) = 0;
 
-    /// \brief Seek and remove whole multi-value of the given key.
-    /// \return true if the key is found and a value(s) is removed.
+    //! \brief Seek and remove whole multi-value of the given key.
+    //! \return true if the key is found and a value(s) is removed.
     virtual bool erase(const Slice& key) = 0;
     virtual bool erase(const Slice& key, bool whole_multivalue) = 0;
 
-    /// \brief Seek and remove the particular multi-value entry of the key.
-    /// \return true if the given key-value pair is found and removed
+    //! \brief Seek and remove the particular multi-value entry of the key.
+    //! \return true if the given key-value pair is found and removed
     virtual bool erase(const Slice& key, const Slice& value) = 0;
 };
 

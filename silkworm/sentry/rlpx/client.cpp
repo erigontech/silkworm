@@ -34,7 +34,7 @@ using namespace boost::asio;
 awaitable<std::unique_ptr<Peer>> Client::connect(
     common::EnodeUrl peer_url,
     bool is_static_peer) {
-    log::Debug() << "RLPx client connecting to " << peer_url.to_string();
+    log::Debug("sentry") << "rlpx::Client connecting to " << peer_url.to_string();
 
     auto client_context = co_await boost::asio::this_coro::executor;
 
@@ -55,18 +55,20 @@ awaitable<std::unique_ptr<Peer>> Client::connect(
         } catch (const boost::system::system_error& ex) {
             if (ex.code() == boost::system::errc::operation_canceled)
                 throw;
-            log::Warning() << "RLPx client connect exception: " << ex.what();
+            log::Warning("sentry") << "rlpx::Client failed to connect"
+                                   << " to " << peer_url.to_string()
+                                   << " due to exception: " << ex.what()
+                                   << ", reconnecting...";
         }
         if (!is_connected) {
             stream = common::SocketStream{client_context};
-            log::Info() << "Failed to connect to " << peer_url.to_string() << ", reconnecting...";
             co_await common::sleep(10s);
         }
     }
 
     auto remote_endpoint = stream.socket().remote_endpoint();
-    log::Debug() << "RLPx client connected to "
-                 << remote_endpoint.address().to_string() << ":" << remote_endpoint.port();
+    log::Debug("sentry") << "rlpx::Client connected to "
+                         << remote_endpoint.address().to_string() << ":" << remote_endpoint.port();
 
     co_return std::make_unique<Peer>(
         client_context,

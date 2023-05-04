@@ -32,6 +32,7 @@
 #include "api/router/service_router.hpp"
 #include "discovery/discovery.hpp"
 #include "eth/protocol.hpp"
+#include "grpc/server/server.hpp"
 #include "message_receiver.hpp"
 #include "message_sender.hpp"
 #include "node_key_config.hpp"
@@ -40,7 +41,6 @@
 #include "rlpx/client.hpp"
 #include "rlpx/protocol.hpp"
 #include "rlpx/server.hpp"
-#include "rpc/server/server.hpp"
 #include "status_manager.hpp"
 
 namespace silkworm::sentry {
@@ -156,8 +156,9 @@ void SentryImpl::setup_node_key() {
 boost::asio::awaitable<void> SentryImpl::run_tasks() {
     using namespace concurrency::awaitable_wait_for_all;
 
-    log::Info() << "Waiting for status message...";
+    log::Info("sentry") << "Sentry is waiting for status message...";
     co_await status_manager_.wait_for_status();
+    log::Info("sentry") << "Sentry received initial status message";
 
     co_await (
         start_status_manager() &&
@@ -260,15 +261,24 @@ Sentry::Sentry(Settings settings, silkworm::rpc::ServerContextPool& context_pool
 }
 
 Sentry::~Sentry() {
-    log::Trace() << "silkworm::sentry::Sentry::~Sentry";
+    log::Trace("sentry") << "silkworm::sentry::Sentry::~Sentry";
 }
 
 boost::asio::awaitable<void> Sentry::run() {
     return p_impl_->run();
 }
 
-std::shared_ptr<api::api_common::Service> Sentry::service() {
-    return p_impl_->service();
+boost::asio::awaitable<std::shared_ptr<api::api_common::Service>> Sentry::service() {
+    co_return p_impl_->service();
+}
+
+void Sentry::on_disconnect(std::function<boost::asio::awaitable<void>()> /*callback*/) {
+    // the direct client never disconnects
+}
+
+boost::asio::awaitable<void> Sentry::reconnect() {
+    // the direct client never disconnects
+    co_return;
 }
 
 }  // namespace silkworm::sentry

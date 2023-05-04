@@ -20,13 +20,10 @@
 
 namespace silkworm::concurrency {
 
+//! The configuration settings for \refitem ContextPool
 struct ContextPoolSettings {
-    // initialized in the constructor based on hardware_concurrency
-    uint32_t num_contexts{0};
-
-    WaitMode wait_mode{WaitMode::blocking};
-
-    ContextPoolSettings();
+    uint32_t num_contexts{std::thread::hardware_concurrency() / 2};  // The number of execution contexts to activate
+    WaitMode wait_mode{WaitMode::blocking};                          // The waiting strategy when context has no work
 };
 
 }  // namespace silkworm::concurrency

@@ -16,38 +16,7 @@
 
 #include "inbound_message.hpp"
 
-#include <iostream>
-
-#include <silkworm/infra/common/log.hpp>
-
-#include "inbound_block_bodies.hpp"
-#include "inbound_block_headers.hpp"
-#include "inbound_get_block_bodies.hpp"
-#include "inbound_get_block_headers.hpp"
-#include "inbound_new_block.hpp"
-#include "inbound_new_block_hashes.hpp"
-
 namespace silkworm {
-
-std::shared_ptr<InboundMessage> InboundMessage::make(const ::sentry::InboundMessage& raw_message) {
-    std::shared_ptr<InboundMessage> message;
-    if (raw_message.id() == sentry::MessageId::GET_BLOCK_HEADERS_66)
-        message = std::make_shared<InboundGetBlockHeaders>(raw_message);
-    else if (raw_message.id() == sentry::MessageId::GET_BLOCK_BODIES_66)
-        message = std::make_shared<InboundGetBlockBodies>(raw_message);
-    else if (raw_message.id() == sentry::MessageId::NEW_BLOCK_HASHES_66)
-        message = std::make_shared<InboundNewBlockHashes>(raw_message);
-    else if (raw_message.id() == sentry::MessageId::NEW_BLOCK_66)
-        message = std::make_shared<InboundNewBlock>(raw_message);
-    else if (raw_message.id() == sentry::MessageId::BLOCK_HEADERS_66)
-        message = std::make_shared<InboundBlockHeaders>(raw_message);
-    else if (raw_message.id() == sentry::MessageId::BLOCK_BODIES_66)
-        message = std::make_shared<InboundBlockBodies>(raw_message);
-    else
-        log::Warning("HeaderStage") << "InboundMessage " << ::sentry::MessageId_Name(raw_message.id())
-                                    << " received but ignored";
-    return message;
-}
 
 std::ostream& operator<<(std::ostream& os, const silkworm::InboundMessage& msg) {
     os << msg.name() << " content: " << msg.content();

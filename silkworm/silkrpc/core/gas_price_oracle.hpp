@@ -45,7 +45,7 @@ const std::uint8_t kSamples = 3;
 const std::uint8_t kMaxSamples = kCheckBlocks * kSamples;
 const std::uint8_t kPercentile = 60;
 
-typedef std::function<boost::asio::awaitable<silkworm::BlockWithHash>(uint64_t)> BlockProvider;
+typedef std::function<boost::asio::awaitable<std::shared_ptr<silkworm::BlockWithHash>>(uint64_t)> BlockProvider;
 
 class GasPriceOracle {
   public:

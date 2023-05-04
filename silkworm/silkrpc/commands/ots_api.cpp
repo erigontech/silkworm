@@ -25,6 +25,7 @@
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
+#include <silkworm/silkrpc/core/evm_trace.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/core/receipts.hpp>
 #include <silkworm/silkrpc/core/state_reader.hpp>
@@ -106,16 +107,16 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetails(const nlohman
         const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_hash, block_number);
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
 
-        const Block extended_block{block_with_hash, total_difficulty, false};
+        const Block extended_block{*block_with_hash, total_difficulty, false};
         auto block_size = extended_block.get_block_size();
 
-        const BlockDetails block_details{block_size, block_hash, block_with_hash.block.header, total_difficulty, block_with_hash.block.transactions.size(), block_with_hash.block.ommers};
+        const BlockDetails block_details{block_size, block_hash, block_with_hash->block.header, total_difficulty, block_with_hash->block.transactions.size(), block_with_hash->block.ommers};
 
-        auto receipts = co_await core::get_receipts(tx_database, block_with_hash);
+        auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
         auto chain_config = co_await core::rawdb::read_chain_config(tx_database);
 
-        IssuanceDetails issuance = get_issuance(chain_config, block_with_hash);
-        intx::uint256 total_fees = get_block_fees(chain_config, block_with_hash, receipts, block_number);
+        IssuanceDetails issuance = get_issuance(chain_config, *block_with_hash);
+        intx::uint256 total_fees = get_block_fees(chain_config, *block_with_hash, receipts, block_number);
 
         const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
 
@@ -156,16 +157,16 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetailsByHash(const n
         const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_hash, block_number);
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
 
-        const Block extended_block{block_with_hash, total_difficulty, false};
+        const Block extended_block{*block_with_hash, total_difficulty, false};
         auto block_size = extended_block.get_block_size();
 
-        const BlockDetails block_details{block_size, block_hash, block_with_hash.block.header, total_difficulty, block_with_hash.block.transactions.size(), block_with_hash.block.ommers};
+        const BlockDetails block_details{block_size, block_hash, block_with_hash->block.header, total_difficulty, block_with_hash->block.transactions.size(), block_with_hash->block.ommers};
 
-        auto receipts = co_await core::get_receipts(tx_database, block_with_hash);
+        auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
         auto chain_config = co_await core::rawdb::read_chain_config(tx_database);
 
-        IssuanceDetails issuance = get_issuance(chain_config, block_with_hash);
-        intx::uint256 total_fees = get_block_fees(chain_config, block_with_hash, receipts, block_number);
+        IssuanceDetails issuance = get_issuance(chain_config, *block_with_hash);
+        intx::uint256 total_fees = get_block_fees(chain_config, *block_with_hash, receipts, block_number);
 
         const BlockDetailsResponse block_details_response{block_details, issuance, total_fees};
 
@@ -207,19 +208,19 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockTransactions(const nl
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
-        const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_with_hash.hash, block_number);
-        auto receipts = co_await core::get_receipts(tx_database, block_with_hash);
+        const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_with_hash->hash, block_number);
+        auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
 
-        const Block extended_block{block_with_hash, total_difficulty, false};
+        const Block extended_block{*block_with_hash, total_difficulty, false};
         auto block_size = extended_block.get_block_size();
 
-        auto transaction_count = block_with_hash.block.transactions.size();
+        auto transaction_count = block_with_hash->block.transactions.size();
 
-        BlockTransactionsResponse block_transactions{block_size, block_with_hash.hash, block_with_hash.block.header, total_difficulty, transaction_count, block_with_hash.block.ommers};
+        BlockTransactionsResponse block_transactions{block_size, block_with_hash->hash, block_with_hash->block.header, total_difficulty, transaction_count, block_with_hash->block.ommers};
 
-        auto page_end = block_with_hash.block.transactions.size() - (page_size * page_number);
+        auto page_end = block_with_hash->block.transactions.size() - (page_size * page_number);
 
-        if (page_end > block_with_hash.block.transactions.size()) {
+        if (page_end > block_with_hash->block.transactions.size()) {
             page_end = 0;
         }
 
@@ -231,7 +232,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockTransactions(const nl
 
         for (auto i = page_start; i < page_end; i++) {
             block_transactions.receipts.push_back(receipts.at(i));
-            block_transactions.transactions.push_back(block_with_hash.block.transactions.at(i));
+            block_transactions.transactions.push_back(block_with_hash->block.transactions.at(i));
         }
 
         reply = make_json_content(request["id"], block_transactions);
@@ -336,7 +337,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getTransactionBySenderAndNonc
         ethdb::TransactionDatabase tx_database{*tx};
         auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, nonce_block);
 
-        for (const auto& transaction : block_with_hash.block.transactions) {
+        for (const auto& transaction : block_with_hash->block.transactions) {
             if (transaction.from == sender && transaction.nonce == nonce) {
                 auto const transaction_hash{hash_of_transaction(transaction)};
                 auto result = to_bytes32({transaction_hash.bytes, kHashLength});
@@ -346,6 +347,140 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getTransactionBySenderAndNonc
             }
         }
         reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+
+    } catch (const std::invalid_argument& iv) {
+        SILKRPC_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump() << "\n";
+        reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+    } catch (const std::exception& e) {
+        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        reply = make_json_error(request["id"], 100, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+    co_return;
+}
+
+boost::asio::awaitable<void> OtsRpcApi::handle_ots_getContractCreator(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request["params"];
+    if (params.size() != 1) {
+        const auto error_msg = "invalid ots_getContractCreator params: " + params.dump();
+        SILKRPC_ERROR << error_msg << "\n";
+        reply = make_json_error(request["id"], 100, error_msg);
+        co_return;
+    }
+
+    const auto contract_address = params[0].get<evmc::address>();
+
+    SILKRPC_DEBUG << "contract_address: " << contract_address << "\n";
+
+    auto tx = co_await database_->begin();
+
+    try {
+        auto contract_address_byte_view = full_view(contract_address);
+        auto plain_state_cursor = co_await tx->cursor(db::table::kPlainStateName);
+        auto account_payload = co_await plain_state_cursor->seek(contract_address_byte_view);
+        auto plain_state_account = Account::from_encoded_storage(account_payload.value);
+
+        if (!plain_state_account.has_value()) {
+            reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+            co_await tx->close();
+            co_return;
+        }
+
+        if (!plain_state_account.value().code_hash) {
+            reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+            co_await tx->close();
+            co_return;
+        }
+
+        auto account_history_cursor = co_await tx->cursor(db::table::kAccountHistoryName);
+        auto account_change_set_cursor = co_await tx->cursor_dup_sort(db::table::kAccountChangeSetName);
+
+        auto key_value = co_await account_history_cursor->seek(db::account_history_key(contract_address, 0));
+
+        std::vector<uint64_t> account_block_numbers;
+
+        uint64_t max_block_prev_chunk = 0;
+        roaring::Roaring64Map bitmap;
+
+        while (true) {
+            if (key_value.key.empty() || !key_value.key.starts_with(contract_address_byte_view)) {
+                reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+                co_await tx->close();
+                co_return;
+            }
+
+            bitmap = db::bitmap::parse(key_value.value);
+            auto const max_block = bitmap.maximum();
+            auto block_key{db::block_key(max_block)};
+            auto address_and_payload = co_await account_change_set_cursor->seek_both(block_key, contract_address_byte_view);
+            if (!address_and_payload.starts_with(contract_address_byte_view)) {
+                reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+                co_await tx->close();
+                co_return;
+            }
+            auto payload = address_and_payload.substr(contract_address_byte_view.length());
+            auto account = Account::from_encoded_storage(payload);
+
+            if (!account) {
+                reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+                co_await tx->close();
+                co_return;
+            }
+
+            if (account->incarnation >= plain_state_account->incarnation) {
+                break;
+            }
+            max_block_prev_chunk = max_block;
+            key_value = co_await account_history_cursor->next();
+        }
+
+        uint64_t cardinality = bitmap.cardinality();
+        account_block_numbers.resize(cardinality);
+        bitmap.toUint64Array(account_block_numbers.data());
+
+        uint64_t idx = 0;
+        for (uint64_t i = 0; i < cardinality; i++) {
+            auto block_number = account_block_numbers[i];
+            auto block_key{db::block_key(block_number)};
+            auto address_and_payload = co_await account_change_set_cursor->seek_both(block_key, contract_address_byte_view);
+
+            if (!address_and_payload.starts_with(contract_address_byte_view)) {
+                reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+                co_await tx->close();
+                co_return;
+            }
+
+            auto payload = address_and_payload.substr(contract_address_byte_view.length());
+            auto account = Account::from_encoded_storage(payload);
+
+            if (!account) {
+                reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+                co_await tx->close();
+                co_return;
+            }
+
+            if (account.has_value() && account->incarnation >= plain_state_account->incarnation) {
+                idx = i;
+                break;
+            }
+        }
+
+        auto block_found = max_block_prev_chunk;
+        if (idx > 0) {
+            block_found = account_block_numbers[idx - 1];
+        }
+
+        ethdb::TransactionDatabase tx_database{*tx};
+        auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_found);
+
+        trace::TraceCallExecutor executor{*context_.io_context(), *context_.block_cache(), tx_database, workers_};
+        const auto result = co_await executor.trace_deploy_transaction(block_with_hash->block, contract_address);
+
+        reply = make_json_content(request["id"], result);
 
     } catch (const std::invalid_argument& iv) {
         SILKRPC_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump() << "\n";

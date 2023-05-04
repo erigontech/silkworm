@@ -53,10 +53,10 @@ awaitable<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::j
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto block_with_hash = co_await core::read_block_by_number(*context_.block_cache(), tx_database, block_number);
-        auto receipts{co_await core::get_receipts(tx_database, block_with_hash)};
+        auto receipts{co_await core::get_receipts(tx_database, *block_with_hash)};
         SILKRPC_INFO << "#receipts: " << receipts.size() << "\n";
 
-        const auto block{block_with_hash.block};
+        const auto block{block_with_hash->block};
         for (size_t i{0}; i < block.transactions.size(); i++) {
             receipts[i].effective_gas_price = block.transactions[i].effective_gas_price(block.header.base_fee_per_gas.value_or(0));
         }

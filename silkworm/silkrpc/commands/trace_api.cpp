@@ -56,11 +56,11 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_call(const nlohmann::json
         ethdb::TransactionDatabase tx_database{*tx};
         ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *context_.state_cache()};
         const auto block_with_hash = co_await core::read_block_by_number_or_hash(*context_.block_cache(), tx_database, block_number_or_hash);
-        const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash.block.header.number, tx_database);
+        const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash->block.header.number, tx_database);
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
         trace::TraceCallExecutor executor{*context_.io_context(), *context_.block_cache(), db_reader, workers_};
-        const auto result = co_await executor.trace_call(block_with_hash.block, call, config);
+        const auto result = co_await executor.trace_call(block_with_hash->block, call, config);
 
         if (result.pre_check_error) {
             reply = make_json_error(request["id"], -32000, result.pre_check_error.value());
@@ -99,12 +99,12 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_call_many(const nlohmann:
         ethdb::TransactionDatabase tx_database{*tx};
         ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *context_.state_cache()};
         const auto block_with_hash = co_await core::read_block_by_number_or_hash(*context_.block_cache(), tx_database, block_number_or_hash);
-        const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash.block.header.number, tx_database);
+        const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash->block.header.number, tx_database);
 
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
         trace::TraceCallExecutor executor{*context_.io_context(), *context_.block_cache(), db_reader, workers_};
-        const auto result = co_await executor.trace_calls(block_with_hash.block, trace_calls);
+        const auto result = co_await executor.trace_calls(block_with_hash->block, trace_calls);
 
         if (result.pre_check_error) {
             reply = make_json_error(request["id"], -32000, result.pre_check_error.value());
@@ -188,7 +188,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_raw_transaction(const nlo
         const auto block_with_hash = co_await core::read_block_by_number(*context_.block_cache(), tx_database, block_number);
 
         trace::TraceCallExecutor executor{*context_.io_context(), *context_.block_cache(), tx_database, workers_};
-        const auto result = co_await executor.trace_transaction(block_with_hash.block, transaction, config);
+        const auto result = co_await executor.trace_transaction(block_with_hash->block, transaction, config);
 
         if (result.pre_check_error) {
             reply = make_json_error(request["id"], -32000, result.pre_check_error.value());
@@ -229,7 +229,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_replay_block_transactions
         const auto block_with_hash = co_await core::read_block_by_number_or_hash(*context_.block_cache(), tx_database, block_number_or_hash);
 
         trace::TraceCallExecutor executor{*context_.io_context(), *context_.block_cache(), tx_database, workers_};
-        const auto result = co_await executor.trace_block_transactions(block_with_hash.block, config);
+        const auto result = co_await executor.trace_block_transactions(block_with_hash->block, config);
         reply = make_json_content(request["id"], result);
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
@@ -310,7 +310,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_block(const nlohmann::jso
 
         trace::TraceCallExecutor executor{*context_.io_context(), *context_.block_cache(), tx_database, workers_};
         trace::Filter filter;
-        const auto result = co_await executor.trace_block(block_with_hash, filter);
+        const auto result = co_await executor.trace_block(*block_with_hash, filter);
         reply = make_json_content(request["id"], result);
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";

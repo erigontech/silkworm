@@ -58,10 +58,7 @@ static const std::vector<fs::path> kSlowTests{
     kBlockchainDir / "GeneralStateTests" / "VMTests" / "vmPerformance",
 };
 
-static const std::vector<fs::path> kFailingTests{
-    // EOF is not implemented yet
-    kBlockchainDir / "GeneralStateTests" / "EIPTests" / "stEOF",
-};
+static const std::vector<fs::path> kFailingTests{};
 
 static constexpr size_t kColumnWidth{80};
 

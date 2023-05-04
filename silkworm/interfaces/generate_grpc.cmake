@@ -67,6 +67,7 @@ set(PROTOC_ARGS_GRPC
 macro(create_symlink_target target link_path target_path)
   add_custom_command(
     OUTPUT "${link_path}"
+    COMMAND "${CMAKE_COMMAND}" ARGS -E remove_directory "${link_path}"
     COMMAND "${CMAKE_COMMAND}" ARGS -E create_symlink "${target_path}" "${link_path}"
     COMMENT "${target}: symlink ${link_path} -> ${target_path}"
   )

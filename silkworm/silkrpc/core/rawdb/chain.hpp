@@ -47,13 +47,13 @@ boost::asio::awaitable<evmc::bytes32> read_canonical_block_hash(const DatabaseRe
 
 boost::asio::awaitable<intx::uint256> read_total_difficulty(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
 
-boost::asio::awaitable<silkworm::BlockWithHash> read_block_by_hash(const DatabaseReader& reader, const evmc::bytes32& block_hash);
+boost::asio::awaitable<std::shared_ptr<BlockWithHash>> read_block_by_hash(const DatabaseReader& reader, const evmc::bytes32& block_hash);
 
-boost::asio::awaitable<silkworm::BlockWithHash> read_block_by_number(const DatabaseReader& reader, uint64_t block_number);
+boost::asio::awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(const DatabaseReader& reader, uint64_t block_number);
 
 boost::asio::awaitable<uint64_t> read_block_number_by_transaction_hash(const DatabaseReader& reader, const evmc::bytes32& transaction_hash);
 
-boost::asio::awaitable<silkworm::BlockWithHash> read_block(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
+boost::asio::awaitable<std::shared_ptr<BlockWithHash>> read_block(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number);
 
 boost::asio::awaitable<silkworm::BlockHeader> read_header_by_hash(const DatabaseReader& reader, const evmc::bytes32& block_hash);
 

@@ -16,10 +16,8 @@
 
 #pragma once
 
-#include <memory>
-
-#include <silkworm/core/rlp/decode.hpp>
-#include <silkworm/core/rlp/encode.hpp>
+#include <ostream>
+#include <string>
 
 #include "message.hpp"
 
@@ -27,12 +25,8 @@ namespace silkworm {
 
 class InboundMessage : public Message {
   public:
-    static std::shared_ptr<InboundMessage> make(const ::sentry::InboundMessage& msg);
-
-    void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) override = 0;
-
-    virtual uint64_t reqId() const = 0;
-    virtual std::string content() const = 0;
+    [[nodiscard]] virtual uint64_t reqId() const = 0;
+    [[nodiscard]] virtual std::string content() const = 0;
 };
 
 std::ostream& operator<<(std::ostream&, const silkworm::InboundMessage&);

@@ -80,6 +80,7 @@ constexpr const char* k_eth_getBlockTransactionCountByHash{"eth_getBlockTransact
 constexpr const char* k_eth_getBlockByNumber{"eth_getBlockByNumber"};
 constexpr const char* k_eth_getBlockTransactionCountByNumber{"eth_getBlockTransactionCountByNumber"};
 constexpr const char* k_eth_getBlockReceipts{"eth_getBlockReceipts"};
+constexpr const char* k_eth_getTransactionReceiptsByBlock{"eth_getTransactionReceiptsByBlock"};
 constexpr const char* k_eth_maxPriorityFeePerGas{"eth_maxPriorityFeePerGas"};
 constexpr const char* k_eth_feeHistory{"eth_feeHistory"};
 
@@ -130,5 +131,6 @@ constexpr const char* k_ots_getBlockDetails{"ots_getBlockDetails"};
 constexpr const char* k_ots_getBlockDetailsByHash{"ots_getBlockDetailsByHash"};
 constexpr const char* k_ots_getBlockTransactions{"ots_getBlockTransactions"};
 constexpr const char* k_ots_getTransactionBySenderAndNonce{"ots_getTransactionBySenderAndNonce"};
+constexpr const char* k_ots_getContractCreator{"ots_getContractCreator"};
 
 }  // namespace silkworm::rpc::http::method

@@ -27,7 +27,11 @@
 
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
+#include <silkworm/silkrpc/json/call.hpp>
+#include <silkworm/silkrpc/json/execution_payload.hpp>
+#include <silkworm/silkrpc/json/filter.hpp>
 #include <silkworm/silkrpc/json/log.hpp>
+#include <silkworm/silkrpc/json/payload_attributes.hpp>
 #include <silkworm/silkrpc/json/receipt.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/call.hpp>
@@ -109,19 +113,8 @@ void to_json(nlohmann::json& json, const BlockTransactionsResponse& b);
 
 void to_json(nlohmann::json& json, const Transaction& transaction);
 
-void from_json(const nlohmann::json& json, Call& call);
-
-void to_json(nlohmann::json& json, const Filter& filter);
-void from_json(const nlohmann::json& json, Filter& filter);
-
-void to_json(nlohmann::json& json, const ExecutionPayload& execution_payload);
-void from_json(const nlohmann::json& json, ExecutionPayload& execution_payload);
-
 void to_json(nlohmann::json& json, const ForkChoiceState& forkchoice_state);
 void from_json(const nlohmann::json& json, ForkChoiceState& forkchoice_state);
-
-void to_json(nlohmann::json& json, const PayloadAttributes& payload_attributes);
-void from_json(const nlohmann::json& json, PayloadAttributes& payload_attributes);
 
 void to_json(nlohmann::json& json, const ForkChoiceUpdatedReply& forkchoice_updated_reply);
 
@@ -156,7 +149,6 @@ nlohmann::json make_json_error(uint32_t id, int64_t code, const std::string& mes
 nlohmann::json make_json_error(uint32_t id, const RevertError& error);
 
 // GLAZE
-void make_glaze_json_content(std::string& reply, uint32_t id, const silkworm::Bytes& call_result);
 void make_glaze_json_error(std::string& reply, uint32_t id, const int error_id, const std::string& message);
 void make_glaze_json_error(std::string& reply, uint32_t id, const RevertError& error);
 

@@ -142,6 +142,8 @@ awaitable<void> PeerManagerApi::handle_peer_events_calls() {
     while (true) {
         auto call = co_await peer_events_calls_channel_.receive();
 
+        log::Trace("sentry") << "PeerManagerApi::handle_peer_events_calls adding subscription";
+
         auto events_channel = std::make_shared<concurrency::Channel<api::api_common::PeerEvent>>(executor);
 
         events_subscriptions_.push_back({
@@ -160,13 +162,13 @@ awaitable<void> PeerManagerApi::unsubscribe_peer_events_on_signal(std::shared_pt
         co_await unsubscribe_signal->wait();
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled) {
-            log::Debug() << "PeerManagerApi::unsubscribe_events_on_signal cancelled";
+            log::Debug("sentry") << "PeerManagerApi::unsubscribe_events_on_signal cancelled";
             co_return;
         }
-        log::Error() << "PeerManagerApi::unsubscribe_events_on_signal system_error: " << ex.what();
+        log::Error("sentry") << "PeerManagerApi::unsubscribe_events_on_signal system_error: " << ex.what();
         throw;
     } catch (const std::exception& ex) {
-        log::Error() << "PeerManagerApi::unsubscribe_events_on_signal exception: " << ex.what();
+        log::Error("sentry") << "PeerManagerApi::unsubscribe_events_on_signal exception: " << ex.what();
         throw;
     }
 
@@ -183,6 +185,8 @@ awaitable<void> PeerManagerApi::forward_peer_events() {
     // loop until receive() throws a cancelled exception
     while (true) {
         auto event = co_await peer_events_channel_.receive();
+
+        log::Trace("sentry") << "PeerManagerApi::forward_peer_events forwarding an event to subscribers";
 
         for (auto& subscription : events_subscriptions_) {
             try {
@@ -205,7 +209,7 @@ void PeerManagerApi::on_peer_added(std::shared_ptr<rlpx::Peer> peer) {
     };
     bool ok = peer_events_channel_.try_send(std::move(event));
     if (!ok) {
-        log::Warning() << "PeerManagerApi::on_peer_added too many unprocessed events, ignoring an event";
+        log::Warning("sentry") << "PeerManagerApi::on_peer_added too many unprocessed events, ignoring an event";
     }
 }
 
@@ -217,7 +221,7 @@ void PeerManagerApi::on_peer_removed(std::shared_ptr<rlpx::Peer> peer) {
     };
     bool ok = peer_events_channel_.try_send(std::move(event));
     if (!ok) {
-        log::Warning() << "PeerManagerApi::on_peer_removed too many unprocessed events, ignoring an event";
+        log::Warning("sentry") << "PeerManagerApi::on_peer_removed too many unprocessed events, ignoring an event";
     }
 }
 

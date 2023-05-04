@@ -184,6 +184,13 @@ inline constexpr db::MapConfig kHashedStorage{kHashedStorageName, mdbx::key_mode
 inline constexpr const char* kHeadBlockName{"LastBlock"};
 inline constexpr db::MapConfig kHeadBlock{kHeadBlockName};
 
+//! \details Store last canonical header hash for ease of access and performance
+//! \remarks This table stores the last record present also in Headers
+//! \struct
+//! \verbatim
+//!   key   : "LastHeader" as bytes
+//!   value : last header hash (32 bytes)
+//! \endverbatim
 inline constexpr const char* kHeadHeaderName{"LastHeader"};
 inline constexpr db::MapConfig kHeadHeader{kHeadHeaderName};
 

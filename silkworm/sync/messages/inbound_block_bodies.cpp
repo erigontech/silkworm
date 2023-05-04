@@ -16,24 +16,16 @@
 
 #include "inbound_block_bodies.hpp"
 
-#include <silkworm/core/common/cast.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/sync/internals/body_sequence.hpp>
-#include <silkworm/sync/internals/header_chain.hpp>
-#include <silkworm/sync/rpc/penalize_peer.hpp>
+#include <silkworm/sync/sentry_client.hpp>
 
 namespace silkworm {
 
-InboundBlockBodies::InboundBlockBodies(const ::sentry::InboundMessage& msg) {
-    if (msg.id() != ::sentry::MessageId::BLOCK_BODIES_66)
-        throw std::logic_error("InboundBlockBodies received wrong InboundMessage");
-
-    peerId_ = bytes_from_H512(msg.peer_id());
-
-    ByteView data = string_view_to_byte_view(msg.data());  // copy for consumption
+InboundBlockBodies::InboundBlockBodies(ByteView data, PeerId peer_id)
+    : peerId_(std::move(peer_id)) {
     success_or_throw(rlp::decode(data, packet_));
-
     SILK_TRACE << "Received message " << *this;
 }
 
@@ -45,9 +37,7 @@ void InboundBlockBodies::execute(db::ROAccess, HeaderChain&, BodySequence& bs, S
     if (penalty != Penalty::NoPenalty) {
         SILK_TRACE << "Replying to " << identify(*this) << " with penalize_peer";
         SILK_TRACE << "Penalizing " << PeerPenalization(penalty, peerId_);
-        rpc::PenalizePeer penalize_peer(peerId_, penalty);
-        penalize_peer.do_not_throw_on_failure();
-        sentry.exec_remotely(penalize_peer);
+        sentry.penalize_peer(peerId_, penalty);
     }
 }
 

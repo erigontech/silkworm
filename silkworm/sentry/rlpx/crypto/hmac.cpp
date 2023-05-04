@@ -31,7 +31,7 @@ Bytes hmac(ByteView key, ByteView data1, ByteView data2, ByteView data3) {
 
     int ok = HMAC_Init_ex(ctx, key.data(), static_cast<int>(key.size()), EVP_sha256(), nullptr);
     if (!ok)
-        throw std::runtime_error("Failed to init HMAC");
+        throw std::runtime_error("rlpx::crypto::hmac: Failed to init HMAC");
 
     HMAC_Update(ctx, data1.data(), data1.size());
     HMAC_Update(ctx, data2.data(), data2.size());

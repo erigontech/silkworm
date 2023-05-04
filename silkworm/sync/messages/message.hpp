@@ -16,17 +16,19 @@
 
 #pragma once
 
+#include <string>
+
 #include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/sync/internals/types.hpp>
-#include <silkworm/sync/sentry_client.hpp>
 
 namespace silkworm {
+
 class HeaderChain;
 class BodySequence;
+class SentryClient;
 
 class Message {
   public:
-    virtual std::string name() const = 0;
+    [[nodiscard]] virtual std::string name() const = 0;
 
     // execute: inbound message send a reply, outbound message send a request
     virtual void execute(db::ROAccess, HeaderChain&, BodySequence&, SentryClient&) = 0;

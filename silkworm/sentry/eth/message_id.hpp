@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 namespace silkworm::sentry::eth {
 
 enum class MessageId : uint8_t {
@@ -35,5 +37,8 @@ enum class MessageId : uint8_t {
     kGetReceipts = 0xF,
     kReceipts,
 };
+
+MessageId eth_message_id_from_common_id(uint8_t id);
+uint8_t common_message_id_from_eth_id(MessageId eth_id);
 
 }  // namespace silkworm::sentry::eth

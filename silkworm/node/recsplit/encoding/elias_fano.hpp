@@ -50,6 +50,7 @@
 #include <iostream>
 #include <limits>
 #include <span>
+#include <utility>
 #include <vector>
 
 #include <silkworm/core/common/assert.hpp>
@@ -97,18 +98,30 @@ inline static void set_bits(std::span<T, Extent> bits, const uint64_t start, con
     }
 }
 
-//! 32-bit Elias-Fano list that can be used to encode one monotone non-decreasing sequence
+//! 32-bit Elias-Fano (EF) list that can be used to encode one monotone non-decreasing sequence
 class EliasFanoList32 {
   public:
-    EliasFanoList32(uint64_t count, uint64_t max_offset) {
-        if (count == 0) throw std::logic_error{"too small count: " + std::to_string(count)};
-        count_ = count - 1;
+    //! Create an empty new 32-bit EF list prepared for specified sequence length and max offset
+    EliasFanoList32(uint64_t sequence_length, uint64_t max_offset) {
+        if (sequence_length == 0) throw std::logic_error{"sequence length is zero"};
+        count_ = sequence_length - 1;
         max_offset_ = max_offset;
         u_ = max_offset + 1;
         words_upper_bits_ = derive_fields();
     }
 
-    [[nodiscard]] std::size_t count() const { return count_ + 1; }
+    //! Create a new 32-bit EF list from an existing data sequence
+    //! \param count the number of EF data points
+    //! \param data the existing data sequence (portion exceeding the total words will be ignored)
+    EliasFanoList32(uint64_t count, uint64_t u, std::span<uint64_t> data)
+        : count_(count), u_(u) {
+        max_offset_ = u_ - 1;
+        derive_fields(data);
+    }
+
+    [[nodiscard]] std::size_t sequence_length() const { return count_ + 1; }
+
+    [[nodiscard]] std::size_t count() const { return count_; }
 
     [[nodiscard]] std::size_t max() const { return max_offset_; }
 
@@ -216,6 +229,24 @@ class EliasFanoList32 {
         return words_upper_bits;
     }
 
+    uint64_t derive_fields(std::span<uint64_t> data) {
+        l_ = u_ / (count_ + 1) == 0 ? 0 : 63 ^ uint64_t(std::countl_zero(u_ / (count_ + 1)));
+        lower_bits_mask_ = (uint64_t(1) << l_) - 1;
+
+        uint64_t words_lower_bits = ((count_ + 1) * l_ + 63) / 64 + 1;
+        uint64_t words_upper_bits = ((count_ + 1) + (u_ >> l_) + 63) / 64;
+        uint64_t jump_words = jump_size_words();
+        uint64_t total_words = words_lower_bits + words_upper_bits + jump_words;
+        data = data.subspan(0, total_words);
+        data_.resize(total_words);
+        std::copy(data.begin(), data.end(), data_.data());
+        lower_bits_ = data.subspan(0, words_lower_bits);
+        upper_bits_ = data.subspan(words_lower_bits, words_upper_bits);
+        jump_ = data.subspan(words_lower_bits + words_upper_bits, jump_words);
+
+        return words_upper_bits;
+    }
+
     [[nodiscard]] inline uint64_t jump_size_words() const {
         uint64_t size = ((count_ + 1) / kSuperQ) * kSuperQSize32;  // Whole blocks
         if ((count_ + 1) % kSuperQ != 0) {
@@ -224,7 +255,6 @@ class EliasFanoList32 {
         return size;
     }
 
-    Uint64Sequence data_;
     std::span<uint64_t> lower_bits_;
     std::span<uint64_t> upper_bits_;
     std::span<uint64_t> jump_;
@@ -235,10 +265,10 @@ class EliasFanoList32 {
     uint64_t max_offset_{0};
     uint64_t i_{0};
     uint64_t words_upper_bits_{0};
+    Uint64Sequence data_;
 };
 
 //! 16-bit Double Elias-Fano list that used to encode *two* monotone non-decreasing sequences in RecSplit
-//! @tparam AT a type of memory allocation out of util::AllocType
 class DoubleEliasFanoList16 {
   public:
     DoubleEliasFanoList16() = default;
@@ -517,11 +547,16 @@ class DoubleEliasFanoList16 {
         ef.lower_bits_mask_position = (1UL << ef.l_position) - 1;
 
         // Erigon assumes that data fills up the stream until the end
-        int read_count{0};
+        std::size_t read_count{0};
         while (!is.eof()) {
+            ef.data_.resize(read_count + 1);
             is.read(reinterpret_cast<char*>(ef.data_.data() + read_count), static_cast<std::streamsize>(sizeof(uint64_t)));
             ++read_count;
         }
+        if (!ef.data_.empty()) {
+            ef.data_.pop_back();
+        }
+        ef.derive_fields();
         return is;
     }
 };

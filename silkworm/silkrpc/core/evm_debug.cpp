@@ -102,7 +102,7 @@ void DebugTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
                   << "\n";
 }
 
-void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int stack_height,
+void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int stack_height, const int64_t gas,
                                        const evmone::ExecutionState& execution_state, const silkworm::IntraBlockState& intra_block_state) noexcept {
     assert(execution_state.msg);
     evmc::address recipient(execution_state.msg->recipient);
@@ -118,7 +118,7 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
                   << " recipient: " << recipient
                   << " sender: " << sender
                   << " execution_state: {"
-                  << "   gas_left: " << std::dec << execution_state.gas_left
+                  << "   gas_left: " << std::dec << gas
                   << "   status: " << execution_state.status
                   << "   msg.gas: " << std::dec << execution_state.msg->gas
                   << "   msg.depth: " << std::dec << execution_state.msg->depth
@@ -152,7 +152,7 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
                 log.gas_cost = log.gas - gas_on_precompiled_;
                 gas_on_precompiled_ = 0;
             } else {
-                log.gas_cost = log.gas - execution_state.gas_left;
+                log.gas_cost = log.gas - gas;
             }
             if (!config_.disableMemory) {
                 auto& memory = log.memory;
@@ -161,7 +161,7 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
                 }
             }
         } else if (depth == execution_state.msg->depth) {
-            log.gas_cost = log.gas - execution_state.gas_left;
+            log.gas_cost = log.gas - gas;
         }
     }
     if (logs_.size() > 1) {
@@ -173,7 +173,7 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
     DebugLog log;
     log.pc = pc;
     log.op = opcode_name;
-    log.gas = execution_state.gas_left;
+    log.gas = gas;
     log.depth = execution_state.msg->depth + 1;
 
     if (!config_.disableStack) {

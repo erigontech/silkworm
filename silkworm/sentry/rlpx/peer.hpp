@@ -29,6 +29,7 @@
 #include <boost/asio/strand.hpp>
 
 #include <silkworm/infra/concurrency/channel.hpp>
+#include <silkworm/infra/concurrency/task_group.hpp>
 #include <silkworm/sentry/common/atomic_value.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
@@ -36,7 +37,6 @@
 #include <silkworm/sentry/common/message.hpp>
 #include <silkworm/sentry/common/promise.hpp>
 #include <silkworm/sentry/common/socket_stream.hpp>
-#include <silkworm/sentry/common/task_group.hpp>
 
 #include "auth/hello_message.hpp"
 #include "framing/message_stream.hpp"
@@ -117,7 +117,7 @@ class Peer {
 
     class DisconnectedError : public std::runtime_error {
       public:
-        DisconnectedError() : std::runtime_error("Peer is disconnected") {}
+        DisconnectedError() : std::runtime_error("rlpx::Peer is disconnected") {}
     };
 
     std::optional<common::EnodeUrl> url() {
@@ -173,7 +173,7 @@ class Peer {
     common::AtomicValue<std::optional<rlpx_common::DisconnectReason>> disconnect_reason_{std::nullopt};
 
     boost::asio::strand<boost::asio::any_io_executor> strand_;
-    common::TaskGroup send_message_tasks_;
+    concurrency::TaskGroup send_message_tasks_;
     concurrency::Channel<common::Message> send_message_channel_;
     concurrency::Channel<common::Message> receive_message_channel_;
     concurrency::Channel<common::Message> pong_channel_;

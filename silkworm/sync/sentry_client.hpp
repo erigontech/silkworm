@@ -17,55 +17,86 @@
 #pragma once
 
 #include <atomic>
-#include <stdexcept>
+#include <memory>
+#include <vector>
 
+#include <silkworm/infra/concurrency/coroutine.hpp>
+
+#include <boost/asio/awaitable.hpp>
+#include <boost/asio/cancellation_signal.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/signals2.hpp>
 
 #include <silkworm/infra/concurrency/active_component.hpp>
-#include <silkworm/interfaces/p2psentry/sentry.grpc.pb.h>
+#include <silkworm/infra/concurrency/task_group.hpp>
 #include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/sync/internals/grpc_sync_client.hpp>
-#include <silkworm/sync/internals/sentry_type_casts.hpp>
+#include <silkworm/sentry/api/api_common/message_from_peer.hpp>
+#include <silkworm/sentry/api/api_common/sentry_client.hpp>
 #include <silkworm/sync/internals/types.hpp>
-#include <silkworm/sync/rpc/hand_shake.hpp>
-#include <silkworm/sync/rpc/receive_messages.hpp>
-#include <silkworm/sync/rpc/receive_peer_stats.hpp>
+#include <silkworm/sync/messages/inbound_message.hpp>
+#include <silkworm/sync/messages/outbound_message.hpp>
 
 namespace silkworm {
 
 /*
- * SentryClient is a client to connect to a remote sentry, send rpc and receive reply.
- * The remote sentry must implement the ethereum p2p protocol and must have an interface specified by sentry.proto
- * SentryClient uses gRPC/protobuf to communicate with the remote sentry.
+ * A SentryClient wrapper for the sync module.
  */
-class SentryClient : public rpc::Client<::sentry::Sentry>, public ActiveComponent {
+class SentryClient : public ActiveComponent {
   public:
-    using base_t = rpc::Client<::sentry::Sentry>;
-    using subscriber_t = void(const ::sentry::InboundMessage&);
+    explicit SentryClient(
+        boost::asio::io_context& io_context,
+        std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> sentry_client);
 
-    explicit SentryClient(const std::string& sentry_addr, const db::ROAccess&, const ChainConfig&);  // connect to the remote sentry
     SentryClient(const SentryClient&) = delete;
     SentryClient(SentryClient&&) = delete;
 
-    void set_status();                         // init the remote sentry
-    void hand_shake();                         // hand_shake & check of the protocol version
-    uint64_t count_active_peers();             // ask the remote sentry for active peers
-    std::string request_peer_info(PeerId id);  // ask the remote sentry for peer info
+    // sending messages
+    using PeerIds = std::vector<PeerId>;
+
+    boost::asio::awaitable<SentryClient::PeerIds> send_message_by_id_async(const OutboundMessage& outbound_message, const PeerId& peer_id);
+    PeerIds send_message_by_id(const OutboundMessage& message, const PeerId& peer_id);
+
+    boost::asio::awaitable<PeerIds> send_message_to_random_peers_async(const OutboundMessage& message, size_t max_peers);
+    PeerIds send_message_to_random_peers(const OutboundMessage& message, size_t max_peers);
+
+    boost::asio::awaitable<PeerIds> send_message_to_all_async(const OutboundMessage& message);
+    PeerIds send_message_to_all(const OutboundMessage& message);
+
+    boost::asio::awaitable<PeerIds> send_message_by_min_block_async(const OutboundMessage& message, BlockNum min_block, size_t max_peers);
+    PeerIds send_message_by_min_block(const OutboundMessage& message, BlockNum min_block, size_t max_peers);
+
+    boost::asio::awaitable<void> peer_min_block_async(const PeerId& peer_id, BlockNum min_block);
+    void peer_min_block(const PeerId& peer_id, BlockNum min_block);
+
+    // receiving messages
+    using Subscriber = void(std::shared_ptr<InboundMessage>);
+    boost::signals2::signal<Subscriber> announcements_subscription;  // subscription to headers & bodies announcements
+    boost::signals2::signal<Subscriber> requests_subscription;       // subscription to headers & bodies requests
+    boost::signals2::signal<Subscriber> rest_subscription;           // subscription to everything else
+
+    // reports received message sizes
+    boost::signals2::signal<void(size_t)> received_message_size_subscription;
+
+    // reports if a malformed message was received
+    boost::signals2::signal<void()> malformed_message_subscription;
+
+    // ask the remote sentry for active peers
+    boost::asio::awaitable<uint64_t> count_active_peers_async();
+    uint64_t count_active_peers();
+
+    // ask the remote sentry for peer info
+    boost::asio::awaitable<std::string> request_peer_info_async(PeerId peer_id);
+    std::string request_peer_info(PeerId peer_id);
+
+    boost::asio::awaitable<void> penalize_peer_async(PeerId peer_id, Penalty penalty);
+    void penalize_peer(PeerId peer_id, Penalty penalty);
 
     uint64_t active_peers();  // return cached peers count
-
-    using base_t::exec_remotely;  // exec_remotely(SentryRpc& rpc) sends a rpc request to the remote sentry
-
-    boost::signals2::signal<subscriber_t> announcements_subscription;  // subscription to headers & bodies announcements
-    boost::signals2::signal<subscriber_t> requests_subscription;       // subscription to headers & bodies requests
-    boost::signals2::signal<subscriber_t> rest_subscription;           // subscription to everything else
 
     bool stop() override;
 
     /*[[long_running]]*/ void execution_loop() override;  // do a long-running loop to wait for messages
     /*[[long_running]]*/ void stats_receiving_loop();     // do a long-running loop to wait for peer statistics
-
-    static rpc::ReceiveMessages::Scope scope(const ::sentry::InboundMessage& message);  // find the scope of the message
 
     static constexpr seconds_t kRequestDeadline = std::chrono::seconds(30);          // time beyond which the remote sentry
                                                                                      // considers an answer lost
@@ -74,25 +105,15 @@ class SentryClient : public rpc::Client<::sentry::Sentry>, public ActiveComponen
     static constexpr size_t kPerPeerMaxOutstandingRequests = 4;                      // max number of outstanding requests per peer
 
   protected:
-    void publish(const ::sentry::InboundMessage&);  // notifying registered subscribers
-    void set_status(Hash head_hash, BigInt head_td, const ChainConfig&);
+    // notifying registered subscribers
+    boost::asio::awaitable<void> publish(const silkworm::sentry::api::api_common::MessageFromPeer& message_from_peer);
 
-    const std::string sentry_addr_;
-    db::ROAccess db_access_;
-    const ChainConfig& chain_config_;
-
-    std::atomic<bool> connected_{false};
-    std::shared_ptr<rpc::HandShake> handshake_;
-    std::shared_ptr<rpc::ReceiveMessages> receive_messages_;
-    std::shared_ptr<rpc::ReceivePeerStats> receive_peer_stats_;
+    boost::asio::io_context& io_context_;
+    std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> sentry_client_;
+    concurrency::TaskGroup tasks_;
+    boost::asio::cancellation_signal tasks_cancellation_signal_;
 
     std::atomic<uint64_t> active_peers_{0};
-};
-
-// custom exception
-class SentryClientException : public std::runtime_error {
-  public:
-    explicit SentryClientException(const std::string& cause) : std::runtime_error(cause) {}
 };
 
 }  // namespace silkworm

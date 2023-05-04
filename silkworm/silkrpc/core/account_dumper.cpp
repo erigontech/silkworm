@@ -43,9 +43,9 @@ boost::asio::awaitable<DumpAccounts> AccountDumper::dump_accounts(BlockCache& ca
     ethdb::TransactionDatabase tx_database{transaction_};
 
     const auto block_with_hash = co_await core::read_block_by_number_or_hash(cache, tx_database, bnoh);
-    const auto block_number = block_with_hash.block.header.number;
+    const auto block_number = block_with_hash->block.header.number;
 
-    dump_accounts.root = block_with_hash.block.header.state_root;
+    dump_accounts.root = block_with_hash->block.header.state_root;
 
     std::vector<silkworm::KeyValue> collected_data;
 

@@ -16,6 +16,7 @@
 
 #include "memory_mapped_file.hpp"
 
+#include <chrono>
 #include <fstream>
 #include <stdexcept>
 
@@ -25,11 +26,9 @@
 
 namespace silkworm {
 
-TEST_CASE("MemoryMappedFile::kPageSize", "[silkworm][common][memory_mapped_file]") {
-    CHECK(MemoryMappedFile::kPageSize >= 4096);
-}
+using namespace std::chrono_literals;
 
-TEST_CASE("MemoryMappedFile", "[silkworm][common][memory_mapped_file]") {
+TEST_CASE("MemoryMappedFile", "[silkworm][infra][common][memory_mapped_file]") {
     SECTION("constructor fails for nonexistent file") {
         CHECK_THROWS_AS(MemoryMappedFile{"nonexistent.txt"}, std::runtime_error);
     }
@@ -77,6 +76,25 @@ TEST_CASE("MemoryMappedFile", "[silkworm][common][memory_mapped_file]") {
 
     SECTION("advise_random") {
         CHECK_NOTHROW(mmf.advise_random());
+    }
+
+    SECTION("input stream") {
+        MemoryMappedInputStream mmis{mmf.address(), mmf.length()};
+        std::string s;
+        mmis >> s;
+        CHECK(s == kFileContent);
+    }
+
+    SECTION("last_write_time") {
+        const auto tmp_path = std::filesystem::temp_directory_path() / "example.bin";
+        std::ofstream{tmp_path.c_str()}.put('a');
+        MemoryMappedFile mm_file{tmp_path};
+        const auto ftime = mm_file.last_write_time();
+        // Move file write time 1 hour to the future
+        std::filesystem::last_write_time(tmp_path, ftime + 1h);
+        const auto new_ftime = mm_file.last_write_time();
+        CHECK(new_ftime > ftime);
+        std::filesystem::remove(tmp_path);
     }
 }
 

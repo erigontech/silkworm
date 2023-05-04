@@ -69,6 +69,7 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/common/memory_mapped_file.hpp>
 #include <silkworm/node/etl/collector.hpp>
 
 #pragma GCC diagnostic push
@@ -97,7 +98,7 @@ static const int kMaxLeafSize = 24;
 static const int kMaxFanout = 32;
 
 //! Starting seed at given distance from the root (extracted at random)
-static constexpr uint64_t kStartSeed[] = {
+static constexpr std::array<uint64_t, 20> kStartSeed = {
     0x106393c187cae21a, 0x6453cec3f7376937, 0x643e521ddbd2be98, 0x3740c6412f6572cb, 0x717d47562f1ce470, 0x4cd6eb4c63befb7c, 0x9bfd8c5e18c8da73,
     0x082f20e10092a9a3, 0x2ada2ce68d21defc, 0xe33cb4f3e7c6466b, 0x3980be458c509c59, 0xc466fd9584828e8c, 0x45f0aabe1a61ede6, 0xf6e7b8b33ad9b98d,
     0x4ef95e25f4b4983d, 0x81175195173b92d3, 0x4e50927d8dd15978, 0x1ea2099d1fafae7f, 0x425c8a06fbaaa815, 0xcd4216006c74052a};
@@ -157,6 +158,31 @@ class SplittingStrategy {
     }
 };
 
+//! Size in bytes of 1st fixed metadata header fields in RecSplit-encoded file
+static constexpr std::size_t kBaseDataIdLength{sizeof(uint64_t)};
+static constexpr std::size_t kKeyCountLength{sizeof(uint64_t)};
+static constexpr std::size_t kBytesPerRecordLength{sizeof(uint8_t)};
+
+//! Size in bytes of 1st fixed metadata header in RecSplit-encoded file
+constexpr std::size_t kFirstMetadataHeaderLength{
+    kBaseDataIdLength + kKeyCountLength + kBytesPerRecordLength};
+
+//! Size in bytes of 2nd fixed metadata header fields in RecSplit-encoded file
+static constexpr std::size_t kBucketCountLength{sizeof(uint64_t)};
+static constexpr std::size_t kBucketSizeLength{sizeof(uint16_t)};
+static constexpr std::size_t kLeafSizeLength{sizeof(uint16_t)};
+static constexpr std::size_t kSaltSizeLength{sizeof(uint32_t)};
+static constexpr std::size_t kStartSeedSizeLength{sizeof(uint8_t)};
+
+static constexpr std::size_t kDoubleIndexFlagLength{sizeof(uint8_t)};
+static constexpr std::size_t kGolombParamSizeLength{sizeof(uint32_t)};  // Erigon writes 4-instead-of-2 bytes
+static constexpr std::size_t kEliasFano32CountLength{sizeof(uint64_t)};
+static constexpr std::size_t kEliasFano32ULength{sizeof(uint64_t)};
+
+//! Size in bytes of 2nd fixed metadata header in RecSplit-encoded file
+constexpr std::size_t kSecondMetadataHeaderLength{
+    kBucketCountLength + kBucketSizeLength + kLeafSizeLength + kSaltSizeLength + kStartSeedSizeLength};
+
 //! Parameters for modified Recursive splitting (RecSplit) algorithm.
 struct RecSplitSettings {
     std::size_t keys_count;                                 // The total number of keys in the RecSplit
@@ -171,7 +197,7 @@ struct RecSplitSettings {
 //! The template parameter LEAF_SIZE decides how large a leaf will be. Larger leaves imply slower construction, but less
 //! space and faster evaluation
 //! @tparam LEAF_SIZE the size of a leaf, typical value range from 6 to 8 for fast small maps or up to 16 for very compact functions
-template <size_t LEAF_SIZE>
+template <std::size_t LEAF_SIZE>
 class RecSplit {
   public:
     using SplitStrategy = SplittingStrategy<LEAF_SIZE>;
@@ -201,6 +227,99 @@ class RecSplit {
         std::mt19937 rand_gen32{rand_dev()};
         salt_ = salt != 0 ? salt : rand_gen32();
         hasher_ = std::make_unique<Murmur3>(salt_);
+    }
+
+    explicit RecSplit(std::filesystem::path index_path) : index_path_(std::move(index_path)), encoded_file_{index_path_} {
+        SILK_DEBUG << "RecSplit encoded file path: " << encoded_file_->path();
+        check_minimum_length(kFirstMetadataHeaderLength);
+
+        const auto address = encoded_file_->address();
+
+        encoded_file_->advise_sequential();
+
+        // Read fixed metadata header fields from RecSplit-encoded file
+        base_data_id_ = endian::load_big_u64(address);
+        key_count_ = endian::load_big_u64(address + kBaseDataIdLength);
+        bytes_per_record_ = address[kBaseDataIdLength + kKeyCountLength];
+        record_mask_ = (uint64_t(1) << (8 * bytes_per_record_)) - 1;
+        SILK_DEBUG << "Base data ID: " << base_data_id_ << " key count: " << key_count_
+                   << " bytes per record: " << bytes_per_record_ << " record mask: " << record_mask_;
+
+        // Compute offset for variable metadata header fields
+        uint64_t offset = kFirstMetadataHeaderLength + key_count_ * bytes_per_record_;
+        check_minimum_length(offset + kSecondMetadataHeaderLength);
+
+        // Read offset-based metadata fields
+        bucket_count_ = endian::load_big_u64(address + offset);
+        offset += kBucketCountLength;
+        bucket_size_ = endian::load_big_u16(address + offset);
+        offset += kBucketSizeLength;
+        const uint16_t leaf_size = endian::load_big_u16(address + offset);
+        SILKWORM_ASSERT(leaf_size == LEAF_SIZE);
+        offset += kLeafSizeLength;
+
+        const uint16_t primary_aggr_bound = leaf_size * succinct::max(2, std::ceil(0.35 * leaf_size + 1. / 2));
+        SILKWORM_ASSERT(primary_aggr_bound == kLowerAggregationBound);
+        const uint16_t secondary_aggr_bound = primary_aggr_bound * (leaf_size < 7 ? 2 : ceil(0.21 * leaf_size + 9. / 10));
+        SILKWORM_ASSERT(secondary_aggr_bound == kUpperAggregationBound);
+
+        // Read salt
+        salt_ = endian::load_big_u32(address + offset);
+        offset += kSaltSizeLength;
+
+        // Read start seed
+        const uint8_t start_seed_length = (address + offset)[0];
+        offset += kStartSeedSizeLength;
+        SILKWORM_ASSERT(start_seed_length == kStartSeed.size());
+        check_minimum_length(offset + start_seed_length * sizeof(uint64_t));
+        std::array<uint64_t, kStartSeed.size()> start_seed;
+        for (std::size_t i{0}; i < start_seed_length; ++i) {
+            start_seed[i] = endian::load_big_u64(address + offset);
+            offset += sizeof(uint64_t);
+        }
+        SILKWORM_ASSERT(start_seed == kStartSeed);
+
+        // Read double-index flag
+        check_minimum_length(offset + kDoubleIndexFlagLength);
+        double_enum_index_ = (address + offset)[0] != 0;
+        offset += kDoubleIndexFlagLength;
+
+        if (double_enum_index_) {
+            check_minimum_length(offset + kEliasFano32CountLength + kEliasFano32ULength);
+
+            // Read Elias-Fano index for offsets
+            const uint64_t count = endian::load_big_u64(address + offset);
+            offset += kEliasFano32CountLength;
+            const uint64_t u = endian::load_big_u64(address + offset);
+            offset += kEliasFano32ULength;
+            const auto ef_data_start{reinterpret_cast<uint64_t*>(address + offset)};
+            std::span<uint64_t> remaining_data{ef_data_start, encoded_file_->length() - offset};
+            ef_offsets_ = std::make_unique<EliasFano>(count, u, remaining_data);
+            offset += ef_offsets_->data().size() * sizeof(uint64_t);
+        }
+
+        // Read the number of Golomb-Rice code params
+        check_minimum_length(offset + kGolombParamSizeLength);
+        const uint16_t golomb_param_size = endian::load_big_u16(address + offset);
+        golomb_param_max_index_ = golomb_param_size - 1;
+        offset += kGolombParamSizeLength;
+
+        MemoryMappedInputStream mmis{address + offset, encoded_file_->length() - offset};
+
+        // Read Golomb-Rice codes
+        mmis >> golomb_rice_codes_;
+        offset += sizeof(uint64_t) + golomb_rice_codes_.size() * sizeof(uint64_t);
+
+        // Read double Elias-Fano code for bucket cumulative keys and bit positions
+        mmis >> double_ef_index_;
+        offset += 5 * sizeof(uint64_t) + double_ef_index_.data().size() * sizeof(uint64_t);
+
+        SILKWORM_ASSERT(offset == encoded_file_->length());
+
+        encoded_file_->advise_random();
+
+        // Prevent any new key addition
+        built_ = true;
     }
 
     void add_key(const hash128_t& key_hash, uint64_t offset) {
@@ -363,7 +482,7 @@ class RecSplit {
         SILK_DEBUG << "[index] written murmur3 salt: " << salt_ << " [" << to_hex(uint64_buffer) << "]";
 
         // Write out start seeds
-        const uint8_t start_seed_length = sizeof(kStartSeed) / sizeof(uint64_t);
+        constexpr uint8_t start_seed_length = kStartSeed.size();
         index_output_stream.write(reinterpret_cast<const char*>(&start_seed_length), sizeof(uint8_t));
         SILK_DEBUG << "[index] written start seed length: " << int(start_seed_length);
 
@@ -371,7 +490,7 @@ class RecSplit {
             endian::store_big_u64(uint64_buffer.data(), s);
             index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint64_t));
         }
-        SILK_DEBUG << "[index] written start seed: " << kStartSeed;
+        SILK_DEBUG << "[index] written start seed: first=" << kStartSeed[0] << " last=" << kStartSeed[kStartSeed.size() - 1];
 
         // Write out index flag
         const uint8_t enum_index_flag = double_enum_index_ ? 1 : 0;
@@ -383,7 +502,7 @@ class RecSplit {
             SILK_DEBUG << "[index] written EF code for offsets [size: " << ef_offsets_->count() - 1 << "]";
         }
 
-        // Write out the number of Golomb-Rice code params
+        // Write out the number of Golomb-Rice codes used i.e. the max index used plus one
         endian::store_big_u16(uint64_buffer.data(), golomb_param_max_index_ + 1);
         // Erigon writes 4-instead-of-2 bytes here: 2 spurious come from previous buffer content, i.e. last seed value
         index_output_stream.write(reinterpret_cast<const char*>(uint64_buffer.data()), sizeof(uint32_t));
@@ -423,7 +542,7 @@ class RecSplit {
      * @param hash a 128-bit hash.
      * @return the associated value.
      */
-    size_t operator()(const hash128_t& hash) {
+    std::size_t operator()(const hash128_t& hash) const {
         if (!built_) throw std::logic_error{"perfect hash function not built yet"};
 
         const std::size_t bucket = hash128_to_bucket(hash);
@@ -477,10 +596,22 @@ class RecSplit {
     }
 
     //! Return the value associated with the given key
-    size_t operator()(const std::string& key) const { return operator()(murmur_hash_3(key.c_str(), key.size())); }
+    std::size_t operator()(const std::string& key) const { return operator()(murmur_hash_3(key.c_str(), key.size())); }
 
     //! Return the number of keys used to build the RecSplit instance
-    inline size_t size() const { return key_count_; }
+    std::size_t key_count() const { return key_count_; }
+
+    bool empty() const { return key_count_ == 0; }
+    uint64_t base_data_id() const { return base_data_id_; }
+    uint64_t record_mask() const { return record_mask_; }
+    uint64_t bucket_count() const { return bucket_count_; }
+    uint16_t bucket_size() const { return bucket_size_; }
+
+    std::size_t file_size() const { return std::filesystem::file_size(index_path_); }
+
+    std::filesystem::file_time_type last_write_time() const {
+        return std::filesystem::last_write_time(index_path_);
+    }
 
   private:
     static inline std::size_t skip_bits(std::size_t m) { return memo[m] & 0xFFFF; }
@@ -707,6 +838,12 @@ class RecSplit {
     // Maps a 128-bit to a bucket using the first 64-bit half.
     inline uint64_t hash128_to_bucket(const hash128_t& hash) const { return remap128(hash.first, bucket_count_); }
 
+    void check_minimum_length(std::size_t minimum_length) {
+        if (encoded_file_ && encoded_file_->length() < minimum_length) {
+            throw std::runtime_error("RecSplit encoded file is too short: " + std::to_string(encoded_file_->length()));
+        }
+    }
+
     friend std::ostream& operator<<(std::ostream& os, const RecSplit<LEAF_SIZE>& rs) {
         size_t leaf_size = LEAF_SIZE;
         os.write(reinterpret_cast<char*>(&leaf_size), sizeof(leaf_size));
@@ -786,6 +923,9 @@ class RecSplit {
     //! Number of bytes used per index record
     uint8_t bytes_per_record_{0};
 
+    //! The bitmask to be used to interpret record data
+    uint64_t record_mask_{0};
+
     //! Identifier of the current bucket being accumulated
     uint64_t current_bucket_id_{0};
 
@@ -827,6 +967,9 @@ class RecSplit {
 
     //! Temporary counters of key remapped occurrences
     std::vector<std::size_t> count_;
+
+    //! The memory-mapped RecSplit-encoded file when opening existing index for read
+    std::optional<MemoryMappedFile> encoded_file_;
 };
 
 constexpr std::size_t kLeafSize{8};
@@ -834,6 +977,8 @@ using RecSplit8 = RecSplit<kLeafSize>;
 
 template <>
 const std::array<uint32_t, kMaxBucketSize> RecSplit8::memo;
+
+using RecSplitIndex = RecSplit8;
 
 }  // namespace silkworm::succinct
 

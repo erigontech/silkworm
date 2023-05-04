@@ -29,6 +29,7 @@ std::unique_ptr<types::H512> H512_from_bytes(ByteView orig);
 
 Hash hash_from_H256(const types::H256& orig);
 std::unique_ptr<types::H256> H256_from_hash(const Hash& orig);
+std::unique_ptr<types::H256> H256_from_bytes(ByteView orig);
 
 intx::uint256 uint256_from_H256(const types::H256& orig);
 std::unique_ptr<types::H256> H256_from_uint256(const intx::uint256& orig);

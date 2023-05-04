@@ -158,6 +158,15 @@ TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][recsplit]") {
             }
             CHECK(rs.build() == false /*collision_detected*/);
             check_bijection(rs, hashed_keys);
+
+            RecSplit4 rs_index{index_file.path()};
+            CHECK(rs.base_data_id() == settings.base_data_id);
+            CHECK(rs.key_count() == settings.keys_count);
+            CHECK(rs.empty() == !settings.keys_count);
+            CHECK(rs.record_mask() == 0);
+            CHECK(rs.bucket_count() == (settings.keys_count + settings.bucket_size - 1) / settings.bucket_size);
+            CHECK(rs.bucket_size() == settings.bucket_size);
+            check_bijection(rs_index, hashed_keys);
         }
     }
 }

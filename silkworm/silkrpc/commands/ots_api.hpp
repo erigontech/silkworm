@@ -22,6 +22,7 @@
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/thread_pool.hpp>
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/base.hpp>
@@ -41,7 +42,7 @@ namespace silkworm::rpc::commands {
 
 class OtsRpcApi {
   public:
-    explicit OtsRpcApi(Context& context) : database_(context.database()), state_cache_(context.state_cache()), block_cache_(context.block_cache()) {}
+    explicit OtsRpcApi(Context& context, boost::asio::thread_pool& workers) : context_(context), workers_{workers}, database_(context.database()), state_cache_(context.state_cache()), block_cache_(context.block_cache()) {}
     virtual ~OtsRpcApi() = default;
 
     OtsRpcApi(const OtsRpcApi&) = delete;
@@ -54,7 +55,10 @@ class OtsRpcApi {
     boost::asio::awaitable<void> handle_ots_getBlockDetailsByHash(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_ots_getBlockTransactions(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_ots_getTransactionBySenderAndNonce(const nlohmann::json& request, nlohmann::json& reply);
+    boost::asio::awaitable<void> handle_ots_getContractCreator(const nlohmann::json& request, nlohmann::json& reply);
 
+    Context& context_;
+    boost::asio::thread_pool& workers_;
     std::unique_ptr<ethdb::Database>& database_;
     std::shared_ptr<ethdb::kv::StateCache>& state_cache_;
     std::shared_ptr<BlockCache>& block_cache_;

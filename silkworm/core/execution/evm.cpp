@@ -45,8 +45,8 @@ class DelegatingTracer : public evmone::Tracer {
     }
 
     void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height,
-                              const evmone::ExecutionState& state) noexcept override {
-        tracer_.on_instruction_start(pc, stack_top, stack_height, state, intra_block_state_);
+                              int64_t gas, const evmone::ExecutionState& state) noexcept override {
+        tracer_.on_instruction_start(pc, stack_top, stack_height, gas, state, intra_block_state_);
     }
 
     void on_execution_end(const evmc_result& result) noexcept override {
@@ -230,7 +230,7 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
         }
         // Explicitly notify registered tracers (if any)
         for (auto tracer : tracers_) {
-            tracer.get().on_precompiled_run(res, message.gas, state_);
+            tracer.get().on_precompiled_run(res.raw(), message.gas, state_);
         }
     } else {
         const ByteView code{state_.get_code(message.code_address)};
@@ -291,9 +291,9 @@ evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc
     std::shared_ptr<evmone::baseline::CodeAnalysis> analysis;
     const bool use_cache{code_hash && baseline_analysis_cache};
     if (use_cache) {
-        const auto* ptr{baseline_analysis_cache->get(*code_hash)};
-        if (ptr) {
-            analysis = *ptr;
+        const auto optional_analysis{baseline_analysis_cache->get_as_copy(*code_hash)};
+        if (optional_analysis) {
+            analysis = *optional_analysis;
         }
     }
     if (!analysis) {
@@ -308,7 +308,7 @@ evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc
     state->reset(msg, rev, host.get_interface(), host.to_context(), code);
 
     const auto vm{static_cast<evmone::VM*>(evm1_)};
-    evmc_result res{evmone::baseline::execute(*vm, *state, *analysis)};
+    evmc_result res{evmone::baseline::execute(*vm, msg.gas, *state, *analysis)};
 
     release_state(state);
 

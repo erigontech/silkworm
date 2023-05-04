@@ -38,6 +38,7 @@
 #include <silkworm/core/state/intra_block_state.hpp>
 #include <silkworm/silkrpc/common/block_cache.hpp>
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
+#include <silkworm/silkrpc/core/evm_executor.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/json/stream.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
@@ -136,7 +137,8 @@ class VmTraceTracer : public silkworm::EvmTracer {
     VmTraceTracer& operator=(const VmTraceTracer&) = delete;
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
-    void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height, const evmone::ExecutionState& execution_state,
+    void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height,
+                              int64_t gas, const evmone::ExecutionState& execution_state,
                               const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_precompiled_run(const evmc_result& result, int64_t gas, const silkworm::IntraBlockState& intra_block_state) noexcept override;
@@ -216,7 +218,8 @@ class TraceTracer : public silkworm::EvmTracer {
     TraceTracer& operator=(const TraceTracer&) = delete;
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
-    void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height, const evmone::ExecutionState& execution_state,
+    void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height,
+                              int64_t gas, const evmone::ExecutionState& execution_state,
                               const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
@@ -286,7 +289,8 @@ class StateDiffTracer : public silkworm::EvmTracer {
     StateDiffTracer& operator=(const StateDiffTracer&) = delete;
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
-    void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height, const evmone::ExecutionState& execution_state,
+    void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height,
+                              int64_t gas, const evmone::ExecutionState& execution_state,
                               const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
     void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
@@ -319,9 +323,15 @@ struct TraceManyCallResult {
     std::optional<std::string> pre_check_error{std::nullopt};
 };
 
+struct TraceDeployResult {
+    std::optional<evmc::bytes32> transaction_hash;
+    std::optional<evmc::address> contract_creator;
+};
+
 void to_json(nlohmann::json& json, const TraceCallTraces& result);
 void to_json(nlohmann::json& json, const TraceCallResult& result);
 void to_json(nlohmann::json& json, const TraceManyCallResult& result);
+void to_json(nlohmann::json& json, const TraceDeployResult& result);
 
 class IntraBlockStateTracer : public silkworm::EvmTracer {
   public:
@@ -332,7 +342,8 @@ class IntraBlockStateTracer : public silkworm::EvmTracer {
 
     void on_execution_start(evmc_revision /*rev*/, const evmc_message& /*msg*/, evmone::bytes_view /*code*/) noexcept override {}
     void on_instruction_start(uint32_t /*pc*/, const intx::uint256* /*stack_top*/, int /*stack_height*/,
-                              const evmone::ExecutionState& /*execution_state*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+                              int64_t /*gas*/, const evmone::ExecutionState& /*execution_state*/,
+                              const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_execution_end(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_reward_granted(const silkworm::CallResult& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
@@ -340,6 +351,29 @@ class IntraBlockStateTracer : public silkworm::EvmTracer {
 
   private:
     StateAddresses& state_addresses_;
+};
+
+class CreateTracer : public silkworm::EvmTracer {
+  public:
+    explicit CreateTracer(const evmc::address& contract_address, silkworm::IntraBlockState& initial_ibs) : contract_address_(contract_address), initial_ibs_(initial_ibs) {}
+
+    CreateTracer(const CreateTracer&) = delete;
+    CreateTracer& operator=(const CreateTracer&) = delete;
+
+    void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
+    void on_instruction_start(uint32_t /*pc*/, const intx::uint256* /*stack_top*/, int /*stack_height*/,
+                              int64_t /*gas*/, const evmone::ExecutionState& /*execution_state*/,
+                              const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_execution_end(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_reward_granted(const silkworm::CallResult& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_creation_completed(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    bool found() const { return found_; }
+
+  private:
+    bool found_{false};
+    const evmc::address& contract_address_;
+    const silkworm::IntraBlockState& initial_ibs_;
 };
 
 struct Filter {
@@ -369,6 +403,7 @@ class TraceCallExecutor {
     boost::asio::awaitable<TraceCallResult> trace_transaction(const silkworm::Block& block, const rpc::Transaction& transaction, const TraceConfig& config) {
         return execute(block.header.number - 1, block, transaction, transaction.transaction_index, config);
     }
+    boost::asio::awaitable<TraceDeployResult> trace_deploy_transaction(const silkworm::Block& block, const evmc::address& contract_address);
     boost::asio::awaitable<std::vector<Trace>> trace_transaction(const silkworm::BlockWithHash& block, const rpc::Transaction& transaction);
     boost::asio::awaitable<void> trace_filter(const TraceFilter& trace_filter, json::Stream* stream);
 

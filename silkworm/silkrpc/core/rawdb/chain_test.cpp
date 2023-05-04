@@ -341,8 +341,8 @@ TEST_CASE("read_block_by_hash") {
         EXPECT_CALL(db_reader, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return kBody; }));
         EXPECT_CALL(db_reader, walk(db::table::kBlockTransactionsName, _, _, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<void> { co_return; }));
         auto result = boost::asio::co_spawn(pool, read_block_by_hash(db_reader, block_hash), boost::asio::use_future);
-        const silkworm::BlockWithHash bwh = result.get();
-        check_expected_block_with_hash(bwh);
+        const std::shared_ptr<silkworm::BlockWithHash> bwh = result.get();
+        check_expected_block_with_hash(*bwh);
     }
 }
 
@@ -414,8 +414,8 @@ TEST_CASE("read_block_by_number") {
         EXPECT_CALL(db_reader, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return kBody; }));
         EXPECT_CALL(db_reader, walk(db::table::kBlockTransactionsName, _, _, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<void> { co_return; }));
         auto result = boost::asio::co_spawn(pool, read_block_by_number(db_reader, block_number), boost::asio::use_future);
-        const silkworm::BlockWithHash bwh = result.get();
-        check_expected_block_with_hash(bwh);
+        const std::shared_ptr<silkworm::BlockWithHash> bwh = result.get();
+        check_expected_block_with_hash(*bwh);
     }
 }
 
@@ -507,8 +507,8 @@ TEST_CASE("read_block") {
         EXPECT_CALL(db_reader, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return *silkworm::from_hex("c68369000003c0"); }));
         EXPECT_CALL(db_reader, walk(db::table::kBlockTransactionsName, _, _, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<void> { co_return; }));
         auto result = boost::asio::co_spawn(pool, read_block(db_reader, block_hash, block_number), boost::asio::use_future);
-        const silkworm::BlockWithHash bwh = result.get();
-        CHECK(bwh.block.transactions.empty());
+        const std::shared_ptr<silkworm::BlockWithHash> bwh = result.get();
+        CHECK(bwh->block.transactions.empty());
     }
 
     SECTION("block found and matching") {
@@ -518,8 +518,8 @@ TEST_CASE("read_block") {
         EXPECT_CALL(db_reader, get_one(db::table::kBlockBodiesName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return kBody; }));
         EXPECT_CALL(db_reader, walk(db::table::kBlockTransactionsName, _, _, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<void> { co_return; }));
         auto result = boost::asio::co_spawn(pool, read_block(db_reader, block_hash, block_number), boost::asio::use_future);
-        const silkworm::BlockWithHash bwh = result.get();
-        check_expected_block_with_hash(bwh);
+        const std::shared_ptr<silkworm::BlockWithHash> bwh = result.get();
+        check_expected_block_with_hash(*bwh);
     }
 }
 
@@ -1003,10 +1003,10 @@ TEST_CASE("read_receipts") {
             co_return *silkworm::from_hex("70A5C9D346416f901826581d423Cd5B92d44Ff5a");
         }));
         auto result = boost::asio::co_spawn(pool, read_block_by_hash(db_reader, block_hash), boost::asio::use_future);
-        const silkworm::BlockWithHash bwh = result.get();
+        const std::shared_ptr<silkworm::BlockWithHash> bwh = result.get();
 
         EXPECT_CALL(db_reader, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return silkworm::Bytes{}; }));
-        auto result1 = boost::asio::co_spawn(pool, read_receipts(db_reader, bwh), boost::asio::use_future);
+        auto result1 = boost::asio::co_spawn(pool, read_receipts(db_reader, *bwh), boost::asio::use_future);
 #ifdef SILKWORM_SANITIZE  // Avoid comparison against exception message: it triggers a TSAN data race seemingly related to libstdc++ string implementation
         CHECK_THROWS_AS(result1.get(), std::runtime_error);
 #else
@@ -1033,7 +1033,7 @@ TEST_CASE("read_receipts") {
             co_return *silkworm::from_hex("70A5C9D346416f901826581d423Cd5B92d44Ff5a");
         }));
         auto result = boost::asio::co_spawn(pool, read_block_by_hash(db_reader, block_hash), boost::asio::use_future);
-        const silkworm::BlockWithHash bwh = result.get();
+        const std::shared_ptr<silkworm::BlockWithHash> bwh = result.get();
 
         EXPECT_CALL(db_reader, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return *silkworm::from_hex("818400f6011a0004a0c8"); }));
         EXPECT_CALL(db_reader, walk(db::table::kLogsName, _, _, _)).WillOnce(Invoke([](Unused, Unused, Unused, Walker w) -> boost::asio::awaitable<void> {
@@ -1064,7 +1064,7 @@ TEST_CASE("read_receipts") {
             w(key, value);
             co_return;
         }));
-        auto result1 = boost::asio::co_spawn(pool, read_receipts(db_reader, bwh), boost::asio::use_future);
+        auto result1 = boost::asio::co_spawn(pool, read_receipts(db_reader, *bwh), boost::asio::use_future);
         // CHECK(result1.get() == Receipts{...}); // TODO(canepat): provide operator== and operator!= for Receipt type
         CHECK(result1.get().size() == 1);
     }
@@ -1102,7 +1102,7 @@ TEST_CASE("read_receipts") {
                 "Dd74564BC9ff247C23f02cFbA1083c805829D981");
         }));
         auto result = boost::asio::co_spawn(pool, read_block_by_hash(db_reader, block_hash), boost::asio::use_future);
-        const silkworm::BlockWithHash bwh = result.get();
+        const std::shared_ptr<silkworm::BlockWithHash> bwh = result.get();
 
         EXPECT_CALL(db_reader, get_one(db::table::kBlockReceiptsName, _)).WillOnce(InvokeWithoutArgs([]() -> boost::asio::awaitable<silkworm::Bytes> { co_return *silkworm::from_hex("828400f6011a00016e5b8400f6011a0002dc76"); }));
         EXPECT_CALL(db_reader, walk(db::table::kLogsName, _, _, _)).WillOnce(DoAll(Invoke([](Unused, Unused, Unused, Walker w) -> boost::asio::awaitable<void> {
@@ -1123,7 +1123,7 @@ TEST_CASE("read_receipts") {
                                                                                        w(key, value);
                                                                                        co_return;
                                                                                    })));
-        auto result1 = boost::asio::co_spawn(pool, read_receipts(db_reader, bwh), boost::asio::use_future);
+        auto result1 = boost::asio::co_spawn(pool, read_receipts(db_reader, *bwh), boost::asio::use_future);
         // CHECK(result1.get() == Receipts{Receipt{...}, Receipt{...}}); // TODO(canepat): provide operator== and operator!= for Receipt type
         CHECK(result1.get().size() == Receipts{Receipt{}, Receipt{}}.size());
     }

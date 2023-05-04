@@ -29,7 +29,7 @@
 
 namespace silkworm::rpc::http {
 
-/// A request received from a client.
+//! A request received from a client.
 struct Request {
     std::string method;
     std::string uri;

@@ -68,17 +68,17 @@ boost::asio::awaitable<void> GasPriceOracle::load_block_prices(uint64_t block_nu
     SILKRPC_TRACE << "GasPriceOracle::load_block_prices processing block: " << block_number << "\n";
 
     const auto block_with_hash = co_await block_provider_(block_number);
-    const auto& base_fee = block_with_hash.block.header.base_fee_per_gas.value_or(0);
-    const auto& coinbase = block_with_hash.block.header.beneficiary;
+    const auto& base_fee = block_with_hash->block.header.base_fee_per_gas.value_or(0);
+    const auto& coinbase = block_with_hash->block.header.beneficiary;
 
-    SILKRPC_TRACE << "GasPriceOracle::load_block_prices # transactions in block: " << block_with_hash.block.transactions.size() << "\n";
+    SILKRPC_TRACE << "GasPriceOracle::load_block_prices # transactions in block: " << block_with_hash->block.transactions.size() << "\n";
     SILKRPC_TRACE << "GasPriceOracle::load_block_prices # block base_fee: 0x" << intx::hex(base_fee) << "\n";
     SILKRPC_TRACE << "GasPriceOracle::load_block_prices # block beneficiary: 0x" << coinbase << "\n";
 
     std::vector<intx::uint256> block_prices;
     int idx = 0;
-    block_prices.reserve(block_with_hash.block.transactions.size());
-    for (const auto& transaction : block_with_hash.block.transactions) {
+    block_prices.reserve(block_with_hash->block.transactions.size());
+    for (const auto& transaction : block_with_hash->block.transactions) {
         const auto priority_fee_per_gas = transaction.priority_fee_per_gas(base_fee);
         SILKRPC_TRACE << "idx: " << idx++
                       << " hash: " << silkworm::to_hex({hash_of_transaction(transaction).bytes, silkworm::kHashLength})

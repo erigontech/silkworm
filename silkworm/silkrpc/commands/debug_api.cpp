@@ -213,8 +213,8 @@ awaitable<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json&
     try {
         ethdb::TransactionDatabase tx_database{*tx};
 
-        const auto block_with_hash = co_await core::rawdb::read_block_by_hash(tx_database, block_hash);
-        auto block_number = block_with_hash.block.header.number - 1;
+        const auto block_with_hash = co_await core::read_block_by_hash(*context_.block_cache(), tx_database, block_hash);
+        auto block_number = block_with_hash->block.header.number - 1;
 
         nlohmann::json storage({});
         silkworm::Bytes next_key;
@@ -349,14 +349,14 @@ awaitable<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& reque
         ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *context_.state_cache()};
 
         const auto block_with_hash = co_await core::read_block_by_number_or_hash(*context_.block_cache(), tx_database, block_number_or_hash);
-        const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash.block.header.number, tx_database);
+        const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash->block.header.number, tx_database);
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
         debug::DebugExecutor executor{*context_.io_context(), db_reader, workers_, config};
 
         stream.write_field("result");
         stream.open_object();
-        co_await executor.execute(stream, block_with_hash.block, call);
+        co_await executor.execute(stream, block_with_hash->block, call);
         stream.close_object();
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
@@ -413,7 +413,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::
 
         stream.write_field("result");
         stream.open_array();
-        co_await executor.execute(stream, block_with_hash.block);
+        co_await executor.execute(stream, block_with_hash->block);
         stream.close_array();
     } catch (const std::invalid_argument& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
@@ -475,7 +475,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::js
 
         stream.write_field("result");
         stream.open_array();
-        co_await executor.execute(stream, block_with_hash.block);
+        co_await executor.execute(stream, block_with_hash->block);
         stream.close_array();
     } catch (const std::invalid_argument& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";

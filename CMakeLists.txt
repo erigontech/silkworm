@@ -150,6 +150,8 @@ if(NOT MSVC)
   endif()
 endif()
 
+set(SILKWORM_STACK_SIZE 0x1000000)
+
 # Silkworm itself
 add_subdirectory(silkworm)
 

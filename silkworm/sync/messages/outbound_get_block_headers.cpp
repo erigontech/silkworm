@@ -21,28 +21,22 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/sync/internals/body_sequence.hpp>
 #include <silkworm/sync/internals/header_chain.hpp>
-#include <silkworm/sync/rpc/penalize_peer.hpp>
-#include <silkworm/sync/rpc/send_message_by_min_block.hpp>
+#include <silkworm/sync/sentry_client.hpp>
 
 namespace silkworm {
-
-OutboundGetBlockHeaders::OutboundGetBlockHeaders() {}
 
 GetBlockHeadersPacket66& OutboundGetBlockHeaders::packet() { return packet_; }
 std::vector<PeerPenalization>& OutboundGetBlockHeaders::penalties() { return penalizations_; }
 bool OutboundGetBlockHeaders::packet_present() const { return (packet_.request.amount != 0); }
 
 void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequence&, SentryClient& sentry) {
-    using namespace std::literals::chrono_literals;
-    seconds_t response_timeout = 1s;
-
     if (packet_present()) {
-        auto send_outcome = send_packet(sentry, response_timeout);
+        auto send_outcome = send_packet(sentry);
 
         SILK_TRACE << "Headers request sent (OutboundGetBlockHeaders/" << packet_ << "), received by "
-                   << send_outcome.peers_size() << "/" << sentry.active_peers() << " peer(s)";
+                   << send_outcome.size() << "/" << sentry.active_peers() << " peer(s)";
 
-        if (send_outcome.peers_size() == 0) {
+        if (send_outcome.empty()) {
             hc.request_nack(packet_);
             nack_reqs_++;
         } else {
@@ -52,11 +46,17 @@ void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequenc
 
     for (auto& penalization : penalizations_) {
         SILK_TRACE << "Penalizing " << penalization;
-        send_penalization(sentry, penalization, 1s);
+        sentry.penalize_peer(penalization.peerId, penalization.penalty);
     }
 }
 
-::sentry::SentPeers OutboundGetBlockHeaders::send_packet(SentryClient& sentry, seconds_t timeout) {
+Bytes OutboundGetBlockHeaders::message_data() const {
+    Bytes rlp_encoding;
+    rlp::encode(rlp_encoding, packet_);
+    return rlp_encoding;
+}
+
+std::vector<PeerId> OutboundGetBlockHeaders::send_packet(SentryClient& sentry) {
     if (std::holds_alternative<Hash>(packet_.request.origin))
         throw std::logic_error("OutboundGetBlockHeaders expects block number not hash");
 
@@ -66,41 +66,14 @@ void OutboundGetBlockHeaders::execute(db::ROAccess, HeaderChain& hc, BodySequenc
     BlockNum min_block = std::get<BlockNum>(packet_.request.origin);  // choose target peer
     if (!packet_.request.reverse) min_block += packet_.request.amount * packet_.request.skip;
 
-    auto request = std::make_unique<::sentry::OutboundMessageData>();  // create header request
-
-    request->set_id(::sentry::MessageId::GET_BLOCK_HEADERS_66);
-
-    Bytes rlp_encoding;
-    rlp::encode(rlp_encoding, packet_);
-    request->set_data(rlp_encoding.data(), rlp_encoding.length());  // copy
-
     // SILK_TRACE << "Sending message OutboundGetBlockHeaders with send_message_by_min_block, content:" << packet_;
 
-    rpc::SendMessageByMinBlock rpc{min_block, std::move(request)};
+    auto peers = sentry.send_message_by_min_block(*this, min_block, 0);
 
-    rpc.timeout(timeout);
-    rpc.do_not_throw_on_failure();
-
-    sentry.exec_remotely(rpc);
-
-    if (!rpc.status().ok()) {
-        SILK_TRACE << "Failure of rpc OutboundGetBlockHeaders " << packet_ << ": " << rpc.status().error_message();
-        return {};
-    }
-
-    ::sentry::SentPeers peers = rpc.reply();
-    // SILK_TRACE << "Received rpc result of OutboundGetBlockHeaders reqId=" << packet_.requestId << ": "
-    //            << std::to_string(peers.peers_size()) + " peer(s)";
+    // SILK_TRACE << "Received sentry result of OutboundGetBlockHeaders reqId=" << packet_.requestId << ": "
+    //            << std::to_string(peers.size()) + " peer(s)";
 
     return peers;
-}
-
-void OutboundGetBlockHeaders::send_penalization(SentryClient& sentry, const PeerPenalization& penalization, seconds_t timeout) {
-    rpc::PenalizePeer rpc{penalization.peerId, penalization.penalty};
-
-    rpc.timeout(timeout);
-
-    sentry.exec_remotely(rpc);
 }
 
 std::string OutboundGetBlockHeaders::content() const {

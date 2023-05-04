@@ -21,7 +21,7 @@
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/infra/grpc/common/util.hpp>
 #include <silkworm/interfaces/types/types.pb.h>
-#include <silkworm/sentry/rpc/interfaces/node_info.hpp>
+#include <silkworm/sentry/grpc/interfaces/node_info.hpp>
 
 namespace silkworm::rpc {
 
@@ -69,7 +69,7 @@ awaitable<void> NetPeerCountCall::operator()(const EthereumBackEnd& backend) {
     SILK_TRACE << "NetPeerCountCall START";
 
     auto sentry_client = backend.sentry_client();
-    auto sentry = sentry_client->service();
+    auto sentry = co_await sentry_client->service();
 
     remote::NetPeerCountReply response;
     grpc::Status result_status{grpc::Status::OK};
@@ -149,7 +149,7 @@ awaitable<void> NodeInfoCall::operator()(const EthereumBackEnd& backend) {
     SILK_TRACE << "NodeInfoCall START limit: " << request_.limit();
 
     auto sentry_client = backend.sentry_client();
-    auto sentry = sentry_client->service();
+    auto sentry = co_await sentry_client->service();
 
     remote::NodesInfoReply response;
     grpc::Status result_status{grpc::Status::OK};

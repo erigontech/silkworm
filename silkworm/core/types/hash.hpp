@@ -38,7 +38,7 @@ class Hash : public evmc::bytes32 {
 
     static constexpr size_t length() { return sizeof(evmc::bytes32); }
 
-    std::string to_hex() { return silkworm::to_hex(*this); }
+    [[nodiscard]] std::string to_hex() const { return silkworm::to_hex(*this); }
     static Hash from_hex(const std::string& hex) { return {evmc::from_hex<Hash>(hex).value()}; }
 
     // conversion to ByteView is handled in ByteView class,

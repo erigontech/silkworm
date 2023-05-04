@@ -32,7 +32,7 @@ std::ostream& operator<<(std::ostream& out, const Context& c) {
 Context::Context(std::size_t context_id, WaitMode wait_mode)
     : context_id_(context_id),
       io_context_{std::make_shared<boost::asio::io_context>()},
-      work_{boost::asio::require(io_context_->get_executor(), boost::asio::execution::outstanding_work_t::tracked)},
+      work_{boost::asio::make_work_guard(*io_context_)},
       wait_mode_(wait_mode) {}
 
 void Context::execute_loop() {
@@ -59,12 +59,12 @@ void Context::stop() {
     io_context_->stop();
 }
 
-template <typename WaitStrategy>
-void Context::execute_loop_single_threaded(WaitStrategy&& wait_strategy) {
+template <typename IdleStrategy>
+void Context::execute_loop_single_threaded(IdleStrategy&& idle_strategy) {
     SILK_DEBUG << "Single-thread execution loop start [" << std::this_thread::get_id() << "]";
     while (!io_context_->stopped()) {
         std::size_t work_count = io_context_->poll();
-        wait_strategy.idle(work_count);
+        idle_strategy.idle(work_count);
     }
     SILK_DEBUG << "Single-thread execution loop end [" << std::this_thread::get_id() << "]";
 }
@@ -79,7 +79,5 @@ void Context::execute_loop_multi_threaded() {
     pool.join();
     SILK_DEBUG << "Multi-thread execution loop end [" << std::this_thread::get_id() << "]";
 }
-
-template class ContextPool<>;
 
 }  // namespace silkworm::concurrency

@@ -14,12 +14,6 @@
    limitations under the License.
 ]]
 
-if(MSVC)
-  add_link_options(/STACK:10000000)
-elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  add_link_options(-Wl,-stack_size -Wl,0x1000000)
-endif()
-
 find_package(absl REQUIRED)
 find_package(CLI11 REQUIRED)
 find_package(gRPC REQUIRED)

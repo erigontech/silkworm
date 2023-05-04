@@ -29,6 +29,7 @@
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/common/mem_usage.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/common/os.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/async_thread.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
@@ -37,15 +38,16 @@
 #include <silkworm/infra/grpc/server/server_context_pool.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
-#include <silkworm/node/common/os.hpp>
 #include <silkworm/node/common/settings.hpp>
+#include <silkworm/node/db/eth_status_data_provider.hpp>
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/snapshot/sync.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/sentry/api/api_common/sentry_client.hpp>
-#include <silkworm/sentry/rpc/client/sentry_client.hpp>
+#include <silkworm/sentry/grpc/client/sentry_client.hpp>
 #include <silkworm/sentry/sentry.hpp>
+#include <silkworm/sentry/session_sentry_client.hpp>
 #include <silkworm/sentry/settings.hpp>
 #include <silkworm/sync/block_exchange.hpp>
 #include <silkworm/sync/sentry_client.hpp>
@@ -223,8 +225,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
         ->check(CLI::Range(0u, UINT32_MAX));
 
     // Logging options
-    auto& log_settings = settings.log_settings;
-    add_logging_options(cli, log_settings);
+    add_logging_options(cli, settings.log_settings);
 
     // RPC server options
     auto& server_settings = settings.server_settings;
@@ -548,16 +549,12 @@ int main(int argc, char* argv[]) {
             sentry_settings.data_dir_path = node_settings.data_directory->path();
             sentry_settings.context_pool_settings = settings.server_settings.context_pool_settings();
             // disable GRPC in the embedded sentry
-            // TODO: uncomment when sync_sentry_client is refactored to use the sentry client
-            // sentry_settings.api_address = "";
+            sentry_settings.api_address = "";
 
             sentry_server = std::make_shared<silkworm::sentry::Sentry>(std::move(sentry_settings), context_pool);
 
             // direct client
             sentry_client = sentry_server.value();
-
-            // TODO: remove when sync_sentry_client is refactored to use the sentry client
-            node_settings.external_sentry_addr = "127.0.0.1:9091";
         } else {
             // remote client
             sentry_client = std::make_shared<silkworm::sentry::rpc::client::SentryClient>(
@@ -569,6 +566,9 @@ int main(int argc, char* argv[]) {
                 co_await sentry_server.value()->run();
             }
         };
+        sentry_client = std::make_shared<silkworm::sentry::SessionSentryClient>(
+            std::move(sentry_client),
+            sw_db::EthStatusDataProvider(sw_db::ROAccess(chaindata_db), node_settings.chain_config.value()).to_factory_function());
 
         // BackEnd & KV server
         silkworm::EthereumBackEnd backend{
@@ -583,9 +583,8 @@ int main(int argc, char* argv[]) {
 
         // Sentry client - connects to sentry
         silkworm::SentryClient sync_sentry_client{
-            node_settings.external_sentry_addr,
-            sw_db::ROAccess{chaindata_db},
-            node_settings.chain_config.value(),
+            context_pool.next_io_context(),
+            sentry_client,
         };
         auto sync_sentry_client_stats_receiving_loop = silkworm::concurrency::async_thread(
             [&sentry_client = sync_sentry_client]() { sentry_client.stats_receiving_loop(); },

@@ -379,7 +379,7 @@ class TestTracer : public EvmTracer {
         bytecode_ = Bytes{bytecode};
     }
     void on_instruction_start(uint32_t pc, const intx::uint256* /*stack_top*/, int /*stack_height*/,
-                              const evmone::ExecutionState& state,
+                              int64_t /*gas*/, const evmone::ExecutionState& state,
                               const IntraBlockState& intra_block_state) noexcept override {
         pc_stack_.push_back(pc);
         memory_size_stack_[pc] = state.memory.size();

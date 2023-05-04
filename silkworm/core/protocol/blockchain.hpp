@@ -28,14 +28,18 @@
 
 namespace silkworm::protocol {
 
-/// Reference implementation of Ethereum blockchain logic.
-/// Used for running Ethereum EL tests; the real node will use staged sync instead
-/// (https://github.com/ledgerwatch/erigon/blob/devel/eth/stagedsync/README.md)
+/**
+ * Reference implementation of Ethereum blockchain logic.
+ * Used for running Ethereum EL tests; the real node will use staged sync instead
+ * (https://github.com/ledgerwatch/erigon/blob/devel/eth/stagedsync/README.md)
+ */
 class Blockchain {
   public:
-    /// Creates a new instance of Blockchain.
-    /// In the beginning the state must have the genesis allocation.
-    /// Later on the state may only be modified by the created instance of Blockchain.
+    //! Creates a new instance of Blockchain.
+    /**
+     * In the beginning the state must have the genesis allocation.
+     * Later on the state may only be modified by the created instance of Blockchain.
+     */
     explicit Blockchain(State& state, const ChainConfig& config, const Block& genesis_block);
 
     // Not copyable nor movable

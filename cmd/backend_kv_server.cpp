@@ -37,8 +37,10 @@
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
 #include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/node/db/eth_status_data_provider.hpp>
 #include <silkworm/node/db/mdbx.hpp>
-#include <silkworm/sentry/rpc/client/sentry_client.hpp>
+#include <silkworm/sentry/grpc/client/sentry_client.hpp>
+#include <silkworm/sentry/session_sentry_client.hpp>
 
 #include "common/common.hpp"
 #include "common/db_max_readers_option.hpp"
@@ -175,10 +177,12 @@ int main(int argc, char* argv[]) {
             [] { return std::make_unique<DummyServerCompletionQueue>(); },
         };
 
-        // remote sentry client
-        auto sentry_client = std::make_shared<silkworm::sentry::rpc::client::SentryClient>(
+        auto remote_sentry_client = std::make_shared<silkworm::sentry::rpc::client::SentryClient>(
             node_settings.external_sentry_addr,
             *context_pool.next_context().client_grpc_context());
+        auto sentry_client = std::make_shared<silkworm::sentry::SessionSentryClient>(
+            std::move(remote_sentry_client),
+            db::EthStatusDataProvider(db::ROAccess(database_env), node_settings.chain_config.value()).to_factory_function());
 
         EthereumBackEnd backend{
             node_settings,

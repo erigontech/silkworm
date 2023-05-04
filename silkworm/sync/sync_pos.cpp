@@ -161,8 +161,8 @@ void PoSSync::do_sanity_checks(const BlockHeader&, /*const BlockHeader& parent,*
     // if (parent.difficulty != 0 && grand_parent_td && grand_parent_td >= terminal_total_difficulty)
     //    throw PayloadValidationError("ignoring pre-merge parent block");
 
-    //if (pos_header.timestamp <= parent.timestamp) throw PayloadValidationError("invalid timestamp");
-    // here Geth return last_valid = fcu head
+    // if (pos_header.timestamp <= parent.timestamp) throw PayloadValidationError("invalid timestamp");
+    //  here Geth return last_valid = fcu head
 }
 
 auto PoSSync::has_bad_ancestor(const Hash&) -> std::tuple<bool, Hash> {
@@ -221,7 +221,7 @@ auto PoSSync::new_payload(const ExecutionPayload& payload) -> asio::awaitable<Pa
         } else if (std::holds_alternative<InvalidChain>(verification)) {
             // INVALID
             auto invalid_chain = std::get<InvalidChain>(verification);
-            //auto latest_valid_height = sync_wait(in(exec_engine_), exec_engine_.get_block_num(invalid_chain.latest_valid_head));
+            // auto latest_valid_height = sync_wait(in(exec_engine_), exec_engine_.get_block_num(invalid_chain.latest_valid_head));
             auto unwind_point_td = chain_fork_view_.get_total_difficulty(invalid_chain.latest_valid_head);
             Hash latest_valid_hash = unwind_point_td < terminal_total_difficulty
                                          ? kZeroHash
@@ -265,7 +265,7 @@ auto PoSSync::fork_choice_update(const ForkChoiceState& state,
             co_return ForkChoiceUpdateReply{PayloadStatus::Syncing, no_payload_id};
         }
 
-        //BlockId head{head_header->number, head_header_hash};
+        // BlockId head{head_header->number, head_header_hash};
 
         auto parent = co_await exec_engine_.get_header(head_header->parent_hash);  // todo: decide whether to use chain_fork_view_ cache instead
         if (!parent) {

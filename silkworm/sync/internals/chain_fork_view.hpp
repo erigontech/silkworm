@@ -48,6 +48,7 @@ class ChainForkView {
 
     std::optional<TotalDifficulty> get_total_difficulty(const Hash& hash);
     std::optional<TotalDifficulty> get_total_difficulty(BlockNum height, const Hash& hash);
+
   private:
     ChainHead initial_head_{};
     ChainHead current_head_{};  // current head of the chain

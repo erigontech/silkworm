@@ -121,8 +121,7 @@ asio::awaitable<ForkChoiceApplication> Server::update_fork_choice(Hash head_bloc
         ForkChoiceApplication application{
             .success = updated,
             .current_head = last_fc.hash,
-            .current_height = last_fc.number
-        };
+            .current_height = last_fc.number};
         co_return application;
     };
     return co_spawn(io_context_, lambda(this, head_block_hash, finalized_block_hash), asio::use_awaitable);

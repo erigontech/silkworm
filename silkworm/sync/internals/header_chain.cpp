@@ -459,7 +459,8 @@ auto HeaderChain::anchor_extension_request(time_point_t time_point) -> std::shar
             auto& packet = request_message->packet();
             packet.requestId = generate_request_id();
             packet.request = {{anchor->blockHeight},  // requesting from origin=blockHeight-1 make debugging difficult
-                              max_len, 0,
+                              max_len,
+                              0,
                               true};  // we use blockHeight in place of parentHash to get also ommers if presents
 
             statistics_.requested_items += max_len;

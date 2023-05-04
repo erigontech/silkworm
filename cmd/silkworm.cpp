@@ -615,7 +615,7 @@ int main(int argc, char* argv[]) {
 
         execution::LocalClient execution_client(execution_server);
         PoWSync sync(block_exchange, execution_client);
-        //PoSSync sync(block_exchange, execution_client);
+        // PoSSync sync(block_exchange, execution_client);
 
         auto tasks =
             timer_executor() &&

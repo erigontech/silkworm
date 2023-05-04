@@ -54,7 +54,7 @@ namespace rlp {
 
     void encode_hash(Bytes& to, const Hash& h);
 
-    //template <>
+    // template <>
     DecodingResult decode_hash(ByteView& from, Hash& to) noexcept;
 
 }  // namespace rlp

@@ -66,9 +66,9 @@ void ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block
 
 void ExtendingFork::close() {
     // todo: implement
-    //work_guard_.reset();
-    //executor.stop();
-    //if (thread_.joinable()) {
+    // work_guard_.reset();
+    // executor.stop();
+    // if (thread_.joinable()) {
     //    thread_.join();
     //}
 }

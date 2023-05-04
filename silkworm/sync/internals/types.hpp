@@ -98,4 +98,3 @@ struct Announce {
 };
 
 }  // namespace silkworm
-

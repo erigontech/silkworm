@@ -143,7 +143,7 @@ void Fork::insert_body(const Block& block, const Hash& block_hash) {
 }
 
 void Fork::extend_with(const std::list<std::shared_ptr<Block>>& blocks) {
-    for(auto const& block: blocks) {
+    for (auto const& block : blocks) {
         extend_with(*block);
     }
 }

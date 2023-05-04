@@ -39,8 +39,9 @@ TEST_CASE("Zero gas price") {
     Transaction txn{
         {.gas_limit = 764'017,
          .data = *from_hex("0x606060")},
-        .r = 1,
-        .s = 1,
+        false,  // odd_y_parity
+        1,      // r
+        1,      // s
     };
 
     InMemoryState state;
@@ -117,8 +118,9 @@ TEST_CASE("No refund on error") {
          .max_fee_per_gas = 59 * kGiga,
          .gas_limit = 103'858,
          .data = code},
-        .r = 1,
-        .s = 1,
+        false,  // odd_y_parity
+        1,      // r
+        1,      // s
     };
 
     processor.evm().state().add_to_balance(caller, kEther);
@@ -214,9 +216,10 @@ TEST_CASE("Self-destruct") {
          .max_fee_per_gas = 20 * kGiga,
          .gas_limit = 100'000,
          .to = caller_address},
-        .r = 1,
-        .s = 1,
-        .from = originator,
+        false,       // odd_y_parity
+        1,           // r
+        1,           // s
+        originator,  // from
     };
 
     evmc::bytes32 address_as_hash{to_bytes32(suicidal_address)};
@@ -345,9 +348,10 @@ TEST_CASE("Out of Gas during account re-creation") {
              "0000000000000000000000200000000000000000000000000000000000000000000000000000000000000002"
              "000000000000000000000000c789e5aba05051b1468ac980e30068e19fad8587000000000000000000000000"
              "99c426b2a0453e27decaecd93c3722fb0f378fc5")},
-        .r = 1,
-        .s = 1,
-        .from = caller,
+        false,   // odd_y_parity
+        1,       // r
+        1,       // s
+        caller,  // from
     };
 
     auto rule_set{protocol::rule_set_factory(kMainnetConfig)};
@@ -385,9 +389,10 @@ TEST_CASE("Empty suicide beneficiary") {
                            "098e6c2a43d9e2c04f08f0c3a87b0ba59079d4d53532071d6cd0cb86facd5605ff6100008061003"
                            "f60003961003f565b6000f35b816000f0905050fe5b6000f35b816000f090506040526000600060"
                            "0060006000604051620249f0f15061000080610108600039610108565b6000f3")},
-        .r = 1,
-        .s = 1,
-        .from = caller,
+        false,   // odd_y_parity
+        1,       // r
+        1,       // s
+        caller,  // from
     };
 
     InMemoryState state;

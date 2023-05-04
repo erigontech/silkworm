@@ -141,9 +141,9 @@ TEST_CASE("is_replay_protected(tx legacy) returns true", "[silkrpc][common][util
          .gas_limit = 21'000,
          .to = 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,
          .value = 31337},
-        .odd_y_parity = true,
-        .r = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),
-        .s = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),
+        true,                                                                                                    // odd_y_parity
+        intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),  // r
+        intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),  // s
     };
 
     auto check = is_replay_protected(txn);
@@ -161,10 +161,10 @@ TEST_CASE("is_replay_protected returns true", "[silkrpc][common][util]") {
          .to = 0x0715a7794a1dc8e42615f059dd6e406a6594651a_address,
          .value = 8,
          .data = *from_hex("001122aabbcc")},
-        .odd_y_parity = false,
-        .r = 18,
-        .s = 36,
-        .from = 0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address,
+        false,                                               // odd_y_parity
+        18,                                                  // r
+        36,                                                  // s
+        0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address,  // from
     };
     auto check = is_replay_protected(txn);
     CHECK(check == true);
@@ -179,9 +179,9 @@ TEST_CASE("is_replay_protected returns false", "[silkrpc][common][util]") {
          .gas_limit = 21'000,
          .to = 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,
          .value = 31337},
-        .odd_y_parity = true,
-        .r = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),
-        .s = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),
+        true,                                                                                                    // odd_y_parity
+        intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),  // r
+        intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),  // s
     };
 
     auto check = is_replay_protected(txn);

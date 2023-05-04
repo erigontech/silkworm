@@ -43,9 +43,9 @@ TEST_CASE("Legacy Transaction RLP") {
          .value = 10 * kEther,
          .data = *from_hex("a9059cbb000000000213ed0f886efd100b67c7e4ec0a85a7d20dc9716000000000000000000"
                            "00015af1d78b58c4000")},
-        .odd_y_parity = true,
-        .r = intx::from_string<intx::uint256>("0xbe67e0a07db67da8d446f76add590e54b6e92cb6b8f9835aeb67540579a27717"),
-        .s = intx::from_string<intx::uint256>("0x2d690516512020171c1ec870f6ff45398cc8609250326be89915fb538e7bd718"),
+        true,                                                                                                    // odd_y_parity
+        intx::from_string<intx::uint256>("0xbe67e0a07db67da8d446f76add590e54b6e92cb6b8f9835aeb67540579a27717"),  // r
+        intx::from_string<intx::uint256>("0x2d690516512020171c1ec870f6ff45398cc8609250326be89915fb538e7bd718"),  // s
     };
 
     Bytes encoded{};
@@ -79,9 +79,9 @@ TEST_CASE("EIP-2930 Transaction RLP") {
          .value = 2 * kEther,
          .data = *from_hex("6ebaf477f83e051589c1188bcc6ddccd"),
          .access_list = access_list},
-        .odd_y_parity = false,
-        .r = intx::from_string<intx::uint256>("0x36b241b061a36a32ab7fe86c7aa9eb592dd59018cd0443adc0903590c16b02b0"),
-        .s = intx::from_string<intx::uint256>("0x5edcc541b4741c5cc6dd347c5ed9577ef293a62787b4510465fadbfe39ee4094"),
+        false,                                                                                                   // odd_y_parity
+        intx::from_string<intx::uint256>("0x36b241b061a36a32ab7fe86c7aa9eb592dd59018cd0443adc0903590c16b02b0"),  // r
+        intx::from_string<intx::uint256>("0x5edcc541b4741c5cc6dd347c5ed9577ef293a62787b4510465fadbfe39ee4094"),  // s
     };
 
     // Raw serialization
@@ -134,9 +134,9 @@ TEST_CASE("EIP-1559 Transaction RLP") {
          .value = 2 * kEther,
          .data = *from_hex("6ebaf477f83e051589c1188bcc6ddccd"),
          .access_list = access_list},
-        .odd_y_parity = false,
-        .r = intx::from_string<intx::uint256>("0x36b241b061a36a32ab7fe86c7aa9eb592dd59018cd0443adc0903590c16b02b0"),
-        .s = intx::from_string<intx::uint256>("0x5edcc541b4741c5cc6dd347c5ed9577ef293a62787b4510465fadbfe39ee4094"),
+        false,                                                                                                   // odd_y_parity
+        intx::from_string<intx::uint256>("0x36b241b061a36a32ab7fe86c7aa9eb592dd59018cd0443adc0903590c16b02b0"),  // r
+        intx::from_string<intx::uint256>("0x5edcc541b4741c5cc6dd347c5ed9577ef293a62787b4510465fadbfe39ee4094"),  // s
     };
 
     Bytes encoded{};
@@ -160,9 +160,9 @@ TEST_CASE("Recover sender 1") {
          .gas_limit = 21'000,
          .to = 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,
          .value = 31337},
-        .odd_y_parity = true,
-        .r = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),
-        .s = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),
+        true,                                                                                                    // odd_y_parity
+        intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),  // r
+        intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),  // s
     };
 
     txn.recover_sender();
@@ -182,9 +182,9 @@ TEST_CASE("Recover sender 2") {
          .to = 0xc9d4035f4a9226d50f79b73aafb5d874a1b6537e_address,
          .value = 31337,
          .data = *from_hex("0x74796d3474406469676978")},
-        .odd_y_parity = true,
-        .r = intx::from_string<intx::uint256>("0x1c48defe76d367bb92b4fc0628aca42a4d8037062865635d955673e57eddfbfa"),
-        .s = intx::from_string<intx::uint256>("0x65f766849f97b15f01d0877636fbed0fa4e39f8834896c0354f56ac44dcb50a6"),
+        true,                                                                                                    // odd_y_parity
+        intx::from_string<intx::uint256>("0x1c48defe76d367bb92b4fc0628aca42a4d8037062865635d955673e57eddfbfa"),  // r
+        intx::from_string<intx::uint256>("0x65f766849f97b15f01d0877636fbed0fa4e39f8834896c0354f56ac44dcb50a6"),  // s
     };
 
     txn.recover_sender();

@@ -61,10 +61,10 @@ TEST_CASE("print type-2 transaction", "[silkrpc][types][transaction]") {
              .to = 0x14efa0d4b0f9850ba1787edc730324962446d7cc_address,
              .value = 210'000'000 * kGiga,
              .data = *from_hex("0x6ecd23060000000000000000000000000000000000000000000000000000000000000005")},
-            .odd_y_parity = true,
-            .r = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),
-            .s = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),
-            .from = 0x7ad75fdb6244111753822140dad3337f5535f718_address,
+            true,                                                                                                    // odd_y_parity
+            intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),  // r
+            intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),  // s
+            0x7ad75fdb6244111753822140dad3337f5535f718_address,                                                      // from
         },
         0x007fe79ccdd5365f46c34336b8a15b36e05c249a0c62596878236a38034edc21_bytes32,  // block hash
         13116571,                                                                    // block number
@@ -86,10 +86,10 @@ TEST_CASE("print type-2 silkworm::transaction", "[silkrpc][types][silkworm::tran
          .to = 0x14efa0d4b0f9850ba1787edc730324962446d7cc_address,
          .value = 210'000'000 * kGiga,
          .data = *from_hex("0x6ecd23060000000000000000000000000000000000000000000000000000000000000005")},
-        .odd_y_parity = true,
-        .r = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),
-        .s = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),
-        .from = 0x7ad75fdb6244111753822140dad3337f5535f718_address,
+        true,                                                                                                    // odd_y_parity
+        intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),  // r
+        intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),  // s
+        0x7ad75fdb6244111753822140dad3337f5535f718_address,                                                      // from
     };
     CHECK_NOTHROW(null_stream() << txn);
 }
@@ -105,10 +105,10 @@ TEST_CASE("create legacy transaction", "[silkrpc][types][transaction]") {
              .gas_limit = 21'000,
              .to = 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,
              .value = 31337},
-            .odd_y_parity = true,
-            .r = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),
-            .s = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),
-            .from = 0xa1e4380a3b1f749673e270229993ee55f35663b4_address,
+            true,                                                                                                    // odd_y_parity
+            intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),  // r
+            intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),  // s
+            0xa1e4380a3b1f749673e270229993ee55f35663b4_address,                                                      // from
         },
         0x4e3a3754410177e6937ef1f84bba68ea139e8d1a2258c5f85db9f1cd715a1bdd_bytes32,  // block hash
         46147,                                                                       // block number
@@ -129,10 +129,10 @@ TEST_CASE("create legacy silkworm::transaction", "[silkrpc][types][silkworm::tra
          .gas_limit = 21'000,
          .to = 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,
          .value = 31337},
-        .odd_y_parity = true,
-        .r = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),
-        .s = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),
-        .from = 0xa1e4380a3b1f749673e270229993ee55f35663b4_address,
+        true,                                                                                                    // odd_y_parity
+        intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),  // r
+        intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),  // s
+        0xa1e4380a3b1f749673e270229993ee55f35663b4_address,                                                      // from
     };
 
     CHECK_NOTHROW(null_stream() << txn);

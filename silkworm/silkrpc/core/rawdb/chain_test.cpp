@@ -1176,9 +1176,9 @@ TEST_CASE("read_canonical_transactions") {
                                                      "00000000000000000000000000000000000000000000000000000000004182f27f9a01e210e2f3214b036e30229b2ac43e1cf2325bf270eea067"
                                                      "e4f8a58a02154776f0dae16f76d1bfc82b9a9d2022039cfb09598954d05b46fc793e731a1c000000000000000000000000000000000000000000"
                                                      "00000000000000000000")},
-                                  .odd_y_parity = true,
-                                  .r = intx::from_string<intx::uint256>("0xa54794fbc1edb3a2a0d3109091984eeb5985b058220fee572147dd99e66b9f34"),
-                                  .s = intx::from_string<intx::uint256>("0x7dcddb68e3665b6693141c8bd60a12727d29012b7cd6ea452d418c43e84d67dc"),
+                                  true,                                                                                                    // odd_y_parity
+                                  intx::from_string<intx::uint256>("0xa54794fbc1edb3a2a0d3109091984eeb5985b058220fee572147dd99e66b9f34"),  // r
+                                  intx::from_string<intx::uint256>("0x7dcddb68e3665b6693141c8bd60a12727d29012b7cd6ea452d418c43e84d67dc"),  // s
                               }});
     }
 
@@ -1239,9 +1239,9 @@ TEST_CASE("read_canonical_transactions") {
                                        .value = 0,
                                        .data = *from_hex("e9c6c176000000000000000000000000000000000000000000000000000000000000002a000000000000000000000000"
                                                          "0000000000000000000000000000000000a4e09362c0d3e9488c19c1600c863d0ae91981e20ccdf4679813b521851735b306309b")},
-                                      .odd_y_parity = false,
-                                      .r = intx::from_string<intx::uint256>("0x3aaa1d392769f655b7a751d60239ef9a52a70772eb8135e94abc9bc06ea28323"),
-                                      .s = intx::from_string<intx::uint256>("0x67d93fbedbb12048fc8d70c5b99dddaaf04a109894671a57f1285f48a9e3b3e9"),
+                                      false,                                                                                                   // odd_y_parity
+                                      intx::from_string<intx::uint256>("0x3aaa1d392769f655b7a751d60239ef9a52a70772eb8135e94abc9bc06ea28323"),  // r
+                                      intx::from_string<intx::uint256>("0x67d93fbedbb12048fc8d70c5b99dddaaf04a109894671a57f1285f48a9e3b3e9"),  // s
                                   },
                                   silkworm::Transaction{
                                       {.type = TransactionType::kLegacy,
@@ -1253,9 +1253,9 @@ TEST_CASE("read_canonical_transactions") {
                                        .value = 0,
                                        .data = *from_hex("e9c6c1760000000000000000000000000000000000000000000000000000000000000004000000000000000000000000"
                                                          "00000000000000000000000000000000004100fa3ce6ba2fb2eb7fa648ad0970b9f8eecfd4c511bf7499c971c10743c555ed2496")},
-                                      .odd_y_parity = false,
-                                      .r = intx::from_string<intx::uint256>("0x752f02b1438be7f67ebf0e71310db3514b162fb169cdb95ad15dde38eff7719b"),
-                                      .s = intx::from_string<intx::uint256>("0x1033638bf86024fe2750ace6f79ea444703f6920979ad1fd495f9167d197a436"),
+                                      false,                                                                                                   // odd_y_parity
+                                      intx::from_string<intx::uint256>("0x752f02b1438be7f67ebf0e71310db3514b162fb169cdb95ad15dde38eff7719b"),  // r
+                                      intx::from_string<intx::uint256>("0x1033638bf86024fe2750ace6f79ea444703f6920979ad1fd495f9167d197a436"),  // s
                                   }});
     }
 }
@@ -1305,9 +1305,9 @@ TEST_CASE("read_noncanonical_transactions") {
                                                      "00000000000000000000000000000000000000000000000000000000004182f27f9a01e210e2f3214b036e30229b2ac43e1cf2325bf270eea067"
                                                      "e4f8a58a02154776f0dae16f76d1bfc82b9a9d2022039cfb09598954d05b46fc793e731a1c000000000000000000000000000000000000000000"
                                                      "00000000000000000000")},
-                                  .odd_y_parity = true,
-                                  .r = intx::from_string<intx::uint256>("0xa54794fbc1edb3a2a0d3109091984eeb5985b058220fee572147dd99e66b9f34"),
-                                  .s = intx::from_string<intx::uint256>("0x7dcddb68e3665b6693141c8bd60a12727d29012b7cd6ea452d418c43e84d67dc"),
+                                  true,                                                                                                    // odd_y_parity
+                                  intx::from_string<intx::uint256>("0xa54794fbc1edb3a2a0d3109091984eeb5985b058220fee572147dd99e66b9f34"),  // r
+                                  intx::from_string<intx::uint256>("0x7dcddb68e3665b6693141c8bd60a12727d29012b7cd6ea452d418c43e84d67dc"),  // s
                               }});
     }
 
@@ -1368,9 +1368,9 @@ TEST_CASE("read_noncanonical_transactions") {
                                        .value = 0,
                                        .data = *from_hex("e9c6c176000000000000000000000000000000000000000000000000000000000000002a000000000000000000000000"
                                                          "0000000000000000000000000000000000a4e09362c0d3e9488c19c1600c863d0ae91981e20ccdf4679813b521851735b306309b")},
-                                      .odd_y_parity = false,
-                                      .r = intx::from_string<intx::uint256>("0x3aaa1d392769f655b7a751d60239ef9a52a70772eb8135e94abc9bc06ea28323"),
-                                      .s = intx::from_string<intx::uint256>("0x67d93fbedbb12048fc8d70c5b99dddaaf04a109894671a57f1285f48a9e3b3e9"),
+                                      false,                                                                                                   // odd_y_parity
+                                      intx::from_string<intx::uint256>("0x3aaa1d392769f655b7a751d60239ef9a52a70772eb8135e94abc9bc06ea28323"),  // r
+                                      intx::from_string<intx::uint256>("0x67d93fbedbb12048fc8d70c5b99dddaaf04a109894671a57f1285f48a9e3b3e9"),  // s
                                   },
                                   silkworm::Transaction{
                                       {.type = TransactionType::kLegacy,
@@ -1382,9 +1382,9 @@ TEST_CASE("read_noncanonical_transactions") {
                                        .value = 0,
                                        .data = *silkworm::from_hex("e9c6c1760000000000000000000000000000000000000000000000000000000000000004000000000000000000000000"
                                                                    "00000000000000000000000000000000004100fa3ce6ba2fb2eb7fa648ad0970b9f8eecfd4c511bf7499c971c10743c555ed2496")},
-                                      .odd_y_parity = false,
-                                      .r = intx::from_string<intx::uint256>("0x752f02b1438be7f67ebf0e71310db3514b162fb169cdb95ad15dde38eff7719b"),
-                                      .s = intx::from_string<intx::uint256>("0x1033638bf86024fe2750ace6f79ea444703f6920979ad1fd495f9167d197a436"),
+                                      false,                                                                                                   // odd_y_parity
+                                      intx::from_string<intx::uint256>("0x752f02b1438be7f67ebf0e71310db3514b162fb169cdb95ad15dde38eff7719b"),  // r
+                                      intx::from_string<intx::uint256>("0x1033638bf86024fe2750ace6f79ea444703f6920979ad1fd495f9167d197a436"),  // s
                                   }});
     }
 }

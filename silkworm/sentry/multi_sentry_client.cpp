@@ -26,7 +26,7 @@ using namespace api::api_common;
 class MultiSentryClientImpl : public api::api_common::Service {
   public:
     explicit MultiSentryClientImpl(
-        std::vector<std::shared_ptr<api::api_common::SentryClient>> clients)
+        std::vector<std::shared_ptr<SentryClient>> clients)
         : clients_(std::move(clients)) {
     }
 
@@ -104,11 +104,21 @@ class MultiSentryClientImpl : public api::api_common::Service {
     }
 
   private:
-    std::vector<std::shared_ptr<api::api_common::SentryClient>> clients_;
+    std::vector<std::shared_ptr<SentryClient>> ready_clients() {
+        std::vector<std::shared_ptr<SentryClient>> ready_clients;
+        for (auto& client : clients_) {
+            if (client->is_ready()) {
+                ready_clients.push_back(client);
+            }
+        }
+        return ready_clients;
+    }
+
+    std::vector<std::shared_ptr<SentryClient>> clients_;
 };
 
 MultiSentryClient::MultiSentryClient(
-    std::vector<std::shared_ptr<api::api_common::SentryClient>> clients)
+    std::vector<std::shared_ptr<SentryClient>> clients)
     : p_impl_(std::make_shared<MultiSentryClientImpl>(std::move(clients))) {
 }
 
@@ -118,6 +128,10 @@ MultiSentryClient::~MultiSentryClient() {
 
 awaitable<std::shared_ptr<api::api_common::Service>> MultiSentryClient::service() {
     co_return p_impl_;
+}
+
+bool MultiSentryClient::is_ready() {
+    return true;
 }
 
 void MultiSentryClient::on_disconnect(std::function<awaitable<void>()> /*callback*/) {

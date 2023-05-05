@@ -65,6 +65,11 @@ class SentryClientImpl final : public api::api_common::Service {
     SentryClientImpl(const SentryClientImpl&) = delete;
     SentryClientImpl& operator=(const SentryClientImpl&) = delete;
 
+    [[nodiscard]] bool is_ready() {
+        auto state = channel_->GetState(false);
+        return (state == GRPC_CHANNEL_READY) || (state == GRPC_CHANNEL_IDLE);
+    }
+
     void on_disconnect(std::function<awaitable<void>()> callback) {
         on_disconnect_ = std::move(callback);
     }
@@ -241,6 +246,10 @@ SentryClient::~SentryClient() {
 
 awaitable<std::shared_ptr<api::api_common::Service>> SentryClient::service() {
     co_return p_impl_;
+}
+
+bool SentryClient::is_ready() {
+    return p_impl_->is_ready();
 }
 
 void SentryClient::on_disconnect(std::function<awaitable<void>()> callback) {

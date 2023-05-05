@@ -213,6 +213,7 @@ class MockSentryClient
     boost::asio::awaitable<std::shared_ptr<silkworm::sentry::api::api_common::Service>> service() override {
         co_return shared_from_this();
     }
+    [[nodiscard]] bool is_ready() override { return true; }
     void on_disconnect(std::function<boost::asio::awaitable<void>()> /*callback*/) override {}
     boost::asio::awaitable<void> reconnect() override { co_return; }
 

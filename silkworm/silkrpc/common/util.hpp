@@ -108,7 +108,7 @@ inline auto hash_of(const silkworm::ByteView& bytes) {
 
 inline auto hash_of_transaction(const silkworm::Transaction& txn) {
     silkworm::Bytes txn_rlp{};
-    silkworm::rlp::encode(txn_rlp, txn, /*for_signing=*/false, /*wrap_eip2718_into_string=*/false);
+    silkworm::rlp::encode(txn_rlp, txn, /*wrap_eip2718_into_string=*/false);
     return ethash::keccak256(txn_rlp.data(), txn_rlp.length());
 }
 

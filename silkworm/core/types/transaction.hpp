@@ -35,17 +35,19 @@ struct AccessListEntry {
     friend bool operator==(const AccessListEntry&, const AccessListEntry&) = default;
 };
 
-struct Transaction {
-    // EIP-2718 transaction type
-    // https://github.com/ethereum/eth1.0-specs/tree/master/lists/signature-types
-    enum class Type : uint8_t {
-        kLegacy = 0,
-        kEip2930 = 1,
-        kEip1559 = 2,
-        kEip4844 = 3,
-    };
+// EIP-2718 transaction type
+// https://github.com/ethereum/eth1.0-specs/tree/master/lists/signature-types
+enum class TransactionType : uint8_t {
+    kLegacy = 0,
+    kEip2930 = 1,
+    kEip1559 = 2,
+    kEip4844 = 3,
+};
 
-    Type type{Type::kLegacy};
+struct UnsignedTransaction {
+    TransactionType type{TransactionType::kLegacy};
+
+    std::optional<intx::uint256> chain_id{std::nullopt};  // nullopt means a pre-EIP-155 transaction
 
     uint64_t nonce{0};
     intx::uint256 max_priority_fee_per_gas{0};  // EIP-1559
@@ -55,15 +57,28 @@ struct Transaction {
     intx::uint256 value{0};
     Bytes data{};
 
-    bool odd_y_parity{false};                             // EIP-155
-    std::optional<intx::uint256> chain_id{std::nullopt};  // EIP-155
-    intx::uint256 r{0}, s{0};                             // signature
-
     std::vector<AccessListEntry> access_list{};  // EIP-2930
 
     // EIP-4844: Shard Blob Transactions
     std::optional<intx::uint256> max_fee_per_data_gas{std::nullopt};
     std::vector<Hash> blob_versioned_hashes{};
+
+    //! \brief Maximum possible cost of normal and data (EIP-4844) gas
+    [[nodiscard]] intx::uint512 maximum_gas_cost() const;
+
+    [[nodiscard]] intx::uint256 priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const;  // EIP-1559
+    [[nodiscard]] intx::uint256 effective_gas_price(const intx::uint256& base_fee_per_gas) const;   // EIP-1559
+
+    [[nodiscard]] uint64_t total_data_gas() const;  // EIP-4844
+
+    void encode_for_signing(Bytes& into) const;
+
+    friend bool operator==(const UnsignedTransaction&, const UnsignedTransaction&) = default;
+};
+
+struct Transaction : public UnsignedTransaction {
+    bool odd_y_parity{false};
+    intx::uint256 r{0}, s{0};  // signature
 
     // sender recovered from the signature
     std::optional<evmc::address> from{std::nullopt};
@@ -79,34 +94,20 @@ struct Transaction {
     //! https://eips.ethereum.org/EIPS/eip-155.
     //! If recovery fails the from field is set to null.
     void recover_sender();
-
-    //! \brief Maximum possible cost of normal and data (EIP-4844) gas
-    [[nodiscard]] intx::uint512 maximum_gas_cost() const;
-
-    [[nodiscard]] intx::uint256 priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const;  // EIP-1559
-    [[nodiscard]] intx::uint256 effective_gas_price(const intx::uint256& base_fee_per_gas) const;   // EIP-1559
-
-    [[nodiscard]] uint64_t total_data_gas() const;  // EIP-4844
 };
 
-bool operator==(const Transaction& a, const Transaction& b);
-
 namespace rlp {
-    size_t length(const AccessListEntry&);
-    size_t length(const Transaction&);
-
     void encode(Bytes& to, const AccessListEntry&);
+    size_t length(const AccessListEntry&);
 
     // According to EIP-2718, serialized transactions are prepended with 1 byte containing the type
     // (0x02 for EIP-1559 transactions); the same goes for receipts. This is true for signing and
     // transaction root calculation. However, in block body RLP serialized EIP-2718 transactions
     // are additionally wrapped into an RLP byte array (=string). (Refer to the geth implementation;
     // EIP-2718 is mute on block RLP.)
-    void encode(Bytes& to, const Transaction& txn, bool for_signing, bool wrap_eip2718_into_string);
+    void encode(Bytes& to, const Transaction& txn, bool wrap_eip2718_into_string = true);
 
-    inline void encode(Bytes& to, const Transaction& txn) {
-        encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_into_string=*/true);
-    }
+    size_t length(const Transaction&, bool wrap_eip2718_into_string = true);
 
     template <>
     DecodingResult decode(ByteView& from, AccessListEntry& to) noexcept;
@@ -125,7 +126,7 @@ namespace rlp {
         return decode_transaction(from, to, Eip2718Wrapping::kString);
     }
 
-    DecodingResult decode_transaction_header_and_type(ByteView& from, Header& header, Transaction::Type& type) noexcept;
+    DecodingResult decode_transaction_header_and_type(ByteView& from, Header& header, TransactionType& type) noexcept;
 }  // namespace rlp
 
 }  // namespace silkworm

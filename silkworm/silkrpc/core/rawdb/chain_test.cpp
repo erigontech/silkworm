@@ -1163,21 +1163,20 @@ TEST_CASE("read_canonical_transactions") {
         auto result = boost::asio::co_spawn(pool, read_canonical_transactions(db_reader, base_txn_id, txn_count), boost::asio::use_future);
 
         CHECK(result.get() == Transactions{silkworm::Transaction{
-                                  Transaction::Type::kLegacy,                          // type
-                                  416268,                                              // nonce
-                                  5'000'000'000,                                       // max_priority_fee_per_gas
-                                  5'000'000'000,                                       // max_fee_per_gas
-                                  1'000'000,                                           // gas_limit
-                                  0x3dd81545f3149538edcb6691a4ffee1898bd2ef0_address,  // to
-                                  0,                                                   // value
-                                  *silkworm::from_hex("cf10c9690000000000000000000000000214281cf15c1a66b51990e2e65e1f7b7c3633180000000000000000000000000000"
-                                                      "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009896800000000000000000"
-                                                      "00000000ac399a5dfb9848d9e83d92d5f7dda9ba1a00132000000000000000000000000000000000000000000000000000000000000000a00000"
-                                                      "00000000000000000000000000000000000000000000000000000000004182f27f9a01e210e2f3214b036e30229b2ac43e1cf2325bf270eea067"
-                                                      "e4f8a58a02154776f0dae16f76d1bfc82b9a9d2022039cfb09598954d05b46fc793e731a1c000000000000000000000000000000000000000000"
-                                                      "00000000000000000000"),                                                             // data
+                                  {.type = TransactionType::kLegacy,
+                                   .nonce = 416268,
+                                   .max_priority_fee_per_gas = 5'000'000'000,
+                                   .max_fee_per_gas = 5'000'000'000,
+                                   .gas_limit = 1'000'000,
+                                   .to = 0x3dd81545f3149538edcb6691a4ffee1898bd2ef0_address,
+                                   .value = 0,
+                                   .data = *from_hex("cf10c9690000000000000000000000000214281cf15c1a66b51990e2e65e1f7b7c3633180000000000000000000000000000"
+                                                     "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009896800000000000000000"
+                                                     "00000000ac399a5dfb9848d9e83d92d5f7dda9ba1a00132000000000000000000000000000000000000000000000000000000000000000a00000"
+                                                     "00000000000000000000000000000000000000000000000000000000004182f27f9a01e210e2f3214b036e30229b2ac43e1cf2325bf270eea067"
+                                                     "e4f8a58a02154776f0dae16f76d1bfc82b9a9d2022039cfb09598954d05b46fc793e731a1c000000000000000000000000000000000000000000"
+                                                     "00000000000000000000")},
                                   true,                                                                                                    // odd_y_parity
-                                  std::nullopt,                                                                                            // chain_id
                                   intx::from_string<intx::uint256>("0xa54794fbc1edb3a2a0d3109091984eeb5985b058220fee572147dd99e66b9f34"),  // r
                                   intx::from_string<intx::uint256>("0x7dcddb68e3665b6693141c8bd60a12727d29012b7cd6ea452d418c43e84d67dc"),  // s
                               }});
@@ -1231,34 +1230,32 @@ TEST_CASE("read_canonical_transactions") {
         auto result = boost::asio::co_spawn(pool, read_canonical_transactions(db_reader, base_txn_id, txn_count), boost::asio::use_future);
         CHECK(result.get() == Transactions{
                                   silkworm::Transaction{
-                                      Transaction::Type::kLegacy,                          // type
-                                      13202,                                               // nonce
-                                      1'000'000'000,                                       // max_priority_fee_per_gas
-                                      1'000'000'000,                                       // max_fee_per_gas
-                                      250'000,                                             // gas_limit // 2424832 ?
-                                      0x7ef66b77759e12caf3ddb3e4aff524e577c59d8d_address,  // to
-                                      0,                                                   // value
-                                      *silkworm::from_hex("e9c6c176000000000000000000000000000000000000000000000000000000000000002a000000000000000000000000"
-                                                          "0000000000000000000000000000000000a4e09362c0d3e9488c19c1600c863d0ae91981e20ccdf4679813b521851735b306309b"),  // data
-                                      false,                                                                                                                            // odd_y_parity
-                                      std::nullopt,                                                                                                                     // chain_id
-                                      intx::from_string<intx::uint256>("0x3aaa1d392769f655b7a751d60239ef9a52a70772eb8135e94abc9bc06ea28323"),                           // r
-                                      intx::from_string<intx::uint256>("0x67d93fbedbb12048fc8d70c5b99dddaaf04a109894671a57f1285f48a9e3b3e9"),                           // s
+                                      {.type = TransactionType::kLegacy,
+                                       .nonce = 13202,
+                                       .max_priority_fee_per_gas = 1'000'000'000,
+                                       .max_fee_per_gas = 1'000'000'000,
+                                       .gas_limit = 250'000,  // 2424832 ?
+                                       .to = 0x7ef66b77759e12caf3ddb3e4aff524e577c59d8d_address,
+                                       .value = 0,
+                                       .data = *from_hex("e9c6c176000000000000000000000000000000000000000000000000000000000000002a000000000000000000000000"
+                                                         "0000000000000000000000000000000000a4e09362c0d3e9488c19c1600c863d0ae91981e20ccdf4679813b521851735b306309b")},
+                                      false,                                                                                                   // odd_y_parity
+                                      intx::from_string<intx::uint256>("0x3aaa1d392769f655b7a751d60239ef9a52a70772eb8135e94abc9bc06ea28323"),  // r
+                                      intx::from_string<intx::uint256>("0x67d93fbedbb12048fc8d70c5b99dddaaf04a109894671a57f1285f48a9e3b3e9"),  // s
                                   },
                                   silkworm::Transaction{
-                                      Transaction::Type::kLegacy,                          // type
-                                      13203,                                               // nonce
-                                      1'000'000'000,                                       // max_priority_fee_per_gas
-                                      1'000'000'000,                                       // max_fee_per_gas
-                                      250'000,                                             // gas_limit
-                                      0x7ef66b77759e12caf3ddb3e4aff524e577c59d8d_address,  // to
-                                      0,                                                   // value
-                                      *silkworm::from_hex("e9c6c1760000000000000000000000000000000000000000000000000000000000000004000000000000000000000000"
-                                                          "00000000000000000000000000000000004100fa3ce6ba2fb2eb7fa648ad0970b9f8eecfd4c511bf7499c971c10743c555ed2496"),  // data
-                                      false,                                                                                                                            // odd_y_parity
-                                      std::nullopt,                                                                                                                     // chain_id
-                                      intx::from_string<intx::uint256>("0x752f02b1438be7f67ebf0e71310db3514b162fb169cdb95ad15dde38eff7719b"),                           // r
-                                      intx::from_string<intx::uint256>("0x1033638bf86024fe2750ace6f79ea444703f6920979ad1fd495f9167d197a436"),                           // s
+                                      {.type = TransactionType::kLegacy,
+                                       .nonce = 13203,
+                                       .max_priority_fee_per_gas = 1'000'000'000,
+                                       .max_fee_per_gas = 1'000'000'000,
+                                       .gas_limit = 250'000,
+                                       .to = 0x7ef66b77759e12caf3ddb3e4aff524e577c59d8d_address,
+                                       .value = 0,
+                                       .data = *from_hex("e9c6c1760000000000000000000000000000000000000000000000000000000000000004000000000000000000000000"
+                                                         "00000000000000000000000000000000004100fa3ce6ba2fb2eb7fa648ad0970b9f8eecfd4c511bf7499c971c10743c555ed2496")},
+                                      false,                                                                                                   // odd_y_parity
+                                      intx::from_string<intx::uint256>("0x752f02b1438be7f67ebf0e71310db3514b162fb169cdb95ad15dde38eff7719b"),  // r
+                                      intx::from_string<intx::uint256>("0x1033638bf86024fe2750ace6f79ea444703f6920979ad1fd495f9167d197a436"),  // s
                                   }});
     }
 }
@@ -1295,21 +1292,20 @@ TEST_CASE("read_noncanonical_transactions") {
         }));
         auto result = boost::asio::co_spawn(pool, read_noncanonical_transactions(db_reader, base_txn_id, txn_count), boost::asio::use_future);
         CHECK(result.get() == Transactions{silkworm::Transaction{
-                                  Transaction::Type::kLegacy,                          // type
-                                  416268,                                              // nonce
-                                  5'000'000'000,                                       // max_priority_fee_per_gas
-                                  5'000'000'000,                                       // max_fee_per_gas
-                                  1'000'000,                                           // gas_limit
-                                  0x3dd81545f3149538edcb6691a4ffee1898bd2ef0_address,  // to
-                                  0,                                                   // value
-                                  *silkworm::from_hex("cf10c9690000000000000000000000000214281cf15c1a66b51990e2e65e1f7b7c3633180000000000000000000000000000"
-                                                      "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009896800000000000000000"
-                                                      "00000000ac399a5dfb9848d9e83d92d5f7dda9ba1a00132000000000000000000000000000000000000000000000000000000000000000a00000"
-                                                      "00000000000000000000000000000000000000000000000000000000004182f27f9a01e210e2f3214b036e30229b2ac43e1cf2325bf270eea067"
-                                                      "e4f8a58a02154776f0dae16f76d1bfc82b9a9d2022039cfb09598954d05b46fc793e731a1c000000000000000000000000000000000000000000"
-                                                      "00000000000000000000"),                                                             // data
+                                  {.type = TransactionType::kLegacy,
+                                   .nonce = 416268,
+                                   .max_priority_fee_per_gas = 5'000'000'000,
+                                   .max_fee_per_gas = 5'000'000'000,
+                                   .gas_limit = 1'000'000,
+                                   .to = 0x3dd81545f3149538edcb6691a4ffee1898bd2ef0_address,
+                                   .value = 0,
+                                   .data = *from_hex("cf10c9690000000000000000000000000214281cf15c1a66b51990e2e65e1f7b7c3633180000000000000000000000000000"
+                                                     "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009896800000000000000000"
+                                                     "00000000ac399a5dfb9848d9e83d92d5f7dda9ba1a00132000000000000000000000000000000000000000000000000000000000000000a00000"
+                                                     "00000000000000000000000000000000000000000000000000000000004182f27f9a01e210e2f3214b036e30229b2ac43e1cf2325bf270eea067"
+                                                     "e4f8a58a02154776f0dae16f76d1bfc82b9a9d2022039cfb09598954d05b46fc793e731a1c000000000000000000000000000000000000000000"
+                                                     "00000000000000000000")},
                                   true,                                                                                                    // odd_y_parity
-                                  std::nullopt,                                                                                            // chain_id
                                   intx::from_string<intx::uint256>("0xa54794fbc1edb3a2a0d3109091984eeb5985b058220fee572147dd99e66b9f34"),  // r
                                   intx::from_string<intx::uint256>("0x7dcddb68e3665b6693141c8bd60a12727d29012b7cd6ea452d418c43e84d67dc"),  // s
                               }});
@@ -1363,34 +1359,32 @@ TEST_CASE("read_noncanonical_transactions") {
 
         CHECK(result.get() == Transactions{
                                   silkworm::Transaction{
-                                      Transaction::Type::kLegacy,                          // type
-                                      13202,                                               // nonce
-                                      1'000'000'000,                                       // max_priority_fee_per_gas
-                                      1'000'000'000,                                       // max_fee_per_gas
-                                      250'000,                                             // gas_limit // 2424832 ?
-                                      0x7ef66b77759e12caf3ddb3e4aff524e577c59d8d_address,  // to
-                                      0,                                                   // value
-                                      *silkworm::from_hex("e9c6c176000000000000000000000000000000000000000000000000000000000000002a000000000000000000000000"
-                                                          "0000000000000000000000000000000000a4e09362c0d3e9488c19c1600c863d0ae91981e20ccdf4679813b521851735b306309b"),  // data
-                                      false,                                                                                                                            // odd_y_parity
-                                      std::nullopt,                                                                                                                     // chain_id
-                                      intx::from_string<intx::uint256>("0x3aaa1d392769f655b7a751d60239ef9a52a70772eb8135e94abc9bc06ea28323"),                           // r
-                                      intx::from_string<intx::uint256>("0x67d93fbedbb12048fc8d70c5b99dddaaf04a109894671a57f1285f48a9e3b3e9"),                           // s
+                                      {.type = TransactionType::kLegacy,
+                                       .nonce = 13202,
+                                       .max_priority_fee_per_gas = 1'000'000'000,
+                                       .max_fee_per_gas = 1'000'000'000,
+                                       .gas_limit = 250'000,  // 2424832 ?
+                                       .to = 0x7ef66b77759e12caf3ddb3e4aff524e577c59d8d_address,
+                                       .value = 0,
+                                       .data = *from_hex("e9c6c176000000000000000000000000000000000000000000000000000000000000002a000000000000000000000000"
+                                                         "0000000000000000000000000000000000a4e09362c0d3e9488c19c1600c863d0ae91981e20ccdf4679813b521851735b306309b")},
+                                      false,                                                                                                   // odd_y_parity
+                                      intx::from_string<intx::uint256>("0x3aaa1d392769f655b7a751d60239ef9a52a70772eb8135e94abc9bc06ea28323"),  // r
+                                      intx::from_string<intx::uint256>("0x67d93fbedbb12048fc8d70c5b99dddaaf04a109894671a57f1285f48a9e3b3e9"),  // s
                                   },
                                   silkworm::Transaction{
-                                      Transaction::Type::kLegacy,                          // type
-                                      13203,                                               // nonce
-                                      1'000'000'000,                                       // max_priority_fee_per_gas
-                                      1'000'000'000,                                       // max_fee_per_gas
-                                      250'000,                                             // gas_limit
-                                      0x7ef66b77759e12caf3ddb3e4aff524e577c59d8d_address,  // to
-                                      0,                                                   // value
-                                      *silkworm::from_hex("e9c6c1760000000000000000000000000000000000000000000000000000000000000004000000000000000000000000"
-                                                          "00000000000000000000000000000000004100fa3ce6ba2fb2eb7fa648ad0970b9f8eecfd4c511bf7499c971c10743c555ed2496"),  // data
-                                      false,                                                                                                                            // odd_y_parity
-                                      std::nullopt,                                                                                                                     // chain_id
-                                      intx::from_string<intx::uint256>("0x752f02b1438be7f67ebf0e71310db3514b162fb169cdb95ad15dde38eff7719b"),                           // r
-                                      intx::from_string<intx::uint256>("0x1033638bf86024fe2750ace6f79ea444703f6920979ad1fd495f9167d197a436"),                           // s
+                                      {.type = TransactionType::kLegacy,
+                                       .nonce = 13203,
+                                       .max_priority_fee_per_gas = 1'000'000'000,
+                                       .max_fee_per_gas = 1'000'000'000,
+                                       .gas_limit = 250'000,
+                                       .to = 0x7ef66b77759e12caf3ddb3e4aff524e577c59d8d_address,
+                                       .value = 0,
+                                       .data = *silkworm::from_hex("e9c6c1760000000000000000000000000000000000000000000000000000000000000004000000000000000000000000"
+                                                                   "00000000000000000000000000000000004100fa3ce6ba2fb2eb7fa648ad0970b9f8eecfd4c511bf7499c971c10743c555ed2496")},
+                                      false,                                                                                                   // odd_y_parity
+                                      intx::from_string<intx::uint256>("0x752f02b1438be7f67ebf0e71310db3514b162fb169cdb95ad15dde38eff7719b"),  // r
+                                      intx::from_string<intx::uint256>("0x1033638bf86024fe2750ace6f79ea444703f6920979ad1fd495f9167d197a436"),  // s
                                   }});
     }
 }

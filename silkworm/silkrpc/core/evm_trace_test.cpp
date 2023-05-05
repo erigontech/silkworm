@@ -1987,7 +1987,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
     transaction.max_priority_fee_per_gas = 0x3b9aca00;
     transaction.max_fee_per_gas = 0x3b9aca00;
     transaction.gas_limit = 0x47b760;
-    transaction.type = silkworm::Transaction::Type::kLegacy;
+    transaction.type = TransactionType::kLegacy;
 
     block.transactions.push_back(transaction);
 
@@ -2538,7 +2538,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
     transaction.max_priority_fee_per_gas = 0x3b9aca00;
     transaction.max_fee_per_gas = 0x3b9aca00;
     transaction.gas_limit = 0x47b760;
-    transaction.type = silkworm::Transaction::Type::kLegacy;
+    transaction.type = TransactionType::kLegacy;
 
     block_with_hash.block.transactions.push_back(transaction);
 
@@ -2757,7 +2757,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
     transaction.max_priority_fee_per_gas = 0x3b9aca00;
     transaction.max_fee_per_gas = 0x3b9aca00;
     transaction.gas_limit = 0x47b760;
-    transaction.type = silkworm::Transaction::Type::kLegacy;
+    transaction.type = TransactionType::kLegacy;
     transaction.block_hash = block_with_hash.hash;
     transaction.block_number = block_number;
     transaction.transaction_index = 0;
@@ -3709,7 +3709,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
     transaction.max_priority_fee_per_gas = 0x3b9aca00;
     transaction.max_fee_per_gas = 0x3b9aca00;
     transaction.gas_limit = 0x47b760;
-    transaction.type = silkworm::Transaction::Type::kLegacy;
+    transaction.type = TransactionType::kLegacy;
     transaction.block_hash = block_with_hash.hash;
     transaction.block_number = block_number;
     transaction.transaction_index = 0;

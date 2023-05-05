@@ -329,7 +329,7 @@ TEST_CASE("serialize block with baseFeePerGas", "[silkrpc][to_json]") {
     body.transactions[0].s =
         intx::from_string<intx::uint256>("0x1fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804");
 
-    body.transactions[1].type = silkworm::Transaction::Type::kEip1559;
+    body.transactions[1].type = TransactionType::kEip1559;
     body.transactions[1].nonce = 1;
     body.transactions[1].max_priority_fee_per_gas = 5 * kGiga;
     body.transactions[1].max_fee_per_gas = 30 * kGiga;
@@ -769,16 +769,14 @@ TEST_CASE("serialize legacy transaction (type=0)", "[silkrpc][to_json]") {
     // https://etherscan.io/tx/0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060
     // Block 46147
     silkworm::Transaction txn1{
-        silkworm::Transaction::Type::kLegacy,                                                                    // type
-        0,                                                                                                       // nonce
-        50'000 * kGiga,                                                                                          // max_priority_fee_per_gas
-        50'000 * kGiga,                                                                                          // max_fee_per_gas
-        21'000,                                                                                                  // gas_limit
-        0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,                                                      // to
-        31337,                                                                                                   // value
-        {},                                                                                                      // data
+        {.type = TransactionType::kLegacy,
+         .nonce = 0,
+         .max_priority_fee_per_gas = 50'000 * kGiga,
+         .max_fee_per_gas = 50'000 * kGiga,
+         .gas_limit = 21'000,
+         .to = 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,
+         .value = 31337},
         true,                                                                                                    // odd_y_parity
-        std::nullopt,                                                                                            // chain_id
         intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),  // r
         intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),  // s
     };
@@ -799,18 +797,17 @@ TEST_CASE("serialize legacy transaction (type=0)", "[silkrpc][to_json]") {
 
     silkworm::rpc::Transaction txn2{
         {
-            .type = Transaction::Type::kLegacy,
-            .nonce = 0,
-            .max_priority_fee_per_gas = 50'000 * kGiga,
-            .max_fee_per_gas = 50'000 * kGiga,
-            .gas_limit = 21'000,
-            .to = 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,
-            .value = 31337,
-            .odd_y_parity = true,
-            .chain_id = std::nullopt,
-            .r = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),
-            .s = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),
-            .from = 0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address,
+            {.type = TransactionType::kLegacy,
+             .nonce = 0,
+             .max_priority_fee_per_gas = 50'000 * kGiga,
+             .max_fee_per_gas = 50'000 * kGiga,
+             .gas_limit = 21'000,
+             .to = 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,
+             .value = 31337},
+            true,                                                                                                    // odd_y_parity
+            intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),  // r
+            intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),  // s
+            0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address,                                                      // from
         },
         0x4e3a3754410177e6937ef1f84bba68ea139e8d1a2258c5f85db9f1cd715a1bdd_bytes32,  // block_hash
         46147,                                                                       // block_number
@@ -837,18 +834,17 @@ TEST_CASE("serialize legacy transaction (type=0)", "[silkrpc][to_json]") {
     })"_json);
     silkworm::rpc::Transaction txn3{
         {
-            .type = Transaction::Type::kLegacy,
-            .nonce = 0,
-            .max_priority_fee_per_gas = 50'000 * kGiga,
-            .max_fee_per_gas = 50'000 * kGiga,
-            .gas_limit = 21'000,
-            .to = 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,
-            .value = 31337,
-            .odd_y_parity = true,
-            .chain_id = std::nullopt,
-            .r = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),
-            .s = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),
-            .from = 0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address,
+            {.type = TransactionType::kLegacy,
+             .nonce = 0,
+             .max_priority_fee_per_gas = 50'000 * kGiga,
+             .max_fee_per_gas = 50'000 * kGiga,
+             .gas_limit = 21'000,
+             .to = 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,
+             .value = 31337},
+            true,                                                                                                    // odd_y_parity
+            intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),  // r
+            intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),  // s
+            0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address,                                                      // from
         },
         0x4e3a3754410177e6937ef1f84bba68ea139e8d1a2258c5f85db9f1cd715a1bdd_bytes32,  // block_hash
         46147,                                                                       // block_number
@@ -878,19 +874,19 @@ TEST_CASE("serialize legacy transaction (type=0)", "[silkrpc][to_json]") {
 
 TEST_CASE("serialize EIP-2930 transaction (type=1)", "[silkrpc][to_json]") {
     silkworm::Transaction txn1{
-        .type = Transaction::Type::kEip2930,
-        .nonce = 0,
-        .max_priority_fee_per_gas = 20000000000,
-        .max_fee_per_gas = 20000000000,
-        .gas_limit = 0,
-        .to = 0x0715a7794a1dc8e42615f059dd6e406a6594651a_address,
-        .value = 0,
-        .data = *from_hex("001122aabbcc"),
-        .odd_y_parity = false,
-        .chain_id = 1,
-        .r = 18,
-        .s = 36,
-        .from = 0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address,
+        {.type = TransactionType::kEip2930,
+         .chain_id = 1,
+         .nonce = 0,
+         .max_priority_fee_per_gas = 20000000000,
+         .max_fee_per_gas = 20000000000,
+         .gas_limit = 0,
+         .to = 0x0715a7794a1dc8e42615f059dd6e406a6594651a_address,
+         .value = 0,
+         .data = *from_hex("001122aabbcc")},
+        false,                                               // odd_y_parity
+        18,                                                  // r
+        36,                                                  // s
+        0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address,  // from
     };
     nlohmann::json j1 = txn1;
     CHECK(j1 == R"({
@@ -920,20 +916,20 @@ TEST_CASE("serialize EIP-2930 transaction (type=1)", "[silkrpc][to_json]") {
 
     silkworm::rpc::Transaction txn2{
         {
-            .type = Transaction::Type::kEip2930,
-            .nonce = 0,
-            .max_priority_fee_per_gas = 20000000000,
-            .max_fee_per_gas = 30000000000,
-            .gas_limit = 0,
-            .to = 0x0715a7794a1dc8e42615f059dd6e406a6594651a_address,
-            .value = 0,
-            .data = *from_hex("001122aabbcc"),
-            .odd_y_parity = false,
-            .chain_id = 1,
-            .r = 18,
-            .s = 36,
-            .access_list = access_list,
-            .from = 0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address,
+            {.type = TransactionType::kEip2930,
+             .chain_id = 1,
+             .nonce = 0,
+             .max_priority_fee_per_gas = 20000000000,
+             .max_fee_per_gas = 30000000000,
+             .gas_limit = 0,
+             .to = 0x0715a7794a1dc8e42615f059dd6e406a6594651a_address,
+             .value = 0,
+             .data = *from_hex("001122aabbcc"),
+             .access_list = access_list},
+            false,                                               // odd_y_parity
+            18,                                                  // r
+            36,                                                  // s
+            0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address,  // from
         },
         0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c_bytes32,
         123123,
@@ -975,19 +971,19 @@ TEST_CASE("serialize EIP-2930 transaction (type=1)", "[silkrpc][to_json]") {
 
 TEST_CASE("serialize EIP-1559 transaction (type=2)", "[silkrpc][to_json]") {
     silkworm::Transaction txn1{
-        .type = Transaction::Type::kEip1559,
-        .nonce = 0,
-        .max_priority_fee_per_gas = 50'000 * kGiga,
-        .max_fee_per_gas = 50'000 * kGiga,
-        .gas_limit = 21'000,
-        .to = 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,
-        .value = 31337,
-        .data = *from_hex("001122aabbcc"),
-        .odd_y_parity = true,
-        .chain_id = intx::uint256{1},
-        .r = intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),
-        .s = intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),
-        .from = 0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address,
+        {.type = TransactionType::kEip1559,
+         .chain_id = 1,
+         .nonce = 0,
+         .max_priority_fee_per_gas = 50'000 * kGiga,
+         .max_fee_per_gas = 50'000 * kGiga,
+         .gas_limit = 21'000,
+         .to = 0x5df9b87991262f6ba471f09758cde1c0fc1de734_address,
+         .value = 31337,
+         .data = *from_hex("001122aabbcc")},
+        true,                                                                                                    // odd_y_parity
+        intx::from_string<intx::uint256>("0x88ff6cf0fefd94db46111149ae4bfc179e9b94721fffd821d38d16464b3f71d0"),  // r
+        intx::from_string<intx::uint256>("0x45e0aff800961cfce805daef7016b9b675c137a6a41a548f7b60a3484c06a33a"),  // s
+        0x007fb8417eb9ad4d958b050fc3720d5b46a2c053_address,                                                      // from
     };
     nlohmann::json j1 = txn1;
     CHECK(j1 == R"({

@@ -457,6 +457,11 @@ bool has_body(ROTxn& txn, BlockNum block_number, const evmc::bytes32& hash) {
     return db::has_body(txn, block_number, hash.bytes);
 }
 
+bool has_sibling(ROTxn& txn, BlockNum block_number) {
+    return false;
+    // todo: implement!
+}
+
 void write_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, BlockNum bn) {
     write_body(txn, body, hash.bytes, bn);
 }
@@ -474,6 +479,10 @@ void write_body(RWTxn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLe
     target.upsert(to_slice(key), to_slice(value));
 
     write_transactions(txn, body.transactions, body_for_storage.base_txn_id);
+}
+
+void write_sibling(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, BlockNum bn) {
+    throw std::runtime_error("write_sibling not implemented");
 }
 
 static ByteView read_senders_raw(ROTxn& txn, const Bytes& key) {

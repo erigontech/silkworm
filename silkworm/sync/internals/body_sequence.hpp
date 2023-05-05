@@ -37,7 +37,7 @@ struct BlockEx : public Block {
 
 using Blocks = std::vector<std::shared_ptr<BlockEx>>;
 
-std::vector<std::shared_ptr<Block>> to_plain_blocks(const Blocks& blocks) {
+inline std::vector<std::shared_ptr<Block>> to_plain_blocks(const Blocks& blocks) {
     std::vector<std::shared_ptr<Block>> result;
     for (const auto& block : blocks) {
         result.push_back(block);

@@ -41,7 +41,7 @@ struct BlockId {
     Hash hash;
 };
 
-BlockNum height(const BlockId& b) { return b.number; }
+BlockNum height(const BlockId& b);
 
 struct ChainHead {
     BlockNum height{};
@@ -148,4 +148,4 @@ inline BlockId to_BlockId(const ChainHead& head) {
     return {.number = head.height, .hash = head.hash};
 }
 
-}  // namespace silkworm
+}  // namespace sil

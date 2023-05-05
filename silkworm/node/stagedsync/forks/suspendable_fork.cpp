@@ -54,10 +54,10 @@ BlockId ExtendingFork::current_head() const {
 void ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block>>&& blocks) {
     current_head_ = new_head;  // setting this here is important for find_fork_by_head() due to the fact that block
                                // insertion and head computation is delayed but find_fork_by_head() is called immediately
-    auto lambda = [](ExtendingFork& me, BlockId new_head, std::list<std::shared_ptr<Block>>&& blocks) -> awaitable<void> {
+    auto lambda = [](ExtendingFork& me, BlockId new_head_, std::list<std::shared_ptr<Block>>&& blocks) -> awaitable<void> {
         me.fork_.open();
         me.fork_.extend_with(blocks);
-        ensure(me.fork_.current_head() == new_head, "fork head mismatch");
+        ensure(me.fork_.current_head() == new_head_, "fork head mismatch");
         co_return;
     };
 
@@ -76,8 +76,8 @@ void ExtendingFork::close() {
 void ExtendingFork::extend_with(Hash head_hash, const Block& block) {
     current_head_ = {block.header.number, head_hash};  // setting this here is important, same as above
 
-    auto lambda = [](ExtendingFork& me, const Block& block) -> awaitable<void> {
-        me.fork_.extend_with(block);
+    auto lambda = [](ExtendingFork& me, const Block& block_) -> awaitable<void> {
+        me.fork_.extend_with(block_);
         co_return;
     };
 

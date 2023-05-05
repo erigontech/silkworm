@@ -52,6 +52,10 @@ auto MainChain::node_settings() -> NodeSettings& {
     return node_settings_;
 }
 
+db::RWTxn& MainChain::tx() {
+    return tx_;
+}
+
 auto MainChain::canonical_head() const -> BlockId {
     return canonical_chain_.current_head();
 }

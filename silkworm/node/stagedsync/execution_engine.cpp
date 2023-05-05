@@ -36,7 +36,6 @@ ExecutionEngine::ExecutionEngine(asio::io_context& ctx, NodeSettings& ns, db::RW
     : io_context_{ctx},
       node_settings_{ns},
       db_access_{dba},
-      tx_{db_access_.start_rw_tx()},
       main_chain_(ctx, ns, dba),
       block_cache_{kDefaultCacheSize} {
     // To initialize canonical_head_status_ & last_fork_choice_ we need to call verify_chain(). Enable?
@@ -45,15 +44,11 @@ ExecutionEngine::ExecutionEngine(asio::io_context& ctx, NodeSettings& ns, db::RW
     // At start-up we can let last_finalized_block_ point to the genesis block so to accept all forking points
     last_finalized_block_ = {0, ns.chain_config.value().genesis_hash.value()};
     last_fork_choice_ = last_finalized_block_;
-
-    block_progress_ = main_chain_.get_block_progress();
-
-    tx_.commit_and_stop();
 }
 
 void ExecutionEngine::open() {  // needed to circumvent mdbx threading model limitations
-    tx_.reopen(*db_access_);
     main_chain_.open();
+    block_progress_ = main_chain_.get_block_progress();
 }
 
 auto ExecutionEngine::block_progress() const -> BlockNum {

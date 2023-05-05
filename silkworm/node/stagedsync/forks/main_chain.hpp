@@ -80,6 +80,7 @@ class MainChain {
     auto is_ancestor(BlockId supposed_parent, BlockId block) const -> bool;
 
     NodeSettings& node_settings();
+    db::RWTxn& tx();  // only for testing purposes due to MDBX limitations
     friend Fork;
 
   protected:

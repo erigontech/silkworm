@@ -47,7 +47,7 @@ class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
   public:
     using stagedsync::ExecutionEngine::ExecutionEngine;
     using stagedsync::ExecutionEngine::insert_block;
-    using stagedsync::ExecutionEngine::tx_;
+    using stagedsync::ExecutionEngine::main_chain_;
 };
 
 class DummyRuleSet : public protocol::IRuleSet {
@@ -81,7 +81,9 @@ TEST_CASE("Headers receiving and saving") {
 
     // creating the ExecutionEngine
     ExecutionEngine_ForTest exec_engine{io, context.node_settings(), db_access};
-    auto& tx = exec_engine.tx_;  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
+    exec_engine.open();
+
+    auto& tx = exec_engine.main_chain_.tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
 
     auto head = exec_engine.last_fork_choice();
     REQUIRE(height(head) == 0);
@@ -112,6 +114,11 @@ TEST_CASE("Headers receiving and saving") {
 
     auto td = db::read_total_difficulty(tx, 0, header0_hash);
     REQUIRE(td.has_value());
+
+    // ### temp workaround due to ChainForkView::get_total_difficulty() not fully implemented ###
+    // todo: remove following line when Sync component will be able to save/load total difficulty
+    chain_fork_view.add(*header0);
+    // ### end of temp workaround ###
 
     // stop execution pipeline at early stages because we use dummy headers without bodies
     Environment::set_stop_before_stage(db::stages::kBlockHashesKey);

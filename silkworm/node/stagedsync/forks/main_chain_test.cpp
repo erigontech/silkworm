@@ -61,7 +61,7 @@ TEST_CASE("MainChain") {
     MainChain_ForTest main_chain{io, context.node_settings(), db_access};
     main_chain.open();
 
-    auto& tx = main_chain.tx_;  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
+    auto& tx = main_chain.tx();
 
     /* status:
      *         h0

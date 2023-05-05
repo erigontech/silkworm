@@ -37,13 +37,12 @@ class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
     using stagedsync::ExecutionEngine::ExecutionEngine;
     using stagedsync::ExecutionEngine::forks_;
     using stagedsync::ExecutionEngine::main_chain_;
-    using stagedsync::ExecutionEngine::tx_;
 };
 
 namespace asio = boost::asio;
 using namespace stagedsync;
 
-TEST_CASE("MainChain") {
+TEST_CASE("ExecutionEngine") {
     test::SetLogVerbosityGuard log_guard(log::Level::kNone);
 
     asio::io_context io;
@@ -60,7 +59,7 @@ TEST_CASE("MainChain") {
     ExecutionEngine_ForTest exec_engine{io, context.node_settings(), db_access};
     exec_engine.open();
 
-    auto& tx = exec_engine.tx_;  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
+    auto& tx = exec_engine.main_chain_.tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
 
     /* status:
      *         h0

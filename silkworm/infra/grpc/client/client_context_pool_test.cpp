@@ -204,13 +204,13 @@ TEST_CASE("ClientContextPool: cannot restart context pool", "[silkworm][infra][g
         CHECK_THROWS_AS(cp.start(), std::logic_error);
     }
 
-    /*SECTION("running 3 thread") {
+    SECTION("running 3 thread") {
         ClientContextPool cp{3};
         auto context_pool_thread = std::thread([&]() { cp.run(); });
         boost::asio::post(cp.next_io_context(), [&]() { cp.stop(); });
         CHECK_NOTHROW(context_pool_thread.join());
         CHECK_THROWS_AS(cp.start(), std::logic_error);
-    }*/
+    }
 }
 
 #endif  // SILKWORM_SANITIZE

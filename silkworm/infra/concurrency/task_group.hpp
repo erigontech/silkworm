@@ -32,6 +32,39 @@
 
 namespace silkworm::concurrency {
 
+/**
+ * TaskGroup is a limited version of a dynamic parallel_group (which asio lacks).
+ *
+ * The parallel_group (and awaitable_wait_for_all/awaitable_wait_for_one that are built on top of it)
+ * supports "structured concurrency" approach for a fixed set of tasks.
+ * If the number of tasks is not fixed, the only asio option is to use co_spawn(asio::detached),
+ * but this violates the "structured concurrency" principle.
+ *
+ * TaskGroup works similarly to co_spawn(asio::detached), but keeps track of the spawned tasks.
+ * When cancellation starts, TaskGroup gracefully cancels the tasks.
+ *
+ * Example:
+ *
+ * \code
+ *
+ * TaskGroup task_group{io_context, 10};
+ *
+ * awaitable<void> run_server() {
+ *     co_await (accept_connections() && task_group.wait());
+ * }
+ *
+ * awaitable<void> accept_connections() {
+ *     auto connection = accept();
+ *     if (num_clients < 10) {
+ *         num_clients++;
+ *         task_group.spawn(io_context, handle_connection(std::move(connection)));
+ *     }
+ * }
+ *
+ * \endcode
+ *
+ * \see https://vorpus.org/blog/notes-on-structured-concurrency-or-go-statement-considered-harmful/
+ */
 class TaskGroup {
   public:
     TaskGroup(boost::asio::any_io_executor&& executor, std::size_t max_tasks)
@@ -49,16 +82,20 @@ class TaskGroup {
         SpawnAfterCloseError() : std::runtime_error("TaskGroup can't spawn after it was closed") {}
     };
 
+    //! Similar to co_spawn, but also adds the task to this group until it completes.
     void spawn(boost::asio::any_io_executor&& executor, boost::asio::awaitable<void> task);
 
+    //! Similar to co_spawn, but also adds the task to this group until it completes.
     void spawn(boost::asio::any_io_executor& executor, boost::asio::awaitable<void> task) {
         spawn(boost::asio::any_io_executor{executor}, std::move(task));
     }
 
+    //! Similar to co_spawn, but also adds the task to this group until it completes.
     void spawn(boost::asio::io_context& io_context, boost::asio::awaitable<void> task) {
         spawn(boost::asio::any_io_executor{io_context.get_executor()}, std::move(task));
     }
 
+    //! Waits until a cancellation signal. then cancels all pending tasks, and waits for them to complete.
     boost::asio::awaitable<void> wait();
 
   private:

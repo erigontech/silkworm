@@ -16,7 +16,6 @@
 
 #include "debug_api.hpp"
 
-#include <stdexcept>
 #include <string>
 
 #include <boost/asio/co_spawn.hpp>
@@ -25,10 +24,13 @@
 #include <boost/asio/use_future.hpp>
 #endif  // !defined(__clang__)
 #include <catch2/catch.hpp>
+#include <grpcpp//grpcpp.h>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
+#include <silkworm/silkrpc/core/filter_storage.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
 #if !defined(__clang__)
 #include <silkworm/silkrpc/stagedsync/stages.hpp>
@@ -203,13 +205,13 @@ class DummyDatabase : public ethdb::Database {
 TEST_CASE("DebugRpcApi") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    auto channel = grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials());
-    FilterStorage filter_storage{0x400};
-    Context context{channel, std::make_shared<BlockCache>(), std::make_shared<ethdb::kv::CoherentStateCache>(), filter_storage};
+    boost::asio::io_context ioc;
+    add_shared_service(ioc, std::make_shared<BlockCache>());
+    add_shared_service<ethdb::kv::StateCache>(ioc, std::make_shared<ethdb::kv::CoherentStateCache>());
     boost::asio::thread_pool workers{1};
 
     SECTION("CTOR") {
-        CHECK_NOTHROW(DebugRpcApi{context, workers});
+        CHECK_NOTHROW(DebugRpcApi{ioc, workers});
     }
 }
 

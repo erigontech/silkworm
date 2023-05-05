@@ -22,8 +22,10 @@
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/io_context.hpp>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/ethbackend/backend.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
@@ -40,6 +42,8 @@ using boost::asio::awaitable;
 class AdminRpcApi {
   public:
     explicit AdminRpcApi(std::unique_ptr<ethbackend::BackEnd>& backend) : backend_(backend) {}
+    explicit AdminRpcApi(boost::asio::io_context& io_context)
+        : AdminRpcApi(use_private_service<ethbackend::BackEnd>(io_context)) {}
     virtual ~AdminRpcApi() = default;
 
     AdminRpcApi(const AdminRpcApi&) = delete;
@@ -50,8 +54,8 @@ class AdminRpcApi {
     awaitable<void> handle_admin_peers(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
-    friend class silkworm::http::RequestHandler;
-
     std::unique_ptr<ethbackend::BackEnd>& backend_;
+
+    friend class silkworm::http::RequestHandler;
 };
 }  // namespace silkworm::rpc::commands

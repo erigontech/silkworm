@@ -26,10 +26,13 @@
 #include <boost/asio/thread_pool.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
+#include <silkworm/infra/concurrency/private_service.hpp>
+#include <silkworm/infra/concurrency/shared_service.hpp>
+#include <silkworm/silkrpc/common/block_cache.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
+#include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
 #include <silkworm/silkrpc/json/stream.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
@@ -43,8 +46,12 @@ using boost::asio::awaitable;
 
 class DebugRpcApi {
   public:
-    explicit DebugRpcApi(Context& context, boost::asio::thread_pool& workers)
-        : context_(context), database_(context.database()), tx_pool_{context.tx_pool()}, workers_{workers} {}
+    DebugRpcApi(boost::asio::io_context& context, boost::asio::thread_pool& workers)
+        : io_context_{context},
+          block_cache_{use_shared_service<BlockCache>(io_context_)},
+          state_cache_{use_shared_service<ethdb::kv::StateCache>(io_context_)},
+          database_{use_private_service<ethdb::Database>(io_context_)},
+          workers_{workers} {}
     virtual ~DebugRpcApi() = default;
 
     DebugRpcApi(const DebugRpcApi&) = delete;
@@ -62,9 +69,10 @@ class DebugRpcApi {
     awaitable<void> handle_debug_trace_block_by_hash(const nlohmann::json& request, json::Stream& stream);
 
   private:
-    Context& context_;
+    boost::asio::io_context& io_context_;
+    std::shared_ptr<BlockCache>& block_cache_;
+    std::shared_ptr<ethdb::kv::StateCache>& state_cache_;
     std::unique_ptr<ethdb::Database>& database_;
-    std::unique_ptr<txpool::TransactionPool>& tx_pool_;
     boost::asio::thread_pool& workers_;
 
     friend class silkworm::http::RequestHandler;

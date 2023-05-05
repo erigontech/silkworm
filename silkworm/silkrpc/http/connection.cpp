@@ -36,8 +36,13 @@
 
 namespace silkworm::rpc::http {
 
-Connection::Connection(Context& context, boost::asio::thread_pool& workers, commands::RpcApiTable& handler_table, std::optional<std::string> jwt_secret)
-    : socket_{*context.io_context()}, request_handler_{context, workers, socket_, handler_table, std::move(jwt_secret)}, buffer_{} {
+Connection::Connection(boost::asio::io_context& io_context,
+                       boost::asio::thread_pool& workers,
+                       commands::RpcApiTable& handler_table,
+                       std::optional<std::string> jwt_secret)
+    : socket_{io_context},
+      request_handler_{io_context, workers, socket_, handler_table, std::move(jwt_secret)},
+      buffer_{} {
     request_.content.reserve(kRequestContentInitialCapacity);
     request_.headers.reserve(kRequestHeadersInitialCapacity);
     request_.method.reserve(kRequestMethodInitialCapacity);

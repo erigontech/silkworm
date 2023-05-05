@@ -20,10 +20,12 @@
 #include <vector>
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
+#include <silkworm/infra/concurrency/private_service.hpp>
+#include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethbackend/backend.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
@@ -37,8 +39,12 @@ using boost::asio::awaitable;
 
 class EngineRpcApi {
   public:
-    explicit EngineRpcApi(std::unique_ptr<ethdb::Database>& database, std::unique_ptr<ethbackend::BackEnd>& backend)
-        : backend_(backend), database_(database) {}
+    EngineRpcApi(std::unique_ptr<ethdb::Database>& database, std::unique_ptr<ethbackend::BackEnd>& backend)
+        : database_{database}, backend_{backend} {}
+    explicit EngineRpcApi(boost::asio::io_context& io_context)
+        : EngineRpcApi(
+              use_private_service<ethdb::Database>(io_context),
+              use_private_service<ethbackend::BackEnd>(io_context)) {}
     virtual ~EngineRpcApi() = default;
 
     EngineRpcApi(const EngineRpcApi&) = delete;
@@ -51,8 +57,8 @@ class EngineRpcApi {
     awaitable<void> handle_engine_exchange_transition_configuration_v1(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
-    std::unique_ptr<ethbackend::BackEnd>& backend_;
     std::unique_ptr<ethdb::Database>& database_;
+    std::unique_ptr<ethbackend::BackEnd>& backend_;
 
     friend class silkworm::http::RequestHandler;
 };

@@ -22,8 +22,10 @@
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/io_context.hpp>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/ethbackend/backend.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
@@ -40,6 +42,8 @@ using boost::asio::awaitable;
 class NetRpcApi {
   public:
     explicit NetRpcApi(std::unique_ptr<ethbackend::BackEnd>& backend) : backend_(backend) {}
+    explicit NetRpcApi(boost::asio::io_context& io_context)
+        : NetRpcApi(use_private_service<ethbackend::BackEnd>(io_context)) {}
     virtual ~NetRpcApi() = default;
 
     NetRpcApi(const NetRpcApi&) = delete;

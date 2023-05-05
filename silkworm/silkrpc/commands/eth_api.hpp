@@ -22,6 +22,7 @@
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <evmc/evmc.hpp>
 #include <nlohmann/json.hpp>
@@ -31,15 +32,19 @@
 #include <roaring.hh>
 #pragma GCC diagnostic pop
 
+#include <silkworm/infra/concurrency/private_service.hpp>
+#include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/core/types/receipt.hpp>
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
+#include <silkworm/silkrpc/common/block_cache.hpp>
 #include <silkworm/silkrpc/core/filter_storage.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/ethbackend/backend.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
+#include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
+#include <silkworm/silkrpc/txpool/miner.hpp>
 #include <silkworm/silkrpc/txpool/transaction_pool.hpp>
 #include <silkworm/silkrpc/types/filter.hpp>
 #include <silkworm/silkrpc/types/log.hpp>
@@ -55,16 +60,16 @@ using boost::asio::awaitable;
 
 class EthereumRpcApi {
   public:
-    EthereumRpcApi(Context& context, boost::asio::thread_pool& workers)
-        : context_(context),
-          block_cache_(context.block_cache()),
-          state_cache_(context.state_cache()),
-          database_(context.database()),
-          backend_(context.backend()),
-          miner_{context.miner()},
-          tx_pool_{context.tx_pool()},
-          workers_{workers},
-          filter_storage_{context.filter_storage()} {}
+    EthereumRpcApi(boost::asio::io_context& io_context, boost::asio::thread_pool& workers)
+        : io_context_{io_context},
+          block_cache_{use_shared_service<BlockCache>(io_context_)},
+          state_cache_{use_shared_service<ethdb::kv::StateCache>(io_context_)},
+          database_{use_private_service<ethdb::Database>(io_context_)},
+          backend_{use_private_service<ethbackend::BackEnd>(io_context_)},
+          miner_{use_private_service<txpool::Miner>(io_context_)},
+          tx_pool_{use_private_service<txpool::TransactionPool>(io_context_)},
+          filter_storage_{use_shared_service<FilterStorage>(io_context_)},
+          workers_{workers} {}
 
     virtual ~EthereumRpcApi() = default;
 
@@ -124,7 +129,6 @@ class EthereumRpcApi {
     awaitable<void> handle_eth_submit_work(const nlohmann::json& request, nlohmann::json& reply);
     awaitable<void> handle_eth_subscribe(const nlohmann::json& request, nlohmann::json& reply);
     awaitable<void> handle_eth_unsubscribe(const nlohmann::json& request, nlohmann::json& reply);
-    awaitable<void> handle_eth_call_original(const nlohmann::json& request, nlohmann::json& reply);  // Temporary
     awaitable<void> handle_eth_max_priority_fee_per_gas(const nlohmann::json& request, nlohmann::json& reply);
     awaitable<void> handle_fee_history(const nlohmann::json& request, nlohmann::json& reply);
 
@@ -132,16 +136,15 @@ class EthereumRpcApi {
     awaitable<void> handle_eth_get_logs(const nlohmann::json& request, std::string& reply);
     awaitable<void> handle_eth_call(const nlohmann::json& request, std::string& reply);
 
-    Context& context_;
+    boost::asio::io_context& io_context_;
     std::shared_ptr<BlockCache>& block_cache_;
     std::shared_ptr<ethdb::kv::StateCache>& state_cache_;
     std::unique_ptr<ethdb::Database>& database_;
     std::unique_ptr<ethbackend::BackEnd>& backend_;
     std::unique_ptr<txpool::Miner>& miner_;
     std::unique_ptr<txpool::TransactionPool>& tx_pool_;
+    std::shared_ptr<FilterStorage>& filter_storage_;
     boost::asio::thread_pool& workers_;
-
-    FilterStorage& filter_storage_;
 
     friend class silkworm::http::RequestHandler;
 };

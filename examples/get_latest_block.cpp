@@ -18,7 +18,6 @@
 #include <future>
 #include <iomanip>
 #include <iostream>
-#include <utility>
 
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
@@ -30,7 +29,7 @@
 #include <grpcpp/grpcpp.h>
 #include <silkworm/core/common/util.hpp>
 
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
+#include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
@@ -61,12 +60,19 @@ boost::asio::awaitable<std::optional<uint64_t>> latest_block(ethdb::Database& db
 }
 
 std::optional<uint64_t> get_latest_block(boost::asio::io_context& io_context, ethdb::Database& db) {
-    auto result = boost::asio::co_spawn(io_context, latest_block(db), boost::asio::use_future);
+    auto result = boost::asio::co_spawn(
+        io_context,
+        [&]() -> boost::asio::awaitable<std::optional<uint64_t>> {
+            const auto block_number = co_await latest_block(db);
+            io_context.stop();
+            co_return block_number;
+        },
+        boost::asio::use_future);
     return result.get();
 }
 
 int main(int argc, char* argv[]) {
-    absl::SetProgramUsageMessage("Seek Erigon/Silkworm Key-Value (KV) remote interface to database");
+    absl::SetProgramUsageMessage("Get latest block in Silkworm/Erigon");
     absl::ParseCommandLine(argc, argv);
 
     SILKRPC_LOG_VERBOSITY(absl::GetFlag(FLAGS_log_verbosity));
@@ -75,7 +81,7 @@ int main(int argc, char* argv[]) {
         auto target{absl::GetFlag(FLAGS_target)};
         if (target.empty() || target.find(":") == std::string::npos) {
             std::cerr << "Parameter target is invalid: [" << target << "]\n";
-            std::cerr << "Use --target flag to specify the location of Turbo-Geth running instance\n";
+            std::cerr << "Use --target flag to specify the location of Silkworm/Erigon running instance\n";
             return -1;
         }
 
@@ -84,10 +90,13 @@ int main(int argc, char* argv[]) {
             return grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
         };
         // TODO(canepat): handle also local (shared-memory) database
-        ContextPool context_pool{1, create_channel};
+        ClientContextPool context_pool{1};
         auto& context = context_pool.next_context();
         auto io_context = context.io_context();
-        auto& database = context.database();
+
+        auto grpc_channel{::grpc::CreateChannel(target, ::grpc::InsecureChannelCredentials())};
+        auto database = std::make_unique<ethdb::kv::RemoteDatabase>(*context.grpc_context(), grpc_channel);
+
         auto context_pool_thread = std::thread([&]() { context_pool.run(); });
 
         const auto latest_block_number = get_latest_block(*io_context, *database);
@@ -95,7 +104,9 @@ int main(int argc, char* argv[]) {
             std::cout << "latest_block_number: " << latest_block_number.value() << "\n" << std::flush;
         }
 
-        context_pool.run();
+        if (context_pool_thread.joinable()) {
+            context_pool_thread.join();
+        }
     } catch (const std::exception& e) {
         std::cerr << "Exception: " << e.what() << "\n" << std::flush;
     } catch (...) {

@@ -18,15 +18,13 @@
 #include <iomanip>
 #include <iostream>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/signal_set.hpp>
 #include <grpcpp/grpcpp.h>
 
+#include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/interfaces/types/types.pb.h>
 #include <silkworm/silkrpc/common/util.hpp>
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/ethbackend/remote_backend.hpp>
 
 using namespace silkworm;
@@ -57,12 +55,7 @@ boost::asio::awaitable<void> ethbackend_etherbase(ethbackend::BackEnd& backend) 
 
 int ethbackend_coroutines(const std::string& target) {
     try {
-        // TODO(canepat): handle also secure channel for remote
-        ChannelFactory create_channel = [&]() {
-            return grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
-        };
-        // TODO(canepat): handle also local (shared-memory) database
-        ContextPool context_pool{1, create_channel};
+        ClientContextPool context_pool{1};
         auto& context = context_pool.next_context();
         auto io_context = context.io_context();
         auto grpc_context = context.grpc_context();

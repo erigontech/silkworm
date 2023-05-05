@@ -28,12 +28,12 @@
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/thread_pool.hpp>
 
 #include <silkworm/silkrpc/commands/rpc_api_table.hpp>
 #include <silkworm/silkrpc/common/constants.hpp>
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/http/reply.hpp>
 #include <silkworm/silkrpc/http/request.hpp>
 #include <silkworm/silkrpc/http/request_handler.hpp>
@@ -48,7 +48,10 @@ class Connection {
     Connection& operator=(const Connection&) = delete;
 
     //! Construct a connection running within the given execution context.
-    Connection(Context& context, boost::asio::thread_pool& workers, commands::RpcApiTable& handler_table, std::optional<std::string> jwt_secret);
+    Connection(boost::asio::io_context& io_context,
+               boost::asio::thread_pool& workers,
+               commands::RpcApiTable& handler_table,
+               std::optional<std::string> jwt_secret);
 
     ~Connection();
 

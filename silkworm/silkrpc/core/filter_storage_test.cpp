@@ -28,7 +28,7 @@ namespace silkworm::rpc {
 using Catch::Matchers::Message;
 
 TEST_CASE("FilterStorage base") {
-    FilterStorage filter_storage{3, 1};
+    FilterStorage filter_storage{3, 0.01};
     SECTION("adding 1 entry") {
         StoredFilter filter;
         const auto filter_id = filter_storage.add_filter(filter);
@@ -89,7 +89,7 @@ TEST_CASE("FilterStorage base") {
     SECTION("filter expires") {
         StoredFilter filter;
         const auto filter_id = filter_storage.add_filter(filter);
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
         const auto filter_opt = filter_storage.get_filter(filter_id.value());
 
         CHECK(filter_opt.has_value() == false);
@@ -100,7 +100,7 @@ TEST_CASE("FilterStorage base") {
         filter_storage.add_filter(filter);
         filter_storage.add_filter(filter);
         filter_storage.add_filter(filter);
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
         const auto filter_id = filter_storage.add_filter(filter);
 
         CHECK(filter_id.has_value() == true);

@@ -32,7 +32,7 @@ class JsonApiTestBase : public ContextTestBase {
   public:
     template <auto method, typename... Args>
     auto run(Args&&... args) {
-        JsonApi api{context_};
+        JsonApi api{io_context_};
         return spawn_and_wait((api.*method)(std::forward<Args>(args)...));
     }
 };
@@ -44,7 +44,7 @@ class JsonApiWithWorkersTestBase : public ContextTestBase {
 
     template <auto method, typename... Args>
     auto run(Args&&... args) {
-        JsonApi api{context_, workers_};
+        JsonApi api{io_context_, workers_};
         return spawn_and_wait((api.*method)(std::forward<Args>(args)...));
     }
 

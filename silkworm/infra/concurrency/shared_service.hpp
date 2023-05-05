@@ -22,7 +22,7 @@
 
 #include <silkworm/infra/concurrency/base_service.hpp>
 
-namespace silkworm::concurrency {
+namespace silkworm {
 
 template <typename T>
 class SharedService : public BaseService<SharedService<T>> {
@@ -54,4 +54,4 @@ std::shared_ptr<T>& use_shared_service(boost::asio::execution_context& context) 
     return use_service<SharedService<T>>(context).shared();
 }
 
-}  // namespace silkworm::concurrency
+}  // namespace silkworm

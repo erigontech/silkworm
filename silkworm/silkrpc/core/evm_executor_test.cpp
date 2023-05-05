@@ -25,6 +25,8 @@
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 
+#include <silkworm/infra/grpc/client/client_context_pool.hpp>
+#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
 
@@ -61,8 +63,7 @@ TEST_CASE("EVMExecutor") {
         const uint64_t chain_id = 5;
         const auto chain_config_ptr = lookup_chain_config(chain_id);
 
-        ChannelFactory my_channel = []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); };
-        ContextPool my_pool{1, my_channel};
+        ClientContextPool my_pool{1};
         boost::asio::thread_pool workers{1};
         my_pool.start();
 
@@ -88,8 +89,7 @@ TEST_CASE("EVMExecutor") {
         const uint64_t chain_id = 5;
         const auto chain_config_ptr = lookup_chain_config(chain_id);
 
-        ChannelFactory my_channel = []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); };
-        ContextPool my_pool{1, my_channel};
+        ClientContextPool my_pool{1};
         boost::asio::thread_pool workers{1};
         my_pool.start();
 
@@ -117,8 +117,7 @@ TEST_CASE("EVMExecutor") {
         const uint64_t chain_id = 5;
         const auto chain_config_ptr = lookup_chain_config(chain_id);
 
-        ChannelFactory my_channel = []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); };
-        ContextPool my_pool{1, my_channel};
+        ClientContextPool my_pool{1};
         boost::asio::thread_pool workers{1};
         my_pool.start();
 
@@ -147,8 +146,7 @@ TEST_CASE("EVMExecutor") {
         const uint64_t chain_id = 5;
         const auto chain_config_ptr = lookup_chain_config(chain_id);
 
-        ChannelFactory my_channel = []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); };
-        ContextPool my_pool{1, my_channel};
+        ClientContextPool my_pool{1};
         boost::asio::thread_pool workers{1};
         my_pool.start();
 
@@ -177,8 +175,7 @@ TEST_CASE("EVMExecutor") {
         const uint64_t chain_id = 5;
         const auto chain_config_ptr = lookup_chain_config(chain_id);
 
-        ChannelFactory my_channel = []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); };
-        ContextPool my_pool{1, my_channel};
+        ClientContextPool my_pool{1};
         boost::asio::thread_pool workers{1};
         my_pool.start();
 
@@ -216,8 +213,7 @@ TEST_CASE("EVMExecutor") {
         const uint64_t chain_id = 5;
         const auto chain_config_ptr = lookup_chain_config(chain_id);
 
-        ChannelFactory my_channel = []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); };
-        ContextPool my_pool{1, my_channel};
+        ClientContextPool my_pool{1};
         boost::asio::thread_pool workers{1};
         my_pool.start();
 

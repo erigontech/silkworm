@@ -16,11 +16,23 @@
 
 #include "multi_sentry_client.hpp"
 
+#include <cassert>
+#include <functional>
+
+#include <silkworm/infra/concurrency/coroutine.hpp>
+
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/deferred.hpp>
+#include <boost/asio/experimental/parallel_group.hpp>
+#include <boost/asio/this_coro.hpp>
+#include <boost/asio/use_awaitable.hpp>
+
 #include <silkworm/sentry/api/api_common/service.hpp>
 
 namespace silkworm::sentry {
 
 using namespace boost::asio;
+using namespace boost::asio::experimental;
 using namespace api::api_common;
 
 class MultiSentryClientImpl : public api::api_common::Service {
@@ -30,13 +42,53 @@ class MultiSentryClientImpl : public api::api_common::Service {
         : clients_(std::move(clients)) {
     }
 
+  private:
+    awaitable<void> for_each_client(
+        std::vector<std::shared_ptr<SentryClient>> clients,
+        std::function<awaitable<void>(std::shared_ptr<api::api_common::Service>)> callback) {
+        auto executor = co_await this_coro::executor;
+        using OperationType = decltype(co_spawn(executor, ([]() -> awaitable<void> { co_return; })(), deferred));
+        std::vector<OperationType> calls;
+
+        for (auto client : clients) {
+            auto call = [client, &callback]() -> awaitable<void> {
+                auto service = co_await client->service();
+                co_await callback(service);
+            };
+            calls.push_back(co_spawn(executor, call(), deferred));
+        }
+
+        auto group = make_parallel_group(std::move(calls));
+
+        // std::vector<size_t> order;
+        // std::vector<std::exception_ptr> exceptions;
+        auto [order, exceptions] = co_await group.async_wait(wait_for_one_error(), use_awaitable);
+
+        // TODO
+        // detail::rethrow_exceptions(ex0, ex1, order);
+    }
+
+    awaitable<void> for_each_client(
+        std::function<awaitable<void>(std::shared_ptr<api::api_common::Service>)> callback) {
+        auto clients = this->ready_clients();
+        if (clients.empty()) {
+            clients = clients_;
+        }
+        return for_each_client(clients, std::move(callback));
+    }
+
+  public:
     // rpc SetStatus(StatusData) returns (SetStatusReply);
     awaitable<void> set_status(eth::StatusData status_data) override {
-        co_return;
+        co_await for_each_client([&status_data](auto service) -> awaitable<void> {
+            co_await service->set_status(status_data);
+        });
     }
 
     // rpc HandShake(google.protobuf.Empty) returns (HandShakeReply);
     awaitable<uint8_t> handshake() override {
+        // handshake is not performed on the multi-client level
+        assert(false);
         co_return 0;
     }
 
@@ -67,14 +119,18 @@ class MultiSentryClientImpl : public api::api_common::Service {
 
     // rpc PeerMinBlock(PeerMinBlockRequest) returns (google.protobuf.Empty);
     awaitable<void> peer_min_block(common::EccPublicKey public_key) override {
-        co_return;
+        co_await for_each_client([&public_key](auto service) -> awaitable<void> {
+            co_await service->peer_min_block(public_key);
+        });
     }
 
     // rpc Messages(MessagesRequest) returns (stream InboundMessage);
     awaitable<void> messages(
         MessageIdSet message_id_filter,
         std::function<awaitable<void>(MessageFromPeer)> consumer) override {
-        co_return;
+        co_await for_each_client(clients_, [&message_id_filter, &consumer](auto service) -> awaitable<void> {
+            co_await service->messages(message_id_filter, consumer);
+        });
     }
 
     // rpc Peers(google.protobuf.Empty) returns (PeersReply);
@@ -94,13 +150,17 @@ class MultiSentryClientImpl : public api::api_common::Service {
 
     // rpc PenalizePeer(PenalizePeerRequest) returns (google.protobuf.Empty);
     awaitable<void> penalize_peer(common::EccPublicKey public_key) override {
-        co_return;
+        co_await for_each_client([&public_key](auto service) -> awaitable<void> {
+            co_await service->penalize_peer(public_key);
+        });
     }
 
     // rpc PeerEvents(PeerEventsRequest) returns (stream PeerEvent);
     awaitable<void> peer_events(
         std::function<awaitable<void>(PeerEvent)> consumer) override {
-        co_return;
+        co_await for_each_client(clients_, [&consumer](auto service) -> awaitable<void> {
+            co_await service->peer_events(consumer);
+        });
     }
 
   private:

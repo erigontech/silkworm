@@ -29,6 +29,7 @@
 #include <silkworm/infra/grpc/client/call.hpp>
 #include <silkworm/infra/grpc/client/reconnect.hpp>
 #include <silkworm/interfaces/p2psentry/sentry.grpc.pb.h>
+#include <silkworm/sentry/api/api_common/service.hpp>
 
 #include "../interfaces/eth_version.hpp"
 #include "../interfaces/message.hpp"
@@ -72,7 +73,6 @@ class SentryClientImpl final : public api::api_common::Service {
         co_await sw_rpc::reconnect_channel(*channel_);
     }
 
-  private:
     // rpc SetStatus(StatusData) returns (SetStatusReply);
     awaitable<void> set_status(eth::StatusData status_data) override {
         proto::StatusData request = interfaces::proto_status_data_from_status_data(status_data);
@@ -225,6 +225,7 @@ class SentryClientImpl final : public api::api_common::Service {
             std::move(proto_consumer));
     }
 
+  private:
     std::shared_ptr<::grpc::Channel> channel_;
     std::unique_ptr<Stub> stub_;
     agrpc::GrpcContext& grpc_context_;

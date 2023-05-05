@@ -54,9 +54,9 @@ BlockId ExtendingFork::current_head() const {
 void ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block>>&& blocks) {
     current_head_ = new_head;  // setting this here is important for find_fork_by_head() due to the fact that block
                                // insertion and head computation is delayed but find_fork_by_head() is called immediately
-    auto lambda = [](ExtendingFork& me, BlockId new_head_, std::list<std::shared_ptr<Block>>&& blocks) -> awaitable<void> {
+    auto lambda = [](ExtendingFork& me, BlockId new_head_, std::list<std::shared_ptr<Block>>&& blocks_) -> awaitable<void> {
         me.fork_.open();
-        me.fork_.extend_with(blocks);
+        me.fork_.extend_with(blocks_);
         ensure(me.fork_.current_head() == new_head_, "fork head mismatch");
         co_return;
     };
@@ -88,10 +88,10 @@ auto ExtendingFork::verify_chain() -> concurrency::AwaitableFuture<VerificationR
     concurrency::AwaitablePromise<VerificationResult> promise{io_context_};
     auto awaitable_future = promise.get_future();
 
-    auto lambda = [](ExtendingFork& me, concurrency::AwaitablePromise<VerificationResult>&& promise) -> awaitable<void> {
+    auto lambda = [](ExtendingFork& me, concurrency::AwaitablePromise<VerificationResult>&& promise_) -> awaitable<void> {
         auto result = me.fork_.verify_chain();
         me.current_head_ = me.fork_.current_head();
-        promise.set_value(result);
+        promise_.set_value(result);
         co_return;
     };
 
@@ -105,11 +105,11 @@ auto ExtendingFork::notify_fork_choice_update(Hash head_block_hash, std::optiona
     concurrency::AwaitablePromise<bool> promise{io_context_};
     auto awaitable_future = promise.get_future();
 
-    auto lambda = [](ExtendingFork& me, concurrency::AwaitablePromise<bool>&& promise,
+    auto lambda = [](ExtendingFork& me, concurrency::AwaitablePromise<bool>&& promise_,
                      Hash head, std::optional<Hash> finalized) -> awaitable<void> {
         auto updated = me.fork_.notify_fork_choice_update(head, finalized);
         me.current_head_ = me.fork_.current_head();
-        promise.set_value(updated);
+        promise_.set_value(updated);
         if (updated) me.fork_.reintegrate();
         me.fork_.close();
         co_return;

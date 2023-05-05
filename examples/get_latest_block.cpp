@@ -94,8 +94,8 @@ int main(int argc, char* argv[]) {
         auto& context = context_pool.next_context();
         auto io_context = context.io_context();
 
-        auto grpc_channel{::grpc::CreateChannel(target, ::grpc::InsecureChannelCredentials())};
-        auto database = std::make_unique<ethdb::kv::RemoteDatabase>(*context.grpc_context(), grpc_channel);
+        auto channel{::grpc::CreateChannel(target, ::grpc::InsecureChannelCredentials())};
+        auto database = std::make_unique<ethdb::kv::RemoteDatabase>(*context.grpc_context(), channel);
 
         auto context_pool_thread = std::thread([&]() { context_pool.run(); });
 

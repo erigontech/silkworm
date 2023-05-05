@@ -30,8 +30,8 @@
 #include <silkworm/silkrpc/common/block_cache.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
-#include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
+#include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/stream.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 

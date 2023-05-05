@@ -22,8 +22,8 @@
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/core/filter_storage.hpp>
 #include <silkworm/silkrpc/ethbackend/remote_backend.hpp>
-#include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
 #include <silkworm/silkrpc/ethdb/kv/remote_database.hpp>
+#include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
 
 namespace silkworm::rpc::test {
 

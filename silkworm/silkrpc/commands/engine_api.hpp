@@ -25,8 +25,8 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/infra/concurrency/private_service.hpp>
-#include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethbackend/backend.hpp>
+#include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkworm::http {

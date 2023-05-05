@@ -25,9 +25,9 @@
 #include <boost/asio/thread_pool.hpp>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
-#include <silkworm/core/common/base.hpp>
 #include <silkworm/silkrpc/common/block_cache.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/ethbackend/backend.hpp>

@@ -44,7 +44,7 @@ std::ostream& operator<<(std::ostream& out, const Block& b) {
     out << " gas_used: " << b.block.header.gas_used;
     out << " timestamp: " << b.block.header.timestamp;
     out << " extra_data: " << silkworm::to_hex(b.block.header.extra_data);
-    out << " mix_hash: " << b.block.header.mix_hash;
+    out << " prev_randao: " << b.block.header.prev_randao;
     out << " nonce: " << silkworm::to_hex({b.block.header.nonce.data(), b.block.header.nonce.size()});
     out << " #transactions: " << b.block.transactions.size();
     out << " #ommers: " << b.block.ommers.size();

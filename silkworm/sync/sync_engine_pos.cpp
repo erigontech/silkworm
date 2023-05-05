@@ -122,12 +122,11 @@ Block PoSSync::make_execution_block(const ExecutionPayload& payload) {
     // as per EIP-3675
     header.ommers_hash = kEmptyListHash;  // = Keccak256(RLP([]))
     header.difficulty = 0;
-    header.mix_hash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
     header.nonce = {0, 0, 0, 0, 0, 0, 0, 0};
     block.ommers = {};  // RLP([]) = 0xc0
 
     // as per EIP-4399
-    header.mix_hash = payload.prev_randao;
+    header.prev_randao = payload.prev_randao;
 
     return block;
 }

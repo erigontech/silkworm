@@ -83,7 +83,7 @@ static void check_expected_block_with_hash(const silkworm::BlockWithHash& bwh) {
     CHECK(bwh.block.header.timestamp == 1609072811);
     CHECK(bwh.block.header.extra_data == *silkworm::from_hex("d88301091a846765746888676f312e31352e36856c696e757800000000000000be009d0049d6f0ee8ca6764a1d3e"
                                                              "b519bd4d046e167ddcab467d5db31d063f2d58f266fa86c4502aa169d17762090e92b821843de69b41adbb5d86f5d114ba7f01"));
-    CHECK(bwh.block.header.mix_hash == 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32);
+    CHECK(bwh.block.header.prev_randao == 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32);
     CHECK(bwh.hash == 0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32);
 }
 

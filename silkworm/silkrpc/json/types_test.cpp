@@ -310,7 +310,7 @@ TEST_CASE("serialize block with baseFeePerGas", "[silkrpc][to_json]") {
               .gas_used = uint64_t(1000000),
               .timestamp = uint64_t(5405021),
               .extra_data = *silkworm::from_hex("0001FF0100"),
-              .mix_hash = 0x0000000000000000000000000000000000000000000000000000000000000001_bytes32,
+              .prev_randao = 0x0000000000000000000000000000000000000000000000000000000000000001_bytes32,
               .nonce = {0, 0, 0, 0, 0, 0, 0, 255},
               .base_fee_per_gas = std::optional<intx::uint256>(0x244428),
           }}}};
@@ -355,7 +355,7 @@ TEST_CASE("serialize block with baseFeePerGas", "[silkrpc][to_json]") {
     body.ommers[0].gas_limit = 3'141'592;
     body.ommers[0].gas_used = 0;
     body.ommers[0].timestamp = 1455404305;
-    body.ommers[0].mix_hash = 0xf0a53dfdd6c2f2a661e718ef29092de60d81d45f84044bec7bf4b36630b2bc08_bytes32;
+    body.ommers[0].prev_randao = 0xf0a53dfdd6c2f2a661e718ef29092de60d81d45f84044bec7bf4b36630b2bc08_bytes32;
     body.ommers[0].nonce[7] = 35;
 
     nlohmann::json j = rpc_block;

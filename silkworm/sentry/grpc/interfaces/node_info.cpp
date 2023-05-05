@@ -27,7 +27,7 @@
 
 #include "peer_id.hpp"
 
-namespace silkworm::sentry::rpc::interfaces {
+namespace silkworm::sentry::grpc::interfaces {
 
 boost::asio::ip::tcp::endpoint parse_endpoint(const std::string& address) {
     auto delimiter_pos = address.find_last_of(':');
@@ -74,4 +74,4 @@ types::NodeInfoReply proto_node_info_from_node_info(const api::api_common::NodeI
     return reply;
 }
 
-}  // namespace silkworm::sentry::rpc::interfaces
+}  // namespace silkworm::sentry::grpc::interfaces

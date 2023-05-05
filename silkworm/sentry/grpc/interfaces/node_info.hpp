@@ -19,9 +19,9 @@
 #include <silkworm/interfaces/types/types.pb.h>
 #include <silkworm/sentry/api/api_common/node_info.hpp>
 
-namespace silkworm::sentry::rpc::interfaces {
+namespace silkworm::sentry::grpc::interfaces {
 
 api::api_common::NodeInfo node_info_from_proto_node_info(const types::NodeInfoReply& info);
 types::NodeInfoReply proto_node_info_from_node_info(const api::api_common::NodeInfo& info);
 
-}  // namespace silkworm::sentry::rpc::interfaces
+}  // namespace silkworm::sentry::grpc::interfaces

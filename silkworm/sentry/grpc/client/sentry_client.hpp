@@ -23,7 +23,7 @@
 
 #include <silkworm/sentry/api/api_common/sentry_client.hpp>
 
-namespace silkworm::sentry::rpc::client {
+namespace silkworm::sentry::grpc::client {
 
 class SentryClientImpl;
 
@@ -44,4 +44,4 @@ class SentryClient : public api::api_common::SentryClient {
     std::shared_ptr<SentryClientImpl> p_impl_;
 };
 
-}  // namespace silkworm::sentry::rpc::client
+}  // namespace silkworm::sentry::grpc::client

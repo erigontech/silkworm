@@ -177,7 +177,7 @@ int main(int argc, char* argv[]) {
             [] { return std::make_unique<DummyServerCompletionQueue>(); },
         };
 
-        auto remote_sentry_client = std::make_shared<silkworm::sentry::rpc::client::SentryClient>(
+        auto remote_sentry_client = std::make_shared<silkworm::sentry::grpc::client::SentryClient>(
             node_settings.external_sentry_addr,
             *context_pool.next_context().client_grpc_context());
         auto sentry_client = std::make_shared<silkworm::sentry::SessionSentryClient>(

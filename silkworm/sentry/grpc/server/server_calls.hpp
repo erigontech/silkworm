@@ -51,7 +51,7 @@
 #include "../interfaces/sent_peer_ids.hpp"
 #include "../interfaces/status_data.hpp"
 
-namespace silkworm::sentry::rpc::server {
+namespace silkworm::sentry::grpc::server {
 
 using boost::asio::awaitable;
 using boost::asio::io_context;
@@ -70,7 +70,7 @@ class SetStatusCall : public sw_rpc::server::UnaryCall<proto::StatusData, proto:
     awaitable<void> operator()(const ServiceRouter& router) {
         auto status = interfaces::status_data_from_proto(request_, router.eth_version);
         co_await router.status_channel.send(status);
-        co_await agrpc::finish(responder_, proto::SetStatusReply{}, grpc::Status::OK);
+        co_await agrpc::finish(responder_, proto::SetStatusReply{}, ::grpc::Status::OK);
     }
 };
 
@@ -85,7 +85,7 @@ class HandshakeCall : public sw_rpc::server::UnaryCall<protobuf::Empty, proto::H
         proto::HandShakeReply reply;
         auto protocol = interfaces::protocol_from_eth_version(router.eth_version);
         reply.set_protocol(protocol);
-        co_await agrpc::finish(responder_, reply, grpc::Status::OK);
+        co_await agrpc::finish(responder_, reply, ::grpc::Status::OK);
     }
 };
 
@@ -97,7 +97,7 @@ class NodeInfoCall : public sw_rpc::server::UnaryCall<protobuf::Empty, proto_typ
 
     awaitable<void> operator()(const ServiceRouter& router) {
         auto reply = interfaces::proto_node_info_from_node_info(router.node_info_provider());
-        co_await agrpc::finish(responder_, reply, grpc::Status::OK);
+        co_await agrpc::finish(responder_, reply, ::grpc::Status::OK);
     }
 };
 
@@ -129,7 +129,7 @@ class SendMessageByIdCall : public sw_rpc::server::UnaryCall<proto::SendMessageB
             router,
             request_.data(),
             api::api_common::PeerFilter::with_peer_public_key(peer_public_key));
-        co_await agrpc::finish(responder_, reply, grpc::Status::OK);
+        co_await agrpc::finish(responder_, reply, ::grpc::Status::OK);
     }
 };
 
@@ -143,7 +143,7 @@ class SendMessageToRandomPeersCall : public sw_rpc::server::UnaryCall<proto::Sen
             router,
             request_.data(),
             api::api_common::PeerFilter::with_max_peers(request_.max_peers()));
-        co_await agrpc::finish(responder_, reply, grpc::Status::OK);
+        co_await agrpc::finish(responder_, reply, ::grpc::Status::OK);
     }
 };
 
@@ -154,7 +154,7 @@ class SendMessageToAllCall : public sw_rpc::server::UnaryCall<proto::OutboundMes
 
     awaitable<void> operator()(const ServiceRouter& router) {
         proto::SentPeers reply = co_await do_send_message_call(router, request_, api::api_common::PeerFilter{});
-        co_await agrpc::finish(responder_, reply, grpc::Status::OK);
+        co_await agrpc::finish(responder_, reply, ::grpc::Status::OK);
     }
 };
 
@@ -169,7 +169,7 @@ class SendMessageByMinBlockCall : public sw_rpc::server::UnaryCall<proto::SendMe
             router,
             request_.data(),
             api::api_common::PeerFilter::with_max_peers(request_.max_peers()));
-        co_await agrpc::finish(responder_, reply, grpc::Status::OK);
+        co_await agrpc::finish(responder_, reply, ::grpc::Status::OK);
     }
 };
 
@@ -180,7 +180,7 @@ class PeerMinBlockCall : public sw_rpc::server::UnaryCall<proto::PeerMinBlockReq
 
     awaitable<void> operator()(const ServiceRouter& /*router*/) {
         // TODO: implement
-        co_await agrpc::finish(responder_, protobuf::Empty{}, grpc::Status::OK);
+        co_await agrpc::finish(responder_, protobuf::Empty{}, ::grpc::Status::OK);
     }
 };
 
@@ -217,7 +217,7 @@ class MessagesCall : public sw_rpc::server::ServerStreamingCall<proto::MessagesR
             write_ok = co_await agrpc::write(responder_, reply);
         }
 
-        co_await agrpc::finish(responder_, grpc::Status::OK);
+        co_await agrpc::finish(responder_, ::grpc::Status::OK);
     }
 };
 
@@ -235,7 +235,7 @@ class PeersCall : public sw_rpc::server::UnaryCall<protobuf::Empty, proto::Peers
 
         proto::PeersReply reply = interfaces::proto_peers_reply_from_peer_infos(peers);
 
-        co_await agrpc::finish(responder_, reply, grpc::Status::OK);
+        co_await agrpc::finish(responder_, reply, ::grpc::Status::OK);
     }
 };
 
@@ -253,7 +253,7 @@ class PeerCountCall : public sw_rpc::server::UnaryCall<proto::PeerCountRequest, 
 
         proto::PeerCountReply reply;
         reply.set_count(count);
-        co_await agrpc::finish(responder_, reply, grpc::Status::OK);
+        co_await agrpc::finish(responder_, reply, ::grpc::Status::OK);
     }
 };
 
@@ -271,7 +271,7 @@ class PeerByIdCall : public sw_rpc::server::UnaryCall<proto::PeerByIdRequest, pr
         auto peer_opt = co_await call.result_promise->wait();
 
         proto::PeerByIdReply reply = interfaces::proto_peer_reply_from_peer_info_opt(peer_opt);
-        co_await agrpc::finish(responder_, reply, grpc::Status::OK);
+        co_await agrpc::finish(responder_, reply, ::grpc::Status::OK);
     }
 };
 
@@ -285,7 +285,7 @@ class PenalizePeerCall : public sw_rpc::server::UnaryCall<proto::PenalizePeerReq
 
         co_await router.peer_penalize_calls_channel.send({peer_public_key});
 
-        co_await agrpc::finish(responder_, protobuf::Empty{}, grpc::Status::OK);
+        co_await agrpc::finish(responder_, protobuf::Empty{}, ::grpc::Status::OK);
     }
 };
 
@@ -312,8 +312,8 @@ class PeerEventsCall : public sw_rpc::server::ServerStreamingCall<proto::PeerEve
             write_ok = co_await agrpc::write(responder_, reply);
         }
 
-        co_await agrpc::finish(responder_, grpc::Status::OK);
+        co_await agrpc::finish(responder_, ::grpc::Status::OK);
     }
 };
 
-}  // namespace silkworm::sentry::rpc::server
+}  // namespace silkworm::sentry::grpc::server

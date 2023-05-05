@@ -557,7 +557,7 @@ int main(int argc, char* argv[]) {
             sentry_client = sentry_server.value();
         } else {
             // remote client
-            sentry_client = std::make_shared<silkworm::sentry::rpc::client::SentryClient>(
+            sentry_client = std::make_shared<silkworm::sentry::grpc::client::SentryClient>(
                 node_settings.external_sentry_addr,
                 *context_pool.next_context().client_grpc_context());
         }

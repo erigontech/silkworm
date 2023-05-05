@@ -155,7 +155,7 @@ awaitable<void> NodeInfoCall::operator()(const EthereumBackEnd& backend) {
     grpc::Status result_status{grpc::Status::OK};
     try {
         auto node_info = co_await sentry->node_info();
-        response.add_nodes_info()->CopyFrom(sentry::rpc::interfaces::proto_node_info_from_node_info(node_info));
+        response.add_nodes_info()->CopyFrom(sentry::grpc::interfaces::proto_node_info_from_node_info(node_info));
         SILK_DEBUG << "Reply OK node info: name=" << node_info.client_id;
     } catch (const GrpcStatusError& status_error) {
         result_status = status_error.status();

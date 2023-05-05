@@ -39,7 +39,7 @@
 #include "../interfaces/sent_peer_ids.hpp"
 #include "../interfaces/status_data.hpp"
 
-namespace silkworm::sentry::rpc::client {
+namespace silkworm::sentry::grpc::client {
 
 using boost::asio::awaitable;
 namespace proto = ::sentry;
@@ -47,8 +47,8 @@ using Stub = proto::Sentry::Stub;
 namespace sw_rpc = silkworm::rpc;
 using namespace api::api_common;
 
-static std::shared_ptr<grpc::Channel> make_grpc_channel(const std::string& address_uri) {
-    return grpc::CreateChannel(address_uri, grpc::InsecureChannelCredentials());
+static std::shared_ptr<::grpc::Channel> make_grpc_channel(const std::string& address_uri) {
+    return ::grpc::CreateChannel(address_uri, ::grpc::InsecureChannelCredentials());
 }
 
 class SentryClientImpl final : public api::api_common::Service {
@@ -225,7 +225,7 @@ class SentryClientImpl final : public api::api_common::Service {
             std::move(proto_consumer));
     }
 
-    std::shared_ptr<grpc::Channel> channel_;
+    std::shared_ptr<::grpc::Channel> channel_;
     std::unique_ptr<Stub> stub_;
     agrpc::GrpcContext& grpc_context_;
     std::function<awaitable<void>()> on_disconnect_;
@@ -235,7 +235,7 @@ SentryClient::SentryClient(const std::string& address_uri, agrpc::GrpcContext& g
     : p_impl_(std::make_shared<SentryClientImpl>(address_uri, grpc_context)) {}
 
 SentryClient::~SentryClient() {
-    log::Trace("sentry") << "silkworm::sentry::rpc::client::SentryClient::~SentryClient";
+    log::Trace("sentry") << "silkworm::sentry::grpc::client::SentryClient::~SentryClient";
 }
 
 awaitable<std::shared_ptr<api::api_common::Service>> SentryClient::service() {
@@ -250,4 +250,4 @@ awaitable<void> SentryClient::reconnect() {
     return p_impl_->reconnect();
 }
 
-}  // namespace silkworm::sentry::rpc::client
+}  // namespace silkworm::sentry::grpc::client

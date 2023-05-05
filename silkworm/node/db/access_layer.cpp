@@ -457,7 +457,7 @@ bool has_body(ROTxn& txn, BlockNum block_number, const evmc::bytes32& hash) {
     return db::has_body(txn, block_number, hash.bytes);
 }
 
-bool has_sibling(ROTxn& txn, BlockNum block_number) {
+bool has_sibling(ROTxn&, BlockNum) {
     return false;
     // todo: implement!
 }
@@ -481,7 +481,7 @@ void write_body(RWTxn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLe
     write_transactions(txn, body.transactions, body_for_storage.base_txn_id);
 }
 
-void write_sibling(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, BlockNum bn) {
+void write_sibling(RWTxn&, const BlockBody&, const evmc::bytes32&, BlockNum) {
     throw std::runtime_error("write_sibling not implemented");
 }
 

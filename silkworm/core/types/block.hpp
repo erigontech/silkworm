@@ -148,4 +148,4 @@ inline BlockId to_BlockId(const ChainHead& head) {
     return {.number = head.height, .hash = head.hash};
 }
 
-}  // namespace sil
+}  // namespace silkworm

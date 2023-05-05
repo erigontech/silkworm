@@ -82,6 +82,7 @@ TEST_CASE("MainChain") {
         block1.header.parent_hash = *header0_hash;
         // auto header1_hash = block1.header.hash();
         block1.ommers.push_back(BlockHeader{});  // generate error InvalidOmmerHeader
+        auto block1_hash = block1.header.hash();
 
         // getting initial status
         auto initial_progress = main_chain.get_block_progress();
@@ -99,7 +100,7 @@ TEST_CASE("MainChain") {
 
         // check db
         BlockBody saved_body;
-        bool present = db::read_body(tx, block1.header.hash(), block1.header.number, saved_body);
+        bool present = db::read_body(tx, block1_hash, block1.header.number, saved_body);
         REQUIRE(present);
 
         auto progress = main_chain.get_block_progress();
@@ -109,7 +110,7 @@ TEST_CASE("MainChain") {
         REQUIRE(canonical_head == initial_canonical_head);  // doesn't change
 
         // verifying the chain
-        auto verification = main_chain.verify_chain(block1.header.hash());
+        auto verification = main_chain.verify_chain(block1_hash);
 
         CHECK(db::stages::read_stage_progress(tx, db::stages::kHeadersKey) == 1);
         CHECK(db::stages::read_stage_progress(tx, db::stages::kBlockHashesKey) == 1);
@@ -123,9 +124,9 @@ TEST_CASE("MainChain") {
 
         REQUIRE(invalid_chain.unwind_point == BlockId{0, *header0_hash});
         REQUIRE(invalid_chain.bad_block.has_value());
-        REQUIRE(invalid_chain.bad_block.value() == block1.header.hash());
+        REQUIRE(invalid_chain.bad_block.value() == block1_hash);
         REQUIRE(invalid_chain.bad_headers.size() == 1);
-        REQUIRE(*(invalid_chain.bad_headers.begin()) == block1.header.hash());
+        REQUIRE(*(invalid_chain.bad_headers.begin()) == block1_hash);
 
         // check status
         auto final_progress = main_chain.get_block_progress();
@@ -133,9 +134,9 @@ TEST_CASE("MainChain") {
 
         auto final_canonical_head = main_chain.canonical_head();
         REQUIRE(final_canonical_head.number == block1.header.number);
-        REQUIRE(final_canonical_head.hash == block1.header.hash());
+        REQUIRE(final_canonical_head.hash == block1_hash);
         REQUIRE(main_chain.canonical_chain_.current_head().number == block1.header.number);
-        REQUIRE(main_chain.canonical_chain_.current_head().hash == block1.header.hash());
+        REQUIRE(main_chain.canonical_chain_.current_head().hash == block1_hash);
 
         auto current_status = main_chain.canonical_head_status_;
         REQUIRE(holds_alternative<InvalidChain>(current_status));

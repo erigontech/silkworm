@@ -16,9 +16,11 @@
 
 #include "multi_sentry_client.hpp"
 
+#include <atomic>
 #include <cassert>
 #include <chrono>
 #include <functional>
+#include <mutex>
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
@@ -30,6 +32,7 @@
 
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/sentry/api/api_common/service.hpp>
+#include <silkworm/sentry/common/atomic_value.hpp>
 #include <silkworm/sentry/common/timeout.hpp>
 
 namespace silkworm::sentry {
@@ -114,22 +117,58 @@ class MultiSentryClientImpl : public api::api_common::Service {
 
     // rpc SendMessageById(SendMessageByIdRequest) returns (SentPeers);
     awaitable<PeerKeys> send_message_by_id(common::Message message, common::EccPublicKey public_key) override {
-        co_return PeerKeys{};
+        PeerKeys all_peer_keys;
+        std::mutex all_peer_keys_mutex;
+
+        co_await for_each_client([&](auto service) -> awaitable<void> {
+            auto peer_keys = co_await service->send_message_by_id(message, public_key);
+
+            std::scoped_lock lock(all_peer_keys_mutex);
+            all_peer_keys.insert(all_peer_keys.end(), peer_keys.begin(), peer_keys.end());
+        });
+        co_return all_peer_keys;
     }
 
     // rpc SendMessageToRandomPeers(SendMessageToRandomPeersRequest) returns (SentPeers);
     awaitable<PeerKeys> send_message_to_random_peers(common::Message message, size_t max_peers) override {
-        co_return PeerKeys{};
+        PeerKeys all_peer_keys;
+        std::mutex all_peer_keys_mutex;
+
+        co_await for_each_client([&](auto service) -> awaitable<void> {
+            auto peer_keys = co_await service->send_message_to_random_peers(message, max_peers);
+
+            std::scoped_lock lock(all_peer_keys_mutex);
+            all_peer_keys.insert(all_peer_keys.end(), peer_keys.begin(), peer_keys.end());
+        });
+        co_return all_peer_keys;
     }
 
     // rpc SendMessageToAll(OutboundMessageData) returns (SentPeers);
     awaitable<PeerKeys> send_message_to_all(common::Message message) override {
-        co_return PeerKeys{};
+        PeerKeys all_peer_keys;
+        std::mutex all_peer_keys_mutex;
+
+        co_await for_each_client([&](auto service) -> awaitable<void> {
+            auto peer_keys = co_await service->send_message_to_all(message);
+
+            std::scoped_lock lock(all_peer_keys_mutex);
+            all_peer_keys.insert(all_peer_keys.end(), peer_keys.begin(), peer_keys.end());
+        });
+        co_return all_peer_keys;
     }
 
     // rpc SendMessageByMinBlock(SendMessageByMinBlockRequest) returns (SentPeers);
     awaitable<PeerKeys> send_message_by_min_block(common::Message message, size_t max_peers) override {
-        co_return PeerKeys{};
+        PeerKeys all_peer_keys;
+        std::mutex all_peer_keys_mutex;
+
+        co_await for_each_client([&](auto service) -> awaitable<void> {
+            auto peer_keys = co_await service->send_message_by_min_block(message, max_peers);
+
+            std::scoped_lock lock(all_peer_keys_mutex);
+            all_peer_keys.insert(all_peer_keys.end(), peer_keys.begin(), peer_keys.end());
+        });
+        co_return all_peer_keys;
     }
 
     // rpc PeerMinBlock(PeerMinBlockRequest) returns (google.protobuf.Empty);
@@ -150,17 +189,37 @@ class MultiSentryClientImpl : public api::api_common::Service {
 
     // rpc Peers(google.protobuf.Empty) returns (PeersReply);
     awaitable<PeerInfos> peers() override {
-        co_return PeerInfos{};
+        PeerInfos all_peers;
+        std::mutex all_peers_mutex;
+
+        co_await for_each_client([&all_peers, &all_peers_mutex](auto service) -> awaitable<void> {
+            auto peers = co_await service->peers();
+
+            std::scoped_lock lock(all_peers_mutex);
+            all_peers.insert(all_peers.end(), peers.begin(), peers.end());
+        });
+        co_return all_peers;
     }
 
     // rpc PeerCount(PeerCountRequest) returns (PeerCountReply);
     awaitable<size_t> peer_count() override {
-        co_return 0;
+        std::atomic_size_t count = 0;
+        co_await for_each_client([&count](auto service) -> awaitable<void> {
+            count += co_await service->peer_count();
+        });
+        co_return count;
     }
 
     // rpc PeerById(PeerByIdRequest) returns (PeerByIdReply);
     awaitable<std::optional<PeerInfo>> peer_by_id(common::EccPublicKey public_key) override {
-        co_return std::nullopt;
+        common::AtomicValue<std::optional<PeerInfo>> found_peer{std::nullopt};
+        co_await for_each_client([&public_key, &found_peer](auto service) -> awaitable<void> {
+            auto peer = co_await service->peer_by_id(public_key);
+            if (peer) {
+                found_peer.set(peer);
+            }
+        });
+        co_return found_peer.get();
     }
 
     // rpc PenalizePeer(PenalizePeerRequest) returns (google.protobuf.Empty);

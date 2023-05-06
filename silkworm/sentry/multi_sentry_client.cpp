@@ -111,8 +111,17 @@ class MultiSentryClientImpl : public api::api_common::Service {
     }
 
     // rpc NodeInfo(google.protobuf.Empty) returns(types.NodeInfoReply);
-    awaitable<NodeInfo> node_info() override {
-        co_return NodeInfo{sentry::common::EnodeUrl{""}, sentry::common::EccPublicKey{Bytes{}}};
+    awaitable<NodeInfos> node_infos() override {
+        NodeInfos all_infos;
+        std::mutex all_infos_mutex;
+
+        co_await for_each_client([&all_infos, &all_infos_mutex](auto service) -> awaitable<void> {
+            auto infos = co_await service->node_infos();
+
+            std::scoped_lock lock(all_infos_mutex);
+            all_infos.insert(all_infos.end(), infos.begin(), infos.end());
+        });
+        co_return all_infos;
     }
 
     // rpc SendMessageById(SendMessageByIdRequest) returns (SentPeers);

@@ -42,8 +42,8 @@ awaitable<uint8_t> DirectService::handshake() {
     co_return router_.eth_version;
 }
 
-awaitable<api_common::NodeInfo> DirectService::node_info() {
-    co_return router_.node_info_provider();
+awaitable<api_common::Service::NodeInfos> DirectService::node_infos() {
+    co_return api_common::Service::NodeInfos{router_.node_info_provider()};
 }
 
 static awaitable<api_common::Service::PeerKeys> do_send_message_call(

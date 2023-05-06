@@ -93,11 +93,11 @@ class SentryClientImpl final : public api::api_common::Service {
     }
 
     // rpc NodeInfo(google.protobuf.Empty) returns(types.NodeInfoReply);
-    awaitable<NodeInfo> node_info() override {
+    awaitable<NodeInfos> node_infos() override {
         google::protobuf::Empty request;
         types::NodeInfoReply reply = co_await sw_rpc::unary_rpc_with_retries(&Stub::AsyncNodeInfo, stub_, std::move(request), grpc_context_, on_disconnect_, *channel_);
         auto result = interfaces::node_info_from_proto_node_info(reply);
-        co_return result;
+        co_return NodeInfos{result};
     }
 
     // rpc SendMessageById(SendMessageByIdRequest) returns (SentPeers);

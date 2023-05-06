@@ -223,7 +223,7 @@ class MockSentryClient
     boost::asio::awaitable<uint8_t> handshake() override {
         throw std::runtime_error("not implemented");
     }
-    boost::asio::awaitable<silkworm::sentry::api::api_common::NodeInfo> node_info() override {
+    boost::asio::awaitable<NodeInfos> node_infos() override {
         const std::string ip_str = "1.2.3.4";
         const uint16_t port = 50555;
         const std::string node_url_str = std::string("enode://") + kTestSentryNodeId + "@" + ip_str + ":" + std::to_string(port);
@@ -235,7 +235,7 @@ class MockSentryClient
             boost::asio::ip::tcp::endpoint{boost::asio::ip::make_address(ip_str), port},
             port,
         };
-        co_return info;
+        co_return NodeInfos{info};
     }
 
     boost::asio::awaitable<PeerKeys> send_message_by_id(silkworm::sentry::common::Message /*message*/, silkworm::sentry::common::EccPublicKey /*public_key*/) override {

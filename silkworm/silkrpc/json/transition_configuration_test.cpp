@@ -55,5 +55,4 @@ TEST_CASE("deserialize transition configuration", "[silkworm::json][from_json]")
     CHECK(actual_transition_configuration.terminal_block_number == expected_transition_configuration.terminal_block_number);
 }
 
-
 }  // namespace silkworm::rpc

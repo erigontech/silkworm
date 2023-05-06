@@ -21,7 +21,6 @@
 #include <vector>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
@@ -54,12 +53,12 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_call(const nlohmann::json
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-        ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *context_.state_cache()};
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*context_.block_cache(), tx_database, block_number_or_hash);
+        ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
+        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, tx_database, block_number_or_hash);
         const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash->block.header.number, tx_database);
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
-        trace::TraceCallExecutor executor{*context_.io_context(), *context_.block_cache(), db_reader, workers_};
+        trace::TraceCallExecutor executor{io_context_, *block_cache_, db_reader, workers_};
         const auto result = co_await executor.trace_call(block_with_hash->block, call, config);
 
         if (result.pre_check_error) {
@@ -97,13 +96,13 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_call_many(const nlohmann:
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-        ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *context_.state_cache()};
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*context_.block_cache(), tx_database, block_number_or_hash);
+        ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
+        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, tx_database, block_number_or_hash);
         const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash->block.header.number, tx_database);
 
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
-        trace::TraceCallExecutor executor{*context_.io_context(), *context_.block_cache(), db_reader, workers_};
+        trace::TraceCallExecutor executor{io_context_, *block_cache_, db_reader, workers_};
         const auto result = co_await executor.trace_calls(block_with_hash->block, trace_calls);
 
         if (result.pre_check_error) {
@@ -185,9 +184,9 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_raw_transaction(const nlo
         ethdb::TransactionDatabase tx_database{*tx};
 
         const auto block_number = co_await core::get_latest_block_number(tx_database);
-        const auto block_with_hash = co_await core::read_block_by_number(*context_.block_cache(), tx_database, block_number);
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
 
-        trace::TraceCallExecutor executor{*context_.io_context(), *context_.block_cache(), tx_database, workers_};
+        trace::TraceCallExecutor executor{io_context_, *block_cache_, tx_database, workers_};
         const auto result = co_await executor.trace_transaction(block_with_hash->block, transaction, config);
 
         if (result.pre_check_error) {
@@ -226,9 +225,9 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_replay_block_transactions
     try {
         ethdb::TransactionDatabase tx_database{*tx};
 
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*context_.block_cache(), tx_database, block_number_or_hash);
+        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, tx_database, block_number_or_hash);
 
-        trace::TraceCallExecutor executor{*context_.io_context(), *context_.block_cache(), tx_database, workers_};
+        trace::TraceCallExecutor executor{io_context_, *block_cache_, tx_database, workers_};
         const auto result = co_await executor.trace_block_transactions(block_with_hash->block, config);
         reply = make_json_content(request["id"], result);
     } catch (const std::exception& e) {
@@ -261,13 +260,13 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_replay_transaction(const 
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-        const auto tx_with_block = co_await core::read_transaction_by_hash(*context_.block_cache(), tx_database, transaction_hash);
+        const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, tx_database, transaction_hash);
         if (!tx_with_block) {
             std::ostringstream oss;
             oss << "transaction 0x" << transaction_hash << " not found";
             reply = make_json_error(request["id"], -32000, oss.str());
         } else {
-            trace::TraceCallExecutor executor{*context_.io_context(), *context_.block_cache(), tx_database, workers_};
+            trace::TraceCallExecutor executor{io_context_, *block_cache_, tx_database, workers_};
             const auto result = co_await executor.trace_transaction(tx_with_block->block_with_hash.block, tx_with_block->transaction, config);
 
             if (result.pre_check_error) {
@@ -306,9 +305,9 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_block(const nlohmann::jso
     try {
         ethdb::TransactionDatabase tx_database{*tx};
 
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*context_.block_cache(), tx_database, block_number_or_hash);
+        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, tx_database, block_number_or_hash);
 
-        trace::TraceCallExecutor executor{*context_.io_context(), *context_.block_cache(), tx_database, workers_};
+        trace::TraceCallExecutor executor{io_context_, *block_cache_, tx_database, workers_};
         trace::Filter filter;
         const auto result = co_await executor.trace_block(*block_with_hash, filter);
         reply = make_json_content(request["id"], result);
@@ -348,7 +347,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_filter(const nlohmann::js
     try {
         ethdb::TransactionDatabase tx_database{*tx};
 
-        trace::TraceCallExecutor executor{*context_.io_context(), *context_.block_cache(), tx_database, workers_};
+        trace::TraceCallExecutor executor{io_context_, *block_cache_, tx_database, workers_};
 
         co_await executor.trace_filter(trace_filter, &stream);
     } catch (const std::exception& e) {
@@ -386,7 +385,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_get(const nlohmann::json&
                    [](const std::string& str) { return std::stoi(str, nullptr, 16); });
     SILKRPC_INFO << "transaction_hash: " << transaction_hash << ", #indices: " << indices.size() << "\n";
 
-    // TODO(sixtysixter) for RPCDAEMON compatibility
+    // Erigon RpcDaemon compatibility
     // Parity fails if it gets more than a single index. It returns nothing in this case. Must we?
     if (indices.size() > 1) {
         reply = make_json_content(request["id"]);
@@ -398,15 +397,14 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_get(const nlohmann::json&
     try {
         ethdb::TransactionDatabase tx_database{*tx};
 
-        const auto tx_with_block = co_await core::read_transaction_by_hash(*context_.block_cache(), tx_database, transaction_hash);
+        const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, tx_database, transaction_hash);
         if (!tx_with_block) {
             reply = make_json_content(request["id"]);
         } else {
-            trace::TraceCallExecutor executor{*context_.io_context(), *context_.block_cache(), tx_database, workers_};
+            trace::TraceCallExecutor executor{io_context_, *block_cache_, tx_database, workers_};
             const auto result = co_await executor.trace_transaction(tx_with_block->block_with_hash, tx_with_block->transaction);
 
-            // TODO(sixtysixter) for RPCDAEMON compatibility
-            uint16_t index = indices[0] + 1;
+            uint16_t index = indices[0] + 1;  // Erigon RpcDaemon compatibility
             if (result.size() > index) {
                 reply = make_json_content(request["id"], result[index]);
             } else {
@@ -441,11 +439,11 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_transaction(const nlohman
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-        const auto tx_with_block = co_await core::read_transaction_by_hash(*context_.block_cache(), tx_database, transaction_hash);
+        const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, tx_database, transaction_hash);
         if (!tx_with_block) {
             reply = make_json_content(request["id"]);
         } else {
-            trace::TraceCallExecutor executor{*context_.io_context(), *context_.block_cache(), tx_database, workers_};
+            trace::TraceCallExecutor executor{io_context_, *block_cache_, tx_database, workers_};
             auto result = co_await executor.trace_transaction(tx_with_block->block_with_hash, tx_with_block->transaction);
             reply = make_json_content(request["id"], result);
         }

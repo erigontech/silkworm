@@ -37,7 +37,6 @@
 #pragma GCC diagnostic pop
 #include <silkworm/core/state/intra_block_state.hpp>
 #include <silkworm/silkrpc/common/block_cache.hpp>
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/core/evm_executor.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/json/stream.hpp>

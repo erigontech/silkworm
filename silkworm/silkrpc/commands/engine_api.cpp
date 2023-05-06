@@ -20,6 +20,7 @@
 
 #include <evmc/evmc.hpp>
 
+#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/types/execution_payload.hpp>

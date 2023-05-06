@@ -19,7 +19,7 @@
 #include <boost/asio/io_context.hpp>
 #include <catch2/catch.hpp>
 
-namespace silkworm::concurrency {
+namespace silkworm {
 
 TEST_CASE("SharedService", "[silkworm][infra][concurrency][services]") {
     struct Integer {
@@ -61,4 +61,4 @@ TEST_CASE("SharedService", "[silkworm][infra][concurrency][services]") {
     }
 }
 
-}  // namespace silkworm::concurrency
+}  // namespace silkworm

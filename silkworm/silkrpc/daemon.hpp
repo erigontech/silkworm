@@ -22,9 +22,9 @@
 
 #include <boost/asio/thread_pool.hpp>
 
+#include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_changes_stream.hpp>
 #include <silkworm/silkrpc/http/server.hpp>
 #include <silkworm/silkrpc/protocol/version.hpp>
@@ -40,7 +40,7 @@ struct DaemonSettings {
     uint32_t num_contexts;
     uint32_t num_workers;
     LogLevel log_verbosity;
-    strategy::WaitMode wait_mode;
+    concurrency::WaitMode wait_mode;
     std::string jwt_secret_filename;
 };
 
@@ -75,6 +75,9 @@ class Daemon {
     static bool validate_settings(const DaemonSettings& settings);
     static ChannelFactory make_channel_factory(const DaemonSettings& settings);
 
+    void add_private_services();
+    void add_shared_services();
+
     //! The RPC daemon configuration settings.
     const DaemonSettings& settings_;
 
@@ -82,15 +85,19 @@ class Daemon {
     ChannelFactory create_channel_;
 
     //! The execution contexts capturing the asynchronous scheduling model.
-    ContextPool context_pool_;
+    ClientContextPool context_pool_;
 
     //! The pool of workers for long-running tasks.
     boost::asio::thread_pool worker_pool_;
 
+    //! The chaindata MDBX environment or \code nullptr if working remotely
+    std::shared_ptr<mdbx::env_managed> chaindata_env_;
+
+    //! The JSON RPC API services.
     std::vector<std::unique_ptr<http::Server>> rpc_services_;
 
     //! The gRPC KV interface client stub.
-    std::unique_ptr<remote::KV::StubInterface> kv_stub_;
+    std::unique_ptr<::remote::KV::StubInterface> kv_stub_;
 
     //! The stream handling StateChanges server-streaming RPC.
     std::unique_ptr<ethdb::kv::StateChangesStream> state_changes_stream_;

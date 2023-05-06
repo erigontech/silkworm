@@ -18,9 +18,9 @@
 
 #include <boost/asio/execution_context.hpp>
 
-namespace silkworm::concurrency {
+namespace silkworm {
 
 template <typename T>
 using BaseService = boost::asio::detail::execution_context_service_base<T>;
 
-}  // namespace silkworm::concurrency
+}  // namespace silkworm

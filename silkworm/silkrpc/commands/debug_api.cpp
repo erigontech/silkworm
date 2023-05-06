@@ -17,12 +17,10 @@
 #include "debug_api.hpp"
 
 #include <chrono>
-#include <ctime>
 #include <ostream>
 #include <set>
 #include <stdexcept>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include <evmc/evmc.hpp>
@@ -85,7 +83,7 @@ awaitable<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& re
     try {
         auto start = std::chrono::system_clock::now();
         core::AccountDumper dumper{*tx};
-        DumpAccounts dump_accounts = co_await dumper.dump_accounts(*context_.block_cache(), block_number_or_hash, start_address, max_result, exclude_code, exclude_storage);
+        DumpAccounts dump_accounts = co_await dumper.dump_accounts(*block_cache_, block_number_or_hash, start_address, max_result, exclude_code, exclude_storage);
         auto end = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = end - start;
         SILKRPC_DEBUG << "dump_accounts: elapsed " << elapsed_seconds.count() << " sec\n";
@@ -213,7 +211,7 @@ awaitable<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json&
     try {
         ethdb::TransactionDatabase tx_database{*tx};
 
-        const auto block_with_hash = co_await core::read_block_by_hash(*context_.block_cache(), tx_database, block_hash);
+        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
         auto block_number = block_with_hash->block.header.number - 1;
 
         nlohmann::json storage({});
@@ -288,14 +286,14 @@ awaitable<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-        const auto tx_with_block = co_await core::read_transaction_by_hash(*context_.block_cache(), tx_database, transaction_hash);
+        const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, tx_database, transaction_hash);
         if (!tx_with_block) {
             std::ostringstream oss;
             oss << "transaction 0x" << transaction_hash << " not found";
             const Error error{-32000, oss.str()};
             stream.write_field("error", error);
         } else {
-            debug::DebugExecutor executor{*context_.io_context(), tx_database, workers_, config};
+            debug::DebugExecutor executor{io_context_, tx_database, workers_, config};
 
             stream.write_field("result");
             stream.open_object();
@@ -346,13 +344,13 @@ awaitable<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& reque
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-        ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *context_.state_cache()};
+        ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
 
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*context_.block_cache(), tx_database, block_number_or_hash);
+        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, tx_database, block_number_or_hash);
         const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash->block.header.number, tx_database);
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
-        debug::DebugExecutor executor{*context_.io_context(), db_reader, workers_, config};
+        debug::DebugExecutor executor{io_context_, db_reader, workers_, config};
 
         stream.write_field("result");
         stream.open_object();
@@ -407,9 +405,9 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::
     try {
         ethdb::TransactionDatabase tx_database{*tx};
 
-        const auto block_with_hash = co_await core::read_block_by_number(*context_.block_cache(), tx_database, block_number);
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
 
-        debug::DebugExecutor executor{*context_.io_context(), tx_database, workers_, config};
+        debug::DebugExecutor executor{io_context_, tx_database, workers_, config};
 
         stream.write_field("result");
         stream.open_array();
@@ -469,9 +467,9 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::js
     try {
         ethdb::TransactionDatabase tx_database{*tx};
 
-        const auto block_with_hash = co_await core::read_block_by_hash(*context_.block_cache(), tx_database, block_hash);
+        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
 
-        debug::DebugExecutor executor{*context_.io_context(), tx_database, workers_, config};
+        debug::DebugExecutor executor{io_context_, tx_database, workers_, config};
 
         stream.write_field("result");
         stream.open_array();

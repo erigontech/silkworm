@@ -25,11 +25,14 @@
 #include <agrpc/asio_grpc.hpp>
 #include <boost/asio/executor_work_guard.hpp>
 #include <boost/asio/io_context.hpp>
+#include <grpcpp/grpcpp.h>
 
 #include <silkworm/infra/concurrency/context_pool.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
 
 namespace silkworm::rpc {
+
+using ChannelFactory = std::function<std::shared_ptr<::grpc::Channel>()>;
 
 //! Asynchronous client scheduler running an execution loop w/ integrated gRPC client.
 class ClientContext : public concurrency::Context {

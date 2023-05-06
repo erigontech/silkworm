@@ -22,7 +22,6 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/node/db/tables.hpp>
-#include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
@@ -52,7 +51,7 @@ awaitable<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::j
         ethdb::TransactionDatabase tx_database{*tx};
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
-        const auto block_with_hash = co_await core::read_block_by_number(*context_.block_cache(), tx_database, block_number);
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
         auto receipts{co_await core::get_receipts(tx_database, *block_with_hash)};
         SILKRPC_INFO << "#receipts: " << receipts.size() << "\n";
 

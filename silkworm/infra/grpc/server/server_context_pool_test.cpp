@@ -32,7 +32,7 @@ using namespace concurrency;
 
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
-TEST_CASE("ServerContext", "[silkworm][rpc][server_context]") {
+TEST_CASE("ServerContext", "[silkworm][infra][grpc][server][server_context]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     grpc::ServerBuilder builder;
     std::unique_ptr<grpc::ServerCompletionQueue> scq = builder.AddCompletionQueue();
@@ -78,7 +78,7 @@ TEST_CASE("ServerContext", "[silkworm][rpc][server_context]") {
     }
 }
 
-TEST_CASE("ServerContextPool", "[silkworm][rpc][server_context]") {
+TEST_CASE("ServerContextPool", "[silkworm][infra][grpc][server][server_context]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     grpc::ServerBuilder builder;
 

@@ -60,7 +60,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json
     try {
         ethdb::TransactionDatabase tx_database{*tx};
         ethdb::kv::CachedDatabase cached_database{BlockNumberOrHash{block_id}, *tx, *state_cache_};
-        // Check if target block is latest one: use local state cache (if any) for target transaction
+        // Check if target block is the latest one: use local state cache (if any) for target transaction
         const bool is_latest_block = co_await core::is_latest_block_number(BlockNumberOrHash{block_id}, tx_database);
         StateReader state_reader{is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database)};
 
@@ -477,7 +477,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getContractCreator(const nloh
         ethdb::TransactionDatabase tx_database{*tx};
         auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_found);
 
-        trace::TraceCallExecutor executor{*context_.io_context(), *context_.block_cache(), tx_database, workers_};
+        trace::TraceCallExecutor executor{io_context_, *block_cache_, tx_database, workers_};
         const auto result = co_await executor.trace_deploy_transaction(block_with_hash->block, contract_address);
 
         reply = make_json_content(request["id"], result);

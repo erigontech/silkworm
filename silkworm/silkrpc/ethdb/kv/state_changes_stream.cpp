@@ -22,6 +22,7 @@
 #include <boost/asio/use_future.hpp>
 #include <boost/system/error_code.hpp>
 
+#include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/grpc/util.hpp>
 
@@ -36,11 +37,11 @@ void StateChangesStream::set_registration_interval(boost::posix_time::millisecon
     StateChangesStream::registration_interval_ = registration_interval;
 }
 
-StateChangesStream::StateChangesStream(Context& context, remote::KV::StubInterface* stub)
+StateChangesStream::StateChangesStream(ClientContext& context, remote::KV::StubInterface* stub)
     : scheduler_(*context.io_context()),
       grpc_context_(*context.grpc_context()),
       stub_(stub),
-      cache_(context.state_cache().get()),
+      cache_(use_shared_service<ethdb::kv::StateCache>(scheduler_).get()),
       retry_timer_{scheduler_} {}
 
 std::future<void> StateChangesStream::open() {

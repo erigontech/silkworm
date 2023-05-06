@@ -22,7 +22,7 @@
 
 #include <silkworm/infra/concurrency/base_service.hpp>
 
-namespace silkworm::concurrency {
+namespace silkworm {
 
 template <typename T>
 class PrivateService : public BaseService<PrivateService<T>> {
@@ -32,7 +32,7 @@ class PrivateService : public BaseService<PrivateService<T>> {
     void shutdown() override { unique_.reset(); }
 
     //! Explicitly *take ownership* of \code std::unique_ptr to enforce isolation
-    void set_private(std::unique_ptr<T>&& unique) {
+    void set_unique(std::unique_ptr<T>&& unique) {
         unique_ = std::move(unique);
     }
     std::unique_ptr<T>& unique() { return unique_; }
@@ -46,7 +46,7 @@ void add_private_service(boost::asio::execution_context& context, std::unique_pt
     if (not has_service<PrivateService<T>>(context)) {
         make_service<PrivateService<T>>(context);
     }
-    use_service<PrivateService<T>>(context).set_private(std::move(unique));
+    use_service<PrivateService<T>>(context).set_unique(std::move(unique));
 }
 
 template <typename T>
@@ -54,4 +54,4 @@ std::unique_ptr<T>& use_private_service(boost::asio::execution_context& context)
     return use_service<PrivateService<T>>(context).unique();
 }
 
-}  // namespace silkworm::concurrency
+}  // namespace silkworm

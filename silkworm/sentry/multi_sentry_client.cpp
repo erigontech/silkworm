@@ -31,6 +31,7 @@
 #include <boost/asio/use_awaitable.hpp>
 
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
+#include <silkworm/infra/concurrency/parallel_group_utils.hpp>
 #include <silkworm/sentry/api/api_common/service.hpp>
 #include <silkworm/sentry/common/atomic_value.hpp>
 #include <silkworm/sentry/common/timeout.hpp>
@@ -77,8 +78,7 @@ class MultiSentryClientImpl : public api::api_common::Service {
             // std::vector<std::exception_ptr> exceptions;
             auto [order, exceptions] = std::get<0>(std::move(results));
 
-            // TODO
-            // detail::rethrow_exceptions(ex0, ex1, order);
+            concurrency::rethrow_first_exception_if_any(exceptions, order);
         } catch (const common::Timeout::ExpiredError&) {
         }
     }

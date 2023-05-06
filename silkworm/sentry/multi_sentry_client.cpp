@@ -17,6 +17,7 @@
 #include "multi_sentry_client.hpp"
 
 #include <cassert>
+#include <chrono>
 #include <functional>
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
@@ -27,7 +28,9 @@
 #include <boost/asio/this_coro.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
+#include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/sentry/api/api_common/service.hpp>
+#include <silkworm/sentry/common/timeout.hpp>
 
 namespace silkworm::sentry {
 
@@ -45,7 +48,10 @@ class MultiSentryClientImpl : public api::api_common::Service {
   private:
     awaitable<void> for_each_client(
         std::vector<std::shared_ptr<SentryClient>> clients,
+        std::chrono::milliseconds timeout,
         std::function<awaitable<void>(std::shared_ptr<api::api_common::Service>)> callback) {
+        using namespace concurrency::awaitable_wait_for_one;
+
         auto executor = co_await this_coro::executor;
         using OperationType = decltype(co_spawn(executor, ([]() -> awaitable<void> { co_return; })(), deferred));
         std::vector<OperationType> calls;
@@ -59,22 +65,31 @@ class MultiSentryClientImpl : public api::api_common::Service {
         }
 
         auto group = make_parallel_group(std::move(calls));
+        auto group_wait = group.async_wait(wait_for_one_error(), use_awaitable);
 
-        // std::vector<size_t> order;
-        // std::vector<std::exception_ptr> exceptions;
-        auto [order, exceptions] = co_await group.async_wait(wait_for_one_error(), use_awaitable);
+        try {
+            auto results = co_await (std::move(group_wait) || common::Timeout::after(timeout));
 
-        // TODO
-        // detail::rethrow_exceptions(ex0, ex1, order);
+            // std::vector<size_t> order;
+            // std::vector<std::exception_ptr> exceptions;
+            auto [order, exceptions] = std::get<0>(std::move(results));
+
+            // TODO
+            // detail::rethrow_exceptions(ex0, ex1, order);
+        } catch (const common::Timeout::ExpiredError&) {
+        }
     }
 
     awaitable<void> for_each_client(
         std::function<awaitable<void>(std::shared_ptr<api::api_common::Service>)> callback) {
+        using namespace std::chrono_literals;
+
         auto clients = this->ready_clients();
         if (clients.empty()) {
             clients = clients_;
         }
-        return for_each_client(clients, std::move(callback));
+
+        return for_each_client(clients, /* timeout = */ 10s, std::move(callback));
     }
 
   public:
@@ -128,7 +143,7 @@ class MultiSentryClientImpl : public api::api_common::Service {
     awaitable<void> messages(
         MessageIdSet message_id_filter,
         std::function<awaitable<void>(MessageFromPeer)> consumer) override {
-        co_await for_each_client(clients_, [&message_id_filter, &consumer](auto service) -> awaitable<void> {
+        co_await for_each_client(clients_, /* timeout = */ kInfiniteDuration, [&message_id_filter, &consumer](auto service) -> awaitable<void> {
             co_await service->messages(message_id_filter, consumer);
         });
     }
@@ -158,7 +173,7 @@ class MultiSentryClientImpl : public api::api_common::Service {
     // rpc PeerEvents(PeerEventsRequest) returns (stream PeerEvent);
     awaitable<void> peer_events(
         std::function<awaitable<void>(PeerEvent)> consumer) override {
-        co_await for_each_client(clients_, [&consumer](auto service) -> awaitable<void> {
+        co_await for_each_client(clients_, /* timeout = */ kInfiniteDuration, [&consumer](auto service) -> awaitable<void> {
             co_await service->peer_events(consumer);
         });
     }
@@ -173,6 +188,8 @@ class MultiSentryClientImpl : public api::api_common::Service {
         }
         return ready_clients;
     }
+
+    static constexpr std::chrono::milliseconds kInfiniteDuration = std::chrono::milliseconds::max();
 
     std::vector<std::shared_ptr<SentryClient>> clients_;
 };

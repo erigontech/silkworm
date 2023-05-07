@@ -78,8 +78,8 @@ class EVMExecutor {
         : config_(config),
           workers_{workers},
           remote_state_{remote_state},
-          state_{remote_state_},
           local_state_{local_state},
+          state_{*local_state_},
           rule_set_(protocol::rule_set_factory(config)) {
         SILKWORM_ASSERT(rule_set_);
         if (!has_service<BaselineAnalysisCacheService>(workers_)) {
@@ -103,8 +103,8 @@ class EVMExecutor {
     const silkworm::ChainConfig& config_;
     boost::asio::thread_pool& workers_;
     state::RemoteState& remote_state_;
-    IntraBlockState state_;
     std::shared_ptr<state::LocalState> local_state_;
+    IntraBlockState state_;
     protocol::RuleSetPtr rule_set_;
 };
 

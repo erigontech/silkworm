@@ -39,6 +39,7 @@ static evmc::address ecrecover(const BlockHeader& header) {
 }
 
 evmc::address CliqueRuleSet::get_beneficiary(const BlockHeader& header) {
+    return header.beneficiary;
     if (header.extra_data.length() < kExtraSealSize) {
         return BaseRuleSet::get_beneficiary(header);
     }

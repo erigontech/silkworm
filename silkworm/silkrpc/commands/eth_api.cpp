@@ -1120,8 +1120,9 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
         state::RemoteState remote_state{io_context_,
                                         is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database),
                                         block_number};
-        auto ltx = dynamic_cast<rpc::ethdb::file::LocalTransaction *>(tx);
-        auto rtxn = db::ROTxn{ltx.get_tx()};
+        auto ltx = dynamic_cast<rpc::ethdb::file::LocalTransaction*>(tx.get());
+        auto tx_managed = ltx->get_tx();
+        auto rtxn = db::ROTxn{std::move(tx_managed)};
         std::shared_ptr<silkworm::rpc::state::LocalState> local_state = std::make_shared<silkworm::rpc::state::LocalState>(io_context_, block_number, rtxn);
         EVMExecutor executor{*chain_config_ptr, workers_, remote_state, local_state};
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
@@ -1140,7 +1141,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
                 make_glaze_json_error(reply, request["id"], RevertError{{3, error_message}, execution_result.data});
             }
         }
-        ltx.set_tx(rtxn);
+        ltx->set_tx(tx_managed);
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
         make_glaze_json_error(reply, request["id"], 100, e.what());
@@ -1148,7 +1149,6 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
         SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
         make_glaze_json_error(reply, request["id"], 100, "unexpected exception");
     }
-
 
     co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;

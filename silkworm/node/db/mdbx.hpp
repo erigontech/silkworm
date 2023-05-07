@@ -177,6 +177,7 @@ class ROTxn {
     explicit ROTxn() = default;
     explicit ROTxn(mdbx::env& env) : managed_txn_{env.start_read()} {}
     virtual ~ROTxn() = default;
+    explicit ROTxn(mdbx::txn_managed&& source) : managed_txn_{std::move(source)} {}
 
     // Not copyable
     ROTxn(const ROTxn&) = delete;
@@ -198,9 +199,6 @@ class ROTxn {
     virtual std::unique_ptr<ROCursorDupSort> ro_cursor_dup_sort(const MapConfig& config);
 
     void abort() { managed_txn_.abort(); }
-
-  protected:
-    explicit ROTxn(mdbx::txn_managed&& source) : managed_txn_{std::move(source)} {}
 
     mdbx::txn_managed managed_txn_;
 };

@@ -54,6 +54,8 @@ class LocalTransaction : public Transaction {
     mdbx::txn_managed&& get_tx() { return std::move(read_only_txn_); }
     void set_tx(mdbx::txn_managed& read_only_txn) { read_only_txn_ = std::move(read_only_txn); }
 
+    mdbx::env_managed& get_env() { return *chaindata_env_; }
+
   private:
     boost::asio::awaitable<std::shared_ptr<CursorDupSort>> get_cursor(const std::string& table, bool is_cursor_dup_sort);
 

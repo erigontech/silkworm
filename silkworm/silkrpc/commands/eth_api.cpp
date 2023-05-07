@@ -51,6 +51,7 @@
 #include <silkworm/silkrpc/core/state_reader.hpp>
 #include <silkworm/silkrpc/ethdb/bitmap.hpp>
 #include <silkworm/silkrpc/ethdb/cbor.hpp>
+#include <silkworm/silkrpc/ethdb/file/local_transaction.hpp>
 #include <silkworm/silkrpc/ethdb/kv/cached_database.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
@@ -1119,7 +1120,10 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
         state::RemoteState remote_state{io_context_,
                                         is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database),
                                         block_number};
-        EVMExecutor executor{*chain_config_ptr, workers_, remote_state};
+        auto ltx = dynamic_cast<rpc::ethdb::file::LocalTransaction *>(tx);
+        auto rtxn = db::ROTxn{ltx.get_tx()};
+        std::shared_ptr<silkworm::rpc::state::LocalState> local_state = std::make_shared<silkworm::rpc::state::LocalState>(io_context_, block_number, rtxn);
+        EVMExecutor executor{*chain_config_ptr, workers_, remote_state, local_state};
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
         silkworm::Transaction txn{call.to_transaction()};
         const auto execution_result = co_await executor.call(block_with_hash->block, txn);
@@ -1136,6 +1140,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
                 make_glaze_json_error(reply, request["id"], RevertError{{3, error_message}, execution_result.data});
             }
         }
+        ltx.set_tx(rtxn);
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
         make_glaze_json_error(reply, request["id"], 100, e.what());
@@ -1143,6 +1148,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
         SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
         make_glaze_json_error(reply, request["id"], 100, "unexpected exception");
     }
+
 
     co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;

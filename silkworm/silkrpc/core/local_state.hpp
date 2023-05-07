@@ -35,7 +35,8 @@ namespace silkworm::rpc::state {
 
 class LocalState : public silkworm::State {
   public:
-    explicit LocalState(boost::asio::io_context& io_context, uint64_t block_number, db::ROTxn& rotxn) : io_context_(io_context), block_number_{block_number}, rotxn_{rotxn} {}
+    explicit LocalState(boost::asio::io_context& io_context, uint64_t block_number, db::ROTxn& rotxn) : 
+                       io_context_(io_context), block_number_{block_number}, rotxn_{rotxn} {}
 
     std::optional<silkworm::Account> read_account(const evmc::address& address) const noexcept override;
 

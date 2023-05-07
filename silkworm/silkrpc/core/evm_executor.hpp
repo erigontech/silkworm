@@ -37,6 +37,7 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
+#include <silkworm/silkrpc/core/local_state.hpp>
 #include <silkworm/silkrpc/core/remote_state.hpp>
 
 namespace silkworm::rpc {
@@ -73,11 +74,12 @@ class EVMExecutor {
   public:
     static std::string get_error_message(int64_t error_code, const Bytes& error_data, bool full_error = true);
 
-    EVMExecutor(const silkworm::ChainConfig& config, boost::asio::thread_pool& workers, state::RemoteState& remote_state)
+    EVMExecutor(const silkworm::ChainConfig& config, boost::asio::thread_pool& workers, state::RemoteState& remote_state, std::shared_ptr<silkworm::rpc::state::LocalState> local_state = nullptr)
         : config_(config),
           workers_{workers},
           remote_state_{remote_state},
           state_{remote_state_},
+          local_state_{local_state},
           rule_set_(protocol::rule_set_factory(config)) {
         SILKWORM_ASSERT(rule_set_);
         if (!has_service<BaselineAnalysisCacheService>(workers_)) {
@@ -102,6 +104,7 @@ class EVMExecutor {
     boost::asio::thread_pool& workers_;
     state::RemoteState& remote_state_;
     IntraBlockState state_;
+    std::shared_ptr<state::LocalState> local_state_;
     protocol::RuleSetPtr rule_set_;
 };
 

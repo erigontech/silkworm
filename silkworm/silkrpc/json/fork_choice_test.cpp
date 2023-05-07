@@ -53,5 +53,4 @@ TEST_CASE("deserialize forkchoice state", "[silkworm::json][from_json]") {
     CHECK(forkchoice_state.finalized_block_hash == 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32);
 }
 
-
 }  // namespace silkworm::rpc

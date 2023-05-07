@@ -36,8 +36,8 @@
 #include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
-#include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/core/local_state.hpp>
+#include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/core/remote_state.hpp>
 
 namespace silkworm::rpc {

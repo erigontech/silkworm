@@ -32,7 +32,7 @@ std::optional<silkworm::Account> LocalState::read_account(const evmc::address& a
 silkworm::ByteView LocalState::read_code(const evmc::bytes32& code_hash) const noexcept {
     auto code_optional = silkworm::db::read_code(rotxn_, code_hash);
     if (!code_optional) {
-       return silkworm::ByteView{};
+        return silkworm::ByteView{};
     }
     return *code_optional;
 }

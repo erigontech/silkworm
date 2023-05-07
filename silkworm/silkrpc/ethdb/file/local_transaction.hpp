@@ -51,6 +51,9 @@ class LocalTransaction : public Transaction {
 
     boost::asio::awaitable<void> close() override;
 
+    mdbx::txn_managed&& get_tx() { return std::move(read_only_txn_); }
+    void set_tx(mdbx::txn_managed& read_only_txn) { read_only_txn_ = std::move(read_only_txn); }
+
   private:
     boost::asio::awaitable<std::shared_ptr<CursorDupSort>> get_cursor(const std::string& table, bool is_cursor_dup_sort);
 

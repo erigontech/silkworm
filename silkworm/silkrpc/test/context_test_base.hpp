@@ -26,7 +26,8 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/use_future.hpp>
 
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
+#include <silkworm/infra/grpc/client/client_context_pool.hpp>
+#include <silkworm/silkrpc/common/log.hpp>
 
 namespace silkworm::rpc::test {
 
@@ -63,7 +64,7 @@ class ContextTestBase {
     ~ContextTestBase();
 
     SetLogVerbosityGuard log_guard_;
-    Context context_;
+    ClientContext context_;
     boost::asio::io_context& io_context_;
     agrpc::GrpcContext& grpc_context_;
     std::thread context_thread_;

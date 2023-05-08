@@ -23,8 +23,8 @@
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 #include <gmock/gmock.h>
-#include <grpcpp/grpcpp.h>
 
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/interfaces/remote/ethbackend_mock.grpc.pb.h>
 #include <silkworm/silkrpc/test/api_test_base.hpp>
 #include <silkworm/silkrpc/test/grpc_actions.hpp>
@@ -237,7 +237,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_get_payload_v1", "[silkrpc][et
         p->set_block_number(0x1);
         p->set_gas_limit(0x1c9c380);
         p->set_timestamp(0x5);
-        const auto tx_bytes{*silkworm::from_hex("0xf92ebdeab45d368f6354e8c5a8ac586c")};
+        const auto tx_bytes{*from_hex("0xf92ebdeab45d368f6354e8c5a8ac586c")};
         p->add_transactions(tx_bytes.data(), tx_bytes.size());
         const auto hi_hi_hi_logsbloom{make_h256(0x1000000000000000, 0x0, 0x0, 0x0)};
         const auto hi_hi_logsbloom{new ::types::H512()};
@@ -263,7 +263,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_get_payload_v1", "[silkrpc][et
         CHECK(payload.prev_randao == 0x0000000000000000000000000000000000000000000000000000000000000001_bytes32);
         CHECK(payload.base_fee == 0x7);
         CHECK(payload.transactions.size() == 1);
-        CHECK(silkworm::to_hex(payload.transactions[0]) == "f92ebdeab45d368f6354e8c5a8ac586c");
+        CHECK(to_hex(payload.transactions[0]) == "f92ebdeab45d368f6354e8c5a8ac586c");
         silkworm::Bloom expected_bloom{0};
         expected_bloom[0] = 0x10;
         CHECK(payload.logs_bloom == expected_bloom);
@@ -288,7 +288,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_new_payload_v1", "[silkrpc][et
     silkworm::Bloom bloom;
     bloom.fill(0);
     bloom[0] = 0x12;
-    const auto transaction{*silkworm::from_hex("0xf92ebdeab45d368f6354e8c5a8ac586c")};
+    const auto transaction{*from_hex("0xf92ebdeab45d368f6354e8c5a8ac586c")};
     const ExecutionPayload execution_payload{
         .timestamp = 0x5,
         .gas_limit = 0x1c9c380,

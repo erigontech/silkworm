@@ -27,6 +27,8 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/infra/grpc/client/client_context_pool.hpp>
+#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/test/mock_cursor.hpp>
@@ -91,7 +93,8 @@ namespace {
 
 class EngineRpcApiTest : public EngineRpcApi {
   public:
-    explicit EngineRpcApiTest(std::unique_ptr<ethdb::Database>& database, std::unique_ptr<ethbackend::BackEnd>& backend) : EngineRpcApi(database, backend) {}
+    EngineRpcApiTest(std::unique_ptr<ethdb::Database>& database, std::unique_ptr<ethbackend::BackEnd>& backend)
+        : EngineRpcApi(database, backend) {}
 
     using EngineRpcApi::handle_engine_exchange_transition_configuration_v1;
     using EngineRpcApi::handle_engine_forkchoice_updated_v1;
@@ -179,8 +182,8 @@ TEST_CASE("handle_engine_get_payload_v1 succeeds if request is expected payload"
         "method":"engine_getPayloadV1",
         "params":["0x0000000000000001"]
     })"_json;
-    // Initialize contex pool
-    ContextPool cp{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+
+    ClientContextPool cp{1};
     cp.start();
     std::unique_ptr<ethdb::Database> database;
     // Initialise components
@@ -232,7 +235,7 @@ TEST_CASE("handle_engine_get_payload_v1 fails with invalid amount of params", "[
         "params":[]
     })"_json;
     // Initialize contex pool
-    ContextPool cp{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ClientContextPool cp{1};
     cp.start();
     // Initialise components
     std::unique_ptr<ethbackend::BackEnd> backend_ptr(new BackEndMock);
@@ -298,7 +301,7 @@ TEST_CASE("handle_engine_new_payload_v1 succeeds if request is expected payload 
         }]
     })"_json;
     // Initialize contex pool
-    ContextPool cp{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ClientContextPool cp{1};
     cp.start();
     std::unique_ptr<ethdb::Database> database;
     // Initialise components
@@ -339,7 +342,7 @@ TEST_CASE("handle_engine_new_payload_v1 fails with invalid amount of params", "[
         "params":[]
     })"_json;
     // Initialize contex pool
-    ContextPool cp{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ClientContextPool cp{1};
     cp.start();
     // Initialise components
     std::unique_ptr<ethbackend::BackEnd> backend_ptr(new BackEndMock);
@@ -396,7 +399,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds only with forkchoiceStat
         ]
     })"_json;
     // Initialize contex pool
-    ContextPool cp{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ClientContextPool cp{1};
     cp.start();
     // Initialise components
     std::unique_ptr<ethbackend::BackEnd> backend_ptr(backend);
@@ -459,7 +462,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params", "[sil
         ]
     })"_json;
     // Initialize contex pool
-    ContextPool cp{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ClientContextPool cp{1};
     cp.start();
     // Initialise components
     std::unique_ptr<ethbackend::BackEnd> backend_ptr(backend);
@@ -518,7 +521,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params and sec
         ]
     })"_json;
     // Initialize contex pool
-    ContextPool cp{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ClientContextPool cp{1};
     cp.start();
     // Initialise components
     std::unique_ptr<ethbackend::BackEnd> backend_ptr(backend);
@@ -560,7 +563,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with invalid amount of para
         "params":[]
     })"_json;
     // Initialize contex pool
-    ContextPool cp{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ClientContextPool cp{1};
     cp.start();
     // Initialise components
     std::unique_ptr<ethbackend::BackEnd> backend_ptr(new BackEndMock);
@@ -608,7 +611,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty finalized block 
         ]
     })"_json;
     // Initialize contex pool
-    ContextPool cp{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ClientContextPool cp{1};
     cp.start();
     // Initialise components
     std::unique_ptr<ethbackend::BackEnd> backend_ptr(backend);
@@ -654,7 +657,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty safe block hash"
         ]
     })"_json;
     // Initialize contex pool
-    ContextPool cp{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ClientContextPool cp{1};
     cp.start();
     // Initialise components
     std::unique_ptr<ethbackend::BackEnd> backend_ptr(backend);
@@ -685,7 +688,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty safe block hash"
 TEST_CASE("handle_engine_transition_configuration_v1 succeeds if EL configurations has the same request configuration", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ClientContextPool context_pool{1};
     context_pool.start();
 
     std::shared_ptr<test::MockCursor> mock_cursor = std::make_shared<test::MockCursor>();
@@ -744,7 +747,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 succeeds if EL configuratio
 TEST_CASE("handle_engine_transition_configuration_v1 succeeds and default terminal block number to zero if chain config doesn't specify it", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ClientContextPool context_pool{1};
     context_pool.start();
 
     std::shared_ptr<test::MockCursor> mock_cursor = std::make_shared<test::MockCursor>();
@@ -803,7 +806,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 succeeds and default termin
 TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect terminal total difficulty", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ClientContextPool context_pool{1};
     context_pool.start();
 
     std::shared_ptr<test::MockCursor> mock_cursor = std::make_shared<test::MockCursor>();
@@ -860,7 +863,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect terminal
 TEST_CASE("handle_engine_transition_configuration_v1 fails if execution layer does not have terminal total difficulty", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ClientContextPool context_pool{1};
     context_pool.start();
 
     std::shared_ptr<test::MockCursor> mock_cursor = std::make_shared<test::MockCursor>();
@@ -917,7 +920,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if execution layer do
 TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer sends block number different from zero", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ClientContextPool context_pool{1};
     context_pool.start();
 
     std::shared_ptr<test::MockCursor> mock_cursor = std::make_shared<test::MockCursor>();
@@ -974,7 +977,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer se
 TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect params", "[silkrpc][engine_api]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
-    ContextPool context_pool{1, []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); }};
+    ClientContextPool context_pool{1};
     context_pool.start();
 
     std::shared_ptr<test::MockCursor> mock_cursor = std::make_shared<test::MockCursor>();

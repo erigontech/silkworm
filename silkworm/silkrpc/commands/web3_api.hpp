@@ -21,9 +21,10 @@
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/io_context.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
+#include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/ethbackend/backend.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
@@ -37,8 +38,10 @@ namespace silkworm::rpc::commands {
 
 class Web3RpcApi {
   public:
-    explicit Web3RpcApi(Context& context) : database_(context.database()), backend_(context.backend()) {}
-    virtual ~Web3RpcApi() {}
+    explicit Web3RpcApi(boost::asio::io_context& io_context)
+        : database_{use_private_service<ethdb::Database>(io_context)},
+          backend_{use_private_service<ethbackend::BackEnd>(io_context)} {}
+    virtual ~Web3RpcApi() = default;
 
     Web3RpcApi(const Web3RpcApi&) = delete;
     Web3RpcApi& operator=(const Web3RpcApi&) = delete;

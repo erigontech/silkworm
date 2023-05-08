@@ -23,7 +23,6 @@
 #include <catch2/catch.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/test/api_test_base.hpp>
 
 namespace silkworm::rpc::commands {
@@ -34,7 +33,7 @@ using Catch::Matchers::Message;
 //! Utility class to expose handle hooks publicly just for tests
 class EthereumRpcApi_ForTest : public EthereumRpcApi {
   public:
-    explicit EthereumRpcApi_ForTest(Context& context, boost::asio::thread_pool& workers) : EthereumRpcApi{context, workers} {}
+    explicit EthereumRpcApi_ForTest(boost::asio::io_context& ioc, boost::asio::thread_pool& workers) : EthereumRpcApi{ioc, workers} {}
 
     // MSVC doesn't support using access declarations properly, so explicitly forward these public accessors
     awaitable<void> eth_block_number(const nlohmann::json& request, nlohmann::json& reply) {
@@ -82,13 +81,14 @@ TEST_CASE_METHOD(EthereumRpcApiTest, "handle_eth_block_number fails if request e
 TEST_CASE_METHOD(EthereumRpcApiTest, "handle_eth_send_raw_transaction fails rlp parsing", "[silkrpc][eth_api]") {
     nlohmann::json reply;
 
-    run<&EthereumRpcApi_ForTest::eth_send_raw_transaction>(R"({
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "eth_sendRawTransaction",
-        "params": ["0xd46ed67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f0724456"]
-    })"_json,
-                                                           reply);
+    run<&EthereumRpcApi_ForTest::eth_send_raw_transaction>(
+        R"({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "eth_sendRawTransaction",
+            "params": ["0xd46ed67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f0724456"]
+        })"_json,
+        reply);
     CHECK(reply == R"({
         "error":{"code":-32000,"message":"rlp: element is larger than containing list"},"id":1,"jsonrpc":"2.0"
     })"_json);
@@ -97,13 +97,14 @@ TEST_CASE_METHOD(EthereumRpcApiTest, "handle_eth_send_raw_transaction fails rlp 
 TEST_CASE_METHOD(EthereumRpcApiTest, "handle_eth_send_raw_transaction fails wrong number digit", "[silkrpc][eth_api]") {
     nlohmann::json reply;
 
-    run<&EthereumRpcApi_ForTest::eth_send_raw_transaction>(R"({
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "eth_sendRawTransaction",
-        "params": ["0xd46ed67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445"]
-    })"_json,
-                                                           reply);
+    run<&EthereumRpcApi_ForTest::eth_send_raw_transaction>(
+        R"({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "eth_sendRawTransaction",
+            "params": ["0xd46ed67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445"]
+        })"_json,
+        reply);
     CHECK(reply == R"({
         "error":{"code":-32000,"message":"rlp: unexpected EIP-2178 serialization"},"id":1,"jsonrpc":"2.0"
     })"_json);

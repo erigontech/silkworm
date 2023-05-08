@@ -18,6 +18,7 @@
 
 #include <memory>
 
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/thread_pool.hpp>
 
 #include <silkworm/silkrpc/commands/admin_api.hpp>
@@ -40,20 +41,30 @@ namespace silkworm::rpc::commands {
 
 class RpcApiTable;
 
-class RpcApi : protected EthereumRpcApi, NetRpcApi, AdminRpcApi, Web3RpcApi, DebugRpcApi, ParityRpcApi, ErigonRpcApi, TraceRpcApi, EngineRpcApi, TxPoolRpcApi, OtsRpcApi {
+class RpcApi : protected EthereumRpcApi,
+               NetRpcApi,
+               AdminRpcApi,
+               Web3RpcApi,
+               DebugRpcApi,
+               ParityRpcApi,
+               ErigonRpcApi,
+               TraceRpcApi,
+               EngineRpcApi,
+               TxPoolRpcApi,
+               OtsRpcApi {
   public:
-    explicit RpcApi(Context& context, boost::asio::thread_pool& workers)
-        : EthereumRpcApi{context, workers},
-          NetRpcApi{context.backend()},
-          AdminRpcApi{context.backend()},
-          Web3RpcApi{context},
-          DebugRpcApi{context, workers},
-          ParityRpcApi{context},
-          ErigonRpcApi{context},
-          TraceRpcApi{context, workers},
-          EngineRpcApi(context.database(), context.backend()),
-          TxPoolRpcApi(context),
-          OtsRpcApi{context, workers} {}
+    explicit RpcApi(boost::asio::io_context& io_context, boost::asio::thread_pool& workers)
+        : EthereumRpcApi{io_context, workers},
+          NetRpcApi{io_context},
+          AdminRpcApi{io_context},
+          Web3RpcApi{io_context},
+          DebugRpcApi{io_context, workers},
+          ParityRpcApi{io_context},
+          ErigonRpcApi{io_context},
+          TraceRpcApi{io_context, workers},
+          EngineRpcApi(io_context),
+          TxPoolRpcApi(io_context),
+          OtsRpcApi{io_context, workers} {}
 
     ~RpcApi() override = default;
 

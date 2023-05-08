@@ -16,25 +16,29 @@
 
 #include "context_test_base.hpp"
 
+#include <silkworm/infra/concurrency/private_service.hpp>
+#include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/silkrpc/common/block_cache.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/silkrpc/core/filter_storage.hpp>
+#include <silkworm/silkrpc/ethbackend/remote_backend.hpp>
+#include <silkworm/silkrpc/ethdb/kv/remote_database.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
 
 namespace silkworm::rpc::test {
 
-FilterStorage filter_storage{0x400};
-
 ContextTestBase::ContextTestBase()
     : log_guard_{LogLevel::None},
-      context_{
-          grpc::CreateChannel("localhost:12345", grpc::InsecureChannelCredentials()),
-          std::make_shared<BlockCache>(),
-          std::make_shared<ethdb::kv::CoherentStateCache>(),
-          filter_storage,
-      },
+      context_{0},
       io_context_{*context_.io_context()},
       grpc_context_{*context_.grpc_context()},
       context_thread_{[&]() { context_.execute_loop(); }} {
+    add_shared_service(io_context_, std::make_shared<BlockCache>());
+    add_shared_service(io_context_, std::make_shared<FilterStorage>(1024));
+    add_shared_service<ethdb::kv::StateCache>(io_context_, std::make_shared<ethdb::kv::CoherentStateCache>());
+    auto grpc_channel{::grpc::CreateChannel("localhost:12345", ::grpc::InsecureChannelCredentials())};
+    add_private_service<ethdb::Database>(io_context_, std::make_unique<ethdb::kv::RemoteDatabase>(grpc_context_, grpc_channel));
+    add_private_service<ethbackend::BackEnd>(io_context_, std::make_unique<ethbackend::RemoteBackEnd>(io_context_, grpc_channel, grpc_context_));
 }
 
 ContextTestBase::~ContextTestBase() {

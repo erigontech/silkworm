@@ -45,7 +45,7 @@ ABSL_FLAG(uint32_t, num_contexts, std::thread::hardware_concurrency() / 3, "numb
 ABSL_FLAG(uint32_t, num_workers, 16, "number of worker threads as 32-bit integer");
 ABSL_FLAG(uint32_t, timeout, kDefaultTimeout.count(), "gRPC call timeout as 32-bit integer");
 ABSL_FLAG(LogLevel, log_verbosity, LogLevel::Critical, "logging verbosity level");
-ABSL_FLAG(strategy::WaitMode, wait_mode, strategy::WaitMode::blocking, "scheduler wait mode");
+ABSL_FLAG(concurrency::WaitMode, wait_mode, concurrency::WaitMode::blocking, "scheduler wait mode");
 ABSL_FLAG(std::string, jwt_secret_file, kDefaultJwtFilename, "Token file to ensure safe connection between CL and EL");
 ABSL_FLAG(std::string, datadir, kDefaultDataDir, "DB Path");
 

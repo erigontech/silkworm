@@ -14,20 +14,20 @@
    limitations under the License.
 */
 
-#include "web3_api.hpp"
+#pragma once
 
-#include <catch2/catch.hpp>
-#include <grpcpp/grpcpp.h>
+#include <memory>
 
-namespace silkworm::rpc::commands {
+#include <boost/asio/awaitable.hpp>
+#include <gmock/gmock.h>
 
-using Catch::Matchers::Message;
+#include <silkworm/silkrpc/ethdb/database.hpp>
 
-#ifndef SILKWORM_SANITIZE
-TEST_CASE("Web3RpcApi::Web3RpcApi", "[silkrpc][erigon_api]") {
-    boost::asio::io_context ioc;
-    CHECK_NOTHROW(Web3RpcApi{ioc});
-}
-#endif  // SILKWORM_SANITIZE
+namespace silkworm::rpc::test {
 
-}  // namespace silkworm::rpc::commands
+class MockDatabase : public ethdb::Database {
+  public:
+    MOCK_METHOD((boost::asio::awaitable<std::unique_ptr<ethdb::Transaction>>), begin, ());
+};
+
+}  // namespace silkworm::rpc::test

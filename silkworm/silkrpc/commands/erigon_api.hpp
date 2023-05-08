@@ -21,10 +21,14 @@
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/io_context.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
+#include <silkworm/infra/concurrency/private_service.hpp>
+#include <silkworm/infra/concurrency/shared_service.hpp>
+#include <silkworm/silkrpc/common/block_cache.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
+#include <silkworm/silkrpc/ethbackend/backend.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
@@ -39,7 +43,10 @@ using boost::asio::awaitable;
 
 class ErigonRpcApi {
   public:
-    explicit ErigonRpcApi(Context& context);
+    explicit ErigonRpcApi(boost::asio::io_context& io_context)
+        : block_cache_{use_shared_service<BlockCache>(io_context)},
+          database_{use_private_service<ethdb::Database>(io_context)},
+          backend_{use_private_service<ethbackend::BackEnd>(io_context)} {}
     virtual ~ErigonRpcApi() = default;
 
     ErigonRpcApi(const ErigonRpcApi&) = delete;
@@ -57,10 +64,9 @@ class ErigonRpcApi {
     awaitable<void> handle_erigon_node_info(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
-    Context& context_;
-    std::unique_ptr<ethbackend::BackEnd>& backend_;
     std::shared_ptr<BlockCache>& block_cache_;
     std::unique_ptr<ethdb::Database>& database_;
+    std::unique_ptr<ethbackend::BackEnd>& backend_;
 
     friend class silkworm::http::RequestHandler;
 };

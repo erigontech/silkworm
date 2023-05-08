@@ -14,20 +14,15 @@
    limitations under the License.
 */
 
-#include "web3_api.hpp"
+#pragma once
 
-#include <catch2/catch.hpp>
-#include <grpcpp/grpcpp.h>
+#include <nlohmann/json.hpp>
 
-namespace silkworm::rpc::commands {
+#include <silkworm/silkrpc/types/execution_payload.hpp>
 
-using Catch::Matchers::Message;
+namespace silkworm::rpc {
 
-#ifndef SILKWORM_SANITIZE
-TEST_CASE("Web3RpcApi::Web3RpcApi", "[silkrpc][erigon_api]") {
-    boost::asio::io_context ioc;
-    CHECK_NOTHROW(Web3RpcApi{ioc});
-}
-#endif  // SILKWORM_SANITIZE
+void to_json(nlohmann::json& json, const TransitionConfiguration& transition_configuration);
+void from_json(const nlohmann::json& json, TransitionConfiguration& transition_configuration);
 
-}  // namespace silkworm::rpc::commands
+}  // namespace silkworm::rpc

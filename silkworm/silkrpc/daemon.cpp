@@ -27,12 +27,23 @@
 #include <boost/process/environment.hpp>
 #include <grpcpp/grpcpp.h>
 
+#include <silkworm/infra/concurrency/private_service.hpp>
+#include <silkworm/infra/concurrency/shared_service.hpp>
+#include <silkworm/silkrpc/ethbackend/remote_backend.hpp>
+#include <silkworm/silkrpc/ethdb/file/local_database.hpp>
+#include <silkworm/silkrpc/ethdb/kv/remote_database.hpp>
 #include <silkworm/silkrpc/http/jwt.hpp>
 
 namespace silkworm::rpc {
 
-// The maximum receive message in bytes for gRPC channels.
+//! The maximum receive message in bytes for gRPC channels.
 constexpr auto kRpcMaxReceiveMessageSize{64 * 1024 * 1024};  // 64 MiB
+
+//! The path to 'chaindata' folder relative to Silkworm data directory.
+static constexpr const char kChaindataRelativePath[]{"/chaindata"};
+
+//! The maximum number of concurrent readers allowed for MDBX datastore.
+static constexpr const int kDatabaseMaxReaders{32000};
 
 void DaemonChecklist::success_or_throw() const {
     for (const auto& protocol_check : protocol_checklist) {
@@ -211,13 +222,72 @@ ChannelFactory Daemon::make_channel_factory(const DaemonSettings& settings) {
 Daemon::Daemon(const DaemonSettings& settings, const std::string& jwt_secret)
     : settings_(settings),
       create_channel_{make_channel_factory(settings_)},
-      context_pool_{settings_.num_contexts, create_channel_, settings.datadir, settings_.wait_mode},
+      context_pool_{settings_.num_contexts /*, create_channel_, settings.datadir, settings_.wait_mode*/},
       worker_pool_{settings_.num_workers},
-      kv_stub_{remote::KV::NewStub(create_channel_())},
+      kv_stub_{::remote::KV::NewStub(create_channel_())},
       jwt_secret_{jwt_secret} {
+    if (settings_.datadir) {
+        chaindata_env_ = std::make_shared<mdbx::env_managed>();
+        std::string db_path = *settings_.datadir + kChaindataRelativePath;
+        silkworm::db::EnvConfig db_config{
+            .path = db_path,
+            .in_memory = true,
+            .shared = true,
+            .max_readers = kDatabaseMaxReaders};
+        *chaindata_env_ = silkworm::db::open_env(db_config);
+    }
+
+    // Create private and shared state in execution contexts
+    add_private_services();
+    add_shared_services();
+
     // Create the unique KV state-changes stream feeding the state cache
     auto& context = context_pool_.next_context();
     state_changes_stream_ = std::make_unique<ethdb::kv::StateChangesStream>(context, kv_stub_.get());
+}
+
+void Daemon::add_private_services() {
+    auto grpc_channel = create_channel_();
+
+    // Add the private state to each execution context
+    for (std::size_t i{0}; i < settings_.num_contexts; ++i) {
+        auto& context = context_pool_.next_context();
+        auto& io_context{*context.io_context()};
+        auto& grpc_context{*context.grpc_context()};
+
+        std::unique_ptr<ethdb::Database> database;
+        if (chaindata_env_) {
+            database = std::make_unique<ethdb::file::LocalDatabase>(chaindata_env_);
+        } else {
+            database = std::make_unique<ethdb::kv::RemoteDatabase>(grpc_context, grpc_channel);
+        }
+        auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(io_context, grpc_channel, grpc_context)};
+        auto tx_pool{std::make_unique<txpool::TransactionPool>(io_context, grpc_channel, grpc_context)};
+        auto miner{std::make_unique<txpool::Miner>(io_context, grpc_channel, grpc_context)};
+
+        add_private_service<ethdb::Database>(io_context, std::move(database));
+        add_private_service<rpc::ethbackend::BackEnd>(io_context, std::move(backend));
+        add_private_service(io_context, std::move(tx_pool));
+        add_private_service(io_context, std::move(miner));
+    }
+}
+
+void Daemon::add_shared_services() {
+    // Create the unique block cache to be shared among the execution contexts
+    auto block_cache = std::make_shared<BlockCache>();
+    // Create the unique state cache to be shared among the execution contexts
+    auto state_cache = std::make_shared<ethdb::kv::CoherentStateCache>();
+    // Create the unique filter storage to be shared among the execution contexts
+    auto filter_storage = std::make_shared<FilterStorage>(context_pool_.num_contexts() * kDefaultFilterStorageSize);
+
+    // Add the shared state to the execution contexts
+    for (std::size_t i{0}; i < settings_.num_contexts; ++i) {
+        auto& io_context = context_pool_.next_io_context();
+
+        add_shared_service(io_context, block_cache);
+        add_shared_service<ethdb::kv::StateCache>(io_context, state_cache);
+        add_shared_service(io_context, filter_storage);
+    }
 }
 
 DaemonChecklist Daemon::run_checklist() {
@@ -241,7 +311,7 @@ DaemonChecklist Daemon::run_checklist() {
 
 void Daemon::start() {
     for (std::size_t i{0}; i < settings_.num_contexts; ++i) {
-        auto& context = context_pool_.next_context();
+        auto& context = context_pool_.next_io_context();
         rpc_services_.emplace_back(
             std::make_unique<http::Server>(settings_.http_port, settings_.api_spec, context, worker_pool_, std::nullopt /* no jwt_secret_file */));
         rpc_services_.emplace_back(

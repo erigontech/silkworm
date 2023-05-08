@@ -17,15 +17,11 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
-#include <utility>
-
-#include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/co_spawn.hpp>
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/ethdb/kv/remote_database.hpp>

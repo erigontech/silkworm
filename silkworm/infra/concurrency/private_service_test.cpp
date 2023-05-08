@@ -19,7 +19,7 @@
 #include <boost/asio/io_context.hpp>
 #include <catch2/catch.hpp>
 
-namespace silkworm::concurrency {
+namespace silkworm {
 
 TEST_CASE("PrivateService", "[silkworm][infra][concurrency][services]") {
     struct Integer {
@@ -43,6 +43,17 @@ TEST_CASE("PrivateService", "[silkworm][infra][concurrency][services]") {
         CHECK_NOTHROW(add_private_service<Integer>(ioc, std::make_unique<Integer>(2)));
         CHECK(use_private_service<Integer>(ioc)->value() == 2);
     }
+    SECTION("register and lookup with same type") {
+        class A {};
+        class B : public A {};
+        CHECK(!use_private_service<A>(ioc));
+        CHECK(!use_private_service<B>(ioc));
+        CHECK_NOTHROW(add_private_service(ioc, std::make_unique<B>()));
+        CHECK(!use_private_service<A>(ioc));
+        CHECK(use_private_service<B>(ioc));
+        CHECK_NOTHROW(add_private_service<A>(ioc, std::make_unique<B>()));
+        CHECK(use_private_service<A>(ioc));
+    }
 }
 
-}  // namespace silkworm::concurrency
+}  // namespace silkworm

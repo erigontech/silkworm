@@ -31,7 +31,6 @@
 #include <silkworm/core/execution/evm.hpp>
 #pragma GCC diagnostic pop
 #include <silkworm/core/state/intra_block_state.hpp>
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/json/stream.hpp>
 #include <silkworm/silkrpc/types/block.hpp>

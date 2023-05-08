@@ -18,7 +18,7 @@
 
 #include "peer_id.hpp"
 
-namespace silkworm::sentry::rpc::interfaces {
+namespace silkworm::sentry::grpc::interfaces {
 
 namespace proto = ::sentry;
 
@@ -39,4 +39,4 @@ std::vector<sentry::common::EccPublicKey> peer_keys_from_sent_peers_ids(const pr
     return result;
 }
 
-}  // namespace silkworm::sentry::rpc::interfaces
+}  // namespace silkworm::sentry::grpc::interfaces

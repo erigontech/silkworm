@@ -18,7 +18,7 @@
 
 #include "peer_id.hpp"
 
-namespace silkworm::sentry::rpc::interfaces {
+namespace silkworm::sentry::grpc::interfaces {
 
 namespace proto = ::sentry;
 
@@ -58,4 +58,4 @@ proto::PeerEvent proto_peer_event_from_peer_event(const api::api_common::PeerEve
     return reply;
 }
 
-}  // namespace silkworm::sentry::rpc::interfaces
+}  // namespace silkworm::sentry::grpc::interfaces

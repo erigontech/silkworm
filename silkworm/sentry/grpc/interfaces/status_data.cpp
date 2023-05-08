@@ -23,7 +23,7 @@
 #include <silkworm/infra/grpc/interfaces/types.hpp>
 #include <silkworm/sentry/eth/fork_id.hpp>
 
-namespace silkworm::sentry::rpc::interfaces {
+namespace silkworm::sentry::grpc::interfaces {
 
 namespace proto = ::sentry;
 
@@ -91,4 +91,4 @@ proto::StatusData proto_status_data_from_status_data(const eth::StatusData& data
     return result;
 }
 
-}  // namespace silkworm::sentry::rpc::interfaces
+}  // namespace silkworm::sentry::grpc::interfaces

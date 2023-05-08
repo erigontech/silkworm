@@ -24,7 +24,7 @@
 
 namespace silkworm::protocol {
 
-intx::uint128 intrinsic_gas(const Transaction& txn, const evmc_revision rev) noexcept {
+intx::uint128 intrinsic_gas(const UnsignedTransaction& txn, const evmc_revision rev) noexcept {
     intx::uint128 gas{fee::kGTransaction};
 
     const bool contract_creation{!txn.to};

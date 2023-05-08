@@ -48,8 +48,16 @@ std::tuple<std::string, std::string> Server::parse_endpoint(const std::string& t
     return {host, port};
 }
 
-Server::Server(const std::string& end_point, const std::string& api_spec, Context& context, boost::asio::thread_pool& workers, std::optional<std::string> jwt_secret)
-    : handler_table_{api_spec}, context_(context), acceptor_{*context.io_context()}, workers_(workers), jwt_secret_(std::move(jwt_secret)) {
+Server::Server(const std::string& end_point,
+               const std::string& api_spec,
+               boost::asio::io_context& io_context,
+               boost::asio::thread_pool& workers,
+               std::optional<std::string> jwt_secret)
+    : handler_table_{api_spec},
+      io_context_(io_context),
+      acceptor_{io_context},
+      workers_(workers),
+      jwt_secret_(std::move(jwt_secret)) {
     const auto [host, port] = parse_endpoint(end_point);
 
     // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
@@ -72,12 +80,10 @@ boost::asio::awaitable<void> Server::run() {
 
     try {
         while (acceptor_.is_open()) {
-            auto io_context = context_.io_context();
-
-            SILKRPC_DEBUG << "Server::run accepting using io_context " << io_context << "...\n"
+            SILKRPC_DEBUG << "Server::run accepting using io_context " << &io_context_ << "...\n"
                           << std::flush;
 
-            auto new_connection = std::make_shared<Connection>(context_, workers_, handler_table_, jwt_secret_);
+            auto new_connection = std::make_shared<Connection>(io_context_, workers_, handler_table_, jwt_secret_);
             co_await acceptor_.async_accept(new_connection->socket(), boost::asio::use_awaitable);
             if (!acceptor_.is_open()) {
                 SILKRPC_TRACE << "Server::run returning...\n";
@@ -89,7 +95,7 @@ boost::asio::awaitable<void> Server::run() {
             SILKRPC_TRACE << "Server::run starting connection for socket: " << &new_connection->socket() << "\n";
             auto connection_loop = [=]() -> boost::asio::awaitable<void> { co_await new_connection->read_loop(); };
 
-            boost::asio::co_spawn(*io_context, connection_loop, [&](std::exception_ptr eptr) {
+            boost::asio::co_spawn(io_context_, connection_loop, [&](std::exception_ptr eptr) {
                 if (eptr) std::rethrow_exception(eptr);
             });
         }

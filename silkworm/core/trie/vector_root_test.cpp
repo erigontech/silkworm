@@ -26,16 +26,16 @@ namespace silkworm::trie {
 
 TEST_CASE("Empty root hash") {
     static constexpr auto kEncoder = [](Bytes& to, const Transaction& txn) {
-        rlp::encode(to, txn, /*for_signing=*/false, /*wrap_eip2718_into_string=*/false);
+        rlp::encode(to, txn, /*wrap_eip2718_into_string=*/false);
     };
     CHECK(root_hash(std::vector<Transaction>{}, kEncoder) == kEmptyRoot);
 }
 
 TEST_CASE("Hardcoded root hash") {
     std::vector<Receipt> receipts{
-        {Transaction::Type::kLegacy, true, 21'000, {}, {}},
-        {Transaction::Type::kLegacy, true, 42'000, {}, {}},
-        {Transaction::Type::kLegacy,
+        {TransactionType::kLegacy, true, 21'000, {}, {}},
+        {TransactionType::kLegacy, true, 42'000, {}, {}},
+        {TransactionType::kLegacy,
          true,
          65'092,
          {},

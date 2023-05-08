@@ -145,7 +145,7 @@ bool check_tx_fee_less_cap(float cap, intx::uint256 max_fee_per_gas, uint64_t ga
 }
 
 bool is_replay_protected(const silkworm::Transaction& txn) {
-    if (txn.type != silkworm::Transaction::Type::kLegacy) {
+    if (txn.type != TransactionType::kLegacy) {
         return false;
     }
     intx::uint256 v = txn.v();

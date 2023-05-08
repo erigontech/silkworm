@@ -24,12 +24,12 @@
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/thread_pool.hpp>
 
 #include <silkworm/silkrpc/commands/rpc_api.hpp>
 #include <silkworm/silkrpc/commands/rpc_api_table.hpp>
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/http/reply.hpp>
 #include <silkworm/silkrpc/http/request.hpp>
 
@@ -37,11 +37,12 @@ namespace silkworm::rpc::http {
 
 class RequestHandler {
   public:
-    RequestHandler(Context& context, boost::asio::thread_pool& workers,
-                   boost::asio::ip::tcp::socket& socket, const commands::RpcApiTable& rpc_api_table,
+    RequestHandler(boost::asio::io_context& io_context,
+                   boost::asio::thread_pool& workers,
+                   boost::asio::ip::tcp::socket& socket,
+                   const commands::RpcApiTable& rpc_api_table,
                    std::optional<std::string> jwt_secret)
-        : rpc_api_{context, workers},
-          io_context_{*context.io_context()},
+        : rpc_api_{io_context, workers},
           socket_{socket},
           rpc_api_table_(rpc_api_table),
           jwt_secret_(std::move(jwt_secret)) {}
@@ -65,7 +66,6 @@ class RequestHandler {
     boost::asio::awaitable<void> write_headers();
 
     commands::RpcApi rpc_api_;
-    boost::asio::io_context& io_context_;
     boost::asio::ip::tcp::socket& socket_;
     const commands::RpcApiTable& rpc_api_table_;
     const std::optional<std::string> jwt_secret_;

@@ -22,6 +22,8 @@
 
 namespace silkworm {
 
+BlockNum height(const BlockId& b) { return b.number; }
+
 evmc::bytes32 BlockHeader::hash(bool for_sealing, bool exclude_extra_data_sig) const {
     Bytes rlp;
     rlp::encode(rlp, *this, for_sealing, exclude_extra_data_sig);
@@ -140,7 +142,7 @@ namespace rlp {
             encode(to, *header.base_fee_per_gas);
         }
         if (header.withdrawals_root) {
-            encode(to, *header.withdrawals_root);
+            encode(to, static_cast<ByteView>(*header.withdrawals_root));
         }
         if (header.excess_data_gas) {
             encode(to, *header.excess_data_gas);

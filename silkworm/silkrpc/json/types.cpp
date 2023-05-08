@@ -244,11 +244,11 @@ void to_json(nlohmann::json& json, const Transaction& transaction) {
     }
     json["type"] = rpc::to_quantity(uint64_t(transaction.type));
 
-    if (transaction.type == silkworm::Transaction::Type::kEip1559) {
+    if (transaction.type == silkworm::TransactionType::kEip1559) {
         json["maxPriorityFeePerGas"] = rpc::to_quantity(transaction.max_priority_fee_per_gas);
         json["maxFeePerGas"] = rpc::to_quantity(transaction.max_fee_per_gas);
     }
-    if (transaction.type != silkworm::Transaction::Type::kLegacy) {
+    if (transaction.type != silkworm::TransactionType::kLegacy) {
         json["chainId"] = rpc::to_quantity(*transaction.chain_id);
         json["v"] = rpc::to_quantity(uint64_t(transaction.odd_y_parity));
         json["accessList"] = transaction.access_list;  // EIP2930
@@ -505,27 +505,6 @@ void to_json(nlohmann::json& json, const Transaction& transaction) {
     }
 }
 
-void to_json(nlohmann::json& json, const ForkChoiceState& forkchoice_state) {
-    json["headBlockHash"] = forkchoice_state.head_block_hash;
-    json["safeBlockHash"] = forkchoice_state.safe_block_hash;
-    json["finalizedBlockHash"] = forkchoice_state.finalized_block_hash;
-}
-
-void from_json(const nlohmann::json& json, ForkChoiceState& forkchoice_state) {
-    forkchoice_state = ForkChoiceState{
-        .head_block_hash = json.at("headBlockHash").get<evmc::bytes32>(),
-        .safe_block_hash = json.at("safeBlockHash").get<evmc::bytes32>(),
-        .finalized_block_hash = json.at("finalizedBlockHash").get<evmc::bytes32>()};
-}
-
-void to_json(nlohmann::json& json, const ForkChoiceUpdatedReply& forkchoice_updated_reply) {
-    nlohmann::json json_payload_status = forkchoice_updated_reply.payload_status;
-    json["payloadStatus"] = json_payload_status;
-    if (forkchoice_updated_reply.payload_id != std::nullopt) {
-        json["payloadId"] = to_quantity(forkchoice_updated_reply.payload_id.value());
-    }
-}
-
 void to_json(nlohmann::json& json, const PayloadStatus& payload_status) {
     json["status"] = payload_status.status;
 
@@ -535,19 +514,6 @@ void to_json(nlohmann::json& json, const PayloadStatus& payload_status) {
     if (payload_status.validation_error) {
         json["validationError"] = *payload_status.validation_error;
     }
-}
-
-void to_json(nlohmann::json& json, const TransitionConfiguration& transition_configuration) {
-    json["terminalTotalDifficulty"] = to_quantity(transition_configuration.terminal_total_difficulty);
-    json["terminalBlockHash"] = transition_configuration.terminal_block_hash;
-    json["terminalBlockNumber"] = to_quantity(transition_configuration.terminal_block_number);
-}
-
-void from_json(const nlohmann::json& json, TransitionConfiguration& transition_configuration) {
-    transition_configuration = TransitionConfiguration{
-        .terminal_total_difficulty = json.at("terminalTotalDifficulty").get<intx::uint256>(),
-        .terminal_block_hash = json.at("terminalBlockHash").get<evmc::bytes32>(),
-        .terminal_block_number = static_cast<uint64_t>(std::stol(json.at("terminalBlockNumber").get<std::string>(), nullptr, 16))};
 }
 
 void to_json(nlohmann::json& json, const Forks& forks) {

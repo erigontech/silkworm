@@ -32,7 +32,7 @@ static Header header(const Receipt& r) {
 }
 
 void encode(Bytes& to, const Receipt& r) {
-    if (r.type != Transaction::Type::kLegacy) {
+    if (r.type != TransactionType::kLegacy) {
         to.push_back(static_cast<uint8_t>(r.type));
     }
     encode_header(to, header(r));

@@ -22,9 +22,11 @@
 
 #include <silkworm/core/types/block.hpp>
 
+#define ERIGON_API
+
 namespace silkworm::execution {
 
-using BlockVector = std::vector<Block>;
+using BlockVector = std::vector<std::shared_ptr<Block>>;
 
 struct ForkChoiceApplication {
     bool success{false};  // Fork choice is either successful or unsuccessful.

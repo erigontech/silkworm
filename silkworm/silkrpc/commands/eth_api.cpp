@@ -36,7 +36,6 @@
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/db/util.hpp>
-#include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
@@ -606,7 +605,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_hash(const nlo
             }
         } else {
             Rlp rlp{};
-            silkworm::rlp::encode(rlp.buffer, tx_with_block->transaction, false, false);
+            silkworm::rlp::encode(rlp.buffer, tx_with_block->transaction, false);
             reply = make_json_content(request["id"], rlp);
         }
     } catch (const std::invalid_argument& iv) {
@@ -694,7 +693,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_hash_and
             reply = make_json_content(request["id"], rlp);
         } else {
             Rlp rlp{};
-            silkworm::rlp::encode(rlp.buffer, transactions[idx], false, false);
+            silkworm::rlp::encode(rlp.buffer, transactions[idx], false);
             reply = make_json_content(request["id"], rlp);
         }
     } catch (const std::invalid_argument& iv) {
@@ -784,7 +783,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_number_a
             reply = make_json_content(request["id"], rlp);
         } else {
             Rlp rlp{};
-            silkworm::rlp::encode(rlp.buffer, transactions[idx], false, false);
+            silkworm::rlp::encode(rlp.buffer, transactions[idx], false);
             reply = make_json_content(request["id"], rlp);
         }
     } catch (const std::invalid_argument& iv) {
@@ -862,7 +861,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohman
 awaitable<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 1) {
-        auto error_msg = "invalid eth_estimategas params: " + params.dump();
+        auto error_msg = "invalid eth_estimateGas params: " + params.dump();
         SILKRPC_ERROR << error_msg << "\n";
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
@@ -885,7 +884,7 @@ awaitable<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& re
         const auto latest_block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, latest_block_number);
         const auto latest_block = latest_block_with_hash->block;
         StateReader state_reader(cached_database);
-        state::RemoteState remote_state{*context_.io_context(), cached_database, latest_block.header.number};
+        state::RemoteState remote_state{io_context_, cached_database, latest_block.header.number};
 
         Tracers tracers;
         EVMExecutor evm_executor{*chain_config_ptr, workers_, remote_state};
@@ -1117,7 +1116,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
         const auto chain_config_ptr = lookup_chain_config(chain_id);
         const auto [block_number, is_latest_block] = co_await core::get_block_number(block_id, tx_database, /*latest_required=*/true);
 
-        state::RemoteState remote_state{*context_.io_context(),
+        state::RemoteState remote_state{io_context_,
                                         is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database),
                                         block_number};
         EVMExecutor executor{*chain_config_ptr, workers_, remote_state};
@@ -1143,61 +1142,6 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
     } catch (...) {
         SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
         make_glaze_json_error(reply, request["id"], 100, "unexpected exception");
-    }
-
-    co_await tx->close();  // RAII not (yet) available with coroutines
-    co_return;
-}
-
-// https://eth.wiki/json-rpc/API#eth_call
-boost::asio::awaitable<void> EthereumRpcApi::handle_eth_call_original(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
-    if (params.size() != 2) {
-        auto error_msg = "invalid eth_call params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
-        reply = make_json_error(request["id"], 100, error_msg);
-        co_return;
-    }
-    const auto call = params[0].get<Call>();
-    const auto block_id = params[1].get<std::string>();
-    SILKRPC_DEBUG << "call: " << call << " block_id: " << block_id << "\n";
-
-    auto tx = co_await database_->begin();
-
-    try {
-        ethdb::TransactionDatabase tx_database{*tx};
-        ethdb::kv::CachedDatabase cached_database{BlockNumberOrHash{block_id}, *tx, *state_cache_};
-
-        const auto chain_id = co_await core::rawdb::read_chain_id(tx_database);
-        const auto chain_config_ptr = lookup_chain_config(chain_id);
-        const auto [block_number, is_latest_block] = co_await core::get_block_number(block_id, tx_database, /*latest_required=*/true);
-
-        state::RemoteState remote_state{*context_.io_context(),
-                                        is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database),
-                                        block_number};
-        EVMExecutor executor{*chain_config_ptr, workers_, remote_state};
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
-        silkworm::Transaction txn{call.to_transaction()};
-        const auto execution_result = co_await executor.call(block_with_hash->block, txn);
-
-        if (execution_result.pre_check_error) {
-            reply = make_json_error(request["id"], -32000, execution_result.pre_check_error.value());
-        } else if (execution_result.error_code == evmc_status_code::EVMC_SUCCESS) {
-            reply = make_json_content(request["id"], "0x" + silkworm::to_hex(execution_result.data));
-        } else {
-            const auto error_message = EVMExecutor::get_error_message(execution_result.error_code, execution_result.data);
-            if (execution_result.data.empty()) {
-                reply = make_json_error(request["id"], -32000, error_message);
-            } else {
-                reply = make_json_error(request["id"], RevertError{{3, error_message}, execution_result.data});
-            }
-        }
-    } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
-        reply = make_json_error(request["id"], 100, e.what());
-    } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
-        reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -1261,7 +1205,7 @@ awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::js
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
         StateReader state_reader(db_reader);
-        state::RemoteState remote_state{*context_.io_context(), db_reader, block_with_hash->block.header.number};
+        state::RemoteState remote_state{io_context_, db_reader, block_with_hash->block.header.number};
 
         evmc::address to{};
         if (call.to) {
@@ -1363,7 +1307,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& req
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
         auto block_number = block_with_hash->block.header.number;
-        state::RemoteState remote_state{*context_.io_context(), db_reader, block_number};
+        state::RemoteState remote_state{io_context_, db_reader, block_number};
 
         const auto start_time = clock_time::now();
 
@@ -1453,8 +1397,8 @@ awaitable<void> EthereumRpcApi::handle_eth_new_filter(const nlohmann::json& requ
         filter.start = start;
         filter.end = end;
 
-        const auto filter_id = filter_storage_.add_filter(filter);
-        SILKRPC_INFO << "Added a new filter, storage size: " << filter_storage_.size() << "\n";
+        const auto filter_id = filter_storage_->add_filter(filter);
+        SILKRPC_INFO << "Added a new filter, storage size: " << filter_storage_->size() << "\n";
 
         if (filter_id) {
             reply = make_json_content(request["id"], filter_id.value());
@@ -1529,7 +1473,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_filter_logs(const nlohmann::json&
     auto filter_id = params[0].get<std::string>();
     SILKRPC_INFO << "filter_id: " << filter_id << "\n";
 
-    const auto filter_ref = filter_storage_.get_filter(filter_id);
+    const auto filter_ref = filter_storage_->get_filter(filter_id);
     if (!filter_ref) {
         reply = make_json_error(request["id"], -32000, "filter not found");
         co_return;
@@ -1582,7 +1526,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_filter_changes(const nlohmann::js
     auto filter_id = params[0].get<std::string>();
     SILKRPC_INFO << "filter_id: " << filter_id << "\n";
 
-    const auto filter_opt = filter_storage_.get_filter(filter_id);
+    const auto filter_opt = filter_storage_->get_filter(filter_id);
 
     if (!filter_opt) {
         reply = make_json_error(request["id"], -32000, "filter not found");
@@ -1634,9 +1578,9 @@ awaitable<void> EthereumRpcApi::handle_eth_uninstall_filter(const nlohmann::json
     auto filter_id = params[0].get<std::string>();
     SILKRPC_DEBUG << "filter_id: " << filter_id << "\n";
 
-    const auto success = filter_storage_.remove_filter(filter_id);
+    const auto success = filter_storage_->remove_filter(filter_id);
 
-    SILKRPC_INFO << "Removing filter " << (success ? "succedeed" : "failed") << ", storage size: " << filter_storage_.size() << "\n";
+    SILKRPC_INFO << "Removing filter " << (success ? "succeeded" : "failed") << ", storage size: " << filter_storage_->size() << "\n";
 
     reply = make_json_content(request["id"], success);
 
@@ -2153,10 +2097,10 @@ awaitable<void> EthereumRpcApi::get_logs(ethdb::TransactionDatabase& tx_database
     }
 
     Logs chunk_logs;
-    Logs filtered_chunck_logs;
+    Logs filtered_chunk_logs;
     Logs filtered_block_logs{};
     chunk_logs.reserve(512);
-    filtered_chunck_logs.reserve(64);
+    filtered_chunk_logs.reserve(64);
     filtered_block_logs.reserve(256);
 
     for (const auto& block_to_match : block_numbers) {
@@ -2175,16 +2119,16 @@ awaitable<void> EthereumRpcApi::get_logs(ethdb::TransactionDatabase& tx_database
                 log.index = log_index++;
             }
             SILKRPC_DEBUG << "chunk_logs.size(): " << chunk_logs.size() << "\n";
-            filtered_chunck_logs.clear();
-            filter_logs(std::move(chunk_logs), addresses, topics, filtered_chunck_logs);
-            SILKRPC_DEBUG << "filtered_chunk_logs.size(): " << filtered_chunck_logs.size() << "\n";
-            if (filtered_chunck_logs.size() > 0) {
+            filtered_chunk_logs.clear();
+            filter_logs(std::move(chunk_logs), addresses, topics, filtered_chunk_logs);
+            SILKRPC_DEBUG << "filtered_chunk_logs.size(): " << filtered_chunk_logs.size() << "\n";
+            if (filtered_chunk_logs.size() > 0) {
                 const auto tx_id = boost::endian::load_big_u32(&k[sizeof(uint64_t)]);
                 SILKRPC_DEBUG << "tx_id: " << tx_id << "\n";
-                for (auto& log : filtered_chunck_logs) {
+                for (auto& log : filtered_chunk_logs) {
                     log.tx_index = tx_id;
                 }
-                filtered_block_logs.insert(filtered_block_logs.end(), filtered_chunck_logs.begin(), filtered_chunck_logs.end());
+                filtered_block_logs.insert(filtered_block_logs.end(), filtered_chunk_logs.begin(), filtered_chunk_logs.end());
             }
             return true;
         });

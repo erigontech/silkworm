@@ -22,11 +22,13 @@
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/io_context.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
+#include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
-#include <silkworm/silkrpc/json/types.hpp>
+#include <silkworm/silkrpc/ethdb/database.hpp>
+#include <silkworm/silkrpc/txpool/transaction_pool.hpp>
 
 namespace silkworm::http {
 class RequestHandler;
@@ -36,9 +38,10 @@ namespace silkworm::rpc::commands {
 
 class TxPoolRpcApi {
   public:
-    explicit TxPoolRpcApi(Context& context)
-        : context_(context), database_(context.database()), tx_pool_{context.tx_pool()} {}
-    virtual ~TxPoolRpcApi() {}
+    explicit TxPoolRpcApi(boost::asio::io_context& io_context)
+        : database_{use_private_service<ethdb::Database>(io_context)},
+          tx_pool_{use_private_service<txpool::TransactionPool>(io_context)} {}
+    virtual ~TxPoolRpcApi() = default;
 
     TxPoolRpcApi(const TxPoolRpcApi&) = delete;
     TxPoolRpcApi& operator=(const TxPoolRpcApi&) = delete;
@@ -48,7 +51,6 @@ class TxPoolRpcApi {
     boost::asio::awaitable<void> handle_txpool_content(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
-    Context& context_;
     std::unique_ptr<ethdb::Database>& database_;
     std::unique_ptr<txpool::TransactionPool>& tx_pool_;
 

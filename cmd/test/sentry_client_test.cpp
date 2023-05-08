@@ -26,7 +26,7 @@
 #include <silkworm/sentry/grpc/client/sentry_client.hpp>
 #include <silkworm/sentry/sentry.hpp>
 
-using namespace silkworm::sentry::rpc::client;
+using namespace silkworm::sentry::grpc::client;
 using namespace silkworm;
 
 class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
@@ -39,7 +39,8 @@ boost::asio::awaitable<void> run(sentry::api::api_common::SentryClient& client) 
         log::Info() << "handshake success!";
         log::Info() << "protocol: eth/" << int(eth_version);
 
-        auto node_info = co_await service->node_info();
+        auto node_infos = co_await service->node_infos();
+        auto node_info = node_infos[0];
         log::Info() << "client_id: " << node_info.client_id;
 
         auto peer_count = co_await service->peer_count();

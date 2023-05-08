@@ -23,6 +23,7 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/rlp/decode.hpp>
 
 namespace silkworm {
 
@@ -47,4 +48,23 @@ class Hash : public evmc::bytes32 {
     static_assert(sizeof(evmc::bytes32) == 32);
 };
 
+// RLP encoding: usually same as ByteView, some tricks for MSVC overload resolution
+namespace rlp {
+    inline size_t length_hash(const Hash&) { return kHashLength + 1; }
+
+    void encode_hash(Bytes& to, const Hash& h);
+
+    // template <>
+    DecodingResult decode_hash(ByteView& from, Hash& to) noexcept;
+
+}  // namespace rlp
+
 }  // namespace silkworm
+
+namespace std {
+
+template <>
+struct hash<silkworm::Hash> : public std::hash<evmc::bytes32>  // to use Hash with std::unordered_set/map
+{};
+
+}  // namespace std

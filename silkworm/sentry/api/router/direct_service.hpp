@@ -30,7 +30,7 @@ class DirectService : public api_common::Service {
 
     boost::asio::awaitable<void> set_status(eth::StatusData status_data) override;
     boost::asio::awaitable<uint8_t> handshake() override;
-    boost::asio::awaitable<api_common::NodeInfo> node_info() override;
+    boost::asio::awaitable<NodeInfos> node_infos() override;
 
     boost::asio::awaitable<PeerKeys> send_message_by_id(common::Message message, common::EccPublicKey public_key) override;
     boost::asio::awaitable<PeerKeys> send_message_to_random_peers(common::Message message, size_t max_peers) override;

@@ -20,32 +20,52 @@
 
 #include <boost/asio/awaitable.hpp>
 
+#include <silkworm/infra/concurrency/active_component.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/node/stagedsync/types.hpp>
 
 namespace silkworm::execution {
 
-using boost::asio::awaitable;
+namespace asio = boost::asio;
+using namespace stagedsync;
 
-class Server {
+class Server : public ActiveComponent {
   public:
-    auto start() -> awaitable<void>;
+    Server(NodeSettings&, db::RWAccess);
 
-    auto get_header(BlockNum block_number, Hash block_hash) -> awaitable<BlockHeader>;
+    // actions
+    ERIGON_API auto insert_headers(const BlockVector& blocks) -> asio::awaitable<void>;
+    ERIGON_API auto insert_bodies(const BlockVector& blocks) -> asio::awaitable<void>;
+    ERIGON_API auto insert_blocks(const BlockVector& blocks) -> asio::awaitable<void>;
 
-    auto get_body(BlockNum block_number, Hash block_hash) -> awaitable<BlockBody>;
+    ERIGON_API auto validate_chain(Hash head_block_hash) -> asio::awaitable<execution::ValidationResult>;
 
-    auto is_canonical(Hash block_hash) -> awaitable<bool>;
+    ERIGON_API auto update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt)
+        -> asio::awaitable<ForkChoiceApplication>;
 
-    auto get_block_num(Hash block_hash) -> awaitable<BlockNum>;
+    // state
+    auto block_progress() -> asio::awaitable<BlockNum>;
+    auto last_fork_choice() -> asio::awaitable<BlockId>;
 
-    auto insert_headers(const BlockVector& blocks) -> awaitable<void>;
+    // header/body retrieval
+    ERIGON_API auto get_header(Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>>;
+    ERIGON_API auto get_body(Hash block_hash) -> asio::awaitable<BlockBody>;
 
-    auto insert_bodies(const BlockVector& blocks) -> awaitable<void>;
+    ERIGON_API auto is_canonical(Hash block_hash) -> asio::awaitable<bool>;
+    ERIGON_API auto get_block_num(Hash block_hash) -> asio::awaitable<std::optional<BlockNum>>;
 
-    auto validate_chain(Hash head_block_hash) -> awaitable<ValidationResult>;
+    auto get_last_headers(BlockNum limit) -> asio::awaitable<std::vector<BlockHeader>>;
 
-    auto update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt) -> awaitable<ForkChoiceApplication>;
+    asio::io_context& get_executor() { return io_context_; }
+
+  private:
+    void open();
+    void execution_loop() override;
+    bool stop() override;
+    static void handle_exception(std::exception_ptr e);
+
+    ExecutionEngine exec_engine_;
+    asio::io_context io_context_;
 };
 
 }  // namespace silkworm::execution

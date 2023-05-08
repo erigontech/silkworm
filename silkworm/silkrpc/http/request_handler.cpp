@@ -23,7 +23,6 @@
 #include "request_handler.hpp"
 
 #include <iostream>
-#include <utility>
 #include <vector>
 
 #include <boost/asio/write.hpp>
@@ -71,7 +70,7 @@ boost::asio::awaitable<void> RequestHandler::handle_user_request(const http::Req
             std::string batch_reply_content = "[";
             bool first_element = true;
             for (auto& item : request_json.items()) {
-                const auto item_json = item.value();
+                const auto& item_json = item.value();
                 if (!item_json.contains("id")) {
                     reply.content = "\n";
                     reply.status = http::StatusType::ok;
@@ -111,7 +110,7 @@ boost::asio::awaitable<void> RequestHandler::handle_request_and_create_reply(con
     }
 
     const auto method = request_json["method"].get<std::string>();
-    if (method.size() == 0) {
+    if (method.empty()) {
         reply.content = make_json_error(request_id, -32600, "invalid request").dump();
         reply.status = http::StatusType::bad_request;
         co_return;

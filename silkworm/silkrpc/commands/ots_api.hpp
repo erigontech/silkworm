@@ -26,8 +26,10 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/infra/concurrency/private_service.hpp>
+#include <silkworm/infra/concurrency/shared_service.hpp>
+#include <silkworm/silkrpc/common/block_cache.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/ethbackend/backend.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
@@ -42,7 +44,12 @@ namespace silkworm::rpc::commands {
 
 class OtsRpcApi {
   public:
-    explicit OtsRpcApi(Context& context, boost::asio::thread_pool& workers) : context_(context), workers_{workers}, database_(context.database()), state_cache_(context.state_cache()), block_cache_(context.block_cache()) {}
+    OtsRpcApi(boost::asio::io_context& io_context, boost::asio::thread_pool& workers)
+        : io_context_(io_context),
+          workers_{workers},
+          database_(use_private_service<ethdb::Database>(io_context_)),
+          state_cache_(use_shared_service<ethdb::kv::StateCache>(io_context_)),
+          block_cache_(use_shared_service<BlockCache>(io_context_)) {}
     virtual ~OtsRpcApi() = default;
 
     OtsRpcApi(const OtsRpcApi&) = delete;
@@ -57,7 +64,7 @@ class OtsRpcApi {
     boost::asio::awaitable<void> handle_ots_getTransactionBySenderAndNonce(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_ots_getContractCreator(const nlohmann::json& request, nlohmann::json& reply);
 
-    Context& context_;
+    boost::asio::io_context& io_context_;
     boost::asio::thread_pool& workers_;
     std::unique_ptr<ethdb::Database>& database_;
     std::shared_ptr<ethdb::kv::StateCache>& state_cache_;
@@ -66,7 +73,8 @@ class OtsRpcApi {
 
   private:
     static IssuanceDetails get_issuance(const ChainConfig& chain_config, const silkworm::BlockWithHash& block);
-    static intx::uint256 get_block_fees(const ChainConfig& chain_config, const silkworm::BlockWithHash& block, std::vector<Receipt>& receipts, silkworm::BlockNum block_number);
+    static intx::uint256 get_block_fees(const ChainConfig& chain_config, const silkworm::BlockWithHash& block,
+                                        std::vector<Receipt>& receipts, silkworm::BlockNum block_number);
 };
 
 }  // namespace silkworm::rpc::commands

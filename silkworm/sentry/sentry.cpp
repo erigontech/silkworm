@@ -68,7 +68,7 @@ class SentryImpl final {
     boost::asio::awaitable<void> start_message_sender();
     boost::asio::awaitable<void> start_message_receiver();
     boost::asio::awaitable<void> start_peer_manager_api();
-    boost::asio::awaitable<void> start_rpc_server();
+    boost::asio::awaitable<void> start_grpc_server();
     std::unique_ptr<rlpx::Protocol> make_protocol();
     std::function<std::unique_ptr<rlpx::Protocol>()> protocol_factory();
     std::unique_ptr<rlpx::Client> make_client();
@@ -94,7 +94,7 @@ class SentryImpl final {
 
     api::router::ServiceRouter service_router_;
     std::shared_ptr<api::router::DirectService> direct_service_;
-    rpc::server::Server rpc_server_;
+    grpc::server::Server grpc_server_;
 };
 
 static silkworm::rpc::ServerConfig make_server_config(const Settings& settings) {
@@ -136,7 +136,7 @@ SentryImpl::SentryImpl(Settings settings, silkworm::rpc::ServerContextPool& cont
       peer_manager_api_(std::make_shared<PeerManagerApi>(context_pool_.next_io_context(), peer_manager_)),
       service_router_(make_service_router(status_manager_.status_channel(), message_sender_, *message_receiver_, *peer_manager_api_, node_info_provider())),
       direct_service_(std::make_shared<api::router::DirectService>(service_router_)),
-      rpc_server_(make_server_config(settings_), service_router_) {
+      grpc_server_(make_server_config(settings_), service_router_) {
 }
 
 boost::asio::awaitable<void> SentryImpl::run() {
@@ -144,7 +144,7 @@ boost::asio::awaitable<void> SentryImpl::run() {
 
     setup_node_key();
 
-    return (run_tasks() && start_rpc_server());
+    return (run_tasks() && start_grpc_server());
 }
 
 void SentryImpl::setup_node_key() {
@@ -214,9 +214,9 @@ boost::asio::awaitable<void> SentryImpl::start_peer_manager_api() {
     return PeerManagerApi::start(peer_manager_api_);
 }
 
-boost::asio::awaitable<void> SentryImpl::start_rpc_server() {
+boost::asio::awaitable<void> SentryImpl::start_grpc_server() {
     if (!settings_.api_address.empty()) {
-        co_await rpc_server_.async_run();
+        co_await grpc_server_.async_run();
     }
 }
 
@@ -270,6 +270,11 @@ boost::asio::awaitable<void> Sentry::run() {
 
 boost::asio::awaitable<std::shared_ptr<api::api_common::Service>> Sentry::service() {
     co_return p_impl_->service();
+}
+
+bool Sentry::is_ready() {
+    // the direct client never disconnects
+    return true;
 }
 
 void Sentry::on_disconnect(std::function<boost::asio::awaitable<void>()> /*callback*/) {

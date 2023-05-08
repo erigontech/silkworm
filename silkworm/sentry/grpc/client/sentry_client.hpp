@@ -23,7 +23,7 @@
 
 #include <silkworm/sentry/api/api_common/sentry_client.hpp>
 
-namespace silkworm::sentry::rpc::client {
+namespace silkworm::sentry::grpc::client {
 
 class SentryClientImpl;
 
@@ -37,6 +37,7 @@ class SentryClient : public api::api_common::SentryClient {
 
     boost::asio::awaitable<std::shared_ptr<api::api_common::Service>> service() override;
 
+    [[nodiscard]] bool is_ready() override;
     void on_disconnect(std::function<boost::asio::awaitable<void>()> callback) override;
     boost::asio::awaitable<void> reconnect() override;
 
@@ -44,4 +45,4 @@ class SentryClient : public api::api_common::SentryClient {
     std::shared_ptr<SentryClientImpl> p_impl_;
 };
 
-}  // namespace silkworm::sentry::rpc::client
+}  // namespace silkworm::sentry::grpc::client

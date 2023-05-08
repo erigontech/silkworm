@@ -267,7 +267,7 @@ TEST_CASE("Sync Stages") {
 
         static constexpr auto kEncoder = [](Bytes& to, const Receipt& r) { rlp::encode(to, r); };
         std::vector<Receipt> receipts{
-            {Transaction::Type::kLegacy, true, block.header.gas_used, {}, {}},
+            {TransactionType::kLegacy, true, block.header.gas_used, {}, {}},
         };
         block.header.receipts_root = trie::root_hash(receipts, kEncoder);
 
@@ -280,7 +280,7 @@ TEST_CASE("Sync Stages") {
         block.transactions.resize(1);
         block.transactions[0].data = deployment_code;
         block.transactions[0].gas_limit = block.header.gas_limit;
-        block.transactions[0].type = Transaction::Type::kLegacy;
+        block.transactions[0].type = TransactionType::kLegacy;
 
         auto sender{0xb685342b8c54347aad148e1f22eff3eb3eb29391_address};
         block.transactions[0].r = 1;  // dummy

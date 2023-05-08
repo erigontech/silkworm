@@ -30,9 +30,11 @@
 #include <silkworm/silkrpc/json/call.hpp>
 #include <silkworm/silkrpc/json/execution_payload.hpp>
 #include <silkworm/silkrpc/json/filter.hpp>
+#include <silkworm/silkrpc/json/fork_choice.hpp>
 #include <silkworm/silkrpc/json/log.hpp>
 #include <silkworm/silkrpc/json/payload_attributes.hpp>
 #include <silkworm/silkrpc/json/receipt.hpp>
+#include <silkworm/silkrpc/json/transition_configuration.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/call.hpp>
 #include <silkworm/silkrpc/types/chain_config.hpp>
@@ -113,15 +115,7 @@ void to_json(nlohmann::json& json, const BlockTransactionsResponse& b);
 
 void to_json(nlohmann::json& json, const Transaction& transaction);
 
-void to_json(nlohmann::json& json, const ForkChoiceState& forkchoice_state);
-void from_json(const nlohmann::json& json, ForkChoiceState& forkchoice_state);
-
-void to_json(nlohmann::json& json, const ForkChoiceUpdatedReply& forkchoice_updated_reply);
-
 void to_json(nlohmann::json& json, const PayloadStatus& payload_status);
-
-void to_json(nlohmann::json& json, const TransitionConfiguration& transition_configuration);
-void from_json(const nlohmann::json& json, TransitionConfiguration& transition_configuration);
 
 void to_json(nlohmann::json& json, const Forks& forks);
 

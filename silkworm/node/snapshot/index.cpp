@@ -208,13 +208,13 @@ void TransactionIndex::build() {
                         ByteView tx_envelope_view{tx_envelope};
 
                         rlp::Header tx_header;
-                        Transaction::Type tx_type;
+                        TransactionType tx_type;
                         decode_result = rlp::decode_transaction_header_and_type(tx_envelope_view, tx_header, tx_type);
                         if (!decode_result) {
                             SILK_ERROR << "cannot decode tx envelope: " << to_hex(tx_envelope) << " i: " << i << " error: " << magic_enum::enum_name(decode_result.error());
                             return false;
                         }
-                        const std::size_t tx_payload_offset = tx_type == Transaction::Type::kLegacy ? 0 : (tx_envelope.length() - tx_header.payload_length);
+                        const std::size_t tx_payload_offset = tx_type == TransactionType::kLegacy ? 0 : (tx_envelope.length() - tx_header.payload_length);
 
                         if (i % 100'000 == 0) {
                             SILK_DEBUG << "header.list: " << tx_header.list << " header.payload_length: " << tx_header.payload_length << " i: " << i;

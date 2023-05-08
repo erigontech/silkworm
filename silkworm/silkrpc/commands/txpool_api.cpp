@@ -19,6 +19,8 @@
 #include <string>
 #include <utility>
 
+#include <silkworm/silkrpc/json/types.hpp>
+
 namespace silkworm::rpc::commands {
 
 // https://eth.wiki/json-rpc/API#txpool_status

@@ -29,9 +29,11 @@
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/thread_pool.hpp>
 
+#include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/silkrpc/commands/rpc_api_table.hpp>
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/http/request_handler.hpp>
@@ -45,7 +47,11 @@ class Server {
     Server& operator=(const Server&) = delete;
 
     // Construct the server to listen on the specified local TCP end-point
-    explicit Server(const std::string& end_point, const std::string& api_spec, Context& context, boost::asio::thread_pool& workers, std::optional<std::string> jwt_secret);
+    explicit Server(const std::string& end_point,
+                    const std::string& api_spec,
+                    boost::asio::io_context& io_context,
+                    boost::asio::thread_pool& workers,
+                    std::optional<std::string> jwt_secret);
 
     void start();
 
@@ -56,16 +62,19 @@ class Server {
 
     boost::asio::awaitable<void> run();
 
-    // The repository of API request handlers
+    //! The repository of API request handlers
     commands::RpcApiTable handler_table_;
 
-    // The context used to perform asynchronous operations
-    Context& context_;
+    //! The context used to perform asynchronous operations
+    boost::asio::io_context& io_context_;
 
-    // The acceptor used to listen for incoming TCP connections
+    //! The acceptor used to listen for incoming TCP connections
     boost::asio::ip::tcp::acceptor acceptor_;
 
+    //! The pool of threads used to execute concurrent calls
     boost::asio::thread_pool& workers_;
+
+    //! The JSON Web Token (JWT) secret for secure channel communication
     std::optional<std::string> jwt_secret_;
 };
 

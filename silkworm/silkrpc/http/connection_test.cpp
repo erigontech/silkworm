@@ -20,6 +20,7 @@
 #include <catch2/catch.hpp>
 #include <grpcpp/grpcpp.h>
 
+#include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/silkrpc/commands/rpc_api_table.hpp>
 
 namespace silkworm::rpc::http {
@@ -35,8 +36,7 @@ TEST_CASE("connection creation", "[silkrpc][http][connection]") {
     SILKRPC_LOG_VERBOSITY(LogLevel::None);
 
     SECTION("field initialization") {
-        ChannelFactory create_channel = []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); };
-        ContextPool context_pool{1, create_channel};
+        ClientContextPool context_pool{1};
         context_pool.start();
         boost::asio::thread_pool workers;
         // Uncommenting the following lines you got stuck into llvm-cov problem:

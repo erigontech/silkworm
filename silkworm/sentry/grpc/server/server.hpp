@@ -25,7 +25,7 @@
 #include <silkworm/infra/grpc/server/server_config.hpp>
 #include <silkworm/sentry/api/router/service_router.hpp>
 
-namespace silkworm::sentry::rpc::server {
+namespace silkworm::sentry::grpc::server {
 
 class ServerImpl;
 
@@ -45,4 +45,4 @@ class Server final {
     std::unique_ptr<ServerImpl> p_impl_;
 };
 
-}  // namespace silkworm::sentry::rpc::server
+}  // namespace silkworm::sentry::grpc::server

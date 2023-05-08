@@ -46,8 +46,10 @@ struct Service {
     // rpc HandShake(google.protobuf.Empty) returns (HandShakeReply);
     virtual boost::asio::awaitable<uint8_t> handshake() = 0;
 
+    using NodeInfos = std::vector<NodeInfo>;
+
     // rpc NodeInfo(google.protobuf.Empty) returns(types.NodeInfoReply);
-    virtual boost::asio::awaitable<NodeInfo> node_info() = 0;
+    virtual boost::asio::awaitable<NodeInfos> node_infos() = 0;
 
     using PeerKeys = std::vector<sentry::common::EccPublicKey>;
 

@@ -29,6 +29,7 @@
 #include <silkworm/infra/grpc/client/call.hpp>
 #include <silkworm/infra/grpc/client/reconnect.hpp>
 #include <silkworm/interfaces/p2psentry/sentry.grpc.pb.h>
+#include <silkworm/sentry/api/api_common/service.hpp>
 
 #include "../interfaces/eth_version.hpp"
 #include "../interfaces/message.hpp"
@@ -39,7 +40,7 @@
 #include "../interfaces/sent_peer_ids.hpp"
 #include "../interfaces/status_data.hpp"
 
-namespace silkworm::sentry::rpc::client {
+namespace silkworm::sentry::grpc::client {
 
 using boost::asio::awaitable;
 namespace proto = ::sentry;
@@ -47,8 +48,8 @@ using Stub = proto::Sentry::Stub;
 namespace sw_rpc = silkworm::rpc;
 using namespace api::api_common;
 
-static std::shared_ptr<grpc::Channel> make_grpc_channel(const std::string& address_uri) {
-    return grpc::CreateChannel(address_uri, grpc::InsecureChannelCredentials());
+static std::shared_ptr<::grpc::Channel> make_grpc_channel(const std::string& address_uri) {
+    return ::grpc::CreateChannel(address_uri, ::grpc::InsecureChannelCredentials());
 }
 
 class SentryClientImpl final : public api::api_common::Service {
@@ -64,6 +65,11 @@ class SentryClientImpl final : public api::api_common::Service {
     SentryClientImpl(const SentryClientImpl&) = delete;
     SentryClientImpl& operator=(const SentryClientImpl&) = delete;
 
+    [[nodiscard]] bool is_ready() {
+        auto state = channel_->GetState(false);
+        return (state == GRPC_CHANNEL_READY) || (state == GRPC_CHANNEL_IDLE);
+    }
+
     void on_disconnect(std::function<awaitable<void>()> callback) {
         on_disconnect_ = std::move(callback);
     }
@@ -72,7 +78,6 @@ class SentryClientImpl final : public api::api_common::Service {
         co_await sw_rpc::reconnect_channel(*channel_);
     }
 
-  private:
     // rpc SetStatus(StatusData) returns (SetStatusReply);
     awaitable<void> set_status(eth::StatusData status_data) override {
         proto::StatusData request = interfaces::proto_status_data_from_status_data(status_data);
@@ -88,11 +93,11 @@ class SentryClientImpl final : public api::api_common::Service {
     }
 
     // rpc NodeInfo(google.protobuf.Empty) returns(types.NodeInfoReply);
-    awaitable<NodeInfo> node_info() override {
+    awaitable<NodeInfos> node_infos() override {
         google::protobuf::Empty request;
         types::NodeInfoReply reply = co_await sw_rpc::unary_rpc_with_retries(&Stub::AsyncNodeInfo, stub_, std::move(request), grpc_context_, on_disconnect_, *channel_);
         auto result = interfaces::node_info_from_proto_node_info(reply);
-        co_return result;
+        co_return NodeInfos{result};
     }
 
     // rpc SendMessageById(SendMessageByIdRequest) returns (SentPeers);
@@ -225,7 +230,8 @@ class SentryClientImpl final : public api::api_common::Service {
             std::move(proto_consumer));
     }
 
-    std::shared_ptr<grpc::Channel> channel_;
+  private:
+    std::shared_ptr<::grpc::Channel> channel_;
     std::unique_ptr<Stub> stub_;
     agrpc::GrpcContext& grpc_context_;
     std::function<awaitable<void>()> on_disconnect_;
@@ -235,11 +241,15 @@ SentryClient::SentryClient(const std::string& address_uri, agrpc::GrpcContext& g
     : p_impl_(std::make_shared<SentryClientImpl>(address_uri, grpc_context)) {}
 
 SentryClient::~SentryClient() {
-    log::Trace("sentry") << "silkworm::sentry::rpc::client::SentryClient::~SentryClient";
+    log::Trace("sentry") << "silkworm::sentry::grpc::client::SentryClient::~SentryClient";
 }
 
 awaitable<std::shared_ptr<api::api_common::Service>> SentryClient::service() {
     co_return p_impl_;
+}
+
+bool SentryClient::is_ready() {
+    return p_impl_->is_ready();
 }
 
 void SentryClient::on_disconnect(std::function<awaitable<void>()> callback) {
@@ -250,4 +260,4 @@ awaitable<void> SentryClient::reconnect() {
     return p_impl_->reconnect();
 }
 
-}  // namespace silkworm::sentry::rpc::client
+}  // namespace silkworm::sentry::grpc::client

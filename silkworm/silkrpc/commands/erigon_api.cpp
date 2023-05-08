@@ -16,7 +16,6 @@
 
 #include "erigon_api.hpp"
 
-#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -25,7 +24,6 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/silkrpc/common/binary_search.hpp>
-#include <silkworm/silkrpc/common/constants.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
@@ -36,12 +34,6 @@
 #include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkworm::rpc::commands {
-
-ErigonRpcApi::ErigonRpcApi(Context& context)
-    : context_(context),
-      backend_(context.backend()),
-      block_cache_(context.block_cache()),
-      database_(context.database()) {}
 
 // https://eth.wiki/json-rpc/API#erigon_getBlockByTimestamp
 awaitable<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohmann::json& request, nlohmann::json& reply) {

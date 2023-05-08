@@ -32,21 +32,16 @@ TEST_CASE("EIP-2930 intrinsic gas") {
         {0xbb9bc244d798123fde783fcc1c72d3bb8c189413_address, {}},
     };
 
-    Transaction txn{
-        Transaction::Type::kEip2930,                                                                             // type
-        7,                                                                                                       // nonce
-        30000000000,                                                                                             // max_priority_fee_per_gas
-        30000000000,                                                                                             // max_fee_per_gas
-        5748100,                                                                                                 // gas_limit
-        0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address,                                                      // to
-        2 * kEther,                                                                                              // value
-        {},                                                                                                      // data
-        false,                                                                                                   // odd_y_parity
-        5,                                                                                                       // chain_id
-        intx::from_string<intx::uint256>("0x36b241b061a36a32ab7fe86c7aa9eb592dd59018cd0443adc0903590c16b02b0"),  // r
-        intx::from_string<intx::uint256>("0x5edcc541b4741c5cc6dd347c5ed9577ef293a62787b4510465fadbfe39ee4094"),  // s
-        access_list,
-    };
+    UnsignedTransaction txn{
+        .type = TransactionType::kEip2930,
+        .chain_id = 5,
+        .nonce = 7,
+        .max_priority_fee_per_gas = 30000000000,
+        .max_fee_per_gas = 30000000000,
+        .gas_limit = 5748100,
+        .to = 0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address,
+        .value = 2 * kEther,
+        .access_list = access_list};
 
     intx::uint128 g0{intrinsic_gas(txn, EVMC_ISTANBUL)};
     CHECK(g0 == fee::kGTransaction + 2 * fee::kAccessListAddressCost + 2 * fee::kAccessListStorageKeyCost);

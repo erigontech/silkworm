@@ -162,6 +162,10 @@ size_t process_headers_at_height(ROTxn& txn, BlockNum height, std::function<void
 }
 
 void write_header(RWTxn& txn, const BlockHeader& header, bool with_header_numbers) {
+    write_header_ex(txn, header, with_header_numbers);
+}
+
+evmc::bytes32 write_header_ex(RWTxn& txn, const BlockHeader& header, bool with_header_numbers) {
     Bytes value{};
     rlp::encode(value, header);
     auto header_hash = bit_cast<evmc_bytes32>(keccak256(value));  // avoid header.hash() because it re-does rlp encoding
@@ -174,6 +178,7 @@ void write_header(RWTxn& txn, const BlockHeader& header, bool with_header_number
     if (with_header_numbers) {
         write_header_number(txn, header_hash.bytes, header.number);
     }
+    return header_hash;
 }
 
 std::optional<ByteView> read_rlp_encoded_header(ROTxn& txn, BlockNum bn, const evmc::bytes32& hash) {
@@ -452,6 +457,11 @@ bool has_body(ROTxn& txn, BlockNum block_number, const evmc::bytes32& hash) {
     return db::has_body(txn, block_number, hash.bytes);
 }
 
+bool has_sibling(ROTxn&, BlockNum) {
+    return false;
+    // todo: implement!
+}
+
 void write_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, BlockNum bn) {
     write_body(txn, body, hash.bytes, bn);
 }
@@ -469,6 +479,10 @@ void write_body(RWTxn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLe
     target.upsert(to_slice(key), to_slice(value));
 
     write_transactions(txn, body.transactions, body_for_storage.base_txn_id);
+}
+
+void write_sibling(RWTxn&, const BlockBody&, const evmc::bytes32&, BlockNum) {
+    throw std::runtime_error("write_sibling not implemented");
 }
 
 static ByteView read_senders_raw(ROTxn& txn, const Bytes& key) {

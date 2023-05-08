@@ -86,7 +86,7 @@ class ContextPool {
             add_context(T{contexts_.size(), settings.wait_mode});
         }
     }
-    ~ContextPool() {
+    virtual ~ContextPool() {
         SILK_TRACE << "ContextPool::~ContextPool START " << this;
         stop();
         join();
@@ -105,7 +105,7 @@ class ContextPool {
     }
 
     //! Start one execution thread for each context.
-    void start() {
+    virtual void start() {
         SILK_TRACE << "ContextPool::start START";
 
         // Create a pool of threads to run all the contexts (each context having 1 thread)
@@ -136,7 +136,7 @@ class ContextPool {
     }
 
     //! Stop all execution threads. This does *NOT* wait for termination: use \ref join() for that.
-    void stop() {
+    virtual void stop() {
         SILK_TRACE << "ContextPool::stop START";
 
         if (!stopped_.exchange(true)) {

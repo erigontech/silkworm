@@ -40,8 +40,7 @@ class MemoryDatabase {
 
 class MemoryOverlay {
   public:
-    MemoryOverlay(const std::filesystem::path& tmp_dir, ROTxn* txn);
-    explicit MemoryOverlay(ROTxn* txn);
+    MemoryOverlay(MemoryDatabase& memory_db, ROTxn& txn);
     MemoryOverlay(MemoryOverlay&& other) noexcept;
 
     [[nodiscard]] db::ROTxn* external_txn() const { return txn_; }
@@ -50,7 +49,7 @@ class MemoryOverlay {
     ::mdbx::txn_managed start_rw_txn();
 
   private:
-    MemoryDatabase memory_db_;
+    MemoryDatabase& memory_db_;
     ROTxn* txn_;
 };
 
@@ -59,9 +58,8 @@ class MemoryMutationCursor;
 class MemoryMutation : public RWTxn {
   public:
     explicit MemoryMutation(MemoryOverlay& overlay);
+    MemoryMutation(MemoryMutation&& other) noexcept = default;
     ~MemoryMutation() override;
-
-    MemoryMutation(MemoryMutation&& other) noexcept = default;  // Movable
 
     [[nodiscard]] bool is_table_cleared(const std::string& table) const;
     [[nodiscard]] bool is_entry_deleted(const std::string& table, const Slice& key) const;
@@ -83,6 +81,7 @@ class MemoryMutation : public RWTxn {
 
     void flush(db::RWTxn& rw_txn);
     void rollback();
+    void reopen();
 
   private:
     std::unique_ptr<MemoryMutationCursor> make_cursor(const MapConfig& config);

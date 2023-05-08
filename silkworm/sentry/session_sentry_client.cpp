@@ -66,6 +66,11 @@ class SessionSentryClientImpl : public api::api_common::SentryClient {
         co_return (co_await sentry_client_->service());
     }
 
+    [[nodiscard]] bool is_ready() override {
+        std::scoped_lock lock(state_mutex_);
+        return (state_ == State::kReady) || (state_ == State::kInit);
+    }
+
     void on_disconnect(std::function<boost::asio::awaitable<void>()> /*callback*/) override {
         assert(false);
     }
@@ -185,6 +190,10 @@ SessionSentryClient::~SessionSentryClient() {
 
 awaitable<std::shared_ptr<api::api_common::Service>> SessionSentryClient::service() {
     return p_impl_->service();
+}
+
+bool SessionSentryClient::is_ready() {
+    return p_impl_->is_ready();
 }
 
 void SessionSentryClient::on_disconnect(std::function<boost::asio::awaitable<void>()> callback) {

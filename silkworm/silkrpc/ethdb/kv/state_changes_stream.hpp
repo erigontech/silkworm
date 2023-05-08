@@ -32,8 +32,8 @@
 #include <boost/asio/deadline_timer.hpp>
 #include <boost/asio/io_context.hpp>
 
+#include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/ethdb/kv/rpc.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
 
@@ -62,7 +62,7 @@ class StateChangesStream {
     //! Set the retry interval between successive registration attempts
     static void set_registration_interval(boost::posix_time::milliseconds registration_interval);
 
-    explicit StateChangesStream(Context& context, remote::KV::StubInterface* stub);
+    explicit StateChangesStream(ClientContext& context, remote::KV::StubInterface* stub);
 
     //! Open up the stream, starting the register-and-receive loop
     std::future<void> open();

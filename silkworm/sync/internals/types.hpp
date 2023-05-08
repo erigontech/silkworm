@@ -97,23 +97,4 @@ struct Announce {
     BlockNum number = 0;
 };
 
-// RLP
-namespace rlp {
-    inline size_t length(const Hash&) { return kHashLength + 1; }
-
-    void encode(Bytes& to, const Hash& h);
-
-    template <>
-    DecodingResult decode(ByteView& from, Hash& to) noexcept;
-
-}  // namespace rlp
-
 }  // namespace silkworm
-
-namespace std {
-
-template <>
-struct hash<silkworm::Hash> : public std::hash<evmc::bytes32>  // to use Hash with std::unordered_set/map
-{};
-
-}  // namespace std

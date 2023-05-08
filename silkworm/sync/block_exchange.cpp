@@ -91,7 +91,7 @@ void BlockExchange::execution_loop() {
 
         time_point_t last_update = system_clock::now();
 
-        while (!is_stopping() && !sentry_.is_stopping()) {
+        while (!is_stopping()) {
             // pop a message from the queue
             std::shared_ptr<Message> message;
             bool present = messages_.timed_wait_and_pop(message, 100ms);

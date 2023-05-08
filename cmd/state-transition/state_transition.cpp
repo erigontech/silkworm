@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The Silkworm Authors
+Copyright 2023 The Silkworm Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,17 +19,16 @@ limitations under the License.
 #include <stdexcept>
 
 #include <CLI/CLI.hpp>
-#include <ethash/keccak.hpp>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/core/common/cast.hpp>
-#include <silkworm/core/execution/execution.hpp>
-#include <silkworm/core/protocol/rule_set.hpp>
-#include <silkworm/core/rlp/encode_vector.hpp>
-#include <silkworm/sentry/common/ecc_key_pair.hpp>
-
-#include "expected_state.hpp"
+#include "cmd/state-transition/expected_state.hpp"
+#include "silkworm/core/common/cast.hpp"
+#include "silkworm/core/execution/execution.hpp"
+#include "silkworm/core/protocol/rule_set.hpp"
+#include "silkworm/core/rlp/encode_vector.hpp"
 #include "silkworm/core/state/in_memory_state.hpp"
+#include "silkworm/sentry/common/ecc_key_pair.hpp"
+#include "third_party/ethash/include/ethash/keccak.hpp"
 
 namespace {
 class StateTransition {
@@ -42,7 +41,7 @@ class StateTransition {
 
   public:
     explicit StateTransition(const std::string& fileName, const bool terminate_on_error) noexcept {
-        std::string basePath = "/home/jacek/dev/silkworm/cmd/";
+        std::string basePath = "/home/jacek/dev/silkworm/cmd/state-transition/";
         std::ifstream input_file(basePath + fileName);
         nlohmann::json baseJson;
         input_file >> baseJson;
@@ -266,6 +265,11 @@ class StateTransition {
 int main(int argc, char* argv[]) {
     CLI::App app{"Executes Ethereum state transition tests"};
     CLI11_PARSE(app, argc, argv)
+
+    char cwd[1024];
+    if (getcwd(cwd, sizeof(cwd)) != nullptr) {
+        std::cout << "Current working directory: " << cwd << std::endl;
+    }
 
     auto stateTransition = new StateTransition("state_transition_sample3.json", false);
 

@@ -127,7 +127,7 @@ jobs:
       BUILD_TYPE: Debug
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=thread
     docker:
-      - image: ethereum/cpp-build-env:18-gcc-11
+      - image: ethereum/cpp-build-env:20-gcc-11
     resource_class: xlarge
     steps:
       - checkout_with_submodules
@@ -140,7 +140,7 @@ jobs:
       BUILD_TYPE: Debug
       BUILD_CMAKE_ARGS: -DCONAN_PACKAGE_MANAGER=ON -DCONAN_PROFILE=linux_gcc_11_debug
     docker:
-      - image: ethereum/cpp-build-env:18-gcc-11
+      - image: ethereum/cpp-build-env:20-gcc-11
     resource_class: xlarge
     steps:
       - run:
@@ -165,7 +165,7 @@ jobs:
       TOOLCHAIN: cxx20
       BUILD_TYPE: Release
     docker:
-      - image: ethereum/cpp-build-env:18-gcc-12
+      - image: ethereum/cpp-build-env:20-gcc-12
     resource_class: xlarge
     steps:
       - checkout_with_submodules
@@ -179,7 +179,7 @@ jobs:
       BUILD_TYPE: Debug
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=address,undefined
     docker:
-      - image: ethereum/cpp-build-env:19-clang-15
+      - image: ethereum/cpp-build-env:20-clang-15
     resource_class: xlarge
     steps:
       - checkout_with_submodules
@@ -194,7 +194,7 @@ jobs:
       BUILD_TYPE: Debug
       BUILD_CMAKE_ARGS: -DSILKWORM_CLANG_COVERAGE=ON
     docker:
-      - image: ethereum/cpp-build-env:18-clang-13
+      - image: ethereum/cpp-build-env:20-clang-13
     resource_class: xlarge
     steps:
       - checkout_with_submodules
@@ -285,7 +285,7 @@ jobs:
 
   linux-default-build:
     docker:
-      - image: ethereum/cpp-build-env:18-gcc-12
+      - image: ethereum/cpp-build-env:20-gcc-12
     resource_class: xlarge
     steps:
       - checkout_with_submodules

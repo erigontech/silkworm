@@ -16,10 +16,12 @@
 
 #pragma once
 
+#include <boost/asio/io_context.hpp>
+
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/active_component.hpp>
 #include <silkworm/node/common/settings.hpp>
-#include <silkworm/node/stagedsync/execution_engine.hpp>
+#include <silkworm/node/stagedsync/client.hpp>
 #include <silkworm/sync/internals/chain_fork_view.hpp>
 #include <silkworm/sync/messages/internal_message.hpp>
 
@@ -27,33 +29,29 @@
 
 namespace silkworm::chainsync {
 
+namespace asio = boost::asio;
+
 class PoWSync : public ActiveComponent {
   public:
-    PoWSync(BlockExchange&, stagedsync::ExecutionEngine&);
+    PoWSync(BlockExchange&, execution::Client&);
 
     void execution_loop() final; /*[[long_running]]*/
 
   private:
-    struct NewHeight {
-        BlockNum block_num;
-        Hash hash;
-    };
-    struct UnwindPoint {
-        BlockNum block_num;
-        Hash hash;
-        std::optional<Hash> bad_block;
-    };
+    using NewHeight = BlockId;
+    using UnwindPoint = BlockId;
 
     auto resume() -> NewHeight;
     auto forward_and_insert_blocks() -> NewHeight;
-    void unwind(UnwindPoint);
+    void unwind(UnwindPoint, std::optional<Hash> bad_block);
     auto update_bad_headers(std::set<Hash>) -> std::shared_ptr<InternalMessage<void>>;
 
     void send_new_block_announcements(Blocks&& blocks);
     void send_new_block_hash_announcements();
 
+    asio::io_context io_context_;
     BlockExchange& block_exchange_;
-    stagedsync::ExecutionEngine& exec_engine_;
+    execution::Client& exec_engine_;
     ChainForkView chain_fork_view_;
     bool is_first_sync_{true};
 };

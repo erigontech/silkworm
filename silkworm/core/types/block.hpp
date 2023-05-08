@@ -41,6 +41,8 @@ struct BlockId {
     Hash hash;
 };
 
+BlockNum height(const BlockId& b);
+
 struct ChainHead {
     BlockNum height{};
     Hash hash;
@@ -140,6 +142,10 @@ inline bool operator==(const BlockId& a, const ChainHead& b) {
 
 inline bool operator==(const ChainHead& a, const ChainHead& b) {
     return a.height == b.height && a.hash == b.hash && a.total_difficulty == b.total_difficulty;
+}
+
+inline BlockId to_BlockId(const ChainHead& head) {
+    return {.number = head.height, .hash = head.hash};
 }
 
 }  // namespace silkworm

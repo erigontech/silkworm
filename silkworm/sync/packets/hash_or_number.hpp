@@ -24,8 +24,10 @@
 
 namespace silkworm {
 
-// HashOrNumber type def
-using HashOrNumber = std::variant<Hash, BlockNum>;
+// HashOrNumber is a variant of Hash and BlockNum
+// It uses struct in place of "using", to obtain a strong typedef and avoid overload resolution ambiguities
+// in the rlp encoding/decoding functions
+struct HashOrNumber : public std::variant<Hash, BlockNum> {};
 
 // HashOrNumber rlp encoding/decoding
 namespace rlp {
@@ -59,13 +61,13 @@ namespace rlp {
             if (DecodingResult res = rlp::decode(from, static_cast<evmc::bytes32&>(hash)); !res) {
                 return res;
             }
-            to = hash;
+            to = {hash};
         } else if (h->payload_length <= 8) {
             BlockNum number{};
             if (DecodingResult res = rlp::decode(from, number); !res) {
                 return res;
             }
-            to = number;
+            to = {number};
         } else {
             return tl::unexpected{DecodingError::kUnexpectedLength};
         }

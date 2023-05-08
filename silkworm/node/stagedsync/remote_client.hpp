@@ -29,27 +29,34 @@
 
 namespace silkworm::execution {
 
+namespace asio = boost::asio;
+
 class RemoteClient : public Client {
   public:
     RemoteClient(agrpc::GrpcContext& grpc_context, const std::shared_ptr<grpc::Channel>& channel);
 
-    auto start() -> awaitable<void> override;
+    // actions
+    ERIGON_API auto insert_headers(const BlockVector& blocks) -> asio::awaitable<void> override;
+    ERIGON_API auto insert_bodies(const BlockVector& blocks) -> asio::awaitable<void> override;
+    auto insert_blocks(const BlockVector& blocks) -> asio::awaitable<void> override;
 
-    auto get_header(BlockNum block_number, Hash block_hash) -> awaitable<BlockHeader> override;
+    ERIGON_API auto validate_chain(Hash head_block_hash) -> asio::awaitable<ValidationResult> override;
 
-    auto get_body(BlockNum block_number, Hash block_hash) -> awaitable<BlockBody> override;
+    ERIGON_API auto update_fork_choice(Hash head_block_hash,
+                                       std::optional<Hash> finalized_block_hash = std::nullopt) -> asio::awaitable<ForkChoiceApplication> override;
 
-    auto is_canonical(Hash block_hash) -> awaitable<bool> override;
+    // state
+    auto block_progress() -> asio::awaitable<BlockNum> override;
+    auto last_fork_choice() -> asio::awaitable<BlockId> override;
 
-    auto get_block_num(Hash block_hash) -> awaitable<BlockNum> override;
+    // header/body retrieval
+    ERIGON_API auto get_header(Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>> override;
+    ERIGON_API auto get_body(Hash block_hash) -> asio::awaitable<BlockBody> override;
 
-    auto insert_headers(const BlockVector& blocks) -> awaitable<void> override;
+    ERIGON_API auto is_canonical(Hash block_hash) -> asio::awaitable<bool> override;
+    ERIGON_API auto get_block_num(Hash block_hash) -> asio::awaitable<std::optional<BlockNum>> override;
 
-    auto insert_bodies(const BlockVector& blocks) -> awaitable<void> override;
-
-    auto validate_chain(Hash head_block_hash) -> awaitable<ValidationResult> override;
-
-    auto update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt) -> awaitable<ForkChoiceApplication> override;
+    auto get_last_headers(BlockNum limit) -> asio::awaitable<std::vector<BlockHeader>> override;
 
   private:
     agrpc::GrpcContext& grpc_context_;

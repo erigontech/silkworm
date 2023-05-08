@@ -65,6 +65,8 @@ class lru_cache {
     typedef typename std::list<key_value_pair_t>::iterator list_iterator_t;
 
     explicit lru_cache(size_t max_size, bool thread_safe = false) : _max_size(max_size), _thread_safe(thread_safe) {}
+    lru_cache(const lru_cache&) = default;
+    lru_cache(lru_cache&&) noexcept = default;
 
     void put(const key_t& key, const value_t& value) {
         SILKWORM_LRU_CACHE_GUARD

@@ -912,7 +912,7 @@ TEST_CASE("GetBlockHeadersPacket (eth/65) encoding") {
 
     GetBlockHeadersPacket packet;
 
-    packet.origin = BlockNum{12189695};
+    packet.origin = {BlockNum{12189695}};
     packet.amount = 1;
     packet.skip = 0;
     packet.reverse = false;
@@ -969,7 +969,7 @@ TEST_CASE("GetBlockHeadersPacket (eth/66) encoding") {
     GetBlockHeadersPacket66 packet;
 
     packet.requestId = 0x6b1a456ba6e2f81d;
-    packet.request.origin = BlockNum{0xb9ffff};
+    packet.request.origin = {BlockNum{0xb9ffff}};
     packet.request.amount = 1;
     packet.request.skip = 0;
     packet.request.reverse = false;

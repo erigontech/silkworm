@@ -35,7 +35,6 @@ auto create_promise_and_set_value(asio::io_context& io, int value) {
 TEST_CASE("awaitable future") {
     asio::io_context io;
     asio::io_context::work work{io};
-    // IOExecution execution{io};
 
     SECTION("trivial use") {
         AwaitablePromise<int> promise{io};
@@ -46,7 +45,6 @@ TEST_CASE("awaitable future") {
         auto value = future.get();
 
         CHECK(value == 42);
-        // The destructor of Executor calls stop() and join()
     }
 
     SECTION("variation of the trivial use") {

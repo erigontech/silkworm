@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+#pragma once
+
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
@@ -31,7 +33,9 @@ namespace silkworm::chainsync {
 
 class ChainForkView {
   public:
-    ChainForkView(ChainHead headers_head, stagedsync::ExecutionEngine&);
+    ChainForkView(ChainHead headers_head);
+
+    void reset_head(BlockId headers_head);
 
     TotalDifficulty add(const BlockHeader&);
 
@@ -42,12 +46,13 @@ class ChainForkView {
 
     bool head_changed() const;
 
+    std::optional<TotalDifficulty> get_total_difficulty(const Hash& hash);
+    std::optional<TotalDifficulty> get_total_difficulty(BlockNum height, const Hash& hash);
+
   private:
     ChainHead initial_head_{};
     ChainHead current_head_{};  // current head of the chain
     Hash previous_hash_;
-
-    stagedsync::ExecutionEngine& exec_engine_;
 
     static constexpr size_t kCacheSize = 4096;
     lru_cache<Hash, TotalDifficulty> td_cache_;  // this is not for performance

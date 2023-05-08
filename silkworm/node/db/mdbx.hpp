@@ -176,6 +176,7 @@ class ROTxn {
   public:
     explicit ROTxn() = default;
     explicit ROTxn(mdbx::env& env) : managed_txn_{env.start_read()} {}
+    explicit ROTxn(mdbx::env&& env) : managed_txn_{env.start_read()} {}
     virtual ~ROTxn() = default;
 
     // Not copyable
@@ -193,6 +194,8 @@ class ROTxn {
     mdbx::txn& operator*() { return managed_txn_; }
     mdbx::txn* operator->() { return &managed_txn_; }
     operator mdbx::txn&() { return managed_txn_; }
+
+    mdbx::env db() const { return managed_txn_.env(); }
 
     virtual std::unique_ptr<ROCursor> ro_cursor(const MapConfig& config);
     virtual std::unique_ptr<ROCursorDupSort> ro_cursor_dup_sort(const MapConfig& config);
@@ -248,7 +251,7 @@ class RWTxn : public ROTxn {
          * */
 
         if (!commit_disabled_) {
-            mdbx::env env = managed_txn_.env();
+            mdbx::env env = db();
             managed_txn_.commit();
             if (renew) {
                 managed_txn_ = env.start_write();  // renew transaction
@@ -257,6 +260,8 @@ class RWTxn : public ROTxn {
     }
     void commit_and_renew() { commit(true); }
     void commit_and_stop() { commit(false); }
+
+    void reopen(mdbx::env& env) { managed_txn_ = env.start_write(); }
 
   protected:
     explicit RWTxn(mdbx::txn_managed&& source) : ROTxn{std::move(source)} {}

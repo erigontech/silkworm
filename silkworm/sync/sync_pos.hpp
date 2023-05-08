@@ -16,39 +16,49 @@
 
 #pragma once
 
+#include <silkworm/infra/concurrency/coroutine.hpp>
+
+#include <boost/asio.hpp>
+#include <boost/asio/awaitable.hpp>
+
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/active_component.hpp>
 #include <silkworm/node/common/settings.hpp>
-#include <silkworm/node/stagedsync/execution_engine.hpp>
+#include <silkworm/node/stagedsync/client.hpp>
 #include <silkworm/sync/engine_apis/structs.hpp>
 #include <silkworm/sync/internals/chain_fork_view.hpp>
 #include <silkworm/sync/messages/internal_message.hpp>
 
 #include "block_exchange.hpp"
 
-namespace silkworm::chainsync::pos {
+namespace silkworm::chainsync {
 
-class PoSSync : public ActiveComponent {
+namespace asio = boost::asio;
+
+class PoSSync {
   public:
-    PoSSync(BlockExchange&, stagedsync::ExecutionEngine&);
+    PoSSync(BlockExchange&, execution::Client&);
 
-    void execution_loop() final; /*[[long_running]]*/
+    asio::awaitable<void> async_run();
+
+    // public interface to download blocks
+    auto download_blocks() -> asio::awaitable<void>; /*[[long_running]]*/
 
     // public interface called by the external PoS client
-    PayloadStatus new_payload(const ExecutionPayload&, seconds_t timeout = 8s);
-    ForkChoiceUpdateReply fork_choice_update(const ForkChoiceState&, const std::optional<PayloadAttributes>&, seconds_t timeout = 8s);
-    ExecutionPayload get_payload(std::string payloadId, seconds_t timeout = 1s);
-    TransitionConfiguration exchange_transition_config(const TransitionConfiguration&, seconds_t timeout = 1s);
+    auto new_payload(const ExecutionPayload&) -> asio::awaitable<PayloadStatus>;
+    auto fork_choice_update(const ForkChoiceState&, const std::optional<PayloadAttributes>&) -> asio::awaitable<ForkChoiceUpdateReply>;
+    auto get_payload(std::string payloadId) -> asio::awaitable<ExecutionPayload>;
+    auto exchange_transition_config(const TransitionConfiguration&) -> asio::awaitable<TransitionConfiguration>;
 
   private:
-    Block make_execution_block(const ExecutionPayload& payload);
-    void do_sanity_checks(const BlockHeader& header, const BlockHeader& parent, TotalDifficulty parent_td);
+    auto make_execution_block(const ExecutionPayload& payload) -> std::shared_ptr<Block>;
+    void do_sanity_checks(const BlockHeader& header, TotalDifficulty parent_td);
     bool extends_canonical(const Block& block, Hash block_hash);
     auto has_bad_ancestor(const Hash& block_hash) -> std::tuple<bool, Hash>;
 
     BlockExchange& block_exchange_;
-    stagedsync::ExecutionEngine& exec_engine_;
+    execution::Client& exec_engine_;
     ChainForkView chain_fork_view_;
 };
 
-}  // namespace silkworm::chainsync::pos
+}  // namespace silkworm::chainsync

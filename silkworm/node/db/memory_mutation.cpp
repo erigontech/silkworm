@@ -52,13 +52,11 @@ MemoryDatabase::MemoryDatabase(MemoryDatabase&& other) noexcept : memory_env_(st
     return memory_env_.start_write();
 }
 
-MemoryOverlay::MemoryOverlay(const std::filesystem::path& tmp_dir, silkworm::db::ROTxn* txn)
-    : memory_db_{tmp_dir}, txn_(txn) {}
-
-MemoryOverlay::MemoryOverlay(silkworm::db::ROTxn* txn) : memory_db_{}, txn_(txn) {}
+MemoryOverlay::MemoryOverlay(MemoryDatabase& memory_db, db::ROTxn& txn)
+    : memory_db_{memory_db}, txn_(&txn) {}
 
 MemoryOverlay::MemoryOverlay(MemoryOverlay&& other) noexcept
-    : memory_db_(std::move(other.memory_db_)), txn_(other.txn_) {}
+    : memory_db_(other.memory_db_), txn_(other.txn_) {}
 
 void MemoryOverlay::update_txn(ROTxn* txn) {
     txn_ = txn;
@@ -80,6 +78,10 @@ MemoryMutation::MemoryMutation(MemoryOverlay& overlay)
 
 MemoryMutation::~MemoryMutation() {
     rollback();
+}
+
+void MemoryMutation::reopen() {
+    managed_txn_ = overlay_.start_rw_txn();
 }
 
 bool MemoryMutation::is_table_cleared(const std::string& table) const {

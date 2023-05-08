@@ -30,7 +30,9 @@ commands:
           name: "Format"
           working_directory: ~/project
           command: |
-            pip install --user cmake-format==0.6.13
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends python3-pip
+            pip install --user --break-system-packages cmake-format==0.6.13
             export "PATH=$HOME/.local/bin:$PATH"
             make fmt
             if ! git diff --exit-code
@@ -146,7 +148,9 @@ jobs:
       - run:
           name: "Install Conan"
           command: |
-            pip install --user conan==1.58.0 chardet
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends python3-pip
+            pip install --user --break-system-packages conan==1.58.0 chardet
             echo 'export "PATH=$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
       - checkout_with_submodules
       - restore_cache:
@@ -229,10 +233,13 @@ jobs:
       - run:
           name: "Upload to Codecov"
           command: |
-            sudo pip3 install --upgrade --quiet --no-cache-dir codecov
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends python3-pip
+            pip install --user --upgrade --no-cache-dir --break-system-packages codecov
+            codecov="$HOME/.local/bin/codecov"
 
             counter=1
-            until codecov --required --file ~/build/silkworm.lcov -X gcov || [ $counter = 5 ]; do
+            until "$codecov" --required --file ~/build/silkworm.lcov -X gcov || [ $counter = 5 ]; do
               counter=$((counter+1))
               sleep 1
               echo "Try #$counter..."

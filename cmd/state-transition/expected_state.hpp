@@ -23,6 +23,7 @@ limitations under the License.
 #include "silkworm/core/chain/config.hpp"
 #include "silkworm/core/common/test_util.hpp"
 
+namespace silkworm::cmd::state_transition {
 using namespace silkworm;
 using namespace silkworm::protocol;
 
@@ -265,7 +266,7 @@ class ExpectedSubState {
 };
 
 class ExpectedState {
-    nlohmann::json state_data_        ;
+    nlohmann::json state_data_;
     std::string fork_name_;
 
   public:
@@ -278,5 +279,6 @@ class ExpectedState {
 
     std::vector<ExpectedSubState> get_sub_states();
 
-    [[nodiscard]] std::string fork_name() const {return fork_name_;};
+    [[nodiscard]] std::string fork_name() const { return fork_name_; };
 };
+};  // namespace silkworm::cmd::state_transition

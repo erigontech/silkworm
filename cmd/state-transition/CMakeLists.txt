@@ -29,7 +29,7 @@ find_package(absl REQUIRED)
 find_package(Boost REQUIRED)
 find_package(CLI11 REQUIRED)
 
-add_executable(state_transition state_transition.cpp expected_state.cpp)
+add_executable(state_transition state_transition.cpp expected_state.cpp state_transition.hpp runner.cpp)
 target_link_libraries(state_transition PRIVATE silkworm_node CLI11::CLI11 absl::time nlohmann_json::nlohmann_json)
 
 configure_file(state_transition_sample1.json ${CMAKE_CURRENT_BINARY_DIR}/state_transition_sample1.json COPYONLY)

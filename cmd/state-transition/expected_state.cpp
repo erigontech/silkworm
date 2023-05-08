@@ -22,6 +22,8 @@ limitations under the License.
 
 #include "silkworm/core/chain/config.hpp"
 
+namespace silkworm::cmd::state_transition {
+
 silkworm::ChainConfig ExpectedState::get_config() const {
     const auto config_it{kNetworkConfig.find(fork_name_)};
     if (config_it == kNetworkConfig.end()) {
@@ -51,3 +53,4 @@ std::vector<ExpectedSubState> ExpectedState::get_sub_states() {
 
     return sub_states;
 }
+};  // namespace silkworm::cmd::state_transition

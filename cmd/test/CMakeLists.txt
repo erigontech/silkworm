@@ -43,7 +43,6 @@ set(CORE_TEST_LIBS
 if(CORE_TEST_ABSEIL_ENABLED)
   list(APPEND CORE_TEST_LIBS absl::flat_hash_map)
   list(APPEND CORE_TEST_LIBS absl::flat_hash_set)
-  list(APPEND CORE_TEST_LIBS absl::node_hash_map)
 endif()
 
 target_link_libraries(core_test ${CORE_TEST_LIBS})

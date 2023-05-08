@@ -25,7 +25,6 @@
 
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
-#include <absl/container/node_hash_map.h>
 
 #endif
 
@@ -38,13 +37,10 @@ The following aliases are defined:
 
 FlatHashMap – a hash map that might not have pointer stability.
 FlatHashSet – a hash set that might not have pointer stability.
-NodeHashMap – a hash map guaranteed to have pointer stability.
+
 
 See https://abseil.io/docs/cpp/guides/container#hash-tables
 and https://abseil.io/docs/cpp/guides/container#fn:pointer-stability
-
-N.B. FlatHashMap is generally faster than NodeHashMap,
-so prefer it unless you need pointer stability.
 */
 
 #if defined(__wasm__)
@@ -59,9 +55,6 @@ using FlatHashMap = std::unordered_map<K, V>;
 template <class T>
 using FlatHashSet = std::unordered_set<T>;
 
-template <class K, class V>
-using NodeHashMap = std::unordered_map<K, V>;
-
 #else
 
 template <class K, class V>
@@ -69,9 +62,6 @@ using FlatHashMap = absl::flat_hash_map<K, V>;
 
 template <class T>
 using FlatHashSet = absl::flat_hash_set<T>;
-
-template <class K, class V>
-using NodeHashMap = absl::node_hash_map<K, V>;
 
 #endif
 

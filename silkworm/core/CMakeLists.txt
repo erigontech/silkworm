@@ -55,7 +55,7 @@ if(NOT SILKWORM_WASM_API)
     hunter_add_package(abseil)
   endif()
   find_package(absl REQUIRED)
-  list(APPEND SILKWORM_CORE_PRIVATE_LIBS absl::flat_hash_map absl::flat_hash_set absl::node_hash_map)
+  list(APPEND SILKWORM_CORE_PRIVATE_LIBS absl::flat_hash_map absl::flat_hash_set)
 endif()
 
 target_link_libraries(

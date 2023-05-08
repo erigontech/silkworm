@@ -134,9 +134,8 @@ class IntraBlockState {
     mutable FlatHashMap<evmc::address, state::Object> objects_;
     mutable FlatHashMap<evmc::address, state::Storage> storage_;
 
-    // we want pointer stability here, thus node map
-    mutable NodeHashMap<evmc::bytes32, ByteView> existing_code_;
-    NodeHashMap<evmc::bytes32, Bytes> new_code_;
+    mutable FlatHashMap<evmc::bytes32, ByteView> existing_code_;
+    FlatHashMap<evmc::bytes32, Bytes> new_code_;
 
     std::vector<std::unique_ptr<state::Delta>> journal_;
 

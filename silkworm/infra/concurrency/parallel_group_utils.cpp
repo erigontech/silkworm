@@ -14,14 +14,14 @@
    limitations under the License.
 */
 
-#include "awaitable_wait_for_all.hpp"
+#include "parallel_group_utils.hpp"
 
 #include <stdexcept>
 
 #include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
 
-namespace silkworm::concurrency::awaitable_wait_for_all::detail {
+namespace silkworm::concurrency {
 
 static bool is_operation_cancelled_error(const std::exception_ptr& ex_ptr) {
     try {
@@ -33,7 +33,12 @@ static bool is_operation_cancelled_error(const std::exception_ptr& ex_ptr) {
     }
 }
 
-void rethrow_exceptions(const std::exception_ptr& ex0, const std::exception_ptr& ex1, const std::array<std::size_t, 2>& order) {
+void rethrow_first_exception_if_any(
+    const std::array<std::exception_ptr, 2>& exceptions,
+    const std::array<std::size_t, 2>& order) {
+    const auto& ex0 = exceptions[0];
+    const auto& ex1 = exceptions[1];
+
     // no exceptions
     if (!ex0 && !ex1)
         return;
@@ -79,4 +84,25 @@ void rethrow_exceptions(const std::exception_ptr& ex0, const std::exception_ptr&
     }
 }
 
-}  // namespace silkworm::concurrency::awaitable_wait_for_all::detail
+void rethrow_first_exception_if_any(
+    const std::vector<std::exception_ptr>& exceptions,
+    const std::vector<std::size_t>& order) {
+    std::exception_ptr first_cancelled_exception;
+
+    for (size_t i : order) {
+        const auto& ex = exceptions[i];
+        if (ex) {
+            if (!is_operation_cancelled_error(ex)) {
+                std::rethrow_exception(ex);
+            } else if (!first_cancelled_exception) {
+                first_cancelled_exception = ex;
+            }
+        }
+    }
+
+    if (first_cancelled_exception) {
+        std::rethrow_exception(first_cancelled_exception);
+    }
+}
+
+}  // namespace silkworm::concurrency

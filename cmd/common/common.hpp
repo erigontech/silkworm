@@ -17,6 +17,7 @@
 #pragma once
 
 #include <filesystem>
+#include <vector>
 
 #include <CLI/CLI.hpp>
 
@@ -44,8 +45,8 @@ void add_option_etherbase(CLI::App& cli, std::string& etherbase_address);
 //! \brief Set up option for the IP address of Core private gRPC API
 void add_option_private_api_address(CLI::App& cli, std::string& private_api_address);
 
-//! \brief Set up option for the IP address(es) of external Sentry component(s)
-void add_option_external_sentry_address(CLI::App& cli, std::string& external_sentry_address);
+//! \brief Set up option for the remote Sentry gRPC API address(es)
+void add_option_remote_sentry_addresses(CLI::App& cli, std::vector<std::string>& addresses, bool is_required);
 
 //! \brief Set up context pool options
 void add_context_pool_options(CLI::App& cli, concurrency::ContextPoolSettings& settings);

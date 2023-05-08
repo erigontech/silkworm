@@ -19,6 +19,8 @@
 #include <regex>
 #include <stdexcept>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <CLI/CLI.hpp>
 #include <boost/asio/co_spawn.hpp>
@@ -47,6 +49,7 @@
 #include <silkworm/node/stagedsync/server.hpp>
 #include <silkworm/sentry/api/api_common/sentry_client.hpp>
 #include <silkworm/sentry/grpc/client/sentry_client.hpp>
+#include <silkworm/sentry/multi_sentry_client.hpp>
 #include <silkworm/sentry/sentry.hpp>
 #include <silkworm/sentry/session_sentry_client.hpp>
 #include <silkworm/sentry/settings.hpp>
@@ -84,8 +87,8 @@ using silkworm::cmd::common::add_context_pool_options;
 using silkworm::cmd::common::add_logging_options;
 using silkworm::cmd::common::add_option_chain;
 using silkworm::cmd::common::add_option_data_dir;
-using silkworm::cmd::common::add_option_external_sentry_address;
 using silkworm::cmd::common::add_option_private_api_address;
+using silkworm::cmd::common::add_option_remote_sentry_addresses;
 using silkworm::cmd::common::add_sentry_options;
 using silkworm::cmd::common::add_snapshot_options;
 using silkworm::cmd::common::get_node_name_from_build_info;
@@ -174,7 +177,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
     add_option_private_api_address(cli, node_settings.private_api_addr);
 
     // Sentry settings
-    add_option_external_sentry_address(cli, node_settings.external_sentry_addr);
+    add_option_remote_sentry_addresses(cli, node_settings.remote_sentry_addresses, /* is_required = */ false);
     add_sentry_options(cli, settings.sentry_settings);
 
     cli.add_option("--sync.loop.throttle", node_settings.sync_loop_throttle_seconds,
@@ -472,6 +475,57 @@ void run_preflight_checklist(NodeSettings& node_settings, bool init_if_empty = t
 class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
 };
 
+std::pair<std::shared_ptr<silkworm::sentry::api::api_common::SentryClient>, std::optional<std::shared_ptr<silkworm::sentry::Sentry>>> make_sentry(
+    silkworm::sentry::Settings sentry_settings,
+    const NodeSettings& node_settings,
+    silkworm::rpc::ServerContextPool& context_pool,
+    sw_db::ROAccess db_access) {
+    std::optional<std::shared_ptr<silkworm::sentry::Sentry>> sentry_server;
+    std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> sentry_client;
+
+    sw_db::EthStatusDataProvider eth_status_data_provider{db_access, node_settings.chain_config.value()};
+
+    if (node_settings.remote_sentry_addresses.empty()) {
+        sentry_settings.data_dir_path = node_settings.data_directory->path();
+        // disable GRPC in the embedded sentry
+        sentry_settings.api_address = "";
+
+        sentry_server = std::make_shared<silkworm::sentry::Sentry>(std::move(sentry_settings), context_pool);
+
+        // wrap direct client in a session client
+        sentry_client = std::make_shared<silkworm::sentry::SessionSentryClient>(
+            sentry_server.value(),
+            eth_status_data_provider.to_factory_function());
+    } else if (node_settings.remote_sentry_addresses.size() == 1) {
+        // remote client
+        auto remote_sentry_client = std::make_shared<silkworm::sentry::grpc::client::SentryClient>(
+            node_settings.remote_sentry_addresses[0],
+            *context_pool.next_context().client_grpc_context());
+        // wrap remote client in a session client
+        sentry_client = std::make_shared<silkworm::sentry::SessionSentryClient>(
+            remote_sentry_client,
+            eth_status_data_provider.to_factory_function());
+    } else {
+        std::vector<std::shared_ptr<silkworm::sentry::api::api_common::SentryClient>> clients;
+
+        for (const auto& address_uri : node_settings.remote_sentry_addresses) {
+            // remote client
+            auto remote_sentry_client = std::make_shared<silkworm::sentry::grpc::client::SentryClient>(
+                address_uri,
+                *context_pool.next_context().client_grpc_context());
+            // wrap remote client in a session client
+            auto session_sentry_client = std::make_shared<silkworm::sentry::SessionSentryClient>(
+                remote_sentry_client,
+                eth_status_data_provider.to_factory_function());
+            clients.push_back(session_sentry_client);
+        }
+
+        sentry_client = std::make_shared<silkworm::sentry::MultiSentryClient>(std::move(clients));
+    }
+
+    return {sentry_client, sentry_server};
+}
+
 // main
 int main(int argc, char* argv[]) {
     using namespace boost::placeholders;
@@ -548,33 +602,16 @@ int main(int argc, char* argv[]) {
         ResourceUsageLog resource_usage_log(node_settings);
 
         // Sentry
-        std::optional<std::shared_ptr<silkworm::sentry::Sentry>> sentry_server;
-        std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> sentry_client;
-        if (node_settings.external_sentry_addr.empty()) {
-            silkworm::sentry::Settings sentry_settings = std::move(settings.sentry_settings);
-            sentry_settings.data_dir_path = node_settings.data_directory->path();
-            sentry_settings.context_pool_settings = settings.server_settings.context_pool_settings();
-            // disable GRPC in the embedded sentry
-            sentry_settings.api_address = "";
-
-            sentry_server = std::make_shared<silkworm::sentry::Sentry>(std::move(sentry_settings), context_pool);
-
-            // direct client
-            sentry_client = sentry_server.value();
-        } else {
-            // remote client
-            sentry_client = std::make_shared<silkworm::sentry::grpc::client::SentryClient>(
-                node_settings.external_sentry_addr,
-                *context_pool.next_context().client_grpc_context());
-        }
-        auto embedded_sentry_run_if_needed = [&sentry_server]() -> boost::asio::awaitable<void> {
+        auto [sentry_client, sentry_server] = make_sentry(
+            std::move(settings.sentry_settings),
+            node_settings,
+            context_pool,
+            sw_db::ROAccess(chaindata_db));
+        auto embedded_sentry_run_if_needed = [&sentry_server = sentry_server]() -> boost::asio::awaitable<void> {
             if (sentry_server) {
                 co_await sentry_server.value()->run();
             }
         };
-        sentry_client = std::make_shared<silkworm::sentry::SessionSentryClient>(
-            std::move(sentry_client),
-            sw_db::EthStatusDataProvider(sw_db::ROAccess(chaindata_db), node_settings.chain_config.value()).to_factory_function());
 
         // BackEnd & KV server
         silkworm::EthereumBackEnd backend{

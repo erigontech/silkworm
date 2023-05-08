@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+#include <cassert>
 #include <filesystem>
 #include <stdexcept>
 #include <string>
@@ -40,6 +41,7 @@
 #include <silkworm/node/db/eth_status_data_provider.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/sentry/grpc/client/sentry_client.hpp>
+#include <silkworm/sentry/multi_sentry_client.hpp>
 #include <silkworm/sentry/session_sentry_client.hpp>
 
 #include "common/common.hpp"
@@ -82,7 +84,7 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, StandaloneBackEndK
 
     // RPC Server options
     add_option_private_api_address(app, node_settings.private_api_addr);
-    add_option_external_sentry_address(app, node_settings.external_sentry_addr);
+    add_option_remote_sentry_addresses(app, node_settings.remote_sentry_addresses, /* is_required = */ true);
 
     concurrency::ContextPoolSettings context_pool_settings;
     add_context_pool_options(app, context_pool_settings);
@@ -119,6 +121,46 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, StandaloneBackEndK
 
 class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
 };
+
+std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> make_sentry_client(
+    const NodeSettings& node_settings,
+    silkworm::rpc::ServerContextPool& context_pool,
+    db::ROAccess db_access) {
+    std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> sentry_client;
+
+    db::EthStatusDataProvider eth_status_data_provider{db_access, node_settings.chain_config.value()};
+
+    if (node_settings.remote_sentry_addresses.empty()) {
+        assert(false);
+    } else if (node_settings.remote_sentry_addresses.size() == 1) {
+        // remote client
+        auto remote_sentry_client = std::make_shared<silkworm::sentry::grpc::client::SentryClient>(
+            node_settings.remote_sentry_addresses[0],
+            *context_pool.next_context().client_grpc_context());
+        // wrap remote client in a session client
+        sentry_client = std::make_shared<silkworm::sentry::SessionSentryClient>(
+            remote_sentry_client,
+            eth_status_data_provider.to_factory_function());
+    } else {
+        std::vector<std::shared_ptr<silkworm::sentry::api::api_common::SentryClient>> clients;
+
+        for (const auto& address_uri : node_settings.remote_sentry_addresses) {
+            // remote client
+            auto remote_sentry_client = std::make_shared<silkworm::sentry::grpc::client::SentryClient>(
+                address_uri,
+                *context_pool.next_context().client_grpc_context());
+            // wrap remote client in a session client
+            auto session_sentry_client = std::make_shared<silkworm::sentry::SessionSentryClient>(
+                remote_sentry_client,
+                eth_status_data_provider.to_factory_function());
+            clients.push_back(session_sentry_client);
+        }
+
+        sentry_client = std::make_shared<silkworm::sentry::MultiSentryClient>(std::move(clients));
+    }
+
+    return sentry_client;
+}
 
 int main(int argc, char* argv[]) {
     using namespace silkworm::concurrency::awaitable_wait_for_one;
@@ -177,12 +219,7 @@ int main(int argc, char* argv[]) {
             [] { return std::make_unique<DummyServerCompletionQueue>(); },
         };
 
-        auto remote_sentry_client = std::make_shared<silkworm::sentry::grpc::client::SentryClient>(
-            node_settings.external_sentry_addr,
-            *context_pool.next_context().client_grpc_context());
-        auto sentry_client = std::make_shared<silkworm::sentry::SessionSentryClient>(
-            std::move(remote_sentry_client),
-            db::EthStatusDataProvider(db::ROAccess(database_env), node_settings.chain_config.value()).to_factory_function());
+        auto sentry_client = make_sentry_client(node_settings, context_pool, db::ROAccess(database_env));
 
         EthereumBackEnd backend{
             node_settings,

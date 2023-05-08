@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <optional>
+#include <vector>
 
 #ifdef __APPLE__
 // otherwise <boost/asio/detail/socket_types.hpp> dependency doesn't compile
@@ -43,7 +44,7 @@ struct NodeSettings {
     size_t batch_size{512_Mebi};                           // Batch size to use in stages
     size_t etl_buffer_size{256_Mebi};                      // Buffer size for ETL operations
     std::string private_api_addr{"127.0.0.1:9090"};        // Private API bind address (IP:port)
-    std::string external_sentry_addr{};                    // External sentry address (host:port)
+    std::vector<std::string> remote_sentry_addresses;      // Remote Sentry API addresses (host:port,host2:port2,...)
     bool fake_pow{false};                                  // Whether to verify Proof-of-Work (PoW)
     std::optional<evmc::address> etherbase{std::nullopt};  // Coinbase address (PoW only)
     std::unique_ptr<db::PruneMode> prune_mode;             // Prune mode

@@ -44,6 +44,7 @@ struct Settings {
 
     NatOption nat;
 
+    // Settings for the GRPC server context pool
     concurrency::ContextPoolSettings context_pool_settings;
 
     std::filesystem::path data_dir_path;

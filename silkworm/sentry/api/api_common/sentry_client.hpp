@@ -32,6 +32,8 @@ struct SentryClient {
 
     virtual boost::asio::awaitable<std::shared_ptr<Service>> service() = 0;
 
+    //! Connected or just created an ready to handle calls. service() is unlikely to block for long.
+    [[nodiscard]] virtual bool is_ready() = 0;
     virtual void on_disconnect(std::function<boost::asio::awaitable<void>()> callback) = 0;
     virtual boost::asio::awaitable<void> reconnect() = 0;
 };

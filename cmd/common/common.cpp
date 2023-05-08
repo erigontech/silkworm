@@ -68,8 +68,11 @@ void add_option_private_api_address(CLI::App& cli, std::string& private_api_addr
                            "DO NOT EXPOSE TO THE INTERNET");
 }
 
-void add_option_external_sentry_address(CLI::App& cli, std::string& external_sentry_address) {
-    add_option_ip_endpoint(cli, "--sentry.remote.addr", external_sentry_address, "External Sentry endpoint");
+void add_option_remote_sentry_addresses(CLI::App& cli, std::vector<std::string>& addresses, bool is_required) {
+    cli.add_option("--sentry.remote.addr", addresses, "Remote Sentry gRPC API addresses (comma separated): <host>:<port>,<host2>:<port2>,...")
+        ->delimiter(',')
+        ->required(is_required)
+        ->check(IPEndpointValidator(/*allow_empty=*/false));
 }
 
 //! \brief Set up parsing of the number of RPC execution contexts (i.e. threading model)

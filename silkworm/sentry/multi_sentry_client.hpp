@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -17,37 +17,27 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
-
-#include <silkworm/infra/grpc/server/server_context_pool.hpp>
-
-#include "api/api_common/sentry_client.hpp"
-#include "settings.hpp"
+#include <silkworm/sentry/api/api_common/sentry_client.hpp>
 
 namespace silkworm::sentry {
 
-class SentryImpl;
+class MultiSentryClientImpl;
 
-class Sentry final : public api::api_common::SentryClient {
+class MultiSentryClient : public api::api_common::SentryClient {
   public:
-    explicit Sentry(Settings settings, silkworm::rpc::ServerContextPool& context_pool);
-    ~Sentry() override;
-
-    Sentry(const Sentry&) = delete;
-    Sentry& operator=(const Sentry&) = delete;
-
-    boost::asio::awaitable<void> run();
+    explicit MultiSentryClient(std::vector<std::shared_ptr<api::api_common::SentryClient>> clients);
+    ~MultiSentryClient() override;
 
     boost::asio::awaitable<std::shared_ptr<api::api_common::Service>> service() override;
+
     [[nodiscard]] bool is_ready() override;
     void on_disconnect(std::function<boost::asio::awaitable<void>()> callback) override;
     boost::asio::awaitable<void> reconnect() override;
 
   private:
-    std::unique_ptr<SentryImpl> p_impl_;
+    std::shared_ptr<MultiSentryClientImpl> p_impl_;
 };
 
 }  // namespace silkworm::sentry

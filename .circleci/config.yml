@@ -191,14 +191,14 @@ jobs:
       - build
       - test
 
-  linux-clang-13-coverage:
+  linux-clang-16-coverage:
     environment:
       TOOLCHAIN: clang_libcxx
-      CLANG_VERSION: 13
+      CLANG_VERSION: 16
       BUILD_TYPE: Debug
       BUILD_CMAKE_ARGS: -DSILKWORM_CLANG_COVERAGE=ON
     docker:
-      - image: ethereum/cpp-build-env:20-clang-13
+      - image: ethereum/cpp-build-env:20-clang-16
     resource_class: xlarge
     steps:
       - checkout_with_submodules
@@ -336,7 +336,7 @@ workflows:
       - linux-gcc-12-release
       - linux-gcc-11-conan
       - linux-gcc-11-thread-sanitizer
-      - linux-clang-13-coverage
+      - linux-clang-16-coverage
       - linux-clang-15-address-sanitizer
       - linux-wasm-build
       - linux-default-build

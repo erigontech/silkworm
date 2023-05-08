@@ -164,11 +164,11 @@ silkworm::Transaction StateTransition::get_transaction(ExpectedSubState expected
     //        std::cout << "from address: " << to_hex(txn.from.value()) << std::endl;
 
     if (jTransaction.contains("gasPrice")) {
-        txn.type = silkworm::Transaction::Type::kLegacy;
+        txn.type = silkworm::TransactionType::kLegacy;
         txn.max_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("gasPrice").get<std::string>());
         txn.max_priority_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("gasPrice").get<std::string>());
     } else {
-        txn.type = silkworm::Transaction::Type::kEip1559;
+        txn.type = silkworm::TransactionType::kEip1559;
         txn.max_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("maxFeePerGas").get<std::string>());
         txn.max_priority_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("maxPriorityFeePerGas").get<std::string>());
     }

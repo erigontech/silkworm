@@ -73,7 +73,7 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(scan_txs scan_txs.cpp)
   target_link_libraries(scan_txs PRIVATE silkworm_node CLI11::CLI11 absl::time)
 
-  add_executable(state_transition state_transition.cpp)
+  add_executable(state_transition state_transition.cpp expected_state.cpp )
   target_link_libraries(state_transition PRIVATE silkworm_node CLI11::CLI11 absl::time nlohmann_json::nlohmann_json)
 
   add_executable(check_pow check_pow.cpp)

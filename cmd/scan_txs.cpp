@@ -65,26 +65,9 @@ int main(int argc, char* argv[]) {
         db::EnvConfig db_config{data_dir.chaindata().path().string()};
         auto env{db::open_env(db_config)};
         db::RWTxn txn{env};
-        auto a = txn->flags();
-        std::cout << a;
         auto chain_config{db::read_chain_config(txn)};
         if (!chain_config) {
-//            throw std::runtime_error("Unable to retrieve chain config");
-            const auto json = nlohmann::json::parse("    {\n"
-                "            \"chainId\":1,\n"
-                "            \"homesteadBlock\":1150000,\n"
-                "            \"daoForkBlock\":1920000,\n"
-                "            \"eip150Block\":2463000,\n"
-                "            \"eip155Block\":2675000,\n"
-                "            \"byzantiumBlock\":4370000,\n"
-                "            \"constantinopleBlock\":7280000,\n"
-                "            \"petersburgBlock\":7280000,\n"
-                "            \"istanbulBlock\":9069000,\n"
-                "            \"muirGlacierBlock\":9200000,\n"
-                "            \"berlinBlock\":12244000\n"
-                "    }", nullptr, false);
-            chain_config = ChainConfig::from_json(json);
-            db::update_chain_config(txn, chain_config.value());
+            throw std::runtime_error("Unable to retrieve chain config");
         }
         auto rule_set{protocol::rule_set_factory(*chain_config)};
         if (!rule_set) {

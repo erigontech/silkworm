@@ -16,7 +16,10 @@
 
 #include "account.hpp"
 
+#include <iostream>
+
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/core/rlp/encode.hpp>
 
 namespace silkworm {
@@ -194,6 +197,8 @@ Bytes Account::rlp(const evmc::bytes32& storage_root) const {
     rlp::encode(to, balance);
     rlp::encode(to, storage_root.bytes);
     rlp::encode(to, code_hash.bytes);
+
+//    std::cout << to_hex(storage_root.bytes) << ":" << to_hex(code_hash.bytes) << std::endl;
 
     return to;
 }

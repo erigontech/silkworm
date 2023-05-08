@@ -248,48 +248,21 @@ class ExpectedSubState {
     unsigned long dataIndex{};
     unsigned long gasIndex{};
     unsigned long valueIndex{};
-
-    void print_summary(const std::string& result) {
-        std::cout << "[Expected State Index] Data: " << dataIndex << ", Gas: " << gasIndex << ", Value" << valueIndex << " [Result]" << result << std::endl;
-    }
 };
 
 class ExpectedState {
-    nlohmann::json stateData;
+    nlohmann::json state_data_        ;
+    std::string fork_name_;
 
   public:
-    std::string forkName;
     explicit ExpectedState(const nlohmann::json& data, const std::string& name) noexcept {
-        stateData = data;
-        forkName = name;
+        state_data_ = data;
+        fork_name_ = name;
     }
 
-    silkworm::ChainConfig getConfig() {
-        const auto config_it{kNetworkConfig.find(forkName)};
-        if (config_it == kNetworkConfig.end()) {
-            std::cout << "unknown network " << forkName << std::endl;
-            throw std::invalid_argument(forkName);
-        }
-        const ChainConfig& config{config_it->second};
-        return config;
-    }
+    [[nodiscard]] silkworm::ChainConfig get_config() const;
 
-    std::vector<ExpectedSubState> getSubStates() {
-        std::vector<ExpectedSubState> subStates;
-        unsigned i = 0;
+    std::vector<ExpectedSubState> get_sub_states();
 
-        for (auto& tx : stateData) {
-            ExpectedSubState subState;
-
-            subState.stateHash = silkworm::to_bytes32(from_hex(tx["hash"].get<std::string>()).value_or(Bytes{}));
-            subState.logsHash = silkworm::to_bytes32(from_hex(tx["logs"].get<std::string>()).value_or(Bytes{}));
-            subState.dataIndex = tx["indexes"]["data"].get<unsigned long>();
-            subState.gasIndex = tx["indexes"]["gas"].get<unsigned long>();
-            subState.valueIndex = tx["indexes"]["value"].get<unsigned long>();
-            subStates.push_back(subState);
-            ++i;
-        }
-
-        return subStates;
-    }
+    [[nodiscard]] std::string fork_name() const {return fork_name_;};
 };

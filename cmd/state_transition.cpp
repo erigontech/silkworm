@@ -28,48 +28,47 @@ limitations under the License.
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 
-#include "ExpectedState.hpp"
+#include "expected_state.hpp"
 #include "silkworm/core/state/in_memory_state.hpp"
-
-// #include "state_transition.hpp"
 
 namespace {
 class StateTransition {
-    nlohmann::json testData;
-    std::string testName;
-    unsigned totalCount{};
-    unsigned failedCount{};
-    bool terminateOnError;
+  private:
+    nlohmann::json test_data_;
+    std::string test_name_;
+    unsigned total_count_{};
+    unsigned failed_count_{};
+    bool terminate_on_error_;
 
   public:
-    explicit StateTransition(const std::string& fileName, const bool terminateOnError_) noexcept {
+    explicit StateTransition(const std::string& fileName, const bool terminate_on_error) noexcept {
         std::string basePath = "/home/jacek/dev/silkworm/cmd/";
         std::ifstream input_file(basePath + fileName);
         nlohmann::json baseJson;
         input_file >> baseJson;
         auto testObject = baseJson.begin();
-        testName = testObject.key();
-        testData = testObject.value();
+        test_name_ = testObject.key();
+        test_data_ = testObject.value();
 
-        terminateOnError = terminateOnError_;
+        terminate_on_error_ = terminate_on_error;
     }
 
     std::string name() {
-        return testName;
+        return test_name_;
     }
 
     std::string getEnv(const std::string& key) {
-        return testData.at("env").at(key);
+        return test_data_.at("env").at(key);
     }
     bool containsEnv(const std::string& key) {
-        return testData.at("env").contains(key);
+        return test_data_.at("env").contains(key);
     }
 
     // get transaction
     std::vector<ExpectedState> getExpectedStates() {
         std::vector<ExpectedState> expectedStates;
 
-        auto post = testData.at("post");
+        auto post = test_data_.at("post");
 
         for (const auto& postState : post.items()) {
             nlohmann::json data = postState.value();
@@ -115,7 +114,7 @@ class StateTransition {
     std::unique_ptr<silkworm::InMemoryState> getState() {
         auto state = std::make_unique<silkworm::InMemoryState>();
 
-        auto pre = testData["pre"];
+        auto pre = test_data_["pre"];
 
         for (const auto& preState : pre.items()) {
             const auto address = toEvmcAddress(preState.key());
@@ -161,7 +160,7 @@ class StateTransition {
 
     silkworm::Transaction getTransaction(const ExpectedSubState expectedStateTransaction) {
         silkworm::Transaction txn;
-        auto jTransaction = testData["transaction"];
+        auto jTransaction = test_data_["transaction"];
 
         txn.nonce = std::stoull(jTransaction.at("nonce").get<std::string>(), nullptr, 16);
         txn.from = *privateKeyToAddress(jTransaction["secretKey"]);
@@ -205,18 +204,18 @@ class StateTransition {
 
     void validateTransition(const silkworm::Receipt& receipt, const ExpectedState& expectedState, const ExpectedSubState& expectedSubState, const InMemoryState& state) {
         if (state.state_root_hash() != expectedSubState.stateHash) {
-            failedCount++;
+            failed_count_++;
             print_validation_results(expectedState, expectedSubState, "State root hash does not match");
-            if (terminateOnError) {
+            if (terminate_on_error_) {
                 throw std::runtime_error("State root hash does not match");
             }
         } else {
             Bytes encoded;
             rlp::encode(encoded, receipt.logs);
             if (silkworm::bit_cast<evmc_bytes32>(keccak256(encoded)) != expectedSubState.logsHash) {
-                failedCount++;
+                failed_count_++;
                 print_validation_results(expectedState, expectedSubState, "Logs hash does not match");
-                if (terminateOnError) {
+                if (terminate_on_error_) {
                     throw std::runtime_error("Logs hash does not match");
                 }
             }
@@ -224,24 +223,23 @@ class StateTransition {
     }
 
     static void print_validation_results(const ExpectedState& expectedState, const ExpectedSubState& expectedSubState, const std::string& result) {
-        std::cout << "[" << expectedState.forkName << ":" << expectedSubState.index << "] Data: " << expectedSubState.dataIndex << ", Gas: " << expectedSubState.gasIndex << ", Value: " << expectedSubState.valueIndex << ", Result: " << result << std::endl;
+        std::cout << "[" << expectedState.fork_name() << ":" << expectedSubState.index << "] Data: " << expectedSubState.dataIndex << ", Gas: " << expectedSubState.gasIndex << ", Value: " << expectedSubState.valueIndex << ", Result: " << result << std::endl;
     }
 
     void run() {
-
-        failedCount = 0;
-        totalCount = 0;
+        failed_count_ = 0;
+        total_count_ = 0;
 
         for (auto& expectedState : getExpectedStates()) {
-            for (const auto& expectedSubState : expectedState.getSubStates()) {
-                ++totalCount;
-                auto config = expectedState.getConfig();
+            for (const auto& expectedSubState : expectedState.get_sub_states()) {
+                ++total_count_;
+                auto config = expectedState.get_config();
                 auto ruleSet = protocol::rule_set_factory(config);
                 auto block = getBlock();
                 auto state = getState();
 
-//                std::cout << "pre: " << std::endl;
-//                state->state_root_hash();
+                //                std::cout << "pre: " << std::endl;
+                //                state->state_root_hash();
 
                 silkworm::ExecutionProcessor processor{block, *ruleSet, *state, config};
                 silkworm::Receipt receipt;
@@ -260,7 +258,7 @@ class StateTransition {
             }
         }
 
-        std::cout << "Finished, encountered " << failedCount << "/" << totalCount << " errors";
+        std::cout << "Finished, encountered " << failed_count_ << "/" << total_count_ << " errors";
     }
 };
 }  // namespace

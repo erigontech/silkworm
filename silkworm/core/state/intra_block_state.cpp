@@ -202,7 +202,7 @@ ByteView IntraBlockState::get_code(const evmc::address& address) const noexcept 
     }
 
     if (auto it{new_code_.find(code_hash)}; it != new_code_.end()) {
-        return it->second;
+        return *(it->second);
     }
 
     if (auto it{existing_code_.find(code_hash)}; it != existing_code_.end()) {
@@ -226,7 +226,7 @@ void IntraBlockState::set_code(const evmc::address& address, ByteView code) noex
 
     // Don't overwrite already existing code so that views of it
     // that were previously returned by get_code() are still valid.
-    new_code_.try_emplace(obj.current->code_hash, code);
+    new_code_.try_emplace(obj.current->code_hash, std::make_unique<Bytes>(code));
 }
 
 evmc_access_status IntraBlockState::access_account(const evmc::address& address) noexcept {
@@ -328,7 +328,7 @@ void IntraBlockState::write_to_db(uint64_t block_number) {
         if (code_hash != kEmptyHash &&
             (!obj.initial.has_value() || obj.initial->incarnation != obj.current->incarnation)) {
             if (auto it{new_code_.find(code_hash)}; it != new_code_.end()) {
-                db_.update_account_code(address, obj.current->incarnation, code_hash, it->second);
+                db_.update_account_code(address, obj.current->incarnation, code_hash, *(it->second));
             }
         }
     }

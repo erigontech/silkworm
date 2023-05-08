@@ -38,7 +38,6 @@ The following aliases are defined:
 FlatHashMap – a hash map that might not have pointer stability.
 FlatHashSet – a hash set that might not have pointer stability.
 
-
 See https://abseil.io/docs/cpp/guides/container#hash-tables
 and https://abseil.io/docs/cpp/guides/container#fn:pointer-stability
 */

@@ -24,6 +24,7 @@ limitations under the License.
 
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/execution/execution.hpp>
+#include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 
@@ -36,9 +37,12 @@ namespace {
 class StateTransition {
     nlohmann::json testData;
     std::string testName;
+    unsigned totalCount{};
+    unsigned failedCount{};
+    bool terminateOnError;
 
   public:
-    explicit StateTransition(const std::string& fileName) noexcept {
+    explicit StateTransition(const std::string& fileName, const bool terminateOnError_) noexcept {
         std::string basePath = "/home/jacek/dev/silkworm/cmd/";
         std::ifstream input_file(basePath + fileName);
         nlohmann::json baseJson;
@@ -46,6 +50,8 @@ class StateTransition {
         auto testObject = baseJson.begin();
         testName = testObject.key();
         testData = testObject.value();
+
+        terminateOnError = terminateOnError_;
     }
 
     std::string name() {
@@ -106,7 +112,7 @@ class StateTransition {
         return block;
     }
 
-    std::unique_ptr<silkworm::State> getState() {
+    std::unique_ptr<silkworm::InMemoryState> getState() {
         auto state = std::make_unique<silkworm::InMemoryState>();
 
         auto pre = testData["pre"];
@@ -158,8 +164,13 @@ class StateTransition {
         auto jTransaction = testData["transaction"];
 
         txn.nonce = std::stoull(jTransaction.at("nonce").get<std::string>(), nullptr, 16);
-        txn.to = toEvmcAddress(jTransaction.at("to").get<std::string>());
         txn.from = *privateKeyToAddress(jTransaction["secretKey"]);
+
+        const auto to_address = jTransaction.at("to").get<std::string>();
+        if (!to_address.empty()) {
+            txn.to = toEvmcAddress(to_address);
+        }
+        //        std::cout << "from address: " << to_hex(txn.from.value()) << std::endl;
 
         if (jTransaction.contains("gasPrice")) {
             txn.type = silkworm::Transaction::Type::kLegacy;
@@ -192,35 +203,64 @@ class StateTransition {
         return txn;
     }
 
-    static void validateTransition(const silkworm::Receipt& receipt, const ExpectedState& /*state*/, const ExpectedSubState& subState, const State& state) {
-        if (state.state_root_hash() != subState.stateHash) {
-            throw std::runtime_error("State root hash does not match");
-        }
-
-        Bytes encoded;
-        rlp::encode(encoded, receipt.logs);
-        if (silkworm::to_bytes32(keccak256(encoded).bytes) != subState.logsHash) {
-            throw std::runtime_error("Logs hash does not match");
+    void validateTransition(const silkworm::Receipt& receipt, const ExpectedState& expectedState, const ExpectedSubState& expectedSubState, const InMemoryState& state) {
+        if (state.state_root_hash() != expectedSubState.stateHash) {
+            failedCount++;
+            print_validation_results(expectedState, expectedSubState, "State root hash does not match");
+            if (terminateOnError) {
+                throw std::runtime_error("State root hash does not match");
+            }
+        } else {
+            Bytes encoded;
+            rlp::encode(encoded, receipt.logs);
+            if (silkworm::bit_cast<evmc_bytes32>(keccak256(encoded)) != expectedSubState.logsHash) {
+                failedCount++;
+                print_validation_results(expectedState, expectedSubState, "Logs hash does not match");
+                if (terminateOnError) {
+                    throw std::runtime_error("Logs hash does not match");
+                }
+            }
         }
     }
 
+    static void print_validation_results(const ExpectedState& expectedState, const ExpectedSubState& expectedSubState, const std::string& result) {
+        std::cout << "[" << expectedState.forkName << ":" << expectedSubState.index << "] Data: " << expectedSubState.dataIndex << ", Gas: " << expectedSubState.gasIndex << ", Value: " << expectedSubState.valueIndex << ", Result: " << result << std::endl;
+    }
+
     void run() {
+
+        failedCount = 0;
+        totalCount = 0;
+
         for (auto& expectedState : getExpectedStates()) {
             for (const auto& expectedSubState : expectedState.getSubStates()) {
+                ++totalCount;
                 auto config = expectedState.getConfig();
-                auto engine = expectedState.getEngine();
+                auto ruleSet = protocol::rule_set_factory(config);
                 auto block = getBlock();
                 auto state = getState();
 
-                silkworm::ExecutionProcessor processor{block, *engine, *state, config};
+//                std::cout << "pre: " << std::endl;
+//                state->state_root_hash();
+
+                silkworm::ExecutionProcessor processor{block, *ruleSet, *state, config};
                 silkworm::Receipt receipt;
                 auto txn = getTransaction(expectedSubState);
 
+                //                std::cout << to_hex(txn.data) << std::endl;
+
                 processor.execute_transaction(txn, receipt);
+
+                processor.evm().state().write_to_db(block.header.number);
+
+                //                std::cout << "post: " << std::endl;
+                //                state->state_root_hash();
 
                 validateTransition(receipt, expectedState, expectedSubState, *state);
             }
         }
+
+        std::cout << "Finished, encountered " << failedCount << "/" << totalCount << " errors";
     }
 };
 }  // namespace
@@ -229,9 +269,7 @@ int main(int argc, char* argv[]) {
     CLI::App app{"Executes Ethereum state transition tests"};
     CLI11_PARSE(app, argc, argv)
 
-    auto stateTransition = new StateTransition("state_transition_sample.json");
-    std::cout << stateTransition->name() << std::endl;
-    std::cout << stateTransition->getEnv("currentCoinbase") << std::endl;
+    auto stateTransition = new StateTransition("state_transition_sample3.json", false);
 
     try {
         stateTransition->run();
@@ -246,5 +284,4 @@ int main(int argc, char* argv[]) {
         // code to handle any other type of exception
         std::cerr << "An unknown exception occurred" << std::endl;
     }
-    std::cout << "Hello world";
 }

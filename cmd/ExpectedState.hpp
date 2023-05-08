@@ -10,46 +10,47 @@
 #include <silkworm/core/common/test_util.hpp>
 
 using namespace silkworm;
+using namespace silkworm::protocol;
 
-static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
+static const std::map<std::string, ChainConfig> kNetworkConfig{
     {"Frontier", test::kFrontierConfig},
     {"Homestead",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
      }},
     {"FrontierToHomesteadAt5",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 5,
      }},
     {"HomesteadToDaoAt5",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .dao_block = 5,
      }},
     {"EIP150",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
      }},
     {"HomesteadToEIP150At5",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 5,
      }},
     {"EIP158",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -57,7 +58,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"Byzantium",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -66,7 +67,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"EIP158ToByzantiumAt5",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -75,7 +76,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"Constantinople",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -85,7 +86,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"ConstantinopleFix",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -96,7 +97,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"ByzantiumToConstantinopleFixAt5",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -107,7 +108,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"Istanbul",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -119,7 +120,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"EIP2384",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -132,7 +133,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"Berlin",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -147,7 +148,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"BerlinToLondonAt5",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -162,7 +163,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"ArrowGlacier",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -177,7 +178,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"GrayGlacier",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -192,7 +193,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"Merge",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -207,7 +208,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"ArrowGlacierToMergeAtDiffC0000",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -224,7 +225,7 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
     {"MergeToShanghaiAtTime15k",
      {
          .chain_id = 1,
-         .seal_engine = SealEngineType::kNoProof,
+         .protocol_rule_set = RuleSetType::kNoProof,
          .homestead_block = 0,
          .tangerine_whistle_block = 0,
          .spurious_dragon_block = 0,
@@ -240,19 +241,24 @@ static const std::map<std::string, silkworm::ChainConfig> kNetworkConfig{
 };
 
 class ExpectedSubState {
-public:
+  public:
+    unsigned index{};
     evmc::bytes32 stateHash;
     evmc::bytes32 logsHash;
     unsigned long dataIndex{};
     unsigned long gasIndex{};
     unsigned long valueIndex{};
+
+    void print_summary(const std::string& result) {
+        std::cout << "[Expected State Index] Data: " << dataIndex << ", Gas: " << gasIndex << ", Value" << valueIndex << " [Result]" << result << std::endl;
+    }
 };
 
 class ExpectedState {
     nlohmann::json stateData;
-    std::string forkName;
 
   public:
+    std::string forkName;
     explicit ExpectedState(const nlohmann::json& data, const std::string& name) noexcept {
         stateData = data;
         forkName = name;
@@ -268,32 +274,22 @@ class ExpectedState {
         return config;
     }
 
-    std::unique_ptr<consensus::IEngine> getEngine() {
-        auto chain_config{getConfig()};
-
-        auto engine{consensus::engine_factory(chain_config)};
-
-        if (!engine) {
-            throw std::runtime_error("Unable to retrieve consensus engine");
-        }
-
-        return engine;
-    }
-
     std::vector<ExpectedSubState> getSubStates() {
-        std::vector<ExpectedSubState> transactions;
+        std::vector<ExpectedSubState> subStates;
+        unsigned i = 0;
 
         for (auto& tx : stateData) {
-            ExpectedSubState transaction;
+            ExpectedSubState subState;
 
-            transaction.stateHash = silkworm::to_bytes32(from_hex(tx["hash"].get<std::string>()).value_or(Bytes{}));
-            transaction.logsHash = silkworm::to_bytes32(from_hex(tx["logs"].get<std::string>()).value_or(Bytes{}));
-            transaction.dataIndex = tx["indexes"]["data"].get<unsigned long>();
-            transaction.gasIndex = tx["indexes"]["gas"].get<unsigned long>();
-            transaction.valueIndex = tx["indexes"]["value"].get<unsigned long>();
-            transactions.push_back(transaction);
+            subState.stateHash = silkworm::to_bytes32(from_hex(tx["hash"].get<std::string>()).value_or(Bytes{}));
+            subState.logsHash = silkworm::to_bytes32(from_hex(tx["logs"].get<std::string>()).value_or(Bytes{}));
+            subState.dataIndex = tx["indexes"]["data"].get<unsigned long>();
+            subState.gasIndex = tx["indexes"]["gas"].get<unsigned long>();
+            subState.valueIndex = tx["indexes"]["value"].get<unsigned long>();
+            subStates.push_back(subState);
+            ++i;
         }
 
-        return transactions;
-    }    
+        return subStates;
+    }
 };

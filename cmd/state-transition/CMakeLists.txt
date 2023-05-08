@@ -14,20 +14,18 @@
    limitations under the License.
 ]]
 
-if (MSVC)
-    add_link_options(/STACK:${SILKWORM_STACK_SIZE})
-elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    add_link_options(-Wl,-stack_size -Wl,${SILKWORM_STACK_SIZE})
-else ()
-    add_link_options(-Wl,-z,stack-size=${SILKWORM_STACK_SIZE})
-endif ()
-
-hunter_add_package(nlohmann_json)
-find_package(nlohmann_json CONFIG REQUIRED)
+if(MSVC)
+  add_link_options(/STACK:${SILKWORM_STACK_SIZE})
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  add_link_options(-Wl,-stack_size -Wl,${SILKWORM_STACK_SIZE})
+else()
+  add_link_options(-Wl,-z,stack-size=${SILKWORM_STACK_SIZE})
+endif()
 
 find_package(absl REQUIRED)
 find_package(Boost REQUIRED)
 find_package(CLI11 REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
 
 add_executable(state_transition state_transition.cpp expected_state.cpp state_transition.hpp runner.cpp)
 target_link_libraries(state_transition PRIVATE silkworm_node CLI11::CLI11 absl::time nlohmann_json::nlohmann_json)

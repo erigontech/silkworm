@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-#include "state_transition.hpp"
-
 #include <CLI/CLI.hpp>
+
+#include "state_transition.hpp"
 
 using namespace silkworm::cmd::state_transition;
 

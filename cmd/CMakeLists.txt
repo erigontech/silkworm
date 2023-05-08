@@ -22,9 +22,6 @@ else()
   add_link_options(-Wl,-z,stack-size=${SILKWORM_STACK_SIZE})
 endif()
 
-hunter_add_package(nlohmann_json)
-find_package(nlohmann_json CONFIG REQUIRED)
-
 # Tests
 add_subdirectory(test)
 
@@ -35,6 +32,7 @@ if(NOT SILKWORM_CORE_ONLY)
   find_package(absl REQUIRED)
   find_package(Boost REQUIRED)
   find_package(CLI11 REQUIRED)
+  find_package(nlohmann_json CONFIG REQUIRED)
 
   set(COMMON_SRC
       common/common.cpp

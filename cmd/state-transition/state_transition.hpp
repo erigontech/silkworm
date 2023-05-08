@@ -30,28 +30,28 @@ limitations under the License.
 #include "third_party/ethash/include/ethash/keccak.hpp"
 
 namespace silkworm::cmd::state_transition {
-    class StateTransition {
-      private:
-        nlohmann::json test_data_;
-        std::string test_name_;
-        unsigned total_count_{};
-        unsigned failed_count_{};
-        bool terminate_on_error_;
+class StateTransition {
+  private:
+    nlohmann::json test_data_;
+    std::string test_name_;
+    unsigned total_count_{};
+    unsigned failed_count_{};
+    bool terminate_on_error_;
 
-      public:
-        explicit StateTransition(const std::string& fileName, bool terminate_on_error) noexcept;
+  public:
+    explicit StateTransition(const std::string& fileName, bool terminate_on_error) noexcept;
 
-        std::string name() ;
-        std::string get_env(const std::string& key) ;
-        bool contains_env(const std::string& key) ;
-        std::vector<ExpectedState> get_expected_states() ;
-        static evmc::address to_evmc_address(const std::string& address) ;
-        silkworm::Block get_block() ;
-        std::unique_ptr<silkworm::InMemoryState> get_state() ;
-        static std::unique_ptr<evmc::address> private_key_to_address(const std::string& privateKey) ;
-        silkworm::Transaction get_transaction(ExpectedSubState expectedStateTransaction) ;
-        void validate_transition(const silkworm::Receipt& receipt, const ExpectedState& expectedState, const ExpectedSubState& expectedSubState, const InMemoryState& state) ;
-        static void print_validation_results(const ExpectedState& expectedState, const ExpectedSubState& expectedSubState, const std::string& result) ;
-        void run() ;
-    };
-}
+    std::string name();
+    std::string get_env(const std::string& key);
+    bool contains_env(const std::string& key);
+    std::vector<ExpectedState> get_expected_states();
+    static evmc::address to_evmc_address(const std::string& address);
+    silkworm::Block get_block();
+    std::unique_ptr<silkworm::InMemoryState> get_state();
+    static std::unique_ptr<evmc::address> private_key_to_address(const std::string& privateKey);
+    silkworm::Transaction get_transaction(ExpectedSubState expectedStateTransaction);
+    void validate_transition(const silkworm::Receipt& receipt, const ExpectedState& expectedState, const ExpectedSubState& expectedSubState, const InMemoryState& state);
+    static void print_validation_results(const ExpectedState& expectedState, const ExpectedSubState& expectedSubState, const std::string& result);
+    void run();
+};
+}  // namespace silkworm::cmd::state_transition

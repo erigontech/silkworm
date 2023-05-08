@@ -88,7 +88,8 @@ struct MemoryMutationCursorTest {
     };
     mdbx::env_managed main_env{create_main_env(main_db_config)};
     RWTxn main_txn{main_env};
-    MemoryOverlay overlay{tmp_dir.path(), &main_txn};
+    MemoryDatabase main_db{tmp_dir.path()};
+    MemoryOverlay overlay{main_db, main_txn};
     MemoryMutation mutation{overlay};
 };
 

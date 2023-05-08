@@ -22,6 +22,11 @@
 #include <variant>
 #include <vector>
 
+#include <silkworm/infra/concurrency/coroutine.hpp>
+
+#include <boost/asio.hpp>
+#include <boost/asio/awaitable.hpp>
+
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
@@ -30,107 +35,86 @@
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
 
+#include "forks/main_chain.hpp"
+#include "forks/suspendable_fork.hpp"
+
+#define ERIGON_API
+
 namespace silkworm::stagedsync {
 
+namespace asio = boost::asio;
+
+/**
+ * ExecutionEngine is the main component of the staged sync.
+ * It is responsible for:
+ * - inserting blocks keeping track of forks
+ * - verifying forks managing some parallel executions of the pipeline
+ * - exposing a consistent view of the chain
+ *
+ * Its interface is sync to maintain a simple and consistent state but on forks:
+ * - block insertion & chain verification immediately return
+ * - notify_fork_choice_update need to block to set a consistent view of the chain
+ * On main-chain operations are blocking because when there are no forks we do not need async execution
+ */
 class ExecutionEngine : public Stoppable {
   public:
-    explicit ExecutionEngine(NodeSettings&, db::RWAccess);
+    explicit ExecutionEngine(asio::io_context&, NodeSettings&, db::RWAccess);
 
-    struct ValidChain {
-        BlockNum current_point;
-    };
-    struct InvalidChain {
-        BlockNum unwind_point;
-        Hash unwind_head;
-        std::optional<Hash> bad_block;
-        std::set<Hash> bad_headers;
-    };
-    struct ValidationError {
-        BlockNum last_point;
-    };
-    using VerificationResult = std::variant<ValidChain, InvalidChain, ValidationError>;
+    void open();  // needed to circumvent mdbx threading model limitations
 
     // actions
-    template <std::derived_from<Block> BLOCK>
-    void insert_blocks(std::vector<std::shared_ptr<BLOCK>>& blocks);
-    void insert_block(const Block& block);
+    ERIGON_API void insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks);
+    ERIGON_API bool insert_block(std::shared_ptr<Block> block);
 
-    auto verify_chain(Hash head_block_hash) -> VerificationResult;
+    ERIGON_API auto verify_chain(Hash head_block_hash) -> concurrency::AwaitableFuture<VerificationResult>;
 
-    bool notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
+    ERIGON_API bool notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
 
     // state
-    auto current_status() -> VerificationResult;
-    auto last_fork_choice() -> BlockId;
+    auto block_progress() const -> BlockNum;
+    auto last_finalized_block() const -> BlockId;
+    auto last_fork_choice() const -> BlockId;
 
-    auto get_canonical_head() -> ChainHead;  // todo: must return the last FCU
+    // header/body retrieval
+    ERIGON_API auto get_header(Hash) const -> std::optional<BlockHeader>;
+    ERIGON_API auto get_header(BlockNum) const -> std::optional<BlockHeader>;
+    ERIGON_API auto get_body(Hash) const -> std::optional<BlockBody>;
+    ERIGON_API auto get_body(BlockNum) const -> std::optional<BlockBody>;
+    ERIGON_API bool is_canonical_hash(Hash) const;
+    ERIGON_API auto get_block_number(Hash) const -> std::optional<BlockNum>;
+    auto get_last_headers(BlockNum limit) const -> std::vector<BlockHeader>;
 
-    auto get_block_progress() -> BlockNum;
-    auto get_header(Hash) -> std::optional<BlockHeader>;
-    auto get_header(BlockNum, Hash) -> std::optional<BlockHeader>;
-    auto get_canonical_hash(BlockNum) -> std::optional<Hash>;
-    auto get_header_td(BlockNum, Hash) -> std::optional<TotalDifficulty>;
-    auto get_body(Hash) -> std::optional<BlockBody>;
-    auto get_last_headers(BlockNum limit) -> std::vector<BlockHeader>;
-    auto extends_last_fork_choice(BlockNum, Hash) -> bool;
-    auto extends(BlockId block, BlockId supposed_parent) -> bool;
-    auto is_ancestor(BlockId supposed_parent, BlockId block) -> bool;
-    auto is_ancestor(Hash supposed_parent, BlockId block) -> bool;
-
+    /*
+    auto get_canonical_head() const -> BlockId;
+    auto get_canonical_hash(BlockNum) const -> std::optional<Hash>;
+    auto get_header_td(BlockNum, Hash) const -> std::optional<TotalDifficulty>;
+    auto get_body(Hash) const -> std::optional<BlockBody>;
+    auto extends_last_fork_choice(BlockNum, Hash) const -> bool;
+    auto extends(BlockId block, BlockId supposed_parent) const -> bool;
+    */
   protected:
-    void insert_header(const BlockHeader&);
-    void insert_body(const Block&);
-
-    std::set<Hash> collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain);
-
-    class CanonicalChain {
-      public:
-        explicit CanonicalChain(db::RWTxn&);
-
-        BlockNum find_forking_point(db::RWTxn& tx, Hash header_hash);
-
-        void update_up_to(BlockNum height, Hash header_hash);
-        void delete_down_to(BlockNum unwind_point);
-
-        BlockId initial_head();
-        BlockId current_head();
-
-        auto get_hash(BlockNum height) -> std::optional<Hash>;
-
-      private:
-        db::RWTxn& tx_;
-
-        BlockId initial_head_{};
-        BlockId current_head_{};
-
-        static constexpr size_t kCacheSize = 1000;
-        lru_cache<BlockNum, Hash> canonical_cache_;
+    struct ForkingPath {
+        BlockId forking_point;
+        std::list<std::shared_ptr<Block>> blocks;  // blocks in reverse order
     };
 
+    auto find_forking_point(const BlockHeader& header) const -> std::optional<ForkingPath>;
+    void discard_all_forks();
+
+    asio::io_context& io_context_;
     NodeSettings& node_settings_;
     db::RWAccess db_access_;
-    db::RWTxn tx_;
-    bool is_first_sync_{true};
-    // lru_cache<Hash, BlockHeader> header_cache_;  // use cache if it improves performances
 
-    ExecutionPipeline pipeline_;
+    MainChain main_chain_;
+    std::vector<ExtendingFork> forks_;
 
-    CanonicalChain canonical_chain_;
-    VerificationResult canonical_status_;
+    static constexpr size_t kDefaultCacheSize = 1000;
+    mutable lru_cache<Hash, std::shared_ptr<Block>> block_cache_;
+
+    BlockNum block_progress_{0};
+    bool fork_tracking_active_{false};
+    BlockId last_finalized_block_;
     BlockId last_fork_choice_;
 };
-
-template <std::derived_from<Block> BLOCK>
-void ExecutionEngine::insert_blocks(std::vector<std::shared_ptr<BLOCK>>& blocks) {
-    SILK_TRACE << "ExecutionEngine: inserting " << blocks.size() << " blocks";
-    if (blocks.empty()) return;
-
-    as_range::for_each(blocks, [&, this](const auto& block) {
-        insert_header(block->header);
-        insert_body(*block);
-    });
-
-    if (is_first_sync_) tx_.commit_and_renew();
-}
 
 }  // namespace silkworm::stagedsync

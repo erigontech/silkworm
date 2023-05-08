@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 
 #include <iostream>
 
+#include <boost/asio/io_context.hpp>
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/types/block.hpp>
@@ -32,16 +33,19 @@ namespace silkworm {
 
 class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
   public:
-    using stagedsync::ExecutionEngine::canonical_chain_;
-    using stagedsync::ExecutionEngine::CanonicalChain;
     using stagedsync::ExecutionEngine::ExecutionEngine;
-    using stagedsync::ExecutionEngine::insert_block;
-    using stagedsync::ExecutionEngine::pipeline_;
-    using stagedsync::ExecutionEngine::tx_;
+    using stagedsync::ExecutionEngine::forks_;
+    using stagedsync::ExecutionEngine::main_chain_;
 };
+
+namespace asio = boost::asio;
+using namespace stagedsync;
 
 TEST_CASE("ExecutionEngine") {
     test::SetLogVerbosityGuard log_guard(log::Level::kNone);
+
+    asio::io_context io;
+    asio::executor_work_guard<decltype(io.get_executor())> work{io.get_executor()};
 
     test::Context context;
     context.add_genesis_data();
@@ -51,13 +55,10 @@ TEST_CASE("ExecutionEngine") {
     Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
 
     db::RWAccess db_access{context.env()};
-    ExecutionEngine_ForTest execution_engine{context.node_settings(), db_access};
+    ExecutionEngine_ForTest exec_engine{io, context.node_settings(), db_access};
+    exec_engine.open();
 
-    auto& tx = execution_engine.tx_;  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
-
-    using ValidChain = stagedsync::ExecutionEngine::ValidChain;
-    using InvalidChain = stagedsync::ExecutionEngine::InvalidChain;
-    using ValidationError = stagedsync::ExecutionEngine::ValidationError;
+    auto& tx = exec_engine.main_chain_.tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
 
     /* status:
      *         h0
@@ -72,41 +73,33 @@ TEST_CASE("ExecutionEngine") {
         auto header0 = db::read_canonical_header(tx, 0);
         REQUIRE(header0.has_value());
 
-        Block block1;
-        block1.header.number = 1;
-        block1.header.difficulty = 17'171'480'576;  // a random value
-        block1.header.parent_hash = *header0_hash;
+        auto block1 = std::make_shared<Block>();
+        block1->header.number = 1;
+        block1->header.difficulty = 17'171'480'576;  // a random value
+        block1->header.parent_hash = *header0_hash;
         // auto header1_hash = block1.header.hash();
-        block1.ommers.push_back(BlockHeader{});  // generate error InvalidOmmerHeader
+        block1->ommers.push_back(BlockHeader{});  // generate error InvalidOmmerHeader
+        auto header1_hash = block1->header.hash();
 
         // getting initial status
-        auto initial_progress = execution_engine.get_block_progress();
+        auto initial_progress = exec_engine.block_progress();
         REQUIRE(initial_progress == 0);
-
-        auto initial_canonical_head = execution_engine.get_canonical_head();
-        REQUIRE(initial_canonical_head.height == 0);
-        REQUIRE(initial_canonical_head.hash == *header0_hash);
-        REQUIRE(initial_canonical_head.total_difficulty == header0->difficulty);
-
-        REQUIRE(initial_canonical_head.height == initial_progress);
-        REQUIRE(execution_engine.canonical_chain_.current_head() == initial_canonical_head);
+        auto initial_canonical_head = exec_engine.main_chain_.canonical_head();
+        auto last_fcu_at_start_time = exec_engine.last_fork_choice();
 
         // inserting headers & bodies
-        execution_engine.insert_block(block1);
+        exec_engine.insert_block(block1);
 
         // check db
         BlockBody saved_body;
-        bool present = db::read_body(tx, block1.header.hash(), block1.header.number, saved_body);
+        bool present = db::read_body(tx, header1_hash, block1->header.number, saved_body);
         REQUIRE(present);
 
-        auto progress = execution_engine.get_block_progress();
+        auto progress = exec_engine.block_progress();
         REQUIRE(progress == 1);
 
-        auto canonical_head = execution_engine.get_canonical_head();
-        REQUIRE(canonical_head == initial_canonical_head);  // doesn't change
-
         // verifying the chain
-        auto verification = execution_engine.verify_chain(block1.header.hash());
+        auto verification = exec_engine.verify_chain(header1_hash).get();
 
         CHECK(db::stages::read_stage_progress(tx, db::stages::kHeadersKey) == 1);
         CHECK(db::stages::read_stage_progress(tx, db::stages::kBlockHashesKey) == 1);
@@ -118,49 +111,36 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(holds_alternative<InvalidChain>(verification));
         auto invalid_chain = std::get<InvalidChain>(verification);
 
-        REQUIRE(invalid_chain.unwind_point == 0);
-        REQUIRE(invalid_chain.unwind_head == header0_hash);
+        REQUIRE(invalid_chain.unwind_point == BlockId{0, *header0_hash});
         REQUIRE(invalid_chain.bad_block.has_value());
-        REQUIRE(invalid_chain.bad_block.value() == block1.header.hash());
+        REQUIRE(invalid_chain.bad_block.value() == header1_hash);
         REQUIRE(invalid_chain.bad_headers.size() == 1);
-        REQUIRE(*(invalid_chain.bad_headers.begin()) == block1.header.hash());
+        REQUIRE(*(invalid_chain.bad_headers.begin()) == header1_hash);
 
         // check status
-        auto final_progress = execution_engine.get_block_progress();
-        REQUIRE(final_progress == block1.header.number);
+        auto final_progress = exec_engine.block_progress();
+        REQUIRE(final_progress == block1->header.number);
 
-        auto final_canonical_head = execution_engine.get_canonical_head();
-        REQUIRE(final_canonical_head.height == block1.header.number);
-        REQUIRE(final_canonical_head.hash == block1.header.hash());
-        REQUIRE(execution_engine.canonical_chain_.current_head().number == block1.header.number);
-        REQUIRE(execution_engine.canonical_chain_.current_head().hash == block1.header.hash());
-
-        auto current_status = execution_engine.current_status();
-        REQUIRE(holds_alternative<InvalidChain>(current_status));
-
-        // check canonical
-        auto present_in_canonical = execution_engine.get_canonical_hash(block1.header.number);
-        REQUIRE(present_in_canonical);
+        auto final_canonical_head = exec_engine.main_chain_.canonical_head();
+        REQUIRE(final_canonical_head.number == block1->header.number);
+        REQUIRE(final_canonical_head.hash == block1->header.hash());
 
         // reverting the chain
-        execution_engine.notify_fork_choice_update(*header0_hash);
+        exec_engine.notify_fork_choice_update(*header0_hash);
 
         // checking the status
-        present_in_canonical = execution_engine.get_canonical_hash(block1.header.number);
-        REQUIRE(!present_in_canonical);
+        // auto present_in_canonical = exec_engine.is_canonical_hash(header1_hash);
+        // REQUIRE(!present_in_canonical);
 
-        final_canonical_head = execution_engine.get_canonical_head();
+        final_canonical_head = exec_engine.main_chain_.canonical_head();
         REQUIRE(final_canonical_head == initial_canonical_head);
-        REQUIRE(execution_engine.canonical_chain_.current_head() == initial_canonical_head);
 
-        current_status = execution_engine.current_status();
-        REQUIRE(holds_alternative<ValidChain>(current_status));
-        REQUIRE(std::get<ValidChain>(current_status).current_point == 0);
+        REQUIRE(last_fcu_at_start_time == exec_engine.last_fork_choice());
     }
 
     SECTION("one valid body after the genesis") {
-        auto header0_hash = db::read_canonical_hash(tx, 0);
-        REQUIRE(header0_hash.has_value());
+        auto block0_hash = db::read_canonical_hash(tx, 0);
+        REQUIRE(block0_hash.has_value());
 
         auto header0 = db::read_canonical_header(tx, 0);
         REQUIRE(header0.has_value());
@@ -179,93 +159,60 @@ TEST_CASE("ExecutionEngine") {
             "1ec4";
         std::optional<Bytes> encoded_header1 = from_hex(raw_header1);
 
-        Block block1;
+        auto block1 = std::make_shared<Block>();
         ByteView encoded_view = encoded_header1.value();
-        auto decoding_result = rlp::decode(encoded_view, block1.header);
+        auto decoding_result = rlp::decode(encoded_view, block1->header);
         // Note: block1 has zero transactions and zero ommers on mainnet
         REQUIRE(decoding_result);
-        auto block1_hash = block1.header.hash();
+        auto block1_hash = block1->header.hash();
 
         // getting initial status
-        auto initial_progress = execution_engine.get_block_progress();
+        auto initial_progress = exec_engine.block_progress();
         REQUIRE(initial_progress == 0);
 
-        auto initial_canonical_head = execution_engine.get_canonical_head();
-        REQUIRE(initial_canonical_head.height == 0);
-        REQUIRE(initial_canonical_head.hash == *header0_hash);
-        REQUIRE(initial_canonical_head.total_difficulty == header0->difficulty);
+        auto initial_canonical_head = exec_engine.main_chain_.canonical_head();
+        REQUIRE(initial_canonical_head.number == 0);
+        REQUIRE(initial_canonical_head.hash == *block0_hash);
 
-        REQUIRE(initial_canonical_head.height == initial_progress);
-        REQUIRE(execution_engine.canonical_chain_.current_head() == initial_canonical_head);
+        REQUIRE(initial_canonical_head.number == initial_progress);
 
         // inserting & verifying the block
-        execution_engine.insert_block(block1);
-        auto verification = execution_engine.verify_chain(block1_hash);
+        exec_engine.insert_block(block1);
+        auto verification = exec_engine.verify_chain(block1_hash).get();
 
         REQUIRE(holds_alternative<ValidChain>(verification));
         auto valid_chain = std::get<ValidChain>(verification);
-        REQUIRE(valid_chain.current_point == 1);
+        REQUIRE(valid_chain.current_head == BlockId{1, block1_hash});
 
         // check status
-        REQUIRE(execution_engine.pipeline_.head_header_number() == block1.header.number);
-        REQUIRE(execution_engine.pipeline_.head_header_hash() == block1_hash);
-
-        auto final_canonical_head = execution_engine.get_canonical_head();
-        REQUIRE(final_canonical_head.height == block1.header.number);
+        auto final_canonical_head = exec_engine.main_chain_.canonical_head();
+        REQUIRE(final_canonical_head.number == block1->header.number);
         REQUIRE(final_canonical_head.hash == block1_hash);
-        REQUIRE(final_canonical_head.total_difficulty > initial_canonical_head.total_difficulty);
-
-        REQUIRE(execution_engine.canonical_chain_.current_head().number == block1.header.number);
-        REQUIRE(execution_engine.canonical_chain_.current_head().hash == block1_hash);
-
-        auto current_status = execution_engine.current_status();
-        REQUIRE(holds_alternative<ValidChain>(current_status));
-        REQUIRE(std::get<ValidChain>(current_status).current_point == 1);
 
         // check db content
         BlockBody saved_body;
-        bool present = db::read_body(tx, block1_hash, block1.header.number, saved_body);
+        bool present = db::read_body(tx, block1_hash, block1->header.number, saved_body);
         REQUIRE(present);
 
-        auto present_in_canonical = execution_engine.get_canonical_hash(block1.header.number);
-        REQUIRE(present_in_canonical);
+        // auto present_in_canonical = exec_engine.is_canonical_hash(block1.header.number);
+        // REQUIRE(present_in_canonical);
 
         // confirming the chain
-        execution_engine.notify_fork_choice_update(block1_hash);
+        exec_engine.notify_fork_choice_update(block1_hash, block0_hash);
 
         // checking the status
-        present_in_canonical = execution_engine.get_canonical_hash(block1.header.number);
-        REQUIRE(present_in_canonical);
+        // present_in_canonical = exec_engine.is_canonical_hash(block1.header.number);
+        // REQUIRE(present_in_canonical);
 
-        final_canonical_head = execution_engine.get_canonical_head();
-        REQUIRE(final_canonical_head.height == block1.header.number);
+        final_canonical_head = exec_engine.main_chain_.canonical_head();
+        REQUIRE(final_canonical_head.number == block1->header.number);
         REQUIRE(final_canonical_head.hash == block1_hash);
-        REQUIRE(execution_engine.canonical_chain_.current_head().number == block1.header.number);
-        REQUIRE(execution_engine.canonical_chain_.current_head().hash == block1_hash);
 
-        // testing other methods
-        Block block1b;
-        block1b.header.number = 1;
-        block1b.header.difficulty = 1'000'000'000;  // a random value
-        block1b.header.parent_hash = *header0_hash;
-        execution_engine.insert_block(block1b);
-        bool extends_canonical = execution_engine.extends_last_fork_choice(block1b.header.number, block1b.header.hash());
-        CHECK(!extends_canonical);
-        Block block2;
-        block2.header.number = 2;
-        block2.header.difficulty = 1'171'480'576;  // a random value
-        block2.header.parent_hash = block1_hash;
-        execution_engine.insert_block(block2);
-        extends_canonical = execution_engine.extends_last_fork_choice(block2.header.number, block2.header.hash());
-        CHECK(extends_canonical);
-        Block block3;
-        block3.header.number = 3;
-        block3.header.difficulty = 1'171'480'576;  // a random value
-        block3.header.parent_hash = block2.header.hash();
-        execution_engine.insert_block(block3);
-        extends_canonical = execution_engine.extends_last_fork_choice(block3.header.number, block3.header.hash());
-        CHECK(extends_canonical);
+        REQUIRE(exec_engine.last_fork_choice() == BlockId{block1->header.number, block1_hash});
+        REQUIRE(exec_engine.last_finalized_block() == BlockId{0, *block0_hash});
     }
+
+    // todo: add tests on fork management
 }
 
 }  // namespace silkworm

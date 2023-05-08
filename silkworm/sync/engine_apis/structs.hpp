@@ -73,7 +73,15 @@ struct PayloadStatus {
     std::string status;
     std::optional<evmc::bytes32> latest_valid_hash;
     std::optional<std::string> validation_error;
+
+    static const PayloadStatus Syncing;
+    static const PayloadStatus Accepted;
+    static const PayloadStatus InvalidBlockHash;
 };
+
+inline const PayloadStatus PayloadStatus::Syncing{.status = PayloadStatus::kSyncing};
+inline const PayloadStatus PayloadStatus::Accepted{.status = PayloadStatus::kAccepted};
+inline const PayloadStatus PayloadStatus::InvalidBlockHash{.status = PayloadStatus::kInvalidBlockHash};
 
 struct ForkChoiceUpdateRequest {
     ForkChoiceState fork_choice_state;

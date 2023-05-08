@@ -43,7 +43,8 @@
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/snapshot/sync.hpp>
-#include <silkworm/node/stagedsync/execution_engine.hpp>
+#include <silkworm/node/stagedsync/local_client.hpp>
+#include <silkworm/node/stagedsync/server.hpp>
 #include <silkworm/sentry/api/api_common/sentry_client.hpp>
 #include <silkworm/sentry/grpc/client/sentry_client.hpp>
 #include <silkworm/sentry/sentry.hpp>
@@ -51,7 +52,8 @@
 #include <silkworm/sentry/settings.hpp>
 #include <silkworm/sync/block_exchange.hpp>
 #include <silkworm/sync/sentry_client.hpp>
-#include <silkworm/sync/sync_engine_pow.hpp>
+#include <silkworm/sync/sync_pos.hpp>
+#include <silkworm/sync/sync_pow.hpp>
 
 #include "common/common.hpp"
 #include "common/human_size_parser_validator.hpp"
@@ -62,6 +64,8 @@
 
 namespace sw_db = silkworm::db;
 namespace sw_log = silkworm::log;
+
+using namespace silkworm;
 
 using silkworm::ActiveComponent;
 using silkworm::BlockExchange;
@@ -74,6 +78,8 @@ using silkworm::parse_size;
 using silkworm::PreverifiedHashes;
 using silkworm::read_genesis_data;
 using silkworm::StopWatch;
+using silkworm::chainsync::PoSSync;
+using silkworm::chainsync::PoWSync;
 using silkworm::cmd::common::add_context_pool_options;
 using silkworm::cmd::common::add_logging_options;
 using silkworm::cmd::common::add_option_chain;
@@ -590,6 +596,7 @@ int main(int argc, char* argv[]) {
         // BlockExchange - download headers and bodies from remote peers using the sentry
         BlockExchange block_exchange{sync_sentry_client, sw_db::ROAccess{chaindata_db}, node_settings.chain_config.value()};
 
+        // Snapshot sync
         if (snapshot_settings.enabled) {
             // Raise file descriptor limit per process
             raise_max_file_descriptors();
@@ -604,27 +611,11 @@ int main(int argc, char* argv[]) {
             sw_log::Info() << "Snapshot sync disabled, no snapshot must be downloaded";
         }
 
-        // The following trick is currently needed because of weird threading issues:
-        // 1) MDBX requires that the very same thread creates and uses the unique r/w tx on the db
-        // 2) ExecutionEngine currently creates such unique r/w tx in its constructor
-        // 3) PoWSync has sync execution_loop using execution methods which in turn use r/w tx
-        // so basically ExecutionEngine ctor + PoWSync::execution_loop must happen in the same thread
-        auto sync_executor = [&]() -> boost::asio::awaitable<void> {
-            std::shared_ptr<silkworm::chainsync::PoWSync> sync;
-            auto run = [&] {
-                // ExecutionEngine executes transactions and builds state validating chain slices
-                silkworm::stagedsync::ExecutionEngine execution{node_settings, sw_db::RWAccess{chaindata_db}};
+        execution::Server execution_server{node_settings, sw_db::RWAccess{chaindata_db}};
 
-                // ConsensusEngine drives headers and bodies sync, implementing fork choice rules
-                // currently sync & execution are on the same process, sync calls execution so due to
-                // limitations related to the db rw tx owned by execution they must run on the same thread
-                sync = std::make_shared<silkworm::chainsync::PoWSync>(block_exchange, execution);
-
-                sync->execution_loop();
-            };
-            auto stop = [&] { sync->stop(); };
-            co_await silkworm::concurrency::async_thread(std::move(run), std::move(stop));
-        };
+        execution::LocalClient execution_client(execution_server);
+        PoWSync sync(block_exchange, execution_client);
+        // PoSSync sync(block_exchange, execution_client);
 
         auto tasks =
             timer_executor() &&
@@ -633,7 +624,8 @@ int main(int argc, char* argv[]) {
             embedded_sentry_run_if_needed() &&
             sync_sentry_client.async_run() &&
             block_exchange.async_run() &&
-            sync_executor();
+            execution_server.async_run() &&
+            sync.async_run();
 
         // Trap OS signals
         ShutdownSignal shutdown_signal{context_pool.next_io_context()};

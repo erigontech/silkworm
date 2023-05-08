@@ -16,39 +16,26 @@
 
 #pragma once
 
+#include <optional>
 #include <set>
 #include <variant>
-#include <vector>
 
 #include <silkworm/core/types/block.hpp>
 
-#define ERIGON_API
-
-namespace silkworm::execution {
-
-using BlockVector = std::vector<std::shared_ptr<Block>>;
-
-struct ForkChoiceApplication {
-    bool success{false};  // Fork choice is either successful or unsuccessful.
-    Hash current_head;    // Return latest valid hash in case of halt of execution.
-    BlockNum current_height{0};
-};
+namespace silkworm::stagedsync {
 
 struct ValidChain {
-    Hash current_head;
+    BlockId current_head;
 };
-
 struct InvalidChain {
-    Hash latest_valid_head;
+    BlockId unwind_point;
     std::optional<Hash> bad_block;
     std::set<Hash> bad_headers;
 };
-
 struct ValidationError {
-    Hash latest_valid_head;
-    Hash missing_block;
+    BlockId latest_valid_head;
 };
 
-using ValidationResult = std::variant<ValidChain, InvalidChain, ValidationError>;
+using VerificationResult = std::variant<ValidChain, InvalidChain, ValidationError>;
 
-}  // namespace silkworm::execution
+}  // namespace silkworm::stagedsync

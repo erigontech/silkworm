@@ -14,13 +14,15 @@
    limitations under the License.
 */
 
+#include "call.hpp"
+
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 
+#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/silkrpc/json/call.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
-
-#include "filter.hpp"
 
 namespace silkworm::rpc {
 
@@ -96,6 +98,17 @@ TEST_CASE("deserialize full call", "[silkworm::json][from_json]") {
     CHECK(c2.data == silkworm::from_hex("0xdaa6d5560000000000000000000000000000000000000000000000000000000000000000"));
     CHECK(c2.value == intx::uint256{1200000});
     CHECK(c2.nonce == intx::uint256{1});
+}
+
+TEST_CASE("make glaze content (data)", "[make_glaze_json_error]") {
+    std::string json;
+    const char* data_hex{"c68341b58302d066"};
+    silkworm::Bytes data_bytes{*silkworm::from_hex(data_hex)};
+    make_glaze_json_content(json, 1, data_bytes);
+    CHECK(strcmp(json.c_str(),
+                 "{\"jsonrpc\":\"2.0\",\
+                  \"id\":1,\
+                   \"result\":\"0xc68341b58302d066\"}"));
 }
 
 TEST_CASE("Bundle", "[silkworm::json][from_json]") {

@@ -110,36 +110,59 @@ void make_glaze_json_content(std::string& reply, uint32_t id, const silkworm::By
 void from_json(const nlohmann::json& json, Bundle& call) {
     call.transactions = json.at("transactions").get<std::vector<Call>>();
     if (json.count("blockOverride") != 0) {
-        call.block_override = json.at("blockOverride").get<BlockOverride>();
+        call.block_override = json.at("blockOverride").get<BlockOverrides>();
     }
 }
 
-void from_json(const nlohmann::json& json, StateContext& state_context) {
-    state_context.block_number = json.at("blockNumber").get<BlockNumberOrHash>();
+void from_json(const nlohmann::json& json, SimulationContext& sc) {
+    sc.block_number = json.at("blockNumber").get<BlockNumberOrHash>();
 
-    if (json.count("transactionIndex ") != 0) {
-        state_context.transaction_index = json.at("transactionIndex ").get<std::int32_t>();
+    if (json.count("transactionIndex") != 0) {
+        sc.transaction_index = json.at("transactionIndex ").get<std::int32_t>();
     }
 }
 
-void from_json(const nlohmann::json& json, BlockOverride& block_override) {
+void from_json(const nlohmann::json& json, StateOverrides& so) {
+    if (json.count("balance") != 0) {
+        so.balance = json.at("balance ").get<intx::uint256>();
+    }
+    if (json.count("nonce") != 0) {
+        so.nonce = json.at("nonce").get<std::uint64_t>();
+    }
+    if (json.count("code") != 0) {
+        so.code = json.at("code").get<silkworm::Bytes>();
+    }
+    // if (json.count("state") != 0) {
+    //     so.code = json.at("state").get<std::map<evmc::bytes32, intx::uint256>>();
+    // }
+    // if (json.count("stateDiff") != 0) {
+    //     so.state_diff = json.at("state_diff").get<std::map<evmc::bytes32, intx::uint256>>();
+    // }
+}
+
+void from_json(const nlohmann::json& json, BlockOverrides& bo) {
     if (json.count("blockNumber") != 0) {
-        block_override.block_number = json.at("blockNumber").get<std::uint64_t>();
+        const auto& jbn = json.at("blockNumber");
+        if (jbn.is_string()) {
+            bo.block_number = std::stoull(jbn.get<std::string>(), nullptr, /*base=*/16);
+        } else {
+            bo.block_number = jbn.get<uint64_t>();
+        }
     }
     if (json.count("coinbase") != 0) {
-        block_override.coin_base = json.at("coinbase").get<evmc::address>();
+        bo.coin_base = json.at("coinbase").get<evmc::address>();
     }
     if (json.count("timestamp") != 0) {
-        block_override.timestamp = json.at("timestamp").get<std::uint64_t>();
+        bo.timestamp = json.at("timestamp").get<std::uint64_t>();
     }
     if (json.count("difficulty") != 0) {
-        block_override.difficulty = json.at("difficulty").get<intx::uint256>();
+        bo.difficulty = json.at("difficulty").get<intx::uint256>();
     }
     if (json.count("gasLimit") != 0) {
-        block_override.gas_limit = json.at("gasLimit").get<std::uint64_t>();
+        bo.gas_limit = json.at("gasLimit").get<std::uint64_t>();
     }
     if (json.count("baseFee") != 0) {
-        block_override.base_fee = json.at("baseFee").get<std::uint64_t>();
+        bo.base_fee = json.at("baseFee").get<std::uint64_t>();
     }
 }
 }  // namespace silkworm::rpc

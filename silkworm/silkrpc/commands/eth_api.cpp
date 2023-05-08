@@ -53,6 +53,7 @@
 #include <silkworm/silkrpc/ethdb/cbor.hpp>
 #include <silkworm/silkrpc/ethdb/kv/cached_database.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
+#include <silkworm/silkrpc/json/call.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/stagedsync/stages.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
@@ -1156,15 +1157,14 @@ awaitable<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& reque
         co_return;
     }
     const auto& params = request["params"];
-    if (params.size() != 3) {
+    if (params.size() < 2) {
         auto error_msg = "invalid eth_callMany params: " + params.dump();
         SILKRPC_ERROR << error_msg << "\n";
         make_glaze_json_error(reply, request["id"], -32602, error_msg);
         co_return;
     }
-    auto bundles = params[0].get<Bundles>();
-    const auto block_number_or_hash = params[1].get<BlockNumberOrHash>();
-    const auto timeout = params[2].get<uint64_t>();
+
+    const auto bundles = params[0].get<Bundles>();
 
     if (bundles.empty()) {
         const auto error_msg = "invalid eth_callMany bundle list: " + params.dump();
@@ -1173,13 +1173,27 @@ awaitable<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& reque
         co_return;
     }
 
-    SILKRPC_DEBUG << "block_number_or_hash: " << block_number_or_hash << " timeout: " << timeout << "\n";
+    const auto simulation_context = params[1].get<SimulationContext>();
+
+    std::optional<StateOverrides> state_overrides;
+    if (params.size() > 2) {
+        state_overrides = params[2].get<StateOverrides>();
+    }
+    std::optional<std::uint64_t> timeout;
+    if (params.size() > 3) {
+        timeout = params[3].get<std::uint64_t>();
+    }
+
+    SILKRPC_DEBUG << "bundles: " << bundles
+                  << " simulation_context: " << simulation_context
+                  << " state_overrides" << state_overrides.value_or(StateOverrides{})
+                  << " timeout: " << timeout.value_or(0) << "\n";
 
     auto tx = co_await database_->begin();
 
     try {
-        ethdb::kv::CachedDatabase tx_database{block_number_or_hash, *tx, *state_cache_};
-        ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
+        // ethdb::kv::CachedDatabase tx_database{block_number_or_hash, *tx, *state_cache_};
+        // ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
 
         reply = make_json_content(request["id"], "0x0");
     } catch (const std::exception& e) {

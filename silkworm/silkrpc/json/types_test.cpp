@@ -1250,17 +1250,6 @@ TEST_CASE("make glaze json error (Revert)", "[make_glaze_json_error]") {
                    \"error\":{\"code\":3,\"message\":\"generic_error\",\"data\": \"0xc68341b58302c0\"}}"));
 }
 
-TEST_CASE("make glaze content (data)", "[make_glaze_json_error]") {
-    std::string json;
-    const char* data_hex{"c68341b58302d066"};
-    silkworm::Bytes data_bytes{*silkworm::from_hex(data_hex)};
-    make_glaze_json_content(json, 1, data_bytes);
-    CHECK(strcmp(json.c_str(),
-                 "{\"jsonrpc\":\"2.0\",\
-                  \"id\":1,\
-                   \"result\":\"0xc68341b58302d066\"}"));
-}
-
 TEST_CASE("make empty json revert error", "[silkworm::json][make_json_error]") {
     const auto j = make_json_error(0, {{0, ""}, silkworm::Bytes{}});
     CHECK(j == R"({

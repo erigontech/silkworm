@@ -35,7 +35,7 @@ static void serialize_header(const BlockHeader& bh, ::execution::Header* header)
     header->set_allocated_state_root(rpc::H256_from_bytes32(bh.state_root).release());
     header->set_allocated_receipt_root(rpc::H256_from_bytes32(bh.receipts_root).release());
     header->set_allocated_logs_bloom(rpc::H2048_from_string(to_string(bh.logs_bloom)).release());
-    header->set_allocated_mix_digest(rpc::H256_from_bytes32(bh.prev_randao).release());
+    header->set_allocated_prev_randao(rpc::H256_from_bytes32(bh.prev_randao).release());
     header->set_block_number(bh.number);
     header->set_gas_limit(bh.gas_limit);
     header->set_gas_used(bh.gas_used);
@@ -64,7 +64,7 @@ static void deserialize_header(const ::execution::Header& received_header, Block
     header.receipts_root = rpc::bytes32_from_H256(received_header.receipt_root());
     const auto& logs_bloom = rpc::string_from_H2048(received_header.logs_bloom());
     std::copy(logs_bloom.cbegin(), logs_bloom.cend(), header.logs_bloom.begin());
-    header.prev_randao = rpc::bytes32_from_H256(received_header.mix_digest());
+    header.prev_randao = rpc::bytes32_from_H256(received_header.prev_randao());
     header.number = received_header.block_number();
     header.gas_limit = received_header.gas_limit();
     header.gas_used = received_header.gas_used();

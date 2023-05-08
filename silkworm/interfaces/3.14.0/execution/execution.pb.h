@@ -725,7 +725,7 @@ class Header PROTOBUF_FINAL :
     kStateRootFieldNumber = 3,
     kReceiptRootFieldNumber = 4,
     kLogsBloomFieldNumber = 5,
-    kMixDigestFieldNumber = 6,
+    kPrevRandaoFieldNumber = 6,
     kDifficultyFieldNumber = 13,
     kBlockHashFieldNumber = 14,
     kOmmerHashFieldNumber = 15,
@@ -845,23 +845,23 @@ class Header PROTOBUF_FINAL :
       ::types::H2048* logs_bloom);
   ::types::H2048* unsafe_arena_release_logs_bloom();
 
-  // .types.H256 mix_digest = 6;
-  bool has_mix_digest() const;
+  // .types.H256 prev_randao = 6;
+  bool has_prev_randao() const;
   private:
-  bool _internal_has_mix_digest() const;
+  bool _internal_has_prev_randao() const;
   public:
-  void clear_mix_digest();
-  const ::types::H256& mix_digest() const;
-  ::types::H256* release_mix_digest();
-  ::types::H256* mutable_mix_digest();
-  void set_allocated_mix_digest(::types::H256* mix_digest);
+  void clear_prev_randao();
+  const ::types::H256& prev_randao() const;
+  ::types::H256* release_prev_randao();
+  ::types::H256* mutable_prev_randao();
+  void set_allocated_prev_randao(::types::H256* prev_randao);
   private:
-  const ::types::H256& _internal_mix_digest() const;
-  ::types::H256* _internal_mutable_mix_digest();
+  const ::types::H256& _internal_prev_randao() const;
+  ::types::H256* _internal_mutable_prev_randao();
   public:
-  void unsafe_arena_set_allocated_mix_digest(
-      ::types::H256* mix_digest);
-  ::types::H256* unsafe_arena_release_mix_digest();
+  void unsafe_arena_set_allocated_prev_randao(
+      ::types::H256* prev_randao);
+  ::types::H256* unsafe_arena_release_prev_randao();
 
   // .types.H256 difficulty = 13;
   bool has_difficulty() const;
@@ -1049,7 +1049,7 @@ class Header PROTOBUF_FINAL :
   ::types::H256* state_root_;
   ::types::H256* receipt_root_;
   ::types::H2048* logs_bloom_;
-  ::types::H256* mix_digest_;
+  ::types::H256* prev_randao_;
   ::types::H256* difficulty_;
   ::types::H256* block_hash_;
   ::types::H256* ommer_hash_;
@@ -2994,81 +2994,81 @@ inline void Header::set_allocated_logs_bloom(::types::H2048* logs_bloom) {
   // @@protoc_insertion_point(field_set_allocated:execution.Header.logs_bloom)
 }
 
-// .types.H256 mix_digest = 6;
-inline bool Header::_internal_has_mix_digest() const {
-  return this != internal_default_instance() && mix_digest_ != nullptr;
+// .types.H256 prev_randao = 6;
+inline bool Header::_internal_has_prev_randao() const {
+  return this != internal_default_instance() && prev_randao_ != nullptr;
 }
-inline bool Header::has_mix_digest() const {
-  return _internal_has_mix_digest();
+inline bool Header::has_prev_randao() const {
+  return _internal_has_prev_randao();
 }
-inline const ::types::H256& Header::_internal_mix_digest() const {
-  const ::types::H256* p = mix_digest_;
+inline const ::types::H256& Header::_internal_prev_randao() const {
+  const ::types::H256* p = prev_randao_;
   return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
       ::types::_H256_default_instance_);
 }
-inline const ::types::H256& Header::mix_digest() const {
-  // @@protoc_insertion_point(field_get:execution.Header.mix_digest)
-  return _internal_mix_digest();
+inline const ::types::H256& Header::prev_randao() const {
+  // @@protoc_insertion_point(field_get:execution.Header.prev_randao)
+  return _internal_prev_randao();
 }
-inline void Header::unsafe_arena_set_allocated_mix_digest(
-    ::types::H256* mix_digest) {
+inline void Header::unsafe_arena_set_allocated_prev_randao(
+    ::types::H256* prev_randao) {
   if (GetArena() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(mix_digest_);
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(prev_randao_);
   }
-  mix_digest_ = mix_digest;
-  if (mix_digest) {
+  prev_randao_ = prev_randao;
+  if (prev_randao) {
     
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.mix_digest)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:execution.Header.prev_randao)
 }
-inline ::types::H256* Header::release_mix_digest() {
+inline ::types::H256* Header::release_prev_randao() {
   
-  ::types::H256* temp = mix_digest_;
-  mix_digest_ = nullptr;
+  ::types::H256* temp = prev_randao_;
+  prev_randao_ = nullptr;
   if (GetArena() != nullptr) {
     temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
   }
   return temp;
 }
-inline ::types::H256* Header::unsafe_arena_release_mix_digest() {
-  // @@protoc_insertion_point(field_release:execution.Header.mix_digest)
+inline ::types::H256* Header::unsafe_arena_release_prev_randao() {
+  // @@protoc_insertion_point(field_release:execution.Header.prev_randao)
   
-  ::types::H256* temp = mix_digest_;
-  mix_digest_ = nullptr;
+  ::types::H256* temp = prev_randao_;
+  prev_randao_ = nullptr;
   return temp;
 }
-inline ::types::H256* Header::_internal_mutable_mix_digest() {
+inline ::types::H256* Header::_internal_mutable_prev_randao() {
   
-  if (mix_digest_ == nullptr) {
+  if (prev_randao_ == nullptr) {
     auto* p = CreateMaybeMessage<::types::H256>(GetArena());
-    mix_digest_ = p;
+    prev_randao_ = p;
   }
-  return mix_digest_;
+  return prev_randao_;
 }
-inline ::types::H256* Header::mutable_mix_digest() {
-  // @@protoc_insertion_point(field_mutable:execution.Header.mix_digest)
-  return _internal_mutable_mix_digest();
+inline ::types::H256* Header::mutable_prev_randao() {
+  // @@protoc_insertion_point(field_mutable:execution.Header.prev_randao)
+  return _internal_mutable_prev_randao();
 }
-inline void Header::set_allocated_mix_digest(::types::H256* mix_digest) {
+inline void Header::set_allocated_prev_randao(::types::H256* prev_randao) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
   if (message_arena == nullptr) {
-    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(mix_digest_);
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(prev_randao_);
   }
-  if (mix_digest) {
+  if (prev_randao) {
     ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-      reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(mix_digest)->GetArena();
+      reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(prev_randao)->GetArena();
     if (message_arena != submessage_arena) {
-      mix_digest = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, mix_digest, submessage_arena);
+      prev_randao = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, prev_randao, submessage_arena);
     }
     
   } else {
     
   }
-  mix_digest_ = mix_digest;
-  // @@protoc_insertion_point(field_set_allocated:execution.Header.mix_digest)
+  prev_randao_ = prev_randao;
+  // @@protoc_insertion_point(field_set_allocated:execution.Header.prev_randao)
 }
 
 // uint64 block_number = 7;

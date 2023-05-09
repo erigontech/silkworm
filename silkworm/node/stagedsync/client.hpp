@@ -35,13 +35,13 @@ class Client {
     virtual asio::io_context& get_executor() = 0;
 
     // actions
-    ERIGON_API virtual auto insert_headers(const BlockVector& blocks) -> asio::awaitable<void> = 0;
-    ERIGON_API virtual auto insert_bodies(const BlockVector& blocks) -> asio::awaitable<void> = 0;
+    virtual auto insert_headers(const BlockVector& blocks) -> asio::awaitable<void> = 0;
+    virtual auto insert_bodies(const BlockVector& blocks) -> asio::awaitable<void> = 0;
     virtual auto insert_blocks(const BlockVector& blocks) -> asio::awaitable<void> = 0;
 
-    ERIGON_API virtual auto validate_chain(Hash head_block_hash) -> asio::awaitable<ValidationResult> = 0;
+    virtual auto validate_chain(Hash head_block_hash) -> asio::awaitable<ValidationResult> = 0;
 
-    ERIGON_API virtual auto update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt)
+    virtual auto update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt)
         -> asio::awaitable<ForkChoiceApplication> = 0;
 
     // state
@@ -49,11 +49,11 @@ class Client {
     virtual auto last_fork_choice() -> asio::awaitable<BlockId> = 0;
 
     // header/body retrieval
-    ERIGON_API virtual auto get_header(Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>> = 0;
-    ERIGON_API virtual auto get_body(Hash block_hash) -> asio::awaitable<BlockBody> = 0;
+    virtual auto get_header(Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>> = 0;
+    virtual auto get_body(Hash block_hash) -> asio::awaitable<BlockBody> = 0;
 
-    ERIGON_API virtual auto is_canonical(Hash block_hash) -> asio::awaitable<bool> = 0;
-    ERIGON_API virtual auto get_block_num(Hash block_hash) -> asio::awaitable<std::optional<BlockNum>> = 0;
+    virtual auto is_canonical(Hash block_hash) -> asio::awaitable<bool> = 0;
+    virtual auto get_block_num(Hash block_hash) -> asio::awaitable<std::optional<BlockNum>> = 0;
 
     virtual auto get_last_headers(BlockNum limit) -> asio::awaitable<std::vector<BlockHeader>> = 0;
 };

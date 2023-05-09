@@ -39,11 +39,13 @@ static void ensure(bool condition, const std::string& message) {
     }
 }
 
-Fork::Fork(BlockId forking_point, MainChain& main_chain, db::MemoryDatabase& db)
+Fork::Fork(BlockId forking_point, MainChain& main_chain)
     : main_chain_{main_chain},
       main_txn_{main_chain_.db_access_.start_ro_tx()},
-      overlay_{db, main_txn_},
-      tx_{overlay_},
+      memory_db_{TemporaryDirectory::get_unique_temporary_path(
+                     main_chain_.node_settings().data_directory->path() / "forks"),
+                 &main_txn_},
+      tx_{memory_db_},
       pipeline_{&(main_chain.node_settings())},
       canonical_chain_(tx_) {
     // setting forking point
@@ -59,7 +61,7 @@ Fork::Fork(BlockId forking_point, MainChain& main_chain, db::MemoryDatabase& db)
 Fork::Fork(Fork&& orig) noexcept
     : main_chain_{orig.main_chain_},
       main_txn_{std::move(orig.main_txn_)},
-      overlay_{std::move(orig.overlay_)},
+      memory_db_{std::move(orig.memory_db_)},
       tx_{std::move(orig.tx_)},
       pipeline_{&(main_chain_.node_settings())},  // warning: pipeline is not movable, we build a new one here
       canonical_chain_{std::move(orig.canonical_chain_), tx_},

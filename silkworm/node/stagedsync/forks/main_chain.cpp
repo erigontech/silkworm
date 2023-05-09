@@ -22,7 +22,7 @@
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/db_utils.hpp>
 
-#include "suspendable_fork.hpp"
+#include "extending_fork.hpp"
 
 namespace silkworm::stagedsync {
 

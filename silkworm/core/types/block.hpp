@@ -67,7 +67,7 @@ struct BlockHeader {
 
     Bytes extra_data{};
 
-    evmc::bytes32 mix_hash{};
+    evmc::bytes32 prev_randao{};  // mix hash prior to EIP-4399
     NonceType nonce{};
 
     std::optional<intx::uint256> base_fee_per_gas{std::nullopt};  // EIP-1559

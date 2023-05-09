@@ -208,7 +208,7 @@ void to_json(nlohmann::json& json, const BlockHeader& header) {
     json["miner"] = header.beneficiary;
     json["difficulty"] = rpc::to_quantity(silkworm::endian::to_big_compact(header.difficulty));
     json["extraData"] = "0x" + silkworm::to_hex(header.extra_data);
-    json["mixHash"] = header.mix_hash;
+    json["mixHash"] = header.prev_randao;
     json["gasLimit"] = rpc::to_quantity(header.gas_limit);
     json["gasUsed"] = rpc::to_quantity(header.gas_used);
     json["timestamp"] = rpc::to_quantity(header.timestamp);
@@ -362,7 +362,7 @@ void to_json(nlohmann::json& json, const Block& b) {
     json["difficulty"] = to_quantity(silkworm::endian::to_big_compact(b.block.header.difficulty));
     json["totalDifficulty"] = to_quantity(silkworm::endian::to_big_compact(b.total_difficulty));
     json["extraData"] = "0x" + silkworm::to_hex(b.block.header.extra_data);
-    json["mixHash"] = b.block.header.mix_hash;
+    json["mixHash"] = b.block.header.prev_randao;
     json["size"] = to_quantity(b.get_block_size());
     json["gasLimit"] = to_quantity(b.block.header.gas_limit);
     json["gasUsed"] = to_quantity(b.block.header.gas_used);
@@ -409,7 +409,7 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
     json["block"]["hash"] = b.block.hash;
     json["block"]["logsBloom"] = nullptr;
     json["block"]["miner"] = b.block.header.beneficiary;
-    json["block"]["mixHash"] = b.block.header.mix_hash;
+    json["block"]["mixHash"] = b.block.header.prev_randao;
     json["block"]["nonce"] = "0x" + silkworm::to_hex({b.block.header.nonce.data(), b.block.header.nonce.size()});
     json["block"]["parentHash"] = b.block.header.parent_hash;
     json["block"]["receiptsRoot"] = b.block.header.receipts_root;
@@ -449,7 +449,7 @@ void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {
     json["fullblock"]["hash"] = b.hash;
     json["fullblock"]["logsBloom"];
     json["fullblock"]["miner"] = b.header.beneficiary;
-    json["fullblock"]["mixHash"] = b.header.mix_hash;
+    json["fullblock"]["mixHash"] = b.header.prev_randao;
     json["fullblock"]["nonce"] = "0x" + silkworm::to_hex({b.header.nonce.data(), b.header.nonce.size()});
     json["fullblock"]["number"] = block_number;
     json["fullblock"]["parentHash"] = b.header.parent_hash;

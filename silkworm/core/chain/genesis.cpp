@@ -73,7 +73,7 @@ BlockHeader read_genesis_header(const nlohmann::json& genesis_json, const evmc::
     if (genesis_json.contains("mixHash")) {
         const std::optional<Bytes> mix_hash{from_hex(genesis_json["mixHash"].get<std::string>())};
         SILKWORM_ASSERT(mix_hash.has_value());
-        std::memcpy(header.mix_hash.bytes, mix_hash->data(), mix_hash->size());
+        std::memcpy(header.prev_randao.bytes, mix_hash->data(), mix_hash->size());
     }
     if (genesis_json.contains("nonce")) {
         const uint64_t nonce{std::stoull(genesis_json["nonce"].get<std::string>(), nullptr, 0)};

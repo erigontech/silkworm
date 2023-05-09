@@ -41,7 +41,7 @@ TEST_CASE("Clique validate_seal") {
     header.gas_limit = 29999972;
     header.gas_used = 798242;
     header.timestamp = 1643045393;
-    header.mix_hash = 0x2f73f29450aad18c0956ec6350524c2910f3be67ec6e80b7b597240a195788e1_bytes32;
+    header.prev_randao = 0x2f73f29450aad18c0956ec6350524c2910f3be67ec6e80b7b597240a195788e1_bytes32;
     header.nonce = {};
 
     auto rule_set = rule_set_factory(ChainConfig{.protocol_rule_set = RuleSetType::kClique});  // Clique rule set
@@ -87,7 +87,7 @@ TEST_CASE("get_beneficiary() && extra_data no seal") {
     header.gas_limit = 29999972;
     header.gas_used = 798242;
     header.timestamp = 1643045393;
-    header.mix_hash = 0x2f73f29450aad18c0956ec6350524c2910f3be67ec6e80b7b597240a195788e1_bytes32;
+    header.prev_randao = 0x2f73f29450aad18c0956ec6350524c2910f3be67ec6e80b7b597240a195788e1_bytes32;
     header.nonce = {};
     header.extra_data = string_view_to_byte_view("d883010a0d84");
     auto rule_set = rule_set_factory(ChainConfig{.protocol_rule_set = RuleSetType::kClique});  // Clique rule set

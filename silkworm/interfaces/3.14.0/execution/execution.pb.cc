@@ -278,7 +278,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_execution_2fexecution_2eproto:
   PROTOBUF_FIELD_OFFSET(::execution::Header, state_root_),
   PROTOBUF_FIELD_OFFSET(::execution::Header, receipt_root_),
   PROTOBUF_FIELD_OFFSET(::execution::Header, logs_bloom_),
-  PROTOBUF_FIELD_OFFSET(::execution::Header, mix_digest_),
+  PROTOBUF_FIELD_OFFSET(::execution::Header, prev_randao_),
   PROTOBUF_FIELD_OFFSET(::execution::Header, block_number_),
   PROTOBUF_FIELD_OFFSET(::execution::Header, gas_limit_),
   PROTOBUF_FIELD_OFFSET(::execution::Header, gas_used_),
@@ -408,58 +408,58 @@ const char descriptor_table_protodef_execution_2fexecution_2eproto[] PROTOBUF_SE
   "idationStatus\022&\n\021latest_valid_hash\030\002 \001(\013"
   "2\013.types.H256\022&\n\014missing_hash\030\003 \001(\0132\013.ty"
   "pes.H256H\000\210\001\001B\017\n\r_missing_hash\"(\n\023IsCano"
-  "nicalResponse\022\021\n\tcanonical\030\001 \001(\010\"\212\005\n\006Hea"
+  "nicalResponse\022\021\n\tcanonical\030\001 \001(\010\"\213\005\n\006Hea"
   "der\022 \n\013parent_hash\030\001 \001(\0132\013.types.H256\022\035\n"
   "\010coinbase\030\002 \001(\0132\013.types.H160\022\037\n\nstate_ro"
   "ot\030\003 \001(\0132\013.types.H256\022!\n\014receipt_root\030\004 "
   "\001(\0132\013.types.H256\022 \n\nlogs_bloom\030\005 \001(\0132\014.t"
-  "ypes.H2048\022\037\n\nmix_digest\030\006 \001(\0132\013.types.H"
-  "256\022\024\n\014block_number\030\007 \001(\004\022\021\n\tgas_limit\030\010"
-  " \001(\004\022\020\n\010gas_used\030\t \001(\004\022\021\n\ttimestamp\030\n \001("
-  "\004\022\r\n\005nonce\030\013 \001(\004\022\022\n\nextra_data\030\014 \001(\014\022\037\n\n"
-  "difficulty\030\r \001(\0132\013.types.H256\022\037\n\nblock_h"
-  "ash\030\016 \001(\0132\013.types.H256\022\037\n\nommer_hash\030\017 \001"
-  "(\0132\013.types.H256\022%\n\020transaction_hash\030\020 \001("
-  "\0132\013.types.H256\022*\n\020base_fee_per_gas\030\021 \001(\013"
-  "2\013.types.H256H\000\210\001\001\022)\n\017withdrawal_hash\030\022 "
-  "\001(\0132\013.types.H256H\001\210\001\001\022)\n\017excess_data_gas"
-  "\030\023 \001(\0132\013.types.H256H\002\210\001\001B\023\n\021_base_fee_pe"
-  "r_gasB\022\n\020_withdrawal_hashB\022\n\020_excess_dat"
-  "a_gas\"\243\001\n\tBlockBody\022\037\n\nblock_hash\030\001 \001(\0132"
-  "\013.types.H256\022\024\n\014block_number\030\002 \001(\004\022\024\n\014tr"
-  "ansactions\030\003 \003(\014\022!\n\006uncles\030\004 \003(\0132\021.execu"
-  "tion.Header\022&\n\013withdrawals\030\005 \003(\0132\021.types"
-  ".Withdrawal\"F\n\021GetHeaderResponse\022&\n\006head"
-  "er\030\001 \001(\0132\021.execution.HeaderH\000\210\001\001B\t\n\007_hea"
-  "der\"C\n\017GetBodyResponse\022\'\n\004body\030\001 \001(\0132\024.e"
-  "xecution.BlockBodyH\000\210\001\001B\007\n\005_body\"I\n\033GetH"
-  "eaderHashNumberResponse\022\031\n\014block_number\030"
-  "\001 \001(\004H\000\210\001\001B\017\n\r_block_number\"t\n\021GetSegmen"
-  "tRequest\022\031\n\014block_number\030\001 \001(\004H\000\210\001\001\022$\n\nb"
-  "lock_hash\030\002 \001(\0132\013.types.H256H\001\210\001\001B\017\n\r_bl"
-  "ock_numberB\r\n\013_block_hash\":\n\024InsertHeade"
-  "rsRequest\022\"\n\007headers\030\001 \003(\0132\021.execution.H"
-  "eader\";\n\023InsertBodiesRequest\022$\n\006bodies\030\001"
-  " \003(\0132\024.execution.BlockBody\"\016\n\014EmptyMessa"
-  "ge*U\n\020ValidationStatus\022\013\n\007Success\020\000\022\020\n\014I"
-  "nvalidChain\020\001\022\016\n\nTooFarAway\020\002\022\022\n\016Missing"
-  "Segment\020\0032\367\004\n\tExecution\022I\n\rInsertHeaders"
-  "\022\037.execution.InsertHeadersRequest\032\027.exec"
-  "ution.EmptyMessage\022G\n\014InsertBodies\022\036.exe"
-  "cution.InsertBodiesRequest\032\027.execution.E"
-  "mptyMessage\022:\n\rValidateChain\022\013.types.H25"
-  "6\032\034.execution.ValidationReceipt\022=\n\020Updat"
-  "eForkChoice\022\013.types.H256\032\034.execution.For"
-  "kChoiceReceipt\022A\n\rAssembleBlock\022\027.execut"
-  "ion.EmptyMessage\032\027.types.ExecutionPayloa"
-  "d\022G\n\tGetHeader\022\034.execution.GetSegmentReq"
-  "uest\032\034.execution.GetHeaderResponse\022C\n\007Ge"
-  "tBody\022\034.execution.GetSegmentRequest\032\032.ex"
-  "ecution.GetBodyResponse\022>\n\017IsCanonicalHa"
-  "sh\022\013.types.H256\032\036.execution.IsCanonicalR"
-  "esponse\022J\n\023GetHeaderHashNumber\022\013.types.H"
-  "256\032&.execution.GetHeaderHashNumberRespo"
-  "nseB\027Z\025./execution;executionb\006proto3"
+  "ypes.H2048\022 \n\013prev_randao\030\006 \001(\0132\013.types."
+  "H256\022\024\n\014block_number\030\007 \001(\004\022\021\n\tgas_limit\030"
+  "\010 \001(\004\022\020\n\010gas_used\030\t \001(\004\022\021\n\ttimestamp\030\n \001"
+  "(\004\022\r\n\005nonce\030\013 \001(\004\022\022\n\nextra_data\030\014 \001(\014\022\037\n"
+  "\ndifficulty\030\r \001(\0132\013.types.H256\022\037\n\nblock_"
+  "hash\030\016 \001(\0132\013.types.H256\022\037\n\nommer_hash\030\017 "
+  "\001(\0132\013.types.H256\022%\n\020transaction_hash\030\020 \001"
+  "(\0132\013.types.H256\022*\n\020base_fee_per_gas\030\021 \001("
+  "\0132\013.types.H256H\000\210\001\001\022)\n\017withdrawal_hash\030\022"
+  " \001(\0132\013.types.H256H\001\210\001\001\022)\n\017excess_data_ga"
+  "s\030\023 \001(\0132\013.types.H256H\002\210\001\001B\023\n\021_base_fee_p"
+  "er_gasB\022\n\020_withdrawal_hashB\022\n\020_excess_da"
+  "ta_gas\"\243\001\n\tBlockBody\022\037\n\nblock_hash\030\001 \001(\013"
+  "2\013.types.H256\022\024\n\014block_number\030\002 \001(\004\022\024\n\014t"
+  "ransactions\030\003 \003(\014\022!\n\006uncles\030\004 \003(\0132\021.exec"
+  "ution.Header\022&\n\013withdrawals\030\005 \003(\0132\021.type"
+  "s.Withdrawal\"F\n\021GetHeaderResponse\022&\n\006hea"
+  "der\030\001 \001(\0132\021.execution.HeaderH\000\210\001\001B\t\n\007_he"
+  "ader\"C\n\017GetBodyResponse\022\'\n\004body\030\001 \001(\0132\024."
+  "execution.BlockBodyH\000\210\001\001B\007\n\005_body\"I\n\033Get"
+  "HeaderHashNumberResponse\022\031\n\014block_number"
+  "\030\001 \001(\004H\000\210\001\001B\017\n\r_block_number\"t\n\021GetSegme"
+  "ntRequest\022\031\n\014block_number\030\001 \001(\004H\000\210\001\001\022$\n\n"
+  "block_hash\030\002 \001(\0132\013.types.H256H\001\210\001\001B\017\n\r_b"
+  "lock_numberB\r\n\013_block_hash\":\n\024InsertHead"
+  "ersRequest\022\"\n\007headers\030\001 \003(\0132\021.execution."
+  "Header\";\n\023InsertBodiesRequest\022$\n\006bodies\030"
+  "\001 \003(\0132\024.execution.BlockBody\"\016\n\014EmptyMess"
+  "age*U\n\020ValidationStatus\022\013\n\007Success\020\000\022\020\n\014"
+  "InvalidChain\020\001\022\016\n\nTooFarAway\020\002\022\022\n\016Missin"
+  "gSegment\020\0032\367\004\n\tExecution\022I\n\rInsertHeader"
+  "s\022\037.execution.InsertHeadersRequest\032\027.exe"
+  "cution.EmptyMessage\022G\n\014InsertBodies\022\036.ex"
+  "ecution.InsertBodiesRequest\032\027.execution."
+  "EmptyMessage\022:\n\rValidateChain\022\013.types.H2"
+  "56\032\034.execution.ValidationReceipt\022=\n\020Upda"
+  "teForkChoice\022\013.types.H256\032\034.execution.Fo"
+  "rkChoiceReceipt\022A\n\rAssembleBlock\022\027.execu"
+  "tion.EmptyMessage\032\027.types.ExecutionPaylo"
+  "ad\022G\n\tGetHeader\022\034.execution.GetSegmentRe"
+  "quest\032\034.execution.GetHeaderResponse\022C\n\007G"
+  "etBody\022\034.execution.GetSegmentRequest\032\032.e"
+  "xecution.GetBodyResponse\022>\n\017IsCanonicalH"
+  "ash\022\013.types.H256\032\036.execution.IsCanonical"
+  "Response\022J\n\023GetHeaderHashNumber\022\013.types."
+  "H256\032&.execution.GetHeaderHashNumberResp"
+  "onseB\027Z\025./execution;executionb\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_execution_2fexecution_2eproto_deps[1] = {
   &::descriptor_table_types_2ftypes_2eproto,
@@ -480,7 +480,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_exe
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_execution_2fexecution_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_execution_2fexecution_2eproto = {
-  false, false, descriptor_table_protodef_execution_2fexecution_2eproto, "execution/execution.proto", 2396,
+  false, false, descriptor_table_protodef_execution_2fexecution_2eproto, "execution/execution.proto", 2397,
   &descriptor_table_execution_2fexecution_2eproto_once, descriptor_table_execution_2fexecution_2eproto_sccs, descriptor_table_execution_2fexecution_2eproto_deps, 12, 1,
   schemas, file_default_instances, TableStruct_execution_2fexecution_2eproto::offsets,
   file_level_metadata_execution_2fexecution_2eproto, 12, file_level_enum_descriptors_execution_2fexecution_2eproto, file_level_service_descriptors_execution_2fexecution_2eproto,
@@ -1265,7 +1265,7 @@ class Header::_Internal {
   static const ::types::H256& state_root(const Header* msg);
   static const ::types::H256& receipt_root(const Header* msg);
   static const ::types::H2048& logs_bloom(const Header* msg);
-  static const ::types::H256& mix_digest(const Header* msg);
+  static const ::types::H256& prev_randao(const Header* msg);
   static const ::types::H256& difficulty(const Header* msg);
   static const ::types::H256& block_hash(const Header* msg);
   static const ::types::H256& ommer_hash(const Header* msg);
@@ -1305,8 +1305,8 @@ Header::_Internal::logs_bloom(const Header* msg) {
   return *msg->logs_bloom_;
 }
 const ::types::H256&
-Header::_Internal::mix_digest(const Header* msg) {
-  return *msg->mix_digest_;
+Header::_Internal::prev_randao(const Header* msg) {
+  return *msg->prev_randao_;
 }
 const ::types::H256&
 Header::_Internal::difficulty(const Header* msg) {
@@ -1366,11 +1366,11 @@ void Header::clear_logs_bloom() {
   }
   logs_bloom_ = nullptr;
 }
-void Header::clear_mix_digest() {
-  if (GetArena() == nullptr && mix_digest_ != nullptr) {
-    delete mix_digest_;
+void Header::clear_prev_randao() {
+  if (GetArena() == nullptr && prev_randao_ != nullptr) {
+    delete prev_randao_;
   }
-  mix_digest_ = nullptr;
+  prev_randao_ = nullptr;
 }
 void Header::clear_difficulty() {
   if (GetArena() == nullptr && difficulty_ != nullptr) {
@@ -1457,10 +1457,10 @@ Header::Header(const Header& from)
   } else {
     logs_bloom_ = nullptr;
   }
-  if (from._internal_has_mix_digest()) {
-    mix_digest_ = new ::types::H256(*from.mix_digest_);
+  if (from._internal_has_prev_randao()) {
+    prev_randao_ = new ::types::H256(*from.prev_randao_);
   } else {
-    mix_digest_ = nullptr;
+    prev_randao_ = nullptr;
   }
   if (from._internal_has_difficulty()) {
     difficulty_ = new ::types::H256(*from.difficulty_);
@@ -1526,7 +1526,7 @@ void Header::SharedDtor() {
   if (this != internal_default_instance()) delete state_root_;
   if (this != internal_default_instance()) delete receipt_root_;
   if (this != internal_default_instance()) delete logs_bloom_;
-  if (this != internal_default_instance()) delete mix_digest_;
+  if (this != internal_default_instance()) delete prev_randao_;
   if (this != internal_default_instance()) delete difficulty_;
   if (this != internal_default_instance()) delete block_hash_;
   if (this != internal_default_instance()) delete ommer_hash_;
@@ -1578,10 +1578,10 @@ void Header::Clear() {
     delete logs_bloom_;
   }
   logs_bloom_ = nullptr;
-  if (GetArena() == nullptr && mix_digest_ != nullptr) {
-    delete mix_digest_;
+  if (GetArena() == nullptr && prev_randao_ != nullptr) {
+    delete prev_randao_;
   }
-  mix_digest_ = nullptr;
+  prev_randao_ = nullptr;
   if (GetArena() == nullptr && difficulty_ != nullptr) {
     delete difficulty_;
   }
@@ -1669,10 +1669,10 @@ const char* Header::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::int
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // .types.H256 mix_digest = 6;
+      // .types.H256 prev_randao = 6;
       case 6:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 50)) {
-          ptr = ctx->ParseMessage(_internal_mutable_mix_digest(), ptr);
+          ptr = ctx->ParseMessage(_internal_mutable_prev_randao(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -1837,12 +1837,12 @@ failure:
         5, _Internal::logs_bloom(this), target, stream);
   }
 
-  // .types.H256 mix_digest = 6;
-  if (this->has_mix_digest()) {
+  // .types.H256 prev_randao = 6;
+  if (this->has_prev_randao()) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(
-        6, _Internal::mix_digest(this), target, stream);
+        6, _Internal::prev_randao(this), target, stream);
   }
 
   // uint64 block_number = 7;
@@ -1995,11 +1995,11 @@ size_t Header::ByteSizeLong() const {
         *logs_bloom_);
   }
 
-  // .types.H256 mix_digest = 6;
-  if (this->has_mix_digest()) {
+  // .types.H256 prev_randao = 6;
+  if (this->has_prev_randao()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *mix_digest_);
+        *prev_randao_);
   }
 
   // .types.H256 difficulty = 13;
@@ -2138,8 +2138,8 @@ void Header::MergeFrom(const Header& from) {
   if (from.has_logs_bloom()) {
     _internal_mutable_logs_bloom()->::types::H2048::MergeFrom(from._internal_logs_bloom());
   }
-  if (from.has_mix_digest()) {
-    _internal_mutable_mix_digest()->::types::H256::MergeFrom(from._internal_mix_digest());
+  if (from.has_prev_randao()) {
+    _internal_mutable_prev_randao()->::types::H256::MergeFrom(from._internal_prev_randao());
   }
   if (from.has_difficulty()) {
     _internal_mutable_difficulty()->::types::H256::MergeFrom(from._internal_difficulty());

@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
             auto seal_hash(header->hash(/*for_sealing =*/true));
             const auto diff256{intx::be::store<ethash::hash256>(header->difficulty)};
             const auto sealh256{ethash::hash256_from_bytes(seal_hash.bytes)};
-            const auto mixh256{ethash::hash256_from_bytes(header->mix_hash.bytes)};
+            const auto mixh256{ethash::hash256_from_bytes(header->prev_randao.bytes)};
             if (const auto ec = ethash::verify_against_difficulty(*epoch_context, sealh256, mixh256, nonce, diff256);
                 ec) {
                 auto boundary256{header->boundary()};

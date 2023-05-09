@@ -496,12 +496,12 @@ evmc_tx_context EvmHost::get_tx_context() const noexcept {
     context.block_timestamp = static_cast<int64_t>(header.timestamp);
     assert(header.gas_limit <= INT64_MAX);  // EIP-1985
     context.block_gas_limit = static_cast<int64_t>(header.gas_limit);
-    if (header.difficulty != 0) {
-        intx::be::store(context.block_prev_randao.bytes, header.difficulty);
-    } else {
+    if (header.difficulty == 0) {
         // EIP-4399: Supplant DIFFICULTY opcode with RANDOM
         // We use 0 header difficulty as the telltale of PoS blocks
-        std::memcpy(context.block_prev_randao.bytes, header.mix_hash.bytes, kHashLength);
+        std::memcpy(context.block_prev_randao.bytes, header.prev_randao.bytes, kHashLength);
+    } else {
+        intx::be::store(context.block_prev_randao.bytes, header.difficulty);
     }
     intx::be::store(context.chain_id.bytes, intx::uint256{evm_.config().chain_id});
     intx::be::store(context.block_base_fee.bytes, base_fee_per_gas);

@@ -63,12 +63,12 @@ class ExecutionEngine : public Stoppable {
     void open();  // needed to circumvent mdbx threading model limitations
 
     // actions
-    ERIGON_API void insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks);
-    ERIGON_API bool insert_block(std::shared_ptr<Block> block);
+    void insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks);
+    bool insert_block(std::shared_ptr<Block> block);
 
-    ERIGON_API auto verify_chain(Hash head_block_hash) -> concurrency::AwaitableFuture<VerificationResult>;
+    auto verify_chain(Hash head_block_hash) -> concurrency::AwaitableFuture<VerificationResult>;
 
-    ERIGON_API bool notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
+    bool notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt);
 
     // state
     auto block_progress() const -> BlockNum;
@@ -76,12 +76,12 @@ class ExecutionEngine : public Stoppable {
     auto last_fork_choice() const -> BlockId;
 
     // header/body retrieval
-    ERIGON_API auto get_header(Hash) const -> std::optional<BlockHeader>;
-    ERIGON_API auto get_header(BlockNum) const -> std::optional<BlockHeader>;
-    ERIGON_API auto get_body(Hash) const -> std::optional<BlockBody>;
-    ERIGON_API auto get_body(BlockNum) const -> std::optional<BlockBody>;
-    ERIGON_API bool is_canonical_hash(Hash) const;
-    ERIGON_API auto get_block_number(Hash) const -> std::optional<BlockNum>;
+    auto get_header(Hash) const -> std::optional<BlockHeader>;
+    auto get_header(BlockNum) const -> std::optional<BlockHeader>;
+    auto get_body(Hash) const -> std::optional<BlockBody>;
+    auto get_body(BlockNum) const -> std::optional<BlockBody>;
+    bool is_canonical_hash(Hash) const;
+    auto get_block_number(Hash) const -> std::optional<BlockNum>;
     auto get_last_headers(BlockNum limit) const -> std::vector<BlockHeader>;
 
     /*

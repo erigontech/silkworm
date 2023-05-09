@@ -61,12 +61,14 @@ class ExtendingFork {
     auto current_head() const -> BlockId;
 
   protected:
-    static void handle_exception(std::exception_ptr);
+    void save_exception(std::exception_ptr);
+    void propagate_exception_if_any();
 
     Fork fork_;
-    asio::io_context& io_context_;   // for io
-    concurrency::Context executor_;  // for pipeline execution
-    std::thread thread_;             // for executor
+    asio::io_context& io_context_;    // for io
+    concurrency::Context executor_;   // for pipeline execution
+    std::thread thread_;              // for executor
+    std::exception_ptr exception_{};  // last exception
 
     // cached values provided to avoid thread synchronization
     BlockId current_head_{};

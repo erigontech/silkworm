@@ -14,12 +14,13 @@
    limitations under the License.
 */
 
+#include "extending_fork.hpp"
+
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
-#include "extending_fork.hpp"
 #include "main_chain.hpp"
 
 namespace silkworm::stagedsync {

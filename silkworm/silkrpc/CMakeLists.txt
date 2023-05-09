@@ -75,4 +75,8 @@ target_include_directories(
 )
 # cmake-format: on
 
-target_link_libraries(silkrpc PUBLIC ${SILKRPC_PUBLIC_LIBRARIES} PRIVATE ${SILKRPC_PRIVATE_LIBRARIES})
+target_link_libraries(
+  silkrpc
+  PUBLIC ${SILKRPC_PUBLIC_LIBRARIES}
+  PRIVATE ${SILKRPC_PRIVATE_LIBRARIES}
+)

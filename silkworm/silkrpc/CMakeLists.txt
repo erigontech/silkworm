@@ -38,7 +38,7 @@ file(
 )
 list(FILTER SILKRPC_SRC EXCLUDE REGEX "main\\.cpp$|_test\\.cpp$|\\.pb\\.cc|\\.pb\\.h")
 
-set(SILKRPC_LIBRARIES
+set(SILKRPC_PUBLIC_LIBRARIES
     silkworm_node
     silkworm_core
     silkworm_interfaces
@@ -54,6 +54,8 @@ set(SILKRPC_LIBRARIES
     protobuf::libprotobuf
     intx::intx
 )
+
+set(SILKRPC_PRIVATE_LIBRARIES evmc::instructions)
 
 add_library(silkrpc "${SILKRPC_SRC}")
 
@@ -73,4 +75,8 @@ target_include_directories(
 )
 # cmake-format: on
 
-target_link_libraries(silkrpc PUBLIC ${SILKRPC_LIBRARIES})
+target_link_libraries(
+  silkrpc
+  PUBLIC ${SILKRPC_PUBLIC_LIBRARIES}
+  PRIVATE ${SILKRPC_PRIVATE_LIBRARIES}
+)

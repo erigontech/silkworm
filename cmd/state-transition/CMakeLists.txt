@@ -25,7 +25,7 @@ endif()
 find_package(absl REQUIRED)
 find_package(Boost REQUIRED)
 find_package(CLI11 REQUIRED)
-find_package(nlohmann_json CONFIG REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 add_executable(state_transition state_transition.cpp expected_state.cpp state_transition.hpp runner.cpp)
 target_link_libraries(state_transition PRIVATE silkworm_node CLI11::CLI11 absl::time nlohmann_json::nlohmann_json)

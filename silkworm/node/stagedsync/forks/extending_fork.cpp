@@ -36,7 +36,8 @@ static void ensure(bool condition, const std::string& message) {
 ExtendingFork::ExtendingFork(BlockId forking_point, MainChain& main_chain, asio::io_context& ctx)
     : fork_{forking_point, main_chain},
       io_context_{ctx},
-      executor_{},  // todo: choose from a pool, maybe a thread
+      executor_{0, concurrency::WaitMode::backoff},
+      thread_{[this] { executor_.execute_loop(); }},
       current_head_{fork_.current_head()} {}
 
 ExtendingFork::ExtendingFork(ExtendingFork&& orig) noexcept
@@ -44,6 +45,10 @@ ExtendingFork::ExtendingFork(ExtendingFork&& orig) noexcept
       io_context_{orig.io_context_},
       executor_{std::move(orig.executor_)},
       current_head_{orig.current_head_} {}
+
+ExtendingFork::~ExtendingFork() {
+    close();
+}
 
 BlockId ExtendingFork::current_head() const {
     return current_head_;
@@ -63,12 +68,8 @@ void ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block
 }
 
 void ExtendingFork::close() {
-    // todo: implement
-    // work_guard_.reset();
-    // executor.stop();
-    // if (thread_.joinable()) {
-    //    thread_.join();
-    //}
+    executor_.stop();
+    if (thread_.joinable()) thread_.join();
 }
 
 void ExtendingFork::extend_with(Hash head_hash, const Block& block) {

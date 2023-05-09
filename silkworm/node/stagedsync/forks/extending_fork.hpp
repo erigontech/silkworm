@@ -22,6 +22,7 @@
 #include <boost/asio/awaitable.hpp>
 
 #include <silkworm/infra/concurrency/awaitable_future.hpp>
+#include <silkworm/infra/concurrency/context_pool.hpp>
 
 #include "fork.hpp"
 #include "silkworm/node/db/memory_mutation.hpp"
@@ -41,6 +42,7 @@ class ExtendingFork {
     explicit ExtendingFork(BlockId forking_point, MainChain&, asio::io_context&);
     ExtendingFork(const ExtendingFork&) = delete;
     ExtendingFork(ExtendingFork&& orig) noexcept;
+    ~ExtendingFork();
 
     // opening & closing
     void start_with(BlockId new_head, std::list<std::shared_ptr<Block>>&&);
@@ -62,9 +64,9 @@ class ExtendingFork {
     static void handle_exception(std::exception_ptr);
 
     Fork fork_;
-    asio::io_context& io_context_;    // for io
-    asio::any_io_executor executor_;  // for pipeline execution
-    std::thread thread_;              // for executor
+    asio::io_context& io_context_;   // for io
+    concurrency::Context executor_;  // for pipeline execution
+    std::thread thread_;             // for executor
 
     // cached values provided to avoid thread synchronization
     BlockId current_head_{};

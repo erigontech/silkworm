@@ -54,13 +54,13 @@ add_library(
   evmone/lib/evmone/vm.hpp
 )
 set_source_files_properties(
-  evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.10.0-dev"
+  evmone/lib/evmone/vm.cpp PROPERTIES COMPILE_DEFINITIONS PROJECT_VERSION="0.10.0"
 )
 target_include_directories(evmone PUBLIC evmone/include evmone/lib)
 target_link_libraries(
   evmone
   PUBLIC evmc intx::intx
-  PRIVATE evmc::instructions ethash::keccak
+  PRIVATE ethash::keccak
 )
 
 if(MSVC)

@@ -61,7 +61,6 @@ class ExtendingFork {
   protected:
     static void handle_exception(std::exception_ptr);
 
-    db::MemoryDatabase memory_db_;
     Fork fork_;
     asio::io_context& io_context_;    // for io
     asio::any_io_executor executor_;  // for pipeline execution

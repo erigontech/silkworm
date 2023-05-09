@@ -35,8 +35,8 @@
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
 
+#include "forks/extending_fork.hpp"
 #include "forks/main_chain.hpp"
-#include "forks/suspendable_fork.hpp"
 
 #define ERIGON_API
 

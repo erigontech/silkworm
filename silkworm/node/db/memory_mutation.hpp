@@ -40,7 +40,8 @@ class MemoryDatabase {
 
 class MemoryOverlay {
   public:
-    MemoryOverlay(MemoryDatabase& memory_db, ROTxn& txn);
+    MemoryOverlay(const std::filesystem::path& tmp_dir, ROTxn* txn);
+    explicit MemoryOverlay(ROTxn* txn);
     MemoryOverlay(MemoryOverlay&& other) noexcept;
 
     [[nodiscard]] db::ROTxn* external_txn() const { return txn_; }
@@ -49,7 +50,7 @@ class MemoryOverlay {
     ::mdbx::txn_managed start_rw_txn();
 
   private:
-    MemoryDatabase& memory_db_;
+    MemoryDatabase memory_db_;
     ROTxn* txn_;
 };
 

@@ -14,13 +14,12 @@
    limitations under the License.
 */
 
-#include "suspendable_fork.hpp"
-
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
+#include "extending_fork.hpp"
 #include "main_chain.hpp"
 
 namespace silkworm::stagedsync {
@@ -34,15 +33,13 @@ static void ensure(bool condition, const std::string& message) {
 }
 
 ExtendingFork::ExtendingFork(BlockId forking_point, MainChain& main_chain, asio::io_context& ctx)
-    : memory_db_{TemporaryDirectory::get_unique_temporary_path(main_chain.node_settings().data_directory->path())},
-      fork_{forking_point, main_chain, memory_db_},
+    : fork_{forking_point, main_chain},
       io_context_{ctx},
       executor_{},  // todo: choose from a pool, maybe a thread
       current_head_{fork_.current_head()} {}
 
 ExtendingFork::ExtendingFork(ExtendingFork&& orig) noexcept
-    : memory_db_{std::move(orig.memory_db_)},
-      fork_{std::move(orig.fork_)},
+    : fork_{std::move(orig.fork_)},
       io_context_{orig.io_context_},
       executor_{std::move(orig.executor_)},
       current_head_{orig.current_head_} {}

@@ -21,7 +21,6 @@
 
 #include <CLI/CLI.hpp>
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/error.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/use_future.hpp>
 #include <boost/process/environment.hpp>
@@ -184,8 +183,6 @@ int main(int argc, char* argv[]) {
         // Initialize logging with custom settings
         log::init(log_settings);
         log::set_thread_name("bekv_server");
-
-        // TODO(canepat): this could be an option in Silkworm logging facility
         rpc::Grpc2SilkwormLogGuard log_guard;
 
         const auto node_name{get_node_name_from_build_info(silkworm_get_buildinfo())};
@@ -229,7 +226,6 @@ int main(int argc, char* argv[]) {
         backend.set_node_name(node_name);
 
         rpc::BackEndKvServer server{server_settings, backend};
-        server.build_and_start();
 
         // Standalone BackEndKV server has no staged loop, so this simulates periodic state changes
         boost::asio::steady_timer state_changes_timer{context_pool.next_io_context()};
@@ -237,20 +233,30 @@ int main(int argc, char* argv[]) {
         constexpr silkworm::BlockNum kStartBlock{100'000'000};
         constexpr uint64_t kGasLimit{30'000'000};
 
-        std::function<void(boost::system::error_code)> state_change_notification = [&](const boost::system::error_code& ec) {
-            if (ec != boost::asio::error::operation_aborted) {
-                static auto block_number = kStartBlock;
-                backend.state_change_source()->start_new_batch(block_number, evmc::bytes32{}, {}, false);
-                backend.state_change_source()->notify_batch(0, kGasLimit);
-                SILK_INFO << "New batch notified for block: " << block_number;
-                state_changes_timer.expires_at(std::chrono::steady_clock::now() + kStateChangeInterval);
-                state_changes_timer.async_wait(state_change_notification);
-                ++block_number;
-            }
-        };
+        boost::asio::awaitable<void> tasks;
         if (settings.simulate_state_changes) {
-            state_changes_timer.expires_at(std::chrono::steady_clock::now() + kStateChangeInterval);
-            state_changes_timer.async_wait(state_change_notification);
+            using namespace boost::asio::experimental::awaitable_operators;
+            auto state_changes_simulator = [&]() -> boost::asio::awaitable<void> {
+                auto run = [&]() {
+                    boost::system::error_code ec;
+                    while (ec != boost::asio::error::operation_aborted) {
+                        state_changes_timer.expires_at(std::chrono::steady_clock::now() + kStateChangeInterval);
+                        state_changes_timer.wait(ec);
+                        static auto block_number = kStartBlock;
+                        backend.state_change_source()->start_new_batch(block_number, evmc::bytes32{}, {}, false);
+                        backend.state_change_source()->notify_batch(0, kGasLimit);
+                        SILK_INFO << "New batch notified for block: " << block_number;
+                        ++block_number;
+                    }
+                };
+                auto stop = [&state_changes_timer]() {
+                    state_changes_timer.cancel();
+                };
+                co_await concurrency::async_thread(std::move(run), std::move(stop));
+            };
+            tasks = state_changes_simulator() && server.async_run();
+        } else {
+            tasks = server.async_run();
         }
 
         ShutdownSignal shutdown_signal{context_pool.next_io_context()};
@@ -258,7 +264,7 @@ int main(int argc, char* argv[]) {
         // Go!
         auto run_future = boost::asio::co_spawn(
             context_pool.next_io_context(),
-            server.async_run() || shutdown_signal.wait(),
+            std::move(tasks) || shutdown_signal.wait(),
             boost::asio::use_future);
         context_pool.start();
 
@@ -266,11 +272,6 @@ int main(int argc, char* argv[]) {
 
         // Wait for shutdown_signal or an exception
         run_future.get();
-
-        context_pool.stop();
-        context_pool.join();
-
-        backend.close();
 
         SILK_LOG << "BackEndKvServer exiting [pid=" + std::to_string(pid) + ", main thread=" << tid << "]";
         return 0;

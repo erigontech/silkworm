@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include "suspendable_fork.hpp"
+#include "extending_fork.hpp"
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>
@@ -34,24 +34,29 @@ static void ensure(bool condition, const std::string& message) {
 }
 
 ExtendingFork::ExtendingFork(BlockId forking_point, MainChain& main_chain, asio::io_context& ctx)
-    : memory_db_{TemporaryDirectory::get_unique_temporary_path(main_chain.node_settings().data_directory->path())},
-      fork_{forking_point, main_chain, memory_db_},
+    : fork_{forking_point, main_chain},
       io_context_{ctx},
-      executor_{},  // todo: choose from a pool, maybe a thread
+      executor_{0, concurrency::WaitMode::backoff},
+      thread_{[this] { executor_.execute_loop(); }},
       current_head_{fork_.current_head()} {}
 
 ExtendingFork::ExtendingFork(ExtendingFork&& orig) noexcept
-    : memory_db_{std::move(orig.memory_db_)},
-      fork_{std::move(orig.fork_)},
+    : fork_{std::move(orig.fork_)},
       io_context_{orig.io_context_},
       executor_{std::move(orig.executor_)},
       current_head_{orig.current_head_} {}
+
+ExtendingFork::~ExtendingFork() {
+    close();
+}
 
 BlockId ExtendingFork::current_head() const {
     return current_head_;
 }
 
 void ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block>>&& blocks) {
+    propagate_exception_if_any();
+
     current_head_ = new_head;  // setting this here is important for find_fork_by_head() due to the fact that block
                                // insertion and head computation is delayed but find_fork_by_head() is called immediately
     auto lambda = [](ExtendingFork& me, BlockId new_head_, std::list<std::shared_ptr<Block>>&& blocks_) -> awaitable<void> {
@@ -61,19 +66,18 @@ void ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block
         co_return;
     };
 
-    co_spawn(io_context_, lambda(*this, new_head, std::move(blocks)), handle_exception);
+    co_spawn(io_context_, lambda(*this, new_head, std::move(blocks)), [this](std::exception_ptr e) { save_exception(e); });
 }
 
 void ExtendingFork::close() {
-    // todo: implement
-    // work_guard_.reset();
-    // executor.stop();
-    // if (thread_.joinable()) {
-    //    thread_.join();
-    //}
+    propagate_exception_if_any();
+    executor_.stop();
+    if (thread_.joinable()) thread_.join();
 }
 
 void ExtendingFork::extend_with(Hash head_hash, const Block& block) {
+    propagate_exception_if_any();
+
     current_head_ = {block.header.number, head_hash};  // setting this here is important, same as above
 
     auto lambda = [](ExtendingFork& me, const Block& block_) -> awaitable<void> {
@@ -81,10 +85,12 @@ void ExtendingFork::extend_with(Hash head_hash, const Block& block) {
         co_return;
     };
 
-    co_spawn(io_context_, lambda(*this, block), handle_exception);
+    co_spawn(io_context_, lambda(*this, block), [this](std::exception_ptr e) { save_exception(e); });
 }
 
 auto ExtendingFork::verify_chain() -> concurrency::AwaitableFuture<VerificationResult> {
+    propagate_exception_if_any();
+
     concurrency::AwaitablePromise<VerificationResult> promise{io_context_};
     auto awaitable_future = promise.get_future();
 
@@ -95,13 +101,15 @@ auto ExtendingFork::verify_chain() -> concurrency::AwaitableFuture<VerificationR
         co_return;
     };
 
-    co_spawn(io_context_, lambda(*this, std::move(promise)), handle_exception);
+    co_spawn(io_context_, lambda(*this, std::move(promise)), [this](std::exception_ptr e) { save_exception(e); });
 
     return awaitable_future;
 }
 
 auto ExtendingFork::notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash)
     -> concurrency::AwaitableFuture<bool> {
+    propagate_exception_if_any();
+
     concurrency::AwaitablePromise<bool> promise{io_context_};
     auto awaitable_future = promise.get_future();
 
@@ -115,7 +123,8 @@ auto ExtendingFork::notify_fork_choice_update(Hash head_block_hash, std::optiona
         co_return;
     };
 
-    co_spawn(io_context_, lambda(*this, std::move(promise), head_block_hash, finalized_block_hash), handle_exception);
+    co_spawn(io_context_, lambda(*this, std::move(promise), head_block_hash, finalized_block_hash),
+             [this](std::exception_ptr e) { save_exception(e); });
 
     return awaitable_future;
 }
@@ -130,14 +139,13 @@ std::vector<ExtendingFork>::iterator find_fork_to_extend(std::vector<ExtendingFo
     return find_fork_by_head(forks, header.parent_hash);
 }
 
-void ExtendingFork::handle_exception(std::exception_ptr e) {
-    // todo: dummy implementation, change it to save exception and rethrow it later
-    try {
-        if (e) {
-            std::rethrow_exception(e);
-        }
-    } catch (const std::exception& ex) {
-        std::cerr << "Exception in ExtendingFork::verify_chain(): " << ex.what() << "\n";
+void ExtendingFork::save_exception(std::exception_ptr e) {
+    exception_ = e;  // save exception to rethrow it later
+}
+
+void ExtendingFork::propagate_exception_if_any() {
+    if (exception_) {
+        std::rethrow_exception(exception_);
     }
 }
 

@@ -93,7 +93,7 @@ namespace rlp {
             rlp_head.payload_length += length(header.extra_data);  // extra_data
         }
         if (!for_sealing) {
-            rlp_head.payload_length += kHashLength + 1;  // mix_hash
+            rlp_head.payload_length += kHashLength + 1;  // prev_randao
             rlp_head.payload_length += 8 + 1;            // nonce
         }
         if (header.base_fee_per_gas) {
@@ -135,7 +135,7 @@ namespace rlp {
             encode(to, header.extra_data);
         }
         if (!for_sealing) {
-            encode(to, header.mix_hash.bytes);
+            encode(to, header.prev_randao.bytes);
             encode(to, header.nonce);
         }
         if (header.base_fee_per_gas) {
@@ -199,7 +199,7 @@ namespace rlp {
         if (DecodingResult res{decode(from, to.extra_data)}; !res) {
             return res;
         }
-        if (DecodingResult res{decode(from, to.mix_hash.bytes)}; !res) {
+        if (DecodingResult res{decode(from, to.prev_randao.bytes)}; !res) {
             return res;
         }
         if (DecodingResult res{decode(from, to.nonce)}; !res) {

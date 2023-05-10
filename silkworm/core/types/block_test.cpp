@@ -101,7 +101,7 @@ TEST_CASE("BlockBody RLP 2") {
     body.ommers[0].gas_limit = 3'141'592;
     body.ommers[0].gas_used = 0;
     body.ommers[0].timestamp = 1455404305;
-    body.ommers[0].mix_hash = 0xf0a53dfdd6c2f2a661e718ef29092de60d81d45f84044bec7bf4b36630b2bc08_bytes32;
+    body.ommers[0].prev_randao = 0xf0a53dfdd6c2f2a661e718ef29092de60d81d45f84044bec7bf4b36630b2bc08_bytes32;
     body.ommers[0].nonce[7] = 35;
 
     Bytes rlp{};

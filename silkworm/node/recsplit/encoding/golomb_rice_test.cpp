@@ -17,10 +17,10 @@
 #include "golomb_rice.hpp"
 
 #include <cstdint>
-#include <random>
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/core/common/random_number.hpp>
 #include <silkworm/infra/test/log.hpp>
 #include <silkworm/node/recsplit/encoding/sequence.hpp>
 
@@ -30,13 +30,11 @@ static const std::size_t kGolombRiceTestNumKeys{128};
 static const std::size_t kGolombRiceTestNumTrees{1'000};
 
 static Uint64Sequence generate_keys() {
-    static std::random_device rd;
-    static std::mt19937_64 rng(rd());
-    static std::uniform_int_distribution<uint64_t> gen(32, 64);
+    static RandomNumber rnd(32, 64);
 
     Uint64Sequence keys;
     for (std::size_t i = 0; i < kGolombRiceTestNumKeys; ++i) {
-        keys.push_back(gen(rng));
+        keys.push_back(rnd.generate_one());
     }
 
     return keys;

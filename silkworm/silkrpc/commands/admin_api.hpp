@@ -16,9 +16,6 @@
 
 #pragma once
 
-#include <memory>
-#include <vector>
-
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
@@ -41,9 +38,9 @@ using boost::asio::awaitable;
 
 class AdminRpcApi {
   public:
-    explicit AdminRpcApi(std::unique_ptr<ethbackend::BackEnd>& backend) : backend_(backend) {}
+    explicit AdminRpcApi(ethbackend::BackEnd* backend) : backend_(backend) {}
     explicit AdminRpcApi(boost::asio::io_context& io_context)
-        : AdminRpcApi(use_private_service<ethbackend::BackEnd>(io_context)) {}
+        : AdminRpcApi(must_use_private_service<ethbackend::BackEnd>(io_context)) {}
     virtual ~AdminRpcApi() = default;
 
     AdminRpcApi(const AdminRpcApi&) = delete;
@@ -54,7 +51,7 @@ class AdminRpcApi {
     awaitable<void> handle_admin_peers(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
-    std::unique_ptr<ethbackend::BackEnd>& backend_;
+    ethbackend::BackEnd* backend_;
 
     friend class silkworm::http::RequestHandler;
 };

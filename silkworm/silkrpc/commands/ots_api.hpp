@@ -16,9 +16,6 @@
 
 #pragma once
 
-#include <memory>
-#include <vector>
-
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
@@ -47,9 +44,9 @@ class OtsRpcApi {
     OtsRpcApi(boost::asio::io_context& io_context, boost::asio::thread_pool& workers)
         : io_context_(io_context),
           workers_{workers},
-          database_(use_private_service<ethdb::Database>(io_context_)),
-          state_cache_(use_shared_service<ethdb::kv::StateCache>(io_context_)),
-          block_cache_(use_shared_service<BlockCache>(io_context_)) {}
+          database_(must_use_private_service<ethdb::Database>(io_context_)),
+          state_cache_(must_use_shared_service<ethdb::kv::StateCache>(io_context_)),
+          block_cache_(must_use_shared_service<BlockCache>(io_context_)) {}
     virtual ~OtsRpcApi() = default;
 
     OtsRpcApi(const OtsRpcApi&) = delete;
@@ -66,9 +63,9 @@ class OtsRpcApi {
 
     boost::asio::io_context& io_context_;
     boost::asio::thread_pool& workers_;
-    std::unique_ptr<ethdb::Database>& database_;
-    std::shared_ptr<ethdb::kv::StateCache>& state_cache_;
-    std::shared_ptr<BlockCache>& block_cache_;
+    ethdb::Database* database_;
+    ethdb::kv::StateCache* state_cache_;
+    BlockCache* block_cache_;
     friend class silkworm::http::RequestHandler;
 
   private:

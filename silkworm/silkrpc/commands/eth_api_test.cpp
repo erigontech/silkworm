@@ -33,7 +33,8 @@ using Catch::Matchers::Message;
 //! Utility class to expose handle hooks publicly just for tests
 class EthereumRpcApi_ForTest : public EthereumRpcApi {
   public:
-    explicit EthereumRpcApi_ForTest(boost::asio::io_context& ioc, boost::asio::thread_pool& workers) : EthereumRpcApi{ioc, workers} {}
+    explicit EthereumRpcApi_ForTest(boost::asio::io_context& ioc, boost::asio::thread_pool& workers)
+        : EthereumRpcApi{ioc, workers} {}
 
     // MSVC doesn't support using access declarations properly, so explicitly forward these public accessors
     awaitable<void> eth_block_number(const nlohmann::json& request, nlohmann::json& reply) {
@@ -51,13 +52,14 @@ TEST_CASE_METHOD(EthereumRpcApiTest, "handle_eth_block_number succeeds if reques
     nlohmann::json reply;
 
     // TODO(canepat) we need to mock silkworm::core functions properly, then we must change this check
-    CHECK_THROWS_AS(run<&EthereumRpcApi_ForTest::eth_block_number>(R"({
-        "jsonrpc":"2.0",
-        "id": 1,
-        "method":"eth_blockNumber",
-        "params":[]
-    })"_json,
-                                                                   reply),
+    CHECK_THROWS_AS(run<&EthereumRpcApi_ForTest::eth_block_number>(
+                        R"({
+                            "jsonrpc":"2.0",
+                            "id": 1,
+                            "method":"eth_blockNumber",
+                            "params":[]
+                        })"_json,
+                        reply),
                     std::exception);
     /*CHECK(reply == R"({
             "jsonrpc":"2.0",

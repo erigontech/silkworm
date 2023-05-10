@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <memory>
-
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
@@ -39,8 +37,8 @@ namespace silkworm::rpc::commands {
 class Web3RpcApi {
   public:
     explicit Web3RpcApi(boost::asio::io_context& io_context)
-        : database_{use_private_service<ethdb::Database>(io_context)},
-          backend_{use_private_service<ethbackend::BackEnd>(io_context)} {}
+        : database_{must_use_private_service<ethdb::Database>(io_context)},
+          backend_{must_use_private_service<ethbackend::BackEnd>(io_context)} {}
     virtual ~Web3RpcApi() = default;
 
     Web3RpcApi(const Web3RpcApi&) = delete;
@@ -51,8 +49,8 @@ class Web3RpcApi {
     boost::asio::awaitable<void> handle_web3_sha3(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
-    std::unique_ptr<ethdb::Database>& database_;
-    std::unique_ptr<ethbackend::BackEnd>& backend_;
+    ethdb::Database* database_;
+    ethbackend::BackEnd* backend_;
 
     friend class silkworm::http::RequestHandler;
 };

@@ -26,7 +26,7 @@ using Catch::Matchers::Message;
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("Web3RpcApi::Web3RpcApi", "[silkrpc][erigon_api]") {
     boost::asio::io_context ioc;
-    CHECK_NOTHROW(Web3RpcApi{ioc});
+    CHECK_THROWS_AS(Web3RpcApi(ioc), std::logic_error);
 }
 #endif  // SILKWORM_SANITIZE
 

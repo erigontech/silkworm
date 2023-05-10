@@ -93,7 +93,7 @@ namespace {
 
 class EngineRpcApiTest : public EngineRpcApi {
   public:
-    EngineRpcApiTest(std::unique_ptr<ethdb::Database>& database, std::unique_ptr<ethbackend::BackEnd>& backend)
+    EngineRpcApiTest(ethdb::Database* database, ethbackend::BackEnd* backend)
         : EngineRpcApi(database, backend) {}
 
     using EngineRpcApi::handle_engine_exchange_transition_configuration_v1;
@@ -187,7 +187,7 @@ TEST_CASE("handle_engine_get_payload_v1 succeeds if request is expected payload"
     cp.start();
     std::unique_ptr<ethdb::Database> database;
     // Initialise components
-    EngineRpcApiTest rpc(database, backend_ptr);
+    EngineRpcApiTest rpc(database.get(), backend_ptr.get());
 
     // spawn routine
     auto result{boost::asio::co_spawn(
@@ -240,7 +240,7 @@ TEST_CASE("handle_engine_get_payload_v1 fails with invalid amount of params", "[
     // Initialise components
     std::unique_ptr<ethbackend::BackEnd> backend_ptr(new BackEndMock);
     std::unique_ptr<ethdb::Database> database;
-    EngineRpcApiTest rpc(database, backend_ptr);
+    EngineRpcApiTest rpc(database.get(), backend_ptr.get());
 
     // spawn routine
     auto result{boost::asio::co_spawn(
@@ -305,7 +305,7 @@ TEST_CASE("handle_engine_new_payload_v1 succeeds if request is expected payload 
     cp.start();
     std::unique_ptr<ethdb::Database> database;
     // Initialise components
-    EngineRpcApiTest rpc(database, backend_ptr);
+    EngineRpcApiTest rpc(database.get(), backend_ptr.get());
 
     // spawn routine
     auto result{boost::asio::co_spawn(
@@ -347,7 +347,7 @@ TEST_CASE("handle_engine_new_payload_v1 fails with invalid amount of params", "[
     // Initialise components
     std::unique_ptr<ethbackend::BackEnd> backend_ptr(new BackEndMock);
     std::unique_ptr<ethdb::Database> database;
-    EngineRpcApiTest rpc(database, backend_ptr);
+    EngineRpcApiTest rpc(database.get(), backend_ptr.get());
 
     // spawn routine
     auto result{boost::asio::co_spawn(
@@ -404,7 +404,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds only with forkchoiceStat
     // Initialise components
     std::unique_ptr<ethbackend::BackEnd> backend_ptr(backend);
     std::unique_ptr<ethdb::Database> database;
-    EngineRpcApiTest rpc(database, backend_ptr);
+    EngineRpcApiTest rpc(database.get(), backend_ptr.get());
 
     // spawn routine
     auto result{boost::asio::co_spawn(
@@ -467,7 +467,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params", "[sil
     // Initialise components
     std::unique_ptr<ethbackend::BackEnd> backend_ptr(backend);
     std::unique_ptr<ethdb::Database> database;
-    EngineRpcApiTest rpc(database, backend_ptr);
+    EngineRpcApiTest rpc(database.get(), backend_ptr.get());
 
     // spawn routine
     auto result{boost::asio::co_spawn(
@@ -526,7 +526,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params and sec
     // Initialise components
     std::unique_ptr<ethbackend::BackEnd> backend_ptr(backend);
     std::unique_ptr<ethdb::Database> database;
-    EngineRpcApiTest rpc(database, backend_ptr);
+    EngineRpcApiTest rpc(database.get(), backend_ptr.get());
 
     // spawn routine
     auto result{boost::asio::co_spawn(
@@ -568,7 +568,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with invalid amount of para
     // Initialise components
     std::unique_ptr<ethbackend::BackEnd> backend_ptr(new BackEndMock);
     std::unique_ptr<ethdb::Database> database;
-    EngineRpcApiTest rpc(database, backend_ptr);
+    EngineRpcApiTest rpc(database.get(), backend_ptr.get());
 
     // spawn routine
     auto result{boost::asio::co_spawn(
@@ -616,7 +616,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty finalized block 
     // Initialise components
     std::unique_ptr<ethbackend::BackEnd> backend_ptr(backend);
     std::unique_ptr<ethdb::Database> database;
-    EngineRpcApiTest rpc(database, backend_ptr);
+    EngineRpcApiTest rpc(database.get(), backend_ptr.get());
 
     // spawn routine
     auto result{boost::asio::co_spawn(
@@ -662,7 +662,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty safe block hash"
     // Initialise components
     std::unique_ptr<ethbackend::BackEnd> backend_ptr(backend);
     std::unique_ptr<ethdb::Database> database;
-    EngineRpcApiTest rpc(database, backend_ptr);
+    EngineRpcApiTest rpc(database.get(), backend_ptr.get());
 
     // spawn routine
     auto result{boost::asio::co_spawn(
@@ -707,7 +707,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 succeeds if EL configuratio
 
     std::unique_ptr<ethdb::Database> database_ptr = std::make_unique<DummyDatabase>(mock_cursor);
     std::unique_ptr<ethbackend::BackEnd> backend_ptr;
-    EngineRpcApiTest rpc(database_ptr, backend_ptr);
+    EngineRpcApiTest rpc(database_ptr.get(), backend_ptr.get());
 
     nlohmann::json reply;
     nlohmann::json request = R"({
@@ -766,7 +766,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 succeeds and default termin
 
     std::unique_ptr<ethdb::Database> database_ptr = std::make_unique<DummyDatabase>(mock_cursor);
     std::unique_ptr<ethbackend::BackEnd> backend_ptr;
-    EngineRpcApiTest rpc(database_ptr, backend_ptr);
+    EngineRpcApiTest rpc(database_ptr.get(), backend_ptr.get());
 
     nlohmann::json reply;
     nlohmann::json request = R"({
@@ -825,7 +825,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect terminal
 
     std::unique_ptr<ethdb::Database> database_ptr = std::make_unique<DummyDatabase>(mock_cursor);
     std::unique_ptr<ethbackend::BackEnd> backend_ptr;
-    EngineRpcApiTest rpc(database_ptr, backend_ptr);
+    EngineRpcApiTest rpc(database_ptr.get(), backend_ptr.get());
 
     nlohmann::json reply;
     nlohmann::json request = R"({
@@ -882,7 +882,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if execution layer do
 
     std::unique_ptr<ethdb::Database> database_ptr = std::make_unique<DummyDatabase>(mock_cursor);
     std::unique_ptr<ethbackend::BackEnd> backend_ptr;
-    EngineRpcApiTest rpc(database_ptr, backend_ptr);
+    EngineRpcApiTest rpc(database_ptr.get(), backend_ptr.get());
 
     nlohmann::json reply;
     nlohmann::json request = R"({
@@ -939,7 +939,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer se
 
     std::unique_ptr<ethdb::Database> database_ptr = std::make_unique<DummyDatabase>(mock_cursor);
     std::unique_ptr<ethbackend::BackEnd> backend_ptr;
-    EngineRpcApiTest rpc(database_ptr, backend_ptr);
+    EngineRpcApiTest rpc(database_ptr.get(), backend_ptr.get());
 
     nlohmann::json reply;
     nlohmann::json request = R"({
@@ -984,7 +984,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect params",
 
     std::unique_ptr<ethdb::Database> database_ptr = std::make_unique<DummyDatabase>(mock_cursor);
     std::unique_ptr<ethbackend::BackEnd> backend_ptr;
-    EngineRpcApiTest rpc(database_ptr, backend_ptr);
+    EngineRpcApiTest rpc(database_ptr.get(), backend_ptr.get());
 
     nlohmann::json reply;
     nlohmann::json request = R"({

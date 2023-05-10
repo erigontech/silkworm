@@ -41,7 +41,7 @@ StateChangesStream::StateChangesStream(ClientContext& context, remote::KV::StubI
     : scheduler_(*context.io_context()),
       grpc_context_(*context.grpc_context()),
       stub_(stub),
-      cache_(use_shared_service<ethdb::kv::StateCache>(scheduler_).get()),
+      cache_(must_use_shared_service<ethdb::kv::StateCache>(scheduler_)),
       retry_timer_{scheduler_} {}
 
 std::future<void> StateChangesStream::open() {

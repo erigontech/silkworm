@@ -16,9 +16,6 @@
 
 #pragma once
 
-#include <memory>
-#include <vector>
-
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
@@ -62,13 +59,13 @@ class EthereumRpcApi {
   public:
     EthereumRpcApi(boost::asio::io_context& io_context, boost::asio::thread_pool& workers)
         : io_context_{io_context},
-          block_cache_{use_shared_service<BlockCache>(io_context_)},
-          state_cache_{use_shared_service<ethdb::kv::StateCache>(io_context_)},
-          database_{use_private_service<ethdb::Database>(io_context_)},
-          backend_{use_private_service<ethbackend::BackEnd>(io_context_)},
-          miner_{use_private_service<txpool::Miner>(io_context_)},
-          tx_pool_{use_private_service<txpool::TransactionPool>(io_context_)},
-          filter_storage_{use_shared_service<FilterStorage>(io_context_)},
+          block_cache_{must_use_shared_service<BlockCache>(io_context_)},
+          state_cache_{must_use_shared_service<ethdb::kv::StateCache>(io_context_)},
+          database_{must_use_private_service<ethdb::Database>(io_context_)},
+          backend_{must_use_private_service<ethbackend::BackEnd>(io_context_)},
+          miner_{must_use_private_service<txpool::Miner>(io_context_)},
+          tx_pool_{must_use_private_service<txpool::TransactionPool>(io_context_)},
+          filter_storage_{must_use_shared_service<FilterStorage>(io_context_)},
           workers_{workers} {}
 
     virtual ~EthereumRpcApi() = default;
@@ -137,13 +134,13 @@ class EthereumRpcApi {
     awaitable<void> handle_eth_call(const nlohmann::json& request, std::string& reply);
 
     boost::asio::io_context& io_context_;
-    std::shared_ptr<BlockCache>& block_cache_;
-    std::shared_ptr<ethdb::kv::StateCache>& state_cache_;
-    std::unique_ptr<ethdb::Database>& database_;
-    std::unique_ptr<ethbackend::BackEnd>& backend_;
-    std::unique_ptr<txpool::Miner>& miner_;
-    std::unique_ptr<txpool::TransactionPool>& tx_pool_;
-    std::shared_ptr<FilterStorage>& filter_storage_;
+    BlockCache* block_cache_;
+    ethdb::kv::StateCache* state_cache_;
+    ethdb::Database* database_;
+    ethbackend::BackEnd* backend_;
+    txpool::Miner* miner_;
+    txpool::TransactionPool* tx_pool_;
+    FilterStorage* filter_storage_;
     boost::asio::thread_pool& workers_;
 
     friend class silkworm::http::RequestHandler;

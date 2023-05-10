@@ -16,6 +16,7 @@
 
 #include "debug_api.hpp"
 
+#include <stdexcept>
 #include <string>
 
 #include <boost/asio/co_spawn.hpp>
@@ -210,7 +211,7 @@ TEST_CASE("DebugRpcApi") {
     boost::asio::thread_pool workers{1};
 
     SECTION("CTOR") {
-        CHECK_NOTHROW(DebugRpcApi{ioc, workers});
+        CHECK_THROWS_AS(DebugRpcApi(ioc, workers), std::logic_error);
     }
 }
 

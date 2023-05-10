@@ -102,30 +102,16 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
                         << " contexts, " << settings.num_workers << " workers\n";
         }
 
-        std::string jwt_secret;
-        if (!load_jwt_token(settings.jwt_secret_filename, jwt_secret)) {
-            SILKRPC_CRIT << "JWT token has wrong size: " << jwt_secret.length() << "\n";
-            return -1;
-        }
-        const auto jwt_secret_bytes_option = silkworm::from_hex(jwt_secret);
-        if (!jwt_secret_bytes_option) {
-            SILKRPC_CRIT << "JWT token is incorrect: " << jwt_secret << "\n";
-            return -1;
-        }
-        const std::string secret_key{jwt_secret_bytes_option->cbegin(), jwt_secret_bytes_option->cend()};
-
         // Create the one-and-only Silkrpc daemon
-        Daemon rpc_daemon{settings, secret_key};
+        Daemon rpc_daemon{settings};
 
         // Check protocol version compatibility with Core Services
         SILKRPC_LOG << "Checking protocol version compatibility with core services...\n";
 
         const auto checklist = rpc_daemon.run_checklist();
-
         for (const auto& protocol_check : checklist.protocol_checklist) {
             SILKRPC_LOG << protocol_check.result << "\n";
         }
-
         checklist.success_or_throw();
 
         // Start execution context dedicated to handling termination signals
@@ -150,15 +136,12 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
 
         rpc_daemon.join();
     } catch (const std::exception& e) {
-        SILKRPC_CRIT << "Exception: " << e.what() << "\n"
-                     << std::flush;
+        SILKRPC_CRIT << "Exception: " << e.what() << "\n";
     } catch (...) {
-        SILKRPC_CRIT << "Unexpected exception: " << current_exception_name() << "\n"
-                     << std::flush;
+        SILKRPC_CRIT << "Unexpected exception: " << current_exception_name() << "\n";
     }
 
-    SILKRPC_LOG << "Silkrpc exiting [pid=" << pid << ", main thread=" << tid << "]\n"
-                << std::flush;
+    SILKRPC_LOG << "Silkrpc exiting [pid=" << pid << ", main thread=" << tid << "]\n";
 
     return 0;
 }
@@ -205,6 +188,12 @@ bool Daemon::validate_settings(const DaemonSettings& settings) {
         return false;
     }
 
+    if (!settings.engine_port.empty() && !settings.jwt_secret_filename) {
+        SILKRPC_ERROR << "Parameter jwt_secret_filename cannot be empty if engine_port is specified\n";
+        SILKRPC_ERROR << "Use --jwt_secret_filename to specify the JWT token to use for Engine JSON RPC service\n";
+        return false;
+    }
+
     return true;
 }
 
@@ -219,13 +208,30 @@ ChannelFactory Daemon::make_channel_factory(const DaemonSettings& settings) {
     };
 }
 
-Daemon::Daemon(const DaemonSettings& settings, const std::string& jwt_secret)
+Daemon::Daemon(const DaemonSettings& settings)
     : settings_(settings),
       create_channel_{make_channel_factory(settings_)},
       context_pool_{settings_.num_contexts /*, create_channel_, settings.datadir, settings_.wait_mode*/},
       worker_pool_{settings_.num_workers},
-      kv_stub_{::remote::KV::NewStub(create_channel_())},
-      jwt_secret_{jwt_secret} {
+      kv_stub_{::remote::KV::NewStub(create_channel_())} {
+    // Load the channel authentication token (if required)
+    if (settings.jwt_secret_filename) {
+        std::string jwt_token;
+        if (!load_jwt_token(*settings.jwt_secret_filename, jwt_token)) {
+            std::string error_msg{"JWT token has wrong size: " + std::to_string(jwt_token.length())};
+            SILKRPC_CRIT << error_msg << "\n";
+            throw std::runtime_error{error_msg};
+        }
+        const auto jwt_token_bytes = silkworm::from_hex(jwt_token);
+        if (!jwt_token_bytes) {
+            std::string error_msg{"JWT token is incorrect: " + jwt_token};
+            SILKRPC_CRIT << error_msg << "\n";
+            throw std::runtime_error{error_msg};
+        }
+        jwt_secret_ = {jwt_token_bytes->cbegin(), jwt_token_bytes->cend()};
+    }
+
+    // Activate the local chaindata access (if required)
     if (settings_.datadir) {
         chaindata_env_ = std::make_shared<mdbx::env_managed>();
         std::string db_path = *settings_.datadir + kChaindataRelativePath;
@@ -290,6 +296,14 @@ void Daemon::add_shared_services() {
     }
 }
 
+void Daemon::add_backend_service(std::unique_ptr<ethbackend::BackEnd>&& backend) {
+    // Add the BackEnd state to each execution context
+    for (std::size_t i{0}; i < settings_.num_contexts; ++i) {
+        auto& io_context = context_pool_.next_io_context();
+        add_private_service<rpc::ethbackend::BackEnd>(io_context, std::move(backend));
+    }
+}
+
 DaemonChecklist Daemon::run_checklist() {
     const auto core_service_channel{create_channel_()};
 
@@ -311,11 +325,18 @@ DaemonChecklist Daemon::run_checklist() {
 
 void Daemon::start() {
     for (std::size_t i{0}; i < settings_.num_contexts; ++i) {
-        auto& context = context_pool_.next_io_context();
-        rpc_services_.emplace_back(
-            std::make_unique<http::Server>(settings_.http_port, settings_.api_spec, context, worker_pool_, std::nullopt /* no jwt_secret_file */));
-        rpc_services_.emplace_back(
-            std::make_unique<http::Server>(settings_.engine_port, kDefaultEth2ApiSpec, context, worker_pool_, jwt_secret_));
+        auto& ioc = context_pool_.next_io_context();
+
+        if (not settings_.http_port.empty()) {
+            rpc_services_.emplace_back(
+                std::make_unique<http::Server>(
+                    settings_.http_port, settings_.api_spec, ioc, worker_pool_, /*jwt_secret=*/std::nullopt));
+        }
+        if (not settings_.engine_port.empty()) {
+            rpc_services_.emplace_back(
+                std::make_unique<http::Server>(
+                    settings_.engine_port, kDefaultEth2ApiSpec, ioc, worker_pool_, jwt_secret_));
+        }
     }
 
     for (auto& service : rpc_services_) {

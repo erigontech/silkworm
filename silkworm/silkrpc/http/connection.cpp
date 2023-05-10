@@ -25,7 +25,6 @@
 #include <exception>
 #include <fstream>
 #include <string_view>
-#include <utility>
 
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/write.hpp>
@@ -37,11 +36,11 @@
 namespace silkworm::rpc::http {
 
 Connection::Connection(boost::asio::io_context& io_context,
-                       boost::asio::thread_pool& workers,
+                       commands::RpcApi& api,
                        commands::RpcApiTable& handler_table,
                        std::optional<std::string> jwt_secret)
     : socket_{io_context},
-      request_handler_{io_context, workers, socket_, handler_table, std::move(jwt_secret)},
+      request_handler_{socket_, api, handler_table, std::move(jwt_secret)},
       buffer_{} {
     request_.content.reserve(kRequestContentInitialCapacity);
     request_.headers.reserve(kRequestHeadersInitialCapacity);
@@ -90,7 +89,7 @@ boost::asio::awaitable<void> Connection::do_read() {
     RequestParser::ResultType result = request_parser_.parse(request_, buffer_.data(), buffer_.data() + bytes_read);
 
     if (result == RequestParser::ResultType::good) {
-        co_await request_handler_.handle_user_request(request_);
+        co_await request_handler_.handle(request_);
         clean();
     } else if (result == RequestParser::ResultType::bad) {
         reply_ = Reply::stock_reply(StatusType::bad_request);

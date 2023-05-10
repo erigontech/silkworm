@@ -132,7 +132,7 @@ awaitable<ExecutionPayload> RemoteBackEnd::engine_get_payload_v1(uint64_t payloa
     co_return execution_payload;
 }
 
-awaitable<PayloadStatus> RemoteBackEnd::engine_new_payload_v1(ExecutionPayload payload) {
+awaitable<PayloadStatus> RemoteBackEnd::engine_new_payload_v1(const ExecutionPayload& payload) {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncEngineNewPayload> npc_rpc{*stub_, grpc_context_};
     auto req{encode_execution_payload(payload)};
@@ -142,7 +142,7 @@ awaitable<PayloadStatus> RemoteBackEnd::engine_new_payload_v1(ExecutionPayload p
     co_return payload_status;
 }
 
-awaitable<ForkChoiceUpdatedReply> RemoteBackEnd::engine_forkchoice_updated_v1(ForkChoiceUpdatedRequest fcu_request) {
+awaitable<ForkChoiceUpdatedReply> RemoteBackEnd::engine_forkchoice_updated_v1(const ForkChoiceUpdatedRequest& fcu_request) {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncEngineForkChoiceUpdated> fcu_rpc{*stub_, grpc_context_};
     const auto req{encode_forkchoice_updated_request(fcu_request)};
@@ -185,7 +185,7 @@ awaitable<PeerInfos> RemoteBackEnd::peers() {
     co_return peer_infos;
 }
 
-ExecutionPayload RemoteBackEnd::decode_execution_payload(const types::ExecutionPayload& execution_payload_grpc) {
+ExecutionPayload RemoteBackEnd::decode_execution_payload(const ::types::ExecutionPayload& execution_payload_grpc) {
     const auto& state_root_h256{execution_payload_grpc.state_root()};
     const auto& receipts_root_h256{execution_payload_grpc.receipt_root()};
     const auto& block_hash_h256{execution_payload_grpc.block_hash()};
@@ -221,8 +221,8 @@ ExecutionPayload RemoteBackEnd::decode_execution_payload(const types::ExecutionP
         .transactions = transactions};
 }
 
-types::ExecutionPayload RemoteBackEnd::encode_execution_payload(const ExecutionPayload& execution_payload) {
-    types::ExecutionPayload execution_payload_grpc;
+::types::ExecutionPayload RemoteBackEnd::encode_execution_payload(const ExecutionPayload& execution_payload) {
+    ::types::ExecutionPayload execution_payload_grpc;
     // Numerical parameters
     execution_payload_grpc.set_block_number(execution_payload.number);
     execution_payload_grpc.set_timestamp(execution_payload.timestamp);
@@ -247,8 +247,8 @@ types::ExecutionPayload RemoteBackEnd::encode_execution_payload(const ExecutionP
     return execution_payload_grpc;
 }
 
-remote::EngineForkChoiceState* RemoteBackEnd::encode_forkchoice_state(const ForkChoiceState& fcs) {
-    auto fcs_grpc = new remote::EngineForkChoiceState();
+::remote::EngineForkChoiceState* RemoteBackEnd::encode_forkchoice_state(const ForkChoiceState& fcs) {
+    auto fcs_grpc = new ::remote::EngineForkChoiceState();
     // 32-bytes parameters
     fcs_grpc->set_allocated_head_block_hash(H256_from_bytes({fcs.head_block_hash.bytes, kHashLength}).release());
     fcs_grpc->set_allocated_safe_block_hash(H256_from_bytes({fcs.safe_block_hash.bytes, kHashLength}).release());
@@ -256,8 +256,8 @@ remote::EngineForkChoiceState* RemoteBackEnd::encode_forkchoice_state(const Fork
     return fcs_grpc;
 }
 
-remote::EnginePayloadAttributes* RemoteBackEnd::encode_payload_attributes(const PayloadAttributes& epa) {
-    auto epa_grpc = new remote::EnginePayloadAttributes();
+::remote::EnginePayloadAttributes* RemoteBackEnd::encode_payload_attributes(const PayloadAttributes& epa) {
+    auto epa_grpc = new ::remote::EnginePayloadAttributes();
     // TODO(yperbasis) support v2 (withdrawals) as well
     epa_grpc->set_version(1);
     // Numerical parameters
@@ -269,20 +269,19 @@ remote::EnginePayloadAttributes* RemoteBackEnd::encode_payload_attributes(const 
     return epa_grpc;
 }
 
-remote::EngineForkChoiceUpdatedRequest RemoteBackEnd::encode_forkchoice_updated_request(const ForkChoiceUpdatedRequest& forkchoice_updated_request) {
-    remote::EngineForkChoiceUpdatedRequest forkchoice_updated_request_grpc;
-    remote::EngineForkChoiceState* forkchoice_state_grpc = RemoteBackEnd::encode_forkchoice_state(forkchoice_updated_request.fork_choice_state);
+::remote::EngineForkChoiceUpdatedRequest RemoteBackEnd::encode_forkchoice_updated_request(const ForkChoiceUpdatedRequest& fcu_request) {
+    ::remote::EngineForkChoiceUpdatedRequest fcu_request_grpc;
+    ::remote::EngineForkChoiceState* forkchoice_state_grpc = RemoteBackEnd::encode_forkchoice_state(fcu_request.fork_choice_state);
 
-    forkchoice_updated_request_grpc.set_allocated_forkchoice_state(forkchoice_state_grpc);
-    if (forkchoice_updated_request.payload_attributes != std::nullopt) {
-        remote::EnginePayloadAttributes* payload_attributes_grpc =
-            RemoteBackEnd::encode_payload_attributes(forkchoice_updated_request.payload_attributes.value());
-        forkchoice_updated_request_grpc.set_allocated_payload_attributes(payload_attributes_grpc);
+    fcu_request_grpc.set_allocated_forkchoice_state(forkchoice_state_grpc);
+    if (fcu_request.payload_attributes != std::nullopt) {
+        ::remote::EnginePayloadAttributes* payload_attributes_grpc = encode_payload_attributes(fcu_request.payload_attributes.value());
+        fcu_request_grpc.set_allocated_payload_attributes(payload_attributes_grpc);
     }
-    return forkchoice_updated_request_grpc;
+    return fcu_request_grpc;
 }
 
-PayloadStatus RemoteBackEnd::decode_payload_status(const remote::EnginePayloadStatus& payload_status_grpc) {
+PayloadStatus RemoteBackEnd::decode_payload_status(const ::remote::EnginePayloadStatus& payload_status_grpc) {
     PayloadStatus payload_status;
     payload_status.status = decode_status_message(payload_status_grpc.status());
     // Set LatestValidHash (if there is one)
@@ -297,15 +296,15 @@ PayloadStatus RemoteBackEnd::decode_payload_status(const remote::EnginePayloadSt
     return payload_status;
 }
 
-std::string RemoteBackEnd::decode_status_message(const remote::EngineStatus& status) {
+std::string RemoteBackEnd::decode_status_message(const ::remote::EngineStatus& status) {
     switch (status) {
-        case remote::EngineStatus::VALID:
+        case ::remote::EngineStatus::VALID:
             return "VALID";
-        case remote::EngineStatus::SYNCING:
+        case ::remote::EngineStatus::SYNCING:
             return "SYNCING";
-        case remote::EngineStatus::ACCEPTED:
+        case ::remote::EngineStatus::ACCEPTED:
             return "ACCEPTED";
-        case remote::EngineStatus::INVALID_BLOCK_HASH:
+        case ::remote::EngineStatus::INVALID_BLOCK_HASH:
             return "INVALID_BLOCK_HASH";
         default:
             return "INVALID";

@@ -46,8 +46,8 @@ class BackEndMock : public ethbackend::BackEnd {  // NOLINT
     MOCK_METHOD((awaitable<std::string>), client_version, ());
     MOCK_METHOD((awaitable<uint64_t>), net_peer_count, ());
     MOCK_METHOD((awaitable<ExecutionPayload>), engine_get_payload_v1, (uint64_t));
-    MOCK_METHOD((awaitable<PayloadStatus>), engine_new_payload_v1, (ExecutionPayload));
-    MOCK_METHOD((awaitable<ForkChoiceUpdatedReply>), engine_forkchoice_updated_v1, (ForkChoiceUpdatedRequest));
+    MOCK_METHOD((awaitable<PayloadStatus>), engine_new_payload_v1, (const ExecutionPayload&));
+    MOCK_METHOD((awaitable<ForkChoiceUpdatedReply>), engine_forkchoice_updated_v1, (const ForkChoiceUpdatedRequest&));
     MOCK_METHOD((awaitable<NodeInfos>), engine_node_info, ());
     MOCK_METHOD((awaitable<PeerInfos>), peers, ());
 };

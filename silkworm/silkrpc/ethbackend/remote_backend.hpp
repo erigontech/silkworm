@@ -51,19 +51,19 @@ class RemoteBackEnd final : public BackEnd {
     awaitable<std::string> client_version() override;
     awaitable<uint64_t> net_peer_count() override;
     awaitable<ExecutionPayload> engine_get_payload_v1(uint64_t payload_id) override;
-    awaitable<PayloadStatus> engine_new_payload_v1(ExecutionPayload payload) override;
-    awaitable<ForkChoiceUpdatedReply> engine_forkchoice_updated_v1(ForkChoiceUpdatedRequest forkchoice_updated_request) override;
+    awaitable<PayloadStatus> engine_new_payload_v1(const ExecutionPayload& payload) override;
+    awaitable<ForkChoiceUpdatedReply> engine_forkchoice_updated_v1(const ForkChoiceUpdatedRequest& fcu_request) override;
     awaitable<NodeInfos> engine_node_info() override;
     awaitable<PeerInfos> peers() override;
 
   private:
-    static ExecutionPayload decode_execution_payload(const types::ExecutionPayload& execution_payload_grpc);
-    static types::ExecutionPayload encode_execution_payload(const ExecutionPayload& execution_payload);
-    static remote::EngineForkChoiceState* encode_forkchoice_state(const ForkChoiceState& forkchoice_state);
-    static remote::EnginePayloadAttributes* encode_payload_attributes(const PayloadAttributes& payload_attributes);
-    static remote::EngineForkChoiceUpdatedRequest encode_forkchoice_updated_request(const ForkChoiceUpdatedRequest& forkchoice_updated_request);
-    static PayloadStatus decode_payload_status(const remote::EnginePayloadStatus& payload_status_grpc);
-    static std::string decode_status_message(const remote::EngineStatus& status);
+    static ExecutionPayload decode_execution_payload(const ::types::ExecutionPayload& execution_payload_grpc);
+    static ::types::ExecutionPayload encode_execution_payload(const ExecutionPayload& execution_payload);
+    static ::remote::EngineForkChoiceState* encode_forkchoice_state(const ForkChoiceState& forkchoice_state);
+    static ::remote::EnginePayloadAttributes* encode_payload_attributes(const PayloadAttributes& payload_attributes);
+    static ::remote::EngineForkChoiceUpdatedRequest encode_forkchoice_updated_request(const ForkChoiceUpdatedRequest& fcu_request);
+    static PayloadStatus decode_payload_status(const ::remote::EnginePayloadStatus& payload_status_grpc);
+    static std::string decode_status_message(const ::remote::EngineStatus& status);
 
     boost::asio::io_context::executor_type executor_;
     std::unique_ptr<::remote::ETHBACKEND::StubInterface> stub_;

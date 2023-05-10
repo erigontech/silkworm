@@ -14,23 +14,28 @@
    limitations under the License.
 */
 
-#include "random_number.hpp"
+#pragma once
 
-#include <algorithm>
-
-#include <catch2/catch.hpp>
+#include <random>
 
 namespace silkworm {
 
-TEST_CASE("random numbers") {
-    uint64_t a = 0;
-    uint64_t b = 3;
-    RandomNumber random_number(a, b);
+class RandomNumber {
+    std::mt19937_64 generator_;                      // the 64-bit Mersenne Twister 19937 generator
+    std::uniform_int_distribution<uint64_t> distr_;  // a uniform distribution
 
-    for (int i = 0; i < 100; i++) {
-        auto a_number = random_number.generate_one();
-        REQUIRE((a <= a_number && a_number <= b));
+  public:
+    RandomNumber() {
+        std::random_device rd;
+        generator_.seed(rd());  // init generator_ with a random seed
     }
-}
+
+    RandomNumber(uint64_t a, uint64_t b) : distr_(a, b) {
+        std::random_device rd;
+        generator_.seed(rd());  // init generator_ with a random seed
+    }
+
+    uint64_t generate_one() { return distr_(generator_); }
+};
 
 }  // namespace silkworm

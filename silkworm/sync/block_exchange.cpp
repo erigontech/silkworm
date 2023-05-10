@@ -116,7 +116,7 @@ void BlockExchange::execution_loop() {
             size_t room_for_new_requests = peers_capacity > outstanding_requests ? peers_capacity - outstanding_requests : 0;
 
             auto body_requests = room_for_new_requests == 1
-                                     ? RANDOM_NUMBER.generate_one() % 2  // 50% chance to request a body
+                                     ? SILKWORM_RANDOM_NUMBER.generate_one() % 2  // 50% chance to request a body
                                      : room_for_new_requests / 2;        // a slight bias towards headers
 
             room_for_new_requests -= request_bodies(now, body_requests);           // do the computed nr. of body requests

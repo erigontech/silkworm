@@ -143,7 +143,7 @@ auto BodySequence::request_bodies(time_point_t tp) -> std::shared_ptr<OutboundMe
 
     auto body_request = std::make_shared<OutboundGetBlockBodies>();
     auto& packet = body_request->packet();
-    packet.requestId = RANDOM_NUMBER.generate_one();
+    packet.requestId = SILKWORM_RANDOM_NUMBER.generate_one();
 
     auto penalizations = renew_stale_requests(packet, min_block, tp, timeout);
 

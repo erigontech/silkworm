@@ -503,7 +503,7 @@ auto HeaderChain::save_external_announce(Hash hash) -> std::optional<GetBlockHea
     if (has_link(hash)) return std::nullopt;  // we already have this link, no need to request it
 
     GetBlockHeadersPacket66 request;
-    request.requestId = RANDOM_NUMBER.generate_one();
+    request.requestId = SILKWORM_RANDOM_NUMBER.generate_one();
     request.request.origin = {hash};
     request.request.amount = 1;
     request.request.skip = 0;

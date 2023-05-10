@@ -25,7 +25,7 @@ namespace silkworm {
 
 InboundNewBlock::InboundNewBlock(ByteView data, PeerId peer_id)
     : peerId_(std::move(peer_id)) {
-    reqId_ = RANDOM_NUMBER.generate_one();  // for trace purposes
+    reqId_ = SILKWORM_RANDOM_NUMBER.generate_one();  // for trace purposes
     success_or_throw(rlp::decode(data, packet_));
     SILK_TRACE << "Received message " << *this;
 }

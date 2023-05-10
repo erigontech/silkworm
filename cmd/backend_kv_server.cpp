@@ -33,7 +33,7 @@
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/grpc/common/util.hpp>
-#include <silkworm/infra/grpc/server/server_context_pool.hpp>
+#include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
 #include <silkworm/node/db/access_layer.hpp>
@@ -118,12 +118,9 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, StandaloneBackEndK
     return 0;
 }
 
-class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
-};
-
 std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> make_sentry_client(
     const NodeSettings& node_settings,
-    silkworm::rpc::ServerContextPool& context_pool,
+    rpc::ClientContextPool& context_pool,
     db::ROAccess db_access) {
     std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> sentry_client;
 
@@ -135,7 +132,7 @@ std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> make_sentry_cli
         // remote client
         auto remote_sentry_client = std::make_shared<silkworm::sentry::grpc::client::SentryClient>(
             node_settings.remote_sentry_addresses[0],
-            *context_pool.next_context().client_grpc_context());
+            *context_pool.next_context().grpc_context());
         // wrap remote client in a session client
         sentry_client = std::make_shared<silkworm::sentry::SessionSentryClient>(
             remote_sentry_client,
@@ -147,7 +144,7 @@ std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> make_sentry_cli
             // remote client
             auto remote_sentry_client = std::make_shared<silkworm::sentry::grpc::client::SentryClient>(
                 address_uri,
-                *context_pool.next_context().client_grpc_context());
+                *context_pool.next_context().grpc_context());
             // wrap remote client in a session client
             auto session_sentry_client = std::make_shared<silkworm::sentry::SessionSentryClient>(
                 remote_sentry_client,
@@ -211,9 +208,8 @@ int main(int argc, char* argv[]) {
         }
         SILK_INFO << "BackEndKvServer genesis from db: " << to_hex(*node_settings.chain_config->genesis_hash);
 
-        silkworm::rpc::ServerContextPool context_pool{
+        rpc::ClientContextPool context_pool{
             server_settings.context_pool_settings(),
-            [] { return std::make_unique<DummyServerCompletionQueue>(); },
         };
 
         auto sentry_client = make_sentry_client(node_settings, context_pool, db::ROAccess(database_env));

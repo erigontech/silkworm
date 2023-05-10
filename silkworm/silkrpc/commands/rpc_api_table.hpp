@@ -32,18 +32,18 @@ namespace silkworm::rpc::commands {
 
 class RpcApiTable {
   public:
-    typedef boost::asio::awaitable<void> (RpcApi::*HandleMethod)(const nlohmann::json&, nlohmann::json&);
-    typedef boost::asio::awaitable<void> (RpcApi::*HandleMethodGlaze)(const nlohmann::json&, std::string&);
-    typedef boost::asio::awaitable<void> (RpcApi::*HandleStream)(const nlohmann::json&, json::Stream&);
+    using HandleMethod = boost::asio::awaitable<void> (RpcApi::*)(const nlohmann::json&, nlohmann::json&);
+    using HandleMethodGlaze = boost::asio::awaitable<void> (RpcApi::*)(const nlohmann::json&, std::string&);
+    using HandleStream = boost::asio::awaitable<void> (RpcApi::*)(const nlohmann::json&, json::Stream&);
 
     explicit RpcApiTable(const std::string& api_spec);
 
     RpcApiTable(const RpcApiTable&) = delete;
     RpcApiTable& operator=(const RpcApiTable&) = delete;
 
-    std::optional<HandleMethod> find_json_handler(const std::string& method) const;
-    std::optional<HandleMethodGlaze> find_json_glaze_handler(const std::string& method) const;
-    std::optional<HandleStream> find_stream_handler(const std::string& method) const;
+    [[nodiscard]] std::optional<HandleMethod> find_json_handler(const std::string& method) const;
+    [[nodiscard]] std::optional<HandleMethodGlaze> find_json_glaze_handler(const std::string& method) const;
+    [[nodiscard]] std::optional<HandleStream> find_stream_handler(const std::string& method) const;
 
   private:
     void build_handlers(const std::string& api_spec);

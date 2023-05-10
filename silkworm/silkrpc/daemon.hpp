@@ -41,7 +41,7 @@ struct DaemonSettings {
     uint32_t num_workers;
     LogLevel log_verbosity;
     concurrency::WaitMode wait_mode;
-    std::string jwt_secret_filename;
+    std::optional<std::string> jwt_secret_filename;
 };
 
 struct DaemonInfo {
@@ -59,10 +59,12 @@ class Daemon {
   public:
     static int run(const DaemonSettings& settings, const DaemonInfo& info = {});
 
-    explicit Daemon(const DaemonSettings& settings, const std::string& jwt_secret);
+    explicit Daemon(const DaemonSettings& settings);
 
     Daemon(const Daemon&) = delete;
     Daemon& operator=(const Daemon&) = delete;
+
+    void add_backend_service(std::unique_ptr<ethbackend::BackEnd>&& backend);
 
     DaemonChecklist run_checklist();
 
@@ -103,7 +105,7 @@ class Daemon {
     std::unique_ptr<ethdb::kv::StateChangesStream> state_changes_stream_;
 
     //! The secret key for communication from CL & EL
-    const std::string& jwt_secret_;
+    std::optional<std::string> jwt_secret_;
 };
 
 }  // namespace silkworm::rpc

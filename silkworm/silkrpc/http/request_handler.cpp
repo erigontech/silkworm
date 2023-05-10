@@ -34,12 +34,11 @@
 #include <silkworm/silkrpc/common/clock_time.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/http/header.hpp>
-#include <silkworm/silkrpc/http/methods.hpp>
 #include <silkworm/silkrpc/types/writer.hpp>
 
 namespace silkworm::rpc::http {
 
-boost::asio::awaitable<void> RequestHandler::handle_user_request(const http::Request& request) {
+boost::asio::awaitable<void> RequestHandler::handle(const http::Request& request) {
     auto start = clock_time::now();
 
     http::Reply reply;
@@ -102,7 +101,7 @@ boost::asio::awaitable<void> RequestHandler::handle_user_request(const http::Req
 }
 
 boost::asio::awaitable<void> RequestHandler::handle_request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply) {
-    auto request_id = request_json["id"].get<uint32_t>();
+    const auto request_id = request_json["id"].get<uint32_t>();
     if (!request_json.contains("method")) {
         reply.content = make_json_error(request_id, -32600, "invalid request").dump();
         reply.status = http::StatusType::bad_request;
@@ -115,30 +114,21 @@ boost::asio::awaitable<void> RequestHandler::handle_request_and_create_reply(con
         reply.status = http::StatusType::bad_request;
         co_return;
     }
-    const auto json_glaze_handler_opt = rpc_api_table_.find_json_glaze_handler(method);
-    if (json_glaze_handler_opt) {
-        const auto json_handler = json_glaze_handler_opt.value();
 
-        co_await handle_request(request_id, json_handler, request_json, reply);
-
+    // Dispatch JSON handlers in this order: 1) glaze JSON 2) nlohmann JSON 3) JSON streaming
+    const auto json_glaze_handler = rpc_api_table_.find_json_glaze_handler(method);
+    if (json_glaze_handler) {
+        co_await handle_request(request_id, *json_glaze_handler, request_json, reply);
         co_return;
     }
-
-    const auto json_handler_opt = rpc_api_table_.find_json_handler(method);
-    if (json_handler_opt) {
-        const auto json_handler = json_handler_opt.value();
-
-        co_await handle_request(request_id, json_handler, request_json, reply);
-
+    const auto json_handler = rpc_api_table_.find_json_handler(method);
+    if (json_handler) {
+        co_await handle_request(request_id, *json_handler, request_json, reply);
         co_return;
     }
-
-    const auto stream_handler_opt = rpc_api_table_.find_stream_handler(method);
-    if (stream_handler_opt) {
-        const auto stream_handler = stream_handler_opt.value();
-
-        co_await handle_request(stream_handler, request_json);
-
+    const auto stream_handler = rpc_api_table_.find_stream_handler(method);
+    if (stream_handler) {
+        co_await handle_request(*stream_handler, request_json);
         co_return;
     }
 

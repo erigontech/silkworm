@@ -103,7 +103,7 @@ silkworm::Block StateTransition::get_block() {
     block.header.parent_hash = to_bytes32(silkworm::from_hex(get_env("previousHash")).value_or(silkworm::Bytes{}));
 
     if (contains_env("currentRandom")) {
-        block.header.mix_hash = to_bytes32(silkworm::from_hex(get_env("currentRandom")).value_or(silkworm::Bytes{}));
+        block.header.prev_randao = to_bytes32(silkworm::from_hex(get_env("currentRandom")).value_or(silkworm::Bytes{}));
     }
 
     if (contains_env("currentBaseFee")) {

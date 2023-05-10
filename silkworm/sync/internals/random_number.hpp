@@ -18,7 +18,7 @@
 
 #include <random>
 
-#include "singleton.hpp"
+#include <silkworm/core/common/singleton.hpp>
 
 namespace silkworm {
 

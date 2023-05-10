@@ -34,6 +34,7 @@ class IntraBlockState {
   public:
     class Snapshot {
       public:
+        // Only movable
         Snapshot(Snapshot&&) = default;
         Snapshot& operator=(Snapshot&&) = default;
 
@@ -46,6 +47,7 @@ class IntraBlockState {
         size_t log_size_{0};
     };
 
+    // Not copyable nor movable
     IntraBlockState(const IntraBlockState&) = delete;
     IntraBlockState& operator=(const IntraBlockState&) = delete;
 
@@ -55,7 +57,7 @@ class IntraBlockState {
 
     bool exists(const evmc::address& address) const noexcept;
 
-    // https://eips.ethereum.org/EIPS/eip-161
+    // See EIP-161: State trie clearing (invariant-preserving alternative)
     bool is_dead(const evmc::address& address) const noexcept;
 
     void create_contract(const evmc::address& address) noexcept;

@@ -16,7 +16,6 @@
 
 #include "in_memory_state.hpp"
 
-#include <iostream>
 #include <map>
 
 #include <ethash/keccak.hpp>
@@ -249,20 +248,14 @@ evmc::bytes32 InMemoryState::state_root_hash() const {
     std::map<evmc::bytes32, Bytes> account_rlp;
     for (const auto& [address, account] : accounts_) {
         ethash::hash256 hash{keccak256(address)};
-
-        //        std::cout << to_hex(address.bytes) << ":" << to_hex(hash.bytes) << ":";
-
         evmc::bytes32 storage_root{account_storage_root(address, account.incarnation)};
         account_rlp[to_bytes32(hash.bytes)] = account.rlp(storage_root);
     }
 
     trie::HashBuilder hb;
     for (const auto& [hash, rlp] : account_rlp) {
-        //        std::cout << to_hex(hash) << ":" << to_hex(rlp) << std::endl;
         hb.add_leaf(trie::unpack_nibbles(hash), rlp);
     }
-
-    //    std::cout << "final hash: " << to_hex(hb.root_hash().bytes) << std::endl;
 
     return hb.root_hash();
 }

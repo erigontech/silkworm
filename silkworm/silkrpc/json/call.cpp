@@ -132,12 +132,12 @@ void from_json(const nlohmann::json& json, StateOverrides& so) {
     if (json.count("code") != 0) {
         so.code = json.at("code").get<silkworm::Bytes>();
     }
-    // if (json.count("state") != 0) {
-    //     so.code = json.at("state").get<std::map<evmc::bytes32, intx::uint256>>();
-    // }
-    // if (json.count("stateDiff") != 0) {
-    //     so.state_diff = json.at("state_diff").get<std::map<evmc::bytes32, intx::uint256>>();
-    // }
+    if (json.count("state") != 0) {
+        so.state = json.at("state").get<std::map<evmc::bytes32, intx::uint256>>();
+    }
+    if (json.count("stateDiff") != 0) {
+        so.state_diff = json.at("state_diff").get<std::map<evmc::bytes32, intx::uint256>>();
+    }
 }
 
 void from_json(const nlohmann::json& json, BlockOverrides& bo) {

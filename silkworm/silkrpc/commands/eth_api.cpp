@@ -40,6 +40,7 @@
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
+#include <silkworm/silkrpc/core/call_many.hpp>
 #include <silkworm/silkrpc/core/estimate_gas_oracle.hpp>
 #include <silkworm/silkrpc/core/evm_access_list_tracer.hpp>
 #include <silkworm/silkrpc/core/evm_executor.hpp>
@@ -1192,10 +1193,10 @@ awaitable<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& reque
     auto tx = co_await database_->begin();
 
     try {
-        // ethdb::kv::CachedDatabase tx_database{block_number_or_hash, *tx, *state_cache_};
-        // ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
+        call::CallExecutor executor{*context_.io_context(), *tx, *state_cache_, workers_};
+        const auto result = co_await executor.execute(bundles, simulation_context, state_overrides, timeout);
 
-        reply = make_json_content(request["id"], "0x0");
+        reply = make_json_content(request["id"], result);
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
         reply = make_json_error(request["id"], 100, e.what());

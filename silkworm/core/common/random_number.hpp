@@ -21,9 +21,6 @@
 namespace silkworm {
 
 class RandomNumber {
-    std::mt19937_64 generator_;                      // the 64-bit Mersenne Twister 19937 generator
-    std::uniform_int_distribution<uint64_t> distr_;  // a uniform distribution
-
   public:
     RandomNumber() {
         std::random_device rd;
@@ -35,7 +32,15 @@ class RandomNumber {
         generator_.seed(rd());  // init generator_ with a random seed
     }
 
+    // Not copyable nor movable
+    RandomNumber(const RandomNumber&) = delete;
+    RandomNumber& operator=(const RandomNumber&) = delete;
+
     uint64_t generate_one() { return distr_(generator_); }
+
+  private:
+    std::mt19937_64 generator_;                      // the 64-bit Mersenne Twister 19937 generator
+    std::uniform_int_distribution<uint64_t> distr_;  // a uniform distribution
 };
 
 }  // namespace silkworm

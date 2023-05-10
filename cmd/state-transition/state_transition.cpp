@@ -220,19 +220,22 @@ void StateTransition::validate_transition(const silkworm::Receipt& receipt, cons
             }
             print_message(expected_state, expected_sub_state, "Logs hash does not match");
             failed_count_++;
+        } else {
+            if (show_diagnostics_) {
+                print_message(expected_state, expected_sub_state, "OK");
+            }
         }
     }
 }
 
 void StateTransition::print_message(const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const std::string& message) {
-    std::cout << "[" << expected_state.fork_name() << ":" << expected_sub_state.index << "] Data: " << expected_sub_state.dataIndex << ", Gas: " << expected_sub_state.gasIndex << ", Value: " << expected_sub_state.valueIndex << ", Result: " << message << std::endl;
+    std::cout << "[" << test_name_ << ":" << expected_state.fork_name() << ":" << expected_sub_state.index << "] " << message << std::endl;
 }
 
 void StateTransition::run() {
     failed_count_ = 0;
     total_count_ = 0;
 
-    std::cout << "State Transition " << test_name_ << std::endl;
     for (auto& expectedState : get_expected_states()) {
         for (const auto& expectedSubState : expectedState.get_sub_states()) {
             ++total_count_;
@@ -261,6 +264,9 @@ void StateTransition::run() {
         }
     }
 
-    std::cout << "Finished, encountered " << failed_count_ << "/" << total_count_ << " errors" << std::endl;
+    if (show_diagnostics_) {
+        std::cout << "[" << test_name_ << "] "
+                  << "Finished total " << total_count_ << ", failed " << failed_count_ << std::endl << std::endl;
+    }
 }
 };  // namespace silkworm::cmd::state_transition

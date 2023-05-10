@@ -53,7 +53,7 @@ class StateTransition {
     static std::unique_ptr<evmc::address> private_key_to_address(const std::string& private_key);
     silkworm::Transaction get_transaction(ExpectedSubState expected_sub_state);
     void validate_transition(const silkworm::Receipt& receipt, const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const InMemoryState& state);
-    static void print_message(const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const std::string& message);
+    void print_message(const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const std::string& message);
     void run();
 };
 }  // namespace silkworm::cmd::state_transition

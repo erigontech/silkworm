@@ -105,10 +105,6 @@ struct ChainConfig {
     //! \remark Should this return std::nullopt the parsing has failed
     static std::optional<ChainConfig> from_json(const nlohmann::json& json) noexcept;
 
-    [[nodiscard]] bool is_london_fork() const noexcept;
-    [[nodiscard]] bool is_shanghai_fork() const noexcept;
-    [[nodiscard]] bool is_cancun_fork() const noexcept;
-
     friend bool operator==(const ChainConfig&, const ChainConfig&) = default;
 };
 

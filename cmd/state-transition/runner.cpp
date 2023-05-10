@@ -34,15 +34,15 @@ int main(int argc, char* argv[]) {
     bool terminate_flag = false;
     app.add_flag("-t,--terminateOnError", terminate_flag, "Terminate execution on failure");
 
-    bool diagnostics_flag = false;
+    bool diagnostics_flag = true;
     app.add_flag("-d,--diagnostics", diagnostics_flag, "Enable extended diagnostics output");
 
     CLI11_PARSE(app, argc, argv)
 
     try {
         if (std::filesystem::is_directory(path)) {
-            for (const auto& test_file : std::filesystem::directory_iterator(path)) {
-                if (test_file.path().extension() == ".json") {
+            for (const auto& test_file : std::filesystem::recursive_directory_iterator(path)) {
+                if (!test_file.is_directory() && test_file.path().extension() == ".json") {
                     execute_test(test_file.path(), terminate_flag, diagnostics_flag);
                 }
             }

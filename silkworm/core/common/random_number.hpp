@@ -18,8 +18,6 @@
 
 #include <random>
 
-#include <silkworm/core/common/singleton.hpp>
-
 namespace silkworm {
 
 class RandomNumber {
@@ -39,7 +37,5 @@ class RandomNumber {
 
     uint64_t generate_one() { return distr_(generator_); }
 };
-
-#define SILKWORM_RANDOM_NUMBER Singleton<RandomNumber>::instance()
 
 }  // namespace silkworm

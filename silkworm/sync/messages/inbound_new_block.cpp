@@ -17,6 +17,7 @@
 #include "inbound_new_block.hpp"
 
 #include <silkworm/core/common/random_number.hpp>
+#include <silkworm/core/common/singleton.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/sync/internals/body_sequence.hpp>
@@ -25,7 +26,7 @@ namespace silkworm {
 
 InboundNewBlock::InboundNewBlock(ByteView data, PeerId peer_id)
     : peerId_(std::move(peer_id)) {
-    reqId_ = SILKWORM_RANDOM_NUMBER.generate_one();  // for trace purposes
+    reqId_ = Singleton<RandomNumber>::instance().generate_one();  // for trace purposes
     success_or_throw(rlp::decode(data, packet_));
     SILK_TRACE << "Received message " << *this;
 }

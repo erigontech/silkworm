@@ -40,6 +40,6 @@ class RandomNumber {
     uint64_t generate_one() { return distr_(generator_); }
 };
 
-#define SILKWORM_RANDOM_NUMBER default_instantiating::Singleton<RandomNumber>::instance()
+#define SILKWORM_RANDOM_NUMBER Singleton<RandomNumber>::instance()
 
 }  // namespace silkworm

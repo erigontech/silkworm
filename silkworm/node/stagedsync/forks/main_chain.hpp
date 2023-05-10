@@ -49,6 +49,7 @@ class MainChain {
     MainChain(MainChain&&);
 
     void open();  // needed to circumvent mdbx threading model limitations
+    void close();
 
     // extension
     void insert_block(const Block&);

@@ -48,6 +48,10 @@ void MainChain::open() {
     tx_.reopen(*db_access_);  // comply to mdbx limitation: tx must be used from its creation thread
 }
 
+void MainChain::close() {
+    tx_.abort();
+}
+
 auto MainChain::node_settings() -> NodeSettings& {
     return node_settings_;
 }

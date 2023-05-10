@@ -51,6 +51,10 @@ void ExecutionEngine::open() {  // needed to circumvent mdbx threading model lim
     block_progress_ = main_chain_.get_block_progress();
 }
 
+void ExecutionEngine::close() {
+    main_chain_.close();
+}
+
 auto ExecutionEngine::block_progress() const -> BlockNum {
     return block_progress_;  // main_chain_.get_block_progress() or forks block progress
 }

@@ -61,6 +61,7 @@ class ExecutionEngine : public Stoppable {
     explicit ExecutionEngine(asio::io_context&, NodeSettings&, db::RWAccess);
 
     void open();  // needed to circumvent mdbx threading model limitations
+    void close();
 
     // actions
     void insert_blocks(const std::vector<std::shared_ptr<Block>>& blocks);

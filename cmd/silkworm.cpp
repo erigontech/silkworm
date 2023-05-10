@@ -29,8 +29,8 @@
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/chain/genesis.hpp>
-#include <silkworm/core/common/mem_usage.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/common/mem_usage.hpp>
 #include <silkworm/infra/common/os.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/async_thread.hpp>

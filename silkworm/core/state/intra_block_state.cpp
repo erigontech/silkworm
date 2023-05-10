@@ -226,7 +226,7 @@ void IntraBlockState::set_code(const evmc::address& address, ByteView code) noex
 
     // Don't overwrite already existing code so that views of it
     // that were previously returned by get_code() are still valid.
-    new_code_.try_emplace(obj.current->code_hash, std::vector<uint8_t>(code.begin(), code.end()));
+    new_code_.try_emplace(obj.current->code_hash, code.begin(), code.end());
 }
 
 evmc_access_status IntraBlockState::access_account(const evmc::address& address) noexcept {

@@ -19,13 +19,14 @@
 #include <gsl/util>
 
 #include <silkworm/core/common/as_range.hpp>
+#include <silkworm/core/common/random_number.hpp>
+#include <silkworm/core/common/singleton.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/db_utils.hpp>
 #include <silkworm/sync/sentry_client.hpp>
 
 #include "algorithm.hpp"
-#include "random_number.hpp"
 
 namespace silkworm {
 
@@ -503,7 +504,7 @@ auto HeaderChain::save_external_announce(Hash hash) -> std::optional<GetBlockHea
     if (has_link(hash)) return std::nullopt;  // we already have this link, no need to request it
 
     GetBlockHeadersPacket66 request;
-    request.requestId = RANDOM_NUMBER.generate_one();
+    request.requestId = Singleton<RandomNumber>::instance().generate_one();
     request.request.origin = {hash};
     request.request.amount = 1;
     request.request.skip = 0;

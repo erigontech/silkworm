@@ -16,33 +16,30 @@
 
 #include "directories.hpp"
 
-#include <random>
+#include <string_view>
 
 #include <absl/strings/str_split.h>
 
+#include <silkworm/core/common/random_number.hpp>
 #include <silkworm/core/common/util.hpp>
 
 namespace silkworm {
 
 static std::string random_string(size_t len) {
-    static constexpr char kAlphaNum[]{
+    static constexpr std::string_view kAlphaNum{
         "0123456789"
         "abcdefghijklmnopqrstuvwxyz"};
 
-    // don't count the null terminator
-    static constexpr size_t kNumberOfCharacters{sizeof(kAlphaNum) - 1};
-
-    std::random_device rd;
-    std::default_random_engine engine{rd()};
+    static constexpr size_t kNumberOfCharacters{kAlphaNum.length()};
 
     // yield random numbers up to and including kNumberOfCharacters - 1
-    std::uniform_int_distribution<size_t> uniform_dist{0, kNumberOfCharacters - 1};
+    RandomNumber rnd{0, kNumberOfCharacters - 1};
 
     std::string s;
     s.reserve(len);
 
     for (size_t i{0}; i < len; ++i) {
-        size_t random_number{uniform_dist(engine)};
+        size_t random_number{rnd.generate_one()};
         s += kAlphaNum[random_number];
     }
 

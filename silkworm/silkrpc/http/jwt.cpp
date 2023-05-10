@@ -18,9 +18,9 @@
 
 #include <filesystem>
 #include <fstream>
-#include <random>
 #include <string>
 
+#include <silkworm/core/common/random_number.hpp>
 #include <silkworm/silkrpc/common/log.hpp>
 
 namespace silkworm {
@@ -36,13 +36,10 @@ void generate_jwt_token(const std::string& file_path, std::string& jwt_token) {
     std::ofstream write_file;
     write_file.open(file_path);
 
-    // TODO(canepat) use RandomNumber after moving it into infra module
-    std::random_device rand_dev;
-    std::mt19937 rand_gen32{rand_dev()};
-
     // Generate a random 32 bytes hex token ( not including prefix )
+    RandomNumber rnd{0, 15};
     for (int i = 0; i < 64; ++i) {
-        jwt_token += kHexCharacters[rand_gen32() % 16];
+        jwt_token += kHexCharacters[rnd.generate_one()];
     }
     SILKRPC_LOG << "JWT token created: 0x" << jwt_token << "\n";
     write_file << "0x" << jwt_token << "\n";

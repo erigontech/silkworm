@@ -16,11 +16,11 @@
 
 #include <filesystem>
 #include <fstream>
-#include <random>
 
 #include <benchmark/benchmark.h>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/random_number.hpp>
 #include <silkworm/infra/common/directories.hpp>
 
 #include "memory_mapped_file.hpp"
@@ -30,11 +30,9 @@ constexpr uint64_t k4MiBFileSize{4u * silkworm::kMebi};
 static inline std::filesystem::path create_random_temporary_file(int64_t file_size) {
     auto tmp_file = silkworm::TemporaryDirectory::get_unique_temporary_path();
     std::ofstream tmp_stream{tmp_file, std::ios_base::binary};
-    std::random_device random_dev;
-    std::mt19937 random_gen(random_dev());
-    std::uniform_int_distribution<> distribution{0, sizeof(char)};
+    silkworm::RandomNumber rnd{0, 255};
     for (int64_t i{0u}; i < file_size; ++i) {
-        const auto random_number = static_cast<char>(distribution(random_gen));
+        const auto random_number = static_cast<char>(rnd.generate_one());
         tmp_stream.write(&random_number, sizeof(char));
     }
     tmp_stream.close();

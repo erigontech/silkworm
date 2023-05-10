@@ -50,8 +50,7 @@ static Bytes random_code() {
 }
 
 // Check that insertion of new codes doesn't invalidate previously returned views of other codes.
-// See https://abseil.io/docs/cpp/guides/container#fn:pointer-stability
-TEST_CASE("Code pointer stability") {
+TEST_CASE("Code view stability") {
     static constexpr size_t n{1000};
 
     // Generate preexisting codes

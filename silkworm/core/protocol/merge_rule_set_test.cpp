@@ -37,7 +37,7 @@ TEST_CASE("Proof-of-Stake RuleSet") {
     header.gas_limit = 30'000'000;
     header.gas_used = 0;
     header.timestamp = 1'650'000'000;
-    header.mix_hash = 0x2f73f29450aad18c0956ec6350524c2910f3be67ec6e80b7b597240a195788e1_bytes32;
+    header.prev_randao = 0x2f73f29450aad18c0956ec6350524c2910f3be67ec6e80b7b597240a195788e1_bytes32;
     header.nonce = {};
 
     Block parent;

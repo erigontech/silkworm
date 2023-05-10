@@ -1,57 +1,49 @@
-# Block Downloader
+# Sync
+Sync component is responsible for chain synchronization. 
+To carry on this task it asks blocks from peers, save blocks to Execution database, detects forks, asks Execution for 
+chain verifications, applies consensus rules and takes decision on forks.
 
-The block downloader is the component that has the responsibility to download block headers and block bodies. 
+There are actually two distinct implementations of Sync: 
+- **PoWSync**: implement the block synchronization logic of a PoW chain; it executes cycles of block downloading & block validation
+- **PoSSync**: implement the Execution Interface of the Ethereum PoS chain and needs an external Consensus Client
 
-It is always active and performs some operations on its own (e.g. handling connection to the Sentry component, replying to received devp2p messages...), some other operations (e.g. making new requests to download more headers or bodies) are instead driven by the stage-loop.
+Other components of Sync are:
+- **BlockExchange**: responsible for downloading blocks from the network
+- **SentryClient**: responsible for connecting to the Sentry component  
 
-## Architecture [outdated]
+## Sync-Execution interaction
+The following diagram depicts the overall architecture of the
+![architecture](../../docs/imgs/sync_execution_structure.png)
 
-The following diagram depicts the overall architecture:
+Sync and Execution are two independent components structured in a client-server architecture as per Torax architecture.
+The Sync component is the client and the Execution component is the server. They can be instantiated in process or 
+out of process using a gRPC interface.
 
-![architecture](../../docs/imgs/downloader_structure.png)
+| component | far from the chain tip                                                                                                                                                                                                                                   | near the chain tip                                                                                                                                                                                                                                                                                                                                       | far vs near detection | 
+|-----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| -------- |
+| **Sync**  | - detect chain tip using newPayload/FCU, <br> - download blocks and insert them to the EL while they are arriving                                                                                                                                        | - at newPayload: <br> a) if  the block  has its parent on the EL: <br> - send the block to the EL <br> - trigger a EL's VerifyChain <br> b) if parent block is missing on the EL <br> - start a downloading of the missing parents; <br><br> - at FCU: send FCU to EL                                                                                    | The  first VerifyChain triggers the state change from "far from the tip" to "near the tip" |
+| **Exec**  | - InsertBlock inserts blocks on the "default" fork that is the db <br> - manage collisions (ommers) using the non-canonical-txes mapping <br> - the body stage "fix" blocks with collisions putting canonical ones to the canonical transactions mapping | - the first VerifyChain start the overlay mechanism to do fork tracking <br> - at each InsertBlock, after the first VerifyChain, add the block to the fork which it belongs, if not present it creates the fork <br> - VerifyChains are executed in parallel on each fork <br> - eah FCU determines which fork must survive and must be copied to the db | The  first VerifyChain triggers the state change from "far from the tip" to "near the tip" |
 
-The header downloader is split in two classes:
 
-- **HeadersStage**: governs the header download process and save headers on the db using the read-write tx
-  received from the stage-loop; it has `forward` and `unwind_to` methods
-- **BlockExchange**: receives messages (new headers, requested headers, request for headers, ...) from remote peers
-  and from the `HeadersStage` and it acts on `HeaderChain` (using the "command pattern")
+## BlockExchange
 
-In the same way the body downloader is divided in two classes:
+The BlockExchange is the component that has the responsibility to download block headers and block bodies. 
 
-- **BodiesStage**: governs the body download process and save bodies on the db using the read-write tx received
-  from the stage-loop; it has `forward` and `unwind_to` methods
-- **BlockExchange**: receives messages (new bodies, requested bodies, request for bodies, ...) from remote peers
-  and from the `BodiesStage` and it acts on `BodySequence` (using the "command pattern")
+It is always active and performs some operations on its own (e.g. replying to received devp2p messages, downloading
+more headers or bodies up to a target, ...); it is driven by the Sync component that sends it messages to start/stop
+the downloading process or to set downloading targets.
 
 Two classes have the responsibility to implement header and body download algorithms: **HeaderChain** and
-**BodySequence**. They are members of **BlockExchange** whose responsibility is to receive messages and process them.
+**BodySequence**. 
+
 Communication among such objects is carried by message-passing techniques. Three types of messages are present:
 - incoming messages from remote peers (for example: hash announcements, headers, bodies, ...) are routed to `HeaderChain` and `BodySequence`
 - outgoing messages to remote peers (for example: new header or bodies needed) contain information from `HeaderChain` and `BodySequence`
 - internal messages are a design choice to share information between objects in different threads
 
-Threading model:
-
-- **stage classes** run in the same thread as the stage-loop
-- **BlockExchange** runs in its own thread and uses message-passing as communication mechanism with the other threads
-- **SentryClient** runs in its own thread
-
-## Code organisation
-
-Directories:
-
-- downloader: contains the main classes that are exposed outside
-- packets: each class is an eth data packet that can be sent or received via sentry
-- messages: divided in inbound messages and outbound messages
-  - inbound msgs: modularize the code to handle incoming packets
-  - outbound msgs: modularize the code that makes requests generating outgoing packets
-- internals: implementation classes
-  - header_chain: code that implements the header downloading process 
-  - body_sequence: code that implements the body downloading process
-  - header_persistence: code that saves headers to mdbx
-  - body_persistence: code that saves bodies to mdbx
-  - other stuff: utilities
+When the BlockExchange is asked to download blocks up to a target, it instructs the HeaderChain to download headers;
+when headers are ready they are transferred to BodySequence that carry on the task to download corresponding bodies.
+Then, the ready blocks are put on the thread-safe queue `BlockQueue` that is read by the Sync component.
     
 
 

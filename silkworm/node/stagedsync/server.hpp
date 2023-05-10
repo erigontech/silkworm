@@ -34,25 +34,25 @@ class Server : public ActiveComponent {
     Server(NodeSettings&, db::RWAccess);
 
     // actions
-    ERIGON_API auto insert_headers(const BlockVector& blocks) -> asio::awaitable<void>;
-    ERIGON_API auto insert_bodies(const BlockVector& blocks) -> asio::awaitable<void>;
-    ERIGON_API auto insert_blocks(const BlockVector& blocks) -> asio::awaitable<void>;
+    auto insert_headers(const BlockVector& blocks) -> asio::awaitable<void>;  // [[torax-compliant]]
+    auto insert_bodies(const BlockVector& blocks) -> asio::awaitable<void>;   // [[torax-compliant]]
+    auto insert_blocks(const BlockVector& blocks) -> asio::awaitable<void>;
 
-    ERIGON_API auto validate_chain(Hash head_block_hash) -> asio::awaitable<execution::ValidationResult>;
+    auto validate_chain(Hash head_block_hash) -> asio::awaitable<execution::ValidationResult>;  // [[torax-compliant]]
 
-    ERIGON_API auto update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt)
-        -> asio::awaitable<ForkChoiceApplication>;
+    auto update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt)
+        -> asio::awaitable<ForkChoiceApplication>;  // [[torax-compliant]]
 
     // state
     auto block_progress() -> asio::awaitable<BlockNum>;
     auto last_fork_choice() -> asio::awaitable<BlockId>;
 
     // header/body retrieval
-    ERIGON_API auto get_header(Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>>;
-    ERIGON_API auto get_body(Hash block_hash) -> asio::awaitable<BlockBody>;
+    auto get_header(Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>>;  // [[torax-compliant]]
+    auto get_body(Hash block_hash) -> asio::awaitable<BlockBody>;                     // [[torax-compliant]]
 
-    ERIGON_API auto is_canonical(Hash block_hash) -> asio::awaitable<bool>;
-    ERIGON_API auto get_block_num(Hash block_hash) -> asio::awaitable<std::optional<BlockNum>>;
+    auto is_canonical(Hash block_hash) -> asio::awaitable<bool>;                      // [[torax-compliant]]
+    auto get_block_num(Hash block_hash) -> asio::awaitable<std::optional<BlockNum>>;  // [[torax-compliant]]
 
     auto get_last_headers(BlockNum limit) -> asio::awaitable<std::vector<BlockHeader>>;
 

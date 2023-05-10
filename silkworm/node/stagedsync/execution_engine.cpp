@@ -257,39 +257,4 @@ bool ExecutionEngine::is_canonical_hash([[maybe_unused]] Hash header_hash) const
     return {};
 }
 
-/*
-auto ExecutionEngine::is_ancestor(BlockId supposed_parent, BlockId block) const -> bool {
-    // todo: before asking main_chain_ navigate block_cache_ to find the ancestor
-    return main_chain_.is_ancestor(supposed_parent, block);
-}
-
-auto ExecutionEngine::get_canonical_hash([[maybe_unused]] BlockNum height) const -> std::optional<Hash> {
-    // read from cache, then from main_chain_
-    throw std::runtime_error("not implemented");
-    return {};
-}
-
-auto ExecutionEngine::get_canonical_head() const -> BlockId {
-    return main_chain_.canonical_head();
-}
-
-auto ExecutionEngine::get_header_td([[maybe_unused]] BlockNum header_height, [[maybe_unused]] Hash header_hash) const -> std::optional<TotalDifficulty> {
-    // implement...
-    throw std::runtime_error("not implemented");
-    return {};
-}
-
-auto ExecutionEngine::extends_last_fork_choice([[maybe_unused]] BlockNum height, [[maybe_unused]] Hash hash) const -> bool {
-    // read from cache, then from main_chain_
-    throw std::runtime_error("not implemented");
-    return {};
-}
-
-auto ExecutionEngine::extends([[maybe_unused]] BlockId block, [[maybe_unused]] BlockId supposed_parent) const -> bool {
-    // read from cache, then from main_chain_
-    throw std::runtime_error("not implemented");
-    return {};
-}
-*/
-
 }  // namespace silkworm::stagedsync

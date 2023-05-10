@@ -26,7 +26,7 @@
 namespace silkworm::db {
 
 MemoryDatabase::MemoryDatabase(const std::filesystem::path& tmp_dir) {
-    DataDirectory data_dir{tmp_dir / "silkworm_mem_db"};
+    DataDirectory data_dir{tmp_dir};
     data_dir.deploy();
 
     EnvConfig memory_config{
@@ -52,11 +52,13 @@ MemoryDatabase::MemoryDatabase(MemoryDatabase&& other) noexcept : memory_env_(st
     return memory_env_.start_write();
 }
 
-MemoryOverlay::MemoryOverlay(MemoryDatabase& memory_db, db::ROTxn& txn)
-    : memory_db_{memory_db}, txn_(&txn) {}
+MemoryOverlay::MemoryOverlay(const std::filesystem::path& tmp_dir, silkworm::db::ROTxn* txn)
+    : memory_db_{tmp_dir}, txn_(txn) {}
+
+MemoryOverlay::MemoryOverlay(silkworm::db::ROTxn* txn) : memory_db_{}, txn_(txn) {}
 
 MemoryOverlay::MemoryOverlay(MemoryOverlay&& other) noexcept
-    : memory_db_(other.memory_db_), txn_(other.txn_) {}
+    : memory_db_(std::move(other.memory_db_)), txn_(other.txn_) {}
 
 void MemoryOverlay::update_txn(ROTxn* txn) {
     txn_ = txn;

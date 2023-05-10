@@ -37,9 +37,11 @@ class StateTransition {
     unsigned total_count_{};
     unsigned failed_count_{};
     bool terminate_on_error_;
+    bool show_diagnostics_;
 
   public:
-    explicit StateTransition(const std::string& fileName, bool terminate_on_error) noexcept;
+    explicit StateTransition(const std::string& file_path) noexcept;
+    explicit StateTransition(const nlohmann::json& json, bool terminate_on_error, bool show_diagnostics) noexcept;
 
     std::string name();
     std::string get_env(const std::string& key);
@@ -48,10 +50,10 @@ class StateTransition {
     static evmc::address to_evmc_address(const std::string& address);
     silkworm::Block get_block();
     std::unique_ptr<silkworm::InMemoryState> get_state();
-    static std::unique_ptr<evmc::address> private_key_to_address(const std::string& privateKey);
-    silkworm::Transaction get_transaction(ExpectedSubState expectedStateTransaction);
-    void validate_transition(const silkworm::Receipt& receipt, const ExpectedState& expectedState, const ExpectedSubState& expectedSubState, const InMemoryState& state);
-    static void print_validation_results(const ExpectedState& expectedState, const ExpectedSubState& expectedSubState, const std::string& result);
+    static std::unique_ptr<evmc::address> private_key_to_address(const std::string& private_key);
+    silkworm::Transaction get_transaction(ExpectedSubState expected_sub_state);
+    void validate_transition(const silkworm::Receipt& receipt, const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const InMemoryState& state);
+    static void print_message(const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const std::string& message);
     void run();
 };
 }  // namespace silkworm::cmd::state_transition

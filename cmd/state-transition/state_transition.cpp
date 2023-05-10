@@ -33,16 +33,26 @@ limitations under the License.
 #include "third_party/ethash/include/ethash/keccak.hpp"
 
 namespace silkworm::cmd::state_transition {
-StateTransition::StateTransition(const std::string& fileName, const bool terminate_on_error) noexcept {
-    std::string basePath = "/home/jacek/dev/silkworm/cmd/state-transition/";
-    std::ifstream input_file(basePath + fileName);
+
+StateTransition::StateTransition(const std::string& file_path) noexcept {
+    std::ifstream input_file(file_path);
     nlohmann::json baseJson;
     input_file >> baseJson;
     auto testObject = baseJson.begin();
     test_name_ = testObject.key();
     test_data_ = testObject.value();
 
+    terminate_on_error_ = false;
+    show_diagnostics_ = false;
+}
+
+StateTransition::StateTransition(const nlohmann::json& json, const bool terminate_on_error, const bool show_diagnostics) noexcept {
+    auto testObject = json.begin();
+    test_name_ = testObject.key();
+    test_data_ = testObject.value();
+
     terminate_on_error_ = terminate_on_error;
+    show_diagnostics_ = show_diagnostics;
 }
 
 std::string StateTransition::name() {
@@ -133,15 +143,15 @@ std::unique_ptr<silkworm::InMemoryState> StateTransition::get_state() {
     return state;
 }
 
-std::unique_ptr<evmc::address> StateTransition::private_key_to_address(const std::string& privateKey) {
+std::unique_ptr<evmc::address> StateTransition::private_key_to_address(const std::string& private_key) {
     /// Example
     // private key: 0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8
     // public key : 043a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d8072e77939dc03ba44790779b7a1025baf3003f6732430e20cd9b76d953391b3
     // address    : 0xa94f5374Fce5edBC8E2a8697C15331677e6EbF0B
 
-    auto private_key = from_hex(privateKey).value();
+    auto private_key_bytes = from_hex(private_key).value();
 
-    silkworm::sentry::common::EccKeyPair pair = silkworm::sentry::common::EccKeyPair(private_key);
+    silkworm::sentry::common::EccKeyPair pair = silkworm::sentry::common::EccKeyPair(private_key_bytes);
 
     uint8_t out[20];
     auto public_key_hash = keccak256(pair.public_key().serialized());
@@ -150,7 +160,7 @@ std::unique_ptr<evmc::address> StateTransition::private_key_to_address(const std
     return std::make_unique<evmc::address>(silkworm::to_evmc_address(out));
 }
 
-silkworm::Transaction StateTransition::get_transaction(ExpectedSubState expectedStateTransaction) {
+silkworm::Transaction StateTransition::get_transaction(ExpectedSubState expected_sub_state) {
     silkworm::Transaction txn;
     auto jTransaction = test_data_["transaction"];
 
@@ -173,55 +183,56 @@ silkworm::Transaction StateTransition::get_transaction(ExpectedSubState expected
         txn.max_priority_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("maxPriorityFeePerGas").get<std::string>());
     }
 
-    if (expectedStateTransaction.dataIndex >= jTransaction.at("data").size()) {
+    if (expected_sub_state.dataIndex >= jTransaction.at("data").size()) {
         throw std::runtime_error("data index out of range");
     } else {
-        txn.data = from_hex(jTransaction.at("data").at(expectedStateTransaction.dataIndex).get<std::string>()).value();
+        txn.data = from_hex(jTransaction.at("data").at(expected_sub_state.dataIndex).get<std::string>()).value();
     }
 
-    if (expectedStateTransaction.gasIndex >= jTransaction.at("gasLimit").size()) {
+    if (expected_sub_state.gasIndex >= jTransaction.at("gasLimit").size()) {
         throw std::runtime_error("gas limit index out of range");
     } else {
-        txn.gas_limit = std::stoull(jTransaction.at("gasLimit").at(expectedStateTransaction.gasIndex).get<std::string>(), nullptr, 16);
+        txn.gas_limit = std::stoull(jTransaction.at("gasLimit").at(expected_sub_state.gasIndex).get<std::string>(), nullptr, 16);
     }
 
-    if (expectedStateTransaction.valueIndex >= jTransaction.at("value").size()) {
+    if (expected_sub_state.valueIndex >= jTransaction.at("value").size()) {
         throw std::runtime_error("value index out of range");
     } else {
-        txn.value = intx::from_string<intx::uint256>(jTransaction.at("value").at(expectedStateTransaction.valueIndex).get<std::string>());
+        txn.value = intx::from_string<intx::uint256>(jTransaction.at("value").at(expected_sub_state.valueIndex).get<std::string>());
     }
 
     return txn;
 }
 
-void StateTransition::validate_transition(const silkworm::Receipt& receipt, const ExpectedState& expectedState, const ExpectedSubState& expectedSubState, const InMemoryState& state) {
-    if (state.state_root_hash() != expectedSubState.stateHash) {
-        failed_count_++;
-        print_validation_results(expectedState, expectedSubState, "State root hash does not match");
+void StateTransition::validate_transition(const silkworm::Receipt& receipt, const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const InMemoryState& state) {
+    if (state.state_root_hash() != expected_sub_state.stateHash) {
         if (terminate_on_error_) {
             throw std::runtime_error("State root hash does not match");
         }
+        print_message(expected_state, expected_sub_state, "State root hash does not match");
+        failed_count_++;
     } else {
         Bytes encoded;
         rlp::encode(encoded, receipt.logs);
-        if (silkworm::bit_cast<evmc_bytes32>(keccak256(encoded)) != expectedSubState.logsHash) {
-            failed_count_++;
-            print_validation_results(expectedState, expectedSubState, "Logs hash does not match");
+        if (silkworm::bit_cast<evmc_bytes32>(keccak256(encoded)) != expected_sub_state.logsHash) {
             if (terminate_on_error_) {
                 throw std::runtime_error("Logs hash does not match");
             }
+            print_message(expected_state, expected_sub_state, "Logs hash does not match");
+            failed_count_++;
         }
     }
 }
 
-void StateTransition::print_validation_results(const ExpectedState& expectedState, const ExpectedSubState& expectedSubState, const std::string& result) {
-    std::cout << "[" << expectedState.fork_name() << ":" << expectedSubState.index << "] Data: " << expectedSubState.dataIndex << ", Gas: " << expectedSubState.gasIndex << ", Value: " << expectedSubState.valueIndex << ", Result: " << result << std::endl;
+void StateTransition::print_message(const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const std::string& message) {
+    std::cout << "[" << expected_state.fork_name() << ":" << expected_sub_state.index << "] Data: " << expected_sub_state.dataIndex << ", Gas: " << expected_sub_state.gasIndex << ", Value: " << expected_sub_state.valueIndex << ", Result: " << message << std::endl;
 }
 
 void StateTransition::run() {
     failed_count_ = 0;
     total_count_ = 0;
 
+    std::cout << "State Transition " << test_name_ << std::endl;
     for (auto& expectedState : get_expected_states()) {
         for (const auto& expectedSubState : expectedState.get_sub_states()) {
             ++total_count_;
@@ -250,6 +261,6 @@ void StateTransition::run() {
         }
     }
 
-    std::cout << "Finished, encountered " << failed_count_ << "/" << total_count_ << " errors";
+    std::cout << "Finished, encountered " << failed_count_ << "/" << total_count_ << " errors" << std::endl;
 }
 };  // namespace silkworm::cmd::state_transition

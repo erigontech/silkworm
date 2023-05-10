@@ -18,10 +18,10 @@
 
 #include <algorithm>
 
+#include <silkworm/core/common/random_number.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/sync/internals/header_chain.hpp>
-#include <silkworm/sync/internals/random_number.hpp>
 #include <silkworm/sync/sentry_client.hpp>
 
 #include "outbound_get_block_headers.hpp"

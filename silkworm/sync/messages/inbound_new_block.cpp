@@ -16,10 +16,10 @@
 
 #include "inbound_new_block.hpp"
 
+#include <silkworm/core/common/random_number.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/sync/internals/body_sequence.hpp>
-#include <silkworm/sync/internals/random_number.hpp>
 
 namespace silkworm {
 

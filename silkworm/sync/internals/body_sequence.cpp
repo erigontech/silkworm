@@ -16,11 +16,10 @@
 
 #include "body_sequence.hpp"
 
+#include <silkworm/core/common/random_number.hpp>
 #include <silkworm/core/protocol/validation.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/sync/sentry_client.hpp>
-
-#include "random_number.hpp"
 
 namespace silkworm {
 

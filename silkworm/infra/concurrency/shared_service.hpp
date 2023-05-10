@@ -35,7 +35,7 @@ class SharedService : public BaseService<SharedService<T>> {
     void set_shared(std::shared_ptr<T> shared) {
         shared_ = std::move(shared);
     }
-    std::shared_ptr<T>& shared() { return shared_; }
+    T* ptr() { return shared_.get(); }
 
   private:
     std::shared_ptr<T> shared_;
@@ -50,8 +50,19 @@ void add_shared_service(boost::asio::execution_context& context, std::shared_ptr
 }
 
 template <typename T>
-std::shared_ptr<T>& use_shared_service(boost::asio::execution_context& context) {
-    return use_service<SharedService<T>>(context).shared();
+T* use_shared_service(boost::asio::execution_context& context) {
+    if (not has_service<SharedService<T>>(context)) {
+        return nullptr;
+    }
+    return use_service<SharedService<T>>(context).ptr();
+}
+
+template <typename T>
+T* must_use_shared_service(boost::asio::execution_context& context) {
+    if (not has_service<SharedService<T>>(context)) {
+        throw std::logic_error{"unregistered shared service: " + std::string{typeid(T).name()}};
+    }
+    return use_service<SharedService<T>>(context).ptr();
 }
 
 }  // namespace silkworm

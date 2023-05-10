@@ -16,9 +16,6 @@
 
 #pragma once
 
-#include <memory>
-#include <set>
-
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
@@ -39,8 +36,8 @@ namespace silkworm::rpc::commands {
 class TxPoolRpcApi {
   public:
     explicit TxPoolRpcApi(boost::asio::io_context& io_context)
-        : database_{use_private_service<ethdb::Database>(io_context)},
-          tx_pool_{use_private_service<txpool::TransactionPool>(io_context)} {}
+        : database_{must_use_private_service<ethdb::Database>(io_context)},
+          tx_pool_{must_use_private_service<txpool::TransactionPool>(io_context)} {}
     virtual ~TxPoolRpcApi() = default;
 
     TxPoolRpcApi(const TxPoolRpcApi&) = delete;
@@ -51,8 +48,8 @@ class TxPoolRpcApi {
     boost::asio::awaitable<void> handle_txpool_content(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
-    std::unique_ptr<ethdb::Database>& database_;
-    std::unique_ptr<txpool::TransactionPool>& tx_pool_;
+    ethdb::Database* database_;
+    txpool::TransactionPool* tx_pool_;
 
     friend class silkworm::http::RequestHandler;
 };

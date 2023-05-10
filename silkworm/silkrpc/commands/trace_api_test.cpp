@@ -32,7 +32,7 @@ TEST_CASE("TraceRpcApi") {
     boost::asio::thread_pool workers{1};
 
     SECTION("CTOR") {
-        CHECK_NOTHROW(TraceRpcApi{ioc, workers});
+        CHECK_THROWS_AS(TraceRpcApi(ioc, workers), std::logic_error);
     }
 }
 #endif  // SILKWORM_SANITIZE

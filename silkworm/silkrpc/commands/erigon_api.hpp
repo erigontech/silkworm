@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <memory>
-
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
@@ -44,9 +42,9 @@ using boost::asio::awaitable;
 class ErigonRpcApi {
   public:
     explicit ErigonRpcApi(boost::asio::io_context& io_context)
-        : block_cache_{use_shared_service<BlockCache>(io_context)},
-          database_{use_private_service<ethdb::Database>(io_context)},
-          backend_{use_private_service<ethbackend::BackEnd>(io_context)} {}
+        : block_cache_{must_use_shared_service<BlockCache>(io_context)},
+          database_{must_use_private_service<ethdb::Database>(io_context)},
+          backend_{must_use_private_service<ethbackend::BackEnd>(io_context)} {}
     virtual ~ErigonRpcApi() = default;
 
     ErigonRpcApi(const ErigonRpcApi&) = delete;
@@ -64,9 +62,9 @@ class ErigonRpcApi {
     awaitable<void> handle_erigon_node_info(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
-    std::shared_ptr<BlockCache>& block_cache_;
-    std::unique_ptr<ethdb::Database>& database_;
-    std::unique_ptr<ethbackend::BackEnd>& backend_;
+    BlockCache* block_cache_;
+    ethdb::Database* database_;
+    ethbackend::BackEnd* backend_;
 
     friend class silkworm::http::RequestHandler;
 };

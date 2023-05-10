@@ -41,7 +41,7 @@ static evmc::address random_address() {
 
 static Bytes random_code() {
     static RandomNumber rnd_len{1, 60};
-    const size_t len{rnd_len.generate_one()};
+    const size_t len{static_cast<size_t>(rnd_len.generate_one())};
     Bytes code(len, 0);
     for (size_t i = 0; i < len; ++i) {
         code[i] = rnd_byte.generate_one();

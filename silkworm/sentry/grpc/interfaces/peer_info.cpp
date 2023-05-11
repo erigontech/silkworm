@@ -39,7 +39,6 @@ api::api_common::PeerInfo peer_info_from_proto_peer_info(const types::PeerInfo& 
 
     return api::api_common::PeerInfo{
         sentry::common::EnodeUrl{info.enode()},
-        peer_public_key_from_id_string(info.id()),
         parse_endpoint(info.conn_local_addr()),
         parse_endpoint(info.conn_remote_addr()),
         info.conn_is_inbound(),
@@ -51,7 +50,7 @@ api::api_common::PeerInfo peer_info_from_proto_peer_info(const types::PeerInfo& 
 
 types::PeerInfo proto_peer_info_from_peer_info(const api::api_common::PeerInfo& peer) {
     types::PeerInfo info;
-    info.set_id(peer_id_string_from_public_key(peer.peer_public_key));
+    info.set_id(peer_id_string_from_public_key(peer.url.public_key()));
     info.set_name(peer.client_id);
     info.set_enode(peer.url.to_string());
 

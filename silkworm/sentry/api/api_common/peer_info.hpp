@@ -21,14 +21,12 @@
 
 #include <boost/asio/ip/tcp.hpp>
 
-#include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 
 namespace silkworm::sentry::api::api_common {
 
 struct PeerInfo {
     sentry::common::EnodeUrl url;
-    sentry::common::EccPublicKey peer_public_key;
     boost::asio::ip::tcp::endpoint local_endpoint;
     boost::asio::ip::tcp::endpoint remote_endpoint;
     bool is_inbound;

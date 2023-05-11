@@ -62,234 +62,6 @@ static const std::vector<fs::path> kFailingTests{};
 
 static constexpr size_t kColumnWidth{80};
 
-static const std::map<std::string, ChainConfig> kNetworkConfig{
-    {"Frontier", test::kFrontierConfig},
-    {"Homestead",
-     {
-         .chain_id = 1,
-         .protocol_rule_set = RuleSetType::kNoProof,
-         .homestead_block = 0,
-     }},
-    {"FrontierToHomesteadAt5",
-     {
-         .chain_id = 1,
-         .protocol_rule_set = RuleSetType::kNoProof,
-         .homestead_block = 5,
-     }},
-    {"HomesteadToDaoAt5",
-     {
-         .chain_id = 1,
-         .protocol_rule_set = RuleSetType::kNoProof,
-         .homestead_block = 0,
-         .dao_block = 5,
-     }},
-    {"EIP150",
-     {
-         .chain_id = 1,
-         .protocol_rule_set = RuleSetType::kNoProof,
-         .homestead_block = 0,
-         .tangerine_whistle_block = 0,
-     }},
-    {"HomesteadToEIP150At5",
-     {
-         .chain_id = 1,
-         .protocol_rule_set = RuleSetType::kNoProof,
-         .homestead_block = 0,
-         .tangerine_whistle_block = 5,
-     }},
-    {"EIP158",
-     {
-         .chain_id = 1,
-         .protocol_rule_set = RuleSetType::kNoProof,
-         .homestead_block = 0,
-         .tangerine_whistle_block = 0,
-         .spurious_dragon_block = 0,
-     }},
-    {"Byzantium",
-     {
-         .chain_id = 1,
-         .protocol_rule_set = RuleSetType::kNoProof,
-         .homestead_block = 0,
-         .tangerine_whistle_block = 0,
-         .spurious_dragon_block = 0,
-         .byzantium_block = 0,
-     }},
-    {"EIP158ToByzantiumAt5",
-     {
-         .chain_id = 1,
-         .protocol_rule_set = RuleSetType::kNoProof,
-         .homestead_block = 0,
-         .tangerine_whistle_block = 0,
-         .spurious_dragon_block = 0,
-         .byzantium_block = 5,
-     }},
-    {"Constantinople",
-     {
-         .chain_id = 1,
-         .protocol_rule_set = RuleSetType::kNoProof,
-         .homestead_block = 0,
-         .tangerine_whistle_block = 0,
-         .spurious_dragon_block = 0,
-         .byzantium_block = 0,
-         .constantinople_block = 0,
-     }},
-    {"ConstantinopleFix",
-     {
-         .chain_id = 1,
-         .protocol_rule_set = RuleSetType::kNoProof,
-         .homestead_block = 0,
-         .tangerine_whistle_block = 0,
-         .spurious_dragon_block = 0,
-         .byzantium_block = 0,
-         .constantinople_block = 0,
-         .petersburg_block = 0,
-     }},
-    {"ByzantiumToConstantinopleFixAt5",
-     {
-         .chain_id = 1,
-         .protocol_rule_set = RuleSetType::kNoProof,
-         .homestead_block = 0,
-         .tangerine_whistle_block = 0,
-         .spurious_dragon_block = 0,
-         .byzantium_block = 0,
-         .constantinople_block = 5,
-         .petersburg_block = 5,
-     }},
-    {"Istanbul",
-     {
-         .chain_id = 1,
-         .protocol_rule_set = RuleSetType::kNoProof,
-         .homestead_block = 0,
-         .tangerine_whistle_block = 0,
-         .spurious_dragon_block = 0,
-         .byzantium_block = 0,
-         .constantinople_block = 0,
-         .petersburg_block = 0,
-         .istanbul_block = 0,
-     }},
-    {"EIP2384",
-     {
-         .chain_id = 1,
-         .protocol_rule_set = RuleSetType::kNoProof,
-         .homestead_block = 0,
-         .tangerine_whistle_block = 0,
-         .spurious_dragon_block = 0,
-         .byzantium_block = 0,
-         .constantinople_block = 0,
-         .petersburg_block = 0,
-         .istanbul_block = 0,
-         .muir_glacier_block = 0,
-     }},
-    {"Berlin",
-     {
-         .chain_id = 1,
-         .protocol_rule_set = RuleSetType::kNoProof,
-         .homestead_block = 0,
-         .tangerine_whistle_block = 0,
-         .spurious_dragon_block = 0,
-         .byzantium_block = 0,
-         .constantinople_block = 0,
-         .petersburg_block = 0,
-         .istanbul_block = 0,
-         .muir_glacier_block = 0,
-         .berlin_block = 0,
-     }},
-    {"London", test::kLondonConfig},
-    {"BerlinToLondonAt5",
-     {
-         .chain_id = 1,
-         .protocol_rule_set = RuleSetType::kNoProof,
-         .homestead_block = 0,
-         .tangerine_whistle_block = 0,
-         .spurious_dragon_block = 0,
-         .byzantium_block = 0,
-         .constantinople_block = 0,
-         .petersburg_block = 0,
-         .istanbul_block = 0,
-         .muir_glacier_block = 0,
-         .berlin_block = 0,
-         .london_block = 5,
-     }},
-    {"ArrowGlacier",
-     {
-         .chain_id = 1,
-         .protocol_rule_set = RuleSetType::kNoProof,
-         .homestead_block = 0,
-         .tangerine_whistle_block = 0,
-         .spurious_dragon_block = 0,
-         .byzantium_block = 0,
-         .constantinople_block = 0,
-         .petersburg_block = 0,
-         .istanbul_block = 0,
-         .berlin_block = 0,
-         .london_block = 0,
-         .arrow_glacier_block = 0,
-     }},
-    {"GrayGlacier",
-     {
-         .chain_id = 1,
-         .protocol_rule_set = RuleSetType::kNoProof,
-         .homestead_block = 0,
-         .tangerine_whistle_block = 0,
-         .spurious_dragon_block = 0,
-         .byzantium_block = 0,
-         .constantinople_block = 0,
-         .petersburg_block = 0,
-         .istanbul_block = 0,
-         .berlin_block = 0,
-         .london_block = 0,
-         .gray_glacier_block = 0,
-     }},
-    {"Merge",
-     {
-         .chain_id = 1,
-         .protocol_rule_set = RuleSetType::kNoProof,
-         .homestead_block = 0,
-         .tangerine_whistle_block = 0,
-         .spurious_dragon_block = 0,
-         .byzantium_block = 0,
-         .constantinople_block = 0,
-         .petersburg_block = 0,
-         .istanbul_block = 0,
-         .berlin_block = 0,
-         .london_block = 0,
-         .terminal_total_difficulty = 0,
-     }},
-    {"ArrowGlacierToMergeAtDiffC0000",
-     {
-         .chain_id = 1,
-         .protocol_rule_set = RuleSetType::kNoProof,
-         .homestead_block = 0,
-         .tangerine_whistle_block = 0,
-         .spurious_dragon_block = 0,
-         .byzantium_block = 0,
-         .constantinople_block = 0,
-         .petersburg_block = 0,
-         .istanbul_block = 0,
-         .berlin_block = 0,
-         .london_block = 0,
-         .arrow_glacier_block = 0,
-         .terminal_total_difficulty = 0xC0000,
-     }},
-    {"Shanghai", test::kShanghaiConfig},
-    {"MergeToShanghaiAtTime15k",
-     {
-         .chain_id = 1,
-         .protocol_rule_set = RuleSetType::kNoProof,
-         .homestead_block = 0,
-         .tangerine_whistle_block = 0,
-         .spurious_dragon_block = 0,
-         .byzantium_block = 0,
-         .constantinople_block = 0,
-         .petersburg_block = 0,
-         .istanbul_block = 0,
-         .berlin_block = 0,
-         .london_block = 0,
-         .terminal_total_difficulty = 0,
-         .shanghai_time = 15'000,
-     }},
-};
-
 ObjectPool<EvmoneExecutionState> execution_state_pool{/*thread_safe=*/true};
 evmc_vm* exo_evm{nullptr};
 
@@ -470,8 +242,8 @@ RunResults blockchain_test(const nlohmann::json& json_test) {
     }
 
     std::string network{json_test["network"].get<std::string>()};
-    const auto config_it{kNetworkConfig.find(network)};
-    if (config_it == kNetworkConfig.end()) {
+    const auto config_it{silkworm::test::kNetworkConfig.find(network)};
+    if (config_it == silkworm::test::kNetworkConfig.end()) {
         std::cout << "unknown network " << network << std::endl;
         return Status::kFailed;
     }
@@ -584,7 +356,7 @@ RunResults transaction_test(const nlohmann::json& j) {
             }
         }
 
-        const ChainConfig& config{kNetworkConfig.at(entry.key())};
+        const ChainConfig& config{silkworm::test::kNetworkConfig.at(entry.key())};
         const evmc_revision rev{config.revision(/*block_number=*/0, /*block_time=*/0)};
 
         /* pre_validate_transaction checks for invalid signature only if from is empty, which means sender recovery
@@ -683,7 +455,7 @@ RunResults difficulty_tests(const nlohmann::json& outer) {
             continue;
         }
 
-        const ChainConfig& config{kNetworkConfig.at(network.key())};
+        const ChainConfig& config{silkworm::test::kNetworkConfig.at(network.key())};
 
         for (const auto& test : network.value().items()) {
             const Status status{individual_difficulty_test(test.value(), config)};

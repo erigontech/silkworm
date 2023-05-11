@@ -47,6 +47,13 @@ std::vector<ExpectedSubState> ExpectedState::get_sub_states() {
         subState.dataIndex = tx["indexes"]["data"].get<unsigned long>();
         subState.gasIndex = tx["indexes"]["gas"].get<unsigned long>();
         subState.valueIndex = tx["indexes"]["value"].get<unsigned long>();
+        if (tx.contains("expectException")) {
+            subState.exceptionExpected = true;
+            subState.exceptionMessage = tx["expectException"];
+        } else {
+            subState.exceptionExpected = false;
+        }
+
         subState.index = i;
         sub_states.push_back(subState);
         ++i;

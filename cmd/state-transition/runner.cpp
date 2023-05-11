@@ -39,6 +39,8 @@ int main(int argc, char* argv[]) {
 
     CLI11_PARSE(app, argc, argv)
 
+    path = "/home/jacek/dev/silkworm/cmd/state-transition/state_transition_sample1.json";
+
     try {
         if (std::filesystem::is_directory(path)) {
             for (const auto& test_file : std::filesystem::recursive_directory_iterator(path)) {

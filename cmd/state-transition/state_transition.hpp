@@ -39,6 +39,10 @@ class StateTransition {
     bool terminate_on_error_;
     bool show_diagnostics_;
 
+    void print_message(const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const std::string& message);
+    void print_error_message(const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const std::string& message);
+    void print_diagnostic_message(const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const std::string& message);
+
   public:
     explicit StateTransition(const std::string& file_path) noexcept;
     explicit StateTransition(const nlohmann::json& json, bool terminate_on_error, bool show_diagnostics) noexcept;
@@ -53,7 +57,7 @@ class StateTransition {
     static std::unique_ptr<evmc::address> private_key_to_address(const std::string& private_key);
     silkworm::Transaction get_transaction(ExpectedSubState expected_sub_state);
     void validate_transition(const silkworm::Receipt& receipt, const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const InMemoryState& state);
-    void print_message(const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const std::string& message);
     void run();
+    void foo(std::string message, const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state);
 };
 }  // namespace silkworm::cmd::state_transition

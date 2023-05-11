@@ -205,26 +205,40 @@ silkworm::Transaction StateTransition::get_transaction(ExpectedSubState expected
 }
 
 void StateTransition::validate_transition(const silkworm::Receipt& receipt, const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const InMemoryState& state) {
-    if (state.state_root_hash() != expected_sub_state.stateHash) {
-        if (terminate_on_error_) {
-            throw std::runtime_error("State root hash does not match");
+    if (expected_sub_state.exceptionExpected) {
+        if (receipt.success) {
+            print_error_message(expected_state, expected_sub_state, "");
+            ++failed_count_;
+        } else {
+            print_diagnostic_message(expected_state, expected_sub_state, "OK (Exception Expected)");
         }
-        print_message(expected_state, expected_sub_state, "State root hash does not match");
-        failed_count_++;
     } else {
-        Bytes encoded;
-        rlp::encode(encoded, receipt.logs);
-        if (silkworm::bit_cast<evmc_bytes32>(keccak256(encoded)) != expected_sub_state.logsHash) {
-            if (terminate_on_error_) {
-                throw std::runtime_error("Logs hash does not match");
-            }
-            print_message(expected_state, expected_sub_state, "Logs hash does not match");
+        if (state.state_root_hash() != expected_sub_state.stateHash) {
+            print_error_message(expected_state, expected_sub_state, "State root hash does not match");
             failed_count_++;
         } else {
-            if (show_diagnostics_) {
-                print_message(expected_state, expected_sub_state, "OK");
+            Bytes encoded;
+            rlp::encode(encoded, receipt.logs);
+            if (silkworm::bit_cast<evmc_bytes32>(keccak256(encoded)) != expected_sub_state.logsHash) {
+                print_error_message(expected_state, expected_sub_state, "Logs hash does not match");
+                failed_count_++;
+            } else {
+                print_diagnostic_message(expected_state, expected_sub_state, "OK (Exception Expected)");
             }
         }
+    }
+}
+
+void StateTransition::print_error_message(const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const std::string& message) {
+    if (terminate_on_error_) {
+        throw std::runtime_error(message);
+    }
+    print_message(expected_state, expected_sub_state, message);
+}
+
+void StateTransition::print_diagnostic_message(const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const std::string& message) {
+    if (show_diagnostics_) {
+        print_message(expected_state, expected_sub_state, message);
     }
 }
 
@@ -266,7 +280,8 @@ void StateTransition::run() {
 
     if (show_diagnostics_) {
         std::cout << "[" << test_name_ << "] "
-                  << "Finished total " << total_count_ << ", failed " << failed_count_ << std::endl << std::endl;
+                  << "Finished total " << total_count_ << ", failed " << failed_count_ << std::endl
+                  << std::endl;
     }
 }
 };  // namespace silkworm::cmd::state_transition

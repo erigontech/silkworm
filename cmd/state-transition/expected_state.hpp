@@ -32,6 +32,8 @@ class ExpectedSubState {
     unsigned long dataIndex{};
     unsigned long gasIndex{};
     unsigned long valueIndex{};
+    bool exceptionExpected;
+    std::string exceptionMessage;
 };
 
 class ExpectedState {

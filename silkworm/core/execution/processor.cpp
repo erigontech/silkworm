@@ -62,7 +62,11 @@ ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn
 }
 
 void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& receipt) noexcept {
-    assert(validate_transaction(txn) == ValidationResult::kOk);
+    receipt.validationResult = validate_transaction(txn);
+    if (receipt.validationResult != ValidationResult::kOk) {
+        receipt.success = false;
+        return;
+    }
 
     // Optimization: since receipt.logs might have some capacity, let's reuse it.
     std::swap(receipt.logs, state_.logs());

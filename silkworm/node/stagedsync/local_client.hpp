@@ -23,6 +23,7 @@ namespace silkworm::execution {
 namespace asio = boost::asio;
 class Server;
 
+//! A client of 'execution' gRPC interface running in-process together with server.
 class LocalClient : public Client {
   public:
     explicit LocalClient(Server& local_server);
@@ -36,7 +37,7 @@ class LocalClient : public Client {
 
     auto validate_chain(Hash head_block_hash) -> asio::awaitable<ValidationResult> override;
 
-    auto update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt)
+    auto update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash)
         -> asio::awaitable<ForkChoiceApplication> override;
 
     // state

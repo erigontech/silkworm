@@ -26,6 +26,7 @@ class State : public BlockState {
   public:
     State() = default;
 
+    // Not copyable nor movable
     State(const State&) = delete;
     State& operator=(const State&) = delete;
 

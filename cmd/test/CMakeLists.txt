@@ -25,8 +25,6 @@ if(CORE_TEST_ABSEIL_ENABLED)
   find_package(absl REQUIRED)
 endif()
 
-find_package(Catch2 REQUIRED)
-
 # Silkworm Core Tests
 file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/core/*_test.cpp")
 add_executable(core_test unit_test.cpp ${SILKWORM_CORE_TESTS})

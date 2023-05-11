@@ -3,7 +3,6 @@ abseil/20220623.0 # grpc dependency
 asio-grpc/2.4.0
 benchmark/1.6.1
 boost/1.81.0
-catch2/2.13.9
 cli11/2.2.0
 grpc/1.46.3
 gtest/1.12.1

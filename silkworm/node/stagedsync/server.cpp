@@ -25,7 +25,6 @@ using namespace std::chrono;
 namespace asio = boost::asio;
 
 Server::Server(NodeSettings& ns, db::RWAccess dba) : exec_engine_{io_context_, ns, dba} {
-    open();
 }
 
 bool Server::stop() {
@@ -34,8 +33,12 @@ bool Server::stop() {
 }
 
 void Server::execution_loop() {
+    exec_engine_.open();
+
     asio::executor_work_guard<decltype(io_context_.get_executor())> work{io_context_.get_executor()};
     io_context_.run();
+
+    exec_engine_.close();
 }
 
 void Server::handle_exception(std::exception_ptr e) {
@@ -47,14 +50,6 @@ void Server::handle_exception(std::exception_ptr e) {
     } catch (const std::exception& ex) {
         std::cerr << "Exception in ExtendingFork::verify_chain(): " << ex.what() << "\n";
     }
-}
-
-void Server::open() {
-    auto lambda = [](Server* me) -> asio::awaitable<void> {
-        me->exec_engine_.open();
-        co_return;
-    };
-    return co_spawn(io_context_, lambda(this), asio::detached);
 }
 
 auto Server::block_progress() -> asio::awaitable<BlockNum> {

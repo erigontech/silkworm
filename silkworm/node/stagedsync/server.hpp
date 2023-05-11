@@ -48,18 +48,17 @@ class Server : public ActiveComponent {
     auto last_fork_choice() -> asio::awaitable<BlockId>;
 
     // header/body retrieval
-    auto get_header(Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>>;  // [[torax-compliant]]
-    auto get_body(Hash block_hash) -> asio::awaitable<BlockBody>;                     // [[torax-compliant]]
+    auto get_header(Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>>;  // [[thorax-compliant]]
+    auto get_body(Hash block_hash) -> asio::awaitable<BlockBody>;                     // [[thorax-compliant]]
 
-    auto is_canonical(Hash block_hash) -> asio::awaitable<bool>;                      // [[torax-compliant]]
-    auto get_block_num(Hash block_hash) -> asio::awaitable<std::optional<BlockNum>>;  // [[torax-compliant]]
+    auto is_canonical(Hash block_hash) -> asio::awaitable<bool>;                      // [[thorax-compliant]]
+    auto get_block_num(Hash block_hash) -> asio::awaitable<std::optional<BlockNum>>;  // [[thorax-compliant]]
 
     auto get_last_headers(BlockNum limit) -> asio::awaitable<std::vector<BlockHeader>>;
 
     asio::io_context& get_executor() { return io_context_; }
 
   private:
-    void open();
     void execution_loop() override;
     bool stop() override;
     static void handle_exception(std::exception_ptr e);

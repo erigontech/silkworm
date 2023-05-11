@@ -664,6 +664,7 @@ auto HeaderList::split_into_segments() -> std::tuple<std::vector<Segment>, Penal
 
 auto HeaderChain::process_segment(const Segment& segment, bool is_a_new_block, const PeerId& peerId)
     -> RequestMoreHeaders {
+    if (segment.empty()) return false;
     auto [anchor, start] = find_anchor(segment);
     auto [tip, end] = find_link(segment, start);
 

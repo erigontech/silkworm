@@ -15,4 +15,3 @@
 ]]
 
 hunter_add_package(Catch)
-hunter_add_package(nlohmann_json)

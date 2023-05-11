@@ -21,7 +21,6 @@ if(CONAN_PACKAGE_MANAGER)
 else()
   find_package(Boost CONFIG REQUIRED container thread)
 endif()
-find_package(nlohmann_json REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(Protobuf REQUIRED)
 

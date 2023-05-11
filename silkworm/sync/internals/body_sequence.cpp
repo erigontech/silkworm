@@ -231,7 +231,8 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
         if (packet.request.size() >= kMaxBlocksPerMessage) break;
     }
 
-    SILK_TRACE << "BodySequence: requesting new bodies from block-num " << start_block << " for " << count << " blocks";
+    if (count)
+        SILK_TRACE << "BodySequence: requesting new bodies from block-num " << start_block << " for " << count << " blocks";
 }
 
 //! Save headers of witch it has to download bodies

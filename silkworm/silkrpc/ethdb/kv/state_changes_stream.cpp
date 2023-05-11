@@ -52,7 +52,7 @@ void StateChangesStream::close() {
     std::lock_guard lock{cancellation_mutex_};
     SILKRPC_DEBUG << "Close state changes stream: emitting cancellation\n";
     cancellation_signal_.emit(boost::asio::cancellation_type::all);
-    SILKRPC_WARN << "Close state changes stream: cancellation emitted\n";
+    SILKRPC_DEBUG << "Close state changes stream: cancellation emitted\n";
 }
 
 boost::asio::awaitable<void> StateChangesStream::run() {

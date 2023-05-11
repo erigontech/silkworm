@@ -26,14 +26,17 @@
 #include <silkworm/sync/messages/internal_message.hpp>
 
 #include "block_exchange.hpp"
+#include "chain_sync.hpp"
 
 namespace silkworm::chainsync {
 
 namespace asio = boost::asio;
 
-class PoWSync : public ActiveComponent {
+class PoWSync : public ChainSync, ActiveComponent {
   public:
     PoWSync(BlockExchange&, execution::Client&);
+
+    asio::awaitable<void> async_run() override;
 
     void execution_loop() final; /*[[long_running]]*/
 
@@ -50,9 +53,6 @@ class PoWSync : public ActiveComponent {
     void send_new_block_hash_announcements();
 
     asio::io_context io_context_;
-    BlockExchange& block_exchange_;
-    execution::Client& exec_engine_;
-    ChainForkView chain_fork_view_;
     bool is_first_sync_{true};
 };
 

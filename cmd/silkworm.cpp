@@ -48,15 +48,13 @@
 #include <silkworm/node/stagedsync/local_client.hpp>
 #include <silkworm/node/stagedsync/server.hpp>
 #include <silkworm/sentry/api/api_common/sentry_client.hpp>
+#include <silkworm/sentry/common/timeout.hpp>
 #include <silkworm/sentry/grpc/client/sentry_client.hpp>
 #include <silkworm/sentry/multi_sentry_client.hpp>
 #include <silkworm/sentry/sentry.hpp>
 #include <silkworm/sentry/session_sentry_client.hpp>
 #include <silkworm/sentry/settings.hpp>
-#include <silkworm/sync/block_exchange.hpp>
-#include <silkworm/sync/sentry_client.hpp>
-#include <silkworm/sync/sync_pos.hpp>
-#include <silkworm/sync/sync_pow.hpp>
+#include <silkworm/sync/sync.hpp>
 
 #include "common/common.hpp"
 #include "common/human_size_parser_validator.hpp"
@@ -81,8 +79,6 @@ using silkworm::parse_size;
 using silkworm::PreverifiedHashes;
 using silkworm::read_genesis_data;
 using silkworm::StopWatch;
-using silkworm::chainsync::PoSSync;
-using silkworm::chainsync::PoWSync;
 using silkworm::cmd::common::add_context_pool_options;
 using silkworm::cmd::common::add_logging_options;
 using silkworm::cmd::common::add_option_chain;
@@ -624,15 +620,6 @@ int main(int argc, char* argv[]) {
 
         silkworm::rpc::BackEndKvServer rpc_server{settings.server_settings, backend};
 
-        // Sentry client - connects to sentry
-        silkworm::SentryClient sync_sentry_client{
-            context_pool.next_io_context(),
-            sentry_client,
-        };
-
-        // BlockExchange - download headers and bodies from remote peers using the sentry
-        BlockExchange block_exchange{sync_sentry_client, sw_db::ROAccess{chaindata_db}, node_settings.chain_config.value()};
-
         // Snapshot sync
         if (snapshot_settings.enabled) {
             // Raise file descriptor limit per process
@@ -648,29 +635,34 @@ int main(int argc, char* argv[]) {
             sw_log::Info() << "Snapshot sync disabled, no snapshot must be downloaded";
         }
 
+        // Execution: the execution layer engine
         execution::Server execution_server{node_settings, sw_db::RWAccess{chaindata_db}};
 
-        execution::LocalClient execution_client(execution_server);
-        PoWSync sync(block_exchange, execution_client);
-        // PoSSync sync(block_exchange, execution_client);
+        // ChainSync: the chain synchronization process based on the consensus protocol
+        execution::LocalClient execution_client{execution_server};
+        chainsync::Sync chain_sync_process{
+            context_pool.next_io_context(),
+            chaindata_db,
+            execution_client,
+            sentry_client,
+            *node_settings.chain_config};
 
         auto tasks =
             timer_executor() &&
             resource_usage_log.async_run() &&
             rpc_server.async_run() &&
             embedded_sentry_run_if_needed() &&
-            sync_sentry_client.async_run() &&
-            block_exchange.async_run() &&
             execution_server.async_run() &&
-            sync.async_run();
+            chain_sync_process.async_run();
 
         // Trap OS signals
         ShutdownSignal shutdown_signal{context_pool.next_io_context()};
 
         // Go!
+        silkworm::sentry::common::Timeout timeout{std::chrono::seconds(5)};
         auto run_future = boost::asio::co_spawn(
             context_pool.next_io_context(),
-            std::move(tasks) || shutdown_signal.wait(),
+            std::move(tasks) || shutdown_signal.wait() || timeout(),
             boost::asio::use_future);
         context_pool.start();
         sw_log::Message() << "Silkworm is now running";

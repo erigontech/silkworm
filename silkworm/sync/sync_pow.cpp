@@ -29,10 +29,10 @@ static void ensure_invariant(bool condition, std::string message) {
         throw std::logic_error("Consensus invariant violation: " + message);
 }
 
-PoWSync::PoWSync(BlockExchange& be, execution::Client& ee)
-    : block_exchange_{be},
-      exec_engine_{ee},
-      chain_fork_view_{ChainHead{}} {  // we cannot call ee.get_canonical_head() at this point because ee is not started
+PoWSync::PoWSync(BlockExchange& be, execution::Client& ee) : ChainSync(be, ee) {}
+
+asio::awaitable<void> PoWSync::async_run() {
+    return ActiveComponent::async_run();
 }
 
 auto PoWSync::resume() -> NewHeight {                                          // find the point (head) where we left off

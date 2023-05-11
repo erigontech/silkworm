@@ -53,10 +53,10 @@ inline std::ostream& operator<<(std::ostream& out, const evmc::address& addr) {
     return out;
 }
 
-inline std::ostream& operator<<(std::ostream& out, const evmc::bytes32& b32) {
+/*inline std::ostream& operator<<(std::ostream& out, const evmc::bytes32& b32) {
     out << silkworm::to_hex(b32);
     return out;
-}
+}*/
 
 // Peers
 using PeerId = Bytes;

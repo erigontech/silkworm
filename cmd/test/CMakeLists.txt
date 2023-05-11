@@ -26,7 +26,6 @@ if(CORE_TEST_ABSEIL_ENABLED)
 endif()
 
 find_package(Catch2 REQUIRED)
-find_package(Microsoft.GSL REQUIRED)
 
 # Silkworm Core Tests
 file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/core/*_test.cpp")
@@ -89,7 +88,7 @@ if(NOT SILKWORM_CORE_ONLY)
   if(SILKWORM_SANITIZE)
     target_compile_definitions(sentry_test PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
   endif()
-  target_link_libraries(sentry_test silkworm_sentry Catch2::Catch2 Microsoft.GSL::GSL)
+  target_link_libraries(sentry_test silkworm_sentry Catch2::Catch2)
 
   # Silkworm Sync Tests
   file(GLOB_RECURSE SILKWORM_SYNC_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/sync/*_test.cpp")

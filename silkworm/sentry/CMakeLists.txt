@@ -27,7 +27,6 @@ else()
   find_package(Boost CONFIG REQUIRED thread)
 endif()
 find_package(gRPC REQUIRED)
-find_package(Microsoft.GSL REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(Snappy REQUIRED)
 
@@ -66,7 +65,6 @@ target_include_directories(
 
 set(LIBS_PRIVATE
     gRPC::grpc++
-    Microsoft.GSL::GSL
     protobuf::libprotobuf
     OpenSSL::Crypto
     Snappy::snappy
@@ -81,6 +79,7 @@ endif(MSVC)
 # cmake-format: off
 set(LIBS_PUBLIC
     Boost::thread
+    Microsoft.GSL::GSL
     silkworm_infra
 )
 # cmake-format: on

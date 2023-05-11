@@ -57,3 +57,6 @@
 [submodule "third_party/ethash"]
 	path = third_party/ethash
 	url = https://github.com/chfast/ethash.git
+[submodule "third_party/gsl"]
+	path = third_party/gsl
+	url = https://github.com/microsoft/GSL.git

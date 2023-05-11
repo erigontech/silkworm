@@ -14,7 +14,6 @@
    limitations under the License.
 ]]
 
-find_package(Microsoft.GSL REQUIRED)
 find_package(nlohmann_json REQUIRED)
 
 if(MSVC)

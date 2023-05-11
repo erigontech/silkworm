@@ -24,8 +24,8 @@
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
-#include <boost/asio.hpp>
 #include <boost/asio/awaitable.hpp>
+#include <boost/asio/io_context.hpp>
 
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/common/lru_cache.hpp>
@@ -37,8 +37,6 @@
 
 #include "forks/extending_fork.hpp"
 #include "forks/main_chain.hpp"
-
-#define ERIGON_API
 
 namespace silkworm::stagedsync {
 

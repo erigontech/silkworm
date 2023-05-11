@@ -14,35 +14,11 @@
    limitations under the License.
 ]]
 
-if(NOT SILKWORM_WASM_API)
-  set(CORE_TEST_ABSEIL_ENABLED TRUE)
-endif()
-
-if(CORE_TEST_ABSEIL_ENABLED)
-  if(NOT CONAN_PACKAGE_MANAGER)
-    hunter_add_package(abseil)
-  endif()
-  find_package(absl REQUIRED)
-endif()
-
 # Silkworm Core Tests
 file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/core/*_test.cpp")
 add_executable(core_test unit_test.cpp ${SILKWORM_CORE_TESTS})
 
-# cmake-format: off
-set(CORE_TEST_LIBS
-    silkworm_core
-    Catch2::Catch2
-    evmone
-)
-# cmake-format: on
-
-if(CORE_TEST_ABSEIL_ENABLED)
-  list(APPEND CORE_TEST_LIBS absl::flat_hash_map)
-  list(APPEND CORE_TEST_LIBS absl::flat_hash_set)
-endif()
-
-target_link_libraries(core_test ${CORE_TEST_LIBS})
+target_link_libraries(core_test silkworm_core Catch2::Catch2)
 
 if(MSVC)
   target_compile_options(core_test PRIVATE /EHa- /EHsc)

@@ -30,7 +30,7 @@ commands:
           name: "Format"
           working_directory: ~/project
           command: |
-            sudo apt-get update
+            # the base image contains these packages preinstalled, this command merely verifies that
             sudo apt-get install -y --no-install-recommends python3-pip
             pip install --user --break-system-packages cmake-format==0.6.13
             export "PATH=$HOME/.local/bin:$PATH"
@@ -50,7 +50,7 @@ commands:
       - run:
           name: "Install dependencies"
           command: |
-            sudo apt-get update
+            # the base image contains these packages preinstalled, this command merely verifies that
             sudo apt-get install -y m4 texinfo bison
       - run:
           name: "Install mimalloc"
@@ -85,7 +85,7 @@ commands:
       - run:
           name: "Install libc++"
           command: |
-            sudo apt-get update
+            # the base image contains these packages preinstalled, this command merely verifies that
             sudo apt -y install libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev
 
   test:
@@ -148,7 +148,7 @@ jobs:
       - run:
           name: "Install Conan"
           command: |
-            sudo apt-get update
+            # the base image contains these packages preinstalled, this command merely verifies that
             sudo apt-get install -y --no-install-recommends python3-pip
             pip install --user --break-system-packages conan==1.58.0 chardet
             echo 'export "PATH=$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
@@ -233,7 +233,7 @@ jobs:
       - run:
           name: "Upload to Codecov"
           command: |
-            sudo apt-get update
+            # the base image contains these packages preinstalled, this command merely verifies that
             sudo apt-get install -y --no-install-recommends python3-pip
             pip install --user --upgrade --no-cache-dir --break-system-packages codecov
             codecov="$HOME/.local/bin/codecov"
@@ -299,7 +299,7 @@ jobs:
       - run:
           name: "Install dependencies"
           command: |
-            sudo apt-get update
+            # the base image contains these packages preinstalled, this command merely verifies that
             sudo apt-get install -y m4 texinfo bison
       - run:
           name: "Install mimalloc"

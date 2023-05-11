@@ -196,7 +196,8 @@ auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, BlockNum
         if (packet.request.size() >= kMaxBlocksPerMessage) break;
     }
 
-    SILK_TRACE << "BodySequence: renewing body requests from block-num " << start_block << " for " << count << " blocks";
+    if (count)
+        SILK_TRACE << "BodySequence: renewing body requests from block-num " << start_block << " for " << count << " blocks";
 
     return penalizations;
 }

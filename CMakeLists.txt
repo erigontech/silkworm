@@ -18,6 +18,17 @@
 cmake_minimum_required(VERSION 3.16.2)
 
 option(CONAN_PACKAGE_MANAGER "Use Conan.io as package manager" OFF)
+option(SILKWORM_WASM_API "Build WebAssembly API" OFF)
+option(SILKWORM_CORE_ONLY "Only build Silkworm Core" OFF)
+option(SILKWORM_CLANG_COVERAGE "Clang instrumentation for code coverage reports" OFF)
+option(SILKWORM_SANITIZE "Build instrumentation for sanitizers" OFF)
+option(SILKWORM_USE_MIMALLOC "Enable using mimalloc for dynamic memory management" ON)
+
+if(CONAN_PACKAGE_MANAGER OR (SILKWORM_CORE_ONLY AND SILKWORM_WASM_API))
+  set(SILKWORM_NEEDS_HUNTER OFF)
+else()
+  set(SILKWORM_NEEDS_HUNTER ON)
+endif()
 
 if(CONAN_PACKAGE_MANAGER) # CMAKE CONAN START
   message("Package manager: Conan")
@@ -68,7 +79,7 @@ if(NOT SILKWORM_HAS_PARENT)
     )
   endif()
 
-  if(NOT CONAN_PACKAGE_MANAGER)
+  if(SILKWORM_NEEDS_HUNTER)
     set(HUNTER_CONFIG_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/config.cmake")
 
     include(third_party/evmone/cmake/cable/HunterGate.cmake)
@@ -93,26 +104,17 @@ set(PROJECT_VERSION_PATCH ${CMAKE_MATCH_3})
 
 cable_add_buildinfo_library(PROJECT_NAME ${PROJECT_NAME})
 
-option(SILKWORM_WASM_API "Build WebAssembly API" OFF)
-option(SILKWORM_CORE_ONLY "Only build Silkworm Core" OFF)
-option(SILKWORM_CLANG_COVERAGE "Clang instrumentation for code coverage reports" OFF)
-option(SILKWORM_SANITIZE "Build instrumentation for sanitizers" OFF)
-option(SILKWORM_USE_MIMALLOC "Enable using mimalloc for dynamic memory management" ON)
-
 get_filename_component(SILKWORM_MAIN_DIR . ABSOLUTE)
 set(SILKWORM_MAIN_SRC_DIR "${SILKWORM_MAIN_DIR}/silkworm")
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler_settings.cmake)
 
-# Include dependencies handled by Hunter package manager
-if(NOT CONAN_PACKAGE_MANAGER)
-  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/core_packages.cmake)
-  if(NOT SILKWORM_CORE_ONLY)
-    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/extra_packages.cmake)
-  endif()
-endif()
-
 if(NOT SILKWORM_CORE_ONLY)
+  if(NOT CONAN_PACKAGE_MANAGER)
+    # Include dependencies handled by Hunter package manager
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/packages.cmake)
+  endif()
+
   # Silence CMake policy warnings in submodules
   set(CMAKE_POLICY_DEFAULT_CMP0048 NEW) # project() command manages VERSION variables
   set(CMAKE_POLICY_DEFAULT_CMP0063 NEW) # Honor visibility properties for all target types

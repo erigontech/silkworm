@@ -317,35 +317,6 @@ jobs:
           working_directory: ~/build
           command: wasmer cmd/test/core_test --stack-size 16777216
 
-  linux-default-build:
-    docker:
-      - image: ethereum/cpp-build-env:20-gcc-12
-    resource_class: xlarge
-    steps:
-      - checkout_with_submodules
-      - run:
-          name: "Install dependencies"
-          command: |
-            # the base image contains these packages preinstalled, this command merely verifies that
-            sudo apt-get install -y m4 texinfo bison
-      - restore_cache:
-          name: "Restore Hunter cache"
-          key: &cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/toolchain/cxx20.cmake"}}
-      - run:
-          name: "Cmake"
-          working_directory: ~/build
-          command: cmake ../project
-      - save_cache:
-          name: "Save Hunter cache"
-          key: *cache-key
-          paths:
-            - ~/.hunter
-      - run:
-          name: "Build"
-          working_directory: ~/build
-          command: make -j4 # each compiler job requires 4GB of RAM
-      - test
-
 workflows:
   version: 2
   silkworm:
@@ -356,4 +327,3 @@ workflows:
       - linux-clang-13-coverage
       - linux-clang-15-address-sanitizer
       - linux-wasm-build
-      - linux-default-build

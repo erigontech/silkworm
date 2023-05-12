@@ -44,14 +44,7 @@ if(CONAN_PACKAGE_MANAGER)
   list(APPEND CMAKE_MODULE_PATH ${CONAN_BINARY_DIR})
   list(APPEND CMAKE_PREFIX_PATH ${CONAN_BINARY_DIR})
 
-  if(NOT EXISTS "${CONAN_BINARY_DIR}/conan.cmake")
-    message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
-    file(DOWNLOAD "https://raw.githubusercontent.com/conan-io/cmake-conan/0.18.1/conan.cmake"
-         "${CONAN_BINARY_DIR}/conan.cmake" TLS_VERIFY ON
-    )
-  endif()
-
-  include(${CONAN_BINARY_DIR}/conan.cmake)
+  include("${CMAKE_SOURCE_DIR}/third_party/cmake-conan/conan.cmake")
 
   # provide a static conanfile.txt instead of generating it with conan_cmake_configure()
   file(COPY "${CMAKE_SOURCE_DIR}/conanfile.txt" DESTINATION "${CONAN_BINARY_DIR}")

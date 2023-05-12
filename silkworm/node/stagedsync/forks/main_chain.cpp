@@ -134,7 +134,7 @@ auto MainChain::verify_chain(Hash head_block_hash) -> VerificationResult {
             ensure_invariant(pipeline_.head_header_number() == canonical_chain_.current_head().number &&
                                  pipeline_.head_header_hash() == canonical_chain_.current_head().hash,
                              "forward succeeded with pipeline head not aligned with canonical head");
-            verify_result = ValidChain{pipeline_.head_header_number()};
+            verify_result = ValidChain{pipeline_.head_header_number(), pipeline_.head_header_hash()};
             break;
         }
         case Stage::Result::kWrongFork:

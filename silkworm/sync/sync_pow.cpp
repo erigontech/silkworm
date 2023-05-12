@@ -138,13 +138,13 @@ void PoWSync::execution_loop() {
         }
 
         // verify the new section of the chain
-        log::Info("Sync") << "Verifying chain, head=" << new_height.number;
+        log::Info("Sync") << "Verifying chain, head= (" << new_height.number << ", " << to_hex(new_height.hash) << ")";
         auto verification = sync_wait(in(exec_engine_), exec_engine_.validate_chain(new_height.hash));  // BLOCKING
 
         if (std::holds_alternative<ValidChain>(verification)) {
             auto valid_chain = std::get<ValidChain>(verification);
 
-            log::Info("Sync") << "Valid chain, new head=" << new_height.number;
+            log::Info("Sync") << "Valid chain, new head=" << valid_chain.current_head;
 
             // if it is valid, do nothing, only check invariant
             ensure_invariant(valid_chain.current_head == new_height.hash, "Invalid verify_chain result");

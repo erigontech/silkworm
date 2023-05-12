@@ -100,7 +100,7 @@ void MainChain::insert_block(const Block& block) {
 }
 
 auto MainChain::verify_chain(Hash head_block_hash) -> VerificationResult {
-    SILK_TRACE << "ExecutionEngine: verifying chain " << head_block_hash.to_hex();
+    SILK_TRACE << "MainChain: verifying chain " << head_block_hash.to_hex();
 
     // retrieve the head header
     auto head_header = get_header(head_block_hash);

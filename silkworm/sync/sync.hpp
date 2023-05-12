@@ -57,6 +57,12 @@ class Sync {
     boost::asio::awaitable<void> async_run();
 
   private:
+    boost::asio::awaitable<void> run_tasks();
+    boost::asio::awaitable<void> start_sync_sentry_client();
+    boost::asio::awaitable<void> start_block_exchange();
+    boost::asio::awaitable<void> start_chain_sync();
+    boost::asio::awaitable<void> start_engine_rpc_server();
+
     //! The Sentry synchronous (i.e. blocking) client used by BlockExchange
     SentryClient sync_sentry_client_;
 

@@ -75,14 +75,9 @@ class ClientContextPool : public concurrency::ContextPool<ClientContext> {
     ClientContextPool& operator=(const ClientContextPool&) = delete;
 
     void start() override;
-    void stop() override;
 
     //! Add a new \ref ClientContext to the pool.
     void add_context(concurrency::WaitMode wait_mode);
-
-  private:
-    //! Flag indicating if pool has been stopped.
-    std::atomic_bool stopped_{false};
 };
 
 }  // namespace silkworm::rpc

@@ -16,7 +16,7 @@
 
 #include "sync.hpp"
 
-#include <boost/asio/experimental/awaitable_operators.hpp>
+#include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 
 #include "engine_api_backend.hpp"
 #include "sync_pos.hpp"
@@ -59,7 +59,28 @@ Sync::Sync(boost::asio::io_context& io_context,
 }
 
 boost::asio::awaitable<void> Sync::async_run() {
-    using namespace boost::asio::experimental::awaitable_operators;
+    using namespace concurrency::awaitable_wait_for_all;
+    return (run_tasks() && start_engine_rpc_server());
+}
+
+boost::asio::awaitable<void> Sync::run_tasks() {
+    using namespace concurrency::awaitable_wait_for_all;
+    co_await (start_sync_sentry_client() && start_block_exchange() && start_chain_sync());
+}
+
+boost::asio::awaitable<void> Sync::start_sync_sentry_client() {
+    return sync_sentry_client_.async_run();
+}
+
+boost::asio::awaitable<void> Sync::start_block_exchange() {
+    return block_exchange_.async_run();
+}
+
+boost::asio::awaitable<void> Sync::start_chain_sync() {
+    return chain_sync_->async_run();
+}
+
+boost::asio::awaitable<void> Sync::start_engine_rpc_server() {
     if (engine_rpc_server_) {
         auto engine_rpc_server_run = [this]() {
             engine_rpc_server_->start();
@@ -68,12 +89,7 @@ boost::asio::awaitable<void> Sync::async_run() {
         auto engine_rpc_server_stop = [this]() {
             engine_rpc_server_->stop();
         };
-        return sync_sentry_client_.async_run() &&
-               block_exchange_.async_run() &&
-               chain_sync_->async_run() &&
-               concurrency::async_thread(std::move(engine_rpc_server_run), std::move(engine_rpc_server_stop));
-    } else {
-        return sync_sentry_client_.async_run() && block_exchange_.async_run() && chain_sync_->async_run();
+        co_await concurrency::async_thread(std::move(engine_rpc_server_run), std::move(engine_rpc_server_stop));
     }
 }
 

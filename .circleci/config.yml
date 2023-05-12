@@ -56,9 +56,6 @@ commands:
           command: |
             # the base image contains these packages preinstalled, this command merely verifies that
             sudo apt-get install -y m4 texinfo bison
-      - restore_cache:
-          name: "Restore Hunter cache"
-          key: &hunter-cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/toolchain/base.cmake"}}-{{checksum "cmake/toolchain/cxx20.cmake"}}-{{checksum "cmake/toolchain/clang_libcxx.cmake"}}-{{checksum "cmake/toolchain/wasi.cmake"}}
       - run:
           name: "Cmake"
           working_directory: ~/build
@@ -69,11 +66,6 @@ commands:
             fi
 
             cmake ../project -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/toolchain/$TOOLCHAIN.cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE $CONAN_CMAKE_ARGS $BUILD_CMAKE_ARGS
-      - save_cache:
-          name: "Save Hunter cache"
-          key: *hunter-cache-key
-          paths:
-            - ~/.hunter
       - run:
           name: "Build"
           command: cmake --build ~/build -j4 # each compiler job requires 4GB of RAM
@@ -87,6 +79,18 @@ commands:
           command: |
             # the base image contains these packages preinstalled, this command merely verifies that
             sudo apt -y install libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev
+
+  build_using_hunter:
+    steps:
+      - restore_cache:
+          name: "Restore Hunter cache"
+          key: &hunter-cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/toolchain/base.cmake"}}-{{checksum "cmake/toolchain/cxx20.cmake"}}-{{checksum "cmake/toolchain/clang_libcxx.cmake"}}-{{checksum "cmake/toolchain/wasi.cmake"}}
+      - build
+      - save_cache:
+          name: "Save Hunter cache"
+          key: *hunter-cache-key
+          paths:
+            - ~/.hunter
 
   build_using_conan:
     parameters:
@@ -157,7 +161,7 @@ jobs:
     resource_class: xlarge
     steps:
       - checkout_with_submodules
-      - build
+      - build_using_hunter
       - test
 
   linux-gcc-11-conan:
@@ -196,7 +200,7 @@ jobs:
     steps:
       - checkout_with_submodules
       - install_libcxx
-      - build
+      - build_using_hunter
       - test
 
   linux-clang-13-coverage:
@@ -212,7 +216,7 @@ jobs:
       - checkout_with_submodules
       - format
       - install_libcxx
-      - build
+      - build_using_hunter
       - run:
           name: "Core unit tests"
           working_directory: ~/build

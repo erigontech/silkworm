@@ -46,6 +46,10 @@ commands:
           command: cmake -P cmake/copyright.cmake
 
   build:
+    parameters:
+      conan_profile:
+        type: string
+        default: none
     steps:
       - run:
           name: "Install dependencies"
@@ -58,7 +62,13 @@ commands:
       - run:
           name: "Cmake"
           working_directory: ~/build
-          command: cmake ../project -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/toolchain/$TOOLCHAIN.cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE $BUILD_CMAKE_ARGS
+          command: |
+            if [[ "<<parameters.conan_profile>>" != "none" ]]
+            then
+                CONAN_CMAKE_ARGS="-DCONAN_PACKAGE_MANAGER=ON -DCONAN_PROFILE=<<parameters.conan_profile>>"
+            fi
+
+            cmake ../project -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/toolchain/$TOOLCHAIN.cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE $CONAN_CMAKE_ARGS $BUILD_CMAKE_ARGS
       - save_cache:
           name: "Save Hunter cache"
           key: *hunter-cache-key
@@ -77,6 +87,30 @@ commands:
           command: |
             # the base image contains these packages preinstalled, this command merely verifies that
             sudo apt -y install libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev
+
+  build_using_conan:
+    parameters:
+      profile:
+        type: string
+        default: linux_gcc_11_release
+    steps:
+      - run:
+          name: "Install Conan"
+          command: |
+            # the base image contains these packages preinstalled, this command merely verifies that
+            sudo apt-get install -y --no-install-recommends python3-pip
+            pip install --user --break-system-packages conan==1.58.0 chardet
+            echo 'export "PATH=$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+      - restore_cache:
+          name: "Restore Conan cache"
+          key: &conan-cache-key conan-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/profiles/<<parameters.profile>>"}}-{{checksum "conanfile.txt"}}
+      - build:
+          conan_profile: <<parameters.profile>>
+      - save_cache:
+          name: "Save Conan cache"
+          key: *conan-cache-key
+          paths:
+            - ~/.conan
 
   test:
     steps:
@@ -130,28 +164,12 @@ jobs:
     environment:
       TOOLCHAIN: cxx20
       BUILD_TYPE: Debug
-      BUILD_CMAKE_ARGS: -DCONAN_PACKAGE_MANAGER=ON -DCONAN_PROFILE=linux_gcc_11_debug
     docker:
       - image: ethereum/cpp-build-env:20-gcc-11
     resource_class: xlarge
     steps:
-      - run:
-          name: "Install Conan"
-          command: |
-            # the base image contains these packages preinstalled, this command merely verifies that
-            sudo apt-get install -y --no-install-recommends python3-pip
-            pip install --user --break-system-packages conan==1.58.0 chardet
-            echo 'export "PATH=$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
       - checkout_with_submodules
-      - restore_cache:
-          name: "Restore Conan cache"
-          key: &conan-cache-key conan-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/profiles/linux_gcc_11_debug"}}-{{checksum "conanfile.txt"}}
-      - build
-      - save_cache:
-          name: "Save Conan cache"
-          key: *conan-cache-key
-          paths:
-            - ~/.conan
+      - build_using_conan
       - test
 
   linux-gcc-12-release:

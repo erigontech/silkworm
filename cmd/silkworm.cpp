@@ -48,7 +48,6 @@
 #include <silkworm/node/stagedsync/local_client.hpp>
 #include <silkworm/node/stagedsync/server.hpp>
 #include <silkworm/sentry/api/api_common/sentry_client.hpp>
-#include <silkworm/sentry/common/timeout.hpp>
 #include <silkworm/sentry/grpc/client/sentry_client.hpp>
 #include <silkworm/sentry/multi_sentry_client.hpp>
 #include <silkworm/sentry/sentry.hpp>
@@ -659,10 +658,9 @@ int main(int argc, char* argv[]) {
         ShutdownSignal shutdown_signal{context_pool.next_io_context()};
 
         // Go!
-        silkworm::sentry::common::Timeout timeout{std::chrono::seconds(5)};
         auto run_future = boost::asio::co_spawn(
             context_pool.next_io_context(),
-            std::move(tasks) || shutdown_signal.wait() || timeout(),
+            std::move(tasks) || shutdown_signal.wait(),
             boost::asio::use_future);
         context_pool.start();
         sw_log::Message() << "Silkworm is now running";

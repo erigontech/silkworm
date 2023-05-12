@@ -34,21 +34,22 @@ if(CONAN_PACKAGE_MANAGER) # CMAKE CONAN START
   endif()
 
   include(${CONAN_BINARY_DIR}/conan.cmake)
+  include(cmake/conan.cmake)
 
   # provide a static conanfile.txt instead of generating it with conan_cmake_configure()
   file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/conanfile.txt" DESTINATION "${CONAN_BINARY_DIR}")
 
   if(NOT DEFINED CONAN_PROFILE)
-    message(FATAL_ERROR "CONAN_PROFILE is not defined")
-  else()
-    message(STATUS "CONAN_PROFILE: ${CONAN_PROFILE}")
-    conan_cmake_install(
-      PATH_OR_REFERENCE "${CONAN_BINARY_DIR}"
-      INSTALL_FOLDER "${CONAN_BINARY_DIR}"
-      BUILD missing
-      PROFILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/profiles/${CONAN_PROFILE}
-    )
+    guess_conan_profile()
   endif()
+  message(STATUS "CONAN_PROFILE: ${CONAN_PROFILE}")
+
+  conan_cmake_install(
+    PATH_OR_REFERENCE "${CONAN_BINARY_DIR}"
+    INSTALL_FOLDER "${CONAN_BINARY_DIR}"
+    BUILD missing
+    PROFILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/profiles/${CONAN_PROFILE}
+  )
 endif() # CMAKE CONAN END
 
 if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/evmone/evmc/.git)

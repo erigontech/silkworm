@@ -14,6 +14,8 @@
    limitations under the License.
 ]]
 
+option(CONAN_PACKAGE_MANAGER "Use Conan.io as package manager" OFF)
+
 function(guess_conan_profile)
   if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
     set(PROFILE linux_gcc_11_release)
@@ -34,3 +36,35 @@ function(guess_conan_profile)
       PARENT_SCOPE
   )
 endfunction()
+
+if(CONAN_PACKAGE_MANAGER)
+  message("Package manager: Conan")
+
+  set(CONAN_BINARY_DIR "${CMAKE_BINARY_DIR}/conan")
+  list(APPEND CMAKE_MODULE_PATH ${CONAN_BINARY_DIR})
+  list(APPEND CMAKE_PREFIX_PATH ${CONAN_BINARY_DIR})
+
+  if(NOT EXISTS "${CONAN_BINARY_DIR}/conan.cmake")
+    message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
+    file(DOWNLOAD "https://raw.githubusercontent.com/conan-io/cmake-conan/0.18.1/conan.cmake"
+         "${CONAN_BINARY_DIR}/conan.cmake" TLS_VERIFY ON
+    )
+  endif()
+
+  include(${CONAN_BINARY_DIR}/conan.cmake)
+
+  # provide a static conanfile.txt instead of generating it with conan_cmake_configure()
+  file(COPY "${CMAKE_SOURCE_DIR}/conanfile.txt" DESTINATION "${CONAN_BINARY_DIR}")
+
+  if(NOT DEFINED CONAN_PROFILE)
+    guess_conan_profile()
+  endif()
+  message(STATUS "CONAN_PROFILE: ${CONAN_PROFILE}")
+
+  conan_cmake_install(
+    PATH_OR_REFERENCE "${CONAN_BINARY_DIR}"
+    INSTALL_FOLDER "${CONAN_BINARY_DIR}"
+    BUILD missing
+    PROFILE "${CMAKE_SOURCE_DIR}/cmake/profiles/${CONAN_PROFILE}"
+  )
+endif()

@@ -60,7 +60,7 @@ void BlockExchange::accept(std::shared_ptr<Message> message) {
 void BlockExchange::receive_message(std::shared_ptr<InboundMessage> message) {
     statistics_.received_msgs++;
 
-    SILK_TRACE << "BlockExchange received message " << *message;
+    // SILK_TRACE << "BlockExchange received message " << *message;
 
     messages_.push(std::move(message));
 }

@@ -22,7 +22,7 @@
 
 namespace silkworm::chainsync {
 
-ChainForkView::ChainForkView(ChainHead head) : initial_head_{head}, td_cache_{kCacheSize} {
+ChainForkView::ChainForkView(ChainHead head, execution::Client& ec) : initial_head_{head}, exec_client_{ec}, td_cache_{kCacheSize} {
     current_head_ = initial_head_;
 }
 

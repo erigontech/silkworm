@@ -18,6 +18,7 @@
 
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/node/stagedsync/client.hpp>
 #include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/sync/internals/types.hpp>
 
@@ -33,7 +34,7 @@ namespace silkworm::chainsync {
 
 class ChainForkView {
   public:
-    ChainForkView(ChainHead headers_head);
+    ChainForkView(ChainHead headers_head, execution::Client&);
 
     void reset_head(BlockId headers_head);
 
@@ -53,6 +54,8 @@ class ChainForkView {
     ChainHead initial_head_{};
     ChainHead current_head_{};  // current head of the chain
     Hash previous_hash_;
+
+    execution::Client& exec_client_;
 
     static constexpr size_t kCacheSize = 4096;
     lru_cache<Hash, TotalDifficulty> td_cache_;  // this is not for performance

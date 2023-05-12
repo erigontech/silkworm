@@ -56,6 +56,7 @@ class Server : public ActiveComponent {
     auto get_block_num(Hash block_hash) -> asio::awaitable<std::optional<BlockNum>>;  // [[thorax-compliant]]
 
     auto get_last_headers(BlockNum limit) -> asio::awaitable<std::vector<BlockHeader>>;
+    auto get_header_td(BlockNum, Hash) -> asio::awaitable<std::optional<TotalDifficulty>>;
 
     asio::io_context& get_executor() { return io_context_; }
 

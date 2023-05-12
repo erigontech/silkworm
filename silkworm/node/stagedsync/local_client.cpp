@@ -76,4 +76,8 @@ awaitable<std::vector<BlockHeader>> LocalClient::get_last_headers(BlockNum limit
     co_return co_await local_server_.get_last_headers(limit);
 }
 
+awaitable<std::optional<TotalDifficulty>> LocalClient::get_header_td(BlockNum bn, Hash h) {
+    co_return co_await local_server_.get_header_td(bn, h);
+}
+
 }  // namespace silkworm::execution

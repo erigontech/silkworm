@@ -230,6 +230,11 @@ auto ExecutionEngine::get_last_headers(BlockNum limit) const -> std::vector<Bloc
     return main_chain_.get_last_headers(limit);
 }
 
+auto ExecutionEngine::get_header_td(BlockNum bn, Hash h) const -> std::optional<TotalDifficulty> {
+    ensure_invariant(block_cache_.size() == 0, "actual get_header_td() impl assume it is called only at beginning");
+    return main_chain_.get_header_td(bn, h);
+}
+
 auto ExecutionEngine::get_body([[maybe_unused]] Hash header_hash) const -> std::optional<BlockBody> {
     // read from cache, then from main_chain_
     throw std::runtime_error("not implemented");

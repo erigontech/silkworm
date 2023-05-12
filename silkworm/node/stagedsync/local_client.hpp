@@ -52,6 +52,7 @@ class LocalClient : public Client {
     auto get_block_num(Hash block_hash) -> asio::awaitable<std::optional<BlockNum>> override;
 
     auto get_last_headers(BlockNum limit) -> asio::awaitable<std::vector<BlockHeader>> override;
+    auto get_header_td(BlockNum, Hash) -> asio::awaitable<std::optional<TotalDifficulty>> override;
 
   private:
     Server& local_server_;

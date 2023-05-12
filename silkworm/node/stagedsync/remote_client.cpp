@@ -253,6 +253,10 @@ asio::awaitable<std::optional<BlockNum>> RemoteClient::get_block_num(Hash block_
     co_return response.block_number();
 }
 
+asio::awaitable<std::optional<TotalDifficulty>> RemoteClient::get_header_td(BlockNum, Hash) {
+    throw std::runtime_error{"RemoteClient::get_header_td not implemented"};
+}
+
 awaitable<ValidationResult> RemoteClient::validate_chain(Hash head_block_hash) {
     std::unique_ptr<types::H256> request = rpc::H256_from_bytes32(head_block_hash);
     const auto response = co_await rpc::unary_rpc(

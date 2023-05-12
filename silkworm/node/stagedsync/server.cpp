@@ -136,6 +136,13 @@ asio::awaitable<std::vector<BlockHeader>> Server::get_last_headers(BlockNum limi
     return co_spawn(io_context_, lambda(this, limit), asio::use_awaitable);
 }
 
+asio::awaitable<std::optional<TotalDifficulty>> Server::get_header_td(BlockNum num, Hash hash) {
+    auto lambda = [](Server* me, BlockNum bn, Hash h) -> asio::awaitable<std::optional<TotalDifficulty>> {
+        co_return me->exec_engine_.get_header_td(bn, h);
+    };
+    return co_spawn(io_context_, lambda(this, num, hash), asio::use_awaitable);
+}
+
 asio::awaitable<BlockBody> Server::get_body(Hash /*block_hash*/) {
     throw std::runtime_error{"Server::get_body not implemented"};
 }

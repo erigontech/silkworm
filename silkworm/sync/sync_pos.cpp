@@ -80,7 +80,7 @@ awaitable<void> PoSSync::download_blocks() {
 
         // compute head of chain applying fork choice rule
         as_range::for_each(blocks, [&, this](const auto& block) {
-            block->td = chain_fork_view_.add(block->header);
+            block->td = await chain_fork_view_.add(block->header);
             block_progress = std::max(block_progress, block->header.number);
         });
 
@@ -188,7 +188,7 @@ auto PoSSync::new_payload(const rpc::ExecutionPayload& payload) -> asio::awaitab
                 co_return rpc::PayloadStatus::Syncing;
             }
             // if found, add it to the chain_fork_view_ and calc total difficulty
-            parent_td = chain_fork_view_.add(*parent);
+            parent_td = await chain_fork_view_.add(*parent);
         }
 
         // do sanity checks
@@ -213,7 +213,7 @@ auto PoSSync::new_payload(const rpc::ExecutionPayload& payload) -> asio::awaitab
             // INVALID
             auto invalid_chain = std::get<InvalidChain>(verification);
             // auto latest_valid_height = sync_wait(in(exec_engine_), exec_engine_.get_block_num(invalid_chain.latest_valid_head));
-            auto unwind_point_td = chain_fork_view_.get_total_difficulty(invalid_chain.latest_valid_head);
+            auto unwind_point_td = await chain_fork_view_.get_total_difficulty(invalid_chain.latest_valid_head);
             Hash latest_valid_hash = unwind_point_td < terminal_total_difficulty
                                          ? kZeroHash
                                          : invalid_chain.latest_valid_head;
@@ -262,7 +262,7 @@ auto PoSSync::fork_choice_update(const rpc::ForkChoiceState& state,
         if (!parent) {
             co_return rpc::ForkChoiceUpdatedReply{rpc::PayloadStatus::Syncing, no_payload_id};
         }
-        auto parent_td = chain_fork_view_.get_total_difficulty(head_header->number - 1, head_header->parent_hash);
+        auto parent_td = await chain_fork_view_.get_total_difficulty(head_header->number - 1, head_header->parent_hash);
         if (!parent_td) {
             co_return rpc::ForkChoiceUpdatedReply{rpc::PayloadStatus::Syncing, no_payload_id};
         }
@@ -284,7 +284,7 @@ auto PoSSync::fork_choice_update(const rpc::ForkChoiceState& state,
         if (std::holds_alternative<InvalidChain>(verification)) {
             // INVALID
             auto invalid_chain = std::get<InvalidChain>(verification);
-            auto unwind_point_td = chain_fork_view_.get_total_difficulty(invalid_chain.latest_valid_head);
+            auto unwind_point_td = await chain_fork_view_.get_total_difficulty(invalid_chain.latest_valid_head);
             Hash latest_valid_hash = unwind_point_td < terminal_total_difficulty
                                          ? kZeroHash
                                          : invalid_chain.latest_valid_head;

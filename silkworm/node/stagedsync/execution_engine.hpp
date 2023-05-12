@@ -82,11 +82,11 @@ class ExecutionEngine : public Stoppable {
     bool is_canonical_hash(Hash) const;
     auto get_block_number(Hash) const -> std::optional<BlockNum>;
     auto get_last_headers(BlockNum limit) const -> std::vector<BlockHeader>;
+    auto get_header_td(BlockNum, Hash) const -> std::optional<TotalDifficulty>;
 
     /*
     auto get_canonical_head() const -> BlockId;
     auto get_canonical_hash(BlockNum) const -> std::optional<Hash>;
-    auto get_header_td(BlockNum, Hash) const -> std::optional<TotalDifficulty>;
     auto get_body(Hash) const -> std::optional<BlockBody>;
     auto extends_last_fork_choice(BlockNum, Hash) const -> bool;
     auto extends(BlockId block, BlockId supposed_parent) const -> bool;

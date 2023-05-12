@@ -56,6 +56,7 @@ class Client {
     virtual auto get_block_num(Hash block_hash) -> asio::awaitable<std::optional<BlockNum>> = 0;
 
     virtual auto get_last_headers(BlockNum limit) -> asio::awaitable<std::vector<BlockHeader>> = 0;
+    virtual auto get_header_td(BlockNum, Hash) -> asio::awaitable<std::optional<TotalDifficulty>> = 0;
 };
 
 }  // namespace silkworm::execution

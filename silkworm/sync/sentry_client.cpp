@@ -252,7 +252,7 @@ boost::asio::awaitable<void> SentryClient::on_peer_event(silkworm::sentry::api::
 
         try {
             info = co_await request_peer_info_async(peer_id);
-        } catch (std::exception) {
+        } catch (std::exception&) {
             info = "unknown";  // workaround for EnodeUrl fragility
         }
 

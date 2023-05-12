@@ -718,8 +718,8 @@ auto HeaderChain::process_segment(const Segment& segment, bool is_a_new_block, c
             op = "new anchor";
             requestMore = new_anchor(segment_slice, peerId);
         }
-        //SILK_TRACE << "HeaderChain, segment " << op << " up=" << startNum << " (" << segment[start]->hash()
-        //           << ") down=" << endNum << " (" << segment[end - 1]->hash() << ") (more=" << requestMore << ")";
+        // SILK_TRACE << "HeaderChain, segment " << op << " up=" << startNum << " (" << segment[start]->hash()
+        //            << ") down=" << endNum << " (" << segment[end - 1]->hash() << ") (more=" << requestMore << ")";
     } catch (segment_cut_and_paste_error& e) {
         log::Trace() << "[WARNING] HeaderChain, segment cut&paste error, " << op << " up=" << startNum << " ("
                      << segment[start]->hash() << ") down=" << endNum << " (" << segment[end - 1]->hash()

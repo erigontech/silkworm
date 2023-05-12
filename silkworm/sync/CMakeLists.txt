@@ -30,6 +30,7 @@ target_include_directories(
 # cmake-format: on
 
 set(SILKWORM_SYNC_PUBLIC_LIBS
+    silkrpc
     silkworm_node
     silkworm_core
     mdbx-static

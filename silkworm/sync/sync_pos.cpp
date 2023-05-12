@@ -38,11 +38,7 @@ class PayloadValidationError : public std::logic_error {
     explicit PayloadValidationError(const std::string& reason) : std::logic_error(reason) {}
 };
 
-PoSSync::PoSSync(BlockExchange& be, execution::Client& ee)
-    : block_exchange_{be},
-      exec_engine_{ee},
-      chain_fork_view_{ChainHead{}} {  // we cannot call ee.get_canonical_head() at this point because ee is not started
-}
+PoSSync::PoSSync(BlockExchange& be, execution::Client& ee) : ChainSync(be, ee) {}
 
 awaitable<void> PoSSync::async_run() {
     co_await download_blocks();
@@ -109,7 +105,7 @@ awaitable<void> PoSSync::download_blocks() {
 }
 
 // Convert an ExecutionPayload to a Block as per "Engine API - Paris" specs
-std::shared_ptr<Block> PoSSync::make_execution_block(const ExecutionPayload& payload) {
+std::shared_ptr<Block> PoSSync::make_execution_block(const rpc::ExecutionPayload& payload) {
     std::shared_ptr<Block> block = std::make_shared<Block>();
     BlockHeader& header = block->header;
 
@@ -168,7 +164,7 @@ auto PoSSync::has_bad_ancestor(const Hash&) -> std::tuple<bool, Hash> {
     return {false, Hash()};  // todo: implement, return if it is valid or the first valid ancestor
 }
 
-auto PoSSync::new_payload(const ExecutionPayload& payload) -> asio::awaitable<PayloadStatus> {
+auto PoSSync::new_payload(const rpc::ExecutionPayload& payload) -> asio::awaitable<rpc::PayloadStatus> {
     // Implementation of engine_new_payloadV1 method
     using namespace execution;
     constexpr evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
@@ -180,10 +176,10 @@ auto PoSSync::new_payload(const ExecutionPayload& payload) -> asio::awaitable<Pa
         auto block = make_execution_block(payload);  // as per the EngineAPI spec
 
         Hash block_hash = block->header.hash();
-        if (payload.block_hash != block_hash) co_return PayloadStatus::InvalidBlockHash;
+        if (payload.block_hash != block_hash) co_return rpc::PayloadStatus::InvalidBlockHash;
 
         auto [valid, last_valid] = has_bad_ancestor(block_hash);
-        if (!valid) co_return PayloadStatus{PayloadStatus::kInvalid, last_valid, "bad ancestor"};
+        if (!valid) co_return rpc::PayloadStatus{rpc::PayloadStatus::kInvalid, last_valid, "bad ancestor"};
 
         // find attaching point using chain_fork_view_ first to avoid remote access to execution
         auto parent_td = chain_fork_view_.get_total_difficulty(block->header.number - 1, block->header.parent_hash);
@@ -193,7 +189,7 @@ auto PoSSync::new_payload(const ExecutionPayload& payload) -> asio::awaitable<Pa
             if (!parent) {
                 // send payload to the block exchange to extend the chain up to it
                 block_exchange_.new_target_block(*block);
-                co_return PayloadStatus::Syncing;
+                co_return rpc::PayloadStatus::Syncing;
             }
             // if found, add it to the chain_fork_view_ and calc total difficulty
             parent_td = chain_fork_view_.add(*parent);
@@ -208,7 +204,7 @@ auto PoSSync::new_payload(const ExecutionPayload& payload) -> asio::awaitable<Pa
         // auto inserted = co_await exec_engine_.insert_block(block); this is not working due to proto interface limitations
         auto inserted = co_await exec_engine_.get_block_num(block_hash);
         if (!inserted) {
-            co_return PayloadStatus::Accepted;
+            co_return rpc::PayloadStatus::Accepted;
         }
 
         // NOTE: from here the method execution can be cancelled
@@ -216,7 +212,7 @@ auto PoSSync::new_payload(const ExecutionPayload& payload) -> asio::awaitable<Pa
 
         if (std::holds_alternative<ValidChain>(verification)) {
             // VALID
-            co_return PayloadStatus{.status = PayloadStatus::kValid, .latest_valid_hash = block_hash};
+            co_return rpc::PayloadStatus{.status = rpc::PayloadStatus::kValid, .latest_valid_hash = block_hash};
         } else if (std::holds_alternative<InvalidChain>(verification)) {
             // INVALID
             auto invalid_chain = std::get<InvalidChain>(verification);
@@ -225,23 +221,23 @@ auto PoSSync::new_payload(const ExecutionPayload& payload) -> asio::awaitable<Pa
             Hash latest_valid_hash = unwind_point_td < terminal_total_difficulty
                                          ? kZeroHash
                                          : invalid_chain.latest_valid_head;
-            co_return PayloadStatus{.status = PayloadStatus::kInvalid, .latest_valid_hash = latest_valid_hash};
+            co_return rpc::PayloadStatus{.status = rpc::PayloadStatus::kInvalid, .latest_valid_hash = latest_valid_hash};
         } else {
             // ERROR
-            co_return PayloadStatus{PayloadStatus::kInvalid, no_latest_valid_hash, "unknown execution error"};
+            co_return rpc::PayloadStatus{rpc::PayloadStatus::kInvalid, no_latest_valid_hash, "unknown execution error"};
         }
 
     } catch (const PayloadValidationError& e) {
         log::Error("Sync") << "Error processing payload: " << e.what();
-        co_return PayloadStatus{PayloadStatus::kInvalid, no_latest_valid_hash, e.what()};
+        co_return rpc::PayloadStatus{rpc::PayloadStatus::kInvalid, no_latest_valid_hash, e.what()};
     } catch (const std::exception& e) {
         log::Error("Sync") << "Error processing payload: " << e.what();
-        co_return PayloadStatus{PayloadStatus::kInvalid, no_latest_valid_hash, e.what()};
+        co_return rpc::PayloadStatus{rpc::PayloadStatus::kInvalid, no_latest_valid_hash, e.what()};
     }
 }
 
-auto PoSSync::fork_choice_update(const ForkChoiceState& state,
-                                 const std::optional<PayloadAttributes>& attributes) -> asio::awaitable<ForkChoiceUpdateReply> {
+auto PoSSync::fork_choice_update(const rpc::ForkChoiceState& state,
+                                 const std::optional<rpc::PayloadAttributes>& attributes) -> asio::awaitable<rpc::ForkChoiceUpdatedReply> {
     // Implementation of engine_forkchoiceUpdatedV1 method
     using namespace execution;
     constexpr evmc::bytes32 kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
@@ -250,29 +246,29 @@ auto PoSSync::fork_choice_update(const ForkChoiceState& state,
     auto no_payload_id = std::nullopt;
     try {
         if (!state.head_block_hash) {
-            co_return ForkChoiceUpdateReply{{PayloadStatus::kInvalid, no_latest_valid_hash, "invalid head block hash"}, no_payload_id};
+            co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalid, no_latest_valid_hash, "invalid head block hash"}, no_payload_id};
         }
 
         Hash head_header_hash = state.head_block_hash;
         auto head_header = co_await exec_engine_.get_header(head_header_hash);  // todo: decide whether to use chain_fork_view_ cache instead
         if (!head_header) {
             auto [valid, last_valid] = has_bad_ancestor(head_header_hash);
-            if (!valid) co_return ForkChoiceUpdateReply{{PayloadStatus::kInvalid, last_valid, "bad ancestor"}, no_payload_id};
+            if (!valid) co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalid, last_valid, "bad ancestor"}, no_payload_id};
 
             // send payload to the block exchange to extend the chain up to it
             // block_exchange_.new_target_block(head_header_hash);  // todo: implement this!
-            co_return ForkChoiceUpdateReply{PayloadStatus::Syncing, no_payload_id};
+            co_return rpc::ForkChoiceUpdatedReply{rpc::PayloadStatus::Syncing, no_payload_id};
         }
 
         // BlockId head{head_header->number, head_header_hash};
 
         auto parent = co_await exec_engine_.get_header(head_header->parent_hash);  // todo: decide whether to use chain_fork_view_ cache instead
         if (!parent) {
-            co_return ForkChoiceUpdateReply{PayloadStatus::Syncing, no_payload_id};
+            co_return rpc::ForkChoiceUpdatedReply{rpc::PayloadStatus::Syncing, no_payload_id};
         }
         auto parent_td = chain_fork_view_.get_total_difficulty(head_header->number - 1, head_header->parent_hash);
         if (!parent_td) {
-            co_return ForkChoiceUpdateReply{PayloadStatus::Syncing, no_payload_id};
+            co_return rpc::ForkChoiceUpdatedReply{rpc::PayloadStatus::Syncing, no_payload_id};
         }
 
         do_sanity_checks(*head_header, /**parent,*/ *parent_td);
@@ -296,10 +292,10 @@ auto PoSSync::fork_choice_update(const ForkChoiceState& state,
             Hash latest_valid_hash = unwind_point_td < terminal_total_difficulty
                                          ? kZeroHash
                                          : invalid_chain.latest_valid_head;
-            co_return ForkChoiceUpdateReply{{PayloadStatus::kInvalid, latest_valid_hash}, no_payload_id};
+            co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalid, latest_valid_hash}, no_payload_id};
         } else if (!std::holds_alternative<ValidChain>(verification)) {
             // ERROR
-            co_return ForkChoiceUpdateReply{{PayloadStatus::kInvalid, no_latest_valid_hash, "unknown execution error"}, no_payload_id};
+            co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalid, no_latest_valid_hash, "unknown execution error"}, no_payload_id};
         }
 
         // VALID
@@ -307,7 +303,7 @@ auto PoSSync::fork_choice_update(const ForkChoiceState& state,
 
         auto application = co_await exec_engine_.update_fork_choice(state.head_block_hash, state.finalized_block_hash);
         if (!application.success) {
-            co_return ForkChoiceUpdateReply{{PayloadStatus::kInvalid, application.current_head, "invalid fork choice update"}, no_payload_id};
+            co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalid, application.current_head, "invalid fork choice update"}, no_payload_id};
         }
 
         /* todo: enable those checks
@@ -323,39 +319,39 @@ auto PoSSync::fork_choice_update(const ForkChoiceState& state,
         }
         */
 
-        PayloadId buildProcessId = 0;
+        uint64_t buildProcessId = 0;
 
         if (attributes) {
             // payload build process
             if (attributes->timestamp <= head_header->timestamp) {
-                co_return ForkChoiceUpdateReply{{PayloadStatus::kInvalid, no_latest_valid_hash, "invalid payload attributes"}, no_payload_id};  // todo: return error code -38003
+                co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalid, no_latest_valid_hash, "invalid payload attributes"}, no_payload_id};  // todo: return error code -38003
                 // in this case spec states that forkchoiceState update MUST NOT be rolled back
             }
 
             // buildProcessId = exec_engine_.build_payload(head_header_hash, attributes);  // todo: use timeout here
         }
 
-        co_return ForkChoiceUpdateReply{{PayloadStatus::kValid, state.head_block_hash}, buildProcessId};
+        co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kValid, state.head_block_hash}, buildProcessId};
 
     } catch (const PayloadValidationError& e) {
         log::Error("Sync") << "Error processing fork-choice: " << e.what();
-        co_return ForkChoiceUpdateReply{{PayloadStatus::kInvalid, no_latest_valid_hash, e.what()}, no_payload_id};
+        co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalid, no_latest_valid_hash, e.what()}, no_payload_id};
     } catch (const std::exception& e) {
         log::Error("Sync") << "Error processing fork-choice: " << e.what();
-        co_return ForkChoiceUpdateReply{{PayloadStatus::kInvalid, no_latest_valid_hash, e.what()}, no_payload_id};
+        co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalid, no_latest_valid_hash, e.what()}, no_payload_id};
     }
 }
 
-auto PoSSync::get_payload(std::string /*payloadId*/) -> asio::awaitable<ExecutionPayload> {
+auto PoSSync::get_payload(uint64_t /*payloadId*/) -> asio::awaitable<rpc::ExecutionPayload> {
     // Implementation of engine_getPayloadV1 method
     ensure_invariant(false, "get_payload not implemented");
-    co_return ExecutionPayload{};
+    co_return rpc::ExecutionPayload{};
 }
 
-auto PoSSync::exchange_transition_config(const TransitionConfiguration& /*config*/) -> asio::awaitable<TransitionConfiguration> {
+auto PoSSync::exchange_transition_config(const rpc::TransitionConfiguration& /*config*/) -> asio::awaitable<rpc::TransitionConfiguration> {
     // Implementation of engine_exchangeTransitionConfigurationV1 method
     ensure_invariant(false, "exchange_transition_config not implemented");
-    co_return TransitionConfiguration{};
+    co_return rpc::TransitionConfiguration{};
 }
 
 }  // namespace silkworm::chainsync

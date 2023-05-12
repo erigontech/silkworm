@@ -181,7 +181,7 @@ jobs:
     resource_class: xlarge
     steps:
       - checkout_with_submodules
-      - build
+      - build_using_conan
       - test
 
   linux-clang-15-address-sanitizer:

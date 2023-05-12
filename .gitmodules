@@ -57,3 +57,6 @@
 [submodule "third_party/ethash"]
 	path = third_party/ethash
 	url = https://github.com/chfast/ethash.git
+[submodule "third_party/mimalloc"]
+	path = third_party/mimalloc
+	url = https://github.com/microsoft/mimalloc

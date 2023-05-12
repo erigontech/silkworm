@@ -230,7 +230,6 @@ class MockSentryClient
 
         silkworm::sentry::api::api_common::NodeInfo info = {
             silkworm::sentry::common::EnodeUrl{node_url_str},
-            silkworm::sentry::common::EccPublicKey::deserialize_hex(kTestSentryNodeId),
             kTestSentryNodeClientId,
             boost::asio::ip::tcp::endpoint{boost::asio::ip::make_address(ip_str), port},
             port,

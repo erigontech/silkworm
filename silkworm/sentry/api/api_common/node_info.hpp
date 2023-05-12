@@ -20,14 +20,12 @@
 
 #include <boost/asio/ip/tcp.hpp>
 
-#include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 
 namespace silkworm::sentry::api::api_common {
 
 struct NodeInfo {
     sentry::common::EnodeUrl node_url;
-    sentry::common::EccPublicKey node_public_key;
     std::string client_id;
     boost::asio::ip::tcp::endpoint rlpx_server_listen_endpoint;
     uint16_t rlpx_server_port;

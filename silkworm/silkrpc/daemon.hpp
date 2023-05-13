@@ -59,7 +59,7 @@ class Daemon {
   public:
     static int run(const DaemonSettings& settings, const DaemonInfo& info = {});
 
-    explicit Daemon(const DaemonSettings& settings);
+    explicit Daemon(DaemonSettings settings);
 
     Daemon(const Daemon&) = delete;
     Daemon& operator=(const Daemon&) = delete;
@@ -81,7 +81,7 @@ class Daemon {
     void add_shared_services();
 
     //! The RPC daemon configuration settings.
-    const DaemonSettings& settings_;
+    DaemonSettings settings_;
 
     //! The factory of gRPC client-side channels.
     ChannelFactory create_channel_;

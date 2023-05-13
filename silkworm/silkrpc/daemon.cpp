@@ -208,10 +208,10 @@ ChannelFactory Daemon::make_channel_factory(const DaemonSettings& settings) {
     };
 }
 
-Daemon::Daemon(const DaemonSettings& settings)
-    : settings_(settings),
+Daemon::Daemon(DaemonSettings settings)
+    : settings_(std::move(settings)),
       create_channel_{make_channel_factory(settings_)},
-      context_pool_{settings_.num_contexts /*, create_channel_, settings.datadir, settings_.wait_mode*/},
+      context_pool_{settings_.num_contexts},
       worker_pool_{settings_.num_workers},
       kv_stub_{::remote::KV::NewStub(create_channel_())} {
     // Load the channel authentication token (if required)

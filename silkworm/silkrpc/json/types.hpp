@@ -32,6 +32,7 @@
 #include <silkworm/silkrpc/json/filter.hpp>
 #include <silkworm/silkrpc/json/fork_choice.hpp>
 #include <silkworm/silkrpc/json/log.hpp>
+#include <silkworm/silkrpc/json/node_info.hpp>
 #include <silkworm/silkrpc/json/payload_attributes.hpp>
 #include <silkworm/silkrpc/json/receipt.hpp>
 #include <silkworm/silkrpc/json/transition_configuration.hpp>
@@ -84,10 +85,6 @@ inline constexpr auto hashSize = 128;
 inline constexpr auto int64Size = 32;
 inline constexpr auto dataSize = 4096;
 inline constexpr auto ethCallResultFixedSize = 2048;
-
-void to_json(nlohmann::json& json, const struct NodeInfo& node_info);
-
-void to_json(nlohmann::json& json, const struct NodeInfoPorts& node_info_ports);
 
 void to_json(nlohmann::json& json, const PeerInfo& peer_info);
 

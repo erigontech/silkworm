@@ -1122,16 +1122,21 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
                                         block_number};
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
 
+        std::shared_ptr<silkworm::rpc::state::LocalState> local_state = nullptr;
         auto ltx = dynamic_cast<rpc::ethdb::file::LocalTransaction*>(tx.get());
-        auto tx_managed = ltx->get_tx();
-        auto rtxn = db::ROTxn{std::move(tx_managed)};
-        //mdbx::env_managed& env = ltx->get_env(); 
-        //auto rtxn = db::ROTxn{env};
-        std::shared_ptr<silkworm::rpc::state::LocalState> local_state = std::make_shared<silkworm::rpc::state::LocalState>(io_context_, block_number, rtxn);
+        if (ltx) {
+           //auto tx_managed = ltx->get_tx();
+           //auto rtxn = db::ROTxn{std::move(tx_managed)};
+           mdbx::env_managed& env = ltx->get_env(); 
+           auto rtxn = db::ROTxn{env};
+           local_state = std::make_shared<silkworm::rpc::state::LocalState>(io_context_, block_number, rtxn);
+        }
         EVMExecutor executor{*chain_config_ptr, workers_, remote_state, local_state};
         silkworm::Transaction txn{call.to_transaction()};
         const auto execution_result = co_await executor.call(block_with_hash->block, txn);
-        ltx->set_tx(tx_managed);
+        //if (ltx) {
+            //ltx->set_tx(tx_managed);
+        //}
 
         if (execution_result.pre_check_error) {
             make_glaze_json_error(reply, request["id"], -32000, execution_result.pre_check_error.value());

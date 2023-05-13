@@ -38,7 +38,7 @@ class Transaction {
 
     virtual ~Transaction() = default;
 
-    [[nodiscard]] virtual uint64_t tx_id() const = 0;
+    [[nodiscard]] virtual uint64_t view_id() const = 0;
 
     virtual boost::asio::awaitable<void> open() = 0;
 

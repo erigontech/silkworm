@@ -253,7 +253,7 @@ TEST_CASE("CoherentStateCache::get_view returns no view", "[silkrpc][ethdb][kv][
     SECTION("no batch") {
         CoherentStateCache cache;
         test::MockTransaction txn;
-        EXPECT_CALL(txn, tx_id()).WillOnce(Return(kTestViewId0));
+        EXPECT_CALL(txn, view_id()).WillOnce(Return(kTestViewId0));
         std::unique_ptr<StateView> view = cache.get_view(txn);
         CHECK(view == nullptr);
         CHECK(cache.state_hit_count() == 0);
@@ -267,7 +267,7 @@ TEST_CASE("CoherentStateCache::get_view returns no view", "[silkrpc][ethdb][kv][
         cache.on_new_block(remote::StateChangeBatch{});
         CHECK(cache.latest_data_size() == 0);
         test::MockTransaction txn;
-        EXPECT_CALL(txn, tx_id()).WillOnce(Return(kTestViewId0));
+        EXPECT_CALL(txn, view_id()).WillOnce(Return(kTestViewId0));
         std::unique_ptr<StateView> view = cache.get_view(txn);
         CHECK(view == nullptr);
         CHECK(cache.state_hit_count() == 0);
@@ -290,7 +290,7 @@ TEST_CASE("CoherentStateCache::get_view one view", "[silkrpc][ethdb][kv][state_c
         CHECK(cache.latest_data_size() == 1);
 
         test::MockTransaction txn;
-        EXPECT_CALL(txn, tx_id()).Times(2).WillRepeatedly(Return(kTestViewId0));
+        EXPECT_CALL(txn, view_id()).Times(2).WillRepeatedly(Return(kTestViewId0));
 
         get_and_check_upsert(cache, txn, kTestAddress1, kTestAccountData);
 
@@ -308,7 +308,7 @@ TEST_CASE("CoherentStateCache::get_view one view", "[silkrpc][ethdb][kv][state_c
         CHECK(cache.latest_code_size() == 1);
 
         test::MockTransaction txn;
-        EXPECT_CALL(txn, tx_id()).Times(4).WillRepeatedly(Return(kTestViewId0));
+        EXPECT_CALL(txn, view_id()).Times(4).WillRepeatedly(Return(kTestViewId0));
 
         get_and_check_upsert(cache, txn, kTestAddress1, kTestAccountData);
 
@@ -332,7 +332,7 @@ TEST_CASE("CoherentStateCache::get_view one view", "[silkrpc][ethdb][kv][state_c
         CHECK(cache.latest_data_size() == 1);
 
         test::MockTransaction txn;
-        EXPECT_CALL(txn, tx_id()).Times(2).WillRepeatedly(Return(kTestViewId0));
+        EXPECT_CALL(txn, view_id()).Times(2).WillRepeatedly(Return(kTestViewId0));
 
         std::unique_ptr<StateView> view = cache.get_view(txn);
         CHECK(view != nullptr);
@@ -358,7 +358,7 @@ TEST_CASE("CoherentStateCache::get_view one view", "[silkrpc][ethdb][kv][state_c
         CHECK(cache.latest_data_size() == 1);
 
         test::MockTransaction txn;
-        EXPECT_CALL(txn, tx_id()).Times(2).WillRepeatedly(Return(kTestViewId0));
+        EXPECT_CALL(txn, view_id()).Times(2).WillRepeatedly(Return(kTestViewId0));
 
         std::unique_ptr<StateView> view = cache.get_view(txn);
         CHECK(view != nullptr);
@@ -414,7 +414,7 @@ TEST_CASE("CoherentStateCache::get_view one view", "[silkrpc][ethdb][kv][state_c
         CHECK(cache.latest_data_size() == 2);
 
         test::MockTransaction txn;
-        EXPECT_CALL(txn, tx_id()).Times(3).WillRepeatedly(Return(kTestViewId0));
+        EXPECT_CALL(txn, view_id()).Times(3).WillRepeatedly(Return(kTestViewId0));
         std::unique_ptr<StateView> view = cache.get_view(txn);
 
         CHECK(view != nullptr);
@@ -447,7 +447,7 @@ TEST_CASE("CoherentStateCache::get_view one view", "[silkrpc][ethdb][kv][state_c
         CHECK(cache.latest_code_size() == 1);
 
         test::MockTransaction txn;
-        EXPECT_CALL(txn, tx_id()).Times(2).WillRepeatedly(Return(kTestViewId0));
+        EXPECT_CALL(txn, view_id()).Times(2).WillRepeatedly(Return(kTestViewId0));
 
         std::unique_ptr<StateView> view = cache.get_view(txn);
         CHECK(view != nullptr);
@@ -482,8 +482,8 @@ TEST_CASE("CoherentStateCache::get_view two views", "[silkrpc][ethdb][kv][state_
         CHECK(cache.latest_data_size() == 1);
 
         test::MockTransaction txn1, txn2;
-        EXPECT_CALL(txn1, tx_id()).Times(2).WillRepeatedly(Return(kTestViewId1));
-        EXPECT_CALL(txn2, tx_id()).Times(2).WillRepeatedly(Return(kTestViewId2));
+        EXPECT_CALL(txn1, view_id()).Times(2).WillRepeatedly(Return(kTestViewId1));
+        EXPECT_CALL(txn2, view_id()).Times(2).WillRepeatedly(Return(kTestViewId2));
 
         get_and_check_upsert(cache, txn1, kTestAddress1, kTestAccountData);
 
@@ -510,8 +510,8 @@ TEST_CASE("CoherentStateCache::get_view two views", "[silkrpc][ethdb][kv][state_
         CHECK(cache.latest_code_size() == 2);
 
         test::MockTransaction txn1, txn2;
-        EXPECT_CALL(txn1, tx_id()).Times(2).WillRepeatedly(Return(kTestViewId1));
-        EXPECT_CALL(txn2, tx_id()).Times(4).WillRepeatedly(Return(kTestViewId2));
+        EXPECT_CALL(txn1, view_id()).Times(2).WillRepeatedly(Return(kTestViewId1));
+        EXPECT_CALL(txn2, view_id()).Times(4).WillRepeatedly(Return(kTestViewId2));
 
         get_and_check_code(cache, txn1, kTestCode1);
 
@@ -541,7 +541,7 @@ TEST_CASE("CoherentStateCache::on_new_block exceed max views", "[silkrpc][ethdb]
         cache.on_new_block(
             new_batch_with_upsert(kTestViewId0 + i, kTestBlockNumber + i, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
         test::MockTransaction txn;
-        EXPECT_CALL(txn, tx_id()).WillOnce(Return(kTestViewId0 + i));
+        EXPECT_CALL(txn, view_id()).WillOnce(Return(kTestViewId0 + i));
         CHECK(cache.get_view(txn) != nullptr);
     }
 
@@ -549,12 +549,12 @@ TEST_CASE("CoherentStateCache::on_new_block exceed max views", "[silkrpc][ethdb]
     cache.on_new_block(
         new_batch_with_upsert(kTestViewId0 + kMaxViews, kTestBlockNumber, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
     test::MockTransaction txn;
-    EXPECT_CALL(txn, tx_id()).WillOnce(Return(kTestViewId0 + kMaxViews));
+    EXPECT_CALL(txn, view_id()).WillOnce(Return(kTestViewId0 + kMaxViews));
     CHECK(cache.get_view(txn) != nullptr);
 
     // Oldest state view i.e. state view with id=0 should have been erased
     test::MockTransaction txn0;
-    EXPECT_CALL(txn0, tx_id()).WillOnce(Return(kTestViewId0));
+    EXPECT_CALL(txn0, view_id()).WillOnce(Return(kTestViewId0));
     CHECK(cache.get_view(txn0) == nullptr);
 }
 
@@ -596,7 +596,7 @@ TEST_CASE("CoherentStateCache::on_new_block clear the cache on view ID wrapping"
         cache.on_new_block(
             new_batch_with_upsert(view_id, kTestBlockNumber + i, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
         test::MockTransaction txn;
-        EXPECT_CALL(txn, tx_id()).WillRepeatedly(Return(view_id));
+        EXPECT_CALL(txn, view_id()).WillRepeatedly(Return(view_id));
         CHECK(cache.get_view(txn) != nullptr);
     }
 
@@ -605,14 +605,14 @@ TEST_CASE("CoherentStateCache::on_new_block clear the cache on view ID wrapping"
     cache.on_new_block(
         new_batch_with_upsert(next_view_id, kTestBlockNumber, kTestBlockHash, kTestZeroTxs, /*unwind=*/false));
     test::MockTransaction txn;
-    EXPECT_CALL(txn, tx_id()).WillRepeatedly(Return(next_view_id));
+    EXPECT_CALL(txn, view_id()).WillRepeatedly(Return(next_view_id));
     CHECK(cache.get_view(txn) != nullptr);
 
     // All previous state views should have been erased
     for (uint64_t i{0}; i < wrapping_view_ids.size(); ++i) {
         uint64_t old_view_id = wrapping_view_ids[i];
         test::MockTransaction old_txn;
-        EXPECT_CALL(old_txn, tx_id()).WillRepeatedly(Return(old_view_id));
+        EXPECT_CALL(old_txn, view_id()).WillRepeatedly(Return(old_view_id));
         CHECK(cache.get_view(old_txn) == nullptr);
     }
 }

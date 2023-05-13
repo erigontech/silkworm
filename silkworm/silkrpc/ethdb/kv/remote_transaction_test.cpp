@@ -40,12 +40,12 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::open", "[silkrpc][et
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call succeeds setting the specified transaction ID
         remote::Pair pair;
-        pair.set_tx_id(4);
+        pair.set_view_id(4);
         EXPECT_CALL(reader_writer_, Read).WillOnce(test::read_success_with(grpc_context_, pair));
 
         // Execute the test: opening a transaction should succeed and transaction should have expected transaction ID
         CHECK_NOTHROW(spawn_and_wait(remote_tx_.open()));
-        CHECK(remote_tx_.tx_id() == 4);
+        CHECK(remote_tx_.view_id() == 4);
     }
     SECTION("failure in request") {
         // Set the call expectations:
@@ -82,7 +82,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::close", "[silkrpc][e
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call succeeds w/ expected transaction ID set in pair
         remote::Pair pair;
-        pair.set_tx_id(4);
+        pair.set_view_id(4);
         EXPECT_CALL(reader_writer_, Read).WillOnce(test::read_success_with(grpc_context_, pair));
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call succeeds
         EXPECT_CALL(reader_writer_, WritesDone).WillOnce(test::writes_done_success(grpc_context_));
@@ -92,11 +92,11 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::close", "[silkrpc][e
         // Execute the test preconditions:
         // open a new transaction w/ expected tx_id
         REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
-        REQUIRE(remote_tx_.tx_id() == 4);
+        REQUIRE(remote_tx_.view_id() == 4);
 
         // Execute the test: closing the transaction should succeed and transaction should have zero transaction ID
         CHECK_NOTHROW(spawn_and_wait(remote_tx_.close()));
-        CHECK(remote_tx_.tx_id() == 0);
+        CHECK(remote_tx_.view_id() == 0);
     }
     SECTION("success w/ open w/ cursor in table") {
         // Set the call expectations:
@@ -104,7 +104,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::close", "[silkrpc][e
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call succeeds w/ expected transaction ID set in pair
         remote::Pair pair;
-        pair.set_tx_id(4);
+        pair.set_view_id(4);
         EXPECT_CALL(reader_writer_, Read).Times(2).WillRepeatedly(test::read_success_with(grpc_context_, pair));
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call succeeds
         EXPECT_CALL(reader_writer_, Write(_, _)).WillOnce(test::write_success(grpc_context_));
@@ -116,14 +116,14 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::close", "[silkrpc][e
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
         REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
-        REQUIRE(remote_tx_.tx_id() == 4);
+        REQUIRE(remote_tx_.view_id() == 4);
         // open a cursor within such transaction
         const auto cursor = spawn_and_wait(remote_tx_.cursor("table1"));
         REQUIRE(cursor != nullptr);
 
         // Execute the test: closing the transaction should succeed and transaction should have zero transaction ID
         CHECK_NOTHROW(spawn_and_wait(remote_tx_.close()));
-        CHECK(remote_tx_.tx_id() == 0);
+        CHECK(remote_tx_.view_id() == 0);
     }
     SECTION("failure in write") {
         // Set the call expectations:
@@ -131,7 +131,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::close", "[silkrpc][e
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call succeeds w/ expected transaction ID set in pair
         remote::Pair pair;
-        pair.set_tx_id(4);
+        pair.set_view_id(4);
         EXPECT_CALL(reader_writer_, Read).WillOnce(test::read_success_with(grpc_context_, pair));
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call fails
         EXPECT_CALL(reader_writer_, WritesDone).WillOnce(test::writes_done_failure(grpc_context_));
@@ -141,7 +141,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::close", "[silkrpc][e
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
         REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
-        REQUIRE(remote_tx_.tx_id() == 4);
+        REQUIRE(remote_tx_.view_id() == 4);
 
         // Execute the test: closing the transaction should raise an exception w/ expected gRPC status code
         CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.close()), boost::system::system_error, test::exception_has_cancelled_grpc_status_code());
@@ -152,7 +152,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::close", "[silkrpc][e
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call succeeds w/ expected transaction ID set in pair
         remote::Pair pair;
-        pair.set_tx_id(4);
+        pair.set_view_id(4);
         EXPECT_CALL(reader_writer_, Read).WillOnce(test::read_success_with(grpc_context_, pair));
         // 4. AsyncReaderWriter<remote::Cursor, remote::Pair>::WritesDone call succeeds
         EXPECT_CALL(reader_writer_, WritesDone).WillOnce(test::writes_done_success(grpc_context_));
@@ -162,7 +162,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::close", "[silkrpc][e
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
         REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
-        REQUIRE(remote_tx_.tx_id() == 4);
+        REQUIRE(remote_tx_.view_id() == 4);
 
         // Execute the test: closing the transaction should raise an exception w/ expected gRPC status code
         CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.close()), boost::system::system_error, test::exception_has_unknown_grpc_status_code());
@@ -180,7 +180,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[silkrpc][
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read calls succeed w/ specified transaction and cursor IDs
         remote::Pair tx_id_pair;
-        tx_id_pair.set_tx_id(4);
+        tx_id_pair.set_view_id(4);
         remote::Pair cursor_id_pair;
         cursor_id_pair.set_cursor_id(0x23);
         EXPECT_CALL(reader_writer_, Read)
@@ -196,7 +196,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[silkrpc][
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
         REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
-        REQUIRE(remote_tx_.tx_id() == 4);
+        REQUIRE(remote_tx_.view_id() == 4);
 
         // Execute the test:
         // 1. opening a cursor should succeed and cursor should have expected cursor ID
@@ -218,7 +218,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[silkrpc][
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read 1st call succeeds w/ specified transaction ID, 2nd call fails
         remote::Pair tx_id_pair;
-        tx_id_pair.set_tx_id(4);
+        tx_id_pair.set_view_id(4);
         EXPECT_CALL(reader_writer_, Read)
             .WillOnce(test::read_success_with(grpc_context_, tx_id_pair))
             .WillOnce(test::read_failure(grpc_context_));
@@ -230,7 +230,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[silkrpc][
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
         REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
-        REQUIRE(remote_tx_.tx_id() == 4);
+        REQUIRE(remote_tx_.view_id() == 4);
 
         // Execute the test: opening a cursor should raise an exception w/ expected gRPC status code
         CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.cursor("table1")), boost::system::system_error,
@@ -247,7 +247,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[silkrpc][
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call succeeds w/ specified transaction ID
         remote::Pair tx_id_pair;
-        tx_id_pair.set_tx_id(4);
+        tx_id_pair.set_view_id(4);
         EXPECT_CALL(reader_writer_, Read).WillOnce(test::read_success_with(grpc_context_, tx_id_pair));
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call fails
         EXPECT_CALL(reader_writer_, Write(_, _)).WillOnce(test::write_failure(grpc_context_));
@@ -257,7 +257,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor", "[silkrpc][
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
         REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
-        REQUIRE(remote_tx_.tx_id() == 4);
+        REQUIRE(remote_tx_.view_id() == 4);
 
         // Execute the test: opening a cursor should raise an exception w/ expected gRPC status code
         CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.cursor("table1")), boost::system::system_error,
@@ -287,7 +287,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read calls succeed w/ specified transaction and cursor IDs
         remote::Pair tx_id_pair;
-        tx_id_pair.set_tx_id(4);
+        tx_id_pair.set_view_id(4);
         remote::Pair cursor_id_pair;
         cursor_id_pair.set_cursor_id(0x23);
         EXPECT_CALL(reader_writer_, Read)
@@ -303,7 +303,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
         REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
-        REQUIRE(remote_tx_.tx_id() == 4);
+        REQUIRE(remote_tx_.view_id() == 4);
 
         // Execute the test:
         // 1. opening a cursor should succeed and cursor should have expected cursor ID
@@ -325,7 +325,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read 1st call succeeds w/ specified transaction ID, 2nd call fails
         remote::Pair tx_id_pair;
-        tx_id_pair.set_tx_id(4);
+        tx_id_pair.set_view_id(4);
         EXPECT_CALL(reader_writer_, Read)
             .WillOnce(test::read_success_with(grpc_context_, tx_id_pair))
             .WillOnce(test::read_failure(grpc_context_));
@@ -337,7 +337,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
         REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
-        REQUIRE(remote_tx_.tx_id() == 4);
+        REQUIRE(remote_tx_.view_id() == 4);
 
         // Execute the test: opening a cursor should raise an exception w/ expected gRPC status code
         CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.cursor_dup_sort("table1")), boost::system::system_error,
@@ -354,7 +354,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
         expect_request_async_tx(/*ok=*/true);
         // 2. AsyncReaderWriter<remote::Cursor, remote::Pair>::Read call succeeds w/ specified transaction ID
         remote::Pair tx_id_pair;
-        tx_id_pair.set_tx_id(4);
+        tx_id_pair.set_view_id(4);
         EXPECT_CALL(reader_writer_, Read).WillOnce(test::read_success_with(grpc_context_, tx_id_pair));
         // 3. AsyncReaderWriter<remote::Cursor, remote::Pair>::Write call fails
         EXPECT_CALL(reader_writer_, Write(_, _)).WillOnce(test::write_failure(grpc_context_));
@@ -364,7 +364,7 @@ TEST_CASE_METHOD(RemoteTransactionTest, "RemoteTransaction::cursor_dup_sort", "[
         // Execute the test preconditions:
         // open a new transaction w/ expected transaction ID
         REQUIRE_NOTHROW(spawn_and_wait(remote_tx_.open()));
-        REQUIRE(remote_tx_.tx_id() == 4);
+        REQUIRE(remote_tx_.view_id() == 4);
 
         // Execute the test: opening a cursor should raise an exception w/ expected gRPC status code
         CHECK_THROWS_MATCHES(spawn_and_wait(remote_tx_.cursor_dup_sort("table1")), boost::system::system_error,

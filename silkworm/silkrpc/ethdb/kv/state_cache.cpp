@@ -48,7 +48,7 @@ CoherentStateCache::CoherentStateCache(CoherentCacheConfig config) : config_(con
 }
 
 std::unique_ptr<StateView> CoherentStateCache::get_view(Transaction& txn) {
-    const auto view_id = txn.tx_id();
+    const auto view_id = txn.view_id();
     std::unique_lock write_lock{rw_mutex_};
     CoherentStateRoot* root = get_root(view_id);
     return root->ready ? std::make_unique<CoherentStateView>(txn, this) : nullptr;
@@ -220,7 +220,7 @@ bool CoherentStateCache::add_code(KeyValue kv, CoherentStateRoot* root, StateVie
 boost::asio::awaitable<std::optional<silkworm::Bytes>> CoherentStateCache::get(const silkworm::Bytes& key, Transaction& txn) {
     std::shared_lock read_lock{rw_mutex_};
 
-    const auto view_id = txn.tx_id();
+    const auto view_id = txn.view_id();
     const auto root_it = state_view_roots_.find(view_id);
     if (root_it == state_view_roots_.end()) {
         co_return std::nullopt;
@@ -262,7 +262,7 @@ boost::asio::awaitable<std::optional<silkworm::Bytes>> CoherentStateCache::get(c
 boost::asio::awaitable<std::optional<silkworm::Bytes>> CoherentStateCache::get_code(const silkworm::Bytes& key, Transaction& txn) {
     std::shared_lock read_lock{rw_mutex_};
 
-    const auto view_id = txn.tx_id();
+    const auto view_id = txn.view_id();
     const auto root_it = state_view_roots_.find(view_id);
     if (root_it == state_view_roots_.end()) {
         co_return std::nullopt;

@@ -37,11 +37,11 @@ namespace silkworm::rpc::ethdb::file {
 class LocalTransaction : public Transaction {
   public:
     explicit LocalTransaction(std::shared_ptr<mdbx::env_managed> chaindata_env)
-        : tx_id_{0}, chaindata_env_{std::move(chaindata_env)}, last_cursor_id_{0} {}
+        : chaindata_env_{std::move(chaindata_env)}, last_cursor_id_{0} {}
 
     ~LocalTransaction() override = default;
 
-    [[nodiscard]] uint64_t tx_id() const override { return tx_id_; }
+    [[nodiscard]] uint64_t view_id() const override { return read_only_txn_.id(); }
 
     boost::asio::awaitable<void> open() override;
 
@@ -56,7 +56,6 @@ class LocalTransaction : public Transaction {
 
     std::map<std::string, std::shared_ptr<CursorDupSort>> cursors_;
     std::map<std::string, std::shared_ptr<CursorDupSort>> dup_cursors_;
-    uint64_t tx_id_;
 
     std::shared_ptr<mdbx::env_managed> chaindata_env_;
     mdbx::txn_managed read_only_txn_;

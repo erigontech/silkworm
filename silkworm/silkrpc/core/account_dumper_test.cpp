@@ -150,7 +150,7 @@ class DummyTransaction : public ethdb::Transaction {
   public:
     explicit DummyTransaction(const nlohmann::json& json) : json_{json} {}
 
-    [[nodiscard]] uint64_t tx_id() const override { return 0; }
+    [[nodiscard]] uint64_t view_id() const override { return 0; }
 
     boost::asio::awaitable<void> open() override {
         co_return;

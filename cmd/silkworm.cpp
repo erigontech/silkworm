@@ -540,7 +540,7 @@ int main(int argc, char* argv[]) {
 
         // Initialize logging with cli settings
         sw_log::init(settings.log_settings);
-        sw_log::set_thread_name("main");
+        sw_log::set_thread_name("main-thread");
 
         // Output BuildInfo
         const auto build_info{silkworm_get_buildinfo()};

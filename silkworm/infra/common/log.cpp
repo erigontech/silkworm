@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+#include "log.hpp"
+
 #include <fstream>
 #include <iostream>
 #include <mutex>
@@ -24,9 +26,10 @@
 
 #include <absl/time/clock.h>
 
-#include <silkworm/infra/common/log.hpp>
-
 namespace silkworm::log {
+
+//! The fixed size for thread name in log traces
+constexpr auto kThreadNameFixedSize{11};
 
 static Settings settings_{};
 static std::mutex out_mtx{};
@@ -55,7 +58,11 @@ void set_verbosity(Level level) { settings_.log_verbosity = level; }
 
 bool test_verbosity(Level level) { return level <= settings_.log_verbosity; }
 
-void set_thread_name(const char* name) { thread_name_ = std::string(name); }
+//! Set the current thread name resizing it to a fixed size
+void set_thread_name(const char* name) {
+    thread_name_ = std::string(name);
+    thread_name_.resize(kThreadNameFixedSize, ' ');
+}
 
 std::string get_thread_name() {
     if (thread_name_.empty()) {
@@ -88,8 +95,8 @@ static inline std::pair<const char*, const char*> get_level_settings(Level level
 struct separate_thousands : std::numpunct<char> {
     char separator;
     explicit separate_thousands(char sep) : separator(sep) {}
-    char do_thousands_sep() const override { return separator; }
-    string_type do_grouping() const override { return "\3"; }  // groups of 3 digit
+    [[nodiscard]] char do_thousands_sep() const override { return separator; }
+    [[nodiscard]] string_type do_grouping() const override { return "\3"; }  // groups of 3 digit
 };
 
 void prepare_for_logging(std::ostream& ss) {

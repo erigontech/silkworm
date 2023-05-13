@@ -136,13 +136,13 @@ jobs:
       - build
       - test
 
-  linux-gcc-13-conan:
+  linux-gcc-11-conan:
     environment:
       TOOLCHAIN: cxx20
       BUILD_TYPE: Debug
       BUILD_CMAKE_ARGS: -DCONAN_PACKAGE_MANAGER=ON -DCONAN_PROFILE=linux_gcc_11_debug
     docker:
-      - image: ethereum/cpp-build-env:20-gcc-13
+      - image: ethereum/cpp-build-env:20-gcc-11
     resource_class: xlarge
     steps:
       - run:
@@ -334,7 +334,7 @@ workflows:
   silkworm:
     jobs:
       - linux-gcc-12-release
-      - linux-gcc-13-conan
+      - linux-gcc-11-conan
       - linux-gcc-11-thread-sanitizer
       - linux-clang-13-coverage
       - linux-clang-15-address-sanitizer

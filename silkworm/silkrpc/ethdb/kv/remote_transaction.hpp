@@ -42,7 +42,7 @@ class RemoteTransaction : public Transaction {
 
     ~RemoteTransaction() override = default;
 
-    uint64_t tx_id() const override { return tx_id_; }
+    uint64_t view_id() const override { return view_id_; }
 
     boost::asio::awaitable<void> open() override;
 
@@ -58,7 +58,7 @@ class RemoteTransaction : public Transaction {
     std::map<std::string, std::shared_ptr<CursorDupSort>> cursors_;
     std::map<std::string, std::shared_ptr<CursorDupSort>> dup_cursors_;
     TxRpc tx_rpc_;
-    uint64_t tx_id_{0};
+    uint64_t view_id_{0};
 };
 
 }  // namespace silkworm::rpc::ethdb::kv

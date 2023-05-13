@@ -20,16 +20,12 @@
 
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/protocol/validation.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/measure.hpp>
 
 namespace silkworm::chainsync {
 
 using namespace boost::asio;
-
-static void ensure_invariant(bool condition, std::string message) {
-    if (!condition)
-        throw std::logic_error("Consensus invariant violation: " + message);
-}
 
 class PayloadValidationError : public std::logic_error {
   public:

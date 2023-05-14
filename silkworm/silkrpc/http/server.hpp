@@ -35,7 +35,6 @@
 
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/silkrpc/commands/rpc_api_table.hpp>
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/http/request_handler.hpp>
 
 namespace silkworm::rpc::http {

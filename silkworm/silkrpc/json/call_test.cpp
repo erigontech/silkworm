@@ -201,4 +201,83 @@ TEST_CASE("Bundle", "[silkworm::json][from_json]") {
         CHECK(bo.base_fee == 4);
     }
 }
+
+TEST_CASE("AccountOverrides", "[silkworm::json][from_json]") {
+    SECTION("Empty account overrides") {
+        auto json = R"({
+        })"_json;
+
+        auto state = json.get<AccountOverrides>();
+        CHECK(state.balance.has_value() == false);
+        CHECK(state.nonce.has_value() == false);
+        CHECK(state.code.has_value() == false);
+        CHECK(state.state.size() == 0);
+        CHECK(state.state_diff.size() == 0);
+    }
+    SECTION("Full account overrides") {
+        auto json = R"({
+            "balance": "0x1000000",
+            "nonce": 10,
+            "data": "0xdaa6d5560000000000000000000000000000000000000000000000000000000000000000"
+        })"_json;
+
+        auto state = json.get<AccountOverrides>();
+        CHECK(state.balance.has_value() == true);
+        CHECK(state.balance.value() == intx::uint256{16777216});
+
+        CHECK(state.nonce.has_value() == true);
+        CHECK(state.nonce.value() == 10);
+
+        CHECK(state.code.has_value() == false);
+        CHECK(state.code.value() == silkworm::from_hex("0xdaa6d5560000000000000000000000000000000000000000000000000000000000000000"));
+
+        CHECK(state.state.size() == 0);
+        CHECK(state.state_diff.size() == 0);
+    }
+    SECTION("Account overrides with states") {
+        auto json = R"({
+            "state": {
+                "0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6": "0x1000000";
+            },
+            "stateDiff": {
+                "0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6": "0x1000000";
+            }
+        })"_json;
+
+        auto state = json.get<AccountOverrides>();
+        CHECK(state.balance.has_value() == false);
+        CHECK(state.nonce.has_value() == false);
+        CHECK(state.code.has_value() == false);
+
+        CHECK(state.state.size() == 1);
+        CHECK(state.state[0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6_bytes32] == intx::uint256{16777216});
+
+        CHECK(state.state_diff.size() == 1);
+        CHECK(state.state_diff[0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6_bytes32] == intx::uint256{16777216});
+    }
+}
+
+TEST_CASE("SimulationContext", "[silkworm::json][from_json]") {
+    SECTION("Only block number") {
+        auto json = R"({
+            "blockNumber": 1000
+        })"_json;
+
+        auto context = json.get<SimulationContext>();
+        CHECK(context.block_number.is_number());
+        CHECK(context.block_number.number() == 1000);
+        CHECK(context.transaction_index == -1);
+    }
+    SECTION("Block number and tx index") {
+        auto json = R"({
+            "blockNumber": 1000
+            "transactionIndex": 5
+        })"_json;
+
+        auto context = json.get<SimulationContext>();
+        CHECK(context.block_number.is_number());
+        CHECK(context.block_number.number() == 1000);
+        CHECK(context.transaction_index == 5);
+    }
+}
 }  // namespace silkworm::rpc

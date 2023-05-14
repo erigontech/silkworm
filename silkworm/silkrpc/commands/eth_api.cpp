@@ -1176,7 +1176,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& reque
 
     const auto simulation_context = params[1].get<SimulationContext>();
 
-    std::optional<StateOverrides> state_overrides;
+    StateOverrides state_overrides;
     if (params.size() > 2) {
         state_overrides = params[2].get<StateOverrides>();
     }
@@ -1187,16 +1187,19 @@ awaitable<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& reque
 
     SILKRPC_DEBUG << "bundles: " << bundles
                   << " simulation_context: " << simulation_context
-                  << " state_overrides" << state_overrides.value_or(StateOverrides{})
+                  << " state_overrides #" << state_overrides.size()
                   << " timeout: " << timeout.value_or(0) << "\n";
 
     auto tx = co_await database_->begin();
 
     try {
-        call::CallExecutor executor{*context_.io_context(), *tx, *state_cache_, workers_};
+        call::CallExecutor executor{io_context_, *tx, *state_cache_, workers_};
         const auto result = co_await executor.execute(bundles, simulation_context, state_overrides, timeout);
-
-        reply = make_json_content(request["id"], result);
+        if (result.error) {
+            make_glaze_json_error(reply, request["id"], -32000, result.error.value());
+        } else {
+            reply = make_json_content(request["id"], result);
+        }
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
         reply = make_json_error(request["id"], 100, e.what());

@@ -46,8 +46,13 @@ std::ostream& operator<<(std::ostream& out, const Call& call) {
 
 std::ostream& operator<<(std::ostream& out, const Bundles& bundles) {
     out << "[";
+    bool first = true;
     for (const auto& bundle : bundles) {
-        out << bundle;
+        if (!first) {
+            out << ", ";
+        }
+        out << "{" << bundle << "}";
+        first = false;
     }
     out << "]";
     return out;
@@ -77,11 +82,26 @@ std::ostream& operator<<(std::ostream& out, const SimulationContext& sc) {
 }
 
 std::ostream& operator<<(std::ostream& out, const StateOverrides& so) {
-    out << "balance: " << optional_uint256_to_string(so.balance) << " "
-        << "nonce: " << so.nonce.value_or(0) << " "
-        << "code: " << optional_bytes_to_string(so.code) << " "
-        << "state: #" << so.state.size() << " "
-        << "state_diff: #" << so.state_diff.size() << " ";
+    out << "{";
+    bool first = true;
+    for (const auto& item : so) {
+        if (!first) {
+            out << ", ";
+        }
+        out << item.first << ": {" << item.second << "}";
+        first = false;
+    }
+    out << "} ";
+
+    return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const AccountOverrides& ao) {
+    out << "balance: " << optional_uint256_to_string(ao.balance) << " "
+        << "nonce: " << ao.nonce.value_or(0) << " "
+        << "code: " << optional_bytes_to_string(ao.code) << " "
+        << "state: #" << ao.state.size() << " "
+        << "state_diff: #" << ao.state_diff.size() << " ";
 
     return out;
 }

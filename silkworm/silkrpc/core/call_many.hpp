@@ -42,6 +42,7 @@
 namespace silkworm::rpc::call {
 
 struct CallManyResult {
+    std::optional<std::string> error{std::nullopt};
 };
 
 void to_json(nlohmann::json& json, const CallManyResult& result);
@@ -59,7 +60,7 @@ class CallExecutor {
     CallExecutor(const CallExecutor&) = delete;
     CallExecutor& operator=(const CallExecutor&) = delete;
 
-    boost::asio::awaitable<CallManyResult> execute(const Bundles& bundles, const SimulationContext& context, std::optional<StateOverrides> state_overrides, std::optional<std::uint64_t> timeout);
+    boost::asio::awaitable<CallManyResult> execute(const Bundles& bundles, const SimulationContext& context, const StateOverrides& state_overrides, std::optional<std::uint64_t> timeout);
 
   private:
     boost::asio::io_context& io_context_;

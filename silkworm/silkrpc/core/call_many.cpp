@@ -41,7 +41,7 @@ void to_json(nlohmann::json& json, const CallManyResult& /*result*/) {
 }
 
 boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bundles, const SimulationContext& context,
-                                                             std::optional<StateOverrides> /*state_overrides*/, std::optional<std::uint64_t> /*timeout*/) {
+                                                             const StateOverrides& /*state_overrides*/, std::optional<std::uint64_t> /*timeout*/) {
     ethdb::TransactionDatabase tx_database{transaction_};
     ethdb::kv::CachedDatabase cached_database{context.block_number, transaction_, state_cache_};
 
@@ -52,12 +52,16 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
     // state::RemoteState remote_state{io_context_,
     //                                 is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database),
     //                                 block_number};
-
+    CallManyResult result;
     std::uint16_t count{0};
     for (const auto& bundle : bundles) {
         SILKRPC_DEBUG << "bundle[" << count++ << "]: " << bundle << "\n";
+        if (bundle.transactions.size() > 0) {
+            result.error = "empty all bundles transactions";
+            co_return result;
+        }
     }
-    co_return CallManyResult{};
+    co_return result;
 }
 
 }  // namespace silkworm::rpc::call

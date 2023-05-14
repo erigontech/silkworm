@@ -24,7 +24,7 @@
 #include <evmone/instructions.hpp>
 #include <intx/intx.hpp>
 
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkworm::rpc {
@@ -65,17 +65,17 @@ void AccessListTracer::on_instruction_start(uint32_t pc, const intx::uint256* st
     const auto opcode = execution_state.original_code[pc];
     const auto opcode_name = get_opcode_name(opcode_names_, opcode);
 
-    SILKRPC_DEBUG << "on_instruction_start:"
-                  << " pc: " << std::dec << pc
-                  << " opcode: 0x" << std::hex << evmc::hex(opcode)
-                  << " opcode_name: " << opcode_name
-                  << " recipient: " << recipient
-                  << " execution_state: {"
-                  << "   gas_left: " << std::dec << gas
-                  << "   status: " << execution_state.status
-                  << "   msg.gas: " << std::dec << execution_state.msg->gas
-                  << "   msg.depth: " << std::dec << execution_state.msg->depth
-                  << "}\n";
+    SILK_DEBUG << "on_instruction_start:"
+               << " pc: " << std::dec << pc
+               << " opcode: 0x" << std::hex << evmc::hex(opcode)
+               << " opcode_name: " << opcode_name
+               << " recipient: " << recipient
+               << " execution_state: {"
+               << "   gas_left: " << std::dec << gas
+               << "   status: " << execution_state.status
+               << "   msg.gas: " << std::dec << execution_state.msg->gas
+               << "   msg.depth: " << std::dec << execution_state.msg->depth
+               << "}";
 
     if (is_storage_opcode(opcode_name) && stack_height >= 1) {
         const auto address = silkworm::bytes32_from_hex(intx::hex(stack_top[0]));
@@ -112,7 +112,7 @@ inline bool AccessListTracer::exclude(const evmc::address& address) {
 }
 
 void AccessListTracer::add_storage(const evmc::address& address, const evmc::bytes32& storage) {
-    SILKRPC_TRACE << "add_storage:" << address << " storage: " << storage << "\n";
+    SILK_TRACE << "add_storage:" << address << " storage: " << storage;
     for (std::size_t i{0}; i < access_list_.size(); i++) {
         if (access_list_[i].account == address) {
             for (const auto& storage_key : access_list_[i].storage_keys) {
@@ -131,7 +131,7 @@ void AccessListTracer::add_storage(const evmc::address& address, const evmc::byt
 }
 
 void AccessListTracer::add_address(const evmc::address& address) {
-    SILKRPC_TRACE << "add_address:" << address << "\n";
+    SILK_TRACE << "add_address:" << address;
     for (std::size_t i{0}; i < access_list_.size(); i++) {
         if (access_list_[i].account == address) {
             return;

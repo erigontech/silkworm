@@ -16,30 +16,30 @@
 
 #include "remote_database.hpp"
 
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/ethdb/kv/remote_transaction.hpp>
 
 namespace silkworm::rpc::ethdb::kv {
 
 RemoteDatabase::RemoteDatabase(agrpc::GrpcContext& grpc_context, std::shared_ptr<grpc::Channel> channel)
     : grpc_context_(grpc_context), stub_{remote::KV::NewStub(channel)} {
-    SILKRPC_TRACE << "RemoteDatabase::ctor " << this << "\n";
+    SILK_TRACE << "RemoteDatabase::ctor " << this;
 }
 
 RemoteDatabase::RemoteDatabase(agrpc::GrpcContext& grpc_context, std::unique_ptr<remote::KV::StubInterface>&& stub)
     : grpc_context_(grpc_context), stub_(std::move(stub)) {
-    SILKRPC_TRACE << "RemoteDatabase::ctor " << this << "\n";
+    SILK_TRACE << "RemoteDatabase::ctor " << this;
 }
 
 RemoteDatabase::~RemoteDatabase() {
-    SILKRPC_TRACE << "RemoteDatabase::dtor " << this << "\n";
+    SILK_TRACE << "RemoteDatabase::dtor " << this;
 }
 
 boost::asio::awaitable<std::unique_ptr<Transaction>> RemoteDatabase::begin() {
-    SILKRPC_TRACE << "RemoteDatabase::begin " << this << " start\n";
+    SILK_TRACE << "RemoteDatabase::begin " << this << " start";
     auto txn = std::make_unique<RemoteTransaction>(*stub_, grpc_context_);
     co_await txn->open();
-    SILKRPC_TRACE << "RemoteDatabase::begin " << this << " txn: " << txn.get() << " end\n";
+    SILK_TRACE << "RemoteDatabase::begin " << this << " txn: " << txn.get() << " end";
     co_return txn;
 }
 

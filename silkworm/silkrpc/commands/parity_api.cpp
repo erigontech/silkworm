@@ -21,8 +21,8 @@
 #include <vector>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/tables.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
@@ -38,12 +38,12 @@ awaitable<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::j
     auto params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid parity_getBlockReceipts params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
     const auto block_id = params[0].get<std::string>();
-    SILKRPC_DEBUG << "block_id: " << block_id << "\n";
+    SILK_DEBUG << "block_id: " << block_id;
 
     auto tx = co_await database_->begin();
 
@@ -53,7 +53,7 @@ awaitable<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::j
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
         auto receipts{co_await core::get_receipts(tx_database, *block_with_hash)};
-        SILKRPC_INFO << "#receipts: " << receipts.size() << "\n";
+        SILK_INFO << "#receipts: " << receipts.size();
 
         const auto block{block_with_hash->block};
         for (size_t i{0}; i < block.transactions.size(); i++) {
@@ -62,13 +62,13 @@ awaitable<void> ParityRpcApi::handle_parity_get_block_receipts(const nlohmann::j
 
         reply = make_json_content(request["id"], receipts);
     } catch (const std::invalid_argument& iv) {
-        SILKRPC_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump() << "\n";
+        SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
         reply = make_json_content(request["id"], {});
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
@@ -81,7 +81,7 @@ awaitable<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::js
     const auto& params = request["params"];
     if (params.size() < 2) {
         auto error_msg = "invalid parity_listStorageKeys params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
@@ -96,9 +96,9 @@ awaitable<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::js
         block_id = params[3].get<std::string>();
     }
 
-    SILKRPC_DEBUG << "address: 0x" << silkworm::to_hex(address)
-                  << " quantity: " << quantity
-                  << " offset: 0x" << (offset ? silkworm::to_hex(offset.value()) : silkworm::to_hex(silkworm::Bytes{})) << "\n";
+    SILK_DEBUG << "address: 0x" << silkworm::to_hex(address)
+               << " quantity: " << quantity
+               << " offset: 0x" << (offset ? silkworm::to_hex(offset.value()) : silkworm::to_hex(silkworm::Bytes{}));
 
     auto tx = co_await database_->begin();
 
@@ -107,13 +107,13 @@ awaitable<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::js
         StateReader state_reader{tx_database};
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
-        SILKRPC_DEBUG << "read account with address: " << silkworm::to_hex(address) << " block number: " << block_number << "\n";
+        SILK_DEBUG << "read account with address: " << silkworm::to_hex(address) << " block number: " << block_number;
         std::optional<silkworm::Account> account = co_await state_reader.read_account(address, block_number);
         if (!account) throw std::domain_error{"account not found"};
 
         silkworm::Bytes seek_bytes = silkworm::db::storage_prefix(full_view(address), account->incarnation);
         const auto cursor = co_await tx->cursor_dup_sort(db::table::kPlainStateName);
-        SILKRPC_TRACE << "ParityRpcApi::handle_parity_list_storage_keys cursor id: " << cursor->cursor_id() << "\n";
+        SILK_TRACE << "ParityRpcApi::handle_parity_list_storage_keys cursor id: " << cursor->cursor_id();
         silkworm::Bytes seek_val = offset ? offset.value() : silkworm::Bytes{};
 
         std::vector<evmc::bytes32> keys;
@@ -131,17 +131,18 @@ awaitable<void> ParityRpcApi::handle_parity_list_storage_keys(const nlohmann::js
         }
         reply = make_json_content(request["id"], keys);
     } catch (const std::invalid_argument& iv) {
-        SILKRPC_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump() << "\n";
+        SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
         reply = make_json_content(request["id"], {});
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
     co_return;
 }
+
 }  // namespace silkworm::rpc::commands

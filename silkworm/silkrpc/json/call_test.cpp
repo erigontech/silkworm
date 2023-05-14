@@ -18,7 +18,6 @@
 #include <evmc/evmc.hpp>
 #include <intx/intx.hpp>
 
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
 #include "filter.hpp"

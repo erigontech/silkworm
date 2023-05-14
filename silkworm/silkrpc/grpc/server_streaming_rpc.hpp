@@ -28,7 +28,7 @@
 #include <boost/asio/experimental/append.hpp>
 #include <grpcpp/grpcpp.h>
 
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/grpc/dispatcher.hpp>
 #include <silkworm/silkrpc/grpc/error.hpp>
 #include <silkworm/silkrpc/grpc/util.hpp>
@@ -62,10 +62,10 @@ class ServerStreamingRpc<PrepareAsync> {
 
         template <typename Op>
         void operator()(Op& op) {
-            SILKRPC_TRACE << "ServerStreamingRpc::StartRequest::initiate r=" << self_.reader_.get() << " START\n";
+            SILK_TRACE << "ServerStreamingRpc::StartRequest::initiate r=" << self_.reader_.get() << " START";
             agrpc::request(PrepareAsync, self_.stub_, self_.context_, request, self_.reader_,
                            boost::asio::bind_executor(self_.grpc_context_, std::move(op)));
-            SILKRPC_TRACE << "ServerStreamingRpc::StartRequest::initiate r=" << self_.reader_.get() << " END\n";
+            SILK_TRACE << "ServerStreamingRpc::StartRequest::initiate r=" << self_.reader_.get() << " END";
         }
 
         template <typename Op>
@@ -76,9 +76,9 @@ class ServerStreamingRpc<PrepareAsync> {
         template <typename Op>
         void operator()(Op& op, bool ok, detail::RequestTag) {
             if (ok) {
-                SILKRPC_TRACE << "ServerStreamingRpc::StartRequest(op, ok): self_.reader_=" << self_.reader_.get() << " START\n";
+                SILK_TRACE << "ServerStreamingRpc::StartRequest(op, ok): self_.reader_=" << self_.reader_.get() << " START";
                 op.complete({});
-                SILKRPC_TRACE << "ServerStreamingRpc::StartRequest(op, ok): self_.reader_=" << self_.reader_.get() << " END\n";
+                SILK_TRACE << "ServerStreamingRpc::StartRequest(op, ok): self_.reader_=" << self_.reader_.get() << " END";
             } else {
                 self_.finish(std::move(op));
             }
@@ -86,7 +86,7 @@ class ServerStreamingRpc<PrepareAsync> {
 
         template <typename Op>
         void operator()(Op& op, const boost::system::error_code& ec) {
-            SILKRPC_TRACE << "ServerStreamingRpc::StartRequest(op, ec): self_.reader_=" << self_.reader_.get() << " ec=" << ec << "\n";
+            SILK_TRACE << "ServerStreamingRpc::StartRequest(op, ec): self_.reader_=" << self_.reader_.get() << " ec=" << ec;
             op.complete(ec);
         }
     };
@@ -98,9 +98,9 @@ class ServerStreamingRpc<PrepareAsync> {
 
         template <typename Op>
         void operator()(Op& op) {
-            SILKRPC_TRACE << "ServerStreamingRpc::Read::initiate r=" << self_.reader_.get() << " START\n";
+            SILK_TRACE << "ServerStreamingRpc::Read::initiate r=" << self_.reader_.get() << " START";
             agrpc::read(self_.reader_, self_.reply_, boost::asio::bind_executor(self_.grpc_context_, std::move(op)));
-            SILKRPC_TRACE << "ServerStreamingRpc::Read::initiate r=" << self_.reader_.get() << " END\n";
+            SILK_TRACE << "ServerStreamingRpc::Read::initiate r=" << self_.reader_.get() << " END";
         }
 
         template <typename Op>
@@ -110,7 +110,7 @@ class ServerStreamingRpc<PrepareAsync> {
 
         template <typename Op>
         void operator()(Op& op, bool ok, detail::ReadTag) {
-            SILKRPC_TRACE << "ServerStreamingRpc::Read::completed r=" << self_.reader_.get() << " ok=" << ok << "\n";
+            SILK_TRACE << "ServerStreamingRpc::Read::completed r=" << self_.reader_.get() << " ok=" << ok;
             if (ok) {
                 op.complete({}, std::move(self_.reply_));
             } else {
@@ -122,7 +122,7 @@ class ServerStreamingRpc<PrepareAsync> {
 
         template <typename Op>
         void operator()(Op& op, const boost::system::error_code& ec) {
-            SILKRPC_TRACE << "ServerStreamingRpc::Read::error r=" << self_.reader_.get() << " ec=" << ec << "\n";
+            SILK_TRACE << "ServerStreamingRpc::Read::error r=" << self_.reader_.get() << " ec=" << ec;
             op.complete(ec, {});
         }
     };
@@ -132,9 +132,9 @@ class ServerStreamingRpc<PrepareAsync> {
 
         template <typename Op>
         void operator()(Op& op) {
-            SILKRPC_TRACE << "ServerStreamingRpc::Finish::initiate " << this << " START\n";
+            SILK_TRACE << "ServerStreamingRpc::Finish::initiate " << this << " START";
             agrpc::finish(self_.reader_, self_.status_, boost::asio::bind_executor(self_.grpc_context_, std::move(op)));
-            SILKRPC_TRACE << "ServerStreamingRpc::Finish::initiate " << this << " END\n";
+            SILK_TRACE << "ServerStreamingRpc::Finish::initiate " << this << " END";
         }
 
         template <typename Op>
@@ -150,7 +150,7 @@ class ServerStreamingRpc<PrepareAsync> {
                 self_.status_ = grpc::Status{grpc::StatusCode::ABORTED, "operation closed by server"};
             }
 
-            SILKRPC_DEBUG << "ServerStreamingRpc::Finish::completed ok=" << ok << " " << self_.status_ << "\n";
+            SILK_DEBUG << "ServerStreamingRpc::Finish::completed ok=" << ok << " " << self_.status_;
             if (self_.status_.ok()) {
                 op.complete({});
             } else {
@@ -189,9 +189,9 @@ class ServerStreamingRpc<PrepareAsync> {
     }
 
     void cancel() {
-        SILKRPC_TRACE << "ServerStreamingRpc::cancel START\n";
+        SILK_TRACE << "ServerStreamingRpc::cancel START";
         context_.TryCancel();
-        SILKRPC_TRACE << "ServerStreamingRpc::cancel END\n";
+        SILK_TRACE << "ServerStreamingRpc::cancel END";
     }
 
   private:

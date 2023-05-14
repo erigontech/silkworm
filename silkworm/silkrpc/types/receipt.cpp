@@ -19,7 +19,7 @@
 #include <iomanip>
 
 #include <silkworm/core/types/bloom.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkworm::rpc {
@@ -56,7 +56,7 @@ std::ostream& operator<<(std::ostream& out, const Receipt& r) {
 }
 
 silkworm::Bloom bloom_from_logs(const Logs& logs) {
-    SILKRPC_TRACE << "bloom_from_logs #logs: " << logs.size() << "\n";
+    SILK_TRACE << "bloom_from_logs #logs: " << logs.size();
     silkworm::Bloom bloom{};
     for (auto const& log : logs) {
         silkworm::m3_2048(bloom, full_view(log.address));
@@ -64,7 +64,7 @@ silkworm::Bloom bloom_from_logs(const Logs& logs) {
             silkworm::m3_2048(bloom, full_view(topic));
         }
     }
-    SILKRPC_TRACE << "bloom_from_logs bloom: " << silkworm::to_hex(full_view(bloom)) << "\n";
+    SILK_TRACE << "bloom_from_logs bloom: " << silkworm::to_hex(full_view(bloom));
     return bloom;
 }
 

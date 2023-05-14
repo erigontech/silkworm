@@ -27,7 +27,6 @@
 #include <boost/asio/use_awaitable.hpp>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 #include <silkworm/silkrpc/ethdb/kv/rpc.hpp>

@@ -21,7 +21,7 @@
 #include <vector>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
@@ -38,7 +38,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_call(const nlohmann::json
     const auto& params = request["params"];
     if (params.size() < 3) {
         auto error_msg = "invalid trace_call params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
@@ -47,7 +47,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_call(const nlohmann::json
     const auto config = params[1].get<trace::TraceConfig>();
     const auto block_number_or_hash = params[2].get<BlockNumberOrHash>();
 
-    SILKRPC_INFO << "call: " << call << " block_number_or_hash: " << block_number_or_hash << " config: " << config << "\n";
+    SILK_INFO << "call: " << call << " block_number_or_hash: " << block_number_or_hash << " config: " << config;
 
     auto tx = co_await database_->begin();
 
@@ -67,10 +67,10 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_call(const nlohmann::json
             reply = make_json_content(request["id"], result.traces);
         }
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
@@ -83,14 +83,14 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_call_many(const nlohmann:
     const auto& params = request["params"];
     if (params.size() < 2) {
         auto error_msg = "invalid trace_callMany params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
     const auto trace_calls = params[0].get<std::vector<trace::TraceCall>>();
     const auto block_number_or_hash = params[1].get<BlockNumberOrHash>();
 
-    SILKRPC_INFO << "#trace_calls: " << trace_calls.size() << " block_number_or_hash: " << block_number_or_hash << "\n";
+    SILK_INFO << "#trace_calls: " << trace_calls.size() << " block_number_or_hash: " << block_number_or_hash;
 
     auto tx = co_await database_->begin();
 
@@ -111,10 +111,10 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_call_many(const nlohmann:
             reply = make_json_content(request["id"], result.traces);
         }
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
@@ -127,7 +127,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_raw_transaction(const nlo
     const auto& params = request["params"];
     if (params.size() < 2) {
         const auto error_msg = "invalid trace_rawTransaction params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
@@ -135,7 +135,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_raw_transaction(const nlo
     const auto encoded_tx_bytes = silkworm::from_hex(encoded_tx_string);
     if (!encoded_tx_bytes.has_value()) {
         const auto error_msg = "invalid trace_rawTransaction encoded tx: " + encoded_tx_string;
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], -32602, error_msg);
         co_return;
     }
@@ -145,7 +145,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_raw_transaction(const nlo
     const auto decoding_result{silkworm::rlp::decode<silkworm::Transaction>(encoded_tx_view, transaction)};
     if (!decoding_result) {
         const auto error_msg = decoding_result_to_string(decoding_result.error());
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], -32000, error_msg);
         co_return;
     }
@@ -154,14 +154,14 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_raw_transaction(const nlo
 
     if (!check_tx_fee_less_cap(kTxFeeCap, transaction.max_fee_per_gas, transaction.gas_limit)) {
         const auto error_msg = "tx fee exceeds the configured cap";
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], -32000, error_msg);
         co_return;
     }
 
     if (!is_replay_protected(transaction)) {
         const auto error_msg = "only replay-protected (EIP-155) transactions allowed over RPC";
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], -32000, error_msg);
         co_return;
     }
@@ -169,14 +169,14 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_raw_transaction(const nlo
     transaction.recover_sender();
     if (!transaction.from.has_value()) {
         const auto error_msg = "cannot recover sender";
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], -32000, error_msg);
         co_return;
     }
 
     const auto config = params[1].get<trace::TraceConfig>();
 
-    SILKRPC_INFO << "transaction: " << transaction << " config: " << config << "\n";
+    SILK_INFO << "transaction: " << transaction << " config: " << config;
 
     auto tx = co_await database_->begin();
 
@@ -195,10 +195,10 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_raw_transaction(const nlo
             reply = make_json_content(request["id"], result.traces);
         }
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
@@ -211,14 +211,14 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_replay_block_transactions
     const auto& params = request["params"];
     if (params.size() < 2) {
         auto error_msg = "invalid trace_replayBlockTransactions params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
     const auto block_number_or_hash = params[0].get<BlockNumberOrHash>();
     const auto config = params[1].get<trace::TraceConfig>();
 
-    SILKRPC_INFO << " block_number_or_hash: " << block_number_or_hash << " config: " << config << "\n";
+    SILK_INFO << " block_number_or_hash: " << block_number_or_hash << " config: " << config;
 
     auto tx = co_await database_->begin();
 
@@ -231,10 +231,10 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_replay_block_transactions
         const auto result = co_await executor.trace_block_transactions(block_with_hash->block, config);
         reply = make_json_content(request["id"], result);
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
@@ -247,14 +247,14 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_replay_transaction(const 
     const auto& params = request["params"];
     if (params.size() < 2) {
         auto error_msg = "invalid trace_replayTransaction params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
     const auto transaction_hash = params[0].get<evmc::bytes32>();
     const auto config = params[1].get<trace::TraceConfig>();
 
-    SILKRPC_INFO << "transaction_hash: " << transaction_hash << " config: " << config << "\n";
+    SILK_INFO << "transaction_hash: " << transaction_hash << " config: " << config;
 
     auto tx = co_await database_->begin();
 
@@ -276,10 +276,10 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_replay_transaction(const 
             }
         }
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
@@ -292,13 +292,13 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_block(const nlohmann::jso
     const auto& params = request["params"];
     if (params.empty()) {
         auto error_msg = "invalid trace_block params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
     const auto block_number_or_hash = params[0].get<BlockNumberOrHash>();
 
-    SILKRPC_INFO << " block_number_or_hash: " << block_number_or_hash << "\n";
+    SILK_INFO << " block_number_or_hash: " << block_number_or_hash;
 
     auto tx = co_await database_->begin();
 
@@ -312,10 +312,10 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_block(const nlohmann::jso
         const auto result = co_await executor.trace_block(*block_with_hash, filter);
         reply = make_json_content(request["id"], result);
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
@@ -328,7 +328,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_filter(const nlohmann::js
     const auto& params = request["params"];
     if (params.empty()) {
         auto error_msg = "invalid trace_filter params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         const auto reply = make_json_error(request["id"], 100, error_msg);
         stream.write_json(reply);
         co_return;
@@ -336,7 +336,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_filter(const nlohmann::js
 
     const auto trace_filter = params[0].get<trace::TraceFilter>();
 
-    SILKRPC_INFO << "trace_filter: " << trace_filter << "\n";
+    SILK_INFO << "trace_filter: " << trace_filter;
 
     stream.open_object();
     stream.write_field("id", request["id"]);
@@ -351,12 +351,12 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_filter(const nlohmann::js
 
         co_await executor.trace_filter(trace_filter, &stream);
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
 
         const Error error{100, e.what()};
         stream.write_field("error", error);
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
 
         const Error error{100, "unexpected exception"};
         stream.write_field("error", error);
@@ -373,7 +373,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_get(const nlohmann::json&
     const auto& params = request["params"];
     if (params.size() < 2) {
         auto error_msg = "invalid trace_get params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
@@ -383,7 +383,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_get(const nlohmann::json&
     std::vector<uint16_t> indices;
     std::transform(str_indices.begin(), str_indices.end(), std::back_inserter(indices),
                    [](const std::string& str) { return std::stoi(str, nullptr, 16); });
-    SILKRPC_INFO << "transaction_hash: " << transaction_hash << ", #indices: " << indices.size() << "\n";
+    SILK_INFO << "transaction_hash: " << transaction_hash << ", #indices: " << indices.size();
 
     // Erigon RpcDaemon compatibility
     // Parity fails if it gets more than a single index. It returns nothing in this case. Must we?
@@ -414,7 +414,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_get(const nlohmann::json&
     } catch (const std::exception& e) {
         reply = make_json_content(request["id"]);
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
@@ -427,13 +427,13 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_transaction(const nlohman
     const auto& params = request["params"];
     if (params.empty()) {
         auto error_msg = "invalid trace_transaction params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
     const auto transaction_hash = params[0].get<evmc::bytes32>();
 
-    SILKRPC_INFO << "transaction_hash: " << transaction_hash << "\n";
+    SILK_INFO << "transaction_hash: " << transaction_hash;
 
     auto tx = co_await database_->begin();
 
@@ -450,7 +450,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_transaction(const nlohman
     } catch (const std::exception& e) {
         reply = make_json_content(request["id"]);
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 

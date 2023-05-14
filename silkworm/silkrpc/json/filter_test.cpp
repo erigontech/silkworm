@@ -19,8 +19,6 @@
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 
-#include <silkworm/silkrpc/common/log.hpp>
-
 namespace silkworm::rpc {
 
 using Catch::Matchers::Message;

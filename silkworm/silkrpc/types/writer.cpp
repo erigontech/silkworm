@@ -22,7 +22,7 @@
 #include <boost/asio/detached.hpp>
 #include <boost/asio/write.hpp>
 
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::rpc {
 
@@ -38,10 +38,7 @@ void ChunksWriter::write(const std::string& content) {
     auto c_str = content.c_str();
     auto size = content.size();
 
-    SILKRPC_DEBUG << "ChunksWriter::write available_: " << available_
-                  << " size: " << size
-                  << std::endl
-                  << std::flush;
+    SILK_DEBUG << "ChunksWriter::write available_: " << available_ << " size: " << size;
 
     char* buffer_start = buffer_.get() + (chunk_size_ - available_);
     if (available_ > size) {
@@ -73,10 +70,7 @@ void ChunksWriter::close() {
 
 void ChunksWriter::flush() {
     auto size = chunk_size_ - available_;
-    SILKRPC_DEBUG << "ChunksWriter::flush available_: " << available_
-                  << " size: " << size
-                  << std::endl
-                  << std::flush;
+    SILK_DEBUG << "ChunksWriter::flush available_: " << available_ << " size: " << size;
 
     if (size > 0) {
         std::stringstream stream;

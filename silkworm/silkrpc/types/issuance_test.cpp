@@ -18,7 +18,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/test/log.hpp>
 
 namespace silkworm::rpc {
 
@@ -33,7 +33,7 @@ TEST_CASE("create empty issuance", "[silkrpc][types][issuance]") {
 
 TEST_CASE("print empty issuance", "[silkrpc][types][issuance]") {
     Issuance i{};
-    CHECK_NOTHROW(null_stream() << i);
+    CHECK_NOTHROW(silkworm::test::null_stream() << i);
 }
 
 }  // namespace silkworm::rpc

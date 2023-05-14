@@ -19,20 +19,20 @@
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/test/log.hpp>
 
 namespace silkworm::rpc {
 
 TEST_CASE("print empty execution payload", "[silkrpc][types][execution_payload]") {
     ExecutionPayload p{};
-    CHECK_NOTHROW(null_stream() << p);
+    CHECK_NOTHROW(silkworm::test::null_stream() << p);
 }
 
 TEST_CASE("print empty payload status", "[silkrpc][types][execution_payload]") {
     PayloadStatus p{
         .latest_valid_hash = evmc::bytes32{},
         .validation_error = ""};
-    CHECK_NOTHROW(null_stream() << p);
+    CHECK_NOTHROW(silkworm::test::null_stream() << p);
 }
 
 }  // namespace silkworm::rpc

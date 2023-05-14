@@ -23,8 +23,7 @@
 
 #include <boost/endian/conversion.hpp>
 
-#include <silkworm/silkrpc/common/log.hpp>
-#include <silkworm/silkrpc/common/util.hpp>
+#include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::rpc::ethdb::bitmap {
 
@@ -56,12 +55,12 @@ boost::asio::awaitable<Roaring> get(core::rawdb::DatabaseReader& db_reader, cons
     silkworm::Bytes from_key{key.begin(), key.end()};
     from_key.resize(key.size() + sizeof(uint32_t));
     boost::endian::store_big_u32(&from_key[key.size()], from_block);
-    SILKRPC_DEBUG << "table: " << table << " key: " << key << " from_key: " << from_key << "\n";
+    SILK_DEBUG << "table: " << table << " key: " << key << " from_key: " << from_key;
 
     core::rawdb::Walker walker = [&](const silkworm::Bytes& k, const silkworm::Bytes& v) {
-        SILKRPC_TRACE << "k: " << k << " v: " << v << "\n";
+        SILK_TRACE << "k: " << k << " v: " << v;
         auto chunk = std::make_unique<Roaring>(Roaring::readSafe(reinterpret_cast<const char*>(v.data()), v.size()));
-        SILKRPC_TRACE << "chunk: " << chunk->toString() << "\n";
+        SILK_TRACE << "chunk: " << chunk->toString();
         chunks.push_back(std::move(chunk));
         auto block = boost::endian::load_big_u32(&k[k.size() - sizeof(uint32_t)]);
         return block < to_block;
@@ -69,7 +68,7 @@ boost::asio::awaitable<Roaring> get(core::rawdb::DatabaseReader& db_reader, cons
     co_await db_reader.walk(table, from_key, key.size() * CHAR_BIT, walker);
 
     auto result{fast_or(chunks.size(), chunks)};
-    SILKRPC_DEBUG << "result: " << result.toString() << "\n";
+    SILK_DEBUG << "result: " << result.toString();
     co_return result;
 }
 

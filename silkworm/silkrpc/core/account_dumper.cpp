@@ -16,16 +16,15 @@
 
 #include "account_dumper.hpp"
 
-#include <sstream>
 #include <utility>
 
 #include <silkworm/core/common/decoding_result.hpp>
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/db/util.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/account_walker.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
@@ -110,7 +109,7 @@ boost::asio::awaitable<void> AccountDumper::load_accounts(ethdb::TransactionData
 }
 
 boost::asio::awaitable<void> AccountDumper::load_storage(uint64_t block_number, DumpAccounts& dump_accounts) {
-    SILKRPC_TRACE << "block_number " << block_number << " START\n";
+    SILK_TRACE << "block_number " << block_number << " START";
     StorageWalker storage_walker{transaction_};
     evmc::bytes32 start_location{};
     for (auto& it : dump_accounts.accounts) {
@@ -144,7 +143,7 @@ boost::asio::awaitable<void> AccountDumper::load_storage(uint64_t block_number, 
 
         account.root = hb.root_hash();
     }
-    SILKRPC_TRACE << "block_number " << block_number << " END\n";
+    SILK_TRACE << "block_number " << block_number << " END";
     co_return;
 }
 

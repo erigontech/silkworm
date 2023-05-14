@@ -22,6 +22,7 @@
 #include <boost/asio/io_context.hpp>
 
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/stagedsync/client.hpp>
@@ -37,7 +38,7 @@ namespace silkworm::chainsync {
 struct EngineRpcSettings {
     std::string engine_end_point{kDefaultEnginePort};
     std::string backend_kv_address{kDefaultTarget};
-    LogLevel log_verbosity{LogLevel::Info};
+    log::Level log_verbosity{log::Level::kInfo};
     concurrency::WaitMode wait_mode{concurrency::WaitMode::blocking};
     std::string jwt_secret_filename;
 };

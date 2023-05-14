@@ -16,122 +16,121 @@
 
 #include "local_cursor.hpp"
 
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/clock_time.hpp>
 
 namespace silkworm::rpc::ethdb::file {
 
 boost::asio::awaitable<void> LocalCursor::open_cursor(const std::string& table_name, bool is_dup_sorted) {
     const auto start_time = clock_time::now();
-    SILKRPC_DEBUG << "LocalCursor::open_cursor opening new cursor for table: " << table_name << "\n";
+    SILK_DEBUG << "LocalCursor::open_cursor opening new cursor for table: " << table_name;
     // table_name name must be a valid MDBX map name
     if (!silkworm::db::has_map(read_only_txn_, table_name.c_str())) {
         const auto error_message = "unknown table: " + table_name;
-        SILKRPC_ERROR << "open_cursor !has_map: " << table_name << " " << is_dup_sorted << error_message;
+        SILK_ERROR << "open_cursor !has_map: " << table_name << " " << is_dup_sorted << error_message;
         throw std::runtime_error(error_message);
     }
-    SILKRPC_DEBUG << "LocalCursor::open_cursor [" << table_name << "] c=" << cursor_id_ << " t=" << clock_time::since(start_time) << "\n";
+    SILK_DEBUG << "LocalCursor::open_cursor [" << table_name << "] c=" << cursor_id_ << " t=" << clock_time::since(start_time);
     co_return;
 }
 
 boost::asio::awaitable<KeyValue> LocalCursor::seek(ByteView key) {
-    SILKRPC_DEBUG << "LocalCursor::seek cursor: " << cursor_id_ << " key: " << key << "\n";
+    SILK_DEBUG << "LocalCursor::seek cursor: " << cursor_id_ << " key: " << key;
     mdbx::slice mdbx_key{key};
 
     const auto result = (key.length() == 0) ? db_cursor_.to_first(/*throw_notfound=*/false) : db_cursor_.lower_bound(mdbx_key, /*throw_notfound=*/false);
-    SILKRPC_DEBUG << "LocalCursor::seek result: " << db::detail::dump_mdbx_result(result) << "\n";
+    SILK_DEBUG << "LocalCursor::seek result: " << db::detail::dump_mdbx_result(result);
 
     if (result) {
-        SILKRPC_DEBUG << "LocalCursor::seek found: "
-                      << " key: " << key << " value: " << byte_view_of_string(result.value.as_string()) << "\n";
+        SILK_DEBUG << "LocalCursor::seek found: "
+                   << " key: " << key << " value: " << byte_view_of_string(result.value.as_string());
         co_return KeyValue{bytes_of_string(result.key.as_string()), bytes_of_string(result.value.as_string())};
     } else {
-        SILKRPC_ERROR << "LocalCursor::seek !result key: " << key << "\n";
+        SILK_ERROR << "LocalCursor::seek !result key: " << key;
     }
     co_return KeyValue{};
 }
 
 boost::asio::awaitable<KeyValue> LocalCursor::seek_exact(ByteView key) {
-    SILKRPC_DEBUG << "LocalCursor::seek_exact cursor: " << cursor_id_ << " key: " << key << "\n";
+    SILK_DEBUG << "LocalCursor::seek_exact cursor: " << cursor_id_ << " key: " << key;
 
     const bool found = db_cursor_.seek(key);
     if (found) {
         const auto result = db_cursor_.current(/*throw_notfound=*/false);
-        SILKRPC_DEBUG << "LocalCursor::seek_exact result: " << db::detail::dump_mdbx_result(result) << "\n";
+        SILK_DEBUG << "LocalCursor::seek_exact result: " << db::detail::dump_mdbx_result(result);
         if (result) {
-            SILKRPC_DEBUG << "LocalCursor::seek_exact found: "
-                          << " key: " << key << " value: " << byte_view_of_string(result.value.as_string()) << "\n";
+            SILK_DEBUG << "LocalCursor::seek_exact found: "
+                       << " key: " << key << " value: " << byte_view_of_string(result.value.as_string());
             co_return KeyValue{bytes_of_string(result.key.as_string()), bytes_of_string(result.value.as_string())};
         }
-        SILKRPC_ERROR << "LocalCursor::seek_exact !result key: " << key << "\n";
+        SILK_ERROR << "LocalCursor::seek_exact !result key: " << key;
     }
     co_return KeyValue{};
 }
 
 boost::asio::awaitable<KeyValue> LocalCursor::next() {
-    SILKRPC_DEBUG << "LocalCursor::next: " << cursor_id_ << "\n";
+    SILK_DEBUG << "LocalCursor::next: " << cursor_id_;
 
     const auto result = db_cursor_.to_next(/*throw_notfound=*/false);
-    SILKRPC_DEBUG << "LocalCursor::next result: " << db::detail::dump_mdbx_result(result) << "\n";
+    SILK_DEBUG << "LocalCursor::next result: " << db::detail::dump_mdbx_result(result);
 
     if (result) {
-        SILKRPC_DEBUG << "LocalCursor::next: "
-                      << " key: " << byte_view_of_string(result.key.as_string()) << " value: " << byte_view_of_string(result.value.as_string()) << "\n";
+        SILK_DEBUG << "LocalCursor::next: "
+                   << " key: " << byte_view_of_string(result.key.as_string()) << " value: " << byte_view_of_string(result.value.as_string());
         co_return KeyValue{bytes_of_string(result.key.as_string()), bytes_of_string(result.value.as_string())};
     } else {
-        SILKRPC_ERROR << "LocalCursor::next !result"
-                      << "\n";
+        SILK_ERROR << "LocalCursor::next !result";
     }
     co_return KeyValue{};
 }
 
 boost::asio::awaitable<KeyValue> LocalCursor::next_dup() {
-    SILKRPC_DEBUG << "LocalCursor::next_dup: " << cursor_id_ << "\n";
+    SILK_DEBUG << "LocalCursor::next_dup: " << cursor_id_;
 
     const auto result = db_cursor_.to_current_next_multi(/*throw_notfound=*/false);
-    SILKRPC_DEBUG << "LocalCursor::next_dup result: " << db::detail::dump_mdbx_result(result) << "\n";
+    SILK_DEBUG << "LocalCursor::next_dup result: " << db::detail::dump_mdbx_result(result);
 
     if (result) {
-        SILKRPC_DEBUG << "LocalCursor::next_dup: "
-                      << " key: " << byte_view_of_string(result.key.as_string()) << " value: " << byte_view_of_string(result.value.as_string()) << "\n";
+        SILK_DEBUG << "LocalCursor::next_dup: "
+                   << " key: " << byte_view_of_string(result.key.as_string()) << " value: " << byte_view_of_string(result.value.as_string());
         co_return KeyValue{bytes_of_string(result.key.as_string()), bytes_of_string(result.value.as_string())};
     } else {
-        SILKRPC_ERROR << "LocalCursor::next_dup !result"
-                      << "\n";
+        SILK_ERROR << "LocalCursor::next_dup !result";
     }
     co_return KeyValue{};
 }
 
 boost::asio::awaitable<Bytes> LocalCursor::seek_both(silkworm::ByteView key, silkworm::ByteView value) {
-    SILKRPC_DEBUG << "LocalCursor::seek_both cursor: " << cursor_id_ << " key: " << key << " subkey: " << value << "\n";
+    SILK_DEBUG << "LocalCursor::seek_both cursor: " << cursor_id_ << " key: " << key << " subkey: " << value;
 
     const auto result = db_cursor_.lower_bound_multivalue(key, value, /*throw_notfound=*/false);
-    SILKRPC_DEBUG << "LocalCursor::seek_both result: " << db::detail::dump_mdbx_result(result) << "\n";
+    SILK_DEBUG << "LocalCursor::seek_both result: " << db::detail::dump_mdbx_result(result);
 
     if (result) {
-        SILKRPC_DEBUG << "LocalCursor::seek_both key: " << byte_view_of_string(result.key.as_string()) << " value: " << byte_view_of_string(result.value.as_string()) << "\n";
+        SILK_DEBUG << "LocalCursor::seek_both key: " << byte_view_of_string(result.key.as_string()) << " value: " << byte_view_of_string(result.value.as_string());
         co_return bytes_of_string(result.value.as_string());
     }
     co_return bytes_of_string("");
 }
 
 boost::asio::awaitable<KeyValue> LocalCursor::seek_both_exact(silkworm::ByteView key, silkworm::ByteView value) {
-    SILKRPC_DEBUG << "LocalCursor::seek_both_exact cursor: " << cursor_id_ << " key: " << key << " subkey: " << value << "\n";
+    SILK_DEBUG << "LocalCursor::seek_both_exact cursor: " << cursor_id_ << " key: " << key << " subkey: " << value;
 
     const auto result = db_cursor_.find_multivalue(key, value, /*throw_notfound=*/false);
-    SILKRPC_DEBUG << "LocalCursor::seek_both_exact result: " << db::detail::dump_mdbx_result(result) << "\n";
+    SILK_DEBUG << "LocalCursor::seek_both_exact result: " << db::detail::dump_mdbx_result(result);
 
     if (result) {
-        SILKRPC_DEBUG << "LocalCursor::seek_both_exact: "
-                      << " key: " << byte_view_of_string(result.key.as_string()) << " value: " << byte_view_of_string(result.value.as_string()) << "\n";
+        SILK_DEBUG << "LocalCursor::seek_both_exact: "
+                   << " key: " << byte_view_of_string(result.key.as_string()) << " value: " << byte_view_of_string(result.value.as_string());
         co_return KeyValue{bytes_of_string(result.key.as_string()), bytes_of_string(result.value.as_string())};
     } else {
-        SILKRPC_ERROR << "LocalCursor::seek_both_exact !found key: " << key << " subkey:" << value << "\n";
+        SILK_ERROR << "LocalCursor::seek_both_exact !found key: " << key << " subkey:" << value;
     }
     co_return KeyValue{};
 }
 
 boost::asio::awaitable<void> LocalCursor::close_cursor() {
-    SILKRPC_DEBUG << "LocalCursor::close_cursor c=" << cursor_id_ << "\n";
+    SILK_DEBUG << "LocalCursor::close_cursor c=" << cursor_id_;
     cursor_id_ = 0;
     co_return;
 }

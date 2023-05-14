@@ -30,9 +30,9 @@
 #include <jwt-cpp/traits/nlohmann-json/defaults.h>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/commands/eth_api.hpp>
 #include <silkworm/silkrpc/common/clock_time.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/http/header.hpp>
 #include <silkworm/silkrpc/types/writer.hpp>
 
@@ -46,7 +46,7 @@ boost::asio::awaitable<void> RequestHandler::handle(const http::Request& request
         reply.content = "";
         reply.status = http::StatusType::no_content;
     } else {
-        SILKRPC_DEBUG << "handle_user_request content: " << request.content << "\n";
+        SILK_DEBUG << "handle_user_request content: " << request.content;
 
         const auto request_json = nlohmann::json::parse(request.content);
 
@@ -97,7 +97,7 @@ boost::asio::awaitable<void> RequestHandler::handle(const http::Request& request
 
     co_await do_write(reply);
 
-    SILKRPC_INFO << "handle_user_request t=" << clock_time::since(start) << "ns\n";
+    SILK_INFO << "handle_user_request t=" << clock_time::since(start) << "ns";
 }
 
 boost::asio::awaitable<void> RequestHandler::handle_request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply) {
@@ -146,11 +146,11 @@ boost::asio::awaitable<void> RequestHandler::handle_request(uint32_t request_id,
         reply.status = http::StatusType::ok;
         reply.content = std::move(reply_json);
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << "\n";
+        SILK_ERROR << "exception: " << e.what();
         reply.content = make_json_error(request_id, 100, e.what()).dump();
         reply.status = http::StatusType::internal_server_error;
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception\n";
+        SILK_ERROR << "unexpected exception";
         reply.content = make_json_error(request_id, 100, "unexpected exception").dump();
         reply.status = http::StatusType::internal_server_error;
     }
@@ -167,11 +167,11 @@ boost::asio::awaitable<void> RequestHandler::handle_request(uint32_t request_id,
         reply.status = http::StatusType::ok;
 
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << "\n";
+        SILK_ERROR << "exception: " << e.what();
         reply.content = make_json_error(request_id, 100, e.what()).dump();
         reply.status = http::StatusType::internal_server_error;
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception\n";
+        SILK_ERROR << "unexpected exception";
         reply.content = make_json_error(request_id, 100, "unexpected exception").dump();
         reply.status = http::StatusType::internal_server_error;
     }
@@ -190,9 +190,9 @@ boost::asio::awaitable<void> RequestHandler::handle_request(commands::RpcApiTabl
 
         stream.close();
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << "\n";
+        SILK_ERROR << "exception: " << e.what();
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception\n";
+        SILK_ERROR << "unexpected exception";
     }
 
     co_return;
@@ -208,7 +208,7 @@ boost::asio::awaitable<std::optional<std::string>> RequestHandler::is_request_au
     });
 
     if (it == request.headers.end()) {
-        SILKRPC_ERROR << "JWT request without Authorization in auth connection\n";
+        SILK_ERROR << "JWT request without Authorization in auth connection";
         co_return "missing Authorization Header";
     }
 
@@ -216,26 +216,26 @@ boost::asio::awaitable<std::optional<std::string>> RequestHandler::is_request_au
     if (it->value.substr(0, 7) == "Bearer ") {
         client_token = it->value.substr(7);
     } else {
-        SILKRPC_ERROR << "JWT client request without token\n";
+        SILK_ERROR << "JWT client request without token";
         co_return "missing token";
     }
     try {
         // Parse token
         auto decoded_client_token = jwt::decode(client_token);
         if (decoded_client_token.has_issued_at() == 0) {
-            SILKRPC_ERROR << "JWT iat (Issued At) not defined: \n";
+            SILK_ERROR << "JWT iat (Issued At) not defined";
             co_return "iat(Issued At) not defined";
         }
         // Validate token
         auto verifier = jwt::verify().allow_algorithm(jwt::algorithm::hs256{*jwt_secret_});
 
-        SILKRPC_TRACE << "jwt client token: " << client_token << " jwt_secret: " << *jwt_secret_ << "\n";
+        SILK_TRACE << "jwt client token: " << client_token << " jwt_secret: " << *jwt_secret_;
         verifier.verify(decoded_client_token);
     } catch (const boost::system::system_error& se) {
-        SILKRPC_ERROR << "JWT invalid token: " << se.what() << "\n";
+        SILK_ERROR << "JWT invalid token: " << se.what();
         co_return "invalid token";
     } catch (const std::exception& se) {
-        SILKRPC_ERROR << "JWT invalid token: " << se.what() << "\n";
+        SILK_ERROR << "JWT invalid token: " << se.what();
         co_return "invalid token";
     }
 
@@ -244,16 +244,14 @@ boost::asio::awaitable<std::optional<std::string>> RequestHandler::is_request_au
 
 boost::asio::awaitable<void> RequestHandler::do_write(Reply& reply) {
     try {
-        SILKRPC_DEBUG << "RequestHandler::do_write reply: " << reply.content << "\n"
-                      << std::flush;
+        SILK_DEBUG << "RequestHandler::do_write reply: " << reply.content;
 
         reply.headers.reserve(2);
         reply.headers.emplace_back(http::Header{"Content-Length", std::to_string(reply.content.size())});
         reply.headers.emplace_back(http::Header{"Content-Type", "application/json"});
 
         const auto bytes_transferred = co_await boost::asio::async_write(socket_, reply.to_buffers(), boost::asio::use_awaitable);
-        SILKRPC_TRACE << "RequestHandler::do_write bytes_transferred: " << bytes_transferred << "\n"
-                      << std::flush;
+        SILK_TRACE << "RequestHandler::do_write bytes_transferred: " << bytes_transferred;
     } catch (const boost::system::system_error& se) {
         std::rethrow_exception(std::make_exception_ptr(se));
     } catch (const std::exception& e) {
@@ -272,8 +270,7 @@ boost::asio::awaitable<void> RequestHandler::write_headers() {
 
         const auto bytes_transferred = co_await boost::asio::async_write(socket_, buffers, boost::asio::use_awaitable);
 
-        SILKRPC_TRACE << "RequestHandler::write_headers bytes_transferred: " << bytes_transferred << "\n"
-                      << std::flush;
+        SILK_TRACE << "RequestHandler::write_headers bytes_transferred: " << bytes_transferred;
     } catch (const std::system_error& se) {
         std::rethrow_exception(std::make_exception_ptr(se));
     } catch (const std::exception& e) {

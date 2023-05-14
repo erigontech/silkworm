@@ -16,7 +16,7 @@
 
 #include "filter_storage.hpp"
 
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkworm::rpc {
@@ -37,8 +37,7 @@ std::optional<std::string> FilterStorage::add_filter(const StoredFilter& filter)
     }
 
     if (storage_.size() >= max_size_) {
-        SILKRPC_INFO << "No room available in storage, max size " << max_size_ << " reached" << std::endl
-                     << std::flush;
+        SILK_WARN << "No room available in storage, max size " << max_size_ << " reached";
         return std::nullopt;
     }
 
@@ -54,8 +53,7 @@ std::optional<std::string> FilterStorage::add_filter(const StoredFilter& filter)
         }
     }
     if (!slot_found) {
-        SILKRPC_INFO << "Unable to generate a new filter_id without clashing" << std::endl
-                     << std::flush;
+        SILK_INFO << "Unable to generate a new filter_id without clashing";
         return std::nullopt;
     }
 
@@ -87,8 +85,7 @@ std::optional<std::reference_wrapper<StoredFilter>> FilterStorage::get_filter(co
 
     auto age = itr->second.age();
     if (age > max_filter_age_) {
-        SILKRPC_INFO << "Filter  " << filter_id << " exhausted: removed" << std::endl
-                     << std::flush;
+        SILK_TRACE << "Filter  " << filter_id << " exhausted: removed";
         storage_.erase(itr);
         return std::nullopt;
     }
@@ -102,8 +99,7 @@ void FilterStorage::clean_up() {
     while (itr != storage_.end()) {
         auto age = itr->second.age();
         if (age > max_filter_age_) {
-            SILKRPC_INFO << "Filter  " << itr->first << " exhausted: removed" << std::endl
-                         << std::flush;
+            SILK_TRACE << "Filter  " << itr->first << " exhausted: removed";
             itr = storage_.erase(itr);
         } else {
             ++itr;

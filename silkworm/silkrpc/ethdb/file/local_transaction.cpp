@@ -25,6 +25,7 @@ namespace silkworm::rpc::ethdb::file {
 boost::asio::awaitable<void> LocalTransaction::open() {
     // Create a new read-only transaction.
     read_only_txn_ = chaindata_env_->start_read();
+    std::cout << "LocalTransaction: view_id: " << read_only_txn_.id() << "\n";
     co_return;
 }
 

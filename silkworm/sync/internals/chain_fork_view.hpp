@@ -16,10 +16,11 @@
 
 #pragma once
 
+#include <boost/asio.hpp>
+#include <boost/asio/awaitable.hpp>
+
 #include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/node/stagedsync/client.hpp>
-#include <silkworm/node/stagedsync/execution_engine.hpp>
 #include <silkworm/sync/internals/types.hpp>
 
 namespace silkworm::chainsync {
@@ -34,11 +35,12 @@ namespace silkworm::chainsync {
 
 class ChainForkView {
   public:
-    ChainForkView(ChainHead headers_head, execution::Client&);
+    ChainForkView(ChainHead headers_head);
 
-    void reset_head(BlockId headers_head);
+    void reset_head(ChainHead headers_head);
 
     TotalDifficulty add(const BlockHeader&);
+    TotalDifficulty add(const BlockHeader&, TotalDifficulty parent_td);
 
     ChainHead head() const;
     BlockNum head_height() const;
@@ -50,6 +52,7 @@ class ChainForkView {
     std::optional<TotalDifficulty> get_total_difficulty(const Hash& hash);
     std::optional<TotalDifficulty> get_total_difficulty(BlockNum height, const Hash& hash);
 
+    static ChainHead head_at_genesis(const ChainConfig& chain_config);
   private:
     ChainHead initial_head_{};
     ChainHead current_head_{};  // current head of the chain

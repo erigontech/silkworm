@@ -21,7 +21,7 @@ namespace silkworm::chainsync {
 ChainSync::ChainSync(BlockExchange& block_exchange, execution::Client& exec_engine)
     : block_exchange_{block_exchange},
       exec_engine_{exec_engine},
-      chain_fork_view_{ChainHead{}} {  // we cannot call exec_engine.get_canonical_head() at this point because EE is not started
+      chain_fork_view_{ChainForkView::head_at_genesis(block_exchange.chain_config())} {
 }
 
 }  // namespace silkworm::chainsync

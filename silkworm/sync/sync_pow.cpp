@@ -19,6 +19,7 @@
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/measure.hpp>
+#include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/sync_wait.hpp>
 #include <silkworm/sync/messages/outbound_new_block.hpp>
 #include <silkworm/sync/messages/outbound_new_block_hashes.hpp>
@@ -31,31 +32,42 @@ asio::awaitable<void> PoWSync::async_run() {
     return ActiveComponent::async_run();
 }
 
-auto PoWSync::resume() -> NewHeight {                                          // find the point (head) where we left off
-    auto head = sync_wait(in(exec_engine_), exec_engine_.last_fork_choice());  // previously was get_canonical_head()
-    auto block_progress = sync_wait(in(exec_engine_), exec_engine_.block_progress());
+auto PoWSync::resume() -> NewHeight {  // find the point (head) where we left off
+    BlockId head{};
 
-    chain_fork_view_.reset_head(head);
+    // BlockExchange need a bunch of previous headers to attach the new ones
+    auto last_headers = sync_wait(in(exec_engine_), exec_engine_.get_last_headers(1000));
+    block_exchange_.initial_state(last_headers);
 
-    ensure_invariant(height(head) <= block_progress, "canonical head beyond block progress");
-
-    // if canonical and header progress match than canonical head was updated, we only need to do a forward sync...
-
-    if (block_progress == height(head)) {
-        return head;
-    }
-
-    // ... else we have to re-compute the canonical head parsing the last N headers
-
-    auto prev_headers = sync_wait(in(exec_engine_), exec_engine_.get_last_headers(128));  // are 128 headers enough?
-    as_range::for_each(prev_headers, [&, this](const auto& header) {
-        chain_fork_view_.add(header);
+    // We calculate a provisional head based on the previous headers
+    as_range::for_each(last_headers, [&, this](const auto& header) {
+        auto hash = header.hash();
+        auto td = sync_wait(in(exec_engine_), exec_engine_.get_header_td(hash, std::nullopt));
+        chain_fork_view_.add(header, *td);  // add to cache & compute a new canonical head
     });
 
-    return to_BlockId(chain_fork_view_.head());
+    // Now we can resume the sync from the canonical head
+    auto last_fcu = sync_wait(in(exec_engine_), exec_engine_.last_fork_choice());  // previously was get_canonical_head()
+    auto block_progress = sync_wait(in(exec_engine_), exec_engine_.block_progress());
+
+    ensure_invariant(height(last_fcu) <= block_progress, "canonical head beyond block progress");
+
+    if (block_progress == height(last_fcu)) {
+        // if fcu and header progress match than we have the actual canonical, we only need to do a forward sync...
+        ensure_invariant(last_fcu == chain_fork_view_.head(), "last fcu misaligned with canonical head");
+        chain_fork_view_.reset_head({last_fcu.number, last_fcu.hash,
+                                     chain_fork_view_.get_total_difficulty(last_fcu.hash).value()});
+        head = last_fcu;
+    } else {
+        // ... else we use the head computed parsing the last N headers
+        head = to_BlockId(chain_fork_view_.head());
+    }
+
+    return head;
 }
 
 auto PoWSync::forward_and_insert_blocks() -> NewHeight {
+    using namespace std::chrono_literals;
     using ResultQueue = BlockExchange::ResultQueue;
 
     ResultQueue& downloading_queue = block_exchange_.result_queue();
@@ -119,9 +131,7 @@ void PoWSync::execution_loop() {
     using namespace execution;
     bool is_starting_up = true;
 
-    auto last_headers = sync_wait(in(exec_engine_), exec_engine_.get_last_headers(65536));
-    block_exchange_.initial_state(last_headers);  // BlockExchange need a starting point to start downloading from
-
+    // Main cycle
     while (!is_stopping()) {
         // resume from previous run or download new blocks
         NewHeight new_height = is_starting_up

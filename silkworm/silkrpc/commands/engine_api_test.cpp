@@ -255,7 +255,7 @@ TEST_CASE("handle_engine_get_payload_v1 fails with invalid amount of params", "[
 
     CHECK(reply == R"({
         "error":{
-            "code":100,
+            "code":-32602,
             "message":"invalid engine_getPayloadV1 params: []"
         },
         "id":1,
@@ -362,7 +362,7 @@ TEST_CASE("handle_engine_new_payload_v1 fails with invalid amount of params", "[
 
     CHECK(reply == R"({
         "error":{
-            "code":100,
+            "code":-32602,
             "message":"invalid engine_newPayloadV1 params: []"
         },
         "id":1,
@@ -583,7 +583,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with invalid amount of para
 
     CHECK(reply == R"({
         "error":{
-            "code":100,
+            "code":-32602,
             "message":"invalid engine_forkchoiceUpdatedV1 params: []"
         },
         "id":1,
@@ -630,7 +630,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty finalized block 
     result.get();
     CHECK(reply == R"({
         "error":{
-            "code":100,
+            "code":-38002,
             "message":"finalized block hash is empty"
         },
         "id":1,
@@ -676,7 +676,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty safe block hash"
     result.get();
     CHECK(reply == R"({
         "error":{
-            "code":100,
+            "code":-38002,
             "message":"safe block hash is empty"
         },
         "id":1,
@@ -851,8 +851,8 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect terminal
 
     CHECK(reply == R"({
         "error":{
-            "code":100,
-            "message":"incorrect terminal total difficulty"
+            "code":-32602,
+            "message":"consensus layer terminal total difficulty does not match"
             },
             "id":1,
             "jsonrpc":"2.0"
@@ -918,7 +918,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if execution layer do
     context_pool.join();
 }
 
-TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer sends block number different from zero", "[silkrpc][engine_api]") {
+TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer sends wrong terminal total difficulty", "[silkrpc][engine_api]") {
     silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     ClientContextPool context_pool{1};
@@ -948,9 +948,9 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer se
         "id":1,
         "method":"engine_transitionConfigurationV1",
         "params":[{
-            "terminalTotalDifficulty":"0xf4240",
+            "terminalTotalDifficulty":"0x0",
             "terminalBlockHash":"0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858",
-            "terminalBlockNumber":"0x1"
+            "terminalBlockNumber":"0x0"
         }]
     })"_json;
 
@@ -965,12 +965,127 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer se
 
     CHECK(reply == R"({
         "error":{
-            "code":100,
-            "message":"consensus layer terminal block number is not zero"
+            "code":-32602,
+            "message":"consensus layer terminal total difficulty does not match"
             },
             "id":1,
             "jsonrpc":"2.0"
         })"_json);
+    context_pool.stop();
+    context_pool.join();
+}
+
+TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer sends wrong terminal block hash", "[silkrpc][engine_api]") {
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+
+    ClientContextPool context_pool{1};
+    context_pool.start();
+
+    std::shared_ptr<test::MockCursor> mock_cursor = std::make_shared<test::MockCursor>();
+
+    const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
+    const silkworm::ByteView block_key{block_number};
+    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> awaitable<KeyValue> {
+        co_return KeyValue{silkworm::Bytes{}, kBlockHash};
+    }));
+
+    const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
+    const silkworm::ByteView genesis_block_key{genesis_block_hash};
+    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> awaitable<KeyValue> {
+        co_return KeyValue{silkworm::Bytes{}, kChainConfig};
+    }));
+
+    std::unique_ptr<ethdb::Database> database_ptr = std::make_unique<DummyDatabase>(mock_cursor);
+    std::unique_ptr<ethbackend::BackEnd> backend_ptr;
+    EngineRpcApiTest rpc(database_ptr.get(), backend_ptr.get());
+
+    nlohmann::json reply;
+    nlohmann::json request = R"({
+        "jsonrpc":"2.0",
+        "id":1,
+        "method":"engine_transitionConfigurationV1",
+        "params":[{
+            "terminalTotalDifficulty":"0xa4a470",
+            "terminalBlockHash":"0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858",
+            "terminalBlockNumber":"0x0"
+        }]
+    })"_json;
+
+    auto result{boost::asio::co_spawn(
+        context_pool.next_io_context(), [&rpc, &reply, &request]() {
+            return rpc.handle_engine_exchange_transition_configuration_v1(
+                request,
+                reply);
+        },
+        boost::asio::use_future)};
+    result.get();
+
+    CHECK(reply == R"({
+        "error":{
+            "code":-32602,
+            "message":"consensus layer terminal block hash is not zero"
+            },
+            "id":1,
+            "jsonrpc":"2.0"
+        })"_json);
+    context_pool.stop();
+    context_pool.join();
+}
+
+TEST_CASE("handle_engine_transition_configuration_v1 succeeds w/o matching terminal block number", "[silkrpc][engine_api]") {
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+
+    ClientContextPool context_pool{1};
+    context_pool.start();
+
+    std::shared_ptr<test::MockCursor> mock_cursor = std::make_shared<test::MockCursor>();
+
+    const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
+    const silkworm::ByteView block_key{block_number};
+    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> awaitable<KeyValue> {
+        co_return KeyValue{silkworm::Bytes{}, kBlockHash};
+    }));
+
+    const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
+    const silkworm::ByteView genesis_block_key{genesis_block_hash};
+    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> awaitable<KeyValue> {
+        co_return KeyValue{silkworm::Bytes{}, kChainConfig};
+    }));
+
+    std::unique_ptr<ethdb::Database> database_ptr = std::make_unique<DummyDatabase>(mock_cursor);
+    std::unique_ptr<ethbackend::BackEnd> backend_ptr;
+    EngineRpcApiTest rpc(database_ptr.get(), backend_ptr.get());
+
+    nlohmann::json reply;
+    nlohmann::json request = R"({
+        "jsonrpc":"2.0",
+        "id":1,
+        "method":"engine_transitionConfigurationV1",
+        "params":[{
+            "terminalTotalDifficulty":"0xa4a470",
+            "terminalBlockHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
+            "terminalBlockNumber":"0x1"
+        }]
+    })"_json;
+
+    auto result{boost::asio::co_spawn(
+        context_pool.next_io_context(), [&rpc, &reply, &request]() {
+            return rpc.handle_engine_exchange_transition_configuration_v1(
+                request,
+                reply);
+        },
+        boost::asio::use_future)};
+    result.get();
+
+    CHECK(reply == R"({
+        "id":1,
+        "jsonrpc":"2.0",
+        "result":{
+            "terminalBlockHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "terminalBlockNumber": "0x0",
+            "terminalTotalDifficulty": "0xa4a470"
+        }
+    })"_json);
     context_pool.stop();
     context_pool.join();
 }
@@ -1006,7 +1121,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect params",
 
     CHECK(reply == R"({
         "error":{
-            "code":100,
+            "code":-32602,
             "message":"invalid engine_exchangeTransitionConfigurationV1 params: []"
             },
             "id":1,

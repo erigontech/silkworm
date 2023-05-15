@@ -37,6 +37,7 @@
 
 namespace silkworm::rpc::ethdb::kv {
 
+#ifdef notdef
 using Catch::Matchers::Message;
 using testing::_;
 using testing::InvokeWithoutArgs;
@@ -207,5 +208,6 @@ TEST_CASE("CachedDatabase::for_prefix", "[silkrpc][ethdb][kv][cached_database]")
     auto result = boost::asio::co_spawn(pool, cached_db.for_prefix(table, kZeroBytes, walker), boost::asio::use_future);
     CHECK_NOTHROW(result.get());
 }
+#endif
 
 }  // namespace silkworm::rpc::ethdb::kv

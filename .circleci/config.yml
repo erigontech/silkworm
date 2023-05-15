@@ -30,7 +30,9 @@ commands:
           name: "Format"
           working_directory: ~/project
           command: |
-            pip install --user cmake-format==0.6.13
+            # the base image contains these packages preinstalled, this command merely verifies that
+            sudo apt-get install -y --no-install-recommends python3-pip
+            pip install --user --break-system-packages cmake-format==0.6.13
             export "PATH=$HOME/.local/bin:$PATH"
             make fmt
             if ! git diff --exit-code
@@ -48,7 +50,7 @@ commands:
       - run:
           name: "Install dependencies"
           command: |
-            sudo apt-get update
+            # the base image contains these packages preinstalled, this command merely verifies that
             sudo apt-get install -y m4 texinfo bison
       - restore_cache:
           name: "Restore Hunter cache"
@@ -73,7 +75,7 @@ commands:
       - run:
           name: "Install libc++"
           command: |
-            sudo apt-get update
+            # the base image contains these packages preinstalled, this command merely verifies that
             sudo apt -y install libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev
 
   test:
@@ -117,7 +119,7 @@ jobs:
       BUILD_TYPE: Debug
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=thread
     docker:
-      - image: ethereum/cpp-build-env:18-gcc-11
+      - image: ethereum/cpp-build-env:20-gcc-11
     resource_class: xlarge
     steps:
       - checkout_with_submodules
@@ -130,13 +132,15 @@ jobs:
       BUILD_TYPE: Debug
       BUILD_CMAKE_ARGS: -DCONAN_PACKAGE_MANAGER=ON -DCONAN_PROFILE=linux_gcc_11_debug
     docker:
-      - image: ethereum/cpp-build-env:18-gcc-11
+      - image: ethereum/cpp-build-env:20-gcc-11
     resource_class: xlarge
     steps:
       - run:
           name: "Install Conan"
           command: |
-            pip install --user conan==1.58.0 chardet
+            # the base image contains these packages preinstalled, this command merely verifies that
+            sudo apt-get install -y --no-install-recommends python3-pip
+            pip install --user --break-system-packages conan==1.58.0 chardet
             echo 'export "PATH=$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
       - checkout_with_submodules
       - restore_cache:
@@ -155,7 +159,7 @@ jobs:
       TOOLCHAIN: cxx20
       BUILD_TYPE: Release
     docker:
-      - image: ethereum/cpp-build-env:18-gcc-12
+      - image: ethereum/cpp-build-env:20-gcc-12
     resource_class: xlarge
     steps:
       - checkout_with_submodules
@@ -169,7 +173,7 @@ jobs:
       BUILD_TYPE: Debug
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=address,undefined
     docker:
-      - image: ethereum/cpp-build-env:19-clang-15
+      - image: ethereum/cpp-build-env:20-clang-15
     resource_class: xlarge
     steps:
       - checkout_with_submodules
@@ -184,7 +188,7 @@ jobs:
       BUILD_TYPE: Debug
       BUILD_CMAKE_ARGS: -DSILKWORM_CLANG_COVERAGE=ON
     docker:
-      - image: ethereum/cpp-build-env:18-clang-13
+      - image: ethereum/cpp-build-env:20-clang-13
     resource_class: xlarge
     steps:
       - checkout_with_submodules
@@ -219,10 +223,13 @@ jobs:
       - run:
           name: "Upload to Codecov"
           command: |
-            sudo pip3 install --upgrade --quiet --no-cache-dir codecov
+            # the base image contains these packages preinstalled, this command merely verifies that
+            sudo apt-get install -y --no-install-recommends python3-pip
+            pip install --user --upgrade --no-cache-dir --break-system-packages codecov
+            codecov="$HOME/.local/bin/codecov"
 
             counter=1
-            until codecov --required --file ~/build/silkworm.lcov -X gcov || [ $counter = 5 ]; do
+            until "$codecov" --required --file ~/build/silkworm.lcov -X gcov || [ $counter = 5 ]; do
               counter=$((counter+1))
               sleep 1
               echo "Try #$counter..."
@@ -250,7 +257,7 @@ jobs:
       - run:
           name: "Install Wasmer"
           working_directory: ~/tmp2
-          command: curl https://get.wasmer.io -sSfL | sh -s "v3.2.1"
+          command: $HOME/project/third_party/wasmer/install.sh v3.2.1
       - run:
           name: "Build GMP"
           working_directory: ~/tmp3
@@ -275,14 +282,14 @@ jobs:
 
   linux-default-build:
     docker:
-      - image: ethereum/cpp-build-env:18-gcc-12
+      - image: ethereum/cpp-build-env:20-gcc-12
     resource_class: xlarge
     steps:
       - checkout_with_submodules
       - run:
           name: "Install dependencies"
           command: |
-            sudo apt-get update
+            # the base image contains these packages preinstalled, this command merely verifies that
             sudo apt-get install -y m4 texinfo bison
       - restore_cache:
           name: "Restore Hunter cache"

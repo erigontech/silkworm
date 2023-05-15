@@ -124,7 +124,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call precompil
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(!result.pre_check_error);
-        CHECK(result.traces == R"({
+        CHECK(nlohmann::json(result.traces) == R"({
             "output": "0x",
             "stateDiff": {
                 "0x0000000000000000000000000000000000000000": {
@@ -347,7 +347,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
-        CHECK(result.traces == R"({
+        CHECK(nlohmann::json(result.traces) == R"({
             "output": "0x",
             "stateDiff": {
                 "0x0000000000000000000000000000000000000000": {
@@ -529,7 +529,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
-        CHECK(result.traces == R"({
+        CHECK(nlohmann::json(result.traces) == R"({
             "output": "0x",
             "stateDiff": {
                 "0x0000000000000000000000000000000000000000": {
@@ -648,7 +648,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
-        CHECK(result.traces == R"({
+        CHECK(nlohmann::json(result.traces) == R"({
             "output": "0x",
             "stateDiff": {
                 "0x0000000000000000000000000000000000000000": {
@@ -813,7 +813,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
-        CHECK(result.traces == R"({
+        CHECK(nlohmann::json(result.traces) == R"({
             "output": "0x",
             "stateDiff": null,
             "trace": [
@@ -951,7 +951,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
-        CHECK(result.traces == R"({
+        CHECK(nlohmann::json(result.traces) == R"({
             "output": "0x",
             "stateDiff": null,
             "trace": [],
@@ -1145,7 +1145,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 2") {
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
-        CHECK(result.traces == R"({
+        CHECK(nlohmann::json(result.traces) == R"({
             "output": "0x",
             "stateDiff": {
                 "0x0000000000000000000000000000000000000000": {
@@ -1391,7 +1391,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with erro
     const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
     CHECK(result.pre_check_error.has_value() == false);
-    CHECK(result.traces == R"({
+    CHECK(nlohmann::json(result.traces) == R"({
         "output": "0x",
         "stateDiff": {
             "0x0000000000000000000000000000000000000000": {
@@ -1666,7 +1666,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
         const auto result = spawn_and_wait(executor.trace_calls(block, calls));
 
         CHECK(result.pre_check_error.has_value() == false);
-        CHECK(result.traces == R"([
+        CHECK(nlohmann::json(result.traces) == R"([
             {
                 "output": "0x",
                 "stateDiff": {
@@ -1972,7 +1972,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
     TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
     const auto result = spawn_and_wait(executor.trace_block_transactions(block, config));
 
-    CHECK(result == R"([
+    CHECK(nlohmann::json(result) == R"([
         {
             "output": "0x6080604052348015600f57600080fd5b506004361060325760003560e01c806360fe47b11460375780636d4ce63c146062575b600080fd5b606060048036036020811015604b57600080fd5b8101908080359060200190929190505050607e565b005b60686088565b6040518082815260200191505060405180910390f35b8060008190555050565b6000805490509056fea265627a7a72305820ca7603d2458ae7a9db8bde091d8ba88a4637b54a8cc213b73af865f97c60af2c64736f6c634300050a0032",
             "stateDiff": {
@@ -2516,7 +2516,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
     Filter filter;
     const auto result = spawn_and_wait(executor.trace_block(block_with_hash, filter));
 
-    CHECK(result == R"([
+    CHECK(nlohmann::json(result) == R"([
         {
             "action": {
             "from": "0xdaae090d53f9ed9e2e1fd25258c01bac4dd6d1c5",
@@ -2730,7 +2730,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         TraceConfig config{.vm_trace = true, .trace = false, .state_diff = false};
         const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash.block, transaction, config));
 
-        CHECK(result == R"({
+        CHECK(nlohmann::json(result) == R"({
             "output": "0x6080604052348015600f57600080fd5b506004361060325760003560e01c806360fe47b11460375780636d4ce63c146062575b600080fd5b606060048036036020811015604b57600080fd5b8101908080359060200190929190505050607e565b005b60686088565b6040518082815260200191505060405180910390f35b8060008190555050565b6000805490509056fea265627a7a72305820ca7603d2458ae7a9db8bde091d8ba88a4637b54a8cc213b73af865f97c60af2c64736f6c634300050a0032",
             "stateDiff": null,
             "trace": [],
@@ -3046,7 +3046,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         TraceConfig config{.vm_trace = false, .trace = true, .state_diff = false};
         const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash.block, transaction, config));
 
-        CHECK(result == R"({
+        CHECK(nlohmann::json(result) == R"({
             "output": "0x6080604052348015600f57600080fd5b506004361060325760003560e01c806360fe47b11460375780636d4ce63c146062575b600080fd5b606060048036036020811015604b57600080fd5b8101908080359060200190929190505050607e565b005b60686088565b6040518082815260200191505060405180910390f35b8060008190555050565b6000805490509056fea265627a7a72305820ca7603d2458ae7a9db8bde091d8ba88a4637b54a8cc213b73af865f97c60af2c64736f6c634300050a0032",
             "stateDiff": null,
             "trace": [
@@ -3076,7 +3076,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         TraceConfig config{.vm_trace = false, .trace = false, .state_diff = true};
         const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash.block, transaction, config));
 
-        CHECK(result == R"({
+        CHECK(nlohmann::json(result) == R"({
             "output": "0x6080604052348015600f57600080fd5b506004361060325760003560e01c806360fe47b11460375780636d4ce63c146062575b600080fd5b606060048036036020811015604b57600080fd5b8101908080359060200190929190505050607e565b005b60686088565b6040518082815260200191505060405180910390f35b8060008190555050565b6000805490509056fea265627a7a72305820ca7603d2458ae7a9db8bde091d8ba88a4637b54a8cc213b73af865f97c60af2c64736f6c634300050a0032",
             "stateDiff": {
                 "0x0000000000000000000000000000000000000000": {
@@ -3129,7 +3129,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
         TraceConfig config{.vm_trace = true, .trace = true, .state_diff = true};
         const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash.block, transaction, config));
 
-        CHECK(result == R"({
+        CHECK(nlohmann::json(result) == R"({
             "output": "0x6080604052348015600f57600080fd5b506004361060325760003560e01c806360fe47b11460375780636d4ce63c146062575b600080fd5b606060048036036020811015604b57600080fd5b8101908080359060200190929190505050607e565b005b60686088565b6040518082815260200191505060405180910390f35b8060008190555050565b6000805490509056fea265627a7a72305820ca7603d2458ae7a9db8bde091d8ba88a4637b54a8cc213b73af865f97c60af2c64736f6c634300050a0032",
             "stateDiff": {
                 "0x0000000000000000000000000000000000000000": {
@@ -3672,7 +3672,7 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
     TraceCallExecutor executor{io_context_, block_cache, db_reader, workers};
     const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash, transaction));
 
-    CHECK(result == R"([
+    CHECK(nlohmann::json(result) == R"([
         {
             "action": {
             "from": "0xdaae090d53f9ed9e2e1fd25258c01bac4dd6d1c5",
@@ -5648,7 +5648,7 @@ TEST_CASE("VmTrace json serialization") {
     vm_trace.ops.push_back(trace_op);
 
     SECTION("VmTrace") {
-        CHECK(vm_trace == R"({
+        CHECK(nlohmann::json(vm_trace) == R"({
             "code": "0xdeadbeaf",
             "ops": [
                 {
@@ -5674,7 +5674,7 @@ TEST_CASE("VmTrace json serialization") {
         })"_json);
     }
     SECTION("TraceOp") {
-        CHECK(trace_op == R"({
+        CHECK(nlohmann::json(trace_op) == R"({
             "cost":42,
             "ex":{
                 "mem":{
@@ -5695,7 +5695,7 @@ TEST_CASE("VmTrace json serialization") {
         })"_json);
     }
     SECTION("TraceEx") {
-        CHECK(trace_ex == R"({
+        CHECK(nlohmann::json(trace_ex) == R"({
             "mem":{
                 "data":"data",
                 "off":10
@@ -5710,14 +5710,14 @@ TEST_CASE("VmTrace json serialization") {
     }
     SECTION("TraceMemory") {
         const auto& memory = trace_ex.memory.value();
-        CHECK(memory == R"({
+        CHECK(nlohmann::json(memory) == R"({
             "data":"data",
             "off":10
         })"_json);
     }
     SECTION("TraceStorage") {
         const auto& storage = trace_ex.storage.value();
-        CHECK(storage == R"({
+        CHECK(nlohmann::json(storage) == R"({
             "key":"key",
             "val":"value"
         })"_json);
@@ -5733,7 +5733,7 @@ TEST_CASE("TraceAction json serialization") {
     trace_action.value = intx::uint256{0xdeadbeaf};
 
     SECTION("basic") {
-        CHECK(trace_action == R"({
+        CHECK(nlohmann::json(trace_action) == R"({
             "from": "0xe0a2bd4258d2768837baa26a28fe71dc079f84c7",
             "gas": "0x3e8",
             "value": "0xdeadbeaf"
@@ -5741,7 +5741,7 @@ TEST_CASE("TraceAction json serialization") {
     }
     SECTION("with to") {
         trace_action.to = 0xe0a2bd4258d2768837baa26a28fe71dc079f8aaa_address;
-        CHECK(trace_action == R"({
+        CHECK(nlohmann::json(trace_action) == R"({
             "from": "0xe0a2bd4258d2768837baa26a28fe71dc079f84c7",
             "to": "0xe0a2bd4258d2768837baa26a28fe71dc079f8aaa",
             "gas": "0x3e8",
@@ -5750,7 +5750,7 @@ TEST_CASE("TraceAction json serialization") {
     }
     SECTION("with input") {
         trace_action.input = *silkworm::from_hex("0xdeadbeaf");
-        CHECK(trace_action == R"({
+        CHECK(nlohmann::json(trace_action) == R"({
             "from": "0xe0a2bd4258d2768837baa26a28fe71dc079f84c7",
             "gas": "0x3e8",
             "input": "0xdeadbeaf",
@@ -5759,7 +5759,7 @@ TEST_CASE("TraceAction json serialization") {
     }
     SECTION("with init") {
         trace_action.init = *silkworm::from_hex("0xdeadbeaf");
-        CHECK(trace_action == R"({
+        CHECK(nlohmann::json(trace_action) == R"({
             "from": "0xe0a2bd4258d2768837baa26a28fe71dc079f84c7",
             "gas": "0x3e8",
             "init": "0xdeadbeaf",
@@ -5776,7 +5776,7 @@ TEST_CASE("TraceResult json serialization") {
     trace_result.code = *silkworm::from_hex("0x1234567890abcdef");
     trace_result.gas_used = 1000;
 
-    CHECK(trace_result == R"({
+    CHECK(nlohmann::json(trace_result) == R"({
         "address": "0xe0a2bd4258d2768837baa26a28fe71dc079f84c7",
         "code": "0x1234567890abcdef",
         "gasUsed": "0x3e8"
@@ -5796,7 +5796,7 @@ TEST_CASE("Trace json serialization") {
     trace.type = "CALL";
 
     SECTION("basic with trace action") {
-        CHECK(trace == R"({
+        CHECK(nlohmann::json(trace) == R"({
             "action": {
                 "from": "0xe0a2bd4258d2768837baa26a28fe71dc079f84c7",
                 "gas": "0x3e8",
@@ -5818,7 +5818,7 @@ TEST_CASE("Trace json serialization") {
         trace.action = reward_action;
         trace.type = "reward";
 
-        CHECK(trace == R"({
+        CHECK(nlohmann::json(trace) == R"({
             "action": {
                 "author": "0xe0a2bd4258d2768837baa26a28fe71dc079f84d8",
                 "rewardType": "block",
@@ -5839,7 +5839,7 @@ TEST_CASE("Trace json serialization") {
 
         trace.trace_result = trace_result;
 
-        CHECK(trace == R"({
+        CHECK(nlohmann::json(trace) == R"({
             "action": {
                 "from": "0xe0a2bd4258d2768837baa26a28fe71dc079f84c7",
                 "gas": "0x3e8",
@@ -5858,7 +5858,7 @@ TEST_CASE("Trace json serialization") {
     SECTION("with error") {
         trace.error = "error";
 
-        CHECK(trace == R"({
+        CHECK(nlohmann::json(trace) == R"({
             "action": {
                 "from": "0xe0a2bd4258d2768837baa26a28fe71dc079f84c7",
                 "gas": "0x3e8",
@@ -5879,7 +5879,7 @@ TEST_CASE("StateDiff json serialization") {
     StateDiff state_diff;
 
     SECTION("basic") {
-        CHECK(state_diff == R"({
+        CHECK(nlohmann::json(state_diff) == R"({
         })"_json);
     }
     SECTION("with 1 entry") {
@@ -5887,7 +5887,7 @@ TEST_CASE("StateDiff json serialization") {
 
         state_diff.insert(std::pair<std::string, StateDiffEntry>("item", entry));
 
-        CHECK(state_diff == R"({
+        CHECK(nlohmann::json(state_diff) == R"({
             "item": {
                 "balance": "=",
                 "code": "=",
@@ -5904,26 +5904,26 @@ TEST_CASE("DiffValue json serialization") {
     SECTION("no entries") {
         DiffValue dv;
 
-        CHECK(dv == R"("=")"_json);
+        CHECK(nlohmann::json(dv) == R"("=")"_json);
     }
     SECTION("only from entry") {
         DiffValue dv{"0xe0a2bd4258d2768837baa26a28fe71dc079f84c7"};
 
-        CHECK(dv == R"({
+        CHECK(nlohmann::json(dv) == R"({
             "-":"0xe0a2bd4258d2768837baa26a28fe71dc079f84c7"
         })"_json);
     }
     SECTION("only to entry") {
         DiffValue dv{{}, "0xe0a2bd4258d2768837baa26a28fe71dc079f84c8"};
 
-        CHECK(dv == R"({
+        CHECK(nlohmann::json(dv) == R"({
             "+": "0xe0a2bd4258d2768837baa26a28fe71dc079f84c8"
         })"_json);
     }
     SECTION("both entries") {
         DiffValue dv{"0xe0a2bd4258d2768837baa26a28fe71dc079f84c7", "0xe0a2bd4258d2768837baa26a28fe71dc079f84c8"};
 
-        CHECK(dv == R"({
+        CHECK(nlohmann::json(dv) == R"({
             "*": {
                 "from": "0xe0a2bd4258d2768837baa26a28fe71dc079f84c7",
                 "to": "0xe0a2bd4258d2768837baa26a28fe71dc079f84c8"
@@ -6143,7 +6143,7 @@ TEST_CASE("copy_memory") {
         copy_memory(memory, trace_memory);
 
         CHECK(trace_memory.has_value() == true);
-        CHECK(trace_memory.value() == R"({
+        CHECK(nlohmann::json(trace_memory.value()) == R"({
             "off":0,
             "data":"0x00010203040506070809"
         })"_json);
@@ -6163,7 +6163,7 @@ TEST_CASE("copy_store") {
         copy_store(evmc_opcode::OP_SSTORE, top_stack, trace_storage);
 
         CHECK(trace_storage.has_value() == true);
-        CHECK(trace_storage.value() == R"({
+        CHECK(nlohmann::json(trace_storage.value()) == R"({
             "key":"0x1f",
             "val":"0x1e"
         })"_json);
@@ -6192,14 +6192,14 @@ TEST_CASE("copy_memory_offset_len") {
             case evmc_opcode::OP_MSTORE:
             case evmc_opcode::OP_MLOAD:
                 CHECK(trace_memory.has_value() == true);
-                CHECK(trace_memory.value() == R"({
+                CHECK(nlohmann::json(trace_memory.value()) == R"({
                     "data":"",
                     "off": 31
                 })"_json);
                 break;
             case evmc_opcode::OP_MSTORE8:
                 CHECK(trace_memory.has_value() == true);
-                CHECK(trace_memory.value() == R"({
+                CHECK(nlohmann::json(trace_memory.value()) == R"({
                     "data":"",
                     "off": 31
                 })"_json);
@@ -6208,7 +6208,7 @@ TEST_CASE("copy_memory_offset_len") {
             case evmc_opcode::OP_CALLDATACOPY:
             case evmc_opcode::OP_CODECOPY:
                 CHECK(trace_memory.has_value() == true);
-                CHECK(trace_memory.value() == R"({
+                CHECK(nlohmann::json(trace_memory.value()) == R"({
                     "data":"",
                     "off": 31
                 })"_json);
@@ -6216,7 +6216,7 @@ TEST_CASE("copy_memory_offset_len") {
             case evmc_opcode::OP_STATICCALL:
             case evmc_opcode::OP_DELEGATECALL:
                 CHECK(trace_memory.has_value() == true);
-                CHECK(trace_memory.value() == R"({
+                CHECK(nlohmann::json(trace_memory.value()) == R"({
                     "data":"",
                     "off": 27
                 })"_json);
@@ -6224,7 +6224,7 @@ TEST_CASE("copy_memory_offset_len") {
             case evmc_opcode::OP_CALL:
             case evmc_opcode::OP_CALLCODE:
                 CHECK(trace_memory.has_value() == true);
-                CHECK(trace_memory.value() == R"({
+                CHECK(nlohmann::json(trace_memory.value()) == R"({
                     "data":"",
                     "off": 26
                 })"_json);
@@ -6232,7 +6232,7 @@ TEST_CASE("copy_memory_offset_len") {
             case evmc_opcode::OP_CREATE:
             case evmc_opcode::OP_CREATE2:
                 CHECK(trace_memory.has_value() == true);
-                CHECK(trace_memory.value() == R"({
+                CHECK(nlohmann::json(trace_memory.value()) == R"({
                     "data":"",
                     "off": 0
                 })"_json);
@@ -6260,7 +6260,7 @@ TEST_CASE("push_memory_offset_len") {
             case evmc_opcode::OP_STATICCALL:
             case evmc_opcode::OP_DELEGATECALL:
                 CHECK(tms.size() == 1);
-                CHECK(tms.top() == R"({
+                CHECK(nlohmann::json(tms.top()) == R"({
                     "data":"",
                     "off": 27
                 })"_json);
@@ -6268,7 +6268,7 @@ TEST_CASE("push_memory_offset_len") {
             case evmc_opcode::OP_CALL:
             case evmc_opcode::OP_CALLCODE:
                 CHECK(tms.size() == 1);
-                CHECK(tms.top() == R"({
+                CHECK(nlohmann::json(tms.top()) == R"({
                     "data":"",
                     "off": 26
                 })"_json);
@@ -6276,7 +6276,7 @@ TEST_CASE("push_memory_offset_len") {
             case evmc_opcode::OP_CREATE:
             case evmc_opcode::OP_CREATE2:
                 CHECK(tms.size() == 1);
-                CHECK(tms.top() == R"({
+                CHECK(nlohmann::json(tms.top()) == R"({
                     "data":"",
                     "off": 0
                 })"_json);
@@ -6485,7 +6485,7 @@ TEST_CASE("TraceCallTraces: json serialization") {
 
     SECTION("with transaction_hash") {
         tct.transaction_hash = 0xe0d4933284f1254835aac8823535278f0eb9608b137266cf3d3d8df8240bbe48_bytes32;
-        CHECK(tct == R"({
+        CHECK(nlohmann::json(tct) == R"({
             "output": "0xdeadbeaf",
             "stateDiff": null,
             "trace": [],
@@ -6496,7 +6496,7 @@ TEST_CASE("TraceCallTraces: json serialization") {
 
     SECTION("with state_diff") {
         tct.state_diff = StateDiff{};
-        CHECK(tct == R"({
+        CHECK(nlohmann::json(tct) == R"({
             "output": "0xdeadbeaf",
             "stateDiff": {},
             "trace": [],
@@ -6506,7 +6506,7 @@ TEST_CASE("TraceCallTraces: json serialization") {
 
     SECTION("with trace") {
         tct.trace.push_back(Trace{});
-        CHECK(tct == R"({
+        CHECK(nlohmann::json(tct) == R"({
             "output": "0xdeadbeaf",
             "stateDiff": null,
             "trace": [
@@ -6528,7 +6528,7 @@ TEST_CASE("TraceCallTraces: json serialization") {
 
     SECTION("with vm_trace") {
         tct.vm_trace = VmTrace{};
-        CHECK(tct == R"({
+        CHECK(nlohmann::json(tct) == R"({
             "output": "0xdeadbeaf",
             "stateDiff": null,
             "trace": [],
@@ -6546,7 +6546,7 @@ TEST_CASE("TraceCallResult: json serialization") {
 
     SECTION("with traces") {
         tcr.traces = TraceCallTraces{};
-        CHECK(tcr == R"({
+        CHECK(nlohmann::json(tcr) == R"({
             "output": "0x",
             "stateDiff": null,
             "trace": [],
@@ -6561,7 +6561,7 @@ TEST_CASE("TraceManyCallResult: json serialization") {
 
     SECTION("with traces") {
         tmcr.traces.push_back(TraceCallTraces{});
-        CHECK(tmcr == R"([
+        CHECK(nlohmann::json(tmcr) == R"([
             {
                 "output": "0x",
                 "stateDiff": null,

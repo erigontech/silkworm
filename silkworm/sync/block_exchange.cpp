@@ -68,7 +68,7 @@ void BlockExchange::receive_message(std::shared_ptr<InboundMessage> message) {
 void BlockExchange::execution_loop() {
     using namespace std::chrono;
     using namespace std::chrono_literals;
-    log::set_thread_name("block-exchange");
+    log::set_thread_name("block-exchg");
 
     auto announcement_receiving_callback = [this](std::shared_ptr<InboundMessage> msg) {
         statistics_.nonsolic_msgs++;

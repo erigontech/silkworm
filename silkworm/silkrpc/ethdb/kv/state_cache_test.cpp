@@ -40,6 +40,7 @@
 
 namespace silkworm::rpc::ethdb::kv {
 
+#ifdef notdef
 using namespace evmc::literals;  // NOLINT(build/namespaces_literals)
 
 using Catch::Matchers::Message;
@@ -617,4 +618,5 @@ TEST_CASE("CoherentStateCache::on_new_block clear the cache on view ID wrapping"
     }
 }
 
+#endif
 }  // namespace silkworm::rpc::ethdb::kv

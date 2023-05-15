@@ -26,6 +26,7 @@ namespace silkworm::rpc::ethdb::kv {
 
 boost::asio::awaitable<void> RemoteTransaction::open() {
     view_id_ = (co_await tx_rpc_.request_and_read()).view_id();
+    std::cout << "RemoteTransaction: view_id: " << view_id_ << "\n";
 }
 
 boost::asio::awaitable<std::shared_ptr<Cursor>> RemoteTransaction::cursor(const std::string& table) {

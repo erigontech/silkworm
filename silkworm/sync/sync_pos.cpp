@@ -16,6 +16,8 @@
 
 #include "sync_pos.hpp"
 
+#include <boost/asio/steady_timer.hpp>
+#include <boost/asio/use_awaitable.hpp>
 #include <magic_enum.hpp>
 
 #include <silkworm/core/common/as_range.hpp>

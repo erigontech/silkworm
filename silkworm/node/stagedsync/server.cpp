@@ -152,7 +152,7 @@ asio::awaitable<std::optional<BlockBody>> Server::get_body(Hash block_hash) {
 
 asio::awaitable<bool> Server::is_canonical(Hash block_hash) {
     auto lambda = [](Server* me, Hash h) -> asio::awaitable<bool> {
-            co_return me->exec_engine_.is_canonical(h);
+        co_return me->exec_engine_.is_canonical(h);
     };
     return co_spawn(io_context_, lambda(this, block_hash), asio::use_awaitable);
 }

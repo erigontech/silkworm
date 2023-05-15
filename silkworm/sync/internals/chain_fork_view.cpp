@@ -57,8 +57,8 @@ TotalDifficulty ChainForkView::add(const BlockHeader& header) {
     if (!parent_td) {                                                              /* clang-format off */
         std::string error_message = "Consensus: parent's total difficulty not found,"
             " hash= " + to_hex(header.parent_hash) +
-            " height= " + std::to_string(height - 1) +
-            " for header= " + hash.to_hex();
+            " height= " + std::to_string(header.number - 1) +
+            " for header= " + to_hex(header.hash());
         log::Error("Consensus") << error_message;
         throw std::logic_error(error_message);  // unexpected condition, bug?  /* clang-format on */
     }

@@ -18,7 +18,6 @@
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
-#include <boost/asio.hpp>
 #include <boost/asio/awaitable.hpp>
 
 #include <silkworm/infra/common/log.hpp>

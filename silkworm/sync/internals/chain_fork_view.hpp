@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <boost/asio.hpp>
 #include <boost/asio/awaitable.hpp>
 
 #include <silkworm/core/common/lru_cache.hpp>
@@ -53,12 +52,11 @@ class ChainForkView {
     std::optional<TotalDifficulty> get_total_difficulty(BlockNum height, const Hash& hash);
 
     static ChainHead head_at_genesis(const ChainConfig& chain_config);
+
   private:
     ChainHead initial_head_{};
     ChainHead current_head_{};  // current head of the chain
     Hash previous_hash_;
-
-    execution::Client& exec_client_;
 
     static constexpr size_t kCacheSize = 4096;
     lru_cache<Hash, TotalDifficulty> td_cache_;  // this is not for performance

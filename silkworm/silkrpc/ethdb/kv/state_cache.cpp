@@ -47,11 +47,23 @@ CoherentStateCache::CoherentStateCache(CoherentCacheConfig config) : config_(con
     }
 }
 
-std::unique_ptr<StateView> CoherentStateCache::get_view(Transaction& txn) {
-    const auto view_id = txn.view_id();
+boost::asio::awaitable<std::unique_ptr<StateView>> CoherentStateCache::get_view(Transaction& txn) {
+    std::stringstream stream;
+    stream << std::hex << txn.view_id();
+    auto key =  *silkworm::from_hex(stream.str());
+
+    std::cout << "CoherentStateCache::get_view2=" << silkworm::to_hex(key, true) << "\n";
+    TransactionDatabase tx_database{txn};
+    
+    auto idstr = co_await tx_database.get_one("Sequence", key);
+    std::cout << "idstr: [" << silkworm::to_hex(idstr, true) << "]\n";
+    ByteView view{idstr};
+    silkworm::rpc::ethdb::kv::StateViewId id = 0;
     std::unique_lock write_lock{rw_mutex_};
-    CoherentStateRoot* root = get_root(view_id);
-    return root->ready ? std::make_unique<CoherentStateView>(txn, this) : nullptr;
+    CoherentStateRoot* root = get_root(id);
+    std::cout << "CoherentStateCache::get_view: " << id << "\n";
+    std::cout << "root->READY: " << root->ready << "\n";
+    co_return root->ready ? std::make_unique<CoherentStateView>(txn, this) : nullptr;
 }
 
 std::size_t CoherentStateCache::latest_data_size() {
@@ -79,6 +91,7 @@ void CoherentStateCache::on_new_block(const remote::StateChangeBatch& state_chan
     std::unique_lock write_lock{rw_mutex_};
 
     const auto view_id = state_changes.state_version_id();
+    std::cout << "CoherentStateCache::on_new_block: " << view_id << "\n";
     CoherentStateRoot* root = advance_root(view_id);
     for (const auto& state_change : state_changes.change_batch()) {
         for (const auto& account_change : state_change.changes()) {

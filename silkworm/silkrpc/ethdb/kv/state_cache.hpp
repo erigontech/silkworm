@@ -48,7 +48,7 @@ class StateCache {
   public:
     virtual ~StateCache() = default;
 
-    virtual std::unique_ptr<StateView> get_view(Transaction& txn) = 0;
+    virtual boost::asio::awaitable<std::unique_ptr<StateView>> get_view(Transaction& txn) = 0;
 
     virtual void on_new_block(const remote::StateChangeBatch& state_changes) = 0;
 
@@ -98,6 +98,7 @@ class CoherentStateView : public StateView {
 
     boost::asio::awaitable<std::optional<silkworm::Bytes>> get_code(const silkworm::Bytes& key) override;
 
+
   private:
     Transaction& txn_;
     CoherentStateCache* cache_;
@@ -110,7 +111,7 @@ class CoherentStateCache : public StateCache {
     CoherentStateCache(const CoherentStateCache&) = delete;
     CoherentStateCache& operator=(const CoherentStateCache&) = delete;
 
-    std::unique_ptr<StateView> get_view(Transaction& txn) override;
+    boost::asio::awaitable<std::unique_ptr<StateView>> get_view(Transaction& txn) override;
 
     void on_new_block(const remote::StateChangeBatch& batch) override;
 

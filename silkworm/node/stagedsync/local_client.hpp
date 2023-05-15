@@ -46,13 +46,13 @@ class LocalClient : public Client {
 
     // header/body retrieval
     auto get_header(Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>> override;
-    auto get_body(Hash block_hash) -> asio::awaitable<BlockBody> override;
+    auto get_body(Hash block_hash) -> asio::awaitable<std::optional<BlockBody>> override;
 
     auto is_canonical(Hash block_hash) -> asio::awaitable<bool> override;
     auto get_block_num(Hash block_hash) -> asio::awaitable<std::optional<BlockNum>> override;
 
     auto get_last_headers(BlockNum limit) -> asio::awaitable<std::vector<BlockHeader>> override;
-    auto get_header_td(BlockNum, Hash) -> asio::awaitable<std::optional<TotalDifficulty>> override;
+    auto get_header_td(Hash, std::optional<BlockNum>) -> asio::awaitable<std::optional<TotalDifficulty>> override;
 
   private:
     Server& local_server_;

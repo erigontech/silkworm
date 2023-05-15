@@ -79,18 +79,11 @@ class ExecutionEngine : public Stoppable {
     auto get_header(BlockNum) const -> std::optional<BlockHeader>;
     auto get_body(Hash) const -> std::optional<BlockBody>;
     auto get_body(BlockNum) const -> std::optional<BlockBody>;
-    bool is_canonical_hash(Hash) const;
+    bool is_canonical(Hash) const;
     auto get_block_number(Hash) const -> std::optional<BlockNum>;
     auto get_last_headers(BlockNum limit) const -> std::vector<BlockHeader>;
-    auto get_header_td(BlockNum, Hash) const -> std::optional<TotalDifficulty>;
+    auto get_header_td(Hash, std::optional<BlockNum> = std::nullopt) const -> std::optional<TotalDifficulty>;
 
-    /*
-    auto get_canonical_head() const -> BlockId;
-    auto get_canonical_hash(BlockNum) const -> std::optional<Hash>;
-    auto get_body(Hash) const -> std::optional<BlockBody>;
-    auto extends_last_fork_choice(BlockNum, Hash) const -> bool;
-    auto extends(BlockId block, BlockId supposed_parent) const -> bool;
-    */
   protected:
     struct ForkingPath {
         BlockId forking_point;

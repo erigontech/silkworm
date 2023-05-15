@@ -50,13 +50,13 @@ class Client {
 
     // header/body retrieval
     virtual auto get_header(Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>> = 0;
-    virtual auto get_body(Hash block_hash) -> asio::awaitable<BlockBody> = 0;
+    virtual auto get_body(Hash block_hash) -> asio::awaitable<std::optional<BlockBody>> = 0;
 
     virtual auto is_canonical(Hash block_hash) -> asio::awaitable<bool> = 0;
     virtual auto get_block_num(Hash block_hash) -> asio::awaitable<std::optional<BlockNum>> = 0;
 
     virtual auto get_last_headers(BlockNum limit) -> asio::awaitable<std::vector<BlockHeader>> = 0;
-    virtual auto get_header_td(BlockNum, Hash) -> asio::awaitable<std::optional<TotalDifficulty>> = 0;
+    virtual auto get_header_td(Hash, std::optional<BlockNum>) -> asio::awaitable<std::optional<TotalDifficulty>> = 0;
 };
 
 }  // namespace silkworm::execution

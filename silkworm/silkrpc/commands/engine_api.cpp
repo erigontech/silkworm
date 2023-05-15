@@ -186,13 +186,13 @@ awaitable<void> EngineRpcApi::handle_engine_exchange_transition_configuration_v1
         if (config.terminal_total_difficulty.value() != cl_configuration.terminal_total_difficulty) {
             SILK_ERROR << "execution layer has the incorrect terminal total difficulty, expected: "
                        << cl_configuration.terminal_total_difficulty << " got: " << config.terminal_total_difficulty.value();
-            reply = make_json_error(request.at("id"), kInvalidParams, "incorrect terminal total difficulty");
+            reply = make_json_error(request.at("id"), kInvalidParams, "consensus layer terminal total difficulty does not match");
             co_return;
         }
         if (cl_configuration.terminal_block_hash != kZeroHash) {
             SILK_ERROR << "execution layer has the incorrect terminal block hash, expected: "
                        << cl_configuration.terminal_block_hash << " got: " << kZeroHash;
-            reply = make_json_error(request.at("id"), kInvalidParams, "incorrect terminal block hash");
+            reply = make_json_error(request.at("id"), kInvalidParams, "consensus layer terminal block hash is not zero");
             co_return;
         }
         // We MUST respond with configurable setting values set according to EIP-3675 [Specification 1.]

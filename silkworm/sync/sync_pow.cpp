@@ -17,17 +17,13 @@
 #include "sync_pow.hpp"
 
 #include <silkworm/core/common/as_range.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/measure.hpp>
 #include <silkworm/infra/concurrency/sync_wait.hpp>
 #include <silkworm/sync/messages/outbound_new_block.hpp>
 #include <silkworm/sync/messages/outbound_new_block_hashes.hpp>
 
 namespace silkworm::chainsync {
-
-static void ensure_invariant(bool condition, std::string message) {
-    if (!condition)
-        throw std::logic_error("Consensus invariant violation: " + message);
-}
 
 PoWSync::PoWSync(BlockExchange& be, execution::Client& ee) : ChainSync(be, ee) {}
 

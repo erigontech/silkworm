@@ -19,6 +19,7 @@
 #include <set>
 
 #include <silkworm/core/common/as_range.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/db_utils.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
@@ -26,18 +27,6 @@
 #include "main_chain.hpp"
 
 namespace silkworm::stagedsync {
-
-static void ensure_invariant(bool condition, const std::string& message) {
-    if (!condition) {
-        throw std::logic_error("Fork invariant violation: " + message);
-    }
-}
-
-static void ensure(bool condition, const std::string& message) {
-    if (!condition) {
-        throw std::logic_error("Fork condition violation: " + message);
-    }
-}
 
 Fork::Fork(BlockId forking_point, MainChain& main_chain)
     : main_chain_{main_chain},

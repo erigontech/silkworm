@@ -62,7 +62,7 @@ if(NOT SILKWORM_CORE_ONLY)
   if(SILKWORM_SANITIZE)
     target_compile_definitions(infra_test PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
   endif()
-  target_link_libraries(infra_test silkworm_infra Catch2::Catch2)
+  target_link_libraries(infra_test silkworm_infra Catch2::Catch2 GTest::gmock)
 
   # Silkworm Node Tests
   file(GLOB_RECURSE SILKWORM_NODE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/node/*_test.cpp")

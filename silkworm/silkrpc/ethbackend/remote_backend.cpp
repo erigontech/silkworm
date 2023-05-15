@@ -23,9 +23,9 @@
 #include <grpcpp/grpcpp.h>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/silkrpc/common/clock_time.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/grpc/unary_rpc.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
@@ -40,11 +40,11 @@ RemoteBackEnd::RemoteBackEnd(boost::asio::io_context::executor_type executor,
                              std::unique_ptr<::remote::ETHBACKEND::StubInterface> stub,
                              agrpc::GrpcContext& grpc_context)
     : executor_(std::move(executor)), stub_(std::move(stub)), grpc_context_(grpc_context) {
-    SILKRPC_TRACE << "RemoteBackEnd::ctor " << this << "\n";
+    SILK_TRACE << "RemoteBackEnd::ctor " << this;
 }
 
 RemoteBackEnd::~RemoteBackEnd() {
-    SILKRPC_TRACE << "RemoteBackEnd::dtor " << this << "\n";
+    SILK_TRACE << "RemoteBackEnd::dtor " << this;
 }
 
 awaitable<evmc::address> RemoteBackEnd::etherbase() {
@@ -56,7 +56,7 @@ awaitable<evmc::address> RemoteBackEnd::etherbase() {
         const auto h160_address = reply.address();
         evmc_address = address_from_H160(h160_address);
     }
-    SILKRPC_DEBUG << "RemoteBackEnd::etherbase address=" << evmc_address << " t=" << clock_time::since(start_time) << "\n";
+    SILK_DEBUG << "RemoteBackEnd::etherbase address=" << evmc_address << " t=" << clock_time::since(start_time);
     co_return evmc_address;
 }
 
@@ -65,7 +65,7 @@ awaitable<uint64_t> RemoteBackEnd::protocol_version() {
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncProtocolVersion> pv_rpc{*stub_, grpc_context_};
     const auto reply = co_await pv_rpc.finish_on(executor_, ::remote::ProtocolVersionRequest{});
     const auto pv = reply.id();
-    SILKRPC_DEBUG << "RemoteBackEnd::protocol_version version=" << pv << " t=" << clock_time::since(start_time) << "\n";
+    SILK_DEBUG << "RemoteBackEnd::protocol_version version=" << pv << " t=" << clock_time::since(start_time);
     co_return pv;
 }
 
@@ -74,7 +74,7 @@ awaitable<uint64_t> RemoteBackEnd::net_version() {
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncNetVersion> nv_rpc{*stub_, grpc_context_};
     const auto reply = co_await nv_rpc.finish_on(executor_, ::remote::NetVersionRequest{});
     const auto nv = reply.id();
-    SILKRPC_DEBUG << "RemoteBackEnd::net_version version=" << nv << " t=" << clock_time::since(start_time) << "\n";
+    SILK_DEBUG << "RemoteBackEnd::net_version version=" << nv << " t=" << clock_time::since(start_time);
     co_return nv;
 }
 
@@ -83,7 +83,7 @@ awaitable<std::string> RemoteBackEnd::client_version() {
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncClientVersion> cv_rpc{*stub_, grpc_context_};
     const auto reply = co_await cv_rpc.finish_on(executor_, ::remote::ClientVersionRequest{});
     const auto cv = reply.node_name();
-    SILKRPC_DEBUG << "RemoteBackEnd::client_version version=" << cv << " t=" << clock_time::since(start_time) << "\n";
+    SILK_DEBUG << "RemoteBackEnd::client_version version=" << cv << " t=" << clock_time::since(start_time);
     co_return cv;
 }
 
@@ -92,7 +92,7 @@ awaitable<uint64_t> RemoteBackEnd::net_peer_count() {
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncNetPeerCount> npc_rpc{*stub_, grpc_context_};
     const auto reply = co_await npc_rpc.finish_on(executor_, ::remote::NetPeerCountRequest{});
     const auto count = reply.count();
-    SILKRPC_DEBUG << "RemoteBackEnd::net_peer_count count=" << count << " t=" << clock_time::since(start_time) << "\n";
+    SILK_DEBUG << "RemoteBackEnd::net_peer_count count=" << count << " t=" << clock_time::since(start_time);
     co_return count;
 }
 
@@ -117,7 +117,7 @@ awaitable<NodeInfos> RemoteBackEnd::engine_node_info() {
         }
         node_info_list.push_back(node_info);
     }
-    SILKRPC_DEBUG << "RemoteBackEnd::engine_node_info t=" << clock_time::since(start_time) << "\n";
+    SILK_DEBUG << "RemoteBackEnd::engine_node_info t=" << clock_time::since(start_time);
     co_return node_info_list;
 }
 
@@ -128,7 +128,7 @@ awaitable<ExecutionPayload> RemoteBackEnd::engine_get_payload_v1(uint64_t payloa
     req.set_payload_id(payload_id);
     const auto reply = co_await npc_rpc.finish_on(executor_, req);
     auto execution_payload{decode_execution_payload(reply.execution_payload())};
-    SILKRPC_DEBUG << "RemoteBackEnd::engine_get_payload_v1 data=" << execution_payload << " t=" << clock_time::since(start_time) << "\n";
+    SILK_DEBUG << "RemoteBackEnd::engine_get_payload_v1 data=" << execution_payload << " t=" << clock_time::since(start_time);
     co_return execution_payload;
 }
 
@@ -138,7 +138,7 @@ awaitable<PayloadStatus> RemoteBackEnd::engine_new_payload_v1(const ExecutionPay
     auto req{encode_execution_payload(payload)};
     const auto reply = co_await npc_rpc.finish_on(executor_, req);
     PayloadStatus payload_status = decode_payload_status(reply);
-    SILKRPC_DEBUG << "RemoteBackEnd::engine_new_payload_v1 data=" << payload_status << " t=" << clock_time::since(start_time) << "\n";
+    SILK_DEBUG << "RemoteBackEnd::engine_new_payload_v1 data=" << payload_status << " t=" << clock_time::since(start_time);
     co_return payload_status;
 }
 
@@ -155,7 +155,7 @@ awaitable<ForkChoiceUpdatedReply> RemoteBackEnd::engine_forkchoice_updated_v1(co
     if (reply.payload_id() != 0) {
         forkchoice_updated_reply.payload_id = reply.payload_id();
     }
-    SILKRPC_DEBUG << "RemoteBackEnd::engine_forkchoice_updated_v1 data=" << payload_status << " t=" << clock_time::since(start_time) << "\n";
+    SILK_DEBUG << "RemoteBackEnd::engine_forkchoice_updated_v1 data=" << payload_status << " t=" << clock_time::since(start_time);
     co_return forkchoice_updated_reply;
 }
 
@@ -181,7 +181,7 @@ awaitable<PeerInfos> RemoteBackEnd::peers() {
         };
         peer_infos.push_back(peer_info);
     }
-    SILKRPC_DEBUG << "RemoteBackEnd::peers t=" << clock_time::since(start_time) << "\n";
+    SILK_DEBUG << "RemoteBackEnd::peers t=" << clock_time::since(start_time);
     co_return peer_infos;
 }
 

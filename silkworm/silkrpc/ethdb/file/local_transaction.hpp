@@ -27,7 +27,6 @@
 #include <boost/asio/awaitable.hpp>
 
 #include <silkworm/node/db/mdbx.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 #include <silkworm/silkrpc/ethdb/file/local_cursor.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>

@@ -19,7 +19,6 @@
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/silkrpc/common/block_cache.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/core/filter_storage.hpp>
 #include <silkworm/silkrpc/ethbackend/remote_backend.hpp>
 #include <silkworm/silkrpc/ethdb/kv/remote_database.hpp>
@@ -30,7 +29,7 @@
 namespace silkworm::rpc::test {
 
 ContextTestBase::ContextTestBase()
-    : log_guard_{LogLevel::None},
+    : log_guard_{log::Level::kNone},
       context_{0},
       io_context_{*context_.io_context()},
       grpc_context_{*context_.grpc_context()},

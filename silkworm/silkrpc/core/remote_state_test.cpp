@@ -24,7 +24,7 @@
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/test/context_test_base.hpp>
 #include <silkworm/silkrpc/test/mock_database_reader.hpp>
@@ -36,7 +36,7 @@ using evmc::literals::operator""_bytes32;
 using evmc::literals::operator""_address;
 
 TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     class MockDatabaseReader : public core::rawdb::DatabaseReader {
       public:
@@ -402,6 +402,8 @@ struct RemoteStateTest : public test::ContextTestBase {
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(RemoteStateTest, "RemoteState") {
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+
     SECTION("overridden write methods do nothing") {
         CHECK_NOTHROW(remote_state_.insert_block(silkworm::Block{}, evmc::bytes32{}));
         CHECK_NOTHROW(remote_state_.canonize_block(0, evmc::bytes32{}));

@@ -16,6 +16,7 @@
 
 #include "transaction_pool.hpp"
 
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/silkrpc/common/clock_time.hpp>
 #include <silkworm/silkrpc/grpc/unary_rpc.hpp>
@@ -30,36 +31,36 @@ TransactionPool::TransactionPool(boost::asio::io_context::executor_type executor
                                  std::unique_ptr<::txpool::Txpool::StubInterface> stub,
                                  agrpc::GrpcContext& grpc_context)
     : executor_(std::move(executor)), stub_(std::move(stub)), grpc_context_(grpc_context) {
-    SILKRPC_TRACE << "TransactionPool::ctor " << this << "\n";
+    SILK_TRACE << "TransactionPool::ctor " << this;
 }
 
 TransactionPool::~TransactionPool() {
-    SILKRPC_TRACE << "TransactionPool::dtor " << this << "\n";
+    SILK_TRACE << "TransactionPool::dtor " << this;
 }
 
 boost::asio::awaitable<OperationResult> TransactionPool::add_transaction(const silkworm::ByteView& rlp_tx) {
     const auto start_time = clock_time::now();
-    SILKRPC_DEBUG << "TransactionPool::add_transaction rlp_tx=" << silkworm::to_hex(rlp_tx) << "\n";
+    SILK_DEBUG << "TransactionPool::add_transaction rlp_tx=" << silkworm::to_hex(rlp_tx);
     ::txpool::AddRequest request;
     request.add_rlp_txs(rlp_tx.data(), rlp_tx.size());
     UnaryRpc<&::txpool::Txpool::StubInterface::AsyncAdd> add_transaction_rpc{*stub_, grpc_context_};
     const auto reply = co_await add_transaction_rpc.finish_on(executor_, request);
     const auto imported_size = reply.imported_size();
     const auto errors_size = reply.errors_size();
-    SILKRPC_DEBUG << "TransactionPool::add_transaction imported_size=" << imported_size << " errors_size=" << errors_size << "\n";
+    SILK_DEBUG << "TransactionPool::add_transaction imported_size=" << imported_size << " errors_size=" << errors_size;
     OperationResult result;
     if (imported_size == 1) {
         const auto import_result = reply.imported(0);
-        SILKRPC_DEBUG << "TransactionPool::add_transaction import_result=" << import_result << "\n";
+        SILK_DEBUG << "TransactionPool::add_transaction import_result=" << import_result;
         if (import_result != ::txpool::ImportResult::SUCCESS) {
             result.success = false;
             if (errors_size >= 1) {
                 const auto import_error = reply.errors(0);
                 result.error_descr = import_error;
-                SILKRPC_WARN << "TransactionPool::add_transaction import_result=" << import_result << " error=" << import_error << "\n";
+                SILK_WARN << "TransactionPool::add_transaction import_result=" << import_result << " error=" << import_error;
             } else {
                 result.error_descr = "no specific error";
-                SILKRPC_WARN << "TransactionPool::add_transaction import_result=" << import_result << ", no error received\n";
+                SILK_WARN << "TransactionPool::add_transaction import_result=" << import_result << ", no error received";
             }
         } else {
             result.success = true;
@@ -67,15 +68,15 @@ boost::asio::awaitable<OperationResult> TransactionPool::add_transaction(const s
     } else {
         result.success = false;
         result.error_descr = "unexpected imported size";
-        SILKRPC_WARN << "TransactionPool::add_transaction unexpected imported_size=" << imported_size << "\n";
+        SILK_WARN << "TransactionPool::add_transaction unexpected imported_size=" << imported_size;
     }
-    SILKRPC_DEBUG << "TransactionPool::add_transaction t=" << clock_time::since(start_time) << "\n";
+    SILK_DEBUG << "TransactionPool::add_transaction t=" << clock_time::since(start_time);
     co_return result;
 }
 
 boost::asio::awaitable<std::optional<silkworm::Bytes>> TransactionPool::get_transaction(const evmc::bytes32& tx_hash) {
     const auto start_time = clock_time::now();
-    SILKRPC_DEBUG << "TransactionPool::get_transaction tx_hash=" << tx_hash << "\n";
+    SILK_DEBUG << "TransactionPool::get_transaction tx_hash=" << tx_hash;
     auto hi = new ::types::H128{};
     auto lo = new ::types::H128{};
     hi->set_hi(evmc::load64be(tx_hash.bytes + 0));
@@ -89,32 +90,32 @@ boost::asio::awaitable<std::optional<silkworm::Bytes>> TransactionPool::get_tran
     UnaryRpc<&::txpool::Txpool::StubInterface::AsyncTransactions> get_transactions_rpc{*stub_, grpc_context_};
     const auto reply = co_await get_transactions_rpc.finish_on(executor_, request);
     const auto rlp_txs_size = reply.rlp_txs_size();
-    SILKRPC_DEBUG << "TransactionPool::get_transaction rlp_txs_size=" << rlp_txs_size << "\n";
+    SILK_DEBUG << "TransactionPool::get_transaction rlp_txs_size=" << rlp_txs_size;
     if (rlp_txs_size == 1) {
         const auto rlp_tx = reply.rlp_txs(0);
-        SILKRPC_DEBUG << "TransactionPool::get_transaction t=" << clock_time::since(start_time) << "\n";
+        SILK_DEBUG << "TransactionPool::get_transaction t=" << clock_time::since(start_time);
         co_return silkworm::Bytes{rlp_tx.begin(), rlp_tx.end()};
     } else {
-        SILKRPC_WARN << "TransactionPool::get_transaction unexpected rlp_txs_size=" << rlp_txs_size << "\n";
-        SILKRPC_DEBUG << "TransactionPool::get_transaction t=" << clock_time::since(start_time) << "\n";
+        SILK_WARN << "TransactionPool::get_transaction unexpected rlp_txs_size=" << rlp_txs_size;
+        SILK_DEBUG << "TransactionPool::get_transaction t=" << clock_time::since(start_time);
         co_return std::nullopt;
     }
 }
 
 boost::asio::awaitable<std::optional<uint64_t>> TransactionPool::nonce(const evmc::address& address) {
     const auto start_time = clock_time::now();
-    SILKRPC_DEBUG << "TransactionPool::nonce address=" << address << "\n";
+    SILK_DEBUG << "TransactionPool::nonce address=" << address;
     ::txpool::NonceRequest request;
     request.set_allocated_address(H160_from_address(address).release());
     UnaryRpc<&::txpool::Txpool::StubInterface::AsyncNonce> nonce_rpc{*stub_, grpc_context_};
     const auto reply = co_await nonce_rpc.finish_on(executor_, request);
-    SILKRPC_DEBUG << "TransactionPool::nonce found:" << reply.found() << " nonce: " << reply.nonce() << " t=" << clock_time::since(start_time) << "\n";
+    SILK_DEBUG << "TransactionPool::nonce found:" << reply.found() << " nonce: " << reply.nonce() << " t=" << clock_time::since(start_time);
     co_return reply.found() ? std::optional<uint64_t>{reply.nonce()} : std::nullopt;
 }
 
 boost::asio::awaitable<StatusInfo> TransactionPool::get_status() {
     const auto start_time = clock_time::now();
-    SILKRPC_DEBUG << "TransactionPool::get_status\n";
+    SILK_DEBUG << "TransactionPool::get_status";
     ::txpool::StatusRequest request;
     UnaryRpc<&::txpool::Txpool::StubInterface::AsyncStatus> status_rpc{*stub_, grpc_context_};
     const auto reply = co_await status_rpc.finish_on(executor_, request);
@@ -122,13 +123,13 @@ boost::asio::awaitable<StatusInfo> TransactionPool::get_status() {
         .queued_count = reply.queued_count(),
         .pending_count = reply.pending_count(),
         .base_fee_count = reply.base_fee_count()};
-    SILKRPC_DEBUG << "TransactionPool::get_status t=" << clock_time::since(start_time) << "\n";
+    SILK_DEBUG << "TransactionPool::get_status t=" << clock_time::since(start_time);
     co_return status_info;
 }
 
 boost::asio::awaitable<TransactionsInPool> TransactionPool::get_transactions() {
     const auto start_time = clock_time::now();
-    SILKRPC_DEBUG << "TransactionPool::get_transactions\n";
+    SILK_DEBUG << "TransactionPool::get_transactions";
     ::txpool::AllRequest request;
     UnaryRpc<&::txpool::Txpool::StubInterface::AsyncAll> all_rpc{*stub_, grpc_context_};
     const auto reply = co_await all_rpc.finish_on(executor_, request);
@@ -149,7 +150,7 @@ boost::asio::awaitable<TransactionsInPool> TransactionPool::get_transactions() {
         }
         transactions_in_pool.push_back(element);
     }
-    SILKRPC_DEBUG << "TransactionPool::get_transactions t=" << clock_time::since(start_time) << "\n";
+    SILK_DEBUG << "TransactionPool::get_transactions t=" << clock_time::since(start_time);
     co_return transactions_in_pool;
 }
 

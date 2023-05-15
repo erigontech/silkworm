@@ -18,6 +18,7 @@
 
 #include <string>
 
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkworm::rpc::commands {
@@ -35,10 +36,10 @@ awaitable<void> NetRpcApi::handle_net_peer_count(const nlohmann::json& request, 
         const auto peer_count = co_await backend_->net_peer_count();
         reply = make_json_content(request["id"], to_quantity(peer_count));
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], -32000, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 }
@@ -49,10 +50,10 @@ awaitable<void> NetRpcApi::handle_net_version(const nlohmann::json& request, nlo
         const auto net_version = co_await backend_->net_version();
         reply = make_json_content(request["id"], std::to_string(net_version));
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], -32000, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 }

@@ -25,7 +25,7 @@
 #include <evmone/instructions.hpp>
 #include <intx/intx.hpp>
 
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/evm_executor.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
@@ -94,12 +94,11 @@ void DebugTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
     start_gas_ = msg.gas;
     evmc::address recipient(msg.recipient);
     evmc::address sender(msg.sender);
-    SILKRPC_DEBUG << "on_execution_start: gas: " << std::dec << msg.gas
-                  << " depth: " << msg.depth
-                  << " recipient: " << recipient
-                  << " sender: " << sender
-                  << " code: " << silkworm::to_hex(code)
-                  << "\n";
+    SILK_DEBUG << "on_execution_start: gas: " << std::dec << msg.gas
+               << " depth: " << msg.depth
+               << " recipient: " << recipient
+               << " sender: " << sender
+               << " code: " << silkworm::to_hex(code);
 }
 
 void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int stack_height, const int64_t gas,
@@ -111,18 +110,18 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
     const auto opcode = execution_state.original_code[pc];
     auto opcode_name = get_opcode_name(opcode_names_, opcode);
 
-    SILKRPC_DEBUG << "on_instruction_start:"
-                  << " pc: " << std::dec << pc
-                  << " opcode: 0x" << std::hex << evmc::hex(opcode)
-                  << " opcode_name: " << opcode_name
-                  << " recipient: " << recipient
-                  << " sender: " << sender
-                  << " execution_state: {"
-                  << "   gas_left: " << std::dec << gas
-                  << "   status: " << execution_state.status
-                  << "   msg.gas: " << std::dec << execution_state.msg->gas
-                  << "   msg.depth: " << std::dec << execution_state.msg->depth
-                  << "}\n";
+    SILK_DEBUG << "on_instruction_start:"
+               << " pc: " << std::dec << pc
+               << " opcode: 0x" << std::hex << evmc::hex(opcode)
+               << " opcode_name: " << opcode_name
+               << " recipient: " << recipient
+               << " sender: " << sender
+               << " execution_state: {"
+               << "   gas_left: " << std::dec << gas
+               << "   status: " << execution_state.status
+               << "   msg.gas: " << std::dec << execution_state.msg->gas
+               << "   msg.depth: " << std::dec << execution_state.msg->depth
+               << "}";
 
     bool output_storage = false;
     if (!config_.disableStorage) {
@@ -194,10 +193,9 @@ void DebugTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_t
 }
 
 void DebugTracer::on_precompiled_run(const evmc_result& result, int64_t gas, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
-    SILKRPC_DEBUG << "DebugTracer::on_precompiled_run:"
-                  << " status: " << result.status_code
-                  << ", gas: " << std::dec << gas
-                  << "\n";
+    SILK_DEBUG << "DebugTracer::on_precompiled_run:"
+               << " status: " << result.status_code
+               << ", gas: " << std::dec << gas;
 
     gas_on_precompiled_ = gas;
 }
@@ -227,11 +225,10 @@ void DebugTracer::on_execution_end(const evmc_result& result, const silkworm::In
         logs_.erase(logs_.begin());
     }
 
-    SILKRPC_DEBUG << "on_execution_end:"
-                  << " result.status_code: " << result.status_code
-                  << " start_gas: " << std::dec << start_gas_
-                  << " gas_left: " << std::dec << result.gas_left
-                  << "\n";
+    SILK_DEBUG << "on_execution_end:"
+               << " result.status_code: " << result.status_code
+               << " start_gas: " << std::dec << start_gas_
+               << " gas_left: " << std::dec << result.gas_left;
 }
 
 void DebugTracer::flush_logs() {
@@ -268,7 +265,7 @@ awaitable<void> DebugExecutor::execute(json::Stream& stream, const silkworm::Blo
     auto block_number = block.header.number;
     const auto& transactions = block.transactions;
 
-    SILKRPC_DEBUG << "execute: block_number: " << block_number << " #txns: " << transactions.size() << " config: " << config_ << "\n";
+    SILK_DEBUG << "execute: block_number: " << block_number << " #txns: " << transactions.size() << " config: " << config_;
 
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     const auto chain_config_ptr = lookup_chain_config(chain_id);
@@ -280,7 +277,7 @@ awaitable<void> DebugExecutor::execute(json::Stream& stream, const silkworm::Blo
         if (!txn.from) {
             txn.recover_sender();
         }
-        SILKRPC_DEBUG << "processing transaction: idx: " << idx << " txn: " << txn << "\n";
+        SILK_DEBUG << "processing transaction: idx: " << idx << " txn: " << txn;
 
         auto debug_tracer = std::make_shared<debug::DebugTracer>(stream, config_);
 
@@ -297,7 +294,7 @@ awaitable<void> DebugExecutor::execute(json::Stream& stream, const silkworm::Blo
         stream.close_array();
 
         if (execution_result.pre_check_error) {
-            SILKRPC_DEBUG << "debug failed: " << execution_result.pre_check_error.value() << "\n";
+            SILK_DEBUG << "debug failed: " << execution_result.pre_check_error.value();
 
             stream.write_field("failed", true);
         } else {
@@ -319,12 +316,11 @@ awaitable<void> DebugExecutor::execute(json::Stream& stream, const silkworm::Blo
 
 awaitable<void> DebugExecutor::execute(json::Stream& stream, uint64_t block_number,
                                        const silkworm::Block& block, const Transaction& transaction, int32_t index) {
-    SILKRPC_INFO << "DebugExecutor::execute: "
-                 << " block_number: " << block_number
-                 << " transaction: {" << transaction << "}"
-                 << " index: " << std::dec << index
-                 << " config: " << config_
-                 << "\n";
+    SILK_INFO << "DebugExecutor::execute: "
+              << " block_number: " << block_number
+              << " transaction: {" << transaction << "}"
+              << " index: " << std::dec << index
+              << " config: " << config_;
 
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     const auto chain_config_ptr = lookup_chain_config(chain_id);
@@ -352,7 +348,7 @@ awaitable<void> DebugExecutor::execute(json::Stream& stream, uint64_t block_numb
     debug_tracer->flush_logs();
     stream.close_array();
     if (execution_result.pre_check_error) {
-        SILKRPC_DEBUG << "debug failed: " << execution_result.pre_check_error.value() << "\n";
+        SILK_DEBUG << "debug failed: " << execution_result.pre_check_error.value();
 
         stream.write_field("failed", true);
     } else {

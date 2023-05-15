@@ -20,7 +20,7 @@
 #include <utility>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 #include "types.hpp"
@@ -49,7 +49,7 @@ void to_json(nlohmann::json& json, const Receipt& receipt) {
 }
 
 void from_json(const nlohmann::json& json, Receipt& receipt) {
-    SILKRPC_TRACE << "from_json<Receipt> json: " << json.dump() << "\n";
+    SILK_TRACE << "from_json<Receipt> json: " << json.dump();
     if (json.is_array()) {
         if (json.size() < 4) {
             throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Receipt CBOR: missing entries"};

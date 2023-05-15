@@ -24,12 +24,12 @@
 #include <gmock/gmock.h>
 #include <grpcpp/server_builder.h>
 
+#include <silkworm/infra/test/log.hpp>
 #include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
 #include <silkworm/interfaces/txpool/mining.grpc.pb.h>
 #include <silkworm/interfaces/txpool/txpool.grpc.pb.h>
 #include <silkworm/interfaces/types/types.pb.h>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/test/interfaces/ethbackend_mock_fix24351.grpc.pb.h>
 #include <silkworm/silkrpc/test/interfaces/kv_mock_fix24351.grpc.pb.h>
 #include <silkworm/silkrpc/test/interfaces/mining_mock_fix24351.grpc.pb.h>
@@ -46,7 +46,7 @@ using testing::SetArgPointee;
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("write protocol version to ostream", "[silkrpc][protocol][version]") {
     const ProtocolVersion v{1, 0, 0};
-    CHECK_NOTHROW(null_stream() << v);
+    CHECK_NOTHROW(silkworm::test::null_stream() << v);
 }
 
 TEST_CASE("ETHBACKEND protocol version error", "[silkrpc][protocol][wait_for_ethbackend_protocol_check]") {

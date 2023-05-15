@@ -21,13 +21,16 @@
 #include <catch2/catch.hpp>
 #include <nlohmann/json.hpp>
 
-#include "silkworm/silkrpc/json/types.hpp"
+#include <silkworm/infra/test/log.hpp>
+#include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkworm::rpc {
 
 using Catch::Matchers::Message;
 
 TEST_CASE("FilterStorage base") {
+    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+
     FilterStorage filter_storage{3, 0.01};
     SECTION("adding 1 entry") {
         StoredFilter filter;
@@ -109,6 +112,8 @@ TEST_CASE("FilterStorage base") {
 }
 
 TEST_CASE("FilterStorage enhanced") {
+    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+
     std::uint64_t count = 0;
     std::uint64_t max_keys = 3;
     Generator default_generator = [&]() { return count++ % max_keys; };

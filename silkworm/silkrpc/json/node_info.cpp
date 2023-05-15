@@ -16,15 +16,6 @@
 
 #include "node_info.hpp"
 
-#include <cstring>
-#include <utility>
-
-#include <silkworm/core/common/util.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
-#include <silkworm/silkrpc/common/util.hpp>
-
-#include "types.hpp"
-
 namespace silkworm::rpc {
 
 void to_json(nlohmann::json& json, const NodeInfoPorts& node_info_ports) {

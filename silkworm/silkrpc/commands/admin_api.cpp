@@ -18,6 +18,7 @@
 
 #include <string>
 
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkworm::rpc::commands {
@@ -32,10 +33,10 @@ awaitable<void> AdminRpcApi::handle_admin_node_info(const nlohmann::json& reques
             reply = make_json_content(request["id"], nlohmann::json::object());
         }
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], -32000, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
     co_return;
@@ -47,10 +48,10 @@ awaitable<void> AdminRpcApi::handle_admin_peers(const nlohmann::json& request, n
         const auto peers = co_await backend_->peers();
         reply = make_json_content(request["id"], peers);
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], -32000, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
     co_return;

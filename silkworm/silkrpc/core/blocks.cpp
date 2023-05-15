@@ -17,8 +17,8 @@
 #include "blocks.hpp"
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/tables.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/stagedsync/stages.hpp>
 
@@ -46,7 +46,7 @@ boost::asio::awaitable<uint64_t> get_block_number_by_tag(const std::string& bloc
     } else {
         block_number = co_await get_latest_executed_block_number(reader);
     }
-    SILKRPC_DEBUG << "get_block_number_by_tag block_number: " << block_number << "\n";
+    SILK_DEBUG << "get_block_number_by_tag block_number: " << block_number;
     co_return block_number;
 }
 
@@ -75,7 +75,7 @@ boost::asio::awaitable<std::pair<uint64_t, bool>> get_block_number(const std::st
     if (check_if_latest) {
         is_latest_block = co_await is_latest_block_number(block_number, reader);
     }
-    SILKRPC_DEBUG << "get_block_number block_number: " << block_number << " is_latest_block: " << is_latest_block << "\n";
+    SILK_DEBUG << "get_block_number block_number: " << block_number << " is_latest_block: " << is_latest_block;
     co_return std::make_pair(block_number, is_latest_block);
 }
 
@@ -116,7 +116,6 @@ boost::asio::awaitable<uint64_t> get_forkchoice_finalized_block_number(const raw
     const auto kv_pair = co_await reader.get(db::table::kLastForkchoiceName, silkworm::bytes_of_string(kFinalizedBlockHash));
     const auto finalized_block_hash_data = kv_pair.value;
     if (finalized_block_hash_data.empty()) {
-        SILKRPC_LOG << "no finalized forkchoice block number found\n";
         co_return 0;
     }
     const auto finalized_block_hash = silkworm::to_bytes32(finalized_block_hash_data);
@@ -129,7 +128,6 @@ boost::asio::awaitable<uint64_t> get_forkchoice_safe_block_number(const rawdb::D
     const auto kv_pair = co_await reader.get(db::table::kLastForkchoiceName, silkworm::bytes_of_string(kSafeBlockHash));
     const auto safe_block_hash_data = kv_pair.value;
     if (safe_block_hash_data.empty()) {
-        SILKRPC_LOG << "no safe forkchoice block number found\n";
         co_return 0;
     }
     const auto safe_block_hash = silkworm::to_bytes32(safe_block_hash_data);

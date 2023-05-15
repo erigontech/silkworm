@@ -19,6 +19,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/infra/grpc/server/server_context_pool.hpp>
+#include <silkworm/infra/test/log.hpp>
 
 namespace silkworm::rpc::http {
 
@@ -28,7 +29,7 @@ using Catch::Matchers::Message;
 // WARNING: ThreadSanitizer: signal-unsafe call inside a signal
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("server creation", "[silkrpc][http][server]") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     SECTION("localhost successful") {
         ServerContextPool context_pool{1};

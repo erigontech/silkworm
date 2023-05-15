@@ -16,7 +16,7 @@
 
 #include "receipts.hpp"
 
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 
 namespace silkworm::rpc::core {
@@ -30,7 +30,7 @@ boost::asio::awaitable<Receipts> get_receipts(const core::rawdb::DatabaseReader&
     // If not already present, retrieve receipts by executing transactions
     // auto block = co_await core::rawdb::read_block(db_reader, hash, number);
     // TODO(canepat): implement
-    SILKRPC_WARN << "retrieve receipts by executing transactions NOT YET IMPLEMENTED\n";
+    SILK_WARN << "retrieve receipts by executing transactions NOT YET IMPLEMENTED";
     co_return Receipts{};
 }
 

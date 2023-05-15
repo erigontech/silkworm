@@ -18,9 +18,9 @@
 
 #include <boost/asio/thread_pool.hpp>
 #include <catch2/catch.hpp>
-#include <grpcpp/grpcpp.h>
 
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
+#include <silkworm/infra/test/log.hpp>
 #include <silkworm/silkrpc/commands/rpc_api_table.hpp>
 
 namespace silkworm::rpc::http {
@@ -33,7 +33,7 @@ using Catch::Matchers::Message;
 // - previous write of size 1 by main thread
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("connection creation", "[silkrpc][http][connection]") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     SECTION("field initialization") {
         ClientContextPool context_pool{1};

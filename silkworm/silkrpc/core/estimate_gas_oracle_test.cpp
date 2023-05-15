@@ -27,6 +27,7 @@
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 
+#include <silkworm/infra/test/log.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 
 namespace silkworm::rpc {
@@ -34,6 +35,8 @@ namespace silkworm::rpc {
 using Catch::Matchers::Message;
 
 TEST_CASE("EstimateGasException") {
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+
     SECTION("EstimateGasException(int64_t, std::string const&)") {
         const char* kErrorMessage{"insufficient funds for transfer"};
         const int64_t kErrorCode{-1};
@@ -55,6 +58,7 @@ TEST_CASE("EstimateGasException") {
 }
 
 TEST_CASE("estimate gas") {
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
 
     uint64_t count{0};

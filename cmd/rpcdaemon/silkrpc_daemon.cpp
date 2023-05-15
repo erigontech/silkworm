@@ -27,7 +27,7 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/buildinfo.h>
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/daemon.hpp>
 
 #include "../common/common.hpp"
@@ -44,10 +44,10 @@ ABSL_FLAG(std::string, api_spec, kDefaultEth1ApiSpec, "JSON RPC API namespaces a
 ABSL_FLAG(uint32_t, num_contexts, std::thread::hardware_concurrency() / 3, "number of running I/O contexts as 32-bit integer");
 ABSL_FLAG(uint32_t, num_workers, 16, "number of worker threads as 32-bit integer");
 ABSL_FLAG(uint32_t, timeout, kDefaultTimeout.count(), "gRPC call timeout as 32-bit integer");
-ABSL_FLAG(LogLevel, log_verbosity, LogLevel::Critical, "logging verbosity level");
+// ABSL_FLAG(LogLevel, log_verbosity, LogLevel::Critical, "logging verbosity level");
 ABSL_FLAG(concurrency::WaitMode, wait_mode, concurrency::WaitMode::blocking, "scheduler wait mode");
 ABSL_FLAG(std::string, jwt_secret_file, kDefaultJwtFilename, "Token file to ensure safe connection between CL and EL");
-ABSL_FLAG(std::string, datadir, kDefaultDataDir, "DB Path");
+ABSL_FLAG(std::string, datadir, kDefaultDataDir, "path to the database folder");
 
 //! Assemble the application version using the Cable build information
 std::string get_version_from_build_info() {
@@ -96,7 +96,7 @@ DaemonSettings parse_args(int argc, char* argv[]) {
         absl::GetFlag(FLAGS_target),
         absl::GetFlag(FLAGS_num_contexts),
         absl::GetFlag(FLAGS_num_workers),
-        absl::GetFlag(FLAGS_log_verbosity),
+        log::Level::kInfo,  // absl::GetFlag(FLAGS_log_verbosity),
         absl::GetFlag(FLAGS_wait_mode),
         absl::GetFlag(FLAGS_jwt_secret_file),
     };

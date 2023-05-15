@@ -27,7 +27,6 @@
 #include <boost/asio/awaitable.hpp>
 #include <grpcpp/grpcpp.h>
 
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 #include <silkworm/silkrpc/ethdb/kv/remote_cursor.hpp>
 #include <silkworm/silkrpc/ethdb/kv/rpc.hpp>

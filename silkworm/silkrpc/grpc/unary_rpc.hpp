@@ -28,7 +28,7 @@
 #include <boost/asio/experimental/append.hpp>
 #include <grpcpp/grpcpp.h>
 
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/grpc/dispatcher.hpp>
 #include <silkworm/silkrpc/grpc/error.hpp>
 #include <silkworm/silkrpc/grpc/util.hpp>
@@ -59,7 +59,7 @@ class UnaryRpc<Async> {
 
         template <typename Op>
         void operator()(Op& op) {
-            SILKRPC_TRACE << "UnaryRpc::initiate " << this << "\n";
+            SILK_TRACE << "UnaryRpc::initiate " << this;
             self_.reader_ = agrpc::request(Async, self_.stub_, self_.context_, request_, self_.grpc_context_);
             agrpc::finish(self_.reader_, self_.reply_, self_.status_, boost::asio::bind_executor(self_.grpc_context_, std::move(op)));
         }
@@ -71,7 +71,7 @@ class UnaryRpc<Async> {
 
         template <typename Op>
         void operator()(Op& op, detail::DoneTag) {
-            SILKRPC_DEBUG << "UnaryRpc::completed " << self_.status_ << "\n";
+            SILK_DEBUG << "UnaryRpc::completed " << self_.status_;
             if (self_.status_.ok()) {
                 op.complete({}, std::move(self_.reply_));
             } else {

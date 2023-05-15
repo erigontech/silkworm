@@ -21,7 +21,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/test/log.hpp>
 #include <silkworm/silkrpc/test/grpc_actions.hpp>
 #include <silkworm/silkrpc/test/kv_test_base.hpp>
 
@@ -45,7 +45,7 @@ class RegistrationIntervalGuard {
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("StateChangeBatch::operator<<", "[silkrpc][ethdb][kv][state_changes_stream]") {
-    CHECK(null_stream() << remote::StateChangeBatch{});
+    CHECK(silkworm::test::null_stream() << remote::StateChangeBatch{});
 }
 
 TEST_CASE("StateChangesStream::set_registration_interval", "[silkrpc][ethdb][kv][state_changes_stream]") {

@@ -23,7 +23,6 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/infra/concurrency/private_service.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/ethbackend/backend.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/types/log.hpp>

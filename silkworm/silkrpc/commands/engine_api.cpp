@@ -20,7 +20,7 @@
 
 #include <evmc/evmc.hpp>
 
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/types/execution_payload.hpp>
@@ -33,13 +33,13 @@ using evmc::literals::operator""_bytes32;
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md#engine_getpayloadv1
 awaitable<void> EngineRpcApi::handle_engine_get_payload_v1(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request.at("params");
-
     if (params.size() != 1) {
         auto error_msg = "invalid engine_getPayloadV1 params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request.at("id"), 100, error_msg);
         co_return;
     }
+
 #ifndef BUILD_COVERAGE
     try {
 #endif
@@ -48,13 +48,13 @@ awaitable<void> EngineRpcApi::handle_engine_get_payload_v1(const nlohmann::json&
         reply = make_json_content(request["id"], payload);
 #ifndef BUILD_COVERAGE
     } catch (const boost::system::system_error& se) {
-        SILKRPC_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump() << "\n";
+        SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
         reply = make_json_error(request["id"], -38001, se.code().message());
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], -38001, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], -38001, "unexpected exception");
     }
 #endif
@@ -64,13 +64,13 @@ awaitable<void> EngineRpcApi::handle_engine_get_payload_v1(const nlohmann::json&
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md#engine_newpayloadv1
 awaitable<void> EngineRpcApi::handle_engine_new_payload_v1(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request.at("params");
-
     if (params.size() != 1) {
         auto error_msg = "invalid engine_newPayloadV1 params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request.at("id"), 100, error_msg);
         co_return;
     }
+
 #ifndef BUILD_COVERAGE
     try {
 #endif
@@ -79,13 +79,13 @@ awaitable<void> EngineRpcApi::handle_engine_new_payload_v1(const nlohmann::json&
         reply = make_json_content(request["id"], new_payload);
 #ifndef BUILD_COVERAGE
     } catch (const boost::system::system_error& se) {
-        SILKRPC_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump() << "\n";
+        SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, se.code().message());
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 #endif
@@ -96,13 +96,13 @@ awaitable<void> EngineRpcApi::handle_engine_new_payload_v1(const nlohmann::json&
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md#engine_forkchoiceupdatedv1
 awaitable<void> EngineRpcApi::handle_engine_forkchoice_updated_v1(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request.at("params");
-
     if (params.size() != 1 && params.size() != 2) {
         auto error_msg = "invalid engine_forkchoiceUpdatedV1 params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request.at("id"), 100, error_msg);
         co_return;
     }
+
 #ifndef BUILD_COVERAGE
     try {
 #endif
@@ -111,14 +111,14 @@ awaitable<void> EngineRpcApi::handle_engine_forkchoice_updated_v1(const nlohmann
 
         if (forkchoice_state.safe_block_hash == zero_hash) {
             const auto error_msg = "safe block hash is empty";
-            SILKRPC_ERROR << error_msg << "\n";
+            SILK_ERROR << error_msg;
             reply = make_json_error(request.at("id"), 100, error_msg);
             co_return;
         }
 
         if (forkchoice_state.finalized_block_hash == zero_hash) {
             const auto error_msg = "finalized block hash is empty";
-            SILKRPC_ERROR << error_msg << "\n";
+            SILK_ERROR << error_msg;
             reply = make_json_error(request.at("id"), 100, error_msg);
             co_return;
         }
@@ -139,13 +139,13 @@ awaitable<void> EngineRpcApi::handle_engine_forkchoice_updated_v1(const nlohmann
         }
 #ifndef BUILD_COVERAGE
     } catch (const boost::system::system_error& se) {
-        SILKRPC_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump() << "\n";
+        SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, se.code().message());
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request.at("id"), 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request.at("id"), 100, "unexpected exception");
     }
 #endif
@@ -157,34 +157,35 @@ awaitable<void> EngineRpcApi::handle_engine_exchange_transition_configuration_v1
     const auto& params = request.at("params");
     if (params.size() != 1) {
         auto error_msg = "invalid engine_exchangeTransitionConfigurationV1 params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request.at("id"), 100, error_msg);
         co_return;
     }
     const auto cl_configuration = params[0].get<TransitionConfiguration>();
     auto tx = co_await database_->begin();
+
 #ifndef BUILD_COVERAGE
     try {
 #endif
         ethdb::TransactionDatabase tx_database{*tx};
         const auto chain_config{co_await core::rawdb::read_chain_config(tx_database)};
-        SILKRPC_DEBUG << "chain config: " << chain_config << "\n";
+        SILK_DEBUG << "chain config: " << chain_config;
         auto config = silkworm::ChainConfig::from_json(chain_config.config).value();
         // CL will always pass in 0 as the terminal block number
         if (cl_configuration.terminal_block_number != 0) {
-            SILKRPC_ERROR << "consensus layer has the wrong terminal block number expected zero but instead got: "
-                          << cl_configuration.terminal_block_number << "\n";
+            SILK_ERROR << "consensus layer has the wrong terminal block number expected zero but instead got: "
+                       << cl_configuration.terminal_block_number;
             reply = make_json_error(request.at("id"), 100, "consensus layer terminal block number is not zero");
             co_return;
         }
         if (config.terminal_total_difficulty == std::nullopt) {
-            SILKRPC_ERROR << "execution layer does not have terminal total difficulty\n";
+            SILK_ERROR << "execution layer does not have terminal total difficulty";
             reply = make_json_error(request.at("id"), 100, "execution layer does not have terminal total difficulty");
             co_return;
         }
         if (config.terminal_total_difficulty.value() != cl_configuration.terminal_total_difficulty) {
-            SILKRPC_ERROR << "execution layer has the incorrect terminal total difficulty, expected: "
-                          << cl_configuration.terminal_total_difficulty << " got: " << config.terminal_total_difficulty.value() << "\n";
+            SILK_ERROR << "execution layer has the incorrect terminal total difficulty, expected: "
+                       << cl_configuration.terminal_total_difficulty << " got: " << config.terminal_total_difficulty.value();
             reply = make_json_error(request.at("id"), 100, "incorrect terminal total difficulty");
             co_return;
         }
@@ -196,10 +197,10 @@ awaitable<void> EngineRpcApi::handle_engine_exchange_transition_configuration_v1
         reply = make_json_content(request["id"], transition_configuration);
 #ifndef BUILD_COVERAGE
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request.at("id"), 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request.at("id"), 100, "unexpected exception");
     }
 #endif

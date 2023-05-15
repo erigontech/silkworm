@@ -34,7 +34,6 @@
 #include <silkworm/interfaces/txpool/txpool.grpc.pb.h>
 #include <silkworm/interfaces/types/types.pb.h>
 #include <silkworm/silkrpc/common/clock_time.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkworm::rpc::txpool {

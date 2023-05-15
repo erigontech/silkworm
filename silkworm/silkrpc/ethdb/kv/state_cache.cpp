@@ -22,9 +22,9 @@
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/node/db/tables.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/rawdb/util.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
@@ -72,7 +72,7 @@ std::size_t CoherentStateCache::latest_code_size() {
 
 void CoherentStateCache::on_new_block(const remote::StateChangeBatch& state_changes) {
     if (state_changes.change_batch_size() == 0) {
-        SILKRPC_WARN << "Unexpected empty batch received and skipped\n";
+        SILK_WARN << "Unexpected empty batch received and skipped";
         return;
     }
 
@@ -107,7 +107,7 @@ void CoherentStateCache::on_new_block(const remote::StateChangeBatch& state_chan
                     break;
                 }
                 default: {
-                    SILKRPC_ERROR << "Unexpected action: " << magic_enum::enum_name(account_change.action()) << " skipped\n";
+                    SILK_ERROR << "Unexpected action: " << magic_enum::enum_name(account_change.action()) << " skipped";
                 }
             }
         }
@@ -123,7 +123,7 @@ void CoherentStateCache::process_upsert_change(CoherentStateRoot* root, StateVie
                                                const remote::AccountChange& change) {
     const auto address = silkworm::rpc::address_from_H160(change.address());
     const auto data_bytes = silkworm::bytes_of_string(change.data());
-    SILKRPC_DEBUG << "CoherentStateCache::process_upsert_change address: " << address << " data: " << data_bytes << "\n";
+    SILK_DEBUG << "CoherentStateCache::process_upsert_change address: " << address << " data: " << data_bytes;
     const silkworm::Bytes address_key{address.bytes, silkworm::kAddressLength};
     add({address_key, data_bytes}, root, view_id);
 }
@@ -132,14 +132,14 @@ void CoherentStateCache::process_code_change(CoherentStateRoot* root, StateViewI
     const auto code_bytes = silkworm::bytes_of_string(change.code());
     const ethash::hash256 code_hash{silkworm::keccak256(code_bytes)};
     const silkworm::Bytes code_hash_key{code_hash.bytes, silkworm::kHashLength};
-    SILKRPC_DEBUG << "CoherentStateCache::process_code_change code_hash_key: " << code_hash_key << "\n";
+    SILK_DEBUG << "CoherentStateCache::process_code_change code_hash_key: " << code_hash_key;
     add_code({code_hash_key, code_bytes}, root, view_id);
 }
 
 void CoherentStateCache::process_delete_change(CoherentStateRoot* root, StateViewId view_id,
                                                const remote::AccountChange& change) {
     const auto address = silkworm::rpc::address_from_H160(change.address());
-    SILKRPC_DEBUG << "CoherentStateCache::process_delete_change address: " << address << "\n";
+    SILK_DEBUG << "CoherentStateCache::process_delete_change address: " << address;
     const silkworm::Bytes address_key{address.bytes, silkworm::kAddressLength};
     add({address_key, {}}, root, view_id);
 }
@@ -147,19 +147,19 @@ void CoherentStateCache::process_delete_change(CoherentStateRoot* root, StateVie
 void CoherentStateCache::process_storage_change(CoherentStateRoot* root, StateViewId view_id,
                                                 const remote::AccountChange& change) {
     const auto address = silkworm::rpc::address_from_H160(change.address());
-    SILKRPC_DEBUG << "CoherentStateCache::process_storage_change address=" << address << "\n";
+    SILK_DEBUG << "CoherentStateCache::process_storage_change address=" << address;
     for (const auto& storage_change : change.storage_changes()) {
         const auto location_hash = silkworm::rpc::bytes32_from_H256(storage_change.location());
         const auto storage_key = composite_storage_key(address, change.incarnation(), location_hash.bytes);
         const auto value = silkworm::bytes_of_string(storage_change.data());
-        SILKRPC_DEBUG << "CoherentStateCache::process_storage_change key=" << storage_key << " value=" << value << "\n";
+        SILK_DEBUG << "CoherentStateCache::process_storage_change key=" << storage_key << " value=" << value;
         add({storage_key, value}, root, view_id);
     }
 }
 
 bool CoherentStateCache::add(KeyValue kv, CoherentStateRoot* root, StateViewId view_id) {
     auto [it, inserted] = root->cache.insert(kv);
-    SILKRPC_DEBUG << "Data cache kv.key=" << silkworm::to_hex(kv.key) << " inserted=" << inserted << " view=" << view_id << "\n";
+    SILK_DEBUG << "Data cache kv.key=" << silkworm::to_hex(kv.key) << " inserted=" << inserted << " view=" << view_id;
     std::optional<KeyValue> replaced;
     if (!inserted) {
         replaced = *it;
@@ -172,14 +172,14 @@ bool CoherentStateCache::add(KeyValue kv, CoherentStateRoot* root, StateViewId v
     }
     if (replaced) {
         state_evictions_.remove(*replaced);
-        SILKRPC_DEBUG << "Data evictions removed replaced.key=" << silkworm::to_hex(replaced->key) << "\n";
+        SILK_DEBUG << "Data evictions removed replaced.key=" << silkworm::to_hex(replaced->key);
     }
     state_evictions_.push_front(kv);
 
     // Remove the longest unused key-value pair when size exceeded
     if (state_evictions_.size() > config_.max_state_keys) {
         const auto oldest = state_evictions_.back();
-        SILKRPC_DEBUG << "Data cache resize oldest.key=" << silkworm::to_hex(oldest.key) << "\n";
+        SILK_DEBUG << "Data cache resize oldest.key=" << silkworm::to_hex(oldest.key);
         state_evictions_.pop_back();
         const auto num_erased = root->cache.erase(oldest);
         SILKWORM_ASSERT(num_erased == 1);
@@ -189,7 +189,7 @@ bool CoherentStateCache::add(KeyValue kv, CoherentStateRoot* root, StateViewId v
 
 bool CoherentStateCache::add_code(KeyValue kv, CoherentStateRoot* root, StateViewId view_id) {
     auto [it, inserted] = root->code_cache.insert(kv);
-    SILKRPC_DEBUG << "Code cache kv.key=" << silkworm::to_hex(kv.key) << " inserted=" << inserted << " view=" << view_id << "\n";
+    SILK_DEBUG << "Code cache kv.key=" << silkworm::to_hex(kv.key) << " inserted=" << inserted << " view=" << view_id;
     std::optional<KeyValue> replaced;
     if (!inserted) {
         replaced = *it;
@@ -202,14 +202,14 @@ bool CoherentStateCache::add_code(KeyValue kv, CoherentStateRoot* root, StateVie
     }
     if (replaced) {
         code_evictions_.remove(*replaced);
-        SILKRPC_DEBUG << "Code evictions removed replaced.key=" << silkworm::to_hex(replaced->key) << "\n";
+        SILK_DEBUG << "Code evictions removed replaced.key=" << silkworm::to_hex(replaced->key);
     }
     code_evictions_.push_front(kv);
 
     // Remove the longest unused key-value pair when size exceeded
     if (code_evictions_.size() > config_.max_code_keys) {
         const auto oldest = code_evictions_.back();
-        SILKRPC_DEBUG << "Code cache resize oldest.key=" << silkworm::to_hex(oldest.key) << "\n";
+        SILK_DEBUG << "Code cache resize oldest.key=" << silkworm::to_hex(oldest.key);
         code_evictions_.pop_back();
         const auto num_erased = root->code_cache.erase(oldest);
         SILKWORM_ASSERT(num_erased == 1);
@@ -232,7 +232,7 @@ boost::asio::awaitable<std::optional<silkworm::Bytes>> CoherentStateCache::get(c
     if (kv_it != cache.end()) {
         ++state_hit_count_;
 
-        SILKRPC_DEBUG << "Hit in state cache key=" << key << " value=" << kv_it->value << "\n";
+        SILK_DEBUG << "Hit in state cache key=" << key << " value=" << kv_it->value;
 
         if (view_id == latest_state_view_id_) {
             state_evictions_.remove(kv);
@@ -246,7 +246,7 @@ boost::asio::awaitable<std::optional<silkworm::Bytes>> CoherentStateCache::get(c
 
     TransactionDatabase tx_database{txn};
     const auto value = co_await tx_database.get_one(db::table::kPlainStateName, key);
-    SILKRPC_DEBUG << "Miss in state cache: lookup in PlainState key=" << key << " value=" << value << "\n";
+    SILK_DEBUG << "Miss in state cache: lookup in PlainState key=" << key << " value=" << value;
     if (value.empty()) {
         co_return std::nullopt;
     }
@@ -274,7 +274,7 @@ boost::asio::awaitable<std::optional<silkworm::Bytes>> CoherentStateCache::get_c
     if (kv_it != code_cache.end()) {
         ++code_hit_count_;
 
-        SILKRPC_DEBUG << "Hit in code cache key=" << key << " value=" << kv_it->value << "\n";
+        SILK_DEBUG << "Hit in code cache key=" << key << " value=" << kv_it->value;
 
         if (view_id == latest_state_view_id_) {
             code_evictions_.remove(kv);
@@ -288,7 +288,7 @@ boost::asio::awaitable<std::optional<silkworm::Bytes>> CoherentStateCache::get_c
 
     TransactionDatabase tx_database{txn};
     const auto value = co_await tx_database.get_one(db::table::kCodeName, key);
-    SILKRPC_DEBUG << "Miss in code cache: lookup in Code key=" << key << " value=" << value << "\n";
+    SILK_DEBUG << "Miss in code cache: lookup in Code key=" << key << " value=" << value;
     if (value.empty()) {
         co_return std::nullopt;
     }
@@ -304,11 +304,11 @@ boost::asio::awaitable<std::optional<silkworm::Bytes>> CoherentStateCache::get_c
 CoherentStateRoot* CoherentStateCache::get_root(StateViewId view_id) {
     const auto root_it = state_view_roots_.find(view_id);
     if (root_it != state_view_roots_.end()) {
-        SILKRPC_DEBUG << "CoherentStateCache::get_root view_id=" << view_id << " root=" << root_it->second.get() << " found\n";
+        SILK_DEBUG << "CoherentStateCache::get_root view_id=" << view_id << " root=" << root_it->second.get() << " found";
         return root_it->second.get();
     }
     const auto [new_root_it, _] = state_view_roots_.emplace(view_id, std::make_unique<CoherentStateRoot>());
-    SILKRPC_DEBUG << "CoherentStateCache::get_root view_id=" << view_id << " root=" << root_it->second.get() << " created\n";
+    SILK_DEBUG << "CoherentStateCache::get_root view_id=" << view_id << " root=" << root_it->second.get() << " created";
     return new_root_it->second.get();
 }
 
@@ -317,11 +317,11 @@ CoherentStateRoot* CoherentStateCache::advance_root(StateViewId view_id) {
 
     const auto previous_root_it = state_view_roots_.find(view_id - 1);
     if (previous_root_it != state_view_roots_.end() && previous_root_it->second->canonical) {
-        SILKRPC_DEBUG << "CoherentStateCache::advance_root canonical view_id-1=" << (view_id - 1) << " found\n";
+        SILK_DEBUG << "CoherentStateCache::advance_root canonical view_id-1=" << (view_id - 1) << " found";
         root->cache = previous_root_it->second->cache;
         root->code_cache = previous_root_it->second->code_cache;
     } else {
-        SILKRPC_DEBUG << "CoherentStateCache::advance_root canonical view_id-1=" << (view_id - 1) << " not found\n";
+        SILK_DEBUG << "CoherentStateCache::advance_root canonical view_id-1=" << (view_id - 1) << " not found";
         state_evictions_.clear();
         for (const auto& kv : root->cache) {
             state_evictions_.push_front(kv);
@@ -345,7 +345,7 @@ CoherentStateRoot* CoherentStateCache::advance_root(StateViewId view_id) {
 }
 
 void CoherentStateCache::evict_roots(StateViewId next_view_id) {
-    SILKRPC_DEBUG << "CoherentStateCache::evict_roots state_view_roots_.size()=" << state_view_roots_.size() << "\n";
+    SILK_DEBUG << "CoherentStateCache::evict_roots state_view_roots_.size()=" << state_view_roots_.size();
     if (state_view_roots_.size() <= config_.max_views) {
         return;
     }
@@ -359,7 +359,7 @@ void CoherentStateCache::evict_roots(StateViewId next_view_id) {
     }
     // Erase older state views in order not to exceed max_views
     const auto max_view_id_to_delete = latest_state_view_id_ - config_.max_views + 1;
-    SILKRPC_DEBUG << "CoherentStateCache::evict_roots max_view_id_to_delete=" << max_view_id_to_delete << "\n";
+    SILK_DEBUG << "CoherentStateCache::evict_roots max_view_id_to_delete=" << max_view_id_to_delete;
     std::erase_if(state_view_roots_, [&](const auto& item) {
         auto const& [view_id, _] = item;
         return view_id <= max_view_id_to_delete;

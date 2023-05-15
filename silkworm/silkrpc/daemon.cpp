@@ -27,6 +27,7 @@
 #include <boost/process/environment.hpp>
 #include <grpcpp/grpcpp.h>
 
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/silkrpc/ethbackend/remote_backend.hpp>
@@ -68,13 +69,13 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
         return -1;
     }
 
-    SILKRPC_LOG_VERBOSITY(settings.log_verbosity);
-    SILKRPC_LOG_THREAD(true);
+    log::set_verbosity(settings.log_verbosity);
+    log::set_thread_name("main-thread");
 
     auto mdbx_ver{mdbx::get_version()};
     auto mdbx_bld{mdbx::get_build()};
-    SILKRPC_LOG << "Silkrpc build info: " << info.build << " " << info.libraries << "\n";
-    SILKRPC_LOG << "Silkrpc libmdbx  version: " << mdbx_ver.git.describe << " build: " << mdbx_bld.target << " compiler: " << mdbx_bld.compiler << "\n";
+    SILK_LOG << "Silkrpc build info: " << info.build << " " << info.libraries;
+    SILK_LOG << "Silkrpc libmdbx  version: " << mdbx_ver.git.describe << " build: " << mdbx_bld.target << " compiler: " << mdbx_bld.compiler;
 
     std::set_terminate([]() {
         try {
@@ -83,9 +84,9 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
                 std::rethrow_exception(exc);
             }
         } catch (const std::exception& e) {
-            SILKRPC_CRIT << "Silkrpc terminating due to exception: " << e.what() << "\n";
+            SILK_CRIT << "Silkrpc terminating due to exception: " << e.what();
         } catch (...) {
-            SILKRPC_CRIT << "Silkrpc terminating due to unexpected exception: " << current_exception_name() << "\n";
+            SILK_CRIT << "Silkrpc terminating due to unexpected exception: " << current_exception_name();
         }
         std::abort();
     });
@@ -95,53 +96,51 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
 
     try {
         if (!settings.datadir) {
-            SILKRPC_LOG << "Silkrpc launched with target " << settings.target << " using " << settings.num_contexts
-                        << " contexts, " << settings.num_workers << " workers\n";
+            SILK_LOG << "Silkrpc launched with target " << settings.target << " using " << settings.num_contexts
+                     << " contexts, " << settings.num_workers << " workers";
         } else {
-            SILKRPC_LOG << "Silkrpc launched with datadir " << *settings.datadir << " using " << settings.num_contexts
-                        << " contexts, " << settings.num_workers << " workers\n";
+            SILK_LOG << "Silkrpc launched with datadir " << *settings.datadir << " using " << settings.num_contexts
+                     << " contexts, " << settings.num_workers << " workers";
         }
 
         // Create the one-and-only Silkrpc daemon
         Daemon rpc_daemon{settings};
 
         // Check protocol version compatibility with Core Services
-        SILKRPC_LOG << "Checking protocol version compatibility with core services...\n";
+        SILK_LOG << "Checking protocol version compatibility with core services...";
 
         const auto checklist = rpc_daemon.run_checklist();
         for (const auto& protocol_check : checklist.protocol_checklist) {
-            SILKRPC_LOG << protocol_check.result << "\n";
+            SILK_LOG << protocol_check.result;
         }
         checklist.success_or_throw();
 
         // Start execution context dedicated to handling termination signals
         boost::asio::io_context signal_context;
         boost::asio::signal_set signals{signal_context, SIGINT, SIGTERM};
-        SILKRPC_DEBUG << "Signals registered on signal_context " << &signal_context << "\n"
-                      << std::flush;
+        SILK_DEBUG << "Signals registered on signal_context " << &signal_context;
         signals.async_wait([&](const boost::system::error_code& error, int signal_number) {
             if (signal_number == SIGINT) std::cout << "\n";
-            SILKRPC_INFO << "Signal number: " << signal_number << " caught, error: " << error.message() << "\n"
-                         << std::flush;
+            SILK_INFO << "Signal number: " << signal_number << " caught, error: " << error.message();
             rpc_daemon.stop();
         });
 
-        SILKRPC_LOG << "Starting ETH RPC API at " << settings.http_port << " ENGINE RPC API at " << settings.engine_port << "\n";
+        SILK_LOG << "Starting ETH RPC API at " << settings.http_port << " ENGINE RPC API at " << settings.engine_port;
 
         rpc_daemon.start();
 
-        SILKRPC_LOG << "Silkrpc is now running [pid=" << pid << ", main thread=" << tid << "]\n";
+        SILK_LOG << "Silkrpc is now running [pid=" << pid << ", main thread=" << tid << "]";
 
         signal_context.run();
 
         rpc_daemon.join();
     } catch (const std::exception& e) {
-        SILKRPC_CRIT << "Exception: " << e.what() << "\n";
+        SILK_CRIT << "Exception: " << e.what();
     } catch (...) {
-        SILKRPC_CRIT << "Unexpected exception: " << current_exception_name() << "\n";
+        SILK_CRIT << "Unexpected exception: " << current_exception_name();
     }
 
-    SILKRPC_LOG << "Silkrpc exiting [pid=" << pid << ", main thread=" << tid << "]\n";
+    SILK_LOG << "Silkrpc exiting [pid=" << pid << ", main thread=" << tid << "]";
 
     return 0;
 }
@@ -149,48 +148,48 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
 bool Daemon::validate_settings(const DaemonSettings& settings) {
     const auto datadir = settings.datadir;
     if (datadir && !std::filesystem::exists(*datadir)) {
-        SILKRPC_ERROR << "Parameter datadir is invalid: [" << *datadir << "]\n";
-        SILKRPC_ERROR << "Use --datadir flag to specify the path of Erigon database\n";
+        SILK_ERROR << "Parameter datadir is invalid: [" << *datadir << "]";
+        SILK_ERROR << "Use --datadir flag to specify the path of Erigon database";
         return false;
     }
 
     const auto http_port = settings.http_port;
     if (!http_port.empty() && http_port.find(silkworm::kAddressPortSeparator) == std::string::npos) {
-        SILKRPC_ERROR << "Parameter http_port is invalid: [" << http_port << "]\n";
-        SILKRPC_ERROR << "Use --http_port flag to specify the local binding for Ethereum JSON RPC service\n";
+        SILK_ERROR << "Parameter http_port is invalid: [" << http_port << "]";
+        SILK_ERROR << "Use --http_port flag to specify the local binding for Ethereum JSON RPC service";
         return false;
     }
 
     const auto engine_port = settings.engine_port;
     if (!engine_port.empty() && engine_port.find(silkworm::kAddressPortSeparator) == std::string::npos) {
-        SILKRPC_ERROR << "Parameter engine_port is invalid: [" << engine_port << "]\n";
-        SILKRPC_ERROR << "Use --engine_port flag to specify the local binding for Engine JSON RPC service\n";
+        SILK_ERROR << "Parameter engine_port is invalid: [" << engine_port << "]";
+        SILK_ERROR << "Use --engine_port flag to specify the local binding for Engine JSON RPC service";
         return false;
     }
 
     const auto target = settings.target;
     if (!target.empty() && target.find(':') == std::string::npos) {
-        SILKRPC_ERROR << "Parameter target is invalid: [" << target << "]\n";
-        SILKRPC_ERROR << "Use --target flag to specify the location of Erigon running instance\n";
+        SILK_ERROR << "Parameter target is invalid: [" << target << "]";
+        SILK_ERROR << "Use --target flag to specify the location of Erigon running instance";
         return false;
     }
 
     if (!datadir && target.empty()) {
-        SILKRPC_ERROR << "Parameters datadir and target cannot be both empty, specify one of them\n";
-        SILKRPC_ERROR << "Use --datadir or --target flag to specify the path or the location of Erigon instance\n";
+        SILK_ERROR << "Parameters datadir and target cannot be both empty, specify one of them";
+        SILK_ERROR << "Use --datadir or --target flag to specify the path or the location of Erigon instance";
         return false;
     }
 
     const auto api_spec = settings.api_spec;
     if (api_spec.empty()) {
-        SILKRPC_ERROR << "Parameter api_spec is invalid: [" << api_spec << "]\n";
-        SILKRPC_ERROR << "Use --api_spec flag to specify JSON RPC API namespaces as comma-separated list of strings\n";
+        SILK_ERROR << "Parameter api_spec is invalid: [" << api_spec << "]";
+        SILK_ERROR << "Use --api_spec flag to specify JSON RPC API namespaces as comma-separated list of strings";
         return false;
     }
 
     if (!settings.engine_port.empty() && !settings.jwt_secret_filename) {
-        SILKRPC_ERROR << "Parameter jwt_secret_filename cannot be empty if engine_port is specified\n";
-        SILKRPC_ERROR << "Use --jwt_secret_filename to specify the JWT token to use for Engine JSON RPC service\n";
+        SILK_ERROR << "Parameter jwt_secret_filename cannot be empty if engine_port is specified";
+        SILK_ERROR << "Use --jwt_secret_filename to specify the JWT token to use for Engine JSON RPC service";
         return false;
     }
 
@@ -219,13 +218,13 @@ Daemon::Daemon(DaemonSettings settings)
         std::string jwt_token;
         if (!load_jwt_token(*settings.jwt_secret_filename, jwt_token)) {
             std::string error_msg{"JWT token has wrong size: " + std::to_string(jwt_token.length())};
-            SILKRPC_CRIT << error_msg << "\n";
+            SILK_CRIT << error_msg;
             throw std::runtime_error{error_msg};
         }
         const auto jwt_token_bytes = silkworm::from_hex(jwt_token);
         if (!jwt_token_bytes) {
             std::string error_msg{"JWT token is incorrect: " + jwt_token};
-            SILKRPC_CRIT << error_msg << "\n";
+            SILK_CRIT << error_msg;
             throw std::runtime_error{error_msg};
         }
         jwt_secret_ = {jwt_token_bytes->cbegin(), jwt_token_bytes->cend()};

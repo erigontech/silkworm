@@ -53,7 +53,7 @@ if(SILKWORM_CORE_USE_ABSEIL)
   endif()
   find_package(absl REQUIRED)
   list(APPEND SILKWORM_CORE_PUBLIC_LIBS absl::flat_hash_map absl::flat_hash_set)
-  add_definitions(-DSILKWORM_CORE_USE_ABSEIL)
+  target_compile_definitions(silkworm_core PUBLIC SILKWORM_CORE_USE_ABSEIL)
 endif()
 
 target_link_libraries(

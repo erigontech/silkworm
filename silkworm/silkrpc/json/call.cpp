@@ -20,6 +20,9 @@
 #include <utility>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/silkrpc/common/util.hpp>
+#include <silkworm/silkrpc/json/types.hpp>
 
 #include "types.hpp"
 
@@ -130,13 +133,28 @@ void from_json(const nlohmann::json& json, AccountOverrides& so) {
         so.nonce = json["nonce"].get<std::uint64_t>();
     }
     if (json.contains("code")) {
-        so.code = json["code"].get<silkworm::Bytes>();
+        const auto json_data = json.at("code").get<std::string>();
+        so.code = silkworm::from_hex(json_data);
     }
     if (json.contains("state")) {
-        so.state = json["state"].get<std::map<evmc::bytes32, intx::uint256>>();
+        const auto& state = json["state"];
+        auto ss = state.get<std::map<std::string, std::string>>();
+        for (const auto& entry : ss) {
+            auto b32 = bytes32_from_hex(entry.first);
+            auto u256 = intx::from_string<intx::uint256>(entry.second);
+
+            so.state.emplace(b32, u256);
+        }
     }
     if (json.contains("stateDiff")) {
-        so.state_diff = json["stateDiff"].get<std::map<evmc::bytes32, intx::uint256>>();
+        const auto& state = json["stateDiff"];
+        auto ss = state.get<std::map<std::string, std::string>>();
+        for (const auto& entry : ss) {
+            auto b32 = bytes32_from_hex(entry.first);
+            auto u256 = intx::from_string<intx::uint256>(entry.second);
+
+            so.state_diff.emplace(b32, u256);
+        }
     }
 }
 

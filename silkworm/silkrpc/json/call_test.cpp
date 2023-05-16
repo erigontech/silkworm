@@ -218,17 +218,18 @@ TEST_CASE("AccountOverrides", "[silkworm::json][from_json]") {
         auto json = R"({
             "balance": "0x1000000",
             "nonce": 10,
-            "data": "0xdaa6d5560000000000000000000000000000000000000000000000000000000000000000"
+            "code": "0xdaa6d5560000000000000000000000000000000000000000000000000000000000000000"
         })"_json;
 
         auto state = json.get<AccountOverrides>();
+
         CHECK(state.balance.has_value() == true);
         CHECK(state.balance.value() == intx::uint256{16777216});
 
         CHECK(state.nonce.has_value() == true);
         CHECK(state.nonce.value() == 10);
 
-        CHECK(state.code.has_value() == false);
+        CHECK(state.code.has_value() == true);
         CHECK(state.code.value() == silkworm::from_hex("0xdaa6d5560000000000000000000000000000000000000000000000000000000000000000"));
 
         CHECK(state.state.size() == 0);
@@ -237,14 +238,15 @@ TEST_CASE("AccountOverrides", "[silkworm::json][from_json]") {
     SECTION("Account overrides with states") {
         auto json = R"({
             "state": {
-                "0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6": "0x1000000";
+                "0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6": "0x1000000"
             },
             "stateDiff": {
-                "0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6": "0x1000000";
+                "0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6": "0x1000000"
             }
         })"_json;
 
         auto state = json.get<AccountOverrides>();
+
         CHECK(state.balance.has_value() == false);
         CHECK(state.nonce.has_value() == false);
         CHECK(state.code.has_value() == false);
@@ -270,7 +272,7 @@ TEST_CASE("SimulationContext", "[silkworm::json][from_json]") {
     }
     SECTION("Block number and tx index") {
         auto json = R"({
-            "blockNumber": 1000
+            "blockNumber": 1000,
             "transactionIndex": 5
         })"_json;
 

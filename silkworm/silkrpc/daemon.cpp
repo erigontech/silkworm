@@ -306,13 +306,12 @@ void Daemon::add_backend_service(std::unique_ptr<ethbackend::BackEnd>&& backend)
 DaemonChecklist Daemon::run_checklist() {
     const auto core_service_channel{create_channel_()};
 
-    /*const auto kv_protocol_check{wait_for_kv_protocol_check(core_service_channel)};
+    const auto kv_protocol_check{wait_for_kv_protocol_check(core_service_channel)};
     const auto ethbackend_protocol_check{wait_for_ethbackend_protocol_check(core_service_channel)};
     const auto mining_protocol_check{wait_for_mining_protocol_check(core_service_channel)};
     const auto txpool_protocol_check{wait_for_txpool_protocol_check(core_service_channel)};
     DaemonChecklist checklist{{kv_protocol_check, ethbackend_protocol_check, mining_protocol_check, txpool_protocol_check}};
-    return checklist;*/
-    return DaemonChecklist{};
+    return checklist;
 }
 
 void Daemon::start() {

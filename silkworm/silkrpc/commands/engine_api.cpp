@@ -17,6 +17,7 @@
 #include "engine_api.hpp"
 
 #include <string>
+#include <vector>
 
 #include <evmc/evmc.hpp>
 
@@ -31,6 +32,28 @@ namespace silkworm::rpc::commands {
 using evmc::literals::operator""_bytes32;
 
 constexpr auto kZeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000_bytes32;
+
+// https://github.com/ethereum/execution-apis/blob/main/src/engine/common.md#engine_exchangecapabilities
+awaitable<void> EngineRpcApi::handle_engine_exchange_capabilities(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request.at("params");
+    if (params.size() != 1) {
+        auto error_msg = "invalid engine_exchangeCapabilities params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+        co_return;
+    }
+
+    const auto cl_capabilities = params[0].get<Capabilities>();
+    SILK_DEBUG << "RemoteBackEnd::engine_exchange_capabilities consensus layer capabilities: " << cl_capabilities;
+    const Capabilities el_capabilities{
+        "engine_newPayloadV1",
+        "engine_forkchoiceUpdatedV1",
+        "engine_getPayloadV1",
+        "engine_exchangeTransitionConfigurationV1",
+    };
+    SILK_DEBUG << "RemoteBackEnd::engine_exchange_capabilities execution layer capabilities: " << el_capabilities;
+    reply = make_json_content(request["id"], el_capabilities);
+}
 
 // Format for params is a list which includes a payloadId ie. [payloadId]
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md#engine_getpayloadv1

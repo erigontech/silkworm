@@ -48,6 +48,7 @@ class EngineRpcApi {
     EngineRpcApi& operator=(const EngineRpcApi&) = delete;
 
   protected:
+    awaitable<void> handle_engine_exchange_capabilities(const nlohmann::json& request, nlohmann::json& reply);
     awaitable<void> handle_engine_get_payload_v1(const nlohmann::json& request, nlohmann::json& reply);
     awaitable<void> handle_engine_new_payload_v1(const nlohmann::json& request, nlohmann::json& reply);
     awaitable<void> handle_engine_forkchoice_updated_v1(const nlohmann::json& request, nlohmann::json& reply);

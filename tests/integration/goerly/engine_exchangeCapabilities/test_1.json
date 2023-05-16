@@ -1,0 +1,31 @@
+[
+   {
+        "request": {
+            "jsonrpc": "2.0",
+            "method": "engine_exchangeCapabilities",
+            "params": [
+                [
+                    "engine_newPayloadV1",
+                    "engine_newPayloadV2",
+                    "engine_forkchoiceUpdatedV1",
+                    "engine_forkchoiceUpdatedV2",
+                    "engine_getPayloadV1",
+                    "engine_getPayloadV2",
+                    "engine_exchangeTransitionConfigurationV1"
+                ]
+            ],
+            "id": 1
+        },
+        "response":{
+            "id": 1,
+            "jsonrpc": "2.0",
+            "result": [
+                "engine_newPayloadV1",
+                "engine_forkchoiceUpdatedV1",
+                "engine_getPayloadV1",
+                "engine_exchangeTransitionConfigurationV1"
+            ]
+        }
+    }
+]
+

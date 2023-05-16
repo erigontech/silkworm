@@ -28,10 +28,10 @@ namespace silkworm {
 struct Receipt {
     TransactionType type{TransactionType::kLegacy};
     bool success{false};
-    ValidationResult validation_result;
     uint64_t cumulative_gas_used{0};
     Bloom bloom;
     std::vector<Log> logs;
+    ValidationResult validation_result {};
 };
 
 namespace rlp {

@@ -60,8 +60,6 @@ boost::asio::awaitable<Handshake::HandshakeResult> Handshake::execute(common::So
 
     framing::MessageStream message_stream{std::move(framing_cipher), stream};
 
-    common::Timeout timeout(5s);
-
     HelloMessage hello_message{
         client_id_,
         {
@@ -71,9 +69,9 @@ boost::asio::awaitable<Handshake::HandshakeResult> Handshake::execute(common::So
         node_listen_port_,
         node_key_.public_key(),
     };
-    co_await (message_stream.send(hello_message.to_message()) || timeout());
+    co_await (message_stream.send(hello_message.to_message()) || common::Timeout::after(5s));
 
-    Message reply_message = std::get<Message>(co_await (message_stream.receive() || timeout()));
+    Message reply_message = std::get<Message>(co_await (message_stream.receive() || common::Timeout::after(5s)));
     if (reply_message.id != HelloMessage::kId) {
         if (reply_message.id == rlpx_common::DisconnectMessage::kId) {
             throw DisconnectError();

@@ -63,13 +63,11 @@ awaitable<void> async_throw() {
 }
 
 awaitable<void> short_timeout() {
-    Timeout timeout(1ms);
-    co_await timeout();
+    co_await Timeout::after(1ms);
 }
 
 awaitable<void> simple_timeout() {
-    Timeout timeout(1h);
-    co_await timeout();
+    co_await Timeout::after(1h);
 }
 
 awaitable<void> wait_until_cancelled() {

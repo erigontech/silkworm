@@ -25,10 +25,10 @@
 
 namespace silkworm::sentry::common {
 
-boost::asio::awaitable<void> Timeout::schedule() const {
+boost::asio::awaitable<void> Timeout::after(std::chrono::milliseconds duration) {
     auto executor = co_await boost::asio::this_coro::executor;
     boost::asio::deadline_timer timer(executor);
-    timer.expires_from_now(boost::posix_time::milliseconds(duration_.count()));
+    timer.expires_from_now(boost::posix_time::milliseconds(duration.count()));
 
     try {
         co_await timer.async_wait(boost::asio::use_awaitable);

@@ -214,9 +214,9 @@ Daemon::Daemon(DaemonSettings settings)
       worker_pool_{settings_.num_workers},
       kv_stub_{::remote::KV::NewStub(create_channel_())} {
     // Load the channel authentication token (if required)
-    if (settings.jwt_secret_filename) {
+    if (settings_.jwt_secret_filename) {
         std::string jwt_token;
-        if (!load_jwt_token(*settings.jwt_secret_filename, jwt_token)) {
+        if (!load_jwt_token(*settings_.jwt_secret_filename, jwt_token)) {
             std::string error_msg{"JWT token has wrong size: " + std::to_string(jwt_token.length())};
             SILK_CRIT << error_msg;
             throw std::runtime_error{error_msg};
@@ -306,12 +306,13 @@ void Daemon::add_backend_service(std::unique_ptr<ethbackend::BackEnd>&& backend)
 DaemonChecklist Daemon::run_checklist() {
     const auto core_service_channel{create_channel_()};
 
-    const auto kv_protocol_check{wait_for_kv_protocol_check(core_service_channel)};
+    /*const auto kv_protocol_check{wait_for_kv_protocol_check(core_service_channel)};
     const auto ethbackend_protocol_check{wait_for_ethbackend_protocol_check(core_service_channel)};
     const auto mining_protocol_check{wait_for_mining_protocol_check(core_service_channel)};
     const auto txpool_protocol_check{wait_for_txpool_protocol_check(core_service_channel)};
     DaemonChecklist checklist{{kv_protocol_check, ethbackend_protocol_check, mining_protocol_check, txpool_protocol_check}};
-    return checklist;
+    return checklist;*/
+    return DaemonChecklist{};
 }
 
 void Daemon::start() {

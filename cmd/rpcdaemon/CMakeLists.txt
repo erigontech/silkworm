@@ -54,7 +54,11 @@ set(SILKRPC_DAEMON_LIBRARIES
 )
 # cmake-format: on
 if(SILKWORM_USE_MIMALLOC)
-  list(APPEND SILKRPC_DAEMON_LIBRARIES mimalloc)
+  if(CONAN_PACKAGE_MANAGER)
+    list(APPEND SILKRPC_DAEMON_LIBRARIES mimalloc::mimalloc)
+  else()
+    list(APPEND SILKRPC_DAEMON_LIBRARIES mimalloc)
+  endif()
 endif()
 
 add_executable(silkrpcdaemon silkrpc_daemon.cpp)

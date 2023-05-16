@@ -27,6 +27,7 @@ else()
   find_package(Boost CONFIG REQUIRED thread)
 endif()
 find_package(gRPC REQUIRED)
+find_package(Microsoft.GSL REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(Snappy REQUIRED)
 

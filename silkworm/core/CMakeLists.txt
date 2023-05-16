@@ -14,6 +14,9 @@
    limitations under the License.
 ]]
 
+find_package(Microsoft.GSL REQUIRED)
+find_package(nlohmann_json REQUIRED)
+
 if(MSVC)
   add_compile_options(/EHsc)
 else()

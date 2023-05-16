@@ -48,6 +48,13 @@ hunter_config(
   CMAKE_ARGS ASIO_GRPC_USE_BOOST_CONTAINER=ON
 )
 
+hunter_config(
+  Microsoft.GSL
+  VERSION 4.0.0
+  URL https://github.com/microsoft/GSL/archive/v4.0.0.tar.gz
+  SHA1 909c9540a76fe4b4f71dbbd24126cab3925fb78e
+)
+
 # Downgrade Protobuf version due to a CMake error in 3.19.4-p0
 # (protobuf-module.cmake.in: _protobuf_find_threads)
 hunter_config(

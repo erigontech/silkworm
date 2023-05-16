@@ -73,12 +73,15 @@ set(SILKWORM_MAIN_SRC_DIR "${SILKWORM_MAIN_DIR}/silkworm")
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler_settings.cmake)
 
-if(NOT SILKWORM_CORE_ONLY)
-  if(NOT CONAN_PACKAGE_MANAGER)
-    # Include dependencies handled by Hunter package manager
-    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/packages.cmake)
+# Include dependencies handled by Hunter package manager
+if(NOT CONAN_PACKAGE_MANAGER)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/core_packages.cmake)
+  if(NOT SILKWORM_CORE_ONLY)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/extra_packages.cmake)
   endif()
+endif()
 
+if(NOT SILKWORM_CORE_ONLY)
   # Silence CMake policy warnings in submodules
   set(CMAKE_POLICY_DEFAULT_CMP0048 NEW) # project() command manages VERSION variables
   set(CMAKE_POLICY_DEFAULT_CMP0063 NEW) # Honor visibility properties for all target types

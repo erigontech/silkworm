@@ -23,6 +23,7 @@ else()
 endif()
 find_package(gRPC REQUIRED)
 find_package(jwt-cpp REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 # Silkrpc library
 file(

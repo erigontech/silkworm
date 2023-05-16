@@ -173,10 +173,6 @@ set_target_properties(blst PROPERTIES
   IMPORTED_LOCATION ${BLST_DIR}/${BLST_LIB}
 )
 
-add_subdirectory(catch2)
-add_subdirectory(gsl)
-add_subdirectory(nlohmann_json)
-
 if(NOT SILKWORM_CORE_ONLY)
   # Roaring Bitmaps
   option(ENABLE_ROARING_TESTS "" OFF)

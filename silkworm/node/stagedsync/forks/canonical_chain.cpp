@@ -19,16 +19,11 @@
 #include <set>
 
 #include <silkworm/core/common/as_range.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/db_utils.hpp>
 
 namespace silkworm::stagedsync {
-
-static void ensure_invariant(bool condition, const std::string& message) {
-    if (!condition) {
-        throw std::logic_error("CanonicalChain invariant violation: " + message);
-    }
-}
 
 CanonicalChain::CanonicalChain(db::RWTxn& tx, size_t cache_size)
     : tx_{tx},

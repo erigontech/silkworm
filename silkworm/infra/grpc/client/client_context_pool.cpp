@@ -106,13 +106,6 @@ void ClientContextPool::start() {
     ContextPool<ClientContext>::start();
 }
 
-void ClientContextPool::stop() {
-    // Flag the pool as stopped to prevent restart
-    stopped_ = true;
-
-    ContextPool<ClientContext>::stop();
-}
-
 void ClientContextPool::add_context(concurrency::WaitMode wait_mode) {
     const auto context_count = num_contexts();
     const auto& client_context = ContextPool::add_context(ClientContext{context_count, wait_mode});

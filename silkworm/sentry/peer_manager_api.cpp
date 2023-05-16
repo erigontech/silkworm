@@ -76,7 +76,6 @@ static std::optional<api::api_common::PeerInfo> make_peer_info(rlpx::Peer& peer)
 
     return api::api_common::PeerInfo{
         url_opt.value(),
-        peer_public_key_opt.value(),
         peer.local_endpoint(),
         peer.remote_endpoint(),
         peer.is_inbound(),

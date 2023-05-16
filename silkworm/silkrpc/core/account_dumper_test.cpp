@@ -27,6 +27,7 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/rlp/encode.hpp>
+#include <silkworm/infra/test/log.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
@@ -150,7 +151,7 @@ class DummyTransaction : public ethdb::Transaction {
   public:
     explicit DummyTransaction(const nlohmann::json& json) : json_{json} {}
 
-    [[nodiscard]] uint64_t tx_id() const override { return 0; }
+    [[nodiscard]] uint64_t view_id() const override { return 0; }
 
     boost::asio::awaitable<void> open() override {
         co_return;
@@ -194,6 +195,7 @@ class DummyDatabase : public ethdb::Database {
 // const evmc::address start_address{0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb_address};
 
 TEST_CASE("account dumper") {
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     nlohmann::json json;
     BlockCache block_cache(100, true);

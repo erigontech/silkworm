@@ -38,7 +38,6 @@ boost::asio::awaitable<std::shared_ptr<CursorDupSort>> LocalTransaction::cursor_
 
 boost::asio::awaitable<void> LocalTransaction::close() {
     cursors_.clear();
-    tx_id_ = 0;
     co_return;
 }
 

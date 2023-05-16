@@ -23,10 +23,10 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/bitmap.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/db/util.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
@@ -90,7 +90,7 @@ boost::asio::awaitable<ethdb::SplittedKeyValue> next(ethdb::SplitCursor& cursor,
 
 boost::asio::awaitable<void> StorageWalker::walk_of_storages(uint64_t block_number, const evmc::address& address,
                                                              const evmc::bytes32& location_hash, uint64_t incarnation, AccountCollector& collector) {
-    SILKRPC_TRACE << "block_number=" << block_number << " address=" << address << " START\n";
+    SILK_TRACE << "block_number=" << block_number << " address=" << address << " START";
 
     auto ps_cursor = co_await transaction_.cursor_dup_sort(db::table::kPlainStateName);
     auto ps_key{make_key(address, incarnation)};
@@ -168,7 +168,7 @@ boost::asio::awaitable<void> StorageWalker::walk_of_storages(uint64_t block_numb
             }
         }
     }
-    SILKRPC_TRACE << "block_number=" << block_number << " address=" << address << " END\n";
+    SILK_TRACE << "block_number=" << block_number << " address=" << address << " END";
     co_return;
 }
 

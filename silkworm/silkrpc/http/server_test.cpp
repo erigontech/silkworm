@@ -17,7 +17,9 @@
 #include "server.hpp"
 
 #include <catch2/catch.hpp>
-#include <grpcpp/grpcpp.h>
+
+#include <silkworm/infra/grpc/server/server_context_pool.hpp>
+#include <silkworm/infra/test/log.hpp>
 
 namespace silkworm::rpc::http {
 
@@ -27,11 +29,10 @@ using Catch::Matchers::Message;
 // WARNING: ThreadSanitizer: signal-unsafe call inside a signal
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("server creation", "[silkrpc][http][server]") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     SECTION("localhost successful") {
-        ChannelFactory create_channel = []() { return grpc::CreateChannel("localhost", grpc::InsecureChannelCredentials()); };
-        ContextPool context_pool{1, create_channel};
+        ServerContextPool context_pool{1};
         context_pool.start();
         // Uncommenting the following lines you got stuck into llvm-cov problem:
         // error: cmd/unit_test: Failed to load coverage: Malformed coverage data

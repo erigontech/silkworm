@@ -22,8 +22,8 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/ethdb/kv/remote_database.hpp>
 
 using namespace silkworm;
@@ -57,12 +57,12 @@ int kv_seek_async_coroutines(const std::string& target, const std::string& table
             return grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
         };
         // TODO(canepat): handle also local (shared-memory) database
-        ContextPool context_pool{1, create_channel};
+        ClientContextPool context_pool{1};
         auto& context = context_pool.next_context();
         auto io_context = context.io_context();
-        auto& database = context.database();
+        ethdb::kv::RemoteDatabase database{*context.grpc_context(), create_channel()};
 
-        boost::asio::co_spawn(*io_context, kv_seek(*database, table_name, key), [&](std::exception_ptr) {
+        boost::asio::co_spawn(*io_context, kv_seek(database, table_name, key), [&](std::exception_ptr) {
             context_pool.stop();
         });
 

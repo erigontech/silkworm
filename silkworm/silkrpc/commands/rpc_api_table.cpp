@@ -18,8 +18,8 @@
 
 #include <cstring>
 
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/constants.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/http/methods.hpp>
 
 namespace silkworm::rpc::commands {
@@ -87,7 +87,7 @@ void RpcApiTable::add_handlers(const std::string& api_namespace) {
     } else if (api_namespace == kOtterscanApiNamespace) {
         add_ots_handlers();
     } else {
-        SILKRPC_WARN << "Server::add_handlers invalid namespace [" << api_namespace << "] ignored\n";
+        SILK_WARN << "Server::add_handlers invalid namespace [" << api_namespace << "] ignored";
     }
 }
 

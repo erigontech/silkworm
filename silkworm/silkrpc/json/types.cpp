@@ -25,7 +25,7 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkworm::rpc {
@@ -293,22 +293,6 @@ void to_json(nlohmann::json& json, const Rlp& rlp) {
     json = "0x" + silkworm::to_hex(rlp.buffer);
 }
 
-void to_json(nlohmann::json& json, const NodeInfoPorts& node_info_ports) {
-    json["discovery"] = node_info_ports.discovery;
-    json["listener"] = node_info_ports.listener;
-}
-
-void to_json(nlohmann::json& json, const NodeInfo& node_info) {
-    json["id"] = node_info.id;
-    json["name"] = node_info.name;
-    json["enode"] = node_info.enode;
-    json["enr"] = node_info.enr;
-    json["listenAddr"] = node_info.listener_addr;
-    json["ports"] = node_info.ports;
-    json["ip"] = node_info.enode;
-    json["protocols"] = nlohmann::json::parse(node_info.protocols, nullptr, /* allow_exceptions = */ false);
-}
-
 void to_json(nlohmann::json& json, const PeerInfo& info) {
     json["id"] = info.id;
     json["name"] = info.name;
@@ -386,7 +370,7 @@ void to_json(nlohmann::json& json, const Block& b) {
             auto ethash_hash{hash_of_transaction(b.block.transactions[i])};
             auto bytes32_hash = silkworm::to_bytes32({ethash_hash.bytes, silkworm::kHashLength});
             transaction_hashes.emplace(transaction_hashes.end(), bytes32_hash);
-            SILKRPC_DEBUG << "transaction_hashes[" << i << "]: " << silkworm::to_hex({transaction_hashes[i].bytes, silkworm::kHashLength}) << "\n";
+            SILK_DEBUG << "transaction_hashes[" << i << "]: " << silkworm::to_hex({transaction_hashes[i].bytes, silkworm::kHashLength});
         }
         json["transactions"] = transaction_hashes;
     }
@@ -394,7 +378,7 @@ void to_json(nlohmann::json& json, const Block& b) {
     ommer_hashes.reserve(b.block.ommers.size());
     for (std::size_t i{0}; i < b.block.ommers.size(); i++) {
         ommer_hashes.emplace(ommer_hashes.end(), b.block.ommers[i].hash());
-        SILKRPC_DEBUG << "ommer_hashes[" << i << "]: " << silkworm::to_hex({ommer_hashes[i].bytes, silkworm::kHashLength}) << "\n";
+        SILK_DEBUG << "ommer_hashes[" << i << "]: " << silkworm::to_hex({ommer_hashes[i].bytes, silkworm::kHashLength});
     }
     json["uncles"] = ommer_hashes;
 }
@@ -425,7 +409,7 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {
     ommer_hashes.reserve(b.block.ommers.size());
     for (std::size_t i{0}; i < b.block.ommers.size(); i++) {
         ommer_hashes.emplace(ommer_hashes.end(), b.block.ommers[i].hash());
-        SILKRPC_DEBUG << "ommer_hashes[" << i << "]: " << silkworm::to_hex({ommer_hashes[i].bytes, silkworm::kHashLength}) << "\n";
+        SILK_DEBUG << "ommer_hashes[" << i << "]: " << silkworm::to_hex({ommer_hashes[i].bytes, silkworm::kHashLength});
     }
     json["block"]["uncles"] = ommer_hashes;
 
@@ -477,7 +461,7 @@ void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {
     ommer_hashes.reserve(b.ommers.size());
     for (std::size_t i{0}; i < b.ommers.size(); i++) {
         ommer_hashes.emplace(ommer_hashes.end(), b.ommers[i].hash());
-        SILKRPC_DEBUG << "ommer_hashes[" << i << "]: " << silkworm::to_hex({ommer_hashes[i].bytes, silkworm::kHashLength}) << "\n";
+        SILK_DEBUG << "ommer_hashes[" << i << "]: " << silkworm::to_hex({ommer_hashes[i].bytes, silkworm::kHashLength});
     }
 
     json["fullblock"]["uncles"] = ommer_hashes;

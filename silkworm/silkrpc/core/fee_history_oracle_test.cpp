@@ -18,20 +18,20 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/test/log.hpp>
 
 namespace silkworm::rpc::fee_history {
 
 using Catch::Matchers::Message;
 
 TEST_CASE("FeeHistory: json serialization") {
-    SILKRPC_LOG_STREAMS(null_stream(), null_stream());
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     SECTION("default value") {
         FeeHistory fh;
 
-        CHECK(fh == R"({
+        CHECK(nlohmann::json(fh) == R"({
             "baseFeePerGas":[],
             "gasUsedRatio":[],
             "oldestBlock":"0x0",
@@ -46,7 +46,7 @@ TEST_CASE("FeeHistory: json serialization") {
             {0.9998838666666666},
             {{0x59682f00, 0x9502f900}}};
 
-        CHECK(fh == R"({
+        CHECK(nlohmann::json(fh) == R"({
             "baseFeePerGas":["0x13c723946e","0x163fe26534"],
             "gasUsedRatio":[0.9998838666666666],
             "oldestBlock":"0x867a80",

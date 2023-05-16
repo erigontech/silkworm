@@ -27,9 +27,9 @@
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/db/util.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/account_dumper.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
@@ -54,7 +54,7 @@ awaitable<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& re
     const auto& params = request["params"];
     if (params.size() != 5) {
         auto error_msg = "invalid debug_accountRange params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
@@ -71,12 +71,11 @@ awaitable<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& re
         max_result = kAccountRangeMaxResults;
     }
 
-    SILKRPC_INFO << "block_number_or_hash: " << block_number_or_hash
-                 << " start_address: 0x" << silkworm::to_hex(start_address)
-                 << " max_result: " << max_result
-                 << " exclude_code: " << exclude_code
-                 << " exclude_storage: " << exclude_storage
-                 << "\n";
+    SILK_INFO << "block_number_or_hash: " << block_number_or_hash
+              << " start_address: 0x" << silkworm::to_hex(start_address)
+              << " max_result: " << max_result
+              << " exclude_code: " << exclude_code
+              << " exclude_storage: " << exclude_storage;
 
     auto tx = co_await database_->begin();
 
@@ -86,14 +85,14 @@ awaitable<void> DebugRpcApi::handle_debug_account_range(const nlohmann::json& re
         DumpAccounts dump_accounts = co_await dumper.dump_accounts(*block_cache_, block_number_or_hash, start_address, max_result, exclude_code, exclude_storage);
         auto end = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = end - start;
-        SILKRPC_DEBUG << "dump_accounts: elapsed " << elapsed_seconds.count() << " sec\n";
+        SILK_DEBUG << "dump_accounts: elapsed " << elapsed_seconds.count() << " sec";
 
         reply = make_json_content(request["id"], dump_accounts);
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
@@ -106,7 +105,7 @@ awaitable<void> DebugRpcApi::handle_debug_get_modified_accounts_by_number(const 
     const auto& params = request["params"];
     if (params.empty() || params.size() > 2) {
         auto error_msg = "invalid debug_getModifiedAccountsByNumber params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
@@ -116,7 +115,7 @@ awaitable<void> DebugRpcApi::handle_debug_get_modified_accounts_by_number(const 
     if (params.size() == 2) {
         end_block_id = params[1].get<std::string>();
     }
-    SILKRPC_DEBUG << "start_block_id: " << start_block_id << " end_block_id: " << end_block_id << "\n";
+    SILK_DEBUG << "start_block_id: " << start_block_id << " end_block_id: " << end_block_id;
 
     auto tx = co_await database_->begin();
 
@@ -128,13 +127,13 @@ awaitable<void> DebugRpcApi::handle_debug_get_modified_accounts_by_number(const 
         const auto addresses = co_await get_modified_accounts(tx_database, start_block_number, end_block_number);
         reply = make_json_content(request["id"], addresses);
     } catch (const std::invalid_argument& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], -32000, e.what());
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
@@ -147,7 +146,7 @@ awaitable<void> DebugRpcApi::handle_debug_get_modified_accounts_by_hash(const nl
     const auto& params = request["params"];
     if (params.empty() || params.size() > 2) {
         auto error_msg = "invalid debug_getModifiedAccountsByHash params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
@@ -157,7 +156,7 @@ awaitable<void> DebugRpcApi::handle_debug_get_modified_accounts_by_hash(const nl
     if (params.size() == 2) {
         end_hash = params[1].get<evmc::bytes32>();
     }
-    SILKRPC_DEBUG << "start_hash: " << start_hash << " end_hash: " << end_hash << "\n";
+    SILK_DEBUG << "start_hash: " << start_hash << " end_hash: " << end_hash;
 
     auto tx = co_await database_->begin();
 
@@ -169,13 +168,13 @@ awaitable<void> DebugRpcApi::handle_debug_get_modified_accounts_by_hash(const nl
         auto addresses = co_await get_modified_accounts(tx_database, start_block_number, end_block_number);
         reply = make_json_content(request["id"], addresses);
     } catch (const std::invalid_argument& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], -32000, e.what());
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
@@ -188,7 +187,7 @@ awaitable<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json&
     const auto& params = request["params"];
     if (params.empty() || params.size() > 5) {
         auto error_msg = "invalid debug_storageRangeAt params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
@@ -199,12 +198,11 @@ awaitable<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json&
     auto start_key = params[3].get<evmc::bytes32>();
     auto max_result = params[4].get<std::uint64_t>();
 
-    SILKRPC_DEBUG << "block_hash: 0x" << silkworm::to_hex(block_hash)
-                  << " tx_index: " << tx_index
-                  << " address: 0x" << silkworm::to_hex(address)
-                  << " start_key: 0x" << silkworm::to_hex(start_key)
-                  << " max_result: " << max_result
-                  << "\n";
+    SILK_DEBUG << "block_hash: 0x" << silkworm::to_hex(block_hash)
+               << " tx_index: " << tx_index
+               << " address: 0x" << silkworm::to_hex(address)
+               << " start_key: 0x" << silkworm::to_hex(start_key)
+               << " max_result: " << max_result;
 
     auto tx = co_await database_->begin();
 
@@ -219,11 +217,10 @@ awaitable<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json&
         std::uint16_t count{0};
 
         StorageWalker::StorageCollector collector = [&](const silkworm::ByteView key, silkworm::ByteView sec_key, silkworm::ByteView value) {
-            SILKRPC_TRACE << "StorageCollector: suitable for result"
-                          << " key: 0x" << silkworm::to_hex(key)
-                          << " sec_key: 0x" << silkworm::to_hex(sec_key)
-                          << " value: " << silkworm::to_hex(value)
-                          << "\n";
+            SILK_TRACE << "StorageCollector: suitable for result"
+                       << " key: 0x" << silkworm::to_hex(key)
+                       << " sec_key: 0x" << silkworm::to_hex(sec_key)
+                       << " value: " << silkworm::to_hex(value);
 
             auto val = silkworm::to_hex(value);
             val.insert(0, 64 - val.length(), '0');
@@ -247,10 +244,10 @@ awaitable<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json&
 
         reply = make_json_content(request["id"], result);
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
@@ -263,7 +260,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json
     const auto& params = request["params"];
     if (params.empty()) {
         auto error_msg = "invalid debug_traceTransaction params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         const auto reply = make_json_error(request["id"], 100, error_msg);
         stream.write_json(reply);
 
@@ -276,7 +273,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json
         config = params[1].get<debug::DebugConfig>();
     }
 
-    SILKRPC_DEBUG << "transaction_hash: " << transaction_hash << " config: {" << config << "}\n";
+    SILK_DEBUG << "transaction_hash: " << transaction_hash << " config: {" << config << "}";
 
     stream.open_object();
     stream.write_field("id", request["id"]);
@@ -301,11 +298,11 @@ awaitable<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json
             stream.close_object();
         }
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         const Error error{100, e.what()};
         stream.write_field("error", error);
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         const Error error{100, "unexpected exception"};
         stream.write_field("error", error);
     }
@@ -321,7 +318,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& reque
     const auto& params = request["params"];
     if (params.size() < 2) {
         auto error_msg = "invalid debug_traceCall params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         const auto reply = make_json_error(request["id"], 100, error_msg);
         stream.write_json(reply);
 
@@ -334,7 +331,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& reque
         config = params[2].get<debug::DebugConfig>();
     }
 
-    SILKRPC_DEBUG << "call: " << call << " block_number_or_hash: " << block_number_or_hash << " config: {" << config << "}\n";
+    SILK_DEBUG << "call: " << call << " block_number_or_hash: " << block_number_or_hash << " config: {" << config << "}";
 
     stream.open_object();
     stream.write_field("id", request["id"]);
@@ -357,16 +354,13 @@ awaitable<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& reque
         co_await executor.execute(stream, block_with_hash->block, call);
         stream.close_object();
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
-
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         std::ostringstream oss;
         oss << "block " << block_number_or_hash.number() << "(" << block_number_or_hash.hash() << ") not found";
-
         const Error error{-32000, oss.str()};
         stream.write_field("error", error);
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
-
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         const Error error{100, "unexpected exception"};
         stream.write_field("error", error);
     }
@@ -382,7 +376,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::
     const auto& params = request["params"];
     if (params.empty()) {
         auto error_msg = "invalid debug_traceBlockByNumber params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         const auto reply = make_json_error(request["id"], 100, error_msg);
         stream.write_json(reply);
         co_return;
@@ -394,7 +388,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::
         config = params[1].get<debug::DebugConfig>();
     }
 
-    SILKRPC_DEBUG << "block_number: " << block_number << " config: {" << config << "}\n";
+    SILK_DEBUG << "block_number: " << block_number << " config: {" << config << "}";
 
     stream.open_object();
     stream.write_field("id", request["id"]);
@@ -414,21 +408,17 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::
         co_await executor.execute(stream, block_with_hash->block);
         stream.close_array();
     } catch (const std::invalid_argument& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
-
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         std::ostringstream oss;
         oss << "block_number " << block_number << " not found";
-
         const Error error{-32000, oss.str()};
         stream.write_field("error", error);
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
-
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         const Error error{100, e.what()};
         stream.write_field("error", error);
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
-
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         const Error error{100, "unexpected exception"};
         stream.write_field("error", error);
     }
@@ -444,7 +434,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::js
     const auto& params = request["params"];
     if (params.empty()) {
         auto error_msg = "invalid debug_traceBlockByHash params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         const auto reply = make_json_error(request["id"], 100, error_msg);
         stream.write_json(reply);
         co_return;
@@ -456,7 +446,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::js
         config = params[1].get<debug::DebugConfig>();
     }
 
-    SILKRPC_DEBUG << "block_hash: " << block_hash << " config: {" << config << "}\n";
+    SILK_DEBUG << "block_hash: " << block_hash << " config: {" << config << "}";
 
     stream.open_object();
     stream.write_field("id", request["id"]);
@@ -476,21 +466,17 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::js
         co_await executor.execute(stream, block_with_hash->block);
         stream.close_array();
     } catch (const std::invalid_argument& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
-
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         std::ostringstream oss;
         oss << "block_hash " << block_hash << " not found";
-
         const Error error{-32000, oss.str()};
         stream.write_field("error", error);
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
-
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         const Error error{100, e.what()};
         stream.write_field("error", error);
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
-
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         const Error error{100, "unexpected exception"};
         stream.write_field("error", error);
     }
@@ -504,7 +490,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::js
 awaitable<std::set<evmc::address>> get_modified_accounts(ethdb::TransactionDatabase& tx_database, uint64_t start_block_number, uint64_t end_block_number) {
     const auto latest_block_number = co_await core::get_block_number(core::kLatestBlockId, tx_database);
 
-    SILKRPC_DEBUG << "latest: " << latest_block_number << " start: " << start_block_number << " end: " << end_block_number << "\n";
+    SILK_DEBUG << "latest: " << latest_block_number << " start: " << start_block_number << " end: " << end_block_number;
 
     std::set<evmc::address> addresses;
     if (start_block_number > latest_block_number) {
@@ -517,14 +503,14 @@ awaitable<std::set<evmc::address>> get_modified_accounts(ethdb::TransactionDatab
             if (block_number <= end_block_number) {
                 auto address = silkworm::to_evmc_address(value.substr(0, silkworm::kAddressLength));
 
-                SILKRPC_TRACE << "Walker: processing block " << block_number << " address 0x" << silkworm::to_hex(address) << "\n";
+                SILK_TRACE << "Walker: processing block " << block_number << " address 0x" << silkworm::to_hex(address);
                 addresses.insert(address);
             }
             return block_number <= end_block_number;
         };
 
         const auto key = silkworm::db::block_key(start_block_number);
-        SILKRPC_TRACE << "Ready to walk starting from key: " << silkworm::to_hex(key) << "\n";
+        SILK_TRACE << "Ready to walk starting from key: " << silkworm::to_hex(key);
 
         co_await tx_database.walk(db::table::kAccountChangeSetName, key, 0, walker);
     }

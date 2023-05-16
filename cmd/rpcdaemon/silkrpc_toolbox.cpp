@@ -22,8 +22,8 @@
 #include <absl/flags/usage.h>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/constants.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 
 using namespace silkworm;
 
@@ -37,7 +37,7 @@ int kv_seek_both(const std::string& target, const std::string& table_name, ByteV
 int kv_seek(const std::string& target, const std::string& table_name, ByteView key);
 
 ABSL_FLAG(std::string, key, "", "key as hex string w/o leading 0x");
-ABSL_FLAG(LogLevel, log_verbosity, LogLevel::Critical, "logging level as string");
+// ABSL_FLAG(LogLevel, log_verbosity, LogLevel::Critical, "logging level as string");
 ABSL_FLAG(std::string, seekkey, "", "seek key as hex string w/o leading 0x");
 ABSL_FLAG(std::string, subkey, "", "subkey as hex string w/o leading 0x");
 ABSL_FLAG(std::string, tool, "", "gRPC remote interface tool name as string");
@@ -240,7 +240,7 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    SILKRPC_LOG_VERBOSITY(absl::GetFlag(FLAGS_log_verbosity));
+    log::set_verbosity(log::Level::kCritical);
 
     const std::string tool{positional_args[1]};
     if (tool == "ethbackend_async") {

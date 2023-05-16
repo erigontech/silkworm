@@ -18,8 +18,20 @@ find_package(absl REQUIRED)
 find_package(CLI11 REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(Protobuf REQUIRED)
+
 if(SILKWORM_USE_MIMALLOC)
-  find_package(mimalloc 2.0 REQUIRED)
+  if(CONAN_PACKAGE_MANAGER)
+    find_package(mimalloc REQUIRED)
+  else()
+    set(MI_BUILD_SHARED OFF)
+    set(MI_BUILD_STATIC ON)
+    set(MI_BUILD_OBJECT OFF)
+    set(MI_BUILD_TESTS OFF)
+    add_subdirectory(
+      "${SILKWORM_MAIN_DIR}/third_party/mimalloc" "${CMAKE_BINARY_DIR}/third_party/mimalloc" EXCLUDE_FROM_ALL
+    )
+    target_compile_options(mimalloc-static PRIVATE -Wno-error)
+  endif()
 endif()
 
 if(MSVC)
@@ -51,7 +63,7 @@ set(SILKRPC_DAEMON_LIBRARIES
 )
 # cmake-format: on
 if(SILKWORM_USE_MIMALLOC)
-  list(APPEND SILKRPC_DAEMON_LIBRARIES mimalloc)
+  list(APPEND SILKRPC_DAEMON_LIBRARIES mimalloc-static)
 endif()
 
 add_executable(silkrpcdaemon silkrpc_daemon.cpp)

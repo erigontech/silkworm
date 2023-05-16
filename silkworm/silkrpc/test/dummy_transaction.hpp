@@ -31,10 +31,10 @@ namespace silkworm::rpc::test {
 //! This dummy transaction just gives you the same cursor over and over again.
 class DummyTransaction : public ethdb::Transaction {
   public:
-    explicit DummyTransaction(uint64_t tx_id, std::shared_ptr<ethdb::CursorDupSort> cursor)
-        : tx_id_(tx_id), cursor_(std::move(cursor)) {}
+    explicit DummyTransaction(uint64_t view_id, std::shared_ptr<ethdb::CursorDupSort> cursor)
+        : view_id_(view_id), cursor_(std::move(cursor)) {}
 
-    [[nodiscard]] uint64_t tx_id() const override { return tx_id_; }
+    [[nodiscard]] uint64_t view_id() const override { return view_id_; }
 
     boost::asio::awaitable<void> open() override { co_return; }
 
@@ -49,7 +49,7 @@ class DummyTransaction : public ethdb::Transaction {
     boost::asio::awaitable<void> close() override { co_return; }
 
   private:
-    uint64_t tx_id_;
+    uint64_t view_id_;
     std::shared_ptr<ethdb::CursorDupSort> cursor_;
 };
 

@@ -60,7 +60,7 @@ void BlockExchange::accept(std::shared_ptr<Message> message) {
 void BlockExchange::receive_message(std::shared_ptr<InboundMessage> message) {
     statistics_.received_msgs++;
 
-    SILK_TRACE << "BlockExchange received message " << *message;
+    // SILK_TRACE << "BlockExchange received message " << *message;
 
     messages_.push(std::move(message));
 }
@@ -68,7 +68,7 @@ void BlockExchange::receive_message(std::shared_ptr<InboundMessage> message) {
 void BlockExchange::execution_loop() {
     using namespace std::chrono;
     using namespace std::chrono_literals;
-    log::set_thread_name("block-exchange");
+    log::set_thread_name("block-exchg");
 
     auto announcement_receiving_callback = [this](std::shared_ptr<InboundMessage> msg) {
         statistics_.nonsolic_msgs++;

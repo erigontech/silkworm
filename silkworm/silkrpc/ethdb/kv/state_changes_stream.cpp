@@ -22,8 +22,8 @@
 #include <boost/asio/use_future.hpp>
 #include <boost/system/error_code.hpp>
 
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/grpc/util.hpp>
 
 namespace silkworm::rpc::ethdb::kv {
@@ -50,13 +50,13 @@ std::future<void> StateChangesStream::open() {
 
 void StateChangesStream::close() {
     std::lock_guard lock{cancellation_mutex_};
-    SILKRPC_DEBUG << "Close state changes stream: emitting cancellation\n";
+    SILK_DEBUG << "Close state changes stream: emitting cancellation";
     cancellation_signal_.emit(boost::asio::cancellation_type::all);
-    SILKRPC_WARN << "Close state changes stream: cancellation emitted\n";
+    SILK_DEBUG << "Close state changes stream: cancellation emitted";
 }
 
 boost::asio::awaitable<void> StateChangesStream::run() {
-    SILKRPC_TRACE << "StateChangesStream::run state stream START\n";
+    SILK_TRACE << "StateChangesStream::run state stream START";
 
     auto cancellation_slot = cancellation_signal_.slot();
 
@@ -68,57 +68,57 @@ boost::asio::awaitable<void> StateChangesStream::run() {
             std::lock_guard lock{cancellation_mutex_};
             cancellation_slot.assign([&, state_changes_rpc](boost::asio::cancellation_type /*type*/) {
                 retry_timer_.cancel();
-                SILKRPC_DEBUG << "Retry timer cancelled\n";
+                SILK_DEBUG << "Retry timer cancelled";
 
                 state_changes_rpc->cancel();
-                SILKRPC_WARN << "State changes stream cancelled\n";
+                SILK_WARN << "State changes stream cancelled";
             });
         }
 
-        SILKRPC_INFO << "Registration for state changes started\n";
+        SILK_INFO << "Registration for state changes started";
         const auto [req_ec] = co_await state_changes_rpc->request_on(scheduler_.get_executor(), request_, use_nothrow_awaitable);
         if (req_ec) {
             if (std::error_code(req_ec).value() == grpc::StatusCode::CANCELLED) {
                 cancelled = true;
-                SILKRPC_DEBUG << "State changes stream cancelled immediately after request cancelled\n";
+                SILK_DEBUG << "State changes stream cancelled immediately after request cancelled";
             } else {
-                SILKRPC_WARN << "State changes stream request error [" << req_ec.message() << "], schedule reopen\n";
+                SILK_WARN << "State changes stream request error [" << req_ec.message() << "], schedule reopen";
                 retry_timer_.expires_from_now(registration_interval_);
                 const auto [ec] = co_await retry_timer_.async_wait(use_nothrow_awaitable);
                 if (ec == boost::asio::error::operation_aborted) {
                     cancelled = true;
-                    SILKRPC_DEBUG << "State changes wait before retry cancelled\n";
+                    SILK_DEBUG << "State changes wait before retry cancelled";
                 }
             }
             continue;
         }
-        SILKRPC_INFO << "State changes stream opened\n";
+        SILK_INFO << "State changes stream opened";
 
         std::error_code read_ec;
         remote::StateChangeBatch reply;
         while (!read_ec) {
             std::tie(read_ec, reply) = co_await state_changes_rpc->read_on(scheduler_.get_executor(), use_nothrow_awaitable);
             if (!read_ec) {
-                SILKRPC_INFO << "State changes batch received: " << reply << "\n";
+                SILK_INFO << "State changes batch received: " << reply << "";
                 cache_->on_new_block(reply);
             } else {
                 if (read_ec.value() == grpc::StatusCode::CANCELLED) {
                     cancelled = true;
-                    SILKRPC_DEBUG << "State changes stream cancelled immediately after read cancelled\n";
+                    SILK_DEBUG << "State changes stream cancelled immediately after read cancelled";
                 } else {
-                    SILKRPC_WARN << "State changes stream read error [" << read_ec.message() << "], schedule reopen\n";
+                    SILK_WARN << "State changes stream read error [" << read_ec.message() << "], schedule reopen";
                     retry_timer_.expires_from_now(registration_interval_);
                     const auto [ec] = co_await retry_timer_.async_wait(use_nothrow_awaitable);
                     if (ec == boost::asio::error::operation_aborted) {
                         cancelled = true;
-                        SILKRPC_DEBUG << "State changes wait before retry cancelled\n";
+                        SILK_DEBUG << "State changes wait before retry cancelled";
                     }
                 }
             }
         }
     }
 
-    SILKRPC_TRACE << "StateChangesStream::run state stream END\n";
+    SILK_TRACE << "StateChangesStream::run state stream END";
 }
 
 }  // namespace silkworm::rpc::ethdb::kv

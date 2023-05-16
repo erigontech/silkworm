@@ -19,18 +19,13 @@
 #include <set>
 
 #include <silkworm/core/common/as_range.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/db_utils.hpp>
 
 #include "extending_fork.hpp"
 
 namespace silkworm::stagedsync {
-
-static void ensure_invariant(bool condition, const std::string& message) {
-    if (!condition) {
-        throw std::logic_error("MainChain invariant violation: " + message);
-    }
-}
 
 MainChain::MainChain(asio::io_context& ctx, NodeSettings& ns, const db::RWAccess dba)
     : io_context_{ctx},
@@ -100,7 +95,7 @@ void MainChain::insert_block(const Block& block) {
 }
 
 auto MainChain::verify_chain(Hash head_block_hash) -> VerificationResult {
-    SILK_TRACE << "ExecutionEngine: verifying chain " << head_block_hash.to_hex();
+    SILK_TRACE << "MainChain: verifying chain " << head_block_hash.to_hex();
 
     // retrieve the head header
     auto head_header = get_header(head_block_hash);
@@ -134,7 +129,7 @@ auto MainChain::verify_chain(Hash head_block_hash) -> VerificationResult {
             ensure_invariant(pipeline_.head_header_number() == canonical_chain_.current_head().number &&
                                  pipeline_.head_header_hash() == canonical_chain_.current_head().hash,
                              "forward succeeded with pipeline head not aligned with canonical head");
-            verify_result = ValidChain{pipeline_.head_header_number()};
+            verify_result = ValidChain{pipeline_.head_header_number(), pipeline_.head_header_hash()};
             break;
         }
         case Stage::Result::kWrongFork:

@@ -18,25 +18,25 @@
 
 #include <utility>
 
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/ethdb/file/local_transaction.hpp>
 
 namespace silkworm::rpc::ethdb::file {
 
 LocalDatabase::LocalDatabase(std::shared_ptr<mdbx::env_managed> chaindata_env) {
-    SILKRPC_TRACE << "LocalDatabase::ctor " << this << "\n";
+    SILK_TRACE << "LocalDatabase::ctor " << this;
     chaindata_env_ = std::move(chaindata_env);
 }
 
 LocalDatabase::~LocalDatabase() {
-    SILKRPC_TRACE << "LocalDatabase::dtor " << this << "\n";
+    SILK_TRACE << "LocalDatabase::dtor " << this;
 }
 
 boost::asio::awaitable<std::unique_ptr<Transaction>> LocalDatabase::begin() {
-    SILKRPC_TRACE << "LocalDatabase::begin " << this << " start\n";
+    SILK_TRACE << "LocalDatabase::begin " << this << " start";
     auto txn = std::make_unique<LocalTransaction>(chaindata_env_);
     co_await txn->open();
-    SILKRPC_TRACE << "LocalDatabase::begin " << this << " txn: " << txn.get() << " end\n";
+    SILK_TRACE << "LocalDatabase::begin " << this << " txn: " << txn.get() << " end";
     co_return txn;
 }
 

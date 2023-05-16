@@ -27,8 +27,9 @@
 #include <catch2/catch.hpp>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/test/log.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/filter_storage.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
@@ -152,13 +153,13 @@ class DummyCursor : public ethdb::CursorDupSort {
     nlohmann::json::iterator itr_;
 };
 
-static uint64_t next_tx_id{0};
+static uint64_t next_view_id{0};
 class DummyTransaction : public ethdb::Transaction {
   public:
-    explicit DummyTransaction(const nlohmann::json& json) : json_{json}, tx_id_{next_tx_id++} {};
+    explicit DummyTransaction(const nlohmann::json& json) : json_{json}, view_id_{next_view_id++} {};
 
-    [[nodiscard]] uint64_t tx_id() const override {
-        return tx_id_;
+    [[nodiscard]] uint64_t view_id() const override {
+        return view_id_;
     }
 
     awaitable<void> open() override {
@@ -185,7 +186,7 @@ class DummyTransaction : public ethdb::Transaction {
 
   private:
     const nlohmann::json& json_;
-    const uint64_t tx_id_;
+    const uint64_t view_id_;
 };
 
 class DummyDatabase : public ethdb::Database {
@@ -203,7 +204,7 @@ class DummyDatabase : public ethdb::Database {
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("DebugRpcApi") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     boost::asio::io_context ioc;
     add_shared_service(ioc, std::make_shared<BlockCache>());

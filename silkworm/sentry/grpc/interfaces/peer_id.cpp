@@ -30,10 +30,6 @@ proto_types::H512 peer_id_from_public_key(const sentry::common::EccPublicKey& ke
     return *H512_from_bytes(key.serialized());
 }
 
-sentry::common::EccPublicKey peer_public_key_from_id_string(const std::string& peer_id_str) {
-    return sentry::common::EccPublicKey::deserialize_hex(peer_id_str);
-}
-
 std::string peer_id_string_from_public_key(const sentry::common::EccPublicKey& key) {
     return key.hex();
 }

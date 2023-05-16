@@ -17,6 +17,7 @@
 #include "sync_pow.hpp"
 
 #include <silkworm/core/common/as_range.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/measure.hpp>
 #include <silkworm/infra/concurrency/sync_wait.hpp>
 #include <silkworm/sync/messages/outbound_new_block.hpp>
@@ -24,15 +25,10 @@
 
 namespace silkworm::chainsync {
 
-static void ensure_invariant(bool condition, std::string message) {
-    if (!condition)
-        throw std::logic_error("Consensus invariant violation: " + message);
-}
+PoWSync::PoWSync(BlockExchange& be, execution::Client& ee) : ChainSync(be, ee) {}
 
-PoWSync::PoWSync(BlockExchange& be, execution::Client& ee)
-    : block_exchange_{be},
-      exec_engine_{ee},
-      chain_fork_view_{ChainHead{}} {  // we cannot call ee.get_canonical_head() at this point because ee is not started
+asio::awaitable<void> PoWSync::async_run() {
+    return ActiveComponent::async_run();
 }
 
 auto PoWSync::resume() -> NewHeight {                                          // find the point (head) where we left off
@@ -138,13 +134,13 @@ void PoWSync::execution_loop() {
         }
 
         // verify the new section of the chain
-        log::Info("Sync") << "Verifying chain, head=" << new_height.number;
+        log::Info("Sync") << "Verifying chain, head= (" << new_height.number << ", " << to_hex(new_height.hash) << ")";
         auto verification = sync_wait(in(exec_engine_), exec_engine_.validate_chain(new_height.hash));  // BLOCKING
 
         if (std::holds_alternative<ValidChain>(verification)) {
             auto valid_chain = std::get<ValidChain>(verification);
 
-            log::Info("Sync") << "Valid chain, new head=" << new_height.number;
+            log::Info("Sync") << "Valid chain, new head=" << valid_chain.current_head;
 
             // if it is valid, do nothing, only check invariant
             ensure_invariant(valid_chain.current_head == new_height.hash, "Invalid verify_chain result");

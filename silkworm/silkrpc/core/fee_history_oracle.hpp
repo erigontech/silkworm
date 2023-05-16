@@ -78,9 +78,9 @@ class FeeHistoryOracle {
     boost::asio::awaitable<FeeHistory> fee_history(uint64_t newest_block, uint64_t block_count, const std::vector<std::int8_t>& reward_percentile);
 
   private:
-    static const std::uint32_t kDefaultMaxFeeHistory = 1024;
-    static const std::uint32_t kDefaultMaxHeaderHistory = 300;
-    static const std::uint32_t kDefaultMaxBlockHistory = 5;
+    static inline const std::uint32_t kDefaultMaxFeeHistory = 1024;
+    static inline const std::uint32_t kDefaultMaxHeaderHistory = 300;
+    static inline const std::uint32_t kDefaultMaxBlockHistory = 5;
 
     boost::asio::awaitable<BlockRange> resolve_block_range(uint64_t newest_block, uint64_t block_count, uint64_t max_history);
     boost::asio::awaitable<void> process_block(BlockFees& block_fees, const std::vector<std::int8_t>& reward_percentile);

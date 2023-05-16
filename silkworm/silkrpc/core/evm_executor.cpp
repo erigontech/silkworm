@@ -29,7 +29,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/protocol/intrinsic_gas.hpp>
 #include <silkworm/core/protocol/param.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
 
@@ -49,13 +49,13 @@ static std::optional<std::string> decode_error_reason(const Bytes& error_data) {
     }
 
     ByteView encoded_msg{error_data.data() + kRevertSelector.size(), error_data.size() - kRevertSelector.size()};
-    SILKRPC_TRACE << "decode_error_reason size: " << encoded_msg.size() << " error_message: " << to_hex(encoded_msg) << "\n";
+    SILK_TRACE << "decode_error_reason size: " << encoded_msg.size() << " error_message: " << to_hex(encoded_msg);
     if (encoded_msg.size() < kAbiStringOffsetSize) {
         return std::nullopt;
     }
 
     const auto offset_uint256{intx::be::unsafe::load<intx::uint256>(encoded_msg.data())};
-    SILKRPC_TRACE << "decode_error_reason offset_uint256: " << intx::to_string(offset_uint256) << "\n";
+    SILK_TRACE << "decode_error_reason offset_uint256: " << intx::to_string(offset_uint256);
     const auto offset = static_cast<uint64_t>(offset_uint256);
     if (encoded_msg.size() < kAbiStringOffsetSize + offset) {
         return std::nullopt;
@@ -63,7 +63,7 @@ static std::optional<std::string> decode_error_reason(const Bytes& error_data) {
 
     const uint64_t message_offset{kAbiStringOffsetSize + offset};
     const auto length_uint256{intx::be::unsafe::load<intx::uint256>(encoded_msg.data() + offset)};
-    SILKRPC_TRACE << "decode_error_reason length_uint256: " << intx::to_string(length_uint256) << "\n";
+    SILK_TRACE << "decode_error_reason length_uint256: " << intx::to_string(length_uint256);
     const auto length = static_cast<uint64_t>(length_uint256);
     if (encoded_msg.size() < message_offset + length) {
         return std::nullopt;
@@ -73,7 +73,7 @@ static std::optional<std::string> decode_error_reason(const Bytes& error_data) {
 }
 
 std::string EVMExecutor::get_error_message(int64_t error_code, const Bytes& error_data, bool full_error) {
-    SILKRPC_DEBUG << "EVMExecutor::get_error_message error_data: " << to_hex(error_data) << "\n";
+    SILK_DEBUG << "EVMExecutor::get_error_message error_data: " << to_hex(error_data);
 
     std::string error_message;
     switch (error_code) {
@@ -147,7 +147,7 @@ std::string EVMExecutor::get_error_message(int64_t error_code, const Bytes& erro
             error_message += ": " + *error_reason;
         }
     }
-    SILKRPC_DEBUG << "EVMExecutor::get_error_message error_message: " << error_message << "\n";
+    SILK_DEBUG << "EVMExecutor::get_error_message error_message: " << error_message;
     return error_message;
 }
 
@@ -160,10 +160,10 @@ uint64_t EVMExecutor::refund_gas(const EVM& evm, const silkworm::Transaction& tx
     gas_left += refund;
 
     const intx::uint256 base_fee_per_gas{evm.block().header.base_fee_per_gas.value_or(0)};
-    SILKRPC_DEBUG << "EVMExecutor::refund_gas txn.max_fee_per_gas: " << txn.max_fee_per_gas << " base_fee_per_gas: " << base_fee_per_gas << "\n";
+    SILK_DEBUG << "EVMExecutor::refund_gas txn.max_fee_per_gas: " << txn.max_fee_per_gas << " base_fee_per_gas: " << base_fee_per_gas;
     const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= base_fee_per_gas ? txn.effective_gas_price(base_fee_per_gas)
                                                                                     : txn.max_priority_fee_per_gas};
-    SILKRPC_DEBUG << "EVMExecutor::refund_gas effective_gas_price: " << effective_gas_price << "\n";
+    SILK_DEBUG << "EVMExecutor::refund_gas effective_gas_price: " << effective_gas_price;
     state_.add_to_balance(*txn.from, gas_left * effective_gas_price);
     return gas_left;
 }
@@ -206,14 +206,14 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor::call(
     Tracers tracers,
     bool refund,
     bool gas_bailout) {
-    SILKRPC_DEBUG << "EVMExecutor::call: " << block.header.number << " gasLimit: " << txn.gas_limit << " refund: " << refund << " gasBailout: " << gas_bailout << "\n";
-    SILKRPC_DEBUG << "EVMExecutor::call:Transaction: " << &txn << "Txn: " << txn << "\n";
+    SILK_DEBUG << "EVMExecutor::call: " << block.header.number << " gasLimit: " << txn.gas_limit << " refund: " << refund << " gasBailout: " << gas_bailout;
+    SILK_DEBUG << "EVMExecutor::call: transaction: " << &txn;
 
     const auto this_executor = co_await boost::asio::this_coro::executor;
 
     const auto call_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(ExecutionResult)>(
         [this, this_executor, &block, &txn, &tracers, &refund, &gas_bailout](auto&& self) {
-            SILKRPC_TRACE << "EVMExecutor::call post block: " << block.header.number << " txn: " << &txn << "\n";
+            SILK_TRACE << "EVMExecutor::call post block: " << block.header.number << " txn: " << &txn;
             boost::asio::post(workers_, [this, this_executor, &block, &txn, &tracers, &refund, &gas_bailout, self = std::move(self)]() mutable {
                 auto& svc = use_service<BaselineAnalysisCacheService>(workers_);
                 EVM evm{block, state_, config_};
@@ -279,9 +279,9 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor::call(
                     }
                 }
 
-                SILKRPC_DEBUG << "EVMExecutor::call execute on EVM txn: " << &txn << " g0: " << static_cast<uint64_t>(g0) << " start\n";
+                SILK_DEBUG << "EVMExecutor::call execute on EVM txn: " << &txn << " g0: " << static_cast<uint64_t>(g0) << " start";
                 const auto result{evm.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0))};
-                SILKRPC_DEBUG << "EVMExecutor::call execute on EVM txn: " << &txn << " gas_left: " << result.gas_left << " end\n";
+                SILK_DEBUG << "EVMExecutor::call execute on EVM txn: " << &txn << " gas_left: " << result.gas_left << " end";
 
                 uint64_t gas_left = result.gas_left;
                 const uint64_t gas_used{txn.gas_limit - refund_gas(evm, txn, result.gas_left, result.gas_refund)};
@@ -292,7 +292,7 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor::call(
                 // Reward the fee recipient
                 const intx::uint256 priority_fee_per_gas{txn.max_fee_per_gas >= base_fee_per_gas ? txn.priority_fee_per_gas(base_fee_per_gas)
                                                                                                  : txn.max_priority_fee_per_gas};
-                SILKRPC_DEBUG << "EVMExecutor::call evm.beneficiary: " << evm.beneficiary << " balance: " << priority_fee_per_gas * gas_used << "\n";
+                SILK_DEBUG << "EVMExecutor::call evm.beneficiary: " << evm.beneficiary << " balance: " << priority_fee_per_gas * gas_used;
                 state_.add_to_balance(evm.beneficiary, priority_fee_per_gas * gas_used);
 
                 for (auto tracer : evm.tracers()) {
@@ -308,7 +308,7 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor::call(
         },
         boost::asio::use_awaitable);
 
-    SILKRPC_DEBUG << "EVMExecutor::call call_result: " << call_result.error_code << " #data: " << call_result.data.size() << " end\n";
+    SILK_DEBUG << "EVMExecutor::call call_result: " << call_result.error_code << " #data: " << call_result.data.size() << " end";
 
     co_return call_result;
 }

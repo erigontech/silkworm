@@ -19,7 +19,6 @@
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkworm::rpc {

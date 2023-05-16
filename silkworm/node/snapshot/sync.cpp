@@ -136,7 +136,10 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
     };
     client_.completed_subscription.connect(log_completed);
 
-    client_thread_ = std::thread([&]() { client_.execute_loop(); });
+    client_thread_ = std::thread([&]() {
+        log::set_thread_name("bit-torrent");
+        client_.execute_loop();
+    });
 
     // Wait for download completion of all snapshots or stop request
     while (not download_done.try_wait() and not is_stopping()) {

@@ -23,8 +23,8 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/binary_search.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
@@ -41,13 +41,13 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohman
     const auto& params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid erigon_getBlockByTimestamp params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
     const auto block_timestamp = params[0].get<std::string>();
     const auto full_tx = params[1].get<bool>();
-    SILKRPC_DEBUG << "block_timestamp: " << block_timestamp << " full_tx: " << full_tx << "\n";
+    SILK_DEBUG << "block_timestamp: " << block_timestamp << " full_tx: " << full_tx;
 
     const std::string::size_type begin = block_timestamp.find_first_not_of(" \"");
     const std::string::size_type end = block_timestamp.find_last_not_of(" \"");
@@ -92,10 +92,10 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_block_by_timestamp(const nlohman
 
         reply = make_json_content(request["id"], extended_block);
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
@@ -109,12 +109,12 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_header_by_hash(const nlohmann::j
     const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid erigon_getHeaderByHash params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
     const auto block_hash = params[0].get<evmc::bytes32>();
-    SILKRPC_DEBUG << "block_hash: " << block_hash << "\n";
+    SILK_DEBUG << "block_hash: " << block_hash;
 
     auto tx = co_await database_->begin();
 
@@ -125,10 +125,10 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_header_by_hash(const nlohmann::j
 
         reply = make_json_content(request["id"], header);
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
@@ -141,17 +141,17 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_header_by_number(const nlohmann:
     const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid erigon_getHeaderByNumber params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
     const auto block_id = params[0].get<std::string>();
-    SILKRPC_DEBUG << "block_id: " << block_id << "\n";
+    SILK_DEBUG << "block_id: " << block_id;
 
     if (block_id == core::kPendingBlockId) {
         // TODO(canepat): add pending block only known to the miner
         auto error_msg = "pending block not implemented in erigon_getHeaderByNumber";
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
@@ -166,10 +166,10 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_header_by_number(const nlohmann:
 
         reply = make_json_content(request["id"], header);
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
@@ -182,12 +182,12 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const nlohmann::jso
     const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid erigon_getLogsByHash params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
     const auto block_hash = params[0].get<evmc::bytes32>();
-    SILKRPC_DEBUG << "block_hash: " << block_hash << "\n";
+    SILK_DEBUG << "block_hash: " << block_hash;
 
     auto tx = co_await database_->begin();
 
@@ -197,21 +197,21 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_logs_by_hash(const nlohmann::jso
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
         const auto receipts{co_await core::get_receipts(tx_database, *block_with_hash)};
 
-        SILKRPC_DEBUG << "receipts.size(): " << receipts.size() << "\n";
+        SILK_DEBUG << "receipts.size(): " << receipts.size();
         std::vector<Logs> logs{};
         logs.reserve(receipts.size());
         for (const auto& receipt : receipts) {
-            SILKRPC_DEBUG << "receipt.logs.size(): " << receipt.logs.size() << "\n";
+            SILK_DEBUG << "receipt.logs.size(): " << receipt.logs.size();
             logs.push_back(receipt.logs);
         }
-        SILKRPC_DEBUG << "logs.size(): " << logs.size() << "\n";
+        SILK_DEBUG << "logs.size(): " << logs.size();
 
         reply = make_json_content(request["id"], logs);
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
@@ -227,16 +227,16 @@ awaitable<void> ErigonRpcApi::handle_erigon_forks(const nlohmann::json& request,
         ethdb::TransactionDatabase tx_database{*tx};
 
         const auto chain_config{co_await core::rawdb::read_chain_config(tx_database)};
-        SILKRPC_DEBUG << "chain config: " << chain_config << "\n";
+        SILK_DEBUG << "chain config: " << chain_config;
 
         Forks forks{chain_config};
 
         reply = make_json_content(request["id"], forks);
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
@@ -249,12 +249,12 @@ awaitable<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nlohmann::json&
     const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid erigon_watchTheBurn params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
     const auto block_id = params[0].get<std::string>();
-    SILKRPC_DEBUG << "block_id: " << block_id << "\n";
+    SILK_DEBUG << "block_id: " << block_id;
 
     auto tx = co_await database_->begin();
 
@@ -262,7 +262,7 @@ awaitable<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nlohmann::json&
         ethdb::TransactionDatabase tx_database{*tx};
 
         const auto chain_config{co_await core::rawdb::read_chain_config(tx_database)};
-        SILKRPC_DEBUG << "chain config: " << chain_config << "\n";
+        SILK_DEBUG << "chain config: " << chain_config;
 
         Issuance issuance{};  // default is empty: no PoW => no issuance
         if (chain_config.config.count("ethash") != 0) {
@@ -307,10 +307,10 @@ awaitable<void> ErigonRpcApi::handle_erigon_watch_the_burn(const nlohmann::json&
         }
         reply = make_json_content(request["id"], issuance);
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
@@ -328,11 +328,11 @@ awaitable<void> ErigonRpcApi::handle_erigon_block_number(const nlohmann::json& r
         block_id = params[0];
     } else {
         auto error_msg = "invalid erigon_blockNumber params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
-    SILKRPC_DEBUG << "block: " << block_id << "\n";
+    SILK_DEBUG << "block: " << block_id;
 
     auto tx = co_await database_->begin();
 
@@ -341,10 +341,10 @@ awaitable<void> ErigonRpcApi::handle_erigon_block_number(const nlohmann::json& r
         const auto block_number{co_await core::get_block_number_by_tag(block_id, tx_database)};
         reply = make_json_content(request["id"], to_quantity(block_number));
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
@@ -357,13 +357,13 @@ awaitable<void> ErigonRpcApi::handle_erigon_cumulative_chain_traffic(const nlohm
     const auto& params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid erigon_cumulativeChainTraffic params: " + params.dump();
-        SILKRPC_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }
     const auto block_id = params[0].get<std::string>();
 
-    SILKRPC_DEBUG << "block_id: " << block_id << "\n";
+    SILK_DEBUG << "block_id: " << block_id;
 
     auto tx = co_await database_->begin();
 
@@ -378,10 +378,10 @@ awaitable<void> ErigonRpcApi::handle_erigon_cumulative_chain_traffic(const nlohm
 
         reply = make_json_content(request["id"], chain_traffic);
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_content(request["id"], chain_traffic);
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
@@ -396,10 +396,10 @@ awaitable<void> ErigonRpcApi::handle_erigon_node_info(const nlohmann::json& requ
 
         reply = make_json_content(request["id"], node_info_data);
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 

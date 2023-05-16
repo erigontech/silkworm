@@ -28,7 +28,6 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/node/db/mdbx.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 

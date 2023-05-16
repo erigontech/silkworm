@@ -25,7 +25,7 @@
 namespace silkworm::rpc::ethdb::kv {
 
 boost::asio::awaitable<void> RemoteTransaction::open() {
-    tx_id_ = (co_await tx_rpc_.request_and_read()).tx_id();
+    view_id_ = (co_await tx_rpc_.request_and_read()).view_id();
 }
 
 boost::asio::awaitable<std::shared_ptr<Cursor>> RemoteTransaction::cursor(const std::string& table) {
@@ -39,7 +39,7 @@ boost::asio::awaitable<std::shared_ptr<CursorDupSort>> RemoteTransaction::cursor
 boost::asio::awaitable<void> RemoteTransaction::close() {
     co_await tx_rpc_.writes_done_and_finish();
     cursors_.clear();
-    tx_id_ = 0;
+    view_id_ = 0;
 }
 
 boost::asio::awaitable<std::shared_ptr<CursorDupSort>> RemoteTransaction::get_cursor(const std::string& table, bool is_cursor_sorted) {

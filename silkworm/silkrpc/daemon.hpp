@@ -22,9 +22,9 @@
 
 #include <boost/asio/thread_pool.hpp>
 
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/silkrpc/common/constants.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_changes_stream.hpp>
 #include <silkworm/silkrpc/http/server.hpp>
 #include <silkworm/silkrpc/protocol/version.hpp>
@@ -39,7 +39,7 @@ struct DaemonSettings {
     std::string target;       // backend_kv_address
     uint32_t num_contexts;
     uint32_t num_workers;
-    LogLevel log_verbosity;
+    log::Level log_verbosity;
     concurrency::WaitMode wait_mode;
     std::optional<std::string> jwt_secret_filename;
 };
@@ -59,7 +59,7 @@ class Daemon {
   public:
     static int run(const DaemonSettings& settings, const DaemonInfo& info = {});
 
-    explicit Daemon(const DaemonSettings& settings);
+    explicit Daemon(DaemonSettings settings);
 
     Daemon(const Daemon&) = delete;
     Daemon& operator=(const Daemon&) = delete;
@@ -81,7 +81,7 @@ class Daemon {
     void add_shared_services();
 
     //! The RPC daemon configuration settings.
-    const DaemonSettings& settings_;
+    DaemonSettings settings_;
 
     //! The factory of gRPC client-side channels.
     ChannelFactory create_channel_;

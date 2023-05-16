@@ -27,8 +27,9 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/test/log.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/test/mock_cursor.hpp>
@@ -58,7 +59,7 @@ namespace {
       public:
         explicit DummyTransaction(std::shared_ptr<ethdb::Cursor> cursor) : cursor_(std::move(cursor)) {}
 
-        [[nodiscard]] uint64_t tx_id() const override { return 0; }
+        [[nodiscard]] uint64_t view_id() const override { return 0; }
 
         awaitable<void> open() override { co_return; }
 
@@ -166,7 +167,7 @@ static silkworm::Bytes kChainConfigNoTerminalBlockNumber{*silkworm::from_hex(
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("handle_engine_get_payload_v1 succeeds if request is expected payload", "[silkrpc][engine_api]") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock;
     EXPECT_CALL(*backend, engine_get_payload_v1(1)).WillOnce(InvokeWithoutArgs([]() -> awaitable<ExecutionPayload> {
@@ -225,7 +226,7 @@ TEST_CASE("handle_engine_get_payload_v1 succeeds if request is expected payload"
 }
 
 TEST_CASE("handle_engine_get_payload_v1 fails with invalid amount of params", "[silkrpc][engine_api]") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     nlohmann::json reply;
     nlohmann::json request = R"({
@@ -254,7 +255,7 @@ TEST_CASE("handle_engine_get_payload_v1 fails with invalid amount of params", "[
 
     CHECK(reply == R"({
         "error":{
-            "code":100,
+            "code":-32602,
             "message":"invalid engine_getPayloadV1 params: []"
         },
         "id":1,
@@ -266,7 +267,7 @@ TEST_CASE("handle_engine_get_payload_v1 fails with invalid amount of params", "[
 }
 
 TEST_CASE("handle_engine_new_payload_v1 succeeds if request is expected payload status", "[silkrpc][engine_api]") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock;
     EXPECT_CALL(*backend, engine_new_payload_v1(testing::_)).WillOnce(InvokeWithoutArgs([]() -> awaitable<PayloadStatus> {
@@ -332,7 +333,7 @@ TEST_CASE("handle_engine_new_payload_v1 succeeds if request is expected payload 
 }
 
 TEST_CASE("handle_engine_new_payload_v1 fails with invalid amount of params", "[silkrpc][engine_api]") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     nlohmann::json reply;
     nlohmann::json request = R"({
@@ -361,7 +362,7 @@ TEST_CASE("handle_engine_new_payload_v1 fails with invalid amount of params", "[
 
     CHECK(reply == R"({
         "error":{
-            "code":100,
+            "code":-32602,
             "message":"invalid engine_newPayloadV1 params: []"
         },
         "id":1,
@@ -373,7 +374,7 @@ TEST_CASE("handle_engine_new_payload_v1 fails with invalid amount of params", "[
 }
 
 TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds only with forkchoiceState", "[silkrpc][engine_api]") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock;
     EXPECT_CALL(*backend, engine_forkchoice_updated_v1(testing::_)).WillOnce(InvokeWithoutArgs([]() -> awaitable<ForkChoiceUpdatedReply> {
@@ -431,7 +432,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds only with forkchoiceStat
 }
 
 TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params", "[silkrpc][engine_api]") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock;
     EXPECT_CALL(*backend, engine_forkchoice_updated_v1(testing::_)).WillOnce(InvokeWithoutArgs([]() -> awaitable<ForkChoiceUpdatedReply> {
@@ -494,7 +495,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params", "[sil
 }
 
 TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params and second set to null", "[silkrpc][engine_api]") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock;
     EXPECT_CALL(*backend, engine_forkchoice_updated_v1(testing::_)).WillOnce(InvokeWithoutArgs([]() -> awaitable<ForkChoiceUpdatedReply> {
@@ -553,7 +554,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params and sec
 }
 
 TEST_CASE("handle_engine_forkchoice_updated_v1 fails with invalid amount of params", "[silkrpc][engine_api]") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     nlohmann::json reply;
     nlohmann::json request = R"({
@@ -582,7 +583,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with invalid amount of para
 
     CHECK(reply == R"({
         "error":{
-            "code":100,
+            "code":-32602,
             "message":"invalid engine_forkchoiceUpdatedV1 params: []"
         },
         "id":1,
@@ -594,7 +595,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with invalid amount of para
 }
 
 TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty finalized block hash", "[silkrpc][engine_api]") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock();
     nlohmann::json reply;
@@ -629,7 +630,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty finalized block 
     result.get();
     CHECK(reply == R"({
         "error":{
-            "code":100,
+            "code":-38002,
             "message":"finalized block hash is empty"
         },
         "id":1,
@@ -640,7 +641,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty finalized block 
 }
 
 TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty safe block hash", "[silkrpc][engine_api]") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock();
     nlohmann::json reply;
@@ -675,7 +676,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty safe block hash"
     result.get();
     CHECK(reply == R"({
         "error":{
-            "code":100,
+            "code":-38002,
             "message":"safe block hash is empty"
         },
         "id":1,
@@ -686,7 +687,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty safe block hash"
 }
 
 TEST_CASE("handle_engine_transition_configuration_v1 succeeds if EL configurations has the same request configuration", "[silkrpc][engine_api]") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     ClientContextPool context_pool{1};
     context_pool.start();
@@ -745,7 +746,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 succeeds if EL configuratio
 }
 
 TEST_CASE("handle_engine_transition_configuration_v1 succeeds and default terminal block number to zero if chain config doesn't specify it", "[silkrpc][engine_api]") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     ClientContextPool context_pool{1};
     context_pool.start();
@@ -804,7 +805,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 succeeds and default termin
 }
 
 TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect terminal total difficulty", "[silkrpc][engine_api]") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     ClientContextPool context_pool{1};
     context_pool.start();
@@ -850,8 +851,8 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect terminal
 
     CHECK(reply == R"({
         "error":{
-            "code":100,
-            "message":"incorrect terminal total difficulty"
+            "code":-32602,
+            "message":"consensus layer terminal total difficulty does not match"
             },
             "id":1,
             "jsonrpc":"2.0"
@@ -861,7 +862,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect terminal
 }
 
 TEST_CASE("handle_engine_transition_configuration_v1 fails if execution layer does not have terminal total difficulty", "[silkrpc][engine_api]") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     ClientContextPool context_pool{1};
     context_pool.start();
@@ -917,8 +918,8 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if execution layer do
     context_pool.join();
 }
 
-TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer sends block number different from zero", "[silkrpc][engine_api]") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer sends wrong terminal total difficulty", "[silkrpc][engine_api]") {
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     ClientContextPool context_pool{1};
     context_pool.start();
@@ -947,9 +948,9 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer se
         "id":1,
         "method":"engine_transitionConfigurationV1",
         "params":[{
-            "terminalTotalDifficulty":"0xf4240",
+            "terminalTotalDifficulty":"0x0",
             "terminalBlockHash":"0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858",
-            "terminalBlockNumber":"0x1"
+            "terminalBlockNumber":"0x0"
         }]
     })"_json;
 
@@ -964,8 +965,8 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer se
 
     CHECK(reply == R"({
         "error":{
-            "code":100,
-            "message":"consensus layer terminal block number is not zero"
+            "code":-32602,
+            "message":"consensus layer terminal total difficulty does not match"
             },
             "id":1,
             "jsonrpc":"2.0"
@@ -974,8 +975,123 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer se
     context_pool.join();
 }
 
+TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer sends wrong terminal block hash", "[silkrpc][engine_api]") {
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+
+    ClientContextPool context_pool{1};
+    context_pool.start();
+
+    std::shared_ptr<test::MockCursor> mock_cursor = std::make_shared<test::MockCursor>();
+
+    const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
+    const silkworm::ByteView block_key{block_number};
+    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> awaitable<KeyValue> {
+        co_return KeyValue{silkworm::Bytes{}, kBlockHash};
+    }));
+
+    const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
+    const silkworm::ByteView genesis_block_key{genesis_block_hash};
+    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> awaitable<KeyValue> {
+        co_return KeyValue{silkworm::Bytes{}, kChainConfig};
+    }));
+
+    std::unique_ptr<ethdb::Database> database_ptr = std::make_unique<DummyDatabase>(mock_cursor);
+    std::unique_ptr<ethbackend::BackEnd> backend_ptr;
+    EngineRpcApiTest rpc(database_ptr.get(), backend_ptr.get());
+
+    nlohmann::json reply;
+    nlohmann::json request = R"({
+        "jsonrpc":"2.0",
+        "id":1,
+        "method":"engine_transitionConfigurationV1",
+        "params":[{
+            "terminalTotalDifficulty":"0xa4a470",
+            "terminalBlockHash":"0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858",
+            "terminalBlockNumber":"0x0"
+        }]
+    })"_json;
+
+    auto result{boost::asio::co_spawn(
+        context_pool.next_io_context(), [&rpc, &reply, &request]() {
+            return rpc.handle_engine_exchange_transition_configuration_v1(
+                request,
+                reply);
+        },
+        boost::asio::use_future)};
+    result.get();
+
+    CHECK(reply == R"({
+        "error":{
+            "code":-32602,
+            "message":"consensus layer terminal block hash is not zero"
+            },
+            "id":1,
+            "jsonrpc":"2.0"
+        })"_json);
+    context_pool.stop();
+    context_pool.join();
+}
+
+TEST_CASE("handle_engine_transition_configuration_v1 succeeds w/o matching terminal block number", "[silkrpc][engine_api]") {
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+
+    ClientContextPool context_pool{1};
+    context_pool.start();
+
+    std::shared_ptr<test::MockCursor> mock_cursor = std::make_shared<test::MockCursor>();
+
+    const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
+    const silkworm::ByteView block_key{block_number};
+    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> awaitable<KeyValue> {
+        co_return KeyValue{silkworm::Bytes{}, kBlockHash};
+    }));
+
+    const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
+    const silkworm::ByteView genesis_block_key{genesis_block_hash};
+    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> awaitable<KeyValue> {
+        co_return KeyValue{silkworm::Bytes{}, kChainConfig};
+    }));
+
+    std::unique_ptr<ethdb::Database> database_ptr = std::make_unique<DummyDatabase>(mock_cursor);
+    std::unique_ptr<ethbackend::BackEnd> backend_ptr;
+    EngineRpcApiTest rpc(database_ptr.get(), backend_ptr.get());
+
+    nlohmann::json reply;
+    nlohmann::json request = R"({
+        "jsonrpc":"2.0",
+        "id":1,
+        "method":"engine_transitionConfigurationV1",
+        "params":[{
+            "terminalTotalDifficulty":"0xa4a470",
+            "terminalBlockHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
+            "terminalBlockNumber":"0x1"
+        }]
+    })"_json;
+
+    auto result{boost::asio::co_spawn(
+        context_pool.next_io_context(), [&rpc, &reply, &request]() {
+            return rpc.handle_engine_exchange_transition_configuration_v1(
+                request,
+                reply);
+        },
+        boost::asio::use_future)};
+    result.get();
+
+    CHECK(reply == R"({
+        "id":1,
+        "jsonrpc":"2.0",
+        "result":{
+            "terminalBlockHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "terminalBlockNumber": "0x0",
+            "terminalTotalDifficulty": "0xa4a470"
+        }
+    })"_json);
+    context_pool.stop();
+    context_pool.join();
+}
+
 TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect params", "[silkrpc][engine_api]") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     ClientContextPool context_pool{1};
     context_pool.start();
@@ -1005,7 +1121,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect params",
 
     CHECK(reply == R"({
         "error":{
-            "code":100,
+            "code":-32602,
             "message":"invalid engine_exchangeTransitionConfigurationV1 params: []"
             },
             "id":1,

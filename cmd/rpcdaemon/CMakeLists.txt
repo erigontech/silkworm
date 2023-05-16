@@ -19,6 +19,12 @@ find_package(CLI11 REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(Protobuf REQUIRED)
 
+if(SILKWORM_USE_MIMALLOC)
+  if(CONAN_PACKAGE_MANAGER)
+    find_package(mimalloc REQUIRED)
+  endif()
+endif()
+
 if(MSVC)
   add_compile_options(/bigobj)
 endif()
@@ -48,9 +54,6 @@ set(SILKRPC_DAEMON_LIBRARIES
 )
 # cmake-format: on
 if(SILKWORM_USE_MIMALLOC)
-  if(CONAN_PACKAGE_MANAGER)
-    find_package(mimalloc REQUIRED)
-  endif()
   list(APPEND SILKRPC_DAEMON_LIBRARIES mimalloc)
 endif()
 

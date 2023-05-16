@@ -41,7 +41,7 @@ constexpr const char* kEmptyChainData{""};
 constexpr const char* kDefaultHttpPort{"localhost:8545"};
 constexpr const char* kDefaultEnginePort{"localhost:8551"};
 constexpr const char* kDefaultTarget{"localhost:9090"};
-constexpr const char* kDefaultEth1ApiSpec{"debug,eth,net,parity,erigon,trace,web3,txpool"};
+constexpr const char* kDefaultEth1ApiSpec{"admin,debug,eth,net,parity,erigon,trace,web3,txpool"};
 constexpr const char* kDefaultEth2ApiSpec{"engine,eth"};
 constexpr const char* kDefaultDataDir{""};
 constexpr const std::chrono::milliseconds kDefaultTimeout{10000};

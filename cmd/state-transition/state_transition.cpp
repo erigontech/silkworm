@@ -49,6 +49,8 @@ StateTransition::StateTransition(const std::string& file_path) noexcept {
 StateTransition::StateTransition(const nlohmann::json& json, const bool terminate_on_error, const bool show_diagnostics) noexcept {
     auto testObject = json.begin();
     test_name_ = testObject.key();
+    std::cout << test_name_ << ":" << std::endl;
+
     test_data_ = testObject.value();
 
     terminate_on_error_ = terminate_on_error;
@@ -198,7 +200,9 @@ silkworm::Transaction StateTransition::get_transaction(ExpectedSubState expected
     if (expected_sub_state.valueIndex >= jTransaction.at("value").size()) {
         throw std::runtime_error("value index out of range");
     } else {
-        txn.value = intx::from_string<intx::uint256>(jTransaction.at("value").at(expected_sub_state.valueIndex).get<std::string>());
+        auto value_str = jTransaction.at("value").at(expected_sub_state.valueIndex).get<std::string>();
+        // in case of bigint, set max value; compatible with all test cases so far
+        txn.value = (value_str.starts_with("0x:bigint ")) ? std::numeric_limits<intx::uint256>::max() : intx::from_string<intx::uint256>(value_str);
     }
 
     return txn;
@@ -207,23 +211,23 @@ silkworm::Transaction StateTransition::get_transaction(ExpectedSubState expected
 void StateTransition::validate_transition(const silkworm::Receipt& receipt, const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const InMemoryState& state) {
     if (expected_sub_state.exceptionExpected) {
         if (receipt.success) {
-            print_error_message(expected_state, expected_sub_state, "");
+            print_error_message(expected_state, expected_sub_state, "Failed: Transaction exception");
             ++failed_count_;
         } else {
             print_diagnostic_message(expected_state, expected_sub_state, "OK (Exception Expected)");
         }
     } else {
         if (state.state_root_hash() != expected_sub_state.stateHash) {
-            print_error_message(expected_state, expected_sub_state, "State root hash does not match");
+            print_error_message(expected_state, expected_sub_state, "Failed: State root hash does not match");
             failed_count_++;
         } else {
             Bytes encoded;
             rlp::encode(encoded, receipt.logs);
             if (silkworm::bit_cast<evmc_bytes32>(keccak256(encoded)) != expected_sub_state.logsHash) {
-                print_error_message(expected_state, expected_sub_state, "Logs hash does not match");
+                print_error_message(expected_state, expected_sub_state, "Failed: Logs hash does not match");
                 failed_count_++;
             } else {
-                print_diagnostic_message(expected_state, expected_sub_state, "OK (Exception Expected)");
+                print_diagnostic_message(expected_state, expected_sub_state, "OK");
             }
         }
     }
@@ -258,21 +262,19 @@ void StateTransition::run() {
             auto block = get_block();
             auto state = get_state();
 
-            //                std::cout << "pre: " << std::endl;
-            //                state->state_root_hash();
-
+            //            std::cout << "pre: " << std::endl;
+            //            state->print_state_root_hash();
+            //
             silkworm::ExecutionProcessor processor{block, *ruleSet, *state, config};
             silkworm::Receipt receipt;
             auto txn = get_transaction(expectedSubState);
-
-            //                std::cout << to_hex(txn.data) << std::endl;
 
             processor.execute_transaction(txn, receipt);
 
             processor.evm().state().write_to_db(block.header.number);
 
-            //                std::cout << "post: " << std::endl;
-            //                state->state_root_hash();
+            //            std::cout << "post: " << std::endl;
+            //            state->print_state_root_hash();
 
             validate_transition(receipt, expectedState, expectedSubState, *state);
         }

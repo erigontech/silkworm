@@ -20,13 +20,13 @@
 
 #include <nlohmann/json.hpp>
 
-#include "silkworm/core/common/test_util.hpp"
 #include "silkworm/core/chain/config.hpp"
+#include "silkworm/core/common/test_util.hpp"
 
 namespace silkworm::cmd::state_transition {
 
 silkworm::ChainConfig ExpectedState::get_config() const {
-    const auto config_it{ silkworm::test::kNetworkConfig.find(fork_name_)};
+    const auto config_it{silkworm::test::kNetworkConfig.find(fork_name_)};
     if (config_it == silkworm::test::kNetworkConfig.end()) {
         std::cout << "unknown network " << fork_name_ << std::endl;
         throw std::invalid_argument(fork_name_);

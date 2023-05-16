@@ -18,17 +18,17 @@
 
 #include <optional>
 
+#include <silkworm/core/protocol/validation.hpp>
 #include <silkworm/core/types/bloom.hpp>
 #include <silkworm/core/types/log.hpp>
 #include <silkworm/core/types/transaction.hpp>
-#include <silkworm/core/protocol/validation.hpp>
 
 namespace silkworm {
 
 struct Receipt {
     TransactionType type{TransactionType::kLegacy};
     bool success{false};
-    ValidationResult validationResult;
+    ValidationResult validation_result;
     uint64_t cumulative_gas_used{0};
     Bloom bloom;
     std::vector<Log> logs;

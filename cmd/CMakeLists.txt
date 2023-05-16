@@ -14,13 +14,15 @@
    limitations under the License.
 ]]
 
-if(MSVC)
-  add_link_options(/STACK:${SILKWORM_STACK_SIZE})
-elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  add_link_options(-Wl,-stack_size -Wl,${SILKWORM_STACK_SIZE})
-else()
-  add_link_options(-Wl,-z,stack-size=${SILKWORM_STACK_SIZE})
-endif()
+macro(increase_stack_size target)
+  if(MSVC)
+    target_link_options(${target} PRIVATE /STACK:${SILKWORM_STACK_SIZE})
+  elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    target_link_options(${target} PRIVATE -Wl,-stack_size -Wl,${SILKWORM_STACK_SIZE})
+  else()
+    target_link_options(${target} PRIVATE -Wl,-z,stack-size=${SILKWORM_STACK_SIZE})
+  endif()
+endmacro()
 
 # Tests
 add_subdirectory(test)
@@ -61,6 +63,7 @@ if(NOT SILKWORM_CORE_ONLY)
 
   add_executable(silkworm "${SILKWORM_CMD_SRC}")
   target_link_libraries(silkworm PRIVATE silkworm_node silkworm_sync cmd_common $<$<BOOL:${MSVC}>:Kernel32.lib>)
+  increase_stack_size(silkworm)
 
   add_executable(check_changes check_changes.cpp)
   target_link_libraries(check_changes PRIVATE silkworm_node CLI11::CLI11 absl::time)
@@ -91,9 +94,11 @@ if(NOT SILKWORM_CORE_ONLY)
 
   add_executable(snapshots snapshots.cpp)
   target_link_libraries(snapshots PRIVATE silkworm_node cmd_common torrent-rasterbar)
+  increase_stack_size(snapshots)
 
   add_executable(sentry sentry.cpp common/sentry_options.cpp common/sentry_options.hpp)
   target_link_libraries(sentry PRIVATE silkworm_sentry cmd_common)
+  increase_stack_size(sentry)
 
   # cmake-format: off
   set(BACKEND_KV_SERVER_SRC

@@ -23,14 +23,14 @@ if(SILKWORM_USE_MIMALLOC)
   if(CONAN_PACKAGE_MANAGER)
     find_package(mimalloc REQUIRED)
   else()
-    set(MI_BUILD_SHARED OFF)
-    set(MI_BUILD_STATIC ON)
+    set(MI_BUILD_SHARED ON)
+    set(MI_BUILD_STATIC OFF)
     set(MI_BUILD_OBJECT OFF)
     set(MI_BUILD_TESTS OFF)
     add_subdirectory(
       "${SILKWORM_MAIN_DIR}/third_party/mimalloc" "${CMAKE_BINARY_DIR}/third_party/mimalloc" EXCLUDE_FROM_ALL
     )
-    target_compile_options(mimalloc-static PRIVATE -Wno-error)
+    target_compile_options(mimalloc PRIVATE -Wno-error)
   endif()
 endif()
 
@@ -63,9 +63,10 @@ set(SILKRPC_DAEMON_LIBRARIES
 )
 # cmake-format: on
 if(SILKWORM_USE_MIMALLOC)
-  list(APPEND SILKRPC_DAEMON_LIBRARIES mimalloc-static)
+  list(APPEND SILKRPC_DAEMON_LIBRARIES mimalloc)
 endif()
 
 add_executable(silkrpcdaemon silkrpc_daemon.cpp)
 target_include_directories(silkrpcdaemon PUBLIC ${CMAKE_SOURCE_DIR})
 target_link_libraries(silkrpcdaemon PRIVATE ${SILKRPC_DAEMON_LIBRARIES})
+increase_stack_size(silkrpcdaemon)

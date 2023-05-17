@@ -47,9 +47,9 @@ class BackEndMock : public ethbackend::BackEnd {  // NOLINT
     MOCK_METHOD((awaitable<uint64_t>), net_version, ());
     MOCK_METHOD((awaitable<std::string>), client_version, ());
     MOCK_METHOD((awaitable<uint64_t>), net_peer_count, ());
-    MOCK_METHOD((awaitable<ExecutionPayload>), engine_get_payload_v1, (uint64_t));
-    MOCK_METHOD((awaitable<PayloadStatus>), engine_new_payload_v1, (const ExecutionPayload&));
-    MOCK_METHOD((awaitable<ForkChoiceUpdatedReply>), engine_forkchoice_updated_v1, (const ForkChoiceUpdatedRequest&));
+    MOCK_METHOD((awaitable<ExecutionPayloadV1>), engine_get_payload_v1, (uint64_t));
+    MOCK_METHOD((awaitable<PayloadStatusV1>), engine_new_payload_v1, (const ExecutionPayloadV1&));
+    MOCK_METHOD((awaitable<ForkChoiceUpdatedReplyV1>), engine_forkchoice_updated_v1, (const ForkChoiceUpdatedRequestV1&));
     MOCK_METHOD((awaitable<NodeInfos>), engine_node_info, ());
     MOCK_METHOD((awaitable<PeerInfos>), peers, ());
 };
@@ -215,8 +215,8 @@ TEST_CASE("handle_engine_get_payload_v1 succeeds if request is expected payload"
     silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock;
-    EXPECT_CALL(*backend, engine_get_payload_v1(1)).WillOnce(InvokeWithoutArgs([]() -> awaitable<ExecutionPayload> {
-        co_return ExecutionPayload{1};
+    EXPECT_CALL(*backend, engine_get_payload_v1(1)).WillOnce(InvokeWithoutArgs([]() -> awaitable<ExecutionPayloadV1> {
+        co_return ExecutionPayloadV1{1};
     }));
 
     std::unique_ptr<ethbackend::BackEnd> backend_ptr(backend);
@@ -315,8 +315,8 @@ TEST_CASE("handle_engine_new_payload_v1 succeeds if request is expected payload 
     silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock;
-    EXPECT_CALL(*backend, engine_new_payload_v1(testing::_)).WillOnce(InvokeWithoutArgs([]() -> awaitable<PayloadStatus> {
-        co_return PayloadStatus{
+    EXPECT_CALL(*backend, engine_new_payload_v1(testing::_)).WillOnce(InvokeWithoutArgs([]() -> awaitable<PayloadStatusV1> {
+        co_return PayloadStatusV1{
             .status = "INVALID",
             .latest_valid_hash = 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32,
             .validation_error = "some error"};
@@ -422,9 +422,9 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds only with forkchoiceStat
     silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock;
-    EXPECT_CALL(*backend, engine_forkchoice_updated_v1(testing::_)).WillOnce(InvokeWithoutArgs([]() -> awaitable<ForkChoiceUpdatedReply> {
-        co_return ForkChoiceUpdatedReply{
-            .payload_status = PayloadStatus{
+    EXPECT_CALL(*backend, engine_forkchoice_updated_v1(testing::_)).WillOnce(InvokeWithoutArgs([]() -> awaitable<ForkChoiceUpdatedReplyV1> {
+        co_return ForkChoiceUpdatedReplyV1{
+            .payload_status = PayloadStatusV1{
                 .status = "INVALID",
                 .latest_valid_hash = 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32,
                 .validation_error = "some error"},
@@ -480,9 +480,9 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params", "[sil
     silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock;
-    EXPECT_CALL(*backend, engine_forkchoice_updated_v1(testing::_)).WillOnce(InvokeWithoutArgs([]() -> awaitable<ForkChoiceUpdatedReply> {
-        co_return ForkChoiceUpdatedReply{
-            .payload_status = PayloadStatus{
+    EXPECT_CALL(*backend, engine_forkchoice_updated_v1(testing::_)).WillOnce(InvokeWithoutArgs([]() -> awaitable<ForkChoiceUpdatedReplyV1> {
+        co_return ForkChoiceUpdatedReplyV1{
+            .payload_status = PayloadStatusV1{
                 .status = "INVALID",
                 .latest_valid_hash = 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32,
                 .validation_error = "some error"},
@@ -543,9 +543,9 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params and sec
     silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock;
-    EXPECT_CALL(*backend, engine_forkchoice_updated_v1(testing::_)).WillOnce(InvokeWithoutArgs([]() -> awaitable<ForkChoiceUpdatedReply> {
-        co_return ForkChoiceUpdatedReply{
-            .payload_status = PayloadStatus{
+    EXPECT_CALL(*backend, engine_forkchoice_updated_v1(testing::_)).WillOnce(InvokeWithoutArgs([]() -> awaitable<ForkChoiceUpdatedReplyV1> {
+        co_return ForkChoiceUpdatedReplyV1{
+            .payload_status = PayloadStatusV1{
                 .status = "INVALID",
                 .latest_valid_hash = 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32,
                 .validation_error = "some error"},

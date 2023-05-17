@@ -24,12 +24,12 @@
 namespace silkworm::rpc {
 
 TEST_CASE("print empty execution payload", "[silkrpc][types][execution_payload]") {
-    ExecutionPayload p{};
+    ExecutionPayloadV1 p{};
     CHECK_NOTHROW(silkworm::test::null_stream() << p);
 }
 
 TEST_CASE("print empty payload status", "[silkrpc][types][execution_payload]") {
-    PayloadStatus p{
+    PayloadStatusV1 p{
         .latest_valid_hash = evmc::bytes32{},
         .validation_error = ""};
     CHECK_NOTHROW(silkworm::test::null_stream() << p);

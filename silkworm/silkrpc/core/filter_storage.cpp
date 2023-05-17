@@ -43,7 +43,7 @@ std::optional<std::string> FilterStorage::add_filter(const StoredFilter& filter)
 
     FilterEntry entry{filter};
     std::string filter_id;
-    bool slot_found;
+    bool slot_found{false};
     std::size_t count{0};
     while (max_size_ > count++) {
         filter_id = to_quantity(generator_());

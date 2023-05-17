@@ -103,7 +103,7 @@ awaitable<void> EngineRpcApi::handle_engine_new_payload_v1(const nlohmann::json&
 #ifndef BUILD_COVERAGE
     try {
 #endif
-        const auto payload = params[0].get<ExecutionPayload>();
+        const auto payload = params[0].get<ExecutionPayloadV1>();
         auto new_payload = co_await backend_->engine_new_payload_v1(payload);
         reply = make_json_content(request["id"], new_payload);
 #ifndef BUILD_COVERAGE
@@ -135,7 +135,7 @@ awaitable<void> EngineRpcApi::handle_engine_forkchoice_updated_v1(const nlohmann
 #ifndef BUILD_COVERAGE
     try {
 #endif
-        const ForkChoiceState forkchoice_state = params[0].get<ForkChoiceState>();
+        const auto forkchoice_state = params[0].get<ForkChoiceStateV1>();
 
         if (forkchoice_state.safe_block_hash == kZeroHash) {
             const auto error_msg = "safe block hash is empty";
@@ -152,14 +152,14 @@ awaitable<void> EngineRpcApi::handle_engine_forkchoice_updated_v1(const nlohmann
         }
 
         if (params.size() == 2 && !params[1].is_null()) {
-            const PayloadAttributes payload_attributes = params[1].get<PayloadAttributes>();
-            const ForkChoiceUpdatedRequest forkchoice_update_request{
+            const auto payload_attributes = params[1].get<PayloadAttributesV1>();
+            const ForkChoiceUpdatedRequestV1 forkchoice_update_request{
                 .fork_choice_state = forkchoice_state,
                 .payload_attributes = std::make_optional(payload_attributes)};
             const auto fork_updated = co_await backend_->engine_forkchoice_updated_v1(forkchoice_update_request);
             reply = make_json_content(request["id"], fork_updated);
         } else {
-            const ForkChoiceUpdatedRequest forkchoice_update_request{
+            const ForkChoiceUpdatedRequestV1 forkchoice_update_request{
                 .fork_choice_state = forkchoice_state,
                 .payload_attributes = std::nullopt};
             const auto fork_updated = co_await backend_->engine_forkchoice_updated_v1(forkchoice_update_request);
@@ -190,7 +190,7 @@ awaitable<void> EngineRpcApi::handle_engine_exchange_transition_configuration_v1
         reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
         co_return;
     }
-    const auto cl_configuration = params[0].get<TransitionConfiguration>();
+    const auto cl_configuration = params[0].get<TransitionConfigurationV1>();
     auto tx = co_await database_->begin();
 
 #ifndef BUILD_COVERAGE
@@ -219,7 +219,7 @@ awaitable<void> EngineRpcApi::handle_engine_exchange_transition_configuration_v1
             co_return;
         }
         // We MUST respond with configurable setting values set according to EIP-3675 [Specification 1.]
-        const auto transition_configuration = TransitionConfiguration{
+        const TransitionConfigurationV1 transition_configuration{
             .terminal_total_difficulty = config.terminal_total_difficulty.value(),
             .terminal_block_hash = kZeroHash,  // terminal_block_hash removed from chain_config, return zero
             .terminal_block_number = 0         // terminal_block_number removed from chain_config, return zero

@@ -25,7 +25,7 @@
 
 namespace silkworm::rpc {
 
-void to_json(nlohmann::json& json, const ExecutionPayload& execution_payload) {
+void to_json(nlohmann::json& json, const ExecutionPayloadV1& execution_payload) {
     nlohmann::json transaction_list;
     for (const auto& transaction : execution_payload.transactions) {
         transaction_list.push_back("0x" + silkworm::to_hex(transaction));
@@ -46,7 +46,7 @@ void to_json(nlohmann::json& json, const ExecutionPayload& execution_payload) {
     json["transactions"] = transaction_list;
 }
 
-void from_json(const nlohmann::json& json, ExecutionPayload& execution_payload) {
+void from_json(const nlohmann::json& json, ExecutionPayloadV1& execution_payload) {
     // Parse logs bloom
     silkworm::Bloom logs_bloom;
     std::memcpy(&logs_bloom[0],
@@ -59,7 +59,7 @@ void from_json(const nlohmann::json& json, ExecutionPayload& execution_payload) 
             *silkworm::from_hex(hex_transaction.get<std::string>()));
     }
 
-    execution_payload = ExecutionPayload{
+    execution_payload = ExecutionPayloadV1{
         .number = static_cast<uint64_t>(std::stol(json.at("blockNumber").get<std::string>(), nullptr, 16)),
         .timestamp = static_cast<uint64_t>(std::stol(json.at("timestamp").get<std::string>(), nullptr, 16)),
         .gas_limit = static_cast<uint64_t>(std::stol(json.at("gasLimit").get<std::string>(), nullptr, 16)),

@@ -50,19 +50,19 @@ class RemoteBackEnd final : public BackEnd {
     awaitable<uint64_t> net_version() override;
     awaitable<std::string> client_version() override;
     awaitable<uint64_t> net_peer_count() override;
-    awaitable<ExecutionPayload> engine_get_payload_v1(uint64_t payload_id) override;
-    awaitable<PayloadStatus> engine_new_payload_v1(const ExecutionPayload& payload) override;
-    awaitable<ForkChoiceUpdatedReply> engine_forkchoice_updated_v1(const ForkChoiceUpdatedRequest& fcu_request) override;
+    awaitable<ExecutionPayloadV1> engine_get_payload_v1(uint64_t payload_id) override;
+    awaitable<PayloadStatusV1> engine_new_payload_v1(const ExecutionPayloadV1& payload) override;
+    awaitable<ForkChoiceUpdatedReplyV1> engine_forkchoice_updated_v1(const ForkChoiceUpdatedRequestV1& fcu_request) override;
     awaitable<NodeInfos> engine_node_info() override;
     awaitable<PeerInfos> peers() override;
 
   private:
-    static ExecutionPayload decode_execution_payload(const ::types::ExecutionPayload& execution_payload_grpc);
-    static ::types::ExecutionPayload encode_execution_payload(const ExecutionPayload& execution_payload);
-    static ::remote::EngineForkChoiceState* encode_forkchoice_state(const ForkChoiceState& forkchoice_state);
-    static ::remote::EnginePayloadAttributes* encode_payload_attributes(const PayloadAttributes& payload_attributes);
-    static ::remote::EngineForkChoiceUpdatedRequest encode_forkchoice_updated_request(const ForkChoiceUpdatedRequest& fcu_request);
-    static PayloadStatus decode_payload_status(const ::remote::EnginePayloadStatus& payload_status_grpc);
+    static ExecutionPayloadV1 decode_execution_payload(const ::types::ExecutionPayload& execution_payload_grpc);
+    static ::types::ExecutionPayload encode_execution_payload(const ExecutionPayloadV1& execution_payload);
+    static ::remote::EngineForkChoiceState* encode_forkchoice_state(const ForkChoiceStateV1& forkchoice_state);
+    static ::remote::EnginePayloadAttributes* encode_payload_attributes(const PayloadAttributesV1& payload_attributes);
+    static ::remote::EngineForkChoiceUpdatedRequest encode_forkchoice_updated_request(const ForkChoiceUpdatedRequestV1& fcu_request);
+    static PayloadStatusV1 decode_payload_status(const ::remote::EnginePayloadStatus& payload_status_grpc);
     static std::string decode_status_message(const ::remote::EngineStatus& status);
 
     boost::asio::io_context::executor_type executor_;

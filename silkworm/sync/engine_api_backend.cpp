@@ -18,16 +18,16 @@
 
 namespace silkworm::chainsync {
 
-awaitable<rpc::PayloadStatus> EngineApiBackend::engine_new_payload_v1(const rpc::ExecutionPayload& payload) {
-    co_return co_await pos_sync_.new_payload(payload);
+awaitable<rpc::PayloadStatusV1> EngineApiBackend::engine_new_payload_v1(const rpc::ExecutionPayloadV1& payload) {
+    co_return co_await pos_sync_.new_payload_v1(payload);
 }
 
-awaitable<rpc::ExecutionPayload> EngineApiBackend::engine_get_payload_v1(uint64_t payload_id) {
-    co_return co_await pos_sync_.get_payload(payload_id);
+awaitable<rpc::ExecutionPayloadV1> EngineApiBackend::engine_get_payload_v1(uint64_t payload_id) {
+    co_return co_await pos_sync_.get_payload_v1(payload_id);
 }
 
-awaitable<rpc::ForkChoiceUpdatedReply> EngineApiBackend::engine_forkchoice_updated_v1(const rpc::ForkChoiceUpdatedRequest& fcu_request) {
-    co_return co_await pos_sync_.fork_choice_update(fcu_request.fork_choice_state, fcu_request.payload_attributes);
+awaitable<rpc::ForkChoiceUpdatedReplyV1> EngineApiBackend::engine_forkchoice_updated_v1(const rpc::ForkChoiceUpdatedRequestV1& fcu_request) {
+    co_return co_await pos_sync_.fork_choice_update_v1(fcu_request.fork_choice_state, fcu_request.payload_attributes);
 }
 awaitable<evmc::address> EngineApiBackend::etherbase() {
     co_return evmc::address{};

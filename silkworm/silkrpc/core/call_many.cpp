@@ -36,8 +36,25 @@ namespace silkworm::rpc::call {
 
 using boost::asio::awaitable;
 
-void to_json(nlohmann::json& json, const CallManyResult& /*result*/) {
-    json = nlohmann::json::object();
+struct GlazeJsonCallManyResult {
+    char jsonrpc[jsonVersionSize] = "2.0";
+    uint32_t id;
+    // std::vector<GlazeJsonLogItem> log_json_list;
+    struct glaze {
+        using T = GlazeJsonCallManyResult;
+        static constexpr auto value = glz::object(
+            "jsonrpc", &T::jsonrpc,
+            "id", &T::id
+            // "result", &T::log_json_list
+            );
+    };
+};
+
+void make_glaze_json_content(std::string& reply, uint32_t id, const CallManyResult& /*result*/) {
+    GlazeJsonCallManyResult json_data{};
+    json_data.id = id;
+
+    glz::write_json(json_data, reply);
 }
 
 boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bundles, const SimulationContext& context,
@@ -52,15 +69,20 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
     // state::RemoteState remote_state{io_context_,
     //                                 is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database),
     //                                 block_number};
-    CallManyResult result;
     std::uint16_t count{0};
+    bool empty = true;
     for (const auto& bundle : bundles) {
         SILKRPC_DEBUG << "bundle[" << count++ << "]: " << bundle << "\n";
         if (bundle.transactions.size() > 0) {
-            result.error = "empty all bundles transactions";
-            co_return result;
+            empty = false;
         }
     }
+    CallManyResult result;
+    if (empty) {
+        result.error = "empty all bundles transactions";
+        co_return result;
+    }
+
     co_return result;
 }
 

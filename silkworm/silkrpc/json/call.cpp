@@ -125,16 +125,16 @@ void from_json(const nlohmann::json& json, SimulationContext& sc) {
     }
 }
 
-void from_json(const nlohmann::json& json, AccountOverrides& so) {
+void from_json(const nlohmann::json& json, AccountOverrides& ao) {
     if (json.contains("balance")) {
-        so.balance = json["balance"].get<intx::uint256>();
+        ao.balance = json["balance"].get<intx::uint256>();
     }
     if (json.contains("nonce")) {
-        so.nonce = json["nonce"].get<std::uint64_t>();
+        ao.nonce = json["nonce"].get<std::uint64_t>();
     }
     if (json.contains("code")) {
         const auto json_data = json.at("code").get<std::string>();
-        so.code = silkworm::from_hex(json_data);
+        ao.code = silkworm::from_hex(json_data);
     }
     if (json.contains("state")) {
         const auto& state = json["state"];
@@ -143,7 +143,7 @@ void from_json(const nlohmann::json& json, AccountOverrides& so) {
             auto b32 = bytes32_from_hex(entry.first);
             auto u256 = intx::from_string<intx::uint256>(entry.second);
 
-            so.state.emplace(b32, u256);
+            ao.state.emplace(b32, u256);
         }
     }
     if (json.contains("stateDiff")) {
@@ -153,7 +153,7 @@ void from_json(const nlohmann::json& json, AccountOverrides& so) {
             auto b32 = bytes32_from_hex(entry.first);
             auto u256 = intx::from_string<intx::uint256>(entry.second);
 
-            so.state_diff.emplace(b32, u256);
+            ao.state_diff.emplace(b32, u256);
         }
     }
 }
@@ -181,6 +181,16 @@ void from_json(const nlohmann::json& json, BlockOverrides& bo) {
     }
     if (json.contains("baseFee")) {
         bo.base_fee = json["baseFee"].get<std::uint64_t>();
+    }
+}
+
+void from_json(const nlohmann::json& json, StateOverrides& state_overrides) {
+    for (const auto& el : json.items()) {
+        const auto address_bytes = silkworm::from_hex(el.key());
+        const auto key = silkworm::to_evmc_address(address_bytes.value_or(silkworm::Bytes{}));
+        const auto value = el.value().get<AccountOverrides>();
+
+        state_overrides.emplace(key, value);
     }
 }
 }  // namespace silkworm::rpc

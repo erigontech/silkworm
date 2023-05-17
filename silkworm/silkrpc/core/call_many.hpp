@@ -45,7 +45,7 @@ struct CallManyResult {
     std::optional<std::string> error{std::nullopt};
 };
 
-void to_json(nlohmann::json& json, const CallManyResult& result);
+void make_glaze_json_content(std::string& reply, uint32_t id, const CallManyResult& result);
 
 class CallExecutor {
   public:

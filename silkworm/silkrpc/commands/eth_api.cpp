@@ -1170,7 +1170,8 @@ awaitable<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& reque
     if (bundles.empty()) {
         const auto error_msg = "invalid eth_callMany bundle list: " + params.dump();
         SILKRPC_ERROR << error_msg << "\n";
-        reply = make_json_error(request["id"], 100, error_msg);
+        make_glaze_json_error(reply, request["id"], 100, error_msg);
+
         co_return;
     }
 
@@ -1178,7 +1179,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& reque
 
     StateOverrides state_overrides;
     if (params.size() > 2) {
-        state_overrides = params[2].get<StateOverrides>();
+        from_json(params[2], state_overrides);
     }
     std::optional<std::uint64_t> timeout;
     if (params.size() > 3) {
@@ -1198,14 +1199,14 @@ awaitable<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& reque
         if (result.error) {
             make_glaze_json_error(reply, request["id"], -32000, result.error.value());
         } else {
-            reply = make_json_content(request["id"], result);
+            make_glaze_json_content(reply, request["id"], result);
         }
     } catch (const std::exception& e) {
         SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
-        reply = make_json_error(request["id"], 100, e.what());
+        make_glaze_json_error(reply, request["id"], 100, e.what());
     } catch (...) {
         SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
-        reply = make_json_error(request["id"], 100, "unexpected exception");
+        make_glaze_json_error(reply, request["id"], 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines

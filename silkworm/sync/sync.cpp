@@ -58,6 +58,11 @@ Sync::Sync(boost::asio::io_context& io_context,
     }
 }
 
+void Sync::force_pow(execution::Client& execution) {
+    chain_sync_ = std::make_unique<PoWSync>(block_exchange_, execution);
+    engine_rpc_server_.reset();
+}
+
 boost::asio::awaitable<void> Sync::async_run() {
     using namespace concurrency::awaitable_wait_for_all;
     return (run_tasks() && start_engine_rpc_server());

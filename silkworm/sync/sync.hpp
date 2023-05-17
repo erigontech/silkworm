@@ -45,15 +45,19 @@ struct EngineRpcSettings {
 
 class Sync {
   public:
-    explicit Sync(boost::asio::io_context& io_context,
-                  mdbx::env& chaindata_env,
-                  execution::Client& execution,
-                  const std::shared_ptr<silkworm::sentry::api::api_common::SentryClient>& sentry_client,
-                  const ChainConfig& config,
-                  const EngineRpcSettings& rpc_settings = {});
+    Sync(boost::asio::io_context& io_context,
+         mdbx::env& chaindata_env,
+         execution::Client& execution,
+         const std::shared_ptr<silkworm::sentry::api::api_common::SentryClient>& sentry_client,
+         const ChainConfig& config,
+         const EngineRpcSettings& rpc_settings = {});
 
     Sync(const Sync&) = delete;
     Sync& operator=(const Sync&) = delete;
+
+    //! Force PoW sync independently from chain config
+    // TODO(canepat) remove when PoS sync works
+    void force_pow(execution::Client& execution);
 
     boost::asio::awaitable<void> async_run();
 

@@ -24,8 +24,6 @@ if(NOT SILKWORM_CORE_ONLY)
       common.hpp
       ip_endpoint_option.cpp
       ip_endpoint_option.hpp
-      sentry_options.cpp
-      sentry_options.hpp
       shutdown_signal.cpp
       shutdown_signal.hpp
   )

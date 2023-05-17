@@ -33,7 +33,10 @@ if(NOT SILKWORM_CORE_ONLY)
   find_package(Boost REQUIRED)
   find_package(CLI11 REQUIRED)
 
+  # Common modules for commands
   add_subdirectory(common)
+
+  # Development utility tools
   add_subdirectory(dev)
 
   # Silkworm components
@@ -46,6 +49,8 @@ if(NOT SILKWORM_CORE_ONLY)
       common/db_max_readers_option.cpp
       common/db_max_readers_option.hpp
       common/human_size_parser_validator.hpp
+      common/sentry_options.cpp
+      common/sentry_options.hpp
       common/snapshot_options.cpp
       common/snapshot_options.hpp
   )
@@ -53,7 +58,13 @@ if(NOT SILKWORM_CORE_ONLY)
   add_executable(silkworm "${SILKWORM_CMD_SRC}")
   target_link_libraries(silkworm PRIVATE silkworm_node silkworm_sync cmd_common $<$<BOOL:${MSVC}>:Kernel32.lib>)
 
-  add_executable(sentry sentry.cpp)
+  set(SENTRY_CMD_SRC
+      sentry.cpp
+      common/sentry_options.cpp
+      common/sentry_options.hpp
+  )
+
+  add_executable(sentry "${SENTRY_CMD_SRC}")
   target_link_libraries(sentry PRIVATE silkworm_sentry cmd_common)
 
 endif()

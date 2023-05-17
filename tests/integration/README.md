@@ -1,10 +1,16 @@
-json-diff install:
-------------------
-- sudo apt update
-- sudo apt install npm
-- npm install -g json-diff
-- pip install pyjwt
+# Requirements
 
+```
+pip3 install -r requirements.txt
+```
+
+Currently, `json-diff` is also required:
+
+```
+sudo apt update
+sudo apt install npm
+npm install -g json-diff
+```
 
 # Integration test (17/04/23)
 

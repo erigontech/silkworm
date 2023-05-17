@@ -28,6 +28,9 @@
 
 namespace silkworm::rpc {
 
+//! Capabilities as specified in https://github.com/ethereum/execution-apis/blob/main/src/engine/common.md#engine_exchangecapabilities
+using Capabilities = std::vector<std::string>;
+
 //! ExecutionPayload as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#executionpayloadv1
 struct ExecutionPayload {
     uint64_t number;

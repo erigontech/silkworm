@@ -214,9 +214,9 @@ Daemon::Daemon(DaemonSettings settings)
       worker_pool_{settings_.num_workers},
       kv_stub_{::remote::KV::NewStub(create_channel_())} {
     // Load the channel authentication token (if required)
-    if (settings.jwt_secret_filename) {
+    if (settings_.jwt_secret_filename) {
         std::string jwt_token;
-        if (!load_jwt_token(*settings.jwt_secret_filename, jwt_token)) {
+        if (!load_jwt_token(*settings_.jwt_secret_filename, jwt_token)) {
             std::string error_msg{"JWT token has wrong size: " + std::to_string(jwt_token.length())};
             SILK_CRIT << error_msg;
             throw std::runtime_error{error_msg};

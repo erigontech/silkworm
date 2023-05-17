@@ -184,6 +184,8 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
                    "Sets the interval between sync loop logs (in seconds)")
         ->capture_default_str()
         ->check(CLI::Range(10u, 600u));
+    // TODO(canepat) remove when PoS sync works
+    cli.add_flag("--sync.force_pow", settings.force_pow, "Force usage of proof-of-work bypassing chain config");
 
     cli.add_flag("--fakepow", node_settings.fake_pow, "Disables proof-of-work verification");
 
@@ -645,6 +647,10 @@ int main(int argc, char* argv[]) {
             execution_client,
             sentry_client,
             *node_settings.chain_config};
+        // TODO(canepat) remove when PoS sync works
+        if (settings.force_pow) {
+            chain_sync_process.force_pow(execution_client);
+        }
 
         auto tasks =
             timer_executor() &&

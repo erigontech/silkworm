@@ -31,6 +31,7 @@ struct SilkwormSettings {
     sentry::Settings sentry_settings;
     rpc::ServerConfig server_settings;
     snapshot::SnapshotSettings snapshot_settings;
+    bool force_pow{true};  // TODO(canepat) remove when PoS sync works
 };
 
 }  // namespace silkworm::cmd::common

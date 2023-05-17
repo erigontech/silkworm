@@ -50,12 +50,13 @@ class Server : public ActiveComponent {
 
     // header/body retrieval
     auto get_header(Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>>;  // [[thorax-compliant]]
-    auto get_body(Hash block_hash) -> asio::awaitable<BlockBody>;                     // [[thorax-compliant]]
+    auto get_body(Hash block_hash) -> asio::awaitable<std::optional<BlockBody>>;      // [[thorax-compliant]]
 
     auto is_canonical(Hash block_hash) -> asio::awaitable<bool>;                      // [[thorax-compliant]]
     auto get_block_num(Hash block_hash) -> asio::awaitable<std::optional<BlockNum>>;  // [[thorax-compliant]]
 
     auto get_last_headers(BlockNum limit) -> asio::awaitable<std::vector<BlockHeader>>;
+    auto get_header_td(Hash, std::optional<BlockNum>) -> asio::awaitable<std::optional<TotalDifficulty>>;  // to remove
 
     asio::io_context& get_executor() { return io_context_; }
 

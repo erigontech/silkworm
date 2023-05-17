@@ -16,12 +16,15 @@
 
 #include "sync_pos.hpp"
 
+#include <boost/asio/steady_timer.hpp>
+#include <boost/asio/use_awaitable.hpp>
 #include <magic_enum.hpp>
 
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/core/protocol/validation.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/measure.hpp>
+#include <silkworm/infra/common/stopwatch.hpp>
 
 namespace silkworm::chainsync {
 
@@ -42,18 +45,26 @@ awaitable<void> PoSSync::async_run() {
 
 // Wait for blocks arrival from BlockExchange and insert them into ExecutionEngine
 awaitable<void> PoSSync::download_blocks() {
+    using namespace std::chrono_literals;
     using ResultQueue = BlockExchange::ResultQueue;
     ResultQueue& downloading_queue = block_exchange_.result_queue();
 
     auto executor = co_await asio::this_coro::executor;
 
-    // BlockExchange need a starting point to start downloading from
-    auto last_headers = co_await exec_engine_.get_last_headers(65536);
+    // BlockExchange & ChainForkView need a bunch of previous headers to attach the new ones
+    auto last_headers = co_await exec_engine_.get_last_headers(1000);
     block_exchange_.initial_state(last_headers);
+    as_range::for_each(last_headers, [&, this](const auto& header) -> awaitable<void> {
+        auto hash = header.hash();
+        auto td = co_await exec_engine_.get_header_td(hash, std::nullopt);
+        chain_fork_view_.add(header, *td);  // add to cache
+    });
 
     // initialization
-    auto head = co_await exec_engine_.last_fork_choice();  // previously was get_canonical_head()
-    chain_fork_view_.reset_head(head);
+    auto last_fcu = co_await exec_engine_.last_fork_choice();  // previously was get_canonical_head()
+    auto td = chain_fork_view_.get_total_difficulty(last_fcu.hash);
+    ensure_invariant(td.has_value(), "last_fcu must be in chain_fork_view");
+    chain_fork_view_.reset_head({last_fcu.number, last_fcu.hash, *td});
 
     auto initial_block_progress = co_await exec_engine_.block_progress();
     auto block_progress = initial_block_progress;
@@ -188,11 +199,14 @@ auto PoSSync::new_payload_v1(const rpc::ExecutionPayloadV1& payload) -> asio::aw
                 co_return rpc::PayloadStatusV1::Syncing;
             }
             // if found, add it to the chain_fork_view_ and calc total difficulty
-            parent_td = chain_fork_view_.add(*parent);
-        }
+            parent_td = co_await exec_engine_.get_header_td(block->header.parent_hash, block->header.number - 1);
+            chain_fork_view_.add(*parent, *parent_td);
+        }  // maybe we can simplify the code above returning Syncing if parent_td is not found on  chain_fork_view
 
         // do sanity checks
         do_sanity_checks(block->header, /*parent,*/ *parent_td);
+
+        // block_exchange_.insert(block);  // todo: implement, like HeaderChain::initial_status + BodySequence::add_to_announcements
 
         // insert the new block
         std::vector<std::shared_ptr<Block>> blocks{block};

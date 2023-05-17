@@ -150,7 +150,7 @@ awaitable<std::optional<BlockHeader>> RemoteClient::get_header(Hash block_hash) 
     co_return header;
 }
 
-awaitable<BlockBody> RemoteClient::get_body(Hash block_hash) {
+awaitable<std::optional<BlockBody>> RemoteClient::get_body(Hash block_hash) {
     BlockNum block_number = 0;  // proto file support get_body by block number, but we don't use it
     BlockBody body;
     ::execution::GetSegmentRequest request;
@@ -159,6 +159,10 @@ awaitable<BlockBody> RemoteClient::get_body(Hash block_hash) {
 
     const auto response = co_await rpc::unary_rpc(
         &::execution::Execution::Stub::AsyncGetBody, stub_, request, *context_.grpc_context(), "failure getting body");
+
+    if (!response.has_body()) {
+        co_return std::nullopt;
+    }
 
     const auto& received_body = response.body();
     match_or_throw(block_hash, received_body.block_hash());
@@ -251,6 +255,10 @@ asio::awaitable<std::optional<BlockNum>> RemoteClient::get_block_num(Hash block_
 
     if (!response.has_block_number()) co_return std::nullopt;
     co_return response.block_number();
+}
+
+asio::awaitable<std::optional<TotalDifficulty>> RemoteClient::get_header_td(Hash, std::optional<BlockNum>) {
+    throw std::runtime_error{"RemoteClient::get_header_td not implemented"};
 }
 
 awaitable<ValidationResult> RemoteClient::validate_chain(Hash head_block_hash) {

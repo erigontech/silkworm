@@ -60,7 +60,7 @@ awaitable<std::optional<BlockHeader>> LocalClient::get_header(Hash block_hash) {
     co_return co_await local_server_.get_header(block_hash);
 }
 
-awaitable<BlockBody> LocalClient::get_body(Hash block_hash) {
+awaitable<std::optional<BlockBody>> LocalClient::get_body(Hash block_hash) {
     co_return co_await local_server_.get_body(block_hash);
 }
 
@@ -74,6 +74,10 @@ awaitable<std::optional<BlockNum>> LocalClient::get_block_num(Hash block_hash) {
 
 awaitable<std::vector<BlockHeader>> LocalClient::get_last_headers(BlockNum limit) {
     co_return co_await local_server_.get_last_headers(limit);
+}
+
+awaitable<std::optional<TotalDifficulty>> LocalClient::get_header_td(Hash h, std::optional<BlockNum> bn) {
+    co_return co_await local_server_.get_header_td(h, bn);
 }
 
 }  // namespace silkworm::execution

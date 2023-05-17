@@ -214,8 +214,8 @@ void ExecutionEngine::discard_all_forks() {
 
 auto ExecutionEngine::get_header([[maybe_unused]] Hash header_hash) const -> std::optional<BlockHeader> {
     // read from cache, then from main_chain_
-    auto header = block_cache_.get_as_copy(header_hash);
-    if (header) return (*header)->header;
+    auto block = block_cache_.get_as_copy(header_hash);
+    if (block) return (*block)->header;
     return main_chain_.get_header(header_hash);
 }
 
@@ -226,14 +226,25 @@ auto ExecutionEngine::get_header([[maybe_unused]] BlockNum header_height) const 
 }
 
 auto ExecutionEngine::get_last_headers(BlockNum limit) const -> std::vector<BlockHeader> {
-    ensure_invariant(block_cache_.size() == 0, "actual get_last_headers() impl assume it is called only at beginning");
+    ensure_invariant(!fork_tracking_active_, "actual get_last_headers() impl assume it is called only at beginning");
+    // if fork_tracking_active_ is true, we should read blocks from cache where they are not ordered on block number
+
     return main_chain_.get_last_headers(limit);
 }
 
-auto ExecutionEngine::get_body([[maybe_unused]] Hash header_hash) const -> std::optional<BlockBody> {
+auto ExecutionEngine::get_header_td(Hash h, std::optional<BlockNum> bn) const -> std::optional<TotalDifficulty> {
+    ensure_invariant(!fork_tracking_active_, "actual get_header_td() impl assume it is called only at beginning");
+    // if fork_tracking_active_ is true, we should read blocks from forks and recompute total difficulty but this
+    // is a duty of the sync component
+
+    return main_chain_.get_header_td(*bn, h);
+}
+
+auto ExecutionEngine::get_body(Hash header_hash) const -> std::optional<BlockBody> {
     // read from cache, then from main_chain_
-    throw std::runtime_error("not implemented");
-    return {};
+    auto block = block_cache_.get_as_copy(header_hash);
+    if (block) return *(block.value().get());
+    return main_chain_.get_body(header_hash);
 }
 
 auto ExecutionEngine::get_body([[maybe_unused]] BlockNum) const -> std::optional<BlockBody> {
@@ -250,7 +261,7 @@ auto ExecutionEngine::get_block_number(Hash header_hash) const -> std::optional<
     return header->number;
 }
 
-bool ExecutionEngine::is_canonical_hash([[maybe_unused]] Hash header_hash) const {
+bool ExecutionEngine::is_canonical([[maybe_unused]] Hash header_hash) const {
     // read from cache, then from main_chain_
     throw std::runtime_error("not implemented");
     return {};

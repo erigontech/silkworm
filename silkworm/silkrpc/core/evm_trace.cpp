@@ -1393,7 +1393,7 @@ awaitable<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWi
     co_return traces;
 }
 
-boost::asio::awaitable<TraceEntriesResult> TraceCallExecutor::trace_ots_transaction(const TransactionWithBlock& transaction_with_block) {
+boost::asio::awaitable<TraceEntriesResult> TraceCallExecutor::trace_transaction_entries(const TransactionWithBlock& transaction_with_block) {
     auto block_number = transaction_with_block.block_with_hash.block.header.number;
 
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
@@ -1410,7 +1410,6 @@ boost::asio::awaitable<TraceEntriesResult> TraceCallExecutor::trace_ots_transact
     Tracers tracers{entry_tracer};
 
     co_await executor.call(transaction_with_block.block_with_hash.block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
-    executor.reset();
 
     co_return entry_tracer->result();
 }
@@ -1563,18 +1562,18 @@ void EntryTracer::on_execution_start(evmc_revision, const evmc_message& msg, evm
     }
 
     if (create) {
-        result_.entries.push_back(TraceEntry{"CALL", msg.depth, sender, recipient, str_value, str_input});
+        result_.push_back(TraceEntry{"CALL", msg.depth, sender, recipient, str_value, str_input});
     } else {
         bool in_static_mode = (msg.flags & evmc_flags::EVMC_STATIC) != 0;
         switch (msg.kind) {
             case evmc_call_kind::EVMC_CALL:
-                in_static_mode ? result_.entries.push_back(TraceEntry{"STATICCALL", msg.depth, sender, recipient, "", str_input}) : result_.entries.push_back(TraceEntry{"CALL", msg.depth, sender, recipient, str_value, str_input});
+                in_static_mode ? result_.push_back(TraceEntry{"STATICCALL", msg.depth, sender, recipient, "", str_input}) : result_.push_back(TraceEntry{"CALL", msg.depth, sender, recipient, str_value, str_input});
                 break;
             case evmc_call_kind::EVMC_DELEGATECALL:
-                result_.entries.push_back(TraceEntry{"DELEGATECALL", msg.depth, recipient, code_address, "", str_input});
+                result_.push_back(TraceEntry{"DELEGATECALL", msg.depth, recipient, code_address, "", str_input});
                 break;
             case evmc_call_kind::EVMC_CALLCODE:
-                result_.entries.push_back(TraceEntry{"CALLCODE", msg.depth, sender, recipient, str_value, str_input});
+                result_.push_back(TraceEntry{"CALLCODE", msg.depth, sender, recipient, str_value, str_input});
                 break;
             case evmc_call_kind::EVMC_CREATE:
             case evmc_call_kind::EVMC_CREATE2:
@@ -1591,15 +1590,7 @@ void EntryTracer::on_execution_start(evmc_revision, const evmc_message& msg, evm
                << ", code_address: " << code_address
                << ", msg.value: " << intx::hex(intx::be::load<intx::uint256>(msg.value))
                << ", code: " << silkworm::to_hex(code)
-               << ", msg.input_data: " << to_hex(ByteView{msg.input_data, msg.input_size})
-               << "\n";
-}
-void EntryTracer::on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
-    SILK_DEBUG << "EntryTracer::on_execution_end: result.status_code: " << result.status_code
-               << " result.gas_left: " << result.gas_left
-               << ", result.gas_refund: " << result.gas_refund
-               << ", result.output_data: " << to_hex(ByteView{result.output_data, result.output_size})
-               << "\n";
+               << ", msg.input_data: " << to_hex(ByteView{msg.input_data, msg.input_size});
 }
 
 }  // namespace silkworm::rpc::trace

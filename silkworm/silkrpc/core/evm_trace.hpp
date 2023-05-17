@@ -336,9 +336,7 @@ struct TraceEntry {
     std::string input;
 };
 
-struct TraceEntriesResult {
-    std::vector<TraceEntry> entries;
-};
+using TraceEntriesResult = std::vector<TraceEntry>;
 
 void to_json(nlohmann::json& json, const TraceCallTraces& result);
 void to_json(nlohmann::json& json, const TraceCallResult& result);
@@ -400,7 +398,7 @@ class EntryTracer : public silkworm::EvmTracer {
     void on_instruction_start(uint32_t /*pc*/, const intx::uint256* /*stack_top*/, int /*stack_height*/,
                               int64_t /*gas*/, const evmone::ExecutionState& /*execution_state*/,
                               const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
-    void on_execution_end(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override;
+    void on_execution_end(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_reward_granted(const silkworm::CallResult& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_creation_completed(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
@@ -440,7 +438,7 @@ class TraceCallExecutor {
     }
     boost::asio::awaitable<TraceDeployResult> trace_deploy_transaction(const silkworm::Block& block, const evmc::address& contract_address);
     boost::asio::awaitable<std::vector<Trace>> trace_transaction(const silkworm::BlockWithHash& block, const rpc::Transaction& transaction);
-    boost::asio::awaitable<TraceEntriesResult> trace_ots_transaction(const TransactionWithBlock& transaction_with_block);
+    boost::asio::awaitable<TraceEntriesResult> trace_transaction_entries(const TransactionWithBlock& transaction_with_block);
     boost::asio::awaitable<void> trace_filter(const TraceFilter& trace_filter, json::Stream* stream);
 
   private:

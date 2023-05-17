@@ -54,12 +54,12 @@ class OtsRpcApi {
   protected:
     boost::asio::awaitable<void> handle_ots_get_api_level(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_ots_has_code(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_ots_getBlockDetails(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_ots_getBlockDetailsByHash(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_ots_getBlockTransactions(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_ots_getTransactionBySenderAndNonce(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_ots_getContractCreator(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_ots_traceTransaction(const nlohmann::json& request, nlohmann::json& reply);
+    boost::asio::awaitable<void> handle_ots_get_block_details(const nlohmann::json& request, nlohmann::json& reply);
+    boost::asio::awaitable<void> handle_ots_get_block_details_by_hash(const nlohmann::json& request, nlohmann::json& reply);
+    boost::asio::awaitable<void> handle_ots_get_block_transactions(const nlohmann::json& request, nlohmann::json& reply);
+    boost::asio::awaitable<void> handle_ots_get_transaction_by_sender_and_nonce(const nlohmann::json& request, nlohmann::json& reply);
+    boost::asio::awaitable<void> handle_ots_get_contract_creator(const nlohmann::json& request, nlohmann::json& reply);
+    boost::asio::awaitable<void> handle_ots_trace_transaction(const nlohmann::json& request, nlohmann::json& reply);
 
     boost::asio::io_context& io_context_;
     boost::asio::thread_pool& workers_;

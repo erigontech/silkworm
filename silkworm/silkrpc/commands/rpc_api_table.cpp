@@ -221,12 +221,12 @@ void RpcApiTable::add_txpool_handlers() {
 void RpcApiTable::add_ots_handlers() {
     method_handlers_[http::method::k_ots_getApiLevel] = &commands::RpcApi::handle_ots_get_api_level;
     method_handlers_[http::method::k_ots_hasCode] = &commands::RpcApi::handle_ots_has_code;
-    method_handlers_[http::method::k_ots_getBlockDetails] = &commands::RpcApi::handle_ots_getBlockDetails;
-    method_handlers_[http::method::k_ots_getBlockDetailsByHash] = &commands::RpcApi::handle_ots_getBlockDetailsByHash;
-    method_handlers_[http::method::k_ots_getBlockTransactions] = &commands::RpcApi::handle_ots_getBlockTransactions;
-    method_handlers_[http::method::k_ots_getTransactionBySenderAndNonce] = &commands::RpcApi::handle_ots_getTransactionBySenderAndNonce;
-    method_handlers_[http::method::k_ots_getContractCreator] = &commands::RpcApi::handle_ots_getContractCreator;
-    method_handlers_[http::method::k_ots_traceTransaction] = &commands::RpcApi::handle_ots_traceTransaction;
+    method_handlers_[http::method::k_ots_getBlockDetails] = &commands::RpcApi::handle_ots_get_block_details;
+    method_handlers_[http::method::k_ots_getBlockDetailsByHash] = &commands::RpcApi::handle_ots_get_block_details_by_hash;
+    method_handlers_[http::method::k_ots_getBlockTransactions] = &commands::RpcApi::handle_ots_get_block_transactions;
+    method_handlers_[http::method::k_ots_getTransactionBySenderAndNonce] = &commands::RpcApi::handle_ots_get_transaction_by_sender_and_nonce;
+    method_handlers_[http::method::k_ots_getContractCreator] = &commands::RpcApi::handle_ots_get_contract_creator;
+    method_handlers_[http::method::k_ots_traceTransaction] = &commands::RpcApi::handle_ots_trace_transaction;
 }
 
 }  // namespace silkworm::rpc::commands

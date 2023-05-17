@@ -59,6 +59,7 @@ class OtsRpcApi {
     boost::asio::awaitable<void> handle_ots_getBlockTransactions(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_ots_getTransactionBySenderAndNonce(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_ots_getContractCreator(const nlohmann::json& request, nlohmann::json& reply);
+    boost::asio::awaitable<void> handle_ots_traceTransaction(const nlohmann::json& request, nlohmann::json& reply);
 
     boost::asio::io_context& io_context_;
     boost::asio::thread_pool& workers_;

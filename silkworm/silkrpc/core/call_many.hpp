@@ -32,6 +32,7 @@
 #pragma GCC diagnostic pop
 #include <silkworm/core/state/intra_block_state.hpp>
 #include <silkworm/silkrpc/concurrency/context_pool.hpp>
+#include <silkworm/silkrpc/core/evm_executor.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/stream.hpp>
@@ -43,6 +44,7 @@ namespace silkworm::rpc::call {
 
 struct CallManyResult {
     std::optional<std::string> error{std::nullopt};
+    std::vector<std::vector<ExecutionResult>> results;
 };
 
 void make_glaze_json_content(std::string& reply, uint32_t id, const CallManyResult& result);
@@ -52,9 +54,10 @@ class CallExecutor {
     explicit CallExecutor(
         boost::asio::io_context& io_context,
         ethdb::Transaction& transaction,
+        BlockCache& block_cache,
         ethdb::kv::StateCache& state_cache,
         boost::asio::thread_pool& workers)
-        : io_context_(io_context), transaction_(transaction), state_cache_(state_cache), workers_{workers} {}
+        : io_context_(io_context), transaction_(transaction), block_cache_(block_cache), state_cache_(state_cache), workers_{workers} {}
     virtual ~CallExecutor() = default;
 
     CallExecutor(const CallExecutor&) = delete;
@@ -65,6 +68,7 @@ class CallExecutor {
   private:
     boost::asio::io_context& io_context_;
     ethdb::Transaction& transaction_;
+    BlockCache& block_cache_;
     ethdb::kv::StateCache& state_cache_;
     boost::asio::thread_pool& workers_;
 };

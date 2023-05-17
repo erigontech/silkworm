@@ -63,6 +63,7 @@ cable_add_buildinfo_library(PROJECT_NAME ${PROJECT_NAME})
 
 option(SILKWORM_WASM_API "Build WebAssembly API" OFF)
 option(SILKWORM_CORE_ONLY "Only build Silkworm Core" OFF)
+option(SILKWORM_CORE_USE_ABSEIL "Allow use of Abseil in Silkworm Core" ON)
 option(SILKWORM_CLANG_COVERAGE "Clang instrumentation for code coverage reports" OFF)
 option(SILKWORM_SANITIZE "Build instrumentation for sanitizers" OFF)
 option(SILKWORM_USE_MIMALLOC "Enable using mimalloc for dynamic memory management" ON)

@@ -16,15 +16,15 @@
 
 #pragma once
 
-#if defined(__wasm__)
-
-#include <unordered_map>
-#include <unordered_set>
-
-#else
+#if defined(SILKWORM_CORE_USE_ABSEIL)
 
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
+
+#else
+
+#include <unordered_map>
+#include <unordered_set>
 
 #endif
 
@@ -42,7 +42,15 @@ See https://abseil.io/docs/cpp/guides/container#hash-tables
 and https://abseil.io/docs/cpp/guides/container#fn:pointer-stability
 */
 
-#if defined(__wasm__)
+#if defined(SILKWORM_CORE_USE_ABSEIL)
+
+template <class K, class V>
+using FlatHashMap = absl::flat_hash_map<K, V>;
+
+template <class T>
+using FlatHashSet = absl::flat_hash_set<T>;
+
+#else
 
 // Abseil is not compatible with Wasm due to its mutli-threading features,
 // at least not under CMake, but see
@@ -53,14 +61,6 @@ using FlatHashMap = std::unordered_map<K, V>;
 
 template <class T>
 using FlatHashSet = std::unordered_set<T>;
-
-#else
-
-template <class K, class V>
-using FlatHashMap = absl::flat_hash_map<K, V>;
-
-template <class T>
-using FlatHashSet = absl::flat_hash_set<T>;
 
 #endif
 

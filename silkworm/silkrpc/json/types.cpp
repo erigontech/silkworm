@@ -489,7 +489,7 @@ void to_json(nlohmann::json& json, const Transaction& transaction) {
     }
 }
 
-void to_json(nlohmann::json& json, const PayloadStatus& payload_status) {
+void to_json(nlohmann::json& json, const PayloadStatusV1& payload_status) {
     json["status"] = payload_status.status;
 
     if (payload_status.latest_valid_hash) {

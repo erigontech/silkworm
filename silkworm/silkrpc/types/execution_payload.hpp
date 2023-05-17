@@ -31,8 +31,8 @@ namespace silkworm::rpc {
 //! Capabilities as specified in https://github.com/ethereum/execution-apis/blob/main/src/engine/common.md#engine_exchangecapabilities
 using Capabilities = std::vector<std::string>;
 
-//! ExecutionPayload as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#executionpayloadv1
-struct ExecutionPayload {
+//! ExecutionPayloadV1 as specified in https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#executionpayloadv1
+struct ExecutionPayloadV1 {
     uint64_t number;
     uint64_t timestamp;
     uint64_t gas_limit;
@@ -49,62 +49,62 @@ struct ExecutionPayload {
     std::vector<silkworm::Bytes> transactions;
 };
 
-//! ForkChoiceState as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#forkchoicestatev1
-struct ForkChoiceState {
+//! ForkChoiceStateV1 as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#forkchoicestatev1
+struct ForkChoiceStateV1 {
     evmc::bytes32 head_block_hash;
     evmc::bytes32 safe_block_hash;
     evmc::bytes32 finalized_block_hash;
 };
 
-//! PayloadAttributes as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#payloadattributesv1
-struct PayloadAttributes {
+//! PayloadAttributesV1 as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#payloadattributesv1
+struct PayloadAttributesV1 {
     uint64_t timestamp;
     evmc::bytes32 prev_randao;
     evmc::address suggested_fee_recipient;
 };
 
-//! PayloadStatus as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#payloadstatusv1
-struct PayloadStatus {
+//! PayloadStatusV1 as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#payloadstatusv1
+struct PayloadStatusV1 {
     static inline const char* kValid{"VALID"};
     static inline const char* kInvalid{"INVALID"};
     static inline const char* kSyncing{"SYNCING"};
     static inline const char* kAccepted{"ACCEPTED"};
     static inline const char* kInvalidBlockHash{"INVALID_BLOCK_HASH"};
-    static const PayloadStatus Syncing;
-    static const PayloadStatus Accepted;
-    static const PayloadStatus InvalidBlockHash;
+    static const PayloadStatusV1 Syncing;
+    static const PayloadStatusV1 Accepted;
+    static const PayloadStatusV1 InvalidBlockHash;
 
     std::string status;
     std::optional<evmc::bytes32> latest_valid_hash;
     std::optional<std::string> validation_error;
 };
 
-inline const PayloadStatus PayloadStatus::Syncing{.status = PayloadStatus::kSyncing};
-inline const PayloadStatus PayloadStatus::Accepted{.status = PayloadStatus::kAccepted};
-inline const PayloadStatus PayloadStatus::InvalidBlockHash{.status = PayloadStatus::kInvalidBlockHash};
+inline const PayloadStatusV1 PayloadStatusV1::Syncing{.status = PayloadStatusV1::kSyncing};
+inline const PayloadStatusV1 PayloadStatusV1::Accepted{.status = PayloadStatusV1::kAccepted};
+inline const PayloadStatusV1 PayloadStatusV1::InvalidBlockHash{.status = PayloadStatusV1::kInvalidBlockHash};
 
-struct ForkChoiceUpdatedRequest {
-    ForkChoiceState fork_choice_state;
-    std::optional<PayloadAttributes> payload_attributes;
+struct ForkChoiceUpdatedRequestV1 {
+    ForkChoiceStateV1 fork_choice_state;
+    std::optional<PayloadAttributesV1> payload_attributes;
 };
 
-struct ForkChoiceUpdatedReply {
-    PayloadStatus payload_status;
+struct ForkChoiceUpdatedReplyV1 {
+    PayloadStatusV1 payload_status;
     std::optional<uint64_t> payload_id;
 };
 
-//! TransitionConfiguration as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#transitionconfigurationv1
-struct TransitionConfiguration {
+//! TransitionConfigurationV1 as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#transitionconfigurationv1
+struct TransitionConfigurationV1 {
     intx::uint256 terminal_total_difficulty;
     evmc::bytes32 terminal_block_hash;
     uint64_t terminal_block_number{0};
 };
 
-std::ostream& operator<<(std::ostream& out, const ExecutionPayload& payload);
-std::ostream& operator<<(std::ostream& out, const PayloadStatus& payload_status);
-std::ostream& operator<<(std::ostream& out, const ForkChoiceState& fork_choice_state);
-std::ostream& operator<<(std::ostream& out, const PayloadAttributes& payload_attributes);
-std::ostream& operator<<(std::ostream& out, const ForkChoiceUpdatedReply& fork_choice_updated_reply);
-std::ostream& operator<<(std::ostream& out, const TransitionConfiguration& transition_configuration);
+std::ostream& operator<<(std::ostream& out, const ExecutionPayloadV1& payload);
+std::ostream& operator<<(std::ostream& out, const PayloadStatusV1& payload_status);
+std::ostream& operator<<(std::ostream& out, const ForkChoiceStateV1& fork_choice_state);
+std::ostream& operator<<(std::ostream& out, const PayloadAttributesV1& payload_attributes);
+std::ostream& operator<<(std::ostream& out, const ForkChoiceUpdatedReplyV1& fork_choice_updated_reply);
+std::ostream& operator<<(std::ostream& out, const TransitionConfigurationV1& transition_configuration);
 
 }  // namespace silkworm::rpc

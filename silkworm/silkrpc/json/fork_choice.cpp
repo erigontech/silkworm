@@ -25,20 +25,20 @@
 
 namespace silkworm::rpc {
 
-void to_json(nlohmann::json& json, const ForkChoiceState& forkchoice_state) {
+void to_json(nlohmann::json& json, const ForkChoiceStateV1& forkchoice_state) {
     json["headBlockHash"] = forkchoice_state.head_block_hash;
     json["safeBlockHash"] = forkchoice_state.safe_block_hash;
     json["finalizedBlockHash"] = forkchoice_state.finalized_block_hash;
 }
 
-void from_json(const nlohmann::json& json, ForkChoiceState& forkchoice_state) {
-    forkchoice_state = ForkChoiceState{
+void from_json(const nlohmann::json& json, ForkChoiceStateV1& forkchoice_state) {
+    forkchoice_state = ForkChoiceStateV1{
         .head_block_hash = json.at("headBlockHash").get<evmc::bytes32>(),
         .safe_block_hash = json.at("safeBlockHash").get<evmc::bytes32>(),
         .finalized_block_hash = json.at("finalizedBlockHash").get<evmc::bytes32>()};
 }
 
-void to_json(nlohmann::json& json, const ForkChoiceUpdatedReply& forkchoice_updated_reply) {
+void to_json(nlohmann::json& json, const ForkChoiceUpdatedReplyV1& forkchoice_updated_reply) {
     nlohmann::json json_payload_status = forkchoice_updated_reply.payload_status;
     json["payloadStatus"] = json_payload_status;
     if (forkchoice_updated_reply.payload_id != std::nullopt) {

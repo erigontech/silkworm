@@ -19,7 +19,7 @@
 #include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkworm::rpc {
-std::ostream& operator<<(std::ostream& out, const ExecutionPayload& payload) {
+std::ostream& operator<<(std::ostream& out, const ExecutionPayloadV1& payload) {
     auto bloom_bytes{silkworm::ByteView(&payload.logs_bloom[0], 256)};
     out << "number: " << payload.number
         << " block_hash: " << payload.block_hash
@@ -38,7 +38,7 @@ std::ostream& operator<<(std::ostream& out, const ExecutionPayload& payload) {
     return out;
 }
 
-std::ostream& operator<<(std::ostream& out, const PayloadStatus& payload_status) {
+std::ostream& operator<<(std::ostream& out, const PayloadStatusV1& payload_status) {
     out << "status: " << payload_status.status;
 
     if (payload_status.latest_valid_hash) {

@@ -1169,12 +1169,12 @@ TEST_CASE("serialize issuance", "[silkworm::json][to_json]") {
     })"_json);
 }
 
-TEST_CASE("serialize forkchoice updated reply", "[silkworm::json][to_json]") {
-    silkworm::rpc::PayloadStatus payload_status{
+TEST_CASE("serialize ForkChoiceUpdatedReplyV1", "[silkworm::json][to_json]") {
+    silkworm::rpc::PayloadStatusV1 payload_status{
         .status = "VALID",
         .latest_valid_hash = 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32,
         .validation_error = "some error"};
-    silkworm::rpc::ForkChoiceUpdatedReply forkchoice_update_reply{
+    silkworm::rpc::ForkChoiceUpdatedReplyV1 forkchoice_update_reply{
         .payload_status = payload_status,
         .payload_id = 0x1};
 
@@ -1189,8 +1189,8 @@ TEST_CASE("serialize forkchoice updated reply", "[silkworm::json][to_json]") {
     })"_json);
 }
 
-TEST_CASE("serialize payload status", "[silkworm::json][to_json]") {
-    silkworm::rpc::PayloadStatus payload_status{
+TEST_CASE("serialize PayloadStatusV1", "[silkworm::json][to_json]") {
+    silkworm::rpc::PayloadStatusV1 payload_status{
         .status = "VALID",
         .latest_valid_hash = 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32,
         .validation_error = "some error"};

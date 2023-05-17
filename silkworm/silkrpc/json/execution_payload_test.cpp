@@ -26,9 +26,9 @@ namespace silkworm::rpc {
 using Catch::Matchers::Message;
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 
-TEST_CASE("serialize execution_payload", "[silkworm::json][to_json]") {
+TEST_CASE("serialize ExecutionPayloadV1", "[silkworm][rpc][to_json]") {
     // uint64_t are kept as hex for readability
-    silkworm::rpc::ExecutionPayload execution_payload{
+    ExecutionPayloadV1 execution_payload{
         .number = 0x1,
         .timestamp = 0x5,
         .gas_limit = 0x1c9c380,
@@ -60,9 +60,9 @@ TEST_CASE("serialize execution_payload", "[silkworm::json][to_json]") {
 })"_json);
 }
 
-TEST_CASE("deserialize execution_payload", "[silkworm::json][to_json]") {
+TEST_CASE("deserialize ExecutionPayloadV1", "[silkworm][rpc][to_json]") {
     // uint64_t are kept as hex for readability
-    ExecutionPayload actual_payload = R"({
+    ExecutionPayloadV1 actual_payload = R"({
         "parentHash":"0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a",
         "feeRecipient":"0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
         "stateRoot":"0xca3149fa9e37db08d1cd49c9061db1002ef1cd58db2210f2115c8c989b2bdf45",
@@ -79,7 +79,7 @@ TEST_CASE("deserialize execution_payload", "[silkworm::json][to_json]") {
         "transactions":["0xf92ebdeab45d368f6354e8c5a8ac586c"]
     })"_json;
     // expected deserialization result
-    ExecutionPayload expected_payload{
+    ExecutionPayloadV1 expected_payload{
         .number = 0x1,
         .timestamp = 0x5,
         .gas_limit = 0x1c9c380,

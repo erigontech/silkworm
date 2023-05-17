@@ -33,8 +33,8 @@
 #include <silkworm/node/snapshot/snapshot.hpp>
 #include <silkworm/node/snapshot/sync.hpp>
 
-#include "common/common.hpp"
-#include "common/shutdown_signal.hpp"
+#include "../common/common.hpp"
+#include "../common/shutdown_signal.hpp"
 
 using namespace silkworm;
 using namespace silkworm::cmd::common;

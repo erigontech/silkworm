@@ -28,7 +28,7 @@ find_package(Protobuf REQUIRED)
 # Generate source files containing snapshot TOML files as binary data
 set(SILKWORM_EMBED embed)
 find_package(CLI11 REQUIRED)
-add_executable(${SILKWORM_EMBED} ${SILKWORM_MAIN_DIR}/cmd/embed.cpp)
+add_executable(${SILKWORM_EMBED} ${SILKWORM_MAIN_DIR}/cmd/dev/embed.cpp)
 target_link_libraries(${SILKWORM_EMBED} PRIVATE CLI11::CLI11 Boost::headers)
 
 set(SILKWORM_TOML_SRC_DIR "${SILKWORM_MAIN_DIR}/third_party/erigon-snapshot")

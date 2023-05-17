@@ -28,7 +28,7 @@
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/etl/collector.hpp>
 
-#include "common/common.hpp"
+#include "../common/common.hpp"
 
 using namespace silkworm;
 using namespace silkworm::cmd::common;

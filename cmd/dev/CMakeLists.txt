@@ -14,5 +14,50 @@
    limitations under the License.
 ]]
 
+find_package(absl REQUIRED)
+find_package(Boost REQUIRED)
+find_package(CLI11 REQUIRED)
+
+# cmake-format: off
+set(BACKEND_KV_SERVER_SRC
+        backend_kv_server.cpp
+        ../common/db_max_readers_option.cpp
+        ../common/db_max_readers_option.hpp
+        )
+# cmake-format: on
+
+add_executable(backend_kv_server "${BACKEND_KV_SERVER_SRC}")
+target_link_libraries(backend_kv_server PRIVATE silkworm_node silkworm_sync cmd_common)
+
+add_executable(check_blockhashes check_blockhashes.cpp)
+target_link_libraries(check_blockhashes PRIVATE silkworm_node CLI11::CLI11)
+
+add_executable(check_changes check_changes.cpp)
+target_link_libraries(check_changes PRIVATE silkworm_node CLI11::CLI11 absl::time)
+
+add_executable(check_hashstate check_hashstate.cpp)
+target_link_libraries(check_hashstate PRIVATE silkworm_node CLI11::CLI11)
+
+add_executable(check_pow check_pow.cpp)
+target_link_libraries(check_pow PRIVATE silkworm_node CLI11::CLI11)
+
+add_executable(check_senders check_senders.cpp)
+target_link_libraries(check_senders PRIVATE silkworm_node cmd_common)
+
+add_executable(check_tx_lookup check_tx_lookup.cpp)
+target_link_libraries(check_tx_lookup PRIVATE silkworm_node CLI11::CLI11)
+
+add_executable(genesistool genesistool.cpp)
+target_link_libraries(genesistool PRIVATE CLI11::CLI11 Boost::headers)
+
 add_executable(kzg_g2_uncompress kzg_g2_uncompress.cpp)
 target_link_libraries(kzg_g2_uncompress silkworm_core blst)
+
+add_executable(scan_txs scan_txs.cpp)
+target_link_libraries(scan_txs PRIVATE silkworm_node CLI11::CLI11 absl::time)
+
+add_executable(snapshots snapshots.cpp)
+target_link_libraries(snapshots PRIVATE silkworm_node cmd_common torrent-rasterbar)
+
+add_executable(toolbox toolbox.cpp)
+target_link_libraries(toolbox PRIVATE silkworm_node CLI11::CLI11)

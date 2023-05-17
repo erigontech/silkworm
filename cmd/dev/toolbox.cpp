@@ -25,7 +25,7 @@
 
 #include <CLI/CLI.hpp>
 #include <absl/container/btree_map.h>
-#include <boost/bind/bind.hpp>
+#include <boost/bind/placeholders.hpp>
 #include <boost/format.hpp>
 #include <magic_enum.hpp>
 

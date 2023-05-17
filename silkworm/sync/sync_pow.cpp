@@ -153,7 +153,7 @@ void PoWSync::execution_loop() {
             log::Info("Sync") << "Valid chain, new head=" << valid_chain.current_head;
 
             // if it is valid, do nothing, only check invariant
-            ensure_invariant(valid_chain.current_head == new_height.hash, "Invalid verify_chain result");
+            ensure_invariant(valid_chain.current_head == new_height.hash, "invalid verify_chain result");
 
             // notify fork choice update
             log::Info("Sync") << "Notifying fork choice updated, new head=" << new_height.number;
@@ -165,7 +165,7 @@ void PoWSync::execution_loop() {
             auto invalid_chain = std::get<InvalidChain>(verification);
 
             auto latest_valid_height = sync_wait(in(exec_engine_), exec_engine_.get_block_num(invalid_chain.latest_valid_head));
-            ensure_invariant(latest_valid_height.has_value(), "Invalid latest_valid_head");
+            ensure_invariant(latest_valid_height.has_value(), "wrong latest_valid_head");
 
             log::Info("Sync") << "Invalid chain, unwinding down to=" << *latest_valid_height;
 

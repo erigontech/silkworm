@@ -22,9 +22,9 @@
 
 namespace silkworm::rpc {
 
-void to_json(nlohmann::json& json, const ForkChoiceStateV1& forkchoice_state);
-void from_json(const nlohmann::json& json, ForkChoiceStateV1& forkchoice_state);
+void to_json(nlohmann::json& json, const ForkChoiceState& forkchoice_state);
+void from_json(const nlohmann::json& json, ForkChoiceState& forkchoice_state);
 
-void to_json(nlohmann::json& json, const ForkChoiceUpdatedReplyV1& forkchoice_updated_reply);
+void to_json(nlohmann::json& json, const ForkChoiceUpdatedReply& forkchoice_updated_reply);
 
 }  // namespace silkworm::rpc

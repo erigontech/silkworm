@@ -28,7 +28,8 @@ using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 
 TEST_CASE("serialize ExecutionPayloadV1", "[silkworm][rpc][to_json]") {
     // uint64_t are kept as hex for readability
-    ExecutionPayloadV1 execution_payload{
+    ExecutionPayload execution_payload_v1{
+        .version = 1,
         .number = 0x1,
         .timestamp = 0x5,
         .gas_limit = 0x1c9c380,
@@ -41,7 +42,7 @@ TEST_CASE("serialize ExecutionPayloadV1", "[silkworm][rpc][to_json]") {
         .base_fee = 0x7,
         .transactions = {*silkworm::from_hex("0xf92ebdeab45d368f6354e8c5a8ac586c")},
     };
-    nlohmann::json j = execution_payload;
+    nlohmann::json j = execution_payload_v1;
     CHECK(j == R"({
         "parentHash":"0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a",
         "feeRecipient":"0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
@@ -62,7 +63,7 @@ TEST_CASE("serialize ExecutionPayloadV1", "[silkworm][rpc][to_json]") {
 
 TEST_CASE("deserialize ExecutionPayloadV1", "[silkworm][rpc][to_json]") {
     // uint64_t are kept as hex for readability
-    ExecutionPayloadV1 actual_payload = R"({
+    ExecutionPayload actual_payload = R"({
         "parentHash":"0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a",
         "feeRecipient":"0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
         "stateRoot":"0xca3149fa9e37db08d1cd49c9061db1002ef1cd58db2210f2115c8c989b2bdf45",
@@ -79,7 +80,8 @@ TEST_CASE("deserialize ExecutionPayloadV1", "[silkworm][rpc][to_json]") {
         "transactions":["0xf92ebdeab45d368f6354e8c5a8ac586c"]
     })"_json;
     // expected deserialization result
-    ExecutionPayloadV1 expected_payload{
+    ExecutionPayload expected_payload_v1{
+        .version = 1,
         .number = 0x1,
         .timestamp = 0x5,
         .gas_limit = 0x1c9c380,
@@ -94,17 +96,18 @@ TEST_CASE("deserialize ExecutionPayloadV1", "[silkworm][rpc][to_json]") {
         .transactions = {{0xf9, 0x2e, 0xbd, 0xea, 0xb4, 0x5d, 0x36, 0x8f, 0x63, 0x54, 0xe8, 0xc5, 0xa8, 0xac, 0x58, 0x6c}},
     };
 
-    CHECK(actual_payload.parent_hash == expected_payload.parent_hash);
-    CHECK(actual_payload.suggested_fee_recipient == expected_payload.suggested_fee_recipient);
-    CHECK(actual_payload.state_root == expected_payload.state_root);
-    CHECK(actual_payload.receipts_root == expected_payload.receipts_root);
-    CHECK(actual_payload.prev_randao == expected_payload.prev_randao);
-    CHECK(actual_payload.number == expected_payload.number);
-    CHECK(actual_payload.gas_limit == expected_payload.gas_limit);
-    CHECK(actual_payload.timestamp == expected_payload.timestamp);
-    CHECK(actual_payload.base_fee == expected_payload.base_fee);
-    CHECK(actual_payload.block_hash == expected_payload.block_hash);
-    CHECK(actual_payload.transactions == expected_payload.transactions);
+    CHECK(actual_payload.parent_hash == expected_payload_v1.parent_hash);
+    CHECK(actual_payload.suggested_fee_recipient == expected_payload_v1.suggested_fee_recipient);
+    CHECK(actual_payload.state_root == expected_payload_v1.state_root);
+    CHECK(actual_payload.receipts_root == expected_payload_v1.receipts_root);
+    CHECK(actual_payload.prev_randao == expected_payload_v1.prev_randao);
+    CHECK(actual_payload.number == expected_payload_v1.number);
+    CHECK(actual_payload.gas_limit == expected_payload_v1.gas_limit);
+    CHECK(actual_payload.timestamp == expected_payload_v1.timestamp);
+    CHECK(actual_payload.base_fee == expected_payload_v1.base_fee);
+    CHECK(actual_payload.block_hash == expected_payload_v1.block_hash);
+    CHECK(actual_payload.transactions == expected_payload_v1.transactions);
+    CHECK(actual_payload.withdrawals == std::nullopt);
 }
 
 }  // namespace silkworm::rpc

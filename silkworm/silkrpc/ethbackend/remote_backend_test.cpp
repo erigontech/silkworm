@@ -151,7 +151,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::client_version", "[silkrpc][ethbacken
     SECTION("call client_version and get empty version") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_ok(grpc_context_));
         const auto client_version = run<&ethbackend::RemoteBackEnd::client_version>();
-        CHECK(client_version == "");
+        CHECK(client_version.empty());
     }
 
     SECTION("call client_version and get error") {
@@ -221,7 +221,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::node_info", "[silkrpc][ethbackend][ba
     }
 }
 
-TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_get_payload_v1", "[silkrpc][ethbackend][backend]") {
+TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_get_payload", "[silkrpc][ethbackend][backend]") {
     test::StrictMockAsyncResponseReader<::remote::EngineGetPayloadResponse> reader;
     EXPECT_CALL(*stub_, AsyncEngineGetPayloadRaw).WillOnce(testing::Return(&reader));
 
@@ -252,7 +252,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_get_payload_v1", "[silkrpc][et
         response.set_allocated_execution_payload(p);
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
 
-        const auto payload = run<&ethbackend::RemoteBackEnd::engine_get_payload_v1>(0u);
+        const auto payload = run<&ethbackend::RemoteBackEnd::engine_get_payload>(0u);
         CHECK(payload.number == 0x1);
         CHECK(payload.gas_limit == 0x1c9c380);
         CHECK(payload.suggested_fee_recipient == 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address);
@@ -271,17 +271,17 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_get_payload_v1", "[silkrpc][et
 
     SECTION("call engine_get_payload_v1 and get empty payload") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_ok(grpc_context_));
-        const auto payload = run<&ethbackend::RemoteBackEnd::engine_get_payload_v1>(0u);
+        const auto payload = run<&ethbackend::RemoteBackEnd::engine_get_payload>(0u);
         CHECK(payload.number == 0);
     }
 
     SECTION("call engine_get_payload_v1 and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::engine_get_payload_v1>(0u)), boost::system::system_error);
+        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::engine_get_payload>(0u)), boost::system::system_error);
     }
 }
 
-TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_new_payload_v1", "[silkrpc][ethbackend][backend]") {
+TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_new_payload", "[silkrpc][ethbackend][backend]") {
     test::StrictMockAsyncResponseReader<::remote::EnginePayloadStatus> reader;
     EXPECT_CALL(*stub_, AsyncEngineNewPayloadRaw).WillOnce(testing::Return(&reader));
 
@@ -289,7 +289,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_new_payload_v1", "[silkrpc][et
     bloom.fill(0);
     bloom[0] = 0x12;
     const auto transaction{*from_hex("0xf92ebdeab45d368f6354e8c5a8ac586c")};
-    const ExecutionPayloadV1 execution_payload{
+    const ExecutionPayload execution_payload{
         .timestamp = 0x5,
         .gas_limit = 0x1c9c380,
         .gas_used = 0x9,
@@ -310,7 +310,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_new_payload_v1", "[silkrpc][et
         response.set_status(::remote::EngineStatus::VALID);
         response.set_validation_error("some error");
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
-        const auto payload_status = run<&ethbackend::RemoteBackEnd::engine_new_payload_v1>(execution_payload);
+        const auto payload_status = run<&ethbackend::RemoteBackEnd::engine_new_payload>(execution_payload);
         CHECK(payload_status.status == "VALID");
         CHECK(payload_status.latest_valid_hash == 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32);
         CHECK(payload_status.validation_error == "some error");
@@ -328,14 +328,14 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_new_payload_v1", "[silkrpc][et
             ::remote::EnginePayloadStatus response;
             response.set_status(engine_status);
             EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
-            const auto payload_status = run<&ethbackend::RemoteBackEnd::engine_new_payload_v1>(execution_payload);
+            const auto payload_status = run<&ethbackend::RemoteBackEnd::engine_new_payload>(execution_payload);
             CHECK(payload_status.status == engine_status_name);
         }
     }
 
     SECTION("call engine_new_payload_v1 and get empty payload") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_ok(grpc_context_));
-        const auto payload_status = run<&ethbackend::RemoteBackEnd::engine_new_payload_v1>(execution_payload);
+        const auto payload_status = run<&ethbackend::RemoteBackEnd::engine_new_payload>(execution_payload);
         CHECK(payload_status.status == "VALID");  // Default value in interfaces is Valid
         CHECK(payload_status.latest_valid_hash == std::nullopt);
         CHECK(payload_status.validation_error == std::nullopt);
@@ -343,22 +343,22 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_new_payload_v1", "[silkrpc][et
 
     SECTION("call engine_new_payload_v1 and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::engine_new_payload_v1>(execution_payload)), boost::system::system_error);
+        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::engine_new_payload>(execution_payload)), boost::system::system_error);
     }
 }
 
-TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_forkchoice_updated_v1", "[silkrpc][ethbackend][backend]") {
+TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_forkchoice_updated", "[silkrpc][ethbackend][backend]") {
     test::StrictMockAsyncResponseReader<::remote::EngineForkChoiceUpdatedResponse> reader;
     EXPECT_CALL(*stub_, AsyncEngineForkChoiceUpdatedRaw).WillOnce(testing::Return(&reader));
 
-    const ForkChoiceUpdatedRequestV1 forkchoice_request{
+    const ForkChoiceUpdatedRequest forkchoice_request{
         .fork_choice_state =
-            ForkChoiceStateV1{
+            ForkChoiceState{
                 .head_block_hash = 0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a_bytes32,
                 .safe_block_hash = 0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a_bytes32,
                 .finalized_block_hash = 0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a_bytes32},
         .payload_attributes =
-            PayloadAttributesV1{
+            PayloadAttributes{
                 .timestamp = 0x1,
                 .prev_randao = 0x0000000000000000000000000000000000000000000000000000000000000001_bytes32,
                 .suggested_fee_recipient = 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address}};
@@ -371,8 +371,8 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_forkchoice_updated_v1", "[silk
         response.set_allocated_payload_status(engine_payload_status);
         response.set_payload_id(1);
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
-        const auto forkchoice_reply = run<&ethbackend::RemoteBackEnd::engine_forkchoice_updated_v1>(forkchoice_request);
-        const PayloadStatusV1 payload_status = forkchoice_reply.payload_status;
+        const auto forkchoice_reply = run<&ethbackend::RemoteBackEnd::engine_forkchoice_updated>(forkchoice_request);
+        const PayloadStatus payload_status = forkchoice_reply.payload_status;
         CHECK(payload_status.status == "VALID");
         CHECK(payload_status.latest_valid_hash == 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32);
         CHECK(payload_status.validation_error == "some error");
@@ -380,8 +380,8 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_forkchoice_updated_v1", "[silk
 
     SECTION("call engine_forkchoice_updated_v1 and get zero count") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_ok(grpc_context_));
-        const auto forkchoice_reply = run<&ethbackend::RemoteBackEnd::engine_forkchoice_updated_v1>(forkchoice_request);
-        const PayloadStatusV1 payload_status = forkchoice_reply.payload_status;
+        const auto forkchoice_reply = run<&ethbackend::RemoteBackEnd::engine_forkchoice_updated>(forkchoice_request);
+        const PayloadStatus payload_status = forkchoice_reply.payload_status;
         CHECK(payload_status.status == "VALID");  // Default value in interfaces is Valid
         CHECK(payload_status.latest_valid_hash == std::nullopt);
         CHECK(payload_status.validation_error == std::nullopt);
@@ -389,7 +389,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_forkchoice_updated_v1", "[silk
 
     SECTION("call engine_forkchoice_updated_v1 and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
-        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::engine_forkchoice_updated_v1>(forkchoice_request)), boost::system::system_error);
+        CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::engine_forkchoice_updated>(forkchoice_request)), boost::system::system_error);
     }
 }
 

@@ -121,7 +121,7 @@ awaitable<NodeInfos> RemoteBackEnd::engine_node_info() {
     co_return node_info_list;
 }
 
-awaitable<ExecutionPayloadV1> RemoteBackEnd::engine_get_payload_v1(uint64_t payload_id) {
+awaitable<ExecutionPayload> RemoteBackEnd::engine_get_payload(uint64_t payload_id) {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncEngineGetPayload> npc_rpc{*stub_, grpc_context_};
     ::remote::EngineGetPayloadRequest req;
@@ -132,23 +132,23 @@ awaitable<ExecutionPayloadV1> RemoteBackEnd::engine_get_payload_v1(uint64_t payl
     co_return execution_payload;
 }
 
-awaitable<PayloadStatusV1> RemoteBackEnd::engine_new_payload_v1(const ExecutionPayloadV1& payload) {
+awaitable<PayloadStatus> RemoteBackEnd::engine_new_payload(const ExecutionPayload& payload) {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncEngineNewPayload> npc_rpc{*stub_, grpc_context_};
     auto req{encode_execution_payload(payload)};
     const auto reply = co_await npc_rpc.finish_on(executor_, req);
-    PayloadStatusV1 payload_status = decode_payload_status(reply);
+    PayloadStatus payload_status = decode_payload_status(reply);
     SILK_DEBUG << "RemoteBackEnd::engine_new_payload_v1 data=" << payload_status << " t=" << clock_time::since(start_time);
     co_return payload_status;
 }
 
-awaitable<ForkChoiceUpdatedReplyV1> RemoteBackEnd::engine_forkchoice_updated_v1(const ForkChoiceUpdatedRequestV1& fcu_request) {
+awaitable<ForkChoiceUpdatedReply> RemoteBackEnd::engine_forkchoice_updated(const ForkChoiceUpdatedRequest& fcu_request) {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncEngineForkChoiceUpdated> fcu_rpc{*stub_, grpc_context_};
     const auto req{encode_forkchoice_updated_request(fcu_request)};
     const auto reply = co_await fcu_rpc.finish_on(executor_, req);
-    PayloadStatusV1 payload_status = decode_payload_status(reply.payload_status());
-    ForkChoiceUpdatedReplyV1 forkchoice_updated_reply{
+    PayloadStatus payload_status = decode_payload_status(reply.payload_status());
+    ForkChoiceUpdatedReply forkchoice_updated_reply{
         .payload_status = payload_status,
         .payload_id = std::nullopt};
     // set payload id (if there is one)
@@ -185,7 +185,7 @@ awaitable<PeerInfos> RemoteBackEnd::peers() {
     co_return peer_infos;
 }
 
-ExecutionPayloadV1 RemoteBackEnd::decode_execution_payload(const ::types::ExecutionPayload& execution_payload_grpc) {
+ExecutionPayload RemoteBackEnd::decode_execution_payload(const ::types::ExecutionPayload& execution_payload_grpc) {
     const auto& state_root_h256{execution_payload_grpc.state_root()};
     const auto& receipts_root_h256{execution_payload_grpc.receipt_root()};
     const auto& block_hash_h256{execution_payload_grpc.block_hash()};
@@ -204,7 +204,7 @@ ExecutionPayloadV1 RemoteBackEnd::decode_execution_payload(const ::types::Execut
     }
 
     // Assembling the execution_payload data structure
-    return ExecutionPayloadV1{
+    return ExecutionPayload{
         .number = execution_payload_grpc.block_number(),
         .timestamp = execution_payload_grpc.timestamp(),
         .gas_limit = execution_payload_grpc.gas_limit(),
@@ -221,7 +221,7 @@ ExecutionPayloadV1 RemoteBackEnd::decode_execution_payload(const ::types::Execut
         .transactions = transactions};
 }
 
-::types::ExecutionPayload RemoteBackEnd::encode_execution_payload(const ExecutionPayloadV1& execution_payload) {
+::types::ExecutionPayload RemoteBackEnd::encode_execution_payload(const ExecutionPayload& execution_payload) {
     ::types::ExecutionPayload execution_payload_grpc;
     // Numerical parameters
     execution_payload_grpc.set_block_number(execution_payload.number);
@@ -247,7 +247,7 @@ ExecutionPayloadV1 RemoteBackEnd::decode_execution_payload(const ::types::Execut
     return execution_payload_grpc;
 }
 
-::remote::EngineForkChoiceState* RemoteBackEnd::encode_forkchoice_state(const ForkChoiceStateV1& fcs) {
+gsl::owner<::remote::EngineForkChoiceState*> RemoteBackEnd::encode_forkchoice_state(const ForkChoiceState& fcs) {
     auto fcs_grpc = new ::remote::EngineForkChoiceState();
     // 32-bytes parameters
     fcs_grpc->set_allocated_head_block_hash(H256_from_bytes({fcs.head_block_hash.bytes, kHashLength}).release());
@@ -256,7 +256,7 @@ ExecutionPayloadV1 RemoteBackEnd::decode_execution_payload(const ::types::Execut
     return fcs_grpc;
 }
 
-::remote::EnginePayloadAttributes* RemoteBackEnd::encode_payload_attributes(const PayloadAttributesV1& epa) {
+gsl::owner<::remote::EnginePayloadAttributes*> RemoteBackEnd::encode_payload_attributes(const PayloadAttributes& epa) {
     auto epa_grpc = new ::remote::EnginePayloadAttributes();
     // TODO(yperbasis) support v2 (withdrawals) as well
     epa_grpc->set_version(1);
@@ -269,7 +269,7 @@ ExecutionPayloadV1 RemoteBackEnd::decode_execution_payload(const ::types::Execut
     return epa_grpc;
 }
 
-::remote::EngineForkChoiceUpdatedRequest RemoteBackEnd::encode_forkchoice_updated_request(const ForkChoiceUpdatedRequestV1& fcu_request) {
+::remote::EngineForkChoiceUpdatedRequest RemoteBackEnd::encode_forkchoice_updated_request(const ForkChoiceUpdatedRequest& fcu_request) {
     ::remote::EngineForkChoiceUpdatedRequest fcu_request_grpc;
     ::remote::EngineForkChoiceState* forkchoice_state_grpc = RemoteBackEnd::encode_forkchoice_state(fcu_request.fork_choice_state);
 
@@ -281,8 +281,8 @@ ExecutionPayloadV1 RemoteBackEnd::decode_execution_payload(const ::types::Execut
     return fcu_request_grpc;
 }
 
-PayloadStatusV1 RemoteBackEnd::decode_payload_status(const ::remote::EnginePayloadStatus& payload_status_grpc) {
-    PayloadStatusV1 payload_status;
+PayloadStatus RemoteBackEnd::decode_payload_status(const ::remote::EnginePayloadStatus& payload_status_grpc) {
+    PayloadStatus payload_status;
     payload_status.status = decode_status_message(payload_status_grpc.status());
     // Set LatestValidHash (if there is one)
     if (payload_status_grpc.has_latest_valid_hash()) {

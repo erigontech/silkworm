@@ -128,7 +128,7 @@ struct PruneModeValidator : public CLI::Validator {
     }
 };
 
-void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], SilkwormSettings& settings) {
+/*void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], SilkwormSettings& settings) {
     using namespace silkworm::cmd;
 
     auto& node_settings = settings.node_settings;
@@ -169,7 +169,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
     add_option_private_api_address(cli, node_settings.private_api_addr);
 
     // Sentry settings
-    add_option_remote_sentry_addresses(cli, node_settings.remote_sentry_addresses, /* is_required = */ false);
+    add_option_remote_sentry_addresses(cli, node_settings.remote_sentry_addresses, is_required = false);
     add_sentry_options(cli, settings.sentry_settings);
 
     cli.add_option("--sync.loop.throttle", node_settings.sync_loop_throttle_seconds,
@@ -255,11 +255,11 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
                                     human_size(mdbx_max_size_hard_limit));
     }
     const auto chaindata_growth_size{parse_size(chaindata_growth_size_str)};
-    if (chaindata_growth_size > (mdbx_max_size_hard_limit / /* two increments ?*/ 2u)) {
+    if (chaindata_growth_size > (mdbx_max_size_hard_limit / 2u)) {
         throw std::invalid_argument("--chaindata.growthsize must be <=" + human_size(mdbx_max_size_hard_limit / 2));
     }
 
-    node_settings.data_directory = std::make_unique<DataDirectory>(data_dir_path, /*create=*/true);
+    node_settings.data_directory = std::make_unique<DataDirectory>(data_dir_path, true);
     node_settings.chaindata_env_config.max_size = chaindata_max_size.value();
     node_settings.chaindata_env_config.growth_size = chaindata_growth_size.value();
 
@@ -290,7 +290,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
     server_settings.set_context_pool_settings(context_pool_settings);
 
     snapshot_settings.bittorrent_settings.repository_path = snapshot_settings.repository_dir;
-}
+}*/
 
 //! Raise allowed max file descriptors in the current process
 void raise_max_file_descriptors() {
@@ -368,7 +368,7 @@ int main(int argc, char* argv[]) {
 
     try {
         SilkwormSettings settings;
-        parse_silkworm_command_line(cli, argc, argv, settings);
+        // parse_silkworm_command_line(cli, argc, argv, settings);
 
         auto& node_settings = settings.node_settings;
         auto& snapshot_settings = settings.snapshot_settings;

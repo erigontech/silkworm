@@ -92,7 +92,8 @@ uint64_t rip160_gas(ByteView input, evmc_revision) noexcept {
 
 std::optional<Bytes> rip160_run(ByteView input) noexcept {
     Bytes out(32, 0);
-    silkworm_rmd160(&out[12], input.data(), input.length());
+    SILKWORM_ASSERT(input.length() <= std::numeric_limits<uint32_t>::max());
+    silkworm_rmd160(&out[12], input.data(), static_cast<uint32_t>(input.length()));
     return out;
 }
 

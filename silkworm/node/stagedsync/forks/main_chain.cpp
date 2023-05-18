@@ -108,7 +108,7 @@ auto MainChain::verify_chain(Hash head_block_hash) -> VerificationResult {
     // the new head is on a new fork?
     BlockId forking_point = canonical_chain_.find_forking_point(*head_header);  // the forking origin
 
-    if (head_block_hash != canonical_chain_.current_head().hash ||  // if the new head is not the current head
+    if (head_block_hash != canonical_chain_.current_head().hash ||        // if the new head is not the current head
         forking_point.number < canonical_chain_.current_head().number) {  // and if the forking is behind the head
         // we need to do unwind to change canonical
         auto unwind_result = pipeline_.unwind(tx_, forking_point.number);

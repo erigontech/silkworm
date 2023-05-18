@@ -24,7 +24,7 @@
 namespace silkworm::rpc {
 
 TEST_CASE("print empty ExecutionPayloadV1", "[silkworm][rpc][types]") {
-    ExecutionPayload p{.version = 1};
+    ExecutionPayload p{.version = ExecutionPayload::V1};
     CHECK_NOTHROW(silkworm::test::null_stream() << p);
 }
 
@@ -36,7 +36,7 @@ TEST_CASE("print empty PayloadStatusV1", "[silkworm][rpc][types]") {
 }
 
 TEST_CASE("print empty ExecutionPayloadV2", "[silkworm][rpc][types]") {
-    ExecutionPayload p{.version = 2};
+    ExecutionPayload p{.version = ExecutionPayload::V2};
     CHECK_NOTHROW(silkworm::test::null_stream() << p);
 }
 

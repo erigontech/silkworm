@@ -21,6 +21,7 @@
 
 #include "filter.hpp"
 #include "types.hpp"
+#include "withdrawal.hpp"
 
 namespace silkworm::rpc {
 
@@ -43,6 +44,9 @@ void to_json(nlohmann::json& json, const ExecutionPayload& execution_payload) {
     json["baseFeePerGas"] = to_quantity(execution_payload.base_fee);
     json["blockHash"] = execution_payload.block_hash;
     json["transactions"] = transaction_list;
+    if (execution_payload.withdrawals) {
+        json["withdrawals"] = execution_payload.withdrawals.value();
+    }
 }
 
 void from_json(const nlohmann::json& json, ExecutionPayload& execution_payload) {
@@ -57,12 +61,18 @@ void from_json(const nlohmann::json& json, ExecutionPayload& execution_payload) 
         transactions.push_back(
             *silkworm::from_hex(hex_transaction.get<std::string>()));
     }
+    // Optionally parse withdrawals
+    std::optional<std::vector<Withdrawal>> withdrawals;
+    if (json.contains("withdrawals")) {
+        withdrawals = json.at("withdrawals").get<std::vector<Withdrawal>>();
+    }
 
     execution_payload = ExecutionPayload{
-        .number = static_cast<uint64_t>(std::stol(json.at("blockNumber").get<std::string>(), nullptr, 16)),
-        .timestamp = static_cast<uint64_t>(std::stol(json.at("timestamp").get<std::string>(), nullptr, 16)),
-        .gas_limit = static_cast<uint64_t>(std::stol(json.at("gasLimit").get<std::string>(), nullptr, 16)),
-        .gas_used = static_cast<uint64_t>(std::stol(json.at("gasUsed").get<std::string>(), nullptr, 16)),
+        .version = withdrawals ? ExecutionPayload::V2 : ExecutionPayload::V1,
+        .number = from_quantity(json.at("blockNumber").get<std::string>()),
+        .timestamp = from_quantity(json.at("timestamp").get<std::string>()),
+        .gas_limit = from_quantity(json.at("gasLimit").get<std::string>()),
+        .gas_used = from_quantity(json.at("gasUsed").get<std::string>()),
         .suggested_fee_recipient = json.at("feeRecipient").get<evmc::address>(),
         .state_root = json.at("stateRoot").get<evmc::bytes32>(),
         .receipts_root = json.at("receiptsRoot").get<evmc::bytes32>(),
@@ -72,7 +82,8 @@ void from_json(const nlohmann::json& json, ExecutionPayload& execution_payload) 
         .base_fee = json.at("baseFeePerGas").get<intx::uint256>(),
         .logs_bloom = logs_bloom,
         .extra_data = *silkworm::from_hex(json.at("extraData").get<std::string>()),
-        .transactions = transactions};
+        .transactions = transactions,
+        .withdrawals = withdrawals};
 }
 
 }  // namespace silkworm::rpc

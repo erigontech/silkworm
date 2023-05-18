@@ -42,7 +42,7 @@ class CanonicalChain {
     CanonicalChain(CanonicalChain&&) noexcept;
 
     BlockId find_forking_point(Hash header_hash) const;
-    BlockId find_forking_point(const BlockHeader& header) const;
+    BlockId find_forking_point(const BlockHeader& header, const Hash& header_hash) const;
 
     void advance(BlockNum height, Hash header_hash);
     void update_up_to(BlockNum height, Hash header_hash);

@@ -113,7 +113,7 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
         }
     }
 
-    SILK_TRACE << "BodySequence: " << count << " body accepted from block " << start_block << " out of "
+    SILK_TRACE << "BodySequence: " << count << " body accepted starting at block " << start_block << " out of "
                << packet.request.size() << " received";
 
     // Process remaining elements in matching_requests invalidating corresponding BodyRequest

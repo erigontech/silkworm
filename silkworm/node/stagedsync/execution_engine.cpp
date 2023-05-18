@@ -140,6 +140,13 @@ auto ExecutionEngine::find_forking_point(const BlockHeader& header) const -> std
 auto ExecutionEngine::verify_chain(Hash head_block_hash) -> concurrency::AwaitableFuture<VerificationResult> {
     SILK_DEBUG << "ExecutionEngine: verifying chain " << head_block_hash.to_hex();
 
+    if (last_fork_choice_.hash == head_block_hash) {
+        SILK_DEBUG << "ExecutionEngine: chain " << head_block_hash.to_hex() << " already verified";
+        concurrency::AwaitablePromise<VerificationResult> promise{io_context_};
+        promise.set_value(ValidChain{last_fork_choice_});
+        return promise.get_future();
+    }
+
     if (!fork_tracking_active_) {
         auto verification = main_chain_.verify_chain(head_block_hash);  // BLOCKING
         concurrency::AwaitablePromise<VerificationResult> promise{io_context_};

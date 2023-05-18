@@ -1,4 +1,4 @@
-#   Copyright 2020-2022 The Silkworm Authors
+#   Copyright 2020 The Silkworm Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -86,6 +86,13 @@ commands:
           command: |
             # the base image contains these packages preinstalled, this command merely verifies that
             sudo apt -y install libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev
+  
+  install_gcc12:
+      - run:
+          name: "Install gcc 12"
+          command: |
+            sudo apt -y install gcc-12 g++-12
+            sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 60 --slave /usr/bin/g++ g++ /usr/bin/g++-12
 
   build_using_hunter:
     parameters:
@@ -104,20 +111,6 @@ commands:
           paths:
             - ~/.hunter
 
-  install_conan_docker:
-    steps:
-      - run:
-          name: "Install Conan"
-          command: |
-            pip install --user --break-system-packages conan==1.58.0 chardet
-            echo 'export "PATH=$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
-
-  install_conan_machine:
-    steps:
-      - run:
-          name: "Install Conan"
-          command: sudo pip3 install conan==1.58.0 chardet
-
   build_using_conan:
     parameters:
       profile:
@@ -127,6 +120,9 @@ commands:
         type: string
         default: default
     steps:
+      - run:
+          name: "Install Conan"
+          command: sudo pip3 install conan==1.58.0 chardet
       - restore_cache:
           name: "Restore Conan cache"
           key: &conan-cache-key conan-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/profiles/<<parameters.profile>>"}}-{{checksum "conanfile.txt"}}
@@ -184,20 +180,19 @@ jobs:
     resource_class: xlarge
     steps:
       - checkout_with_submodules
-      - install_conan_machine
       - build_using_conan
       - test
 
   linux-gcc-12-release:
     environment:
       BUILD_TYPE: Release
-      BUILD_JOBS: 4
-    docker:
-      - image: ethereum/cpp-build-env:20-gcc-12
+      BUILD_JOBS: 8
+    machine:
+      image: ubuntu-2204:2023.04.2
     resource_class: xlarge
     steps:
       - checkout_with_submodules
-      - install_conan_docker
+      - install_gcc12
       - build_using_conan
       - test
 

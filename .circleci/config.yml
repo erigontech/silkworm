@@ -50,6 +50,9 @@ commands:
       conan_profile:
         type: string
         default: none
+      toolchain:
+        type: string
+        default: default
     steps:
       - run:
           name: "Install dependencies"
@@ -64,8 +67,12 @@ commands:
             then
                 CONAN_CMAKE_ARGS="-DCONAN_PACKAGE_MANAGER=ON -DCONAN_PROFILE=<<parameters.conan_profile>>"
             fi
+            if [[ "<<parameters.toolchain>>" != "default" ]]
+            then
+                TOOLCHAIN_CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/<<parameters.toolchain>>.cmake"
+            fi
 
-            cmake ../project -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/toolchain/$TOOLCHAIN.cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE $CONAN_CMAKE_ARGS $BUILD_CMAKE_ARGS
+            cmake ../project -DCMAKE_BUILD_TYPE=$BUILD_TYPE $CONAN_CMAKE_ARGS $TOOLCHAIN_CMAKE_ARGS $BUILD_CMAKE_ARGS
       - run:
           name: "Build"
           command: cmake --build ~/build -j$BUILD_JOBS
@@ -81,11 +88,16 @@ commands:
             sudo apt -y install libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev
 
   build_using_hunter:
+    parameters:
+      toolchain:
+        type: string
+        default: default
     steps:
       - restore_cache:
           name: "Restore Hunter cache"
-          key: &hunter-cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/toolchain/base.cmake"}}-{{checksum "cmake/toolchain/cxx20.cmake"}}-{{checksum "cmake/toolchain/clang_libcxx.cmake"}}
-      - build
+          key: &hunter-cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/toolchain/cxx20.cmake"}}-{{checksum "cmake/toolchain/clang_libcxx.cmake"}}
+      - build:
+          toolchain: <<parameters.toolchain>>
       - save_cache:
           name: "Save Hunter cache"
           key: *hunter-cache-key
@@ -111,12 +123,16 @@ commands:
       profile:
         type: string
         default: linux_gcc_11_release
+      toolchain:
+        type: string
+        default: default
     steps:
       - restore_cache:
           name: "Restore Conan cache"
           key: &conan-cache-key conan-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/profiles/<<parameters.profile>>"}}-{{checksum "conanfile.txt"}}
       - build:
           conan_profile: <<parameters.profile>>
+          toolchain: <<parameters.toolchain>>
       - save_cache:
           name: "Save Conan cache"
           key: *conan-cache-key
@@ -160,7 +176,6 @@ commands:
 jobs:
   linux-gcc-11-thread-sanitizer:
     environment:
-      TOOLCHAIN: cxx20
       BUILD_TYPE: Debug
       BUILD_JOBS: 8
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=thread
@@ -175,7 +190,6 @@ jobs:
 
   linux-gcc-12-release:
     environment:
-      TOOLCHAIN: cxx20
       BUILD_TYPE: Release
       BUILD_JOBS: 4
     docker:
@@ -189,7 +203,6 @@ jobs:
 
   linux-clang-15-address-sanitizer:
     environment:
-      TOOLCHAIN: clang_libcxx
       CLANG_VERSION: 15
       BUILD_TYPE: Debug
       BUILD_JOBS: 4
@@ -200,12 +213,13 @@ jobs:
     steps:
       - checkout_with_submodules
       - install_libcxx
-      - build_using_hunter
+      - build_using_hunter:
+          toolchain:
+            clang_libcxx
       - test
 
   linux-clang-13-coverage:
     environment:
-      TOOLCHAIN: clang_libcxx
       CLANG_VERSION: 13
       BUILD_TYPE: Debug
       BUILD_JOBS: 4
@@ -217,7 +231,9 @@ jobs:
       - checkout_with_submodules
       - format
       - install_libcxx
-      - build_using_hunter
+      - build_using_hunter:
+          toolchain:
+            clang_libcxx
       - run:
           name: "Core unit tests"
           working_directory: ~/build
@@ -303,37 +319,6 @@ jobs:
           working_directory: ~/build
           command: wasmer cmd/test/core_test --stack-size 16777216
 
-  linux-default-build:
-    environment:
-      BUILD_JOBS: 4
-    docker:
-      - image: ethereum/cpp-build-env:20-gcc-12
-    resource_class: xlarge
-    steps:
-      - checkout_with_submodules
-      - run:
-          name: "Install dependencies"
-          command: |
-            # the base image contains these packages preinstalled, this command merely verifies that
-            sudo apt-get install -y m4 texinfo bison
-      - restore_cache:
-          name: "Restore Hunter cache"
-          key: &cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/toolchain/base.cmake"}}-{{checksum "cmake/toolchain/cxx20.cmake"}}
-      - run:
-          name: "Cmake"
-          working_directory: ~/build
-          command: cmake ../project
-      - save_cache:
-          name: "Save Hunter cache"
-          key: *cache-key
-          paths:
-            - ~/.hunter
-      - run:
-          name: "Build"
-          working_directory: ~/build
-          command: make -j4 # each compiler job requires 4GB of RAM
-      - test
-
 workflows:
   version: 2
   silkworm:
@@ -343,4 +328,3 @@ workflows:
       - linux-clang-13-coverage
       - linux-clang-15-address-sanitizer
       - linux-wasm-build
-      - linux-default-build

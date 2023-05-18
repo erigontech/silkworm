@@ -125,6 +125,8 @@ namespace detail {
         std::optional<std::vector<Withdrawal>> withdrawals{std::nullopt};  // EIP-4895
 
         [[nodiscard]] Bytes encode() const;
+
+        friend bool operator==(const BlockBodyForStorage&, const BlockBodyForStorage&) = default;
     };
 
     DecodingResult decode_stored_block_body(ByteView& from, BlockBodyForStorage& to);

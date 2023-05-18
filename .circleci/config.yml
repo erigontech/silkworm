@@ -161,7 +161,7 @@ jobs:
     resource_class: xlarge
     steps:
       - checkout_with_submodules
-      - build_using_hunter
+      - build_using_conan
       - test
 
   linux-gcc-11-conan:

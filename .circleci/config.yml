@@ -87,13 +87,13 @@ commands:
             # the base image contains these packages preinstalled, this command merely verifies that
             sudo apt -y install libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev
   
-  install_gcc12:
+  install_gcc:
     steps:
       - run:
-          name: "Install gcc 12"
+          name: "Install gcc"
           command: |
-            sudo apt -y install gcc-12 g++-12
-            sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 60 --slave /usr/bin/g++ g++ /usr/bin/g++-12
+            sudo apt -y install gcc-$GCC_VERSION g++-$GCC_VERSION
+            sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-$GCC_VERSION 60 --slave /usr/bin/g++ g++ /usr/bin/g++-$GCC_VERSION
 
   build_using_hunter:
     parameters:
@@ -186,6 +186,7 @@ jobs:
 
   linux-gcc-12-release:
     environment:
+      GCC_VERSION: 12
       BUILD_TYPE: Release
       BUILD_JOBS: 8
     machine:
@@ -193,7 +194,7 @@ jobs:
     resource_class: xlarge
     steps:
       - checkout_with_submodules
-      - install_gcc12
+      - install_gcc
       - build_using_conan
       - test
 

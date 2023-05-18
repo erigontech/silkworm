@@ -101,8 +101,9 @@ commands:
       - run:
           name: "Install Conan"
           command: |
-            sudo pip install --upgrade pip
-            pip install --user --break-system-packages conan==1.58.0 chardet
+            # the base image contains these packages preinstalled, this command merely verifies that
+            sudo apt-get install -y --no-install-recommends python3-pip
+            pip3 install --user --break-system-packages conan==1.58.0 chardet
             echo 'export "PATH=$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
       - restore_cache:
           name: "Restore Conan cache"

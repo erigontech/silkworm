@@ -74,6 +74,7 @@ class MainChain {
     auto get_header(BlockNum, Hash) const -> std::optional<BlockHeader>;
     auto get_canonical_hash(BlockNum) const -> std::optional<Hash>;
     auto get_header_td(BlockNum, Hash) const -> std::optional<TotalDifficulty>;
+    auto get_header_td(Hash) const -> std::optional<TotalDifficulty>;
     auto get_body(Hash) const -> std::optional<BlockBody>;
     auto get_last_headers(BlockNum limit) const -> std::vector<BlockHeader>;
     auto extends_last_fork_choice(BlockNum, Hash) const -> bool;

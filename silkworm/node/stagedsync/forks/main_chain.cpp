@@ -251,6 +251,12 @@ auto MainChain::get_header_td(BlockNum header_height, Hash header_hash) const ->
     return db::read_total_difficulty(tx_, header_height, header_hash);
 }
 
+auto MainChain::get_header_td(Hash header_hash) const -> std::optional<TotalDifficulty> {
+    auto header = get_header(header_hash);
+    if (!header) return {};
+    return db::read_total_difficulty(tx_, header->number, header_hash);
+}
+
 auto MainChain::get_body(Hash header_hash) const -> std::optional<BlockBody> {
     BlockBody body;
     bool found = read_body(tx_, header_hash, body);

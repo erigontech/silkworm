@@ -52,7 +52,6 @@ class PoSSync : public ChainSync {
   private:
     static auto make_execution_block(const rpc::ExecutionPayloadV1& payload) -> std::shared_ptr<Block>;
     void do_sanity_checks(const BlockHeader& header, TotalDifficulty parent_td);
-    // bool extends_canonical(const Block& block, Hash block_hash);
     auto has_bad_ancestor(const Hash& block_hash) -> std::tuple<bool, Hash>;
 };
 

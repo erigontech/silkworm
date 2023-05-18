@@ -236,8 +236,11 @@ auto ExecutionEngine::get_header_td(Hash h, std::optional<BlockNum> bn) const ->
     ensure_invariant(!fork_tracking_active_, "actual get_header_td() impl assume it is called only at beginning");
     // if fork_tracking_active_ is true, we should read blocks from forks and recompute total difficulty but this
     // is a duty of the sync component
-
-    return main_chain_.get_header_td(*bn, h);
+    if (bn) {
+        return main_chain_.get_header_td(*bn, h);
+    } else {
+        return main_chain_.get_header_td(h);
+    }
 }
 
 auto ExecutionEngine::get_body(Hash header_hash) const -> std::optional<BlockBody> {

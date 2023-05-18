@@ -14,7 +14,7 @@
    limitations under the License.
 ]]
 
-option(CONAN_PACKAGE_MANAGER "Use Conan.io as package manager" OFF)
+option(CONAN_PACKAGE_MANAGER "Use Conan.io as package manager" ON)
 
 function(guess_conan_profile)
   if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")

@@ -101,9 +101,7 @@ commands:
       - run:
           name: "Install Conan"
           command: |
-            sudo -H pip3 install --upgrade pip
-            pip3 install --user --break-system-packages conan==1.58.0 chardet
-            echo 'export "PATH=$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+            sudo apt install python3-conan
       - restore_cache:
           name: "Restore Conan cache"
           key: &conan-cache-key conan-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/profiles/<<parameters.profile>>"}}-{{checksum "conanfile.txt"}}

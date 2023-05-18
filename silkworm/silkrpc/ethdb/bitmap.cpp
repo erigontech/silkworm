@@ -49,7 +49,8 @@ static Roaring fast_or(size_t n, const std::vector<std::unique_ptr<Roaring>>& in
     return ans;
 }
 
-boost::asio::awaitable<Roaring> get(core::rawdb::DatabaseReader& db_reader, const std::string& table, silkworm::Bytes& key, uint32_t from_block, uint32_t to_block) {
+awaitable<Roaring> get(core::rawdb::DatabaseReader& db_reader, const std::string& table, silkworm::Bytes& key,
+                       uint32_t from_block, uint32_t to_block) {
     std::vector<std::unique_ptr<Roaring>> chunks;
 
     silkworm::Bytes from_key{key.begin(), key.end()};
@@ -70,6 +71,47 @@ boost::asio::awaitable<Roaring> get(core::rawdb::DatabaseReader& db_reader, cons
     auto result{fast_or(chunks.size(), chunks)};
     SILK_DEBUG << "result: " << result.toString();
     co_return result;
+}
+
+awaitable<Roaring> from_topics(core::rawdb::DatabaseReader& db_reader, const std::string& table, const FilterTopics& topics,
+                               uint64_t start, uint64_t end) {
+    SILK_DEBUG << "#topics: " << topics.size() << " start: " << start << " end: " << end;
+    roaring::Roaring result_bitmap;
+    for (const auto& subtopics : topics) {
+        SILK_DEBUG << "#subtopics: " << subtopics.size();
+        roaring::Roaring subtopic_bitmap;
+        for (auto topic : subtopics) {
+            silkworm::Bytes topic_key{std::begin(topic.bytes), std::end(topic.bytes)};
+            SILK_TRACE << "topic: " << topic << " topic_key: " << silkworm::to_hex(topic);
+            auto bitmap = co_await ethdb::bitmap::get(db_reader, table, topic_key, start, end);
+            SILK_TRACE << "bitmap: " << bitmap.toString();
+            subtopic_bitmap |= bitmap;
+            SILK_TRACE << "subtopic_bitmap: " << subtopic_bitmap.toString();
+        }
+        if (!subtopic_bitmap.isEmpty()) {
+            if (result_bitmap.isEmpty()) {
+                result_bitmap = subtopic_bitmap;
+            } else {
+                result_bitmap &= subtopic_bitmap;
+            }
+        }
+        SILK_DEBUG << "result_bitmap: " << result_bitmap.toString();
+    }
+    co_return result_bitmap;
+}
+
+awaitable<Roaring> from_addresses(core::rawdb::DatabaseReader& db_reader, const std::string& table, const FilterAddresses& addresses,
+                                  uint64_t start, uint64_t end) {
+    SILK_TRACE << "#addresses: " << addresses.size() << " start: " << start << " end: " << end;
+    roaring::Roaring result_bitmap;
+    for (auto address : addresses) {
+        silkworm::Bytes address_key{std::begin(address.bytes), std::end(address.bytes)};
+        auto bitmap = co_await ethdb::bitmap::get(db_reader, table, address_key, start, end);
+        SILK_TRACE << "bitmap: " << bitmap.toString();
+        result_bitmap |= bitmap;
+    }
+    SILK_TRACE << "result_bitmap: " << result_bitmap.toString();
+    co_return result_bitmap;
 }
 
 }  // namespace silkworm::rpc::ethdb::bitmap

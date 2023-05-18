@@ -23,11 +23,6 @@
 #include <boost/asio/thread_pool.hpp>
 #include <evmc/evmc.hpp>
 #include <nlohmann/json.hpp>
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wsign-conversion"
-#include <roaring.hh>
-#pragma GCC diagnostic pop
 
 #include <silkworm/core/types/receipt.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
@@ -76,8 +71,6 @@ class EthereumRpcApi {
   protected:
     static void filter_logs(std::vector<Log>&& logs, FilterAddresses& addresses, FilterTopics& topics, std::vector<Log>& filtered_logs);
 
-    static awaitable<roaring::Roaring> get_topics_bitmap(core::rawdb::DatabaseReader& db_reader, FilterTopics& topics, uint64_t start, uint64_t end);
-    static awaitable<roaring::Roaring> get_addresses_bitmap(core::rawdb::DatabaseReader& db_reader, FilterAddresses& addresses, uint64_t start, uint64_t end);
     awaitable<void> get_logs(ethdb::TransactionDatabase& tx_database, std::uint64_t start, std::uint64_t end,
                              FilterAddresses& addresses, FilterTopics& topics, std::vector<Log>& logs);
 

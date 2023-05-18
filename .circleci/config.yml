@@ -92,18 +92,26 @@ commands:
           paths:
             - ~/.hunter
 
+  install_conan_docker:
+    steps:
+      - run:
+          name: "Install Conan"
+          command: |
+            pip install --user --break-system-packages conan==1.58.0 chardet
+            echo 'export "PATH=$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+
+  install_conan_machine:
+    steps:
+      - run:
+          name: "Install Conan"
+          command: sudo pip3 install conan==1.58.0 chardet
+
   build_using_conan:
     parameters:
       profile:
         type: string
         default: linux_gcc_11_release
     steps:
-      - run:
-          name: "Install Conan"
-          command: |
-            # the base image contains these packages preinstalled, this command merely verifies that
-            sudo apt-get install -y --no-install-recommends python3-pip
-            sudo pip3 install conan==1.58.0 chardet
       - restore_cache:
           name: "Restore Conan cache"
           key: &conan-cache-key conan-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/profiles/<<parameters.profile>>"}}-{{checksum "conanfile.txt"}}
@@ -154,13 +162,14 @@ jobs:
     environment:
       TOOLCHAIN: cxx20
       BUILD_TYPE: Debug
-      BUILD_JOBS: 8
+      BUILD_JOBS: 16
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=thread
     machine:
       image: ubuntu-2204:2023.04.2
-    resource_class: xlarge
+    resource_class: 2xlarge
     steps:
       - checkout_with_submodules
+      - install_conan_machine
       - build_using_conan
       - test
 
@@ -174,6 +183,7 @@ jobs:
     resource_class: xlarge
     steps:
       - checkout_with_submodules
+      - install_conan_docker
       - build_using_conan
       - test
 
@@ -294,6 +304,8 @@ jobs:
           command: wasmer cmd/test/core_test --stack-size 16777216
 
   linux-default-build:
+    environment:
+      BUILD_JOBS: 4
     docker:
       - image: ethereum/cpp-build-env:20-gcc-12
     resource_class: xlarge

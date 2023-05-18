@@ -953,7 +953,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if execution layer do
 
     CHECK(reply == R"({
         "error":{
-            "code":100,
+            "code":-32603,
             "message":"execution layer does not have terminal total difficulty"
             },
             "id":1,

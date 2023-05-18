@@ -31,7 +31,7 @@ TEST_CASE("serialize WithdrawalV1", "[silkworm::json][to_json]") {
         .amount = 10'000};
     CHECK(nlohmann::json(withdrawal) == R"({
         "index":"0x6",
-        "validator_index":"0xc",
+        "validatorIndex":"0xc",
         "address":"0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
         "amount":"0x2710"
     })"_json);

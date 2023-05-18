@@ -68,7 +68,7 @@ commands:
             cmake ../project -DCMAKE_TOOLCHAIN_FILE=$HOME/project/cmake/toolchain/$TOOLCHAIN.cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE $CONAN_CMAKE_ARGS $BUILD_CMAKE_ARGS
       - run:
           name: "Build"
-          command: cmake --build ~/build -j4 # each compiler job requires 4GB of RAM
+          command: cmake --build ~/build -j$BUILD_JOBS
 
   # libc++ is an alternative standard library needed for coroutines support on Clang
   # https://libcxx.llvm.org
@@ -147,28 +147,17 @@ commands:
           name: "Ethereum EL tests"
           working_directory: ~/build
           no_output_timeout: 30m
-          command: cmd/test/ethereum
+          command: cmd/test/ethereum --threads $BUILD_JOBS
 
 jobs:
   linux-gcc-11-thread-sanitizer:
     environment:
       TOOLCHAIN: cxx20
       BUILD_TYPE: Debug
+      BUILD_JOBS: 8
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=thread
     machine:
       image: ubuntu-2204:2023.04.2
-    resource_class: xlarge
-    steps:
-      - checkout_with_submodules
-      - build_using_conan
-      - test
-
-  linux-gcc-11-conan:
-    environment:
-      TOOLCHAIN: cxx20
-      BUILD_TYPE: Debug
-    docker:
-      - image: ethereum/cpp-build-env:20-gcc-11
     resource_class: xlarge
     steps:
       - checkout_with_submodules
@@ -179,6 +168,7 @@ jobs:
     environment:
       TOOLCHAIN: cxx20
       BUILD_TYPE: Release
+      BUILD_JOBS: 4
     docker:
       - image: ethereum/cpp-build-env:20-gcc-12
     resource_class: xlarge
@@ -192,6 +182,7 @@ jobs:
       TOOLCHAIN: clang_libcxx
       CLANG_VERSION: 15
       BUILD_TYPE: Debug
+      BUILD_JOBS: 4
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=address,undefined
     docker:
       - image: ethereum/cpp-build-env:20-clang-15
@@ -207,6 +198,7 @@ jobs:
       TOOLCHAIN: clang_libcxx
       CLANG_VERSION: 13
       BUILD_TYPE: Debug
+      BUILD_JOBS: 4
       BUILD_CMAKE_ARGS: -DSILKWORM_CLANG_COVERAGE=ON
     docker:
       - image: ethereum/cpp-build-env:20-clang-13
@@ -335,7 +327,6 @@ workflows:
   silkworm:
     jobs:
       - linux-gcc-12-release
-      - linux-gcc-11-conan
       - linux-gcc-11-thread-sanitizer
       - linux-clang-13-coverage
       - linux-clang-15-address-sanitizer

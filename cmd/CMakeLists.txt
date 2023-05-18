@@ -54,16 +54,16 @@ if(NOT SILKWORM_CORE_ONLY)
       common/snapshot_options.cpp
       common/snapshot_options.hpp
   )
-
   add_executable(silkworm "${SILKWORM_CMD_SRC}")
   target_link_libraries(silkworm PRIVATE silkworm_node silkworm_sync cmd_common $<$<BOOL:${MSVC}>:Kernel32.lib>)
 
+  # cmake-format: off
   set(SENTRY_CMD_SRC
       sentry.cpp
       common/sentry_options.cpp
       common/sentry_options.hpp
   )
-
+  # cmake-format: on
   add_executable(sentry "${SENTRY_CMD_SRC}")
   target_link_libraries(sentry PRIVATE silkworm_sentry cmd_common)
 

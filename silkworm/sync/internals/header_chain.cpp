@@ -430,14 +430,15 @@ std::shared_ptr<Anchor> HeaderChain::highest_anchor() {
  */
 auto HeaderChain::anchor_extension_request(time_point_t time_point) -> std::shared_ptr<OutboundMessage> {
     using std::nullopt;
+    auto prev_condition = extension_condition_;
 
     if (time_point - last_nack_ < SentryClient::kNoPeerDelay)
         return {};
 
     if (anchor_queue_.empty()) {
-        if (extension_condition_ != "empty anchor queue") {
+        extension_condition_ = "empty anchor queue";
+        if (extension_condition_ != prev_condition) {
             SILK_TRACE << "HeaderChain, no more headers to request: " << extension_condition_;
-            extension_condition_ = "empty anchor queue";
         }
         return {};
     }
@@ -452,9 +453,9 @@ auto HeaderChain::anchor_extension_request(time_point_t time_point) -> std::shar
         }
 
         if (anchor->timestamp > time_point) {
-            if (extension_condition_ != "no anchor ready for extension yet") {
+            extension_condition_ = "no anchor ready for extension yet";
+            if (extension_condition_ != prev_condition) {
                 SILK_TRACE << "HeaderChain, no more headers to request: " << extension_condition_;
-                extension_condition_ = "no anchor ready for extension yet";
             }
             return send_penalties;  // anchor not ready for "extend" re-request yet, send only penalties if any
         }

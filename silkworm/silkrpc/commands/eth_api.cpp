@@ -2021,45 +2021,6 @@ awaitable<void> EthereumRpcApi::handle_fee_history(const nlohmann::json& request
     co_return;
 }
 
-awaitable<roaring::Roaring> EthereumRpcApi::get_topics_bitmap(core::rawdb::DatabaseReader& db_reader, FilterTopics& topics, uint64_t start, uint64_t end) {
-    SILK_DEBUG << "#topics: " << topics.size() << " start: " << start << " end: " << end;
-    roaring::Roaring result_bitmap;
-    for (const auto& subtopics : topics) {
-        SILK_DEBUG << "#subtopics: " << subtopics.size();
-        roaring::Roaring subtopic_bitmap;
-        for (auto topic : subtopics) {
-            silkworm::Bytes topic_key{std::begin(topic.bytes), std::end(topic.bytes)};
-            SILK_TRACE << "topic: " << topic << " topic_key: " << silkworm::to_hex(topic);
-            auto bitmap = co_await ethdb::bitmap::get(db_reader, db::table::kLogTopicIndexName, topic_key, start, end);
-            SILK_TRACE << "bitmap: " << bitmap.toString();
-            subtopic_bitmap |= bitmap;
-            SILK_TRACE << "subtopic_bitmap: " << subtopic_bitmap.toString();
-        }
-        if (!subtopic_bitmap.isEmpty()) {
-            if (result_bitmap.isEmpty()) {
-                result_bitmap = subtopic_bitmap;
-            } else {
-                result_bitmap &= subtopic_bitmap;
-            }
-        }
-        SILK_DEBUG << "result_bitmap: " << result_bitmap.toString();
-    }
-    co_return result_bitmap;
-}
-
-awaitable<roaring::Roaring> EthereumRpcApi::get_addresses_bitmap(core::rawdb::DatabaseReader& db_reader, FilterAddresses& addresses, uint64_t start, uint64_t end) {
-    SILK_TRACE << "#addresses: " << addresses.size() << " start: " << start << " end: " << end;
-    roaring::Roaring result_bitmap;
-    for (auto address : addresses) {
-        silkworm::Bytes address_key{std::begin(address.bytes), std::end(address.bytes)};
-        auto bitmap = co_await ethdb::bitmap::get(db_reader, db::table::kLogAddressIndexName, address_key, start, end);
-        SILK_TRACE << "bitmap: " << bitmap.toString();
-        result_bitmap |= bitmap;
-    }
-    SILK_TRACE << "result_bitmap: " << result_bitmap.toString();
-    co_return result_bitmap;
-}
-
 awaitable<void> EthereumRpcApi::get_logs(ethdb::TransactionDatabase& tx_database, std::uint64_t start, std::uint64_t end,
                                          FilterAddresses& addresses, FilterTopics& topics, std::vector<Log>& logs) {
     SILK_INFO << "start block: " << start << " end block: " << end;
@@ -2070,7 +2031,7 @@ awaitable<void> EthereumRpcApi::get_logs(ethdb::TransactionDatabase& tx_database
     SILK_DEBUG << "block_numbers.cardinality(): " << block_numbers.cardinality();
 
     if (!topics.empty()) {
-        auto topics_bitmap = co_await get_topics_bitmap(tx_database, topics, start, end);
+        auto topics_bitmap = co_await ethdb::bitmap::from_topics(tx_database, db::table::kLogTopicIndexName, topics, start, end);
         SILK_TRACE << "topics_bitmap: " << topics_bitmap.toString();
         if (topics_bitmap.isEmpty()) {
             block_numbers = topics_bitmap;
@@ -2082,7 +2043,7 @@ awaitable<void> EthereumRpcApi::get_logs(ethdb::TransactionDatabase& tx_database
     SILK_TRACE << "block_numbers: " << block_numbers.toString();
 
     if (!addresses.empty()) {
-        auto addresses_bitmap = co_await get_addresses_bitmap(tx_database, addresses, start, end);
+        auto addresses_bitmap = co_await ethdb::bitmap::from_addresses(tx_database, db::table::kLogAddressIndexName, addresses, start, end);
         if (addresses_bitmap.isEmpty()) {
             block_numbers = addresses_bitmap;
         } else {

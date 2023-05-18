@@ -62,6 +62,11 @@ tests_not_compared_result = [
    "trace_callMany/test_15.json"
 ]
 
+tests_message_lower_case = [
+   "eth_callBundle/test_8.json",
+   "eth_createAccessList/test_4.json"
+]
+
 def get_target(target_type: str, method: str, infura_url: str, host: str):
     """ determine target
     """
@@ -115,6 +120,19 @@ def replace_str_from_file(filer, filew, matched_string):
                 if (matched_string in line) == 0:
                     output_file.write(line)
 
+def modified_str_from_file(filer, filew, matched_string):
+    """ parse file and convert string
+    """
+    with open(filer, "r", encoding='utf8') as input_file:
+        with open(filew, "w", encoding='utf8') as output_file:
+            # iterate all lines from file
+            for line in input_file:
+                # if text matches then don't write it
+                if (matched_string in line) == 1:
+                    output_file.write(line.lower())
+                else:
+                    output_file.write(line)
+
 
 def is_skipped(api_name, exclude_api_list, exclude_test_list, api_file: str, req_test, verify_with_daemon, global_test_number):
     """ determine if test must be skipped
@@ -151,6 +169,14 @@ def is_not_compared_result(test_name: str):
     """ determine if test not compared result
     """
     for curr_test_name in tests_not_compared_result:
+        if curr_test_name == test_name:
+            return 1
+    return 0
+
+def is_message_to_be_converted(test_name: str):
+    """ determine if test not compared result
+    """
+    for curr_test_name in tests_message_lower_case:
         if curr_test_name == test_name:
             return 1
     return 0
@@ -213,6 +239,11 @@ def run_shell_command(command: str, command1: str, expected_response: str, verbo
             removed_line_string = "error"
             replace_str_from_file(exp_rsp_file, temp_file1, removed_line_string)
             replace_str_from_file(silk_file, temp_file2, removed_line_string)
+            cmd = "json-diff -s /tmp/file1 /tmp/file2 " + " > " + diff_file
+        elif is_message_to_be_converted(json_file):
+            modified_string = "message"
+            modified_str_from_file(exp_rsp_file, temp_file1, modified_string)
+            modified_str_from_file(silk_file, temp_file2, modified_string)
             cmd = "json-diff -s /tmp/file1 /tmp/file2 " + " > " + diff_file
         elif is_big_json(json_file):
             cmd = "json-patch-jsondiff --indent 4 " + exp_rsp_file  + " " + silk_file + " > " + diff_file

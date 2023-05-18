@@ -162,11 +162,11 @@ jobs:
     environment:
       TOOLCHAIN: cxx20
       BUILD_TYPE: Debug
-      BUILD_JOBS: 16
+      BUILD_JOBS: 8
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=thread
     machine:
       image: ubuntu-2204:2023.04.2
-    resource_class: 2xlarge
+    resource_class: xlarge
     steps:
       - checkout_with_submodules
       - install_conan_machine

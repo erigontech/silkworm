@@ -23,30 +23,13 @@
 
 #include <boost/asio/awaitable.hpp>
 
-namespace silkworm::sentry::common {
+namespace silkworm::sentry::common::concurrency {
 
-class Timeout {
+boost::asio::awaitable<void> timeout(std::chrono::milliseconds duration);
+
+class TimeoutExpiredError : public std::runtime_error {
   public:
-    explicit Timeout(std::chrono::milliseconds duration) : duration_(duration) {}
-
-    Timeout(const Timeout&) = delete;
-    Timeout& operator=(const Timeout&) = delete;
-
-    [[nodiscard]] boost::asio::awaitable<void> schedule() const;
-    boost::asio::awaitable<void> operator()() const { return schedule(); }
-
-    static boost::asio::awaitable<void> after(std::chrono::milliseconds duration) {
-        Timeout timeout(duration);
-        co_await timeout.schedule();
-    }
-
-    class ExpiredError : public std::runtime_error {
-      public:
-        ExpiredError() : std::runtime_error("Timeout has expired") {}
-    };
-
-  private:
-    std::chrono::milliseconds duration_;
+    TimeoutExpiredError() : std::runtime_error("Timeout has expired") {}
 };
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::sentry::common::concurrency

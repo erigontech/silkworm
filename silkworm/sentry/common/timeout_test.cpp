@@ -63,13 +63,11 @@ awaitable<void> async_throw() {
 }
 
 awaitable<void> short_timeout() {
-    Timeout timeout(1ms);
-    co_await timeout();
+    co_await concurrency::timeout(1ms);
 }
 
 awaitable<void> simple_timeout() {
-    Timeout timeout(1h);
-    co_await timeout();
+    co_await concurrency::timeout(1h);
 }
 
 awaitable<void> wait_until_cancelled() {
@@ -123,7 +121,7 @@ TEST_CASE("Timeout.throw") {
 }
 
 TEST_CASE("Timeout.timeout") {
-    CHECK_THROWS_AS(run(short_timeout()), Timeout::ExpiredError);
+    CHECK_THROWS_AS(run(short_timeout()), concurrency::TimeoutExpiredError);
 }
 
 TEST_CASE("Timeout.boost_wait_for_one.throw_or_timeout") {

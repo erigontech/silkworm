@@ -327,10 +327,22 @@ struct TraceDeployResult {
     std::optional<evmc::address> contract_creator;
 };
 
+struct TraceEntry {
+    std::string type;
+    int32_t depth;
+    evmc::address from;
+    evmc::address to;
+    std::string value;
+    std::string input;
+};
+
+using TraceEntriesResult = std::vector<TraceEntry>;
+
 void to_json(nlohmann::json& json, const TraceCallTraces& result);
 void to_json(nlohmann::json& json, const TraceCallResult& result);
 void to_json(nlohmann::json& json, const TraceManyCallResult& result);
 void to_json(nlohmann::json& json, const TraceDeployResult& result);
+void to_json(nlohmann::json& json, const TraceEntry& trace_entry);
 
 class IntraBlockStateTracer : public silkworm::EvmTracer {
   public:
@@ -375,6 +387,28 @@ class CreateTracer : public silkworm::EvmTracer {
     const silkworm::IntraBlockState& initial_ibs_;
 };
 
+class EntryTracer : public silkworm::EvmTracer {
+  public:
+    explicit EntryTracer(silkworm::IntraBlockState& initial_ibs) : initial_ibs_(initial_ibs) {}
+
+    EntryTracer(const EntryTracer&) = delete;
+    EntryTracer& operator=(const EntryTracer&) = delete;
+
+    void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
+    void on_instruction_start(uint32_t /*pc*/, const intx::uint256* /*stack_top*/, int /*stack_height*/,
+                              int64_t /*gas*/, const evmone::ExecutionState& /*execution_state*/,
+                              const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_execution_end(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_precompiled_run(const evmc_result& /*result*/, int64_t /*gas*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_reward_granted(const silkworm::CallResult& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_creation_completed(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    TraceEntriesResult result() const { return result_; }
+
+  private:
+    const silkworm::IntraBlockState& initial_ibs_;
+    TraceEntriesResult result_;
+};
+
 struct Filter {
     std::set<evmc::address> from_addresses;
     std::set<evmc::address> to_addresses;
@@ -404,6 +438,7 @@ class TraceCallExecutor {
     }
     boost::asio::awaitable<TraceDeployResult> trace_deploy_transaction(const silkworm::Block& block, const evmc::address& contract_address);
     boost::asio::awaitable<std::vector<Trace>> trace_transaction(const silkworm::BlockWithHash& block, const rpc::Transaction& transaction);
+    boost::asio::awaitable<TraceEntriesResult> trace_transaction_entries(const TransactionWithBlock& transaction_with_block);
     boost::asio::awaitable<void> trace_filter(const TraceFilter& trace_filter, json::Stream* stream);
 
   private:

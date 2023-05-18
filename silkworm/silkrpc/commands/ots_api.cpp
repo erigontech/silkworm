@@ -86,7 +86,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_has_code(const nlohmann::json
     co_return;
 }
 
-boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetails(const nlohmann::json& request, nlohmann::json& reply) {
+boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_block_details(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid handle_ots_getBlockDetails params: " + params.dump();
@@ -137,7 +137,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetails(const nlohman
     co_return;
 }
 
-boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetailsByHash(const nlohmann::json& request, nlohmann::json& reply) {
+boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_block_details_by_hash(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 1) {
         auto error_msg = "invalid ots_getBlockDetailsByHash params: " + params.dump();
@@ -187,7 +187,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockDetailsByHash(const n
     co_return;
 }
 
-boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockTransactions(const nlohmann::json& request, nlohmann::json& reply) {
+boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_block_transactions(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 3) {
         auto error_msg = "invalid ots_getBlockTransactions params: " + params.dump();
@@ -253,7 +253,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getBlockTransactions(const nl
     co_return;
 }
 
-boost::asio::awaitable<void> OtsRpcApi::handle_ots_getTransactionBySenderAndNonce(const nlohmann::json& request, nlohmann::json& reply) {
+boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_transaction_by_sender_and_nonce(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 2) {
         const auto error_msg = "invalid ots_getTransactionBySenderAndNonce params: " + params.dump();
@@ -364,7 +364,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getTransactionBySenderAndNonc
     co_return;
 }
 
-boost::asio::awaitable<void> OtsRpcApi::handle_ots_getContractCreator(const nlohmann::json& request, nlohmann::json& reply) {
+boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_contract_creator(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 1) {
         const auto error_msg = "invalid ots_getContractCreator params: " + params.dump();
@@ -480,6 +480,52 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_getContractCreator(const nloh
 
         trace::TraceCallExecutor executor{io_context_, *block_cache_, tx_database, workers_};
         const auto result = co_await executor.trace_deploy_transaction(block_with_hash->block, contract_address);
+
+        reply = make_json_content(request["id"], result);
+
+    } catch (const std::invalid_argument& iv) {
+        SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
+        reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        reply = make_json_error(request["id"], 100, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+    co_return;
+}
+
+boost::asio::awaitable<void> OtsRpcApi::handle_ots_trace_transaction(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request["params"];
+    if (params.size() != 1) {
+        const auto error_msg = "invalid ots_traceTransaction params: " + params.dump();
+        SILK_ERROR << error_msg << "\n";
+        reply = make_json_error(request["id"], 100, error_msg);
+        co_return;
+    }
+
+    const auto transaction_hash = params[0].get<evmc::bytes32>();
+
+    SILK_DEBUG << "transaction_hash: " << transaction_hash;
+
+    auto tx = co_await database_->begin();
+
+    try {
+        ethdb::TransactionDatabase tx_database{*tx};
+        trace::TraceCallExecutor executor{io_context_, *block_cache_, tx_database, workers_};
+
+        const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, tx_database, transaction_hash);
+
+        if (!transaction_with_block.has_value()) {
+            reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+            co_await tx->close();
+            co_return;
+        }
+
+        const auto result = co_await executor.trace_transaction_entries(transaction_with_block.value());
 
         reply = make_json_content(request["id"], result);
 

@@ -88,6 +88,7 @@ commands:
             sudo apt -y install libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev
   
   install_gcc12:
+    steps:
       - run:
           name: "Install gcc 12"
           command: |

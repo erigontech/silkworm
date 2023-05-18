@@ -17,6 +17,8 @@
 find_package(absl REQUIRED)
 find_package(Boost REQUIRED)
 find_package(CLI11 REQUIRED)
+find_package(gRPC REQUIRED)
+find_package(Protobuf REQUIRED)
 
 # cmake-format: off
 set(BACKEND_KV_SERVER_SRC
@@ -49,6 +51,10 @@ target_link_libraries(check_tx_lookup PRIVATE silkworm_node CLI11::CLI11)
 
 add_executable(genesistool genesistool.cpp)
 target_link_libraries(genesistool PRIVATE CLI11::CLI11 Boost::headers)
+
+add_executable(grpc_toolbox grpc_toolbox.cpp)
+target_include_directories(grpc_toolbox PRIVATE ${CMAKE_SOURCE_DIR})
+target_link_libraries(grpc_toolbox absl::flags_parse gRPC::grpc++ protobuf::libprotobuf silkrpc)
 
 add_executable(kzg_g2_uncompress kzg_g2_uncompress.cpp)
 target_link_libraries(kzg_g2_uncompress silkworm_core blst)

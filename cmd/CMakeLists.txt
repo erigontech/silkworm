@@ -33,6 +33,10 @@ if(NOT SILKWORM_CORE_ONLY)
   find_package(Boost REQUIRED)
   find_package(CLI11 REQUIRED)
 
+  if(SILKWORM_USE_MIMALLOC AND CONAN_PACKAGE_MANAGER)
+    find_package(mimalloc REQUIRED)
+  endif()
+
   # Common modules for commands
   add_subdirectory(common)
 
@@ -40,8 +44,6 @@ if(NOT SILKWORM_CORE_ONLY)
   add_subdirectory(dev)
 
   # Silkworm components
-  add_subdirectory(rpcdaemon)
-
   set(SILKWORM_CMD_SRC
       silkworm.cpp
       common/db_checklist.cpp
@@ -56,6 +58,26 @@ if(NOT SILKWORM_CORE_ONLY)
   )
   add_executable(silkworm "${SILKWORM_CMD_SRC}")
   target_link_libraries(silkworm PRIVATE silkworm_node silkworm_sync cmd_common $<$<BOOL:${MSVC}>:Kernel32.lib>)
+
+  # SilkRpc Daemon
+  # cmake-format: off
+  set(SILKRPC_DAEMON_LIBRARIES
+      silkrpc
+      absl::flags_parse
+      cmd_common
+  )
+  # cmake-format: on
+  if(SILKWORM_USE_MIMALLOC)
+    if(CONAN_PACKAGE_MANAGER)
+      list(APPEND SILKRPC_DAEMON_LIBRARIES mimalloc::mimalloc)
+    else()
+      list(APPEND SILKRPC_DAEMON_LIBRARIES mimalloc)
+    endif()
+  endif()
+
+  add_executable(silkrpcdaemon rpcdaemon.cpp)
+  target_include_directories(silkrpcdaemon PUBLIC ${CMAKE_SOURCE_DIR})
+  target_link_libraries(silkrpcdaemon PRIVATE ${SILKRPC_DAEMON_LIBRARIES})
 
   # cmake-format: off
   set(SENTRY_CMD_SRC

@@ -30,7 +30,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/daemon.hpp>
 
-#include "../common/common.hpp"
+#include "common/common.hpp"
 
 using namespace silkworm;
 using namespace silkworm::cmd;

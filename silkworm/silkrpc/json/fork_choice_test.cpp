@@ -25,7 +25,7 @@ using Catch::Matchers::Message;
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 
 TEST_CASE("serialize ForkChoiceStateV1", "[silkworm::json][to_json]") {
-    ForkChoiceStateV1 forkchoice_state{
+    ForkChoiceState forkchoice_state{
         .head_block_hash = 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32,
         .safe_block_hash = 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32,
         .finalized_block_hash = 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32};
@@ -45,7 +45,7 @@ TEST_CASE("deserialize ForkChoiceStateV1", "[silkworm::json][from_json]") {
         "finalizedBlockHash":"0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858"
     })"_json;
 
-    ForkChoiceStateV1 forkchoice_state = j;
+    ForkChoiceState forkchoice_state = j;
     CHECK(forkchoice_state.head_block_hash == 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32);
     CHECK(forkchoice_state.safe_block_hash == 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32);
     CHECK(forkchoice_state.finalized_block_hash == 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32);

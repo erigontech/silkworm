@@ -45,12 +45,12 @@ class PoSSync : public ChainSync {
     auto download_blocks() -> asio::awaitable<void>; /*[[long_running]]*/
 
     // public interface called by the external PoS client
-    auto new_payload_v1(const rpc::ExecutionPayloadV1&) -> asio::awaitable<rpc::PayloadStatusV1>;
-    auto fork_choice_update_v1(const rpc::ForkChoiceStateV1&, const std::optional<rpc::PayloadAttributesV1>&) -> asio::awaitable<rpc::ForkChoiceUpdatedReplyV1>;
-    auto get_payload_v1(uint64_t payloadId) -> asio::awaitable<rpc::ExecutionPayloadV1>;
+    auto new_payload(const rpc::ExecutionPayload&) -> asio::awaitable<rpc::PayloadStatus>;
+    auto fork_choice_update(const rpc::ForkChoiceState&, const std::optional<rpc::PayloadAttributes>&) -> asio::awaitable<rpc::ForkChoiceUpdatedReply>;
+    auto get_payload(uint64_t payloadId) -> asio::awaitable<rpc::ExecutionPayload>;
 
   private:
-    static auto make_execution_block(const rpc::ExecutionPayloadV1& payload) -> std::shared_ptr<Block>;
+    static auto make_execution_block(const rpc::ExecutionPayload& payload) -> std::shared_ptr<Block>;
     void do_sanity_checks(const BlockHeader& header, TotalDifficulty parent_td);
     auto has_bad_ancestor(const Hash& block_hash) -> std::tuple<bool, Hash>;
 };

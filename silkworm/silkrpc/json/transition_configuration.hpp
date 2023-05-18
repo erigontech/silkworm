@@ -22,7 +22,7 @@
 
 namespace silkworm::rpc {
 
-void to_json(nlohmann::json& json, const TransitionConfigurationV1& transition_configuration);
-void from_json(const nlohmann::json& json, TransitionConfigurationV1& transition_configuration);
+void to_json(nlohmann::json& json, const TransitionConfiguration& transition_configuration);
+void from_json(const nlohmann::json& json, TransitionConfiguration& transition_configuration);
 
 }  // namespace silkworm::rpc

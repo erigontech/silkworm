@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-#include <filesystem>
 #include <iostream>
 
 #include <CLI/CLI.hpp>

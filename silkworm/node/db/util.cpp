@@ -153,6 +153,11 @@ namespace detail {
         rlp::encode(to, base_txn_id);
         rlp::encode(to, txn_count);
         rlp::encode(to, ommers);
+
+        if (withdrawals) {
+            rlp::encode(to, *withdrawals);
+        }
+
         return to;
     }
 

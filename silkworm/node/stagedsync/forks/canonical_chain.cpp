@@ -69,19 +69,16 @@ BlockId CanonicalChain::find_forking_point(Hash header_hash) const {
     std::optional<BlockHeader> header = db::read_header(tx_, header_hash);
     if (!header) throw std::logic_error("find_forking_point precondition violation, header not found");
 
-    return find_forking_point(*header, header_hash);
+    return find_forking_point(*header);
 }
 
-BlockId CanonicalChain::find_forking_point(const BlockHeader& header, const Hash& header_hash) const {
+BlockId CanonicalChain::find_forking_point(const BlockHeader& header) const {
     BlockId forking_point{};
 
     if (header.number == 0) return forking_point;
 
     BlockNum height = header.number;
     Hash parent_hash = header.parent_hash;
-
-    // Special case: forking point is in the canonical chain
-    if (header_hash == get_hash(height)) return {height, header_hash};
 
     // Most common case: forking point is the height of the parent header
     auto prev_canon_hash = get_hash(height - 1);

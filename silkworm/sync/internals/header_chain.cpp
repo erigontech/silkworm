@@ -435,7 +435,10 @@ auto HeaderChain::anchor_extension_request(time_point_t time_point) -> std::shar
         return {};
 
     if (anchor_queue_.empty()) {
-        SILK_TRACE << "HeaderChain, no more headers to request: empty anchor queue";
+        if (extension_condition_ != "empty anchor queue") {
+            SILK_TRACE << "HeaderChain, no more headers to request: " << extension_condition_;
+            extension_condition_ = "empty anchor queue";
+        }
         return {};
     }
 
@@ -449,7 +452,10 @@ auto HeaderChain::anchor_extension_request(time_point_t time_point) -> std::shar
         }
 
         if (anchor->timestamp > time_point) {
-            SILK_TRACE << "HeaderChain: no anchor ready for extension yet";
+            if (extension_condition_ != "no anchor ready for extension yet") {
+                SILK_TRACE << "HeaderChain, no more headers to request: " << extension_condition_;
+                extension_condition_ = "no anchor ready for extension yet";
+            }
             return send_penalties;  // anchor not ready for "extend" re-request yet, send only penalties if any
         }
 
@@ -469,6 +475,7 @@ auto HeaderChain::anchor_extension_request(time_point_t time_point) -> std::shar
             SILK_TRACE << "HeaderChain: trying to extend anchor " << anchor->blockHeight
                        << " (chain bundle len = " << anchor->chainLength() << ", last link = " << anchor->lastLinkHeight << " )";
 
+            extension_condition_ = "ok";
             return request_message;  // try (again) to extend this anchor
         } else {
             // ancestors of this anchor seem to be unavailable, invalidate and move on
@@ -480,6 +487,7 @@ auto HeaderChain::anchor_extension_request(time_point_t time_point) -> std::shar
         }
     }
 
+    extension_condition_ = "void anchor queue";
     return send_penalties;
 }
 

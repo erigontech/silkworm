@@ -37,7 +37,11 @@ using Capabilities = std::vector<std::string>;
 //! or
 //! ExecutionPayloadV2 as specified in https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#executionpayloadv2
 struct ExecutionPayload {
-    uint32_t version{1};
+    enum Version : uint32_t {
+        V1 = 1,
+        V2 = 2
+    };
+    Version version{V1};
 
     uint64_t number;
     uint64_t timestamp;
@@ -53,7 +57,7 @@ struct ExecutionPayload {
     Bloom logs_bloom;
     Bytes extra_data;
     std::vector<Bytes> transactions;
-    std::optional<std::vector<Withdrawal>> withdrawals{std::nullopt};  // present iff version=2
+    std::optional<std::vector<Withdrawal>> withdrawals{std::nullopt};  // present iff version == V2
 };
 
 //! ForkChoiceStateV1 as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#forkchoicestatev1

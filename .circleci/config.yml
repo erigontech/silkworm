@@ -88,7 +88,7 @@ commands:
       - run:
           name: "Install llvm"
           command: |
-            sudo apt -y install llvm-$CLANG_VERSION libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev clang-$CLANG_VERSION lcov
+            sudo apt -y install llvm-$CLANG_VERSION libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev clang-$CLANG_VERSION
             sudo ln -sfv /usr/bin/clang-$CLANG_VERSION /usr/bin/clang
             sudo ln -sfv /usr/bin/clang++-$CLANG_VERSION /usr/bin/clang++
             sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100

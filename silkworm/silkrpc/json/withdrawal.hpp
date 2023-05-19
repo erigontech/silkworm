@@ -18,11 +18,11 @@
 
 #include <nlohmann/json.hpp>
 
-#include <silkworm/silkrpc/types/execution_payload.hpp>
+#include <silkworm/core/types/withdrawal.hpp>
 
-namespace silkworm::rpc {
+namespace silkworm {
 
-void to_json(nlohmann::json& json, const PayloadAttributes& payload_attributes);
-void from_json(const nlohmann::json& json, PayloadAttributes& payload_attributes);
+void to_json(nlohmann::json& json, const Withdrawal& withdrawal);
+void from_json(const nlohmann::json& json, Withdrawal& receipt);
 
-}  // namespace silkworm::rpc
+}  // namespace silkworm

@@ -36,8 +36,11 @@ jobs:
         submodules: recursive
         fetch-depth: "0"
 
-    - name: Install GMP & mimalloc
-      run: brew install gmp mimalloc
+    - name: Install Prerequisites
+      run: |
+        brew install gmp
+        pip3 install --user conan==1.58.0 chardet
+        echo "$HOME/Library/Python/$(ls $HOME/Library/Python)/bin" >> "$GITHUB_PATH"
 
     - name: Create Build Environment
       # Some projects don't allow in-source building, so create a separate build directory
@@ -50,9 +53,6 @@ jobs:
         key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.config.cc }}-${{ matrix.config.build_type }}  # Eg. "linux_x64-ubuntu-latest-clang-12-Debug"
 
     - name: Configure CMake
-      # Use a bash shell so we can use the same syntax for environment variable
-      # access regardless of the host operating system
-      shell: bash
       working-directory: ${{runner.workspace}}/build
       env:
         CC: ${{ matrix.config.cc}}
@@ -63,13 +63,11 @@ jobs:
 
     - name: Build
       working-directory: ${{runner.workspace}}/build
-      shell: bash
       # Execute the build.  You can specify a specific target with "--target <NAME>"
       run: cmake --build . --config ${{ matrix.config.build_type }} -j 2
 
     - name: Test
       working-directory: ${{runner.workspace}}/build
-      shell: bash
       run: |
         cmd/test/core_test
         cmd/test/infra_test

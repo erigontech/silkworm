@@ -144,6 +144,7 @@ class BodySequence {
     time_point_t last_nack_;
     size_t ready_bodies_{0};
     Download_Statistics statistics_;
+    std::string retrieval_condition_;
 };
 
 }  // namespace silkworm

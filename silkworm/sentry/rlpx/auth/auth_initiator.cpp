@@ -29,14 +29,12 @@ using namespace std::chrono_literals;
 using namespace concurrency::awaitable_wait_for_one;
 
 boost::asio::awaitable<AuthKeys> AuthInitiator::execute(common::SocketStream& stream) {
-    common::Timeout timeout(5s);
-
     AuthMessage auth_message{initiator_key_pair_, recipient_public_key_, initiator_ephemeral_key_pair_};
     Bytes auth_data = auth_message.serialize();
-    co_await (stream.send(auth_data) || timeout());
+    co_await (stream.send(auth_data) || common::concurrency::timeout(5s));
 
     Bytes auth_ack_data_raw;
-    auto auth_ack_data = std::get<ByteView>(co_await (stream.receive_size_and_data(auth_ack_data_raw) || timeout()));
+    auto auth_ack_data = std::get<ByteView>(co_await (stream.receive_size_and_data(auth_ack_data_raw) || common::concurrency::timeout(5s)));
     AuthAckMessage auth_ack_message{auth_ack_data, initiator_key_pair_};
 
     co_return AuthKeys{

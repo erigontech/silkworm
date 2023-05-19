@@ -43,7 +43,6 @@ def usage(argv):
     print("")
     print("-h                      print this help")
     print("-D                      perf command")
-    print("-z                      do not start server")
     print("-Z                      doen't verify server is still active")
     print("-u                      save test report in Git repo")
     print("-v                      verbose")
@@ -91,7 +90,6 @@ class Config:
         self.waiting_time = DEFAULT_WAITING_TIME
         self.user_perf_command = ""
         self.workers = DEFAULT_WORKERS
-        self.start_server = "1"
         self.wait_mode = DEFAULT_WAIT_MODE
         self.versioned_test_report = False
         self.verbose = False
@@ -146,8 +144,6 @@ class Config:
                     self.repetitions = int(optarg)
                 elif option == "-t":
                     self.test_sequence = optarg
-                elif option == "-z":
-                    self.start_server = "0"
                 elif option == "-u":
                     self.versioned_test_report = True
                 elif option == "-v":
@@ -190,18 +186,12 @@ class PerfTest:
             print("Stop both RPC daemons in case they are already running...", end='', flush=True)
         if self.config.tracing:
             print("")
-        self.stop_silk_daemon()
-        self.stop_rpc_daemon()
         if self.config.verbose:
             print("done", flush=True)
         if self.config.verbose:
             print("Start-and-stop both RPC daemons just to check that configuration is OK...", end='', flush=True)
         if self.config.tracing:
             print("")
-        self.start_silk_daemon(0)
-        self.stop_silk_daemon()
-        self.start_rpc_daemon(0)
-        self.stop_rpc_daemon()
         if self.config.verbose:
             print("done", flush=True)
         self.copy_and_extract_pattern_file()
@@ -241,107 +231,6 @@ class PerfTest:
             os.system(cmd)
             cmd = "sed -i 's/localhost/" + self.config.rpc_daemon_address + "/g' " + VEGETA_PATTERN_RPCDAEMON_BASE + self.config.test_type + ".txt"
             os.system(cmd)
-
-    def start_rpc_daemon(self, start_test):
-        """ Start Erigon RPC daemon server """
-        if self.config.rpc_daemon_address != "localhost":
-            return
-        if self.config.start_server == "0":
-            if start_test:
-                print("Erigon RpcDaemon NOT started")
-            return
-        if self.config.test_mode == "1":
-            return
-        self.rpc_daemon = 1
-        on_core = self.config.daemon_vegeta_on_core.split(':')
-        if on_core[0] == "-":
-            cmd = self.config.erigon_builddir + "bin/rpcdaemon --private.api.addr="+self.config.erigon_addr+" --http.api=eth,debug,net,web3 2>/dev/null &"
-        else:
-            cmd = "taskset -c " + on_core[0] + " " + \
-                   self.config.erigon_builddir + "bin/rpcdaemon --private.api.addr="+self.config.erigon_addr+" --http.api=eth,debug,net,web3 2>/dev/null &"
-        if self.config.tracing:
-            print(f"Erigon RpcDaemon starting: {cmd}")
-        status = os.system(cmd)
-        if int(status) != 0:
-            print("Start Erigon RpcDaemon failed: Test Aborted!")
-            sys.exit(-1)
-        time.sleep(2)
-        rpcdaemon_process = get_process('rpcdaemon')
-        if not rpcdaemon_process:
-            print("Start Erigon RpcDaemon failed: Test Aborted!")
-            sys.exit(-1)
-
-    def stop_rpc_daemon(self):
-        """ Stop Erigon RPC daemon server """
-        if self.config.rpc_daemon_address != "localhost":
-            return
-        if self.config.start_server == "0":
-            return
-        if self.config.test_mode == "1":
-            return
-        self.rpc_daemon = 0
-        os.system("kill -9 $(ps aux | grep 'rpcdaemon' | grep -v 'grep' | awk '{print $2}') 2> /dev/null")
-        rpcdaemon_process = get_process('rpcdaemon')
-        if rpcdaemon_process:
-            rpcdaemon_process.kill()
-        if self.config.tracing:
-            print("Erigon RpcDaemon stopped")
-        time.sleep(5)
-
-    def start_silk_daemon(self, start_test):
-        """ Starts Silkrpc daemon """
-        if self.config.rpc_daemon_address != "localhost":
-            return
-        if self.config.start_server == "0":
-            if start_test:
-                print("Silkrpc NOT started")
-            return
-        if self.config.test_mode == "2":
-            return
-        self.rpc_daemon = 1
-        on_core = self.config.daemon_vegeta_on_core.split(':')
-        if self.config.user_perf_command != "" and start_test == 1:
-            perf_cmd = self.config.user_perf_command
-        else:
-            perf_cmd = ""
-        wait_mode_str = " --wait_mode " + self.config.wait_mode
-
-        base_params = self.config.silkrpc_build_dir + "cmd/silkrpcdaemon --target " + self.config.erigon_addr + " --http_port localhost:51515 --log_verbosity c --num_workers " \
-            + str(self.config.workers)
-
-        if self.config.silkrpc_num_contexts != "":
-            base_params += " --num_contexts " + str(self.config.silkrpc_num_contexts)
-        if on_core[0] == "-":
-            cmd = perf_cmd  + base_params + wait_mode_str + " 2>/dev/null &"
-        else:
-            cmd = perf_cmd + "taskset -c " + on_core[0] + " "  + base_params + wait_mode_str + " 2>/dev/null &"
-        if self.config.tracing:
-            print(f"Silkrpc starting: {cmd}")
-        status = os.system(cmd)
-        if int(status) != 0:
-            print("Start Silkrpc failed: Test Aborted!")
-            sys.exit(-1)
-        time.sleep(2)
-        silkrpc_process = get_process('silkrpcdaemon')
-        if not silkrpc_process:
-            print("Start Silkrpc failed: Test Aborted!")
-            sys.exit(-1)
-
-    def stop_silk_daemon(self):
-        """ Stops Silkrpc daemon """
-        if self.config.rpc_daemon_address != "localhost":
-            return
-        if self.config.start_server == "0":
-            return
-        if self.config.test_mode == "2":
-            return
-        self.silk_daemon = 0
-        silkrpc_process = get_process('silkrpcdaemon')
-        if silkrpc_process:
-            silkrpc_process.kill()
-        if self.config.tracing:
-            print("Silkrpc stopped")
-        time.sleep(3)
 
     def execute(self, test_number, name, qps_value, duration):
         """ Execute the tests using specified queries-per-second (QPS) and duration """
@@ -561,24 +450,20 @@ def main(argv):
     current_sequence = str(config.test_sequence).split(',')
 
     if config.test_mode in ("1", "3"):
-        perf_test.start_silk_daemon(1)
         result = perf_test.execute_sequence(current_sequence, 'silkrpc')
         if result == 0:
             print("Server dead test Aborted!")
             test_report.close()
             sys.exit(-1)
-        perf_test.stop_silk_daemon()
         if config.test_mode == "3":
             print("--------------------------------------------------------------------------------------------\n")
 
     if config.test_mode in ("2", "3"):
-        perf_test.start_rpc_daemon(1)
         result = perf_test.execute_sequence(current_sequence, 'rpcdaemon')
         if result == 0:
             print("Server dead test Aborted!")
             test_report.close()
             sys.exit(-1)
-        perf_test.stop_rpc_daemon()
 
     test_report.close()
     print("Performance Test completed successfully.")

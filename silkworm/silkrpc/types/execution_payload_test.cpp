@@ -23,15 +23,20 @@
 
 namespace silkworm::rpc {
 
-TEST_CASE("print empty execution payload", "[silkrpc][types][execution_payload]") {
-    ExecutionPayloadV1 p{};
+TEST_CASE("print empty ExecutionPayloadV1", "[silkworm][rpc][types]") {
+    ExecutionPayload p{.version = ExecutionPayload::V1};
     CHECK_NOTHROW(silkworm::test::null_stream() << p);
 }
 
-TEST_CASE("print empty payload status", "[silkrpc][types][execution_payload]") {
-    PayloadStatusV1 p{
+TEST_CASE("print empty PayloadStatusV1", "[silkworm][rpc][types]") {
+    PayloadStatus p{
         .latest_valid_hash = evmc::bytes32{},
         .validation_error = ""};
+    CHECK_NOTHROW(silkworm::test::null_stream() << p);
+}
+
+TEST_CASE("print empty ExecutionPayloadV2", "[silkworm][rpc][types]") {
+    ExecutionPayload p{.version = ExecutionPayload::V2};
     CHECK_NOTHROW(silkworm::test::null_stream() << p);
 }
 

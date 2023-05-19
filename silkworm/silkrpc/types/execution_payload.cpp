@@ -19,7 +19,8 @@
 #include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkworm::rpc {
-std::ostream& operator<<(std::ostream& out, const ExecutionPayloadV1& payload) {
+
+std::ostream& operator<<(std::ostream& out, const ExecutionPayload& payload) {
     auto bloom_bytes{silkworm::ByteView(&payload.logs_bloom[0], 256)};
     out << "number: " << payload.number
         << " block_hash: " << payload.block_hash
@@ -33,12 +34,14 @@ std::ostream& operator<<(std::ostream& out, const ExecutionPayloadV1& payload) {
         << " prev_randao: " << payload.prev_randao
         << " logs_bloom: " << silkworm::to_hex(bloom_bytes)
         << " extra_data: " << silkworm::to_hex(payload.extra_data)
-        << "#transactions: " << payload.transactions.size();
-
+        << " #transactions: " << payload.transactions.size();
+    if (payload.withdrawals) {
+        out << " #withdrawals: " << payload.withdrawals->size();
+    }
     return out;
 }
 
-std::ostream& operator<<(std::ostream& out, const PayloadStatusV1& payload_status) {
+std::ostream& operator<<(std::ostream& out, const PayloadStatus& payload_status) {
     out << "status: " << payload_status.status;
 
     if (payload_status.latest_valid_hash) {
@@ -50,4 +53,5 @@ std::ostream& operator<<(std::ostream& out, const PayloadStatusV1& payload_statu
 
     return out;
 }
+
 }  // namespace silkworm::rpc

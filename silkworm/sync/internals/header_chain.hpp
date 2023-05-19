@@ -186,6 +186,7 @@ class HeaderChain {
 
     Download_Statistics statistics_;
     std::string skeleton_condition_;
+    std::string extension_condition_;
 };
 
 }  // namespace silkworm

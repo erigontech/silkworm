@@ -22,7 +22,7 @@
 
 namespace silkworm::rpc {
 
-void to_json(nlohmann::json& json, const ExecutionPayloadV1& execution_payload);
-void from_json(const nlohmann::json& json, ExecutionPayloadV1& execution_payload);
+void to_json(nlohmann::json& json, const ExecutionPayload& execution_payload);
+void from_json(const nlohmann::json& json, ExecutionPayload& execution_payload);
 
 }  // namespace silkworm::rpc

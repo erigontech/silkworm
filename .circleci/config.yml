@@ -93,6 +93,8 @@ commands:
             sudo ln -sfv /usr/bin/clang++-$CLANG_VERSION /usr/bin/clang++
             sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100
             sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 100
+            sudo update-alternatives --install /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-$CLANG_VERSION 100
+            sudo update-alternatives --install /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-$CLANG_VERSION 100
 
   build_using_hunter:
     parameters:

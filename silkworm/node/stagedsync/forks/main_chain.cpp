@@ -176,6 +176,12 @@ bool MainChain::notify_fork_choice_update(Hash head_block_hash, [[maybe_unused]]
                          "canonical head not aligned with fork choice");
     }
 
+    if (!std::holds_alternative<ValidChain>(canonical_head_status_)) return false;
+
+    auto valid_chain = std::get<ValidChain>(canonical_head_status_);
+    ensure_invariant(canonical_chain_.current_head() == valid_chain.current_head,
+                     "canonical head not aligned with recorded head status");
+
     tx_.commit_and_renew();
 
     last_fork_choice_ = canonical_chain_.current_head();

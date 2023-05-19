@@ -21,6 +21,7 @@
 #include <boost/asio/io_context.hpp>
 #include <catch2/catch.hpp>
 
+#include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test/log.hpp>
@@ -30,6 +31,10 @@
 #include <silkworm/node/test/context.hpp>
 
 namespace silkworm {
+
+namespace asio = boost::asio;
+using namespace stagedsync;
+using namespace intx;  // just for literals
 
 class MainChain_ForTest : public stagedsync::MainChain {
   public:
@@ -41,8 +46,24 @@ class MainChain_ForTest : public stagedsync::MainChain {
     using stagedsync::MainChain::tx_;
 };
 
-namespace asio = boost::asio;
-using namespace stagedsync;
+Block generateSampleChildrenBlock(const BlockHeader& parent) {
+    Block block;
+    auto parent_hash = parent.hash();
+
+    // BlockHeader
+    block.header.number = parent.number + 1;
+    block.header.difficulty = 17'000'000'000 + block.header.number;
+    block.header.parent_hash = parent_hash;
+    block.header.beneficiary = 0xc8ebccc5f5689fa8659d83713341e5ad19349448_address;
+    block.header.state_root = kEmptyRoot;
+    block.header.receipts_root = kEmptyRoot;
+    block.header.gas_limit = 10'000'000;
+    block.header.gas_used = 0;
+    block.header.timestamp = parent.timestamp + 12;
+    block.header.extra_data = {};
+
+    return block;
+}
 
 TEST_CASE("MainChain") {
     test::SetLogVerbosityGuard log_guard(log::Level::kNone);
@@ -266,6 +287,79 @@ TEST_CASE("MainChain") {
         main_chain.insert_block(block3);
         extends_canonical = main_chain.extends_last_fork_choice(block3.header.number, block3.header.hash());
         CHECK(extends_canonical);
+
+        // reverting the chain
+        main_chain.notify_fork_choice_update(*header0_hash);
+
+        // checking the status
+        present_in_canonical = main_chain.get_canonical_hash(block1.header.number);
+        REQUIRE(!present_in_canonical);
+
+        final_canonical_head = main_chain.canonical_head();
+        REQUIRE(final_canonical_head == initial_canonical_head);
+        REQUIRE(main_chain.canonical_chain_.current_head() == initial_canonical_head);
+
+        current_status = main_chain.canonical_head_status_;
+        REQUIRE(holds_alternative<ValidChain>(current_status));
+        REQUIRE(std::get<ValidChain>(current_status).current_head == BlockId{0, *header0_hash});
+    }
+
+    SECTION("diverting the head") {
+        auto header0_hash = db::read_canonical_hash(tx, 0);
+        REQUIRE(header0_hash.has_value());
+
+        auto header0 = db::read_canonical_header(tx, 0);
+        REQUIRE(header0.has_value());
+
+        Block block1 = generateSampleChildrenBlock(*header0);
+        auto block1_hash = block1.header.hash();
+
+        Block block2 = generateSampleChildrenBlock(block1.header);
+        auto block2_hash = block2.header.hash();
+
+        Block block3 = generateSampleChildrenBlock(block2.header);
+        auto block3_hash = block3.header.hash();
+
+        // inserting & verifying the block
+        main_chain.insert_block(block1);
+        main_chain.insert_block(block2);
+        main_chain.insert_block(block3);
+        auto verification = main_chain.verify_chain(block3_hash);
+
+        REQUIRE(holds_alternative<ValidChain>(verification));
+        auto valid_chain = std::get<ValidChain>(verification);
+        CHECK(valid_chain.current_head == BlockId{3, block3_hash});
+
+        // confirming the chain
+        auto fcu_updated = main_chain.notify_fork_choice_update(block3_hash);
+        CHECK(fcu_updated);
+
+        auto final_canonical_head = main_chain.canonical_head();
+        CHECK(final_canonical_head == BlockId{3, block3_hash});
+        CHECK(main_chain.canonical_chain_.current_head() == final_canonical_head);
+
+        // Creating a fork and changing the head (trigger unwind)
+        {
+            Block block2b = generateSampleChildrenBlock(block1.header);
+            block2b.header.extra_data = string_view_to_byte_view("I'm different");  // to make it different from block2
+            auto block2b_hash = block2b.header.hash();
+
+            // inserting & verifying the block
+            main_chain.insert_block(block2b);
+            auto verification = main_chain.verify_chain(block2b_hash);
+
+            REQUIRE(holds_alternative<ValidChain>(verification));
+            auto valid_chain = std::get<ValidChain>(verification);
+            CHECK(valid_chain.current_head == BlockId{2, block2b_hash});
+
+            // confirming the chain
+            auto fcu_updated = main_chain.notify_fork_choice_update(block2b_hash);
+            CHECK(fcu_updated);
+
+            auto final_canonical_head = main_chain.canonical_head();
+            CHECK(final_canonical_head == BlockId{2, block2b_hash});
+            CHECK(main_chain.canonical_chain_.current_head() == final_canonical_head);
+        }
     }
 }
 

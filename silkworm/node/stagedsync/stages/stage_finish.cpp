@@ -33,15 +33,7 @@ Stage::Result Finish::forward(db::RWTxn& txn) {
         auto execution_stage_progress{db::stages::read_stage_progress(txn, db::stages::kExecutionKey)};
         if (previous_progress >= execution_stage_progress) {
             // Nothing to process
-            const auto stop_at_block = Environment::get_stop_at_block();  // User can specify to stop at some block
-            if (stop_at_block && stop_at_block <= execution_stage_progress) return Stage::Result::kStoppedByEnv;
             return ret;
-        } else if (previous_progress > execution_stage_progress) {
-            // Something bad had happened.
-            std::string what{std::string(stage_name_) + " progress " + std::to_string(previous_progress) +
-                             " while " + std::string(db::stages::kExecutionKey) + " stage " +
-                             std::to_string(execution_stage_progress)};
-            throw StageError(Stage::Result::kInvalidProgress, what);
         }
 
         throw_if_stopping();

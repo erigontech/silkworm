@@ -28,6 +28,7 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/strand.hpp>
 
+#include <silkworm/infra/concurrency/awaitable_future.hpp>
 #include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/infra/concurrency/task_group.hpp>
 #include <silkworm/sentry/common/atomic_value.hpp>
@@ -35,7 +36,6 @@
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 #include <silkworm/sentry/common/message.hpp>
-#include <silkworm/sentry/common/promise.hpp>
 #include <silkworm/sentry/common/socket_stream.hpp>
 
 #include "auth/hello_message.hpp"
@@ -169,7 +169,7 @@ class Peer {
     bool is_static_;
 
     common::AtomicValue<std::optional<auth::HelloMessage>> hello_message_{std::nullopt};
-    common::Promise<bool> handshake_promise_;
+    concurrency::AwaitablePromise<bool> handshake_promise_;
     common::AtomicValue<std::optional<rlpx_common::DisconnectReason>> disconnect_reason_{std::nullopt};
 
     boost::asio::strand<boost::asio::any_io_executor> strand_;

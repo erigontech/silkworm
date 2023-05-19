@@ -16,6 +16,10 @@
 
 #include "awaitable_future.hpp"
 
+#include <stdexcept>
+
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/detached.hpp>
 #include <catch2/catch.hpp>
 
 #include "active_component.hpp"
@@ -31,6 +35,11 @@ auto create_promise_and_set_value(asio::io_context& io, int value) {
     promise.set_value(value);
     return promise.get_future();
 }
+
+class TestException : public std::runtime_error {
+  public:
+    TestException() : std::runtime_error("TestException") {}
+};
 
 TEST_CASE("awaitable future") {
     asio::io_context io;
@@ -61,9 +70,9 @@ TEST_CASE("awaitable future") {
         AwaitablePromise<int> promise{io};
         auto future = promise.get_future();
 
-        promise.set_exception(std::make_exception_ptr(std::exception()));
+        promise.set_exception(std::make_exception_ptr(TestException()));
 
-        CHECK_THROWS(future.get());
+        CHECK_THROWS_AS(future.get(), TestException);
     }
 
     SECTION("variation of setting exception instead of value") {
@@ -71,20 +80,28 @@ TEST_CASE("awaitable future") {
         auto future = promise.get_future();
 
         try {
-            throw std::exception();
-        } catch (...) {
+            throw TestException();
+        } catch (const TestException&) {
             promise.set_exception(std::current_exception());
         }
 
-        CHECK_THROWS(future.get());
+        CHECK_THROWS_AS(future.get(), TestException);
     }
 
-    SECTION("setting value two times") {
+    SECTION("setting value two times fails") {
         AwaitablePromise<int> promise{io};
 
         promise.set_value(42);
 
         CHECK_THROWS(promise.set_value(43));
+    }
+
+    SECTION("setting exception two times fails") {
+        AwaitablePromise<int> promise{io};
+
+        promise.set_exception(std::make_exception_ptr(TestException()));
+
+        CHECK_THROWS(promise.set_exception(std::make_exception_ptr(TestException())));
     }
 
     SECTION("returning the future from a function") {

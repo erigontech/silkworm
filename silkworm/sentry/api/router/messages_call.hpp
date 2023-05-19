@@ -25,11 +25,11 @@
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
 
+#include <silkworm/infra/concurrency/awaitable_future.hpp>
 #include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/infra/concurrency/event_notifier.hpp>
 #include <silkworm/sentry/api/api_common/message_from_peer.hpp>
 #include <silkworm/sentry/api/api_common/message_id_set.hpp>
-#include <silkworm/sentry/common/promise.hpp>
 
 namespace silkworm::sentry::api::router {
 
@@ -41,7 +41,7 @@ class MessagesCall final {
         api_common::MessageIdSet message_id_filter,
         boost::asio::any_io_executor& executor)
         : message_id_filter_(std::move(message_id_filter)),
-          result_promise_(std::make_shared<sentry::common::Promise<TResult>>(executor)),
+          result_promise_(std::make_shared<concurrency::AwaitablePromise<TResult>>(executor)),
           unsubscribe_signal_(std::make_shared<concurrency::EventNotifier>(executor)) {}
 
     MessagesCall() = default;
@@ -49,7 +49,8 @@ class MessagesCall final {
     [[nodiscard]] const api_common::MessageIdSet& message_id_filter() const { return message_id_filter_; }
 
     boost::asio::awaitable<TResult> result() {
-        return result_promise_->wait();
+        auto future = result_promise_->get_future();
+        co_return (co_await future.get_async());
     }
 
     void set_result(TResult result) {
@@ -62,7 +63,7 @@ class MessagesCall final {
 
   private:
     api_common::MessageIdSet message_id_filter_;
-    std::shared_ptr<sentry::common::Promise<TResult>> result_promise_;
+    std::shared_ptr<concurrency::AwaitablePromise<TResult>> result_promise_;
     std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal_;
 };
 

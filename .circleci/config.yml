@@ -142,8 +142,7 @@ commands:
           working_directory: ~/build
           command: |
             ulimit -s unlimited
-            # https://github.com/llvm/llvm-project/issues/59432
-            ASAN_OPTIONS=alloc_dealloc_mismatch=0 cmd/test/core_test
+            cmd/test/core_test
       - run:
           name: "Infra unit tests"
           working_directory: ~/build
@@ -201,6 +200,7 @@ jobs:
       CLANG_VERSION: 15
       BUILD_TYPE: Debug
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=address,undefined
+      ASAN_OPTIONS: alloc_dealloc_mismatch=0 # https://github.com/llvm/llvm-project/issues/59432
     machine:
       image: ubuntu-2204:2023.04.2
     resource_class: xlarge

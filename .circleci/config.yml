@@ -73,6 +73,14 @@ commands:
           name: "Build"
           command: cmake --build ~/build -j8 # each compiler job requires 4GB of RAM
 
+  install_gcc:
+    steps:
+      - run:
+          name: "Install gcc"
+          command: |
+            sudo apt -y install gcc-$GCC_VERSION g++-$GCC_VERSION
+            sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-$GCC_VERSION 100 --slave /usr/bin/g++ g++ /usr/bin/g++-$GCC_VERSION
+
   # libc++ is an alternative standard library needed for coroutines support on Clang
   # https://libcxx.llvm.org
   install_llvm:
@@ -85,14 +93,6 @@ commands:
             sudo ln -sfv /usr/bin/clang++-$CLANG_VERSION /usr/bin/clang++
             sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100
             sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 100
-  
-  install_gcc:
-    steps:
-      - run:
-          name: "Install gcc"
-          command: |
-            sudo apt -y install gcc-$GCC_VERSION g++-$GCC_VERSION
-            sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-$GCC_VERSION 100 --slave /usr/bin/g++ g++ /usr/bin/g++-$GCC_VERSION
 
   build_using_hunter:
     parameters:
@@ -142,7 +142,8 @@ commands:
           working_directory: ~/build
           command: |
             ulimit -s unlimited
-            cmd/test/core_test
+            # https://github.com/llvm/llvm-project/issues/59432
+            ASAN_OPTIONS=alloc_dealloc_mismatch=0 cmd/test/core_test
       - run:
           name: "Infra unit tests"
           working_directory: ~/build

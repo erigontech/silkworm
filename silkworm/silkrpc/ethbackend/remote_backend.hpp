@@ -51,7 +51,7 @@ class RemoteBackEnd final : public BackEnd {
     awaitable<uint64_t> net_version() override;
     awaitable<std::string> client_version() override;
     awaitable<uint64_t> net_peer_count() override;
-    awaitable<ExecutionPayload> engine_get_payload(uint64_t payload_id) override;
+    awaitable<ExecutionPayloadAndValue> engine_get_payload(uint64_t payload_id) override;
     awaitable<PayloadStatus> engine_new_payload(const ExecutionPayload& payload) override;
     awaitable<ForkChoiceUpdatedReply> engine_forkchoice_updated(const ForkChoiceUpdatedRequest& fcu_request) override;
     awaitable<NodeInfos> engine_node_info() override;

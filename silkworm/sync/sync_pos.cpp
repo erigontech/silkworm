@@ -359,10 +359,10 @@ auto PoSSync::fork_choice_update(const rpc::ForkChoiceState& state,
     }
 }
 
-auto PoSSync::get_payload(uint64_t /*payloadId*/) -> asio::awaitable<rpc::ExecutionPayload> {
+auto PoSSync::get_payload(uint64_t /*payloadId*/) -> asio::awaitable<rpc::ExecutionPayloadAndValue> {
     // Implementation of engine_getPayloadVx method
     ensure_invariant(false, "get_payload not implemented");
-    co_return rpc::ExecutionPayload{};
+    co_return rpc::ExecutionPayloadAndValue{};
 }
 
 }  // namespace silkworm::chainsync

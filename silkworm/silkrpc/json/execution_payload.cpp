@@ -86,4 +86,9 @@ void from_json(const nlohmann::json& json, ExecutionPayload& execution_payload) 
         .withdrawals = withdrawals};
 }
 
+void to_json(nlohmann::json& json, const ExecutionPayloadAndValue& reply) {
+    json["executionPayload"] = reply.payload;
+    json["blockValue"] = to_quantity(reply.block_value);
+}
+
 }  // namespace silkworm::rpc

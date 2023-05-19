@@ -115,15 +115,16 @@ awaitable<NodeInfos> RemoteBackEnd::engine_node_info() {
     co_return node_info_list;
 }
 
-awaitable<ExecutionPayload> RemoteBackEnd::engine_get_payload(uint64_t payload_id) {
+awaitable<ExecutionPayloadAndValue> RemoteBackEnd::engine_get_payload(uint64_t payload_id) {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncEngineGetPayload> npc_rpc{*stub_, grpc_context_};
     ::remote::EngineGetPayloadRequest req;
     req.set_payload_id(payload_id);
     const auto reply = co_await npc_rpc.finish_on(executor_, req);
-    auto execution_payload{decode_execution_payload(reply.execution_payload())};
-    SILK_DEBUG << "RemoteBackEnd::engine_get_payload_v1 data=" << execution_payload << " t=" << clock_time::since(start_time);
-    co_return execution_payload;
+    const auto payload{decode_execution_payload(reply.execution_payload())};
+    const auto value{uint256_from_H256(reply.block_value())};
+    SILK_DEBUG << "RemoteBackEnd::engine_get_payload data=" << payload << " value=" << value << " t=" << clock_time::since(start_time);
+    co_return ExecutionPayloadAndValue{payload, value};
 }
 
 awaitable<PayloadStatus> RemoteBackEnd::engine_new_payload(const ExecutionPayload& payload) {
@@ -132,7 +133,7 @@ awaitable<PayloadStatus> RemoteBackEnd::engine_new_payload(const ExecutionPayloa
     auto req{encode_execution_payload(payload)};
     const auto reply = co_await npc_rpc.finish_on(executor_, req);
     PayloadStatus payload_status = decode_payload_status(reply);
-    SILK_DEBUG << "RemoteBackEnd::engine_new_payload_v1 data=" << payload_status << " t=" << clock_time::since(start_time);
+    SILK_DEBUG << "RemoteBackEnd::engine_new_payload data=" << payload_status << " t=" << clock_time::since(start_time);
     co_return payload_status;
 }
 
@@ -149,7 +150,7 @@ awaitable<ForkChoiceUpdatedReply> RemoteBackEnd::engine_forkchoice_updated(const
     if (reply.payload_id() != 0) {
         forkchoice_updated_reply.payload_id = reply.payload_id();
     }
-    SILK_DEBUG << "RemoteBackEnd::engine_forkchoice_updated_v1 data=" << payload_status << " t=" << clock_time::since(start_time);
+    SILK_DEBUG << "RemoteBackEnd::engine_forkchoice_updated data=" << payload_status << " t=" << clock_time::since(start_time);
     co_return forkchoice_updated_reply;
 }
 

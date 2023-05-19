@@ -346,17 +346,17 @@ TEST_CASE("MainChain") {
 
             // inserting & verifying the block
             main_chain.insert_block(block2b);
-            auto verification = main_chain.verify_chain(block2b_hash);
+            verification = main_chain.verify_chain(block2b_hash);
 
             REQUIRE(holds_alternative<ValidChain>(verification));
-            auto valid_chain = std::get<ValidChain>(verification);
+            valid_chain = std::get<ValidChain>(verification);
             CHECK(valid_chain.current_head == BlockId{2, block2b_hash});
 
             // confirming the chain
-            auto fcu_updated = main_chain.notify_fork_choice_update(block2b_hash);
+            fcu_updated = main_chain.notify_fork_choice_update(block2b_hash);
             CHECK(fcu_updated);
 
-            auto final_canonical_head = main_chain.canonical_head();
+            final_canonical_head = main_chain.canonical_head();
             CHECK(final_canonical_head == BlockId{2, block2b_hash});
             CHECK(main_chain.canonical_chain_.current_head() == final_canonical_head);
         }

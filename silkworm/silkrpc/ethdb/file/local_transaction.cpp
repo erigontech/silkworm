@@ -19,6 +19,7 @@
 #include <utility>
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/silkrpc/core/local_state.hpp>
 
 namespace silkworm::rpc::ethdb::file {
 
@@ -61,6 +62,10 @@ boost::asio::awaitable<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cur
         cursors_[table] = cursor;
     }
     co_return cursor;
+}
+
+boost::asio::awaitable<std::shared_ptr<silkworm::State>> LocalTransaction::get_state(boost::asio::io_context&, const ethdb::kv::CachedDatabase&, uint64_t block_number) {
+    co_return std::make_shared<silkworm::rpc::state::LocalState>(block_number, rtxn_);
 }
 
 }  // namespace silkworm::rpc::ethdb::file

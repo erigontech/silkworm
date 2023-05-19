@@ -30,10 +30,7 @@ commands:
           name: "Format"
           working_directory: ~/project
           command: |
-            # the base image contains these packages preinstalled, this command merely verifies that
-            sudo apt-get install -y --no-install-recommends python3-pip
-            pip install --user --break-system-packages cmake-format==0.6.13
-            export "PATH=$HOME/.local/bin:$PATH"
+            sudo pip install cmake-format==0.6.13
             make fmt
             if ! git diff --exit-code
             then
@@ -83,7 +80,7 @@ commands:
       - run:
           name: "Install llvm"
           command: |
-            sudo apt -y install llvm-$CLANG_VERSION libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev clang-$CLANG_VERSION libclang-rt-$CLANG_VERSION-dev lcov
+            sudo apt -y install llvm-$CLANG_VERSION libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev clang-$CLANG_VERSION lcov
             sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang-$CLANG_VERSION 60 --slave /usr/bin/c++ c++ /usr/bin/clang++-$CLANG_VERSION
   
   install_gcc:
@@ -254,10 +251,7 @@ jobs:
       - run:
           name: "Upload to Codecov"
           command: |
-            # the base image contains these packages preinstalled, this command merely verifies that
-            sudo apt-get install -y --no-install-recommends python3-pip
-            pip install --user --upgrade --no-cache-dir --break-system-packages codecov
-            codecov="$HOME/.local/bin/codecov"
+            sudo pip install codecov==2.1.13
 
             counter=1
             until "$codecov" --required --file ~/build/silkworm.lcov -X gcov || [ $counter = 5 ]; do

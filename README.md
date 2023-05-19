@@ -60,8 +60,19 @@ git submodule update --init --recursive
 
 Building Silkworm requires:
 * C++20 compiler: [GCC](https://www.gnu.org/software/gcc/) >= 11.2 or [Clang](https://clang.llvm.org/) >= 13
-* [CMake]
+* [CMake](https://cmake.org)
+* [Conan](https://conan.io)
+
+Conan requires Python, and can be installed using:
+
+    pip3 install --user conan==1.58.0 chardet
+
+and adding its binary to PATH:
+
+    export "PATH=$HOME/Library/Python/3.9/bin:$PATH"
+
 * Tools for [gmplib](https://gmplib.org/): `sudo apt-get install -y m4 texinfo bison`
+
 
 Once the prerequisites are installed, bootstrap cmake by running
 ```
@@ -182,23 +193,13 @@ $env:STOP_AT_BLOCK=15000000
 
 ## Use Conan as Package Manager
 
-Silkworm uses Hunter as package manager, but will soon switch to Conan (https://conan.io/).
+A custom Conan "profile" can be passed via a cmake argument, for example: 
 
-Install Conan using:
+    cmake .. -DCONAN_PROFILE=macos_arm_clang_13_debug
 
-    pip3 install --user conan==1.58.0 chardet
+will use "debug" configuration builds of dependencies.
 
-and add its binary to PATH:
-
-    export "PATH=$HOME/Library/Python/3.9/bin:$PATH"
-
-To use Conan at this experimental stage set the `CONAN_PACKAGE_MANAGER` option, and optionally set the Conan profile with the `CONAN_PROFILE` option.
-
-Example: 
-```
-cmake .. -DCONAN_PACKAGE_MANAGER=ON -DCONAN_PROFILE=linux_gcc_11_release
-```
-You can find all available conan profiles inside the [cmake/profiles](cmake/profiles) folder.
+See available profiles in [cmake/profiles](cmake/profiles).
 
 The conan packages could also be pre-installed using [conan install](https://docs.conan.io/1/reference/commands/consumer/install.html):
 

@@ -36,6 +36,7 @@
 #include <silkworm/silkrpc/json/payload_attributes.hpp>
 #include <silkworm/silkrpc/json/receipt.hpp>
 #include <silkworm/silkrpc/json/transition_configuration.hpp>
+#include <silkworm/silkrpc/json/withdrawal.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/call.hpp>
 #include <silkworm/silkrpc/types/chain_config.hpp>

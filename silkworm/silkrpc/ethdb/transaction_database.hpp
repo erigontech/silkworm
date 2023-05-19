@@ -25,6 +25,8 @@
 
 namespace silkworm::rpc::ethdb {
 
+class Transaction;
+
 using boost::asio::awaitable;
 
 class TransactionDatabase : public core::rawdb::DatabaseReader {

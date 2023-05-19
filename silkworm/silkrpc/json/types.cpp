@@ -340,6 +340,9 @@ void to_json(nlohmann::json& json, const Block& b) {
     json["sha3Uncles"] = b.block.header.ommers_hash;
     json["logsBloom"] = "0x" + silkworm::to_hex(full_view(b.block.header.logs_bloom));
     json["transactionsRoot"] = b.block.header.transactions_root;
+    if (b.block.header.withdrawals_root) {
+        json["withdrawalsRoot"] = *(b.block.header.withdrawals_root);
+    }
     json["stateRoot"] = b.block.header.state_root;
     json["receiptsRoot"] = b.block.header.receipts_root;
     json["miner"] = b.block.header.beneficiary;
@@ -381,6 +384,9 @@ void to_json(nlohmann::json& json, const Block& b) {
         SILK_DEBUG << "ommer_hashes[" << i << "]: " << silkworm::to_hex({ommer_hashes[i].bytes, silkworm::kHashLength});
     }
     json["uncles"] = ommer_hashes;
+    if (b.block.withdrawals) {
+        json["withdrawals"] = *(b.block.withdrawals);
+    }
 }
 
 void to_json(nlohmann::json& json, const BlockDetailsResponse& b) {

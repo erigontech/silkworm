@@ -43,13 +43,9 @@ ValidationResult BaseRuleSet::pre_validate_block_body(const Block& block, const 
         return ValidationResult::kMissingWithdrawals;
     }
 
-    if (block.withdrawals) {
-        const evmc::bytes32 withdrawals_root{trie::root_hash(*block.withdrawals, [](Bytes& to, const Withdrawal& w) {
-            rlp::encode(to, w);
-        })};
-        if (withdrawals_root != header.withdrawals_root) {
-            return ValidationResult::kWrongWithdrawalsRoot;
-        }
+    const std::optional<evmc::bytes32> withdrawals_root{compute_withdrawals_root(block)};
+    if (withdrawals_root != header.withdrawals_root) {
+        return ValidationResult::kWrongWithdrawalsRoot;
     }
 
     size_t total_blobs{0};

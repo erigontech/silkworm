@@ -16,14 +16,13 @@
 
 #pragma once
 
+#include <optional>
 #include <stdexcept>
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/awaitable.hpp>
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/detached.hpp>
 #include <boost/asio/experimental/concurrent_channel.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/use_awaitable.hpp>
@@ -34,6 +33,7 @@ namespace silkworm::concurrency {
 namespace asio = boost::asio;
 
 // An awaitable-friendly future/promise
+// See also: https://docs.rs/tokio/1.25.0/tokio/sync/oneshot/index.html
 
 template <typename T>
 class AwaitablePromise;
@@ -42,34 +42,34 @@ template <typename T>
 class AwaitableFuture {
   public:
     AwaitableFuture(const AwaitableFuture&) = delete;
-    AwaitableFuture(AwaitableFuture&& orig) : channel_(std::move(orig.channel_)) {}
+    AwaitableFuture& operator=(const AwaitableFuture&) = delete;
+
+    AwaitableFuture(AwaitableFuture&&) noexcept = default;
+    AwaitableFuture& operator=(AwaitableFuture&&) noexcept = default;
 
     asio::awaitable<T> get_async() {
-        return get(asio::use_awaitable);
+        std::optional<T> result = co_await channel_->async_receive(asio::use_awaitable);
+        co_return std::move(result.value());
     }
 
     T get() {
-        return get(asio::use_future).get();
+        std::optional<T> result = channel_->async_receive(asio::use_future).get();
+        return std::move(result.value());
     }
 
   private:
     friend class AwaitablePromise<T>;
 
-    using AsyncChannel = asio::experimental::concurrent_channel<void(std::exception_ptr, T)>;
+    using AsyncChannel = asio::experimental::concurrent_channel<void(std::exception_ptr, std::optional<T>)>;
 
     explicit AwaitableFuture(std::shared_ptr<AsyncChannel> channel) : channel_(channel) {}
-
-    template <typename CompletionToken>
-    auto get(CompletionToken completion_token) {
-        return channel_->async_receive(completion_token);
-    }
 
     std::shared_ptr<AsyncChannel> channel_;
 };
 
 template <typename T>
 class AwaitablePromise {
-    inline static size_t one_shot_channel = 1;
+    constexpr static size_t one_shot_channel = 1;
     using AsyncChannel = typename AwaitableFuture<T>::AsyncChannel;
 
   public:
@@ -78,7 +78,10 @@ class AwaitablePromise {
     explicit AwaitablePromise(asio::io_context& io_context) : channel_(std::make_shared<AsyncChannel>(io_context, one_shot_channel)) {}
 
     AwaitablePromise(const AwaitablePromise&) = delete;
-    AwaitablePromise(AwaitablePromise&& orig) : channel_(std::move(orig.channel_)) {}
+    AwaitablePromise& operator=(const AwaitablePromise&) = delete;
+
+    AwaitablePromise(AwaitablePromise&&) noexcept = default;
+    AwaitablePromise& operator=(AwaitablePromise&&) noexcept = default;
 
     void set_value(T value) {
         bool sent = channel_->try_send(nullptr, std::move(value));
@@ -86,7 +89,7 @@ class AwaitablePromise {
     }
 
     void set_exception(std::exception_ptr ptr) {
-        bool sent = channel_->try_send(ptr, T{});
+        bool sent = channel_->try_send(ptr, std::nullopt);
         if (!sent) throw std::runtime_error("AwaitablePromise::set_exception: channel is full");
     }
 

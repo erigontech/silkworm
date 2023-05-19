@@ -21,8 +21,8 @@
 #include <boost/asio/this_coro.hpp>
 #include <gsl/util>
 
+#include <silkworm/infra/concurrency/awaitable_future.hpp>
 #include <silkworm/sentry/api/api_common/peer_filter.hpp>
-#include <silkworm/sentry/common/promise.hpp>
 
 #include "messages_call.hpp"
 #include "peer_call.hpp"
@@ -98,23 +98,26 @@ awaitable<void> DirectService::messages(
 
 awaitable<api_common::PeerInfos> DirectService::peers() {
     auto executor = co_await this_coro::executor;
-    auto call = std::make_shared<common::Promise<api_common::PeerInfos>>(executor);
+    auto call = std::make_shared<concurrency::AwaitablePromise<api_common::PeerInfos>>(executor);
+    auto call_future = call->get_future();
     co_await router_.peers_calls_channel.send(call);
-    co_return (co_await call->wait());
+    co_return (co_await call_future.get_async());
 }
 
 awaitable<size_t> DirectService::peer_count() {
     auto executor = co_await this_coro::executor;
-    auto call = std::make_shared<common::Promise<size_t>>(executor);
+    auto call = std::make_shared<concurrency::AwaitablePromise<size_t>>(executor);
+    auto call_future = call->get_future();
     co_await router_.peer_count_calls_channel.send(call);
-    co_return (co_await call->wait());
+    co_return (co_await call_future.get_async());
 }
 
 awaitable<std::optional<api_common::PeerInfo>> DirectService::peer_by_id(common::EccPublicKey public_key) {
     auto executor = co_await this_coro::executor;
     PeerCall call{std::move(public_key), executor};
+    auto call_future = call.result_promise->get_future();
     co_await router_.peer_calls_channel.send(call);
-    co_return (co_await call.result_promise->wait());
+    co_return (co_await call_future.get_async());
 }
 
 awaitable<void> DirectService::penalize_peer(common::EccPublicKey public_key) {
@@ -125,12 +128,13 @@ awaitable<void> DirectService::peer_events(
     std::function<boost::asio::awaitable<void>(api_common::PeerEvent)> consumer) {
     auto executor = co_await this_coro::executor;
     PeerEventsCall call{executor};
+    auto call_future = call.result_promise->get_future();
 
     auto unsubscribe_signal = call.unsubscribe_signal;
     auto _ = gsl::finally([=]() { unsubscribe_signal->notify(); });
 
     co_await router_.peer_events_calls_channel.send(call);
-    auto channel = co_await call.result_promise->wait();
+    auto channel = co_await call_future.get_async();
 
     // loop until a cancelled exception
     while (true) {

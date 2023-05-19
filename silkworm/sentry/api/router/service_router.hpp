@@ -19,11 +19,11 @@
 #include <functional>
 #include <optional>
 
+#include <silkworm/infra/concurrency/awaitable_future.hpp>
 #include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/sentry/api/api_common/node_info.hpp>
 #include <silkworm/sentry/api/api_common/peer_info.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
-#include <silkworm/sentry/common/promise.hpp>
 #include <silkworm/sentry/eth/status_data.hpp>
 
 #include "messages_call.hpp"
@@ -44,8 +44,8 @@ struct ServiceRouter {
     Channel<SendMessageCall>& send_message_channel;
     Channel<MessagesCall>& message_calls_channel;
 
-    Channel<std::shared_ptr<sentry::common::Promise<size_t>>>& peer_count_calls_channel;
-    Channel<std::shared_ptr<sentry::common::Promise<api_common::PeerInfos>>>& peers_calls_channel;
+    Channel<std::shared_ptr<concurrency::AwaitablePromise<size_t>>>& peer_count_calls_channel;
+    Channel<std::shared_ptr<concurrency::AwaitablePromise<api_common::PeerInfos>>>& peers_calls_channel;
     Channel<PeerCall>& peer_calls_channel;
     Channel<std::optional<sentry::common::EccPublicKey>>& peer_penalize_calls_channel;
     Channel<PeerEventsCall>& peer_events_calls_channel;

@@ -28,6 +28,7 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/concurrency/awaitable_future.hpp>
 #include <silkworm/infra/grpc/interfaces/types.hpp>
 #include <silkworm/infra/grpc/server/call.hpp>
 #include <silkworm/sentry/api/api_common/message_id_set.hpp>
@@ -39,7 +40,6 @@
 #include <silkworm/sentry/api/router/peer_events_call.hpp>
 #include <silkworm/sentry/api/router/send_message_call.hpp>
 #include <silkworm/sentry/api/router/service_router.hpp>
-#include <silkworm/sentry/common/promise.hpp>
 #include <silkworm/sentry/eth/fork_id.hpp>
 
 #include "../interfaces/eth_version.hpp"
@@ -228,10 +228,11 @@ class PeersCall : public sw_rpc::server::UnaryCall<protobuf::Empty, proto::Peers
 
     awaitable<void> operator()(const ServiceRouter& router) {
         auto executor = co_await boost::asio::this_coro::executor;
-        auto call = std::make_shared<sentry::common::Promise<api::api_common::PeerInfos>>(executor);
+        auto call = std::make_shared<concurrency::AwaitablePromise<api::api_common::PeerInfos>>(executor);
+        auto call_future = call->get_future();
 
         co_await router.peers_calls_channel.send(call);
-        auto peers = co_await call->wait();
+        auto peers = co_await call_future.get_async();
 
         proto::PeersReply reply = interfaces::proto_peers_reply_from_peer_infos(peers);
 
@@ -246,10 +247,11 @@ class PeerCountCall : public sw_rpc::server::UnaryCall<proto::PeerCountRequest, 
 
     awaitable<void> operator()(const ServiceRouter& router) {
         auto executor = co_await boost::asio::this_coro::executor;
-        auto call = std::make_shared<sentry::common::Promise<size_t>>(executor);
+        auto call = std::make_shared<concurrency::AwaitablePromise<size_t>>(executor);
+        auto call_future = call->get_future();
 
         co_await router.peer_count_calls_channel.send(call);
-        auto count = co_await call->wait();
+        auto count = co_await call_future.get_async();
 
         proto::PeerCountReply reply;
         reply.set_count(count);
@@ -266,9 +268,10 @@ class PeerByIdCall : public sw_rpc::server::UnaryCall<proto::PeerByIdRequest, pr
         auto peer_public_key = interfaces::peer_public_key_from_id(request_.peer_id());
         auto executor = co_await boost::asio::this_coro::executor;
         api::router::PeerCall call{peer_public_key, executor};
+        auto call_future = call.result_promise->get_future();
 
         co_await router.peer_calls_channel.send(call);
-        auto peer_opt = co_await call.result_promise->wait();
+        auto peer_opt = co_await call_future.get_async();
 
         proto::PeerByIdReply reply = interfaces::proto_peer_reply_from_peer_info_opt(peer_opt);
         co_await agrpc::finish(responder_, reply, ::grpc::Status::OK);
@@ -298,12 +301,13 @@ class PeerEventsCall : public sw_rpc::server::ServerStreamingCall<proto::PeerEve
     awaitable<void> operator()(const ServiceRouter& router) {
         auto executor = co_await boost::asio::this_coro::executor;
         api::router::PeerEventsCall call{executor};
+        auto call_future = call.result_promise->get_future();
 
         auto unsubscribe_signal = call.unsubscribe_signal;
         auto _ = gsl::finally([=]() { unsubscribe_signal->notify(); });
 
         co_await router.peer_events_calls_channel.send(call);
-        auto events_channel = co_await call.result_promise->wait();
+        auto events_channel = co_await call_future.get_async();
 
         bool write_ok = true;
         while (write_ok) {

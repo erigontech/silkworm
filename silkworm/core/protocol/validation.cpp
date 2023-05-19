@@ -185,6 +185,17 @@ evmc::bytes32 compute_transaction_root(const BlockBody& body) {
     return trie::root_hash(body.transactions, kEncoder);
 }
 
+std::optional<evmc::bytes32> compute_withdrawals_root(const BlockBody& body) {
+    if (!body.withdrawals) {
+        return std::nullopt;
+    }
+
+    static constexpr auto kEncoder = [](Bytes& to, const Withdrawal& w) {
+        rlp::encode(to, w);
+    };
+    return trie::root_hash(*body.withdrawals, kEncoder);
+}
+
 evmc::bytes32 compute_ommers_hash(const BlockBody& body) {
     if (body.ommers.empty()) {
         return kEmptyListHash;

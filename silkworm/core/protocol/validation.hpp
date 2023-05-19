@@ -120,6 +120,9 @@ namespace protocol {
     //! \brief Calculate the transaction root of a block body
     evmc::bytes32 compute_transaction_root(const BlockBody& body);
 
+    //! \brief Calculate the withdrawals root of a block body
+    std::optional<evmc::bytes32> compute_withdrawals_root(const BlockBody& body);
+
     //! \brief Calculate the hash of ommers of a block body
     evmc::bytes32 compute_ommers_hash(const BlockBody& body);
 

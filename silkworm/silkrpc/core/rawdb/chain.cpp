@@ -215,7 +215,7 @@ boost::asio::awaitable<silkworm::BlockBody> read_body(const DatabaseReader& read
                 SILK_WARN << "#senders: " << senders.size() << " and #txns " << transactions.size() << " do not match";
             }
         }
-        silkworm::BlockBody body{transactions, stored_body.ommers, stored_body.withdrawals};
+        silkworm::BlockBody body{std::move(transactions), std::move(stored_body.ommers), std::move(stored_body.withdrawals)};
         co_return body;
     } catch (const silkworm::DecodingException& error) {
         SILK_ERROR << "RLP decoding error for block body #" << block_number << " [" << error.what() << "]";

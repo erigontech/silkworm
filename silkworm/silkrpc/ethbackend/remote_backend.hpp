@@ -44,7 +44,7 @@ class RemoteBackEnd final : public BackEnd {
     explicit RemoteBackEnd(boost::asio::io_context::executor_type executor,
                            std::unique_ptr<::remote::ETHBACKEND::StubInterface> stub,
                            agrpc::GrpcContext& grpc_context);
-    ~RemoteBackEnd() override;
+    ~RemoteBackEnd() override = default;
 
     awaitable<evmc::address> etherbase() override;
     awaitable<uint64_t> protocol_version() override;

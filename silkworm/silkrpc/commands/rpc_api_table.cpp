@@ -209,6 +209,7 @@ void RpcApiTable::add_engine_handlers() {
     method_handlers_[http::method::k_engine_exchangeCapabilities] = &commands::RpcApi::handle_engine_exchange_capabilities;
     method_handlers_[http::method::k_engine_getPayloadV1] = &commands::RpcApi::handle_engine_get_payload_v1;
     method_handlers_[http::method::k_engine_newPayloadV1] = &commands::RpcApi::handle_engine_new_payload_v1;
+    method_handlers_[http::method::k_engine_newPayloadV2] = &commands::RpcApi::handle_engine_new_payload_v2;
     method_handlers_[http::method::k_engine_forkchoiceUpdatedV1] = &commands::RpcApi::handle_engine_forkchoice_updated_v1;
     method_handlers_[http::method::k_engine_exchangeTransitionConfiguration] = &commands::RpcApi::handle_engine_exchange_transition_configuration_v1;
 }

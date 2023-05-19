@@ -124,6 +124,7 @@ boost::asio::awaitable<std::shared_ptr<BlockWithHash>> read_block(const Database
     SILK_TRACE << "body: #txn=" << body.transactions.size() << " #ommers=" << body.ommers.size();
     block_with_hash_ptr->block.transactions = std::move(body.transactions);
     block_with_hash_ptr->block.ommers = std::move(body.ommers),
+    block_with_hash_ptr->block.withdrawals = std::move(body.withdrawals),
     block_with_hash_ptr->hash = block_hash;
     co_return block_with_hash_ptr;
 }
@@ -214,7 +215,7 @@ boost::asio::awaitable<silkworm::BlockBody> read_body(const DatabaseReader& read
                 SILK_WARN << "#senders: " << senders.size() << " and #txns " << transactions.size() << " do not match";
             }
         }
-        silkworm::BlockBody body{transactions, stored_body.ommers};
+        silkworm::BlockBody body{transactions, stored_body.ommers, stored_body.withdrawals};
         co_return body;
     } catch (const silkworm::DecodingException& error) {
         SILK_ERROR << "RLP decoding error for block body #" << block_number << " [" << error.what() << "]";

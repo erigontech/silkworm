@@ -238,6 +238,10 @@ Stage::Result ExecutionPipeline::forward(db::RWTxn& cycle_txn, BlockNum target_h
         }
 
         log::Info("ExecPipeline") << "Forward done ---------------------------";
+
+        const auto stop_at_block = Environment::get_stop_at_block();  // User can specify to stop at some block
+        if (stop_at_block && stop_at_block <= head_header_number_) return Stage::Result::kStoppedByEnv;
+
         return result;
 
     } catch (const std::exception& ex) {

@@ -53,7 +53,7 @@ struct CallManyResult {
     std::vector<std::vector<nlohmann::json>> results;
 };
 
-void to_json(nlohmann::json& json, const CallResult& result);
+// void to_json(nlohmann::json& json, const CallResult& result);
 
 class CallExecutor {
   public:

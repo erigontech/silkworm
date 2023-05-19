@@ -1,4 +1,4 @@
-#   Copyright 2020-2022 The Silkworm Authors
+#   Copyright 2020 The Silkworm Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -30,10 +30,7 @@ commands:
           name: "Format"
           working_directory: ~/project
           command: |
-            # the base image contains these packages preinstalled, this command merely verifies that
-            sudo apt-get install -y --no-install-recommends python3-pip
-            pip install --user --break-system-packages cmake-format==0.6.13
-            export "PATH=$HOME/.local/bin:$PATH"
+            sudo pip install cmake-format==0.6.13
             make fmt
             if ! git diff --exit-code
             then
@@ -57,7 +54,6 @@ commands:
       - run:
           name: "Install dependencies"
           command: |
-            # the base image contains these packages preinstalled, this command merely verifies that
             sudo apt-get install -y m4 texinfo bison
       - run:
           name: "Cmake"
@@ -75,34 +71,30 @@ commands:
             cmake ../project -DCMAKE_BUILD_TYPE=$BUILD_TYPE $CONAN_CMAKE_ARGS $TOOLCHAIN_CMAKE_ARGS $BUILD_CMAKE_ARGS
       - run:
           name: "Build"
-          command: cmake --build ~/build -j4 # each compiler job requires 4GB of RAM
+          command: cmake --build ~/build -j8 # each compiler job requires 4GB of RAM
+
+  install_gcc:
+    steps:
+      - run:
+          name: "Install gcc"
+          command: |
+            sudo apt -y install gcc-$GCC_VERSION g++-$GCC_VERSION
+            sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-$GCC_VERSION 100 --slave /usr/bin/g++ g++ /usr/bin/g++-$GCC_VERSION
 
   # libc++ is an alternative standard library needed for coroutines support on Clang
   # https://libcxx.llvm.org
-  install_libcxx:
+  install_llvm:
     steps:
       - run:
-          name: "Install libc++"
+          name: "Install llvm"
           command: |
-            # the base image contains these packages preinstalled, this command merely verifies that
-            sudo apt -y install libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev
-
-  build_using_hunter:
-    parameters:
-      toolchain:
-        type: string
-        default: default
-    steps:
-      - restore_cache:
-          name: "Restore Hunter cache"
-          key: &hunter-cache-key hunter-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/Hunter/config.cmake"}}-{{checksum "cmake/toolchain/cxx20.cmake"}}-{{checksum "cmake/toolchain/clang_libcxx.cmake"}}
-      - build:
-          toolchain: <<parameters.toolchain>>
-      - save_cache:
-          name: "Save Hunter cache"
-          key: *hunter-cache-key
-          paths:
-            - ~/.hunter
+            sudo apt -y install llvm-$CLANG_VERSION libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev clang-$CLANG_VERSION
+            sudo ln -sfv /usr/bin/clang-$CLANG_VERSION /usr/bin/clang
+            sudo ln -sfv /usr/bin/clang++-$CLANG_VERSION /usr/bin/clang++
+            sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100
+            sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 100
+            sudo update-alternatives --install /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-$CLANG_VERSION 100
+            sudo update-alternatives --install /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-$CLANG_VERSION 100
 
   build_using_conan:
     parameters:
@@ -115,14 +107,10 @@ commands:
     steps:
       - run:
           name: "Install Conan"
-          command: |
-            # the base image contains these packages preinstalled, this command merely verifies that
-            sudo apt-get install -y --no-install-recommends python3-pip
-            pip install --user --break-system-packages conan==1.58.0 chardet
-            echo 'export "PATH=$HOME/.local/bin:$PATH"' >> "$BASH_ENV"
+          command: sudo pip3 install conan==1.58.0 chardet
       - restore_cache:
           name: "Restore Conan cache"
-          key: &conan-cache-key conan-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/profiles/<<parameters.profile>>"}}-{{checksum "conanfile.txt"}}
+          key: &conan-cache-key conan-machine-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/profiles/<<parameters.profile>>"}}-{{checksum "conanfile.txt"}}
       - build:
           conan_profile: <<parameters.profile>>
           toolchain: <<parameters.toolchain>>
@@ -164,15 +152,15 @@ commands:
           name: "Ethereum EL tests"
           working_directory: ~/build
           no_output_timeout: 30m
-          command: cmd/test/ethereum --threads 4 # out of memory with 8 threads under thread sanitizer
+          command: cmd/test/ethereum --threads 8
 
 jobs:
   linux-gcc-11-thread-sanitizer:
     environment:
       BUILD_TYPE: Debug
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=thread
-    docker:
-      - image: ethereum/cpp-build-env:20-gcc-11
+    machine:
+      image: ubuntu-2204:2023.04.2
     resource_class: xlarge
     steps:
       - checkout_with_submodules
@@ -181,12 +169,14 @@ jobs:
 
   linux-gcc-12-release:
     environment:
+      GCC_VERSION: 12
       BUILD_TYPE: Release
-    docker:
-      - image: ethereum/cpp-build-env:20-gcc-12
+    machine:
+      image: ubuntu-2204:2023.04.2
     resource_class: xlarge
     steps:
       - checkout_with_submodules
+      - install_gcc
       - build_using_conan
       - test
 
@@ -195,12 +185,13 @@ jobs:
       CLANG_VERSION: 15
       BUILD_TYPE: Debug
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=address,undefined
-    docker:
-      - image: ethereum/cpp-build-env:20-clang-15
+      ASAN_OPTIONS: alloc_dealloc_mismatch=0 # https://github.com/llvm/llvm-project/issues/59432
+    machine:
+      image: ubuntu-2204:2023.04.2
     resource_class: xlarge
     steps:
       - checkout_with_submodules
-      - install_libcxx
+      - install_llvm
       - build_using_conan:
           profile: linux_clang_13_release
           toolchain: clang_libcxx
@@ -211,13 +202,13 @@ jobs:
       CLANG_VERSION: 13
       BUILD_TYPE: Debug
       BUILD_CMAKE_ARGS: -DSILKWORM_CLANG_COVERAGE=ON
-    docker:
-      - image: ethereum/cpp-build-env:20-clang-13
+    machine:
+      image: ubuntu-2204:2023.04.2
     resource_class: xlarge
     steps:
       - checkout_with_submodules
       - format
-      - install_libcxx
+      - install_llvm
       - build_using_conan:
           profile: linux_clang_13_release
           toolchain: clang_libcxx
@@ -249,10 +240,7 @@ jobs:
       - run:
           name: "Upload to Codecov"
           command: |
-            # the base image contains these packages preinstalled, this command merely verifies that
-            sudo apt-get install -y --no-install-recommends python3-pip
-            pip install --user --upgrade --no-cache-dir --break-system-packages codecov
-            codecov="$HOME/.local/bin/codecov"
+            sudo pip install codecov==2.1.13
 
             counter=1
             until "$codecov" --required --file ~/build/silkworm.lcov -X gcov || [ $counter = 5 ]; do
@@ -265,7 +253,7 @@ jobs:
     environment:
       WASI_SDK_VERSION: 14
     machine:
-      image: ubuntu-2004:202010-01
+      image: ubuntu-2204:2023.04.2
     steps:
       - checkout_with_submodules
       - run:

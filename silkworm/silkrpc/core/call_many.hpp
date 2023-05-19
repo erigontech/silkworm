@@ -42,12 +42,18 @@
 
 namespace silkworm::rpc::call {
 
+// struct CallResult {
+//     int64_t error_code;
+//     Bytes data;
+//     std::optional<std::string> error{std::nullopt};
+// };
+
 struct CallManyResult {
     std::optional<std::string> error{std::nullopt};
-    std::vector<std::vector<ExecutionResult>> results;
+    std::vector<std::vector<nlohmann::json>> results;
 };
 
-void make_glaze_json_content(std::string& reply, uint32_t id, const CallManyResult& result);
+void to_json(nlohmann::json& json, const CallResult& result);
 
 class CallExecutor {
   public:

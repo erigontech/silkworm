@@ -38,26 +38,13 @@ namespace silkworm::rpc::call {
 
 using boost::asio::awaitable;
 
-struct GlazeJsonCallManyResult {
-    char jsonrpc[jsonVersionSize] = "2.0";
-    uint32_t id;
-    // std::vector<GlazeJsonLogItem> log_json_list;
-    struct glaze {
-        using T = GlazeJsonCallManyResult;
-        static constexpr auto value = glz::object(
-            "jsonrpc", &T::jsonrpc,
-            "id", &T::id
-            // "result", &T::log_json_list
-        );
-    };
-};
-
-void make_glaze_json_content(std::string& reply, uint32_t id, const CallManyResult& /*result*/) {
-    GlazeJsonCallManyResult json_data{};
-    json_data.id = id;
-
-    glz::write_json(json_data, reply);
-}
+// void to_json(nlohmann::json& json, const CallResult& result) {
+//     if (result.error) {
+//         json["error"] = result.error.value();
+//     } else {
+//         json["result"] = result.data;
+//     }
+// }
 
 boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bundles, const SimulationContext& context,
                                                              const StateOverrides& /*state_overrides*/, std::optional<std::uint64_t> /*timeout*/) {
@@ -137,13 +124,34 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
             blockContext.header.base_fee_per_gas = block_override.base_fee;
         }
         // block_hash
-        std::vector<ExecutionResult> results;
+        
+        std::vector<nlohmann::json> results;
         result.results.reserve(bundle.transactions.size());
         for (const auto& call : bundle.transactions) {
             silkworm::Transaction txn{call.to_transaction()};
             auto execution_result = co_await executor.call(blockContext, txn);
 
-            results.push_back(execution_result);
+            if (execution_result.pre_check_error) {
+                result.error = execution_result.pre_check_error;
+                co_return result;
+            }
+
+            nlohmann::json reply;
+            if (execution_result.error_code == evmc_status_code::EVMC_SUCCESS) {
+                reply["value"] = "0x" + silkworm::to_hex(execution_result.data);
+            } else {
+                const auto error_message = EVMExecutor::get_error_message(execution_result.error_code, execution_result.data);
+                if (execution_result.data.empty()) {
+                    reply["error"]["code"] = -32000;
+                    reply["error"]["message"] = error_message;
+                } else {
+                    RevertError revert_error{3, error_message, execution_result.data};
+                    reply = revert_error;
+                }
+            }
+
+            // CallResult cr{execution_result.error_code, execution_result.data};
+            results.push_back(reply);
         }
         result.results.push_back(results);
     }

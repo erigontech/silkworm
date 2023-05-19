@@ -111,7 +111,7 @@ awaitable<void> PoSSync::download_blocks() {
     log::Warning("Sync") << "PoS sync block downloading stopped";
 }
 
-// Convert an ExecutionPayload to a Block as per "Engine API - Paris" specs
+// Convert an ExecutionPayload to a Block as per Engine API spec
 std::shared_ptr<Block> PoSSync::make_execution_block(const rpc::ExecutionPayload& payload) {
     std::shared_ptr<Block> block = std::make_shared<Block>();
     BlockHeader& header = block->header;
@@ -140,6 +140,13 @@ std::shared_ptr<Block> PoSSync::make_execution_block(const rpc::ExecutionPayload
         block->transactions.push_back(tx);
     }
     header.transactions_root = protocol::compute_transaction_root(*block);
+
+    // as per EIP-4895
+    if (payload.withdrawals) {
+        block->withdrawals = std::vector<Withdrawal>{};
+        std::copy(payload.withdrawals->begin(), payload.withdrawals->end(), block->withdrawals->begin());
+        header.withdrawals_root = protocol::compute_withdrawals_root(*block);
+    }
 
     // as per EIP-3675
     header.ommers_hash = kEmptyListHash;  // = Keccak256(RLP([]))

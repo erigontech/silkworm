@@ -44,7 +44,7 @@
 extern "C" {
 #endif
 
-void silkworm_rmd160(uint8_t out[20], const uint8_t* input, size_t len);
+void silkworm_rmd160(uint8_t out[20], const uint8_t* input, uint32_t len);
 
 #if defined(__cplusplus)
 }

@@ -16,22 +16,25 @@
 
 #include "withdrawal.hpp"
 
-#include "types.hpp"
+#include <catch2/catch.hpp>
+#include <evmc/evmc.hpp>
 
 namespace silkworm {
 
-void to_json(nlohmann::json& json, const Withdrawal& withdrawal) {
-    json["index"] = rpc::to_quantity(withdrawal.index);
-    json["validatorIndex"] = rpc::to_quantity(withdrawal.validator_index);
-    json["address"] = withdrawal.address;
-    json["amount"] = rpc::to_quantity(withdrawal.amount);
-}
+using evmc::literals::operator""_address;
 
-void from_json(const nlohmann::json& json, Withdrawal& withdrawal) {
-    withdrawal.index = rpc::from_quantity(json.at("index"));
-    withdrawal.validator_index = rpc::from_quantity(json.at("validatorIndex"));
-    withdrawal.address = json.at("address").get<evmc::address>();
-    withdrawal.amount = rpc::from_quantity(json.at("amount"));
+TEST_CASE("serialize WithdrawalV1", "[silkworm::json][to_json]") {
+    Withdrawal withdrawal{
+        .index = 6,
+        .validator_index = 12,
+        .address = 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address,
+        .amount = 10'000};
+    CHECK(nlohmann::json(withdrawal) == R"({
+        "index":"0x6",
+        "validatorIndex":"0xc",
+        "address":"0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+        "amount":"0x2710"
+    })"_json);
 }
 
 }  // namespace silkworm

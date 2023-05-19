@@ -113,7 +113,7 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
         }
     }
 
-    SILK_TRACE << "BodySequence: " << count << " body accepted from block " << start_block << " out of "
+    SILK_TRACE << "BodySequence: " << count << " body accepted starting at block " << start_block << " out of "
                << packet.request.size() << " received";
 
     // Process remaining elements in matching_requests invalidating corresponding BodyRequest
@@ -138,6 +138,7 @@ auto BodySequence::request_bodies(time_point_t tp) -> std::shared_ptr<OutboundMe
     if (tp - last_nack_ < SentryClient::kNoPeerDelay)
         return nullptr;
 
+    auto prev_condition = retrieval_condition_;
     seconds_t timeout = SentryClient::kRequestDeadline;
     BlockNum min_block{0};
 
@@ -155,7 +156,12 @@ auto BodySequence::request_bodies(time_point_t tp) -> std::shared_ptr<OutboundMe
     statistics_.requested_items += packet.request.size();
 
     if (packet.request.size() == 0) {
-        SILK_TRACE << "BodySequence, no more bodies to request";
+        retrieval_condition_ = "no more bodies to request";
+        if (retrieval_condition_ != prev_condition) {
+            SILK_TRACE << "BodySequence, no more bodies to request";
+        }
+    } else {
+        retrieval_condition_ = "requesting bodies";
     }
 
     body_request->penalties() = std::move(penalizations);

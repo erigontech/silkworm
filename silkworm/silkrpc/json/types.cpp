@@ -134,6 +134,10 @@ std::string to_hex_no_leading_zeros(silkworm::ByteView bytes) {
     return out;
 }
 
+uint64_t from_quantity(const std::string& hex_quantity) {
+    return static_cast<uint64_t>(std::stol(hex_quantity, nullptr, 16));
+}
+
 std::string to_hex_no_leading_zeros(uint64_t number) {
     silkworm::Bytes number_bytes(8, '\0');
     boost::endian::store_big_u64(&number_bytes[0], number);

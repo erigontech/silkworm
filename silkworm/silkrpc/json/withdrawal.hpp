@@ -22,6 +22,7 @@
 
 namespace silkworm {
 
-void to_json(nlohmann::json& json, const silkworm::Withdrawal& withdrawal);
+void to_json(nlohmann::json& json, const Withdrawal& withdrawal);
+void from_json(const nlohmann::json& json, Withdrawal& receipt);
 
 }  // namespace silkworm

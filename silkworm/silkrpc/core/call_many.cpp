@@ -25,7 +25,7 @@
 #include <evmone/instructions.hpp>
 #include <intx/intx.hpp>
 
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
@@ -54,7 +54,7 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
     std::uint16_t count{0};
     bool empty = true;
     for (const auto& bundle : bundles) {
-        SILKRPC_DEBUG << "bundle[" << count++ << "]: " << bundle << "\n";
+        SILK_DEBUG << "bundle[" << count++ << "]: " << bundle << "\n";
         if (bundle.transactions.size() > 0) {
             empty = false;
         }
@@ -124,7 +124,7 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
             blockContext.header.base_fee_per_gas = block_override.base_fee;
         }
         // block_hash
-        
+
         std::vector<nlohmann::json> results;
         result.results.reserve(bundle.transactions.size());
         for (const auto& call : bundle.transactions) {

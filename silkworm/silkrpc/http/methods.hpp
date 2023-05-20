@@ -121,6 +121,7 @@ constexpr const char* k_parity_listStorageKeys{"parity_listStorageKeys"};
 
 constexpr const char* k_engine_exchangeCapabilities{"engine_exchangeCapabilities"};
 constexpr const char* k_engine_getPayloadV1{"engine_getPayloadV1"};
+constexpr const char* k_engine_getPayloadV2{"engine_getPayloadV2"};
 constexpr const char* k_engine_newPayloadV1{"engine_newPayloadV1"};
 constexpr const char* k_engine_newPayloadV2{"engine_newPayloadV2"};
 constexpr const char* k_engine_forkchoiceUpdatedV1{"engine_forkchoiceUpdatedV1"};

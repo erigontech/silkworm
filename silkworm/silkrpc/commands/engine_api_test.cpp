@@ -47,7 +47,7 @@ class BackEndMock : public ethbackend::BackEnd {  // NOLINT
     MOCK_METHOD((awaitable<uint64_t>), net_version, ());
     MOCK_METHOD((awaitable<std::string>), client_version, ());
     MOCK_METHOD((awaitable<uint64_t>), net_peer_count, ());
-    MOCK_METHOD((awaitable<ExecutionPayload>), engine_get_payload, (uint64_t));
+    MOCK_METHOD((awaitable<ExecutionPayloadAndValue>), engine_get_payload, (uint64_t));
     MOCK_METHOD((awaitable<PayloadStatus>), engine_new_payload, (const ExecutionPayload&));
     MOCK_METHOD((awaitable<ForkChoiceUpdatedReply>), engine_forkchoice_updated, (const ForkChoiceUpdatedRequest&));
     MOCK_METHOD((awaitable<NodeInfos>), engine_node_info, ());
@@ -215,8 +215,8 @@ TEST_CASE("handle_engine_get_payload_v1 succeeds if request is expected payload"
     silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock;
-    EXPECT_CALL(*backend, engine_get_payload(1)).WillOnce(InvokeWithoutArgs([]() -> awaitable<ExecutionPayload> {
-        co_return ExecutionPayload{.number = 1};
+    EXPECT_CALL(*backend, engine_get_payload(1)).WillOnce(InvokeWithoutArgs([]() -> awaitable<ExecutionPayloadAndValue> {
+        co_return ExecutionPayloadAndValue{ExecutionPayload{.number = 1}, 0};
     }));
 
     std::unique_ptr<ethbackend::BackEnd> backend_ptr(backend);

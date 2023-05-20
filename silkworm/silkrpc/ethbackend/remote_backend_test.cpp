@@ -225,7 +225,7 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_get_payload", "[silkworm][rpc]
     test::StrictMockAsyncResponseReader<::remote::EngineGetPayloadResponse> reader;
     EXPECT_CALL(*stub_, AsyncEngineGetPayloadRaw).WillOnce(testing::Return(&reader));
 
-    SECTION("call engine_get_payload_v1 and get payload") {
+    SECTION("call engine_get_payload and get payload") {
         const auto p{new ::types::ExecutionPayload};
         p->set_allocated_coinbase(make_h160(0xa94f5374fce5edbc, 0x8e2a8697c1533167, 0x7e6ebf0b));
         p->set_allocated_block_hash(make_h256(0x3559e851470f6e7b, 0xbed1db474980683e, 0x8c315bfce99b2a6e, 0xf47c057c04de7858));
@@ -252,7 +252,8 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_get_payload", "[silkworm][rpc]
         response.set_allocated_execution_payload(p);
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_with(grpc_context_, std::move(response)));
 
-        const auto payload = run<&ethbackend::RemoteBackEnd::engine_get_payload>(0u);
+        const auto payload_and_value = run<&ethbackend::RemoteBackEnd::engine_get_payload>(0u);
+        const auto& payload = payload_and_value.payload;
         CHECK(payload.number == 0x1);
         CHECK(payload.gas_limit == 0x1c9c380);
         CHECK(payload.suggested_fee_recipient == 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address);
@@ -267,15 +268,16 @@ TEST_CASE_METHOD(EthBackendTest, "BackEnd::engine_get_payload", "[silkworm][rpc]
         silkworm::Bloom expected_bloom{0};
         expected_bloom[0] = 0x10;
         CHECK(payload.logs_bloom == expected_bloom);
+        CHECK(payload_and_value.block_value == 0);
     }
 
-    SECTION("call engine_get_payload_v1 and get empty payload") {
+    SECTION("call engine_get_payload and get empty payload") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_ok(grpc_context_));
         const auto payload = run<&ethbackend::RemoteBackEnd::engine_get_payload>(0u);
-        CHECK(payload.number == 0);
+        CHECK(payload.payload.number == 0);
     }
 
-    SECTION("call engine_get_payload_v1 and get error") {
+    SECTION("call engine_get_payload and get error") {
         EXPECT_CALL(reader, Finish).WillOnce(test::finish_cancelled(grpc_context_));
         CHECK_THROWS_AS((run<&ethbackend::RemoteBackEnd::engine_get_payload>(0u)), boost::system::system_error);
     }

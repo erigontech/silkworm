@@ -22,7 +22,7 @@ awaitable<rpc::PayloadStatus> EngineApiBackend::engine_new_payload(const rpc::Ex
     co_return co_await pos_sync_.new_payload(payload);
 }
 
-awaitable<rpc::ExecutionPayload> EngineApiBackend::engine_get_payload(uint64_t payload_id) {
+awaitable<rpc::ExecutionPayloadAndValue> EngineApiBackend::engine_get_payload(uint64_t payload_id) {
     co_return co_await pos_sync_.get_payload(payload_id);
 }
 

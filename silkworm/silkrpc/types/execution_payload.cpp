@@ -54,4 +54,9 @@ std::ostream& operator<<(std::ostream& out, const PayloadStatus& payload_status)
     return out;
 }
 
+std::ostream& operator<<(std::ostream& out, const ExecutionPayloadAndValue& pv) {
+    out << "payload: " << pv.payload << " block_value: " << pv.block_value;
+    return out;
+}
+
 }  // namespace silkworm::rpc

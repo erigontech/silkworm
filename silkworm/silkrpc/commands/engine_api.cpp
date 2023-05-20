@@ -57,8 +57,7 @@ awaitable<void> EngineRpcApi::handle_engine_exchange_capabilities(  // NOLINT(re
     reply = make_json_content(request["id"], el_capabilities);
 }
 
-// Format for params is a list which includes a payloadId ie. [payloadId]
-// https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md#engine_getpayloadv1
+// https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#engine_getpayloadv1
 awaitable<void> EngineRpcApi::handle_engine_get_payload_v1(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request.at("params");
     if (params.size() != 1) {
@@ -71,9 +70,9 @@ awaitable<void> EngineRpcApi::handle_engine_get_payload_v1(const nlohmann::json&
 #ifndef BUILD_COVERAGE
     try {
 #endif
-        const auto payload_id = params[0].get<std::string>();
-        const auto payload = co_await backend_->engine_get_payload(std::stoul(payload_id, nullptr, 16));
-        reply = make_json_content(request["id"], payload);
+        const auto payload_quantity = params[0].get<std::string>();
+        const auto payload_and_value = co_await backend_->engine_get_payload(from_quantity(payload_quantity));
+        reply = make_json_content(request["id"], payload_and_value.payload);
 #ifndef BUILD_COVERAGE
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
@@ -89,6 +88,35 @@ awaitable<void> EngineRpcApi::handle_engine_get_payload_v1(const nlohmann::json&
         reply = make_json_error(request["id"], kUnknownPayload, "unexpected exception");
     }
 #endif
+}
+
+// https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#engine_getpayloadv2
+awaitable<void> EngineRpcApi::handle_engine_get_payload_v2(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request.at("params");
+    if (params.size() != 1) {
+        auto error_msg = "invalid engine_getPayloadV2 params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+        co_return;
+    }
+
+    try {
+        const auto payload_quantity = params[0].get<std::string>();
+        const auto payload_and_value = co_await backend_->engine_get_payload(from_quantity(payload_quantity));
+        reply = make_json_content(request["id"], payload_and_value);
+    } catch (const boost::system::system_error& se) {
+        SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
+        // TODO(canepat) the error code should be se.code().value() here: application-level errors should come from BackEnd
+        reply = make_json_error(request["id"], kUnknownPayload, se.code().message());
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        // TODO(canepat) the error code should be kInternalError here: application-level errors should come from BackEnd
+        reply = make_json_error(request["id"], kUnknownPayload, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        // TODO(canepat) the error code should be kServerError here: application-level errors should come from BackEnd
+        reply = make_json_error(request["id"], kUnknownPayload, "unexpected exception");
+    }
 }
 
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#engine_newpayloadv1

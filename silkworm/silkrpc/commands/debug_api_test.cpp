@@ -180,6 +180,11 @@ class DummyTransaction : public ethdb::Transaction {
         co_return cursor;
     }
 
+    boost::asio::awaitable<std::shared_ptr<silkworm::State>> get_state(boost::asio::io_context& /* io_context */, const core::rawdb::DatabaseReader& /* db_reader */,
+                                                                       uint64_t /* block_number */) override {
+        co_return nullptr;
+    }
+
     awaitable<void> close() override {
         co_return;
     }

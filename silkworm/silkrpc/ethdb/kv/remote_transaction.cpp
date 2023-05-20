@@ -19,9 +19,10 @@
 #include <utility>
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
-#include <silkworm/silkrpc/core/remote_state.hpp>
 
 #include <grpcpp/grpcpp.h>
+
+#include <silkworm/silkrpc/core/remote_state.hpp>
 
 namespace silkworm::rpc::ethdb::kv {
 
@@ -65,9 +66,8 @@ boost::asio::awaitable<std::shared_ptr<CursorDupSort>> RemoteTransaction::get_cu
     co_return cursor;
 }
 
-boost::asio::awaitable<std::shared_ptr<silkworm::State>> RemoteTransaction::get_state(boost::asio::io_context& io_context, const ethdb::kv::CachedDatabase& cached_database, uint64_t block_number) {
-    co_return std::make_shared<silkworm::rpc::state::RemoteState>(io_context, cached_database, block_number);
+boost::asio::awaitable<std::shared_ptr<silkworm::State>> RemoteTransaction::get_state(boost::asio::io_context& io_context, const core::rawdb::DatabaseReader& db_reader, uint64_t block_number) {
+    co_return std::make_shared<silkworm::rpc::state::RemoteState>(io_context, db_reader, block_number);
 }
-
 
 }  // namespace silkworm::rpc::ethdb::kv

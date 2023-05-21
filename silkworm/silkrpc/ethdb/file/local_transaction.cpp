@@ -65,8 +65,8 @@ boost::asio::awaitable<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cur
     co_return cursor;
 }
 
-boost::asio::awaitable<std::shared_ptr<silkworm::State>> LocalTransaction::create_state(boost::asio::io_context&, const core::rawdb::DatabaseReader&, uint64_t block_number) {
-    co_return std::make_shared<silkworm::rpc::state::LocalState>(block_number, rtxn_);
+std::shared_ptr<silkworm::State> LocalTransaction::create_state(boost::asio::io_context&, const core::rawdb::DatabaseReader&, uint64_t block_number) {
+    return std::make_shared<silkworm::rpc::state::LocalState>(block_number, rtxn_);
 }
 
 }  // namespace silkworm::rpc::ethdb::file

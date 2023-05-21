@@ -15,12 +15,12 @@
 */
 
 #include <memory>
-#include <optional>
+// #include <optional>
 #include <regex>
 #include <stdexcept>
 #include <string>
 #include <utility>
-#include <vector>
+// #include <vector>
 
 #include <CLI/CLI.hpp>
 #include <boost/asio/co_spawn.hpp>
@@ -44,12 +44,12 @@
 #include <silkworm/node/snapshot/sync.hpp>
 #include <silkworm/node/stagedsync/local_client.hpp>
 #include <silkworm/node/stagedsync/server.hpp>
-#include <silkworm/sentry/api/api_common/sentry_client.hpp>
-#include <silkworm/sentry/grpc/client/sentry_client.hpp>
-#include <silkworm/sentry/multi_sentry_client.hpp>
-#include <silkworm/sentry/sentry.hpp>
-#include <silkworm/sentry/session_sentry_client.hpp>
-#include <silkworm/sentry/settings.hpp>
+// #include <silkworm/sentry/api/api_common/sentry_client.hpp>
+// #include <silkworm/sentry/grpc/client/sentry_client.hpp>
+// #include <silkworm/sentry/multi_sentry_client.hpp>
+// #include <silkworm/sentry/sentry.hpp>
+// #include <silkworm/sentry/session_sentry_client.hpp>
+// #include <silkworm/sentry/settings.hpp>
 #include <silkworm/sync/sync.hpp>
 
 #include "common/common.hpp"
@@ -305,7 +305,7 @@ void raise_max_file_descriptors() {
 class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
 };
 
-std::pair<std::shared_ptr<silkworm::sentry::api::api_common::SentryClient>, std::optional<std::shared_ptr<silkworm::sentry::Sentry>>> make_sentry(
+/*std::pair<std::shared_ptr<silkworm::sentry::api::api_common::SentryClient>, std::optional<std::shared_ptr<silkworm::sentry::Sentry>>> make_sentry(
     silkworm::sentry::Settings sentry_settings,
     const NodeSettings& node_settings,
     silkworm::rpc::ServerContextPool& context_pool,
@@ -354,10 +354,10 @@ std::pair<std::shared_ptr<silkworm::sentry::api::api_common::SentryClient>, std:
     }
 
     return {sentry_client, sentry_server};
-}
+}*/
 
 // main
-int main(int argc, char* argv[]) {
+int main(int /*argc*/, char* /*argv*/[]) {
     using namespace boost::placeholders;
     using namespace std::chrono;
     using namespace silkworm::concurrency::awaitable_wait_for_one;
@@ -432,7 +432,7 @@ int main(int argc, char* argv[]) {
         ResourceUsageLog resource_usage_log(node_settings);
 
         // Sentry
-        auto [sentry_client, sentry_server] = make_sentry(
+        /*auto [sentry_client, sentry_server] = make_sentry(
             std::move(settings.sentry_settings),
             node_settings,
             context_pool,
@@ -441,13 +441,13 @@ int main(int argc, char* argv[]) {
             if (sentry_server) {
                 co_await sentry_server.value()->run();
             }
-        };
+        };*/
 
         // BackEnd & KV server
         silkworm::EthereumBackEnd backend{
             node_settings,
             &chaindata_db,
-            sentry_client,
+            {}  // sentry_client,
         };
         const auto node_name{get_node_name_from_build_info(build_info)};
         backend.set_node_name(node_name);
@@ -478,7 +478,7 @@ int main(int argc, char* argv[]) {
             context_pool.next_io_context(),
             chaindata_db,
             execution_client,
-            sentry_client,
+            {},  // sentry_client,
             *node_settings.chain_config};
         // TODO(canepat) remove when PoS sync works
         if (settings.force_pow) {
@@ -489,7 +489,7 @@ int main(int argc, char* argv[]) {
             timer_executor() &&
             resource_usage_log.async_run() &&
             rpc_server.async_run() &&
-            embedded_sentry_run_if_needed() &&
+            // embedded_sentry_run_if_needed() &&
             execution_server.async_run() &&
             chain_sync_process.async_run();
 

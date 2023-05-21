@@ -16,13 +16,23 @@ version: 2.1
 
 commands:
   checkout_with_submodules:
+    parameters:
+      ethereum_tests:
+        description: Include a heavy Ethereum tests submodule if needed.
+        type: boolean
+        default: true
     steps:
       - checkout
       - run:
           name: "Update submodules"
           command: |
+            if [[ <<parameters.ethereum_tests>> == false ]]
+            then
+              git config submodule.tests.update none
+            fi
+
             git submodule sync
-            git submodule update --init --recursive
+            git -c submodule.LegacyTests.update=none submodule update --init --recursive
 
   format:
     steps:
@@ -258,7 +268,8 @@ jobs:
     machine:
       image: ubuntu-2204:2023.04.2
     steps:
-      - checkout_with_submodules
+      - checkout_with_submodules:
+          ethereum_tests: false
       - run:
           name: "Install WASI SDK"
           working_directory: ~/tmp1

@@ -47,7 +47,7 @@ class PoSSync : public ChainSync {
     // public interface called by the external PoS client
     auto new_payload(const rpc::ExecutionPayload&) -> asio::awaitable<rpc::PayloadStatus>;
     auto fork_choice_update(const rpc::ForkChoiceState&, const std::optional<rpc::PayloadAttributes>&) -> asio::awaitable<rpc::ForkChoiceUpdatedReply>;
-    auto get_payload(uint64_t payloadId) -> asio::awaitable<rpc::ExecutionPayload>;
+    auto get_payload(uint64_t payloadId) -> asio::awaitable<rpc::ExecutionPayloadAndValue>;
 
   private:
     static auto make_execution_block(const rpc::ExecutionPayload& payload) -> std::shared_ptr<Block>;

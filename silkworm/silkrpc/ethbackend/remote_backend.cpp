@@ -39,13 +39,7 @@ RemoteBackEnd::RemoteBackEnd(boost::asio::io_context& context, const std::shared
 RemoteBackEnd::RemoteBackEnd(boost::asio::io_context::executor_type executor,
                              std::unique_ptr<::remote::ETHBACKEND::StubInterface> stub,
                              agrpc::GrpcContext& grpc_context)
-    : executor_(std::move(executor)), stub_(std::move(stub)), grpc_context_(grpc_context) {
-    SILK_TRACE << "RemoteBackEnd::ctor " << this;
-}
-
-RemoteBackEnd::~RemoteBackEnd() {
-    SILK_TRACE << "RemoteBackEnd::dtor " << this;
-}
+    : executor_(std::move(executor)), stub_(std::move(stub)), grpc_context_(grpc_context) {}
 
 awaitable<evmc::address> RemoteBackEnd::etherbase() {
     const auto start_time = clock_time::now();
@@ -121,15 +115,16 @@ awaitable<NodeInfos> RemoteBackEnd::engine_node_info() {
     co_return node_info_list;
 }
 
-awaitable<ExecutionPayload> RemoteBackEnd::engine_get_payload(uint64_t payload_id) {
+awaitable<ExecutionPayloadAndValue> RemoteBackEnd::engine_get_payload(uint64_t payload_id) {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncEngineGetPayload> npc_rpc{*stub_, grpc_context_};
     ::remote::EngineGetPayloadRequest req;
     req.set_payload_id(payload_id);
     const auto reply = co_await npc_rpc.finish_on(executor_, req);
-    auto execution_payload{decode_execution_payload(reply.execution_payload())};
-    SILK_DEBUG << "RemoteBackEnd::engine_get_payload_v1 data=" << execution_payload << " t=" << clock_time::since(start_time);
-    co_return execution_payload;
+    const auto payload{decode_execution_payload(reply.execution_payload())};
+    const auto value{uint256_from_H256(reply.block_value())};
+    SILK_DEBUG << "RemoteBackEnd::engine_get_payload data=" << payload << " value=" << value << " t=" << clock_time::since(start_time);
+    co_return ExecutionPayloadAndValue{payload, value};
 }
 
 awaitable<PayloadStatus> RemoteBackEnd::engine_new_payload(const ExecutionPayload& payload) {
@@ -138,7 +133,7 @@ awaitable<PayloadStatus> RemoteBackEnd::engine_new_payload(const ExecutionPayloa
     auto req{encode_execution_payload(payload)};
     const auto reply = co_await npc_rpc.finish_on(executor_, req);
     PayloadStatus payload_status = decode_payload_status(reply);
-    SILK_DEBUG << "RemoteBackEnd::engine_new_payload_v1 data=" << payload_status << " t=" << clock_time::since(start_time);
+    SILK_DEBUG << "RemoteBackEnd::engine_new_payload data=" << payload_status << " t=" << clock_time::since(start_time);
     co_return payload_status;
 }
 
@@ -155,7 +150,7 @@ awaitable<ForkChoiceUpdatedReply> RemoteBackEnd::engine_forkchoice_updated(const
     if (reply.payload_id() != 0) {
         forkchoice_updated_reply.payload_id = reply.payload_id();
     }
-    SILK_DEBUG << "RemoteBackEnd::engine_forkchoice_updated_v1 data=" << payload_status << " t=" << clock_time::since(start_time);
+    SILK_DEBUG << "RemoteBackEnd::engine_forkchoice_updated data=" << payload_status << " t=" << clock_time::since(start_time);
     co_return forkchoice_updated_reply;
 }
 
@@ -185,31 +180,31 @@ awaitable<PeerInfos> RemoteBackEnd::peers() {
     co_return peer_infos;
 }
 
-ExecutionPayload RemoteBackEnd::decode_execution_payload(const ::types::ExecutionPayload& execution_payload_grpc) {
-    const auto& state_root_h256{execution_payload_grpc.state_root()};
-    const auto& receipts_root_h256{execution_payload_grpc.receipt_root()};
-    const auto& block_hash_h256{execution_payload_grpc.block_hash()};
-    const auto& parent_hash_h256{execution_payload_grpc.parent_hash()};
-    const auto& prev_randao_h256{execution_payload_grpc.prev_randao()};
-    const auto& base_fee_h256{execution_payload_grpc.base_fee_per_gas()};
-    const auto& logs_bloom_h2048{execution_payload_grpc.logs_bloom()};
-    const auto& extra_data_string{execution_payload_grpc.extra_data()};  // []byte becomes std::string in silkrpc protobuf
+ExecutionPayload RemoteBackEnd::decode_execution_payload(const ::types::ExecutionPayload& grpc_payload) {
+    const auto& state_root_h256{grpc_payload.state_root()};
+    const auto& receipts_root_h256{grpc_payload.receipt_root()};
+    const auto& block_hash_h256{grpc_payload.block_hash()};
+    const auto& parent_hash_h256{grpc_payload.parent_hash()};
+    const auto& prev_randao_h256{grpc_payload.prev_randao()};
+    const auto& base_fee_h256{grpc_payload.base_fee_per_gas()};
+    const auto& logs_bloom_h2048{grpc_payload.logs_bloom()};
+    const auto& extra_data_string{grpc_payload.extra_data()};  // []byte becomes std::string in silkrpc protobuf
     // Convert h2048 to a bloom
     silkworm::Bloom bloom;
     std::memcpy(bloom.data(), bytes_from_H2048(logs_bloom_h2048).data(), bloom.size());
     // Convert transactions in std::string to silkworm::Bytes
     std::vector<Bytes> transactions;
-    for (const auto& transaction_string : execution_payload_grpc.transactions()) {
+    for (const auto& transaction_string : grpc_payload.transactions()) {
         transactions.push_back(bytes_of_string(transaction_string));
     }
 
     // Assembling the execution_payload data structure
     return ExecutionPayload{
-        .number = execution_payload_grpc.block_number(),
-        .timestamp = execution_payload_grpc.timestamp(),
-        .gas_limit = execution_payload_grpc.gas_limit(),
-        .gas_used = execution_payload_grpc.gas_used(),
-        .suggested_fee_recipient = address_from_H160(execution_payload_grpc.coinbase()),
+        .number = grpc_payload.block_number(),
+        .timestamp = grpc_payload.timestamp(),
+        .gas_limit = grpc_payload.gas_limit(),
+        .gas_used = grpc_payload.gas_used(),
+        .suggested_fee_recipient = address_from_H160(grpc_payload.coinbase()),
         .state_root = bytes32_from_H256(state_root_h256),
         .receipts_root = bytes32_from_H256(receipts_root_h256),
         .parent_hash = bytes32_from_H256(parent_hash_h256),
@@ -221,30 +216,40 @@ ExecutionPayload RemoteBackEnd::decode_execution_payload(const ::types::Executio
         .transactions = transactions};
 }
 
-::types::ExecutionPayload RemoteBackEnd::encode_execution_payload(const ExecutionPayload& execution_payload) {
-    ::types::ExecutionPayload execution_payload_grpc;
+::types::ExecutionPayload RemoteBackEnd::encode_execution_payload(const ExecutionPayload& payload) {
+    ::types::ExecutionPayload grpc_payload;
     // Numerical parameters
-    execution_payload_grpc.set_block_number(execution_payload.number);
-    execution_payload_grpc.set_timestamp(execution_payload.timestamp);
-    execution_payload_grpc.set_gas_limit(execution_payload.gas_limit);
-    execution_payload_grpc.set_gas_used(execution_payload.gas_used);
+    grpc_payload.set_block_number(payload.number);
+    grpc_payload.set_timestamp(payload.timestamp);
+    grpc_payload.set_gas_limit(payload.gas_limit);
+    grpc_payload.set_gas_used(payload.gas_used);
     // coinbase
-    execution_payload_grpc.set_allocated_coinbase(H160_from_address(execution_payload.suggested_fee_recipient).release());
+    grpc_payload.set_allocated_coinbase(H160_from_address(payload.suggested_fee_recipient).release());
     // 32-bytes parameters
-    execution_payload_grpc.set_allocated_receipt_root(H256_from_bytes({execution_payload.receipts_root.bytes, kHashLength}).release());
-    execution_payload_grpc.set_allocated_state_root(H256_from_bytes({execution_payload.state_root.bytes, kHashLength}).release());
-    execution_payload_grpc.set_allocated_parent_hash(H256_from_bytes({execution_payload.parent_hash.bytes, kHashLength}).release());
-    execution_payload_grpc.set_allocated_block_hash(H256_from_bytes({execution_payload.block_hash.bytes, kHashLength}).release());
-    execution_payload_grpc.set_allocated_prev_randao(H256_from_bytes({execution_payload.prev_randao.bytes, kHashLength}).release());
-    execution_payload_grpc.set_allocated_base_fee_per_gas(H256_from_uint256(execution_payload.base_fee).release());
+    grpc_payload.set_allocated_receipt_root(H256_from_bytes({payload.receipts_root.bytes, kHashLength}).release());
+    grpc_payload.set_allocated_state_root(H256_from_bytes({payload.state_root.bytes, kHashLength}).release());
+    grpc_payload.set_allocated_parent_hash(H256_from_bytes({payload.parent_hash.bytes, kHashLength}).release());
+    grpc_payload.set_allocated_block_hash(H256_from_bytes({payload.block_hash.bytes, kHashLength}).release());
+    grpc_payload.set_allocated_prev_randao(H256_from_bytes({payload.prev_randao.bytes, kHashLength}).release());
+    grpc_payload.set_allocated_base_fee_per_gas(H256_from_uint256(payload.base_fee).release());
     // Logs Bloom
-    execution_payload_grpc.set_allocated_logs_bloom(H2048_from_bytes(execution_payload.logs_bloom).release());
+    grpc_payload.set_allocated_logs_bloom(H2048_from_bytes(payload.logs_bloom).release());
     // String-like parameters
-    for (auto transaction_bytes : execution_payload.transactions) {
-        execution_payload_grpc.add_transactions(std::string(transaction_bytes.begin(), transaction_bytes.end()));
+    for (auto transaction_bytes : payload.transactions) {
+        grpc_payload.add_transactions(std::string(transaction_bytes.begin(), transaction_bytes.end()));
     }
-    execution_payload_grpc.set_extra_data(std::string(execution_payload.extra_data.begin(), execution_payload.extra_data.end()));
-    return execution_payload_grpc;
+    grpc_payload.set_extra_data(std::string(payload.extra_data.begin(), payload.extra_data.end()));
+    // Withdrawals
+    if (payload.withdrawals) {
+        for (auto& withdrawal : payload.withdrawals.value()) {
+            auto grpc_withdrawal = grpc_payload.add_withdrawals();
+            grpc_withdrawal->set_index(withdrawal.index);
+            grpc_withdrawal->set_validator_index(withdrawal.validator_index);
+            grpc_withdrawal->set_allocated_address(H160_from_address(withdrawal.address).release());
+            grpc_withdrawal->set_amount(withdrawal.amount);
+        }
+    }
+    return grpc_payload;
 }
 
 gsl::owner<::remote::EngineForkChoiceState*> RemoteBackEnd::encode_forkchoice_state(const ForkChoiceState& fcs) {

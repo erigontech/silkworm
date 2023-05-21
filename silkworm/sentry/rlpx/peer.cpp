@@ -254,7 +254,8 @@ awaitable<framing::MessageStream> Peer::handshake() {
 }
 
 awaitable<bool> Peer::wait_for_handshake(std::shared_ptr<Peer> self) {
-    co_return (co_await self->handshake_promise_.wait());
+    auto future = self->handshake_promise_.get_future();
+    co_return (co_await future.get_async());
 }
 
 void Peer::close() {

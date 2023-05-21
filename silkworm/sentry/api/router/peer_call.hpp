@@ -21,15 +21,15 @@
 
 #include <boost/asio/any_io_executor.hpp>
 
+#include <silkworm/infra/concurrency/awaitable_future.hpp>
 #include <silkworm/sentry/api/api_common/peer_info.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
-#include <silkworm/sentry/common/promise.hpp>
 
 namespace silkworm::sentry::api::router {
 
 struct PeerCall {
     std::optional<sentry::common::EccPublicKey> peer_public_key;
-    std::shared_ptr<sentry::common::Promise<std::optional<api_common::PeerInfo>>> result_promise;
+    std::shared_ptr<concurrency::AwaitablePromise<std::optional<api_common::PeerInfo>>> result_promise;
 
     PeerCall() = default;
 
@@ -37,7 +37,7 @@ struct PeerCall {
         sentry::common::EccPublicKey peer_public_key1,
         boost::asio::any_io_executor& executor)
         : peer_public_key(std::move(peer_public_key1)),
-          result_promise(std::make_shared<sentry::common::Promise<std::optional<api_common::PeerInfo>>>(executor)) {}
+          result_promise(std::make_shared<concurrency::AwaitablePromise<std::optional<api_common::PeerInfo>>>(executor)) {}
 };
 
 }  // namespace silkworm::sentry::api::router

@@ -20,23 +20,23 @@
 
 #include <boost/asio/any_io_executor.hpp>
 
+#include <silkworm/infra/concurrency/awaitable_future.hpp>
 #include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/infra/concurrency/event_notifier.hpp>
 #include <silkworm/sentry/api/api_common/peer_event.hpp>
-#include <silkworm/sentry/common/promise.hpp>
 
 namespace silkworm::sentry::api::router {
 
 struct PeerEventsCall {
     using TResult = std::shared_ptr<concurrency::Channel<api_common::PeerEvent>>;
 
-    std::shared_ptr<sentry::common::Promise<TResult>> result_promise;
+    std::shared_ptr<concurrency::AwaitablePromise<TResult>> result_promise;
     std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal;
 
     PeerEventsCall() = default;
 
     explicit PeerEventsCall(boost::asio::any_io_executor& executor)
-        : result_promise(std::make_shared<sentry::common::Promise<TResult>>(executor)),
+        : result_promise(std::make_shared<concurrency::AwaitablePromise<TResult>>(executor)),
           unsubscribe_signal(std::make_shared<concurrency::EventNotifier>(executor)) {}
 };
 

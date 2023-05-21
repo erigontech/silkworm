@@ -111,11 +111,18 @@ struct TransitionConfiguration {
     uint64_t terminal_block_number{0};
 };
 
+//! Response for engine_getPayloadV2 as specified in https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#response-2
+struct ExecutionPayloadAndValue {
+    ExecutionPayload payload;
+    intx::uint256 block_value;  // in wei
+};
+
 std::ostream& operator<<(std::ostream& out, const ExecutionPayload& payload);
 std::ostream& operator<<(std::ostream& out, const PayloadStatus& payload_status);
 std::ostream& operator<<(std::ostream& out, const ForkChoiceState& fork_choice_state);
 std::ostream& operator<<(std::ostream& out, const PayloadAttributes& payload_attributes);
 std::ostream& operator<<(std::ostream& out, const ForkChoiceUpdatedReply& fork_choice_updated_reply);
 std::ostream& operator<<(std::ostream& out, const TransitionConfiguration& transition_configuration);
+std::ostream& operator<<(std::ostream& out, const ExecutionPayloadAndValue& pv);
 
 }  // namespace silkworm::rpc

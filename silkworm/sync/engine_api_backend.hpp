@@ -34,7 +34,7 @@ class EngineApiBackend : public rpc::ethbackend::BackEnd {
     EngineApiBackend& operator=(const EngineApiBackend&) = delete;
 
     awaitable<rpc::PayloadStatus> engine_new_payload(const rpc::ExecutionPayload& payload) override;
-    awaitable<rpc::ExecutionPayload> engine_get_payload(uint64_t payload_id) override;
+    awaitable<rpc::ExecutionPayloadAndValue> engine_get_payload(uint64_t payload_id) override;
     awaitable<rpc::ForkChoiceUpdatedReply> engine_forkchoice_updated(const rpc::ForkChoiceUpdatedRequest& fcu_request) override;
     awaitable<evmc::address> etherbase() override;
     awaitable<uint64_t> protocol_version() override;

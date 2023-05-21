@@ -23,7 +23,15 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wsign-conversion"
-#include <roaring64map.hh>
+
+// ignore a warning on a GCC release build:
+// "accessing 9223372036854775810 or more bytes at offsets [2, 9223372036854775807] and 1 may overlap up to 9223372036854775813 bytes at offset -3"
+// here: https://github.com/RoaringBitmap/CRoaring/blob/v1.1.2/cpp/roaring64map.hh#L1589
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wrestrict"
+#endif
+
+#include <roaring/roaring64map.hh>
 #pragma GCC diagnostic pop
 
 #include <boost/functional/hash.hpp>

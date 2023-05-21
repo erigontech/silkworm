@@ -7,9 +7,6 @@
 [submodule "cbor-cpp"]
 	path = third_party/cbor-cpp
 	url = https://github.com/torquem-ch/cbor-cpp.git
-[submodule "CRoaring"]
-	path = third_party/CRoaring
-	url = https://github.com/RoaringBitmap/CRoaring.git
 [submodule "magic_enum"]
 	path = third_party/magic_enum
 	url = https://github.com/Neargye/magic_enum.git

@@ -24,7 +24,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wsign-conversion"
-#include <roaring.hh>
+#include <roaring/roaring.hh>
 #pragma GCC diagnostic pop
 
 #include <silkworm/core/common/util.hpp>

@@ -174,15 +174,6 @@ set_target_properties(blst PROPERTIES
 )
 
 if(NOT SILKWORM_CORE_ONLY)
-  # Roaring Bitmaps
-  option(ENABLE_ROARING_TESTS "" OFF)
-  option(ROARING_BUILD_STATIC "Build a static library" ON)
-  if(NOT MSVC)
-    # Not supported on MSVC
-    option(ROARING_LINK_STATIC "Link executables (tests, benchmarks) statically" ON)
-  endif()
-  add_subdirectory(CRoaring EXCLUDE_FROM_ALL)
-
   # mimalloc
   if(SILKWORM_USE_MIMALLOC)
     if(NOT CONAN_PACKAGE_MANAGER)

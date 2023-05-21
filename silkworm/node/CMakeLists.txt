@@ -24,6 +24,7 @@ endif()
 find_package(nlohmann_json REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(Protobuf REQUIRED)
+find_package(roaring REQUIRED)
 
 # Generate source files containing snapshot TOML files as binary data
 set(SILKWORM_EMBED embed)
@@ -109,7 +110,6 @@ set(SILKWORM_NODE_PUBLIC_LIBS
     mdbx-static
     nlohmann_json::nlohmann_json
     protobuf::libprotobuf
-    roaring
     torrent-rasterbar
 )
 
@@ -117,6 +117,7 @@ set(SILKWORM_NODE_PUBLIC_LIBS
 set(SILKWORM_NODE_PRIVATE_LIBS
     cborcpp
     evmone
+    roaring::roaring
     silkworm_interfaces
 )
 # cmake-format: on

@@ -884,10 +884,10 @@ awaitable<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& re
         const auto latest_block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, latest_block_number);
         const auto latest_block = latest_block_with_hash->block;
         StateReader state_reader(cached_database);
-        state::RemoteState remote_state{io_context_, cached_database, latest_block.header.number};
+        auto state = co_await tx->create_state(io_context_, cached_database, latest_block.header.number);
 
         Tracers tracers;
-        EVMExecutor evm_executor{*chain_config_ptr, workers_, remote_state};
+        EVMExecutor evm_executor{*chain_config_ptr, workers_, state};
 
         rpc::Executor executor = [&latest_block, &evm_executor, &tracers](const silkworm::Transaction& transaction) {
             return evm_executor.call(latest_block, transaction, tracers);
@@ -1116,10 +1116,10 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
         const auto chain_config_ptr = lookup_chain_config(chain_id);
         const auto [block_number, is_latest_block] = co_await core::get_block_number(block_id, tx_database, /*latest_required=*/true);
 
-        state::RemoteState remote_state{io_context_,
-                                        is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database),
-                                        block_number};
-        EVMExecutor executor{*chain_config_ptr, workers_, remote_state};
+        auto state = co_await tx->create_state(io_context_,
+                                               is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database),
+                                               block_number);
+        EVMExecutor executor{*chain_config_ptr, workers_, state};
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
         silkworm::Transaction txn{call.to_transaction()};
         const auto execution_result = co_await executor.call(block_with_hash->block, txn);
@@ -1205,7 +1205,7 @@ awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::js
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
         StateReader state_reader(db_reader);
-        state::RemoteState remote_state{io_context_, db_reader, block_with_hash->block.header.number};
+        auto state = co_await tx->create_state(io_context_, db_reader, block_with_hash->block.header.number);
 
         evmc::address to{};
         if (call.to) {
@@ -1235,7 +1235,7 @@ awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::js
         Tracers tracers{tracer};
         bool access_lists_match{false};
         do {
-            EVMExecutor executor{*chain_config_ptr, workers_, remote_state};
+            EVMExecutor executor{*chain_config_ptr, workers_, state};
             const auto txn = call.to_transaction();
             tracer->reset_access_list();
             const auto execution_result = co_await executor.call(block_with_hash->block, txn, tracers, /* refund */ true, /* gasBailout */ false);
@@ -1307,7 +1307,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& req
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
         auto block_number = block_with_hash->block.header.number;
-        state::RemoteState remote_state{io_context_, db_reader, block_number};
+        auto state = co_await tx->create_state(io_context_, db_reader, block_number);
 
         const auto start_time = clock_time::now();
 
@@ -1326,7 +1326,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& req
                 break;
             }
 
-            EVMExecutor executor{*chain_config_ptr, workers_, remote_state};
+            EVMExecutor executor{*chain_config_ptr, workers_, state};
             const auto execution_result = co_await executor.call(block_with_hash->block, tx_with_block->transaction);
             if (execution_result.pre_check_error) {
                 reply = make_json_error(request["id"], -32000, execution_result.pre_check_error.value());

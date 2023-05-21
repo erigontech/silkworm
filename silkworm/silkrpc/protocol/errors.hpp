@@ -31,7 +31,7 @@ enum ErrorCode : int64_t {
 
     /** Engine API errors **/
     kUnknownPayload = -38001,            // Payload does not exist / is not available
-    kInvalidForChoiceState = -38002,     // Forkchoice state is invalid / inconsistent
+    kInvalidForkChoiceState = -38002,    // Forkchoice state is invalid / inconsistent
     kInvalidPayloadAttributes = -38003,  // Payload attributes are invalid / inconsistent
     kTooLargeRequest = -38004,           // Number of requested entities is too large
 };

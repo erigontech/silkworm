@@ -125,6 +125,7 @@ constexpr const char* k_engine_getPayloadV2{"engine_getPayloadV2"};
 constexpr const char* k_engine_newPayloadV1{"engine_newPayloadV1"};
 constexpr const char* k_engine_newPayloadV2{"engine_newPayloadV2"};
 constexpr const char* k_engine_forkchoiceUpdatedV1{"engine_forkchoiceUpdatedV1"};
+constexpr const char* k_engine_forkchoiceUpdatedV2{"engine_forkchoiceUpdatedV2"};
 constexpr const char* k_engine_exchangeTransitionConfiguration{"engine_exchangeTransitionConfigurationV1"};
 
 constexpr const char* k_txpool_status{"txpool_status"};

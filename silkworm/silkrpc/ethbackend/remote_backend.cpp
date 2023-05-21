@@ -47,7 +47,7 @@ awaitable<evmc::address> RemoteBackEnd::etherbase() {
     const auto reply = co_await eb_rpc.finish_on(executor_, ::remote::EtherbaseRequest{});
     evmc::address evmc_address;
     if (reply.has_address()) {
-        const auto h160_address = reply.address();
+        const auto& h160_address = reply.address();
         evmc_address = address_from_H160(h160_address);
     }
     SILK_DEBUG << "RemoteBackEnd::etherbase address=" << evmc_address << " t=" << clock_time::since(start_time);
@@ -76,7 +76,7 @@ awaitable<std::string> RemoteBackEnd::client_version() {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncClientVersion> cv_rpc{*stub_, grpc_context_};
     const auto reply = co_await cv_rpc.finish_on(executor_, ::remote::ClientVersionRequest{});
-    const auto cv = reply.node_name();
+    const auto& cv = reply.node_name();
     SILK_DEBUG << "RemoteBackEnd::client_version version=" << cv << " t=" << clock_time::since(start_time);
     co_return cv;
 }
@@ -97,7 +97,7 @@ awaitable<NodeInfos> RemoteBackEnd::engine_node_info() {
     const auto reply = co_await ni_rpc.finish_on(executor_, ::remote::NodesInfoRequest{});
     for (int i = 0; i < reply.nodes_info_size(); i++) {
         NodeInfo node_info;
-        const auto backend_node_info = reply.nodes_info(i);
+        const auto& backend_node_info = reply.nodes_info(i);
         node_info.id = backend_node_info.id();
         node_info.name = backend_node_info.name();
         node_info.enode = backend_node_info.enode();
@@ -105,7 +105,7 @@ awaitable<NodeInfos> RemoteBackEnd::engine_node_info() {
         node_info.listener_addr = backend_node_info.listener_addr();
         node_info.protocols = backend_node_info.protocols();
         if (backend_node_info.has_ports()) {
-            const auto ports = backend_node_info.ports();
+            const auto& ports = backend_node_info.ports();
             node_info.ports.discovery = ports.discovery();
             node_info.ports.listener = ports.listener();
         }
@@ -218,6 +218,7 @@ ExecutionPayload RemoteBackEnd::decode_execution_payload(const ::types::Executio
 
 ::types::ExecutionPayload RemoteBackEnd::encode_execution_payload(const ExecutionPayload& payload) {
     ::types::ExecutionPayload grpc_payload;
+    grpc_payload.set_version(payload.version);
     // Numerical parameters
     grpc_payload.set_block_number(payload.number);
     grpc_payload.set_timestamp(payload.timestamp);
@@ -263,14 +264,23 @@ gsl::owner<::remote::EngineForkChoiceState*> RemoteBackEnd::encode_forkchoice_st
 
 gsl::owner<::remote::EnginePayloadAttributes*> RemoteBackEnd::encode_payload_attributes(const PayloadAttributes& epa) {
     auto epa_grpc = new ::remote::EnginePayloadAttributes();
-    // TODO(yperbasis) support v2 (withdrawals) as well
-    epa_grpc->set_version(1);
+    epa_grpc->set_version(epa.version);
     // Numerical parameters
     epa_grpc->set_timestamp(epa.timestamp);
     // 32-bytes parameters
     epa_grpc->set_allocated_prev_randao(H256_from_bytes({epa.prev_randao.bytes, kHashLength}).release());
     // Address parameters
     epa_grpc->set_allocated_suggested_fee_recipient(H160_from_address(epa.suggested_fee_recipient).release());
+    // Withdrawals
+    if (epa.withdrawals) {
+        for (auto& withdrawal : epa.withdrawals.value()) {
+            auto grpc_withdrawal = epa_grpc->add_withdrawals();
+            grpc_withdrawal->set_index(withdrawal.index);
+            grpc_withdrawal->set_validator_index(withdrawal.validator_index);
+            grpc_withdrawal->set_allocated_address(H160_from_address(withdrawal.address).release());
+            grpc_withdrawal->set_amount(withdrawal.amount);
+        }
+    }
     return epa_grpc;
 }
 

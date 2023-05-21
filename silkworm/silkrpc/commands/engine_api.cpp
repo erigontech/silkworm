@@ -218,36 +218,28 @@ awaitable<void> EngineRpcApi::handle_engine_forkchoice_updated_v1(const nlohmann
 #ifndef BUILD_COVERAGE
     try {
 #endif
-        const auto forkchoice_state = params[0].get<ForkChoiceState>();
-
-        if (forkchoice_state.safe_block_hash == kZeroHash) {
+        const auto fork_choice_state = params[0].get<ForkChoiceState>();
+        // We MUST check that ForkChoiceState is valid and consistent [Specification 9.]
+        if (fork_choice_state.safe_block_hash == kZeroHash) {
             const auto error_msg = "safe block hash is empty";
             SILK_ERROR << error_msg;
-            reply = make_json_error(request.at("id"), kInvalidForChoiceState, error_msg);
+            reply = make_json_error(request.at("id"), kInvalidForkChoiceState, error_msg);
             co_return;
         }
-
-        if (forkchoice_state.finalized_block_hash == kZeroHash) {
+        if (fork_choice_state.finalized_block_hash == kZeroHash) {
             const auto error_msg = "finalized block hash is empty";
             SILK_ERROR << error_msg;
-            reply = make_json_error(request.at("id"), kInvalidForChoiceState, error_msg);
+            reply = make_json_error(request.at("id"), kInvalidForkChoiceState, error_msg);
             co_return;
         }
 
+        std::optional<PayloadAttributes> payload_attributes;
         if (params.size() == 2 && !params[1].is_null()) {
-            const auto payload_attributes = params[1].get<PayloadAttributes>();
-            const ForkChoiceUpdatedRequest forkchoice_update_request{
-                .fork_choice_state = forkchoice_state,
-                .payload_attributes = std::make_optional(payload_attributes)};
-            const auto fork_updated = co_await backend_->engine_forkchoice_updated(forkchoice_update_request);
-            reply = make_json_content(request["id"], fork_updated);
-        } else {
-            const ForkChoiceUpdatedRequest forkchoice_update_request{
-                .fork_choice_state = forkchoice_state,
-                .payload_attributes = std::nullopt};
-            const auto fork_updated = co_await backend_->engine_forkchoice_updated(forkchoice_update_request);
-            reply = make_json_content(request["id"], fork_updated);
+            payload_attributes = params[1].get<PayloadAttributes>();
         }
+        const ForkChoiceUpdatedRequest fcu_request{fork_choice_state, payload_attributes};
+        const auto fcu_reply = co_await backend_->engine_forkchoice_updated(fcu_request);
+        reply = make_json_content(request["id"], fcu_reply);
 #ifndef BUILD_COVERAGE
     } catch (const boost::system::system_error& se) {
         SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
@@ -260,6 +252,74 @@ awaitable<void> EngineRpcApi::handle_engine_forkchoice_updated_v1(const nlohmann
         reply = make_json_error(request.at("id"), kServerError, "unexpected exception");
     }
 #endif
+}
+
+// https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#engine_forkchoiceupdatedv2
+awaitable<void> EngineRpcApi::handle_engine_forkchoice_updated_v2(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request.at("params");
+    if (params.size() != 1 && params.size() != 2) {
+        auto error_msg = "invalid engine_forkchoiceUpdatedV2 params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+        co_return;
+    }
+
+    try {
+        const auto fork_choice_state = params[0].get<ForkChoiceState>();
+        // We MUST check that ForkChoiceState is valid and consistent [Specification 9.]
+        if (fork_choice_state.safe_block_hash == kZeroHash) {
+            const auto error_msg = "safe block hash is empty";
+            SILK_ERROR << error_msg;
+            reply = make_json_error(request.at("id"), kInvalidForkChoiceState, error_msg);
+            co_return;
+        }
+        if (fork_choice_state.finalized_block_hash == kZeroHash) {
+            const auto error_msg = "finalized block hash is empty";
+            SILK_ERROR << error_msg;
+            reply = make_json_error(request.at("id"), kInvalidForkChoiceState, error_msg);
+            co_return;
+        }
+
+        std::optional<PayloadAttributes> payload_attributes;
+        if (params.size() == 2 && !params[1].is_null()) {
+            const auto attributes = params[1].get<PayloadAttributes>();
+
+            auto tx = co_await database_->begin();
+            const auto chain_config{co_await core::rawdb::read_chain_config(ethdb::TransactionDatabase{*tx})};
+            co_await tx->close();
+            const auto config = silkworm::ChainConfig::from_json(chain_config.config);
+
+            ensure(config.has_value(), "execution layer has invalid configuration");
+            ensure(config->shanghai_time.has_value(), "execution layer has no Shanghai timestamp in configuration");
+
+            // We MUST check that CL has sent the expected PayloadAttributes version [Specification for params]
+            if (attributes.timestamp < config->shanghai_time and attributes.version != PayloadAttributes::V1) {
+                const auto error_msg = "consensus layer must use PayloadAttributesV1 if timestamp lower than Shanghai";
+                SILK_ERROR << error_msg;
+                reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+                co_return;
+            }
+            if (attributes.timestamp >= config->shanghai_time and attributes.version != PayloadAttributes::V2) {
+                const auto error_msg = "consensus layer must use PayloadAttributesV2 if timestamp greater or equal to Shanghai";
+                SILK_ERROR << error_msg;
+                reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+                co_return;
+            }
+            payload_attributes = attributes;
+        }
+        const ForkChoiceUpdatedRequest fcu_request{fork_choice_state, payload_attributes};
+        const auto fcu_reply = co_await backend_->engine_forkchoice_updated(fcu_request);
+        reply = make_json_content(request["id"], fcu_reply);
+    } catch (const boost::system::system_error& se) {
+        SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
+        reply = make_json_error(request["id"], se.code().value(), se.code().message());
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request.at("id"), kInternalError, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        reply = make_json_error(request.at("id"), kServerError, "unexpected exception");
+    }
 }
 
 // Checks if the transition configurations of the Execution Layer is equal to the ones in the Consensus Layer

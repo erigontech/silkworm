@@ -54,6 +54,7 @@ commands:
       - run:
           name: "Install dependencies"
           command: |
+            sudo apt-get update
             sudo apt-get install -y m4 texinfo bison
       - run:
           name: "Cmake"
@@ -78,7 +79,8 @@ commands:
       - run:
           name: "Install gcc"
           command: |
-            sudo apt -y install gcc-$GCC_VERSION g++-$GCC_VERSION
+            sudo apt-get update
+            sudo apt-get install -y gcc-$GCC_VERSION g++-$GCC_VERSION
             sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-$GCC_VERSION 100 --slave /usr/bin/g++ g++ /usr/bin/g++-$GCC_VERSION
 
   # libc++ is an alternative standard library needed for coroutines support on Clang
@@ -88,7 +90,8 @@ commands:
       - run:
           name: "Install llvm"
           command: |
-            sudo apt -y install llvm-$CLANG_VERSION libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev clang-$CLANG_VERSION
+            sudo apt-get update
+            sudo apt-get install -y llvm-$CLANG_VERSION libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev clang-$CLANG_VERSION
             sudo ln -sfv /usr/bin/clang-$CLANG_VERSION /usr/bin/clang
             sudo ln -sfv /usr/bin/clang++-$CLANG_VERSION /usr/bin/clang++
             sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100

@@ -32,9 +32,9 @@
 
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/parallel_group_utils.hpp>
+#include <silkworm/infra/concurrency/timeout.hpp>
 #include <silkworm/sentry/api/api_common/service.hpp>
 #include <silkworm/sentry/common/atomic_value.hpp>
-#include <silkworm/sentry/common/timeout.hpp>
 
 namespace silkworm::sentry {
 

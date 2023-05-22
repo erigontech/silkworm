@@ -19,8 +19,6 @@
 #include <chrono>
 
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/error.hpp>
-#include <boost/asio/experimental/channel_error.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
@@ -29,8 +27,8 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
+#include <silkworm/infra/concurrency/timeout.hpp>
 #include <silkworm/sentry/common/sleep.hpp>
-#include <silkworm/sentry/common/timeout.hpp>
 
 #include "auth/handshake.hpp"
 #include "ping_message.hpp"

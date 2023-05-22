@@ -34,7 +34,7 @@ class DummyTransaction : public ethdb::Transaction {
     explicit DummyTransaction(uint64_t view_id, std::shared_ptr<ethdb::CursorDupSort> cursor)
         : view_id_(view_id), cursor_(std::move(cursor)) {}
 
-    [[nodiscard]] uint64_t view_id() override { return view_id_; }
+    [[nodiscard]] uint64_t view_id() const override { return view_id_; }
 
     boost::asio::awaitable<void> open() override { co_return; }
 

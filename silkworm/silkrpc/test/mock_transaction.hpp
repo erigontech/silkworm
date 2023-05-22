@@ -31,7 +31,7 @@ namespace silkworm::rpc::test {
 
 class MockTransaction : public ethdb::Transaction {
   public:
-    MOCK_METHOD(uint64_t, view_id, (), ());
+    MOCK_METHOD(uint64_t, view_id, (), (const));
     MOCK_METHOD((boost::asio::awaitable<void>), open, ());
     MOCK_METHOD((boost::asio::awaitable<std::shared_ptr<ethdb::Cursor>>), cursor, (const std::string&));
     MOCK_METHOD((boost::asio::awaitable<std::shared_ptr<ethdb::CursorDupSort>>), cursor_dup_sort, (const std::string&));

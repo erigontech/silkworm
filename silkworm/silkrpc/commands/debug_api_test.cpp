@@ -158,7 +158,7 @@ class DummyTransaction : public ethdb::Transaction {
   public:
     explicit DummyTransaction(const nlohmann::json& json) : json_{json}, view_id_{next_view_id++} {};
 
-    [[nodiscard]] uint64_t view_id() const override {
+    [[nodiscard]] uint64_t view_id() override {
         return view_id_;
     }
 

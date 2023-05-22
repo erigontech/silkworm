@@ -19,13 +19,14 @@
 #include <gsl/util>
 
 #include <silkworm/core/common/as_range.hpp>
+#include <silkworm/core/common/random_number.hpp>
+#include <silkworm/core/common/singleton.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/db_utils.hpp>
 #include <silkworm/sync/sentry_client.hpp>
 
 #include "algorithm.hpp"
-#include "random_number.hpp"
 
 namespace silkworm {
 
@@ -429,12 +430,16 @@ std::shared_ptr<Anchor> HeaderChain::highest_anchor() {
  */
 auto HeaderChain::anchor_extension_request(time_point_t time_point) -> std::shared_ptr<OutboundMessage> {
     using std::nullopt;
+    auto prev_condition = extension_condition_;
 
     if (time_point - last_nack_ < SentryClient::kNoPeerDelay)
         return {};
 
     if (anchor_queue_.empty()) {
-        SILK_TRACE << "HeaderChain, no more headers to request: empty anchor queue";
+        extension_condition_ = "empty anchor queue";
+        if (extension_condition_ != prev_condition) {
+            SILK_TRACE << "HeaderChain, no more headers to request: " << extension_condition_;
+        }
         return {};
     }
 
@@ -448,7 +453,10 @@ auto HeaderChain::anchor_extension_request(time_point_t time_point) -> std::shar
         }
 
         if (anchor->timestamp > time_point) {
-            SILK_TRACE << "HeaderChain: no anchor ready for extension yet";
+            extension_condition_ = "no anchor ready for extension yet";
+            if (extension_condition_ != prev_condition) {
+                SILK_TRACE << "HeaderChain, no more headers to request: " << extension_condition_;
+            }
             return send_penalties;  // anchor not ready for "extend" re-request yet, send only penalties if any
         }
 
@@ -468,6 +476,7 @@ auto HeaderChain::anchor_extension_request(time_point_t time_point) -> std::shar
             SILK_TRACE << "HeaderChain: trying to extend anchor " << anchor->blockHeight
                        << " (chain bundle len = " << anchor->chainLength() << ", last link = " << anchor->lastLinkHeight << " )";
 
+            extension_condition_ = "ok";
             return request_message;  // try (again) to extend this anchor
         } else {
             // ancestors of this anchor seem to be unavailable, invalidate and move on
@@ -479,6 +488,7 @@ auto HeaderChain::anchor_extension_request(time_point_t time_point) -> std::shar
         }
     }
 
+    extension_condition_ = "void anchor queue";
     return send_penalties;
 }
 
@@ -503,7 +513,7 @@ auto HeaderChain::save_external_announce(Hash hash) -> std::optional<GetBlockHea
     if (has_link(hash)) return std::nullopt;  // we already have this link, no need to request it
 
     GetBlockHeadersPacket66 request;
-    request.requestId = RANDOM_NUMBER.generate_one();
+    request.requestId = Singleton<RandomNumber>::instance().generate_one();
     request.request.origin = {hash};
     request.request.amount = 1;
     request.request.skip = 0;
@@ -663,6 +673,7 @@ auto HeaderList::split_into_segments() -> std::tuple<std::vector<Segment>, Penal
 
 auto HeaderChain::process_segment(const Segment& segment, bool is_a_new_block, const PeerId& peerId)
     -> RequestMoreHeaders {
+    if (segment.empty()) return false;
     auto [anchor, start] = find_anchor(segment);
     auto [tip, end] = find_link(segment, start);
 
@@ -716,8 +727,8 @@ auto HeaderChain::process_segment(const Segment& segment, bool is_a_new_block, c
             op = "new anchor";
             requestMore = new_anchor(segment_slice, peerId);
         }
-        SILK_TRACE << "HeaderChain, segment " << op << " up=" << startNum << " (" << segment[start]->hash()
-                   << ") down=" << endNum << " (" << segment[end - 1]->hash() << ") (more=" << requestMore << ")";
+        // SILK_TRACE << "HeaderChain, segment " << op << " up=" << startNum << " (" << segment[start]->hash()
+        //            << ") down=" << endNum << " (" << segment[end - 1]->hash() << ") (more=" << requestMore << ")";
     } catch (segment_cut_and_paste_error& e) {
         log::Trace() << "[WARNING] HeaderChain, segment cut&paste error, " << op << " up=" << startNum << " ("
                      << segment[start]->hash() << ") down=" << endNum << " (" << segment[end - 1]->hash()

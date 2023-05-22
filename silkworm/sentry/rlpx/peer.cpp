@@ -19,8 +19,6 @@
 #include <chrono>
 
 #include <boost/asio/co_spawn.hpp>
-#include <boost/asio/error.hpp>
-#include <boost/asio/experimental/channel_error.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
@@ -29,8 +27,8 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
+#include <silkworm/infra/concurrency/timeout.hpp>
 #include <silkworm/sentry/common/sleep.hpp>
-#include <silkworm/sentry/common/timeout.hpp>
 
 #include "auth/handshake.hpp"
 #include "ping_message.hpp"
@@ -127,7 +125,7 @@ awaitable<void> Peer::handle() {
         if (is_incompatible) {
             log::Debug("sentry") << "Peer::handle IncompatiblePeerError";
             co_await (message_stream.send(DisconnectMessage{DisconnectReason::UselessPeer}.to_message()) ||
-                      common::Timeout::after(kPeerDisconnectTimeout));
+                      common::concurrency::timeout(kPeerDisconnectTimeout));
             co_return;
         }
 
@@ -158,26 +156,26 @@ awaitable<void> Peer::handle() {
             log::Debug("sentry") << "Peer::handle disconnecting";
             auto reason = disconnect_reason_.get().value_or(DisconnectReason::DisconnectRequested);
             co_await (message_stream.send(DisconnectMessage{reason}.to_message()) ||
-                      common::Timeout::after(kPeerDisconnectTimeout));
+                      common::concurrency::timeout(kPeerDisconnectTimeout));
         }
 
         if (is_cancelled) {
             log::Debug("sentry") << "Peer::handle cancelled - quitting gracefully";
             co_await boost::asio::this_coro::reset_cancellation_state();
             co_await (message_stream.send(DisconnectMessage{DisconnectReason::ClientQuitting}.to_message()) ||
-                      common::Timeout::after(kPeerDisconnectTimeout));
+                      common::concurrency::timeout(kPeerDisconnectTimeout));
             throw boost::system::system_error(make_error_code(boost::system::errc::operation_canceled));
         }
 
         if (is_ping_timed_out) {
             log::Debug("sentry") << "Peer::handle ping timed out";
             co_await (message_stream.send(DisconnectMessage{DisconnectReason::PingTimeout}.to_message()) ||
-                      common::Timeout::after(kPeerDisconnectTimeout));
+                      common::concurrency::timeout(kPeerDisconnectTimeout));
         }
 
     } catch (const auth::Handshake::DisconnectError&) {
         log::Debug("sentry") << "Peer::handle DisconnectError";
-    } catch (const common::Timeout::ExpiredError&) {
+    } catch (const common::concurrency::TimeoutExpiredError&) {
         log::Debug("sentry") << "Peer::handle timeout expired";
     } catch (const boost::system::system_error& ex) {
         if (is_fatal_network_error(ex)) {
@@ -212,10 +210,10 @@ awaitable<void> Peer::drop(DisconnectReason reason) {
     try {
         auto message_stream = co_await handshake();
         co_await (message_stream.send(DisconnectMessage{reason}.to_message()) ||
-                  common::Timeout::after(kPeerDisconnectTimeout));
+                  common::concurrency::timeout(kPeerDisconnectTimeout));
     } catch (const auth::Handshake::DisconnectError&) {
         log::Debug("sentry") << "Peer::drop DisconnectError";
-    } catch (const common::Timeout::ExpiredError&) {
+    } catch (const common::concurrency::TimeoutExpiredError&) {
         log::Debug("sentry") << "Peer::drop timeout expired";
     } catch (const boost::system::system_error& ex) {
         if (is_fatal_network_error(ex)) {
@@ -254,7 +252,8 @@ awaitable<framing::MessageStream> Peer::handshake() {
 }
 
 awaitable<bool> Peer::wait_for_handshake(std::shared_ptr<Peer> self) {
-    co_return (co_await self->handshake_promise_.wait());
+    auto future = self->handshake_promise_.get_future();
+    co_return (co_await future.get_async());
 }
 
 void Peer::close() {
@@ -369,8 +368,8 @@ awaitable<void> Peer::ping_periodically(framing::MessageStream& message_stream) 
         co_await message_stream.send(PingMessage{}.to_message());
 
         try {
-            co_await (pong_channel_.receive() || common::Timeout::after(kPeerPingInterval / 3));
-        } catch (const common::Timeout::ExpiredError&) {
+            co_await (pong_channel_.receive() || common::concurrency::timeout(kPeerPingInterval / 3));
+        } catch (const common::concurrency::TimeoutExpiredError&) {
             throw PingTimeoutError();
         } catch (const boost::system::system_error& ex) {
             if (ex.code() == boost::asio::experimental::error::channel_closed)

@@ -19,6 +19,7 @@
 #include <string>
 #include <utility>
 
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkworm::rpc::commands {
@@ -30,10 +31,10 @@ boost::asio::awaitable<void> TxPoolRpcApi::handle_txpool_status(const nlohmann::
         TxPoolStatusInfo txpool_status{status.base_fee_count, status.pending_count, status.queued_count};
         reply = make_json_content(request["id"], txpool_status);
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
@@ -57,7 +58,7 @@ boost::asio::awaitable<void> TxPoolRpcApi::handle_txpool_content(const nlohmann:
             Transaction txn{};
             const auto result = silkworm::rlp::decode_transaction(from, dynamic_cast<silkworm::Transaction&>(txn), silkworm::rlp::Eip2718Wrapping::kBoth);
             if (!result) {
-                SILKRPC_ERROR << "handle_txpool_content  rlp::decode failed sender: " << sender << "\n";
+                SILK_ERROR << "handle_txpool_content  rlp::decode failed sender: " << sender;
                 error = true;
                 break;
             }
@@ -77,10 +78,10 @@ boost::asio::awaitable<void> TxPoolRpcApi::handle_txpool_content(const nlohmann:
             reply = make_json_error(request["id"], 100, "RLP decoding error");
         }
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 

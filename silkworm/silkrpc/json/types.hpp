@@ -27,14 +27,17 @@
 
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
+#include <silkworm/silkrpc/json/access_list_entry.hpp>
 #include <silkworm/silkrpc/json/call.hpp>
 #include <silkworm/silkrpc/json/execution_payload.hpp>
 #include <silkworm/silkrpc/json/filter.hpp>
 #include <silkworm/silkrpc/json/fork_choice.hpp>
 #include <silkworm/silkrpc/json/log.hpp>
+#include <silkworm/silkrpc/json/node_info.hpp>
 #include <silkworm/silkrpc/json/payload_attributes.hpp>
 #include <silkworm/silkrpc/json/receipt.hpp>
 #include <silkworm/silkrpc/json/transition_configuration.hpp>
+#include <silkworm/silkrpc/json/withdrawal.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/call.hpp>
 #include <silkworm/silkrpc/types/chain_config.hpp>
@@ -85,10 +88,6 @@ inline constexpr auto int64Size = 32;
 inline constexpr auto dataSize = 4096;
 inline constexpr auto ethCallResultFixedSize = 2048;
 
-void to_json(nlohmann::json& json, const struct NodeInfo& node_info);
-
-void to_json(nlohmann::json& json, const struct NodeInfoPorts& node_info_ports);
-
 void to_json(nlohmann::json& json, const PeerInfo& peer_info);
 
 void to_json(nlohmann::json& json, const struct ChainTraffic& chain_traffic);
@@ -126,6 +125,8 @@ void to_json(nlohmann::json& json, const RevertError& error);
 
 void to_json(nlohmann::json& json, const std::set<evmc::address>& addresses);
 
+uint64_t from_quantity(const std::string& hex_quantity);
+
 std::string to_hex_no_leading_zeros(uint64_t number);
 std::string to_hex_no_leading_zeros(silkworm::ByteView bytes);
 std::string to_quantity(uint64_t number);
@@ -143,7 +144,7 @@ nlohmann::json make_json_error(uint32_t id, int64_t code, const std::string& mes
 nlohmann::json make_json_error(uint32_t id, const RevertError& error);
 
 // GLAZE
-void make_glaze_json_error(std::string& reply, uint32_t id, const int error_id, const std::string& message);
+void make_glaze_json_error(std::string& reply, uint32_t id, int error_id, const std::string& message);
 void make_glaze_json_error(std::string& reply, uint32_t id, const RevertError& error);
 
 }  // namespace silkworm::rpc

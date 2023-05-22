@@ -25,7 +25,6 @@ using namespace std::chrono;
 namespace asio = boost::asio;
 
 Server::Server(NodeSettings& ns, db::RWAccess dba) : exec_engine_{io_context_, ns, dba} {
-    open();
 }
 
 bool Server::stop() {
@@ -34,8 +33,12 @@ bool Server::stop() {
 }
 
 void Server::execution_loop() {
+    exec_engine_.open();
+
     asio::executor_work_guard<decltype(io_context_.get_executor())> work{io_context_.get_executor()};
     io_context_.run();
+
+    exec_engine_.close();
 }
 
 void Server::handle_exception(std::exception_ptr e) {
@@ -47,14 +50,6 @@ void Server::handle_exception(std::exception_ptr e) {
     } catch (const std::exception& ex) {
         std::cerr << "Exception in ExtendingFork::verify_chain(): " << ex.what() << "\n";
     }
-}
-
-void Server::open() {
-    auto lambda = [](Server* me) -> asio::awaitable<void> {
-        me->exec_engine_.open();
-        co_return;
-    };
-    return co_spawn(io_context_, lambda(this), asio::detached);
 }
 
 auto Server::block_progress() -> asio::awaitable<BlockNum> {
@@ -141,12 +136,25 @@ asio::awaitable<std::vector<BlockHeader>> Server::get_last_headers(BlockNum limi
     return co_spawn(io_context_, lambda(this, limit), asio::use_awaitable);
 }
 
-asio::awaitable<BlockBody> Server::get_body(Hash /*block_hash*/) {
-    throw std::runtime_error{"Server::get_body not implemented"};
+asio::awaitable<std::optional<TotalDifficulty>> Server::get_header_td(Hash hash, std::optional<BlockNum> num) {
+    auto lambda = [](Server* me, Hash h, std::optional<BlockNum> bn) -> asio::awaitable<std::optional<TotalDifficulty>> {
+        co_return me->exec_engine_.get_header_td(h, bn);
+    };
+    return co_spawn(io_context_, lambda(this, hash, num), asio::use_awaitable);
 }
 
-asio::awaitable<bool> Server::is_canonical(Hash /*block_hash*/) {
-    throw std::runtime_error{"Server::is_canonical not implemented"};
+asio::awaitable<std::optional<BlockBody>> Server::get_body(Hash block_hash) {
+    auto lambda = [](Server* me, Hash h) -> asio::awaitable<std::optional<BlockBody>> {
+        co_return me->exec_engine_.get_body(h);
+    };
+    return co_spawn(io_context_, lambda(this, block_hash), asio::use_awaitable);
+}
+
+asio::awaitable<bool> Server::is_canonical(Hash block_hash) {
+    auto lambda = [](Server* me, Hash h) -> asio::awaitable<bool> {
+        co_return me->exec_engine_.is_canonical(h);
+    };
+    return co_spawn(io_context_, lambda(this, block_hash), asio::use_awaitable);
 }
 
 asio::awaitable<std::optional<BlockNum>> Server::get_block_num(Hash block_hash) {

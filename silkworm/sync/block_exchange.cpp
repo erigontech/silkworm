@@ -20,10 +20,11 @@
 
 #include <boost/signals2.hpp>
 
+#include <silkworm/core/common/random_number.hpp>
+#include <silkworm/core/common/singleton.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
-#include <silkworm/sync/internals/random_number.hpp>
 #include <silkworm/sync/messages/inbound_message.hpp>
 #include <silkworm/sync/messages/internal_message.hpp>
 #include <silkworm/sync/sentry_client.hpp>
@@ -59,7 +60,7 @@ void BlockExchange::accept(std::shared_ptr<Message> message) {
 void BlockExchange::receive_message(std::shared_ptr<InboundMessage> message) {
     statistics_.received_msgs++;
 
-    SILK_TRACE << "BlockExchange received message " << *message;
+    // SILK_TRACE << "BlockExchange received message " << *message;
 
     messages_.push(std::move(message));
 }
@@ -67,7 +68,7 @@ void BlockExchange::receive_message(std::shared_ptr<InboundMessage> message) {
 void BlockExchange::execution_loop() {
     using namespace std::chrono;
     using namespace std::chrono_literals;
-    log::set_thread_name("block-exchange");
+    log::set_thread_name("block-exchg");
 
     auto announcement_receiving_callback = [this](std::shared_ptr<InboundMessage> msg) {
         statistics_.nonsolic_msgs++;
@@ -116,8 +117,8 @@ void BlockExchange::execution_loop() {
             size_t room_for_new_requests = peers_capacity > outstanding_requests ? peers_capacity - outstanding_requests : 0;
 
             auto body_requests = room_for_new_requests == 1
-                                     ? RANDOM_NUMBER.generate_one() % 2  // 50% chance to request a body
-                                     : room_for_new_requests / 2;        // a slight bias towards headers
+                                     ? Singleton<RandomNumber>::instance().generate_one() % 2  // 50% chance to request a body
+                                     : room_for_new_requests / 2;                              // a slight bias towards headers
 
             room_for_new_requests -= request_bodies(now, body_requests);           // do the computed nr. of body requests
             room_for_new_requests -= request_headers(now, room_for_new_requests);  // do the remaining nr. of header requests

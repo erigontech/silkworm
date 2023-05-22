@@ -25,4 +25,6 @@ namespace silkworm::rpc {
 void to_json(nlohmann::json& json, const ExecutionPayload& execution_payload);
 void from_json(const nlohmann::json& json, ExecutionPayload& execution_payload);
 
+void to_json(nlohmann::json& json, const ExecutionPayloadAndValue& reply);
+
 }  // namespace silkworm::rpc

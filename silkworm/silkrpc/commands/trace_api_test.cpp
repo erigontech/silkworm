@@ -18,7 +18,8 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/test/log.hpp>
 
 namespace silkworm::rpc::commands {
 
@@ -26,13 +27,13 @@ using Catch::Matchers::Message;
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("TraceRpcApi") {
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     boost::asio::io_context ioc;
     boost::asio::thread_pool workers{1};
 
     SECTION("CTOR") {
-        CHECK_NOTHROW(TraceRpcApi{ioc, workers});
+        CHECK_THROWS_AS(TraceRpcApi(ioc, workers), std::logic_error);
     }
 }
 #endif  // SILKWORM_SANITIZE

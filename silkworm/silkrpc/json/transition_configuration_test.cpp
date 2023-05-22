@@ -19,14 +19,12 @@
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 
-#include <silkworm/silkrpc/common/log.hpp>
-
 namespace silkworm::rpc {
 
 using Catch::Matchers::Message;
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 
-TEST_CASE("serialize transition configuration", "[silkworm::json][to_json]") {
+TEST_CASE("serialize TransitionConfigurationV1", "[silkworm::json][to_json]") {
     TransitionConfiguration transition_configuration{
         .terminal_total_difficulty = 0xf4240,
         .terminal_block_hash = 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32,
@@ -38,7 +36,7 @@ TEST_CASE("serialize transition configuration", "[silkworm::json][to_json]") {
     CHECK(j["terminalBlockNumber"] == "0x0");
 }
 
-TEST_CASE("deserialize transition configuration", "[silkworm::json][from_json]") {
+TEST_CASE("deserialize TransitionConfigurationV1", "[silkworm::json][from_json]") {
     TransitionConfiguration actual_transition_configuration = R"({
         "terminalTotalDifficulty":"0xf4240",
         "terminalBlockHash":"0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858",
@@ -49,7 +47,6 @@ TEST_CASE("deserialize transition configuration", "[silkworm::json][from_json]")
         .terminal_total_difficulty = 0xf4240,
         .terminal_block_hash = 0x3559e851470f6e7bbed1db474980683e8c315bfce99b2a6ef47c057c04de7858_bytes32,
         .terminal_block_number = 0x0};
-
     CHECK(actual_transition_configuration.terminal_total_difficulty == expected_transition_configuration.terminal_total_difficulty);
     CHECK(actual_transition_configuration.terminal_block_hash == expected_transition_configuration.terminal_block_hash);
     CHECK(actual_transition_configuration.terminal_block_number == expected_transition_configuration.terminal_block_number);

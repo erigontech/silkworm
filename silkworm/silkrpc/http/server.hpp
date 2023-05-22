@@ -35,7 +35,6 @@
 
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/silkrpc/commands/rpc_api_table.hpp>
-#include <silkworm/silkrpc/concurrency/context_pool.hpp>
 #include <silkworm/silkrpc/http/request_handler.hpp>
 
 namespace silkworm::rpc::http {
@@ -62,6 +61,9 @@ class Server {
 
     boost::asio::awaitable<void> run();
 
+    //! The JSON RPC API implementation
+    commands::RpcApi rpc_api_;
+
     //! The repository of API request handlers
     commands::RpcApiTable handler_table_;
 
@@ -70,9 +72,6 @@ class Server {
 
     //! The acceptor used to listen for incoming TCP connections
     boost::asio::ip::tcp::acceptor acceptor_;
-
-    //! The pool of threads used to execute concurrent calls
-    boost::asio::thread_pool& workers_;
 
     //! The JSON Web Token (JWT) secret for secure channel communication
     std::optional<std::string> jwt_secret_;

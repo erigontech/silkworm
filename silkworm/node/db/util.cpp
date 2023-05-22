@@ -143,16 +143,23 @@ void upsert_storage_value(RWCursorDupSort& state_cursor, ByteView storage_prefix
 
 namespace detail {
     Bytes BlockBodyForStorage::encode() const {
-        rlp::Header header{/*list=*/true, /*payload_length=*/0};
+        rlp::Header header{.list = true, .payload_length = 0};
         header.payload_length += rlp::length(base_txn_id);
         header.payload_length += rlp::length(txn_count);
         header.payload_length += rlp::length(ommers);
+        if (withdrawals) {
+            header.payload_length += rlp::length(*withdrawals);
+        }
 
         Bytes to;
         rlp::encode_header(to, header);
         rlp::encode(to, base_txn_id);
         rlp::encode(to, txn_count);
         rlp::encode(to, ommers);
+        if (withdrawals) {
+            rlp::encode(to, *withdrawals);
+        }
+
         return to;
     }
 
@@ -174,6 +181,15 @@ namespace detail {
         }
         if (const auto result{rlp::decode(from, to.ommers)}; !result) {
             return tl::unexpected{result.error()};
+        }
+
+        to.withdrawals = std::nullopt;
+        if (from.length() > leftover) {
+            std::vector<Withdrawal> withdrawals;
+            if (DecodingResult res{rlp::decode(from, withdrawals)}; !res) {
+                return res;
+            }
+            to.withdrawals = withdrawals;
         }
 
         if (from.length() != leftover) {

@@ -19,9 +19,11 @@
 #include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkworm::rpc {
+
 std::ostream& operator<<(std::ostream& out, const ExecutionPayload& payload) {
     auto bloom_bytes{silkworm::ByteView(&payload.logs_bloom[0], 256)};
-    out << "number: " << payload.number
+    out << "version: " << payload.version
+        << " number: " << payload.number
         << " block_hash: " << payload.block_hash
         << " parent_hash: " << payload.parent_hash
         << " timestamp: " << payload.timestamp
@@ -33,21 +35,68 @@ std::ostream& operator<<(std::ostream& out, const ExecutionPayload& payload) {
         << " prev_randao: " << payload.prev_randao
         << " logs_bloom: " << silkworm::to_hex(bloom_bytes)
         << " extra_data: " << silkworm::to_hex(payload.extra_data)
-        << "#transactions: " << payload.transactions.size();
-
+        << " #transactions: " << payload.transactions.size();
+    if (payload.withdrawals) {
+        out << " #withdrawals: " << payload.withdrawals->size();
+    }
     return out;
 }
 
 std::ostream& operator<<(std::ostream& out, const PayloadStatus& payload_status) {
     out << "status: " << payload_status.status;
-
     if (payload_status.latest_valid_hash) {
         out << " latest_valid_hash: " << *payload_status.latest_valid_hash;
     }
     if (payload_status.validation_error) {
         out << " validation_error: " << *payload_status.validation_error;
     }
-
     return out;
 }
+
+std::ostream& operator<<(std::ostream& out, const ForkChoiceState& fork_choice_state) {
+    out << "head_block_hash: " << fork_choice_state.head_block_hash
+        << " safe_block_hash: " << fork_choice_state.safe_block_hash
+        << " finalized_block_hash: " << fork_choice_state.finalized_block_hash;
+    return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const PayloadAttributes& attributes) {
+    out << "version: " << attributes.version
+        << " timestamp: " << attributes.timestamp
+        << " prev_randao: " << attributes.prev_randao
+        << " suggested_fee_recipient: " << attributes.suggested_fee_recipient;
+    if (attributes.withdrawals) {
+        out << " #withdrawals: " << attributes.withdrawals->size();
+    }
+    return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const ForkChoiceUpdatedRequest& fcu_request) {
+    out << fcu_request.fork_choice_state;
+    if (fcu_request.payload_attributes) {
+        out << " " << *fcu_request.payload_attributes;
+    }
+    return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const ForkChoiceUpdatedReply& fcu_reply) {
+    out << fcu_reply.payload_status;
+    if (fcu_reply.payload_id) {
+        out << " payload_id: " << *fcu_reply.payload_id;
+    }
+    return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const TransitionConfiguration& transition_configuration) {
+    out << "terminal_total_difficulty: " << transition_configuration.terminal_total_difficulty
+        << " terminal_block_hash: " << transition_configuration.terminal_block_hash
+        << " terminal_block_number: " << transition_configuration.terminal_block_number;
+    return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const ExecutionPayloadAndValue& pv) {
+    out << "payload: " << pv.payload << " block_value: " << pv.block_value;
+    return out;
+}
+
 }  // namespace silkworm::rpc

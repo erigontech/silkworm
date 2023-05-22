@@ -31,7 +31,7 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
@@ -284,6 +284,19 @@ void to_json(nlohmann::json& json, const TraceManyCallResult& result) {
 void to_json(nlohmann::json& json, const TraceDeployResult& result) {
     json["hash"] = result.transaction_hash.value();
     json["creator"] = result.contract_creator.value();
+}
+
+void to_json(nlohmann::json& json, const TraceEntry& trace_entry) {
+    json["type"] = trace_entry.type;
+    json["depth"] = trace_entry.depth;
+    json["from"] = trace_entry.from;
+    json["to"] = trace_entry.to;
+    if (trace_entry.value.empty()) {
+        json["value"] = nullptr;
+    } else {
+        json["value"] = trace_entry.value;
+    }
+    json["input"] = trace_entry.input;
 }
 
 int get_stack_count(std::uint8_t op_code) {
@@ -564,16 +577,15 @@ void VmTraceTracer::on_execution_start(evmc_revision rev, const evmc_message& ms
     }
 
     auto& index_prefix = index_prefix_.top();
-    SILKRPC_DEBUG << "VmTraceTracer::on_execution_start:"
-                  << " depth: " << msg.depth
-                  << ", gas: " << std::dec << msg.gas
-                  << ", recipient: " << evmc::address{msg.recipient}
-                  << ", sender: " << evmc::address{msg.sender}
-                  << ", code: " << silkworm::to_hex(code)
-                  << ", code_address: " << evmc::address{msg.code_address}
-                  << ", input_size: " << msg.input_size
-                  << ", index_prefix: " << index_prefix
-                  << "\n";
+    SILK_DEBUG << "VmTraceTracer::on_execution_start:"
+               << " depth: " << msg.depth
+               << ", gas: " << std::dec << msg.gas
+               << ", recipient: " << evmc::address{msg.recipient}
+               << ", sender: " << evmc::address{msg.sender}
+               << ", code: " << silkworm::to_hex(code)
+               << ", code_address: " << evmc::address{msg.code_address}
+               << ", input_size: " << msg.input_size
+               << ", index_prefix: " << index_prefix;
 }
 
 void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int /*stack_height*/, const int64_t gas,
@@ -609,22 +621,21 @@ void VmTraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack
     copy_store(op_code, stack_top, trace_op.trace_ex.storage);
 
     vm_trace.ops.push_back(trace_op);
-    SILKRPC_DEBUG << "VmTraceTracer::on_instruction_start:"
-                  << " pc: " << std::dec << pc
-                  << ", opcode: 0x" << std::hex << evmc::hex(op_code)
-                  << ", opcode_name: " << op_name
-                  << ", index_prefix: " << index_prefix
-                  << ", execution_state: {"
-                  << "   gas_left: " << std::dec << gas
-                  << ",   status: " << execution_state.status
-                  << ",   msg.gas: " << std::dec << execution_state.msg->gas
-                  << ",   msg.depth: " << std::dec << execution_state.msg->depth
-                  << "}\n";
+    SILK_DEBUG << "VmTraceTracer::on_instruction_start:"
+               << " pc: " << std::dec << pc
+               << ", opcode: 0x" << std::hex << evmc::hex(op_code)
+               << ", opcode_name: " << op_name
+               << ", index_prefix: " << index_prefix
+               << ", execution_state: {"
+               << "   gas_left: " << std::dec << gas
+               << ",   status: " << execution_state.status
+               << ",   msg.gas: " << std::dec << execution_state.msg->gas
+               << ",   msg.depth: " << std::dec << execution_state.msg->depth;
 }
 
 void VmTraceTracer::on_precompiled_run(const evmc_result& result, int64_t gas, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
-    SILKRPC_DEBUG << "VmTraceTracer::on_precompiled_run:"
-                  << " status: " << result.status_code << ", gas: " << std::dec << gas << "\n";
+    SILK_DEBUG << "VmTraceTracer::on_precompiled_run:"
+               << " status: " << result.status_code << ", gas: " << std::dec << gas << "\n";
 
     if (!vm_trace_.ops.empty()) {
         auto& op = vm_trace_.ops[vm_trace_.ops.size() - 1];
@@ -643,11 +654,10 @@ void VmTraceTracer::on_execution_end(const evmc_result& result, const silkworm::
 
     index_prefix_.pop();
 
-    SILKRPC_DEBUG << "VmTraceTracer::on_execution_end:"
-                  << " result.status_code: " << result.status_code
-                  << ", start_gas: " << std::dec << start_gas
-                  << ", gas_left: " << std::dec << result.gas_left
-                  << "\n";
+    SILK_DEBUG << "VmTraceTracer::on_execution_end:"
+               << " result.status_code: " << result.status_code
+               << ", start_gas: " << std::dec << start_gas
+               << ", gas_left: " << std::dec << result.gas_left;
 
     if (vm_trace.ops.empty()) {
         return;
@@ -748,16 +758,15 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
     }
     index_stack_.push(index);
 
-    SILKRPC_DEBUG << "TraceTracer::on_execution_start: gas: " << std::dec << msg.gas
-                  << " create: " << create
-                  << ", msg.depth: " << msg.depth
-                  << ", msg.kind: " << msg.kind
-                  << ", sender: " << sender
-                  << ", recipient: " << recipient << " (created: " << create << ")"
-                  << ", code_address: " << code_address
-                  << ", msg.value: " << intx::hex(intx::be::load<intx::uint256>(msg.value))
-                  << ", code: " << silkworm::to_hex(code)
-                  << "\n";
+    SILK_DEBUG << "TraceTracer::on_execution_start: gas: " << std::dec << msg.gas
+               << " create: " << create
+               << ", msg.depth: " << msg.depth
+               << ", msg.kind: " << msg.kind
+               << ", sender: " << sender
+               << ", recipient: " << recipient << " (created: " << create << ")"
+               << ", code_address: " << code_address
+               << ", msg.value: " << intx::hex(intx::be::load<intx::uint256>(msg.value))
+               << ", code: " << silkworm::to_hex(code);
 }
 
 void TraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* /*stack_top*/, const int /*stack_height*/, const int64_t gas,
@@ -765,18 +774,18 @@ void TraceTracer::on_instruction_start(uint32_t pc, const intx::uint256* /*stack
     const auto opcode = execution_state.original_code[pc];
     auto opcode_name = get_op_name(opcode_names_, opcode);
 
-    SILKRPC_DEBUG << "TraceTracer::on_instruction_start:"
-                  << " pc: " << std::dec << pc
-                  << ", opcode: 0x" << std::hex << evmc::hex(opcode)
-                  << ", opcode_name: " << opcode_name
-                  << ", recipient: " << evmc::address{execution_state.msg->recipient}
-                  << ", sender: " << evmc::address{execution_state.msg->sender}
-                  << ", execution_state: {"
-                  << "   gas_left: " << std::dec << gas
-                  << ",   status: " << execution_state.status
-                  << ",   msg.gas: " << std::dec << execution_state.msg->gas
-                  << ",   msg.depth: " << std::dec << execution_state.msg->depth
-                  << "}\n";
+    SILK_DEBUG << "TraceTracer::on_instruction_start:"
+               << " pc: " << std::dec << pc
+               << ", opcode: 0x" << std::hex << evmc::hex(opcode)
+               << ", opcode_name: " << opcode_name
+               << ", recipient: " << evmc::address{execution_state.msg->recipient}
+               << ", sender: " << evmc::address{execution_state.msg->sender}
+               << ", execution_state: {"
+               << "   gas_left: " << std::dec << gas
+               << ",   status: " << execution_state.status
+               << ",   msg.gas: " << std::dec << execution_state.msg->gas
+               << ",   msg.depth: " << std::dec << execution_state.msg->depth
+               << "}";
 }
 
 void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
@@ -831,11 +840,10 @@ void TraceTracer::on_execution_end(const evmc_result& result, const silkworm::In
             break;
     }
 
-    SILKRPC_DEBUG << "TraceTracer::on_execution_end:"
-                  << " result.status_code: " << result.status_code
-                  << " start_gas: " << std::dec << start_gas
-                  << " gas_left: " << std::dec << result.gas_left
-                  << "\n";
+    SILK_DEBUG << "TraceTracer::on_execution_end:"
+               << " result.status_code: " << result.status_code
+               << " start_gas: " << std::dec << start_gas
+               << " gas_left: " << std::dec << result.gas_left;
 }
 
 void TraceTracer::on_creation_completed(const evmc_result& result, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
@@ -850,14 +858,13 @@ void TraceTracer::on_creation_completed(const evmc_result& result, const silkwor
 }
 
 void TraceTracer::on_reward_granted(const silkworm::CallResult& result, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
-    SILKRPC_DEBUG << "TraceTracer::on_reward_granted:"
-                  << " result.status_code: " << result.status
-                  << ", result.gas_left: " << result.gas_left
-                  << ", initial_gas: " << std::dec << initial_gas_
-                  << ", result.data: " << silkworm::to_hex(result.data)
-                  << "\n";
+    SILK_DEBUG << "TraceTracer::on_reward_granted:"
+               << " result.status_code: " << result.status
+               << ", result.gas_left: " << result.gas_left
+               << ", initial_gas: " << std::dec << initial_gas_
+               << ", result.data: " << silkworm::to_hex(result.data);
 
-    // reward only on firts trace
+    // Reward only on first trace
     if (traces_.empty()) {
         return;
     }
@@ -944,12 +951,11 @@ void StateDiffTracer::on_execution_start(evmc_revision rev, const evmc_message& 
 
     auto exists = state_addresses_.exists(recipient);
 
-    SILKRPC_DEBUG << "StateDiffTracer::on_execution_start: gas: " << std::dec << msg.gas
-                  << ", depth: " << msg.depth
-                  << ", sender: " << evmc::address{msg.sender}
-                  << ", recipient: " << recipient << " (exists: " << exists << ")"
-                  << ", code: " << silkworm::to_hex(code)
-                  << "\n";
+    SILK_DEBUG << "StateDiffTracer::on_execution_start: gas: " << std::dec << msg.gas
+               << ", depth: " << msg.depth
+               << ", sender: " << evmc::address{msg.sender}
+               << ", recipient: " << recipient << " (exists: " << exists << ")"
+               << ", code: " << silkworm::to_hex(code);
 }
 
 void StateDiffTracer::on_instruction_start(uint32_t pc, const intx::uint256* stack_top, const int /*stack_height*/, const int64_t gas,
@@ -965,32 +971,30 @@ void StateDiffTracer::on_instruction_start(uint32_t pc, const intx::uint256* sta
         keys.insert(key);
     }
 
-    SILKRPC_DEBUG << "StateDiffTracer::on_instruction_start:"
-                  << " pc: " << std::dec << pc
-                  << ", opcode_name: " << opcode_name
-                  << ", recipient: " << evmc::address{execution_state.msg->recipient}
-                  << ", sender: " << evmc::address{execution_state.msg->sender}
-                  << ", execution_state: {"
-                  << "   gas_left: " << std::dec << gas
-                  << ",   status: " << execution_state.status
-                  << ",   msg.gas: " << std::dec << execution_state.msg->gas
-                  << ",   msg.depth: " << std::dec << execution_state.msg->depth
-                  << "}\n";
+    SILK_DEBUG << "StateDiffTracer::on_instruction_start:"
+               << " pc: " << std::dec << pc
+               << ", opcode_name: " << opcode_name
+               << ", recipient: " << evmc::address{execution_state.msg->recipient}
+               << ", sender: " << evmc::address{execution_state.msg->sender}
+               << ", execution_state: {"
+               << "   gas_left: " << std::dec << gas
+               << ",   status: " << execution_state.status
+               << ",   msg.gas: " << std::dec << execution_state.msg->gas
+               << ",   msg.depth: " << std::dec << execution_state.msg->depth
+               << "}";
 }
 
 void StateDiffTracer::on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept {
-    SILKRPC_DEBUG << "StateDiffTracer::on_execution_end:"
-                  << " result.status_code: " << result.status_code
-                  << ", gas_left: " << std::dec << result.gas_left
-                  << "\n";
+    SILK_DEBUG << "StateDiffTracer::on_execution_end:"
+               << " result.status_code: " << result.status_code
+               << ", gas_left: " << std::dec << result.gas_left;
 }
 
 void StateDiffTracer::on_reward_granted(const silkworm::CallResult& result, const silkworm::IntraBlockState& intra_block_state) noexcept {
-    SILKRPC_DEBUG << "StateDiffTracer::on_reward_granted:"
-                  << " result.status_code: " << result.status
-                  << ", result.gas_left: " << result.gas_left
-                  << ", #touched: " << std::dec << intra_block_state.touched().size()
-                  << "\n";
+    SILK_DEBUG << "StateDiffTracer::on_reward_granted:"
+               << " result.status_code: " << result.status
+               << ", result.gas_left: " << result.gas_left
+               << ", #touched: " << std::dec << intra_block_state.touched().size();
 
     for (const auto& address : intra_block_state.touched()) {
         auto initial_exists = state_addresses_.exists(address);
@@ -1088,12 +1092,11 @@ void StateDiffTracer::on_reward_granted(const silkworm::CallResult& result, cons
 };
 
 void IntraBlockStateTracer::on_reward_granted(const silkworm::CallResult& result, const silkworm::IntraBlockState& intra_block_state) noexcept {
-    SILKRPC_DEBUG
+    SILK_DEBUG
         << "IntraBlockStateTracer::on_reward_granted:"
         << " result.status_code: " << result.status
         << ", result.gas_left: " << result.gas_left
-        << ", #touched: " << intra_block_state.touched().size()
-        << "\n";
+        << ", #touched: " << intra_block_state.touched().size();
 
     for (auto& address : intra_block_state.touched()) {
         auto balance = intra_block_state.get_balance(address);
@@ -1205,7 +1208,7 @@ awaitable<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transacti
     auto block_number = block.header.number;
     const auto& transactions = block.transactions;
 
-    SILKRPC_INFO << "execute: block_number: " << std::dec << block_number << " #txns: " << transactions.size() << " config: " << config << "\n";
+    SILK_INFO << "execute: block_number: " << std::dec << block_number << " #txns: " << transactions.size() << " config: " << config;
 
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     auto chain_config_ptr = lookup_chain_config(chain_id);
@@ -1269,10 +1272,9 @@ awaitable<TraceCallResult> TraceCallExecutor::trace_call(const silkworm::Block& 
 
 awaitable<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Block& block, const std::vector<TraceCall>& calls) {
     const auto block_number = block.header.number;
-    SILKRPC_DEBUG << "trace_call_many: "
-                  << " block_number: " << block_number
-                  << " #trace_calls: " << calls.size()
-                  << "\n";
+    SILK_DEBUG << "trace_call_many: "
+               << " block_number: " << block_number
+               << " #trace_calls: " << calls.size();
 
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     const auto chain_config_ptr = lookup_chain_config(chain_id);
@@ -1331,7 +1333,7 @@ boost::asio::awaitable<TraceDeployResult> TraceCallExecutor::trace_deploy_transa
     auto block_number = block.header.number;
     const auto& transactions = block.transactions;
 
-    SILKRPC_INFO << "execute: block_number: " << std::dec << block_number << " #txns: " << transactions.size() << "\n";
+    SILK_INFO << "execute: block_number: " << std::dec << block_number << " #txns: " << transactions.size();
 
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     const auto chain_config_ptr = lookup_chain_config(chain_id);
@@ -1391,8 +1393,29 @@ awaitable<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWi
     co_return traces;
 }
 
+boost::asio::awaitable<TraceEntriesResult> TraceCallExecutor::trace_transaction_entries(const TransactionWithBlock& transaction_with_block) {
+    auto block_number = transaction_with_block.block_with_hash.block.header.number;
+
+    const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
+    const auto chain_config_ptr = lookup_chain_config(chain_id);
+
+    state::RemoteState remote_state{io_context_, database_reader_, block_number - 1};
+    silkworm::IntraBlockState initial_ibs{remote_state};
+
+    state::RemoteState curr_remote_state{io_context_, database_reader_, block_number - 1};
+    EVMExecutor executor{*chain_config_ptr, workers_, curr_remote_state};
+
+    auto entry_tracer = std::make_shared<trace::EntryTracer>(initial_ibs);
+
+    Tracers tracers{entry_tracer};
+
+    co_await executor.call(transaction_with_block.block_with_hash.block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+
+    co_return entry_tracer->result();
+}
+
 awaitable<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, json::Stream* stream) {
-    SILKRPC_INFO << "TraceCallExecutor::trace_filter: filter " << trace_filter << "\n";
+    SILK_INFO << "TraceCallExecutor::trace_filter: filter " << trace_filter;
 
     const auto from_block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, database_reader_, trace_filter.from_block);
     const auto to_block_with_hash = co_await core::read_block_by_number_or_hash(block_cache_, database_reader_, trace_filter.to_block);
@@ -1416,10 +1439,9 @@ awaitable<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter,
     auto block_with_hash = from_block_with_hash;
     while (block_number++ <= to_block_with_hash->block.header.number) {
         const Block block{*block_with_hash, {}, false};
-        SILKRPC_INFO << "TraceCallExecutor::trace_filter: processing "
-                     << " block_number: " << block_number - 1
-                     << " block: " << block
-                     << "\n";
+        SILK_INFO << "TraceCallExecutor::trace_filter: processing "
+                  << " block_number: " << block_number - 1
+                  << " block: " << block;
 
         co_await trace_block(*block_with_hash, filter, stream);
 
@@ -1436,19 +1458,18 @@ awaitable<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter,
 
     stream->close_array();
 
-    SILKRPC_INFO << "TraceCallExecutor::trace_filter: ends \n";
+    SILK_INFO << "TraceCallExecutor::trace_filter: end";
 
     co_return;
 }
 
 awaitable<TraceCallResult> TraceCallExecutor::execute(std::uint64_t block_number, const silkworm::Block& block,
                                                       const rpc::Transaction& transaction, std::int32_t index, const TraceConfig& config) {
-    SILKRPC_DEBUG << "execute: "
-                  << " block_number: " << std::dec << block_number
-                  << " transaction: {" << transaction << "}"
-                  << " index: " << std::dec << index
-                  << " config: " << config
-                  << "\n";
+    SILK_DEBUG << "execute: "
+               << " block_number: " << std::dec << block_number
+               << " transaction: {" << transaction << "}"
+               << " index: " << std::dec << index
+               << " config: " << config;
 
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     const auto chain_config_ptr = lookup_chain_config(chain_id);
@@ -1471,7 +1492,7 @@ awaitable<TraceCallResult> TraceCallExecutor::execute(std::uint64_t block_number
         }
         const auto execution_result = co_await executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/true);
         if (execution_result.pre_check_error) {
-            SILKRPC_ERROR << "execution failed for tx " << idx << " due to pre-check error: " << *execution_result.pre_check_error;
+            SILK_ERROR << "execution failed for tx " << idx << " due to pre-check error: " << *execution_result.pre_check_error;
         }
         executor.reset();
     }
@@ -1516,16 +1537,60 @@ void CreateTracer::on_execution_start(evmc_revision, const evmc_message& msg, ev
         this->found_ = true;
     }
 
-    SILKRPC_DEBUG << "CreateTracer::on_execution_start: gas: " << std::dec << msg.gas
-                  << " create: " << create
-                  << ", msg.depth: " << msg.depth
-                  << ", msg.kind: " << msg.kind
-                  << ", sender: " << sender
-                  << ", recipient: " << recipient << " (created: " << create << ")"
-                  << ", code_address: " << code_address
-                  << ", msg.value: " << intx::hex(intx::be::load<intx::uint256>(msg.value))
-                  << ", code: " << silkworm::to_hex(code)
-                  << "\n";
+    SILK_DEBUG << "CreateTracer::on_execution_start: gas: " << std::dec << msg.gas
+               << " create: " << create
+               << ", msg.depth: " << msg.depth
+               << ", msg.kind: " << msg.kind
+               << ", sender: " << sender
+               << ", recipient: " << recipient << " (created: " << create << ")"
+               << ", code_address: " << code_address
+               << ", msg.value: " << intx::hex(intx::be::load<intx::uint256>(msg.value))
+               << ", code: " << silkworm::to_hex(code);
+}
+
+void EntryTracer::on_execution_start(evmc_revision, const evmc_message& msg, evmone::bytes_view code) noexcept {
+    auto sender = evmc::address{msg.sender};
+    auto recipient = evmc::address{msg.recipient};
+    auto code_address = evmc::address{msg.code_address};
+    bool create = (!initial_ibs_.exists(recipient) && recipient != code_address);
+    auto input = silkworm::ByteView{msg.input_data, msg.input_size};
+
+    auto str_value = "0x" + intx::hex(intx::be::load<intx::uint256>(msg.value));
+    auto str_input = "0x" + silkworm::to_hex(input);
+    if (str_input == "0x") {
+        str_input = "0x" + silkworm::to_hex(code);
+    }
+
+    if (create) {
+        result_.push_back(TraceEntry{"CALL", msg.depth, sender, recipient, str_value, str_input});
+    } else {
+        bool in_static_mode = (msg.flags & evmc_flags::EVMC_STATIC) != 0;
+        switch (msg.kind) {
+            case evmc_call_kind::EVMC_CALL:
+                in_static_mode ? result_.push_back(TraceEntry{"STATICCALL", msg.depth, sender, recipient, "", str_input}) : result_.push_back(TraceEntry{"CALL", msg.depth, sender, recipient, str_value, str_input});
+                break;
+            case evmc_call_kind::EVMC_DELEGATECALL:
+                result_.push_back(TraceEntry{"DELEGATECALL", msg.depth, recipient, code_address, "", str_input});
+                break;
+            case evmc_call_kind::EVMC_CALLCODE:
+                result_.push_back(TraceEntry{"CALLCODE", msg.depth, sender, recipient, str_value, str_input});
+                break;
+            case evmc_call_kind::EVMC_CREATE:
+            case evmc_call_kind::EVMC_CREATE2:
+                break;
+        }
+    }
+
+    SILK_DEBUG << "EntryTracer::on_execution_start: gas: " << std::dec << msg.gas
+               << " create: " << create
+               << ", msg.depth: " << msg.depth
+               << ", msg.kind: " << msg.kind
+               << ", sender: " << sender
+               << ", recipient: " << recipient << " (created: " << create << ")"
+               << ", code_address: " << code_address
+               << ", msg.value: " << intx::hex(intx::be::load<intx::uint256>(msg.value))
+               << ", code: " << silkworm::to_hex(code)
+               << ", msg.input_data: " << to_hex(ByteView{msg.input_data, msg.input_size});
 }
 
 }  // namespace silkworm::rpc::trace

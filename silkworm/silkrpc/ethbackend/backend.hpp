@@ -37,9 +37,9 @@ class BackEnd {
     virtual boost::asio::awaitable<uint64_t> net_version() = 0;
     virtual boost::asio::awaitable<std::string> client_version() = 0;
     virtual boost::asio::awaitable<uint64_t> net_peer_count() = 0;
-    virtual boost::asio::awaitable<ExecutionPayload> engine_get_payload_v1(uint64_t payload_id) = 0;
-    virtual boost::asio::awaitable<PayloadStatus> engine_new_payload_v1(ExecutionPayload payload) = 0;
-    virtual boost::asio::awaitable<ForkChoiceUpdatedReply> engine_forkchoice_updated_v1(ForkChoiceUpdatedRequest forkchoice_updated_request) = 0;
+    virtual boost::asio::awaitable<ExecutionPayloadAndValue> engine_get_payload(uint64_t payload_id) = 0;
+    virtual boost::asio::awaitable<PayloadStatus> engine_new_payload(const ExecutionPayload& payload) = 0;
+    virtual boost::asio::awaitable<ForkChoiceUpdatedReply> engine_forkchoice_updated(const ForkChoiceUpdatedRequest& fcu_request) = 0;
     virtual boost::asio::awaitable<NodeInfos> engine_node_info() = 0;
     virtual boost::asio::awaitable<PeerInfos> peers() = 0;
 };

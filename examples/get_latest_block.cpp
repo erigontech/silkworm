@@ -29,9 +29,9 @@
 #include <grpcpp/grpcpp.h>
 #include <silkworm/core/common/util.hpp>
 
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/silkrpc/common/constants.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/ethdb/kv/remote_database.hpp>
@@ -40,7 +40,7 @@ using namespace silkworm;
 using namespace silkworm::rpc;
 
 ABSL_FLAG(std::string, target, kDefaultTarget, "server location as string <address>:<port>");
-ABSL_FLAG(LogLevel, log_verbosity, LogLevel::Critical, "logging level");
+// ABSL_FLAG(LogLevel, log_verbosity, LogLevel::Critical, "logging level");
 
 boost::asio::awaitable<std::optional<uint64_t>> latest_block(ethdb::Database& db) {
     std::optional<uint64_t> block_height;
@@ -50,9 +50,9 @@ boost::asio::awaitable<std::optional<uint64_t>> latest_block(ethdb::Database& db
         ethdb::TransactionDatabase tx_db_reader{*db_transaction};
         block_height = co_await core::get_latest_block_number(tx_db_reader);
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "exception: " << e.what() << "\n";
+        SILK_ERROR << "exception: " << e.what();
     } catch (...) {
-        SILKRPC_ERROR << "unexpected exception\n";
+        SILK_ERROR << "unexpected exception";
     }
     co_await db_transaction->close();
 
@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
     absl::SetProgramUsageMessage("Get latest block in Silkworm/Erigon");
     absl::ParseCommandLine(argc, argv);
 
-    SILKRPC_LOG_VERBOSITY(absl::GetFlag(FLAGS_log_verbosity));
+    log::set_verbosity(log::Level::kCritical);
 
     try {
         auto target{absl::GetFlag(FLAGS_target)};

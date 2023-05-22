@@ -29,37 +29,38 @@ namespace silkworm::execution {
 namespace asio = boost::asio;
 using namespace stagedsync;
 
+//! A server for 'execution' gRPC interface.
 class Server : public ActiveComponent {
   public:
     Server(NodeSettings&, db::RWAccess);
 
     // actions
-    auto insert_headers(const BlockVector& blocks) -> asio::awaitable<void>;  // [[torax-compliant]]
-    auto insert_bodies(const BlockVector& blocks) -> asio::awaitable<void>;   // [[torax-compliant]]
+    auto insert_headers(const BlockVector& blocks) -> asio::awaitable<void>;  // [[thorax-compliant]]
+    auto insert_bodies(const BlockVector& blocks) -> asio::awaitable<void>;   // [[thorax-compliant]]
     auto insert_blocks(const BlockVector& blocks) -> asio::awaitable<void>;
 
-    auto validate_chain(Hash head_block_hash) -> asio::awaitable<execution::ValidationResult>;  // [[torax-compliant]]
+    auto validate_chain(Hash head_block_hash) -> asio::awaitable<execution::ValidationResult>;  // [[thorax-compliant]]
 
     auto update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt)
-        -> asio::awaitable<ForkChoiceApplication>;  // [[torax-compliant]]
+        -> asio::awaitable<ForkChoiceApplication>;  // [[thorax-compliant]]
 
     // state
     auto block_progress() -> asio::awaitable<BlockNum>;
     auto last_fork_choice() -> asio::awaitable<BlockId>;
 
     // header/body retrieval
-    auto get_header(Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>>;  // [[torax-compliant]]
-    auto get_body(Hash block_hash) -> asio::awaitable<BlockBody>;                     // [[torax-compliant]]
+    auto get_header(Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>>;  // [[thorax-compliant]]
+    auto get_body(Hash block_hash) -> asio::awaitable<std::optional<BlockBody>>;      // [[thorax-compliant]]
 
-    auto is_canonical(Hash block_hash) -> asio::awaitable<bool>;                      // [[torax-compliant]]
-    auto get_block_num(Hash block_hash) -> asio::awaitable<std::optional<BlockNum>>;  // [[torax-compliant]]
+    auto is_canonical(Hash block_hash) -> asio::awaitable<bool>;                      // [[thorax-compliant]]
+    auto get_block_num(Hash block_hash) -> asio::awaitable<std::optional<BlockNum>>;  // [[thorax-compliant]]
 
     auto get_last_headers(BlockNum limit) -> asio::awaitable<std::vector<BlockHeader>>;
+    auto get_header_td(Hash, std::optional<BlockNum>) -> asio::awaitable<std::optional<TotalDifficulty>>;  // to remove
 
     asio::io_context& get_executor() { return io_context_; }
 
   private:
-    void open();
     void execution_loop() override;
     bool stop() override;
     static void handle_exception(std::exception_ptr e);

@@ -16,12 +16,7 @@
 
 #include "transition_configuration.hpp"
 
-#include <cstring>
-#include <utility>
-
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
-#include <silkworm/silkrpc/common/util.hpp>
 
 #include "types.hpp"
 

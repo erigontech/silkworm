@@ -16,9 +16,6 @@
 
 #pragma once
 
-#include <memory>
-#include <vector>
-
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
@@ -26,7 +23,6 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/infra/concurrency/private_service.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/ethbackend/backend.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/types/log.hpp>
@@ -41,9 +37,9 @@ using boost::asio::awaitable;
 
 class NetRpcApi {
   public:
-    explicit NetRpcApi(std::unique_ptr<ethbackend::BackEnd>& backend) : backend_(backend) {}
+    explicit NetRpcApi(ethbackend::BackEnd* backend) : backend_(backend) {}
     explicit NetRpcApi(boost::asio::io_context& io_context)
-        : NetRpcApi(use_private_service<ethbackend::BackEnd>(io_context)) {}
+        : NetRpcApi(must_use_private_service<ethbackend::BackEnd>(io_context)) {}
     virtual ~NetRpcApi() = default;
 
     NetRpcApi(const NetRpcApi&) = delete;
@@ -57,6 +53,6 @@ class NetRpcApi {
   private:
     friend class silkworm::http::RequestHandler;
 
-    std::unique_ptr<ethbackend::BackEnd>& backend_;
+    ethbackend::BackEnd* backend_;
 };
 }  // namespace silkworm::rpc::commands

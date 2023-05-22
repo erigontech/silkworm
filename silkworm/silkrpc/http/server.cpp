@@ -30,8 +30,8 @@
 #include <boost/asio/dispatch.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/constants.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/http/connection.hpp>
 
@@ -53,10 +53,10 @@ Server::Server(const std::string& end_point,
                boost::asio::io_context& io_context,
                boost::asio::thread_pool& workers,
                std::optional<std::string> jwt_secret)
-    : handler_table_{api_spec},
+    : rpc_api_{io_context, workers},
+      handler_table_{api_spec},
       io_context_(io_context),
       acceptor_{io_context},
-      workers_(workers),
       jwt_secret_(std::move(jwt_secret)) {
     const auto [host, port] = parse_endpoint(end_point);
 
@@ -80,19 +80,18 @@ boost::asio::awaitable<void> Server::run() {
 
     try {
         while (acceptor_.is_open()) {
-            SILKRPC_DEBUG << "Server::run accepting using io_context " << &io_context_ << "...\n"
-                          << std::flush;
+            SILK_DEBUG << "Server::run accepting using io_context " << &io_context_ << "...";
 
-            auto new_connection = std::make_shared<Connection>(io_context_, workers_, handler_table_, jwt_secret_);
+            auto new_connection = std::make_shared<Connection>(io_context_, rpc_api_, handler_table_, jwt_secret_);
             co_await acceptor_.async_accept(new_connection->socket(), boost::asio::use_awaitable);
             if (!acceptor_.is_open()) {
-                SILKRPC_TRACE << "Server::run returning...\n";
+                SILK_TRACE << "Server::run returning...";
                 co_return;
             }
 
             new_connection->socket().set_option(boost::asio::ip::tcp::socket::keep_alive(true));
 
-            SILKRPC_TRACE << "Server::run starting connection for socket: " << &new_connection->socket() << "\n";
+            SILK_TRACE << "Server::run starting connection for socket: " << &new_connection->socket();
             auto connection_loop = [=]() -> boost::asio::awaitable<void> { co_await new_connection->read_loop(); };
 
             boost::asio::co_spawn(io_context_, connection_loop, [&](std::exception_ptr eptr) {
@@ -101,24 +100,20 @@ boost::asio::awaitable<void> Server::run() {
         }
     } catch (const boost::system::system_error& se) {
         if (se.code() != boost::asio::error::operation_aborted) {
-            SILKRPC_ERROR << "Server::run system_error: " << se.what() << "\n"
-                          << std::flush;
+            SILK_ERROR << "Server::run system_error: " << se.what();
             std::rethrow_exception(std::make_exception_ptr(se));
         } else {
-            SILKRPC_DEBUG << "Server::run operation_aborted: " << se.what() << "\n"
-                          << std::flush;
+            SILK_DEBUG << "Server::run operation_aborted: " << se.what();
         }
     }
-    SILKRPC_DEBUG << "Server::run exiting...\n"
-                  << std::flush;
+    SILK_DEBUG << "Server::run exiting...";
 }
 
 void Server::stop() {
     // The server is stopped by cancelling all outstanding asynchronous operations.
-    SILKRPC_DEBUG << "Server::stop started...\n";
+    SILK_DEBUG << "Server::stop started...";
     acceptor_.close();
-    SILKRPC_DEBUG << "Server::stop completed\n"
-                  << std::flush;
+    SILK_DEBUG << "Server::stop completed";
 }
 
 }  // namespace silkworm::rpc::http

@@ -19,18 +19,13 @@
 #include <set>
 
 #include <silkworm/core/common/as_range.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/db_utils.hpp>
 
 namespace silkworm::stagedsync {
 
 using namespace boost::asio;
-
-static void ensure_invariant(bool condition, const std::string& message) {
-    if (!condition) {
-        throw std::logic_error("Execution invariant violation: " + message);
-    }
-}
 
 ExecutionEngine::ExecutionEngine(asio::io_context& ctx, NodeSettings& ns, db::RWAccess dba)
     : io_context_{ctx},
@@ -49,6 +44,10 @@ ExecutionEngine::ExecutionEngine(asio::io_context& ctx, NodeSettings& ns, db::RW
 void ExecutionEngine::open() {  // needed to circumvent mdbx threading model limitations
     main_chain_.open();
     block_progress_ = main_chain_.get_block_progress();
+}
+
+void ExecutionEngine::close() {
+    main_chain_.close();
 }
 
 auto ExecutionEngine::block_progress() const -> BlockNum {
@@ -141,6 +140,13 @@ auto ExecutionEngine::find_forking_point(const BlockHeader& header) const -> std
 auto ExecutionEngine::verify_chain(Hash head_block_hash) -> concurrency::AwaitableFuture<VerificationResult> {
     SILK_DEBUG << "ExecutionEngine: verifying chain " << head_block_hash.to_hex();
 
+    if (last_fork_choice_.hash == head_block_hash) {
+        SILK_DEBUG << "ExecutionEngine: chain " << head_block_hash.to_hex() << " already verified";
+        concurrency::AwaitablePromise<VerificationResult> promise{io_context_};
+        promise.set_value(ValidChain{last_fork_choice_});
+        return promise.get_future();
+    }
+
     if (!fork_tracking_active_) {
         auto verification = main_chain_.verify_chain(head_block_hash);  // BLOCKING
         concurrency::AwaitablePromise<VerificationResult> promise{io_context_};
@@ -215,8 +221,8 @@ void ExecutionEngine::discard_all_forks() {
 
 auto ExecutionEngine::get_header([[maybe_unused]] Hash header_hash) const -> std::optional<BlockHeader> {
     // read from cache, then from main_chain_
-    auto header = block_cache_.get_as_copy(header_hash);
-    if (header) return (*header)->header;
+    auto block = block_cache_.get_as_copy(header_hash);
+    if (block) return (*block)->header;
     return main_chain_.get_header(header_hash);
 }
 
@@ -227,14 +233,28 @@ auto ExecutionEngine::get_header([[maybe_unused]] BlockNum header_height) const 
 }
 
 auto ExecutionEngine::get_last_headers(BlockNum limit) const -> std::vector<BlockHeader> {
-    ensure_invariant(block_cache_.size() == 0, "actual get_last_headers() impl assume it is called only at beginning");
+    ensure_invariant(!fork_tracking_active_, "actual get_last_headers() impl assume it is called only at beginning");
+    // if fork_tracking_active_ is true, we should read blocks from cache where they are not ordered on block number
+
     return main_chain_.get_last_headers(limit);
 }
 
-auto ExecutionEngine::get_body([[maybe_unused]] Hash header_hash) const -> std::optional<BlockBody> {
+auto ExecutionEngine::get_header_td(Hash h, std::optional<BlockNum> bn) const -> std::optional<TotalDifficulty> {
+    ensure_invariant(!fork_tracking_active_, "actual get_header_td() impl assume it is called only at beginning");
+    // if fork_tracking_active_ is true, we should read blocks from forks and recompute total difficulty but this
+    // is a duty of the sync component
+    if (bn) {
+        return main_chain_.get_header_td(*bn, h);
+    } else {
+        return main_chain_.get_header_td(h);
+    }
+}
+
+auto ExecutionEngine::get_body(Hash header_hash) const -> std::optional<BlockBody> {
     // read from cache, then from main_chain_
-    throw std::runtime_error("not implemented");
-    return {};
+    auto block = block_cache_.get_as_copy(header_hash);
+    if (block) return *(block.value().get());
+    return main_chain_.get_body(header_hash);
 }
 
 auto ExecutionEngine::get_body([[maybe_unused]] BlockNum) const -> std::optional<BlockBody> {
@@ -251,7 +271,7 @@ auto ExecutionEngine::get_block_number(Hash header_hash) const -> std::optional<
     return header->number;
 }
 
-bool ExecutionEngine::is_canonical_hash([[maybe_unused]] Hash header_hash) const {
+bool ExecutionEngine::is_canonical([[maybe_unused]] Hash header_hash) const {
     // read from cache, then from main_chain_
     throw std::runtime_error("not implemented");
     return {};

@@ -23,9 +23,9 @@
 #include <grpcpp/grpcpp.h>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/silkrpc/common/clock_time.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/grpc/unary_rpc.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
@@ -39,13 +39,7 @@ RemoteBackEnd::RemoteBackEnd(boost::asio::io_context& context, const std::shared
 RemoteBackEnd::RemoteBackEnd(boost::asio::io_context::executor_type executor,
                              std::unique_ptr<::remote::ETHBACKEND::StubInterface> stub,
                              agrpc::GrpcContext& grpc_context)
-    : executor_(std::move(executor)), stub_(std::move(stub)), grpc_context_(grpc_context) {
-    SILKRPC_TRACE << "RemoteBackEnd::ctor " << this << "\n";
-}
-
-RemoteBackEnd::~RemoteBackEnd() {
-    SILKRPC_TRACE << "RemoteBackEnd::dtor " << this << "\n";
-}
+    : executor_(std::move(executor)), stub_(std::move(stub)), grpc_context_(grpc_context) {}
 
 awaitable<evmc::address> RemoteBackEnd::etherbase() {
     const auto start_time = clock_time::now();
@@ -53,10 +47,10 @@ awaitable<evmc::address> RemoteBackEnd::etherbase() {
     const auto reply = co_await eb_rpc.finish_on(executor_, ::remote::EtherbaseRequest{});
     evmc::address evmc_address;
     if (reply.has_address()) {
-        const auto h160_address = reply.address();
+        const auto& h160_address = reply.address();
         evmc_address = address_from_H160(h160_address);
     }
-    SILKRPC_DEBUG << "RemoteBackEnd::etherbase address=" << evmc_address << " t=" << clock_time::since(start_time) << "\n";
+    SILK_DEBUG << "RemoteBackEnd::etherbase address=" << evmc_address << " t=" << clock_time::since(start_time);
     co_return evmc_address;
 }
 
@@ -65,7 +59,7 @@ awaitable<uint64_t> RemoteBackEnd::protocol_version() {
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncProtocolVersion> pv_rpc{*stub_, grpc_context_};
     const auto reply = co_await pv_rpc.finish_on(executor_, ::remote::ProtocolVersionRequest{});
     const auto pv = reply.id();
-    SILKRPC_DEBUG << "RemoteBackEnd::protocol_version version=" << pv << " t=" << clock_time::since(start_time) << "\n";
+    SILK_DEBUG << "RemoteBackEnd::protocol_version version=" << pv << " t=" << clock_time::since(start_time);
     co_return pv;
 }
 
@@ -74,7 +68,7 @@ awaitable<uint64_t> RemoteBackEnd::net_version() {
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncNetVersion> nv_rpc{*stub_, grpc_context_};
     const auto reply = co_await nv_rpc.finish_on(executor_, ::remote::NetVersionRequest{});
     const auto nv = reply.id();
-    SILKRPC_DEBUG << "RemoteBackEnd::net_version version=" << nv << " t=" << clock_time::since(start_time) << "\n";
+    SILK_DEBUG << "RemoteBackEnd::net_version version=" << nv << " t=" << clock_time::since(start_time);
     co_return nv;
 }
 
@@ -82,8 +76,8 @@ awaitable<std::string> RemoteBackEnd::client_version() {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncClientVersion> cv_rpc{*stub_, grpc_context_};
     const auto reply = co_await cv_rpc.finish_on(executor_, ::remote::ClientVersionRequest{});
-    const auto cv = reply.node_name();
-    SILKRPC_DEBUG << "RemoteBackEnd::client_version version=" << cv << " t=" << clock_time::since(start_time) << "\n";
+    const auto& cv = reply.node_name();
+    SILK_DEBUG << "RemoteBackEnd::client_version version=" << cv << " t=" << clock_time::since(start_time);
     co_return cv;
 }
 
@@ -92,7 +86,7 @@ awaitable<uint64_t> RemoteBackEnd::net_peer_count() {
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncNetPeerCount> npc_rpc{*stub_, grpc_context_};
     const auto reply = co_await npc_rpc.finish_on(executor_, ::remote::NetPeerCountRequest{});
     const auto count = reply.count();
-    SILKRPC_DEBUG << "RemoteBackEnd::net_peer_count count=" << count << " t=" << clock_time::since(start_time) << "\n";
+    SILK_DEBUG << "RemoteBackEnd::net_peer_count count=" << count << " t=" << clock_time::since(start_time);
     co_return count;
 }
 
@@ -103,7 +97,7 @@ awaitable<NodeInfos> RemoteBackEnd::engine_node_info() {
     const auto reply = co_await ni_rpc.finish_on(executor_, ::remote::NodesInfoRequest{});
     for (int i = 0; i < reply.nodes_info_size(); i++) {
         NodeInfo node_info;
-        const auto backend_node_info = reply.nodes_info(i);
+        const auto& backend_node_info = reply.nodes_info(i);
         node_info.id = backend_node_info.id();
         node_info.name = backend_node_info.name();
         node_info.enode = backend_node_info.enode();
@@ -111,38 +105,39 @@ awaitable<NodeInfos> RemoteBackEnd::engine_node_info() {
         node_info.listener_addr = backend_node_info.listener_addr();
         node_info.protocols = backend_node_info.protocols();
         if (backend_node_info.has_ports()) {
-            const auto ports = backend_node_info.ports();
+            const auto& ports = backend_node_info.ports();
             node_info.ports.discovery = ports.discovery();
             node_info.ports.listener = ports.listener();
         }
         node_info_list.push_back(node_info);
     }
-    SILKRPC_DEBUG << "RemoteBackEnd::engine_node_info t=" << clock_time::since(start_time) << "\n";
+    SILK_DEBUG << "RemoteBackEnd::engine_node_info t=" << clock_time::since(start_time);
     co_return node_info_list;
 }
 
-awaitable<ExecutionPayload> RemoteBackEnd::engine_get_payload_v1(uint64_t payload_id) {
+awaitable<ExecutionPayloadAndValue> RemoteBackEnd::engine_get_payload(uint64_t payload_id) {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncEngineGetPayload> npc_rpc{*stub_, grpc_context_};
     ::remote::EngineGetPayloadRequest req;
     req.set_payload_id(payload_id);
     const auto reply = co_await npc_rpc.finish_on(executor_, req);
-    auto execution_payload{decode_execution_payload(reply.execution_payload())};
-    SILKRPC_DEBUG << "RemoteBackEnd::engine_get_payload_v1 data=" << execution_payload << " t=" << clock_time::since(start_time) << "\n";
-    co_return execution_payload;
+    const auto payload{decode_execution_payload(reply.execution_payload())};
+    const auto value{uint256_from_H256(reply.block_value())};
+    SILK_DEBUG << "RemoteBackEnd::engine_get_payload data=" << payload << " value=" << value << " t=" << clock_time::since(start_time);
+    co_return ExecutionPayloadAndValue{payload, value};
 }
 
-awaitable<PayloadStatus> RemoteBackEnd::engine_new_payload_v1(ExecutionPayload payload) {
+awaitable<PayloadStatus> RemoteBackEnd::engine_new_payload(const ExecutionPayload& payload) {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncEngineNewPayload> npc_rpc{*stub_, grpc_context_};
     auto req{encode_execution_payload(payload)};
     const auto reply = co_await npc_rpc.finish_on(executor_, req);
     PayloadStatus payload_status = decode_payload_status(reply);
-    SILKRPC_DEBUG << "RemoteBackEnd::engine_new_payload_v1 data=" << payload_status << " t=" << clock_time::since(start_time) << "\n";
+    SILK_DEBUG << "RemoteBackEnd::engine_new_payload data=" << payload_status << " t=" << clock_time::since(start_time);
     co_return payload_status;
 }
 
-awaitable<ForkChoiceUpdatedReply> RemoteBackEnd::engine_forkchoice_updated_v1(ForkChoiceUpdatedRequest fcu_request) {
+awaitable<ForkChoiceUpdatedReply> RemoteBackEnd::engine_forkchoice_updated(const ForkChoiceUpdatedRequest& fcu_request) {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncEngineForkChoiceUpdated> fcu_rpc{*stub_, grpc_context_};
     const auto req{encode_forkchoice_updated_request(fcu_request)};
@@ -155,7 +150,7 @@ awaitable<ForkChoiceUpdatedReply> RemoteBackEnd::engine_forkchoice_updated_v1(Fo
     if (reply.payload_id() != 0) {
         forkchoice_updated_reply.payload_id = reply.payload_id();
     }
-    SILKRPC_DEBUG << "RemoteBackEnd::engine_forkchoice_updated_v1 data=" << payload_status << " t=" << clock_time::since(start_time) << "\n";
+    SILK_DEBUG << "RemoteBackEnd::engine_forkchoice_updated data=" << payload_status << " t=" << clock_time::since(start_time);
     co_return forkchoice_updated_reply;
 }
 
@@ -181,35 +176,35 @@ awaitable<PeerInfos> RemoteBackEnd::peers() {
         };
         peer_infos.push_back(peer_info);
     }
-    SILKRPC_DEBUG << "RemoteBackEnd::peers t=" << clock_time::since(start_time) << "\n";
+    SILK_DEBUG << "RemoteBackEnd::peers t=" << clock_time::since(start_time);
     co_return peer_infos;
 }
 
-ExecutionPayload RemoteBackEnd::decode_execution_payload(const types::ExecutionPayload& execution_payload_grpc) {
-    const auto& state_root_h256{execution_payload_grpc.state_root()};
-    const auto& receipts_root_h256{execution_payload_grpc.receipt_root()};
-    const auto& block_hash_h256{execution_payload_grpc.block_hash()};
-    const auto& parent_hash_h256{execution_payload_grpc.parent_hash()};
-    const auto& prev_randao_h256{execution_payload_grpc.prev_randao()};
-    const auto& base_fee_h256{execution_payload_grpc.base_fee_per_gas()};
-    const auto& logs_bloom_h2048{execution_payload_grpc.logs_bloom()};
-    const auto& extra_data_string{execution_payload_grpc.extra_data()};  // []byte becomes std::string in silkrpc protobuf
+ExecutionPayload RemoteBackEnd::decode_execution_payload(const ::types::ExecutionPayload& grpc_payload) {
+    const auto& state_root_h256{grpc_payload.state_root()};
+    const auto& receipts_root_h256{grpc_payload.receipt_root()};
+    const auto& block_hash_h256{grpc_payload.block_hash()};
+    const auto& parent_hash_h256{grpc_payload.parent_hash()};
+    const auto& prev_randao_h256{grpc_payload.prev_randao()};
+    const auto& base_fee_h256{grpc_payload.base_fee_per_gas()};
+    const auto& logs_bloom_h2048{grpc_payload.logs_bloom()};
+    const auto& extra_data_string{grpc_payload.extra_data()};  // []byte becomes std::string in silkrpc protobuf
     // Convert h2048 to a bloom
     silkworm::Bloom bloom;
     std::memcpy(bloom.data(), bytes_from_H2048(logs_bloom_h2048).data(), bloom.size());
     // Convert transactions in std::string to silkworm::Bytes
     std::vector<Bytes> transactions;
-    for (const auto& transaction_string : execution_payload_grpc.transactions()) {
+    for (const auto& transaction_string : grpc_payload.transactions()) {
         transactions.push_back(bytes_of_string(transaction_string));
     }
 
     // Assembling the execution_payload data structure
     return ExecutionPayload{
-        .number = execution_payload_grpc.block_number(),
-        .timestamp = execution_payload_grpc.timestamp(),
-        .gas_limit = execution_payload_grpc.gas_limit(),
-        .gas_used = execution_payload_grpc.gas_used(),
-        .suggested_fee_recipient = address_from_H160(execution_payload_grpc.coinbase()),
+        .number = grpc_payload.block_number(),
+        .timestamp = grpc_payload.timestamp(),
+        .gas_limit = grpc_payload.gas_limit(),
+        .gas_used = grpc_payload.gas_used(),
+        .suggested_fee_recipient = address_from_H160(grpc_payload.coinbase()),
         .state_root = bytes32_from_H256(state_root_h256),
         .receipts_root = bytes32_from_H256(receipts_root_h256),
         .parent_hash = bytes32_from_H256(parent_hash_h256),
@@ -221,34 +216,45 @@ ExecutionPayload RemoteBackEnd::decode_execution_payload(const types::ExecutionP
         .transactions = transactions};
 }
 
-types::ExecutionPayload RemoteBackEnd::encode_execution_payload(const ExecutionPayload& execution_payload) {
-    types::ExecutionPayload execution_payload_grpc;
+::types::ExecutionPayload RemoteBackEnd::encode_execution_payload(const ExecutionPayload& payload) {
+    ::types::ExecutionPayload grpc_payload;
+    grpc_payload.set_version(payload.version);
     // Numerical parameters
-    execution_payload_grpc.set_block_number(execution_payload.number);
-    execution_payload_grpc.set_timestamp(execution_payload.timestamp);
-    execution_payload_grpc.set_gas_limit(execution_payload.gas_limit);
-    execution_payload_grpc.set_gas_used(execution_payload.gas_used);
+    grpc_payload.set_block_number(payload.number);
+    grpc_payload.set_timestamp(payload.timestamp);
+    grpc_payload.set_gas_limit(payload.gas_limit);
+    grpc_payload.set_gas_used(payload.gas_used);
     // coinbase
-    execution_payload_grpc.set_allocated_coinbase(H160_from_address(execution_payload.suggested_fee_recipient).release());
+    grpc_payload.set_allocated_coinbase(H160_from_address(payload.suggested_fee_recipient).release());
     // 32-bytes parameters
-    execution_payload_grpc.set_allocated_receipt_root(H256_from_bytes({execution_payload.receipts_root.bytes, kHashLength}).release());
-    execution_payload_grpc.set_allocated_state_root(H256_from_bytes({execution_payload.state_root.bytes, kHashLength}).release());
-    execution_payload_grpc.set_allocated_parent_hash(H256_from_bytes({execution_payload.parent_hash.bytes, kHashLength}).release());
-    execution_payload_grpc.set_allocated_block_hash(H256_from_bytes({execution_payload.block_hash.bytes, kHashLength}).release());
-    execution_payload_grpc.set_allocated_prev_randao(H256_from_bytes({execution_payload.prev_randao.bytes, kHashLength}).release());
-    execution_payload_grpc.set_allocated_base_fee_per_gas(H256_from_uint256(execution_payload.base_fee).release());
+    grpc_payload.set_allocated_receipt_root(H256_from_bytes({payload.receipts_root.bytes, kHashLength}).release());
+    grpc_payload.set_allocated_state_root(H256_from_bytes({payload.state_root.bytes, kHashLength}).release());
+    grpc_payload.set_allocated_parent_hash(H256_from_bytes({payload.parent_hash.bytes, kHashLength}).release());
+    grpc_payload.set_allocated_block_hash(H256_from_bytes({payload.block_hash.bytes, kHashLength}).release());
+    grpc_payload.set_allocated_prev_randao(H256_from_bytes({payload.prev_randao.bytes, kHashLength}).release());
+    grpc_payload.set_allocated_base_fee_per_gas(H256_from_uint256(payload.base_fee).release());
     // Logs Bloom
-    execution_payload_grpc.set_allocated_logs_bloom(H2048_from_bytes(execution_payload.logs_bloom).release());
+    grpc_payload.set_allocated_logs_bloom(H2048_from_bytes(payload.logs_bloom).release());
     // String-like parameters
-    for (auto transaction_bytes : execution_payload.transactions) {
-        execution_payload_grpc.add_transactions(std::string(transaction_bytes.begin(), transaction_bytes.end()));
+    for (auto transaction_bytes : payload.transactions) {
+        grpc_payload.add_transactions(std::string(transaction_bytes.begin(), transaction_bytes.end()));
     }
-    execution_payload_grpc.set_extra_data(std::string(execution_payload.extra_data.begin(), execution_payload.extra_data.end()));
-    return execution_payload_grpc;
+    grpc_payload.set_extra_data(std::string(payload.extra_data.begin(), payload.extra_data.end()));
+    // Withdrawals
+    if (payload.withdrawals) {
+        for (auto& withdrawal : payload.withdrawals.value()) {
+            auto grpc_withdrawal = grpc_payload.add_withdrawals();
+            grpc_withdrawal->set_index(withdrawal.index);
+            grpc_withdrawal->set_validator_index(withdrawal.validator_index);
+            grpc_withdrawal->set_allocated_address(H160_from_address(withdrawal.address).release());
+            grpc_withdrawal->set_amount(withdrawal.amount);
+        }
+    }
+    return grpc_payload;
 }
 
-remote::EngineForkChoiceState* RemoteBackEnd::encode_forkchoice_state(const ForkChoiceState& fcs) {
-    auto fcs_grpc = new remote::EngineForkChoiceState();
+gsl::owner<::remote::EngineForkChoiceState*> RemoteBackEnd::encode_forkchoice_state(const ForkChoiceState& fcs) {
+    auto fcs_grpc = new ::remote::EngineForkChoiceState();
     // 32-bytes parameters
     fcs_grpc->set_allocated_head_block_hash(H256_from_bytes({fcs.head_block_hash.bytes, kHashLength}).release());
     fcs_grpc->set_allocated_safe_block_hash(H256_from_bytes({fcs.safe_block_hash.bytes, kHashLength}).release());
@@ -256,33 +262,41 @@ remote::EngineForkChoiceState* RemoteBackEnd::encode_forkchoice_state(const Fork
     return fcs_grpc;
 }
 
-remote::EnginePayloadAttributes* RemoteBackEnd::encode_payload_attributes(const PayloadAttributes& epa) {
-    auto epa_grpc = new remote::EnginePayloadAttributes();
-    // TODO(yperbasis) support v2 (withdrawals) as well
-    epa_grpc->set_version(1);
+gsl::owner<::remote::EnginePayloadAttributes*> RemoteBackEnd::encode_payload_attributes(const PayloadAttributes& epa) {
+    auto epa_grpc = new ::remote::EnginePayloadAttributes();
+    epa_grpc->set_version(epa.version);
     // Numerical parameters
     epa_grpc->set_timestamp(epa.timestamp);
     // 32-bytes parameters
     epa_grpc->set_allocated_prev_randao(H256_from_bytes({epa.prev_randao.bytes, kHashLength}).release());
     // Address parameters
     epa_grpc->set_allocated_suggested_fee_recipient(H160_from_address(epa.suggested_fee_recipient).release());
+    // Withdrawals
+    if (epa.withdrawals) {
+        for (auto& withdrawal : epa.withdrawals.value()) {
+            auto grpc_withdrawal = epa_grpc->add_withdrawals();
+            grpc_withdrawal->set_index(withdrawal.index);
+            grpc_withdrawal->set_validator_index(withdrawal.validator_index);
+            grpc_withdrawal->set_allocated_address(H160_from_address(withdrawal.address).release());
+            grpc_withdrawal->set_amount(withdrawal.amount);
+        }
+    }
     return epa_grpc;
 }
 
-remote::EngineForkChoiceUpdatedRequest RemoteBackEnd::encode_forkchoice_updated_request(const ForkChoiceUpdatedRequest& forkchoice_updated_request) {
-    remote::EngineForkChoiceUpdatedRequest forkchoice_updated_request_grpc;
-    remote::EngineForkChoiceState* forkchoice_state_grpc = RemoteBackEnd::encode_forkchoice_state(forkchoice_updated_request.fork_choice_state);
+::remote::EngineForkChoiceUpdatedRequest RemoteBackEnd::encode_forkchoice_updated_request(const ForkChoiceUpdatedRequest& fcu_request) {
+    ::remote::EngineForkChoiceUpdatedRequest fcu_request_grpc;
+    ::remote::EngineForkChoiceState* forkchoice_state_grpc = RemoteBackEnd::encode_forkchoice_state(fcu_request.fork_choice_state);
 
-    forkchoice_updated_request_grpc.set_allocated_forkchoice_state(forkchoice_state_grpc);
-    if (forkchoice_updated_request.payload_attributes != std::nullopt) {
-        remote::EnginePayloadAttributes* payload_attributes_grpc =
-            RemoteBackEnd::encode_payload_attributes(forkchoice_updated_request.payload_attributes.value());
-        forkchoice_updated_request_grpc.set_allocated_payload_attributes(payload_attributes_grpc);
+    fcu_request_grpc.set_allocated_forkchoice_state(forkchoice_state_grpc);
+    if (fcu_request.payload_attributes != std::nullopt) {
+        ::remote::EnginePayloadAttributes* payload_attributes_grpc = encode_payload_attributes(fcu_request.payload_attributes.value());
+        fcu_request_grpc.set_allocated_payload_attributes(payload_attributes_grpc);
     }
-    return forkchoice_updated_request_grpc;
+    return fcu_request_grpc;
 }
 
-PayloadStatus RemoteBackEnd::decode_payload_status(const remote::EnginePayloadStatus& payload_status_grpc) {
+PayloadStatus RemoteBackEnd::decode_payload_status(const ::remote::EnginePayloadStatus& payload_status_grpc) {
     PayloadStatus payload_status;
     payload_status.status = decode_status_message(payload_status_grpc.status());
     // Set LatestValidHash (if there is one)
@@ -297,15 +311,15 @@ PayloadStatus RemoteBackEnd::decode_payload_status(const remote::EnginePayloadSt
     return payload_status;
 }
 
-std::string RemoteBackEnd::decode_status_message(const remote::EngineStatus& status) {
+std::string RemoteBackEnd::decode_status_message(const ::remote::EngineStatus& status) {
     switch (status) {
-        case remote::EngineStatus::VALID:
+        case ::remote::EngineStatus::VALID:
             return "VALID";
-        case remote::EngineStatus::SYNCING:
+        case ::remote::EngineStatus::SYNCING:
             return "SYNCING";
-        case remote::EngineStatus::ACCEPTED:
+        case ::remote::EngineStatus::ACCEPTED:
             return "ACCEPTED";
-        case remote::EngineStatus::INVALID_BLOCK_HASH:
+        case ::remote::EngineStatus::INVALID_BLOCK_HASH:
             return "INVALID_BLOCK_HASH";
         default:
             return "INVALID";

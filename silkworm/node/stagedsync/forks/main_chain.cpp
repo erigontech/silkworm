@@ -19,18 +19,13 @@
 #include <set>
 
 #include <silkworm/core/common/as_range.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/db_utils.hpp>
 
 #include "extending_fork.hpp"
 
 namespace silkworm::stagedsync {
-
-static void ensure_invariant(bool condition, const std::string& message) {
-    if (!condition) {
-        throw std::logic_error("MainChain invariant violation: " + message);
-    }
-}
 
 MainChain::MainChain(asio::io_context& ctx, NodeSettings& ns, const db::RWAccess dba)
     : io_context_{ctx},
@@ -46,6 +41,10 @@ MainChain::MainChain(asio::io_context& ctx, NodeSettings& ns, const db::RWAccess
 
 void MainChain::open() {
     tx_.reopen(*db_access_);  // comply to mdbx limitation: tx must be used from its creation thread
+}
+
+void MainChain::close() {
+    tx_.abort();
 }
 
 auto MainChain::node_settings() -> NodeSettings& {
@@ -96,7 +95,7 @@ void MainChain::insert_block(const Block& block) {
 }
 
 auto MainChain::verify_chain(Hash head_block_hash) -> VerificationResult {
-    SILK_TRACE << "ExecutionEngine: verifying chain " << head_block_hash.to_hex();
+    SILK_TRACE << "MainChain: verifying chain " << head_block_hash.to_hex();
 
     // retrieve the head header
     auto head_header = get_header(head_block_hash);
@@ -109,7 +108,8 @@ auto MainChain::verify_chain(Hash head_block_hash) -> VerificationResult {
     // the new head is on a new fork?
     BlockId forking_point = canonical_chain_.find_forking_point(*head_header);  // the forking origin
 
-    if (forking_point.number < canonical_chain_.current_head().number) {  // if the forking is behind the current head
+    if (head_block_hash != canonical_chain_.current_head().hash &&        // if the new head is not the current head
+        forking_point.number < canonical_chain_.current_head().number) {  // and if the forking is behind the head
         // we need to do unwind to change canonical
         auto unwind_result = pipeline_.unwind(tx_, forking_point.number);
         success_or_throw(unwind_result);  // unwind must complete with success
@@ -130,7 +130,7 @@ auto MainChain::verify_chain(Hash head_block_hash) -> VerificationResult {
             ensure_invariant(pipeline_.head_header_number() == canonical_chain_.current_head().number &&
                                  pipeline_.head_header_hash() == canonical_chain_.current_head().hash,
                              "forward succeeded with pipeline head not aligned with canonical head");
-            verify_result = ValidChain{pipeline_.head_header_number()};
+            verify_result = ValidChain{pipeline_.head_header_number(), pipeline_.head_header_hash()};
             break;
         }
         case Stage::Result::kWrongFork:
@@ -250,6 +250,12 @@ auto MainChain::get_canonical_hash(BlockNum height) const -> std::optional<Hash>
 
 auto MainChain::get_header_td(BlockNum header_height, Hash header_hash) const -> std::optional<TotalDifficulty> {
     return db::read_total_difficulty(tx_, header_height, header_hash);
+}
+
+auto MainChain::get_header_td(Hash header_hash) const -> std::optional<TotalDifficulty> {
+    auto header = get_header(header_hash);
+    if (!header) return {};
+    return db::read_total_difficulty(tx_, header->number, header_hash);
 }
 
 auto MainChain::get_body(Hash header_hash) const -> std::optional<BlockBody> {

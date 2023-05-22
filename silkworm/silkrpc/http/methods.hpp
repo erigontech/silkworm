@@ -22,6 +22,9 @@
 
 namespace silkworm::rpc::http::method {
 
+// Constants defined here have a different naming from our standard: k_<JSON_RPC_API>
+// where <JSON_RPC_API> is *exactly* the JSON RPC API method
+
 constexpr const char* k_web3_clientVersion{"web3_clientVersion"};
 constexpr const char* k_web3_sha3{"web3_sha3"};
 
@@ -116,9 +119,13 @@ constexpr const char* k_erigon_nodeInfo{"erigon_nodeInfo"};
 constexpr const char* k_parity_getBlockReceipts{"parity_getBlockReceipts"};
 constexpr const char* k_parity_listStorageKeys{"parity_listStorageKeys"};
 
+constexpr const char* k_engine_exchangeCapabilities{"engine_exchangeCapabilities"};
 constexpr const char* k_engine_getPayloadV1{"engine_getPayloadV1"};
+constexpr const char* k_engine_getPayloadV2{"engine_getPayloadV2"};
 constexpr const char* k_engine_newPayloadV1{"engine_newPayloadV1"};
+constexpr const char* k_engine_newPayloadV2{"engine_newPayloadV2"};
 constexpr const char* k_engine_forkchoiceUpdatedV1{"engine_forkchoiceUpdatedV1"};
+constexpr const char* k_engine_forkchoiceUpdatedV2{"engine_forkchoiceUpdatedV2"};
 constexpr const char* k_engine_exchangeTransitionConfiguration{"engine_exchangeTransitionConfigurationV1"};
 
 constexpr const char* k_txpool_status{"txpool_status"};
@@ -132,5 +139,6 @@ constexpr const char* k_ots_getBlockDetailsByHash{"ots_getBlockDetailsByHash"};
 constexpr const char* k_ots_getBlockTransactions{"ots_getBlockTransactions"};
 constexpr const char* k_ots_getTransactionBySenderAndNonce{"ots_getTransactionBySenderAndNonce"};
 constexpr const char* k_ots_getContractCreator{"ots_getContractCreator"};
+constexpr const char* k_ots_traceTransaction{"ots_traceTransaction"};
 
 }  // namespace silkworm::rpc::http::method

@@ -16,9 +16,6 @@
 
 #pragma once
 
-#include <memory>
-#include <vector>
-
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
@@ -29,7 +26,6 @@
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/silkrpc/common/block_cache.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/ethbackend/backend.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
@@ -47,9 +43,9 @@ class OtsRpcApi {
     OtsRpcApi(boost::asio::io_context& io_context, boost::asio::thread_pool& workers)
         : io_context_(io_context),
           workers_{workers},
-          database_(use_private_service<ethdb::Database>(io_context_)),
-          state_cache_(use_shared_service<ethdb::kv::StateCache>(io_context_)),
-          block_cache_(use_shared_service<BlockCache>(io_context_)) {}
+          database_(must_use_private_service<ethdb::Database>(io_context_)),
+          state_cache_(must_use_shared_service<ethdb::kv::StateCache>(io_context_)),
+          block_cache_(must_use_shared_service<BlockCache>(io_context_)) {}
     virtual ~OtsRpcApi() = default;
 
     OtsRpcApi(const OtsRpcApi&) = delete;
@@ -58,17 +54,18 @@ class OtsRpcApi {
   protected:
     boost::asio::awaitable<void> handle_ots_get_api_level(const nlohmann::json& request, nlohmann::json& reply);
     boost::asio::awaitable<void> handle_ots_has_code(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_ots_getBlockDetails(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_ots_getBlockDetailsByHash(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_ots_getBlockTransactions(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_ots_getTransactionBySenderAndNonce(const nlohmann::json& request, nlohmann::json& reply);
-    boost::asio::awaitable<void> handle_ots_getContractCreator(const nlohmann::json& request, nlohmann::json& reply);
+    boost::asio::awaitable<void> handle_ots_get_block_details(const nlohmann::json& request, nlohmann::json& reply);
+    boost::asio::awaitable<void> handle_ots_get_block_details_by_hash(const nlohmann::json& request, nlohmann::json& reply);
+    boost::asio::awaitable<void> handle_ots_get_block_transactions(const nlohmann::json& request, nlohmann::json& reply);
+    boost::asio::awaitable<void> handle_ots_get_transaction_by_sender_and_nonce(const nlohmann::json& request, nlohmann::json& reply);
+    boost::asio::awaitable<void> handle_ots_get_contract_creator(const nlohmann::json& request, nlohmann::json& reply);
+    boost::asio::awaitable<void> handle_ots_trace_transaction(const nlohmann::json& request, nlohmann::json& reply);
 
     boost::asio::io_context& io_context_;
     boost::asio::thread_pool& workers_;
-    std::unique_ptr<ethdb::Database>& database_;
-    std::shared_ptr<ethdb::kv::StateCache>& state_cache_;
-    std::shared_ptr<BlockCache>& block_cache_;
+    ethdb::Database* database_;
+    ethdb::kv::StateCache* state_cache_;
+    BlockCache* block_cache_;
     friend class silkworm::http::RequestHandler;
 
   private:

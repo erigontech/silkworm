@@ -35,7 +35,7 @@ class PrivateService : public BaseService<PrivateService<T>> {
     void set_unique(std::unique_ptr<T>&& unique) {
         unique_ = std::move(unique);
     }
-    std::unique_ptr<T>& unique() { return unique_; }
+    T* ptr() { return unique_.get(); }
 
   private:
     std::unique_ptr<T> unique_;
@@ -50,8 +50,19 @@ void add_private_service(boost::asio::execution_context& context, std::unique_pt
 }
 
 template <typename T>
-std::unique_ptr<T>& use_private_service(boost::asio::execution_context& context) {
-    return use_service<PrivateService<T>>(context).unique();
+T* use_private_service(boost::asio::execution_context& context) {
+    if (not has_service<PrivateService<T>>(context)) {
+        return nullptr;
+    }
+    return use_service<PrivateService<T>>(context).ptr();
+}
+
+template <typename T>
+T* must_use_private_service(boost::asio::execution_context& context) {
+    if (not has_service<PrivateService<T>>(context)) {
+        throw std::logic_error{"unregistered private service: " + std::string{typeid(T).name()}};
+    }
+    return use_service<PrivateService<T>>(context).ptr();
 }
 
 }  // namespace silkworm

@@ -31,7 +31,6 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/interfaces/txpool/mining.grpc.pb.h>
 #include <silkworm/interfaces/types/types.pb.h>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkworm::rpc::txpool {

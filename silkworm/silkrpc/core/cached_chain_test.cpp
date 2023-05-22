@@ -30,6 +30,7 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/test/log.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
@@ -107,6 +108,7 @@ static void check_expected_transaction(const Transaction& transaction) {
 }
 
 TEST_CASE("read_block_by_number_or_hash") {
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
     BlockCache cache(10, true);
@@ -146,6 +148,7 @@ TEST_CASE("read_block_by_number_or_hash") {
 }
 
 TEST_CASE("silkworm::core::read_block_by_number") {
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
     uint64_t bn = 5'000'001;
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
@@ -206,6 +209,7 @@ TEST_CASE("silkworm::core::read_block_by_number") {
 }
 
 TEST_CASE("silkworm::core::read_block_by_hash") {
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
     const evmc::bytes32 bh = 0x439816753229fc0736bf86a5048de4bc9fcdede8c91dadf88c828c76b2281dff_bytes32;
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
@@ -276,6 +280,7 @@ TEST_CASE("silkworm::core::read_block_by_hash") {
 }
 
 TEST_CASE("read_block_by_transaction_hash") {
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
     BlockCache cache(10, true);
@@ -351,6 +356,7 @@ TEST_CASE("read_block_by_transaction_hash") {
 }
 
 TEST_CASE("read_transaction_by_hash") {
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     test::MockDatabaseReader db_reader;
     BlockCache cache(10, true);

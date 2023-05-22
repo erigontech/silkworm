@@ -93,13 +93,6 @@ TEST_CASE("Headers receiving and saving") {
     REQUIRE(last_headers[0].number == head.number);
     REQUIRE(last_headers[0].hash() == head.hash);
 
-    // creating the chain-fork-view to simulate a bit of the HeaderStage
-    chainsync::ChainForkView chain_fork_view{{head.number, head.hash, 0}};
-    CHECK(chain_fork_view.head() == head);
-
-    chain_fork_view.reset_head(head);
-    CHECK(chain_fork_view.head() == head);
-
     // creating the working chain to simulate a bit of the sync
     BlockNum highest_in_db = 0;
     HeaderChainForTest header_chain(std::make_unique<DummyRuleSet>());
@@ -115,10 +108,15 @@ TEST_CASE("Headers receiving and saving") {
     auto td = db::read_total_difficulty(tx, 0, header0_hash);
     REQUIRE(td.has_value());
 
-    // ### temp workaround due to ChainForkView::get_total_difficulty() not fully implemented ###
-    // todo: remove following line when Sync component will be able to save/load total difficulty
-    chain_fork_view.add(*header0);
-    // ### end of temp workaround ###
+    // creating the chain-fork-view to simulate a bit of the HeaderStage
+    chainsync::ChainForkView chain_fork_view{{header0->number, header0_hash, *td}};
+    CHECK(chain_fork_view.head() == head);
+
+    chain_fork_view.add(*header0, *td);
+    CHECK(chain_fork_view.head() == head);
+
+    chain_fork_view.reset_head({header0->number, header0_hash, *td});
+    CHECK(chain_fork_view.head() == head);
 
     // stop execution pipeline at early stages because we use dummy headers without bodies
     Environment::set_stop_before_stage(db::stages::kBlockHashesKey);

@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include <memory>
-
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
 #include <boost/asio/awaitable.hpp>
@@ -42,8 +40,8 @@ using boost::asio::awaitable;
 class ParityRpcApi {
   public:
     explicit ParityRpcApi(boost::asio::io_context& io_context)
-        : block_cache_{use_shared_service<BlockCache>(io_context)},
-          database_{use_private_service<ethdb::Database>(io_context)} {}
+        : block_cache_{must_use_shared_service<BlockCache>(io_context)},
+          database_{must_use_private_service<ethdb::Database>(io_context)} {}
     virtual ~ParityRpcApi() = default;
 
     ParityRpcApi(const ParityRpcApi&) = delete;
@@ -54,8 +52,8 @@ class ParityRpcApi {
     awaitable<void> handle_parity_list_storage_keys(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
-    std::shared_ptr<BlockCache>& block_cache_;
-    std::unique_ptr<ethdb::Database>& database_;
+    BlockCache* block_cache_;
+    ethdb::Database* database_;
 
     friend class silkworm::http::RequestHandler;
 };

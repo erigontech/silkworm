@@ -20,13 +20,13 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/test/log.hpp>
 
 namespace silkworm::rpc {
 
 TEST_CASE("StringWriter", "[silkrpc]") {
-    SILKRPC_LOG_STREAMS(null_stream(), null_stream());
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     SECTION("write") {
         StringWriter writer;
@@ -48,8 +48,7 @@ TEST_CASE("StringWriter", "[silkrpc]") {
 }
 
 TEST_CASE("ChunksWriter", "[silkrpc]") {
-    SILKRPC_LOG_STREAMS(std::cout, null_stream());
-    SILKRPC_LOG_VERBOSITY(LogLevel::None);
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     SECTION("write&close under chunk size") {
         StringWriter s_writer;

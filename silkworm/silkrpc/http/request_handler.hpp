@@ -37,12 +37,11 @@ namespace silkworm::rpc::http {
 
 class RequestHandler {
   public:
-    RequestHandler(boost::asio::io_context& io_context,
-                   boost::asio::thread_pool& workers,
-                   boost::asio::ip::tcp::socket& socket,
+    RequestHandler(boost::asio::ip::tcp::socket& socket,
+                   commands::RpcApi& rpc_api,
                    const commands::RpcApiTable& rpc_api_table,
                    std::optional<std::string> jwt_secret)
-        : rpc_api_{io_context, workers},
+        : rpc_api_{rpc_api},
           socket_{socket},
           rpc_api_table_(rpc_api_table),
           jwt_secret_(std::move(jwt_secret)) {}
@@ -50,7 +49,7 @@ class RequestHandler {
     RequestHandler(const RequestHandler&) = delete;
     RequestHandler& operator=(const RequestHandler&) = delete;
 
-    boost::asio::awaitable<void> handle_user_request(const http::Request& request);
+    boost::asio::awaitable<void> handle(const http::Request& request);
 
   private:
     boost::asio::awaitable<std::optional<std::string>> is_request_authorized(const http::Request& request);
@@ -65,9 +64,12 @@ class RequestHandler {
     boost::asio::awaitable<void> do_write(http::Reply& reply);
     boost::asio::awaitable<void> write_headers();
 
-    commands::RpcApi rpc_api_;
+    commands::RpcApi& rpc_api_;
+
     boost::asio::ip::tcp::socket& socket_;
+
     const commands::RpcApiTable& rpc_api_table_;
+
     const std::optional<std::string> jwt_secret_;
 };
 

@@ -49,7 +49,7 @@ class Connection {
 
     //! Construct a connection running within the given execution context.
     Connection(boost::asio::io_context& io_context,
-               boost::asio::thread_pool& workers,
+               commands::RpcApi& api,
                commands::RpcApiTable& handler_table,
                std::optional<std::string> jwt_secret);
 

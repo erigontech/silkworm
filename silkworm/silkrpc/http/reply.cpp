@@ -30,7 +30,7 @@
 #include <string>
 #include <vector>
 
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkworm::rpc::http {
@@ -143,7 +143,7 @@ std::vector<boost::asio::const_buffer> Reply::to_buffers() const {
     buffers.push_back(boost::asio::buffer(misc_strings::crlf));
     buffers.push_back(boost::asio::buffer(content));
 
-    SILKRPC_TRACE << "Reply::to_buffers buffers: " << buffers << "\n";
+    SILK_TRACE << "Reply::to_buffers buffers: " << buffers;
     return buffers;
 }
 

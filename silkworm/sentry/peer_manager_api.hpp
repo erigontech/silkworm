@@ -26,6 +26,7 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/strand.hpp>
 
+#include <silkworm/infra/concurrency/awaitable_future.hpp>
 #include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/infra/concurrency/event_notifier.hpp>
 #include <silkworm/infra/concurrency/task_group.hpp>
@@ -34,7 +35,6 @@
 #include <silkworm/sentry/api/router/peer_call.hpp>
 #include <silkworm/sentry/api/router/peer_events_call.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
-#include <silkworm/sentry/common/promise.hpp>
 
 #include "peer_manager.hpp"
 #include "rlpx/peer.hpp"
@@ -61,11 +61,11 @@ class PeerManagerApi : public PeerManagerObserver {
     template <typename T>
     using Channel = concurrency::Channel<T>;
 
-    Channel<std::shared_ptr<common::Promise<size_t>>>& peer_count_calls_channel() {
+    Channel<std::shared_ptr<concurrency::AwaitablePromise<size_t>>>& peer_count_calls_channel() {
         return peer_count_calls_channel_;
     }
 
-    Channel<std::shared_ptr<common::Promise<api::api_common::PeerInfos>>>& peers_calls_channel() {
+    Channel<std::shared_ptr<concurrency::AwaitablePromise<api::api_common::PeerInfos>>>& peers_calls_channel() {
         return peers_calls_channel_;
     }
 
@@ -96,8 +96,8 @@ class PeerManagerApi : public PeerManagerObserver {
 
     PeerManager& peer_manager_;
 
-    Channel<std::shared_ptr<common::Promise<size_t>>> peer_count_calls_channel_;
-    Channel<std::shared_ptr<common::Promise<api::api_common::PeerInfos>>> peers_calls_channel_;
+    Channel<std::shared_ptr<concurrency::AwaitablePromise<size_t>>> peer_count_calls_channel_;
+    Channel<std::shared_ptr<concurrency::AwaitablePromise<api::api_common::PeerInfos>>> peers_calls_channel_;
     Channel<api::router::PeerCall> peer_calls_channel_;
     Channel<std::optional<common::EccPublicKey>> peer_penalize_calls_channel_;
     Channel<api::router::PeerEventsCall> peer_events_calls_channel_;

@@ -28,9 +28,8 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/buildinfo.h>
-#include <silkworm/core/chain/genesis.hpp>
-#include <silkworm/core/common/mem_usage.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/common/mem_usage.hpp>
 #include <silkworm/infra/common/os.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/async_thread.hpp>
@@ -42,8 +41,6 @@
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
 #include <silkworm/node/common/settings.hpp>
 #include <silkworm/node/db/eth_status_data_provider.hpp>
-#include <silkworm/node/db/genesis.hpp>
-#include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/snapshot/sync.hpp>
 #include <silkworm/node/stagedsync/local_client.hpp>
 #include <silkworm/node/stagedsync/server.hpp>
@@ -53,12 +50,10 @@
 #include <silkworm/sentry/sentry.hpp>
 #include <silkworm/sentry/session_sentry_client.hpp>
 #include <silkworm/sentry/settings.hpp>
-#include <silkworm/sync/block_exchange.hpp>
-#include <silkworm/sync/sentry_client.hpp>
-#include <silkworm/sync/sync_pos.hpp>
-#include <silkworm/sync/sync_pow.hpp>
+#include <silkworm/sync/sync.hpp>
 
 #include "common/common.hpp"
+#include "common/db_checklist.hpp"
 #include "common/human_size_parser_validator.hpp"
 #include "common/sentry_options.hpp"
 #include "common/settings.hpp"
@@ -79,10 +74,7 @@ using silkworm::lookup_known_chain;
 using silkworm::NodeSettings;
 using silkworm::parse_size;
 using silkworm::PreverifiedHashes;
-using silkworm::read_genesis_data;
 using silkworm::StopWatch;
-using silkworm::chainsync::PoSSync;
-using silkworm::chainsync::PoWSync;
 using silkworm::cmd::common::add_context_pool_options;
 using silkworm::cmd::common::add_logging_options;
 using silkworm::cmd::common::add_option_chain;
@@ -189,6 +181,8 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
                    "Sets the interval between sync loop logs (in seconds)")
         ->capture_default_str()
         ->check(CLI::Range(10u, 600u));
+    // TODO(canepat) remove when PoS sync works
+    cli.add_flag("--sync.force_pow", settings.force_pow, "Force usage of proof-of-work bypassing chain config");
 
     cli.add_flag("--fakepow", node_settings.fake_pow, "Disables proof-of-work verification");
 
@@ -308,170 +302,6 @@ void raise_max_file_descriptors() {
     }
 }
 
-//! \brief Ensure database is ready to take off and consistent with command line arguments
-void run_preflight_checklist(NodeSettings& node_settings, bool init_if_empty = true) {
-    node_settings.data_directory->deploy();                                  // Ensures all subdirs are present
-    bool chaindata_exclusive{node_settings.chaindata_env_config.exclusive};  // Save setting
-    {
-        auto& config = node_settings.chaindata_env_config;
-        config.path = node_settings.data_directory->chaindata().path().string();
-        config.create =
-            !std::filesystem::exists(sw_db::get_datafile_path(node_settings.data_directory->chaindata().path()));
-        config.exclusive = true;  // Will be cleared after this phase
-    }
-
-    // Open chaindata environment and check tables are consistent
-    sw_log::Message("Opening database", {"path", node_settings.data_directory->chaindata().path().string()});
-    auto chaindata_env{sw_db::open_env(node_settings.chaindata_env_config)};
-    sw_db::RWTxn tx(chaindata_env);
-
-    // Ensures all tables are present
-    sw_db::table::check_or_create_chaindata_tables(tx);
-    sw_log::Message("Database schema", {"version", sw_db::read_schema_version(tx)->to_string()});
-
-    // Detect the highest downloaded header. We need that to detect if we can apply changes in chain config and/or
-    // prune mode
-    const auto header_download_progress{sw_db::stages::read_stage_progress(tx, sw_db::stages::kHeadersKey)};
-
-    // Check db is initialized with chain config
-    {
-        node_settings.chain_config = sw_db::read_chain_config(tx);
-        if (!node_settings.chain_config.has_value() && init_if_empty) {
-            auto source_data{read_genesis_data(node_settings.network_id)};
-            auto genesis_json = nlohmann::json::parse(source_data, nullptr, /* allow_exceptions = */ false);
-            if (genesis_json.is_discarded()) {
-                throw std::runtime_error("Could not initialize db for chain id " +
-                                         std::to_string(node_settings.network_id) + " : unknown network");
-            }
-            sw_log::Message("Priming database", {"network id", std::to_string(node_settings.network_id)});
-            sw_db::initialize_genesis(tx, genesis_json, /*allow_exceptions=*/true);
-            tx.commit();
-            node_settings.chain_config = sw_db::read_chain_config(tx);
-        }
-
-        if (!node_settings.chain_config.has_value()) {
-            throw std::runtime_error("Unable to retrieve chain configuration");
-        } else if (node_settings.chain_config.value().chain_id != node_settings.network_id) {
-            throw std::runtime_error("Incompatible network id. Command line expects " +
-                                     std::to_string(node_settings.network_id) + "; Database has " +
-                                     std::to_string(node_settings.chain_config.value().chain_id));
-        }
-
-        const auto known_chain{lookup_known_chain(node_settings.chain_config->chain_id)};
-        if (known_chain.has_value() && *(known_chain->second) != *(node_settings.chain_config)) {
-            // If loaded config is known we must ensure is up-to-date with hardcoded one
-            // Loop all respective JSON members to find discrepancies
-            auto known_chain_config_json{known_chain->second->to_json()};
-            auto active_chain_config_json{node_settings.chain_config->to_json()};
-            bool new_members_added{false};
-            bool old_members_changed(false);
-            for (auto& [known_key, known_value] : known_chain_config_json.items()) {
-                if (!active_chain_config_json.contains(known_key)) {
-                    // Is this new key a definition of a new fork block or a bomb delay block ?
-                    // If so we need to check its new value must be **beyond** the highest
-                    // header processed.
-
-                    const std::regex block_pattern(R"(Block$)", std::regex_constants::icase);
-                    if (std::regex_match(known_key, block_pattern)) {
-                        // New forkBlock definition (as well as bomb defusing block) must be "activated" to be relevant.
-                        // By "activated" we mean it has to have a value > 0. Code should also take into account
-                        // different chain_id(s) if special features are embedded from genesis
-                        // All our chain configurations inherit from ChainConfig which necessarily needs to be extended
-                        // to allow derivative chains to support new fork blocks
-
-                        if (const auto known_value_activation{known_value.get<uint64_t>()};
-                            known_value_activation > 0 && known_value_activation <= header_download_progress) {
-                            throw std::runtime_error("Can't apply new chain config key " + known_key + "with value " +
-                                                     std::to_string(known_value_activation) +
-                                                     " as the database has already blocks up to " +
-                                                     std::to_string(header_download_progress));
-                        }
-                    }
-
-                    new_members_added = true;
-                    continue;
-
-                } else {
-                    const auto active_value{active_chain_config_json[known_key]};
-                    if (active_value.type_name() != known_value.type_name()) {
-                        throw std::runtime_error("Hard-coded chain config key " + known_key + " has type " +
-                                                 std::string(known_value.type_name()) +
-                                                 " whilst persisted config has type " +
-                                                 std::string(active_value.type_name()));
-                    }
-
-                    if (known_value.is_number()) {
-                        // Check whether activation value has been modified
-                        const auto known_value_activation{known_value.get<uint64_t>()};
-                        const auto active_value_activation{active_value.get<uint64_t>()};
-                        if (known_value_activation != active_value_activation) {
-                            bool must_throw{false};
-                            if (!known_value_activation && active_value_activation &&
-                                active_value_activation <= header_download_progress) {
-                                // Can't de-activate an already activated fork block
-                                must_throw = true;
-                            } else if (!active_value_activation && known_value_activation &&
-                                       known_value_activation <= header_download_progress) {
-                                // Can't activate a fork block BEFORE current height
-                                must_throw = true;
-                            } else if (known_value_activation && active_value_activation &&
-                                       std::min(known_value_activation, active_value_activation) <=
-                                           header_download_progress) {
-                                // Can change activation height BEFORE current height
-                                must_throw = true;
-                            }
-                            if (must_throw) {
-                                throw std::runtime_error("Can't apply modified chain config key " +
-                                                         known_key + " from " +
-                                                         std::to_string(active_value_activation) + " to " +
-                                                         std::to_string(known_value_activation) +
-                                                         " as the database has already headers up to " +
-                                                         std::to_string(header_download_progress));
-                            }
-                            old_members_changed = true;
-                        }
-                    }
-                }
-            }
-
-            if (new_members_added || old_members_changed) {
-                sw_db::update_chain_config(tx, *(known_chain->second));
-                tx.commit();
-                node_settings.chain_config = *(known_chain->second);
-            }
-        }
-
-        // Load genesis_hash
-        node_settings.chain_config->genesis_hash = sw_db::read_canonical_header_hash(tx, 0);
-        if (!node_settings.chain_config->genesis_hash.has_value())
-            throw std::runtime_error("Could not load genesis hash");
-
-        sw_log::Message("Starting Silkworm", {"chain", (known_chain.has_value() ? known_chain->first : "unknown/custom"),
-                                              "config", node_settings.chain_config->to_json().dump()});
-    }
-
-    // Detect prune-mode and verify is compatible
-    {
-        auto db_prune_mode{sw_db::read_prune_mode(*tx)};
-        if (db_prune_mode != *node_settings.prune_mode) {
-            // In case we have mismatching modes (cli != db) we prevent
-            // further execution ONLY if we've already synced something
-            if (header_download_progress) {
-                throw std::runtime_error("Can't change prune_mode on already synced data. Expected " +
-                                         db_prune_mode.to_string() + " got " + node_settings.prune_mode->to_string());
-            }
-            sw_db::write_prune_mode(*tx, *node_settings.prune_mode);
-            node_settings.prune_mode = std::make_unique<sw_db::PruneMode>(sw_db::read_prune_mode(*tx));
-        }
-        sw_log::Message("Effective pruning", {"mode", node_settings.prune_mode->to_string()});
-    }
-
-    tx.commit(/*renew=*/false);
-    chaindata_env.close();
-    node_settings.chaindata_env_config.exclusive = chaindata_exclusive;
-    node_settings.chaindata_env_config.create = false;  // Has already been created
-}
-
 class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
 };
 
@@ -545,7 +375,7 @@ int main(int argc, char* argv[]) {
 
         // Initialize logging with cli settings
         sw_log::init(settings.log_settings);
-        sw_log::set_thread_name("main");
+        sw_log::set_thread_name("main-thread");
 
         // Output BuildInfo
         const auto build_info{silkworm_get_buildinfo()};
@@ -571,8 +401,8 @@ int main(int argc, char* argv[]) {
         sw_log::Message("libmdbx",
                         {"version", mdbx_ver.git.describe, "build", mdbx_bld.target, "compiler", mdbx_bld.compiler});
 
-        // Check db
-        run_preflight_checklist(node_settings);  // Prepare database for takeoff
+        // Prepare database for takeoff
+        cmd::common::run_db_checklist(node_settings);
 
         auto chaindata_db{sw_db::open_env(node_settings.chaindata_env_config)};
 
@@ -624,15 +454,6 @@ int main(int argc, char* argv[]) {
 
         silkworm::rpc::BackEndKvServer rpc_server{settings.server_settings, backend};
 
-        // Sentry client - connects to sentry
-        silkworm::SentryClient sync_sentry_client{
-            context_pool.next_io_context(),
-            sentry_client,
-        };
-
-        // BlockExchange - download headers and bodies from remote peers using the sentry
-        BlockExchange block_exchange{sync_sentry_client, sw_db::ROAccess{chaindata_db}, node_settings.chain_config.value()};
-
         // Snapshot sync
         if (snapshot_settings.enabled) {
             // Raise file descriptor limit per process
@@ -648,21 +469,29 @@ int main(int argc, char* argv[]) {
             sw_log::Info() << "Snapshot sync disabled, no snapshot must be downloaded";
         }
 
+        // Execution: the execution layer engine
         execution::Server execution_server{node_settings, sw_db::RWAccess{chaindata_db}};
 
-        execution::LocalClient execution_client(execution_server);
-        PoWSync sync(block_exchange, execution_client);
-        // PoSSync sync(block_exchange, execution_client);
+        // ChainSync: the chain synchronization process based on the consensus protocol
+        execution::LocalClient execution_client{execution_server};
+        chainsync::Sync chain_sync_process{
+            context_pool.next_io_context(),
+            chaindata_db,
+            execution_client,
+            sentry_client,
+            *node_settings.chain_config};
+        // TODO(canepat) remove when PoS sync works
+        if (settings.force_pow) {
+            chain_sync_process.force_pow(execution_client);
+        }
 
         auto tasks =
             timer_executor() &&
             resource_usage_log.async_run() &&
             rpc_server.async_run() &&
             embedded_sentry_run_if_needed() &&
-            sync_sentry_client.async_run() &&
-            block_exchange.async_run() &&
             execution_server.async_run() &&
-            sync.async_run();
+            chain_sync_process.async_run();
 
         // Trap OS signals
         ShutdownSignal shutdown_signal{context_pool.next_io_context()};

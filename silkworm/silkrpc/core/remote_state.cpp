@@ -24,8 +24,7 @@
 #include <boost/asio/use_future.hpp>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
-#include <silkworm/silkrpc/core/blocks.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 
 namespace silkworm::rpc::state {
@@ -81,98 +80,98 @@ boost::asio::awaitable<std::optional<evmc::bytes32>> AsyncRemoteState::canonical
 }
 
 std::optional<silkworm::Account> RemoteState::read_account(const evmc::address& address) const noexcept {
-    SILKRPC_DEBUG << "RemoteState::read_account address=" << address << " start\n";
+    SILK_DEBUG << "RemoteState::read_account address=" << address << " start";
     try {
         std::future<std::optional<silkworm::Account>> result{boost::asio::co_spawn(io_context_, async_state_.read_account(address), boost::asio::use_future)};
         const auto optional_account{result.get()};
-        SILKRPC_DEBUG << "RemoteState::read_account account.nonce=" << (optional_account ? optional_account->nonce : 0) << " end\n";
+        SILK_DEBUG << "RemoteState::read_account account.nonce=" << (optional_account ? optional_account->nonce : 0) << " end";
         return optional_account;
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "RemoteState::read_account exception: " << e.what() << "\n";
+        SILK_ERROR << "RemoteState::read_account exception: " << e.what();
         return std::nullopt;
     }
 }
 
 silkworm::ByteView RemoteState::read_code(const evmc::bytes32& code_hash) const noexcept {
-    SILKRPC_DEBUG << "RemoteState::read_code code_hash=" << code_hash << " start\n";
+    SILK_DEBUG << "RemoteState::read_code code_hash=" << code_hash << " start";
     try {
         std::future<silkworm::ByteView> result{boost::asio::co_spawn(io_context_, async_state_.read_code(code_hash), boost::asio::use_future)};
         const auto code{result.get()};
         return code;
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "RemoteState::read_code exception: " << e.what() << "\n";
+        SILK_ERROR << "RemoteState::read_code exception: " << e.what();
         return silkworm::ByteView{};
     }
 }
 
 evmc::bytes32 RemoteState::read_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location) const noexcept {
-    SILKRPC_DEBUG << "RemoteState::read_storage address=" << address << " incarnation=" << incarnation << " location=" << location << " start\n";
+    SILK_DEBUG << "RemoteState::read_storage address=" << address << " incarnation=" << incarnation << " location=" << location << " start";
     try {
         std::future<evmc::bytes32> result{boost::asio::co_spawn(io_context_, async_state_.read_storage(address, incarnation, location), boost::asio::use_future)};
         const auto storage_value{result.get()};
-        SILKRPC_DEBUG << "RemoteState::read_storage storage_value=" << storage_value << " end\n";
+        SILK_DEBUG << "RemoteState::read_storage storage_value=" << storage_value << " end\n";
         return storage_value;
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "RemoteState::read_storage exception: " << e.what() << "\n";
+        SILK_ERROR << "RemoteState::read_storage exception: " << e.what();
         return evmc::bytes32{};
     }
 }
 
 uint64_t RemoteState::previous_incarnation(const evmc::address& address) const noexcept {
-    SILKRPC_DEBUG << "RemoteState::previous_incarnation address=" << address << "\n";
+    SILK_DEBUG << "RemoteState::previous_incarnation address=" << address;
     return 0;
 }
 
 std::optional<silkworm::BlockHeader> RemoteState::read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
-    SILKRPC_DEBUG << "RemoteState::read_header block_number=" << block_number << " block_hash=" << block_hash << "\n";
+    SILK_DEBUG << "RemoteState::read_header block_number=" << block_number << " block_hash=" << block_hash;
     try {
         std::future<std::optional<silkworm::BlockHeader>> result{boost::asio::co_spawn(io_context_, async_state_.read_header(block_number, block_hash), boost::asio::use_future)};
         const auto optional_header{result.get()};
-        SILKRPC_DEBUG << "RemoteState::read_header block_number=" << block_number << " block_hash=" << block_hash << "\n";
+        SILK_DEBUG << "RemoteState::read_header block_number=" << block_number << " block_hash=" << block_hash;
         return optional_header;
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "RemoteState::read_header exception: " << e.what() << "\n";
+        SILK_ERROR << "RemoteState::read_header exception: " << e.what();
         return std::nullopt;
     }
 }
 
 bool RemoteState::read_body(uint64_t block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& filled_body) const noexcept {
-    SILKRPC_DEBUG << "RemoteState::read_body block_number=" << block_number << " block_hash=" << block_hash << "\n";
+    SILK_DEBUG << "RemoteState::read_body block_number=" << block_number << " block_hash=" << block_hash;
     try {
         auto result{boost::asio::co_spawn(io_context_, async_state_.read_body(block_number, block_hash, filled_body), boost::asio::use_future)};
-        SILKRPC_DEBUG << "RemoteState::read_body block_number=" << block_number << " block_hash=" << block_hash << "\n";
+        SILK_DEBUG << "RemoteState::read_body block_number=" << block_number << " block_hash=" << block_hash;
         return result.get();
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "RemoteState::read_body exception: " << e.what() << "\n";
+        SILK_ERROR << "RemoteState::read_body exception: " << e.what();
         return false;
     }
 }
 
 std::optional<intx::uint256> RemoteState::total_difficulty(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
-    SILKRPC_DEBUG << "RemoteState::total_difficulty block_number=" << block_number << " block_hash=" << block_hash << "\n";
+    SILK_DEBUG << "RemoteState::total_difficulty block_number=" << block_number << " block_hash=" << block_hash;
     try {
         std::future<std::optional<intx::uint256>> result{boost::asio::co_spawn(io_context_, async_state_.total_difficulty(block_number, block_hash), boost::asio::use_future)};
         const auto optional_total_difficulty{result.get()};
-        SILKRPC_DEBUG << "RemoteState::total_difficulty block_number=" << block_number << " block_hash=" << block_hash << "\n";
+        SILK_DEBUG << "RemoteState::total_difficulty block_number=" << block_number << " block_hash=" << block_hash;
         return optional_total_difficulty;
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "RemoteState::total_difficulty exception: " << e.what() << "\n";
+        SILK_ERROR << "RemoteState::total_difficulty exception: " << e.what();
         return std::nullopt;
     }
 }
 
 evmc::bytes32 RemoteState::state_root_hash() const {
-    SILKRPC_DEBUG << "RemoteState::state_root_hash\n";
+    SILK_DEBUG << "RemoteState::state_root_hash";
     return evmc::bytes32{};
 }
 
 uint64_t RemoteState::current_canonical_block() const {
-    SILKRPC_DEBUG << "RemoteState::current_canonical_block\n";
+    SILK_DEBUG << "RemoteState::current_canonical_block";
     return 0;
 }
 
 std::optional<evmc::bytes32> RemoteState::canonical_hash(uint64_t block_number) const {
-    SILKRPC_DEBUG << "RemoteState::canonical_hash block_number=" << block_number << "\n";
+    SILK_DEBUG << "RemoteState::canonical_hash block_number=" << block_number;
     return std::nullopt;
 }
 

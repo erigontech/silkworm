@@ -18,10 +18,10 @@
 
 #include <filesystem>
 #include <fstream>
-#include <random>
 #include <string>
 
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/core/common/random_number.hpp>
+#include <silkworm/infra/common/log.hpp>
 
 namespace silkworm {
 
@@ -36,23 +36,20 @@ void generate_jwt_token(const std::string& file_path, std::string& jwt_token) {
     std::ofstream write_file;
     write_file.open(file_path);
 
-    // TODO(canepat) use RandomNumber after moving it into infra module
-    std::random_device rand_dev;
-    std::mt19937 rand_gen32{rand_dev()};
-
     // Generate a random 32 bytes hex token ( not including prefix )
+    RandomNumber rnd{0, 15};
     for (int i = 0; i < 64; ++i) {
-        jwt_token += kHexCharacters[rand_gen32() % 16];
+        jwt_token += kHexCharacters[rnd.generate_one()];
     }
-    SILKRPC_LOG << "JWT token created: 0x" << jwt_token << "\n";
-    write_file << "0x" << jwt_token << "\n";
+    SILK_LOG << "JWT token created: 0x" << jwt_token;
+    write_file << "0x" << jwt_token;
     write_file.close();
 }
 
 bool load_jwt_token(const std::string& file_path, std::string& jwt_token) {
     std::ifstream read_file;
     read_file.open(file_path);
-    SILKRPC_LOG << "Reading JWT secret: " << file_path << "\n";
+    SILK_LOG << "Reading JWT secret: " << file_path;
 
     std::getline(read_file, jwt_token);
     read_file.close();
@@ -62,7 +59,7 @@ bool load_jwt_token(const std::string& file_path, std::string& jwt_token) {
     }
 
     if (jwt_token.length() == 64) {
-        SILKRPC_LOG << "JWT secret: 0x" << jwt_token << "\n";
+        SILK_LOG << "JWT secret: 0x" << jwt_token;
         return true;
     }
     // If token is of an incorrect size then we return an empty string

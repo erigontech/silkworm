@@ -16,11 +16,11 @@
 
 #include "body_sequence.hpp"
 
+#include <silkworm/core/common/random_number.hpp>
+#include <silkworm/core/common/singleton.hpp>
 #include <silkworm/core/protocol/validation.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/sync/sentry_client.hpp>
-
-#include "random_number.hpp"
 
 namespace silkworm {
 
@@ -113,7 +113,7 @@ Penalty BodySequence::accept_requested_bodies(BlockBodiesPacket66& packet, const
         }
     }
 
-    SILK_TRACE << "BodySequence: " << count << " body accepted from block " << start_block << " out of "
+    SILK_TRACE << "BodySequence: " << count << " body accepted starting at block " << start_block << " out of "
                << packet.request.size() << " received";
 
     // Process remaining elements in matching_requests invalidating corresponding BodyRequest
@@ -138,12 +138,13 @@ auto BodySequence::request_bodies(time_point_t tp) -> std::shared_ptr<OutboundMe
     if (tp - last_nack_ < SentryClient::kNoPeerDelay)
         return nullptr;
 
+    auto prev_condition = retrieval_condition_;
     seconds_t timeout = SentryClient::kRequestDeadline;
     BlockNum min_block{0};
 
     auto body_request = std::make_shared<OutboundGetBlockBodies>();
     auto& packet = body_request->packet();
-    packet.requestId = RANDOM_NUMBER.generate_one();
+    packet.requestId = Singleton<RandomNumber>::instance().generate_one();
 
     auto penalizations = renew_stale_requests(packet, min_block, tp, timeout);
 
@@ -155,7 +156,12 @@ auto BodySequence::request_bodies(time_point_t tp) -> std::shared_ptr<OutboundMe
     statistics_.requested_items += packet.request.size();
 
     if (packet.request.size() == 0) {
-        SILK_TRACE << "BodySequence, no more bodies to request";
+        retrieval_condition_ = "no more bodies to request";
+        if (retrieval_condition_ != prev_condition) {
+            SILK_TRACE << "BodySequence, no more bodies to request";
+        }
+    } else {
+        retrieval_condition_ = "requesting bodies";
     }
 
     body_request->penalties() = std::move(penalizations);
@@ -196,7 +202,9 @@ auto BodySequence::renew_stale_requests(GetBlockBodiesPacket66& packet, BlockNum
         if (packet.request.size() >= kMaxBlocksPerMessage) break;
     }
 
-    SILK_TRACE << "BodySequence: renewing body requests from block-num " << start_block << " for " << count << " blocks";
+    if (count) {
+        SILK_TRACE << "BodySequence: renewing body requests from block-num " << start_block << " for " << count << " blocks";
+    }
 
     return penalizations;
 }
@@ -230,7 +238,9 @@ void BodySequence::make_new_requests(GetBlockBodiesPacket66& packet, BlockNum& m
         if (packet.request.size() >= kMaxBlocksPerMessage) break;
     }
 
-    SILK_TRACE << "BodySequence: requesting new bodies from block-num " << start_block << " for " << count << " blocks";
+    if (count) {
+        SILK_TRACE << "BodySequence: requesting new bodies from block-num " << start_block << " for " << count << " blocks";
+    }
 }
 
 //! Save headers of witch it has to download bodies

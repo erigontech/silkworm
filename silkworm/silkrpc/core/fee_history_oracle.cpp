@@ -22,7 +22,7 @@
 #include <boost/asio/use_awaitable.hpp>
 
 #include <silkworm/core/protocol/validation.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
@@ -58,7 +58,7 @@ boost::asio::awaitable<FeeHistory> FeeHistoryOracle::fee_history(uint64_t newest
         co_return fee_history;
     }
     if (block_count > kDefaultMaxFeeHistory) {
-        SILKRPC_WARN << "FeeHistoryOracle::fee_history fee history length to long: requested " << block_count << " truncated to " << kDefaultMaxFeeHistory << "\n";
+        SILK_WARN << "FeeHistoryOracle::fee_history fee history length to long: requested " << block_count << " truncated to " << kDefaultMaxFeeHistory;
         block_count = kDefaultMaxFeeHistory;
     }
 

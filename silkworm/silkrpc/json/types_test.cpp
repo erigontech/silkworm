@@ -1148,30 +1148,6 @@ TEST_CASE("serialize chain_traffic", "[silkworm::json][to_json]") {
     })"_json);
 }
 
-TEST_CASE("serialize NodeInfoPorts", "[silkworm::json][to_json]") {
-    silkworm::rpc::NodeInfoPorts ports{6, 7};
-    nlohmann::json j = ports;
-    CHECK(j == R"({
-        "discovery":6,
-        "listener":7
-    })"_json);
-}
-
-TEST_CASE("serialize NodeInfo", "[silkworm::json][to_json]") {
-    silkworm::rpc::NodeInfo node_info{"340", "erigon", "enode", "enr", "[::]:30303", R"({"eth": {"network":5, "difficulty":10790000}})"};
-    nlohmann::json j = node_info;
-    CHECK(j == R"( {
-              "enode":"enode",
-              "enr":"enr",
-              "id":"340",
-              "ip":"enode",
-              "listenAddr":"[::]:30303",
-              "name":"erigon",
-              "ports":{"discovery":0,"listener":0},
-              "protocols":  { "eth":  {"network":5, "difficulty":10790000}}
-    })"_json);
-}
-
 TEST_CASE("serialize issuance", "[silkworm::json][to_json]") {
     silkworm::rpc::Issuance issuance{
         "0x0",
@@ -1193,7 +1169,7 @@ TEST_CASE("serialize issuance", "[silkworm::json][to_json]") {
     })"_json);
 }
 
-TEST_CASE("serialize forkchoice updated reply", "[silkworm::json][to_json]") {
+TEST_CASE("serialize ForkChoiceUpdatedReplyV1", "[silkworm::json][to_json]") {
     silkworm::rpc::PayloadStatus payload_status{
         .status = "VALID",
         .latest_valid_hash = 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32,
@@ -1213,7 +1189,7 @@ TEST_CASE("serialize forkchoice updated reply", "[silkworm::json][to_json]") {
     })"_json);
 }
 
-TEST_CASE("serialize payload status", "[silkworm::json][to_json]") {
+TEST_CASE("serialize PayloadStatusV1", "[silkworm::json][to_json]") {
     silkworm::rpc::PayloadStatus payload_status{
         .status = "VALID",
         .latest_valid_hash = 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32,

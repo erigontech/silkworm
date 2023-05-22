@@ -245,7 +245,6 @@ common::EnodeUrl SentryImpl::make_node_url() const {
 api::api_common::NodeInfo SentryImpl::make_node_info() const {
     return {
         make_node_url(),
-        node_key_.value().public_key(),
         client_id(),
         rlpx_server_.listen_endpoint(),
         settings_.port,

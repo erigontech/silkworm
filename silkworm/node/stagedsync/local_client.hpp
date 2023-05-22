@@ -23,6 +23,7 @@ namespace silkworm::execution {
 namespace asio = boost::asio;
 class Server;
 
+//! A client of 'execution' gRPC interface running in-process together with server.
 class LocalClient : public Client {
   public:
     explicit LocalClient(Server& local_server);
@@ -36,7 +37,7 @@ class LocalClient : public Client {
 
     auto validate_chain(Hash head_block_hash) -> asio::awaitable<ValidationResult> override;
 
-    auto update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash = std::nullopt)
+    auto update_fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash)
         -> asio::awaitable<ForkChoiceApplication> override;
 
     // state
@@ -45,12 +46,13 @@ class LocalClient : public Client {
 
     // header/body retrieval
     auto get_header(Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>> override;
-    auto get_body(Hash block_hash) -> asio::awaitable<BlockBody> override;
+    auto get_body(Hash block_hash) -> asio::awaitable<std::optional<BlockBody>> override;
 
     auto is_canonical(Hash block_hash) -> asio::awaitable<bool> override;
     auto get_block_num(Hash block_hash) -> asio::awaitable<std::optional<BlockNum>> override;
 
     auto get_last_headers(BlockNum limit) -> asio::awaitable<std::vector<BlockHeader>> override;
+    auto get_header_td(Hash, std::optional<BlockNum>) -> asio::awaitable<std::optional<TotalDifficulty>> override;
 
   private:
     Server& local_server_;

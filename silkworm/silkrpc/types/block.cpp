@@ -59,6 +59,9 @@ uint64_t Block::get_block_size() const {
     rlp_head.payload_length = silkworm::rlp::length(block.header);
     rlp_head.payload_length += silkworm::rlp::length(block.transactions);
     rlp_head.payload_length += silkworm::rlp::length(block.ommers);
+    if (block.withdrawals) {
+        rlp_head.payload_length += silkworm::rlp::length(*(block.withdrawals));
+    }
     rlp_head.payload_length += silkworm::rlp::length_of_length(rlp_head.payload_length);
     return rlp_head.payload_length;
 }

@@ -108,8 +108,24 @@ static void match_or_throw(BlockNum block_number, uint64_t received_number) {
     }
 }
 
-RemoteClient::RemoteClient(agrpc::GrpcContext& grpc_context, const std::shared_ptr<grpc::Channel>& channel)
-    : grpc_context_(grpc_context), stub_(::execution::Execution::NewStub(channel)) {}
+RemoteClient::RemoteClient(rpc::ClientContext& context, const RemoteSettings& settings)
+    : context_(context),
+      channel_{::grpc::CreateChannel(settings.target, ::grpc::InsecureChannelCredentials())},
+      stub_(::execution::Execution::NewStub(channel_)) {}
+
+asio::io_context& RemoteClient::get_executor() {
+    return *context_.io_context();
+}
+
+awaitable<BlockNum> RemoteClient::block_progress() {
+    // TODO(canepat) this method must be either added to execution.proto or not used by sync
+    throw std::runtime_error{"RemoteClient::block_progress: not implemented"};
+}
+
+awaitable<BlockId> RemoteClient::last_fork_choice() {
+    // TODO(canepat) this method must be either added to execution.proto or not used by sync
+    throw std::runtime_error{"RemoteClient::last_fork_choice: not implemented"};
+}
 
 awaitable<std::optional<BlockHeader>> RemoteClient::get_header(Hash block_hash) {
     BlockNum block_number = 0;  // proto file support get_header by block number, but we don't use it
@@ -119,7 +135,7 @@ awaitable<std::optional<BlockHeader>> RemoteClient::get_header(Hash block_hash) 
     request.set_allocated_block_hash(rpc::H256_from_bytes32(block_hash).release());
 
     const auto response = co_await rpc::unary_rpc(
-        &::execution::Execution::Stub::AsyncGetHeader, stub_, request, grpc_context_, "failure getting header");
+        &::execution::Execution::Stub::AsyncGetHeader, stub_, request, *context_.grpc_context(), "failure getting header");
 
     if (!response.has_header()) {
         co_return std::nullopt;
@@ -134,7 +150,7 @@ awaitable<std::optional<BlockHeader>> RemoteClient::get_header(Hash block_hash) 
     co_return header;
 }
 
-awaitable<BlockBody> RemoteClient::get_body(Hash block_hash) {
+awaitable<std::optional<BlockBody>> RemoteClient::get_body(Hash block_hash) {
     BlockNum block_number = 0;  // proto file support get_body by block number, but we don't use it
     BlockBody body;
     ::execution::GetSegmentRequest request;
@@ -142,7 +158,11 @@ awaitable<BlockBody> RemoteClient::get_body(Hash block_hash) {
     request.set_allocated_block_hash(rpc::H256_from_bytes32(block_hash).release());
 
     const auto response = co_await rpc::unary_rpc(
-        &::execution::Execution::Stub::AsyncGetBody, stub_, request, grpc_context_, "failure getting body");
+        &::execution::Execution::Stub::AsyncGetBody, stub_, request, *context_.grpc_context(), "failure getting body");
+
+    if (!response.has_body()) {
+        co_return std::nullopt;
+    }
 
     const auto& received_body = response.body();
     match_or_throw(block_hash, received_body.block_hash());
@@ -184,7 +204,7 @@ awaitable<void> RemoteClient::insert_headers(const BlockVector& blocks) {
         serialize_header(b->header, header);
     }
     co_await rpc::unary_rpc(
-        &::execution::Execution::Stub::AsyncInsertHeaders, stub_, request, grpc_context_, "failure inserting headers");
+        &::execution::Execution::Stub::AsyncInsertHeaders, stub_, request, *context_.grpc_context(), "failure inserting headers");
 }
 
 awaitable<void> RemoteClient::insert_bodies(const BlockVector& blocks) {
@@ -213,7 +233,7 @@ awaitable<void> RemoteClient::insert_bodies(const BlockVector& blocks) {
         }
     }
     co_await rpc::unary_rpc(
-        &::execution::Execution::Stub::AsyncInsertBodies, stub_, request, grpc_context_, "failure inserting bodies");
+        &::execution::Execution::Stub::AsyncInsertBodies, stub_, request, *context_.grpc_context(), "failure inserting bodies");
 }
 
 awaitable<void> RemoteClient::insert_blocks(const BlockVector&) {
@@ -223,7 +243,7 @@ awaitable<void> RemoteClient::insert_blocks(const BlockVector&) {
 awaitable<bool> RemoteClient::is_canonical(Hash block_hash) {
     std::unique_ptr<types::H256> request = rpc::H256_from_bytes32(block_hash);
     const auto response = co_await rpc::unary_rpc(
-        &::execution::Execution::Stub::AsyncIsCanonicalHash, stub_, *request, grpc_context_, "failure checking canonical hash");
+        &::execution::Execution::Stub::AsyncIsCanonicalHash, stub_, *request, *context_.grpc_context(), "failure checking canonical hash");
 
     co_return response.canonical();
 }
@@ -231,16 +251,20 @@ awaitable<bool> RemoteClient::is_canonical(Hash block_hash) {
 asio::awaitable<std::optional<BlockNum>> RemoteClient::get_block_num(Hash block_hash) {
     std::unique_ptr<types::H256> request = rpc::H256_from_bytes32(block_hash);
     const auto response = co_await rpc::unary_rpc(
-        &::execution::Execution::Stub::AsyncGetHeaderHashNumber, stub_, *request, grpc_context_, "failure getting block number");
+        &::execution::Execution::Stub::AsyncGetHeaderHashNumber, stub_, *request, *context_.grpc_context(), "failure getting block number");
 
     if (!response.has_block_number()) co_return std::nullopt;
     co_return response.block_number();
 }
 
+asio::awaitable<std::optional<TotalDifficulty>> RemoteClient::get_header_td(Hash, std::optional<BlockNum>) {
+    throw std::runtime_error{"RemoteClient::get_header_td not implemented"};
+}
+
 awaitable<ValidationResult> RemoteClient::validate_chain(Hash head_block_hash) {
     std::unique_ptr<types::H256> request = rpc::H256_from_bytes32(head_block_hash);
     const auto response = co_await rpc::unary_rpc(
-        &::execution::Execution::Stub::AsyncValidateChain, stub_, *request, grpc_context_, "failure verifying chain");
+        &::execution::Execution::Stub::AsyncValidateChain, stub_, *request, *context_.grpc_context(), "failure verifying chain");
 
     ValidationResult result;
     switch (response.validation_status()) {
@@ -265,11 +289,16 @@ awaitable<ValidationResult> RemoteClient::validate_chain(Hash head_block_hash) {
 awaitable<ForkChoiceApplication> RemoteClient::update_fork_choice(Hash head_block_hash, std::optional<Hash> /*finalized_block_hash*/) {
     std::unique_ptr<types::H256> request = rpc::H256_from_bytes32(head_block_hash);
     const auto response = co_await rpc::unary_rpc(
-        &::execution::Execution::Stub::AsyncUpdateForkChoice, stub_, *request, grpc_context_, "failure updating fork choice");
+        &::execution::Execution::Stub::AsyncUpdateForkChoice, stub_, *request, *context_.grpc_context(), "failure updating fork choice");
 
     ForkChoiceApplication result{.success = response.success(), .current_head = hash_from_H256(response.latest_valid_hash())};
 
     co_return result;
+}
+
+asio::awaitable<std::vector<BlockHeader>> RemoteClient::get_last_headers(BlockNum /*limit*/) {
+    // TODO(canepat) this method must be either added to execution.proto or not used by sync
+    throw std::runtime_error{"RemoteClient::get_last_headers not implemented"};
 }
 
 }  // namespace silkworm::execution

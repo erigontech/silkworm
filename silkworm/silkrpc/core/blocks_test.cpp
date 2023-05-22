@@ -25,8 +25,9 @@
 #include <gmock/gmock.h>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/tables.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
+// #include <silkworm/infra/test/log.hpp>
 #include <silkworm/silkrpc/stagedsync/stages.hpp>
 #include <silkworm/silkrpc/test/mock_database_reader.hpp>
 
@@ -54,7 +55,7 @@ static silkworm::Bytes kHeader{*silkworm::from_hex(
     "00000000000000000000000000000000000000000000880000000000000000")};
 
 TEST_CASE("get_block_number latest_required", "[silkrpc][core][blocks]") {
-    SILKRPC_LOG_STREAMS(null_stream(), null_stream());
+    // SILK_LOG_STREAMS(test::null_stream(), test::null_stream());
     const silkworm::ByteView kExecutionStage{stages::kExecution};
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool pool{1};
@@ -170,7 +171,7 @@ TEST_CASE("get_block_number latest_required", "[silkrpc][core][blocks]") {
 }
 
 TEST_CASE("get_block_number ", "[silkrpc][core][blocks]") {
-    SILKRPC_LOG_STREAMS(null_stream(), null_stream());
+    // SILK_LOG_STREAMS(null_stream(), null_stream());
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool pool{1};
 
@@ -183,7 +184,7 @@ TEST_CASE("get_block_number ", "[silkrpc][core][blocks]") {
 }
 
 TEST_CASE("get_block_number_by_tag", "[silkrpc][core][blocks]") {
-    SILKRPC_LOG_STREAMS(null_stream(), null_stream());
+    // SILK_LOG_STREAMS(null_stream(), null_stream());
     const silkworm::ByteView kExecutionStage{stages::kExecution};
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool pool{1};

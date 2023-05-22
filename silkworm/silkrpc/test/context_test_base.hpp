@@ -26,22 +26,11 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/use_future.hpp>
 
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/test/log.hpp>
 
 namespace silkworm::rpc::test {
-
-//! Temporary addition: this must be removed when refactoring logging to one unique framework
-class SetLogVerbosityGuard {
-  public:
-    explicit SetLogVerbosityGuard(LogLevel new_level) : current_level_(log_verbosity_) {
-        SILKRPC_LOG_VERBOSITY(new_level);
-    }
-    ~SetLogVerbosityGuard() { SILKRPC_LOG_VERBOSITY(current_level_); }
-
-  private:
-    LogLevel current_level_;
-};
 
 class ContextTestBase {
   public:
@@ -63,7 +52,7 @@ class ContextTestBase {
 
     ~ContextTestBase();
 
-    SetLogVerbosityGuard log_guard_;
+    silkworm::test::SetLogVerbosityGuard log_guard_;
     ClientContext context_;
     boost::asio::io_context& io_context_;
     agrpc::GrpcContext& grpc_context_;

@@ -16,9 +16,6 @@
 
 #pragma once
 
-#include <memory>
-#include <vector>
-
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/thread_pool.hpp>
@@ -39,26 +36,30 @@ using boost::asio::awaitable;
 
 class EngineRpcApi {
   public:
-    EngineRpcApi(std::unique_ptr<ethdb::Database>& database, std::unique_ptr<ethbackend::BackEnd>& backend)
+    EngineRpcApi(ethdb::Database* database, ethbackend::BackEnd* backend)
         : database_{database}, backend_{backend} {}
     explicit EngineRpcApi(boost::asio::io_context& io_context)
         : EngineRpcApi(
-              use_private_service<ethdb::Database>(io_context),
-              use_private_service<ethbackend::BackEnd>(io_context)) {}
+              must_use_private_service<ethdb::Database>(io_context),
+              must_use_private_service<ethbackend::BackEnd>(io_context)) {}
     virtual ~EngineRpcApi() = default;
 
     EngineRpcApi(const EngineRpcApi&) = delete;
     EngineRpcApi& operator=(const EngineRpcApi&) = delete;
 
   protected:
+    awaitable<void> handle_engine_exchange_capabilities(const nlohmann::json& request, nlohmann::json& reply);
     awaitable<void> handle_engine_get_payload_v1(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_engine_get_payload_v2(const nlohmann::json& request, nlohmann::json& reply);
     awaitable<void> handle_engine_new_payload_v1(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_engine_new_payload_v2(const nlohmann::json& request, nlohmann::json& reply);
     awaitable<void> handle_engine_forkchoice_updated_v1(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_engine_forkchoice_updated_v2(const nlohmann::json& request, nlohmann::json& reply);
     awaitable<void> handle_engine_exchange_transition_configuration_v1(const nlohmann::json& request, nlohmann::json& reply);
 
   private:
-    std::unique_ptr<ethdb::Database>& database_;
-    std::unique_ptr<ethbackend::BackEnd>& backend_;
+    ethdb::Database* database_;
+    ethbackend::BackEnd* backend_;
 
     friend class silkworm::http::RequestHandler;
 };

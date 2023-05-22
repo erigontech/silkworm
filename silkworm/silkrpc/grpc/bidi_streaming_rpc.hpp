@@ -30,7 +30,7 @@
 #include <boost/asio/experimental/append.hpp>
 #include <grpcpp/grpcpp.h>
 
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/grpc/error.hpp>
 #include <silkworm/silkrpc/grpc/util.hpp>
 
@@ -57,12 +57,12 @@ class BidiStreamingRpc<PrepareAsync> {
 
         template <typename Op>
         void operator()(Op& op, bool ok) {
-            SILKRPC_TRACE << "BidiStreamingRpc::ReadNext(op, ok): " << this << " START\n";
+            SILK_TRACE << "BidiStreamingRpc::ReadNext(op, ok): " << this << " START";
             if (ok) {
-                SILKRPC_DEBUG << "BidiStreamingRpc::ReadNext(op, ok): rw=" << self_.reader_writer_.get() << " before read\n";
+                SILK_DEBUG << "BidiStreamingRpc::ReadNext(op, ok): rw=" << self_.reader_writer_.get() << " before read";
                 agrpc::read(self_.reader_writer_, self_.reply_,
                             boost::asio::bind_executor(self_.grpc_context_, boost::asio::append(std::move(op), detail::ReadDoneTag{})));
-                SILKRPC_DEBUG << "BidiStreamingRpc::ReadNext(op, ok): rw=" << self_.reader_writer_.get() << " after read\n";
+                SILK_DEBUG << "BidiStreamingRpc::ReadNext(op, ok): rw=" << self_.reader_writer_.get() << " after read";
             } else {
                 self_.finish(std::move(op));
             }
@@ -70,7 +70,7 @@ class BidiStreamingRpc<PrepareAsync> {
 
         template <typename Op>
         void operator()(Op& op, bool ok, detail::ReadDoneTag) {
-            SILKRPC_TRACE << "BidiStreamingRpc::ReadNext(op, ok, ReadDoneTag): " << this << " ok=" << ok << "\n";
+            SILK_TRACE << "BidiStreamingRpc::ReadNext(op, ok, ReadDoneTag): " << this << " ok=" << ok;
             if (ok) {
                 op.complete({}, self_.reply_);
             } else {
@@ -80,7 +80,7 @@ class BidiStreamingRpc<PrepareAsync> {
 
         template <typename Op>
         void operator()(Op& op, const boost::system::error_code& ec) {
-            SILKRPC_TRACE << "BidiStreamingRpc::ReadNext(op, ec): " << this << " ec=" << ec << "\n";
+            SILK_TRACE << "BidiStreamingRpc::ReadNext(op, ec): " << this << " ec=" << ec;
             op.complete(ec, self_.reply_);
         }
     };
@@ -88,10 +88,10 @@ class BidiStreamingRpc<PrepareAsync> {
     struct RequestAndRead : ReadNext {
         template <typename Op>
         void operator()(Op& op) {
-            SILKRPC_TRACE << "BidiStreamingRpc::RequestAndRead::initiate rw=" << this->self_.reader_writer_.get() << " START\n";
+            SILK_TRACE << "BidiStreamingRpc::RequestAndRead::initiate rw=" << this->self_.reader_writer_.get() << " START";
             agrpc::request(PrepareAsync, this->self_.stub_, this->self_.context_, this->self_.reader_writer_,
                            boost::asio::bind_executor(this->self_.grpc_context_, std::move(op)));
-            SILKRPC_TRACE << "BidiStreamingRpc::RequestAndRead::initiate rw=" << this->self_.reader_writer_.get() << " END\n";
+            SILK_TRACE << "BidiStreamingRpc::RequestAndRead::initiate rw=" << this->self_.reader_writer_.get() << " END";
         }
 
         using ReadNext::operator();
@@ -102,7 +102,7 @@ class BidiStreamingRpc<PrepareAsync> {
 
         template <typename Op>
         void operator()(Op& op) {
-            SILKRPC_TRACE << "BidiStreamingRpc::WriteAndRead::initiate " << this << "\n";
+            SILK_TRACE << "BidiStreamingRpc::WriteAndRead::initiate " << this;
             if (this->self_.reader_writer_) {
                 agrpc::write(this->self_.reader_writer_, request, boost::asio::bind_executor(this->self_.grpc_context_, std::move(op)));
             } else {
@@ -119,7 +119,7 @@ class BidiStreamingRpc<PrepareAsync> {
         template <typename Op>
         void operator()(Op& op) {
             if (self_.status_) {
-                SILKRPC_DEBUG << "BidiStreamingRpc::WritesDoneAndFinish " << this << " already finished\n";
+                SILK_DEBUG << "BidiStreamingRpc::WritesDoneAndFinish " << this << " already finished";
                 if (self_.status_->ok()) {
                     op.complete({});
                 } else {
@@ -127,7 +127,7 @@ class BidiStreamingRpc<PrepareAsync> {
                 }
                 return;
             }
-            SILKRPC_TRACE << "BidiStreamingRpc::WritesDoneAndFinish::initiate " << this << "\n";
+            SILK_TRACE << "BidiStreamingRpc::WritesDoneAndFinish::initiate " << this;
             if (self_.reader_writer_) {
                 agrpc::writes_done(self_.reader_writer_, boost::asio::bind_executor(self_.grpc_context_, std::move(op)));
             } else {
@@ -137,7 +137,7 @@ class BidiStreamingRpc<PrepareAsync> {
 
         template <typename Op>
         void operator()(Op& op, bool ok) {
-            SILKRPC_TRACE << "BidiStreamingRpc::WritesDoneAndFinish::completed " << this << " ok=" << ok << "\n";
+            SILK_TRACE << "BidiStreamingRpc::WritesDoneAndFinish::completed " << this << " ok=" << ok;
             self_.finish(std::move(op));
         }
 
@@ -152,7 +152,7 @@ class BidiStreamingRpc<PrepareAsync> {
 
         template <typename Op>
         void operator()(Op& op) {
-            SILKRPC_TRACE << "BidiStreamingRpc::Finish::initiate " << this << "\n";
+            SILK_TRACE << "BidiStreamingRpc::Finish::initiate " << this;
             self_.status_ = std::make_optional<grpc::Status>();
             agrpc::finish(self_.reader_writer_, *self_.status_, boost::asio::bind_executor(self_.grpc_context_, std::move(op)));
         }
@@ -164,7 +164,7 @@ class BidiStreamingRpc<PrepareAsync> {
                 self_.status_ = grpc::Status{grpc::StatusCode::UNKNOWN, "unknown error in finish"};
             }
 
-            SILKRPC_DEBUG << "BidiStreamingRpc::Finish::completed ok=" << ok << " " << *self_.status_ << "\n";
+            SILK_DEBUG << "BidiStreamingRpc::Finish::completed ok=" << ok << " " << *self_.status_;
             if (self_.status_->ok()) {
                 op.complete({});
             } else {

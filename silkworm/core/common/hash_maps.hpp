@@ -16,16 +16,15 @@
 
 #pragma once
 
-#if defined(__wasm__)
-
-#include <unordered_map>
-#include <unordered_set>
-
-#else
+#if defined(SILKWORM_CORE_USE_ABSEIL)
 
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
-#include <absl/container/node_hash_map.h>
+
+#else
+
+#include <unordered_map>
+#include <unordered_set>
 
 #endif
 
@@ -38,16 +37,20 @@ The following aliases are defined:
 
 FlatHashMap – a hash map that might not have pointer stability.
 FlatHashSet – a hash set that might not have pointer stability.
-NodeHashMap – a hash map guaranteed to have pointer stability.
 
 See https://abseil.io/docs/cpp/guides/container#hash-tables
 and https://abseil.io/docs/cpp/guides/container#fn:pointer-stability
-
-N.B. FlatHashMap is generally faster than NodeHashMap,
-so prefer it unless you need pointer stability.
 */
 
-#if defined(__wasm__)
+#if defined(SILKWORM_CORE_USE_ABSEIL)
+
+template <class K, class V>
+using FlatHashMap = absl::flat_hash_map<K, V>;
+
+template <class T>
+using FlatHashSet = absl::flat_hash_set<T>;
+
+#else
 
 // Abseil is not compatible with Wasm due to its mutli-threading features,
 // at least not under CMake, but see
@@ -58,20 +61,6 @@ using FlatHashMap = std::unordered_map<K, V>;
 
 template <class T>
 using FlatHashSet = std::unordered_set<T>;
-
-template <class K, class V>
-using NodeHashMap = std::unordered_map<K, V>;
-
-#else
-
-template <class K, class V>
-using FlatHashMap = absl::flat_hash_map<K, V>;
-
-template <class T>
-using FlatHashSet = absl::flat_hash_set<T>;
-
-template <class K, class V>
-using NodeHashMap = absl::node_hash_map<K, V>;
 
 #endif
 

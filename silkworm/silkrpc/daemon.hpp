@@ -22,12 +22,12 @@
 
 #include <boost/asio/thread_pool.hpp>
 
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
+#include <silkworm/infra/grpc/common/version.hpp>
 #include <silkworm/silkrpc/common/constants.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_changes_stream.hpp>
 #include <silkworm/silkrpc/http/server.hpp>
-#include <silkworm/silkrpc/protocol/version.hpp>
 
 namespace silkworm::rpc {
 
@@ -39,9 +39,9 @@ struct DaemonSettings {
     std::string target;       // backend_kv_address
     uint32_t num_contexts;
     uint32_t num_workers;
-    LogLevel log_verbosity;
+    log::Level log_verbosity;
     concurrency::WaitMode wait_mode;
-    std::string jwt_secret_filename;
+    std::optional<std::string> jwt_secret_filename;
 };
 
 struct DaemonInfo {
@@ -59,10 +59,12 @@ class Daemon {
   public:
     static int run(const DaemonSettings& settings, const DaemonInfo& info = {});
 
-    explicit Daemon(const DaemonSettings& settings, const std::string& jwt_secret);
+    explicit Daemon(DaemonSettings settings);
 
     Daemon(const Daemon&) = delete;
     Daemon& operator=(const Daemon&) = delete;
+
+    void add_backend_service(std::unique_ptr<ethbackend::BackEnd>&& backend);
 
     DaemonChecklist run_checklist();
 
@@ -79,7 +81,7 @@ class Daemon {
     void add_shared_services();
 
     //! The RPC daemon configuration settings.
-    const DaemonSettings& settings_;
+    DaemonSettings settings_;
 
     //! The factory of gRPC client-side channels.
     ChannelFactory create_channel_;
@@ -103,7 +105,7 @@ class Daemon {
     std::unique_ptr<ethdb::kv::StateChangesStream> state_changes_stream_;
 
     //! The secret key for communication from CL & EL
-    const std::string& jwt_secret_;
+    std::optional<std::string> jwt_secret_;
 };
 
 }  // namespace silkworm::rpc

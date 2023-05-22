@@ -23,7 +23,7 @@
 #include <cbor/listener.h>
 #include <nlohmann/json.hpp>
 
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkworm::rpc {
@@ -180,7 +180,7 @@ bool cbor_decode(const silkworm::Bytes& bytes, std::vector<Log>& logs) {
     decoder.run();
     const auto decode_success = listener.success();
     if (!decode_success) {
-        SILKRPC_ERROR << "cbor_decode<std::vector<Log>> unexpected cbor: wrong number of logs\n";
+        SILK_ERROR << "cbor_decode<std::vector<Log>> unexpected cbor: wrong number of logs";
     }
     return decode_success;
 }
@@ -190,12 +190,12 @@ bool cbor_decode(const silkworm::Bytes& bytes, std::vector<Receipt>& receipts) {
         return false;
     }
     auto json = nlohmann::json::from_cbor(bytes);
-    SILKRPC_TRACE << "cbor_decode<std::vector<Receipt>> json: " << json.dump() << "\n";
+    SILK_TRACE << "cbor_decode<std::vector<Receipt>> json: " << json.dump();
     if (json.is_array()) {
         receipts = json.get<std::vector<Receipt>>();
         return true;
     } else {
-        SILKRPC_ERROR << "cbor_decode<std::vector<Receipt>> unexpected json: " << json.dump() << "\n";
+        SILK_ERROR << "cbor_decode<std::vector<Receipt>> unexpected json: " << json.dump();
         return false;
     }
 }

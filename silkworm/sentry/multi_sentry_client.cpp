@@ -32,9 +32,9 @@
 
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/parallel_group_utils.hpp>
+#include <silkworm/infra/concurrency/timeout.hpp>
 #include <silkworm/sentry/api/api_common/service.hpp>
 #include <silkworm/sentry/common/atomic_value.hpp>
-#include <silkworm/sentry/common/timeout.hpp>
 
 namespace silkworm::sentry {
 
@@ -72,14 +72,14 @@ class MultiSentryClientImpl : public api::api_common::Service {
         auto group_wait = group.async_wait(wait_for_one_error(), use_awaitable);
 
         try {
-            auto results = co_await (std::move(group_wait) || common::Timeout::after(timeout));
+            auto results = co_await (std::move(group_wait) || common::concurrency::timeout(timeout));
 
             // std::vector<size_t> order;
             // std::vector<std::exception_ptr> exceptions;
             auto [order, exceptions] = std::get<0>(std::move(results));
 
             concurrency::rethrow_first_exception_if_any(exceptions, order);
-        } catch (const common::Timeout::ExpiredError&) {
+        } catch (const common::concurrency::TimeoutExpiredError&) {
         }
     }
 

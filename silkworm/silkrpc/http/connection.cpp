@@ -25,34 +25,33 @@
 #include <exception>
 #include <fstream>
 #include <string_view>
-#include <utility>
 
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/system/error_code.hpp>
 
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkworm::rpc::http {
 
 Connection::Connection(boost::asio::io_context& io_context,
-                       boost::asio::thread_pool& workers,
+                       commands::RpcApi& api,
                        commands::RpcApiTable& handler_table,
                        std::optional<std::string> jwt_secret)
     : socket_{io_context},
-      request_handler_{io_context, workers, socket_, handler_table, std::move(jwt_secret)},
+      request_handler_{socket_, api, handler_table, std::move(jwt_secret)},
       buffer_{} {
     request_.content.reserve(kRequestContentInitialCapacity);
     request_.headers.reserve(kRequestHeadersInitialCapacity);
     request_.method.reserve(kRequestMethodInitialCapacity);
     request_.uri.reserve(kRequestUriInitialCapacity);
-    SILKRPC_DEBUG << "Connection::Connection socket " << &socket_ << " created\n";
+    SILK_DEBUG << "Connection::Connection socket " << &socket_ << " created";
 }
 
 Connection::~Connection() {
     socket_.close();
-    SILKRPC_DEBUG << "Connection::~Connection socket " << &socket_ << " deleted\n";
+    SILK_DEBUG << "Connection::~Connection socket " << &socket_ << " deleted";
 }
 
 boost::asio::awaitable<void> Connection::read_loop() {
@@ -63,34 +62,29 @@ boost::asio::awaitable<void> Connection::read_loop() {
         }
     } catch (const boost::system::system_error& se) {
         if (se.code() == boost::asio::error::eof || se.code() == boost::asio::error::connection_reset || se.code() == boost::asio::error::broken_pipe) {
-            SILKRPC_DEBUG << "Connection::read_loop close from client with code: " << se.code() << "\n"
-                          << std::flush;
+            SILK_DEBUG << "Connection::read_loop close from client with code: " << se.code();
         } else if (se.code() != boost::asio::error::operation_aborted) {
-            SILKRPC_ERROR << "Connection::read_loop system_error: " << se.what() << "\n"
-                          << std::flush;
+            SILK_ERROR << "Connection::read_loop system_error: " << se.what();
             std::rethrow_exception(std::make_exception_ptr(se));
         } else {
-            SILKRPC_DEBUG << "Connection::read_loop operation_aborted: " << se.what() << "\n"
-                          << std::flush;
+            SILK_DEBUG << "Connection::read_loop operation_aborted: " << se.what();
         }
     } catch (const std::exception& e) {
-        SILKRPC_ERROR << "Connection::read_loop exception: " << e.what() << "\n"
-                      << std::flush;
+        SILK_ERROR << "Connection::read_loop exception: " << e.what();
         std::rethrow_exception(std::make_exception_ptr(e));
     }
 }
 
 boost::asio::awaitable<void> Connection::do_read() {
-    SILKRPC_DEBUG << "Connection::do_read going to read...\n"
-                  << std::flush;
+    SILK_DEBUG << "Connection::do_read going to read...";
     std::size_t bytes_read = co_await socket_.async_read_some(boost::asio::buffer(buffer_), boost::asio::use_awaitable);
-    SILKRPC_DEBUG << "Connection::do_read bytes_read: " << bytes_read << "\n";
-    SILKRPC_TRACE << "Connection::do_read buffer: " << std::string_view{static_cast<const char*>(buffer_.data()), bytes_read} << "\n";
+    SILK_DEBUG << "Connection::do_read bytes_read: " << bytes_read;
+    SILK_TRACE << "Connection::do_read buffer: " << std::string_view{static_cast<const char*>(buffer_.data()), bytes_read};
 
     RequestParser::ResultType result = request_parser_.parse(request_, buffer_.data(), buffer_.data() + bytes_read);
 
     if (result == RequestParser::ResultType::good) {
-        co_await request_handler_.handle_user_request(request_);
+        co_await request_handler_.handle(request_);
         clean();
     } else if (result == RequestParser::ResultType::bad) {
         reply_ = Reply::stock_reply(StatusType::bad_request);
@@ -104,11 +98,9 @@ boost::asio::awaitable<void> Connection::do_read() {
 }
 
 boost::asio::awaitable<void> Connection::do_write() {
-    SILKRPC_DEBUG << "Connection::do_write reply: " << reply_.content << "\n"
-                  << std::flush;
+    SILK_DEBUG << "Connection::do_write reply: " << reply_.content;
     const auto bytes_transferred = co_await boost::asio::async_write(socket_, reply_.to_buffers(), boost::asio::use_awaitable);
-    SILKRPC_TRACE << "Connection::do_write bytes_transferred: " << bytes_transferred << "\n"
-                  << std::flush;
+    SILK_TRACE << "Connection::do_write bytes_transferred: " << bytes_transferred;
 }
 
 void Connection::clean() {

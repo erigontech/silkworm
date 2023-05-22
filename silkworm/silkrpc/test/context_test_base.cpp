@@ -19,16 +19,17 @@
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
 #include <silkworm/silkrpc/common/block_cache.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/core/filter_storage.hpp>
 #include <silkworm/silkrpc/ethbackend/remote_backend.hpp>
 #include <silkworm/silkrpc/ethdb/kv/remote_database.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
+#include <silkworm/silkrpc/txpool/miner.hpp>
+#include <silkworm/silkrpc/txpool/transaction_pool.hpp>
 
 namespace silkworm::rpc::test {
 
 ContextTestBase::ContextTestBase()
-    : log_guard_{LogLevel::None},
+    : log_guard_{log::Level::kNone},
       context_{0},
       io_context_{*context_.io_context()},
       grpc_context_{*context_.grpc_context()},
@@ -39,6 +40,8 @@ ContextTestBase::ContextTestBase()
     auto grpc_channel{::grpc::CreateChannel("localhost:12345", ::grpc::InsecureChannelCredentials())};
     add_private_service<ethdb::Database>(io_context_, std::make_unique<ethdb::kv::RemoteDatabase>(grpc_context_, grpc_channel));
     add_private_service<ethbackend::BackEnd>(io_context_, std::make_unique<ethbackend::RemoteBackEnd>(io_context_, grpc_channel, grpc_context_));
+    add_private_service<txpool::Miner>(io_context_, std::make_unique<txpool::Miner>(io_context_, grpc_channel, grpc_context_));
+    add_private_service<txpool::TransactionPool>(io_context_, std::make_unique<txpool::TransactionPool>(io_context_, grpc_channel, grpc_context_));
 }
 
 ContextTestBase::~ContextTestBase() {

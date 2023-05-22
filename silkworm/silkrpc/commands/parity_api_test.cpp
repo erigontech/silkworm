@@ -26,7 +26,7 @@ using Catch::Matchers::Message;
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("ParityRpcApi::ParityRpcApi", "[silkrpc][erigon_api]") {
     boost::asio::io_context ioc;
-    CHECK_NOTHROW(ParityRpcApi{ioc});
+    CHECK_THROWS_AS(ParityRpcApi(ioc), std::logic_error);
 }
 #endif  // SILKWORM_SANITIZE
 

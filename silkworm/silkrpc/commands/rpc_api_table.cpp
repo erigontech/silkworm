@@ -18,8 +18,8 @@
 
 #include <cstring>
 
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/constants.hpp>
-#include <silkworm/silkrpc/common/log.hpp>
 #include <silkworm/silkrpc/http/methods.hpp>
 
 namespace silkworm::rpc::commands {
@@ -87,7 +87,7 @@ void RpcApiTable::add_handlers(const std::string& api_namespace) {
     } else if (api_namespace == kOtterscanApiNamespace) {
         add_ots_handlers();
     } else {
-        SILKRPC_WARN << "Server::add_handlers invalid namespace [" << api_namespace << "] ignored\n";
+        SILK_WARN << "Server::add_handlers invalid namespace [" << api_namespace << "] ignored";
     }
 }
 
@@ -158,7 +158,6 @@ void RpcApiTable::add_eth_handlers() {
     method_handlers_[http::method::k_eth_getTransactionReceiptsByBlock] = &commands::RpcApi::handle_parity_get_block_receipts;
     method_handlers_[http::method::k_eth_maxPriorityFeePerGas] = &commands::RpcApi::handle_eth_max_priority_fee_per_gas;
     method_handlers_[http::method::k_eth_feeHistory] = &commands::RpcApi::handle_fee_history;
-    // method_handlers_glaze_[http::method::k_eth_call] = &commands::RpcApi::handle_eth_call_original;
 
     // GLAZE methods
     method_handlers_glaze_[http::method::k_eth_getLogs] = &commands::RpcApi::handle_eth_get_logs;
@@ -207,9 +206,13 @@ void RpcApiTable::add_web3_handlers() {
 }
 
 void RpcApiTable::add_engine_handlers() {
+    method_handlers_[http::method::k_engine_exchangeCapabilities] = &commands::RpcApi::handle_engine_exchange_capabilities;
     method_handlers_[http::method::k_engine_getPayloadV1] = &commands::RpcApi::handle_engine_get_payload_v1;
+    method_handlers_[http::method::k_engine_getPayloadV2] = &commands::RpcApi::handle_engine_get_payload_v2;
     method_handlers_[http::method::k_engine_newPayloadV1] = &commands::RpcApi::handle_engine_new_payload_v1;
+    method_handlers_[http::method::k_engine_newPayloadV2] = &commands::RpcApi::handle_engine_new_payload_v2;
     method_handlers_[http::method::k_engine_forkchoiceUpdatedV1] = &commands::RpcApi::handle_engine_forkchoice_updated_v1;
+    method_handlers_[http::method::k_engine_forkchoiceUpdatedV2] = &commands::RpcApi::handle_engine_forkchoice_updated_v2;
     method_handlers_[http::method::k_engine_exchangeTransitionConfiguration] = &commands::RpcApi::handle_engine_exchange_transition_configuration_v1;
 }
 
@@ -221,11 +224,12 @@ void RpcApiTable::add_txpool_handlers() {
 void RpcApiTable::add_ots_handlers() {
     method_handlers_[http::method::k_ots_getApiLevel] = &commands::RpcApi::handle_ots_get_api_level;
     method_handlers_[http::method::k_ots_hasCode] = &commands::RpcApi::handle_ots_has_code;
-    method_handlers_[http::method::k_ots_getBlockDetails] = &commands::RpcApi::handle_ots_getBlockDetails;
-    method_handlers_[http::method::k_ots_getBlockDetailsByHash] = &commands::RpcApi::handle_ots_getBlockDetailsByHash;
-    method_handlers_[http::method::k_ots_getBlockTransactions] = &commands::RpcApi::handle_ots_getBlockTransactions;
-    method_handlers_[http::method::k_ots_getTransactionBySenderAndNonce] = &commands::RpcApi::handle_ots_getTransactionBySenderAndNonce;
-    method_handlers_[http::method::k_ots_getContractCreator] = &commands::RpcApi::handle_ots_getContractCreator;
+    method_handlers_[http::method::k_ots_getBlockDetails] = &commands::RpcApi::handle_ots_get_block_details;
+    method_handlers_[http::method::k_ots_getBlockDetailsByHash] = &commands::RpcApi::handle_ots_get_block_details_by_hash;
+    method_handlers_[http::method::k_ots_getBlockTransactions] = &commands::RpcApi::handle_ots_get_block_transactions;
+    method_handlers_[http::method::k_ots_getTransactionBySenderAndNonce] = &commands::RpcApi::handle_ots_get_transaction_by_sender_and_nonce;
+    method_handlers_[http::method::k_ots_getContractCreator] = &commands::RpcApi::handle_ots_get_contract_creator;
+    method_handlers_[http::method::k_ots_traceTransaction] = &commands::RpcApi::handle_ots_trace_transaction;
 }
 
 }  // namespace silkworm::rpc::commands

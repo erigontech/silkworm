@@ -19,32 +19,32 @@
 #include <climits>
 #include <exception>
 
-#include <silkworm/silkrpc/common/log.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 
 namespace silkworm::rpc::ethdb {
 
 awaitable<KeyValue> TransactionDatabase::get(const std::string& table, ByteView key) const {
     const auto cursor = co_await tx_.cursor(table);
-    SILKRPC_TRACE << "TransactionDatabase::get cursor_id: " << cursor->cursor_id() << "\n";
+    SILK_TRACE << "TransactionDatabase::get cursor_id: " << cursor->cursor_id();
     const auto kv_pair = co_await cursor->seek(key);
     co_return kv_pair;
 }
 
 awaitable<silkworm::Bytes> TransactionDatabase::get_one(const std::string& table, ByteView key) const {
     const auto cursor = co_await tx_.cursor(table);
-    SILKRPC_TRACE << "TransactionDatabase::get_one cursor_id: " << cursor->cursor_id() << "\n";
+    SILK_TRACE << "TransactionDatabase::get_one cursor_id: " << cursor->cursor_id();
     const auto kv_pair = co_await cursor->seek_exact(key);
     co_return kv_pair.value;
 }
 
 awaitable<std::optional<Bytes>> TransactionDatabase::get_both_range(const std::string& table, ByteView key, ByteView subkey) const {
     const auto cursor = co_await tx_.cursor_dup_sort(table);
-    SILKRPC_TRACE << "TransactionDatabase::get_both_range cursor_id: " << cursor->cursor_id() << "\n";
+    SILK_TRACE << "TransactionDatabase::get_both_range cursor_id: " << cursor->cursor_id();
     const auto value{co_await cursor->seek_both(key, subkey)};
-    SILKRPC_DEBUG << "TransactionDatabase::get_both_range value: " << value << " subkey: " << subkey << "\n";
+    SILK_DEBUG << "TransactionDatabase::get_both_range value: " << value << " subkey: " << subkey;
     if (value.substr(0, subkey.size()) != subkey) {
-        SILKRPC_DEBUG << "TransactionDatabase::get_both_range value: " << value << " subkey: " << subkey << "\n";
+        SILK_DEBUG << "TransactionDatabase::get_both_range value: " << value << " subkey: " << subkey;
         co_return std::nullopt;
     }
     co_return value.substr(subkey.length());
@@ -52,20 +52,20 @@ awaitable<std::optional<Bytes>> TransactionDatabase::get_both_range(const std::s
 
 awaitable<void> TransactionDatabase::walk(const std::string& table, ByteView start_key, uint32_t fixed_bits, core::rawdb::Walker w) const {
     const auto fixed_bytes = (fixed_bits + 7) / CHAR_BIT;
-    SILKRPC_TRACE << "TransactionDatabase::walk fixed_bits: " << fixed_bits << " fixed_bytes: " << fixed_bytes << "\n";
+    SILK_TRACE << "TransactionDatabase::walk fixed_bits: " << fixed_bits << " fixed_bytes: " << fixed_bytes;
     const auto shift_bits = fixed_bits & 7;
     uint8_t mask{0xff};
     if (shift_bits != 0) {
         mask = 0xff << (CHAR_BIT - shift_bits);
     }
-    SILKRPC_TRACE << "mask: " << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(mask) << std::dec << "\n";
+    SILK_TRACE << "mask: " << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(mask) << std::dec;
 
     const auto cursor = co_await tx_.cursor(table);
-    SILKRPC_TRACE << "TransactionDatabase::walk cursor_id: " << cursor->cursor_id() << "\n";
+    SILK_TRACE << "TransactionDatabase::walk cursor_id: " << cursor->cursor_id();
     auto kv_pair = co_await cursor->seek(start_key);
     auto k = kv_pair.key;
     auto v = kv_pair.value;
-    SILKRPC_TRACE << "k: " << k << " v: " << v << "\n";
+    SILK_TRACE << "k: " << k << " v: " << v;
     while (
         !k.empty() &&
         k.size() >= fixed_bytes &&
@@ -84,11 +84,11 @@ awaitable<void> TransactionDatabase::walk(const std::string& table, ByteView sta
 
 awaitable<void> TransactionDatabase::for_prefix(const std::string& table, ByteView prefix, core::rawdb::Walker w) const {
     const auto cursor = co_await tx_.cursor(table);
-    SILKRPC_TRACE << "TransactionDatabase::for_prefix cursor_id: " << cursor->cursor_id() << " prefix: " << silkworm::to_hex(prefix) << "\n";
+    SILK_TRACE << "TransactionDatabase::for_prefix cursor_id: " << cursor->cursor_id() << " prefix: " << silkworm::to_hex(prefix);
     auto kv_pair = co_await cursor->seek(prefix);
     auto k = kv_pair.key;
     auto v = kv_pair.value;
-    SILKRPC_TRACE << "TransactionDatabase::for_prefix k: " << k << " v: " << v << "\n";
+    SILK_TRACE << "TransactionDatabase::for_prefix k: " << k << " v: " << v;
     while (k.substr(0, prefix.size()) == prefix) {
         const auto go_on = w(k, v);
         if (!go_on) {
@@ -97,7 +97,7 @@ awaitable<void> TransactionDatabase::for_prefix(const std::string& table, ByteVi
         kv_pair = co_await cursor->next();
         k = kv_pair.key;
         v = kv_pair.value;
-        SILKRPC_TRACE << "TransactionDatabase::for_prefix k: " << k << " v: " << v << "\n";
+        SILK_TRACE << "TransactionDatabase::for_prefix k: " << k << " v: " << v;
     }
     co_return;
 }

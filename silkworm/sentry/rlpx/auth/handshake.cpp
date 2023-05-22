@@ -18,7 +18,7 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
-#include <silkworm/sentry/common/timeout.hpp>
+#include <silkworm/infra/concurrency/timeout.hpp>
 #include <silkworm/sentry/rlpx/framing/framing_cipher.hpp>
 #include <silkworm/sentry/rlpx/rlpx_common/disconnect_message.hpp>
 

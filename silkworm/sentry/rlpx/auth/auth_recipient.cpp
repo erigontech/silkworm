@@ -18,7 +18,7 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
-#include <silkworm/sentry/common/timeout.hpp>
+#include <silkworm/infra/concurrency/timeout.hpp>
 
 #include "auth_ack_message.hpp"
 #include "auth_message.hpp"

@@ -197,7 +197,7 @@ void SnapshotSync::build_missing_indexes() {
     // Determine the missing indexes and build them in parallel
     const auto missing_indexes = repository_.missing_indexes();
     for (const auto& index : missing_indexes) {
-        workers.submit([=]() {
+        workers.push_task([=]() {
             log::Info() << "[Snapshots] Build index: " << index->path().filename() << " start";
             index->build();
             log::Info() << "[Snapshots] Build index: " << index->path().filename() << " end";

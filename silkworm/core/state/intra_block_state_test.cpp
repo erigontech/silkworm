@@ -74,7 +74,7 @@ TEST_CASE("Code view stability") {
     // Randomly get a view of an existing code from the state or insert a new code
     RandomNumber rnd{0, 2 * n - 1};
     for (size_t i = 0; i < n; ++i) {
-        uint64_t x{rnd.generate_one()};
+        const auto x{static_cast<size_t>(rnd.generate_one())};
         if (x < n) {
             // Get a preexisting code
             evmc::address addr{existing_codes[x].first};

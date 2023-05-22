@@ -110,6 +110,7 @@ set(SILKWORM_NODE_PUBLIC_LIBS
     mdbx-static
     nlohmann_json::nlohmann_json
     protobuf::libprotobuf
+    roaring::roaring
     torrent-rasterbar
 )
 
@@ -117,7 +118,6 @@ set(SILKWORM_NODE_PUBLIC_LIBS
 set(SILKWORM_NODE_PRIVATE_LIBS
     cborcpp
     evmone
-    roaring::roaring
     silkworm_interfaces
 )
 # cmake-format: on

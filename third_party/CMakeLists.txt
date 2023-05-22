@@ -180,6 +180,7 @@ if(NOT SILKWORM_CORE_ONLY)
   set(MDBX_ENABLE_TESTS OFF)
   add_subdirectory(libmdbx)
   target_include_directories(mdbx-static INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/libmdbx)
+  target_compile_definitions(mdbx-static PUBLIC CONSTEXPR_ASSERT=assert)
 
   # libtorrent
   add_subdirectory(libtorrent)

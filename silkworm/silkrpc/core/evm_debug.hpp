@@ -24,6 +24,7 @@
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/thread_pool.hpp>
+#include <gsl/narrow>
 #include <nlohmann/json.hpp>
 
 #pragma GCC diagnostic push
@@ -109,7 +110,7 @@ class DebugExecutor {
     boost::asio::awaitable<void> execute(json::Stream& stream, const silkworm::Block& block);
     boost::asio::awaitable<void> execute(json::Stream& stream, const silkworm::Block& block, const Call& call);
     boost::asio::awaitable<void> execute(json::Stream& stream, const silkworm::Block& block, const Transaction& transaction) {
-        return execute(stream, block.header.number - 1, block, transaction, transaction.transaction_index);
+        return execute(stream, block.header.number - 1, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index));
     }
 
   private:

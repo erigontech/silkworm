@@ -105,7 +105,7 @@ std::string abridge(std::string_view input, size_t length) {
 static inline uint8_t unhex_lut(uint8_t x) { return kUnhexTable[x]; }
 static inline uint8_t unhex_lut4(uint8_t x) { return kUnhexTable4[x]; }
 
-std::optional<unsigned> decode_hex_digit(char ch) noexcept {
+std::optional<uint8_t> decode_hex_digit(char ch) noexcept {
     auto ret{unhex_lut(static_cast<uint8_t>(ch))};
     if (ret == 0xff) {
         return std::nullopt;
@@ -241,6 +241,16 @@ size_t prefix_length(ByteView a, ByteView b) {
         }
     }
     return len;
+}
+
+float to_float(const intx::uint256& n) noexcept {
+    static constexpr float k2_64{18446744073709551616.};  // 2^64
+    const uint64_t* words{intx::as_words(n)};
+    auto res{static_cast<float>(words[3])};
+    res = k2_64 * res + static_cast<float>(words[2]);
+    res = k2_64 * res + static_cast<float>(words[1]);
+    res = k2_64 * res + static_cast<float>(words[0]);
+    return res;
 }
 
 }  // namespace silkworm

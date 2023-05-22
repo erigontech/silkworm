@@ -291,7 +291,7 @@ boost::asio::awaitable<Receipts> read_receipts(const DatabaseReader& reader, con
     if (transactions.size() != receipts.size()) {
         throw std::runtime_error{"#transactions and #receipts do not match in read_receipts"};
     }
-    size_t log_index{0};
+    uint32_t log_index{0};
     for (size_t i{0}; i < receipts.size(); i++) {
         // The tx hash can be calculated by the tx content itself
         auto tx_hash{hash_of_transaction(transactions[i])};

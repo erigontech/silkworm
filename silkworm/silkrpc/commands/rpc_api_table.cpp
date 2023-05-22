@@ -53,8 +53,8 @@ std::optional<RpcApiTable::HandleStream> RpcApiTable::find_stream_handler(const 
 }
 
 void RpcApiTable::build_handlers(const std::string& api_spec) {
-    auto start = 0u;
-    auto end = api_spec.find(kApiSpecSeparator);
+    size_t start = 0;
+    size_t end = api_spec.find(kApiSpecSeparator);
     while (end != std::string::npos) {
         add_handlers(api_spec.substr(start, end - start));
         start = end + std::strlen(kApiSpecSeparator);

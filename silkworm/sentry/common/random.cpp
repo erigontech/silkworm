@@ -24,7 +24,7 @@ Bytes random_bytes(Bytes::size_type size) {
 
     Bytes data(size, 0);
     for (auto& d : data) {
-        d = random_distribution(random_engine);
+        d = static_cast<uint8_t>(random_distribution(random_engine));
     }
     return data;
 }

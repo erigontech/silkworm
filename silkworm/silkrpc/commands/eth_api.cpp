@@ -2065,7 +2065,7 @@ awaitable<void> EthereumRpcApi::get_logs(ethdb::TransactionDatabase& tx_database
     filtered_block_logs.reserve(256);
 
     for (const auto& block_to_match : block_numbers) {
-        uint64_t log_index{0};
+        uint32_t log_index{0};
 
         filtered_block_logs.clear();
         const auto block_key = silkworm::db::block_key(block_to_match);

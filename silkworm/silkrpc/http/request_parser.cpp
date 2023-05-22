@@ -217,11 +217,14 @@ RequestParser::ResultType RequestParser::consume(Request& req, char input) {
                     if (it == req.headers.end()) {
                         return ResultType::bad;
                     }
+                    const char* str{it->value.c_str()};
+                    char* end_ptr{nullptr};
                     errno = 0;
-                    req.content_length = std::strtol((*it).value.c_str(), nullptr, 0);
-                    if (errno == ERANGE) {
+                    long long len{std::strtoll(str, &end_ptr, 0)};
+                    if (errno == ERANGE || end_ptr == str || len < 0 || len > UINT32_MAX) {
                         return ResultType::bad;
                     }
+                    req.content_length = static_cast<uint32_t>(len);
                 }
                 if (req.content_length == 0) {
                     return ResultType::good;

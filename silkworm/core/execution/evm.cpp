@@ -510,7 +510,7 @@ evmc_tx_context EvmHost::get_tx_context() const noexcept {
 
 evmc::bytes32 EvmHost::get_block_hash(int64_t n) const noexcept {
     const uint64_t base_number{evm_.block_.header.number};
-    const uint64_t new_size{base_number - static_cast<uint64_t>(n)};
+    const auto new_size{static_cast<size_t>(base_number - static_cast<uint64_t>(n))};
     assert(new_size <= 256);
 
     std::vector<evmc::bytes32>& hashes{evm_.block_hashes_};
@@ -518,12 +518,12 @@ evmc::bytes32 EvmHost::get_block_hash(int64_t n) const noexcept {
         hashes.push_back(evm_.block_.header.parent_hash);
     }
 
-    const uint64_t old_size{hashes.size()};
+    const size_t old_size{hashes.size()};
     if (old_size < new_size) {
         hashes.resize(new_size);
     }
 
-    for (uint64_t i{old_size}; i < new_size; ++i) {
+    for (size_t i{old_size}; i < new_size; ++i) {
         std::optional<BlockHeader> header{evm_.state().db().read_header(base_number - i, hashes[i - 1])};
         if (!header) {
             break;

@@ -150,11 +150,11 @@ TEST_CASE("parse_size") {
     size = parse_size("2TB");
     CHECK((size && *size == 2 * kTebi));
     size = parse_size(".5TB");
-    CHECK((size && *size == (kTebi * 0.5)));
+    CHECK((size && *size == (kTebi / 2)));
     size = parse_size("0.5TB");
-    CHECK((size && *size == (kTebi * 0.5)));
+    CHECK((size && *size == (kTebi / 2)));
     size = parse_size("0.5   TB");
-    CHECK((size && *size == (kTebi * 0.5)));
+    CHECK((size && *size == (kTebi / 2)));
     CHECK(!parse_size("ABBA"));
 }
 
@@ -200,6 +200,13 @@ TEST_CASE("intx::uint256 from scientific notation string") {
     CHECK(from_string_sci<intx::uint256>(kMaxFixedDecimalNotation) == std::numeric_limits<intx::uint256>::max());
     const auto kMaxScientificNotation{"1.15792089237316195423570985008687907853269984665640564039457584007913129639935e+77"};
     CHECK(from_string_sci<intx::uint256>(kMaxScientificNotation) == std::numeric_limits<intx::uint256>::max());
+}
+
+TEST_CASE("intx::uint256 to_float") {
+    CHECK(to_float(0) == 0.f);
+    CHECK(to_float(1) == 1.f);
+    CHECK(to_float(24) == 24.f);
+    CHECK(to_float(intx::from_string<intx::uint256>("1000000000000000000000000")) == 1e24f);
 }
 
 }  // namespace silkworm

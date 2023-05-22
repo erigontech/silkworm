@@ -152,7 +152,7 @@ std::size_t PatternTable::build_condensed(std::span<Pattern> patterns, uint64_t 
         return last_cw->table()->build_condensed(patterns, highest_depth, 0, 0, depth);
     }
     const auto b0 = build_condensed(patterns, highest_depth - 1, code, bits + 1, depth + 1);
-    return b0 + build_condensed(patterns.subspan(b0), highest_depth - 1, (1 << bits) | code, bits + 1, depth + 1);
+    return b0 + build_condensed(patterns.subspan(b0), highest_depth - 1, static_cast<uint16_t>((1 << bits) | code), bits + 1, depth + 1);
 }
 
 CodeWord* PatternTable::insert_word(std::shared_ptr<CodeWord> codeword) {
@@ -269,7 +269,7 @@ int PositionTable::build_tree(std::span<Position> positions, uint64_t highest_de
         return children_[code]->build_tree(positions, highest_depth, 0, 0, depth);
     }
     const int b0 = build_tree(positions, highest_depth - 1, code, bits + 1, depth + 1);
-    return b0 + build_tree(positions.subspan(static_cast<std::size_t>(b0)), highest_depth - 1, (1 << bits) | code, bits + 1, depth + 1);
+    return b0 + build_tree(positions.subspan(static_cast<std::size_t>(b0)), highest_depth - 1, static_cast<uint16_t>((1 << bits) | code), bits + 1, depth + 1);
 }
 
 std::ostream& operator<<(std::ostream& out, const PositionTable& pt) {

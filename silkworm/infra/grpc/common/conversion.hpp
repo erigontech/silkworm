@@ -39,10 +39,6 @@ bool operator==(const H128& lhs, const H128& rhs);
 
 namespace silkworm::rpc {
 
-// TODO (canepat) move sentry_type_casts here and unify
-// TODO (canepat) sentry_type_casts: better function naming, smart helpers
-// TODO (canepat) conversion: better module name and location
-
 //! Convert internal gRPC H2048 type instance to std::string.
 std::string string_from_H2048(const ::types::H2048& orig);
 
@@ -86,6 +82,9 @@ std::unique_ptr<::types::H512> H512_from_string(std::string_view orig);
 
 //! Convert ByteView to internal gRPC H512 type instance.
 std::unique_ptr<::types::H512> H512_from_bytes(ByteView bytes);
+
+//! Convert evmc::bytes32 to internal gRPC H256 type instance.
+void H256_from_bytes32(const evmc::bytes32& orig, ::types::H256* dest);
 
 //! Convert evmc::bytes32 to internal gRPC H256 type instance.
 std::unique_ptr<::types::H256> H256_from_bytes32(const evmc::bytes32& orig);

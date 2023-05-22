@@ -99,4 +99,16 @@ std::ostream& operator<<(std::ostream& out, const ExecutionPayloadAndValue& pv) 
     return out;
 }
 
+std::ostream& operator<<(std::ostream& out, const ExecutionPayloadBody& body) {
+    if (body.transactions) {
+        out << "#transactions: " << body.transactions->size();
+        if (body.withdrawals) {
+            out << " #withdrawals: " << body.withdrawals->size();
+        }
+    } else {
+        out << "null";
+    }
+    return out;
+}
+
 }  // namespace silkworm::rpc

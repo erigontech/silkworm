@@ -127,7 +127,7 @@ void SignalHandler::handle(int sig_code) {
     if (sig_count > 1) {
         std::fputs("Already shutting down. Interrupt more to panic. ", stderr);
         char digit_with_endl[3];
-        digit_with_endl[0] = '0' + (10 - sig_count);
+        digit_with_endl[0] = static_cast<char>('0' + (10 - sig_count));
         digit_with_endl[1] = '\n';
         digit_with_endl[2] = '\0';
         std::fputs(digit_with_endl, stderr);

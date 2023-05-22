@@ -131,13 +131,13 @@ std::string to_dec(intx::uint256 number) {
 }
 
 // check whether the fee of the given transaction is reasonable (under the cap)
-bool check_tx_fee_less_cap(float cap, intx::uint256 max_fee_per_gas, uint64_t gas_limit) {
+bool check_tx_fee_less_cap(float cap, const intx::uint256& max_fee_per_gas, uint64_t gas_limit) {
     // Short circuit if there is no cap for transaction fee at all
     if (cap == 0) {
         return true;
     }
 
-    float fee_eth = (static_cast<uint64_t>(max_fee_per_gas) * gas_limit) / static_cast<float>(silkworm::kEther);
+    float fee_eth = (to_float(max_fee_per_gas) * static_cast<float>(gas_limit)) / static_cast<float>(silkworm::kEther);
     if (fee_eth > cap) {
         return false;
     }

@@ -577,7 +577,7 @@ nlohmann::json make_json_content(uint32_t id, const nlohmann::json& result) {
     return {{"jsonrpc", "2.0"}, {"id", id}, {"result", result}};
 }
 
-nlohmann::json make_json_error(uint32_t id, int64_t code, const std::string& message) {
+nlohmann::json make_json_error(uint32_t id, int code, const std::string& message) {
     const Error error{code, message};
     return {{"jsonrpc", "2.0"}, {"id", id}, {"error", error}};
 }

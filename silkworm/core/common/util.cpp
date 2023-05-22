@@ -105,7 +105,7 @@ std::string abridge(std::string_view input, size_t length) {
 static inline uint8_t unhex_lut(uint8_t x) { return kUnhexTable[x]; }
 static inline uint8_t unhex_lut4(uint8_t x) { return kUnhexTable4[x]; }
 
-std::optional<unsigned> decode_hex_digit(char ch) noexcept {
+std::optional<uint8_t> decode_hex_digit(char ch) noexcept {
     auto ret{unhex_lut(static_cast<uint8_t>(ch))};
     if (ret == 0xff) {
         return std::nullopt;

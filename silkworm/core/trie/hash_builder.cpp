@@ -44,7 +44,7 @@ static Bytes encode_path(ByteView nibbles, bool terminating) {
     }
 
     for (auto it{std::next(res.begin(), 1)}, end{res.end()}; it != end; ++it) {
-        *it = (nibbles[0] << 4) + nibbles[1];
+        *it = static_cast<uint8_t>((nibbles[0] << 4) + nibbles[1]);
         nibbles.remove_prefix(2);
     }
 
@@ -167,7 +167,7 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding) {
 
         const ByteView short_node_key{current.substr(from)};
         if (!build_extensions) {
-            if (const Bytes * leaf_value{std::get_if<Bytes>(&value_)}) {
+            if (const Bytes* leaf_value{std::get_if<Bytes>(&value_)}) {
                 stack_.push_back(node_ref(leaf_node_rlp(short_node_key, *leaf_value)));
             } else {
                 stack_.push_back(wrap_hash(std::get<evmc::bytes32>(value_).bytes));
@@ -186,7 +186,7 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding) {
         if (build_extensions && !short_node_key.empty()) {  // extension node
             if (node_collector && from > 0) {
                 // See node/silkworm/trie/intermediate_hashes.hpp
-                const uint16_t flag = 1u << current[from - 1];
+                const auto flag{static_cast<uint16_t>(1u << current[from - 1])};
 
                 // DB trie can't use hash of an extension node
                 hash_masks_[from - 1] &= ~flag;

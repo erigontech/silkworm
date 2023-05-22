@@ -49,9 +49,9 @@ TEST_CASE("HashBuilder1") {
 
     Bytes branch_payload;
     branch_payload.push_back(rlp::kEmptyStringCode);  // nibble 0
-    branch_payload.push_back(rlp::kEmptyListCode + leaf1_payload.length());
+    rlp::encode_header(branch_payload, {.list = true, .payload_length = leaf1_payload.length()});
     branch_payload.append(leaf1_payload);
-    branch_payload.push_back(rlp::kEmptyListCode + leaf2_payload.length());
+    rlp::encode_header(branch_payload, {.list = true, .payload_length = leaf2_payload.length()});
     branch_payload.append(leaf2_payload);
 
     // nibbles 3 to 15 plus nil value
@@ -69,8 +69,7 @@ TEST_CASE("HashBuilder1") {
     const Bytes encoded_path{*from_hex("1000000000000000000000000000000000000000000000000000000000000000")};
 
     Bytes extension_payload;
-    extension_payload.push_back(rlp::kEmptyStringCode + encoded_path.length());
-    extension_payload.append(encoded_path);
+    rlp::encode(extension_payload, encoded_path);
     extension_payload.append(branch_rlp);
 
     Bytes extension_rlp;

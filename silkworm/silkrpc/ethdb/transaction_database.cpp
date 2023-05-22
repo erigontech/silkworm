@@ -56,7 +56,7 @@ awaitable<void> TransactionDatabase::walk(const std::string& table, ByteView sta
     const auto shift_bits = fixed_bits & 7;
     uint8_t mask{0xff};
     if (shift_bits != 0) {
-        mask = 0xff << (CHAR_BIT - shift_bits);
+        mask = static_cast<uint8_t>(0xff << (CHAR_BIT - shift_bits));
     }
     SILK_TRACE << "mask: " << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(mask) << std::dec;
 

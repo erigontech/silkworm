@@ -173,7 +173,7 @@ boost::asio::awaitable<void> StorageWalker::walk_of_storages(uint64_t block_numb
 }
 
 boost::asio::awaitable<void> StorageWalker::storage_range_at(uint64_t block_number, const evmc::address& address,
-                                                             const evmc::bytes32& start_location, int16_t max_result, StorageCollector& collector) {
+                                                             const evmc::bytes32& start_location, size_t max_result, StorageCollector& collector) {
     ethdb::TransactionDatabase tx_database{transaction_};
     auto account_data = co_await tx_database.get_one(db::table::kPlainStateName, full_view(address));
 
@@ -201,7 +201,7 @@ boost::asio::awaitable<void> StorageWalker::storage_range_at(uint64_t block_numb
         }
 
         storage.insert(storage_item);
-        return storage.size() <= static_cast<std::size_t>(max_result);
+        return storage.size() <= max_result;
     };
 
     StorageWalker storage_walker{transaction_};

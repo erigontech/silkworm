@@ -45,7 +45,7 @@ void encode(Bytes& to, const bool& x) {
 
 void encode(Bytes& to, ByteView s) {
     if (s.length() != 1 || s[0] >= kEmptyStringCode) {
-        encode_header(to, {false, s.length()});
+        encode_header(to, {.list = false, .payload_length = s.length()});
     }
     to.append(s);
 }

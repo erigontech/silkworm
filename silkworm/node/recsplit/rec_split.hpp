@@ -73,7 +73,7 @@
 #include <silkworm/node/etl/collector.hpp>
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wconversion"
 #pragma GCC diagnostic ignored "-Wshadow"
 #if defined(__clang__)
 #pragma GCC diagnostic ignored "-Winvalid-constexpr"

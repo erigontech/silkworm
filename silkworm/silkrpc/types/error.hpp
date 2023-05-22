@@ -26,7 +26,7 @@
 namespace silkworm::rpc {
 
 struct Error {
-    int64_t code{0};
+    int code{0};
     std::string message;
 };
 

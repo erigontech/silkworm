@@ -27,6 +27,7 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/process/environment.hpp>
 #include <grpcpp/grpcpp.h>
+#include <gsl/narrow>
 #include <magic_enum.hpp>
 
 #include <silkworm/core/common/assert.hpp>
@@ -680,7 +681,7 @@ class AsyncTxCall
     bool handle_read() override {
         if (view_id_ == kInvalidViewId) {
             SILK_INFO << "Tx database view: tx_id=" << reply_.tx_id();
-            view_id_ = reply_.tx_id();
+            view_id_ = gsl::narrow<uint32_t>(reply_.tx_id());
             SILK_INFO << "Tx announced: opening cursor";
             request_.set_op(remote::Op::OPEN);
             request_.set_bucket_name(table_name_);

@@ -25,17 +25,24 @@ if(MSVC)
   add_link_options(/ignore:4099)
 else()
   add_compile_options(-Werror -Wall -Wextra -pedantic)
-  add_compile_options(-Wshadow -Wimplicit-fallthrough -Wsign-conversion)
+  add_compile_options(-Wshadow -Wimplicit-fallthrough -Wunused)
+  add_compile_options(-Wconversion -Wsign-conversion)
+  add_compile_options(-Wdouble-promotion -Wsign-compare)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wnon-virtual-dtor>)
+  add_compile_options(-Woverloaded-virtual)
+  add_compile_options(-Wnull-dereference)
+  add_compile_options(-Wtype-limits -Wformat=2)
+
   add_compile_options(-Wno-missing-field-initializers)
 
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    add_compile_options(-Wno-attributes)
+    add_compile_options(-Wduplicated-cond -Wduplicated-branches -Wlogical-op)
 
-    # gcc can issue bogus -Wmaybe-uninitialized warnings with std::optional
-    # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=80635
-    add_compile_options(-Wno-error=maybe-uninitialized)
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12)
+      # gcc 12 apparently has regressions in uninitialized diagnostics
+      add_compile_options(-Wno-error=maybe-uninitialized)
+    endif()
   endif()
 
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_SYSTEM_NAME MATCHES "Darwin")

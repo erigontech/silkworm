@@ -25,8 +25,6 @@
 namespace silkworm::rpc::ethdb::file {
 
 boost::asio::awaitable<void> LocalTransaction::open() {
-    // Create a new read-only transaction.
-    read_only_txn_ = chaindata_env_->start_read();
     co_return;
 }
 
@@ -55,7 +53,7 @@ boost::asio::awaitable<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cur
             co_return cursor_it->second;
         }
     }
-    auto cursor = std::make_shared<LocalCursor>(read_only_txn_, ++last_cursor_id_, table);
+    auto cursor = std::make_shared<LocalCursor>(rtxn_, ++last_cursor_id_, table);
     co_await cursor->open_cursor(table, is_cursor_sorted);
     if (is_cursor_sorted) {
         dup_cursors_[table] = cursor;

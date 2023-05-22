@@ -193,11 +193,6 @@ void from_json(const nlohmann::json& json, uint256& ui256) {
 
 namespace silkworm {
 
-void from_json(const nlohmann::json& json, AccessListEntry& entry) {
-    entry.account = json.at("address").get<evmc::address>();
-    entry.storage_keys = json.at("storageKeys").get<std::vector<evmc::bytes32>>();
-}
-
 void to_json(nlohmann::json& json, const BlockHeader& header) {
     const auto block_number = rpc::to_quantity(header.number);
     json["number"] = block_number;
@@ -222,11 +217,6 @@ void to_json(nlohmann::json& json, const BlockHeader& header) {
         json["baseFeePerGas"] = nullptr;
     }
     json["withdrawalsRoot"] = nullptr;  // waiting EIP-4895
-}
-
-void to_json(nlohmann::json& json, const AccessListEntry& access_list) {
-    json["address"] = access_list.account;
-    json["storageKeys"] = access_list.storage_keys;
 }
 
 void to_json(nlohmann::json& json, const Transaction& transaction) {

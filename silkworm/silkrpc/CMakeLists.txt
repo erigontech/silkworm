@@ -24,6 +24,7 @@ endif()
 find_package(gRPC REQUIRED)
 find_package(jwt-cpp REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(roaring REQUIRED)
 
 # Silkrpc library
 file(
@@ -55,7 +56,7 @@ set(SILKRPC_PUBLIC_LIBRARIES
     intx::intx
 )
 
-set(SILKRPC_PRIVATE_LIBRARIES evmc::instructions)
+set(SILKRPC_PRIVATE_LIBRARIES evmc::instructions roaring::roaring)
 
 add_library(silkrpc "${SILKRPC_SRC}")
 

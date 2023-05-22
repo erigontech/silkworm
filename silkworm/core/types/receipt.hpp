@@ -18,7 +18,6 @@
 
 #include <optional>
 
-#include <silkworm/core/protocol/validation.hpp>
 #include <silkworm/core/types/bloom.hpp>
 #include <silkworm/core/types/log.hpp>
 #include <silkworm/core/types/transaction.hpp>
@@ -31,7 +30,6 @@ struct Receipt {
     uint64_t cumulative_gas_used{0};
     Bloom bloom;
     std::vector<Log> logs;
-    ValidationResult validation_result{};
 };
 
 namespace rlp {

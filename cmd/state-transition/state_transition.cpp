@@ -26,6 +26,7 @@
 #include "cmd/state-transition/expected_state.hpp"
 #include "silkworm/core/common/cast.hpp"
 #include "silkworm/core/execution/execution.hpp"
+#include "silkworm/core/protocol/param.hpp"
 #include "silkworm/core/protocol/rule_set.hpp"
 #include "silkworm/core/rlp/encode_vector.hpp"
 #include "silkworm/core/state/in_memory_state.hpp"
@@ -94,7 +95,7 @@ evmc::address StateTransition::to_evmc_address(const std::string& address) {
 }
 
 // get block
-silkworm::Block StateTransition::get_block() {
+silkworm::Block StateTransition::get_block(protocol::IRuleSet& /*rule_set*/, InMemoryState& state, ChainConfig& chain_config) {
     auto block = silkworm::Block();
 
     block.header.beneficiary = to_evmc_address(get_env("currentCoinbase"));
@@ -108,9 +109,26 @@ silkworm::Block StateTransition::get_block() {
         block.header.prev_randao = to_bytes32(silkworm::from_hex(get_env("currentRandom")).value_or(silkworm::Bytes{}));
     }
 
-    if (contains_env("currentBaseFee")) {
+    const evmc_revision rev{chain_config.revision(block.header.number, block.header.timestamp)};
+
+    if (contains_env("currentBaseFee") && rev >= EVMC_LONDON) {
         block.header.base_fee_per_gas = intx::from_string<intx::uint256>(get_env("currentBaseFee"));
     }
+
+    if (rev >= EVMC_SHANGHAI) {
+        block.withdrawals = std::vector<Withdrawal>{};
+        block.header.withdrawals_root = kEmptyRoot;
+    }
+
+    block.header.transactions_root = protocol::compute_transaction_root(block);
+    block.header.ommers_hash = kEmptyListHash;
+
+    auto parent_block = silkworm::Block();
+    parent_block.header.gas_limit = block.header.gas_limit;
+    parent_block.header.gas_used = parent_block.header.gas_limit / protocol::kElasticityMultiplier;
+    parent_block.header.number = block.header.number - 1;
+    parent_block.header.base_fee_per_gas = block.header.base_fee_per_gas;
+    state.insert_block(parent_block, block.header.parent_hash);
 
     return block;
 }
@@ -211,7 +229,7 @@ silkworm::Transaction StateTransition::get_transaction(ExpectedSubState expected
 void StateTransition::validate_transition(const silkworm::Receipt& receipt, const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const InMemoryState& state) {
     if (expected_sub_state.exceptionExpected) {
         if (receipt.success) {
-            print_error_message(expected_state, expected_sub_state, "Failed: Transaction exception");
+            print_error_message(expected_state, expected_sub_state, "Failed: Exception expected");
             ++failed_count_;
         } else {
             print_diagnostic_message(expected_state, expected_sub_state, "OK (Exception Expected)");
@@ -259,19 +277,26 @@ void StateTransition::run() {
             ++total_count_;
             auto config = expectedState.get_config();
             auto ruleSet = protocol::rule_set_factory(config);
-            auto block = get_block();
             auto state = get_state();
+            auto block = get_block(*ruleSet, *state, config);
+            auto txn = get_transaction(expectedSubState);
+
+            silkworm::ExecutionProcessor processor{block, *ruleSet, *state, config};
+            silkworm::Receipt receipt;
+
+            auto pre_validation = ruleSet->pre_validate_block_body(block, *state);
+            auto block_validation = ruleSet->validate_block_header(block.header, *state, true);
+            auto txn_validation = processor.validate_transaction(txn);
 
             //            std::cout << "pre: " << std::endl;
             //            state->print_state_root_hash();
-            //
-            silkworm::ExecutionProcessor processor{block, *ruleSet, *state, config};
-            silkworm::Receipt receipt;
-            auto txn = get_transaction(expectedSubState);
 
-            processor.execute_transaction(txn, receipt);
-
-            processor.evm().state().write_to_db(block.header.number);
+            if (pre_validation == ValidationResult::kOk && block_validation == ValidationResult::kOk && txn_validation == ValidationResult::kOk) {
+                processor.execute_transaction(txn, receipt);
+                processor.evm().state().write_to_db(block.header.number);
+            } else {
+                receipt.success = false;
+            }
 
             //            std::cout << "post: " << std::endl;
             //            state->print_state_root_hash();

@@ -450,7 +450,7 @@ intx::uint512 UnsignedTransaction::maximum_gas_cost() const {
 }
 
 intx::uint256 UnsignedTransaction::priority_fee_per_gas(const intx::uint256& base_fee_per_gas) const {
-    if (base_fee_per_gas > max_fee_per_gas) return 0;
+    SILKWORM_ASSERT(max_fee_per_gas >= base_fee_per_gas);
     return std::min(max_priority_fee_per_gas, max_fee_per_gas - base_fee_per_gas);
 }
 

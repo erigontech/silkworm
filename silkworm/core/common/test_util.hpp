@@ -57,7 +57,7 @@ inline constexpr ChainConfig kShanghaiConfig{
     .istanbul_block = 0,
     .berlin_block = 0,
     .london_block = 0,
-    .terminal_total_difficulty = 0,
+    .terminal_total_difficulty = 0xC0000,
     .shanghai_time = 0,
 };
 
@@ -252,7 +252,7 @@ static const std::map<std::string, ChainConfig> kNetworkConfig{
          .istanbul_block = 0,
          .berlin_block = 0,
          .london_block = 0,
-         .terminal_total_difficulty = 0,
+         .terminal_total_difficulty = 0xC0000,
      }},
     {"ArrowGlacierToMergeAtDiffC0000",
      {

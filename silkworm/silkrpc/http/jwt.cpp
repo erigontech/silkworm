@@ -47,6 +47,11 @@ void generate_jwt_token(const std::string& file_path, std::string& jwt_token) {
 }
 
 bool load_jwt_token(const std::string& file_path, std::string& jwt_token) {
+    if (file_path.empty()) {
+        SILK_ERROR << "empty jwt file path ";
+        return false;
+    }
+
     std::ifstream read_file;
     read_file.open(file_path);
     SILK_LOG << "Reading JWT secret: " << file_path;

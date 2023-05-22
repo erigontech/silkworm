@@ -199,7 +199,7 @@ boost::asio::awaitable<void> RequestHandler::handle_request(commands::RpcApiTabl
 }
 
 boost::asio::awaitable<std::optional<std::string>> RequestHandler::is_request_authorized(const http::Request& request) {
-    if (!jwt_secret_.has_value()) {
+    if (!jwt_secret_.has_value() || (*jwt_secret_).empty()) {
         co_return std::nullopt;
     }
 

@@ -18,7 +18,7 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
-#include <silkworm/sentry/common/timeout.hpp>
+#include <silkworm/infra/concurrency/timeout.hpp>
 
 #include "auth_ack_message.hpp"
 #include "auth_message.hpp"
@@ -30,7 +30,7 @@ using namespace concurrency::awaitable_wait_for_one;
 
 boost::asio::awaitable<AuthKeys> AuthRecipient::execute(common::SocketStream& stream) {
     Bytes auth_data_raw;
-    auto auth_data = std::get<ByteView>(co_await (stream.receive_size_and_data(auth_data_raw) || common::concurrency::timeout(5s)));
+    auto auth_data = std::get<ByteView>(co_await (stream.receive_size_and_data(auth_data_raw) || concurrency::timeout(5s)));
     AuthMessage auth_message{auth_data, recipient_key_pair_};
 
     AuthAckMessage auth_ack_message{
@@ -38,7 +38,7 @@ boost::asio::awaitable<AuthKeys> AuthRecipient::execute(common::SocketStream& st
         recipient_ephemeral_key_pair_.public_key(),
     };
     Bytes auth_ack_data = auth_ack_message.serialize();
-    co_await (stream.send(auth_ack_data) || common::concurrency::timeout(5s));
+    co_await (stream.send(auth_ack_data) || concurrency::timeout(5s));
 
     co_return AuthKeys{
         auth_message.initiator_public_key(),

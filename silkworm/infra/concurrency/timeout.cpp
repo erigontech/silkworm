@@ -23,7 +23,7 @@
 #include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
 
-namespace silkworm::sentry::common::concurrency {
+namespace silkworm::concurrency {
 
 boost::asio::awaitable<void> timeout(std::chrono::milliseconds duration) {
     auto executor = co_await boost::asio::this_coro::executor;
@@ -42,4 +42,4 @@ boost::asio::awaitable<void> timeout(std::chrono::milliseconds duration) {
     throw TimeoutExpiredError();
 }
 
-}  // namespace silkworm::sentry::common::concurrency
+}  // namespace silkworm::concurrency

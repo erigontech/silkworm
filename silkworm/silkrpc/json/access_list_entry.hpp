@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,20 +16,13 @@
 
 #pragma once
 
-#include <chrono>
-#include <stdexcept>
+#include <nlohmann/json.hpp>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/core/types/transaction.hpp>
 
-#include <boost/asio/awaitable.hpp>
+namespace silkworm {
 
-namespace silkworm::sentry::common::concurrency {
+void from_json(const nlohmann::json& json, AccessListEntry& entry);
+void to_json(nlohmann::json& json, const AccessListEntry& access_list);
 
-boost::asio::awaitable<void> timeout(std::chrono::milliseconds duration);
-
-class TimeoutExpiredError : public std::runtime_error {
-  public:
-    TimeoutExpiredError() : std::runtime_error("Timeout has expired") {}
-};
-
-}  // namespace silkworm::sentry::common::concurrency
+}  // namespace silkworm

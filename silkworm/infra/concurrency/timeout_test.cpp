@@ -36,11 +36,10 @@
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 
-namespace silkworm::sentry::common {
+namespace silkworm::concurrency {
 
 using namespace std::chrono_literals;
 using namespace boost::asio;
-using namespace silkworm::concurrency;
 
 class TestException : public std::runtime_error {
   public:
@@ -63,11 +62,11 @@ awaitable<void> async_throw() {
 }
 
 awaitable<void> short_timeout() {
-    co_await concurrency::timeout(1ms);
+    co_await timeout(1ms);
 }
 
 awaitable<void> simple_timeout() {
-    co_await concurrency::timeout(1h);
+    co_await timeout(1h);
 }
 
 awaitable<void> wait_until_cancelled() {
@@ -121,7 +120,7 @@ TEST_CASE("Timeout.throw") {
 }
 
 TEST_CASE("Timeout.timeout") {
-    CHECK_THROWS_AS(run(short_timeout()), concurrency::TimeoutExpiredError);
+    CHECK_THROWS_AS(run(short_timeout()), TimeoutExpiredError);
 }
 
 TEST_CASE("Timeout.boost_wait_for_one.throw_or_timeout") {
@@ -254,4 +253,4 @@ TEST_CASE("Timeout.wait_for_all.throw_and_bad_cancel") {
     }
 }
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::concurrency

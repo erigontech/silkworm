@@ -26,12 +26,10 @@ if(MSVC)
 else()
   add_compile_options(-Werror -Wall -Wextra -pedantic)
   add_compile_options(-Wshadow -Wimplicit-fallthrough -Wunused)
-  add_compile_options(-Wconversion -Wsign-conversion)
-  add_compile_options(-Wdouble-promotion -Wsign-compare)
+  add_compile_options(-Wsign-compare -Wsign-conversion -Wdouble-promotion)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wnon-virtual-dtor>)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Woverloaded-virtual>)
-  add_compile_options(-Wnull-dereference)
   add_compile_options(-Wtype-limits -Wformat=2)
 
   add_compile_options(-Wno-missing-field-initializers)
@@ -39,14 +37,19 @@ else()
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_compile_options(-Wduplicated-cond -Wduplicated-branches -Wlogical-op)
 
+    add_compile_options(-Wno-attributes)
+
     if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12)
       # gcc 12 apparently has regressions in uninitialized diagnostics
       add_compile_options(-Wno-error=maybe-uninitialized)
     endif()
-  endif()
+  else()
+    # Clang
+    add_compile_options(-Wconversion) # too much noise in gcc
 
-  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    add_compile_definitions(_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS)
-    add_compile_options(-Wthread-safety)
+    if(CMAKE_SYSTEM_NAME MATCHES "Darwin")
+      add_compile_definitions(_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS)
+      add_compile_options(-Wthread-safety)
+    endif()
   endif()
 endif()

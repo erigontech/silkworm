@@ -25,7 +25,7 @@
 #include <CLI/CLI.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/use_future.hpp>
-#include <grpcpp/grpcpp.h>
+// #include <grpcpp/grpcpp.h>
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/infra/common/log.hpp>
@@ -36,7 +36,8 @@
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
-#include <silkworm/infra/grpc/server/server_context_pool.hpp>
+#include <silkworm/infra/concurrency/context_pool.hpp>
+// #include <silkworm/infra/grpc/server/server_context_pool.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
 #include <silkworm/node/common/settings.hpp>
@@ -117,7 +118,7 @@ class ResourceUsageLog : public ActiveComponent {
     }
 };
 
-struct PruneModeValidator : public CLI::Validator {
+/*struct PruneModeValidator : public CLI::Validator {
     explicit PruneModeValidator() {
         func_ = [](const std::string& value) -> std::string {
             if (value.find_first_not_of("hrtc") != std::string::npos) {
@@ -126,7 +127,7 @@ struct PruneModeValidator : public CLI::Validator {
             return {};
         };
     }
-};
+};*/
 
 /*void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], SilkwormSettings& settings) {
     using namespace silkworm::cmd;
@@ -302,8 +303,8 @@ void raise_max_file_descriptors() {
     }
 }
 
-class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
-};
+/*class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
+};*/
 
 /*std::pair<std::shared_ptr<silkworm::sentry::api::api_common::SentryClient>, std::optional<std::shared_ptr<silkworm::sentry::Sentry>>> make_sentry(
     silkworm::sentry::Settings sentry_settings,
@@ -423,10 +424,12 @@ int main(int /*argc*/, char* /*argv*/[]) {
             auto stop = [&] { asio_guard.reset(); };
             co_await silkworm::concurrency::async_thread(std::move(run), std::move(stop));
         };
-        silkworm::rpc::ServerContextPool context_pool{
+        /*silkworm::rpc::ServerContextPool context_pool{
             settings.server_settings.context_pool_settings(),
             [] { return std::make_unique<DummyServerCompletionQueue>(); },
-        };
+        };*/
+        silkworm::concurrency::ContextPool context_pool{settings.server_settings.context_pool_settings()};
+
 
         // Resource usage logging
         ResourceUsageLog resource_usage_log(node_settings);

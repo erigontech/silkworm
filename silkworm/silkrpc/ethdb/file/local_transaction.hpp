@@ -41,7 +41,7 @@ class LocalTransaction : public Transaction {
 
     ~LocalTransaction() override = default;
 
-    [[nodiscard]] uint64_t view_id() override { return (*rtxn_).id(); }
+    [[nodiscard]] uint64_t view_id() const override { return rtxn_.id(); }
 
     boost::asio::awaitable<void> open() override;
 

@@ -42,7 +42,7 @@ class RemoteTransaction : public Transaction {
 
     ~RemoteTransaction() override = default;
 
-    uint64_t view_id() const override { return view_id_; }
+    uint64_t view_id() override { return view_id_; }
 
     boost::asio::awaitable<void> open() override;
 

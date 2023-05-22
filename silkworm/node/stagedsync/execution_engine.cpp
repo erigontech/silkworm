@@ -192,6 +192,9 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
         if (!updated) return false;
 
         last_fork_choice_ = fork.current_head();
+
+        main_chain_.reintegrate_fork(fork);  // BLOCKING
+
         fork.close();
     }
 

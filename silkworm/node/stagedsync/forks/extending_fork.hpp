@@ -61,10 +61,14 @@ class ExtendingFork {
     auto current_head() const -> BlockId;
 
   protected:
+    friend MainChain;
+
     void save_exception(std::exception_ptr);
     void propagate_exception_if_any();
 
-    Fork fork_;
+    BlockId forking_point_;           // starting point
+    MainChain& main_chain_;           // main chain
+    std::unique_ptr<Fork> fork_;      // for domain logic
     asio::io_context& io_context_;    // for io
     concurrency::Context executor_;   // for pipeline execution
     std::thread thread_;              // for executor

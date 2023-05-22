@@ -35,10 +35,10 @@ namespace silkworm::rpc::ethdb::file {
 
 class LocalCursor : public CursorDupSort {
   public:
-    explicit LocalCursor(mdbx::txn_managed& read_only_txn, uint32_t cursor_id, const std::string& table_name)
+    explicit LocalCursor(mdbx::txn& txn, uint32_t cursor_id, const std::string& table_name)
         : cursor_id_{cursor_id},
-          db_cursor_{read_only_txn, silkworm::db::MapConfig{table_name.c_str()}},
-          read_only_txn_{read_only_txn} {}
+          db_cursor_{txn, silkworm::db::MapConfig{table_name.c_str()}},
+          txn_{txn} {}
 
     [[nodiscard]] uint32_t cursor_id() const override { return cursor_id_; };
 
@@ -61,7 +61,7 @@ class LocalCursor : public CursorDupSort {
   private:
     uint32_t cursor_id_;
     silkworm::db::PooledCursor db_cursor_;
-    mdbx::txn_managed& read_only_txn_;
+    mdbx::txn& txn_;
 };
 
 }  // namespace silkworm::rpc::ethdb::file

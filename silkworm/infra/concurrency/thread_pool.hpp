@@ -29,12 +29,14 @@
 
 #include <boost/thread/thread.hpp>  // boost::thread
 
+#include <silkworm/infra/concurrency/stoppable.hpp>
+
 namespace silkworm {
 
 /**
  * @brief A fast, lightweight, and easy-to-use C++17 thread pool class.
  */
-class [[nodiscard]] ThreadPool {
+class [[nodiscard]] ThreadPool : public Stoppable {
   public:
     // ============================
     // Constructors and destructors
@@ -50,7 +52,7 @@ class [[nodiscard]] ThreadPool {
      */
     explicit ThreadPool(const unsigned thread_count = 0, const std::size_t stack_size = 0)
         : thread_count_(determine_thread_count(thread_count)),
-          threads(std::make_unique<boost::thread[]>(thread_count_)),
+          threads_(std::make_unique<boost::thread[]>(thread_count_)),
           stack_size_(stack_size) {
         create_threads();
     }
@@ -95,11 +97,11 @@ class [[nodiscard]] ThreadPool {
     void push_task(F&& task, A&&... args) {
         std::function<void()> task_function = std::bind(std::forward<F>(task), std::forward<A>(args)...);
         {
-            const std::scoped_lock tasks_lock(tasks_mutex);
-            tasks.push(task_function);
+            const std::scoped_lock tasks_lock(tasks_mutex_);
+            tasks_.push(task_function);
             ++tasks_total_;
         }
-        task_available_cv.notify_one();
+        task_available_cv_.notify_one();
     }
 
     /**
@@ -141,8 +143,8 @@ class [[nodiscard]] ThreadPool {
     void wait_for_tasks() {
         if (!waiting_) {
             waiting_ = true;
-            std::unique_lock<std::mutex> tasks_lock(tasks_mutex);
-            task_done_cv.wait(tasks_lock, [this] { return (tasks_total_ == 0); });
+            std::unique_lock<std::mutex> tasks_lock(tasks_mutex_);
+            task_done_cv_.wait(tasks_lock, [this] { return (tasks_total_ == 0); });
             waiting_ = false;
         }
     }
@@ -156,13 +158,12 @@ class [[nodiscard]] ThreadPool {
      * @brief Create the threads in the pool and assign a worker to each thread.
      */
     void create_threads() {
-        running_ = true;
         boost::thread::attributes attrs;
         if (stack_size_) {
             attrs.set_stack_size(stack_size_);
         }
         for (unsigned i = 0; i < thread_count_; ++i) {
-            threads[i] = boost::thread(attrs, [this] { worker(); });
+            threads_[i] = boost::thread(attrs, [this] { worker(); });
         }
     }
 
@@ -170,13 +171,13 @@ class [[nodiscard]] ThreadPool {
      * @brief Destroy the threads in the pool.
      */
     void destroy_threads() {
-        running_ = false;
+        stop();
         {
-            const std::scoped_lock tasks_lock(tasks_mutex);
-            task_available_cv.notify_all();
+            const std::scoped_lock tasks_lock(tasks_mutex_);
+            task_available_cv_.notify_all();
         }
         for (unsigned i = 0; i < thread_count_; ++i) {
-            threads[i].join();
+            threads_[i].join();
         }
     }
 
@@ -201,19 +202,19 @@ class [[nodiscard]] ThreadPool {
      * @brief A worker function to be assigned to each thread in the pool. Waits until it is notified by push_task() that a task is available, and then retrieves the task from the queue and executes it. Once the task finishes, the worker notifies wait_for_tasks() in case it is waiting.
      */
     void worker() {
-        while (running_) {
+        while (!is_stopping()) {
             std::function<void()> task;
-            std::unique_lock<std::mutex> tasks_lock(tasks_mutex);
-            task_available_cv.wait(tasks_lock, [this] { return !tasks.empty() || !running_; });
-            if (running_) {
-                task = std::move(tasks.front());
-                tasks.pop();
+            std::unique_lock<std::mutex> tasks_lock(tasks_mutex_);
+            task_available_cv_.wait(tasks_lock, [this] { return !tasks_.empty() || is_stopping(); });
+            if (!is_stopping()) {
+                task = std::move(tasks_.front());
+                tasks_.pop();
                 tasks_lock.unlock();
                 task();
                 tasks_lock.lock();
                 --tasks_total_;
                 if (waiting_)
-                    task_done_cv.notify_one();
+                    task_done_cv_.notify_one();
             }
         }
     }
@@ -223,24 +224,19 @@ class [[nodiscard]] ThreadPool {
     // ============
 
     /**
-     * @brief An atomic variable indicating to the workers to keep running. When set to false, the workers permanently stop working.
-     */
-    std::atomic<bool> running_ = false;
-
-    /**
      * @brief A condition variable used to notify worker() that a new task has become available.
      */
-    std::condition_variable task_available_cv = {};
+    std::condition_variable task_available_cv_ = {};
 
     /**
      * @brief A condition variable used to notify wait_for_tasks() that a tasks is done.
      */
-    std::condition_variable task_done_cv = {};
+    std::condition_variable task_done_cv_ = {};
 
     /**
      * @brief A queue of tasks to be executed by the threads.
      */
-    std::queue<std::function<void()>> tasks = {};
+    std::queue<std::function<void()>> tasks_ = {};
 
     /**
      * @brief An atomic variable to keep track of the total number of unfinished tasks - either still in the queue, or running in a thread.
@@ -250,7 +246,7 @@ class [[nodiscard]] ThreadPool {
     /**
      * @brief A mutex to synchronize access to the task queue by different threads.
      */
-    mutable std::mutex tasks_mutex = {};
+    mutable std::mutex tasks_mutex_ = {};
 
     /**
      * @brief The number of threads in the pool.
@@ -260,7 +256,7 @@ class [[nodiscard]] ThreadPool {
     /**
      * @brief A smart pointer to manage the memory allocated for the threads.
      */
-    std::unique_ptr<boost::thread[]> threads = nullptr;
+    std::unique_ptr<boost::thread[]> threads_ = nullptr;
 
     /**
      * @brief An atomic variable indicating that wait_for_tasks() is active and expects to be notified whenever a task is done.

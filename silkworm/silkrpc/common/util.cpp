@@ -137,7 +137,7 @@ bool check_tx_fee_less_cap(float cap, const intx::uint256& max_fee_per_gas, uint
         return true;
     }
 
-    float fee_eth = (to_float(max_fee_per_gas) * gas_limit) / static_cast<float>(silkworm::kEther);
+    float fee_eth = (to_float(max_fee_per_gas) * static_cast<float>(gas_limit)) / static_cast<float>(silkworm::kEther);
     if (fee_eth > cap) {
         return false;
     }

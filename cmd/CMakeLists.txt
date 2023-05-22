@@ -33,7 +33,7 @@ if(NOT SILKWORM_CORE_ONLY)
   find_package(Boost REQUIRED)
   find_package(CLI11 REQUIRED)
 
-  if(SILKWORM_USE_MIMALLOC AND CONAN_PACKAGE_MANAGER)
+  if(SILKWORM_USE_MIMALLOC)
     find_package(mimalloc REQUIRED)
   endif()
 
@@ -68,11 +68,7 @@ if(NOT SILKWORM_CORE_ONLY)
   )
   # cmake-format: on
   if(SILKWORM_USE_MIMALLOC)
-    if(CONAN_PACKAGE_MANAGER)
-      list(APPEND SILKRPC_DAEMON_LIBRARIES mimalloc::mimalloc)
-    else()
-      list(APPEND SILKRPC_DAEMON_LIBRARIES mimalloc)
-    endif()
+    list(APPEND SILKRPC_DAEMON_LIBRARIES mimalloc::mimalloc)
   endif()
 
   add_executable(silkrpcdaemon rpcdaemon.cpp)

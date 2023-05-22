@@ -50,7 +50,7 @@ jobs:
       uses: johnwason/vcpkg-action@v4
       id: vcpkg
       with:
-        pkgs: mpir mimalloc
+        pkgs: mpir
         triplet: x64-windows
         token: ${{ github.token }}
 

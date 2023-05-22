@@ -51,9 +51,6 @@ set(SILKWORM_CORE_PUBLIC_LIBS
 set(SILKWORM_CORE_PRIVATE_LIBS ff blst)
 
 if(SILKWORM_CORE_USE_ABSEIL)
-  if(NOT CONAN_PACKAGE_MANAGER)
-    hunter_add_package(abseil)
-  endif()
   find_package(absl REQUIRED)
   list(APPEND SILKWORM_CORE_PUBLIC_LIBS absl::flat_hash_map absl::flat_hash_set)
   target_compile_definitions(silkworm_core PUBLIC SILKWORM_CORE_USE_ABSEIL)

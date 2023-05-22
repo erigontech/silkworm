@@ -255,4 +255,16 @@ TEST_CASE("serialize ExecutionPayloadAndValue", "[silkworm][rpc][to_json]") {
     })"_json);
 }
 
+TEST_CASE("serialize ExecutionPayloadBody", "[silkworm][rpc][to_json]") {
+    ExecutionPayloadBody payload_body{
+        .transactions = std::vector<Bytes>{*silkworm::from_hex("0xf92ebdeab45d368f6354e8c5a8ac586c")},
+        .withdrawals = std::vector<Withdrawal>{
+            {.index = 6, .validator_index = 12, .address = 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address, .amount = 10'000},
+        }};
+    CHECK(nlohmann::json(payload_body) == R"({
+        "transactions":["0xf92ebdeab45d368f6354e8c5a8ac586c"],
+        "withdrawals":[{"address":"0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b","amount":"0x2710","index":"0x6","validatorIndex":"0xc"}]
+    })"_json);
+}
+
 }  // namespace silkworm::rpc

@@ -29,12 +29,12 @@
 
 namespace silkworm {
 
-static RandomNumber rnd_byte{0, 255};
+static RandomNumber rnd_byte{0, UINT8_MAX};
 
 static evmc::address random_address() {
     evmc::address a;
     for (size_t i = 0; i < kAddressLength; ++i) {
-        a.bytes[i] = rnd_byte.generate_one();
+        a.bytes[i] = static_cast<uint8_t>(rnd_byte.generate_one());
     }
     return a;
 }
@@ -44,7 +44,7 @@ static Bytes random_code() {
     const size_t len{static_cast<size_t>(rnd_len.generate_one())};
     Bytes code(len, 0);
     for (size_t i = 0; i < len; ++i) {
-        code[i] = rnd_byte.generate_one();
+        code[i] = static_cast<uint8_t>(rnd_byte.generate_one());
     }
     return code;
 }
@@ -74,7 +74,7 @@ TEST_CASE("Code view stability") {
     // Randomly get a view of an existing code from the state or insert a new code
     RandomNumber rnd{0, 2 * n - 1};
     for (size_t i = 0; i < n; ++i) {
-        uint64_t x{rnd.generate_one()};
+        const auto x{static_cast<size_t>(rnd.generate_one())};
         if (x < n) {
             // Get a preexisting code
             evmc::address addr{existing_codes[x].first};

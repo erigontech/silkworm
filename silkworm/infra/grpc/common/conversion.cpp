@@ -242,7 +242,7 @@ std::unique_ptr<::types::H512> H512_from_bytes(ByteView bytes) {
     return dest;
 }
 
-std::unique_ptr<::types::H256> H256_from_bytes32(const evmc::bytes32& orig) {
+void H256_from_bytes32(const evmc::bytes32& orig, ::types::H256* dest) {
     auto hi = new ::types::H128{};
     auto lo = new ::types::H128{};
     hi->set_hi(endian::load_big_u64(orig.bytes + 0));
@@ -250,10 +250,13 @@ std::unique_ptr<::types::H256> H256_from_bytes32(const evmc::bytes32& orig) {
     lo->set_hi(endian::load_big_u64(orig.bytes + 16));
     lo->set_lo(endian::load_big_u64(orig.bytes + 24));
 
-    auto dest = std::make_unique<::types::H256>();
     dest->set_allocated_hi(hi);  // takes ownership
     dest->set_allocated_lo(lo);  // takes ownership
+}
 
+std::unique_ptr<::types::H256> H256_from_bytes32(const evmc::bytes32& orig) {
+    auto dest = std::make_unique<::types::H256>();
+    H256_from_bytes32(orig, dest.get());
     return dest;
 }
 

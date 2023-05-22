@@ -704,7 +704,7 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
 
     start_gas_.push(msg.gas);
 
-    std::uint32_t index = traces_.size();
+    std::size_t index = traces_.size();
     traces_.resize(traces_.size() + 1);
 
     Trace& trace = traces_[index];
@@ -1373,7 +1373,7 @@ awaitable<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWi
     std::vector<Trace> traces;
 
     const auto result = co_await execute(block_with_hash.block.header.number - 1, block_with_hash.block, transaction,
-                                         transaction.transaction_index, {false, true, false});
+                                         gsl::narrow<int32_t>(transaction.transaction_index), {false, true, false});
     const auto& trace_result = result.traces.trace;
 
     const auto hash = hash_of_transaction(transaction);

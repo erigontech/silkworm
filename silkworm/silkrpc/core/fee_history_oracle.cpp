@@ -145,7 +145,7 @@ boost::asio::awaitable<void> FeeHistoryOracle::process_block(BlockFees& block_fe
     auto& header = block_fees.block.block.header;
 
     block_fees.base_fee = header.base_fee_per_gas.value_or(0);
-    block_fees.gas_used_ratio = header.gas_used / header.gas_limit;
+    block_fees.gas_used_ratio = static_cast<double>(header.gas_used) / static_cast<double>(header.gas_limit);
 
     const auto parent_block = co_await block_provider_(header.number - 1);
 

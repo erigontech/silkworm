@@ -29,6 +29,7 @@
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/thread_pool.hpp>
+#include <gsl/narrow>
 #include <nlohmann/json.hpp>
 
 #pragma GCC diagnostic push
@@ -232,7 +233,7 @@ class TraceTracer : public silkworm::EvmTracer {
     int64_t initial_gas_{0};
     int32_t current_depth_{-1};
     std::set<evmc::address> created_address_;
-    iterable_stack<uint32_t> index_stack_;
+    iterable_stack<size_t> index_stack_;
     std::stack<int64_t> start_gas_;
 };
 
@@ -434,7 +435,7 @@ class TraceCallExecutor {
     boost::asio::awaitable<TraceCallResult> trace_call(const silkworm::Block& block, const Call& call, const TraceConfig& config);
     boost::asio::awaitable<TraceManyCallResult> trace_calls(const silkworm::Block& block, const std::vector<TraceCall>& calls);
     boost::asio::awaitable<TraceCallResult> trace_transaction(const silkworm::Block& block, const rpc::Transaction& transaction, const TraceConfig& config) {
-        return execute(block.header.number - 1, block, transaction, transaction.transaction_index, config);
+        return execute(block.header.number - 1, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index), config);
     }
     boost::asio::awaitable<TraceDeployResult> trace_deploy_transaction(const silkworm::Block& block, const evmc::address& contract_address);
     boost::asio::awaitable<std::vector<Trace>> trace_transaction(const silkworm::BlockWithHash& block, const rpc::Transaction& transaction);

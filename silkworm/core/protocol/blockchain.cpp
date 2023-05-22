@@ -145,10 +145,11 @@ void Blockchain::unwind_last_changes(uint64_t ancestor, uint64_t tip) {
 
 std::vector<BlockWithHash> Blockchain::intermediate_chain(uint64_t block_number, evmc::bytes32 hash,
                                                           uint64_t canonical_ancestor) const {
-    std::vector<BlockWithHash> chain(block_number - canonical_ancestor);
+    SILKWORM_ASSERT(block_number >= canonical_ancestor);
+    std::vector<BlockWithHash> chain(static_cast<size_t>(block_number - canonical_ancestor));
 
     for (; block_number > canonical_ancestor; --block_number) {
-        BlockWithHash& x{chain[block_number - canonical_ancestor - 1]};
+        BlockWithHash& x{chain[static_cast<size_t>(block_number - canonical_ancestor - 1)]};
 
         BlockBody body;
         SILKWORM_ASSERT(state_.read_body(block_number, hash, body));

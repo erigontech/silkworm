@@ -91,4 +91,22 @@ void to_json(nlohmann::json& json, const ExecutionPayloadAndValue& reply) {
     json["blockValue"] = to_quantity(reply.block_value);
 }
 
+void to_json(nlohmann::json& json, const ExecutionPayloadBody& body) {
+    if (not body.transactions) {
+        json = nlohmann::json::value_t::null;
+        return;
+    }
+
+    nlohmann::json transaction_list;
+    for (const auto& transaction : *body.transactions) {
+        transaction_list.push_back("0x" + silkworm::to_hex(transaction));
+    }
+    json["transactions"] = transaction_list;
+    if (body.withdrawals) {
+        json["withdrawals"] = body.withdrawals.value();
+    } else {
+        json["withdrawals"] = nlohmann::json::value_t::null;
+    }
+}
+
 }  // namespace silkworm::rpc

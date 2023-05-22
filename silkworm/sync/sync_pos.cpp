@@ -365,4 +365,23 @@ auto PoSSync::get_payload(uint64_t /*payloadId*/) -> asio::awaitable<rpc::Execut
     co_return rpc::ExecutionPayloadAndValue{};
 }
 
+auto PoSSync::get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) -> asio::awaitable<rpc::ExecutionPayloadBodies> {
+    rpc::ExecutionPayloadBodies payload_bodies;
+    payload_bodies.resize(block_hashes.size());
+    for (const auto& bh : block_hashes) {
+        const auto block_body{co_await exec_engine_.get_body(bh)};
+        if (block_body) {
+            rpc::ExecutionPayloadBody payload_body{
+                .transactions = {},  // TODO(canepat) encode block_body->transactions
+                .withdrawals = block_body->withdrawals,
+            };
+            payload_bodies.push_back(payload_body);
+        } else {
+            // Add an empty payload anyway because we must respond w/ one payload for each hash
+            payload_bodies.emplace_back();
+        }
+    }
+    co_return payload_bodies;
+}
+
 }  // namespace silkworm::chainsync

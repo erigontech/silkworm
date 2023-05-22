@@ -52,7 +52,7 @@ class StorageWalker {
                                                   const evmc::bytes32& start_location, uint64_t incarnation, AccountCollector& collector);
 
     boost::asio::awaitable<void> storage_range_at(uint64_t block_number, const evmc::address& start_address,
-                                                  const evmc::bytes32& start_location, int16_t max_result, StorageCollector& collector);
+                                                  const evmc::bytes32& start_location, size_t max_result, StorageCollector& collector);
 
   private:
     ethdb::Transaction& transaction_;

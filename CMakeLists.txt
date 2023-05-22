@@ -96,28 +96,7 @@ endif()
 
 add_subdirectory(third_party)
 
-# Compiler enforcements on Silkworm
-if(NOT MSVC)
-  add_compile_options(-Werror -Wall -Wextra -pedantic)
-  add_compile_options(-Wshadow -Wimplicit-fallthrough -Wsign-conversion)
-  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>)
-  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wnon-virtual-dtor>)
-  add_compile_options(-Wno-missing-field-initializers)
-
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    add_compile_options(-Wno-attributes)
-
-    # coroutines support
-    if(NOT SILKWORM_WASM_API)
-      add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fcoroutines>)
-    endif()
-  endif()
-
-  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    add_compile_definitions(_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS)
-    add_compile_options(-Wthread-safety)
-  endif()
-endif()
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler_warnings.cmake)
 
 set(SILKWORM_STACK_SIZE 0x3000000)
 

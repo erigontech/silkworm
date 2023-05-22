@@ -64,7 +64,7 @@ std::string to_hex(T value, bool with_prefix = false) {
 //! \brief Abridges a string to given length and eventually adds an ellipsis if input length is gt required length
 std::string abridge(std::string_view input, size_t length);
 
-std::optional<unsigned> decode_hex_digit(char ch) noexcept;
+std::optional<uint8_t> decode_hex_digit(char ch) noexcept;
 
 std::optional<Bytes> from_hex(std::string_view hex) noexcept;
 
@@ -84,7 +84,7 @@ size_t prefix_length(ByteView a, ByteView b);
 inline ethash::hash256 keccak256(ByteView view) { return ethash::keccak256(view.data(), view.size()); }
 
 //! \brief Create an intx::uint256 from a string supporting both fixed decimal and scientific notation
-template <typename Int>
+template <UnsignedIntegral Int>
 inline constexpr Int from_string_sci(const char* str) {
     auto s = str;
     auto m = Int{};
@@ -104,7 +104,7 @@ inline constexpr Int from_string_sci(const char* str) {
         }
         if (num_digits++ > std::numeric_limits<Int>::digits10)
             intx::throw_<std::out_of_range>(s);
-        if (count_decimals) num_decimal_digits++;
+        if (count_decimals) ++num_decimal_digits;
 
         const auto d = intx::from_dec_digit(c);
         m = m * Int{10} + d;
@@ -129,10 +129,12 @@ inline constexpr Int from_string_sci(const char* str) {
     auto x = m;
     auto exp = e - num_decimal_digits;
     while (exp > 0) {
-        x = x * Int{10};
+        x *= Int{10};
         --exp;
     }
     return x;
 }
+
+float to_float(const intx::uint256&) noexcept;
 
 }  // namespace silkworm

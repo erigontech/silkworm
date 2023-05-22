@@ -53,8 +53,8 @@ std::optional<RpcApiTable::HandleStream> RpcApiTable::find_stream_handler(const 
 }
 
 void RpcApiTable::build_handlers(const std::string& api_spec) {
-    auto start = 0u;
-    auto end = api_spec.find(kApiSpecSeparator);
+    size_t start = 0;
+    size_t end = api_spec.find(kApiSpecSeparator);
     while (end != std::string::npos) {
         add_handlers(api_spec.substr(start, end - start));
         start = end + std::strlen(kApiSpecSeparator);
@@ -209,6 +209,7 @@ void RpcApiTable::add_engine_handlers() {
     method_handlers_[http::method::k_engine_exchangeCapabilities] = &commands::RpcApi::handle_engine_exchange_capabilities;
     method_handlers_[http::method::k_engine_getPayloadV1] = &commands::RpcApi::handle_engine_get_payload_v1;
     method_handlers_[http::method::k_engine_getPayloadV2] = &commands::RpcApi::handle_engine_get_payload_v2;
+    method_handlers_[http::method::k_engine_getPayloadBodiesByHashV1] = &commands::RpcApi::handle_engine_get_payload_bodies_by_hash_v1;
     method_handlers_[http::method::k_engine_newPayloadV1] = &commands::RpcApi::handle_engine_new_payload_v1;
     method_handlers_[http::method::k_engine_newPayloadV2] = &commands::RpcApi::handle_engine_new_payload_v2;
     method_handlers_[http::method::k_engine_forkchoiceUpdatedV1] = &commands::RpcApi::handle_engine_forkchoice_updated_v1;

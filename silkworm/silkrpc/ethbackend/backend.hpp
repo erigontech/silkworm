@@ -23,6 +23,7 @@
 #include <boost/asio/use_awaitable.hpp>
 #include <evmc/evmc.hpp>
 
+#include <silkworm/core/types/hash.hpp>
 #include <silkworm/silkrpc/types/execution_payload.hpp>
 #include <silkworm/silkrpc/types/node_info.hpp>
 #include <silkworm/silkrpc/types/peer_info.hpp>
@@ -40,6 +41,7 @@ class BackEnd {
     virtual boost::asio::awaitable<ExecutionPayloadAndValue> engine_get_payload(uint64_t payload_id) = 0;
     virtual boost::asio::awaitable<PayloadStatus> engine_new_payload(const ExecutionPayload& payload) = 0;
     virtual boost::asio::awaitable<ForkChoiceUpdatedReply> engine_forkchoice_updated(const ForkChoiceUpdatedRequest& fcu_request) = 0;
+    virtual boost::asio::awaitable<ExecutionPayloadBodies> engine_get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) = 0;
     virtual boost::asio::awaitable<NodeInfos> engine_node_info() = 0;
     virtual boost::asio::awaitable<PeerInfos> peers() = 0;
 };

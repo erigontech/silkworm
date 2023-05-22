@@ -63,4 +63,8 @@ TEST_CASE("print empty ExecutionPayloadAndValue", "[silkworm][rpc][types]") {
     CHECK_NOTHROW(silkworm::test::null_stream() << pv);
 }
 
+TEST_CASE("print empty ExecutionPayloadBody", "[silkworm][rpc][types]") {
+    CHECK_NOTHROW(silkworm::test::null_stream() << ExecutionPayloadBody{});
+}
+
 }  // namespace silkworm::rpc

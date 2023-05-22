@@ -41,7 +41,7 @@ class LocalTransaction : public Transaction {
 
     ~LocalTransaction() override = default;
 
-    [[nodiscard]] uint64_t view_id() const override { return read_only_txn_.id(); }
+    [[nodiscard]] uint64_t view_id() override { return (*rtxn_).id(); }
 
     boost::asio::awaitable<void> open() override;
 
@@ -61,7 +61,6 @@ class LocalTransaction : public Transaction {
 
     std::shared_ptr<mdbx::env_managed> chaindata_env_;
     uint32_t last_cursor_id_;
-    mdbx::txn_managed read_only_txn_;
     db::ROTxn rtxn_;
 };
 

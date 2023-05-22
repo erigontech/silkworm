@@ -195,6 +195,8 @@ class ROTxn {
     mdbx::txn* operator->() { return &managed_txn_; }
     operator mdbx::txn&() { return managed_txn_; }
 
+    [[nodiscard]] uint64_t id() const { return managed_txn_.id(); }
+
     mdbx::env db() const { return managed_txn_.env(); }
 
     virtual std::unique_ptr<ROCursor> ro_cursor(const MapConfig& config);

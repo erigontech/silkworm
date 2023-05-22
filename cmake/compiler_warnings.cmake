@@ -30,7 +30,7 @@ else()
   add_compile_options(-Wdouble-promotion -Wsign-compare)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wnon-virtual-dtor>)
-  add_compile_options(-Woverloaded-virtual)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Woverloaded-virtual>)
   add_compile_options(-Wnull-dereference)
   add_compile_options(-Wtype-limits -Wformat=2)
 

@@ -36,7 +36,7 @@ namespace silkworm {
  * Warning: This method does not verify state root;
  * pre-Byzantium receipt root isn't validated either.
  *
- * For better performance use ExecutionProcessor directly and set EVM state_pool & advanced_analysis_cache.
+ * For better performance use ExecutionProcessor directly and set EVM state_pool & analysis_cache.
  *
  * @param state The Ethereum state at the beginning of the block.
  */

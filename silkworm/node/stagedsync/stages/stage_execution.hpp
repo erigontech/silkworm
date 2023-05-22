@@ -53,7 +53,7 @@ class Execution final : public Stage {
 
     //! \brief Executes a batch of blocks
     //! \remarks A batch completes when either max block is reached or buffer dimensions overflow
-    Stage::Result execute_batch(db::RWTxn& txn, BlockNum max_block_num, BaselineAnalysisCache& analysis_cache,
+    Stage::Result execute_batch(db::RWTxn& txn, BlockNum max_block_num, AnalysisCache& analysis_cache,
                                 ObjectPool<evmone::ExecutionState>& state_pool, BlockNum prune_history_threshold,
                                 BlockNum prune_receipts_threshold);
 

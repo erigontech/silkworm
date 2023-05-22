@@ -259,7 +259,6 @@ evmc_result EVM::execute(const evmc_message& msg, ByteView code, const evmc::byt
         EvmHost host{*this};
         return exo_evm->execute(exo_evm, &host.get_interface(), host.to_context(), rev, &msg, code.data(), code.size());
     } else {
-        // for one-off execution baseline interpreter is generally faster
         return execute_with_baseline_interpreter(rev, msg, code, code_hash);
     }
 }
@@ -286,9 +285,9 @@ void EVM::release_state(gsl::owner<evmone::ExecutionState*> state) const noexcep
 evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& msg, ByteView code,
                                                    const evmc::bytes32* code_hash) noexcept {
     std::shared_ptr<evmone::baseline::CodeAnalysis> analysis;
-    const bool use_cache{code_hash && baseline_analysis_cache};
+    const bool use_cache{code_hash && analysis_cache};
     if (use_cache) {
-        const auto optional_analysis{baseline_analysis_cache->get_as_copy(*code_hash)};
+        const auto optional_analysis{analysis_cache->get_as_copy(*code_hash)};
         if (optional_analysis) {
             analysis = *optional_analysis;
         }
@@ -296,7 +295,7 @@ evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc
     if (!analysis) {
         analysis = std::make_shared<evmone::baseline::CodeAnalysis>(evmone::baseline::analyze(rev, code));
         if (use_cache) {
-            baseline_analysis_cache->put(*code_hash, analysis);
+            analysis_cache->put(*code_hash, analysis);
         }
     }
 

@@ -59,9 +59,10 @@ class EvmTracer {
 
     virtual void on_reward_granted(const CallResult& result, const IntraBlockState& intra_block_state) noexcept = 0;
 };
+
 using EvmTracers = std::vector<std::reference_wrapper<EvmTracer>>;
 
-using BaselineAnalysisCache = lru_cache<evmc::bytes32, std::shared_ptr<evmone::baseline::CodeAnalysis>>;
+using AnalysisCache = lru_cache<evmc::bytes32, std::shared_ptr<evmone::baseline::CodeAnalysis>>;
 
 class EVM {
   public:
@@ -88,9 +89,8 @@ class EVM {
     void add_tracer(EvmTracer& tracer) noexcept;
     [[nodiscard]] const EvmTracers& tracers() const noexcept { return tracers_; };
 
-    BaselineAnalysisCache* baseline_analysis_cache{nullptr};  // use for better performance
-
-    ObjectPool<evmone::ExecutionState>* state_pool{nullptr};  // use for better performance
+    AnalysisCache* analysis_cache{nullptr};                   // provide one for better performance
+    ObjectPool<evmone::ExecutionState>* state_pool{nullptr};  // ditto
 
     evmc_vm* exo_evm{nullptr};  // it's possible to use an exogenous EVMC VM
 

@@ -88,7 +88,7 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
         }
 
         static constexpr size_t kCacheSize{5'000};
-        BaselineAnalysisCache analysis_cache{kCacheSize};
+        AnalysisCache analysis_cache{kCacheSize};
         ObjectPool<evmone::ExecutionState> state_pool;
 
         prefetched_blocks_.clear();
@@ -198,7 +198,7 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
     }
 }
 
-Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, BaselineAnalysisCache& analysis_cache,
+Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, AnalysisCache& analysis_cache,
                                        ObjectPool<evmone::ExecutionState>& state_pool, BlockNum prune_history_threshold,
                                        BlockNum prune_receipts_threshold) {
     Stage::Result ret{Stage::Result::kSuccess};
@@ -236,7 +236,7 @@ Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, B
             }
 
             ExecutionProcessor processor(block, *rule_set_, buffer, node_settings_->chain_config.value());
-            processor.evm().baseline_analysis_cache = &analysis_cache;
+            processor.evm().analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 
             // TODO Add Tracer and collect call traces

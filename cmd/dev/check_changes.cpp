@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
             throw std::runtime_error("Unable to retrieve chain config");
         }
 
-        BaselineAnalysisCache analysis_cache{/*max_size=*/5'000};
+        AnalysisCache analysis_cache{/*max_size=*/5'000};
         ObjectPool<evmone::ExecutionState> state_pool;
         std::vector<Receipt> receipts;
         auto rule_set{protocol::rule_set_factory(*chain_config)};
@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
             db::Buffer buffer{txn, /*prune_history_threshold=*/0, /*historical_block=*/block_num};
 
             ExecutionProcessor processor{block, *rule_set, buffer, *chain_config};
-            processor.evm().baseline_analysis_cache = &analysis_cache;
+            processor.evm().analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 
             if (const auto res{processor.execute_and_write_block(receipts)}; res != ValidationResult::kOk) {

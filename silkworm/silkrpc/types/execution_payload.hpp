@@ -40,8 +40,7 @@ struct ExecutionPayload {
     enum Version : uint32_t {
         V1 = 1,
         V2 = 2
-    };
-    Version version{V1};
+    } version{V1};
 
     uint64_t number;
     uint64_t timestamp;
@@ -67,11 +66,20 @@ struct ForkChoiceState {
     evmc::bytes32 finalized_block_hash;
 };
 
+//! PayloadAttributes represents either
 //! PayloadAttributesV1 as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#payloadattributesv1
+//! or
+//! PayloadAttributesV2 as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#payloadattributesv2
 struct PayloadAttributes {
+    enum Version : uint32_t {
+        V1 = 1,
+        V2 = 2
+    } version{V1};
+
     uint64_t timestamp;
     evmc::bytes32 prev_randao;
     evmc::address suggested_fee_recipient;
+    std::optional<std::vector<Withdrawal>> withdrawals{std::nullopt};  // present iff version == V2
 };
 
 //! PayloadStatusV1 as specified by https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#payloadstatusv1
@@ -121,7 +129,8 @@ std::ostream& operator<<(std::ostream& out, const ExecutionPayload& payload);
 std::ostream& operator<<(std::ostream& out, const PayloadStatus& payload_status);
 std::ostream& operator<<(std::ostream& out, const ForkChoiceState& fork_choice_state);
 std::ostream& operator<<(std::ostream& out, const PayloadAttributes& payload_attributes);
-std::ostream& operator<<(std::ostream& out, const ForkChoiceUpdatedReply& fork_choice_updated_reply);
+std::ostream& operator<<(std::ostream& out, const ForkChoiceUpdatedRequest& fcu_request);
+std::ostream& operator<<(std::ostream& out, const ForkChoiceUpdatedReply& fcu_reply);
 std::ostream& operator<<(std::ostream& out, const TransitionConfiguration& transition_configuration);
 std::ostream& operator<<(std::ostream& out, const ExecutionPayloadAndValue& pv);
 

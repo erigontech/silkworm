@@ -107,7 +107,7 @@ inline constexpr Int from_string_sci(const char* str) {
         if (count_decimals) ++num_decimal_digits;
 
         const auto d = intx::from_dec_digit(c);
-        m = m* Int{10} + d;
+        m = m * Int{10} + d;
         if (m < d)
             intx::throw_<std::out_of_range>(s);
     }

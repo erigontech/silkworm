@@ -92,7 +92,7 @@ void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& re
     }
 
     // EIP-1559 normal gas cost
-    const intx::uint256 base_fee_per_gas = (rev >= EVMC_LONDON) ? evm_.block().header.base_fee_per_gas.value_or(0) : 0;
+    const intx::uint256 base_fee_per_gas{evm_.block().header.base_fee_per_gas.value_or(0)};
     const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
     state_.subtract_from_balance(*txn.from, txn.gas_limit * effective_gas_price);
 

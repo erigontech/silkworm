@@ -192,7 +192,7 @@ bool SnapshotSync::stop() {
 }
 
 void SnapshotSync::build_missing_indexes() {
-    thread_pool workers;
+    ThreadPool workers;
 
     // Determine the missing indexes and build them in parallel
     const auto missing_indexes = repository_.missing_indexes();
@@ -209,7 +209,6 @@ void SnapshotSync::build_missing_indexes() {
         std::this_thread::sleep_for(kCheckCompletionInterval);
     }
     // Wait for any already-started-but-unfinished work in case of stop request
-    workers.paused = true;
     workers.wait_for_tasks();
 }
 

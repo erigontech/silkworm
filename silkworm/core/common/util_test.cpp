@@ -150,11 +150,11 @@ TEST_CASE("parse_size") {
     size = parse_size("2TB");
     CHECK((size && *size == 2 * kTebi));
     size = parse_size(".5TB");
-    CHECK((size && *size == (kTebi * 0.5)));
+    CHECK((size && *size == (kTebi / 2)));
     size = parse_size("0.5TB");
-    CHECK((size && *size == (kTebi * 0.5)));
+    CHECK((size && *size == (kTebi / 2)));
     size = parse_size("0.5   TB");
-    CHECK((size && *size == (kTebi * 0.5)));
+    CHECK((size && *size == (kTebi / 2)));
     CHECK(!parse_size("ABBA"));
 }
 

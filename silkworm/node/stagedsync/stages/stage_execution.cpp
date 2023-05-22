@@ -89,7 +89,7 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
 
         static constexpr size_t kCacheSize{5'000};
         BaselineAnalysisCache analysis_cache{kCacheSize};
-        ObjectPool<EvmoneExecutionState> state_pool;
+        ObjectPool<evmone::ExecutionState> state_pool;
 
         prefetched_blocks_.clear();
 
@@ -199,7 +199,7 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
 }
 
 Stage::Result Execution::execute_batch(db::RWTxn& txn, BlockNum max_block_num, BaselineAnalysisCache& analysis_cache,
-                                       ObjectPool<EvmoneExecutionState>& state_pool, BlockNum prune_history_threshold,
+                                       ObjectPool<evmone::ExecutionState>& state_pool, BlockNum prune_history_threshold,
                                        BlockNum prune_receipts_threshold) {
     Stage::Result ret{Stage::Result::kSuccess};
     using namespace std::chrono_literals;

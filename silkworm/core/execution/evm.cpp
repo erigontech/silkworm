@@ -23,7 +23,6 @@
 #include <memory>
 
 #include <ethash/keccak.hpp>
-#include <evmone/advanced_execution.hpp>
 #include <evmone/evmone.h>
 #include <evmone/tracing.hpp>
 #include <evmone/vm.hpp>
@@ -259,26 +258,24 @@ evmc_result EVM::execute(const evmc_message& msg, ByteView code, const evmc::byt
     if (exo_evm) {
         EvmHost host{*this};
         return exo_evm->execute(exo_evm, &host.get_interface(), host.to_context(), rev, &msg, code.data(), code.size());
-    } else if (code_hash && advanced_analysis_cache) {
-        return execute_with_advanced_interpreter(rev, msg, code, *code_hash);
     } else {
         // for one-off execution baseline interpreter is generally faster
         return execute_with_baseline_interpreter(rev, msg, code, code_hash);
     }
 }
 
-gsl::owner<EvmoneExecutionState*> EVM::acquire_state() const noexcept {
-    gsl::owner<EvmoneExecutionState*> state{nullptr};
+gsl::owner<evmone::ExecutionState*> EVM::acquire_state() const noexcept {
+    gsl::owner<evmone::ExecutionState*> state{nullptr};
     if (state_pool) {
         state = state_pool->acquire();
     }
     if (!state) {
-        state = new EvmoneExecutionState;
+        state = new evmone::ExecutionState;
     }
     return state;
 }
 
-void EVM::release_state(gsl::owner<EvmoneExecutionState*> state) const noexcept {
+void EVM::release_state(gsl::owner<evmone::ExecutionState*> state) const noexcept {
     if (state_pool) {
         state_pool->add(state);
     } else {
@@ -304,32 +301,11 @@ evmc_result EVM::execute_with_baseline_interpreter(evmc_revision rev, const evmc
     }
 
     EvmHost host{*this};
-    gsl::owner<EvmoneExecutionState*> state{acquire_state()};
+    gsl::owner<evmone::ExecutionState*> state{acquire_state()};
     state->reset(msg, rev, host.get_interface(), host.to_context(), code);
 
     const auto vm{static_cast<evmone::VM*>(evm1_)};
     evmc_result res{evmone::baseline::execute(*vm, msg.gas, *state, *analysis)};
-
-    release_state(state);
-
-    return res;
-}
-
-evmc_result EVM::execute_with_advanced_interpreter(evmc_revision rev, const evmc_message& msg, ByteView code,
-                                                   const evmc::bytes32& code_hash) noexcept {
-    assert(advanced_analysis_cache != nullptr);
-
-    std::shared_ptr<evmone::advanced::AdvancedCodeAnalysis> analysis{advanced_analysis_cache->get(code_hash, rev)};
-    if (!analysis) {
-        analysis = std::make_shared<evmone::advanced::AdvancedCodeAnalysis>(evmone::advanced::analyze(rev, code));
-        advanced_analysis_cache->put(code_hash, analysis, rev);
-    }
-
-    EvmHost host{*this};
-    gsl::owner<EvmoneExecutionState*> state{acquire_state()};
-    state->reset(msg, rev, host.get_interface(), host.to_context(), code);
-
-    evmc_result res{evmone::advanced::execute(*state, *analysis)};
 
     release_state(state);
 
@@ -341,8 +317,6 @@ evmc_revision EVM::revision() const noexcept {
 }
 
 void EVM::add_tracer(EvmTracer& tracer) noexcept {
-    assert(advanced_analysis_cache == nullptr);
-
     const auto vm{static_cast<evmone::VM*>(evm1_)};
     vm->add_tracer(std::make_unique<DelegatingTracer>(tracer, state_));
     tracers_.push_back(std::ref(tracer));

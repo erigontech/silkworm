@@ -18,7 +18,6 @@
 
 #include <boost/circular_buffer.hpp>
 
-#include <silkworm/core/execution/analysis_cache.hpp>
 #include <silkworm/core/execution/evm.hpp>
 #include <silkworm/core/protocol/rule_set.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
@@ -55,7 +54,7 @@ class Execution final : public Stage {
     //! \brief Executes a batch of blocks
     //! \remarks A batch completes when either max block is reached or buffer dimensions overflow
     Stage::Result execute_batch(db::RWTxn& txn, BlockNum max_block_num, BaselineAnalysisCache& analysis_cache,
-                                ObjectPool<EvmoneExecutionState>& state_pool, BlockNum prune_history_threshold,
+                                ObjectPool<evmone::ExecutionState>& state_pool, BlockNum prune_history_threshold,
                                 BlockNum prune_receipts_threshold);
 
     //! \brief For given changeset cursor/bucket it reverts the changes on states buckets

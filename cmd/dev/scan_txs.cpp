@@ -55,8 +55,8 @@ int main(int argc, char* argv[]) {
     // running on the same machine.
     // std::unique_ptr<lmdb::Transaction> txn{env->begin_ro_transaction()};
 
-    AdvancedAnalysisCache analysis_cache;
-    ObjectPool<EvmoneExecutionState> state_pool;
+    BaselineAnalysisCache analysis_cache{/*max_size=*/5'000};
+    ObjectPool<evmone::ExecutionState> state_pool;
     std::vector<Receipt> receipts;
 
     try {
@@ -92,7 +92,7 @@ int main(int argc, char* argv[]) {
             db::Buffer buffer{txn, /*prune_history_threshold=*/0, /*historical_block=*/block_num};
 
             ExecutionProcessor processor{block, *rule_set, buffer, *chain_config};
-            processor.evm().advanced_analysis_cache = &analysis_cache;
+            processor.evm().baseline_analysis_cache = &analysis_cache;
             processor.evm().state_pool = &state_pool;
 
             // Execute the block and retrieve the receipts

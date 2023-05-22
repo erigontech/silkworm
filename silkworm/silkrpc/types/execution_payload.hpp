@@ -125,6 +125,13 @@ struct ExecutionPayloadAndValue {
     intx::uint256 block_value;  // in wei
 };
 
+//! ExecutionPayloadBodyV1 as specified in https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#executionpayloadbodyv1
+struct ExecutionPayloadBody {
+    std::optional<std::vector<Bytes>> transactions{std::nullopt};      // not present iff requested block is missing
+    std::optional<std::vector<Withdrawal>> withdrawals{std::nullopt};  // present iff after Shanghai
+};
+using ExecutionPayloadBodies = std::vector<ExecutionPayloadBody>;
+
 std::ostream& operator<<(std::ostream& out, const ExecutionPayload& payload);
 std::ostream& operator<<(std::ostream& out, const PayloadStatus& payload_status);
 std::ostream& operator<<(std::ostream& out, const ForkChoiceState& fork_choice_state);
@@ -133,5 +140,6 @@ std::ostream& operator<<(std::ostream& out, const ForkChoiceUpdatedRequest& fcu_
 std::ostream& operator<<(std::ostream& out, const ForkChoiceUpdatedReply& fcu_reply);
 std::ostream& operator<<(std::ostream& out, const TransitionConfiguration& transition_configuration);
 std::ostream& operator<<(std::ostream& out, const ExecutionPayloadAndValue& pv);
+std::ostream& operator<<(std::ostream& out, const ExecutionPayloadBody& body);
 
 }  // namespace silkworm::rpc

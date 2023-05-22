@@ -154,6 +154,26 @@ awaitable<ForkChoiceUpdatedReply> RemoteBackEnd::engine_forkchoice_updated(const
     co_return forkchoice_updated_reply;
 }
 
+awaitable<ExecutionPayloadBodies> RemoteBackEnd::engine_get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) {
+    const auto start_time = clock_time::now();
+    UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncEngineGetPayloadBodiesByHashV1> gpb_rpc{*stub_, grpc_context_};
+    ::remote::EngineGetPayloadBodiesByHashV1Request request;
+    for (const auto& bh : block_hashes) {
+        H256_from_bytes32(bh, request.add_hashes());
+    }
+    const auto reply = co_await gpb_rpc.finish_on(executor_, request);
+    ExecutionPayloadBodies payload_bodies;
+    payload_bodies.reserve(static_cast<std::size_t>(reply.bodies_size()));
+    for (const auto& body : reply.bodies()) {
+        std::vector<Bytes> transactions{decode(body.transactions())};
+        std::vector<Withdrawal> withdrawals{decode(body.withdrawals())};
+        ExecutionPayloadBody payload_body{std::move(transactions), std::move(withdrawals)};
+        payload_bodies.push_back(std::move(payload_body));
+    }
+    SILK_DEBUG << "RemoteBackEnd::engine_get_payload_bodies_by_hash #bodies=" << payload_bodies.size() << " t=" << clock_time::since(start_time);
+    co_return payload_bodies;
+}
+
 awaitable<PeerInfos> RemoteBackEnd::peers() {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncPeers> peers_rpc{*stub_, grpc_context_};
@@ -193,10 +213,7 @@ ExecutionPayload RemoteBackEnd::decode_execution_payload(const ::types::Executio
     silkworm::Bloom bloom;
     std::memcpy(bloom.data(), bytes_from_H2048(logs_bloom_h2048).data(), bloom.size());
     // Convert transactions in std::string to silkworm::Bytes
-    std::vector<Bytes> transactions;
-    for (const auto& transaction_string : grpc_payload.transactions()) {
-        transactions.push_back(bytes_of_string(transaction_string));
-    }
+    std::vector<Bytes> transactions{decode(grpc_payload.transactions())};
 
     // Assembling the execution_payload data structure
     return ExecutionPayload{
@@ -294,6 +311,29 @@ gsl::owner<::remote::EnginePayloadAttributes*> RemoteBackEnd::encode_payload_att
         fcu_request_grpc.set_allocated_payload_attributes(payload_attributes_grpc);
     }
     return fcu_request_grpc;
+}
+
+std::vector<Bytes> RemoteBackEnd::decode(const ::google::protobuf::RepeatedPtrField<std::string>& grpc_txs) {
+    // Convert encoded transactions from std::string to Bytes
+    std::vector<Bytes> encoded_transactions;
+    encoded_transactions.reserve(static_cast<std::size_t>(grpc_txs.size()));
+    for (const auto& grpc_tx_string : grpc_txs) {
+        encoded_transactions.push_back(bytes_of_string(grpc_tx_string));
+    }
+    return encoded_transactions;
+}
+
+std::vector<Withdrawal> RemoteBackEnd::decode(const ::google::protobuf::RepeatedPtrField<::types::Withdrawal>& grpc_withdrawals) {
+    std::vector<Withdrawal> withdrawals;
+    withdrawals.reserve(static_cast<std::size_t>(grpc_withdrawals.size()));
+    for (auto& grpc_withdrawal : grpc_withdrawals) {
+        Withdrawal w{grpc_withdrawal.index(),
+                     grpc_withdrawal.validator_index(),
+                     address_from_H160(grpc_withdrawal.address()),
+                     grpc_withdrawal.amount()};
+        withdrawals.emplace_back(w);
+    }
+    return withdrawals;
 }
 
 PayloadStatus RemoteBackEnd::decode_payload_status(const ::remote::EnginePayloadStatus& payload_status_grpc) {

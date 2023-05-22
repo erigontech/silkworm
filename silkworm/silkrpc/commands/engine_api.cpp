@@ -119,6 +119,38 @@ awaitable<void> EngineRpcApi::handle_engine_get_payload_v2(const nlohmann::json&
     }
 }
 
+// https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#engine_getpayloadbodiesbyhashv1
+awaitable<void> EngineRpcApi::handle_engine_get_payload_bodies_by_hash_v1(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request.at("params");
+    if (params.size() != 1) {
+        auto error_msg = "invalid engine_getPayloadBodiesByHashV1 params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+        co_return;
+    }
+
+    try {
+        const auto block_hashes = params[0].get<std::vector<Hash>>();
+        // We MUST support at least 32 block hashes and MUST check if number is too large for us [Specification 3.]
+        if (block_hashes.size() > 32) {
+            const auto error_msg = "number of block hashes > 32 is too large";
+            SILK_ERROR << error_msg;
+            reply = make_json_error(request.at("id"), kTooLargeRequest, error_msg);
+        }
+        const auto payload_bodies = co_await backend_->engine_get_payload_bodies_by_hash(block_hashes);
+        reply = make_json_content(request["id"], payload_bodies);
+    } catch (const boost::system::system_error& se) {
+        SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
+        reply = make_json_error(request["id"], se.code().value(), se.code().message());
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request["id"], kInternalError, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        reply = make_json_error(request["id"], kServerError, "unexpected exception");
+    }
+}
+
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/paris.md#engine_newpayloadv1
 awaitable<void> EngineRpcApi::handle_engine_new_payload_v1(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request.at("params");

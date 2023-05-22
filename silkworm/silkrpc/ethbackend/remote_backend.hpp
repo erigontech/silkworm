@@ -54,6 +54,7 @@ class RemoteBackEnd final : public BackEnd {
     awaitable<ExecutionPayloadAndValue> engine_get_payload(uint64_t payload_id) override;
     awaitable<PayloadStatus> engine_new_payload(const ExecutionPayload& payload) override;
     awaitable<ForkChoiceUpdatedReply> engine_forkchoice_updated(const ForkChoiceUpdatedRequest& fcu_request) override;
+    awaitable<ExecutionPayloadBodies> engine_get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) override;
     awaitable<NodeInfos> engine_node_info() override;
     awaitable<PeerInfos> peers() override;
 
@@ -63,6 +64,8 @@ class RemoteBackEnd final : public BackEnd {
     static gsl::owner<::remote::EngineForkChoiceState*> encode_forkchoice_state(const ForkChoiceState& forkchoice_state);
     static gsl::owner<::remote::EnginePayloadAttributes*> encode_payload_attributes(const PayloadAttributes& payload_attributes);
     static ::remote::EngineForkChoiceUpdatedRequest encode_forkchoice_updated_request(const ForkChoiceUpdatedRequest& fcu_request);
+    static std::vector<Bytes> decode(const ::google::protobuf::RepeatedPtrField<std::string>& grpc_txs);
+    static std::vector<Withdrawal> decode(const ::google::protobuf::RepeatedPtrField<::types::Withdrawal>& grpc_withdrawals);
     static PayloadStatus decode_payload_status(const ::remote::EnginePayloadStatus& payload_status_grpc);
     static std::string decode_status_message(const ::remote::EngineStatus& status);
 

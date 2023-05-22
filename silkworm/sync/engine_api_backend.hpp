@@ -36,6 +36,7 @@ class EngineApiBackend : public rpc::ethbackend::BackEnd {
     awaitable<rpc::PayloadStatus> engine_new_payload(const rpc::ExecutionPayload& payload) override;
     awaitable<rpc::ExecutionPayloadAndValue> engine_get_payload(uint64_t payload_id) override;
     awaitable<rpc::ForkChoiceUpdatedReply> engine_forkchoice_updated(const rpc::ForkChoiceUpdatedRequest& fcu_request) override;
+    awaitable<rpc::ExecutionPayloadBodies> engine_get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) override;
     awaitable<evmc::address> etherbase() override;
     awaitable<uint64_t> protocol_version() override;
     awaitable<uint64_t> net_version() override;

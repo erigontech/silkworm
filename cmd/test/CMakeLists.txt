@@ -15,7 +15,6 @@
 ]]
 
 find_package(Catch2 REQUIRED)
-find_package(roaring REQUIRED)
 
 # Silkworm Core Tests
 file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/core/*_test.cpp")
@@ -46,7 +45,7 @@ if(NOT SILKWORM_CORE_ONLY)
   if(SILKWORM_SANITIZE)
     target_compile_definitions(node_test PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
   endif()
-  target_link_libraries(node_test silkworm_node Catch2::Catch2 roaring::roaring)
+  target_link_libraries(node_test silkworm_node Catch2::Catch2)
 
   # Silkworm RpcDaemon Tests
   file(GLOB_RECURSE SILKWORM_RPCDAEMON_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/silkrpc/*_test.cpp")

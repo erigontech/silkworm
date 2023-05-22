@@ -202,4 +202,11 @@ TEST_CASE("intx::uint256 from scientific notation string") {
     CHECK(from_string_sci<intx::uint256>(kMaxScientificNotation) == std::numeric_limits<intx::uint256>::max());
 }
 
+TEST_CASE("intx::uint256 to_float") {
+    CHECK(to_float(0) == 0.f);
+    CHECK(to_float(1) == 1.f);
+    CHECK(to_float(24) == 24.f);
+    CHECK(to_float(intx::from_string<intx::uint256>("1000000000000000000000000")) == 1e24f);
+}
+
 }  // namespace silkworm

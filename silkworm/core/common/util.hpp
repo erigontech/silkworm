@@ -135,4 +135,6 @@ inline constexpr Int from_string_sci(const char* str) {
     return x;
 }
 
+float to_float(const intx::uint256&) noexcept;
+
 }  // namespace silkworm

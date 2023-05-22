@@ -243,4 +243,14 @@ size_t prefix_length(ByteView a, ByteView b) {
     return len;
 }
 
+float to_float(const intx::uint256& n) noexcept {
+    static constexpr float k2_64{18446744073709551616.};  // 2^64
+    const uint64_t* words{intx::as_words(n)};
+    float res = words[3];
+    res = k2_64 * res + words[2];
+    res = k2_64 * res + words[1];
+    res = k2_64 * res + words[0];
+    return res;
+}
+
 }  // namespace silkworm

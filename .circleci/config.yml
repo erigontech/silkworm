@@ -57,6 +57,10 @@ commands:
       build_type:
         type: string
         default: Release
+      compiler_id:
+        type: string
+      compiler_version:
+        type: integer
       conan_profile:
         type: string
         default: none
@@ -64,6 +68,9 @@ commands:
         type: string
         default: default
     steps:
+      - run:
+          name: "Install compiler"
+          command: cmake/setup/compiler_install.sh <<parameters.compiler_id>> <<parameters.compiler_version>>
       - run:
           name: "Install dependencies"
           command: |
@@ -87,36 +94,15 @@ commands:
           name: "Build"
           command: cmake --build ~/build -j8 # each compiler job requires 4GB of RAM
 
-  install_gcc:
-    steps:
-      - run:
-          name: "Install gcc"
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y gcc-$GCC_VERSION g++-$GCC_VERSION
-            sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-$GCC_VERSION 100 --slave /usr/bin/g++ g++ /usr/bin/g++-$GCC_VERSION
-
-  # libc++ is an alternative standard library needed for coroutines support on Clang
-  # https://libcxx.llvm.org
-  install_llvm:
-    steps:
-      - run:
-          name: "Install llvm"
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y llvm-$CLANG_VERSION libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev clang-$CLANG_VERSION
-            sudo ln -sfv /usr/bin/clang-$CLANG_VERSION /usr/bin/clang
-            sudo ln -sfv /usr/bin/clang++-$CLANG_VERSION /usr/bin/clang++
-            sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100
-            sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 100
-            sudo update-alternatives --install /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-$CLANG_VERSION 100
-            sudo update-alternatives --install /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-$CLANG_VERSION 100
-
   build_using_conan:
     parameters:
       build_type:
         type: string
         default: Release
+      compiler_id:
+        type: string
+      compiler_version:
+        type: integer
       profile:
         type: string
         default: linux_gcc_11_release
@@ -132,6 +118,8 @@ commands:
           key: &conan-cache-key conan-machine-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/profiles/<<parameters.profile>>"}}-{{checksum "conanfile.txt"}}
       - build:
           build_type: <<parameters.build_type>>
+          compiler_id: <<parameters.compiler_id>>
+          compiler_version: <<parameters.compiler_version>>
           conan_profile: <<parameters.profile>>
           toolchain: <<parameters.toolchain>>
       - save_cache:
@@ -184,24 +172,24 @@ jobs:
     steps:
       - checkout_with_submodules
       - build_using_conan:
+          compiler_id: gcc
+          compiler_version: 11
           build_type: Debug
       - test
 
   linux-gcc-12-release:
-    environment:
-      GCC_VERSION: 12
     machine:
       image: ubuntu-2204:2023.04.2
     resource_class: xlarge
     steps:
       - checkout_with_submodules
-      - install_gcc
-      - build_using_conan
+      - build_using_conan:
+          compiler_id: gcc
+          compiler_version: 12        
       - test
 
   linux-clang-15-address-sanitizer:
     environment:
-      CLANG_VERSION: 15
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=address,undefined
       ASAN_OPTIONS: alloc_dealloc_mismatch=0 # https://github.com/llvm/llvm-project/issues/59432
     machine:
@@ -209,16 +197,16 @@ jobs:
     resource_class: xlarge
     steps:
       - checkout_with_submodules
-      - install_llvm
       - build_using_conan:
           build_type: Debug
+          compiler_id: clang
+          compiler_version: 15
           profile: linux_clang_13_release
           toolchain: clang_libcxx
       - test
 
   linux-clang-13-coverage:
     environment:
-      CLANG_VERSION: 13
       BUILD_CMAKE_ARGS: -DSILKWORM_CLANG_COVERAGE=ON
     machine:
       image: ubuntu-2204:2023.04.2
@@ -226,9 +214,10 @@ jobs:
     steps:
       - checkout_with_submodules
       - format
-      - install_llvm
       - build_using_conan:
           build_type: Debug
+          compiler_id: clang
+          compiler_version: 13
           profile: linux_clang_13_release
           toolchain: clang_libcxx
       - run:

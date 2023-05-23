@@ -315,9 +315,20 @@ jobs:
 
 workflows:
   version: 2
-  silkworm:
+
+  light:
+    when:
+      not:
+        equal: [ master, <<pipeline.git.branch>> ]
     jobs:
       - linux-gcc-12-release
+
+  integration:
+    when:
+      or:
+        - equal: [ master, <<pipeline.git.branch>> ]
+        - matches: { pattern: "^ci\\/.+$", value: <<pipeline.git.branch>> }
+    jobs:
       - linux-gcc-11-thread-sanitizer
       - linux-clang-13-coverage
       - linux-clang-15-address-sanitizer

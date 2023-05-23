@@ -10,8 +10,6 @@
  * for High-Performance Scientific Computing", doi:10.5281/zenodo.4742687, arXiv:2105.00613 (May 2021)
  *
  * @note Modified for Silkworm. Main modification: configurable stack size.
- *
- * @brief A fast, lightweight, and easy-to-use C++17 thread pool library.
  */
 
 #pragma once
@@ -33,7 +31,7 @@
 namespace silkworm {
 
 /**
- * @brief A fast, lightweight, and easy-to-use C++17 thread pool class.
+ * @brief A fast, lightweight, and easy-to-use C++17 thread pool.
  */
 class [[nodiscard]] ThreadPool {
   public:

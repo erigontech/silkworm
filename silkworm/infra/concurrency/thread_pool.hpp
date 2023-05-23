@@ -57,8 +57,9 @@ class [[nodiscard]] ThreadPool {
         create_threads();
     }
 
-    ThreadPool(const ThreadPool&) = delete;  // not copyable
-    ThreadPool(ThreadPool&&) = delete;       // nor movable
+    // Not copyable nor movable
+    ThreadPool(const ThreadPool&) = delete;
+    ThreadPool& operator=(const ThreadPool&) = delete;
 
     /**
      * @brief Destruct the thread pool. Waits for all tasks to complete, then destroys all threads. Note that

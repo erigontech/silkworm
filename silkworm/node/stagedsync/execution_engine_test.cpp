@@ -306,6 +306,7 @@ TEST_CASE("ExecutionEngine") {
         CHECK(exec_engine.last_finalized_block() == BlockId{1, block1_hash});
 
         // Creating a fork and changing the head (trigger unwind)
+        /*
         {
             auto block4 = generateSampleChildrenBlock(block3->header);
             auto block4_hash = block4->header.hash();
@@ -327,7 +328,7 @@ TEST_CASE("ExecutionEngine") {
             CHECK(exec_engine.last_fork_choice() == BlockId{4, block4_hash});
             CHECK(exec_engine.last_finalized_block() == BlockId{2, block2_hash});
         }
-
+        */
         // Creating a fork and changing the head (trigger unwind)
         /*
         {

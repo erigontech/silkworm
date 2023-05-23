@@ -28,13 +28,9 @@
 
 namespace silkworm::stagedsync {
 
-// todo: eliminare main_chain_ dai membri perchè Fork gira in un altro thread e non può chimare main_chain_
-// todo: eseguire il costruttore in un altro thread rispetto ad execution_engine per evitare MDBX_TXN_OVERLAPPING
-//       oppure spostare la creazione di main_txn_ nella open, usare MemoryOverlay::update_txn() nel caso
-//       oppure usare main_chain_.tx_
 Fork::Fork(BlockId forking_point, db::ROTxn&& main_chain_tx, NodeSettings& ns)
     : main_tx_{std::move(main_chain_tx)},
-      memory_db_{TemporaryDirectory::get_unique_temporary_path(ns.data_directory->path() / "forks"), &main_chain_tx},
+      memory_db_{TemporaryDirectory::get_unique_temporary_path(ns.data_directory->forks().path()), &main_chain_tx},
       memory_tx_{memory_db_},
       pipeline_{&ns},
       canonical_chain_(memory_tx_) {

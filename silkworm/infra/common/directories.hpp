@@ -100,7 +100,8 @@ class DataDirectory final : public Directory {
           chaindata_(base_path / "chaindata", create),
           etl_(base_path / "etl-temp", create),
           nodes_(base_path / "nodes", create),
-          snapshots_(base_path / "snapshots", create) {}
+          snapshots_(base_path / "snapshots", create),
+          forks_(base_path / "forks", create) {}
 
     //! \brief Creates an instance of Silkworm's data directory starting from default storage path. (each host OS has
     //! its own)
@@ -144,12 +145,15 @@ class DataDirectory final : public Directory {
     [[nodiscard]] const Directory& nodes() const { return nodes_; }
     //! \brief Returns the "snapshots" directory (where snapshot files are stored)
     [[nodiscard]] const Directory& snapshots() const { return snapshots_; }
+    //! \brief Returns the "forks" directory (where forks files are stored)
+    [[nodiscard]] const Directory& forks() const { return forks_; }
 
   private:
     Directory chaindata_;  // Database storage
     Directory etl_;        // Temporary etl files
     Directory nodes_;      // Nodes discovery databases
     Directory snapshots_;  // Snapshot files
+    Directory forks_;      // Fork files
 };
 
 }  // namespace silkworm

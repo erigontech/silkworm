@@ -29,6 +29,7 @@
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 #include <silkworm/silkrpc/ethdb/file/local_cursor.hpp>
+#include <silkworm/silkrpc/ethdb/kv/cached_database.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
 
 namespace silkworm::rpc::ethdb::file {
@@ -36,17 +37,19 @@ namespace silkworm::rpc::ethdb::file {
 class LocalTransaction : public Transaction {
   public:
     explicit LocalTransaction(std::shared_ptr<mdbx::env_managed> chaindata_env)
-        : chaindata_env_{std::move(chaindata_env)}, last_cursor_id_{0} {}
+        : chaindata_env_{std::move(chaindata_env)}, last_cursor_id_{0}, rtxn_{*chaindata_env_} {}
 
     ~LocalTransaction() override = default;
 
-    [[nodiscard]] uint64_t view_id() const override { return read_only_txn_.id(); }
+    [[nodiscard]] uint64_t view_id() const override { return rtxn_.id(); }
 
     boost::asio::awaitable<void> open() override;
 
     boost::asio::awaitable<std::shared_ptr<Cursor>> cursor(const std::string& table) override;
 
     boost::asio::awaitable<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& table) override;
+
+    std::shared_ptr<silkworm::State> create_state(boost::asio::io_context& io_context, const core::rawdb::DatabaseReader& db_reader, uint64_t block_number) override;
 
     boost::asio::awaitable<void> close() override;
 
@@ -57,8 +60,8 @@ class LocalTransaction : public Transaction {
     std::map<std::string, std::shared_ptr<CursorDupSort>> dup_cursors_;
 
     std::shared_ptr<mdbx::env_managed> chaindata_env_;
-    mdbx::txn_managed read_only_txn_;
     uint32_t last_cursor_id_;
+    db::ROTxn rtxn_;
 };
 
 }  // namespace silkworm::rpc::ethdb::file

@@ -22,6 +22,8 @@
 
 #include <grpcpp/grpcpp.h>
 
+#include <silkworm/silkrpc/core/remote_state.hpp>
+
 namespace silkworm::rpc::ethdb::kv {
 
 boost::asio::awaitable<void> RemoteTransaction::open() {
@@ -62,6 +64,10 @@ boost::asio::awaitable<std::shared_ptr<CursorDupSort>> RemoteTransaction::get_cu
         cursors_[table] = cursor;
     }
     co_return cursor;
+}
+
+std::shared_ptr<silkworm::State> RemoteTransaction::create_state(boost::asio::io_context& io_context, const core::rawdb::DatabaseReader& db_reader, uint64_t block_number) {
+    return std::make_shared<silkworm::rpc::state::RemoteState>(io_context, db_reader, block_number);
 }
 
 }  // namespace silkworm::rpc::ethdb::kv

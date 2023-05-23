@@ -24,7 +24,9 @@
 #include <boost/asio/awaitable.hpp>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/state/state.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
+#include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 
 namespace silkworm::rpc::ethdb {
@@ -45,6 +47,8 @@ class Transaction {
     virtual boost::asio::awaitable<std::shared_ptr<Cursor>> cursor(const std::string& table) = 0;
 
     virtual boost::asio::awaitable<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& table) = 0;
+
+    virtual std::shared_ptr<silkworm::State> create_state(boost::asio::io_context& io_context, const core::rawdb::DatabaseReader& db_reader, uint64_t block_number) = 0;
 
     virtual boost::asio::awaitable<void> close() = 0;
 };

@@ -28,6 +28,7 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
+#include <silkworm/silkrpc/ethdb/kv/cached_database.hpp>
 #include <silkworm/silkrpc/ethdb/kv/remote_cursor.hpp>
 #include <silkworm/silkrpc/ethdb/kv/rpc.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
@@ -48,6 +49,8 @@ class RemoteTransaction : public Transaction {
     boost::asio::awaitable<std::shared_ptr<Cursor>> cursor(const std::string& table) override;
 
     boost::asio::awaitable<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& table) override;
+
+    std::shared_ptr<silkworm::State> create_state(boost::asio::io_context& io_context, const core::rawdb::DatabaseReader& db_reader, uint64_t block_number) override;
 
     boost::asio::awaitable<void> close() override;
 

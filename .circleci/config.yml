@@ -310,6 +310,20 @@ jobs:
           working_directory: ~/build
           command: wasmer cmd/test/core_test --stack-size 16777216
 
+parameters:
+  clang_version_min:
+    type: integer
+    default: 13
+  clang_version_latest:
+    type: integer
+    default: 15
+  gcc_version_min:
+    type: integer
+    default: 11
+  gcc_version_latest:
+    type: integer
+    default: 12
+
 workflows:
   version: 2
 
@@ -319,9 +333,13 @@ workflows:
         equal: [ master, <<pipeline.git.branch>> ]
     jobs:
       - linux-release:
-          name: linux-gcc-12-release
+          name: linux-gcc-<<pipeline.parameters.gcc_version_latest>>-release
           compiler_id: gcc
-          compiler_version: 12
+          compiler_version: <<pipeline.parameters.gcc_version_latest>>
+      - linux-release:
+          name: linux-clang-<<pipeline.parameters.clang_version_latest>>-release
+          compiler_id: clang
+          compiler_version: <<pipeline.parameters.clang_version_latest>>
 
   integration:
     when:
@@ -329,6 +347,14 @@ workflows:
         - equal: [ master, <<pipeline.git.branch>> ]
         - matches: { pattern: "^ci\\/.+$", value: <<pipeline.git.branch>> }
     jobs:
+      - linux-release:
+          name: linux-gcc-<<pipeline.parameters.gcc_version_min>>-release
+          compiler_id: gcc
+          compiler_version: <<pipeline.parameters.gcc_version_min>>
+      - linux-release:
+          name: linux-clang-<<pipeline.parameters.clang_version_min>>-release
+          compiler_id: clang
+          compiler_version: <<pipeline.parameters.clang_version_min>>
       - linux-gcc-11-thread-sanitizer
       - linux-clang-13-coverage
       - linux-clang-15-address-sanitizer

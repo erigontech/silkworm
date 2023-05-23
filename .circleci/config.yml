@@ -312,13 +312,3 @@ jobs:
           name: "Core unit tests"
           working_directory: ~/build
           command: wasmer cmd/test/core_test --stack-size 16777216
-
-workflows:
-  version: 2
-  silkworm:
-    jobs:
-      - linux-gcc-12-release
-      - linux-gcc-11-thread-sanitizer
-      - linux-clang-13-coverage
-      - linux-clang-15-address-sanitizer
-      - linux-wasm-build

@@ -46,8 +46,9 @@ ABSL_FLAG(uint32_t, num_workers, 16, "number of worker threads as 32-bit integer
 ABSL_FLAG(uint32_t, timeout, kDefaultTimeout.count(), "gRPC call timeout as 32-bit integer");
 // ABSL_FLAG(LogLevel, log_verbosity, LogLevel::Critical, "logging verbosity level");
 ABSL_FLAG(concurrency::WaitMode, wait_mode, concurrency::WaitMode::blocking, "scheduler wait mode");
-ABSL_FLAG(std::string, jwt_secret_file, kDefaultJwtFilename, "Token file to ensure safe connection between CL and EL");
+ABSL_FLAG(std::string, jwt_secret_file, kDefaultJwtFilename, "token file to ensure safe connection between CL and EL");
 ABSL_FLAG(std::string, datadir, kDefaultDataDir, "path to the database folder");
+ABSL_FLAG(bool, skip_protocol_check, false, "flag indicating if gRPC protocol version check should be skipped");
 
 //! Assemble the application version using the Cable build information
 std::string get_version_from_build_info() {
@@ -99,6 +100,7 @@ DaemonSettings parse_args(int argc, char* argv[]) {
         log::Level::kInfo,  // absl::GetFlag(FLAGS_log_verbosity),
         absl::GetFlag(FLAGS_wait_mode),
         absl::GetFlag(FLAGS_jwt_secret_file),
+        absl::GetFlag(FLAGS_skip_protocol_check),
     };
     return rpc_daemon_settings;
 }

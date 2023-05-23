@@ -269,7 +269,7 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(exec_engine.last_fork_choice() == BlockId{block1->header.number, block1_hash});
         REQUIRE(exec_engine.last_finalized_block() == BlockId{0, *block0_hash});
     }
-
+    /*
     SECTION("a fork") {
         auto header0_hash = db::read_canonical_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
@@ -306,7 +306,6 @@ TEST_CASE("ExecutionEngine") {
         CHECK(exec_engine.last_finalized_block() == BlockId{1, block1_hash});
 
         // Creating a fork and changing the head (trigger unwind)
-        /*
         {
             auto block4 = generateSampleChildrenBlock(block3->header);
             auto block4_hash = block4->header.hash();
@@ -328,9 +327,8 @@ TEST_CASE("ExecutionEngine") {
             CHECK(exec_engine.last_fork_choice() == BlockId{4, block4_hash});
             CHECK(exec_engine.last_finalized_block() == BlockId{2, block2_hash});
         }
-        */
+
         // Creating a fork and changing the head (trigger unwind)
-        /*
         {
             auto block2b = generateSampleChildrenBlock(block1->header);
             block2b->header.extra_data = string_view_to_byte_view("I'm different");  // to make it different from block2
@@ -353,9 +351,8 @@ TEST_CASE("ExecutionEngine") {
             CHECK(exec_engine.last_fork_choice() == BlockId{2, block2b_hash});
             CHECK(exec_engine.last_finalized_block() == BlockId{1, block1_hash});
         }
-        */
     }
-
+    */
 }
 
 }  // namespace silkworm

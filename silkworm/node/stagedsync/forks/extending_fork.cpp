@@ -71,6 +71,7 @@ void ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block
     current_head_ = new_head;  // setting this here is important for find_fork_by_head() due to the fact that block
                                // insertion and head computation is delayed but find_fork_by_head() is called immediately
     auto lambda = [](ExtendingFork& me, BlockId new_head_, std::list<std::shared_ptr<Block>>&& blocks_) -> awaitable<void> {
+        if (me.exception_) co_return;
         me.fork_ = std::make_unique<Fork>(me.forking_point_,
                                           db::ROTxn(me.main_chain_.tx().db()),
                                           me.main_chain_.node_settings());  // create the real fork
@@ -95,6 +96,7 @@ void ExtendingFork::extend_with(Hash head_hash, const Block& block) {
     current_head_ = {block.header.number, head_hash};  // setting this here is important, same as above
 
     auto lambda = [](ExtendingFork& me, const Block& block_) -> awaitable<void> {
+        if (me.exception_) co_return;
         me.fork_->extend_with(block_);
         co_return;
     };
@@ -109,6 +111,7 @@ auto ExtendingFork::verify_chain() -> concurrency::AwaitableFuture<VerificationR
     auto awaitable_future = promise.get_future();
 
     auto lambda = [](ExtendingFork& me, concurrency::AwaitablePromise<VerificationResult>&& promise_) -> awaitable<void> {
+        if (me.exception_) co_return;
         auto result = me.fork_->verify_chain();
         me.current_head_ = me.fork_->current_head();
         promise_.set_value(result);
@@ -129,6 +132,7 @@ auto ExtendingFork::notify_fork_choice_update(Hash head_block_hash, std::optiona
 
     auto lambda = [](ExtendingFork& me, concurrency::AwaitablePromise<bool>&& promise_,
                      Hash head, std::optional<Hash> finalized) -> awaitable<void> {
+        if (me.exception_) co_return;
         auto updated = me.fork_->notify_fork_choice_update(head, finalized);
         me.current_head_ = me.fork_->current_head();
         promise_.set_value(updated);

@@ -41,7 +41,7 @@ void Server::execution_loop() {
     exec_engine_.close();
 }
 
-void Server::handle_exception(std::exception_ptr e) {
+void Server::handle_exception(const std::exception_ptr& e) {
     // todo: dummy implementation, change it to save exception and rethrow it later
     try {
         if (e) {
@@ -148,6 +148,13 @@ asio::awaitable<std::optional<BlockBody>> Server::get_body(Hash block_hash) {
         co_return me->exec_engine_.get_body(h);
     };
     return co_spawn(io_context_, lambda(this, block_hash), asio::use_awaitable);
+}
+
+asio::awaitable<std::optional<BlockBody>> Server::get_body(BlockNum block_number) {
+    auto lambda = [](Server* me, BlockNum block_number) -> asio::awaitable<std::optional<BlockBody>> {
+        co_return me->exec_engine_.get_body(block_number);
+    };
+    return co_spawn(io_context_, lambda(this, block_number), asio::use_awaitable);
 }
 
 asio::awaitable<bool> Server::is_canonical(Hash block_hash) {

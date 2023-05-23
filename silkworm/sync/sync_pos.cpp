@@ -384,4 +384,23 @@ auto PoSSync::get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) 
     co_return payload_bodies;
 }
 
+auto PoSSync::get_payload_bodies_by_range(BlockNum start, uint64_t count) -> asio::awaitable<rpc::ExecutionPayloadBodies> {
+    rpc::ExecutionPayloadBodies payload_bodies;
+    payload_bodies.resize(count);
+    for (BlockNum number{start}; number < start + count; ++number) {
+        const auto block_body{co_await exec_engine_.get_body({})};  // TODO(canepat) add API to pass number
+        if (block_body) {
+            rpc::ExecutionPayloadBody payload_body{
+                .transactions = {},  // TODO(canepat) encode block_body->transactions
+                .withdrawals = block_body->withdrawals,
+            };
+            payload_bodies.push_back(payload_body);
+        } else {
+            // Add an empty payload anyway because we must respond w/ one payload for each hash
+            payload_bodies.emplace_back();
+        }
+    }
+    co_return payload_bodies;
+}
+
 }  // namespace silkworm::chainsync

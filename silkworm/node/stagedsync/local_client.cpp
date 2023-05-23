@@ -64,6 +64,10 @@ awaitable<std::optional<BlockBody>> LocalClient::get_body(Hash block_hash) {
     co_return co_await local_server_.get_body(block_hash);
 }
 
+asio::awaitable<std::optional<BlockBody>> LocalClient::get_body(BlockNum block_number) {
+    co_return co_await local_server_.get_body(block_number);
+}
+
 awaitable<bool> LocalClient::is_canonical(Hash block_hash) {
     co_return co_await local_server_.is_canonical(block_hash);
 }

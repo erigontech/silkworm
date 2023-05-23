@@ -123,6 +123,7 @@ constexpr const char* k_engine_exchangeCapabilities{"engine_exchangeCapabilities
 constexpr const char* k_engine_getPayloadV1{"engine_getPayloadV1"};
 constexpr const char* k_engine_getPayloadV2{"engine_getPayloadV2"};
 constexpr const char* k_engine_getPayloadBodiesByHashV1{"engine_getPayloadBodiesByHashV1"};
+constexpr const char* k_engine_getPayloadBodiesByRangeV1{"engine_getPayloadBodiesByRangeV1"};
 constexpr const char* k_engine_newPayloadV1{"engine_newPayloadV1"};
 constexpr const char* k_engine_newPayloadV2{"engine_newPayloadV2"};
 constexpr const char* k_engine_forkchoiceUpdatedV1{"engine_forkchoiceUpdatedV1"};

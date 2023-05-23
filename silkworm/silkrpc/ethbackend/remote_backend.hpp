@@ -55,6 +55,7 @@ class RemoteBackEnd final : public BackEnd {
     awaitable<PayloadStatus> engine_new_payload(const ExecutionPayload& payload) override;
     awaitable<ForkChoiceUpdatedReply> engine_forkchoice_updated(const ForkChoiceUpdatedRequest& fcu_request) override;
     awaitable<ExecutionPayloadBodies> engine_get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) override;
+    awaitable<ExecutionPayloadBodies> engine_get_payload_bodies_by_range(BlockNum start, uint64_t count) override;
     awaitable<NodeInfos> engine_node_info() override;
     awaitable<PeerInfos> peers() override;
 

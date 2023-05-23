@@ -178,15 +178,20 @@ jobs:
           build_type: Debug
       - test
 
-  linux-gcc-12-release:
+  linux-release:
+    parameters:
+      compiler_id:
+        type: string
+      compiler_version:
+        type: integer
     machine:
       image: ubuntu-2204:2023.04.2
     resource_class: xlarge
     steps:
       - checkout_with_submodules
       - build_using_conan:
-          compiler_id: gcc
-          compiler_version: 12        
+          compiler_id: <<parameters.compiler_id>>
+          compiler_version: <<parameters.compiler_version>>
       - test
 
   linux-clang-15-address-sanitizer:
@@ -313,7 +318,10 @@ workflows:
       not:
         equal: [ master, <<pipeline.git.branch>> ]
     jobs:
-      - linux-gcc-12-release
+      - linux-release:
+          name: linux-gcc-12-release
+          compiler_id: gcc
+          compiler_version: 12
 
   integration:
     when:

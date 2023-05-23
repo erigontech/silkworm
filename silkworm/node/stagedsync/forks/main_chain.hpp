@@ -56,7 +56,7 @@ class MainChain {
 
     // branching
     auto fork(BlockId forking_point) -> ExtendingFork;  // fort at the current head
-    void reintegrate_fork(ExtendingFork&);  // reintegrate fork into the main chain
+    void reintegrate_fork(ExtendingFork&);              // reintegrate fork into the main chain
     auto find_forking_point(const BlockHeader& header) const -> std::optional<BlockId>;
     auto find_forking_point(const Hash& header_hash) const -> std::optional<BlockId>;
 

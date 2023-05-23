@@ -107,13 +107,17 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
         Daemon rpc_daemon{settings};
 
         // Check protocol version compatibility with Core Services
-        SILK_LOG << "Checking protocol version compatibility with core services...";
+        if (not settings.skip_protocol_check) {
+            SILK_LOG << "Checking protocol version compatibility with core services...";
 
-        const auto checklist = rpc_daemon.run_checklist();
-        for (const auto& protocol_check : checklist.protocol_checklist) {
-            SILK_LOG << protocol_check.result;
+            const auto checklist = rpc_daemon.run_checklist();
+            for (const auto& protocol_check : checklist.protocol_checklist) {
+                SILK_LOG << protocol_check.result;
+            }
+            checklist.success_or_throw();
+        } else {
+            SILK_LOG << "Skip protocol version compatibility check with core services";
         }
-        checklist.success_or_throw();
 
         // Start execution context dedicated to handling termination signals
         boost::asio::io_context signal_context;

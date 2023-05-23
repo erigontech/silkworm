@@ -322,7 +322,9 @@ workflows:
       - linux-gcc-12-release      
   integration:
     when:
-      equal: [ master, <<pipeline.git.branch>> ]
+      or:
+        - equal: [ master, <<pipeline.git.branch>> ]
+        - equal: [ integration_workflow, <<pipeline.git.branch>> ]
     jobs:
       - linux-gcc-11-thread-sanitizer
       - linux-clang-13-coverage

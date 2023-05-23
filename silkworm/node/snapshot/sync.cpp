@@ -208,8 +208,9 @@ void SnapshotSync::build_missing_indexes() {
     while (workers.get_tasks_total() and not is_stopping()) {
         std::this_thread::sleep_for(kCheckCompletionInterval);
     }
-
-    workers.stop();
+    // Wait for any already-started-but-unfinished work in case of stop request
+    workers.pause();
+    workers.wait_for_tasks();
 }
 
 bool SnapshotSync::save(db::RWTxn& txn, BlockNum max_block_available) {

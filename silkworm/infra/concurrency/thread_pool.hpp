@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <algorithm>           // std::max
 #include <atomic>              // std::atomic
 #include <condition_variable>  // std::condition_variable
 #include <exception>           // std::current_exception
@@ -24,19 +25,17 @@
 #include <memory>              // std::make_shared, std::make_unique, std::shared_ptr, std::unique_ptr
 #include <mutex>               // std::mutex, std::scoped_lock, std::unique_lock
 #include <queue>               // std::queue
-#include <type_traits>         // std::common_type_t, std::decay_t, std::invoke_result_t, std::is_void_v
+#include <type_traits>         // std::decay_t, std::invoke_result_t, std::is_void_v
 #include <utility>             // std::forward, std::move, std::swap
 
 #include <boost/thread/thread.hpp>  // boost::thread
-
-#include <silkworm/infra/concurrency/stoppable.hpp>
 
 namespace silkworm {
 
 /**
  * @brief A fast, lightweight, and easy-to-use C++17 thread pool class.
  */
-class [[nodiscard]] ThreadPool : public Stoppable {
+class [[nodiscard]] ThreadPool {
   public:
     // ============================
     // Constructors and destructors
@@ -45,20 +44,25 @@ class [[nodiscard]] ThreadPool : public Stoppable {
     /**
      * @brief Construct a new thread pool.
      *
-     * @param thread_count The number of threads to use. The default value is the total number of hardware threads available,
-     * as reported by the implementation. This is usually determined by the number of cores in the CPU. If a core is hyperthreaded, it will count as two threads.
+     * @param thread_count The number of threads to use. The default value is the total number of hardware threads
+     * available, as reported by the implementation. This is usually determined by the number of cores in the CPU.
+     * If a core is hyper-threaded, it will count as two threads.
      * @param stack_size The stack size to set for each created thread. If the argument is zero, the default OS value
      * will be used instead.
      */
-    explicit ThreadPool(const unsigned thread_count = 0, const std::size_t stack_size = 0)
+    explicit ThreadPool(const unsigned thread_count = 0, const size_t stack_size = 0)
         : thread_count_(determine_thread_count(thread_count)),
           threads_(std::make_unique<boost::thread[]>(thread_count_)),
           stack_size_(stack_size) {
         create_threads();
     }
 
+    ThreadPool(const ThreadPool&) = delete;  // not copyable
+    ThreadPool(ThreadPool&&) = delete;       // nor movable
+
     /**
-     * @brief Destruct the thread pool. Waits for all tasks to complete, then destroys all threads.
+     * @brief Destruct the thread pool. Waits for all tasks to complete, then destroys all threads. Note that
+     * if the pool is paused, then any tasks still in the queue will never be executed.
      */
     ~ThreadPool() {
         wait_for_tasks();
@@ -70,11 +74,13 @@ class [[nodiscard]] ThreadPool : public Stoppable {
     // =======================
 
     /**
-     * @brief Get the total number of unfinished tasks - either still in the queue, or running in a thread.
+     * @brief Get the total number of unfinished tasks: either still in the queue, or running in a thread.
      *
      * @return The total number of tasks.
      */
-    size_t get_tasks_total() const { return tasks_total_; }
+    [[nodiscard]] size_t get_tasks_total() const {
+        return tasks_total_;
+    }
 
     /**
      * @brief Get the number of threads in the pool.
@@ -86,12 +92,32 @@ class [[nodiscard]] ThreadPool : public Stoppable {
     }
 
     /**
-     * @brief Push a function with zero or more arguments, but no return value, into the task queue. Does not return a future, so the user must use wait_for_tasks() or some other method to ensure that the task finishes executing, otherwise bad things will happen.
+     * @brief Check whether the pool is currently paused.
+     *
+     * @return true if the pool is paused, false if it is not paused.
+     */
+    [[nodiscard]] bool is_paused() const {
+        return paused_;
+    }
+
+    /**
+     * @brief Pause the pool. The workers will temporarily stop retrieving new tasks out of the queue,
+     * although any tasks already executed will keep running until they are finished.
+     */
+    void pause() {
+        paused_ = true;
+    }
+
+    /**
+     * @brief Push a function with zero or more arguments, but no return value, into the task queue. Does not return
+     * a future, so the user must use wait_for_tasks() or some other method to ensure that the task finishes executing,
+     * otherwise bad things will happen.
      *
      * @tparam F The type of the function.
      * @tparam A The types of the arguments.
      * @param task The function to push.
-     * @param args The zero or more arguments to pass to the function. Note that if the task is a class member function, the first argument must be a pointer to the object, i.e. &object (or this), followed by the actual arguments.
+     * @param args The zero or more arguments to pass to the function. Note that if the task is a class member function,
+     * the first argument must be a pointer to the object, i.e. &object (or this), followed by the actual arguments.
      */
     template <typename F, typename... A>
     void push_task(F&& task, A&&... args) {
@@ -105,14 +131,18 @@ class [[nodiscard]] ThreadPool : public Stoppable {
     }
 
     /**
-     * @brief Submit a function with zero or more arguments into the task queue. If the function has a return value, get a future for the eventual returned value. If the function has no return value, get an std::future<void> which can be used to wait until the task finishes.
+     * @brief Submit a function with zero or more arguments into the task queue. If the function has a return value,
+     * get a future for the eventual returned value. If the function has no return value, get an std::future<void>
+     * which can be used to wait until the task finishes.
      *
      * @tparam F The type of the function.
      * @tparam A The types of the zero or more arguments to pass to the function.
      * @tparam R The return type of the function (can be void).
      * @param task The function to submit.
-     * @param args The zero or more arguments to pass to the function. Note that if the task is a class member function, the first argument must be a pointer to the object, i.e. &object (or this), followed by the actual arguments.
-     * @return A future to be used later to wait for the function to finish executing and/or obtain its returned value if it has one.
+     * @param args The zero or more arguments to pass to the function. Note that if the task is a class member function,
+     * the first argument must be a pointer to the object, i.e. &object (or this), followed by the actual arguments.
+     * @return A future to be used later to wait for the function to finish executing and/or obtain its returned value
+     * if it has one.
      */
     template <typename F, typename... A, typename R = std::invoke_result_t<std::decay_t<F>, std::decay_t<A>...>>
     [[nodiscard]] std::future<R> submit(F&& task, A&&... args) {
@@ -138,13 +168,23 @@ class [[nodiscard]] ThreadPool : public Stoppable {
     }
 
     /**
-     * @brief Wait for tasks to be completed. Normally, this function waits for all tasks, both those that are currently running in the threads and those that are still waiting in the queue. Note: To wait for just one specific task, use submit() instead, and call the wait() member function of the generated future.
+     * @brief Unpause the pool. The workers will resume retrieving new tasks out of the queue.
+     */
+    void unpause() {
+        paused_ = false;
+    }
+
+    /**
+     * @brief Wait for tasks to be completed. Normally, this function waits for all tasks, both those that are currently
+     * running in the threads and those that are still waiting in the queue. However, if the pool is paused, this
+     * function only waits for the currently running tasks (otherwise it would wait forever). Note: To wait for just one
+     * specific task, use submit() instead, and call the wait() member function of the generated future.
      */
     void wait_for_tasks() {
         if (!waiting_) {
             waiting_ = true;
             std::unique_lock<std::mutex> tasks_lock(tasks_mutex_);
-            task_done_cv_.wait(tasks_lock, [this] { return (tasks_total_ == 0); });
+            task_done_cv_.wait(tasks_lock, [this] { return (tasks_total_ == (paused_ ? tasks_.size() : 0)); });
             waiting_ = false;
         }
     }
@@ -158,6 +198,7 @@ class [[nodiscard]] ThreadPool : public Stoppable {
      * @brief Create the threads in the pool and assign a worker to each thread.
      */
     void create_threads() {
+        running_ = true;
         boost::thread::attributes attrs;
         if (stack_size_) {
             attrs.set_stack_size(stack_size_);
@@ -171,7 +212,7 @@ class [[nodiscard]] ThreadPool : public Stoppable {
      * @brief Destroy the threads in the pool.
      */
     void destroy_threads() {
-        stop();
+        running_ = false;
         {
             const std::scoped_lock tasks_lock(tasks_mutex_);
             task_available_cv_.notify_all();
@@ -184,29 +225,31 @@ class [[nodiscard]] ThreadPool : public Stoppable {
     /**
      * @brief Determine how many threads the pool should have, based on the parameter passed to the constructor.
      *
-     * @param thread_count The parameter passed to the constructor. If the parameter is a positive number, then the pool will be created with this number of threads. If the parameter is non-positive, or a parameter was not supplied (in which case it will have the default value of 0), then the pool will be created with the total number of hardware threads available, as obtained from std::thread::hardware_concurrency(). If the latter returns a non-positive number for some reason, then the pool will be created with just one thread.
+     * @param thread_count The parameter passed to the constructor. If the parameter is a positive number, then the pool
+     * will be created with this number of threads. If the parameter is non-positive, or a parameter was not supplied
+     * (in which case it will have the default value of 0), then the pool will be created with the total number of
+     * hardware threads available, as obtained from std::thread::hardware_concurrency(). If the latter returns
+     * a non-positive number for some reason, then the pool will be created with just one thread.
      * @return The number of threads to use for constructing the pool.
      */
     [[nodiscard]] unsigned determine_thread_count(const unsigned thread_count) {
-        if (thread_count > 0)
+        if (thread_count > 0) {
             return thread_count;
-        else {
-            if (std::thread::hardware_concurrency() > 0)
-                return std::thread::hardware_concurrency();
-            else
-                return 1;
         }
+        return std::max(std::thread::hardware_concurrency(), 1u);
     }
 
     /**
-     * @brief A worker function to be assigned to each thread in the pool. Waits until it is notified by push_task() that a task is available, and then retrieves the task from the queue and executes it. Once the task finishes, the worker notifies wait_for_tasks() in case it is waiting.
+     * @brief A worker function to be assigned to each thread in the pool. Waits until it is notified by push_task()
+     * that a task is available, and then retrieves the task from the queue and executes it. Once the task finishes,
+     * the worker notifies wait_for_tasks() in case it is waiting.
      */
     void worker() {
-        while (!is_stopping()) {
+        while (running_) {
             std::function<void()> task;
             std::unique_lock<std::mutex> tasks_lock(tasks_mutex_);
-            task_available_cv_.wait(tasks_lock, [this] { return !tasks_.empty() || is_stopping(); });
-            if (!is_stopping()) {
+            task_available_cv_.wait(tasks_lock, [this] { return !tasks_.empty() || !running_; });
+            if (running_ && !paused_) {
                 task = std::move(tasks_.front());
                 tasks_.pop();
                 tasks_lock.unlock();
@@ -224,6 +267,19 @@ class [[nodiscard]] ThreadPool : public Stoppable {
     // ============
 
     /**
+     * @brief An atomic variable indicating whether the workers should pause. When set to true, the workers temporarily
+     * stop retrieving new tasks out of the queue, although any tasks already executed will keep running until they are
+     * finished. When set to false again, the workers resume retrieving tasks.
+     */
+    std::atomic<bool> paused_ = false;
+
+    /**
+     * @brief An atomic variable indicating to the workers to keep running. When set to false, the workers permanently
+     * stop working.
+     */
+    std::atomic<bool> running_ = false;
+
+    /**
      * @brief A condition variable used to notify worker() that a new task has become available.
      */
     std::condition_variable task_available_cv_ = {};
@@ -239,7 +295,8 @@ class [[nodiscard]] ThreadPool : public Stoppable {
     std::queue<std::function<void()>> tasks_ = {};
 
     /**
-     * @brief An atomic variable to keep track of the total number of unfinished tasks - either still in the queue, or running in a thread.
+     * @brief An atomic variable to keep track of the total number of unfinished tasks - either still in the queue,
+     * or running in a thread.
      */
     std::atomic<size_t> tasks_total_ = 0;
 
@@ -259,14 +316,15 @@ class [[nodiscard]] ThreadPool : public Stoppable {
     std::unique_ptr<boost::thread[]> threads_ = nullptr;
 
     /**
-     * @brief An atomic variable indicating that wait_for_tasks() is active and expects to be notified whenever a task is done.
+     * @brief An atomic variable indicating that wait_for_tasks() is active and expects to be notified whenever a task
+     * is done.
      */
     std::atomic<bool> waiting_ = false;
 
     /**
      * @brief The stack size of created threads. 0 means default OS value.
      */
-    std::size_t stack_size_ = 0;
+    size_t stack_size_ = 0;
 };
 
 }  // namespace silkworm

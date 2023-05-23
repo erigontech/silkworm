@@ -108,6 +108,35 @@ static void match_or_throw(BlockNum block_number, uint64_t received_number) {
     }
 }
 
+static void deserialize_body(const ::execution::BlockBody& received_body, BlockBody& body) {
+    body.transactions.reserve(static_cast<std::size_t>(received_body.transactions_size()));
+    for (const auto& execution_tx : received_body.transactions()) {
+        ByteView raw_tx_rlp{reinterpret_cast<const uint8_t*>(execution_tx.data()), execution_tx.size()};
+        Transaction tx;
+        rlp::decode(raw_tx_rlp, tx);
+        body.transactions.push_back(std::move(tx));
+    }
+    body.ommers.reserve(static_cast<std::size_t>(received_body.uncles_size()));
+    for (const auto& execution_ommer : received_body.uncles()) {
+        BlockHeader ommer;
+        deserialize_header(execution_ommer, ommer);
+        body.ommers.push_back(std::move(ommer));
+    }
+    if (received_body.withdrawals_size() > 0) {
+        std::vector<Withdrawal> withdrawals;
+        withdrawals.reserve(static_cast<std::size_t>(received_body.withdrawals_size()));
+        body.withdrawals = std::move(withdrawals);
+    }
+    for (const auto& execution_withdrawal : received_body.withdrawals()) {
+        body.withdrawals->emplace_back(Withdrawal{
+            .index = execution_withdrawal.index(),
+            .validator_index = execution_withdrawal.validator_index(),
+            .address = rpc::address_from_H160(execution_withdrawal.address()),
+            .amount = execution_withdrawal.amount(),
+        });
+    }
+}
+
 RemoteClient::RemoteClient(rpc::ClientContext& context, const RemoteSettings& settings)
     : context_(context),
       channel_{::grpc::CreateChannel(settings.target, ::grpc::InsecureChannelCredentials())},
@@ -151,10 +180,7 @@ awaitable<std::optional<BlockHeader>> RemoteClient::get_header(Hash block_hash) 
 }
 
 awaitable<std::optional<BlockBody>> RemoteClient::get_body(Hash block_hash) {
-    BlockNum block_number = 0;  // proto file support get_body by block number, but we don't use it
-    BlockBody body;
     ::execution::GetSegmentRequest request;
-    request.set_block_number(block_number);
     request.set_allocated_block_hash(rpc::H256_from_bytes32(block_hash).release());
 
     const auto response = co_await rpc::unary_rpc(
@@ -166,34 +192,28 @@ awaitable<std::optional<BlockBody>> RemoteClient::get_body(Hash block_hash) {
 
     const auto& received_body = response.body();
     match_or_throw(block_hash, received_body.block_hash());
+
+    BlockBody body;
+    deserialize_body(received_body, body);
+    co_return body;
+}
+
+awaitable<std::optional<BlockBody>> RemoteClient::get_body(BlockNum block_number) {
+    ::execution::GetSegmentRequest request;
+    request.set_block_number(block_number);
+
+    const auto response = co_await rpc::unary_rpc(
+        &::execution::Execution::Stub::AsyncGetBody, stub_, request, *context_.grpc_context(), "failure getting body");
+
+    if (!response.has_body()) {
+        co_return std::nullopt;
+    }
+
+    const auto& received_body = response.body();
     match_or_throw(block_number, received_body.block_number());
 
-    body.transactions.reserve(static_cast<std::size_t>(received_body.transactions_size()));
-    for (const auto& execution_tx : received_body.transactions()) {
-        ByteView raw_tx_rlp{reinterpret_cast<const uint8_t*>(execution_tx.data()), execution_tx.size()};
-        Transaction tx;
-        rlp::decode(raw_tx_rlp, tx);
-        body.transactions.push_back(std::move(tx));
-    }
-    body.ommers.reserve(static_cast<std::size_t>(received_body.uncles_size()));
-    for (const auto& execution_ommer : received_body.uncles()) {
-        BlockHeader ommer;
-        deserialize_header(execution_ommer, ommer);
-        body.ommers.push_back(std::move(ommer));
-    }
-    if (received_body.withdrawals_size() > 0) {
-        std::vector<Withdrawal> withdrawals;
-        withdrawals.reserve(static_cast<std::size_t>(received_body.withdrawals_size()));
-        body.withdrawals = std::move(withdrawals);
-    }
-    for (const auto& execution_withdrawal : received_body.withdrawals()) {
-        body.withdrawals->emplace_back(Withdrawal{
-            .index = execution_withdrawal.index(),
-            .validator_index = execution_withdrawal.validator_index(),
-            .address = rpc::address_from_H160(execution_withdrawal.address()),
-            .amount = execution_withdrawal.amount(),
-        });
-    }
+    BlockBody body;
+    deserialize_body(received_body, body);
     co_return body;
 }
 
@@ -284,7 +304,7 @@ awaitable<ValidationResult> RemoteClient::validate_chain(Hash head_block_hash) {
     }
 
     co_return result;
-};
+}
 
 awaitable<ForkChoiceApplication> RemoteClient::update_fork_choice(Hash head_block_hash, std::optional<Hash> /*finalized_block_hash*/) {
     std::unique_ptr<types::H256> request = rpc::H256_from_bytes32(head_block_hash);

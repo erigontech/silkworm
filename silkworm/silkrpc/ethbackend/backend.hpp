@@ -42,6 +42,7 @@ class BackEnd {
     virtual boost::asio::awaitable<PayloadStatus> engine_new_payload(const ExecutionPayload& payload) = 0;
     virtual boost::asio::awaitable<ForkChoiceUpdatedReply> engine_forkchoice_updated(const ForkChoiceUpdatedRequest& fcu_request) = 0;
     virtual boost::asio::awaitable<ExecutionPayloadBodies> engine_get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) = 0;
+    virtual boost::asio::awaitable<ExecutionPayloadBodies> engine_get_payload_bodies_by_range(BlockNum start, uint64_t count) = 0;
     virtual boost::asio::awaitable<NodeInfos> engine_node_info() = 0;
     virtual boost::asio::awaitable<PeerInfos> peers() = 0;
 };

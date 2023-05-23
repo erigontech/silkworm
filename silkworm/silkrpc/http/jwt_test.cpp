@@ -24,14 +24,22 @@
 #include <silkworm/node/test/files.hpp>
 
 static char hex2ascii(char c) {
-    if ('0' <= c && c <= '9') { return c      - '0'; }
-    if ('a' <= c && c <= 'f') { return c + 10 - 'a'; }
-    if ('A' <= c && c <= 'F') { return c + 10 - 'A'; }
+    if ('0' <= c && c <= '9') {
+        return c - '0';
+    }
+    if ('a' <= c && c <= 'f') {
+        return c + 10 - 'a';
+    }
+    if ('A' <= c && c <= 'F') {
+        return c + 10 - 'A';
+    }
     throw std::runtime_error{"hex2ascii"};
 }
 
 static std::string ascii_from_hex(const std::string& hex) {
-    if (hex.size() % 2 != 0) { throw std::runtime_error{"ascii_from_hex"}; }
+    if (hex.size() % 2 != 0) {
+        throw std::runtime_error{"ascii_from_hex"};
+    }
     std::string ascii;
     ascii.reserve(hex.size() / 2);
     for (std::size_t i{0}; i < hex.size() / 2; ++i) {
@@ -89,8 +97,7 @@ TEST_CASE("load_jwt_token", "[silkworm][rpc][http][jwt]") {
         "0xd4414235d86b6d00ab77bb3eae739605aa9d4036b99bda915ecfb5e170cbf8",
         "0xd4414235d86b6d00ab77bb3eae739605aa9d4036b99bda915ecfb5e170cbf8f",
         "0xd4414235d86b6d00ab77bb3eae739605aa9d4036b99bda915ecfb5e170cbf8f4f",
-        "0xd4414235d86b6d00ab77bb3eae739605aa9d4036b99bda915ecfb5e170cbf8f4ff"
-    };
+        "0xd4414235d86b6d00ab77bb3eae739605aa9d4036b99bda915ecfb5e170cbf8f4ff"};
     for (const auto& token : kInvalidTokens) {
         SECTION("invalid JWT file content: " + token) {
             tmp_jwt_ofs << token;

@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <algorithm>           // std::max
 #include <atomic>              // std::atomic
 #include <condition_variable>  // std::condition_variable
 #include <exception>           // std::current_exception
@@ -25,6 +24,7 @@
 #include <memory>              // std::make_shared, std::make_unique, std::shared_ptr, std::unique_ptr
 #include <mutex>               // std::mutex, std::scoped_lock, std::unique_lock
 #include <queue>               // std::queue
+#include <thread>              // std::thread::hardware_concurrency
 #include <type_traits>         // std::decay_t, std::invoke_result_t, std::is_void_v
 #include <utility>             // std::forward, std::move, std::swap
 
@@ -50,8 +50,8 @@ class [[nodiscard]] ThreadPool {
      * @param stack_size The stack size to set for each created thread. If the argument is zero, the default OS value
      * will be used instead.
      */
-    explicit ThreadPool(const unsigned thread_count = 0, const size_t stack_size = 0)
-        : thread_count_(determine_thread_count(thread_count)),
+    explicit ThreadPool(unsigned thread_count = std::thread::hardware_concurrency(), size_t stack_size = 0)
+        : thread_count_(thread_count ? thread_count : 1),
           threads_(std::make_unique<boost::thread[]>(thread_count_)),
           stack_size_(stack_size) {
         create_threads();
@@ -220,23 +220,6 @@ class [[nodiscard]] ThreadPool {
         for (unsigned i = 0; i < thread_count_; ++i) {
             threads_[i].join();
         }
-    }
-
-    /**
-     * @brief Determine how many threads the pool should have, based on the parameter passed to the constructor.
-     *
-     * @param thread_count The parameter passed to the constructor. If the parameter is a positive number, then the pool
-     * will be created with this number of threads. If the parameter is non-positive, or a parameter was not supplied
-     * (in which case it will have the default value of 0), then the pool will be created with the total number of
-     * hardware threads available, as obtained from std::thread::hardware_concurrency(). If the latter returns
-     * a non-positive number for some reason, then the pool will be created with just one thread.
-     * @return The number of threads to use for constructing the pool.
-     */
-    [[nodiscard]] unsigned determine_thread_count(const unsigned thread_count) {
-        if (thread_count > 0) {
-            return thread_count;
-        }
-        return std::max(std::thread::hardware_concurrency(), 1u);
     }
 
     /**

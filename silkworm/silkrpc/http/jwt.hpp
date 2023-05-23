@@ -16,14 +16,15 @@
 
 #pragma once
 
+#include <filesystem>
 #include <string>
 
 namespace silkworm {
 
 //! Generate a new JSON Web Token (JWT) secret
-void generate_jwt_token(const std::string& file_path, std::string& jwt_token);
+std::string generate_jwt_token(const std::filesystem::path& file_path);
 
 //! Load a JWT secret token from provided file path. If the file doesn't contain the token then we generate one
-bool load_jwt_token(const std::string& file_path, std::string& jwt_token);
+std::string load_jwt_token(const std::filesystem::path& file_path);
 
 }  // namespace silkworm

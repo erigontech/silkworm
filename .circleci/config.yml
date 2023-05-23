@@ -64,9 +64,6 @@ commands:
       conan_profile:
         type: string
         default: none
-      toolchain:
-        type: string
-        default: default
     steps:
       - run:
           name: "Install compiler"
@@ -84,9 +81,9 @@ commands:
             then
                 CONAN_CMAKE_ARGS="-DCONAN_PROFILE=<<parameters.conan_profile>>"
             fi
-            if [[ "<<parameters.toolchain>>" != "default" ]]
+            if [[ "<<parameters.compiler_id>>" == "clang" ]]
             then
-                TOOLCHAIN_CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/<<parameters.toolchain>>.cmake"
+                TOOLCHAIN_CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake"
             fi
 
             cmake ../project -DCMAKE_BUILD_TYPE=<<parameters.build_type>> $CONAN_CMAKE_ARGS $TOOLCHAIN_CMAKE_ARGS $BUILD_CMAKE_ARGS
@@ -106,9 +103,6 @@ commands:
       profile:
         type: string
         default: linux_gcc_11_release
-      toolchain:
-        type: string
-        default: default
     steps:
       - run:
           name: "Install Conan"
@@ -121,7 +115,6 @@ commands:
           compiler_id: <<parameters.compiler_id>>
           compiler_version: <<parameters.compiler_version>>
           conan_profile: <<parameters.profile>>
-          toolchain: <<parameters.toolchain>>
       - save_cache:
           name: "Save Conan cache"
           key: *conan-cache-key
@@ -202,7 +195,6 @@ jobs:
           compiler_id: clang
           compiler_version: 15
           profile: linux_clang_13_release
-          toolchain: clang_libcxx
       - test
 
   linux-clang-13-coverage:
@@ -219,7 +211,6 @@ jobs:
           compiler_id: clang
           compiler_version: 13
           profile: linux_clang_13_release
-          toolchain: clang_libcxx
       - run:
           name: "Core unit tests"
           working_directory: ~/build

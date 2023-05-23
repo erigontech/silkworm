@@ -100,21 +100,29 @@ commands:
         type: string
       compiler_version:
         type: integer
-      profile:
-        type: string
-        default: linux_gcc_11_release
     steps:
       - run:
           name: "Install Conan"
           command: sudo pip3 install conan==1.58.0 chardet
+      - run:
+          name: "Select Conan profile"
+          command: |
+            if [[ "<<parameters.compiler_id>>" == "clang" ]]
+            then
+                conan_profile=linux_clang_13_release
+            else
+                conan_profile=linux_gcc_11_release
+            fi
+            echo "export CONAN_PROFILE='$conan_profile'" >> "$BASH_ENV"
+            cp "cmake/profiles/$conan_profile" "$HOME/selected_conan_profile"
       - restore_cache:
           name: "Restore Conan cache"
-          key: &conan-cache-key conan-machine-{{ .Environment.CIRCLE_JOB }}-<<parameters.compiler_id>>-<<parameters.compiler_version>>-{{checksum "cmake/profiles/<<parameters.profile>>"}}-{{checksum "conanfile.txt"}}
+          key: &conan-cache-key conan-machine-{{ .Environment.CIRCLE_JOB }}-<<parameters.compiler_id>>-<<parameters.compiler_version>>-{{checksum "../selected_conan_profile"}}-{{checksum "conanfile.txt"}}
       - build:
           build_type: <<parameters.build_type>>
           compiler_id: <<parameters.compiler_id>>
           compiler_version: <<parameters.compiler_version>>
-          conan_profile: <<parameters.profile>>
+          conan_profile: $CONAN_PROFILE
       - save_cache:
           name: "Save Conan cache"
           key: *conan-cache-key
@@ -194,7 +202,6 @@ jobs:
           build_type: Debug
           compiler_id: clang
           compiler_version: 15
-          profile: linux_clang_13_release
       - test
 
   linux-clang-13-coverage:
@@ -210,7 +217,6 @@ jobs:
           build_type: Debug
           compiler_id: clang
           compiler_version: 13
-          profile: linux_clang_13_release
       - run:
           name: "Core unit tests"
           working_directory: ~/build

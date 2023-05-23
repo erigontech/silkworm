@@ -72,7 +72,7 @@ commands:
           command: |
             if [[ "<<parameters.conan_profile>>" != "none" ]]
             then
-                CONAN_CMAKE_ARGS="-DCONAN_PACKAGE_MANAGER=ON -DCONAN_PROFILE=<<parameters.conan_profile>>"
+                CONAN_CMAKE_ARGS="-DCONAN_PROFILE=<<parameters.conan_profile>>"
             fi
             if [[ "<<parameters.toolchain>>" != "default" ]]
             then

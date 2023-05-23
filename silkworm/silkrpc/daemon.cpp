@@ -107,13 +107,17 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
         Daemon rpc_daemon{settings};
 
         // Check protocol version compatibility with Core Services
-        SILK_LOG << "Checking protocol version compatibility with core services...";
+        if (not settings.skip_protocol_check) {
+            SILK_LOG << "Checking protocol version compatibility with core services...";
 
-        const auto checklist = rpc_daemon.run_checklist();
-        for (const auto& protocol_check : checklist.protocol_checklist) {
-            SILK_LOG << protocol_check.result;
+            const auto checklist = rpc_daemon.run_checklist();
+            for (const auto& protocol_check : checklist.protocol_checklist) {
+                SILK_LOG << protocol_check.result;
+            }
+            checklist.success_or_throw();
+        } else {
+            SILK_LOG << "Skip protocol version compatibility check with core services";
         }
-        checklist.success_or_throw();
 
         // Start execution context dedicated to handling termination signals
         boost::asio::io_context signal_context;
@@ -215,19 +219,7 @@ Daemon::Daemon(DaemonSettings settings)
       kv_stub_{::remote::KV::NewStub(create_channel_())} {
     // Load the channel authentication token (if required)
     if (settings_.jwt_secret_filename) {
-        std::string jwt_token;
-        if (!load_jwt_token(*settings_.jwt_secret_filename, jwt_token)) {
-            std::string error_msg{"JWT token has wrong size: " + std::to_string(jwt_token.length())};
-            SILK_CRIT << error_msg;
-            throw std::runtime_error{error_msg};
-        }
-        const auto jwt_token_bytes = silkworm::from_hex(jwt_token);
-        if (!jwt_token_bytes) {
-            std::string error_msg{"JWT token is incorrect: " + jwt_token};
-            SILK_CRIT << error_msg;
-            throw std::runtime_error{error_msg};
-        }
-        jwt_secret_ = {jwt_token_bytes->cbegin(), jwt_token_bytes->cend()};
+        jwt_secret_ = load_jwt_token(*settings_.jwt_secret_filename);
     }
 
     // Activate the local chaindata access (if required)

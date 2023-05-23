@@ -6,20 +6,6 @@ parse:
         INSTALL_FOLDER: '*'
         BUILD: '*'
         PROFILE: '*'
-    huntergate:
-      kwargs:
-        URL: '*'
-        SHA1: '*'
-        FILEPATH: '*'
-    hunter_config:
-      kwargs:
-        VERSION: '*'
-        CMAKE_ARGS: '*'
-        URL: '*'
-        SHA1: '*'
-    hunter_cmake_args:
-      kwargs:
-        CMAKE_ARGS: '*'
 
 format:
   line_width: 120
@@ -27,8 +13,6 @@ format:
   max_subgroups_hwrap: 2
   max_pargs_hwrap: 5
   dangle_parens: true
-  always_wrap:
-    - hunter_cmake_args
 
 markup:
   first_comment_is_literal: true

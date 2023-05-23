@@ -164,18 +164,6 @@ set_target_properties(blst PROPERTIES
 )
 
 if(NOT SILKWORM_CORE_ONLY)
-  # mimalloc
-  if(SILKWORM_USE_MIMALLOC)
-    if(NOT CONAN_PACKAGE_MANAGER)
-      set(MI_BUILD_SHARED ON)
-      set(MI_BUILD_STATIC OFF)
-      set(MI_BUILD_OBJECT OFF)
-      set(MI_BUILD_TESTS OFF)
-      add_subdirectory(mimalloc EXCLUDE_FROM_ALL)
-      target_compile_options(mimalloc PRIVATE -Wno-error)
-    endif()
-  endif()
-
   # MDBX
   set(MDBX_ENABLE_TESTS OFF)
   add_subdirectory(libmdbx)

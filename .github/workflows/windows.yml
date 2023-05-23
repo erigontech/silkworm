@@ -14,7 +14,11 @@
 
 name: Windows
 
-on: [ push, pull_request ]
+on:
+  push:
+    branches:
+      - master
+      - 'ci/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -23,14 +27,16 @@ concurrency:
 jobs:
   windows:
     runs-on: windows-latest
-    # Needed for the build test on Windows as first one fails
+
+    # Disable on external PRs
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+
     strategy:
       matrix:
         config:
-#          - {build_type: "Debug"}
           - {build_type: "Release"}
       fail-fast: false # This makes it so that if 1 of the tests in the matrix fail, they don't all fail
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+
     steps:
     - uses: actions/checkout@v3
       with:
@@ -50,7 +56,7 @@ jobs:
       uses: johnwason/vcpkg-action@v4
       id: vcpkg
       with:
-        pkgs: mpir mimalloc
+        pkgs: mpir
         triplet: x64-windows
         token: ${{ github.token }}
 

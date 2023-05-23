@@ -36,17 +36,6 @@ if(NOT SILKWORM_HAS_PARENT)
 
   include(cmake/conan.cmake)
 
-  if(NOT CONAN_PACKAGE_MANAGER)
-    set(HUNTER_CONFIG_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/config.cmake")
-
-    include(third_party/evmone/cmake/cable/HunterGate.cmake)
-    # https://github.com/cpp-pm/hunter/releases/
-    huntergate(
-      URL "https://github.com/cpp-pm/hunter/archive/v0.24.15.tar.gz"
-      SHA1 "8010d63d5ae611c564889d5fe12d3cb7a45703ac"
-      FILEPATH "${HUNTER_CONFIG_PATH}"
-    )
-  endif()
 endif()
 
 project(silkworm)
@@ -72,14 +61,6 @@ get_filename_component(SILKWORM_MAIN_DIR . ABSOLUTE)
 set(SILKWORM_MAIN_SRC_DIR "${SILKWORM_MAIN_DIR}/silkworm")
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler_settings.cmake)
-
-# Include dependencies handled by Hunter package manager
-if(NOT CONAN_PACKAGE_MANAGER)
-  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/core_packages.cmake)
-  if(NOT SILKWORM_CORE_ONLY)
-    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/extra_packages.cmake)
-  endif()
-endif()
 
 if(NOT SILKWORM_CORE_ONLY)
   # Silence CMake policy warnings in submodules

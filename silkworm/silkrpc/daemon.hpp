@@ -42,6 +42,7 @@ struct DaemonSettings {
     log::Level log_verbosity;
     concurrency::WaitMode wait_mode;
     std::optional<std::string> jwt_secret_filename;
+    bool skip_protocol_check{false};
 };
 
 struct DaemonInfo {

@@ -54,6 +54,9 @@ commands:
 
   build:
     parameters:
+      build_type:
+        type: string
+        default: Release
       conan_profile:
         type: string
         default: none
@@ -79,7 +82,7 @@ commands:
                 TOOLCHAIN_CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/<<parameters.toolchain>>.cmake"
             fi
 
-            cmake ../project -DCMAKE_BUILD_TYPE=$BUILD_TYPE $CONAN_CMAKE_ARGS $TOOLCHAIN_CMAKE_ARGS $BUILD_CMAKE_ARGS
+            cmake ../project -DCMAKE_BUILD_TYPE=<<parameters.build_type>> $CONAN_CMAKE_ARGS $TOOLCHAIN_CMAKE_ARGS $BUILD_CMAKE_ARGS
       - run:
           name: "Build"
           command: cmake --build ~/build -j8 # each compiler job requires 4GB of RAM
@@ -111,6 +114,9 @@ commands:
 
   build_using_conan:
     parameters:
+      build_type:
+        type: string
+        default: Release
       profile:
         type: string
         default: linux_gcc_11_release
@@ -125,6 +131,7 @@ commands:
           name: "Restore Conan cache"
           key: &conan-cache-key conan-machine-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/profiles/<<parameters.profile>>"}}-{{checksum "conanfile.txt"}}
       - build:
+          build_type: <<parameters.build_type>>
           conan_profile: <<parameters.profile>>
           toolchain: <<parameters.toolchain>>
       - save_cache:
@@ -170,20 +177,19 @@ commands:
 jobs:
   linux-gcc-11-thread-sanitizer:
     environment:
-      BUILD_TYPE: Debug
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=thread
     machine:
       image: ubuntu-2204:2023.04.2
     resource_class: xlarge
     steps:
       - checkout_with_submodules
-      - build_using_conan
+      - build_using_conan:
+          build_type: Debug
       - test
 
   linux-gcc-12-release:
     environment:
       GCC_VERSION: 12
-      BUILD_TYPE: Release
     machine:
       image: ubuntu-2204:2023.04.2
     resource_class: xlarge
@@ -196,7 +202,6 @@ jobs:
   linux-clang-15-address-sanitizer:
     environment:
       CLANG_VERSION: 15
-      BUILD_TYPE: Debug
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=address,undefined
       ASAN_OPTIONS: alloc_dealloc_mismatch=0 # https://github.com/llvm/llvm-project/issues/59432
     machine:
@@ -206,6 +211,7 @@ jobs:
       - checkout_with_submodules
       - install_llvm
       - build_using_conan:
+          build_type: Debug
           profile: linux_clang_13_release
           toolchain: clang_libcxx
       - test
@@ -213,7 +219,6 @@ jobs:
   linux-clang-13-coverage:
     environment:
       CLANG_VERSION: 13
-      BUILD_TYPE: Debug
       BUILD_CMAKE_ARGS: -DSILKWORM_CLANG_COVERAGE=ON
     machine:
       image: ubuntu-2204:2023.04.2
@@ -223,6 +228,7 @@ jobs:
       - format
       - install_llvm
       - build_using_conan:
+          build_type: Debug
           profile: linux_clang_13_release
           toolchain: clang_libcxx
       - run:

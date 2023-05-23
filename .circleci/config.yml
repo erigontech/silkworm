@@ -315,9 +315,15 @@ jobs:
 
 workflows:
   version: 2
-  silkworm:
+  light:
+    when:
+      equal: [ master, <<pipeline.git.branch>> ]
     jobs:
-      - linux-gcc-12-release
+      - linux-gcc-12-release      
+  integration:
+    when:
+      equal: [ master, <<pipeline.git.branch>> ]
+    jobs:
       - linux-gcc-11-thread-sanitizer
       - linux-clang-13-coverage
       - linux-clang-15-address-sanitizer

@@ -50,9 +50,8 @@ class [[nodiscard]] ThreadPool {
      */
     explicit ThreadPool(unsigned thread_count = std::thread::hardware_concurrency(), size_t stack_size = 0)
         : thread_count_(thread_count ? thread_count : 1),
-          threads_(std::make_unique<boost::thread[]>(thread_count_)),
-          stack_size_(stack_size) {
-        create_threads();
+          threads_(std::make_unique<boost::thread[]>(thread_count_)) {
+        create_threads(stack_size);
     }
 
     // Not copyable nor movable
@@ -195,12 +194,13 @@ class [[nodiscard]] ThreadPool {
 
     /**
      * @brief Create the threads in the pool and assign a worker to each thread.
+     * @param stack_size The stack size of created threads. 0 means default OS value.
      */
-    void create_threads() {
+    void create_threads(size_t stack_size) {
         running_ = true;
         boost::thread::attributes attrs;
-        if (stack_size_) {
-            attrs.set_stack_size(stack_size_);
+        if (stack_size) {
+            attrs.set_stack_size(stack_size);
         }
         for (unsigned i = 0; i < thread_count_; ++i) {
             threads_[i] = boost::thread(attrs, [this] { worker(); });
@@ -302,11 +302,6 @@ class [[nodiscard]] ThreadPool {
      * is done.
      */
     std::atomic<bool> waiting_ = false;
-
-    /**
-     * @brief The stack size of created threads. 0 means default OS value.
-     */
-    size_t stack_size_ = 0;
 };
 
 }  // namespace silkworm

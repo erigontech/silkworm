@@ -49,8 +49,13 @@ awaitable<void> EngineRpcApi::handle_engine_exchange_capabilities(  // NOLINT(re
     SILK_DEBUG << "RemoteBackEnd::engine_exchange_capabilities consensus layer capabilities: " << cl_capabilities;
     const Capabilities el_capabilities{
         "engine_newPayloadV1",
+        "engine_newPayloadV2",
         "engine_forkchoiceUpdatedV1",
+        "engine_forkchoiceUpdatedV2",
         "engine_getPayloadV1",
+        "engine_getPayloadV2",
+        "engine_getPayloadBodiesByHashV1",
+        "engine_getPayloadBodiesByRangeV1",
         "engine_exchangeTransitionConfigurationV1",
     };
     SILK_DEBUG << "RemoteBackEnd::engine_exchange_capabilities execution layer capabilities: " << el_capabilities;

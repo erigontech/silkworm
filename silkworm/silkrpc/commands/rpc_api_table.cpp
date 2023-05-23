@@ -210,7 +210,7 @@ void RpcApiTable::add_engine_handlers() {
     method_handlers_[http::method::k_engine_getPayloadV1] = &commands::RpcApi::handle_engine_get_payload_v1;
     method_handlers_[http::method::k_engine_getPayloadV2] = &commands::RpcApi::handle_engine_get_payload_v2;
     method_handlers_[http::method::k_engine_getPayloadBodiesByHashV1] = &commands::RpcApi::handle_engine_get_payload_bodies_by_hash_v1;
-    method_handlers_[http::method::k_engine_getPayloadBodiesByRangeV1] = &commands::RpcApi::handle_engine_get_payload_bodies_by_hash_v1;
+    method_handlers_[http::method::k_engine_getPayloadBodiesByRangeV1] = &commands::RpcApi::handle_engine_get_payload_bodies_by_range_v1;
     method_handlers_[http::method::k_engine_newPayloadV1] = &commands::RpcApi::handle_engine_new_payload_v1;
     method_handlers_[http::method::k_engine_newPayloadV2] = &commands::RpcApi::handle_engine_new_payload_v2;
     method_handlers_[http::method::k_engine_forkchoiceUpdatedV1] = &commands::RpcApi::handle_engine_forkchoice_updated_v1;

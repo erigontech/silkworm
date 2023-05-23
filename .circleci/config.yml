@@ -324,7 +324,7 @@ workflows:
     when:
       or:
         - equal: [ master, <<pipeline.git.branch>> ]
-        - matches: { pattern: "^integration_", value: <<pipeline.git.branch>> }
+        - matches: { pattern: "^integration_.+$", value: <<pipeline.git.branch>> }
     jobs:
       - linux-gcc-11-thread-sanitizer
       - linux-clang-13-coverage

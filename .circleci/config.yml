@@ -115,7 +115,7 @@ commands:
           command: sudo pip3 install conan==1.58.0 chardet
       - restore_cache:
           name: "Restore Conan cache"
-          key: &conan-cache-key conan-machine-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/profiles/<<parameters.profile>>"}}-{{checksum "conanfile.txt"}}
+          key: &conan-cache-key conan-machine-{{ .Environment.CIRCLE_JOB }}-<<parameters.compiler_id>>-<<parameters.compiler_version>>-{{checksum "cmake/profiles/<<parameters.profile>>"}}-{{checksum "conanfile.txt"}}
       - build:
           build_type: <<parameters.build_type>>
           compiler_id: <<parameters.compiler_id>>

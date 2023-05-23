@@ -219,17 +219,11 @@ void ExecutionEngine::discard_all_forks() {
 
 // TO IMPLEMENT OR REWORK ---------------------------------------------------------------------------------------------
 
-auto ExecutionEngine::get_header([[maybe_unused]] Hash header_hash) const -> std::optional<BlockHeader> {
+auto ExecutionEngine::get_header(Hash header_hash) const -> std::optional<BlockHeader> {
     // read from cache, then from main_chain_
     auto block = block_cache_.get_as_copy(header_hash);
     if (block) return (*block)->header;
     return main_chain_.get_header(header_hash);
-}
-
-auto ExecutionEngine::get_header([[maybe_unused]] BlockNum header_height) const -> std::optional<BlockHeader> {
-    // read from cache, then from main_chain_
-    throw std::runtime_error("not implemented");
-    return {};
 }
 
 auto ExecutionEngine::get_last_headers(BlockNum limit) const -> std::vector<BlockHeader> {
@@ -257,10 +251,16 @@ auto ExecutionEngine::get_body(Hash header_hash) const -> std::optional<BlockBod
     return main_chain_.get_body(header_hash);
 }
 
-auto ExecutionEngine::get_body([[maybe_unused]] BlockNum) const -> std::optional<BlockBody> {
-    // read from cache, then from main_chain_
-    throw std::runtime_error("not implemented");
-    return {};
+auto ExecutionEngine::get_canonical_header(BlockNum bn) const -> std::optional<BlockHeader> {
+    auto hash = main_chain_.get_canonical_hash(bn);
+    if (!hash) return {};
+    return main_chain_.get_header(*hash);
+}
+
+auto ExecutionEngine::get_canonical_body(BlockNum bn) const -> std::optional<BlockBody> {
+    auto hash = main_chain_.get_canonical_hash(bn);
+    if (!hash) return {};
+    return main_chain_.get_body(*hash);
 }
 
 auto ExecutionEngine::get_block_number(Hash header_hash) const -> std::optional<BlockNum> {
@@ -271,10 +271,11 @@ auto ExecutionEngine::get_block_number(Hash header_hash) const -> std::optional<
     return header->number;
 }
 
-bool ExecutionEngine::is_canonical([[maybe_unused]] Hash header_hash) const {
-    // read from cache, then from main_chain_
-    throw std::runtime_error("not implemented");
-    return {};
+bool ExecutionEngine::is_canonical(Hash header_hash) const {
+    auto header = main_chain_.get_header(header_hash);
+    if (!header) return false;
+    auto canonical_hash_at_same_height = main_chain_.get_canonical_hash(header->number);
+    return (canonical_hash_at_same_height == header_hash);
 }
 
 }  // namespace silkworm::stagedsync

@@ -215,19 +215,7 @@ Daemon::Daemon(DaemonSettings settings)
       kv_stub_{::remote::KV::NewStub(create_channel_())} {
     // Load the channel authentication token (if required)
     if (settings_.jwt_secret_filename) {
-        std::string jwt_token;
-        if (!load_jwt_token(*settings_.jwt_secret_filename, jwt_token)) {
-            std::string error_msg{"JWT token has wrong size: " + std::to_string(jwt_token.length())};
-            SILK_CRIT << error_msg;
-            throw std::runtime_error{error_msg};
-        }
-        const auto jwt_token_bytes = silkworm::from_hex(jwt_token);
-        if (!jwt_token_bytes) {
-            std::string error_msg{"JWT token is incorrect: " + jwt_token};
-            SILK_CRIT << error_msg;
-            throw std::runtime_error{error_msg};
-        }
-        jwt_secret_ = {jwt_token_bytes->cbegin(), jwt_token_bytes->cend()};
+        jwt_secret_ = load_jwt_token(*settings_.jwt_secret_filename);
     }
 
     // Activate the local chaindata access (if required)

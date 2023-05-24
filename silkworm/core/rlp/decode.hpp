@@ -55,7 +55,7 @@ DecodingResult decode(ByteView& from, T& to) noexcept {
         return tl::unexpected{DecodingError::kUnexpectedList};
     }
     if (DecodingResult res{endian::from_big_compact(from.substr(0, h->payload_length), to)}; !res) {
-        return tl::unexpected{res.error()};
+        return res;
     }
     from.remove_prefix(h->payload_length);
     return {};
@@ -110,7 +110,7 @@ DecodingResult decode(ByteView& from, std::vector<T>& to) noexcept {
     while (!payload_view.empty()) {
         to.emplace_back();
         if (DecodingResult res{decode(payload_view, to.back())}; !res) {
-            return tl::unexpected{res.error()};
+            return res;
         }
     }
 
@@ -118,21 +118,23 @@ DecodingResult decode(ByteView& from, std::vector<T>& to) noexcept {
     return {};
 }
 
-template <typename Arg1, typename Arg2>
-DecodingResult decode_items(ByteView& from, Arg1& arg1, Arg2& arg2) noexcept {
-    if (DecodingResult res{decode(from, arg1)}; !res) {
-        return tl::unexpected{res.error()};
+namespace detail {
+    template <typename Arg1, typename Arg2>
+    DecodingResult decode_items(ByteView& from, Arg1& arg1, Arg2& arg2) noexcept {
+        if (DecodingResult res{decode(from, arg1)}; !res) {
+            return res;
+        }
+        return decode(from, arg2);
     }
-    return decode(from, arg2);
-}
 
-template <typename Arg1, typename Arg2, typename... Args>
-DecodingResult decode_items(ByteView& from, Arg1& arg1, Arg2& arg2, Args&... args) noexcept {
-    if (DecodingResult res{decode(from, arg1)}; !res) {
-        return tl::unexpected{res.error()};
+    template <typename Arg1, typename Arg2, typename... Args>
+    DecodingResult decode_items(ByteView& from, Arg1& arg1, Arg2& arg2, Args&... args) noexcept {
+        if (DecodingResult res{decode(from, arg1)}; !res) {
+            return res;
+        }
+        return decode_items(from, arg2, args...);
     }
-    return decode_items(from, arg2, args...);
-}
+}  // namespace detail
 
 template <typename Arg1, typename Arg2, typename... Args>
 DecodingResult decode(ByteView& from, Arg1& arg1, Arg2& arg2, Args&... args) noexcept {
@@ -143,7 +145,16 @@ DecodingResult decode(ByteView& from, Arg1& arg1, Arg2& arg2, Args&... args) noe
     if (!header->list) {
         return tl::unexpected{DecodingError::kUnexpectedString};
     }
-    return decode_items(from, arg1, arg2, args...);
+    uint64_t leftover{from.length() - header->payload_length};
+
+    if (DecodingResult res{detail::decode_items(from, arg1, arg2, args...)}; !res) {
+        return res;
+    }
+
+    if (from.length() != leftover) {
+        return tl::unexpected{DecodingError::kListLengthMismatch};
+    }
+    return {};
 }
 
 }  // namespace silkworm::rlp

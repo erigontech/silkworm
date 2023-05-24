@@ -152,7 +152,7 @@ asio::awaitable<std::optional<BlockBody>> Server::get_body(Hash block_hash) {
 
 asio::awaitable<std::optional<BlockBody>> Server::get_body(BlockNum block_number) {
     auto lambda = [](Server* me, BlockNum n) -> asio::awaitable<std::optional<BlockBody>> {
-        co_return me->exec_engine_.get_body(n);
+        co_return me->exec_engine_.get_canonical_body(n);
     };
     return co_spawn(io_context_, lambda(this, block_number), asio::use_awaitable);
 }

@@ -118,24 +118,23 @@ DecodingResult decode(ByteView& from, std::vector<T>& to) noexcept {
     return {};
 }
 
-namespace detail {
-    template <typename Arg1, typename Arg2>
-    DecodingResult decode_items(ByteView& from, Arg1& arg1, Arg2& arg2) noexcept {
-        if (DecodingResult res{decode(from, arg1)}; !res) {
-            return res;
-        }
-        return decode(from, arg2);
+template <typename Arg1, typename Arg2>
+DecodingResult decode_items(ByteView& from, Arg1& arg1, Arg2& arg2) noexcept {
+    if (DecodingResult res{decode(from, arg1)}; !res) {
+        return res;
     }
+    return decode(from, arg2);
+}
 
-    template <typename Arg1, typename Arg2, typename... Args>
-    DecodingResult decode_items(ByteView& from, Arg1& arg1, Arg2& arg2, Args&... args) noexcept {
-        if (DecodingResult res{decode(from, arg1)}; !res) {
-            return res;
-        }
-        return decode_items(from, arg2, args...);
+template <typename Arg1, typename Arg2, typename... Args>
+DecodingResult decode_items(ByteView& from, Arg1& arg1, Arg2& arg2, Args&... args) noexcept {
+    if (DecodingResult res{decode(from, arg1)}; !res) {
+        return res;
     }
-}  // namespace detail
+    return decode_items(from, arg2, args...);
+}
 
+// Decodes an RLP list
 template <typename Arg1, typename Arg2, typename... Args>
 DecodingResult decode(ByteView& from, Arg1& arg1, Arg2& arg2, Args&... args) noexcept {
     const auto header{decode_header(from)};
@@ -147,7 +146,7 @@ DecodingResult decode(ByteView& from, Arg1& arg1, Arg2& arg2, Args&... args) noe
     }
     uint64_t leftover{from.length() - header->payload_length};
 
-    if (DecodingResult res{detail::decode_items(from, arg1, arg2, args...)}; !res) {
+    if (DecodingResult res{decode_items(from, arg1, arg2, args...)}; !res) {
         return res;
     }
 

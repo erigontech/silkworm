@@ -60,26 +60,7 @@ namespace rlp {
 
     template <>
     DecodingResult decode(ByteView& from, AccessListEntry& to) noexcept {
-        const auto h{decode_header(from)};
-        if (!h) {
-            return tl::unexpected{h.error()};
-        }
-        if (!h->list) {
-            return tl::unexpected{DecodingError::kUnexpectedString};
-        }
-        uint64_t leftover{from.length() - h->payload_length};
-
-        if (DecodingResult res{decode(from, to.account.bytes)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.storage_keys)}; !res) {
-            return res;
-        }
-
-        if (from.length() != leftover) {
-            return tl::unexpected{DecodingError::kListLengthMismatch};
-        }
-        return {};
+        return decode(from, to.account.bytes, to.storage_keys);
     }
 
     static Header header_base(const UnsignedTransaction& txn) {
@@ -197,12 +178,8 @@ namespace rlp {
         }
     }
 
-    static DecodingResult legacy_decode(ByteView& from, Transaction& to) noexcept {
-        if (DecodingResult res{decode(from, to.nonce)}; !res) {
-            return res;
-        }
-
-        if (DecodingResult res{decode(from, to.max_priority_fee_per_gas)}; !res) {
+    static DecodingResult legacy_decode_items(ByteView& from, Transaction& to) noexcept {
+        if (DecodingResult res{decode_items(from, to.nonce, to.max_priority_fee_per_gas)}; !res) {
             return res;
         }
         to.max_fee_per_gas = to.max_priority_fee_per_gas;
@@ -221,31 +198,15 @@ namespace rlp {
             }
         }
 
-        if (DecodingResult res{decode(from, to.value)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.data)}; !res) {
-            return res;
-        }
-
         intx::uint256 v;
-        if (DecodingResult res{decode(from, v)}; !res) {
+        if (DecodingResult res{decode_items(from, to.value, to.data, v)}; !res) {
             return res;
         }
         if (!to.set_v(v)) {
             return tl::unexpected{DecodingError::kInvalidVInSignature};
         }
 
-        if (DecodingResult res{decode(from, to.r)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.s)}; !res) {
-            return res;
-        }
-
-        to.access_list.clear();
-
-        return {};
+        return decode_items(from, to.r, to.s);
     }
 
     static DecodingResult eip2718_decode(ByteView& from, Transaction& to) noexcept {
@@ -267,13 +228,10 @@ namespace rlp {
         }
         to.chain_id = chain_id;
 
-        if (DecodingResult res{decode(from, to.nonce)}; !res) {
+        if (DecodingResult res{decode_items(from, to.nonce, to.max_priority_fee_per_gas)}; !res) {
             return res;
         }
 
-        if (DecodingResult res{decode(from, to.max_priority_fee_per_gas)}; !res) {
-            return res;
-        }
         if (to.type == TransactionType::kEip2930) {
             to.max_fee_per_gas = to.max_priority_fee_per_gas;
         } else if (DecodingResult res{decode(from, to.max_fee_per_gas)}; !res) {
@@ -294,26 +252,7 @@ namespace rlp {
             }
         }
 
-        if (DecodingResult res{decode(from, to.value)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.data)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.access_list)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.odd_y_parity)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.r)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.s)}; !res) {
-            return res;
-        }
-
-        return {};
+        return decode_items(from, to.value, to.data, to.access_list, to.odd_y_parity, to.r, to.s);
     }
 
     DecodingResult decode_transaction(ByteView& from, Transaction& to, Eip2718Wrapping allowed) noexcept {
@@ -341,8 +280,9 @@ namespace rlp {
 
         if (h->list) {  // Legacy transaction
             to.type = TransactionType::kLegacy;
+            to.access_list.clear();
             uint64_t leftover{from.length() - h->payload_length};
-            if (DecodingResult res{legacy_decode(from, to)}; !res) {
+            if (DecodingResult res{legacy_decode_items(from, to)}; !res) {
                 return res;
             }
             if (from.length() != leftover) {

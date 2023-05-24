@@ -28,15 +28,12 @@
 
 namespace silkworm::stagedsync {
 
-Fork::Fork(BlockId forking_point, MainChain& main_chain)
-    : main_chain_{main_chain},
-      main_txn_{main_chain_.db_access_.start_ro_tx()},
-      memory_db_{TemporaryDirectory::get_unique_temporary_path(
-                     main_chain_.node_settings().data_directory->path() / "forks"),
-                 &main_txn_},
-      tx_{memory_db_},
-      pipeline_{&(main_chain.node_settings())},
-      canonical_chain_(tx_) {
+Fork::Fork(BlockId forking_point, db::ROTxn&& main_chain_tx, NodeSettings& ns)
+    : main_tx_{std::move(main_chain_tx)},
+      memory_db_{TemporaryDirectory::get_unique_temporary_path(ns.data_directory->forks().path()), &main_tx_},
+      memory_tx_{memory_db_},
+      pipeline_{&ns},
+      canonical_chain_(memory_tx_) {
     // setting forking point
     if (canonical_chain_.initial_head() != forking_point) {
         reduce_down_to(forking_point);
@@ -44,33 +41,24 @@ Fork::Fork(BlockId forking_point, MainChain& main_chain)
                          "forking point must be the current canonical head");
     }
     current_head_ = forking_point;
-    tx_.commit();
 }
 
+/*
 Fork::Fork(Fork&& orig) noexcept
-    : main_chain_{orig.main_chain_},
-      main_txn_{std::move(orig.main_txn_)},
+    : main_tx_{std::move(orig.main_chain_)},
       memory_db_{std::move(orig.memory_db_)},
-      tx_{std::move(orig.tx_)},
-      pipeline_{&(main_chain_.node_settings())},  // warning: pipeline is not movable, we build a new one here
-      canonical_chain_{std::move(orig.canonical_chain_), tx_},
+      memory_tx_{std::move(orig.memory_tx_)},
+      pipeline_{&(orig.pipeline_.node_settings())},  // warning: pipeline is not movable, we build a new one here
+      canonical_chain_{std::move(orig.canonical_chain_), memory_tx_},
       current_head_{std::move(orig.current_head_)},
       last_verified_head_{std::move(orig.last_verified_head_)},
       last_head_status_{std::move(orig.last_head_status_)},
       last_fork_choice_{std::move(orig.last_fork_choice_)} {
-    tx_.commit_and_stop();
 }
-
-void Fork::open() {
-    tx_.reopen();  // comply to mdbx limitation: tx must be used from its creation thread
-}
-
-void Fork::reintegrate() {
-    main_chain_.reintegrate_fork(*this, tx_);
-}
+*/
 
 void Fork::close() {
-    tx_.abort();
+    memory_tx_.abort();
 }
 
 BlockId Fork::current_head() const {
@@ -121,15 +109,15 @@ BlockNum Fork::distance_from_root(const BlockId& block) const {
 }
 
 Hash Fork::insert_header(const BlockHeader& header) {
-    return db::write_header_ex(tx_, header, true);
+    return db::write_header_ex(memory_tx_, header, true);
 }
 
 void Fork::insert_body(const Block& block, const Hash& block_hash) {
     // avoid calculation of block.header.hash() because is computationally expensive
     BlockNum block_num = block.header.number;
 
-    if (!db::has_body(tx_, block_num, block_hash)) {
-        db::write_body(tx_, block, block_hash, block_num);
+    if (!db::has_body(memory_tx_, block_num, block_hash)) {
+        db::write_body(memory_tx_, block, block_hash, block_num);
     }
 }
 
@@ -159,7 +147,7 @@ void Fork::reduce_down_to(BlockId unwind_point) {
     // we do not handle differently the case where unwind_point.number > last_verified_head_.number
     // assuming pipeline unwind can handle it correclty
 
-    auto unwind_result = pipeline_.unwind(tx_, unwind_point.number);
+    auto unwind_result = pipeline_.unwind(memory_tx_, unwind_point.number);
     success_or_throw(unwind_result);  // unwind must complete with success
 
     ensure_invariant(pipeline_.head_header_number() == unwind_point.number &&
@@ -181,10 +169,10 @@ VerificationResult Fork::verify_chain() {
     SILK_TRACE << "Fork: verifying chain from head " << current_head_.hash.to_hex();
 
     // db commit policy
-    tx_.disable_commit();
+    memory_tx_.disable_commit();
 
     // forward
-    Stage::Result forward_result = pipeline_.forward(tx_, current_head_.number);
+    Stage::Result forward_result = pipeline_.forward(memory_tx_, current_head_.number);
 
     // evaluate result
     VerificationResult verify_result;
@@ -206,7 +194,7 @@ VerificationResult Fork::verify_chain() {
             invalid_chain.unwind_point.hash = *canonical_chain_.get_hash(*pipeline_.unwind_point());
             if (pipeline_.bad_block()) {
                 invalid_chain.bad_block = pipeline_.bad_block();
-                invalid_chain.bad_headers = collect_bad_headers(tx_, invalid_chain);
+                invalid_chain.bad_headers = collect_bad_headers(memory_tx_, invalid_chain);
             }
             verify_result = invalid_chain;
             break;
@@ -221,8 +209,8 @@ VerificationResult Fork::verify_chain() {
     last_head_status_ = verify_result;
 
     // finish
-    tx_.enable_commit();
-    tx_.commit_and_renew();
+    memory_tx_.enable_commit();
+    memory_tx_.commit_and_renew();
     return verify_result;
 }
 
@@ -240,7 +228,7 @@ bool Fork::notify_fork_choice_update(Hash head_block_hash, [[maybe_unused]] std:
         ensure_invariant(*head_block_num < last_verified_head_.number,
                          "fork choice update upon non verified block");
 
-        auto unwind_result = pipeline_.unwind(tx_, *head_block_num);
+        auto unwind_result = pipeline_.unwind(memory_tx_, *head_block_num);
         success_or_throw(unwind_result);  // unwind must complete with success
 
         canonical_chain_.delete_down_to(*head_block_num);  // remove last part of canonical
@@ -254,7 +242,7 @@ bool Fork::notify_fork_choice_update(Hash head_block_hash, [[maybe_unused]] std:
 
     if (!holds_alternative<ValidChain>(last_head_status_)) return false;
 
-    tx_.commit_and_renew();
+    memory_tx_.commit_and_renew();
 
     last_fork_choice_ = canonical_chain_.current_head();
 

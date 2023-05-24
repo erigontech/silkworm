@@ -35,12 +35,9 @@ class MainChain;
 
 class Fork {
   public:
-    explicit Fork(BlockId forking_point, MainChain&);
+    explicit Fork(BlockId forking_point, db::ROTxn&& main_chain_tx, NodeSettings&);
     Fork(const Fork&) = delete;
-    Fork(Fork&& orig) noexcept;
 
-    void open();  // needed to circumvent mdbx threading model limitations
-    void reintegrate();
     void close();
 
     // extension & contraction
@@ -66,15 +63,16 @@ class Fork {
     BlockNum distance_from_root(const BlockId&) const;
 
   protected:
+    friend class MainChain;
+
     Hash insert_header(const BlockHeader&);
     void insert_body(const Block&, const Hash& block_hash);
 
     std::set<Hash> collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain);
 
-    MainChain& main_chain_;
-    db::ROTxn main_txn_;
+    db::ROTxn main_tx_;
     db::MemoryOverlay memory_db_;
-    db::MemoryMutation tx_;
+    db::MemoryMutation memory_tx_;
 
     ExecutionPipeline pipeline_;
     CanonicalChain canonical_chain_;

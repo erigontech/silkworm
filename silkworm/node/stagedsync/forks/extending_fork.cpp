@@ -55,6 +55,7 @@ void ExtendingFork::execution_loop() {
     if (!executor_) return;
     asio::executor_work_guard<decltype(executor_->get_executor())> work{executor_->get_executor()};
     executor_->run();
+    if (fork_) fork_->close();  // close the fork here, in the same thread where was created to comply to mdbx limitations
 }
 
 void ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block>>&& blocks) {
@@ -83,7 +84,6 @@ void ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block
 
 void ExtendingFork::close() {
     propagate_exception_if_any();
-    if (fork_) fork_->close();
     if (executor_) executor_->stop();
     if (thread_.joinable()) thread_.join();
 }

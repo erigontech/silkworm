@@ -149,7 +149,7 @@ int main(int argc, char* argv[]) {
 
                     // Decode transaction data as RLP buffer
                     Transaction tx;
-                    success_or_throw(rlp::decode(transaction_rlp, tx, false));
+                    success_or_throw(rlp::decode(transaction_rlp, tx));
 
                     // Recover transaction sender i.e. 'from' field
                     tx.recover_sender();

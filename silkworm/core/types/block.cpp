@@ -116,12 +116,12 @@ namespace rlp {
 
     void encode(Bytes& to, const BlockHeader& header, bool for_sealing, bool exclude_extra_data_sig) {
         encode_header(to, rlp_header(header, for_sealing, exclude_extra_data_sig));
-        encode(to, header.parent_hash.bytes);
-        encode(to, header.ommers_hash.bytes);
-        encode(to, header.beneficiary.bytes);
-        encode(to, header.state_root.bytes);
-        encode(to, header.transactions_root.bytes);
-        encode(to, header.receipts_root.bytes);
+        encode(to, header.parent_hash);
+        encode(to, header.ommers_hash);
+        encode(to, header.beneficiary);
+        encode(to, header.state_root);
+        encode(to, header.transactions_root);
+        encode(to, header.receipts_root);
         encode(to, header.logs_bloom);
         encode(to, header.difficulty);
         encode(to, header.number);
@@ -135,7 +135,7 @@ namespace rlp {
             encode(to, header.extra_data);
         }
         if (!for_sealing) {
-            encode(to, header.prev_randao.bytes);
+            encode(to, header.prev_randao);
             encode(to, header.nonce);
         }
         if (header.base_fee_per_gas) {

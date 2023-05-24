@@ -84,9 +84,6 @@ struct BlockHeader {
     [[nodiscard]] std::optional<intx::uint256> data_gas_price() const;
 
     friend bool operator==(const BlockHeader&, const BlockHeader&) = default;
-
-  private:
-    friend DecodingResult rlp::decode<BlockHeader>(ByteView& from, BlockHeader& to) noexcept;
 };
 
 struct BlockBody {

@@ -160,49 +160,23 @@ namespace rlp {
         }
         uint64_t leftover{from.length() - rlp_head->payload_length};
 
-        if (DecodingResult res{decode(from, to.parent_hash.bytes)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.ommers_hash.bytes)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.beneficiary.bytes)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.state_root.bytes)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.transactions_root.bytes)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.receipts_root.bytes)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.logs_bloom)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.difficulty)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.number)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.gas_limit)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.gas_used)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.timestamp)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.extra_data)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.prev_randao.bytes)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.nonce)}; !res) {
+        if (DecodingResult res{decode_items(from,
+                                            to.parent_hash.bytes,
+                                            to.ommers_hash.bytes,
+                                            to.beneficiary.bytes,
+                                            to.state_root.bytes,
+                                            to.transactions_root.bytes,
+                                            to.receipts_root.bytes,
+                                            to.logs_bloom,
+                                            to.difficulty,
+                                            to.number,
+                                            to.gas_limit,
+                                            to.gas_used,
+                                            to.timestamp,
+                                            to.extra_data,
+                                            to.prev_randao.bytes,
+                                            to.nonce)};
+            !res) {
             return res;
         }
 
@@ -273,10 +247,7 @@ namespace rlp {
         }
         uint64_t leftover{from.length() - rlp_head->payload_length};
 
-        if (DecodingResult res{decode(from, to.transactions)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.ommers)}; !res) {
+        if (DecodingResult res{decode_items(from, to.transactions, to.ommers)}; !res) {
             return res;
         }
 
@@ -305,13 +276,7 @@ namespace rlp {
         }
         uint64_t leftover{from.length() - rlp_head->payload_length};
 
-        if (DecodingResult res{decode(from, to.header)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.transactions)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.ommers)}; !res) {
+        if (DecodingResult res{decode_items(from, to.header, to.transactions, to.ommers)}; !res) {
             return res;
         }
 

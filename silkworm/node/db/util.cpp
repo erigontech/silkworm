@@ -174,14 +174,8 @@ namespace detail {
         }
         uint64_t leftover{from.length() - header->payload_length};
 
-        if (const auto result{rlp::decode(from, to.base_txn_id)}; !result) {
-            return tl::unexpected{result.error()};
-        }
-        if (const auto result{rlp::decode(from, to.txn_count)}; !result) {
-            return tl::unexpected{result.error()};
-        }
-        if (const auto result{rlp::decode(from, to.ommers)}; !result) {
-            return tl::unexpected{result.error()};
+        if (DecodingResult res{rlp::decode_items(from, to.base_txn_id, to.txn_count, to.ommers)}; !res) {
+            return res;
         }
 
         to.withdrawals = std::nullopt;

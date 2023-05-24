@@ -36,7 +36,7 @@ namespace silkworm {
 namespace asio = boost::asio;
 using namespace stagedsync;
 
-std::shared_ptr<Block> generateSampleChildrenBlock(const BlockHeader& parent) {
+static std::shared_ptr<Block> generateSampleChildrenBlock(const BlockHeader& parent) {
     auto block = std::make_shared<Block>();
     auto parent_hash = parent.hash();
 

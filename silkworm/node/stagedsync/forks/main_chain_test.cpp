@@ -46,7 +46,7 @@ class MainChain_ForTest : public stagedsync::MainChain {
     using stagedsync::MainChain::tx_;
 };
 
-Block generateSampleChildrenBlock(const BlockHeader& parent) {
+static Block generateSampleChildrenBlock(const BlockHeader& parent) {
     Block block;
     auto parent_hash = parent.hash();
 

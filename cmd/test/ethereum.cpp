@@ -733,7 +733,7 @@ int main(int argc, char* argv[]) {
 #ifdef NDEBUG
     stack_size = 16 * kMebi;
 #endif
-    thread_pool thread_pool{num_threads, stack_size};
+    ThreadPool thread_pool{num_threads, stack_size};
 
     const fs::path root_dir{tests_path};
 

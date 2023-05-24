@@ -18,6 +18,7 @@
 
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/protocol/param.hpp>
+#include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 
 namespace silkworm {
@@ -149,7 +150,6 @@ namespace rlp {
         }
     }
 
-    template <>
     DecodingResult decode(ByteView& from, BlockHeader& to) noexcept {
         const auto rlp_head{decode_header(from)};
         if (!rlp_head) {
@@ -263,7 +263,6 @@ namespace rlp {
         }
     }
 
-    template <>
     DecodingResult decode(ByteView& from, BlockBody& to) noexcept {
         const auto rlp_head{decode_header(from)};
         if (!rlp_head) {
@@ -296,7 +295,6 @@ namespace rlp {
         return {};
     }
 
-    template <>
     DecodingResult decode(ByteView& from, Block& to) noexcept {
         const auto rlp_head{decode_header(from)};
         if (!rlp_head) {

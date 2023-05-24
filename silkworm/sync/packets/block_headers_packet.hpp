@@ -35,7 +35,6 @@ namespace rlp {
 
     void encode(Bytes& to, const BlockHeadersPacket66& from);
 
-    template <>
     DecodingResult decode(ByteView& from, BlockHeadersPacket66& to) noexcept;
 
 }  // namespace rlp

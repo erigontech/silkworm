@@ -23,6 +23,7 @@
 #include "new_block_packet.hpp"
 
 // generic implementations (must follow types)
+#include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 
 namespace silkworm {

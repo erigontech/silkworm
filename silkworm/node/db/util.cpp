@@ -21,6 +21,7 @@
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 

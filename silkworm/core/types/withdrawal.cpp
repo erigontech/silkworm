@@ -16,6 +16,7 @@
 
 #include "withdrawal.hpp"
 
+#include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode.hpp>
 
 namespace silkworm::rlp {
@@ -42,7 +43,6 @@ void encode(Bytes& to, const Withdrawal& w) {
     encode(to, w.amount);
 }
 
-template <>
 DecodingResult decode(ByteView& from, Withdrawal& to) noexcept {
     return decode(from, to.index, to.validator_index, to.address.bytes, to.amount);
 }

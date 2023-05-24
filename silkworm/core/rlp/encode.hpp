@@ -19,9 +19,6 @@
 
 #pragma once
 
-#include <optional>
-#include <vector>
-
 #include <intx/intx.hpp>
 
 #include <silkworm/core/common/base.hpp>

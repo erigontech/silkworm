@@ -114,13 +114,8 @@ namespace rlp {
     void encode(Bytes& to, const BlockHeader&, bool for_sealing = false, bool exclude_extra_data_sig = false);
     void encode(Bytes& to, const Block&);
 
-    template <>
     DecodingResult decode(ByteView& from, BlockBody& to) noexcept;
-
-    template <>
     DecodingResult decode(ByteView& from, BlockHeader& to) noexcept;
-
-    template <>
     DecodingResult decode(ByteView& from, Block& to) noexcept;
 }  // namespace rlp
 

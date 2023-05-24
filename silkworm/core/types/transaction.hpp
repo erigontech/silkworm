@@ -109,7 +109,6 @@ namespace rlp {
 
     size_t length(const Transaction&, bool wrap_eip2718_into_string = true);
 
-    template <>
     DecodingResult decode(ByteView& from, AccessListEntry& to) noexcept;
 
     enum class Eip2718Wrapping {
@@ -121,7 +120,6 @@ namespace rlp {
     DecodingResult decode_transaction(ByteView& from, Transaction& to,
                                       Eip2718Wrapping accepted_typed_txn_wrapping) noexcept;
 
-    template <>
     inline DecodingResult decode(ByteView& from, Transaction& to) noexcept {
         return decode_transaction(from, to, Eip2718Wrapping::kString);
     }

@@ -18,6 +18,7 @@
 
 #include <type_traits>
 
+#include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/sync/internals/types.hpp>
 
 namespace silkworm::rlp {
@@ -65,27 +66,7 @@ inline size_t length_eth66_packet(const T& from) noexcept {
 
 template <typename T>
 inline DecodingResult decode_eth66_packet(ByteView& from, T& to) noexcept {
-    const auto rlp_head{rlp::decode_header(from)};
-    if (!rlp_head) {
-        return tl::unexpected{rlp_head.error()};
-    }
-    if (!rlp_head->list) {
-        return tl::unexpected{DecodingError::kUnexpectedString};
-    }
-
-    uint64_t leftover{from.length() - rlp_head->payload_length};
-
-    if (DecodingResult res{rlp::decode(from, to.requestId)}; !res) {
-        return res;
-    }
-    if (DecodingResult res{rlp::decode(from, to.request)}; !res) {
-        return res;
-    }
-
-    if (from.length() != leftover) {
-        return tl::unexpected{DecodingError::kListLengthMismatch};
-    }
-    return {};
+    return decode(from, to.requestId, to.request);
 }
 
 }  // namespace silkworm::rlp

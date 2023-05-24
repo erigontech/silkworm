@@ -33,7 +33,6 @@ namespace rlp {
 
     void encode(Bytes& to, const GetBlockBodiesPacket66& from);
 
-    template <>
     DecodingResult decode(ByteView& from, GetBlockBodiesPacket66& to) noexcept;
 
 }  // namespace rlp

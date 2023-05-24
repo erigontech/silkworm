@@ -23,21 +23,15 @@
 #include "get_block_headers_packet.hpp"
 #include "new_block_hashes_packet.hpp"
 #include "new_block_packet.hpp"
-
-// generic implementations (must follow types)
-#include <silkworm/core/rlp/decode.hpp>
-
 #include "rlp_eth66_packet_coding.hpp"
 
 // specific implementations
 namespace silkworm::rlp {
 
-template <>
 DecodingResult decode(ByteView& from, Hash& to) noexcept {
     return rlp::decode(from, static_cast<evmc::bytes32&>(to));
 }
 
-template <>
 DecodingResult decode(ByteView& from, NewBlockHash& to) noexcept {
     const auto rlp_head{decode_header(from)};
     if (!rlp_head) {
@@ -62,7 +56,6 @@ DecodingResult decode(ByteView& from, NewBlockHash& to) noexcept {
     return {};
 }
 
-template <>
 DecodingResult decode(ByteView& from, NewBlockPacket& to) noexcept {
     const auto rlp_head{decode_header(from)};
     if (!rlp_head) {
@@ -87,55 +80,24 @@ DecodingResult decode(ByteView& from, NewBlockPacket& to) noexcept {
     return {};
 }
 
-template <>
 DecodingResult decode(ByteView& from, GetBlockHeadersPacket66& to) noexcept {
     return rlp::decode_eth66_packet(from, to);
 }
 
-template <>
 DecodingResult decode(ByteView& from, BlockBodiesPacket66& to) noexcept {
     return rlp::decode_eth66_packet(from, to);
 }
 
-template <>
 DecodingResult decode(ByteView& from, BlockHeadersPacket66& to) noexcept {
     return rlp::decode_eth66_packet(from, to);
 }
 
-template <>
 DecodingResult decode(ByteView& from, GetBlockBodiesPacket66& to) noexcept {
     return rlp::decode_eth66_packet(from, to);
 }
 
-template <>
 DecodingResult decode(ByteView& from, GetBlockHeadersPacket& to) noexcept {
-    const auto rlp_head{decode_header(from)};
-    if (!rlp_head) {
-        return tl::unexpected{rlp_head.error()};
-    }
-    if (!rlp_head->list) {
-        return tl::unexpected{DecodingError::kUnexpectedString};
-    }
-
-    uint64_t leftover{from.length() - rlp_head->payload_length};
-
-    if (DecodingResult res{rlp::decode(from, to.origin)}; !res) {
-        return res;
-    }
-    if (DecodingResult res{rlp::decode(from, to.amount)}; !res) {
-        return res;
-    }
-    if (DecodingResult res{rlp::decode(from, to.skip)}; !res) {
-        return res;
-    }
-    if (DecodingResult res{rlp::decode(from, to.reverse)}; !res) {
-        return res;
-    }
-
-    if (from.length() != leftover) {
-        return tl::unexpected{DecodingError::kListLengthMismatch};
-    }
-    return {};
+    return decode(from, to.origin, to.amount, to.skip, to.reverse);
 }
 
 }  // namespace silkworm::rlp

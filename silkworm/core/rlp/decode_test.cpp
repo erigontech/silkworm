@@ -20,6 +20,8 @@
 
 #include <silkworm/core/common/util.hpp>
 
+#include "decode_vector.hpp"
+
 namespace silkworm::rlp {
 
 template <class T>
@@ -27,7 +29,7 @@ static T decode_success(std::string_view hex) {
     Bytes bytes{*from_hex(hex)};
     ByteView view{bytes};
     T res;
-    REQUIRE(decode<T>(view, res));
+    REQUIRE(decode(view, res));
     CHECK(view.empty());  // check that the entire input was consumed
     return res;
 }
@@ -37,7 +39,7 @@ static DecodingError decode_failure(std::string_view hex) {
     Bytes bytes{*from_hex(hex)};
     ByteView view{bytes};
     T x;
-    DecodingResult res{decode<T>(view, x)};
+    DecodingResult res{decode(view, x)};
     REQUIRE(!res);
     return res.error();
 }
@@ -47,7 +49,7 @@ static std::vector<T> decode_vector_success(std::string_view hex) {
     Bytes bytes{*from_hex(hex)};
     ByteView view{bytes};
     std::vector<T> res;
-    REQUIRE(decode<T>(view, res));
+    REQUIRE(decode(view, res));
     CHECK(view.empty());  // check that the entire input was consumed
     return res;
 }

@@ -87,12 +87,10 @@ tl::expected<Header, DecodingError> decode_header(ByteView& from) noexcept {
     return h;
 }
 
-template <>
 DecodingResult decode(ByteView& from, evmc::bytes32& to) noexcept {
     return decode(from, to.bytes);
 }
 
-template <>
 DecodingResult decode(ByteView& from, Bytes& to) noexcept {
     const auto h{decode_header(from)};
     if (!h) {
@@ -106,7 +104,6 @@ DecodingResult decode(ByteView& from, Bytes& to) noexcept {
     return {};
 }
 
-template <>
 DecodingResult decode(ByteView& from, bool& to) noexcept {
     uint64_t i{0};
     if (DecodingResult res{decode(from, i)}; !res) {

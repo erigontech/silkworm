@@ -19,7 +19,7 @@
 #include <stdexcept>
 
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/core/rlp/decode.hpp>
+#include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/secp256k1_context.hpp>

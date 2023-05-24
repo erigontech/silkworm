@@ -21,6 +21,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/crypto/ecdsa.h>
 #include <silkworm/core/protocol/param.hpp>
+#include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 
 #include "y_parity_and_chain_id.hpp"
@@ -58,7 +59,6 @@ namespace rlp {
         encode(to, e.storage_keys);
     }
 
-    template <>
     DecodingResult decode(ByteView& from, AccessListEntry& to) noexcept {
         return decode(from, to.account.bytes, to.storage_keys);
     }

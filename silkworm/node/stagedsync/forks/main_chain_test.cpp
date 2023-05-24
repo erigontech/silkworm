@@ -312,10 +312,8 @@ TEST_CASE("MainChain") {
         REQUIRE(header0.has_value());
 
         Block block1 = generateSampleChildrenBlock(*header0);
-        auto block1_hash = block1.header.hash();
 
         Block block2 = generateSampleChildrenBlock(block1.header);
-        auto block2_hash = block2.header.hash();
 
         Block block3 = generateSampleChildrenBlock(block2.header);
         auto block3_hash = block3.header.hash();

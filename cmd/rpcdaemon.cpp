@@ -16,52 +16,23 @@
 
 #include <string>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <absl/flags/flag.h>
-#include <absl/flags/parse.h>
-#include <absl/flags/usage.h>
-#include <absl/flags/usage_config.h>
-#include <absl/strings/match.h>
+#include <CLI/CLI.hpp>
 #include <boost/asio/version.hpp>
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/buildinfo.h>
-#include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/daemon.hpp>
 
 #include "common/common.hpp"
+#include "common/rpcdaemon_options.hpp"
 
 using namespace silkworm;
-using namespace silkworm::cmd;
+using namespace silkworm::cmd::common;
 using namespace silkworm::rpc;
-
-ABSL_FLAG(std::string, chaindata, kEmptyChainData, "chain data path as string");
-ABSL_FLAG(std::string, http_port, kDefaultHttpPort, "Ethereum JSON RPC API local end-point as string <address>:<port>");
-ABSL_FLAG(std::string, engine_port, kDefaultEnginePort, "Engine JSON RPC API local end-point as string <address>:<port>");
-ABSL_FLAG(std::string, target, kDefaultTarget, "Erigon Core gRPC service location as string <address>:<port>");
-ABSL_FLAG(std::string, api_spec, kDefaultEth1ApiSpec, "JSON RPC API namespaces as comma-separated list of strings");
-ABSL_FLAG(uint32_t, num_contexts, std::thread::hardware_concurrency() / 3, "number of running I/O contexts as 32-bit integer");
-ABSL_FLAG(uint32_t, num_workers, 16, "number of worker threads as 32-bit integer");
-ABSL_FLAG(uint32_t, timeout, kDefaultTimeout.count(), "gRPC call timeout as 32-bit integer");
-// ABSL_FLAG(LogLevel, log_verbosity, LogLevel::Critical, "logging verbosity level");
-ABSL_FLAG(concurrency::WaitMode, wait_mode, concurrency::WaitMode::blocking, "scheduler wait mode");
-ABSL_FLAG(std::string, jwt_secret_file, kDefaultJwtFilename, "token file to ensure safe connection between CL and EL");
-ABSL_FLAG(std::string, datadir, kDefaultDataDir, "path to the database folder");
-ABSL_FLAG(bool, skip_protocol_check, false, "flag indicating if gRPC protocol version check should be skipped");
-
-//! Assemble the application version using the Cable build information
-std::string get_version_from_build_info() {
-    const auto build_info{silkworm_get_buildinfo()};
-
-    std::string application_version{"silkrpcdaemon version: "};
-    application_version.append(build_info->project_version);
-    return application_version;
-}
 
 //! Assemble the application fully-qualified name using the Cable build information
 std::string get_name_from_build_info() {
-    return common::get_node_name_from_build_info(silkworm_get_buildinfo());
+    return get_node_name_from_build_info(silkworm_get_buildinfo());
 }
 
 //! Assemble the relevant library version information
@@ -73,38 +44,21 @@ std::string get_library_versions() {
     return library_versions;
 }
 
-DaemonSettings parse_args(int argc, char* argv[]) {
-    absl::FlagsUsageConfig config;
-    config.contains_helpshort_flags = [](absl::string_view) { return false; };
-    config.contains_help_flags = [](absl::string_view filename) { return absl::EndsWith(filename, "main.cpp"); };
-    config.contains_helppackage_flags = [](absl::string_view) { return false; };
-    config.normalize_filename = [](absl::string_view f) { return std::string{f.substr(f.rfind('/') + 1)}; };
-    config.version_string = []() { return get_version_from_build_info() + "\n"; };
-    absl::SetFlagsUsageConfig(config);
-    absl::SetProgramUsageMessage("C++ implementation of Ethereum JSON RPC API service within Thorax architecture");
-    absl::ParseCommandLine(argc, argv);
-
-    const auto datadir = absl::GetFlag(FLAGS_datadir);
-    std::optional<std::string> datadir_optional;
-    if (!datadir.empty()) {
-        datadir_optional = datadir;
-    }
-    DaemonSettings rpc_daemon_settings{
-        datadir_optional,
-        absl::GetFlag(FLAGS_http_port),
-        absl::GetFlag(FLAGS_engine_port),
-        absl::GetFlag(FLAGS_api_spec),
-        absl::GetFlag(FLAGS_target),
-        absl::GetFlag(FLAGS_num_contexts),
-        absl::GetFlag(FLAGS_num_workers),
-        log::Level::kInfo,  // absl::GetFlag(FLAGS_log_verbosity),
-        absl::GetFlag(FLAGS_wait_mode),
-        absl::GetFlag(FLAGS_jwt_secret_file),
-        absl::GetFlag(FLAGS_skip_protocol_check),
-    };
-    return rpc_daemon_settings;
-}
-
 int main(int argc, char* argv[]) {
-    return Daemon::run(parse_args(argc, argv), {get_name_from_build_info(), get_library_versions()});
+    CLI::App cli{"Silkrpc - C++ implementation of Ethereum JSON RPC API service"};
+
+    DaemonSettings settings;
+
+    try {
+        // Parse and validate program arguments
+        add_logging_options(cli, settings.log_settings);
+        add_option_data_dir(cli, settings.datadir);
+        add_context_pool_options(cli, settings.context_pool_settings);
+        add_rpcdaemon_options(cli, settings);
+        cli.parse(argc, argv);
+
+        return Daemon::run(settings, {get_name_from_build_info(), get_library_versions()});
+    } catch (const CLI::ParseError& pe) {
+        return cli.exit(pe);
+    }
 }

@@ -16,12 +16,32 @@
 
 #include "common.hpp"
 
+#include <CLI/CLI.hpp>
+
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/infra/common/directories.hpp>
 
 #include "ip_endpoint_option.hpp"
 
 namespace silkworm::cmd::common {
+
+//! CLI11 validator for an optional directory, checking that the folder exists if specified
+struct OptionalExistingDirectory : public CLI::detail::ExistingDirectoryValidator {
+    explicit OptionalExistingDirectory() {
+        func_ = [](const std::optional<std::filesystem::path>& value) -> std::string {
+            if (not value) return {};
+
+            const auto path_result = CLI::detail::check_path(value->c_str());
+            if (path_result == CLI::detail::path_type::nonexistent) {
+                return "Directory does not exist: " + value->string();
+            }
+            if (path_result == CLI::detail::path_type::file) {
+                return "Directory is actually a file: " + value->string();
+            }
+            return {};
+        };
+    }
+};
 
 void add_logging_options(CLI::App& cli, log::Settings& log_settings) {
     std::map<std::string, log::Level> level_mapping{
@@ -52,7 +72,14 @@ void add_option_chain(CLI::App& cli, uint64_t& network_id) {
 
 void add_option_data_dir(CLI::App& cli, std::filesystem::path& data_dir) {
     cli.add_option("--datadir", data_dir, "The path to the blockchain data directory")
+        ->check(CLI::ExistingDirectory)
         ->default_val(DataDirectory::get_default_storage_path().string());
+}
+
+void add_option_data_dir(CLI::App& cli, std::optional<std::filesystem::path>& data_dir) {
+    cli.add_option("--datadir", data_dir, "The path to the blockchain data directory (optional)")
+        ->check(OptionalExistingDirectory{})
+        ->capture_default_str();
 }
 
 void add_option_etherbase(CLI::App& cli, std::string& etherbase_address) {

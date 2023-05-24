@@ -36,15 +36,19 @@ Sync::Sync(boost::asio::io_context& io_context,
     if (config.terminal_total_difficulty) {
         // Configure and activate the Execution Layer Engine API RPC server
         rpc::DaemonSettings engine_rpc_settings{
-            .http_port = "",  // no need for Ethereum JSON RPC end-point
-            .engine_port = rpc_settings.engine_end_point,
-            .api_spec = kDefaultEth2ApiSpec,
-            .target = rpc_settings.backend_kv_address,
-            .num_contexts = 1,  // single-client so just one scheduler should be OK
-            .num_workers = 1,   // single-client so just one worker should be OK
-            .log_verbosity = rpc_settings.log_verbosity,
-            .wait_mode = concurrency::WaitMode::blocking,  // single-client so no need to play w/ strategies
-            .jwt_secret_filename = rpc_settings.jwt_secret_filename,
+            .log_settings = {
+                .log_verbosity = rpc_settings.log_verbosity,
+            },
+            .context_pool_settings{
+                .num_contexts = 1,                             // single-client so just one scheduler is OK
+                .wait_mode = concurrency::WaitMode::blocking,  // single-client so no need to play w/ strategies
+            },
+            .eth_end_point = "",  // no need for Ethereum JSON RPC end-point
+            .engine_end_point = rpc_settings.engine_end_point,
+            .eth_api_spec = kDefaultEth2ApiSpec,
+            .private_api_addr = rpc_settings.private_api_addr,
+            .num_workers = 1,  // single-client so just one worker should be OK
+            .jwt_secret_file = rpc_settings.jwt_secret_file,
         };
         engine_rpc_server_ = std::make_unique<rpc::Daemon>(engine_rpc_settings);
 

@@ -62,6 +62,6 @@ class ForkId {
 // RLP
 size_t length(const ForkId& value);
 void encode(Bytes& to, const ForkId& value);
-DecodingResult decode(ByteView& from, ForkId& value) noexcept;
+DecodingResult decode(ByteView& from, ForkId& value, bool allow_leftover = false) noexcept;
 
 }  // namespace silkworm::sentry::eth

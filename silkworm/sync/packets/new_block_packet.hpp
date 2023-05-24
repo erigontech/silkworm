@@ -31,7 +31,7 @@ namespace rlp {
 
     size_t length(const NewBlockPacket& from) noexcept;
 
-    DecodingResult decode(ByteView& from, NewBlockPacket& to) noexcept;
+    DecodingResult decode(ByteView& from, NewBlockPacket& to, bool allow_leftover = false) noexcept;
 
 }  // namespace rlp
 

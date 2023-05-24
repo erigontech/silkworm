@@ -38,13 +38,13 @@ namespace rlp {
 
     size_t length(const GetBlockHeadersPacket& from) noexcept;
 
-    DecodingResult decode(ByteView& from, GetBlockHeadersPacket& to) noexcept;
+    DecodingResult decode(ByteView& from, GetBlockHeadersPacket& to, bool allow_leftover = false) noexcept;
 
     size_t length(const GetBlockHeadersPacket66& from) noexcept;
 
     void encode(Bytes& to, const GetBlockHeadersPacket66& from) noexcept;
 
-    DecodingResult decode(ByteView& from, GetBlockHeadersPacket66& to) noexcept;
+    DecodingResult decode(ByteView& from, GetBlockHeadersPacket66& to, bool allow_leftover = false) noexcept;
 
 }  // namespace rlp
 

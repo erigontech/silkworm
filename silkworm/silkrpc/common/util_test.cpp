@@ -216,8 +216,8 @@ TEST_CASE("decoding_result_to_string(kUnexpectedList)", "[silkrpc][common][util]
     CHECK(decoding_result_to_string(silkworm::DecodingError::kUnexpectedList) == "rlp: element is larger than containing list");
 }
 
-TEST_CASE("decoding_result_to_string(kListLengthMismatch)", "[silkrpc][common][util]") {
-    CHECK(decoding_result_to_string(silkworm::DecodingError::kListLengthMismatch) == "rlp: list Length Mismatch");
+TEST_CASE("decoding_result_to_string(kInputTooLong)", "[silkrpc][common][util]") {
+    CHECK(decoding_result_to_string(silkworm::DecodingError::kInputTooLong) == "rlp: input too long");
 }
 
 TEST_CASE("decoding_result_to_string(kInvalidVInSignature)", "[silkrpc][common][util]") {

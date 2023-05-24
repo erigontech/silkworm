@@ -22,8 +22,8 @@
 
 namespace silkworm::rlp {
 
-template <class T>
-DecodingResult decode(ByteView& from, std::vector<T>& to) noexcept {
+template <typename T>
+DecodingResult decode(ByteView& from, std::vector<T>& to, bool allow_leftover = false) noexcept {
     const auto h{decode_header(from)};
     if (!h) {
         return tl::unexpected{h.error()};
@@ -37,26 +37,29 @@ DecodingResult decode(ByteView& from, std::vector<T>& to) noexcept {
     ByteView payload_view{from.substr(0, h->payload_length)};
     while (!payload_view.empty()) {
         to.emplace_back();
-        if (DecodingResult res{decode(payload_view, to.back())}; !res) {
+        if (DecodingResult res{decode(payload_view, to.back(), /*allow_leftover=*/true)}; !res) {
             return res;
         }
     }
 
     from.remove_prefix(h->payload_length);
+    if (!allow_leftover && !from.empty()) {
+        return tl::unexpected{DecodingError::kInputTooLong};
+    }
     return {};
 }
 
 template <typename Arg1, typename Arg2>
 DecodingResult decode_items(ByteView& from, Arg1& arg1, Arg2& arg2) noexcept {
-    if (DecodingResult res{decode(from, arg1)}; !res) {
+    if (DecodingResult res{decode(from, arg1, /*allow_leftover=*/true)}; !res) {
         return res;
     }
-    return decode(from, arg2);
+    return decode(from, arg2, /*allow_leftover=*/true);
 }
 
 template <typename Arg1, typename Arg2, typename... Args>
 DecodingResult decode_items(ByteView& from, Arg1& arg1, Arg2& arg2, Args&... args) noexcept {
-    if (DecodingResult res{decode(from, arg1)}; !res) {
+    if (DecodingResult res{decode(from, arg1, /*allow_leftover=*/true)}; !res) {
         return res;
     }
     return decode_items(from, arg2, args...);
@@ -64,7 +67,7 @@ DecodingResult decode_items(ByteView& from, Arg1& arg1, Arg2& arg2, Args&... arg
 
 // Decodes an RLP list
 template <typename Arg1, typename Arg2, typename... Args>
-DecodingResult decode(ByteView& from, Arg1& arg1, Arg2& arg2, Args&... args) noexcept {
+DecodingResult decode(ByteView& from, bool allow_leftover, Arg1& arg1, Arg2& arg2, Args&... args) noexcept {
     const auto header{decode_header(from)};
     if (!header) {
         return tl::unexpected{header.error()};
@@ -79,7 +82,10 @@ DecodingResult decode(ByteView& from, Arg1& arg1, Arg2& arg2, Args&... args) noe
     }
 
     if (from.length() != leftover) {
-        return tl::unexpected{DecodingError::kListLengthMismatch};
+        return tl::unexpected{DecodingError::kInputTooLong};
+    }
+    if (!allow_leftover && leftover) {
+        return tl::unexpected{DecodingError::kInputTooLong};
     }
     return {};
 }

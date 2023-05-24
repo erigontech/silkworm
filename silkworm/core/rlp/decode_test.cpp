@@ -30,7 +30,6 @@ static T decode_success(std::string_view hex) {
     ByteView view{bytes};
     T res;
     REQUIRE(decode(view, res));
-    CHECK(view.empty());  // check that the entire input was consumed
     return res;
 }
 
@@ -50,7 +49,6 @@ static std::vector<T> decode_vector_success(std::string_view hex) {
     ByteView view{bytes};
     std::vector<T> res;
     REQUIRE(decode(view, res));
-    CHECK(view.empty());  // check that the entire input was consumed
     return res;
 }
 

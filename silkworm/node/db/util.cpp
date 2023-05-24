@@ -181,16 +181,18 @@ namespace detail {
         to.withdrawals = std::nullopt;
         if (from.length() > leftover) {
             std::vector<Withdrawal> withdrawals;
-            if (DecodingResult res{rlp::decode(from, withdrawals)}; !res) {
+            if (DecodingResult res{rlp::decode(from, withdrawals, /*allow_leftover=*/true)}; !res) {
                 return res;
             }
             to.withdrawals = withdrawals;
         }
 
         if (from.length() != leftover) {
-            return tl::unexpected{DecodingError::kListLengthMismatch};
+            return tl::unexpected{DecodingError::kInputTooLong};
         }
-
+        if (leftover) {
+            return tl::unexpected{DecodingError::kInputTooLong};
+        }
         return {};
     }
 

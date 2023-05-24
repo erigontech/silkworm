@@ -33,7 +33,7 @@ namespace rlp {
 
     size_t length(const NewBlockHash& from) noexcept;
 
-    DecodingResult decode(ByteView& from, NewBlockHash& to) noexcept;
+    DecodingResult decode(ByteView& from, NewBlockHash& to, bool allow_leftover = false) noexcept;
 
 }  // namespace rlp
 

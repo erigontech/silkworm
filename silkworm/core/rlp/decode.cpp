@@ -87,11 +87,11 @@ tl::expected<Header, DecodingError> decode_header(ByteView& from) noexcept {
     return h;
 }
 
-DecodingResult decode(ByteView& from, evmc::bytes32& to) noexcept {
-    return decode(from, to.bytes);
+DecodingResult decode(ByteView& from, evmc::bytes32& to, bool allow_leftover) noexcept {
+    return decode(from, to.bytes, allow_leftover);
 }
 
-DecodingResult decode(ByteView& from, Bytes& to) noexcept {
+DecodingResult decode(ByteView& from, Bytes& to, bool allow_leftover) noexcept {
     const auto h{decode_header(from)};
     if (!h) {
         return tl::unexpected{h.error()};
@@ -101,12 +101,15 @@ DecodingResult decode(ByteView& from, Bytes& to) noexcept {
     }
     to = from.substr(0, h->payload_length);
     from.remove_prefix(h->payload_length);
+    if (!allow_leftover && !from.empty()) {
+        return tl::unexpected{DecodingError::kInputTooLong};
+    }
     return {};
 }
 
-DecodingResult decode(ByteView& from, bool& to) noexcept {
+DecodingResult decode(ByteView& from, bool& to, bool allow_leftover) noexcept {
     uint64_t i{0};
-    if (DecodingResult res{decode(from, i)}; !res) {
+    if (DecodingResult res{decode(from, i, allow_leftover)}; !res) {
         return tl::unexpected{res.error()};
     }
     if (i > 1) {

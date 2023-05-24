@@ -35,12 +35,12 @@ namespace silkworm::rlp {
 // in which case the byte is put back.
 [[nodiscard]] tl::expected<Header, DecodingError> decode_header(ByteView& from) noexcept;
 
-DecodingResult decode(ByteView& from, evmc::bytes32& to) noexcept;
+DecodingResult decode(ByteView& from, evmc::bytes32& to, bool allow_leftover = false) noexcept;
 
-DecodingResult decode(ByteView& from, Bytes& to) noexcept;
+DecodingResult decode(ByteView& from, Bytes& to, bool allow_leftover = false) noexcept;
 
 template <UnsignedIntegral T>
-DecodingResult decode(ByteView& from, T& to) noexcept {
+DecodingResult decode(ByteView& from, T& to, bool allow_leftover = false) noexcept {
     const auto h{decode_header(from)};
     if (!h) {
         return tl::unexpected{h.error()};
@@ -52,13 +52,16 @@ DecodingResult decode(ByteView& from, T& to) noexcept {
         return res;
     }
     from.remove_prefix(h->payload_length);
+    if (!allow_leftover && !from.empty()) {
+        return tl::unexpected{DecodingError::kInputTooLong};
+    }
     return {};
 }
 
-DecodingResult decode(ByteView& from, bool& to) noexcept;
+DecodingResult decode(ByteView& from, bool& to, bool allow_leftover = false) noexcept;
 
 template <size_t N>
-DecodingResult decode(ByteView& from, std::span<uint8_t, N> to) noexcept {
+DecodingResult decode(ByteView& from, std::span<uint8_t, N> to, bool allow_leftover = false) noexcept {
     static_assert(N != std::dynamic_extent);
 
     const auto h{decode_header(from)};
@@ -74,17 +77,20 @@ DecodingResult decode(ByteView& from, std::span<uint8_t, N> to) noexcept {
 
     std::memcpy(to.data(), from.data(), N);
     from.remove_prefix(N);
+    if (!allow_leftover && !from.empty()) {
+        return tl::unexpected{DecodingError::kInputTooLong};
+    }
     return {};
 }
 
 template <size_t N>
-DecodingResult decode(ByteView& from, uint8_t (&to)[N]) noexcept {
-    return decode<N>(from, std::span<uint8_t, N>{to});
+DecodingResult decode(ByteView& from, uint8_t (&to)[N], bool allow_leftover = false) noexcept {
+    return decode<N>(from, std::span<uint8_t, N>{to}, allow_leftover);
 }
 
 template <size_t N>
-DecodingResult decode(ByteView& from, std::array<uint8_t, N>& to) noexcept {
-    return decode<N>(from, std::span<uint8_t, N>{to});
+DecodingResult decode(ByteView& from, std::array<uint8_t, N>& to, bool allow_leftover = false) noexcept {
+    return decode<N>(from, std::span<uint8_t, N>{to}, allow_leftover);
 }
 
 }  // namespace silkworm::rlp

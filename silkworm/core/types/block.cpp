@@ -150,7 +150,7 @@ namespace rlp {
         }
     }
 
-    DecodingResult decode(ByteView& from, BlockHeader& to) noexcept {
+    DecodingResult decode(ByteView& from, BlockHeader& to, bool allow_leftover) noexcept {
         const auto rlp_head{decode_header(from)};
         if (!rlp_head) {
             return tl::unexpected{rlp_head.error()};
@@ -183,7 +183,7 @@ namespace rlp {
         to.base_fee_per_gas = std::nullopt;
         if (from.length() > leftover) {
             intx::uint256 base_fee_per_gas;
-            if (DecodingResult res{decode(from, base_fee_per_gas)}; !res) {
+            if (DecodingResult res{decode(from, base_fee_per_gas, /*allow_leftover=*/true)}; !res) {
                 return res;
             }
             to.base_fee_per_gas = base_fee_per_gas;
@@ -192,7 +192,7 @@ namespace rlp {
         to.withdrawals_root = std::nullopt;
         if (from.length() > leftover) {
             evmc::bytes32 withdrawals_root;
-            if (DecodingResult res{decode(from, withdrawals_root)}; !res) {
+            if (DecodingResult res{decode(from, withdrawals_root, /*allow_leftover=*/true)}; !res) {
                 return res;
             }
             to.withdrawals_root = withdrawals_root;
@@ -201,14 +201,17 @@ namespace rlp {
         to.excess_data_gas = std::nullopt;
         if (from.length() > leftover) {
             intx::uint256 excess_data_gas;
-            if (DecodingResult res{decode(from, excess_data_gas)}; !res) {
+            if (DecodingResult res{decode(from, excess_data_gas, /*allow_leftover=*/true)}; !res) {
                 return res;
             }
             to.excess_data_gas = excess_data_gas;
         }
 
         if (from.length() != leftover) {
-            return tl::unexpected{DecodingError::kListLengthMismatch};
+            return tl::unexpected{DecodingError::kInputTooLong};
+        }
+        if (!allow_leftover && leftover) {
+            return tl::unexpected{DecodingError::kInputTooLong};
         }
         return {};
     }
@@ -237,7 +240,7 @@ namespace rlp {
         }
     }
 
-    DecodingResult decode(ByteView& from, BlockBody& to) noexcept {
+    DecodingResult decode(ByteView& from, BlockBody& to, bool allow_leftover) noexcept {
         const auto rlp_head{decode_header(from)};
         if (!rlp_head) {
             return tl::unexpected{rlp_head.error()};
@@ -254,19 +257,22 @@ namespace rlp {
         to.withdrawals = std::nullopt;
         if (from.length() > leftover) {
             std::vector<Withdrawal> withdrawals;
-            if (DecodingResult res{decode(from, withdrawals)}; !res) {
+            if (DecodingResult res{decode(from, withdrawals, /*allow_leftover=*/true)}; !res) {
                 return res;
             }
             to.withdrawals = withdrawals;
         }
 
         if (from.length() != leftover) {
-            return tl::unexpected{DecodingError::kListLengthMismatch};
+            return tl::unexpected{DecodingError::kInputTooLong};
+        }
+        if (!allow_leftover && leftover) {
+            return tl::unexpected{DecodingError::kInputTooLong};
         }
         return {};
     }
 
-    DecodingResult decode(ByteView& from, Block& to) noexcept {
+    DecodingResult decode(ByteView& from, Block& to, bool allow_leftover) noexcept {
         const auto rlp_head{decode_header(from)};
         if (!rlp_head) {
             return tl::unexpected{rlp_head.error()};
@@ -283,14 +289,17 @@ namespace rlp {
         to.withdrawals = std::nullopt;
         if (from.length() > leftover) {
             std::vector<Withdrawal> withdrawals;
-            if (DecodingResult res{decode(from, withdrawals)}; !res) {
+            if (DecodingResult res{decode(from, withdrawals, /*allow_leftover=*/true)}; !res) {
                 return res;
             }
             to.withdrawals = withdrawals;
         }
 
         if (from.length() != leftover) {
-            return tl::unexpected{DecodingError::kListLengthMismatch};
+            return tl::unexpected{DecodingError::kInputTooLong};
+        }
+        if (!allow_leftover && leftover) {
+            return tl::unexpected{DecodingError::kInputTooLong};
         }
         return {};
     }

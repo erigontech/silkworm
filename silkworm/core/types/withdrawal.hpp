@@ -33,7 +33,7 @@ struct Withdrawal {
 namespace rlp {
     size_t length(const Withdrawal&);
     void encode(Bytes& to, const Withdrawal&);
-    DecodingResult decode(ByteView& from, Withdrawal& to) noexcept;
+    DecodingResult decode(ByteView& from, Withdrawal& to, bool allow_leftover = false) noexcept;
 }  // namespace rlp
 
 }  // namespace silkworm

@@ -189,6 +189,7 @@ jobs:
     resource_class: xlarge
     steps:
       - checkout_with_submodules
+      - format
       - build_using_conan:
           compiler_id: <<parameters.compiler_id>>
           compiler_version: <<parameters.compiler_version>>
@@ -217,7 +218,6 @@ jobs:
     resource_class: xlarge
     steps:
       - checkout_with_submodules
-      - format
       - build_using_conan:
           build_type: Debug
           compiler_id: clang

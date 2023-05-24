@@ -43,7 +43,9 @@ if(NOT SILKWORM_CORE_ONLY)
   # Development utility tools
   add_subdirectory(dev)
 
-  # Silkworm components
+  # Silkworm runnable components
+
+  # [=] "all-in-one" Silkworm component
   set(SILKWORM_CMD_SRC
       silkworm.cpp
       common/db_checklist.cpp
@@ -58,28 +60,13 @@ if(NOT SILKWORM_CORE_ONLY)
       common/snapshot_options.cpp
       common/snapshot_options.hpp
   )
-  set(SILKWORM_LIBRARIES
-      silkworm_node
-      silkworm_sync
-      cmd_common
-      $<$<BOOL:${MSVC}>:Kernel32.lib>
-  )
+  set(SILKWORM_LIBRARIES silkworm_node silkworm_sync cmd_common $<$<BOOL:${MSVC}>:Kernel32.lib>)
   add_executable(silkworm "${SILKWORM_CMD_SRC}")
   target_link_libraries(silkworm PRIVATE ${SILKWORM_LIBRARIES})
 
-  # SilkRpc Daemon
-  # cmake-format: off
-  set(RPCDAEMON_CMD_SRC
-      rpcdaemon.cpp
-      common/rpcdaemon_options.cpp
-      common/rpcdaemon_options.hpp
-  )
-  set(RPCDAEMON_LIBRARIES
-      silkrpc
-      absl::flags_parse
-      cmd_common
-  )
-  # cmake-format: on
+  # [=] standalone RpcDaemon component
+  set(RPCDAEMON_CMD_SRC rpcdaemon.cpp common/rpcdaemon_options.cpp common/rpcdaemon_options.hpp)
+  set(RPCDAEMON_LIBRARIES silkrpc absl::flags_parse cmd_common)
   if(SILKWORM_USE_MIMALLOC)
     list(APPEND RPCDAEMON_LIBRARIES mimalloc::mimalloc)
   endif()
@@ -88,13 +75,8 @@ if(NOT SILKWORM_CORE_ONLY)
   target_include_directories(silkrpcdaemon PUBLIC ${CMAKE_SOURCE_DIR})
   target_link_libraries(silkrpcdaemon PRIVATE ${RPCDAEMON_LIBRARIES})
 
-  # cmake-format: off
-  set(SENTRY_CMD_SRC
-      sentry.cpp
-      common/sentry_options.cpp
-      common/sentry_options.hpp
-  )
-  # cmake-format: on
+  # [=] standalone Sentry component
+  set(SENTRY_CMD_SRC sentry.cpp common/sentry_options.cpp common/sentry_options.hpp)
   add_executable(sentry "${SENTRY_CMD_SRC}")
   target_link_libraries(sentry PRIVATE silkworm_sentry cmd_common)
 

@@ -245,7 +245,8 @@ auto MainChain::get_header(BlockNum header_height, Hash header_hash) const -> st
 }
 
 auto MainChain::get_canonical_hash(BlockNum height) const -> std::optional<Hash> {
-    return canonical_chain_.get_hash(height);
+    // return canonical_chain_.get_hash(height);
+    return db::read_canonical_hash(tx_, height);
 }
 
 auto MainChain::get_header_td(BlockNum header_height, Hash header_hash) const -> std::optional<TotalDifficulty> {

@@ -36,11 +36,11 @@
 namespace silkworm::chainsync {
 
 struct EngineRpcSettings {
-    std::string engine_end_point{kDefaultEnginePort};
-    std::string backend_kv_address{kDefaultTarget};
+    std::string engine_end_point{kDefaultEngineEndPoint};
+    std::string private_api_addr{kDefaultPrivateApiAddr};
     log::Level log_verbosity{log::Level::kInfo};
     concurrency::WaitMode wait_mode{concurrency::WaitMode::blocking};
-    std::string jwt_secret_filename;
+    std::string jwt_secret_file;
 };
 
 class Sync {

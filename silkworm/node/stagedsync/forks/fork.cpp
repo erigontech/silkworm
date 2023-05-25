@@ -242,7 +242,7 @@ bool Fork::notify_fork_choice_update(Hash head_block_hash, [[maybe_unused]] std:
 
     if (!holds_alternative<ValidChain>(last_head_status_)) return false;
 
-    //memory_tx_.commit_and_renew();
+    // memory_tx_.commit_and_renew();
 
     last_fork_choice_ = canonical_chain_.current_head();
 

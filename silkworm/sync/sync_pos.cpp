@@ -61,11 +61,6 @@ awaitable<void> PoSSync::download_blocks() {
     });
 
     // initialization
-    auto last_fcu = co_await exec_engine_.last_fork_choice();  // previously was get_canonical_head()
-    auto td = chain_fork_view_.get_total_difficulty(last_fcu.hash);
-    ensure_invariant(td.has_value(), "last_fcu must be in chain_fork_view");
-    chain_fork_view_.reset_head({last_fcu.number, last_fcu.hash, *td});
-
     auto initial_block_progress = co_await exec_engine_.block_progress();
     auto block_progress = initial_block_progress;
 

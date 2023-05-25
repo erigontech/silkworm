@@ -31,7 +31,7 @@ struct OptionalExistingDirectory : public CLI::detail::ExistingDirectoryValidato
         func_ = [](const std::optional<std::filesystem::path>& value) -> std::string {
             if (not value) return {};
 
-            const auto path_result = CLI::detail::check_path(value->c_str());
+            const auto path_result = CLI::detail::check_path(value->string().c_str());
             if (path_result == CLI::detail::path_type::nonexistent) {
                 return "Directory does not exist: " + value->string();
             }

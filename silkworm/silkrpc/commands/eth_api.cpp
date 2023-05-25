@@ -1196,9 +1196,9 @@ awaitable<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& reque
     }
 
     SILK_INFO << "bundles: " << bundles
-               << " simulation_context: " << simulation_context
-               << " state_overrides #" << state_overrides.size()
-               << " timeout: " << timeout.value_or(0) << "\n";
+              << " simulation_context: " << simulation_context
+              << " state_overrides #" << state_overrides.size()
+              << " timeout: " << timeout.value_or(0) << "\n";
 
     auto tx = co_await database_->begin();
 

@@ -29,10 +29,10 @@
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
-#include <silkworm/silkrpc/core/override_state.hpp>
-#include <silkworm/silkrpc/core/remote_state.hpp>
 #include <silkworm/silkrpc/core/evm_executor.hpp>
+#include <silkworm/silkrpc/core/override_state.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
+#include <silkworm/silkrpc/core/remote_state.hpp>
 #include <silkworm/silkrpc/ethdb/kv/cached_database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 

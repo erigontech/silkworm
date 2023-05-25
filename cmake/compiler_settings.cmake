@@ -108,4 +108,11 @@ if(SILKWORM_SANITIZE)
   add_compile_options(${SILKWORM_SANITIZE_COMPILER_OPTIONS})
   add_link_options(${SILKWORM_SANITIZE_COMPILER_OPTIONS})
   add_definitions(-DSILKWORM_SANITIZE)
+
+  # asio is using atomic_thread_fence in asio::detail::std_fenced_block, unsupported on GCC with thread sanitizer. See:
+  # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=97868
+  # https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wtsan
+  if("${SILKWORM_SANITIZE}" STREQUAL "thread" AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
+    add_compile_options(-Wno-error=tsan)
+  endif()
 endif()

@@ -170,7 +170,7 @@ std::string decoding_result_to_string(silkworm::DecodingError decode_result) {
         case silkworm::DecodingError::kUnexpectedString:
             return "rlp: unexpected String";
         case silkworm::DecodingError::kUnexpectedList:
-            return "rlp: element is larger than containing list";
+            return "rlp: unexpected list";
         case silkworm::DecodingError::kInputTooLong:
             return "rlp: input too long";
         case silkworm::DecodingError::kInvalidVInSignature:  // v != 27 && v != 28 && v < 35, see EIP-155

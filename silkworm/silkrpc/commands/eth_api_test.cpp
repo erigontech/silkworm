@@ -92,7 +92,7 @@ TEST_CASE_METHOD(EthereumRpcApiTest, "handle_eth_send_raw_transaction fails rlp 
         })"_json,
         reply);
     CHECK(reply == R"({
-        "error":{"code":-32000,"message":"rlp: element is larger than containing list"},"id":1,"jsonrpc":"2.0"
+        "error":{"code":-32000,"message":"rlp: input too long"},"id":1,"jsonrpc":"2.0"
     })"_json);
 }
 

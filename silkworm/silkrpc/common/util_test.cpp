@@ -213,7 +213,7 @@ TEST_CASE("decoding_result_to_string(kUnexpectedString)", "[silkrpc][common][uti
 }
 
 TEST_CASE("decoding_result_to_string(kUnexpectedList)", "[silkrpc][common][util]") {
-    CHECK(decoding_result_to_string(silkworm::DecodingError::kUnexpectedList) == "rlp: element is larger than containing list");
+    CHECK(decoding_result_to_string(silkworm::DecodingError::kUnexpectedList) == "rlp: unexpected list");
 }
 
 TEST_CASE("decoding_result_to_string(kInputTooLong)", "[silkrpc][common][util]") {

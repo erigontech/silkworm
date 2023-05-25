@@ -35,7 +35,7 @@ namespace silkworm {
 
 namespace asio = boost::asio;
 using namespace stagedsync;
-/*
+
 static std::shared_ptr<Block> generateSampleChildrenBlock(const BlockHeader& parent) {
     auto block = std::make_shared<Block>();
     auto parent_hash = parent.hash();
@@ -51,51 +51,51 @@ static std::shared_ptr<Block> generateSampleChildrenBlock(const BlockHeader& par
     block->header.gas_used = 0;
     block->header.timestamp = parent.timestamp + 12;
     block->header.extra_data = {};
-*/
-/*
-// BlockBody: transactions
-block.transactions.resize(1);
-if (block.header.number % 2 == 0) {
-    block.transactions[0].nonce = 172339;
-    block.transactions[0].max_priority_fee_per_gas = 50 * kGiga;
-    block.transactions[0].max_fee_per_gas = 50 * kGiga;
-    block.transactions[0].gas_limit = 90'000;
-    block.transactions[0].to = 0xe5ef458d37212a06e3f59d40c454e76150ae7c32_address;
-    block.transactions[0].value = 1'027'501'080 * kGiga;
-    block.transactions[0].data = {};
-    CHECK(block.transactions[0].set_v(27));
-    block.transactions[0].r = 0x48b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353_u256;
-    block.transactions[0].s = 0x1fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804_u256;
-}
-else {
-    block.transactions[0].type = TransactionType::kEip1559;
-    block.transactions[0].nonce = 1;
-    block.transactions[0].max_priority_fee_per_gas = 5 * kGiga;
-    block.transactions[0].max_fee_per_gas = 30 * kGiga;
-    block.transactions[0].gas_limit = 1'000'000;
-    block.transactions[0].to = {};
-    block.transactions[0].value = 0;
-    block.transactions[0].data = *from_hex("602a6000556101c960015560068060166000396000f3600035600055");
-    CHECK(block.transactions[0].set_v(37));
-    block.transactions[0].r = 0x52f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afb_u256;
-    block.transactions[0].s = 0x52f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afb_u256;
-}
 
-block.header.transactions_root = protocol::compute_transaction_root(block);
+    /*
+    // BlockBody: transactions
+    block.transactions.resize(1);
+    if (block.header.number % 2 == 0) {
+        block.transactions[0].nonce = 172339;
+        block.transactions[0].max_priority_fee_per_gas = 50 * kGiga;
+        block.transactions[0].max_fee_per_gas = 50 * kGiga;
+        block.transactions[0].gas_limit = 90'000;
+        block.transactions[0].to = 0xe5ef458d37212a06e3f59d40c454e76150ae7c32_address;
+        block.transactions[0].value = 1'027'501'080 * kGiga;
+        block.transactions[0].data = {};
+        CHECK(block.transactions[0].set_v(27));
+        block.transactions[0].r = 0x48b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353_u256;
+        block.transactions[0].s = 0x1fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804_u256;
+    }
+    else {
+        block.transactions[0].type = TransactionType::kEip1559;
+        block.transactions[0].nonce = 1;
+        block.transactions[0].max_priority_fee_per_gas = 5 * kGiga;
+        block.transactions[0].max_fee_per_gas = 30 * kGiga;
+        block.transactions[0].gas_limit = 1'000'000;
+        block.transactions[0].to = {};
+        block.transactions[0].value = 0;
+        block.transactions[0].data = *from_hex("602a6000556101c960015560068060166000396000f3600035600055");
+        CHECK(block.transactions[0].set_v(37));
+        block.transactions[0].r = 0x52f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afb_u256;
+        block.transactions[0].s = 0x52f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afb_u256;
+    }
 
-// BlockBody: ommers
-block.ommers.resize(1);
-block.ommers[0].parent_hash = parent_hash;
-block.ommers[0].ommers_hash = kEmptyListHash;
-block.ommers[0].beneficiary = 0x0c729be7c39543c3d549282a40395299d987cec2_address;
-block.ommers[0].state_root = 0xc2bcdfd012534fa0b19ffba5fae6fc81edd390e9b7d5007d1e92e8e835286e9d_bytes32;
+    block.header.transactions_root = protocol::compute_transaction_root(block);
 
-block.header.ommers_hash = protocol::compute_ommers_hash(block);
-*/
-/*
+    // BlockBody: ommers
+    block.ommers.resize(1);
+    block.ommers[0].parent_hash = parent_hash;
+    block.ommers[0].ommers_hash = kEmptyListHash;
+    block.ommers[0].beneficiary = 0x0c729be7c39543c3d549282a40395299d987cec2_address;
+    block.ommers[0].state_root = 0xc2bcdfd012534fa0b19ffba5fae6fc81edd390e9b7d5007d1e92e8e835286e9d_bytes32;
+
+    block.header.ommers_hash = protocol::compute_ommers_hash(block);
+    */
+
     return block;
 }
-*/
+
 class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
   public:
     using stagedsync::ExecutionEngine::ExecutionEngine;
@@ -270,7 +270,7 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(exec_engine.last_fork_choice() == BlockId{block1->header.number, block1_hash});
         REQUIRE(exec_engine.last_finalized_block() == BlockId{0, *block0_hash});
     }
-    /*
+
     SECTION("a fork") {
         auto header0_hash = db::read_canonical_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
@@ -282,7 +282,7 @@ TEST_CASE("ExecutionEngine") {
         auto block1_hash = block1->header.hash();
 
         auto block2 = generateSampleChildrenBlock(block1->header);
-        auto block2_hash = block2->header.hash();
+        //auto block2_hash = block2->header.hash();
 
         auto block3 = generateSampleChildrenBlock(block2->header);
         auto block3_hash = block3->header.hash();
@@ -313,8 +313,9 @@ TEST_CASE("ExecutionEngine") {
 
             // inserting & verifying the block
             exec_engine.insert_block(block4);
-            verification = exec_engine.verify_chain(block4_hash).get();
+            /*verification =*/ exec_engine.verify_chain(block4_hash).get();
 
+            /* replace PooledCursor from BlockHashes to make this part work
             REQUIRE(holds_alternative<ValidChain>(verification));
             valid_chain = std::get<ValidChain>(verification);
             CHECK(valid_chain.current_head == BlockId{4, block4_hash});
@@ -327,8 +328,10 @@ TEST_CASE("ExecutionEngine") {
             CHECK(final_canonical_head == BlockId{4, block4_hash});
             CHECK(exec_engine.last_fork_choice() == BlockId{4, block4_hash});
             CHECK(exec_engine.last_finalized_block() == BlockId{2, block2_hash});
+            */
         }
 
+        /*
         // Creating a fork and changing the head (trigger unwind)
         {
             auto block2b = generateSampleChildrenBlock(block1->header);
@@ -352,8 +355,9 @@ TEST_CASE("ExecutionEngine") {
             CHECK(exec_engine.last_fork_choice() == BlockId{2, block2b_hash});
             CHECK(exec_engine.last_finalized_block() == BlockId{1, block1_hash});
         }
+        */
     }
-    */
+
 }
 
 }  // namespace silkworm

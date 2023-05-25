@@ -213,11 +213,11 @@ TEST_CASE("decoding_result_to_string(kUnexpectedLength)", "[silkrpc][common][uti
 }
 
 TEST_CASE("decoding_result_to_string(kUnexpectedString)", "[silkrpc][common][util]") {
-    CHECK(decoding_result_to_string(silkworm::DecodingError::kUnexpectedString) == "rlp: unexpected String");
+    CHECK(decoding_result_to_string(silkworm::DecodingError::kUnexpectedString) == "rlp: expected list, got string instead");
 }
 
 TEST_CASE("decoding_result_to_string(kUnexpectedList)", "[silkrpc][common][util]") {
-    CHECK(decoding_result_to_string(silkworm::DecodingError::kUnexpectedList) == "rlp: unexpected list");
+    CHECK(decoding_result_to_string(silkworm::DecodingError::kUnexpectedList) == "rlp: expected string, got list instead");
 }
 
 TEST_CASE("decoding_result_to_string(kUnexpectedListElements)", "[silkrpc][common][util]") {

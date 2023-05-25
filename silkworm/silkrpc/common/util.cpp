@@ -170,9 +170,9 @@ std::string decoding_result_to_string(silkworm::DecodingError decode_result) {
         case silkworm::DecodingError::kUnexpectedLength:
             return "rlp: unexpected Length";
         case silkworm::DecodingError::kUnexpectedString:
-            return "rlp: unexpected String";
+            return "rlp: expected list, got string instead";
         case silkworm::DecodingError::kUnexpectedList:
-            return "rlp: unexpected list";
+            return "rlp: expected string, got list instead";
         case silkworm::DecodingError::kUnexpectedListElements:
             return "rlp: unexpected list element(s)";
         case silkworm::DecodingError::kInvalidVInSignature:  // v != 27 && v != 28 && v < 35, see EIP-155

@@ -163,6 +163,8 @@ std::string decoding_result_to_string(silkworm::DecodingError decode_result) {
             return "rlp: leading Zero";
         case silkworm::DecodingError::kInputTooShort:
             return "rlp: value size exceeds available input length";
+        case silkworm::DecodingError::kInputTooLong:
+            return "rlp: input exceeds encoded length";
         case silkworm::DecodingError::kNonCanonicalSize:
             return "rlp: non-canonical size information";
         case silkworm::DecodingError::kUnexpectedLength:
@@ -171,8 +173,8 @@ std::string decoding_result_to_string(silkworm::DecodingError decode_result) {
             return "rlp: unexpected String";
         case silkworm::DecodingError::kUnexpectedList:
             return "rlp: unexpected list";
-        case silkworm::DecodingError::kInputTooLong:
-            return "rlp: input too long";
+        case silkworm::DecodingError::kUnexpectedListElements:
+            return "rlp: unexpected list element(s)";
         case silkworm::DecodingError::kInvalidVInSignature:  // v != 27 && v != 28 && v < 35, see EIP-155
             return "rlp: invalid V in signature";
         case silkworm::DecodingError::kUnsupportedTransactionType:

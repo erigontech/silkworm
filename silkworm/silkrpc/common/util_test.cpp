@@ -200,6 +200,10 @@ TEST_CASE("decoding_result_to_string(kInputTooShort)", "[silkrpc][common][util]"
     CHECK(decoding_result_to_string(silkworm::DecodingError::kInputTooShort) == "rlp: value size exceeds available input length");
 }
 
+TEST_CASE("decoding_result_to_string(kInputTooLong)", "[silkrpc][common][util]") {
+    CHECK(decoding_result_to_string(silkworm::DecodingError::kInputTooLong) == "rlp: input exceeds encoded length");
+}
+
 TEST_CASE("decoding_result_to_string(kNonCanonicalSize)", "[silkrpc][common][util]") {
     CHECK(decoding_result_to_string(silkworm::DecodingError::kNonCanonicalSize) == "rlp: non-canonical size information");
 }
@@ -216,8 +220,8 @@ TEST_CASE("decoding_result_to_string(kUnexpectedList)", "[silkrpc][common][util]
     CHECK(decoding_result_to_string(silkworm::DecodingError::kUnexpectedList) == "rlp: unexpected list");
 }
 
-TEST_CASE("decoding_result_to_string(kInputTooLong)", "[silkrpc][common][util]") {
-    CHECK(decoding_result_to_string(silkworm::DecodingError::kInputTooLong) == "rlp: input too long");
+TEST_CASE("decoding_result_to_string(kUnexpectedListElements)", "[silkrpc][common][util]") {
+    CHECK(decoding_result_to_string(silkworm::DecodingError::kUnexpectedListElements) == "rlp: unexpected list element(s)");
 }
 
 TEST_CASE("decoding_result_to_string(kInvalidVInSignature)", "[silkrpc][common][util]") {

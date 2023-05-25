@@ -85,7 +85,7 @@ DecodingResult decode(ByteView& from, bool allow_leftover, Arg1& arg1, Arg2& arg
     }
 
     if (from.length() != leftover) {
-        return tl::unexpected{DecodingError::kInputTooLong};
+        return tl::unexpected{DecodingError::kUnexpectedListElements};
     }
     return {};
 }

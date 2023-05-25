@@ -30,6 +30,7 @@ enum class [[nodiscard]] DecodingError{
     kUnexpectedLength,
     kUnexpectedString,
     kUnexpectedList,
+    kUnexpectedListElements,
     kInvalidVInSignature,         // v != 27 && v != 28 && v < 35, see EIP-155
     kUnsupportedTransactionType,  // EIP-2718
     kInvalidFieldset,

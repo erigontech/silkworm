@@ -191,7 +191,7 @@ namespace detail {
         }
 
         if (from.length() != leftover) {
-            return tl::unexpected{DecodingError::kInputTooLong};
+            return tl::unexpected{DecodingError::kUnexpectedListElements};
         }
         return {};
     }

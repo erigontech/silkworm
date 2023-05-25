@@ -290,7 +290,7 @@ namespace rlp {
                 return res;
             }
             if (from.length() != leftover) {
-                return tl::unexpected{DecodingError::kInputTooLong};
+                return tl::unexpected{DecodingError::kUnexpectedListElements};
             }
             return {};
         }
@@ -315,7 +315,7 @@ namespace rlp {
         }
 
         if (!eip2718_view.empty()) {
-            return tl::unexpected{DecodingError::kInputTooLong};
+            return tl::unexpected{DecodingError::kUnexpectedListElements};
         }
 
         from.remove_prefix(h->payload_length - 1);

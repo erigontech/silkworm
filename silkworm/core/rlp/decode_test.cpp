@@ -43,20 +43,12 @@ static DecodingError decode_failure(std::string_view hex) {
     return res.error();
 }
 
-template <class T>
-static std::vector<T> decode_vector_success(std::string_view hex) {
-    Bytes bytes{*from_hex(hex)};
-    ByteView view{bytes};
-    std::vector<T> res;
-    REQUIRE(decode(view, res));
-    return res;
-}
-
 TEST_CASE("RLP decoding") {
     SECTION("strings") {
         CHECK(to_hex(decode_success<Bytes>("00")) == "00");
         CHECK(to_hex(decode_success<Bytes>("8D6F62636465666768696A6B6C6D")) == "6f62636465666768696a6b6c6d");
 
+        CHECK(decode_failure<Bytes>("8D6F62636465666768696A6B6C6Daa") == DecodingError::kInputTooLong);
         CHECK(decode_failure<Bytes>("C0") == DecodingError::kUnexpectedList);
     }
 
@@ -66,6 +58,7 @@ TEST_CASE("RLP decoding") {
         CHECK(decode_success<uint64_t>("820505") == 0x0505);
         CHECK(decode_success<uint64_t>("85CE05050505") == 0xCE05050505);
 
+        CHECK(decode_failure<uint64_t>("85CE05050505aa") == DecodingError::kInputTooLong);
         CHECK(decode_failure<uint64_t>("C0") == DecodingError::kUnexpectedList);
         CHECK(decode_failure<uint64_t>("00") == DecodingError::kLeadingZero);
         CHECK(decode_failure<uint64_t>("8105") == DecodingError::kNonCanonicalSize);
@@ -83,6 +76,7 @@ TEST_CASE("RLP decoding") {
               intx::from_string<intx::uint256>("0xFFFFFFFFFFFFFFFFFF7C"));
 
         CHECK(decode_failure<intx::uint256>("8BFFFFFFFFFFFFFFFFFF7C") == DecodingError::kInputTooShort);
+        CHECK(decode_failure<intx::uint256>("8AFFFFFFFFFFFFFFFFFF7Caa") == DecodingError::kInputTooLong);
         CHECK(decode_failure<intx::uint256>("C0") == DecodingError::kUnexpectedList);
         CHECK(decode_failure<intx::uint256>("00") == DecodingError::kLeadingZero);
         CHECK(decode_failure<intx::uint256>("8105") == DecodingError::kNonCanonicalSize);
@@ -92,9 +86,10 @@ TEST_CASE("RLP decoding") {
               DecodingError::kOverflow);
     }
 
-    SECTION("vectors") {
-        CHECK(decode_vector_success<intx::uint256>("C0").empty());
-        CHECK(decode_vector_success<uint64_t>("C883BBCCB583FFC0B5") == std::vector<uint64_t>{0xBBCCB5, 0xFFC0B5});
+    SECTION("lists") {
+        CHECK(decode_success<std::vector<intx::uint256>>("C0").empty());
+        CHECK(decode_success<std::vector<uint64_t>>("C883BBCCB583FFC0B5") == std::vector<uint64_t>{0xBBCCB5, 0xFFC0B5});
+        CHECK(decode_failure<std::vector<uint64_t>>("C883BBCCB583FFC0B5aa") == DecodingError::kInputTooLong);
     }
 }
 

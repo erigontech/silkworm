@@ -69,7 +69,7 @@ struct StandaloneBackEndKVSettings : public SilkwormSettings {
 int parse_command_line(int argc, char* argv[], CLI::App& app, StandaloneBackEndKVSettings& settings) {
     auto& log_settings = settings.log_settings;
     auto& node_settings = settings.node_settings;
-    auto& server_settings = settings.server_settings;
+    auto& server_settings = settings.node_settings.server_settings;
 
     // Node options
     std::filesystem::path data_dir;
@@ -175,7 +175,7 @@ int main(int argc, char* argv[]) {
 
         auto& log_settings = settings.log_settings;
         auto& node_settings = settings.node_settings;
-        auto& server_settings = settings.server_settings;
+        auto& server_settings = settings.node_settings.server_settings;
 
         // Initialize logging with custom settings
         log::init(log_settings);

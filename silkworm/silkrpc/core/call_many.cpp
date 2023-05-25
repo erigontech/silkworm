@@ -29,6 +29,8 @@
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
+#include <silkworm/silkrpc/core/override_state.hpp>
+#include <silkworm/silkrpc/core/remote_state.hpp>
 #include <silkworm/silkrpc/core/evm_executor.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/ethdb/kv/cached_database.hpp>
@@ -71,23 +73,32 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
     // co_await rpc::core::read_block_by_number(block_cache_, tx_database, block_number);
     const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, tx_database, context.block_number);
     auto transaction_index = context.transaction_index;
-
     auto block_number = block_with_hash->block.header.number;
     const auto& block = block_with_hash->block;
     const auto& block_transactions = block.transactions;
+
+    rpc::Block initial_block{block};
+    std::cout << "***********  initial_block: " << initial_block << "\n";
+    std::cout << "***********  transaction size: " << block_transactions.size() << "\n";
+
     if (transaction_index == -1) {
         transaction_index = block_transactions.size();
     }
 
     // std::vector<Transaction> transactions(block_transactions.begin(), block_transactions.begin() + transaction_index);
-    state::RemoteState remote_state{io_context_, tx_database, block_number - 1};
+    state::RemoteState remote_state{io_context_, tx_database, block_number};
+    state::OverrideState state{remote_state};
 
     const auto chain_config_ptr = lookup_chain_config(chain_id);
 
-    EVMExecutor executor{*chain_config_ptr, workers_, remote_state};
+    EVMExecutor executor{*chain_config_ptr, workers_, state};
 
+    std::cout << "***********  transaction_index: " << transaction_index << "\n";
     for (auto idx{0}; idx < transaction_index; idx++) {
         silkworm::Transaction txn{block_transactions[std::size_t(idx)]};
+
+        rpc::Transaction trans{txn};
+        std::cout << "*********** " << idx << "  transaction: " << trans << "\n";
 
         if (!txn.from) {
             txn.recover_sender();
@@ -104,34 +115,42 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
     for (const auto& bundle : bundles) {
         const auto& block_override = bundle.block_override;
 
-        silkworm::Block blockContext;
+        rpc::Block blockContext{block_with_hash->block};
+        std::cout << "***********  blockContext: " << blockContext << "\n";
+        nlohmann::json json = blockContext;
         if (block_override.block_number) {
-            blockContext.header.number = block_override.block_number.value();
+            blockContext.block.header.number = block_override.block_number.value();
         }
         // if (block_override.coin_base) {
         //     blockContext.header.number = block_override.coin_base.value();
         // }
         if (block_override.timestamp) {
-            blockContext.header.timestamp = block_override.timestamp.value();
+            // blockContext.header.timestamp = block_override.timestamp.value();
         }
         if (block_override.difficulty) {
-            blockContext.header.difficulty = block_override.difficulty.value();
+            // blockContext.header.difficulty = block_override.difficulty.value();
         }
         if (block_override.gas_limit) {
-            blockContext.header.gas_limit = block_override.gas_limit.value();
+            // blockContext.header.gas_limit = block_override.gas_limit.value();
         }
         if (block_override.base_fee) {
-            blockContext.header.base_fee_per_gas = block_override.base_fee;
+            // blockContext.header.base_fee_per_gas = block_override.base_fee;
         }
         // block_hash
+        std::cout << "***********  blockContext dopo override: " << blockContext << "\n";
 
         std::vector<nlohmann::json> results;
         result.results.reserve(bundle.transactions.size());
         for (const auto& call : bundle.transactions) {
             silkworm::Transaction txn{call.to_transaction()};
-            auto execution_result = co_await executor.call(blockContext, txn);
+
+            rpc::Transaction trans{txn};
+            std::cout << "*********** transaction from call: " << trans << "\n";
+
+            auto execution_result = co_await executor.call(blockContext.block, txn);
 
             if (execution_result.pre_check_error) {
+                std::cout << "***********  fallimento per pre-check\n";
                 result.error = execution_result.pre_check_error;
                 co_return result;
             }

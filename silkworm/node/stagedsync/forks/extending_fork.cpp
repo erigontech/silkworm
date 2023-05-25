@@ -73,10 +73,9 @@ void ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block
             fork_ = std::make_unique<Fork>(forking_point_,
                                            db::ROTxn(main_chain_.tx().db()),
                                            main_chain_.node_settings());  // create the real fork
-            fork_->extend_with(blocks_);                                     // extend it with the blocks
+            fork_->extend_with(blocks_);                                  // extend it with the blocks
             ensure(fork_->current_head() == new_head, "fork head mismatch");
-        }
-        catch (...) {
+        } catch (...) {
             save_exception(std::current_exception());
         }
     });
@@ -97,8 +96,7 @@ void ExtendingFork::extend_with(Hash head_hash, const Block& block) {
         try {
             if (exception_) return;
             fork_->extend_with(block);
-        }
-        catch (...) {
+        } catch (...) {
             save_exception(std::current_exception());
         }
     });
@@ -116,8 +114,7 @@ auto ExtendingFork::verify_chain() -> concurrency::AwaitableFuture<VerificationR
             auto result = fork_->verify_chain();
             current_head_ = fork_->current_head();
             promise_.set_value(result);
-        }
-        catch (...) {
+        } catch (...) {
             save_exception(std::current_exception());
         }
     });
@@ -134,15 +131,14 @@ auto ExtendingFork::notify_fork_choice_update(Hash head_block_hash, std::optiona
 
     post(*executor_, [this, promise_ = std::move(promise), head_block_hash, finalized_block_hash]() mutable {
         try {
-          if (exception_) return;
-          auto updated = fork_->notify_fork_choice_update(head_block_hash, finalized_block_hash);
-          current_head_ = fork_->current_head();
-          promise_.set_value(updated);
+            if (exception_) return;
+            auto updated = fork_->notify_fork_choice_update(head_block_hash, finalized_block_hash);
+            current_head_ = fork_->current_head();
+            promise_.set_value(updated);
+        } catch (...) {
+            save_exception(std::current_exception());
         }
-        catch(...) {
-          save_exception(std::current_exception());
-        }
-     });
+    });
 
     return awaitable_future;
 }

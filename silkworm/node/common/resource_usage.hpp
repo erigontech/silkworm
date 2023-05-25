@@ -16,22 +16,23 @@
 
 #pragma once
 
-#include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/grpc/server/server_config.hpp>
-#include <silkworm/node/settings.hpp>
-#include <silkworm/node/snapshot/settings.hpp>
-#include <silkworm/sentry/settings.hpp>
-#include <silkworm/silkrpc/settings.hpp>
+#include <boost/asio/steady_timer.hpp>
 
-namespace silkworm::cmd::common {
+#include <silkworm/infra/concurrency/task.hpp>
+#include <silkworm/node/common/settings.hpp>
 
-//! The overall settings
-struct SilkwormSettings {
-    log::Settings log_settings;
-    node::Settings node_settings;
-    sentry::Settings sentry_settings;
-    rpc::DaemonSettings rpcdaemon_settings;
-    bool force_pow{true};  // TODO(canepat) remove when PoS sync works
+namespace silkworm {
+
+//! Log for resource usage
+class ResourceUsageLog {
+  public:
+    explicit ResourceUsageLog(NodeSettings& settings);
+
+    Task<void> run();
+
+  private:
+    NodeSettings& settings_;
+    boost::asio::steady_timer timer_;
 };
 
-}  // namespace silkworm::cmd::common
+}  // namespace silkworm

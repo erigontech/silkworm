@@ -21,6 +21,7 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
+#include <silkworm/silkrpc/common/constants.hpp>
 
 namespace silkworm::rpc {
 

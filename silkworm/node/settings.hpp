@@ -16,22 +16,21 @@
 
 #pragma once
 
+#include <memory>
+
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/server/server_config.hpp>
-#include <silkworm/node/settings.hpp>
+#include <silkworm/node/common/settings.hpp>
 #include <silkworm/node/snapshot/settings.hpp>
 #include <silkworm/sentry/settings.hpp>
-#include <silkworm/silkrpc/settings.hpp>
 
-namespace silkworm::cmd::common {
+namespace silkworm::node {
 
-//! The overall settings
-struct SilkwormSettings {
-    log::Settings log_settings;
-    node::Settings node_settings;
-    sentry::Settings sentry_settings;
-    rpc::DaemonSettings rpcdaemon_settings;
-    bool force_pow{true};  // TODO(canepat) remove when PoS sync works
+struct Settings : public NodeSettings {
+    log::Settings log_settings;                    // Configuration for the logging facility
+    sentry::Settings sentry_settings;              // Configuration for Sentry client + embedded server
+    rpc::ServerConfig server_settings;             // Configuration for the gRPC server
+    snapshot::SnapshotSettings snapshot_settings;  // Configuration for the database snapshots
 };
 
-}  // namespace silkworm::cmd::common
+}  // namespace silkworm::node

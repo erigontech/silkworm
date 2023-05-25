@@ -282,14 +282,14 @@ namespace rlp {
         if (h->list) {  // Legacy transaction
             to.type = TransactionType::kLegacy;
             to.access_list.clear();
-            uint64_t leftover{from.length() - h->payload_length};
+            const uint64_t leftover{from.length() - h->payload_length};
+            if (!allow_leftover && leftover) {
+                return tl::unexpected{DecodingError::kInputTooLong};
+            }
             if (DecodingResult res{legacy_decode_items(from, to)}; !res) {
                 return res;
             }
             if (from.length() != leftover) {
-                return tl::unexpected{DecodingError::kInputTooLong};
-            }
-            if (!allow_leftover && leftover) {
                 return tl::unexpected{DecodingError::kInputTooLong};
             }
             return {};

@@ -172,7 +172,10 @@ namespace detail {
         if (!header->list) {
             return tl::unexpected{DecodingError::kUnexpectedString};
         }
-        uint64_t leftover{from.length() - header->payload_length};
+        const uint64_t leftover{from.length() - header->payload_length};
+        if (leftover) {
+            return tl::unexpected{DecodingError::kInputTooLong};
+        }
 
         if (DecodingResult res{rlp::decode_items(from, to.base_txn_id, to.txn_count, to.ommers)}; !res) {
             return res;
@@ -188,9 +191,6 @@ namespace detail {
         }
 
         if (from.length() != leftover) {
-            return tl::unexpected{DecodingError::kInputTooLong};
-        }
-        if (leftover) {
             return tl::unexpected{DecodingError::kInputTooLong};
         }
         return {};

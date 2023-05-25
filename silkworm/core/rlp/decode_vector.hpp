@@ -75,16 +75,16 @@ DecodingResult decode(ByteView& from, bool allow_leftover, Arg1& arg1, Arg2& arg
     if (!header->list) {
         return tl::unexpected{DecodingError::kUnexpectedString};
     }
-    uint64_t leftover{from.length() - header->payload_length};
+    const uint64_t leftover{from.length() - header->payload_length};
+    if (!allow_leftover && leftover) {
+        return tl::unexpected{DecodingError::kInputTooLong};
+    }
 
     if (DecodingResult res{decode_items(from, arg1, arg2, args...)}; !res) {
         return res;
     }
 
     if (from.length() != leftover) {
-        return tl::unexpected{DecodingError::kInputTooLong};
-    }
-    if (!allow_leftover && leftover) {
         return tl::unexpected{DecodingError::kInputTooLong};
     }
     return {};

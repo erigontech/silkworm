@@ -158,7 +158,10 @@ namespace rlp {
         if (!rlp_head->list) {
             return tl::unexpected{DecodingError::kUnexpectedString};
         }
-        uint64_t leftover{from.length() - rlp_head->payload_length};
+        const uint64_t leftover{from.length() - rlp_head->payload_length};
+        if (!allow_leftover && leftover) {
+            return tl::unexpected{DecodingError::kInputTooLong};
+        }
 
         if (DecodingResult res{decode_items(from,
                                             to.parent_hash.bytes,
@@ -210,9 +213,6 @@ namespace rlp {
         if (from.length() != leftover) {
             return tl::unexpected{DecodingError::kInputTooLong};
         }
-        if (!allow_leftover && leftover) {
-            return tl::unexpected{DecodingError::kInputTooLong};
-        }
         return {};
     }
 
@@ -248,7 +248,10 @@ namespace rlp {
         if (!rlp_head->list) {
             return tl::unexpected{DecodingError::kUnexpectedString};
         }
-        uint64_t leftover{from.length() - rlp_head->payload_length};
+        const uint64_t leftover{from.length() - rlp_head->payload_length};
+        if (!allow_leftover && leftover) {
+            return tl::unexpected{DecodingError::kInputTooLong};
+        }
 
         if (DecodingResult res{decode_items(from, to.transactions, to.ommers)}; !res) {
             return res;
@@ -266,9 +269,6 @@ namespace rlp {
         if (from.length() != leftover) {
             return tl::unexpected{DecodingError::kInputTooLong};
         }
-        if (!allow_leftover && leftover) {
-            return tl::unexpected{DecodingError::kInputTooLong};
-        }
         return {};
     }
 
@@ -280,7 +280,10 @@ namespace rlp {
         if (!rlp_head->list) {
             return tl::unexpected{DecodingError::kUnexpectedString};
         }
-        uint64_t leftover{from.length() - rlp_head->payload_length};
+        const uint64_t leftover{from.length() - rlp_head->payload_length};
+        if (!allow_leftover && leftover) {
+            return tl::unexpected{DecodingError::kInputTooLong};
+        }
 
         if (DecodingResult res{decode_items(from, to.header, to.transactions, to.ommers)}; !res) {
             return res;
@@ -296,9 +299,6 @@ namespace rlp {
         }
 
         if (from.length() != leftover) {
-            return tl::unexpected{DecodingError::kInputTooLong};
-        }
-        if (!allow_leftover && leftover) {
             return tl::unexpected{DecodingError::kInputTooLong};
         }
         return {};

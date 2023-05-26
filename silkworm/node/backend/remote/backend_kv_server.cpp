@@ -28,11 +28,11 @@ namespace silkworm::rpc {
 
 using boost::asio::awaitable;
 
-BackEndKvServer::BackEndKvServer(const ServerConfig& srv_config, const EthereumBackEnd& backend)
-    : Server(srv_config), backend_(backend) {
+BackEndKvServer::BackEndKvServer(const ServerSettings& settings, const EthereumBackEnd& backend)
+    : Server(settings), backend_(backend) {
     setup_backend_calls(backend);
     setup_kv_calls();
-    SILK_INFO << "BackEndKvServer created listening on: " << srv_config.address_uri();
+    SILK_INFO << "BackEndKvServer created listening on: " << settings.address_uri;
 }
 
 // Register the gRPC services: they must exist for the lifetime of the server built by builder.

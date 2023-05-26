@@ -97,10 +97,11 @@ class SentryImpl final {
     grpc::server::Server grpc_server_;
 };
 
-static silkworm::rpc::ServerConfig make_server_config(const Settings& settings) {
-    silkworm::rpc::ServerConfig config;
-    config.set_address_uri(settings.api_address);
-    config.set_context_pool_settings(settings.context_pool_settings);
+static silkworm::rpc::ServerSettings make_server_config(const Settings& settings) {
+    silkworm::rpc::ServerSettings config{
+        .address_uri = settings.api_address,
+        .context_pool_settings = settings.context_pool_settings,
+    };
     return config;
 }
 

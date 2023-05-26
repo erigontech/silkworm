@@ -192,8 +192,8 @@ Bytes Account::rlp(const evmc::bytes32& storage_root) const {
     rlp::encode_header(to, h);
     rlp::encode(to, nonce);
     rlp::encode(to, balance);
-    rlp::encode(to, storage_root.bytes);
-    rlp::encode(to, code_hash.bytes);
+    rlp::encode(to, storage_root);
+    rlp::encode(to, code_hash);
 
     return to;
 }

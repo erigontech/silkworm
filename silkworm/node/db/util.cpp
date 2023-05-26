@@ -21,6 +21,7 @@
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 
@@ -171,31 +172,27 @@ namespace detail {
         if (!header->list) {
             return tl::unexpected{DecodingError::kUnexpectedString};
         }
-        uint64_t leftover{from.length() - header->payload_length};
+        const uint64_t leftover{from.length() - header->payload_length};
+        if (leftover) {
+            return tl::unexpected{DecodingError::kInputTooLong};
+        }
 
-        if (const auto result{rlp::decode(from, to.base_txn_id)}; !result) {
-            return tl::unexpected{result.error()};
-        }
-        if (const auto result{rlp::decode(from, to.txn_count)}; !result) {
-            return tl::unexpected{result.error()};
-        }
-        if (const auto result{rlp::decode(from, to.ommers)}; !result) {
-            return tl::unexpected{result.error()};
+        if (DecodingResult res{rlp::decode_items(from, to.base_txn_id, to.txn_count, to.ommers)}; !res) {
+            return res;
         }
 
         to.withdrawals = std::nullopt;
         if (from.length() > leftover) {
             std::vector<Withdrawal> withdrawals;
-            if (DecodingResult res{rlp::decode(from, withdrawals)}; !res) {
+            if (DecodingResult res{rlp::decode(from, withdrawals, rlp::Leftover::kAllow)}; !res) {
                 return res;
             }
             to.withdrawals = withdrawals;
         }
 
         if (from.length() != leftover) {
-            return tl::unexpected{DecodingError::kListLengthMismatch};
+            return tl::unexpected{DecodingError::kUnexpectedListElements};
         }
-
         return {};
     }
 

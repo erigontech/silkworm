@@ -18,7 +18,7 @@
 
 #include <stdexcept>
 
-#include <silkworm/core/rlp/decode.hpp>
+#include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 
@@ -44,7 +44,7 @@ Bytes StatusMessage::rlp_encode() const {
 StatusMessage StatusMessage::rlp_decode(ByteView data) {
     StatusMessage message;
     success_or_throw(rlp::decode(
-                         data,
+                         data, rlp::Leftover::kProhibit,
                          message.version,
                          message.network_id,
                          message.total_difficulty,

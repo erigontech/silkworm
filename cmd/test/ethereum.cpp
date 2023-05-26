@@ -342,7 +342,7 @@ Status run_block(const nlohmann::json& json_block, Blockchain& blockchain) {
 
     Block block;
     ByteView view{*rlp};
-    if (!rlp::decode(view, block) || !view.empty()) {
+    if (!rlp::decode(view, block)) {
         if (invalid) {
             return Status::kPassed;
         }
@@ -464,7 +464,7 @@ RunResults blockchain_test(const nlohmann::json& json_test) {
     Bytes genesis_rlp{from_hex(json_test["genesisRLP"].get<std::string>()).value()};
     ByteView genesis_view{genesis_rlp};
     Block genesis_block;
-    if (!rlp::decode(genesis_view, genesis_block) || !genesis_view.empty()) {
+    if (!rlp::decode(genesis_view, genesis_block)) {
         std::cout << "Failure to decode genesisRLP" << std::endl;
         return Status::kFailed;
     }

@@ -20,7 +20,7 @@
 #include <stdexcept>
 
 #include <silkworm/core/common/as_range.hpp>
-#include <silkworm/core/rlp/decode.hpp>
+#include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 
@@ -31,16 +31,16 @@ using common::Message;
 const uint8_t HelloMessage::kId = 0;
 const uint8_t HelloMessage::kProtocolVersion = 5;
 
-size_t length(const HelloMessage::Capability& capability) {
+static size_t length(const HelloMessage::Capability& capability) {
     return rlp::length(capability.name_bytes, capability.version);
 }
 
-void encode(Bytes& to, const HelloMessage::Capability& capability) {
+static void encode(Bytes& to, const HelloMessage::Capability& capability) {
     rlp::encode(to, capability.name_bytes, capability.version);
 }
 
-DecodingResult decode(ByteView& from, HelloMessage::Capability& to) noexcept {
-    return rlp::decode(from, to.name_bytes, to.version);
+static DecodingResult decode(ByteView& from, HelloMessage::Capability& to, rlp::Leftover mode) noexcept {
+    return rlp::decode(from, mode, to.name_bytes, to.version);
 }
 
 bool HelloMessage::contains_capability(const Capability& capability) const {
@@ -81,7 +81,7 @@ Bytes HelloMessage::rlp_encode() const {
 HelloMessage HelloMessage::rlp_decode(ByteView data) {
     HelloMessage message;
     success_or_throw(rlp::decode(
-                         data,
+                         data, rlp::Leftover::kProhibit,
                          message.protocol_version_,
                          message.client_id_bytes_,
                          message.capabilities_,

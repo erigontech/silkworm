@@ -33,8 +33,7 @@ namespace rlp {
 
     size_t length(const NewBlockHash& from) noexcept;
 
-    template <>
-    DecodingResult decode(ByteView& from, NewBlockHash& to) noexcept;
+    DecodingResult decode(ByteView& from, NewBlockHash& to, Leftover mode = Leftover::kProhibit) noexcept;
 
 }  // namespace rlp
 

@@ -84,9 +84,6 @@ struct BlockHeader {
     [[nodiscard]] std::optional<intx::uint256> data_gas_price() const;
 
     friend bool operator==(const BlockHeader&, const BlockHeader&) = default;
-
-  private:
-    friend DecodingResult rlp::decode<BlockHeader>(ByteView& from, BlockHeader& to) noexcept;
 };
 
 struct BlockBody {
@@ -117,14 +114,9 @@ namespace rlp {
     void encode(Bytes& to, const BlockHeader&, bool for_sealing = false, bool exclude_extra_data_sig = false);
     void encode(Bytes& to, const Block&);
 
-    template <>
-    DecodingResult decode(ByteView& from, BlockBody& to) noexcept;
-
-    template <>
-    DecodingResult decode(ByteView& from, BlockHeader& to) noexcept;
-
-    template <>
-    DecodingResult decode(ByteView& from, Block& to) noexcept;
+    DecodingResult decode(ByteView& from, BlockBody& to, Leftover mode = Leftover::kProhibit) noexcept;
+    DecodingResult decode(ByteView& from, BlockHeader& to, Leftover mode = Leftover::kProhibit) noexcept;
+    DecodingResult decode(ByteView& from, Block& to, Leftover mode = Leftover::kProhibit) noexcept;
 }  // namespace rlp
 
 // Comparison operator ==

@@ -46,7 +46,7 @@ namespace rlp {
             return rlp::length(std::get<BlockNum>(from));
     }
 
-    inline DecodingResult decode(ByteView& from, HashOrNumber& to) noexcept {
+    inline DecodingResult decode(ByteView& from, HashOrNumber& to, Leftover mode = Leftover::kProhibit) noexcept {
         ByteView copy(from);           // a copy because we need only decode header and not consume it
         auto h = decode_header(copy);  // so we can use full implementation of decode below
         if (!h) {
@@ -58,13 +58,13 @@ namespace rlp {
 
         if (h->payload_length == 32) {
             Hash hash;
-            if (DecodingResult res = rlp::decode(from, static_cast<evmc::bytes32&>(hash)); !res) {
+            if (DecodingResult res = rlp::decode(from, static_cast<evmc::bytes32&>(hash), mode); !res) {
                 return res;
             }
             to = {hash};
         } else if (h->payload_length <= 8) {
             BlockNum number{};
-            if (DecodingResult res = rlp::decode(from, number); !res) {
+            if (DecodingResult res = rlp::decode(from, number, mode); !res) {
                 return res;
             }
             to = {number};

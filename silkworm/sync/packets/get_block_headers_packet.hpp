@@ -38,15 +38,13 @@ namespace rlp {
 
     size_t length(const GetBlockHeadersPacket& from) noexcept;
 
-    template <>
-    DecodingResult decode(ByteView& from, GetBlockHeadersPacket& to) noexcept;
+    DecodingResult decode(ByteView& from, GetBlockHeadersPacket& to, Leftover mode = Leftover::kProhibit) noexcept;
 
     size_t length(const GetBlockHeadersPacket66& from) noexcept;
 
     void encode(Bytes& to, const GetBlockHeadersPacket66& from) noexcept;
 
-    template <>
-    DecodingResult decode(ByteView& from, GetBlockHeadersPacket66& to) noexcept;
+    DecodingResult decode(ByteView& from, GetBlockHeadersPacket66& to, Leftover mode = Leftover::kProhibit) noexcept;
 
 }  // namespace rlp
 

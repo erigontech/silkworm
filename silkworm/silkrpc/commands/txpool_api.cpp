@@ -56,7 +56,7 @@ boost::asio::awaitable<void> TxPoolRpcApi::handle_txpool_content(const nlohmann:
             silkworm::ByteView from{txpool_transactions[i].rlp};
             std::string sender = silkworm::to_hex(txpool_transactions[i].sender, true);
             Transaction txn{};
-            const auto result = silkworm::rlp::decode_transaction(from, dynamic_cast<silkworm::Transaction&>(txn), silkworm::rlp::Eip2718Wrapping::kBoth);
+            const auto result = silkworm::rlp::decode_transaction(from, txn, rlp::Eip2718Wrapping::kBoth);
             if (!result) {
                 SILK_ERROR << "handle_txpool_content  rlp::decode failed sender: " << sender;
                 error = true;

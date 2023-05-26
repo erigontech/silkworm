@@ -19,7 +19,7 @@
 #include <stdexcept>
 
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/core/rlp/decode.hpp>
+#include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/secp256k1_context.hpp>
@@ -111,7 +111,7 @@ Bytes AuthMessage::body_as_rlp() const {
 
 void AuthMessage::init_from_rlp(ByteView data) {
     Bytes public_key_data;
-    success_or_throw(rlp::decode(data, signature_, public_key_data, nonce_),
+    success_or_throw(rlp::decode(data, rlp::Leftover::kProhibit, signature_, public_key_data, nonce_),
                      "Failed to decode AuthMessage RLP");
     initiator_public_key_ = common::EccPublicKey::deserialize(public_key_data);
 }

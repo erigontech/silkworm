@@ -19,7 +19,7 @@
 #include <vector>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/core/common/decoding_result.hpp>
+#include <silkworm/core/rlp/decode.hpp>
 
 namespace silkworm::sentry::eth {
 
@@ -62,6 +62,6 @@ class ForkId {
 // RLP
 size_t length(const ForkId& value);
 void encode(Bytes& to, const ForkId& value);
-DecodingResult decode(ByteView& from, ForkId& value) noexcept;
+DecodingResult decode(ByteView& from, ForkId& value, rlp::Leftover mode = rlp::Leftover::kProhibit) noexcept;
 
 }  // namespace silkworm::sentry::eth

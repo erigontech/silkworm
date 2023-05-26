@@ -103,8 +103,12 @@ awaitable<void> Peer::handle() {
     using namespace concurrency::awaitable_wait_for_one;
 
     log::Debug("sentry") << "Peer::handle";
-    auto _ = gsl::finally([this] {
-        this->handshake_promise_.set_value(false);
+
+    bool is_handshake_completed = false;
+    auto _ = gsl::finally([this, &is_handshake_completed] {
+        if (!is_handshake_completed) {
+            this->handshake_promise_.set_value(false);
+        }
         this->close();
     });
 
@@ -130,6 +134,7 @@ awaitable<void> Peer::handle() {
         }
 
         handshake_promise_.set_value(true);
+        is_handshake_completed = true;
 
         bool is_disconnecting = false;
         bool is_cancelled = false;

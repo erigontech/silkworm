@@ -39,7 +39,7 @@
 using namespace silkworm;
 using namespace silkworm::rpc;
 
-ABSL_FLAG(std::string, target, kDefaultTarget, "server location as string <address>:<port>");
+ABSL_FLAG(std::string, target, kDefaultPrivateApiAddr, "server location as string <address>:<port>");
 // ABSL_FLAG(LogLevel, log_verbosity, LogLevel::Critical, "logging level");
 
 boost::asio::awaitable<std::optional<uint64_t>> latest_block(ethdb::Database& db) {

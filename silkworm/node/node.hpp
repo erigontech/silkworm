@@ -16,22 +16,37 @@
 
 #pragma once
 
-#include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/grpc/server/server_config.hpp>
+#include <memory>
+
+#include <silkworm/infra/concurrency/task.hpp>
+#include <silkworm/node/common/settings.hpp>
+#include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/settings.hpp>
 #include <silkworm/node/snapshot/settings.hpp>
+#include <silkworm/node/stagedsync/local_client.hpp>
+#include <silkworm/sentry/api/api_common/sentry_client.hpp>
 #include <silkworm/sentry/settings.hpp>
-#include <silkworm/silkrpc/settings.hpp>
 
-namespace silkworm::cmd::common {
+namespace silkworm::node {
 
-//! The overall settings
-struct SilkwormSettings {
-    log::Settings log_settings;
-    node::Settings node_settings;
-    sentry::Settings sentry_settings;
-    rpc::DaemonSettings rpcdaemon_settings;
-    bool force_pow{true};  // TODO(canepat) remove when PoS sync works
+class NodeImpl;
+
+class Node {
+  public:
+    Node(Settings&, std::shared_ptr<sentry::api::api_common::SentryClient>, mdbx::env&);
+    ~Node();
+
+    Node(const Node&) = delete;
+    Node& operator=(const Node&) = delete;
+
+    execution::LocalClient& execution_local_client();
+
+    void setup();
+
+    Task<void> run();
+
+  private:
+    std::unique_ptr<NodeImpl> p_impl_;
 };
 
-}  // namespace silkworm::cmd::common
+}  // namespace silkworm::node

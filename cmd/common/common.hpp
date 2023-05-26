@@ -17,6 +17,7 @@
 #pragma once
 
 #include <filesystem>
+#include <optional>
 #include <vector>
 
 #include <CLI/CLI.hpp>
@@ -38,6 +39,9 @@ void add_option_chain(CLI::App& cli, uint64_t& network_id);
 
 //! \brief Set up option for the data directory path
 void add_option_data_dir(CLI::App& cli, std::filesystem::path& data_dir);
+
+//! \brief Set up option for an optional data directory path
+void add_option_data_dir(CLI::App& cli, std::optional<std::filesystem::path>& data_dir);
 
 //! \brief Set up option for the node Etherbase address
 void add_option_etherbase(CLI::App& cli, std::string& etherbase_address);

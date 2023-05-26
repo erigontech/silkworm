@@ -34,24 +34,6 @@ commands:
             git submodule sync
             git -c submodule.LegacyTests.update=none submodule update --init --recursive
 
-  format:
-    steps:
-      - run:
-          name: "Format"
-          working_directory: ~/project
-          command: |
-            sudo pip install cmake-format==0.6.13
-            make fmt
-            if ! git diff --exit-code
-            then
-              echo "The formatting style is not compliant. Try to run: 'make fmt' locally and push the changes"
-              exit 1
-            fi
-      - run:
-          name: "Copyright"
-          working_directory: ~/project
-          command: cmake -P cmake/copyright.cmake
-
   build:
     parameters:
       build_type:
@@ -164,7 +146,28 @@ commands:
           command: cmd/test/ethereum --threads 8
 
 jobs:
-  linux-gcc-11-thread-sanitizer:
+  lint:
+    machine:
+      image: ubuntu-2204:2023.04.2    
+    steps:
+      - checkout
+      - run:
+          name: "Format"
+          working_directory: ~/project
+          command: |
+            sudo pip install cmake-format==0.6.13
+            make fmt
+            if ! git diff --exit-code
+            then
+              echo "The formatting style is not compliant. Try to run: 'make fmt' locally and push the changes"
+              exit 1
+            fi
+      - run:
+          name: "Copyright"
+          working_directory: ~/project
+          command: cmake -P cmake/copyright.cmake
+
+  linux-gcc-thread-sanitizer:
     environment:
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=thread
     machine:
@@ -174,7 +177,7 @@ jobs:
       - checkout_with_submodules
       - build_using_conan:
           compiler_id: gcc
-          compiler_version: 11
+          compiler_version: <<pipeline.parameters.gcc_version_latest>>
           build_type: Debug
       - test
 
@@ -194,7 +197,7 @@ jobs:
           compiler_version: <<parameters.compiler_version>>
       - test
 
-  linux-clang-15-address-sanitizer:
+  linux-clang-address-sanitizer:
     environment:
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=address,undefined
       ASAN_OPTIONS: alloc_dealloc_mismatch=0 # https://github.com/llvm/llvm-project/issues/59432
@@ -206,10 +209,10 @@ jobs:
       - build_using_conan:
           build_type: Debug
           compiler_id: clang
-          compiler_version: 15
+          compiler_version: <<pipeline.parameters.clang_version_latest>>
       - test
 
-  linux-clang-13-coverage:
+  linux-clang-coverage:
     environment:
       BUILD_CMAKE_ARGS: -DSILKWORM_CLANG_COVERAGE=ON
     machine:
@@ -217,11 +220,10 @@ jobs:
     resource_class: xlarge
     steps:
       - checkout_with_submodules
-      - format
       - build_using_conan:
           build_type: Debug
           compiler_id: clang
-          compiler_version: 13
+          compiler_version: <<pipeline.parameters.clang_version_latest>>
       - run:
           name: "Core unit tests"
           working_directory: ~/build
@@ -332,14 +334,19 @@ workflows:
       not:
         equal: [ master, <<pipeline.git.branch>> ]
     jobs:
+      - lint
       - linux-release:
           name: linux-gcc-<<pipeline.parameters.gcc_version_latest>>-release
           compiler_id: gcc
           compiler_version: <<pipeline.parameters.gcc_version_latest>>
+          requires:
+            - lint
       - linux-release:
           name: linux-clang-<<pipeline.parameters.clang_version_latest>>-release
           compiler_id: clang
           compiler_version: <<pipeline.parameters.clang_version_latest>>
+          requires:
+            - lint
 
   integration:
     when:
@@ -355,7 +362,7 @@ workflows:
           name: linux-clang-<<pipeline.parameters.clang_version_min>>-release
           compiler_id: clang
           compiler_version: <<pipeline.parameters.clang_version_min>>
-      - linux-gcc-11-thread-sanitizer
-      - linux-clang-13-coverage
-      - linux-clang-15-address-sanitizer
+      - linux-gcc-thread-sanitizer
+      - linux-clang-coverage
+      - linux-clang-address-sanitizer
       - linux-wasm-build

@@ -334,8 +334,6 @@ bool PooledCursor::is_dangling() const {
 
 size_t PooledCursor::size() const { return get_map_stat().ms_entries; }
 
-bool PooledCursor::empty() const { return size() == 0; }
-
 ::mdbx::map_handle PooledCursor::map() const {
     return ::mdbx::cursor::map();
 }

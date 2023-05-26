@@ -37,6 +37,7 @@ static std::optional<eth::MessageId> eth_message_id(proto::MessageId proto_id) {
         case proto::TRANSACTIONS_66:
             return eth::MessageId::kTransactions;
         case proto::NEW_POOLED_TRANSACTION_HASHES_66:
+        case proto::NEW_POOLED_TRANSACTION_HASHES_68:
             return eth::MessageId::kNewPooledTransactionHashes;
         case proto::GET_BLOCK_HEADERS_66:
             return eth::MessageId::kGetBlockHeaders;
@@ -74,7 +75,7 @@ static proto::MessageId proto_message_id_from_eth_id(eth::MessageId eth_id) {
         case eth::MessageId::kTransactions:
             return proto::TRANSACTIONS_66;
         case eth::MessageId::kNewPooledTransactionHashes:
-            return proto::NEW_POOLED_TRANSACTION_HASHES_66;
+            return proto::NEW_POOLED_TRANSACTION_HASHES_68;
         case eth::MessageId::kGetBlockHeaders:
             return proto::GET_BLOCK_HEADERS_66;
         case eth::MessageId::kGetBlockBodies:

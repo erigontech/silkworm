@@ -111,8 +111,10 @@ Bytes AuthMessage::body_as_rlp() const {
 
 void AuthMessage::init_from_rlp(ByteView data) {
     Bytes public_key_data;
-    success_or_throw(rlp::decode(data, rlp::Leftover::kProhibit, signature_, public_key_data, nonce_),
-                     "Failed to decode AuthMessage RLP");
+    auto result = rlp::decode(data, rlp::Leftover::kAllow, signature_, public_key_data, nonce_);
+    if (!result && (result.error() != DecodingError::kUnexpectedListElements)) {
+        throw DecodingException(result.error(), "Failed to decode AuthMessage RLP");
+    }
     initiator_public_key_ = common::EccPublicKey::deserialize(public_key_data);
 }
 

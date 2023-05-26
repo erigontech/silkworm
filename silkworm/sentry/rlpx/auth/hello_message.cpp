@@ -80,14 +80,17 @@ Bytes HelloMessage::rlp_encode() const {
 
 HelloMessage HelloMessage::rlp_decode(ByteView data) {
     HelloMessage message;
-    success_or_throw(rlp::decode(
-                         data, rlp::Leftover::kProhibit,
-                         message.protocol_version_,
-                         message.client_id_bytes_,
-                         message.capabilities_,
-                         message.listen_port_,
-                         message.node_id_bytes_),
-                     "Failed to decode HelloMessage RLP");
+    auto result = rlp::decode(
+        data,
+        rlp::Leftover::kProhibit,
+        message.protocol_version_,
+        message.client_id_bytes_,
+        message.capabilities_,
+        message.listen_port_,
+        message.node_id_bytes_);
+    if (!result && (result.error() != DecodingError::kUnexpectedListElements)) {
+        throw DecodingException(result.error(), "Failed to decode HelloMessage RLP");
+    }
     return message;
 }
 

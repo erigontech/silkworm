@@ -17,13 +17,21 @@
 #include "rpcdaemon_options.hpp"
 
 #include <algorithm>
-#include <regex>
+
+#include <absl/strings/str_split.h>
 
 #include <silkworm/silkrpc/common/constants.hpp>
 
 #include "ip_endpoint_option.hpp"
 
 namespace silkworm::cmd::common {
+
+//! Compute the maximum number of chars in comma-separated list of all API namespaces
+static const auto kApiNamespaceListMaxChars{
+    std::accumulate(kAllEth1Namespaces.cbegin(), kAllEth1Namespaces.cend(), 0, [](size_t sum, auto s) {
+        return sum + std::strlen(s);
+    }) +
+    kAllEth1Namespaces.size() - 1};
 
 //! CLI11 validator for ETH1 JSON API namespace specification
 struct ApiSpecValidator : public CLI::Validator {
@@ -32,20 +40,15 @@ struct ApiSpecValidator : public CLI::Validator {
             if (value.empty() && allow_empty) {
                 return {};
             }
-
-            // Parse the entire API namespace specification, i.e. comma-separated list of API namespaces
-            const std::regex pattern(R"([,]+)");
-            std::smatch matches;
-            if (!std::regex_match(value, matches, pattern)) {
-                return "Value " + value + " is not a valid API namespace specification";
+            if (value.size() > kApiNamespaceListMaxChars) {
+                return "Value " + value + " is too long for valid API namespace specification";
             }
 
-            // Validate each specified API namespace
-            for (const auto& sub_match : matches) {
-                const auto ns = sub_match.str();
-                const auto it = std::find(kAllEth1Namespaces.cbegin(), kAllEth1Namespaces.cend(), ns.c_str());
+            // Parse the entire API namespace specification, i.e. comma-separated list of API namespaces
+            for (const auto ns : absl::StrSplit(value, ",")) {
+                const auto it = std::find(kAllEth1Namespaces.cbegin(), kAllEth1Namespaces.cend(), ns);
                 if (it == kAllEth1Namespaces.cend()) {
-                    return "Value " + ns + " is not a valid API namespace";
+                    return "Value " + std::string{ns} + " is not a valid API namespace";
                 }
             }
 

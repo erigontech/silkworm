@@ -16,21 +16,12 @@
 
 #pragma once
 
-#include <silkworm/infra/common/log.hpp>
+#include <CLI/CLI.hpp>
+
 #include <silkworm/node/settings.hpp>
-#include <silkworm/node/snapshot/settings.hpp>
-#include <silkworm/sentry/settings.hpp>
-#include <silkworm/silkrpc/settings.hpp>
 
 namespace silkworm::cmd::common {
 
-//! The overall settings
-struct SilkwormSettings {
-    log::Settings log_settings;
-    node::Settings node_settings;
-    sentry::Settings sentry_settings;
-    rpc::DaemonSettings rpcdaemon_settings;
-    bool force_pow{true};  // TODO(canepat) remove when PoS sync works
-};
+void add_node_options(CLI::App& cli, node::Settings& settings);
 
 }  // namespace silkworm::cmd::common

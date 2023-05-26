@@ -32,7 +32,6 @@
 #include <silkworm/infra/common/stopwatch.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
-#include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/grpc/server/server_context_pool.hpp>
 #include <silkworm/node/db/eth_status_data_provider.hpp>
 #include <silkworm/node/node.hpp>
@@ -46,6 +45,7 @@
 #include "common/common.hpp"
 #include "common/db_checklist.hpp"
 #include "common/human_size_parser_validator.hpp"
+#include "common/node_options.hpp"
 #include "common/rpcdaemon_options.hpp"
 #include "common/sentry_options.hpp"
 #include "common/settings.hpp"
@@ -69,6 +69,7 @@ using silkworm::PreverifiedHashes;
 using silkworm::StopWatch;
 using silkworm::cmd::common::add_context_pool_options;
 using silkworm::cmd::common::add_logging_options;
+using silkworm::cmd::common::add_node_options;
 using silkworm::cmd::common::add_option_chain;
 using silkworm::cmd::common::add_option_data_dir;
 using silkworm::cmd::common::add_option_private_api_address;
@@ -97,61 +98,23 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
 
     auto& node_settings = settings.node_settings;
 
-    // Node settings
     std::filesystem::path data_dir_path;
+    add_option_data_dir(cli, data_dir_path);
+
     std::string chaindata_max_size_str{human_size(node_settings.chaindata_env_config.max_size)};
     std::string chaindata_growth_size_str{human_size(node_settings.chaindata_env_config.growth_size)};
     std::string chaindata_page_size_str{human_size(node_settings.chaindata_env_config.page_size)};
     std::string batch_size_str{human_size(node_settings.batch_size)};
     std::string etl_buffer_size_str{human_size(node_settings.etl_buffer_size)};
-    add_option_data_dir(cli, data_dir_path);
 
-    cli.add_flag("--chaindata.exclusive", node_settings.chaindata_env_config.exclusive,
-                 "Chaindata database opened in exclusive mode");
-    cli.add_flag("--chaindata.readahead", node_settings.chaindata_env_config.read_ahead,
-                 "Chaindata database enable readahead");
-    cli.add_flag("--chaindata.writemap", node_settings.chaindata_env_config.write_map,
-                 "Chaindata database enable writemap");
-
-    cli.add_option("--chaindata.growthsize", chaindata_growth_size_str, "Chaindata database growth size.")
-        ->capture_default_str()
-        ->check(HumanSizeParserValidator("64MB"));
-    cli.add_option("--chaindata.pagesize", chaindata_page_size_str, "Chaindata database page size. A power of 2")
-        ->capture_default_str()
-        ->check(HumanSizeParserValidator("256B", {"65KB"}));
-    cli.add_option("--chaindata.maxsize", chaindata_max_size_str, "Chaindata database max size.")
-        ->capture_default_str()
-        ->check(HumanSizeParserValidator("32MB", {"128TB"}));
-
-    cli.add_option("--batchsize", batch_size_str, "Batch size for stage execution")
-        ->capture_default_str()
-        ->check(HumanSizeParserValidator("64MB", {"16GB"}));
-    cli.add_option("--etl.buffersize", etl_buffer_size_str, "Buffer size for ETL operations")
-        ->capture_default_str()
-        ->check(HumanSizeParserValidator("64MB", {"1GB"}));
-
-    add_option_private_api_address(cli, node_settings.private_api_addr);
+    // Node settings
+    add_node_options(cli, node_settings);
 
     // Sentry settings
-    add_option_remote_sentry_addresses(cli, node_settings.remote_sentry_addresses, /* is_required = */ false);
     add_sentry_options(cli, settings.sentry_settings);
 
-    cli.add_option("--sync.loop.throttle", node_settings.sync_loop_throttle_seconds,
-                   "Sets the minimum delay between sync loop starts (in seconds)")
-        ->capture_default_str()
-        ->check(CLI::Range(1u, 7200u));
-
-    cli.add_option("--sync.loop.log.interval", node_settings.sync_loop_log_interval_seconds,
-                   "Sets the interval between sync loop logs (in seconds)")
-        ->capture_default_str()
-        ->check(CLI::Range(10u, 600u));
     // TODO(canepat) remove when PoS sync works
     cli.add_flag("--sync.force_pow", settings.force_pow, "Force usage of proof-of-work bypassing chain config");
-
-    cli.add_flag("--fakepow", node_settings.fake_pow, "Disables proof-of-work verification");
-
-    // Chain options
-    add_option_chain(cli, node_settings.network_id);
 
     // Prune options
     std::string prune_mode;
@@ -193,16 +156,6 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
 
     // Logging options
     add_logging_options(cli, settings.log_settings);
-
-    // RPC server options
-    auto& server_settings = settings.node_settings.server_settings;
-
-    silkworm::concurrency::ContextPoolSettings context_pool_settings;
-    add_context_pool_options(cli, context_pool_settings);
-
-    // Snapshot&Bittorrent options
-    auto& snapshot_settings = settings.node_settings.snapshot_settings;
-    add_snapshot_options(cli, snapshot_settings);
 
     // RpcDaemon settings
     add_rpcdaemon_options(cli, settings.rpcdaemon_settings);
@@ -253,9 +206,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
                                 olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces, beforeHistory,
                                 beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
 
-    server_settings.set_address_uri(node_settings.private_api_addr);
-    server_settings.set_context_pool_settings(context_pool_settings);
-
+    auto& snapshot_settings = node_settings.snapshot_settings;
     snapshot_settings.bittorrent_settings.repository_path = snapshot_settings.repository_dir;
 }
 
@@ -367,7 +318,7 @@ int main(int argc, char* argv[]) {
         auto chaindata_db{db::open_env(node_settings.chaindata_env_config)};
 
         silkworm::rpc::ServerContextPool context_pool{
-            settings.node_settings.server_settings.context_pool_settings(),
+            settings.node_settings.server_settings.context_pool_settings,
             [] { return std::make_unique<DummyServerCompletionQueue>(); },
         };
 

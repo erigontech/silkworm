@@ -14,27 +14,27 @@
    limitations under the License.
 */
 
-#include "server_config.hpp"
+#pragma once
 
-#include <utility>
+#include <memory>
+#include <string>
+
+#include <grpcpp/grpcpp.h>
+
+#include <silkworm/infra/concurrency/context_pool_settings.hpp>
 
 namespace silkworm::rpc {
 
-ServerConfig::ServerConfig(std::shared_ptr<grpc::ServerCredentials> credentials)
-    : address_uri_{kDefaultAddressUri},
-      credentials_(std::move(credentials)) {
-}
+constexpr const char* kDefaultAddressUri{"localhost:9090"};
 
-void ServerConfig::set_address_uri(const std::string& address_uri) noexcept {
-    address_uri_ = address_uri;
-}
-
-void ServerConfig::set_credentials(std::shared_ptr<grpc::ServerCredentials> credentials) noexcept {
-    credentials_ = std::move(credentials);
-}
-
-void ServerConfig::set_context_pool_settings(concurrency::ContextPoolSettings settings) noexcept {
-    context_pool_settings_ = settings;
-}
+//! Configuration settings for private (i.e. internal) API gRPC server
+struct ServerSettings {
+    //! gRPC private API bind address (IP:port)
+    std::string address_uri{kDefaultAddressUri};
+    //! gRPC private API credentials
+    std::shared_ptr<grpc::ServerCredentials> credentials{grpc::InsecureServerCredentials()};
+    //! Configuration for gRPC server execution pool
+    concurrency::ContextPoolSettings context_pool_settings;
+};
 
 }  // namespace silkworm::rpc

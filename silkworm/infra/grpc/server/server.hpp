@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
@@ -27,8 +28,8 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/async_thread.hpp>
-#include <silkworm/infra/grpc/server/server_config.hpp>
 #include <silkworm/infra/grpc/server/server_context_pool.hpp>
+#include <silkworm/infra/grpc/server/server_settings.hpp>
 
 namespace silkworm::rpc {
 
@@ -36,9 +37,8 @@ namespace silkworm::rpc {
 class Server {
   public:
     //! Build a ready-to-start RPC server according to specified configuration.
-    explicit Server(const ServerConfig& config)
-        : config_(config),
-          context_pool_{config.context_pool_settings().num_contexts} {}
+    explicit Server(ServerSettings settings)
+        : settings_{std::move(settings)}, context_pool_{settings_.context_pool_settings.num_contexts} {}
 
     /**
      * No need to explicitly shutdown the server because this destructor takes care.
@@ -69,12 +69,11 @@ class Server {
 
         // Add the local endpoint to bind the RPC server to (selected_port will be set *after* BuildAndStart call).
         int selected_port;
-        builder.AddListeningPort(config_.address_uri(), config_.credentials(), &selected_port);
+        builder.AddListeningPort(settings_.address_uri, settings_.credentials, &selected_port);
 
         // Add one server-side gRPC completion queue for each execution context.
-        const auto& context_pool_settings = config_.context_pool_settings();
-        for (std::size_t i{0}; i < context_pool_settings.num_contexts; ++i) {
-            context_pool_.add_context(builder.AddCompletionQueue(), context_pool_settings.wait_mode);
+        for (std::size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
+            context_pool_.add_context(builder.AddCompletionQueue(), settings_.context_pool_settings.wait_mode);
         }
 
         // gRPC async model requires the server to register the RPC services first.
@@ -84,8 +83,8 @@ class Server {
         server_ = builder.BuildAndStart();
         SILK_DEBUG << "Server " << this << " bound at selected port: " << selected_port;
         if (server_ == nullptr) {
-            SILK_ERROR << "Server " << this << " BuildAndStart failed [" << config_.address_uri() << "]";
-            throw std::runtime_error("cannot start gRPC server at " + config_.address_uri());
+            SILK_ERROR << "Server " << this << " BuildAndStart failed [" << settings_.address_uri << "]";
+            throw std::runtime_error("cannot start gRPC server at " + settings_.address_uri);
         }
 
         // gRPC async model requires the server to register one request call for each RPC in advance.
@@ -159,7 +158,7 @@ class Server {
 
   private:
     //! The server configuration options.
-    ServerConfig config_;
+    ServerSettings settings_;
 
     //! The gRPC server instance tied to this Server lifetime.
     std::unique_ptr<grpc::Server> server_;

@@ -22,7 +22,7 @@
 
 #include <boost/asio/awaitable.hpp>
 
-#include <silkworm/infra/grpc/server/server_config.hpp>
+#include <silkworm/infra/grpc/server/server_settings.hpp>
 #include <silkworm/sentry/api/router/service_router.hpp>
 
 namespace silkworm::sentry::grpc::server {
@@ -32,7 +32,7 @@ class ServerImpl;
 class Server final {
   public:
     explicit Server(
-        const silkworm::rpc::ServerConfig& config,
+        const silkworm::rpc::ServerSettings& config,
         api::router::ServiceRouter router);
     ~Server();
 

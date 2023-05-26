@@ -44,7 +44,7 @@ Bytes StatusMessage::rlp_encode() const {
 StatusMessage StatusMessage::rlp_decode(ByteView data) {
     StatusMessage message;
     success_or_throw(rlp::decode(
-                         data, /*allow_leftover=*/false,
+                         data, rlp::Leftover::kProhibit,
                          message.version,
                          message.network_id,
                          message.total_difficulty,

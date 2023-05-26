@@ -28,36 +28,36 @@
 // specific implementations
 namespace silkworm::rlp {
 
-DecodingResult decode(ByteView& from, Hash& to, bool allow_leftover) noexcept {
-    return rlp::decode(from, static_cast<evmc::bytes32&>(to), allow_leftover);
+DecodingResult decode(ByteView& from, Hash& to, Leftover mode) noexcept {
+    return rlp::decode(from, static_cast<evmc::bytes32&>(to), mode);
 }
 
-DecodingResult decode(ByteView& from, NewBlockHash& to, bool allow_leftover) noexcept {
-    return decode(from, allow_leftover, to.hash, to.number);
+DecodingResult decode(ByteView& from, NewBlockHash& to, Leftover mode) noexcept {
+    return decode(from, mode, to.hash, to.number);
 }
 
-DecodingResult decode(ByteView& from, NewBlockPacket& to, bool allow_leftover) noexcept {
-    return decode(from, allow_leftover, to.block, to.td);
+DecodingResult decode(ByteView& from, NewBlockPacket& to, Leftover mode) noexcept {
+    return decode(from, mode, to.block, to.td);
 }
 
-DecodingResult decode(ByteView& from, GetBlockHeadersPacket66& to, bool allow_leftover) noexcept {
-    return rlp::decode_eth66_packet(from, to, allow_leftover);
+DecodingResult decode(ByteView& from, GetBlockHeadersPacket66& to, Leftover mode) noexcept {
+    return rlp::decode_eth66_packet(from, to, mode);
 }
 
-DecodingResult decode(ByteView& from, BlockBodiesPacket66& to, bool allow_leftover) noexcept {
-    return rlp::decode_eth66_packet(from, to, allow_leftover);
+DecodingResult decode(ByteView& from, BlockBodiesPacket66& to, Leftover mode) noexcept {
+    return rlp::decode_eth66_packet(from, to, mode);
 }
 
-DecodingResult decode(ByteView& from, BlockHeadersPacket66& to, bool allow_leftover) noexcept {
-    return rlp::decode_eth66_packet(from, to, allow_leftover);
+DecodingResult decode(ByteView& from, BlockHeadersPacket66& to, Leftover mode) noexcept {
+    return rlp::decode_eth66_packet(from, to, mode);
 }
 
-DecodingResult decode(ByteView& from, GetBlockBodiesPacket66& to, bool allow_leftover) noexcept {
-    return rlp::decode_eth66_packet(from, to, allow_leftover);
+DecodingResult decode(ByteView& from, GetBlockBodiesPacket66& to, Leftover mode) noexcept {
+    return rlp::decode_eth66_packet(from, to, mode);
 }
 
-DecodingResult decode(ByteView& from, GetBlockHeadersPacket& to, bool allow_leftover) noexcept {
-    return decode(from, allow_leftover, to.origin, to.amount, to.skip, to.reverse);
+DecodingResult decode(ByteView& from, GetBlockHeadersPacket& to, Leftover mode) noexcept {
+    return decode(from, mode, to.origin, to.amount, to.skip, to.reverse);
 }
 
 }  // namespace silkworm::rlp

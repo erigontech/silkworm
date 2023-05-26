@@ -65,8 +65,8 @@ inline size_t length_eth66_packet(const T& from) noexcept {
 }
 
 template <typename T>
-inline DecodingResult decode_eth66_packet(ByteView& from, T& to, bool allow_leftover = false) noexcept {
-    return decode(from, allow_leftover, to.requestId, to.request);
+inline DecodingResult decode_eth66_packet(ByteView& from, T& to, Leftover mode = Leftover::kProhibit) noexcept {
+    return decode(from, mode, to.requestId, to.request);
 }
 
 }  // namespace silkworm::rlp

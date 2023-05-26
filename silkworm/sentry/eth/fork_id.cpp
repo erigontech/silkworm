@@ -36,8 +36,8 @@ void encode(Bytes& to, const ForkId& value) {
     rlp::encode(to, value.hash_bytes(), value.next());
 }
 
-DecodingResult decode(ByteView& from, ForkId& value, bool allow_leftover) noexcept {
-    return rlp::decode(from, allow_leftover, value.hash_bytes(), value.next());
+DecodingResult decode(ByteView& from, ForkId& value, rlp::Leftover mode) noexcept {
+    return rlp::decode(from, mode, value.hash_bytes(), value.next());
 }
 
 ForkId::ForkId(uint32_t hash, BlockNum next)

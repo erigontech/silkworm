@@ -59,8 +59,8 @@ namespace rlp {
         encode(to, e.storage_keys);
     }
 
-    DecodingResult decode(ByteView& from, AccessListEntry& to, bool allow_leftover) noexcept {
-        return decode(from, allow_leftover, to.account.bytes, to.storage_keys);
+    DecodingResult decode(ByteView& from, AccessListEntry& to, Leftover mode) noexcept {
+        return decode(from, mode, to.account.bytes, to.storage_keys);
     }
 
     static Header header_base(const UnsignedTransaction& txn) {
@@ -184,7 +184,7 @@ namespace rlp {
         }
         to.max_fee_per_gas = to.max_priority_fee_per_gas;
 
-        if (DecodingResult res{decode(from, to.gas_limit, /*allow_leftover=*/true)}; !res) {
+        if (DecodingResult res{decode(from, to.gas_limit, Leftover::kAllow)}; !res) {
             return res;
         }
 
@@ -193,7 +193,7 @@ namespace rlp {
             from.remove_prefix(1);
         } else {
             to.to = evmc::address{};
-            if (DecodingResult res{decode(from, to.to->bytes, /*allow_leftover=*/true)}; !res) {
+            if (DecodingResult res{decode(from, to.to->bytes, Leftover::kAllow)}; !res) {
                 return res;
             }
         }
@@ -223,7 +223,7 @@ namespace rlp {
         }
 
         intx::uint256 chain_id;
-        if (DecodingResult res{decode(from, chain_id, /*allow_leftover=*/true)}; !res) {
+        if (DecodingResult res{decode(from, chain_id, Leftover::kAllow)}; !res) {
             return res;
         }
         to.chain_id = chain_id;
@@ -234,11 +234,11 @@ namespace rlp {
 
         if (to.type == TransactionType::kEip2930) {
             to.max_fee_per_gas = to.max_priority_fee_per_gas;
-        } else if (DecodingResult res{decode(from, to.max_fee_per_gas, /*allow_leftover=*/true)}; !res) {
+        } else if (DecodingResult res{decode(from, to.max_fee_per_gas, Leftover::kAllow)}; !res) {
             return res;
         }
 
-        if (DecodingResult res{decode(from, to.gas_limit, /*allow_leftover=*/true)}; !res) {
+        if (DecodingResult res{decode(from, to.gas_limit, Leftover::kAllow)}; !res) {
             return res;
         }
 
@@ -247,7 +247,7 @@ namespace rlp {
             from.remove_prefix(1);
         } else {
             to.to = evmc::address{};
-            if (DecodingResult res{decode(from, to.to->bytes, /*allow_leftover=*/true)}; !res) {
+            if (DecodingResult res{decode(from, to.to->bytes, Leftover::kAllow)}; !res) {
                 return res;
             }
         }
@@ -256,7 +256,7 @@ namespace rlp {
     }
 
     DecodingResult decode_transaction(ByteView& from, Transaction& to, Eip2718Wrapping allowed,
-                                      bool allow_leftover) noexcept {
+                                      Leftover mode) noexcept {
         to.from.reset();
 
         if (from.empty()) {
@@ -283,7 +283,7 @@ namespace rlp {
             to.type = TransactionType::kLegacy;
             to.access_list.clear();
             const uint64_t leftover{from.length() - h->payload_length};
-            if (!allow_leftover && leftover) {
+            if (mode != Leftover::kAllow && leftover) {
                 return tl::unexpected{DecodingError::kInputTooLong};
             }
             if (DecodingResult res{legacy_decode_items(from, to)}; !res) {
@@ -319,7 +319,7 @@ namespace rlp {
         }
 
         from.remove_prefix(h->payload_length - 1);
-        if (!allow_leftover && !from.empty()) {
+        if (mode != Leftover::kAllow && !from.empty()) {
             return tl::unexpected{DecodingError::kInputTooLong};
         }
         return {};

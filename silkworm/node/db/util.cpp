@@ -184,7 +184,7 @@ namespace detail {
         to.withdrawals = std::nullopt;
         if (from.length() > leftover) {
             std::vector<Withdrawal> withdrawals;
-            if (DecodingResult res{rlp::decode(from, withdrawals, /*allow_leftover=*/true)}; !res) {
+            if (DecodingResult res{rlp::decode(from, withdrawals, rlp::Leftover::kAllow)}; !res) {
                 return res;
             }
             to.withdrawals = withdrawals;

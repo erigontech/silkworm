@@ -150,7 +150,7 @@ namespace rlp {
         }
     }
 
-    DecodingResult decode(ByteView& from, BlockHeader& to, bool allow_leftover) noexcept {
+    DecodingResult decode(ByteView& from, BlockHeader& to, Leftover mode) noexcept {
         const auto rlp_head{decode_header(from)};
         if (!rlp_head) {
             return tl::unexpected{rlp_head.error()};
@@ -159,7 +159,7 @@ namespace rlp {
             return tl::unexpected{DecodingError::kUnexpectedString};
         }
         const uint64_t leftover{from.length() - rlp_head->payload_length};
-        if (!allow_leftover && leftover) {
+        if (mode != Leftover::kAllow && leftover) {
             return tl::unexpected{DecodingError::kInputTooLong};
         }
 
@@ -186,7 +186,7 @@ namespace rlp {
         to.base_fee_per_gas = std::nullopt;
         if (from.length() > leftover) {
             intx::uint256 base_fee_per_gas;
-            if (DecodingResult res{decode(from, base_fee_per_gas, /*allow_leftover=*/true)}; !res) {
+            if (DecodingResult res{decode(from, base_fee_per_gas, Leftover::kAllow)}; !res) {
                 return res;
             }
             to.base_fee_per_gas = base_fee_per_gas;
@@ -195,7 +195,7 @@ namespace rlp {
         to.withdrawals_root = std::nullopt;
         if (from.length() > leftover) {
             evmc::bytes32 withdrawals_root;
-            if (DecodingResult res{decode(from, withdrawals_root, /*allow_leftover=*/true)}; !res) {
+            if (DecodingResult res{decode(from, withdrawals_root, Leftover::kAllow)}; !res) {
                 return res;
             }
             to.withdrawals_root = withdrawals_root;
@@ -204,7 +204,7 @@ namespace rlp {
         to.excess_data_gas = std::nullopt;
         if (from.length() > leftover) {
             intx::uint256 excess_data_gas;
-            if (DecodingResult res{decode(from, excess_data_gas, /*allow_leftover=*/true)}; !res) {
+            if (DecodingResult res{decode(from, excess_data_gas, Leftover::kAllow)}; !res) {
                 return res;
             }
             to.excess_data_gas = excess_data_gas;
@@ -240,7 +240,7 @@ namespace rlp {
         }
     }
 
-    DecodingResult decode(ByteView& from, BlockBody& to, bool allow_leftover) noexcept {
+    DecodingResult decode(ByteView& from, BlockBody& to, Leftover mode) noexcept {
         const auto rlp_head{decode_header(from)};
         if (!rlp_head) {
             return tl::unexpected{rlp_head.error()};
@@ -249,7 +249,7 @@ namespace rlp {
             return tl::unexpected{DecodingError::kUnexpectedString};
         }
         const uint64_t leftover{from.length() - rlp_head->payload_length};
-        if (!allow_leftover && leftover) {
+        if (mode != Leftover::kAllow && leftover) {
             return tl::unexpected{DecodingError::kInputTooLong};
         }
 
@@ -260,7 +260,7 @@ namespace rlp {
         to.withdrawals = std::nullopt;
         if (from.length() > leftover) {
             std::vector<Withdrawal> withdrawals;
-            if (DecodingResult res{decode(from, withdrawals, /*allow_leftover=*/true)}; !res) {
+            if (DecodingResult res{decode(from, withdrawals, Leftover::kAllow)}; !res) {
                 return res;
             }
             to.withdrawals = withdrawals;
@@ -272,7 +272,7 @@ namespace rlp {
         return {};
     }
 
-    DecodingResult decode(ByteView& from, Block& to, bool allow_leftover) noexcept {
+    DecodingResult decode(ByteView& from, Block& to, Leftover mode) noexcept {
         const auto rlp_head{decode_header(from)};
         if (!rlp_head) {
             return tl::unexpected{rlp_head.error()};
@@ -281,7 +281,7 @@ namespace rlp {
             return tl::unexpected{DecodingError::kUnexpectedString};
         }
         const uint64_t leftover{from.length() - rlp_head->payload_length};
-        if (!allow_leftover && leftover) {
+        if (mode != Leftover::kAllow && leftover) {
             return tl::unexpected{DecodingError::kInputTooLong};
         }
 
@@ -292,7 +292,7 @@ namespace rlp {
         to.withdrawals = std::nullopt;
         if (from.length() > leftover) {
             std::vector<Withdrawal> withdrawals;
-            if (DecodingResult res{decode(from, withdrawals, /*allow_leftover=*/true)}; !res) {
+            if (DecodingResult res{decode(from, withdrawals, Leftover::kAllow)}; !res) {
                 return res;
             }
             to.withdrawals = withdrawals;

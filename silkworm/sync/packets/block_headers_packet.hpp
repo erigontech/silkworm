@@ -35,7 +35,7 @@ namespace rlp {
 
     void encode(Bytes& to, const BlockHeadersPacket66& from);
 
-    DecodingResult decode(ByteView& from, BlockHeadersPacket66& to, bool allow_leftover = false) noexcept;
+    DecodingResult decode(ByteView& from, BlockHeadersPacket66& to, Leftover mode = Leftover::kProhibit) noexcept;
 
 }  // namespace rlp
 

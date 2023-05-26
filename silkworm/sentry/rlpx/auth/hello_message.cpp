@@ -39,8 +39,8 @@ static void encode(Bytes& to, const HelloMessage::Capability& capability) {
     rlp::encode(to, capability.name_bytes, capability.version);
 }
 
-static DecodingResult decode(ByteView& from, HelloMessage::Capability& to, bool allow_leftover) noexcept {
-    return rlp::decode(from, allow_leftover, to.name_bytes, to.version);
+static DecodingResult decode(ByteView& from, HelloMessage::Capability& to, rlp::Leftover mode) noexcept {
+    return rlp::decode(from, mode, to.name_bytes, to.version);
 }
 
 bool HelloMessage::contains_capability(const Capability& capability) const {
@@ -81,7 +81,7 @@ Bytes HelloMessage::rlp_encode() const {
 HelloMessage HelloMessage::rlp_decode(ByteView data) {
     HelloMessage message;
     success_or_throw(rlp::decode(
-                         data, /*allow_leftover=*/false,
+                         data, rlp::Leftover::kProhibit,
                          message.protocol_version_,
                          message.client_id_bytes_,
                          message.capabilities_,

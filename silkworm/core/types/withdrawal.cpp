@@ -43,8 +43,8 @@ void encode(Bytes& to, const Withdrawal& w) {
     encode(to, w.amount);
 }
 
-DecodingResult decode(ByteView& from, Withdrawal& to, bool allow_leftover) noexcept {
-    return decode(from, allow_leftover, to.index, to.validator_index, to.address.bytes, to.amount);
+DecodingResult decode(ByteView& from, Withdrawal& to, Leftover mode) noexcept {
+    return decode(from, mode, to.index, to.validator_index, to.address.bytes, to.amount);
 }
 
 }  // namespace silkworm::rlp

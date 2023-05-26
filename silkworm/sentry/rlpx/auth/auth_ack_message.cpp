@@ -53,7 +53,7 @@ Bytes AuthAckMessage::body_as_rlp() const {
 
 void AuthAckMessage::init_from_rlp(ByteView data) {
     Bytes public_key_data;
-    success_or_throw(rlp::decode(data, /*allow_leftover=*/false, public_key_data, nonce_),
+    success_or_throw(rlp::decode(data, rlp::Leftover::kProhibit, public_key_data, nonce_),
                      "Failed to decode AuthAckMessage RLP");
     ephemeral_public_key_ = common::EccPublicKey::deserialize(public_key_data);
 }

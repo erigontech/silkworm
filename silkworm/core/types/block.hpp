@@ -114,9 +114,9 @@ namespace rlp {
     void encode(Bytes& to, const BlockHeader&, bool for_sealing = false, bool exclude_extra_data_sig = false);
     void encode(Bytes& to, const Block&);
 
-    DecodingResult decode(ByteView& from, BlockBody& to, bool allow_leftover = false) noexcept;
-    DecodingResult decode(ByteView& from, BlockHeader& to, bool allow_leftover = false) noexcept;
-    DecodingResult decode(ByteView& from, Block& to, bool allow_leftover = false) noexcept;
+    DecodingResult decode(ByteView& from, BlockBody& to, Leftover mode = Leftover::kProhibit) noexcept;
+    DecodingResult decode(ByteView& from, BlockHeader& to, Leftover mode = Leftover::kProhibit) noexcept;
+    DecodingResult decode(ByteView& from, Block& to, Leftover mode = Leftover::kProhibit) noexcept;
 }  // namespace rlp
 
 // Comparison operator ==

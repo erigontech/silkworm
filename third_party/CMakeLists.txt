@@ -27,20 +27,15 @@ if(DEFINED GMP_LIBRARY)
     message(FATAL_ERROR "GMP_INCLUDE_DIR is required if a custom GMP_LIBRARY is provided")
   endif()
 elseif(MSVC)
-  find_path(GMP_INCLUDE_DIR NAMES gmp.h)
-  find_library(GMP_LIBRARY mpir)
-  if(GMP_LIBRARY MATCHES ${CMAKE_SHARED_LIBRARY_SUFFIX})
-    set(gmp_library_type SHARED)
-  else()
-    set(gmp_library_type STATIC)
-  endif()
-  message(STATUS "GMP: ${GMP_LIBRARY}, ${GMP_INCLUDE_DIR}")
-  add_library(gmplib ${gmp_library_type} IMPORTED)
-  set_target_properties(
-    gmplib PROPERTIES
-    IMPORTED_LOCATION ${GMP_LIBRARY}
-    INTERFACE_INCLUDE_DIRECTORIES ${GMP_INCLUDE_DIR}
-  )
+  find_package(mpir REQUIRED)
+  add_custom_target(gmplib DEPENDS mpir::mpir)
+
+  # derive the path variables from the package for intx, libff
+  get_target_property(GMP_INCLUDE_DIR mpir::mpir INTERFACE_INCLUDE_DIRECTORIES)
+  set(GMP_INCLUDE_DIR "${GMP_INCLUDE_DIR}" CACHE PATH "")
+  get_target_property(GMP_LIBRARY_DIR mpir::mpir INTERFACE_LINK_DIRECTORIES)
+  find_library(GMP_LIBRARY gmp "${GMP_LIBRARY_DIR}")
+  message(FATAL_ERROR "TODO")
 else()
   find_package(gmp REQUIRED)
   add_custom_target(gmplib DEPENDS gmp::GMP)
@@ -108,7 +103,7 @@ endif()
 # secp256k1
 add_library(secp256k1 secp256k1/src/secp256k1.c)
 if(MSVC)
-  target_link_libraries(secp256k1 PRIVATE gmplib)
+  add_dependencies(secp256k1 gmplib)
   target_compile_definitions(secp256k1 PUBLIC USE_NUM_GMP USE_FIELD_INV_NUM USE_SCALAR_INV_NUM)
   target_compile_definitions(secp256k1 PUBLIC USE_FIELD_10X26 USE_SCALAR_8X32)
   target_compile_options(secp256k1 PRIVATE /w) # Not much we can do about warnings

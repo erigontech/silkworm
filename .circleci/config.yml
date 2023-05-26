@@ -112,6 +112,10 @@ commands:
             - ~/.conan
 
   test:
+    parameters:
+      ethereum_tests:
+        type: boolean
+        default: true
     steps:
       - run:
           name: "Core unit tests"
@@ -139,11 +143,14 @@ commands:
           name: "Sync unit tests"
           working_directory: ~/build
           command: cmd/test/sync_test
-      - run:
-          name: "Ethereum EL tests"
-          working_directory: ~/build
-          no_output_timeout: 30m
-          command: cmd/test/ethereum --threads 8
+      - when:
+          condition: <<parameters.ethereum_tests>>
+          steps:
+            - run:
+                name: "Ethereum EL tests"
+                working_directory: ~/build
+                no_output_timeout: 30m
+                command: cmd/test/ethereum --threads 8
 
 jobs:
   lint:
@@ -187,15 +194,20 @@ jobs:
         type: string
       compiler_version:
         type: integer
+      ethereum_tests:
+        type: boolean
+        default: true
     machine:
       image: ubuntu-2204:2023.04.2
     resource_class: xlarge
     steps:
-      - checkout_with_submodules
+      - checkout_with_submodules:
+          ethereum_tests: <<parameters.ethereum_tests>>
       - build_using_conan:
           compiler_id: <<parameters.compiler_id>>
           compiler_version: <<parameters.compiler_version>>
-      - test
+      - test:
+          ethereum_tests: <<parameters.ethereum_tests>>
 
   linux-clang-address-sanitizer:
     environment:
@@ -339,12 +351,14 @@ workflows:
           name: linux-gcc-<<pipeline.parameters.gcc_version_latest>>-release
           compiler_id: gcc
           compiler_version: <<pipeline.parameters.gcc_version_latest>>
+          ethereum_tests: false
           requires:
             - lint
       - linux-release:
           name: linux-clang-<<pipeline.parameters.clang_version_latest>>-release
           compiler_id: clang
           compiler_version: <<pipeline.parameters.clang_version_latest>>
+          ethereum_tests: false
           requires:
             - lint
 

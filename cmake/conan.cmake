@@ -44,13 +44,6 @@ include("${CMAKE_SOURCE_DIR}/third_party/cmake-conan/conan.cmake")
 # provide a static conanfile.txt instead of generating it with conan_cmake_configure()
 file(COPY "${CMAKE_SOURCE_DIR}/conanfile.txt" DESTINATION "${CONAN_BINARY_DIR}")
 
-# use mpir instead of gmp on Windows
-if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-  file(READ "${CONAN_BINARY_DIR}/conanfile.txt" conanfile_contents)
-  string(REPLACE "gmp/6.2.1" "mpir/3.0.0" conanfile_contents "${conanfile_contents}")
-  file(WRITE "${CONAN_BINARY_DIR}/conanfile.txt" "${conanfile_contents}")
-endif()
-
 if(NOT DEFINED CONAN_PROFILE)
   guess_conan_profile()
 endif()

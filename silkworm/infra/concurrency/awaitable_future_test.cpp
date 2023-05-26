@@ -284,8 +284,8 @@ TEST_CASE("awaitable future") {
 
         io.run();
 
-        CHECK_THROWS_AS(promise.set_value(42), std::runtime_error);
-        CHECK(code == boost::asio::experimental::channel_errc::channel_cancelled);
+        CHECK(promise.set_value(42) == false);
+        CHECK(code == boost::system::errc::operation_canceled);
     }
 }
 

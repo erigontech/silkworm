@@ -66,6 +66,12 @@ class ROCursor {
     //! \brief Reuse current cursor binding it to provided transaction and map configuration
     virtual void bind(ROTxn& txn, const MapConfig& config) = 0;
 
+    //! \brief Returns the size of the underlying table
+    [[nodiscard]] virtual size_t size() const = 0;
+
+    //! \brief Returns whether the underlying table is empty
+    [[nodiscard]] bool empty() const { return size() == 0; }
+
     //! \brief Flag indicating if table is single-value or multi-value
     [[nodiscard]] virtual bool is_multi_value() const = 0;
 
@@ -79,8 +85,8 @@ class ROCursor {
     virtual CursorResult to_first(bool throw_notfound) = 0;
     virtual CursorResult to_previous() = 0;
     virtual CursorResult to_previous(bool throw_notfound) = 0;
-    virtual CursorResult current() const = 0;
-    virtual CursorResult current(bool throw_notfound) const = 0;
+    [[nodiscard]] virtual CursorResult current() const = 0;
+    [[nodiscard]] virtual CursorResult current(bool throw_notfound) const = 0;
     virtual CursorResult to_next() = 0;
     virtual CursorResult to_next(bool throw_notfound) = 0;
     virtual CursorResult to_last() = 0;
@@ -92,15 +98,15 @@ class ROCursor {
     virtual MoveResult move(MoveOperation operation, bool throw_notfound) = 0;
     virtual MoveResult move(MoveOperation operation, const Slice& key, bool throw_notfound) = 0;
     virtual bool seek(const Slice& key) = 0;
-    virtual bool eof() const = 0;
-    virtual bool on_first() const = 0;
-    virtual bool on_last() const = 0;
+    [[nodiscard]] virtual bool eof() const = 0;
+    [[nodiscard]] virtual bool on_first() const = 0;
+    [[nodiscard]] virtual bool on_last() const = 0;
 };
 
 //! \brief Read-only key-value cursor for multi-value tables
 class ROCursorDupSort : public virtual ROCursor {
   public:
-    virtual ~ROCursorDupSort() = default;
+    virtual ~ROCursorDupSort() = default;  // NOLINT(modernize-use-override)
 
     virtual CursorResult to_previous_last_multi() = 0;
     virtual CursorResult to_previous_last_multi(bool throw_notfound) = 0;
@@ -118,16 +124,16 @@ class ROCursorDupSort : public virtual ROCursor {
     virtual CursorResult find_multivalue(const Slice& key, const Slice& value, bool throw_notfound) = 0;
     virtual CursorResult lower_bound_multivalue(const Slice& key, const Slice& value) = 0;
     virtual CursorResult lower_bound_multivalue(const Slice& key, const Slice& value, bool throw_notfound) = 0;
-    virtual MoveResult move(MoveOperation operation, bool throw_notfound) = 0;
-    virtual MoveResult move(MoveOperation operation, const Slice& key, bool throw_notfound) = 0;
+    virtual MoveResult move(MoveOperation operation, bool throw_notfound) = 0;                    // NOLINT(modernize-use-override)
+    virtual MoveResult move(MoveOperation operation, const Slice& key, bool throw_notfound) = 0;  // NOLINT(modernize-use-override)
     virtual MoveResult move(MoveOperation operation, const Slice& key, const Slice& value, bool throw_notfound) = 0;
-    virtual std::size_t count_multivalue() const = 0;
+    [[nodiscard]] virtual std::size_t count_multivalue() const = 0;
 };
 
 //! \brief Read-write key-value cursor for single-value tables
 class RWCursor : public virtual ROCursor {
   public:
-    virtual ~RWCursor() = default;
+    virtual ~RWCursor() = default;  // NOLINT(modernize-use-override)
 
     virtual MDBX_error_t put(const Slice& key, Slice* value, MDBX_put_flags_t flags) noexcept = 0;
     virtual void insert(const Slice& key, Slice value) = 0;
@@ -147,16 +153,16 @@ class RWCursor : public virtual ROCursor {
 //! \brief Read-write key-value cursor for multi-value tables
 class RWCursorDupSort : public RWCursor, public ROCursorDupSort {
   public:
-    virtual ~RWCursorDupSort() = default;
+    virtual ~RWCursorDupSort() = default;  // NOLINT(modernize-use-override)
 
     //! \brief Remove all multi-values at the current cursor position.
-    virtual bool erase() = 0;
-    virtual bool erase(bool whole_multivalue) = 0;
+    virtual bool erase() = 0;                       // NOLINT(modernize-use-override)
+    virtual bool erase(bool whole_multivalue) = 0;  // NOLINT(modernize-use-override)
 
     //! \brief Seek and remove whole multi-value of the given key.
     //! \return true if the key is found and a value(s) is removed.
-    virtual bool erase(const Slice& key) = 0;
-    virtual bool erase(const Slice& key, bool whole_multivalue) = 0;
+    virtual bool erase(const Slice& key) = 0;                         // NOLINT(modernize-use-override)
+    virtual bool erase(const Slice& key, bool whole_multivalue) = 0;  // NOLINT(modernize-use-override)
 
     //! \brief Seek and remove the particular multi-value entry of the key.
     //! \return true if the given key-value pair is found and removed
@@ -193,11 +199,11 @@ class ROTxn {
     // Access to the underling raw mdbx transaction
     mdbx::txn& operator*() { return managed_txn_; }
     mdbx::txn* operator->() { return &managed_txn_; }
-    operator mdbx::txn&() { return managed_txn_; }
+    operator mdbx::txn&() { return managed_txn_; }  // NOLINT(google-explicit-constructor)
 
     [[nodiscard]] uint64_t id() const { return managed_txn_.id(); }
 
-    mdbx::env db() const { return managed_txn_.env(); }
+    [[nodiscard]] mdbx::env db() const { return managed_txn_.env(); }
 
     virtual std::unique_ptr<ROCursor> ro_cursor(const MapConfig& config);
     virtual std::unique_ptr<ROCursorDupSort> ro_cursor_dup_sort(const MapConfig& config);
@@ -378,10 +384,7 @@ class PooledCursor : public RWCursorDupSort, protected ::mdbx::cursor {
     [[nodiscard]] MDBX_db_flags_t get_map_flags() const;
 
     //! \brief Returns the size of the underlying table
-    [[nodiscard]] size_t size() const;
-
-    //! \brief Returns whether the underlying table is empty
-    [[nodiscard]] bool empty() const;
+    [[nodiscard]] size_t size() const override;
 
     using ::mdbx::cursor::operator bool;
 

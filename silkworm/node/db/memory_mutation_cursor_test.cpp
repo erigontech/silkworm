@@ -113,11 +113,15 @@ TEST_CASE("MemoryMutationCursor: initialization", "[silkworm][node][db][memory_m
 
         // Check initial state
         MemoryMutationCursor mutation_cursor1{test1.mutation, kTestMap};
-        CHECK_NOTHROW(!mutation_cursor1.is_table_cleared());
-        CHECK_NOTHROW(!mutation_cursor1.is_entry_deleted(Slice{}));
+        CHECK(mutation_cursor1.size() == 2);
+        CHECK(!mutation_cursor1.empty());
+        CHECK(!mutation_cursor1.is_table_cleared());
+        CHECK(!mutation_cursor1.is_entry_deleted(Slice{}));
         MemoryMutationCursor mutation_cursor2{test1.mutation, kTestMultiMap};
-        CHECK_NOTHROW(!mutation_cursor2.is_table_cleared());
-        CHECK_NOTHROW(!mutation_cursor2.is_entry_deleted(Slice{}));
+        CHECK(mutation_cursor2.size() == 4);
+        CHECK(!mutation_cursor2.empty());
+        CHECK(!mutation_cursor2.is_table_cleared());
+        CHECK(!mutation_cursor2.is_entry_deleted(Slice{}));
 
         // Create many cursors
         std::vector<std::unique_ptr<MemoryMutationCursor>> memory_cursors;
@@ -129,9 +133,9 @@ TEST_CASE("MemoryMutationCursor: initialization", "[silkworm][node][db][memory_m
         // Check predefined tables
         for (const auto& table : table::kChainDataTables) {
             MemoryMutationCursor mutation_cursor{test1.mutation, table};
-            CHECK_NOTHROW(has_map(test1.mutation, table.name));
-            CHECK_NOTHROW(!mutation_cursor.is_table_cleared());
-            CHECK_NOTHROW(!mutation_cursor.is_entry_deleted(Slice{}));
+            CHECK(has_map(test1.mutation, table.name));
+            CHECK(!mutation_cursor.is_table_cleared());
+            CHECK(!mutation_cursor.is_entry_deleted(Slice{}));
         }
     }
 

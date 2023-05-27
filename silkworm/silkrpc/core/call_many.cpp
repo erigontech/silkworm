@@ -117,24 +117,24 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
 
         rpc::Block blockContext{block_with_hash->block};
         std::cout << "***********  blockContext: " << blockContext << "\n";
-        nlohmann::json json = blockContext;
+        // nlohmann::json json = blockContext;
         if (block_override.block_number) {
             blockContext.block.header.number = block_override.block_number.value();
         }
-        // if (block_override.coin_base) {
-        //     blockContext.header.number = block_override.coin_base.value();
-        // }
+        if (block_override.coin_base) {
+            // blockContext.block.header.number = block_override.coin_base.value();
+        }
         if (block_override.timestamp) {
-            // blockContext.header.timestamp = block_override.timestamp.value();
+            blockContext.block.header.timestamp = block_override.timestamp.value();
         }
         if (block_override.difficulty) {
-            // blockContext.header.difficulty = block_override.difficulty.value();
+            blockContext.block.header.difficulty = block_override.difficulty.value();
         }
         if (block_override.gas_limit) {
-            // blockContext.header.gas_limit = block_override.gas_limit.value();
+            blockContext.block.header.gas_limit = block_override.gas_limit.value();
         }
         if (block_override.base_fee) {
-            // blockContext.header.base_fee_per_gas = block_override.base_fee;
+            blockContext.block.header.base_fee_per_gas = block_override.base_fee;
         }
         // block_hash
         std::cout << "***********  blockContext dopo override: " << blockContext << "\n";
@@ -157,12 +157,11 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
 
             nlohmann::json reply;
             if (execution_result.error_code == evmc_status_code::EVMC_SUCCESS) {
-                reply["value"] = "0x" + silkworm::to_hex(execution_result.data);
+                reply["value"] = /*"0x" + */silkworm::to_hex(execution_result.data);
             } else {
                 const auto error_message = EVMExecutor::get_error_message(execution_result.error_code, execution_result.data);
                 if (execution_result.data.empty()) {
-                    reply["error"]["code"] = -32000;
-                    reply["error"]["message"] = error_message;
+                    reply["error"] = error_message;
                 } else {
                     RevertError revert_error{3, error_message, execution_result.data};
                     reply = revert_error;

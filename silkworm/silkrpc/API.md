@@ -166,8 +166,8 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | ots_getBlockDetailsByHash                  | Yes          |                                            |
 | ots_getBlockTransactions                   | Yes          |                                            |
 | ots_hasCode                                | Yes          |                                            |
-| ots_traceTransaction                       | -            | not yet implemented                        |
-| ots_getTransactionError                    | -            | not yet implemented                        |
+| ots_traceTransaction                       | Yes          |                                            |
+| ots_getTransactionError                    | Yes          |                                            |
 | ots_getTransactionBySenderAndNonce         | Yes          |                                            |
 | ots_getContractCreator                     | Yes          |                                            |
 

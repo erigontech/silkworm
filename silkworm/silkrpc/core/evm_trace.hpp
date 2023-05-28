@@ -440,6 +440,7 @@ class TraceCallExecutor {
     boost::asio::awaitable<TraceDeployResult> trace_deploy_transaction(const silkworm::Block& block, const evmc::address& contract_address);
     boost::asio::awaitable<std::vector<Trace>> trace_transaction(const silkworm::BlockWithHash& block, const rpc::Transaction& transaction);
     boost::asio::awaitable<TraceEntriesResult> trace_transaction_entries(const TransactionWithBlock& transaction_with_block);
+    boost::asio::awaitable<std::string> trace_transaction_error(const TransactionWithBlock& transaction_with_block);
     boost::asio::awaitable<void> trace_filter(const TraceFilter& trace_filter, json::Stream* stream);
 
   private:

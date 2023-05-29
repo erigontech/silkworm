@@ -6122,7 +6122,7 @@ TEST_CASE("copy_memory") {
     silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     evmone::Memory memory;
-    for (std::size_t idx = 0; idx < 16; idx++) {
+    for (std::uint8_t idx = 0; idx < 16; idx++) {
         memory[idx] = idx;
     }
 

@@ -36,17 +36,6 @@ if(NOT SILKWORM_HAS_PARENT)
 
   include(cmake/conan.cmake)
 
-  if(NOT CONAN_PACKAGE_MANAGER)
-    set(HUNTER_CONFIG_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/config.cmake")
-
-    include(third_party/evmone/cmake/cable/HunterGate.cmake)
-    # https://github.com/cpp-pm/hunter/releases/
-    huntergate(
-      URL "https://github.com/cpp-pm/hunter/archive/v0.24.15.tar.gz"
-      SHA1 "8010d63d5ae611c564889d5fe12d3cb7a45703ac"
-      FILEPATH "${HUNTER_CONFIG_PATH}"
-    )
-  endif()
 endif()
 
 project(silkworm)
@@ -73,14 +62,6 @@ set(SILKWORM_MAIN_SRC_DIR "${SILKWORM_MAIN_DIR}/silkworm")
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler_settings.cmake)
 
-# Include dependencies handled by Hunter package manager
-if(NOT CONAN_PACKAGE_MANAGER)
-  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/core_packages.cmake)
-  if(NOT SILKWORM_CORE_ONLY)
-    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Hunter/extra_packages.cmake)
-  endif()
-endif()
-
 if(NOT SILKWORM_CORE_ONLY)
   # Silence CMake policy warnings in submodules
   set(CMAKE_POLICY_DEFAULT_CMP0048 NEW) # project() command manages VERSION variables
@@ -96,28 +77,7 @@ endif()
 
 add_subdirectory(third_party)
 
-# Compiler enforcements on Silkworm
-if(NOT MSVC)
-  add_compile_options(-Werror -Wall -Wextra -pedantic)
-  add_compile_options(-Wshadow -Wimplicit-fallthrough -Wsign-conversion)
-  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wold-style-cast>)
-  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wnon-virtual-dtor>)
-  add_compile_options(-Wno-missing-field-initializers)
-
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    add_compile_options(-Wno-attributes)
-
-    # coroutines support
-    if(NOT SILKWORM_WASM_API)
-      add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fcoroutines>)
-    endif()
-  endif()
-
-  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    add_compile_definitions(_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS)
-    add_compile_options(-Wthread-safety)
-  endif()
-endif()
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler_warnings.cmake)
 
 set(SILKWORM_STACK_SIZE 0x1000000)
 

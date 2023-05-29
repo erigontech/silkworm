@@ -19,9 +19,6 @@
 
 #pragma once
 
-#include <optional>
-#include <vector>
-
 #include <intx/intx.hpp>
 
 #include <silkworm/core/common/base.hpp>
@@ -39,7 +36,7 @@ inline constexpr uint8_t kEmptyListCode{0xC0};
 
 void encode_header(Bytes& to, Header header);
 
-void encode(Bytes& to, ByteView);
+void encode(Bytes& to, ByteView str);
 
 template <UnsignedIntegral T>
 void encode(Bytes& to, const T& n) {
@@ -54,8 +51,7 @@ void encode(Bytes& to, const T& n) {
     }
 }
 
-template <>
-void encode(Bytes& to, const bool&);
+void encode(Bytes& to, bool);
 
 size_t length_of_length(uint64_t payload_length) noexcept;
 
@@ -71,8 +67,7 @@ size_t length(const T& n) noexcept {
     }
 }
 
-template <>
-inline size_t length(const bool&) noexcept {
+inline size_t length(bool) noexcept {
     return 1;
 }
 

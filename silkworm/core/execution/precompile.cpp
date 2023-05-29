@@ -26,6 +26,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wconversion"
 #pragma GCC diagnostic ignored "-Wsign-conversion"
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pairing.hpp>
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pp.hpp>
@@ -147,11 +148,11 @@ uint64_t expmod_gas(ByteView input_view, evmc_revision rev) noexcept {
 
     intx::uint256 exp_head{0};  // first 32 bytes of the exponent
     if (input.length() > base_len64) {
-        input.erase(0, base_len64);
+        input.erase(0, static_cast<size_t>(base_len64));
         right_pad(input, 3 * 32);
         if (exp_len64 < 32) {
-            input.erase(exp_len64);
-            input.insert(0, 32 - exp_len64, '\0');
+            input.erase(static_cast<size_t>(exp_len64));
+            input.insert(0, 32 - static_cast<size_t>(exp_len64), '\0');
         }
         exp_head = intx::be::unsafe::load<intx::uint256>(input.data());
     }
@@ -202,27 +203,27 @@ std::optional<Bytes> expmod_run(ByteView input_view) noexcept {
         return Bytes{};
     }
 
-    right_pad(input, base_len + exponent_len + modulus_len);
+    right_pad(input, static_cast<size_t>(base_len + exponent_len + modulus_len));
 
     mpz_t base;
     mpz_init(base);
     if (base_len) {
         mpz_import(base, base_len, 1, 1, 0, 0, input.data());
-        input.erase(0, base_len);
+        input.erase(0, static_cast<size_t>(base_len));
     }
 
     mpz_t exponent;
     mpz_init(exponent);
     if (exponent_len) {
         mpz_import(exponent, exponent_len, 1, 1, 0, 0, input.data());
-        input.erase(0, exponent_len);
+        input.erase(0, static_cast<size_t>(exponent_len));
     }
 
     mpz_t modulus;
     mpz_init(modulus);
     mpz_import(modulus, modulus_len, 1, 1, 0, 0, input.data());
 
-    Bytes out(modulus_len, 0);
+    Bytes out(static_cast<size_t>(modulus_len), 0);
 
     if (mpz_sgn(modulus) == 0) {
         mpz_clear(modulus);

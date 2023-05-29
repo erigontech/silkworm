@@ -23,7 +23,7 @@
 
 #include <boost/asio/awaitable.hpp>
 
-namespace silkworm::sentry::common::concurrency {
+namespace silkworm::concurrency {
 
 boost::asio::awaitable<void> timeout(std::chrono::milliseconds duration);
 
@@ -32,4 +32,4 @@ class TimeoutExpiredError : public std::runtime_error {
     TimeoutExpiredError() : std::runtime_error("Timeout has expired") {}
 };
 
-}  // namespace silkworm::sentry::common::concurrency
+}  // namespace silkworm::concurrency

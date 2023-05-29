@@ -171,6 +171,11 @@ class DummyTransaction : public ethdb::Transaction {
         co_return cursor;
     }
 
+    std::shared_ptr<silkworm::State> create_state(boost::asio::io_context& /* io_context */, const core::rawdb::DatabaseReader& /* db_reader */,
+                                                  uint64_t /* block_number */) override {
+        return nullptr;
+    }
+
     boost::asio::awaitable<void> close() override {
         co_return;
     }
@@ -286,14 +291,14 @@ TEST_CASE("account dumper") {
     evmc::bytes32 code_hash_3 = 0x925fa7384049febb1eddca32821f1f1d709687628c1cf77ef40ca5013d04bdef_bytes32;
 
     SECTION("1 result, exclude code and storage") {
-        uint64_t max_result = 1;
+        int16_t max_result = 1;
         bool exclude_code = true;
         bool exclude_storage = true;
         auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
         const DumpAccounts& da = result.get();
 
         CHECK(da.root == root);
-        CHECK(da.accounts.size() == max_result);
+        CHECK(da.accounts.size() == static_cast<size_t>(max_result));
 
         CHECK(da.accounts.find(address_1) != da.accounts.end());
 
@@ -308,14 +313,14 @@ TEST_CASE("account dumper") {
     }
 
     SECTION("2 result, exclude code and storage") {
-        uint64_t max_result = 2;
+        int16_t max_result = 2;
         bool exclude_code = true;
         bool exclude_storage = true;
         auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
         const DumpAccounts& da = result.get();
 
         CHECK(da.root == root);
-        CHECK(da.accounts.size() == max_result);
+        CHECK(da.accounts.size() == static_cast<size_t>(max_result));
 
         CHECK(da.accounts.find(address_1) != da.accounts.end());
         auto account = da.accounts.at(address_1);
@@ -339,14 +344,14 @@ TEST_CASE("account dumper") {
     }
 
     SECTION("3 result, exclude code and storage") {
-        uint64_t max_result = 3;
+        int16_t max_result = 3;
         bool exclude_code = true;
         bool exclude_storage = true;
         auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
         const DumpAccounts& da = result.get();
 
         CHECK(da.root == root);
-        CHECK(da.accounts.size() == max_result);
+        CHECK(da.accounts.size() == static_cast<size_t>(max_result));
 
         CHECK(da.accounts.find(address_1) != da.accounts.end());
         auto account = da.accounts.at(address_1);
@@ -380,14 +385,14 @@ TEST_CASE("account dumper") {
     }
 
     SECTION("1 result, include code exclude storage") {
-        uint64_t max_result = 1;
+        int16_t max_result = 1;
         bool exclude_code = false;
         bool exclude_storage = true;
         auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
         const DumpAccounts& da = result.get();
 
         CHECK(da.root == root);
-        CHECK(da.accounts.size() == max_result);
+        CHECK(da.accounts.size() == static_cast<size_t>(max_result));
 
         CHECK(da.accounts.find(address_1) != da.accounts.end());
 
@@ -402,14 +407,14 @@ TEST_CASE("account dumper") {
     }
 
     SECTION("2 result, include code exclude storage") {
-        uint64_t max_result = 2;
+        int16_t max_result = 2;
         bool exclude_code = false;
         bool exclude_storage = true;
         auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
         const DumpAccounts& da = result.get();
 
         CHECK(da.root == root);
-        CHECK(da.accounts.size() == max_result);
+        CHECK(da.accounts.size() == static_cast<size_t>(max_result));
 
         CHECK(da.accounts.find(address_1) != da.accounts.end());
         auto account = da.accounts.at(address_1);
@@ -434,14 +439,14 @@ TEST_CASE("account dumper") {
     }
 
     SECTION("3 result, include code exclude storage") {
-        uint64_t max_result = 3;
+        int16_t max_result = 3;
         bool exclude_code = false;
         bool exclude_storage = true;
         auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
         const DumpAccounts& da = result.get();
 
         CHECK(da.root == root);
-        CHECK(da.accounts.size() == max_result);
+        CHECK(da.accounts.size() == static_cast<size_t>(max_result));
 
         CHECK(da.accounts.find(address_1) != da.accounts.end());
         auto account = da.accounts.at(address_1);
@@ -476,14 +481,14 @@ TEST_CASE("account dumper") {
     }
 
     SECTION("1 result, include code and storage") {
-        uint64_t max_result = 1;
+        int16_t max_result = 1;
         bool exclude_code = false;
         bool exclude_storage = false;
         auto result = boost::asio::co_spawn(pool, ad.dump_accounts(block_cache, bnoh, start_address, max_result, exclude_code, exclude_storage), boost::asio::use_future);
         const DumpAccounts& da = result.get();
 
         CHECK(da.root == root);
-        CHECK(da.accounts.size() == max_result);
+        CHECK(da.accounts.size() == static_cast<size_t>(max_result));
 
         CHECK(da.accounts.find(address_1) != da.accounts.end());
 

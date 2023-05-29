@@ -72,14 +72,14 @@ class MultiSentryClientImpl : public api::api_common::Service {
         auto group_wait = group.async_wait(wait_for_one_error(), use_awaitable);
 
         try {
-            auto results = co_await (std::move(group_wait) || common::concurrency::timeout(timeout));
+            auto results = co_await (std::move(group_wait) || concurrency::timeout(timeout));
 
             // std::vector<size_t> order;
             // std::vector<std::exception_ptr> exceptions;
             auto [order, exceptions] = std::get<0>(std::move(results));
 
             concurrency::rethrow_first_exception_if_any(exceptions, order);
-        } catch (const common::concurrency::TimeoutExpiredError&) {
+        } catch (const concurrency::TimeoutExpiredError&) {
         }
     }
 

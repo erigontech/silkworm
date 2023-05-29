@@ -19,7 +19,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include <silkworm/core/rlp/decode.hpp>
+#include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 

@@ -50,6 +50,8 @@ class BackEndMock : public ethbackend::BackEnd {  // NOLINT
     MOCK_METHOD((awaitable<ExecutionPayloadAndValue>), engine_get_payload, (uint64_t));
     MOCK_METHOD((awaitable<PayloadStatus>), engine_new_payload, (const ExecutionPayload&));
     MOCK_METHOD((awaitable<ForkChoiceUpdatedReply>), engine_forkchoice_updated, (const ForkChoiceUpdatedRequest&));
+    MOCK_METHOD((awaitable<ExecutionPayloadBodies>), engine_get_payload_bodies_by_hash, (const std::vector<Hash>&));
+    MOCK_METHOD((awaitable<ExecutionPayloadBodies>), engine_get_payload_bodies_by_range, (BlockNum start, uint64_t count));
     MOCK_METHOD((awaitable<NodeInfos>), engine_node_info, ());
     MOCK_METHOD((awaitable<PeerInfos>), peers, ());
 };
@@ -70,6 +72,11 @@ namespace {
 
         awaitable<std::shared_ptr<ethdb::CursorDupSort>> cursor_dup_sort(const std::string& /*table*/) override {
             co_return nullptr;
+        }
+
+        std::shared_ptr<silkworm::State> create_state(boost::asio::io_context& /* io_context */, const core::rawdb::DatabaseReader& /* db_reader */,
+                                                      uint64_t /* block_number */) override {
+            return nullptr;
         }
 
         awaitable<void> close() override { co_return; }
@@ -203,8 +210,13 @@ TEST_CASE_METHOD(EngineRpcApiTest, "EngineRpcApi::handle_engine_exchange_capabil
                 "jsonrpc":"2.0",
                 "result":[
                     "engine_newPayloadV1",
+                    "engine_newPayloadV2",
                     "engine_forkchoiceUpdatedV1",
+                    "engine_forkchoiceUpdatedV2",
                     "engine_getPayloadV1",
+                    "engine_getPayloadV2",
+                    "engine_getPayloadBodiesByHashV1",
+                    "engine_getPayloadBodiesByRangeV1",
                     "engine_exchangeTransitionConfigurationV1"
                 ]
         })"_json);

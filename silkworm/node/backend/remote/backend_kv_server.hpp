@@ -29,7 +29,7 @@ namespace silkworm::rpc {
 
 class BackEndKvServer : public Server {
   public:
-    BackEndKvServer(const ServerConfig& srv_config, const EthereumBackEnd& backend);
+    BackEndKvServer(const ServerSettings& settings, const EthereumBackEnd& backend);
 
     BackEndKvServer(const BackEndKvServer&) = delete;
     BackEndKvServer& operator=(const BackEndKvServer&) = delete;

@@ -109,8 +109,7 @@ namespace rlp {
 
     size_t length(const Transaction&, bool wrap_eip2718_into_string = true);
 
-    template <>
-    DecodingResult decode(ByteView& from, AccessListEntry& to) noexcept;
+    DecodingResult decode(ByteView& from, AccessListEntry& to, Leftover mode = Leftover::kProhibit) noexcept;
 
     enum class Eip2718Wrapping {
         kNone,    // Serialized typed transactions must start with its type byte, e.g. 0x02
@@ -118,12 +117,11 @@ namespace rlp {
         kBoth,    // Both options above are accepted
     };
 
-    DecodingResult decode_transaction(ByteView& from, Transaction& to,
-                                      Eip2718Wrapping accepted_typed_txn_wrapping) noexcept;
+    DecodingResult decode_transaction(ByteView& from, Transaction& to, Eip2718Wrapping accepted_typed_txn_wrapping,
+                                      Leftover mode = Leftover::kProhibit) noexcept;
 
-    template <>
-    inline DecodingResult decode(ByteView& from, Transaction& to) noexcept {
-        return decode_transaction(from, to, Eip2718Wrapping::kString);
+    inline DecodingResult decode(ByteView& from, Transaction& to, Leftover mode = Leftover::kProhibit) noexcept {
+        return decode_transaction(from, to, Eip2718Wrapping::kString, mode);
     }
 
     DecodingResult decode_transaction_header_and_type(ByteView& from, Header& header, TransactionType& type) noexcept;

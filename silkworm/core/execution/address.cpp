@@ -29,7 +29,7 @@ evmc::address create_address(const evmc::address& caller, uint64_t nonce) noexce
 
     Bytes rlp{};
     rlp::encode_header(rlp, h);
-    rlp::encode(rlp, caller.bytes);
+    rlp::encode(rlp, caller);
     rlp::encode(rlp, nonce);
 
     ethash::hash256 hash{keccak256(rlp)};

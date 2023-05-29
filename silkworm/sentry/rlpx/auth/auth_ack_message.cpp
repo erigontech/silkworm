@@ -18,7 +18,7 @@
 
 #include <stdexcept>
 
-#include <silkworm/core/rlp/decode.hpp>
+#include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/sentry/common/random.hpp>
@@ -53,8 +53,10 @@ Bytes AuthAckMessage::body_as_rlp() const {
 
 void AuthAckMessage::init_from_rlp(ByteView data) {
     Bytes public_key_data;
-    success_or_throw(rlp::decode(data, public_key_data, nonce_),
-                     "Failed to decode AuthAckMessage RLP");
+    auto result = rlp::decode(data, rlp::Leftover::kAllow, public_key_data, nonce_);
+    if (!result && (result.error() != DecodingError::kUnexpectedListElements)) {
+        throw DecodingException(result.error(), "Failed to decode AuthAckMessage RLP");
+    }
     ephemeral_public_key_ = common::EccPublicKey::deserialize(public_key_data);
 }
 

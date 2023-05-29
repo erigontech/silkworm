@@ -140,7 +140,7 @@ void to_hex(std::span<char> hex_bytes, silkworm::ByteView bytes);
 
 nlohmann::json make_json_content(uint32_t id);
 nlohmann::json make_json_content(uint32_t id, const nlohmann::json& result);
-nlohmann::json make_json_error(uint32_t id, int64_t code, const std::string& message);
+nlohmann::json make_json_error(uint32_t id, int code, const std::string& message);
 nlohmann::json make_json_error(uint32_t id, const RevertError& error);
 
 // GLAZE

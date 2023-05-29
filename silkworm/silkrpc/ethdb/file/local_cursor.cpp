@@ -25,7 +25,7 @@ boost::asio::awaitable<void> LocalCursor::open_cursor(const std::string& table_n
     const auto start_time = clock_time::now();
     SILK_DEBUG << "LocalCursor::open_cursor opening new cursor for table: " << table_name;
     // table_name name must be a valid MDBX map name
-    if (!silkworm::db::has_map(read_only_txn_, table_name.c_str())) {
+    if (!silkworm::db::has_map(txn_, table_name.c_str())) {
         const auto error_message = "unknown table: " + table_name;
         SILK_ERROR << "open_cursor !has_map: " << table_name << " " << is_dup_sorted << error_message;
         throw std::runtime_error(error_message);

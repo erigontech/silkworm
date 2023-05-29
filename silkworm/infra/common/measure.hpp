@@ -74,7 +74,7 @@ class RepeatedMeasure {
     double high_res_throughput() {
         auto nano_elapsed = static_cast<unsigned long>(high_res_elapsed().count());
         if (nano_elapsed == 0) nano_elapsed = 1;
-        return delta() / static_cast<double>(nano_elapsed);
+        return static_cast<double>(delta()) / static_cast<double>(nano_elapsed);
     }
 
     template <typename DURATION = Duration>
@@ -82,7 +82,9 @@ class RepeatedMeasure {
         auto nano_elapsed = static_cast<unsigned long>(high_res_elapsed().count());
         if (nano_elapsed == 0) nano_elapsed = 1;
         using conversion = std::ratio_divide<std::nano, typename DURATION::period>;
-        return (delta() / static_cast<double>(nano_elapsed)) * conversion::den / conversion::num;
+        auto res_num = static_cast<double>(delta()) * static_cast<double>(conversion::den);
+        auto res_den = static_cast<double>(nano_elapsed) * static_cast<double>(conversion::num);
+        return res_num / res_den;
     }
 
     std::chrono::seconds elapsed() {

@@ -7,9 +7,6 @@
 [submodule "cbor-cpp"]
 	path = third_party/cbor-cpp
 	url = https://github.com/torquem-ch/cbor-cpp.git
-[submodule "CRoaring"]
-	path = third_party/CRoaring
-	url = https://github.com/RoaringBitmap/CRoaring.git
 [submodule "magic_enum"]
 	path = third_party/magic_enum
 	url = https://github.com/Neargye/magic_enum.git
@@ -23,9 +20,6 @@
 [submodule "third_party/libtorrent"]
 	path = third_party/libtorrent
 	url = https://github.com/arvidn/libtorrent
-[submodule "third_party/gmplib"]
-	path = third_party/gmplib
-	url = https://github.com/torquem-ch/gmp-wasm.git
 [submodule "third_party/stbrumme-crc32"]
 	path = third_party/stbrumme-crc32
 	url = https://github.com/battlmonstr/stbrumme-crc32.git
@@ -57,6 +51,3 @@
 [submodule "third_party/ethash"]
 	path = third_party/ethash
 	url = https://github.com/chfast/ethash.git
-[submodule "third_party/mimalloc"]
-	path = third_party/mimalloc
-	url = https://github.com/microsoft/mimalloc

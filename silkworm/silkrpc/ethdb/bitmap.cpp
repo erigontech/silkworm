@@ -22,6 +22,7 @@
 #include <vector>
 
 #include <boost/endian/conversion.hpp>
+#include <gsl/narrow>
 
 #include <silkworm/infra/common/log.hpp>
 
@@ -66,7 +67,7 @@ awaitable<Roaring> get(core::rawdb::DatabaseReader& db_reader, const std::string
         auto block = boost::endian::load_big_u32(&k[k.size() - sizeof(uint32_t)]);
         return block < to_block;
     };
-    co_await db_reader.walk(table, from_key, key.size() * CHAR_BIT, walker);
+    co_await db_reader.walk(table, from_key, gsl::narrow<uint32_t>(key.size() * CHAR_BIT), walker);
 
     auto result{fast_or(chunks.size(), chunks)};
     SILK_DEBUG << "result: " << result.toString();
@@ -83,7 +84,7 @@ awaitable<Roaring> from_topics(core::rawdb::DatabaseReader& db_reader, const std
         for (auto topic : subtopics) {
             silkworm::Bytes topic_key{std::begin(topic.bytes), std::end(topic.bytes)};
             SILK_TRACE << "topic: " << topic << " topic_key: " << silkworm::to_hex(topic);
-            auto bitmap = co_await ethdb::bitmap::get(db_reader, table, topic_key, start, end);
+            auto bitmap = co_await ethdb::bitmap::get(db_reader, table, topic_key, gsl::narrow<uint32_t>(start), gsl::narrow<uint32_t>(end));
             SILK_TRACE << "bitmap: " << bitmap.toString();
             subtopic_bitmap |= bitmap;
             SILK_TRACE << "subtopic_bitmap: " << subtopic_bitmap.toString();
@@ -106,7 +107,7 @@ awaitable<Roaring> from_addresses(core::rawdb::DatabaseReader& db_reader, const 
     roaring::Roaring result_bitmap;
     for (auto address : addresses) {
         silkworm::Bytes address_key{std::begin(address.bytes), std::end(address.bytes)};
-        auto bitmap = co_await ethdb::bitmap::get(db_reader, table, address_key, start, end);
+        auto bitmap = co_await ethdb::bitmap::get(db_reader, table, address_key, gsl::narrow<uint32_t>(start), gsl::narrow<uint32_t>(end));
         SILK_TRACE << "bitmap: " << bitmap.toString();
         result_bitmap |= bitmap;
     }

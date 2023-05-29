@@ -49,8 +49,13 @@ awaitable<void> EngineRpcApi::handle_engine_exchange_capabilities(  // NOLINT(re
     SILK_DEBUG << "RemoteBackEnd::engine_exchange_capabilities consensus layer capabilities: " << cl_capabilities;
     const Capabilities el_capabilities{
         "engine_newPayloadV1",
+        "engine_newPayloadV2",
         "engine_forkchoiceUpdatedV1",
+        "engine_forkchoiceUpdatedV2",
         "engine_getPayloadV1",
+        "engine_getPayloadV2",
+        "engine_getPayloadBodiesByHashV1",
+        "engine_getPayloadBodiesByRangeV1",
         "engine_exchangeTransitionConfigurationV1",
     };
     SILK_DEBUG << "RemoteBackEnd::engine_exchange_capabilities execution layer capabilities: " << el_capabilities;
@@ -92,6 +97,12 @@ awaitable<void> EngineRpcApi::handle_engine_get_payload_v1(const nlohmann::json&
 
 // https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#engine_getpayloadv2
 awaitable<void> EngineRpcApi::handle_engine_get_payload_v2(const nlohmann::json& request, nlohmann::json& reply) {
+    if (!request.contains("params")) {
+        auto error_msg = "missing value for required argument 0";
+        SILK_ERROR << error_msg << request.dump();
+        reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+        co_return;
+    }
     const auto& params = request.at("params");
     if (params.size() != 1) {
         auto error_msg = "invalid engine_getPayloadV2 params: " + params.dump();
@@ -116,6 +127,88 @@ awaitable<void> EngineRpcApi::handle_engine_get_payload_v2(const nlohmann::json&
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
         // TODO(canepat) the error code should be kServerError here: application-level errors should come from BackEnd
         reply = make_json_error(request["id"], kUnknownPayload, "unexpected exception");
+    }
+}
+
+// https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#engine_getpayloadbodiesbyhashv1
+awaitable<void> EngineRpcApi::handle_engine_get_payload_bodies_by_hash_v1(const nlohmann::json& request, nlohmann::json& reply) {
+    if (!request.contains("params")) {
+        auto error_msg = "missing value for required argument 0";
+        SILK_ERROR << error_msg << request.dump();
+        reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+        co_return;
+    }
+    const auto& params = request.at("params");
+    if (params.size() != 1) {
+        auto error_msg = "invalid engine_getPayloadBodiesByHashV1 params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+        co_return;
+    }
+
+    try {
+        const auto block_hashes = params[0].get<std::vector<Hash>>();
+        // We MUST support at least 32 block hashes and MUST check if number is too large for us [Specification 3.]
+        if (block_hashes.size() > 32) {
+            const auto error_msg = "number of block hashes > 32 is too large";
+            SILK_ERROR << error_msg;
+            reply = make_json_error(request.at("id"), kTooLargeRequest, error_msg);
+        }
+        const auto payload_bodies = co_await backend_->engine_get_payload_bodies_by_hash(block_hashes);
+        reply = make_json_content(request["id"], payload_bodies);
+    } catch (const boost::system::system_error& se) {
+        SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
+        reply = make_json_error(request["id"], se.code().value(), se.code().message());
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request["id"], kInternalError, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        reply = make_json_error(request["id"], kServerError, "unexpected exception");
+    }
+}
+
+// https://github.com/ethereum/execution-apis/blob/main/src/engine/shanghai.md#engine_getpayloadbodiesbyrangev1
+awaitable<void> EngineRpcApi::handle_engine_get_payload_bodies_by_range_v1(const nlohmann::json& request, nlohmann::json& reply) {
+    if (!request.contains("params")) {
+        auto error_msg = "missing value for required argument 0";
+        SILK_ERROR << error_msg << request.dump();
+        reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+        co_return;
+    }
+    const auto& params = request.at("params");
+    if (params.size() != 2) {
+        auto error_msg = "invalid engine_getPayloadBodiesByRangeV1 params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+        co_return;
+    }
+
+    try {
+        const auto start = from_quantity(params[0].get<std::string>());
+        const auto count = from_quantity(params[1].get<std::string>());
+        if (count == 0) {
+            const auto error_msg = "count 0 is invalid";
+            SILK_ERROR << error_msg;
+            reply = make_json_error(request.at("id"), kInvalidParams, error_msg);
+        }
+        // We MUST support count values of at least 32 and MUST check if number is too large for us [Specification 2.]
+        if (count > 32) {
+            const auto error_msg = "count value > 32 is too large";
+            SILK_ERROR << error_msg;
+            reply = make_json_error(request.at("id"), kTooLargeRequest, error_msg);
+        }
+        const auto payload_bodies = co_await backend_->engine_get_payload_bodies_by_range(start, count);
+        reply = make_json_content(request["id"], payload_bodies);
+    } catch (const boost::system::system_error& se) {
+        SILK_ERROR << "error: \"" << se.code().message() << "\" processing request: " << request.dump();
+        reply = make_json_error(request["id"], se.code().value(), se.code().message());
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request["id"], kInternalError, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        reply = make_json_error(request["id"], kServerError, "unexpected exception");
     }
 }
 

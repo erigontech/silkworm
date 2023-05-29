@@ -16,14 +16,11 @@
 
 find_package(absl REQUIRED)
 find_package(asio-grpc REQUIRED)
-if(CONAN_PACKAGE_MANAGER)
-  find_package(Boost REQUIRED container thread)
-else()
-  find_package(Boost CONFIG REQUIRED container thread)
-endif()
+find_package(Boost REQUIRED container thread)
 find_package(gRPC REQUIRED)
 find_package(jwt-cpp REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(roaring REQUIRED)
 
 # Silkrpc library
 file(
@@ -55,7 +52,7 @@ set(SILKRPC_PUBLIC_LIBRARIES
     intx::intx
 )
 
-set(SILKRPC_PRIVATE_LIBRARIES evmc::instructions)
+set(SILKRPC_PRIVATE_LIBRARIES evmc::instructions roaring::roaring)
 
 add_library(silkrpc "${SILKRPC_SRC}")
 

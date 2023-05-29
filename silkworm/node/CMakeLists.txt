@@ -16,14 +16,11 @@
 
 find_package(absl REQUIRED)
 find_package(asio-grpc REQUIRED)
-if(CONAN_PACKAGE_MANAGER)
-  find_package(Boost REQUIRED container thread)
-else()
-  find_package(Boost CONFIG REQUIRED container thread)
-endif()
+find_package(Boost REQUIRED container thread)
 find_package(nlohmann_json REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(Protobuf REQUIRED)
+find_package(roaring REQUIRED)
 
 # Generate source files containing snapshot TOML files as binary data
 set(SILKWORM_EMBED embed)
@@ -109,7 +106,7 @@ set(SILKWORM_NODE_PUBLIC_LIBS
     mdbx-static
     nlohmann_json::nlohmann_json
     protobuf::libprotobuf
-    roaring
+    roaring::roaring
     torrent-rasterbar
 )
 

@@ -31,13 +31,6 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   # is solved by this (issue only for MVC)
   add_definitions(-DBOOST_DATE_TIME_NO_LIB)
 
-  # Abseil triggers some deprecation warnings
-  add_compile_definitions(_SILENCE_CXX17_OLD_ALLOCATOR_MEMBERS_DEPRECATION_WARNING)
-  add_compile_definitions(_SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING)
-  add_compile_definitions(_SILENCE_CXX20_IS_POD_DEPRECATION_WARNING)
-
-  # And gRPC too ...
-  add_compile_definitions(_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING)
 
   add_compile_options(/MP)            # Enable parallel compilation
   add_compile_options(/EHa)           # Enable standard C++ unwinding
@@ -50,20 +43,11 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   https://youtrack.jetbrains.com/issue/CPP-20259?_ga=2.92522975.312527487.1632161219-1027977455.1629393843&_gac=1.251211380.1631446966.CjwKCAjwyvaJBhBpEiwA8d38vIMQB8b0QfoFeQR5Mf4LHU50RFx3CWeeNzVeCrDOr1QcnfCpUPbFTBoCLEYQAvD_BwE
   ]]
   add_compile_options(/diagnostics:classic)
-
-  add_compile_options(/wd4127) # Silence warnings about "conditional expression is constant" (abseil mainly)
-  add_compile_options(/wd5030) # Silence warnings about GNU attributes
-  add_compile_options(/wd4324) # Silence warning C4324: 'xxx': structure was padded due to alignment specifier
-  add_compile_options(/wd4068) # Silence warning C4068: unknown pragma
-  add_compile_options(/wd5030) # Silence warning C5030: unknown gnu/clang attribute
-  add_compile_options(/W4)     # Display all other un-silenced warnings
   add_compile_options(/bigobj) # Increase .obj sections, needed for hard coded pre-verified hashes
 
   # Required for proper detection of __cplusplus
   # see https://docs.microsoft.com/en-us/cpp/build/reference/zc-cplusplus?view=msvc-160
   add_compile_options(/Zc:__cplusplus)
-
-  add_link_options(/ignore:4099)
 
   if(CMAKE_BUILD_TYPE MATCHES "Release")
     add_compile_options(/GL)                                                  # Enable LTCG for faster builds
@@ -85,9 +69,10 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
     add_compile_options(-g1)
   endif()
 
-  # gcc can issue bogus -Wmaybe-uninitialized warnings with std::optional
-  # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=80635
-  add_compile_options(-Wno-error=maybe-uninitialized)
+  # coroutines support
+  if(NOT SILKWORM_WASM_API)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fcoroutines>)
+  endif()
 
 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$")
 
@@ -123,4 +108,11 @@ if(SILKWORM_SANITIZE)
   add_compile_options(${SILKWORM_SANITIZE_COMPILER_OPTIONS})
   add_link_options(${SILKWORM_SANITIZE_COMPILER_OPTIONS})
   add_definitions(-DSILKWORM_SANITIZE)
+
+  # asio is using atomic_thread_fence in asio::detail::std_fenced_block, unsupported on GCC with thread sanitizer. See:
+  # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=97868
+  # https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wtsan
+  if("${SILKWORM_SANITIZE}" STREQUAL "thread" AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
+    add_compile_options(-Wno-error=tsan)
+  endif()
 endif()

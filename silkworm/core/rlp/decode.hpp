@@ -22,7 +22,6 @@
 #include <array>
 #include <cstring>
 #include <span>
-#include <vector>
 
 #include <intx/intx.hpp>
 
@@ -32,21 +31,23 @@
 
 namespace silkworm::rlp {
 
-// Consumes RLP header unless it's a single byte in the [0x00, 0x7f] range,
+// Whether to allow or prohibit trailing characters in an input after decoding.
+// If prohibited and the input does contain extra characters, decode() returns DecodingResult::kInputTooLong.
+enum class Leftover {
+    kProhibit,
+    kAllow,
+};
+
+// Consumes an RLP header unless it's a single byte in the [0x00, 0x7f] range,
 // in which case the byte is put back.
 [[nodiscard]] tl::expected<Header, DecodingError> decode_header(ByteView& from) noexcept;
 
-template <class T>
-DecodingResult decode(ByteView& from, T& to) noexcept;
+DecodingResult decode(ByteView& from, evmc::bytes32& to, Leftover mode = Leftover::kProhibit) noexcept;
 
-template <>
-DecodingResult decode(ByteView& from, evmc::bytes32& to) noexcept;
-
-template <>
-DecodingResult decode(ByteView& from, Bytes& to) noexcept;
+DecodingResult decode(ByteView& from, Bytes& to, Leftover mode = Leftover::kProhibit) noexcept;
 
 template <UnsignedIntegral T>
-DecodingResult decode(ByteView& from, T& to) noexcept {
+DecodingResult decode(ByteView& from, T& to, Leftover mode = Leftover::kProhibit) noexcept {
     const auto h{decode_header(from)};
     if (!h) {
         return tl::unexpected{h.error()};
@@ -55,17 +56,19 @@ DecodingResult decode(ByteView& from, T& to) noexcept {
         return tl::unexpected{DecodingError::kUnexpectedList};
     }
     if (DecodingResult res{endian::from_big_compact(from.substr(0, h->payload_length), to)}; !res) {
-        return tl::unexpected{res.error()};
+        return res;
     }
     from.remove_prefix(h->payload_length);
+    if (mode != Leftover::kAllow && !from.empty()) {
+        return tl::unexpected{DecodingError::kInputTooLong};
+    }
     return {};
 }
 
-template <>
-DecodingResult decode(ByteView& from, bool& to) noexcept;
+DecodingResult decode(ByteView& from, bool& to, Leftover mode = Leftover::kProhibit) noexcept;
 
 template <size_t N>
-DecodingResult decode(ByteView& from, std::span<uint8_t, N> to) noexcept {
+DecodingResult decode(ByteView& from, std::span<uint8_t, N> to, Leftover mode = Leftover::kProhibit) noexcept {
     static_assert(N != std::dynamic_extent);
 
     const auto h{decode_header(from)};
@@ -81,69 +84,20 @@ DecodingResult decode(ByteView& from, std::span<uint8_t, N> to) noexcept {
 
     std::memcpy(to.data(), from.data(), N);
     from.remove_prefix(N);
+    if (mode != Leftover::kAllow && !from.empty()) {
+        return tl::unexpected{DecodingError::kInputTooLong};
+    }
     return {};
 }
 
 template <size_t N>
-DecodingResult decode(ByteView& from, uint8_t (&to)[N]) noexcept {
-    return decode<N>(from, std::span<uint8_t, N>{to});
+DecodingResult decode(ByteView& from, uint8_t (&to)[N], Leftover mode = Leftover::kProhibit) noexcept {
+    return decode<N>(from, std::span<uint8_t, N>{to}, mode);
 }
 
 template <size_t N>
-DecodingResult decode(ByteView& from, std::array<uint8_t, N>& to) noexcept {
-    return decode<N>(from, std::span<uint8_t, N>{to});
-}
-
-template <class T>
-DecodingResult decode(ByteView& from, std::vector<T>& to) noexcept {
-    const auto h{decode_header(from)};
-    if (!h) {
-        return tl::unexpected{h.error()};
-    }
-    if (!h->list) {
-        return tl::unexpected{DecodingError::kUnexpectedString};
-    }
-
-    to.clear();
-
-    ByteView payload_view{from.substr(0, h->payload_length)};
-    while (!payload_view.empty()) {
-        to.emplace_back();
-        if (DecodingResult res{decode(payload_view, to.back())}; !res) {
-            return tl::unexpected{res.error()};
-        }
-    }
-
-    from.remove_prefix(h->payload_length);
-    return {};
-}
-
-template <typename Arg1, typename Arg2>
-DecodingResult decode_items(ByteView& from, Arg1& arg1, Arg2& arg2) noexcept {
-    if (DecodingResult res{decode(from, arg1)}; !res) {
-        return tl::unexpected{res.error()};
-    }
-    return decode(from, arg2);
-}
-
-template <typename Arg1, typename Arg2, typename... Args>
-DecodingResult decode_items(ByteView& from, Arg1& arg1, Arg2& arg2, Args&... args) noexcept {
-    if (DecodingResult res{decode(from, arg1)}; !res) {
-        return tl::unexpected{res.error()};
-    }
-    return decode_items(from, arg2, args...);
-}
-
-template <typename Arg1, typename Arg2, typename... Args>
-DecodingResult decode(ByteView& from, Arg1& arg1, Arg2& arg2, Args&... args) noexcept {
-    const auto header{decode_header(from)};
-    if (!header) {
-        return tl::unexpected{header.error()};
-    }
-    if (!header->list) {
-        return tl::unexpected{DecodingError::kUnexpectedString};
-    }
-    return decode_items(from, arg1, arg2, args...);
+DecodingResult decode(ByteView& from, std::array<uint8_t, N>& to, Leftover mode = Leftover::kProhibit) noexcept {
+    return decode<N>(from, std::span<uint8_t, N>{to}, mode);
 }
 
 }  // namespace silkworm::rlp

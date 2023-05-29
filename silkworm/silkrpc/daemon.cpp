@@ -68,14 +68,16 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
     if (!are_settings_valid) {
         return -1;
     }
+    auto& log_settings = settings.log_settings;
+    auto& context_pool_settings = settings.context_pool_settings;
 
-    log::set_verbosity(settings.log_verbosity);
+    log::set_verbosity(log_settings.log_verbosity);
     log::set_thread_name("main-thread");
 
     auto mdbx_ver{mdbx::get_version()};
     auto mdbx_bld{mdbx::get_build()};
     SILK_LOG << "Silkrpc build info: " << info.build << " " << info.libraries;
-    SILK_LOG << "Silkrpc libmdbx  version: " << mdbx_ver.git.describe << " build: " << mdbx_bld.target << " compiler: " << mdbx_bld.compiler;
+    SILK_LOG << "Silkrpc libmdbx version: " << mdbx_ver.git.describe << " build: " << mdbx_bld.target << " compiler: " << mdbx_bld.compiler;
 
     std::set_terminate([]() {
         try {
@@ -96,24 +98,28 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
 
     try {
         if (!settings.datadir) {
-            SILK_LOG << "Silkrpc launched with target " << settings.target << " using " << settings.num_contexts
-                     << " contexts, " << settings.num_workers << " workers";
+            SILK_LOG << "Silkrpc launched with private address " << settings.private_api_addr << " using "
+                     << context_pool_settings.num_contexts << " contexts, " << settings.num_workers << " workers";
         } else {
-            SILK_LOG << "Silkrpc launched with datadir " << *settings.datadir << " using " << settings.num_contexts
-                     << " contexts, " << settings.num_workers << " workers";
+            SILK_LOG << "Silkrpc launched with datadir " << *settings.datadir << " using "
+                     << context_pool_settings.num_contexts << " contexts, " << settings.num_workers << " workers";
         }
 
         // Create the one-and-only Silkrpc daemon
         Daemon rpc_daemon{settings};
 
         // Check protocol version compatibility with Core Services
-        SILK_LOG << "Checking protocol version compatibility with core services...";
+        if (not settings.skip_protocol_check) {
+            SILK_LOG << "Checking protocol version compatibility with core services...";
 
-        const auto checklist = rpc_daemon.run_checklist();
-        for (const auto& protocol_check : checklist.protocol_checklist) {
-            SILK_LOG << protocol_check.result;
+            const auto checklist = rpc_daemon.run_checklist();
+            for (const auto& protocol_check : checklist.protocol_checklist) {
+                SILK_LOG << protocol_check.result;
+            }
+            checklist.success_or_throw();
+        } else {
+            SILK_LOG << "Skip protocol version compatibility check with core services";
         }
-        checklist.success_or_throw();
 
         // Start execution context dedicated to handling termination signals
         boost::asio::io_context signal_context;
@@ -125,7 +131,7 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
             rpc_daemon.stop();
         });
 
-        SILK_LOG << "Starting ETH RPC API at " << settings.http_port << " ENGINE RPC API at " << settings.engine_port;
+        SILK_LOG << "Starting ETH RPC API at " << settings.eth_end_point << " ENGINE RPC API at " << settings.engine_end_point;
 
         rpc_daemon.start();
 
@@ -146,50 +152,9 @@ int Daemon::run(const DaemonSettings& settings, const DaemonInfo& info) {
 }
 
 bool Daemon::validate_settings(const DaemonSettings& settings) {
-    const auto datadir = settings.datadir;
-    if (datadir && !std::filesystem::exists(*datadir)) {
-        SILK_ERROR << "Parameter datadir is invalid: [" << *datadir << "]";
-        SILK_ERROR << "Use --datadir flag to specify the path of Erigon database";
-        return false;
-    }
-
-    const auto http_port = settings.http_port;
-    if (!http_port.empty() && http_port.find(silkworm::kAddressPortSeparator) == std::string::npos) {
-        SILK_ERROR << "Parameter http_port is invalid: [" << http_port << "]";
-        SILK_ERROR << "Use --http_port flag to specify the local binding for Ethereum JSON RPC service";
-        return false;
-    }
-
-    const auto engine_port = settings.engine_port;
-    if (!engine_port.empty() && engine_port.find(silkworm::kAddressPortSeparator) == std::string::npos) {
-        SILK_ERROR << "Parameter engine_port is invalid: [" << engine_port << "]";
-        SILK_ERROR << "Use --engine_port flag to specify the local binding for Engine JSON RPC service";
-        return false;
-    }
-
-    const auto target = settings.target;
-    if (!target.empty() && target.find(':') == std::string::npos) {
-        SILK_ERROR << "Parameter target is invalid: [" << target << "]";
-        SILK_ERROR << "Use --target flag to specify the location of Erigon running instance";
-        return false;
-    }
-
-    if (!datadir && target.empty()) {
-        SILK_ERROR << "Parameters datadir and target cannot be both empty, specify one of them";
-        SILK_ERROR << "Use --datadir or --target flag to specify the path or the location of Erigon instance";
-        return false;
-    }
-
-    const auto api_spec = settings.api_spec;
-    if (api_spec.empty()) {
-        SILK_ERROR << "Parameter api_spec is invalid: [" << api_spec << "]";
-        SILK_ERROR << "Use --api_spec flag to specify JSON RPC API namespaces as comma-separated list of strings";
-        return false;
-    }
-
-    if (!settings.engine_port.empty() && !settings.jwt_secret_filename) {
-        SILK_ERROR << "Parameter jwt_secret_filename cannot be empty if engine_port is specified";
-        SILK_ERROR << "Use --jwt_secret_filename to specify the JWT token to use for Engine JSON RPC service";
+    if (!settings.datadir && settings.private_api_addr.empty()) {
+        SILK_ERROR << "Parameters datadir and private_api_addr cannot be both empty, specify one of them";
+        SILK_ERROR << "Use --datadir or --private_api_addr flag to specify the path of database or the location of running instance";
         return false;
     }
 
@@ -203,39 +168,26 @@ ChannelFactory Daemon::make_channel_factory(const DaemonSettings& settings) {
         channel_args.SetMaxReceiveMessageSize(kRpcMaxReceiveMessageSize);
         // Allow each client to open its own TCP connection to server (sharing one single connection becomes a bottleneck under high load)
         channel_args.SetInt(GRPC_ARG_USE_LOCAL_SUBCHANNEL_POOL, 1);
-        return grpc::CreateCustomChannel(settings.target, grpc::InsecureChannelCredentials(), channel_args);
+        return grpc::CreateCustomChannel(settings.private_api_addr, grpc::InsecureChannelCredentials(), channel_args);
     };
 }
 
 Daemon::Daemon(DaemonSettings settings)
     : settings_(std::move(settings)),
       create_channel_{make_channel_factory(settings_)},
-      context_pool_{settings_.num_contexts},
+      context_pool_{settings_.context_pool_settings.num_contexts},
       worker_pool_{settings_.num_workers},
       kv_stub_{::remote::KV::NewStub(create_channel_())} {
     // Load the channel authentication token (if required)
-    if (settings_.jwt_secret_filename) {
-        std::string jwt_token;
-        if (!load_jwt_token(*settings_.jwt_secret_filename, jwt_token)) {
-            std::string error_msg{"JWT token has wrong size: " + std::to_string(jwt_token.length())};
-            SILK_CRIT << error_msg;
-            throw std::runtime_error{error_msg};
-        }
-        const auto jwt_token_bytes = silkworm::from_hex(jwt_token);
-        if (!jwt_token_bytes) {
-            std::string error_msg{"JWT token is incorrect: " + jwt_token};
-            SILK_CRIT << error_msg;
-            throw std::runtime_error{error_msg};
-        }
-        jwt_secret_ = {jwt_token_bytes->cbegin(), jwt_token_bytes->cend()};
+    if (settings_.jwt_secret_file) {
+        jwt_secret_ = load_jwt_token(*settings_.jwt_secret_file);
     }
 
     // Activate the local chaindata access (if required)
     if (settings_.datadir) {
         chaindata_env_ = std::make_shared<mdbx::env_managed>();
-        std::string db_path = *settings_.datadir + kChaindataRelativePath;
         silkworm::db::EnvConfig db_config{
-            .path = db_path,
+            .path = settings_.datadir->string() + kChaindataRelativePath,
             .in_memory = true,
             .shared = true,
             .max_readers = kDatabaseMaxReaders};
@@ -255,7 +207,7 @@ void Daemon::add_private_services() {
     auto grpc_channel = create_channel_();
 
     // Add the private state to each execution context
-    for (std::size_t i{0}; i < settings_.num_contexts; ++i) {
+    for (std::size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
         auto& context = context_pool_.next_context();
         auto& io_context{*context.io_context()};
         auto& grpc_context{*context.grpc_context()};
@@ -286,7 +238,7 @@ void Daemon::add_shared_services() {
     auto filter_storage = std::make_shared<FilterStorage>(context_pool_.num_contexts() * kDefaultFilterStorageSize);
 
     // Add the shared state to the execution contexts
-    for (std::size_t i{0}; i < settings_.num_contexts; ++i) {
+    for (std::size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
         auto& io_context = context_pool_.next_io_context();
 
         add_shared_service(io_context, block_cache);
@@ -297,7 +249,7 @@ void Daemon::add_shared_services() {
 
 void Daemon::add_backend_service(std::unique_ptr<ethbackend::BackEnd>&& backend) {
     // Add the BackEnd state to each execution context
-    for (std::size_t i{0}; i < settings_.num_contexts; ++i) {
+    for (std::size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
         auto& io_context = context_pool_.next_io_context();
         add_private_service<rpc::ethbackend::BackEnd>(io_context, std::move(backend));
     }
@@ -315,18 +267,18 @@ DaemonChecklist Daemon::run_checklist() {
 }
 
 void Daemon::start() {
-    for (std::size_t i{0}; i < settings_.num_contexts; ++i) {
+    for (std::size_t i{0}; i < settings_.context_pool_settings.num_contexts; ++i) {
         auto& ioc = context_pool_.next_io_context();
 
-        if (not settings_.http_port.empty()) {
+        if (not settings_.eth_end_point.empty()) {
             rpc_services_.emplace_back(
                 std::make_unique<http::Server>(
-                    settings_.http_port, settings_.api_spec, ioc, worker_pool_, /*jwt_secret=*/std::nullopt));
+                    settings_.eth_end_point, settings_.eth_api_spec, ioc, worker_pool_, /*jwt_secret=*/std::nullopt));
         }
-        if (not settings_.engine_port.empty()) {
+        if (not settings_.engine_end_point.empty()) {
             rpc_services_.emplace_back(
                 std::make_unique<http::Server>(
-                    settings_.engine_port, kDefaultEth2ApiSpec, ioc, worker_pool_, jwt_secret_));
+                    settings_.engine_end_point, kDefaultEth2ApiSpec, ioc, worker_pool_, jwt_secret_));
         }
     }
 

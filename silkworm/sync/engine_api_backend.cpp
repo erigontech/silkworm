@@ -29,6 +29,15 @@ awaitable<rpc::ExecutionPayloadAndValue> EngineApiBackend::engine_get_payload(ui
 awaitable<rpc::ForkChoiceUpdatedReply> EngineApiBackend::engine_forkchoice_updated(const rpc::ForkChoiceUpdatedRequest& fcu_request) {
     co_return co_await pos_sync_.fork_choice_update(fcu_request.fork_choice_state, fcu_request.payload_attributes);
 }
+
+awaitable<rpc::ExecutionPayloadBodies> EngineApiBackend::engine_get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) {
+    co_return co_await pos_sync_.get_payload_bodies_by_hash(block_hashes);
+}
+
+awaitable<rpc::ExecutionPayloadBodies> EngineApiBackend::engine_get_payload_bodies_by_range(BlockNum start, uint64_t count) {
+    co_return co_await pos_sync_.get_payload_bodies_by_range(start, count);
+}
+
 awaitable<evmc::address> EngineApiBackend::etherbase() {
     co_return evmc::address{};
 }

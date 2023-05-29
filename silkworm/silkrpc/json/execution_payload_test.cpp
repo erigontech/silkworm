@@ -25,7 +25,7 @@ namespace silkworm::rpc {
 
 using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 
-TEST_CASE("serialize ExecutionPayloadV1", "[silkworm][rpc][to_json]") {
+TEST_CASE("serialize ExecutionPayloadV1", "[silkworm][rpc][json]") {
     ExecutionPayload payload_v1{
         .version = ExecutionPayload::V1,
         .number = 0x1,
@@ -58,7 +58,7 @@ TEST_CASE("serialize ExecutionPayloadV1", "[silkworm][rpc][to_json]") {
     })"_json);
 }
 
-TEST_CASE("deserialize ExecutionPayloadV1", "[silkworm][rpc][to_json]") {
+TEST_CASE("deserialize ExecutionPayloadV1", "[silkworm][rpc][json]") {
     ExecutionPayload payload = R"({
         "parentHash":"0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a",
         "feeRecipient":"0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
@@ -90,7 +90,7 @@ TEST_CASE("deserialize ExecutionPayloadV1", "[silkworm][rpc][to_json]") {
     CHECK(payload.withdrawals == std::nullopt);
 }
 
-TEST_CASE("serialize ExecutionPayloadV2", "[silkworm][rpc][to_json]") {
+TEST_CASE("serialize ExecutionPayloadV2", "[silkworm][rpc][json]") {
     ExecutionPayload payload_v2{
         .version = ExecutionPayload::V2,
         .number = 0x1,
@@ -149,7 +149,7 @@ TEST_CASE("serialize ExecutionPayloadV2", "[silkworm][rpc][to_json]") {
     }
 }
 
-TEST_CASE("deserialize ExecutionPayloadV2", "[silkworm][rpc][to_json]") {
+TEST_CASE("deserialize ExecutionPayloadV2", "[silkworm][rpc][json]") {
     SECTION("empty withdrawals") {
         ExecutionPayload payload = R"({
             "parentHash":"0x3b8fb240d288781d4aac94d3fd16809ee413bc99294a085798a589dae51ddd4a",
@@ -218,7 +218,7 @@ TEST_CASE("deserialize ExecutionPayloadV2", "[silkworm][rpc][to_json]") {
     }
 }
 
-TEST_CASE("serialize ExecutionPayloadAndValue", "[silkworm][rpc][to_json]") {
+TEST_CASE("serialize ExecutionPayloadAndValue", "[silkworm][rpc][json]") {
     ExecutionPayload payload_v1{
         .version = ExecutionPayload::V1,
         .number = 0x1,
@@ -252,6 +252,18 @@ TEST_CASE("serialize ExecutionPayloadAndValue", "[silkworm][rpc][to_json]") {
             "transactions":["0xf92ebdeab45d368f6354e8c5a8ac586c"]
         },
         "blockValue":"0x3d0900"
+    })"_json);
+}
+
+TEST_CASE("serialize ExecutionPayloadBody", "[silkworm][rpc][json]") {
+    ExecutionPayloadBody payload_body{
+        .transactions = std::vector<Bytes>{*silkworm::from_hex("0xf92ebdeab45d368f6354e8c5a8ac586c")},
+        .withdrawals = std::vector<Withdrawal>{
+            {.index = 6, .validator_index = 12, .address = 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address, .amount = 10'000},
+        }};
+    CHECK(nlohmann::json(payload_body) == R"({
+        "transactions":["0xf92ebdeab45d368f6354e8c5a8ac586c"],
+        "withdrawals":[{"address":"0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b","amount":"0x2710","index":"0x6","validatorIndex":"0xc"}]
     })"_json);
 }
 

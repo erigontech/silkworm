@@ -25,7 +25,7 @@ SplitCursor::SplitCursor(Cursor& inner_cursor, silkworm::ByteView key, uint64_t 
 
     uint8_t shift_bits = match_bits & 7;
     if (shift_bits != 0) {
-        mask_ = 0xff << (8 - shift_bits);
+        mask_ = static_cast<uint8_t>(0xff << (8 - shift_bits));
     } else {
         mask_ = 0xff;
     }
@@ -93,7 +93,7 @@ SplitCursorDupSort::SplitCursorDupSort(CursorDupSort& inner_cursor, silkworm::By
 
     uint8_t shift_bits = match_bits & 7;
     if (shift_bits != 0) {
-        mask_ = 0xff << (8 - shift_bits);
+        mask_ = static_cast<uint8_t>(0xff << (8 - shift_bits));
     } else {
         mask_ = 0xff;
     }

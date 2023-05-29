@@ -704,7 +704,7 @@ void TraceTracer::on_execution_start(evmc_revision rev, const evmc_message& msg,
 
     start_gas_.push(msg.gas);
 
-    std::uint32_t index = traces_.size();
+    std::size_t index = traces_.size();
     traces_.resize(traces_.size() + 1);
 
     Trace& trace = traces_[index];
@@ -1373,7 +1373,7 @@ awaitable<std::vector<Trace>> TraceCallExecutor::trace_transaction(const BlockWi
     std::vector<Trace> traces;
 
     const auto result = co_await execute(block_with_hash.block.header.number - 1, block_with_hash.block, transaction,
-                                         transaction.transaction_index, {false, true, false});
+                                         gsl::narrow<int32_t>(transaction.transaction_index), {false, true, false});
     const auto& trace_result = result.traces.trace;
 
     const auto hash = hash_of_transaction(transaction);
@@ -1412,6 +1412,30 @@ boost::asio::awaitable<TraceEntriesResult> TraceCallExecutor::trace_transaction_
     co_await executor.call(transaction_with_block.block_with_hash.block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
 
     co_return entry_tracer->result();
+}
+
+boost::asio::awaitable<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWithBlock& transaction_with_block) {
+    auto block_number = transaction_with_block.block_with_hash.block.header.number;
+
+    const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
+    const auto chain_config_ptr = lookup_chain_config(chain_id);
+
+    state::RemoteState remote_state{io_context_, database_reader_, block_number - 1};
+    silkworm::IntraBlockState initial_ibs{remote_state};
+
+    state::RemoteState curr_remote_state{io_context_, database_reader_, block_number - 1};
+    EVMExecutor executor{*chain_config_ptr, workers_, curr_remote_state};
+
+    Tracers tracers{};
+
+    auto execution_result = co_await executor.call(transaction_with_block.block_with_hash.block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+
+    std::string result = "0x";
+    if (execution_result.error_code != evmc_status_code::EVMC_SUCCESS) {
+        result = "0x" + silkworm::to_hex(execution_result.data);
+    }
+
+    co_return result;
 }
 
 awaitable<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, json::Stream* stream) {

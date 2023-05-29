@@ -142,7 +142,7 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_raw_transaction(const nlo
 
     silkworm::ByteView encoded_tx_view{*encoded_tx_bytes};
     Transaction transaction;
-    const auto decoding_result{silkworm::rlp::decode<silkworm::Transaction>(encoded_tx_view, transaction)};
+    const auto decoding_result{silkworm::rlp::decode(encoded_tx_view, transaction)};
     if (!decoding_result) {
         const auto error_msg = decoding_result_to_string(decoding_result.error());
         SILK_ERROR << error_msg;

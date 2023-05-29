@@ -71,26 +71,16 @@ endif()
 
 # GMP
 if(NOT MSVC)
-  set(GMP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/gmplib")
-  set(GMP_INSTALL_DIR "${CMAKE_BINARY_DIR}/gmplib")
-
-  set(GMP_INCLUDE_DIR
-      "${GMP_INSTALL_DIR}"
-      CACHE PATH ""
-      )
-  set(GMP_LIBRARY
-      "${GMP_INSTALL_DIR}/lib/libgmp.a"
-      CACHE FILEPATH ""
-      )
-
-  ExternalProject_Add(
-      gmplib
-      SOURCE_DIR "${GMP_SOURCE_DIR}"
-      BINARY_DIR "${GMP_INSTALL_DIR}"
-      CONFIGURE_COMMAND "${GMP_SOURCE_DIR}/configure" "--prefix=${GMP_INSTALL_DIR}" --with-pic=yes
-      PREFIX "${GMP_INSTALL_DIR}"
-      BUILD_BYPRODUCTS "${GMP_LIBRARY}"
-  )
+  if(DEFINED GMP_LIBRARY)
+    add_library(gmplib STATIC IMPORTED)
+    set_target_properties(gmplib PROPERTIES IMPORTED_LOCATION "${GMP_LIBRARY}")
+    if(DEFINED GMP_INCLUDE_DIR)
+      set_target_properties(gmplib PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${GMP_INCLUDE_DIR}")
+    endif()
+  else()
+    find_package(gmp REQUIRED)
+    add_custom_target(gmplib DEPENDS gmp::gmp)
+  endif()
 else()
   find_path(GMP_INCLUDE_DIR NAMES gmp.h)
   find_library(GMP_LIBRARY mpir)
@@ -174,31 +164,11 @@ set_target_properties(blst PROPERTIES
 )
 
 if(NOT SILKWORM_CORE_ONLY)
-  # Roaring Bitmaps
-  option(ENABLE_ROARING_TESTS "" OFF)
-  option(ROARING_BUILD_STATIC "Build a static library" ON)
-  if(NOT MSVC)
-    # Not supported on MSVC
-    option(ROARING_LINK_STATIC "Link executables (tests, benchmarks) statically" ON)
-  endif()
-  add_subdirectory(CRoaring EXCLUDE_FROM_ALL)
-
-  # mimalloc
-  if(SILKWORM_USE_MIMALLOC)
-    if(NOT CONAN_PACKAGE_MANAGER)
-      set(MI_BUILD_SHARED ON)
-      set(MI_BUILD_STATIC OFF)
-      set(MI_BUILD_OBJECT OFF)
-      set(MI_BUILD_TESTS OFF)
-      add_subdirectory(mimalloc EXCLUDE_FROM_ALL)
-      target_compile_options(mimalloc PRIVATE -Wno-error)
-    endif()
-  endif()
-
   # MDBX
   set(MDBX_ENABLE_TESTS OFF)
   add_subdirectory(libmdbx)
   target_include_directories(mdbx-static INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/libmdbx)
+  target_compile_definitions(mdbx-static PUBLIC CONSTEXPR_ASSERT=assert)
 
   # libtorrent
   add_subdirectory(libtorrent)

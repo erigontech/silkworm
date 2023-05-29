@@ -164,12 +164,12 @@ uint64_t EVMExecutor::refund_gas(const EVM& evm, const silkworm::Transaction& tx
     const intx::uint256 effective_gas_price{txn.max_fee_per_gas >= base_fee_per_gas ? txn.effective_gas_price(base_fee_per_gas)
                                                                                     : txn.max_priority_fee_per_gas};
     SILK_DEBUG << "EVMExecutor::refund_gas effective_gas_price: " << effective_gas_price;
-    state_.add_to_balance(*txn.from, gas_left * effective_gas_price);
+    ibs_state_.add_to_balance(*txn.from, gas_left * effective_gas_price);
     return gas_left;
 }
 
 void EVMExecutor::reset() {
-    state_.clear_journal_and_substate();
+    ibs_state_.clear_journal_and_substate();
 }
 
 std::optional<std::string> EVMExecutor::pre_check(const EVM& evm, const silkworm::Transaction& txn, const intx::uint256& base_fee_per_gas, const intx::uint128& g0) {
@@ -216,7 +216,7 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor::call(
             SILK_TRACE << "EVMExecutor::call post block: " << block.header.number << " txn: " << &txn;
             boost::asio::post(workers_, [this, this_executor, &block, &txn, &tracers, &refund, &gas_bailout, self = std::move(self)]() mutable {
                 auto& svc = use_service<BaselineAnalysisCacheService>(workers_);
-                EVM evm{block, state_, config_};
+                EVM evm{block, ibs_state_, config_};
                 evm.baseline_analysis_cache = svc.get_baseline_analysis_cache();
                 evm.state_pool = svc.get_object_pool();
                 evm.beneficiary = rule_set_->get_beneficiary(block.header);
@@ -226,7 +226,7 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor::call(
                 }
 
                 SILKWORM_ASSERT(txn.from.has_value());
-                state_.access_account(*txn.from);
+                ibs_state_.access_account(*txn.from);
 
                 const evmc_revision rev{evm.revision()};
                 const intx::uint256 base_fee_per_gas{evm.block().header.base_fee_per_gas.value_or(0)};
@@ -251,7 +251,7 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor::call(
                 } else {
                     want = 0;
                 }
-                const auto have = state_.get_balance(*txn.from);
+                const auto have = ibs_state_.get_balance(*txn.from);
                 if (have < want + txn.value) {
                     if (!gas_bailout) {
                         Bytes data{};
@@ -264,18 +264,18 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor::call(
                         return;
                     }
                 } else {
-                    state_.subtract_from_balance(*txn.from, want);
+                    ibs_state_.subtract_from_balance(*txn.from, want);
                 }
 
                 if (txn.to.has_value()) {
-                    state_.access_account(*txn.to);
+                    ibs_state_.access_account(*txn.to);
                     // EVM itself increments the nonce for contract creation
-                    state_.set_nonce(*txn.from, state_.get_nonce(*txn.from) + 1);
+                    ibs_state_.set_nonce(*txn.from, ibs_state_.get_nonce(*txn.from) + 1);
                 }
                 for (const AccessListEntry& ae : txn.access_list) {
-                    state_.access_account(ae.account);
+                    ibs_state_.access_account(ae.account);
                     for (const evmc::bytes32& key : ae.storage_keys) {
-                        state_.access_storage(ae.account, key);
+                        ibs_state_.access_storage(ae.account, key);
                     }
                 }
 
@@ -293,12 +293,12 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor::call(
                 const intx::uint256 priority_fee_per_gas{txn.max_fee_per_gas >= base_fee_per_gas ? txn.priority_fee_per_gas(base_fee_per_gas)
                                                                                                  : txn.max_priority_fee_per_gas};
                 SILK_DEBUG << "EVMExecutor::call evm.beneficiary: " << evm.beneficiary << " balance: " << priority_fee_per_gas * gas_used;
-                state_.add_to_balance(evm.beneficiary, priority_fee_per_gas * gas_used);
+                ibs_state_.add_to_balance(evm.beneficiary, priority_fee_per_gas * gas_used);
 
                 for (auto tracer : evm.tracers()) {
                     tracer.get().on_reward_granted(result, evm.state());
                 }
-                state_.finalize_transaction();
+                ibs_state_.finalize_transaction();
 
                 ExecutionResult exec_result{result.status, gas_left, result.data};
                 boost::asio::post(this_executor, [exec_result, self = std::move(self)]() mutable {

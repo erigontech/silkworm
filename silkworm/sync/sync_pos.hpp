@@ -48,6 +48,8 @@ class PoSSync : public ChainSync {
     auto new_payload(const rpc::ExecutionPayload&) -> asio::awaitable<rpc::PayloadStatus>;
     auto fork_choice_update(const rpc::ForkChoiceState&, const std::optional<rpc::PayloadAttributes>&) -> asio::awaitable<rpc::ForkChoiceUpdatedReply>;
     auto get_payload(uint64_t payloadId) -> asio::awaitable<rpc::ExecutionPayloadAndValue>;
+    auto get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) -> asio::awaitable<rpc::ExecutionPayloadBodies>;
+    auto get_payload_bodies_by_range(BlockNum start, uint64_t count) -> asio::awaitable<rpc::ExecutionPayloadBodies>;
 
   private:
     static auto make_execution_block(const rpc::ExecutionPayload& payload) -> std::shared_ptr<Block>;

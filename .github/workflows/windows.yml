@@ -42,8 +42,8 @@ jobs:
     - name: Install Conan
       run: |
         Invoke-WebRequest -Uri https://github.com/conan-io/conan/releases/download/1.58.0/conan-win-64.exe -OutFile conan-win-64.exe
-        .\conan-win-64.exe /HELP
-        .\conan-win-64.exe /SP- /VERYSILENT /SUPPRESSMSGBOXES /LOG="D:\a\silkworm\silkworm\conan-setup.log" /DIR="D:\a\silkworm\silkworm\conan"
+        .\conan-win-64.exe
+        # .\conan-win-64.exe /SP- /VERYSILENT /SUPPRESSMSGBOXES /LOG="D:\a\silkworm\silkworm\conan-setup.log" /DIR="D:\a\silkworm\silkworm\conan"
         dir
         type conan-setup.log
 

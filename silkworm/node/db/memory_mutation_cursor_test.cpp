@@ -18,6 +18,7 @@
 
 #include <catch2/catch.hpp>
 
+#include <silkworm/infra/test/log.hpp>
 #include <silkworm/node/test/context.hpp>
 
 namespace silkworm::db {
@@ -704,7 +705,51 @@ TEST_CASE("MemoryMutationCursor: lower_bound_multivalue", "[silkworm][node][db][
     }
 }
 
-TEST_CASE("MemoryMutationCursor: Next interleaved", "[silkworm][node][db][memory_mutation_cursor]") {
+TEST_CASE("MemoryMutationCursor: Cursor Next sequential after find", "[silkworm][node][db][memory_mutation_cursor]") {
+    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    MemoryMutationCursorTest test;
+
+    auto rw_db_cursor = test.main_txn.rw_cursor(db::table::kCode);
+    rw_db_cursor->upsert(mdbx::slice{"key1"}, mdbx::slice{"value1"});
+    rw_db_cursor->upsert(mdbx::slice{"key2"}, mdbx::slice{"value2"});
+    test.main_txn.commit_and_renew();
+
+    auto rw_mem_cursor = test.mutation.rw_cursor(db::table::kCode);
+    rw_mem_cursor->upsert(mdbx::slice{"key3"}, mdbx::slice{"value3"});
+
+    auto db_cursor = test.main_txn.ro_cursor(db::table::kCode);
+    auto mem_cursor = test.mutation.ro_cursor(db::table::kCode);
+
+    auto db_result = db_cursor->find("key1", /*throw_notfound=*/false);
+    CHECK(db_result.done);
+    CHECK(db_result.key == "key1");
+    CHECK(db_result.value == "value1");
+    auto mem_result = mem_cursor->find("key1", /*throw_notfound=*/false);
+    CHECK(mem_result.done);
+    CHECK(mem_result.key == "key1");
+    CHECK(mem_result.value == "value1");
+
+    db_result = db_cursor->to_next(/*throw_notfound=*/false);
+    CHECK(db_result.done);
+    CHECK(db_result.key == "key2");
+    CHECK(db_result.value == "value2");
+    mem_result = mem_cursor->to_next(/*throw_notfound=*/false);
+    CHECK(mem_result.done);
+    CHECK(mem_result.key == "key2");
+    CHECK(mem_result.value == "value2");
+
+    db_result = db_cursor->to_next(/*throw_notfound=*/false);
+    CHECK(!db_result.done);
+    mem_result = mem_cursor->to_next(/*throw_notfound=*/false);
+    CHECK(mem_result.done);
+    CHECK(mem_result.key == "key3");
+    CHECK(mem_result.value == "value3");
+
+    mem_result = mem_cursor->to_next(/*throw_notfound=*/false);
+    CHECK(!mem_result.done);
+}
+
+TEST_CASE("MemoryMutationCursor: CursorDupSort Next interleaved", "[silkworm][node][db][memory_mutation_cursor]") {
     MemoryMutationCursorTest test;
 
     auto rw_db_cursor = test.main_txn.rw_cursor_dup_sort(db::table::kAccountChangeSet);

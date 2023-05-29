@@ -119,8 +119,10 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   add_link_options(-Wl,-stack_size -Wl,${SILKWORM_STACK_SIZE})
 else()
   add_link_options(-Wl,-z,stack-size=${SILKWORM_STACK_SIZE})
-endif()
 
-if(NOT MSVC AND CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)")
-  add_compile_options(-mshstk) # shadow stack
+  # https://clang.llvm.org/docs/SafeStack.html
+  if("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$" AND NOT SILKWORM_WASM_API)
+    add_compile_options(-fsanitize=safe-stack)
+    add_link_options(-fsanitize=safe-stack)
+  endif()  
 endif()

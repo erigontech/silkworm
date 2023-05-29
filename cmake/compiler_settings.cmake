@@ -116,3 +116,23 @@ if(SILKWORM_SANITIZE)
     add_compile_options(-Wno-error=tsan)
   endif()
 endif()
+
+# Stack
+set(SILKWORM_STACK_SIZE 0x1000000)
+
+if(MSVC)
+  add_link_options(/STACK:${SILKWORM_STACK_SIZE})
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  add_link_options(-Wl,-stack_size -Wl,${SILKWORM_STACK_SIZE})
+else()
+  add_link_options(-Wl,-z,stack-size=${SILKWORM_STACK_SIZE})
+
+  # https://clang.llvm.org/docs/SafeStack.html
+  if("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang$"
+     AND NOT SILKWORM_WASM_API
+     AND NOT SILKWORM_SANITIZE
+  )
+    add_compile_options(-fsanitize=safe-stack)
+    add_link_options(-fsanitize=safe-stack)
+  endif()
+endif()

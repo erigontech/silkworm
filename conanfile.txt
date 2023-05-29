@@ -9,7 +9,7 @@ gmp/6.2.1
 grpc/1.48.0
 gtest/1.12.1
 jwt-cpp/0.6.0
-magic_enum/0.9.0
+magic_enum/0.8.2
 mimalloc/2.0.9
 ms-gsl/4.0.0
 nlohmann_json/3.11.2

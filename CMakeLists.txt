@@ -98,8 +98,6 @@ add_subdirectory(third_party)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler_warnings.cmake)
 
-set(SILKWORM_STACK_SIZE 0x1000000)
-
 # Silkworm itself
 add_subdirectory(silkworm)
 

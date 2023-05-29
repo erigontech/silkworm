@@ -109,3 +109,19 @@ if(SILKWORM_SANITIZE)
   add_link_options(${SILKWORM_SANITIZE_COMPILER_OPTIONS})
   add_definitions(-DSILKWORM_SANITIZE)
 endif()
+
+# Stack
+set(SILKWORM_STACK_SIZE 0x1000000)
+
+if(MSVC)
+  add_link_options(/STACK:${SILKWORM_STACK_SIZE})
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  add_link_options(-Wl,-stack_size -Wl,${SILKWORM_STACK_SIZE})
+else()
+  add_compile_options(-fstack-protector)
+  add_link_options(-Wl,-z,stack-size=${SILKWORM_STACK_SIZE})
+endif()
+
+if(NOT MSVC AND NOT SILKWORM_WASM_API)
+  add_compile_options(-fstack-protector)
+endif()

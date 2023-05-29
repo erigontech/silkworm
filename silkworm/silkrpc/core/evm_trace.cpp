@@ -1414,6 +1414,30 @@ boost::asio::awaitable<TraceEntriesResult> TraceCallExecutor::trace_transaction_
     co_return entry_tracer->result();
 }
 
+boost::asio::awaitable<std::string> TraceCallExecutor::trace_transaction_error(const TransactionWithBlock& transaction_with_block) {
+    auto block_number = transaction_with_block.block_with_hash.block.header.number;
+
+    const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
+    const auto chain_config_ptr = lookup_chain_config(chain_id);
+
+    state::RemoteState remote_state{io_context_, database_reader_, block_number - 1};
+    silkworm::IntraBlockState initial_ibs{remote_state};
+
+    state::RemoteState curr_remote_state{io_context_, database_reader_, block_number - 1};
+    EVMExecutor executor{*chain_config_ptr, workers_, curr_remote_state};
+
+    Tracers tracers{};
+
+    auto execution_result = co_await executor.call(transaction_with_block.block_with_hash.block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+
+    std::string result = "0x";
+    if (execution_result.error_code != evmc_status_code::EVMC_SUCCESS) {
+        result = "0x" + silkworm::to_hex(execution_result.data);
+    }
+
+    co_return result;
+}
+
 awaitable<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, json::Stream* stream) {
     SILK_INFO << "TraceCallExecutor::trace_filter: filter " << trace_filter;
 

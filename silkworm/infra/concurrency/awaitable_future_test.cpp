@@ -18,6 +18,8 @@
 
 #include <stdexcept>
 
+#include <boost/asio/bind_cancellation_slot.hpp>
+#include <boost/asio/cancellation_signal.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
 #include <catch2/catch.hpp>
@@ -251,6 +253,39 @@ TEST_CASE("awaitable future") {
         io.run();
 
         CHECK(value == 42);
+    }
+
+    SECTION("cancellation after read") {
+        AwaitablePromise<int> promise{io};
+        int value;
+        boost::system::error_code code;
+
+        boost::asio::cancellation_signal cancellation_signal;
+        asio::co_spawn(
+            io,
+            [&]() -> asio::awaitable<void> {
+                auto future = promise.get_future();
+                try {
+                    value = co_await future.get_async();
+                } catch (const boost::system::system_error& se) {
+                    code = se.code();
+                }
+                io.stop();
+            },
+            boost::asio::bind_cancellation_slot(cancellation_signal.slot(), asio::detached));
+
+        asio::co_spawn(
+            io,
+            [&]() -> asio::awaitable<void> {
+                cancellation_signal.emit(boost::asio::cancellation_type::all);
+                co_return;
+            },
+            asio::detached);
+
+        io.run();
+
+        CHECK(promise.set_value(42) == false);
+        CHECK(code == boost::system::errc::operation_canceled);
     }
 }
 

@@ -69,7 +69,7 @@ struct StandaloneBackEndKVSettings : public SilkwormSettings {
 int parse_command_line(int argc, char* argv[], CLI::App& app, StandaloneBackEndKVSettings& settings) {
     auto& log_settings = settings.log_settings;
     auto& node_settings = settings.node_settings;
-    auto& server_settings = settings.server_settings;
+    auto& server_settings = settings.node_settings.server_settings;
 
     // Node options
     std::filesystem::path data_dir;
@@ -82,11 +82,9 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, StandaloneBackEndK
     add_option_db_max_readers(app, max_readers);
 
     // RPC Server options
-    add_option_private_api_address(app, node_settings.private_api_addr);
+    add_option_private_api_address(app, node_settings.server_settings.address_uri);
     add_option_remote_sentry_addresses(app, node_settings.remote_sentry_addresses, /* is_required = */ true);
-
-    concurrency::ContextPoolSettings context_pool_settings;
-    add_context_pool_options(app, context_pool_settings);
+    add_context_pool_options(app, server_settings.context_pool_settings);
 
     // Logging options
     add_logging_options(app, log_settings);
@@ -111,9 +109,6 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, StandaloneBackEndK
                                                        /*create=*/false,
                                                        /*readonly=*/true};
     node_settings.chaindata_env_config.max_readers = max_readers;
-
-    server_settings.set_address_uri(node_settings.private_api_addr);
-    server_settings.set_context_pool_settings(context_pool_settings);
 
     return 0;
 }
@@ -175,7 +170,7 @@ int main(int argc, char* argv[]) {
 
         auto& log_settings = settings.log_settings;
         auto& node_settings = settings.node_settings;
-        auto& server_settings = settings.server_settings;
+        auto& server_settings = settings.node_settings.server_settings;
 
         // Initialize logging with custom settings
         log::init(log_settings);
@@ -186,8 +181,8 @@ int main(int argc, char* argv[]) {
         SILK_LOG << "BackEndKvServer build info: " << node_name;
         SILK_LOG << "BackEndKvServer library info: " << get_library_versions();
         SILK_LOG << "BackEndKvServer launched with chaindata: " << node_settings.chaindata_env_config.path
-                 << " address: " << node_settings.private_api_addr
-                 << " contexts: " << server_settings.context_pool_settings().num_contexts;
+                 << " address: " << node_settings.server_settings.address_uri
+                 << " contexts: " << server_settings.context_pool_settings.num_contexts;
 
         auto database_env = db::open_env(node_settings.chaindata_env_config);
         SILK_INFO << "BackEndKvServer MDBX max readers: " << database_env.max_readers();
@@ -209,7 +204,7 @@ int main(int argc, char* argv[]) {
         SILK_INFO << "BackEndKvServer genesis from db: " << to_hex(*node_settings.chain_config->genesis_hash);
 
         rpc::ClientContextPool context_pool{
-            server_settings.context_pool_settings(),
+            server_settings.context_pool_settings,
         };
 
         auto sentry_client = make_sentry_client(node_settings, context_pool, db::ROAccess(database_env));

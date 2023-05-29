@@ -39,7 +39,7 @@ using api::router::ServiceRouter;
 class ServerImpl final : public silkworm::rpc::Server {
   public:
     explicit ServerImpl(
-        const silkworm::rpc::ServerConfig& config,
+        const silkworm::rpc::ServerSettings& config,
         ServiceRouter router);
 
     ServerImpl(const ServerImpl&) = delete;
@@ -67,13 +67,13 @@ class ServerImpl final : public silkworm::rpc::Server {
 };
 
 ServerImpl::ServerImpl(
-    const silkworm::rpc::ServerConfig& config,
+    const silkworm::rpc::ServerSettings& config,
     ServiceRouter router)
     : silkworm::rpc::Server(config),
       router_(std::move(router)) {
     log::Info("sentry") << "rpc::Server created"
-                        << " to listen on: " << config.address_uri() << ";"
-                        << " contexts: " << config.context_pool_settings().num_contexts;
+                        << " to listen on: " << config.address_uri << ";"
+                        << " contexts: " << config.context_pool_settings.num_contexts;
 }
 
 // Register the gRPC services: they must exist for the lifetime of the server built by builder.
@@ -109,7 +109,7 @@ void ServerImpl::register_request_calls(agrpc::GrpcContext* grpc_context) {
 }
 
 Server::Server(
-    const silkworm::rpc::ServerConfig& config,
+    const silkworm::rpc::ServerSettings& config,
     ServiceRouter router)
     : p_impl_(std::make_unique<ServerImpl>(config, std::move(router))) {}
 

@@ -20,7 +20,7 @@
 
 namespace silkworm::sentry::eth {
 
-const uint8_t Protocol::kVersion = 67;
+const uint8_t Protocol::kVersion = 68;
 
 void Protocol::handle_peer_first_message(const common::Message& message) {
     if (message.id != StatusMessage::kId)

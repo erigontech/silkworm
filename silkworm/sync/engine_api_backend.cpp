@@ -34,6 +34,10 @@ awaitable<rpc::ExecutionPayloadBodies> EngineApiBackend::engine_get_payload_bodi
     co_return co_await pos_sync_.get_payload_bodies_by_hash(block_hashes);
 }
 
+awaitable<rpc::ExecutionPayloadBodies> EngineApiBackend::engine_get_payload_bodies_by_range(BlockNum start, uint64_t count) {
+    co_return co_await pos_sync_.get_payload_bodies_by_range(start, count);
+}
+
 awaitable<evmc::address> EngineApiBackend::etherbase() {
     co_return evmc::address{};
 }

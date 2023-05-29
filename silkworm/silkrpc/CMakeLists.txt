@@ -16,11 +16,7 @@
 
 find_package(absl REQUIRED)
 find_package(asio-grpc REQUIRED)
-if(CONAN_PACKAGE_MANAGER)
-  find_package(Boost REQUIRED container thread)
-else()
-  find_package(Boost CONFIG REQUIRED container thread)
-endif()
+find_package(Boost REQUIRED container thread)
 find_package(gRPC REQUIRED)
 find_package(jwt-cpp REQUIRED)
 find_package(nlohmann_json REQUIRED)

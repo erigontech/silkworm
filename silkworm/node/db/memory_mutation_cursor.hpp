@@ -36,8 +36,8 @@ class MemoryMutationCursor : public RWCursorDupSort {
 
     [[nodiscard]] ::mdbx::map_handle map() const override;
 
+    [[nodiscard]] size_t size() const override;
     [[nodiscard]] bool is_multi_value() const override;
-
     [[nodiscard]] bool is_dangling() const override;
 
     CursorResult to_first() override;

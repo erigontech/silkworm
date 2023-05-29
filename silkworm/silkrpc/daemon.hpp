@@ -29,20 +29,9 @@
 #include <silkworm/silkrpc/ethdb/kv/state_changes_stream.hpp>
 #include <silkworm/silkrpc/http/server.hpp>
 
-namespace silkworm::rpc {
+#include "settings.hpp"
 
-struct DaemonSettings {
-    std::optional<std::string> datadir;
-    std::string http_port;    // eth_end_point
-    std::string engine_port;  // engine_end_point
-    std::string api_spec;     // eth_api_spec
-    std::string target;       // backend_kv_address
-    uint32_t num_contexts;
-    uint32_t num_workers;
-    log::Level log_verbosity;
-    concurrency::WaitMode wait_mode;
-    std::optional<std::string> jwt_secret_filename;
-};
+namespace silkworm::rpc {
 
 struct DaemonInfo {
     std::string build;

@@ -31,7 +31,6 @@
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/os.hpp>
-#include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/infra/grpc/common/util.hpp>
 #include <silkworm/infra/test/log.hpp>
@@ -328,10 +327,8 @@ struct BackEndKvE2eTest {
         kv_stub = remote::KV::NewStub(channel);
         kv_client = std::make_unique<KvClient>(kv_stub.get());
 
-        concurrency::ContextPoolSettings context_pool_settings;
-        context_pool_settings.num_contexts = 1;
-        srv_config.set_context_pool_settings(context_pool_settings);
-        srv_config.set_address_uri(kTestAddressUri);
+        srv_config.context_pool_settings.num_contexts = 1;
+        srv_config.address_uri = kTestAddressUri;
 
         DataDirectory data_dir{tmp_dir.path()};
         REQUIRE_NOTHROW(data_dir.deploy());
@@ -385,7 +382,7 @@ struct BackEndKvE2eTest {
     std::unique_ptr<BackEndClient> backend_client;
     std::unique_ptr<remote::KV::Stub> kv_stub;
     std::unique_ptr<KvClient> kv_client;
-    rpc::ServerConfig srv_config;
+    rpc::ServerSettings srv_config;
     TemporaryDirectory tmp_dir;
     std::unique_ptr<db::EnvConfig> db_config;
     mdbx::env_managed database_env;
@@ -402,8 +399,8 @@ namespace silkworm::rpc {
 TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     Grpc2SilkwormLogGuard log_guard;
-    ServerConfig srv_config;
-    srv_config.set_address_uri(kTestAddressUri);
+    ServerSettings srv_config;
+    srv_config.address_uri = kTestAddressUri;
     TemporaryDirectory tmp_dir;
     DataDirectory data_dir{tmp_dir.path()};
     REQUIRE_NOTHROW(data_dir.deploy());

@@ -34,33 +34,22 @@ commands:
             git submodule sync
             git -c submodule.LegacyTests.update=none submodule update --init --recursive
 
-  format:
-    steps:
-      - run:
-          name: "Format"
-          working_directory: ~/project
-          command: |
-            sudo pip install cmake-format==0.6.13
-            make fmt
-            if ! git diff --exit-code
-            then
-              echo "The formatting style is not compliant. Try to run: 'make fmt' locally and push the changes"
-              exit 1
-            fi
-      - run:
-          name: "Copyright"
-          working_directory: ~/project
-          command: cmake -P cmake/copyright.cmake
-
   build:
     parameters:
+      build_type:
+        type: string
+        default: Release
+      compiler_id:
+        type: string
+      compiler_version:
+        type: integer
       conan_profile:
         type: string
         default: none
-      toolchain:
-        type: string
-        default: default
     steps:
+      - run:
+          name: "Install compiler"
+          command: cmake/setup/compiler_install.sh <<parameters.compiler_id>> <<parameters.compiler_version>>
       - run:
           name: "Install dependencies"
           command: |
@@ -72,61 +61,50 @@ commands:
           command: |
             if [[ "<<parameters.conan_profile>>" != "none" ]]
             then
-                CONAN_CMAKE_ARGS="-DCONAN_PACKAGE_MANAGER=ON -DCONAN_PROFILE=<<parameters.conan_profile>>"
+                CONAN_CMAKE_ARGS="-DCONAN_PROFILE=<<parameters.conan_profile>>"
             fi
-            if [[ "<<parameters.toolchain>>" != "default" ]]
+            if [[ "<<parameters.compiler_id>>" == "clang" ]]
             then
-                TOOLCHAIN_CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/<<parameters.toolchain>>.cmake"
+                TOOLCHAIN_CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=../project/cmake/toolchain/clang_libcxx.cmake"
             fi
 
-            cmake ../project -DCMAKE_BUILD_TYPE=$BUILD_TYPE $CONAN_CMAKE_ARGS $TOOLCHAIN_CMAKE_ARGS $BUILD_CMAKE_ARGS
+            cmake ../project -DCMAKE_BUILD_TYPE=<<parameters.build_type>> $CONAN_CMAKE_ARGS $TOOLCHAIN_CMAKE_ARGS $BUILD_CMAKE_ARGS
       - run:
           name: "Build"
           command: cmake --build ~/build -j8 # each compiler job requires 4GB of RAM
 
-  install_gcc:
-    steps:
-      - run:
-          name: "Install gcc"
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y gcc-$GCC_VERSION g++-$GCC_VERSION
-            sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-$GCC_VERSION 100 --slave /usr/bin/g++ g++ /usr/bin/g++-$GCC_VERSION
-
-  # libc++ is an alternative standard library needed for coroutines support on Clang
-  # https://libcxx.llvm.org
-  install_llvm:
-    steps:
-      - run:
-          name: "Install llvm"
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y llvm-$CLANG_VERSION libc++-$CLANG_VERSION-dev libc++abi-$CLANG_VERSION-dev clang-$CLANG_VERSION
-            sudo ln -sfv /usr/bin/clang-$CLANG_VERSION /usr/bin/clang
-            sudo ln -sfv /usr/bin/clang++-$CLANG_VERSION /usr/bin/clang++
-            sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100
-            sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 100
-            sudo update-alternatives --install /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-$CLANG_VERSION 100
-            sudo update-alternatives --install /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-$CLANG_VERSION 100
-
   build_using_conan:
     parameters:
-      profile:
+      build_type:
         type: string
-        default: linux_gcc_11_release
-      toolchain:
+        default: Release
+      compiler_id:
         type: string
-        default: default
+      compiler_version:
+        type: integer
     steps:
       - run:
           name: "Install Conan"
           command: sudo pip3 install conan==1.58.0 chardet
+      - run:
+          name: "Select Conan profile"
+          command: |
+            if [[ "<<parameters.compiler_id>>" == "clang" ]]
+            then
+                conan_profile=linux_clang_13_release
+            else
+                conan_profile=linux_gcc_11_release
+            fi
+            echo "export CONAN_PROFILE='$conan_profile'" >> "$BASH_ENV"
+            cp "cmake/profiles/$conan_profile" "$HOME/selected_conan_profile"
       - restore_cache:
           name: "Restore Conan cache"
-          key: &conan-cache-key conan-machine-{{ .Environment.CIRCLE_JOB }}-{{checksum "cmake/profiles/<<parameters.profile>>"}}-{{checksum "conanfile.txt"}}
+          key: &conan-cache-key conan-machine-{{ .Environment.CIRCLE_JOB }}-<<parameters.compiler_id>>-<<parameters.compiler_version>>-{{checksum "../selected_conan_profile"}}-{{checksum "conanfile.txt"}}
       - build:
-          conan_profile: <<parameters.profile>>
-          toolchain: <<parameters.toolchain>>
+          build_type: <<parameters.build_type>>
+          compiler_id: <<parameters.compiler_id>>
+          compiler_version: <<parameters.compiler_version>>
+          conan_profile: $CONAN_PROFILE
       - save_cache:
           name: "Save Conan cache"
           key: *conan-cache-key
@@ -134,6 +112,10 @@ commands:
             - ~/.conan
 
   test:
+    parameters:
+      ethereum_tests:
+        type: boolean
+        default: true
     steps:
       - run:
           name: "Core unit tests"
@@ -161,42 +143,74 @@ commands:
           name: "Sync unit tests"
           working_directory: ~/build
           command: cmd/test/sync_test
-      - run:
-          name: "Ethereum EL tests"
-          working_directory: ~/build
-          no_output_timeout: 30m
-          command: cmd/test/ethereum --threads 8
+      - when:
+          condition: <<parameters.ethereum_tests>>
+          steps:
+            - run:
+                name: "Ethereum EL tests"
+                working_directory: ~/build
+                no_output_timeout: 30m
+                command: cmd/test/ethereum --threads 8
 
 jobs:
-  linux-gcc-11-thread-sanitizer:
+  lint:
+    machine:
+      image: ubuntu-2204:2023.04.2    
+    steps:
+      - checkout
+      - run:
+          name: "Format"
+          working_directory: ~/project
+          command: |
+            sudo pip install cmake-format==0.6.13
+            make fmt
+            if ! git diff --exit-code
+            then
+              echo "The formatting style is not compliant. Try to run: 'make fmt' locally and push the changes"
+              exit 1
+            fi
+      - run:
+          name: "Copyright"
+          working_directory: ~/project
+          command: cmake -P cmake/copyright.cmake
+
+  linux-gcc-thread-sanitizer:
     environment:
-      BUILD_TYPE: Debug
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=thread
     machine:
       image: ubuntu-2204:2023.04.2
     resource_class: xlarge
     steps:
       - checkout_with_submodules
-      - build_using_conan
+      - build_using_conan:
+          compiler_id: gcc
+          compiler_version: <<pipeline.parameters.gcc_version_latest>>
+          build_type: Debug
       - test
 
-  linux-gcc-12-release:
-    environment:
-      GCC_VERSION: 12
-      BUILD_TYPE: Release
+  linux-release:
+    parameters:
+      compiler_id:
+        type: string
+      compiler_version:
+        type: integer
+      ethereum_tests:
+        type: boolean
+        default: true
     machine:
       image: ubuntu-2204:2023.04.2
     resource_class: xlarge
     steps:
-      - checkout_with_submodules
-      - install_gcc
-      - build_using_conan
-      - test
+      - checkout_with_submodules:
+          ethereum_tests: <<parameters.ethereum_tests>>
+      - build_using_conan:
+          compiler_id: <<parameters.compiler_id>>
+          compiler_version: <<parameters.compiler_version>>
+      - test:
+          ethereum_tests: <<parameters.ethereum_tests>>
 
-  linux-clang-15-address-sanitizer:
+  linux-clang-address-sanitizer:
     environment:
-      CLANG_VERSION: 15
-      BUILD_TYPE: Debug
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=address,undefined
       ASAN_OPTIONS: alloc_dealloc_mismatch=0 # https://github.com/llvm/llvm-project/issues/59432
     machine:
@@ -204,27 +218,24 @@ jobs:
     resource_class: xlarge
     steps:
       - checkout_with_submodules
-      - install_llvm
       - build_using_conan:
-          profile: linux_clang_13_release
-          toolchain: clang_libcxx
+          build_type: Debug
+          compiler_id: clang
+          compiler_version: <<pipeline.parameters.clang_version_latest>>
       - test
 
-  linux-clang-13-coverage:
+  linux-clang-coverage:
     environment:
-      CLANG_VERSION: 13
-      BUILD_TYPE: Debug
       BUILD_CMAKE_ARGS: -DSILKWORM_CLANG_COVERAGE=ON
     machine:
       image: ubuntu-2204:2023.04.2
     resource_class: xlarge
     steps:
       - checkout_with_submodules
-      - format
-      - install_llvm
       - build_using_conan:
-          profile: linux_clang_13_release
-          toolchain: clang_libcxx
+          build_type: Debug
+          compiler_id: clang
+          compiler_version: <<pipeline.parameters.clang_version_latest>>
       - run:
           name: "Core unit tests"
           working_directory: ~/build
@@ -313,12 +324,59 @@ jobs:
           working_directory: ~/build
           command: wasmer cmd/test/core_test --stack-size 16777216
 
+parameters:
+  clang_version_min:
+    type: integer
+    default: 13
+  clang_version_latest:
+    type: integer
+    default: 15
+  gcc_version_min:
+    type: integer
+    default: 11
+  gcc_version_latest:
+    type: integer
+    default: 12
+
 workflows:
   version: 2
-  silkworm:
+
+  light:
+    when:
+      not:
+        equal: [ master, <<pipeline.git.branch>> ]
     jobs:
-      - linux-gcc-12-release
-      - linux-gcc-11-thread-sanitizer
-      - linux-clang-13-coverage
-      - linux-clang-15-address-sanitizer
+      - lint
+      - linux-release:
+          name: linux-gcc-<<pipeline.parameters.gcc_version_latest>>-release
+          compiler_id: gcc
+          compiler_version: <<pipeline.parameters.gcc_version_latest>>
+          ethereum_tests: false
+          requires:
+            - lint
+      - linux-release:
+          name: linux-clang-<<pipeline.parameters.clang_version_latest>>-release
+          compiler_id: clang
+          compiler_version: <<pipeline.parameters.clang_version_latest>>
+          ethereum_tests: false
+          requires:
+            - lint
+
+  integration:
+    when:
+      or:
+        - equal: [ master, <<pipeline.git.branch>> ]
+        - matches: { pattern: "^ci\\/.+$", value: <<pipeline.git.branch>> }
+    jobs:
+      - linux-release:
+          name: linux-gcc-<<pipeline.parameters.gcc_version_min>>-release
+          compiler_id: gcc
+          compiler_version: <<pipeline.parameters.gcc_version_min>>
+      - linux-release:
+          name: linux-clang-<<pipeline.parameters.clang_version_min>>-release
+          compiler_id: clang
+          compiler_version: <<pipeline.parameters.clang_version_min>>
+      - linux-gcc-thread-sanitizer
+      - linux-clang-coverage
+      - linux-clang-address-sanitizer
       - linux-wasm-build

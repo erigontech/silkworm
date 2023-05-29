@@ -50,6 +50,10 @@ void MemoryMutationCursor::bind(ROTxn& txn, const MapConfig& config) {
     return memory_cursor_->map();
 }
 
+size_t MemoryMutationCursor::size() const {
+    return cursor_->size();
+}
+
 bool MemoryMutationCursor::is_multi_value() const {
     return cursor_->is_multi_value();
 }

@@ -269,7 +269,7 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
         success_or_throw(read_canonical_hashes(txn, from, target_progress));
 
         // Create the pool of worker threads crunching the address recovery tasks
-        thread_pool worker_pool;
+        ThreadPool worker_pool;
 
         // Load block transactions from db and recover tx senders in batches
         log::Trace(log_prefix_, {"op", "read bodies", "from", std::to_string(from), "to", std::to_string(target_progress)});
@@ -494,7 +494,7 @@ Stage::Result Senders::add_to_batch(BlockNum block_num, std::vector<Transaction>
     return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 }
 
-void Senders::recover_batch(thread_pool& worker_pool, secp256k1_context* context, BlockNum from) {
+void Senders::recover_batch(ThreadPool& worker_pool, secp256k1_context* context, BlockNum from) {
     // Launch parallel senders recovery
     log::Trace(log_prefix_, {"op", "recover_batch", "first", std::to_string(batch_->cbegin()->block_num)});
 

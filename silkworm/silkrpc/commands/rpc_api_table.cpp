@@ -210,6 +210,7 @@ void RpcApiTable::add_engine_handlers() {
     method_handlers_[http::method::k_engine_getPayloadV1] = &commands::RpcApi::handle_engine_get_payload_v1;
     method_handlers_[http::method::k_engine_getPayloadV2] = &commands::RpcApi::handle_engine_get_payload_v2;
     method_handlers_[http::method::k_engine_getPayloadBodiesByHashV1] = &commands::RpcApi::handle_engine_get_payload_bodies_by_hash_v1;
+    method_handlers_[http::method::k_engine_getPayloadBodiesByRangeV1] = &commands::RpcApi::handle_engine_get_payload_bodies_by_range_v1;
     method_handlers_[http::method::k_engine_newPayloadV1] = &commands::RpcApi::handle_engine_new_payload_v1;
     method_handlers_[http::method::k_engine_newPayloadV2] = &commands::RpcApi::handle_engine_new_payload_v2;
     method_handlers_[http::method::k_engine_forkchoiceUpdatedV1] = &commands::RpcApi::handle_engine_forkchoice_updated_v1;
@@ -231,6 +232,7 @@ void RpcApiTable::add_ots_handlers() {
     method_handlers_[http::method::k_ots_getTransactionBySenderAndNonce] = &commands::RpcApi::handle_ots_get_transaction_by_sender_and_nonce;
     method_handlers_[http::method::k_ots_getContractCreator] = &commands::RpcApi::handle_ots_get_contract_creator;
     method_handlers_[http::method::k_ots_traceTransaction] = &commands::RpcApi::handle_ots_trace_transaction;
+    method_handlers_[http::method::k_ots_getTransactionError] = &commands::RpcApi::handle_ots_get_transaction_error;
 }
 
 }  // namespace silkworm::rpc::commands

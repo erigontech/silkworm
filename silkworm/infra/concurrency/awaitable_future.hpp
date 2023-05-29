@@ -48,13 +48,23 @@ class AwaitableFuture {
     AwaitableFuture& operator=(AwaitableFuture&&) noexcept = default;
 
     asio::awaitable<T> get_async() {
-        std::optional<T> result = co_await channel_->async_receive(asio::use_awaitable);
-        co_return std::move(result.value());
+        try {
+            std::optional<T> result = co_await channel_->async_receive(asio::use_awaitable);
+            co_return std::move(result.value());
+        } catch (const boost::system::system_error& ex) {
+            close_and_throw_if_cancelled(ex);
+            throw ex;
+        }
     }
 
     T get() {
-        std::optional<T> result = channel_->async_receive(asio::use_future).get();
-        return std::move(result.value());
+        try {
+            std::optional<T> result = channel_->async_receive(asio::use_future).get();
+            return std::move(result.value());
+        } catch (const boost::system::system_error& ex) {
+            close_and_throw_if_cancelled(ex);
+            throw ex;
+        }
     }
 
   private:
@@ -63,6 +73,15 @@ class AwaitableFuture {
     using AsyncChannel = asio::experimental::concurrent_channel<void(std::exception_ptr, std::optional<T>)>;
 
     explicit AwaitableFuture(std::shared_ptr<AsyncChannel> channel) : channel_(channel) {}
+
+    void close_and_throw_if_cancelled(const boost::system::system_error& ex) {
+        // Convert channel cancelled into operation cancelled to allow just one catch clause at call site
+        if (ex.code() == boost::asio::experimental::channel_errc::channel_cancelled) {
+            // Close the channel because cancellation state seems to be not detectable at sender side
+            channel_->close();
+            throw boost::system::system_error{make_error_code(boost::system::errc::operation_canceled)};
+        }
+    }
 
     std::shared_ptr<AsyncChannel> channel_;
 };
@@ -83,19 +102,26 @@ class AwaitablePromise {
     AwaitablePromise(AwaitablePromise&&) noexcept = default;
     AwaitablePromise& operator=(AwaitablePromise&&) noexcept = default;
 
-    void set_value(T value) {
-        bool sent = channel_->try_send(nullptr, std::move(value));
-        if (!sent) throw std::runtime_error("AwaitablePromise::set_value: channel is full");
+    bool set_value(T value) {
+        return set(nullptr, std::move(value));
     }
 
     void set_exception(std::exception_ptr ptr) {
-        bool sent = channel_->try_send(ptr, std::nullopt);
-        if (!sent) throw std::runtime_error("AwaitablePromise::set_exception: channel is full");
+        set(ptr, std::nullopt);
     }
 
     AwaitableFuture<T> get_future() { return AwaitableFuture<T>(channel_); }
 
   private:
+    bool set(std::exception_ptr ptr, std::optional<T> value) {
+        const bool sent = channel_->try_send(ptr, std::move(value));
+        // Any send failure when channel has already been closed must not trigger an error
+        if (!sent && channel_->is_open()) {
+            throw std::runtime_error("AwaitablePromise::set: channel is full");
+        }
+        return sent;
+    }
+
     std::shared_ptr<AsyncChannel> channel_;
 };
 

@@ -22,7 +22,7 @@
 #include <stdexcept>
 
 #include <silkworm/core/common/endian.hpp>
-#include <silkworm/core/rlp/decode.hpp>
+#include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 
@@ -36,8 +36,8 @@ void encode(Bytes& to, const ForkId& value) {
     rlp::encode(to, value.hash_bytes(), value.next());
 }
 
-DecodingResult decode(ByteView& from, ForkId& value) noexcept {
-    return rlp::decode(from, value.hash_bytes(), value.next());
+DecodingResult decode(ByteView& from, ForkId& value, rlp::Leftover mode) noexcept {
+    return rlp::decode(from, mode, value.hash_bytes(), value.next());
 }
 
 ForkId::ForkId(uint32_t hash, BlockNum next)

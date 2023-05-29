@@ -174,6 +174,25 @@ awaitable<ExecutionPayloadBodies> RemoteBackEnd::engine_get_payload_bodies_by_ha
     co_return payload_bodies;
 }
 
+awaitable<ExecutionPayloadBodies> RemoteBackEnd::engine_get_payload_bodies_by_range(BlockNum start, uint64_t count) {
+    const auto start_time = clock_time::now();
+    UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncEngineGetPayloadBodiesByRangeV1> gpb_rpc{*stub_, grpc_context_};
+    ::remote::EngineGetPayloadBodiesByRangeV1Request request;
+    request.set_start(start);
+    request.set_count(count);
+    const auto reply = co_await gpb_rpc.finish_on(executor_, request);
+    ExecutionPayloadBodies payload_bodies;
+    payload_bodies.reserve(static_cast<std::size_t>(reply.bodies_size()));
+    for (const auto& body : reply.bodies()) {
+        std::vector<Bytes> transactions{decode(body.transactions())};
+        std::vector<Withdrawal> withdrawals{decode(body.withdrawals())};
+        ExecutionPayloadBody payload_body{std::move(transactions), std::move(withdrawals)};
+        payload_bodies.push_back(std::move(payload_body));
+    }
+    SILK_DEBUG << "RemoteBackEnd::engine_get_payload_bodies_by_range #bodies=" << payload_bodies.size() << " t=" << clock_time::since(start_time);
+    co_return payload_bodies;
+}
+
 awaitable<PeerInfos> RemoteBackEnd::peers() {
     const auto start_time = clock_time::now();
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncPeers> peers_rpc{*stub_, grpc_context_};

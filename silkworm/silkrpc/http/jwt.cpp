@@ -21,59 +21,94 @@
 #include <string>
 
 #include <silkworm/core/common/random_number.hpp>
+#include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/log.hpp>
+
+static std::string hex_to_string(const std::string& jwt_token) {
+    const auto jwt_token_bytes = silkworm::from_hex(jwt_token);
+    if (!jwt_token_bytes) {
+        const auto error_msg{"JWT token format is incorrect: " + jwt_token};
+        SILK_ERROR << error_msg;
+        throw std::runtime_error{error_msg};
+    }
+
+    return {jwt_token_bytes->cbegin(), jwt_token_bytes->cend()};
+}
 
 namespace silkworm {
 
 constexpr char kHexCharacters[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
-void generate_jwt_token(const std::string& file_path, std::string& jwt_token) {
-    // If file doesn't exist we generate one
-    if (!std::filesystem::exists(file_path)) {
-        std::ofstream{file_path};
-    }
-    // If no token has been found then we make one
-    std::ofstream write_file;
-    write_file.open(file_path);
+constexpr std::size_t kTokenSize{32 * 2};                  // 32-bytes as hex chars
+constexpr std::size_t kPrefixedTokenSize{2 + kTokenSize};  // "0x" + 32-bytes as hex chars
 
-    // Generate a random 32 bytes hex token ( not including prefix )
+std::string generate_jwt_token(const std::filesystem::path& file_path) {
+    // Check input file path is not empty
+    if (file_path.empty()) {
+        const auto error_msg{"Empty JWT file path"};
+        SILK_ERROR << error_msg;
+        throw std::runtime_error{error_msg};
+    }
+
+    std::string jwt_token;
+    jwt_token.reserve(kTokenSize);
+
+    // Generate a random 32-bytes hex token (not including prefix)
     RandomNumber rnd{0, 15};
     for (int i = 0; i < 64; ++i) {
         jwt_token += kHexCharacters[rnd.generate_one()];
     }
-    SILK_LOG << "JWT token created: 0x" << jwt_token;
+    SILK_INFO << "JWT token written to file: " << file_path.string();
+
+    std::ofstream write_file{file_path};
     write_file << "0x" << jwt_token;
-    write_file.close();
+
+    return hex_to_string(jwt_token);
 }
 
-bool load_jwt_token(const std::string& file_path, std::string& jwt_token) {
+std::string load_jwt_token(const std::filesystem::path& file_path) {
+    // Check input file path is not empty
     if (file_path.empty()) {
-        SILK_ERROR << "empty jwt file path ";
-        return false;
+        const auto error_msg{"Empty JWT file path"};
+        SILK_ERROR << error_msg;
+        throw std::runtime_error{error_msg};
     }
 
-    std::ifstream read_file;
-    read_file.open(file_path);
-    SILK_LOG << "Reading JWT secret: " << file_path;
+    // If the input file does not exist, make a new JWT token since we don't have one
+    if (!std::filesystem::exists(file_path)) {
+        return generate_jwt_token(file_path);
+    }
 
-    std::getline(read_file, jwt_token);
-    read_file.close();
-    // Get rid of prefix if we have a token
-    if (jwt_token.length() > 1 && jwt_token[0] == '0' && (jwt_token[1] == 'x' || jwt_token[1] == 'X')) {
+    // Check input file has expected size
+    const auto file_size = std::filesystem::file_size(file_path);
+    if (file_size != kPrefixedTokenSize and file_size != kTokenSize) {
+        const auto error_msg{"Unexpected JWT file size: " + std::to_string(file_size)};
+        SILK_ERROR << error_msg;
+        throw std::runtime_error{error_msg};
+    }
+
+    std::string jwt_token;
+    jwt_token.reserve(kPrefixedTokenSize);
+
+    // Read JWT token from input file strictly checking content size
+    std::ifstream read_file{file_path};
+    read_file >> jwt_token;
+
+    // Get rid of prefix if any
+    if (jwt_token.starts_with("0x") or jwt_token.starts_with("0X")) {
         jwt_token = jwt_token.substr(2);
     }
 
-    if (jwt_token.length() == 64) {
-        SILK_LOG << "JWT secret: 0x" << jwt_token;
-        return true;
+    if (jwt_token.size() != kTokenSize) {
+        const auto error_msg{"JWT token has wrong size: " + std::to_string(jwt_token.size())};
+        SILK_ERROR << error_msg;
+        throw std::runtime_error{error_msg};
     }
-    // If token is of an incorrect size then we return an empty string
-    if (jwt_token.length() != 0 && jwt_token.length() != 64) {
-        return false;
-    }
-    // Make a JWT token since we dont have one
-    generate_jwt_token(file_path, jwt_token);
-    return true;
+    read_file.close();
+
+    SILK_INFO << "JWT secret read from file: " << file_path.string();
+
+    return hex_to_string(jwt_token);
 }
 
 }  // namespace silkworm

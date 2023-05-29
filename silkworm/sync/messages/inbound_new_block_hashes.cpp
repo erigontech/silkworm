@@ -20,6 +20,7 @@
 
 #include <silkworm/core/common/random_number.hpp>
 #include <silkworm/core/common/singleton.hpp>
+#include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/sync/internals/header_chain.hpp>

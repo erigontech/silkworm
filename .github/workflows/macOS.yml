@@ -14,7 +14,11 @@
 
 name: macOS
 
-on: [ push, pull_request ]
+on:
+  push:
+    branches:
+      - master
+      - 'ci/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -23,13 +27,16 @@ concurrency:
 jobs:
   osx:
     runs-on: macOS-latest
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+
+    # Disable on external PRs
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+
     strategy:
       matrix:
         config:
-#          - {build_type: "Debug"}
           - {build_type: "Release"}
       fail-fast: false # This makes it so that if 1 of the tests in the matrix fail, they don't all fail
+
     steps:
     - uses: actions/checkout@v3
       with:

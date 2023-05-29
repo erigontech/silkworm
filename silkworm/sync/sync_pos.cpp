@@ -61,11 +61,6 @@ awaitable<void> PoSSync::download_blocks() {
     });
 
     // initialization
-    auto last_fcu = co_await exec_engine_.last_fork_choice();  // previously was get_canonical_head()
-    auto td = chain_fork_view_.get_total_difficulty(last_fcu.hash);
-    ensure_invariant(td.has_value(), "last_fcu must be in chain_fork_view");
-    chain_fork_view_.reset_head({last_fcu.number, last_fcu.hash, *td});
-
     auto initial_block_progress = co_await exec_engine_.block_progress();
     auto block_progress = initial_block_progress;
 
@@ -371,8 +366,41 @@ auto PoSSync::get_payload_bodies_by_hash(const std::vector<Hash>& block_hashes) 
     for (const auto& bh : block_hashes) {
         const auto block_body{co_await exec_engine_.get_body(bh)};
         if (block_body) {
+            std::vector<Bytes> rlp_txs;
+            rlp_txs.reserve(block_body->transactions.size());
+            for (const auto& transaction : block_body->transactions) {
+                Bytes tx_rlp;
+                rlp::encode(tx_rlp, transaction);
+                rlp_txs.emplace_back(tx_rlp.data(), tx_rlp.size());
+            }
             rpc::ExecutionPayloadBody payload_body{
-                .transactions = {},  // TODO(canepat) encode block_body->transactions
+                .transactions = std::move(rlp_txs),
+                .withdrawals = block_body->withdrawals,
+            };
+            payload_bodies.push_back(payload_body);
+        } else {
+            // Add an empty payload anyway because we must respond w/ one payload for each hash
+            payload_bodies.emplace_back();
+        }
+    }
+    co_return payload_bodies;
+}
+
+auto PoSSync::get_payload_bodies_by_range(BlockNum start, uint64_t count) -> asio::awaitable<rpc::ExecutionPayloadBodies> {
+    rpc::ExecutionPayloadBodies payload_bodies;
+    payload_bodies.resize(count);
+    for (BlockNum number{start}; number < start + count; ++number) {
+        const auto block_body{co_await exec_engine_.get_body(number)};
+        if (block_body) {
+            std::vector<Bytes> rlp_txs;
+            rlp_txs.reserve(block_body->transactions.size());
+            for (const auto& transaction : block_body->transactions) {
+                Bytes tx_rlp;
+                rlp::encode(tx_rlp, transaction);
+                rlp_txs.emplace_back(tx_rlp.data(), tx_rlp.size());
+            }
+            rpc::ExecutionPayloadBody payload_body{
+                .transactions = std::move(rlp_txs),
                 .withdrawals = block_body->withdrawals,
             };
             payload_bodies.push_back(payload_body);

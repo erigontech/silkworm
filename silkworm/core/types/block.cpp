@@ -18,6 +18,7 @@
 
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/protocol/param.hpp>
+#include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 
 namespace silkworm {
@@ -116,12 +117,12 @@ namespace rlp {
 
     void encode(Bytes& to, const BlockHeader& header, bool for_sealing, bool exclude_extra_data_sig) {
         encode_header(to, rlp_header(header, for_sealing, exclude_extra_data_sig));
-        encode(to, header.parent_hash.bytes);
-        encode(to, header.ommers_hash.bytes);
-        encode(to, header.beneficiary.bytes);
-        encode(to, header.state_root.bytes);
-        encode(to, header.transactions_root.bytes);
-        encode(to, header.receipts_root.bytes);
+        encode(to, header.parent_hash);
+        encode(to, header.ommers_hash);
+        encode(to, header.beneficiary);
+        encode(to, header.state_root);
+        encode(to, header.transactions_root);
+        encode(to, header.receipts_root);
         encode(to, header.logs_bloom);
         encode(to, header.difficulty);
         encode(to, header.number);
@@ -135,7 +136,7 @@ namespace rlp {
             encode(to, header.extra_data);
         }
         if (!for_sealing) {
-            encode(to, header.prev_randao.bytes);
+            encode(to, header.prev_randao);
             encode(to, header.nonce);
         }
         if (header.base_fee_per_gas) {
@@ -149,8 +150,7 @@ namespace rlp {
         }
     }
 
-    template <>
-    DecodingResult decode(ByteView& from, BlockHeader& to) noexcept {
+    DecodingResult decode(ByteView& from, BlockHeader& to, Leftover mode) noexcept {
         const auto rlp_head{decode_header(from)};
         if (!rlp_head) {
             return tl::unexpected{rlp_head.error()};
@@ -158,58 +158,35 @@ namespace rlp {
         if (!rlp_head->list) {
             return tl::unexpected{DecodingError::kUnexpectedString};
         }
-        uint64_t leftover{from.length() - rlp_head->payload_length};
+        const uint64_t leftover{from.length() - rlp_head->payload_length};
+        if (mode != Leftover::kAllow && leftover) {
+            return tl::unexpected{DecodingError::kInputTooLong};
+        }
 
-        if (DecodingResult res{decode(from, to.parent_hash.bytes)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.ommers_hash.bytes)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.beneficiary.bytes)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.state_root.bytes)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.transactions_root.bytes)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.receipts_root.bytes)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.logs_bloom)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.difficulty)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.number)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.gas_limit)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.gas_used)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.timestamp)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.extra_data)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.prev_randao.bytes)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.nonce)}; !res) {
+        if (DecodingResult res{decode_items(from,
+                                            to.parent_hash.bytes,
+                                            to.ommers_hash.bytes,
+                                            to.beneficiary.bytes,
+                                            to.state_root.bytes,
+                                            to.transactions_root.bytes,
+                                            to.receipts_root.bytes,
+                                            to.logs_bloom,
+                                            to.difficulty,
+                                            to.number,
+                                            to.gas_limit,
+                                            to.gas_used,
+                                            to.timestamp,
+                                            to.extra_data,
+                                            to.prev_randao.bytes,
+                                            to.nonce)};
+            !res) {
             return res;
         }
 
         to.base_fee_per_gas = std::nullopt;
         if (from.length() > leftover) {
             intx::uint256 base_fee_per_gas;
-            if (DecodingResult res{decode(from, base_fee_per_gas)}; !res) {
+            if (DecodingResult res{decode(from, base_fee_per_gas, Leftover::kAllow)}; !res) {
                 return res;
             }
             to.base_fee_per_gas = base_fee_per_gas;
@@ -218,7 +195,7 @@ namespace rlp {
         to.withdrawals_root = std::nullopt;
         if (from.length() > leftover) {
             evmc::bytes32 withdrawals_root;
-            if (DecodingResult res{decode(from, withdrawals_root)}; !res) {
+            if (DecodingResult res{decode(from, withdrawals_root, Leftover::kAllow)}; !res) {
                 return res;
             }
             to.withdrawals_root = withdrawals_root;
@@ -227,14 +204,14 @@ namespace rlp {
         to.excess_data_gas = std::nullopt;
         if (from.length() > leftover) {
             intx::uint256 excess_data_gas;
-            if (DecodingResult res{decode(from, excess_data_gas)}; !res) {
+            if (DecodingResult res{decode(from, excess_data_gas, Leftover::kAllow)}; !res) {
                 return res;
             }
             to.excess_data_gas = excess_data_gas;
         }
 
         if (from.length() != leftover) {
-            return tl::unexpected{DecodingError::kListLengthMismatch};
+            return tl::unexpected{DecodingError::kUnexpectedListElements};
         }
         return {};
     }
@@ -263,8 +240,7 @@ namespace rlp {
         }
     }
 
-    template <>
-    DecodingResult decode(ByteView& from, BlockBody& to) noexcept {
+    DecodingResult decode(ByteView& from, BlockBody& to, Leftover mode) noexcept {
         const auto rlp_head{decode_header(from)};
         if (!rlp_head) {
             return tl::unexpected{rlp_head.error()};
@@ -272,32 +248,31 @@ namespace rlp {
         if (!rlp_head->list) {
             return tl::unexpected{DecodingError::kUnexpectedString};
         }
-        uint64_t leftover{from.length() - rlp_head->payload_length};
-
-        if (DecodingResult res{decode(from, to.transactions)}; !res) {
-            return res;
+        const uint64_t leftover{from.length() - rlp_head->payload_length};
+        if (mode != Leftover::kAllow && leftover) {
+            return tl::unexpected{DecodingError::kInputTooLong};
         }
-        if (DecodingResult res{decode(from, to.ommers)}; !res) {
+
+        if (DecodingResult res{decode_items(from, to.transactions, to.ommers)}; !res) {
             return res;
         }
 
         to.withdrawals = std::nullopt;
         if (from.length() > leftover) {
             std::vector<Withdrawal> withdrawals;
-            if (DecodingResult res{decode(from, withdrawals)}; !res) {
+            if (DecodingResult res{decode(from, withdrawals, Leftover::kAllow)}; !res) {
                 return res;
             }
             to.withdrawals = withdrawals;
         }
 
         if (from.length() != leftover) {
-            return tl::unexpected{DecodingError::kListLengthMismatch};
+            return tl::unexpected{DecodingError::kUnexpectedListElements};
         }
         return {};
     }
 
-    template <>
-    DecodingResult decode(ByteView& from, Block& to) noexcept {
+    DecodingResult decode(ByteView& from, Block& to, Leftover mode) noexcept {
         const auto rlp_head{decode_header(from)};
         if (!rlp_head) {
             return tl::unexpected{rlp_head.error()};
@@ -305,29 +280,26 @@ namespace rlp {
         if (!rlp_head->list) {
             return tl::unexpected{DecodingError::kUnexpectedString};
         }
-        uint64_t leftover{from.length() - rlp_head->payload_length};
+        const uint64_t leftover{from.length() - rlp_head->payload_length};
+        if (mode != Leftover::kAllow && leftover) {
+            return tl::unexpected{DecodingError::kInputTooLong};
+        }
 
-        if (DecodingResult res{decode(from, to.header)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.transactions)}; !res) {
-            return res;
-        }
-        if (DecodingResult res{decode(from, to.ommers)}; !res) {
+        if (DecodingResult res{decode_items(from, to.header, to.transactions, to.ommers)}; !res) {
             return res;
         }
 
         to.withdrawals = std::nullopt;
         if (from.length() > leftover) {
             std::vector<Withdrawal> withdrawals;
-            if (DecodingResult res{decode(from, withdrawals)}; !res) {
+            if (DecodingResult res{decode(from, withdrawals, Leftover::kAllow)}; !res) {
                 return res;
             }
             to.withdrawals = withdrawals;
         }
 
         if (from.length() != leftover) {
-            return tl::unexpected{DecodingError::kListLengthMismatch};
+            return tl::unexpected{DecodingError::kUnexpectedListElements};
         }
         return {};
     }

@@ -20,11 +20,11 @@
 
 #include <silkworm/infra/concurrency/coroutine.hpp>
 
+#include <silkworm/silkrpc/core/local_state.hpp>
+
 namespace silkworm::rpc::ethdb::file {
 
 boost::asio::awaitable<void> LocalTransaction::open() {
-    // Create a new read-only transaction.
-    read_only_txn_ = chaindata_env_->start_read();
     co_return;
 }
 
@@ -53,7 +53,7 @@ boost::asio::awaitable<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cur
             co_return cursor_it->second;
         }
     }
-    auto cursor = std::make_shared<LocalCursor>(read_only_txn_, ++last_cursor_id_, table);
+    auto cursor = std::make_shared<LocalCursor>(rtxn_, ++last_cursor_id_, table);
     co_await cursor->open_cursor(table, is_cursor_sorted);
     if (is_cursor_sorted) {
         dup_cursors_[table] = cursor;
@@ -61,6 +61,10 @@ boost::asio::awaitable<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cur
         cursors_[table] = cursor;
     }
     co_return cursor;
+}
+
+std::shared_ptr<silkworm::State> LocalTransaction::create_state(boost::asio::io_context&, const core::rawdb::DatabaseReader&, uint64_t block_number) {
+    return std::make_shared<silkworm::rpc::state::LocalState>(block_number, chaindata_env_);
 }
 
 }  // namespace silkworm::rpc::ethdb::file

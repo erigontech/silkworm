@@ -16,6 +16,7 @@
 
 #include "withdrawal.hpp"
 
+#include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode.hpp>
 
 namespace silkworm::rlp {
@@ -42,34 +43,8 @@ void encode(Bytes& to, const Withdrawal& w) {
     encode(to, w.amount);
 }
 
-template <>
-DecodingResult decode(ByteView& from, Withdrawal& to) noexcept {
-    const auto rlp_head{decode_header(from)};
-    if (!rlp_head) {
-        return tl::unexpected{rlp_head.error()};
-    }
-    if (!rlp_head->list) {
-        return tl::unexpected{DecodingError::kUnexpectedString};
-    }
-    uint64_t leftover{from.length() - rlp_head->payload_length};
-
-    if (DecodingResult res{decode(from, to.index)}; !res) {
-        return res;
-    }
-    if (DecodingResult res{decode(from, to.validator_index)}; !res) {
-        return res;
-    }
-    if (DecodingResult res{decode(from, to.address.bytes)}; !res) {
-        return res;
-    }
-    if (DecodingResult res{decode(from, to.amount)}; !res) {
-        return res;
-    }
-
-    if (from.length() != leftover) {
-        return tl::unexpected{DecodingError::kListLengthMismatch};
-    }
-    return {};
+DecodingResult decode(ByteView& from, Withdrawal& to, Leftover mode) noexcept {
+    return decode(from, mode, to.index, to.validator_index, to.address.bytes, to.amount);
 }
 
 }  // namespace silkworm::rlp

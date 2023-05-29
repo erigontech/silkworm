@@ -28,7 +28,7 @@ tl::expected<Header, DecodingError> decode_header(ByteView& from) noexcept {
         return tl::unexpected{DecodingError::kInputTooShort};
     }
 
-    Header h;
+    Header h{.list = false};
     uint8_t b{from[0]};
     if (b < 0x80) {
         h.payload_length = 1;
@@ -87,13 +87,11 @@ tl::expected<Header, DecodingError> decode_header(ByteView& from) noexcept {
     return h;
 }
 
-template <>
-DecodingResult decode(ByteView& from, evmc::bytes32& to) noexcept {
-    return decode(from, to.bytes);
+DecodingResult decode(ByteView& from, evmc::bytes32& to, Leftover mode) noexcept {
+    return decode(from, to.bytes, mode);
 }
 
-template <>
-DecodingResult decode(ByteView& from, Bytes& to) noexcept {
+DecodingResult decode(ByteView& from, Bytes& to, Leftover mode) noexcept {
     const auto h{decode_header(from)};
     if (!h) {
         return tl::unexpected{h.error()};
@@ -103,13 +101,15 @@ DecodingResult decode(ByteView& from, Bytes& to) noexcept {
     }
     to = from.substr(0, h->payload_length);
     from.remove_prefix(h->payload_length);
+    if (mode != Leftover::kAllow && !from.empty()) {
+        return tl::unexpected{DecodingError::kInputTooLong};
+    }
     return {};
 }
 
-template <>
-DecodingResult decode(ByteView& from, bool& to) noexcept {
+DecodingResult decode(ByteView& from, bool& to, Leftover mode) noexcept {
     uint64_t i{0};
-    if (DecodingResult res{decode(from, i)}; !res) {
+    if (DecodingResult res{decode(from, i, mode)}; !res) {
         return tl::unexpected{res.error()};
     }
     if (i > 1) {

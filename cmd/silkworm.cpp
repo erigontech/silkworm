@@ -20,7 +20,6 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
-#include <vector>
 
 #include <CLI/CLI.hpp>
 #include <boost/asio/co_spawn.hpp>
@@ -29,32 +28,25 @@
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/common/mem_usage.hpp>
 #include <silkworm/infra/common/os.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
-#include <silkworm/infra/concurrency/async_thread.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
-#include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/infra/grpc/server/server_context_pool.hpp>
-#include <silkworm/node/backend/ethereum_backend.hpp>
-#include <silkworm/node/backend/remote/backend_kv_server.hpp>
-#include <silkworm/node/common/settings.hpp>
 #include <silkworm/node/db/eth_status_data_provider.hpp>
-#include <silkworm/node/snapshot/sync.hpp>
-#include <silkworm/node/stagedsync/local_client.hpp>
-#include <silkworm/node/stagedsync/server.hpp>
+#include <silkworm/node/node.hpp>
 #include <silkworm/sentry/api/api_common/sentry_client.hpp>
 #include <silkworm/sentry/grpc/client/sentry_client.hpp>
 #include <silkworm/sentry/multi_sentry_client.hpp>
 #include <silkworm/sentry/sentry.hpp>
 #include <silkworm/sentry/session_sentry_client.hpp>
-#include <silkworm/sentry/settings.hpp>
 #include <silkworm/sync/sync.hpp>
 
 #include "common/common.hpp"
 #include "common/db_checklist.hpp"
 #include "common/human_size_parser_validator.hpp"
+#include "common/node_options.hpp"
+#include "common/rpcdaemon_options.hpp"
 #include "common/sentry_options.hpp"
 #include "common/settings.hpp"
 #include "common/shutdown_signal.hpp"
@@ -77,45 +69,18 @@ using silkworm::PreverifiedHashes;
 using silkworm::StopWatch;
 using silkworm::cmd::common::add_context_pool_options;
 using silkworm::cmd::common::add_logging_options;
+using silkworm::cmd::common::add_node_options;
 using silkworm::cmd::common::add_option_chain;
 using silkworm::cmd::common::add_option_data_dir;
 using silkworm::cmd::common::add_option_private_api_address;
 using silkworm::cmd::common::add_option_remote_sentry_addresses;
+using silkworm::cmd::common::add_rpcdaemon_options;
 using silkworm::cmd::common::add_sentry_options;
 using silkworm::cmd::common::add_snapshot_options;
 using silkworm::cmd::common::get_node_name_from_build_info;
 using silkworm::cmd::common::HumanSizeParserValidator;
 using silkworm::cmd::common::ShutdownSignal;
 using silkworm::cmd::common::SilkwormSettings;
-using silkworm::snapshot::SnapshotSync;
-
-// progress log
-class ResourceUsageLog : public ActiveComponent {
-    NodeSettings& node_settings_;
-
-  public:
-    explicit ResourceUsageLog(NodeSettings& settings) : node_settings_{settings} {}
-
-    void execution_loop() override {  // todo: this is only a trick, instead use asio timers
-        using namespace std::chrono;
-        sw_log::set_thread_name("progress-log  ");
-        auto start_time = steady_clock::now();
-        auto last_update = start_time;
-        while (!is_stopping()) {
-            std::this_thread::sleep_for(500ms);
-
-            auto now = steady_clock::now();
-            if (now - last_update > 300s) {
-                sw_log::Info("Resource usage",
-                             {"mem", human_size(get_mem_usage()),
-                              "chain", human_size(node_settings_.data_directory->chaindata().size()),
-                              "etl-tmp", human_size(node_settings_.data_directory->etl().size()),
-                              "uptime", StopWatch::format(now - start_time)});
-                last_update = now;
-            }
-        }
-    }
-};
 
 struct PruneModeValidator : public CLI::Validator {
     explicit PruneModeValidator() {
@@ -133,61 +98,23 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
 
     auto& node_settings = settings.node_settings;
 
-    // Node settings
     std::filesystem::path data_dir_path;
+    add_option_data_dir(cli, data_dir_path);
+
     std::string chaindata_max_size_str{human_size(node_settings.chaindata_env_config.max_size)};
     std::string chaindata_growth_size_str{human_size(node_settings.chaindata_env_config.growth_size)};
     std::string chaindata_page_size_str{human_size(node_settings.chaindata_env_config.page_size)};
     std::string batch_size_str{human_size(node_settings.batch_size)};
     std::string etl_buffer_size_str{human_size(node_settings.etl_buffer_size)};
-    add_option_data_dir(cli, data_dir_path);
 
-    cli.add_flag("--chaindata.exclusive", node_settings.chaindata_env_config.exclusive,
-                 "Chaindata database opened in exclusive mode");
-    cli.add_flag("--chaindata.readahead", node_settings.chaindata_env_config.read_ahead,
-                 "Chaindata database enable readahead");
-    cli.add_flag("--chaindata.writemap", node_settings.chaindata_env_config.write_map,
-                 "Chaindata database enable writemap");
-
-    cli.add_option("--chaindata.growthsize", chaindata_growth_size_str, "Chaindata database growth size.")
-        ->capture_default_str()
-        ->check(HumanSizeParserValidator("64MB"));
-    cli.add_option("--chaindata.pagesize", chaindata_page_size_str, "Chaindata database page size. A power of 2")
-        ->capture_default_str()
-        ->check(HumanSizeParserValidator("256B", {"65KB"}));
-    cli.add_option("--chaindata.maxsize", chaindata_max_size_str, "Chaindata database max size.")
-        ->capture_default_str()
-        ->check(HumanSizeParserValidator("32MB", {"128TB"}));
-
-    cli.add_option("--batchsize", batch_size_str, "Batch size for stage execution")
-        ->capture_default_str()
-        ->check(HumanSizeParserValidator("64MB", {"16GB"}));
-    cli.add_option("--etl.buffersize", etl_buffer_size_str, "Buffer size for ETL operations")
-        ->capture_default_str()
-        ->check(HumanSizeParserValidator("64MB", {"1GB"}));
-
-    add_option_private_api_address(cli, node_settings.private_api_addr);
+    // Node settings
+    add_node_options(cli, node_settings);
 
     // Sentry settings
-    add_option_remote_sentry_addresses(cli, node_settings.remote_sentry_addresses, /* is_required = */ false);
     add_sentry_options(cli, settings.sentry_settings);
 
-    cli.add_option("--sync.loop.throttle", node_settings.sync_loop_throttle_seconds,
-                   "Sets the minimum delay between sync loop starts (in seconds)")
-        ->capture_default_str()
-        ->check(CLI::Range(1u, 7200u));
-
-    cli.add_option("--sync.loop.log.interval", node_settings.sync_loop_log_interval_seconds,
-                   "Sets the interval between sync loop logs (in seconds)")
-        ->capture_default_str()
-        ->check(CLI::Range(10u, 600u));
     // TODO(canepat) remove when PoS sync works
     cli.add_flag("--sync.force_pow", settings.force_pow, "Force usage of proof-of-work bypassing chain config");
-
-    cli.add_flag("--fakepow", node_settings.fake_pow, "Disables proof-of-work verification");
-
-    // Chain options
-    add_option_chain(cli, node_settings.network_id);
 
     // Prune options
     std::string prune_mode;
@@ -230,15 +157,8 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
     // Logging options
     add_logging_options(cli, settings.log_settings);
 
-    // RPC server options
-    auto& server_settings = settings.server_settings;
-
-    silkworm::concurrency::ContextPoolSettings context_pool_settings;
-    add_context_pool_options(cli, context_pool_settings);
-
-    // Snapshot&Bittorrent options
-    auto& snapshot_settings = settings.snapshot_settings;
-    add_snapshot_options(cli, snapshot_settings);
+    // RpcDaemon settings
+    add_rpcdaemon_options(cli, settings.rpcdaemon_settings);
 
     cli.parse(argc, argv);
 
@@ -286,71 +206,62 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
                                 olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces, beforeHistory,
                                 beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
 
-    server_settings.set_address_uri(node_settings.private_api_addr);
-    server_settings.set_context_pool_settings(context_pool_settings);
-
+    auto& snapshot_settings = node_settings.snapshot_settings;
     snapshot_settings.bittorrent_settings.repository_path = snapshot_settings.repository_dir;
 }
 
-//! Raise allowed max file descriptors in the current process
-void raise_max_file_descriptors() {
-    constexpr uint64_t kMaxFileDescriptors{10'240};
-
-    const bool set_fd_result = silkworm::os::set_max_file_descriptors(kMaxFileDescriptors);
-    if (!set_fd_result) {
-        throw std::runtime_error{"Cannot increase max file descriptor up to " + std::to_string(kMaxFileDescriptors)};
-    }
-}
-
+// TODO(canepat) remove by migrating Sentry from ServerContextPool to ClientContextPool
 class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
 };
 
-std::pair<std::shared_ptr<silkworm::sentry::api::api_common::SentryClient>, std::optional<std::shared_ptr<silkworm::sentry::Sentry>>> make_sentry(
-    silkworm::sentry::Settings sentry_settings,
-    const NodeSettings& node_settings,
-    silkworm::rpc::ServerContextPool& context_pool,
-    sw_db::ROAccess db_access) {
-    std::optional<std::shared_ptr<silkworm::sentry::Sentry>> sentry_server;
-    std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> sentry_client;
+using SentryClientPtr = std::shared_ptr<sentry::api::api_common::SentryClient>;
+using SentryServerPtr = std::shared_ptr<sentry::Sentry>;
+using SentryPtrPair = std::tuple<SentryClientPtr, SentryServerPtr>;
 
-    sw_db::EthStatusDataProvider eth_status_data_provider{db_access, node_settings.chain_config.value()};
+static SentryPtrPair make_sentry(sentry::Settings sentry_settings, NodeSettings& node_settings,
+                                 rpc::ServerContextPool& context_pool, db::ROAccess db_access) {
+    SentryServerPtr sentry_server;
+    SentryClientPtr sentry_client;
+
+    db::EthStatusDataProvider eth_status_data_provider{db_access, node_settings.chain_config.value()};
 
     if (node_settings.remote_sentry_addresses.empty()) {
         sentry_settings.data_dir_path = node_settings.data_directory->path();
-        // disable GRPC in the embedded sentry
+        // Disable gRPC in the embedded sentry
         sentry_settings.api_address = "";
 
-        sentry_server = std::make_shared<silkworm::sentry::Sentry>(std::move(sentry_settings), context_pool);
+        // Create embedded server
+        sentry_server = std::make_shared<sentry::Sentry>(std::move(sentry_settings), context_pool);
 
-        // wrap direct client in a session client
-        sentry_client = std::make_shared<silkworm::sentry::SessionSentryClient>(
-            sentry_server.value(),
+        // Wrap direct client i.e. server in a session client
+        sentry_client = std::make_shared<sentry::SessionSentryClient>(
+            sentry_server,
             eth_status_data_provider.to_factory_function());
     } else if (node_settings.remote_sentry_addresses.size() == 1) {
-        // remote client
-        auto remote_sentry_client = std::make_shared<silkworm::sentry::grpc::client::SentryClient>(
+        // Create remote client
+        auto remote_sentry_client = std::make_shared<sentry::grpc::client::SentryClient>(
             node_settings.remote_sentry_addresses[0],
             *context_pool.next_context().client_grpc_context());
-        // wrap remote client in a session client
-        sentry_client = std::make_shared<silkworm::sentry::SessionSentryClient>(
+        // Wrap remote client in a session client
+        sentry_client = std::make_shared<sentry::SessionSentryClient>(
             remote_sentry_client,
             eth_status_data_provider.to_factory_function());
     } else {
-        std::vector<std::shared_ptr<silkworm::sentry::api::api_common::SentryClient>> clients;
+        std::vector<SentryClientPtr> clients;
 
         for (const auto& address_uri : node_settings.remote_sentry_addresses) {
-            // remote client
-            auto remote_sentry_client = std::make_shared<silkworm::sentry::grpc::client::SentryClient>(
+            // Create remote client
+            auto remote_sentry_client = std::make_shared<sentry::grpc::client::SentryClient>(
                 address_uri,
                 *context_pool.next_context().client_grpc_context());
-            // wrap remote client in a session client
-            auto session_sentry_client = std::make_shared<silkworm::sentry::SessionSentryClient>(
+            // Wrap remote client in a session client
+            auto session_sentry_client = std::make_shared<sentry::SessionSentryClient>(
                 remote_sentry_client,
                 eth_status_data_provider.to_factory_function());
             clients.push_back(session_sentry_client);
         }
 
-        sentry_client = std::make_shared<silkworm::sentry::MultiSentryClient>(std::move(clients));
+        sentry_client = std::make_shared<sentry::MultiSentryClient>(std::move(clients));
     }
 
     return {sentry_client, sentry_server};
@@ -371,7 +282,6 @@ int main(int argc, char* argv[]) {
         parse_silkworm_command_line(cli, argc, argv, settings);
 
         auto& node_settings = settings.node_settings;
-        auto& snapshot_settings = settings.snapshot_settings;
 
         // Initialize logging with cli settings
         sw_log::init(settings.log_settings);
@@ -385,6 +295,7 @@ int main(int argc, char* argv[]) {
             " " + std::string(build_info->build_type) +
             "compiler=" + std::string(build_info->compiler_id) +
             " " + std::string(build_info->compiler_version);
+        node_settings.node_name = get_node_name_from_build_info(build_info);
 
         sw_log::Message(
             "Silkworm",
@@ -404,93 +315,52 @@ int main(int argc, char* argv[]) {
         // Prepare database for takeoff
         cmd::common::run_db_checklist(node_settings);
 
-        auto chaindata_db{sw_db::open_env(node_settings.chaindata_env_config)};
+        auto chaindata_db{db::open_env(node_settings.chaindata_env_config)};
 
-        PreverifiedHashes::load(node_settings.chain_config->chain_id);
-
-        // Start boost asio context for execution timers // TODO(canepat) we need a better solution
-        // The following async-thread executor is needed to have graceful shutdown in case of any run exception
-        auto timer_executor = [&node_settings]() -> boost::asio::awaitable<void> {
-            using asio_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
-            auto asio_guard = std::make_unique<asio_guard_type>(node_settings.asio_context.get_executor());
-
-            auto run = [&] {
-                sw_log::set_thread_name("asio_ctx_timer");
-                sw_log::Trace("Asio Timers", {"state", "started"});
-                node_settings.asio_context.run();
-                sw_log::Trace("Asio Timers", {"state", "stopped"});
-            };
-            auto stop = [&] { asio_guard.reset(); };
-            co_await silkworm::concurrency::async_thread(std::move(run), std::move(stop));
-        };
         silkworm::rpc::ServerContextPool context_pool{
-            settings.server_settings.context_pool_settings(),
+            settings.node_settings.server_settings.context_pool_settings,
             [] { return std::make_unique<DummyServerCompletionQueue>(); },
         };
 
-        // Resource usage logging
-        ResourceUsageLog resource_usage_log(node_settings);
-
-        // Sentry
+        // Sentry: the peer-2-peer proxy server
         auto [sentry_client, sentry_server] = make_sentry(
-            std::move(settings.sentry_settings),
-            node_settings,
-            context_pool,
-            sw_db::ROAccess(chaindata_db));
+            std::move(settings.sentry_settings), settings.node_settings, context_pool, db::ROAccess{chaindata_db});
         auto embedded_sentry_run_if_needed = [&sentry_server = sentry_server]() -> boost::asio::awaitable<void> {
             if (sentry_server) {
-                co_await sentry_server.value()->run();
+                co_await sentry_server->run();
             }
         };
 
-        // BackEnd & KV server
-        silkworm::EthereumBackEnd backend{
-            node_settings,
-            &chaindata_db,
-            sentry_client,
-        };
-        const auto node_name{get_node_name_from_build_info(build_info)};
-        backend.set_node_name(node_name);
-
-        silkworm::rpc::BackEndKvServer rpc_server{settings.server_settings, backend};
-
-        // Snapshot sync
-        if (snapshot_settings.enabled) {
-            // Raise file descriptor limit per process
-            raise_max_file_descriptors();
-
-            sw_db::RWTxn rw_txn{chaindata_db};
-
-            // Snapshot sync - download chain from peers using snapshot files
-            SnapshotSync snapshot_sync{snapshot_settings, node_settings.chain_config.value()};
-            snapshot_sync.download_and_index_snapshots(rw_txn);
-            rw_txn.commit_and_stop();
-        } else {
-            sw_log::Info() << "Snapshot sync disabled, no snapshot must be downloaded";
-        }
-
         // Execution: the execution layer engine
-        execution::Server execution_server{node_settings, sw_db::RWAccess{chaindata_db}};
+        silkworm::node::Node execution_node{settings.node_settings, sentry_client, chaindata_db};
+        execution::LocalClient& execution_client{execution_node.execution_local_client()};
+
+        // Set up the execution node (e.g. load pre-verified hashes, download+index snapshots...)
+        execution_node.setup();
 
         // ChainSync: the chain synchronization process based on the consensus protocol
-        execution::LocalClient execution_client{execution_server};
+        chainsync::EngineRpcSettings rpc_settings{
+            .engine_end_point = settings.rpcdaemon_settings.engine_end_point,
+            .private_api_addr = settings.rpcdaemon_settings.private_api_addr,
+            .log_verbosity = settings.log_settings.log_verbosity,
+            .wait_mode = settings.rpcdaemon_settings.context_pool_settings.wait_mode,
+            .jwt_secret_file = settings.rpcdaemon_settings.jwt_secret_file.value(),
+        };
         chainsync::Sync chain_sync_process{
             context_pool.next_io_context(),
             chaindata_db,
             execution_client,
             sentry_client,
-            *node_settings.chain_config};
+            *node_settings.chain_config,
+            rpc_settings};
         // TODO(canepat) remove when PoS sync works
         if (settings.force_pow) {
             chain_sync_process.force_pow(execution_client);
         }
 
         auto tasks =
-            timer_executor() &&
-            resource_usage_log.async_run() &&
-            rpc_server.async_run() &&
+            execution_node.run() &&
             embedded_sentry_run_if_needed() &&
-            execution_server.async_run() &&
             chain_sync_process.async_run();
 
         // Trap OS signals

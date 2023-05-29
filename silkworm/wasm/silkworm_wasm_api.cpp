@@ -77,7 +77,7 @@ void difficulty(intx::uint256* in_out, uint64_t block_number, uint64_t block_tim
 Transaction* new_transaction(const Bytes* rlp) {
     ByteView view{*rlp};
     auto txn{new Transaction};
-    if (rlp::decode(view, *txn) && view.empty()) {
+    if (rlp::decode(view, *txn)) {
         return txn;
     } else {
         delete txn;
@@ -122,7 +122,7 @@ uint8_t* account_code_hash(Account* a) { return a->code_hash.bytes; }
 Block* new_block(const Bytes* rlp) {
     ByteView view{*rlp};
     auto block{new Block};
-    if (rlp::decode(view, *block) && view.empty()) {
+    if (rlp::decode(view, *block)) {
         return block;
     } else {
         delete block;

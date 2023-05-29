@@ -35,7 +35,7 @@ namespace {  // Trick suggested by gRPC team to avoid name clashes in multiple t
 
     class EmptyServer : public Server {
       public:
-        explicit EmptyServer(const ServerConfig& config) : Server(config) {}
+        explicit EmptyServer(const ServerSettings& settings) : Server(settings) {}
 
       protected:
         void register_async_services(grpc::ServerBuilder& builder) override {
@@ -78,9 +78,9 @@ TEST_CASE("Server::Server", "[silkworm][node][rpc]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
 
     SECTION("OK: create an empty Server", "[silkworm][node][rpc]") {
-        ServerConfig config;
-        config.set_address_uri(kTestAddressUri);
-        EmptyServer server{config};
+        ServerSettings settings;
+        settings.address_uri = kTestAddressUri;
+        EmptyServer server{settings};
     }
 }
 
@@ -90,7 +90,7 @@ TEST_CASE("Server::build_and_start", "[silkworm][node][rpc]") {
     // TODO(canepat): use GMock
     class TestServer : public EmptyServer {
       public:
-        TestServer(const ServerConfig& config) : EmptyServer(config) {}
+        explicit TestServer(const ServerSettings& settings) : EmptyServer(settings) {}
 
         bool register_async_services_called() const { return register_async_services_called_; }
 
@@ -111,11 +111,11 @@ TEST_CASE("Server::build_and_start", "[silkworm][node][rpc]") {
     SECTION("KO: Address already in use", "[silkworm][node][rpc]") {
         GrpcNoLogGuard guard;
 
-        ServerConfig config;
-        config.set_address_uri(kTestAddressUri);
-        TestServer server1{config};
+        ServerSettings settings;
+        settings.address_uri = kTestAddressUri;
+        TestServer server1{settings};
         server1.build_and_start();
-        TestServer server2{config};
+        TestServer server2{settings};
         CHECK_THROWS_AS(server2.build_and_start(), std::runtime_error);
         server1.shutdown();
     }
@@ -123,16 +123,16 @@ TEST_CASE("Server::build_and_start", "[silkworm][node][rpc]") {
     SECTION("KO: Name or service not known", "[silkworm][node][rpc]") {
         GrpcNoLogGuard guard;
 
-        ServerConfig config;
-        config.set_address_uri("local:12345");  // "localhost@12345" core dumped in gRPC 1.44.0-p0 (SIGSEGV)
-        EmptyServer server{config};
+        ServerSettings settings;
+        settings.address_uri = "local:12345";  // "localhost@12345" core dumped in gRPC 1.44.0-p0 (SIGSEGV)
+        EmptyServer server{settings};
         CHECK_THROWS_AS(server.build_and_start(), std::runtime_error);
     }
 
     SECTION("OK: accept requests called", "[silkworm][node][rpc]") {
-        ServerConfig config;
-        config.set_address_uri(kTestAddressUri);
-        TestServer server{config};
+        ServerSettings settings;
+        settings.address_uri = kTestAddressUri;
+        TestServer server{settings};
         CHECK_NOTHROW(server.build_and_start());
         CHECK(server.register_async_services_called());
         CHECK(server.register_request_calls_called());
@@ -141,19 +141,16 @@ TEST_CASE("Server::build_and_start", "[silkworm][node][rpc]") {
 
 TEST_CASE("Server::shutdown", "[silkworm][node][rpc]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
+    ServerSettings settings;
+    settings.address_uri = kTestAddressUri;
+    EmptyServer server{settings};
 
     SECTION("OK: build_and_start/shutdown", "[silkworm][node][rpc]") {
-        ServerConfig config;
-        config.set_address_uri(kTestAddressUri);
-        EmptyServer server{config};
         server.build_and_start();
         CHECK_NOTHROW(server.shutdown());
     }
 
     SECTION("OK: build_and_start/shutdown/shutdown", "[silkworm][node][rpc]") {
-        ServerConfig config;
-        config.set_address_uri(kTestAddressUri);
-        EmptyServer server{config};
         server.build_and_start();
         CHECK_NOTHROW(server.shutdown());
         CHECK_NOTHROW(server.shutdown());
@@ -162,11 +159,11 @@ TEST_CASE("Server::shutdown", "[silkworm][node][rpc]") {
 
 TEST_CASE("Server::join", "[silkworm][node][rpc]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
+    ServerSettings settings;
+    settings.address_uri = kTestAddressUri;
+    EmptyServer server{settings};
 
     SECTION("OK: build_and_start/join/shutdown", "[silkworm][node][rpc]") {
-        ServerConfig config;
-        config.set_address_uri(kTestAddressUri);
-        EmptyServer server{config};
         server.build_and_start();
         std::thread server_thread{[&server]() { server.join(); }};
         CHECK_NOTHROW(server.shutdown());
@@ -174,9 +171,6 @@ TEST_CASE("Server::join", "[silkworm][node][rpc]") {
     }
 
     SECTION("OK: build_and_start/join/shutdown/shutdown", "[silkworm][node][rpc]") {
-        ServerConfig config;
-        config.set_address_uri(kTestAddressUri);
-        EmptyServer server{config};
         server.build_and_start();
         std::thread server_thread{[&server]() { server.join(); }};
         CHECK_NOTHROW(server.shutdown());

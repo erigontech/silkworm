@@ -38,10 +38,6 @@ jobs:
       fail-fast: false # This makes it so that if 1 of the tests in the matrix fail, they don't all fail
 
     steps:
-    - uses: actions/checkout@v3
-      with:
-        submodules: recursive
-        fetch-depth: "0"
 
     - name: Install Conan
       run: |

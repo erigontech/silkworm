@@ -181,25 +181,23 @@ static inline ALWAYS_INLINE void sha_256_implementation(uint32_t h[8], const voi
 
         const uint8_t* p = chunk;
 
+        /*
+         * The w-array is really w[64], but since we only need 16 of them at a time, we save stack by
+         * calculating 16 at a time.
+         *
+         * This optimization was not there initially and the rest of the comments about w[64] are kept in their
+         * initial state.
+         */
+
+        /*
+         * create a 64-entry message schedule array w[0..63] of 32-bit words (The initial values in w[0..63]
+         * don't matter, so many implementations zero them here) copy chunk into first 16 words w[0..15] of the
+         * message schedule array
+         */
+        uint32_t w[16];
+
         /* Compression function main loop: */
         for (i = 0; i < 4; i++) {
-            /*
-             * The w-array is really w[64], but since we only need
-             * 16 of them at a time, we save stack by calculating
-             * 16 at a time.
-             *
-             * This optimization was not there initially and the
-             * rest of the comments about w[64] are kept in their
-             * initial state.
-             */
-
-            /*
-             * create a 64-entry message schedule array w[0..63] of 32-bit words
-             * (The initial values in w[0..63] don't matter, so many implementations zero them here)
-             * copy chunk into first 16 words w[0..15] of the message schedule array
-             */
-            uint32_t w[16];
-
             for (j = 0; j < 16; j++) {
                 if (i == 0) {
                     w[j] = (uint32_t)p[0] << 24 | (uint32_t)p[1] << 16 | (uint32_t)p[2] << 8 | (uint32_t)p[3];

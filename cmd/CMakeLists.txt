@@ -19,7 +19,8 @@ if(MSVC)
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   add_link_options(-Wl,-stack_size -Wl,${SILKWORM_STACK_SIZE})
 else()
-  add_compile_options(-fsplit-stack)
+  add_compile_options(-fstack-protector)
+  add_link_options(-Wl,-z,stack-size=${SILKWORM_STACK_SIZE})
 endif()
 
 # Tests

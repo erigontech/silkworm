@@ -87,94 +87,87 @@ TEST_CASE("Fork") {
     db::RWAccess db_access{context.env()};
     MainChain main_chain{io, context.node_settings(), db_access};
 
-    std::atomic_flag init_finished = ATOMIC_FLAG_INIT;
-    std::atomic_flag test_finished = ATOMIC_FLAG_INIT;
+    main_chain.open();
+    auto& tx = main_chain.tx();
 
-    auto main_chain_thread = std::thread([&]() {  // avoid mdbx limitations on txns & threads
-        main_chain.open();
-        auto& tx = main_chain.tx();
+    auto header0_hash = db::read_canonical_hash(tx, 0);
+    REQUIRE(header0_hash.has_value());
 
-        auto header0_hash = db::read_canonical_hash(tx, 0);
-        REQUIRE(header0_hash.has_value());
+    auto header0 = db::read_canonical_header(tx, 0);
+    REQUIRE(header0.has_value());
 
-        auto header0 = db::read_canonical_header(tx, 0);
-        REQUIRE(header0.has_value());
+    auto block1 = generateSampleChildrenBlock(*header0);
+    auto block1_hash = block1.header.hash();
 
-        auto block1 = generateSampleChildrenBlock(*header0);
-        auto block1_hash = block1.header.hash();
+    auto block2 = generateSampleChildrenBlock(block1.header);
+    // auto block2_hash = block2.header.hash();
 
-        auto block2 = generateSampleChildrenBlock(block1.header);
-        // auto block2_hash = block2.header.hash();
+    auto block3 = generateSampleChildrenBlock(block2.header);
+    auto block3_hash = block3.header.hash();
 
-        auto block3 = generateSampleChildrenBlock(block2.header);
-        auto block3_hash = block3.header.hash();
+    // inserting & verifying the block
+    main_chain.insert_block(block1);
+    main_chain.insert_block(block2);
+    main_chain.insert_block(block3);
+    auto verification = main_chain.verify_chain(block3_hash);
 
-        // inserting & verifying the block
-        main_chain.insert_block(block1);
-        main_chain.insert_block(block2);
-        main_chain.insert_block(block3);
-        auto verification = main_chain.verify_chain(block3_hash);
+    REQUIRE(holds_alternative<ValidChain>(verification));
+    auto valid_chain = std::get<ValidChain>(verification);
+    REQUIRE(valid_chain.current_head == BlockId{3, block3_hash});
 
-        REQUIRE(holds_alternative<ValidChain>(verification));
-        auto valid_chain = std::get<ValidChain>(verification);
-        REQUIRE(valid_chain.current_head == BlockId{3, block3_hash});
+    REQUIRE(db::stages::read_stage_progress(main_chain.tx(), db::stages::kHeadersKey) == 3);
+    REQUIRE(db::stages::read_stage_progress(main_chain.tx(), db::stages::kBlockHashesKey) == 3);
+    REQUIRE(db::stages::read_stage_progress(main_chain.tx(), db::stages::kBlockBodiesKey) == 3);
 
-        REQUIRE(db::stages::read_stage_progress(main_chain.tx(), db::stages::kHeadersKey) == 3);
-        REQUIRE(db::stages::read_stage_progress(main_chain.tx(), db::stages::kBlockHashesKey) == 3);
-        REQUIRE(db::stages::read_stage_progress(main_chain.tx(), db::stages::kBlockBodiesKey) == 3);
+    // confirming the chain
+    auto fcu_updated = main_chain.notify_fork_choice_update(block3_hash, block1_hash);
+    REQUIRE(fcu_updated);
 
-        // confirming the chain
-        auto fcu_updated = main_chain.notify_fork_choice_update(block3_hash, block1_hash);
-        REQUIRE(fcu_updated);
-
-        auto final_canonical_head = main_chain.canonical_head();
-        REQUIRE(final_canonical_head == BlockId{3, block3_hash});
-
-        init_finished.test_and_set();
-        init_finished.notify_one();
-
-        test_finished.wait(true);
-        main_chain.close();
-    });
+    auto final_canonical_head = main_chain.canonical_head();
+    REQUIRE(final_canonical_head == BlockId{3, block3_hash});
 
     SECTION("creating a fork") {
-        init_finished.wait(true);
+        std::exception_ptr test_failure;
+        auto fork_thread = std::thread([&]() {  // avoid mdbx limitations on txns & threads
+            try {
+                auto block4 = generateSampleChildrenBlock(block3.header);
+                auto block4_hash = block4.header.hash();
 
-        auto block3_hash = main_chain.get_canonical_hash(3);
-        REQUIRE(block3_hash.has_value());
-        auto block3 = main_chain.get_header(*block3_hash);
-        REQUIRE(block3.has_value());
+                BlockId forking_point = main_chain.canonical_head();
 
-        auto block4 = generateSampleChildrenBlock(*block3);
-        auto block4_hash = block4.header.hash();
+                Fork_ForTest fork{forking_point,
+                                  db::ROTxn(main_chain.tx().db()),  // this need to be on a different thread than main_chain
+                                  context.node_settings()};
 
-        BlockId forking_point = main_chain.canonical_head();
+                CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kHeadersKey) == 3);
+                CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kBlockHashesKey) == 3);
+                CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kBlockBodiesKey) == 3);
 
-        Fork_ForTest fork{forking_point, db::ROTxn(main_chain.tx().db()), context.node_settings()};
+                // inserting & verifying the block
+                fork.extend_with(block4);
+                auto fork_verification = fork.verify_chain();
 
-        CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kHeadersKey) == 3);
-        CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kBlockHashesKey) == 3);
-        CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kBlockBodiesKey) == 3);
+                REQUIRE(holds_alternative<ValidChain>(fork_verification));
+                auto fork_valid_chain = std::get<ValidChain>(fork_verification);
+                CHECK(fork_valid_chain.current_head == BlockId{4, block4_hash});
 
-        // inserting & verifying the block
-        fork.extend_with(block4);
-        auto fork_verification = fork.verify_chain();
+                CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kHeadersKey) == 4);
+                CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kBlockHashesKey) == 4);
+                CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kBlockBodiesKey) == 4);
 
-        REQUIRE(holds_alternative<ValidChain>(fork_verification));
-        auto fork_valid_chain = std::get<ValidChain>(fork_verification);
-        CHECK(fork_valid_chain.current_head == BlockId{4, block4_hash});
+                // read blocks from mutation
+                // run pipeline and validate stage progress and results
 
-        CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kHeadersKey) == 4);
-        CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kBlockHashesKey) == 4);
-        CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kBlockBodiesKey) == 4);
-
-        // read blocks from mutation
-        // run pipeline and validate stage progress and results
-
-        fork.close();
-        test_finished.test_and_set();
-        test_finished.notify_all();
-        main_chain_thread.join();
+                fork.close();
+            }
+            catch(...) {
+                test_failure = std::current_exception();
+            }
+        });
+        fork_thread.join();
+        if (test_failure) {
+            std::rethrow_exception(test_failure);
+        }
     }
 }
 

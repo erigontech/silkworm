@@ -24,6 +24,23 @@
 
 #include "ip_endpoint_option.hpp"
 
+namespace silkworm {
+
+constexpr std::array kAllEth1Namespaces{
+    kAdminApiNamespace,
+    kDebugApiNamespace,
+    kEthApiNamespace,
+    kNetApiNamespace,
+    kParityApiNamespace,
+    kErigonApiNamespace,
+    kTxPoolApiNamespace,
+    kTraceApiNamespace,
+    kWeb3ApiNamespace,
+    kOtterscanApiNamespace
+};
+
+}  // namespace silkworm
+
 namespace silkworm::cmd::common {
 
 //! Compute the maximum number of chars in comma-separated list of all API namespaces

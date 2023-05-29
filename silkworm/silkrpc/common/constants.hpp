@@ -34,19 +34,6 @@ constexpr const char* kTraceApiNamespace{"trace"};
 constexpr const char* kWeb3ApiNamespace{"web3"};
 constexpr const char* kOtterscanApiNamespace{"ots"};
 
-constexpr std::array<const char*, 10> kAllEth1Namespaces{
-    kAdminApiNamespace,
-    kDebugApiNamespace,
-    kEthApiNamespace,
-    kNetApiNamespace,
-    kParityApiNamespace,
-    kErigonApiNamespace,
-    kTxPoolApiNamespace,
-    kTraceApiNamespace,
-    kWeb3ApiNamespace,
-    kOtterscanApiNamespace,
-};
-
 constexpr const char* kAddressPortSeparator{":"};
 constexpr const char* kApiSpecSeparator{","};
 constexpr const char* kDefaultJwtFile{"jwt.hex"};

@@ -111,7 +111,7 @@ silkworm::Block StateTransition::get_block(protocol::IRuleSet& /*rule_set*/, InM
 
     const evmc_revision rev{chain_config.revision(block.header.number, block.header.timestamp)};
 
-//    if (rev <= EVMC_LONDON) {
+    //    if (rev <= EVMC_LONDON) {
     if (!chain_config.terminal_total_difficulty.has_value()) {
         block.header.difficulty = intx::from_string<intx::uint256>(get_env("currentDifficulty"));
     }

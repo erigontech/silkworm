@@ -82,8 +82,8 @@ class EVMExecutor {
           ibs_state_{state1_},
           rule_set_(protocol::rule_set_factory(config)) {
         SILKWORM_ASSERT(rule_set_);
-        if (!has_service<BaselineAnalysisCacheService>(workers_)) {
-            make_service<BaselineAnalysisCacheService>(workers_);
+        if (!has_service<AnalysisCacheService>(workers_)) {
+            make_service<AnalysisCacheService>(workers_);
         }
     }
 

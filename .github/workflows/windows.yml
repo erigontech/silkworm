@@ -42,7 +42,8 @@ jobs:
     - name: Install Conan
       run: |
         Invoke-WebRequest -Uri https://github.com/conan-io/conan/releases/download/1.58.0/conan-win-64.exe -OutFile conan-win-64.exe
-        .\conan-win-64.exe /SP- /VERYSILENT /SUPPRESSMSGBOXES
+        .\conan-win-64.exe /SP- /VERYSILENT /SUPPRESSMSGBOXES /LOG="conan-setup.log"
+        type conan-setup.log
 
     - name: Create Build Environment
       # Some projects don't allow in-source building, so create a separate build directory

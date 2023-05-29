@@ -99,7 +99,7 @@ silkworm::Block StateTransition::get_block(protocol::IRuleSet& /*rule_set*/, InM
     auto block = silkworm::Block();
 
     block.header.beneficiary = to_evmc_address(get_env("currentCoinbase"));
-    block.header.difficulty = intx::from_string<intx::uint256>(get_env("currentDifficulty"));
+
     block.header.gas_limit = std::stoull(get_env("currentGasLimit"), nullptr, /*base=*/16);
     block.header.number = std::stoull(get_env("currentNumber"), nullptr, /*base=*/16);
     block.header.timestamp = std::stoull(get_env("currentTimestamp"), nullptr, /*base=*/16);
@@ -110,6 +110,11 @@ silkworm::Block StateTransition::get_block(protocol::IRuleSet& /*rule_set*/, InM
     }
 
     const evmc_revision rev{chain_config.revision(block.header.number, block.header.timestamp)};
+
+//    if (rev <= EVMC_LONDON) {
+    if (!chain_config.terminal_total_difficulty.has_value()) {
+        block.header.difficulty = intx::from_string<intx::uint256>(get_env("currentDifficulty"));
+    }
 
     if (contains_env("currentBaseFee") && rev >= EVMC_LONDON) {
         block.header.base_fee_per_gas = intx::from_string<intx::uint256>(get_env("currentBaseFee"));
@@ -288,8 +293,8 @@ void StateTransition::run() {
             auto block_validation = ruleSet->validate_block_header(block.header, *state, true);
             auto txn_validation = processor.validate_transaction(txn);
 
-            //            std::cout << "pre: " << std::endl;
-            //            state->print_state_root_hash();
+            // std::cout << "pre: " << std::endl;
+            // state->print_state_root_hash();
 
             if (pre_validation == ValidationResult::kOk && block_validation == ValidationResult::kOk && txn_validation == ValidationResult::kOk) {
                 processor.execute_transaction(txn, receipt);
@@ -298,8 +303,8 @@ void StateTransition::run() {
                 receipt.success = false;
             }
 
-            //            std::cout << "post: " << std::endl;
-            //            state->print_state_root_hash();
+            // std::cout << "post: " << std::endl;
+            // state->print_state_root_hash();
 
             validate_transition(receipt, expectedState, expectedSubState, *state);
         }

@@ -20,8 +20,6 @@
 #include <exception>
 #include <mutex>
 
-#include <magic_enum.hpp>
-
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/stoppable.hpp>
 #include <silkworm/node/common/settings.hpp>
@@ -139,11 +137,8 @@ class Stage : public Stoppable {
 //! \brief Stage execution exception
 class StageError : public std::exception {
   public:
-    explicit StageError(Stage::Result err)
-        : err_{magic_enum::enum_integer<Stage::Result>(err)},
-          message_{std::string(magic_enum::enum_name<Stage::Result>(err))} {};
-    explicit StageError(Stage::Result err, std::string message)
-        : err_{magic_enum::enum_integer<Stage::Result>(err)}, message_{std::move(message)} {};
+    explicit StageError(Stage::Result err);
+    explicit StageError(Stage::Result err, std::string message);
     ~StageError() noexcept override = default;
     [[nodiscard]] const char* what() const noexcept override { return message_.c_str(); }
     [[nodiscard]] int err() const noexcept { return err_; }

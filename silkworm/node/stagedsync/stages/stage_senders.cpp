@@ -21,6 +21,7 @@
 #include <thread>
 
 #include <gsl/util>
+#include <magic_enum.hpp>
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/crypto/ecdsa.h>

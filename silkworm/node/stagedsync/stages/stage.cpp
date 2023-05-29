@@ -16,9 +16,18 @@
 
 #include "stage.hpp"
 
+#include <magic_enum.hpp>
+
 #include <silkworm/node/db/stages.hpp>
 
 namespace silkworm::stagedsync {
+
+StageError::StageError(Stage::Result err)
+    : err_{magic_enum::enum_integer<Stage::Result>(err)},
+      message_{std::string(magic_enum::enum_name<Stage::Result>(err))} {}
+
+StageError::StageError(Stage::Result err, std::string message)
+    : err_{magic_enum::enum_integer<Stage::Result>(err)}, message_{std::move(message)} {}
 
 Stage::Stage(SyncContext* sync_context, const char* stage_name, NodeSettings* node_settings)
     : sync_context_{sync_context}, stage_name_{stage_name}, node_settings_{node_settings} {}

@@ -7,9 +7,6 @@
 [submodule "cbor-cpp"]
 	path = third_party/cbor-cpp
 	url = https://github.com/torquem-ch/cbor-cpp.git
-[submodule "magic_enum"]
-	path = third_party/magic_enum
-	url = https://github.com/Neargye/magic_enum.git
 [submodule "libmdbx"]
 	path = third_party/libmdbx
 	url = https://github.com/torquem-ch/libmdbx.git

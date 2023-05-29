@@ -18,6 +18,7 @@ find_package(absl REQUIRED)
 find_package(asio-grpc REQUIRED)
 find_package(Boost REQUIRED container thread)
 find_package(gRPC REQUIRED)
+find_package(magic_enum REQUIRED)
 
 file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
 list(FILTER SRC EXCLUDE REGEX "_test\\.cpp$")
@@ -30,10 +31,6 @@ add_library(silkworm_infra "${SRC}")
 if(SILKWORM_SANITIZE)
   target_compile_definitions(silkworm_infra PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
 endif()
-
-target_include_directories(
-  silkworm_infra PUBLIC "${SILKWORM_MAIN_DIR}" "${SILKWORM_MAIN_DIR}/third_party/magic_enum/include"
-)
 
 set(LIBS_PUBLIC
     silkworm_core
@@ -49,6 +46,7 @@ set(LIBS_PUBLIC
 set(LIBS_PRIVATE
     absl::time
     Boost::container # required for asio-grpc
+    magic_enum::magic_enum
 )
 # cmake-format: on
 if(MSVC)

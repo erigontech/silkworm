@@ -19,6 +19,7 @@ find_package(asio-grpc REQUIRED)
 find_package(Boost REQUIRED container thread)
 find_package(nlohmann_json REQUIRED)
 find_package(gRPC REQUIRED)
+find_package(magic_enum REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(roaring REQUIRED)
 
@@ -86,7 +87,6 @@ endif()
 target_include_directories(
   silkworm_node
   PUBLIC "${SILKWORM_MAIN_DIR}"
-         "${SILKWORM_MAIN_DIR}/third_party/magic_enum/include"
          "${SILKWORM_MAIN_DIR}/third_party/libtorrent/include"
          "${SILKWORM_MAIN_DIR}/third_party/tomlplusplus"
 )
@@ -114,6 +114,7 @@ set(SILKWORM_NODE_PUBLIC_LIBS
 set(SILKWORM_NODE_PRIVATE_LIBS
     cborcpp
     evmone
+    magic_enum::magic_enum
     silkworm_interfaces
 )
 # cmake-format: on

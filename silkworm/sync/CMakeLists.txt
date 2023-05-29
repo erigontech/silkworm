@@ -15,19 +15,12 @@
 ]]
 
 find_package(absl REQUIRED)
+find_package(magic_enum REQUIRED)
 
 file(GLOB_RECURSE SILKWORM_SYNC_SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
 list(FILTER SILKWORM_SYNC_SRC EXCLUDE REGEX "_test\\.cpp$")
 
 add_library(silkworm_sync "${SILKWORM_SYNC_SRC}")
-
-# cmake-format: off
-target_include_directories(
-  silkworm_sync
-  PUBLIC "${SILKWORM_MAIN_DIR}"
-         "${SILKWORM_MAIN_DIR}/third_party/magic_enum/include"
-)
-# cmake-format: on
 
 set(SILKWORM_SYNC_PUBLIC_LIBS
     silkrpc
@@ -43,6 +36,7 @@ set(SILKWORM_SYNC_PUBLIC_LIBS
 set(SILKWORM_SYNC_PRIVATE_LIBS
     cborcpp
     evmone
+    magic_enum::magic_enum
 )
 # cmake-format: on
 if(MSVC)

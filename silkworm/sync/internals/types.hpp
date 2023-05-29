@@ -18,8 +18,6 @@
 
 #include <chrono>
 
-#include <magic_enum.hpp>
-
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/common/util.hpp>
@@ -87,10 +85,7 @@ struct PeerPenalization {
     PeerPenalization(Penalty p, PeerId id) : penalty(p), peerId(std::move(id)) {}  // unnecessary with c++20
 };
 
-inline std::ostream& operator<<(std::ostream& os, const PeerPenalization& penalization) {
-    os << "peerId=" << penalization.peerId << " cause=" << magic_enum::enum_name(penalization.penalty);
-    return os;
-}
+std::ostream& operator<<(std::ostream& os, const PeerPenalization& penalization);
 
 struct Announce {
     Hash hash;

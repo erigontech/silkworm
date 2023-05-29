@@ -17,6 +17,7 @@
 #include "execution_pipeline.hpp"
 
 #include <boost/format.hpp>
+#include <magic_enum.hpp>
 
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/node/stagedsync/stages/stage_blockhashes.hpp>

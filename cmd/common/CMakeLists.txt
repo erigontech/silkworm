@@ -15,8 +15,6 @@
 ]]
 
 if(NOT SILKWORM_CORE_ONLY)
-  find_package(absl REQUIRED)
-  find_package(Boost REQUIRED)
   find_package(CLI11 REQUIRED)
 
   set(COMMON_SRC

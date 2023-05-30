@@ -271,7 +271,7 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(exec_engine.last_finalized_block() == BlockId{0, *block0_hash});
     }
 
-    SECTION("a fork") {
+    SECTION("a block that creates a fork") {
         auto header0_hash = db::read_canonical_hash(tx, 0);
         REQUIRE(header0_hash.has_value());
 
@@ -282,7 +282,7 @@ TEST_CASE("ExecutionEngine") {
         auto block1_hash = block1->header.hash();
 
         auto block2 = generateSampleChildrenBlock(block1->header);
-        // auto block2_hash = block2->header.hash();
+        auto block2_hash = block2->header.hash();
 
         auto block3 = generateSampleChildrenBlock(block2->header);
         auto block3_hash = block3->header.hash();
@@ -313,9 +313,8 @@ TEST_CASE("ExecutionEngine") {
 
             // inserting & verifying the block
             exec_engine.insert_block(block4);
-            /*verification =*/exec_engine.verify_chain(block4_hash).get();
+            verification = exec_engine.verify_chain(block4_hash).get();
 
-            /* replace PooledCursor from BlockHashes to make this part work
             REQUIRE(holds_alternative<ValidChain>(verification));
             valid_chain = std::get<ValidChain>(verification);
             CHECK(valid_chain.current_head == BlockId{4, block4_hash});
@@ -328,7 +327,6 @@ TEST_CASE("ExecutionEngine") {
             CHECK(final_canonical_head == BlockId{4, block4_hash});
             CHECK(exec_engine.last_fork_choice() == BlockId{4, block4_hash});
             CHECK(exec_engine.last_finalized_block() == BlockId{2, block2_hash});
-            */
         }
 
         /*

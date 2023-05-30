@@ -183,7 +183,7 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
             SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at fork choice update time";
             return false;
         }
-        ExtendingFork&& fork = std::move(*f);
+        ExtendingFork fork = std::move(*f);
 
         discard_all_forks();  // remove all other forks
 
@@ -214,7 +214,7 @@ void ExecutionEngine::discard_all_forks() {
     // ensure a clean exit of all those forks that can be busy in a VerifyChain
     // method or something else; maybe use a sweeper thread
 
-    for (auto it = forks_.begin(); it != forks_.end();) {
+    for (auto it = forks_.begin(); it != forks_.end(); ++it) {
         it->close();  // todo: maybe we should wait for the fork to close in another thread, a sweeper thread
     }
     forks_.clear();

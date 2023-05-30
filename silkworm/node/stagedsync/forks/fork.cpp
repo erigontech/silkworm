@@ -61,6 +61,10 @@ void Fork::close() {
     memory_tx_.abort();
 }
 
+void Fork::flush(db::RWTxn& main_chain_tx_) {
+    memory_tx_.flush(main_chain_tx_);
+}
+
 BlockId Fork::current_head() const {
     return current_head_;
 }
@@ -208,9 +212,7 @@ VerificationResult Fork::verify_chain() {
     last_verified_head_ = current_head_;
     last_head_status_ = verify_result;
 
-    // finish
-    memory_tx_.enable_commit();
-    memory_tx_.commit_and_renew();
+    // finish, no commit here
     return verify_result;
 }
 
@@ -242,7 +244,8 @@ bool Fork::notify_fork_choice_update(Hash head_block_hash, [[maybe_unused]] std:
 
     if (!holds_alternative<ValidChain>(last_head_status_)) return false;
 
-    // memory_tx_.commit_and_renew();
+    memory_tx_.enable_commit();
+    memory_tx_.commit_and_stop();
 
     last_fork_choice_ = canonical_chain_.current_head();
 

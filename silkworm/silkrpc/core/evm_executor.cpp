@@ -215,9 +215,9 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor::call(
         [this, this_executor, &block, &txn, &tracers, &refund, &gas_bailout](auto&& self) {
             SILK_TRACE << "EVMExecutor::call post block: " << block.header.number << " txn: " << &txn;
             boost::asio::post(workers_, [this, this_executor, &block, &txn, &tracers, &refund, &gas_bailout, self = std::move(self)]() mutable {
-                auto& svc = use_service<BaselineAnalysisCacheService>(workers_);
+                auto& svc = use_service<AnalysisCacheService>(workers_);
                 EVM evm{block, ibs_state_, config_};
-                evm.baseline_analysis_cache = svc.get_baseline_analysis_cache();
+                evm.analysis_cache = svc.get_analysis_cache();
                 evm.state_pool = svc.get_object_pool();
                 evm.beneficiary = rule_set_->get_beneficiary(block.header);
 

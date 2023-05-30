@@ -108,11 +108,7 @@ cmd/test/ethereum
 **Note! Windows builds are maintained for compatibility/portability reasons. However, due to the lack of 128-bit integers support by MSVC, execution performance is inferior when compared to Linux builds.**
 * Install [Visual Studio] 2019. Community edition is fine.
 * Make sure your setup includes CMake support and Windows 10 SDK.
-* Install [vcpkg](https://github.com/microsoft/vcpkg#quick-start-windows).
-* `.\vcpkg\vcpkg install mpir:x64-windows`
-* Add <VCPKG_ROOT>\installed\x64-windows\include to your `INCLUDE` environment variable.
-* Add <VCPKG_ROOT>\installed\x64-windows\bin to your `PATH` environment variable.
-* Install [Perl](https://strawberryperl.com/) (needed for OpenSSL build process)
+* Install [Conan](https://conan.io) and add it to PATH.
 * Open Visual Studio and select File -> CMake...
 * Browse the folder where you have cloned this repository and select the file CMakeLists.txt
 * Let CMake cache generation complete (it may take several minutes)

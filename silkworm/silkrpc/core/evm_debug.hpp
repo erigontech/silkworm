@@ -97,11 +97,10 @@ class DebugTracer : public silkworm::EvmTracer {
 class DebugExecutor {
   public:
     explicit DebugExecutor(
-        boost::asio::io_context& io_context,
         const core::rawdb::DatabaseReader& database_reader,
         boost::asio::thread_pool& workers,
         DebugConfig config = {})
-        : io_context_(io_context), database_reader_(database_reader), workers_{workers}, config_{config} {}
+        : database_reader_(database_reader), workers_{workers}, config_{config} {}
     virtual ~DebugExecutor() = default;
 
     DebugExecutor(const DebugExecutor&) = delete;
@@ -117,7 +116,6 @@ class DebugExecutor {
     boost::asio::awaitable<void> execute(json::Stream& stream, std::uint64_t block_number,
                                          const silkworm::Block& block, const Transaction& transaction, int32_t = -1);
 
-    boost::asio::io_context& io_context_;
     const core::rawdb::DatabaseReader& database_reader_;
     boost::asio::thread_pool& workers_;
     DebugConfig config_;

@@ -118,7 +118,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
         silkworm::Block block{};
         block.header.number = 10'336'006;
 
-        DebugExecutor executor{io_context_, db_reader, workers};
+        DebugExecutor executor{db_reader, workers};
         stream.open_object();
         spawn_and_wait(executor.execute(stream, block, call));
         stream.close_object();
@@ -263,7 +263,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         silkworm::Block block{};
         block.header.number = block_number;
 
-        DebugExecutor executor{io_context_, db_reader, workers};
+        DebugExecutor executor{db_reader, workers};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, block, call));
@@ -322,7 +322,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         silkworm::Block block{};
         block.header.number = block_number;
 
-        DebugExecutor executor{io_context_, db_reader, workers};
+        DebugExecutor executor{db_reader, workers};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, block, call));
@@ -429,7 +429,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         block.header.number = block_number;
 
         DebugConfig config{false, false, true};
-        DebugExecutor executor{io_context_, db_reader, workers, config};
+        DebugExecutor executor{db_reader, workers, config};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, block, call));
@@ -527,7 +527,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         block.header.number = block_number;
 
         DebugConfig config{false, true, false};
-        DebugExecutor executor{io_context_, db_reader, workers, config};
+        DebugExecutor executor{db_reader, workers, config};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, block, call));
@@ -630,7 +630,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         block.header.number = block_number;
 
         DebugConfig config{true, false, false};
-        DebugExecutor executor{io_context_, db_reader, workers, config};
+        DebugExecutor executor{db_reader, workers, config};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, block, call));
@@ -734,7 +734,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         block.header.number = block_number;
 
         DebugConfig config{true, true, true};
-        DebugExecutor executor{io_context_, db_reader, workers, config};
+        DebugExecutor executor{db_reader, workers, config};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, block, call));
@@ -825,7 +825,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         block.header.number = block_number;
 
         DebugConfig config{true, true, true};
-        DebugExecutor executor{io_context_, db_reader, workers, config};
+        DebugExecutor executor{db_reader, workers, config};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, block, call));
@@ -1027,7 +1027,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
         silkworm::Block block{};
         block.header.number = block_number;
 
-        DebugExecutor executor{io_context_, db_reader, workers};
+        DebugExecutor executor{db_reader, workers};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, block, call));
@@ -1179,7 +1179,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
     silkworm::Block block{};
     block.header.number = block_number;
 
-    DebugExecutor executor{io_context_, db_reader, workers};
+    DebugExecutor executor{db_reader, workers};
 
     stream.open_object();
     spawn_and_wait(executor.execute(stream, block, call));

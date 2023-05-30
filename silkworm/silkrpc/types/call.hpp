@@ -94,8 +94,8 @@ struct SimulationContext {
 };
 
 struct AccountOverrides {
-    std::optional<intx::uint256> balance;
     std::optional<std::uint64_t> nonce;
+    std::optional<intx::uint256> balance;
     std::optional<silkworm::Bytes> code;
     std::map<evmc::bytes32, intx::uint256> state;
     std::map<evmc::bytes32, intx::uint256> state_diff;

@@ -1123,13 +1123,13 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
         EVMExecutor executor{*chain_config_ptr, workers_, state};
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
 
-        rpc::Block initial_block{block_with_hash->block};
-        std::cout << "***********  block: " << initial_block << "\n";
+        // rpc::Block initial_block{block_with_hash->block};
+        // std::cout << "***********  block: " << initial_block << "\n";
 
         silkworm::Transaction txn{call.to_transaction()};
 
-        rpc::Transaction trans{txn};
-        std::cout << "***********  transaction: " << trans << "\n";
+        // rpc::Transaction trans{txn};
+        // std::cout << "***********  transaction: " << trans << "\n";
 
         const auto execution_result = co_await executor.call(block_with_hash->block, txn);
 
@@ -1161,7 +1161,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
 awaitable<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& request, nlohmann::json& reply) {
     if (!request.contains("params")) {
         auto error_msg = "missing value for required arguments";
-        SILK_ERROR << error_msg << request.dump() << "\n";
+        SILK_ERROR << error_msg << request.dump();
         reply = make_json_error(request["id"], -32602, error_msg);
 
         co_return;
@@ -1169,7 +1169,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& reque
     const auto& params = request["params"];
     if (params.size() < 2) {
         auto error_msg = "invalid eth_callMany params: " + params.dump();
-        SILK_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], -32602, error_msg);
         co_return;
     }
@@ -1178,7 +1178,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& reque
 
     if (bundles.empty()) {
         const auto error_msg = "invalid eth_callMany bundle list: " + params.dump();
-        SILK_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
 
         co_return;
@@ -1198,7 +1198,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& reque
     SILK_INFO << "bundles: " << bundles
               << " simulation_context: " << simulation_context
               << " state_overrides #" << state_overrides.size()
-              << " timeout: " << timeout.value_or(0) << "\n";
+              << " timeout: " << timeout.value_or(0);
 
     auto tx = co_await database_->begin();
 
@@ -1212,10 +1212,10 @@ awaitable<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& reque
             reply = make_json_content(request["id"], result.results);
         }
     } catch (const std::exception& e) {
-        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump() << "\n";
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
     } catch (...) {
-        SILK_ERROR << "unexpected exception processing request: " << request.dump() << "\n";
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
@@ -1257,7 +1257,7 @@ awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::js
     auto params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid eth_createAccessList params: " + params.dump();
-        SILK_ERROR << error_msg << "\n";
+        SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
     }

@@ -16,34 +16,23 @@
 
 #pragma once
 
-// #include <iostream>
 #include <optional>
 #include <string>
 #include <vector>
 
-// #include <silkworm/infra/concurrency/coroutine.hpp>
-
-// #include <boost/asio/awaitable.hpp>
-// #include <boost/asio/io_context.hpp>
-// #include <evmc/evmc.hpp>
-
-// #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/state/state.hpp>
-// #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
-// #include <silkworm/silkrpc/core/state_reader.hpp>
+#include <silkworm/silkrpc/types/call.hpp>
 
 namespace silkworm::rpc::state {
 
 class OverrideState : public silkworm::State {
   public:
-    explicit OverrideState(silkworm::State& inner_state)
-        : inner_state_{inner_state} {}
+    explicit OverrideState(silkworm::State& inner_state, const StateOverrides& state_overrides)
+        : inner_state_{inner_state}, state_overrides_{state_overrides} {}
 
     std::optional<silkworm::Account> read_account(const evmc::address& address) const noexcept override;
 
-    silkworm::ByteView read_code(const evmc::bytes32& code_hash) const noexcept override {
-        return inner_state_.read_code(code_hash);
-    }
+    silkworm::ByteView read_code(const evmc::bytes32& code_hash) const noexcept override;
 
     evmc::bytes32 read_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location) const noexcept override;
 
@@ -65,9 +54,7 @@ class OverrideState : public silkworm::State {
         return inner_state_.current_canonical_block();
     }
 
-    std::optional<evmc::bytes32> canonical_hash(uint64_t block_number) const override {
-        return inner_state_.canonical_hash(block_number);
-    }
+    std::optional<evmc::bytes32> canonical_hash(uint64_t block_number) const override;
 
     void insert_block(const silkworm::Block& block, const evmc::bytes32& hash) override {
         return inner_state_.insert_block(block, hash);
@@ -119,6 +106,7 @@ class OverrideState : public silkworm::State {
 
   private:
     silkworm::State& inner_state_;
+    const StateOverrides& state_overrides_;
 };
 
 std::ostream& operator<<(std::ostream& out, const OverrideState& s);

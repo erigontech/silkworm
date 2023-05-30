@@ -17,6 +17,7 @@
 #include "rpcdaemon_options.hpp"
 
 #include <algorithm>
+#include <array>
 
 #include <absl/strings/str_split.h>
 
@@ -25,6 +26,19 @@
 #include "ip_endpoint_option.hpp"
 
 namespace silkworm::cmd::common {
+
+//! All Ethereum EL JSON RPC API namespaces (standard + custom)
+constexpr std::array kAllEth1Namespaces{
+    kAdminApiNamespace,
+    kDebugApiNamespace,
+    kEthApiNamespace,
+    kNetApiNamespace,
+    kParityApiNamespace,
+    kTraceApiNamespace,
+    kTxPoolApiNamespace,
+    kWeb3ApiNamespace,
+    kErigonApiNamespace,
+    kOtterscanApiNamespace};
 
 //! Compute the maximum number of chars in comma-separated list of all API namespaces
 static const auto kApiNamespaceListMaxChars{

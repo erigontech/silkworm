@@ -36,8 +36,7 @@ constexpr std::array kAllEth1Namespaces{
     kTxPoolApiNamespace,
     kTraceApiNamespace,
     kWeb3ApiNamespace,
-    kOtterscanApiNamespace
-};
+    kOtterscanApiNamespace};
 
 }  // namespace silkworm
 

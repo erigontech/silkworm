@@ -72,11 +72,13 @@ CursorResult MemoryMutationCursor::to_first(bool throw_notfound) {
     }
 
     const auto memory_result = memory_cursor_->to_first(false);
+    SILK_TRACE << "to_first: memory_result=" << memory_result;
 
     auto db_result = cursor_->to_first(false);
     if (db_result.key && is_entry_deleted(db_result.key)) {
         db_result = next_on_db(NextType::kNormal, throw_notfound);
     }
+    SILK_TRACE << "to_first: db_result=" << db_result;
 
     const auto result = resolve_priority(memory_result, db_result, NextType::kNormal);
     if (!result.done && throw_notfound) throw_error_notfound();
@@ -119,6 +121,7 @@ CursorResult MemoryMutationCursor::to_next(bool throw_notfound) {
 
     if (is_previous_from_db_) {
         const auto db_result = next_on_db(NextType::kNormal, false);
+        SILK_TRACE << "to_next: db_result.key=" << db_result.key << " db_result.value=" << db_result.value;
 
         const auto result = resolve_priority(current_memory_entry_, db_result, NextType::kNormal);
         if (!result.done && throw_notfound) throw_error_notfound();
@@ -215,20 +218,32 @@ CursorResult MemoryMutationCursor::find(const Slice& key) {
     return find(key, /*.throw_notfound=*/true);
 }
 
+//! \details mdbx::cursor::find in mdbx C++ bindings has "key_exact" semantics, that is "Position at specified key".
+//! On the other hand, we need mdbx::cursor::lower_bound semantics i.e. "Position at first key greater than or equal
+//! to specified key" when comparing and caching memory and database results as required by database overlay.
 CursorResult MemoryMutationCursor::find(const Slice& key, bool throw_notfound) {
     if (is_table_cleared()) {
-        return memory_cursor_->find(key);
+        // We simply delegate to memory cursor, so we need "key_exact" semantics here
+        return memory_cursor_->find(key, throw_notfound);
     }
 
-    const auto memory_result = memory_cursor_->find(key, false);
+    // We need to compare and cache memory and db results, so we need "key_lowerbound" semantics hereafter
+    const auto memory_result = memory_cursor_->lower_bound(key, false);
+    SILK_DEBUG << "find: memory_result=" << memory_result;
 
-    auto db_result = cursor_->find(key, false);
+    auto db_result = cursor_->lower_bound(key, false);
     if (db_result.key && is_entry_deleted(db_result.key)) {
         db_result = next_on_db(NextType::kNormal, throw_notfound);
     }
+    SILK_DEBUG << "find: db_result=" << db_result;
 
     const auto result = resolve_priority(memory_result, db_result, NextType::kNormal);
     if (!result.done && throw_notfound) throw_error_notfound();
+
+    // In the end, we need to enforce "key_exact" semantics before returning
+    if (result.done && result.key != key) {
+        return CursorResult{{}, {}, false};
+    }
     return result;
 }
 
@@ -269,7 +284,7 @@ bool MemoryMutationCursor::seek(const Slice& key) {
 bool MemoryMutationCursor::eof() const {
     const auto result = current(/*throw_notfound=*/false);
     if (result.done) return false;
-    return result.done ? false : memory_cursor_->eof() && cursor_->eof();
+    return memory_cursor_->eof() && cursor_->eof();
 }
 
 bool MemoryMutationCursor::on_first() const {
@@ -505,6 +520,8 @@ CursorResult MemoryMutationCursor::resolve_priority(CursorResult memory_result, 
 
     current_db_entry_ = db_result.done ? db_result : CursorResult{{}, {}, false};
     current_memory_entry_ = memory_result.done ? memory_result : CursorResult{{}, {}, false};
+
+    SILK_TRACE << "resolve_priority: current_memory_entry_=" << current_memory_entry_ << " current_db_entry_=" << current_db_entry_;
 
     if (memory_result.done) {
         const auto mem_key = memory_result.key.as_string();

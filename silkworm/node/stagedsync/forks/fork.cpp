@@ -34,13 +34,14 @@ Fork::Fork(BlockId forking_point, db::ROTxn&& main_chain_tx, NodeSettings& ns)
       memory_tx_{memory_db_},
       pipeline_{&ns},
       canonical_chain_(memory_tx_) {
-    // setting forking point
+    // actual head
+    current_head_ = forking_point;
+    // go down if needed
     if (canonical_chain_.initial_head() != forking_point) {
         reduce_down_to(forking_point);
         ensure_invariant(canonical_chain_.current_head() == forking_point,
                          "forking point must be the current canonical head");
     }
-    current_head_ = forking_point;
 }
 
 /*
@@ -143,10 +144,8 @@ void Fork::extend_with(const Block& block) {
 }
 
 void Fork::reduce_down_to(BlockId unwind_point) {
-    ensure(unwind_point.number < current_head().number,
+    ensure(unwind_point.number < canonical_chain_.current_head().number,
            "reducing down to a block above the fork head");
-    ensure(unwind_point.number > canonical_chain_.initial_head().number,
-           "reducing down to a block below the fork root");
 
     // we do not handle differently the case where unwind_point.number > last_verified_head_.number
     // assuming pipeline unwind can handle it correclty

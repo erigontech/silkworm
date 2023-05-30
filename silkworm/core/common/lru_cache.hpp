@@ -118,6 +118,10 @@ class lru_cache {
         return _cache_items_map.size();
     }
 
+    [[nodiscard]] size_t max_size() const noexcept {
+        return _max_size;
+    }
+
     void clear() noexcept {
         SILKWORM_LRU_CACHE_GUARD
         _cache_items_map.clear();

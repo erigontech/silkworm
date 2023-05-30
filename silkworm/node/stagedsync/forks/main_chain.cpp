@@ -59,14 +59,18 @@ auto MainChain::canonical_head() const -> BlockId {
     return canonical_chain_.current_head();
 }
 
-std::optional<BlockId> MainChain::find_forking_point(const BlockHeader& header) const {
-    return canonical_chain_.find_forking_point(header);
+std::optional<BlockId> MainChain::find_forking_point(const BlockHeader& header, const Hash& header_hash) const {
+    return canonical_chain_.find_forking_point(header, header_hash);
 }
 
 std::optional<BlockId> MainChain::find_forking_point(const Hash& header_hash) const {
     auto header = get_header(header_hash);
     if (!header) return std::nullopt;
-    return find_forking_point(*header);
+    return find_forking_point(*header, header_hash);
+}
+
+auto MainChain::is_canonical(BlockId block) const -> bool {
+    return (canonical_chain_.get_hash(block.number) == block.hash);
 }
 
 Hash MainChain::insert_header(const BlockHeader& header) {
@@ -106,7 +110,7 @@ auto MainChain::verify_chain(Hash head_block_hash) -> VerificationResult {
     if (!commit_at_each_stage) tx_.disable_commit();
 
     // the new head is on a new fork?
-    BlockId forking_point = canonical_chain_.find_forking_point(*head_header);  // the forking origin
+    BlockId forking_point = canonical_chain_.find_forking_point(*head_header, head_block_hash);  // the forking origin
 
     if (head_block_hash != canonical_chain_.current_head().hash &&        // if the new head is not the current head
         forking_point.number < canonical_chain_.current_head().number) {  // and if the forking is behind the head

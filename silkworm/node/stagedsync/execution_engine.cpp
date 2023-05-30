@@ -116,9 +116,9 @@ bool ExecutionEngine::insert_block(const std::shared_ptr<Block> block) {
 }
 
 auto ExecutionEngine::find_forking_point(const BlockHeader& header) const -> std::optional<ForkingPath> {
-    ForkingPath path;
+    ForkingPath path;  // a path from the header to the first block of the main chain using parent-child relationship
 
-    // search in cache
+    // search in cache till to the main chain
     path.forking_point = {.number = header.number - 1, .hash = header.parent_hash};
     while (path.forking_point.number > main_chain_.canonical_head().number) {
         auto parent = block_cache_.get_as_copy(path.forking_point.hash);  // parent is a pointer
@@ -131,6 +131,8 @@ auto ExecutionEngine::find_forking_point(const BlockHeader& header) const -> std
     if (path.forking_point == main_chain_.canonical_head()) return {std::move(path)};
 
     // search remaining path on main chain
+    if (main_chain_.is_canonical(path.forking_point)) return {std::move(path)};
+
     auto forking_point = main_chain_.find_forking_point(path.forking_point.hash);
     if (!forking_point) return {};  // not found
 

@@ -63,19 +63,20 @@ void CanonicalChain::set_current_head(BlockId head) {
 BlockId CanonicalChain::initial_head() const { return initial_head_; }
 BlockId CanonicalChain::current_head() const { return current_head_; }
 
-bool CanonicalChain::cache_enabled() const { return canonical_hash_cache_->size() > 0; }
+bool CanonicalChain::cache_enabled() const { return canonical_hash_cache_->max_size() > 0; }
 
 BlockId CanonicalChain::find_forking_point(Hash header_hash) const {
     std::optional<BlockHeader> header = db::read_header(tx_, header_hash);
     if (!header) throw std::logic_error("find_forking_point precondition violation, header not found");
 
-    return find_forking_point(*header);
+    return find_forking_point(*header, header_hash);
 }
 
-BlockId CanonicalChain::find_forking_point(const BlockHeader& header) const {
+BlockId CanonicalChain::find_forking_point(const BlockHeader& header, Hash header_hash) const {
     BlockId forking_point{};
 
     if (header.number == 0) return forking_point;
+    if (get_hash(header.number) == header_hash) return {header.number, header_hash};
 
     BlockNum height = header.number;
     Hash parent_hash = header.parent_hash;
@@ -163,6 +164,10 @@ void CanonicalChain::delete_down_to(BlockNum unwind_point) {
                      "hash not found on canonical at height " + std::to_string(unwind_point));
 
     current_head_.hash = *current_head_hash;
+
+    if (initial_head_.number > current_head_.number) {
+        initial_head_ = current_head_;  // we went under the prev initial head
+    }
 }
 
 auto CanonicalChain::get_hash(BlockNum height) const -> std::optional<Hash> {

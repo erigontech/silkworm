@@ -143,9 +143,12 @@ TEST_CASE("Fork") {
                 CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kBlockHashesKey) == 3);
                 CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kBlockBodiesKey) == 3);
 
-                // inserting & verifying the block
+                // inserting blocks
                 fork.extend_with(block4);
-                auto fork_verification = fork.verify_chain();
+                CHECK(db::read_header(fork.memory_tx_, 4, block4_hash));
+
+                // verification
+                auto fork_verification = fork.verify_chain();  // run pipeline
 
                 REQUIRE(holds_alternative<ValidChain>(fork_verification));
                 auto fork_valid_chain = std::get<ValidChain>(fork_verification);
@@ -155,9 +158,13 @@ TEST_CASE("Fork") {
                 CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kBlockHashesKey) == 4);
                 CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kBlockBodiesKey) == 4);
 
-                // read blocks from mutation
-                // run pipeline and validate stage progress and results
+                // fork choice
+                bool updated = fork.notify_fork_choice_update(block4_hash, block3_hash);
+                CHECK(updated);
+                CHECK(fork.current_head() == BlockId{4, block4_hash});
+                CHECK(fork.last_fork_choice() == BlockId{4, block4_hash});
 
+                // close
                 fork.close();
             } catch (...) {
                 test_failure = std::current_exception();

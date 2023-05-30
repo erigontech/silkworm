@@ -16,6 +16,8 @@
 
 #include "stage.hpp"
 
+#include <magic_enum.hpp>
+
 #include <silkworm/node/db/stages.hpp>
 
 namespace silkworm::stagedsync {
@@ -42,5 +44,12 @@ void Stage::check_block_sequence(BlockNum actual, BlockNum expected) {
 void Stage::throw_if_stopping() {
     if (is_stopping()) throw StageError(Stage::Result::kAborted);
 }
+
+StageError::StageError(Stage::Result err)
+    : err_{magic_enum::enum_integer<Stage::Result>(err)},
+      message_{std::string(magic_enum::enum_name<Stage::Result>(err))} {}
+
+StageError::StageError(Stage::Result err, std::string message)
+    : err_{magic_enum::enum_integer<Stage::Result>(err)}, message_{std::move(message)} {}
 
 }  // namespace silkworm::stagedsync

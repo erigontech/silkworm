@@ -16,6 +16,8 @@
 
 #include "stage_log_index.hpp"
 
+#include <magic_enum.hpp>
+
 namespace silkworm::stagedsync {
 
 Stage::Result LogIndex::forward(db::RWTxn& txn) {

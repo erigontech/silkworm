@@ -14,14 +14,6 @@
    limitations under the License.
 ]]
 
-if(MSVC)
-  add_link_options(/STACK:${SILKWORM_STACK_SIZE})
-elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  add_link_options(-Wl,-stack_size -Wl,${SILKWORM_STACK_SIZE})
-else()
-  add_link_options(-Wl,-z,stack-size=${SILKWORM_STACK_SIZE})
-endif()
-
 # Tests
 add_subdirectory(test)
 
@@ -30,7 +22,6 @@ if(NOT SILKWORM_CORE_ONLY)
   add_subdirectory(benchmark)
 
   find_package(absl REQUIRED)
-  find_package(Boost REQUIRED)
   find_package(CLI11 REQUIRED)
 
   if(SILKWORM_USE_MIMALLOC)

@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <array>
 #include <chrono>
 #include <cstddef>
 
@@ -33,18 +32,6 @@ constexpr const char* kTxPoolApiNamespace{"txpool"};
 constexpr const char* kTraceApiNamespace{"trace"};
 constexpr const char* kWeb3ApiNamespace{"web3"};
 constexpr const char* kOtterscanApiNamespace{"ots"};
-
-constexpr std::array<const char*, 9> kAllEth1Namespaces{
-    kAdminApiNamespace,
-    kDebugApiNamespace,
-    kEthApiNamespace,
-    kParityApiNamespace,
-    kErigonApiNamespace,
-    kTxPoolApiNamespace,
-    kTraceApiNamespace,
-    kWeb3ApiNamespace,
-    kOtterscanApiNamespace,
-};
 
 constexpr const char* kAddressPortSeparator{":"};
 constexpr const char* kApiSpecSeparator{","};

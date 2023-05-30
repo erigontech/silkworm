@@ -9,6 +9,7 @@ gmp/6.2.1
 grpc/1.48.0
 gtest/1.12.1
 jwt-cpp/0.6.0
+magic_enum/0.8.2
 mimalloc/2.0.9
 ms-gsl/4.0.0
 nlohmann_json/3.11.2
@@ -16,6 +17,8 @@ openssl/1.1.1s # grpc dependency
 protobuf/3.21.4 # grpc dependency
 roaring/1.1.2
 snappy/1.1.7
+tl-expected/1.1.0
+tomlplusplus/3.3.0
 
 [generators]
 cmake_find_package

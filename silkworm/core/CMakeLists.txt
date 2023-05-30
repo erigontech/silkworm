@@ -16,6 +16,7 @@
 
 find_package(Microsoft.GSL REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(tl-expected REQUIRED)
 
 if(MSVC)
   add_compile_options(/EHsc)
@@ -37,7 +38,6 @@ list(FILTER SILKWORM_CORE_SRC EXCLUDE REGEX "_benchmark\\.cpp$")
 
 add_library(silkworm_core ${SILKWORM_CORE_SRC})
 target_include_directories(silkworm_core PUBLIC ${SILKWORM_MAIN_DIR})
-target_include_directories(silkworm_core SYSTEM PUBLIC ${SILKWORM_MAIN_DIR}/third_party/expected/include)
 
 set(SILKWORM_CORE_PUBLIC_LIBS
     ethash::ethash
@@ -47,6 +47,7 @@ set(SILKWORM_CORE_PUBLIC_LIBS
     Microsoft.GSL::GSL
     nlohmann_json::nlohmann_json
     secp256k1
+    tl::expected
 )
 set(SILKWORM_CORE_PRIVATE_LIBS ff blst)
 

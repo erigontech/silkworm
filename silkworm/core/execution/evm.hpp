@@ -20,12 +20,14 @@
 #include <stack>
 #include <vector>
 
+#include <evmone/baseline.hpp>
+#include <evmone/execution_state.hpp>
 #include <intx/intx.hpp>
 
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/core/common/lru_cache.hpp>
 #include <silkworm/core/common/object_pool.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/execution/analysis_cache.hpp>
 #include <silkworm/core/state/intra_block_state.hpp>
 #include <silkworm/core/types/block.hpp>
 
@@ -57,9 +59,10 @@ class EvmTracer {
 
     virtual void on_reward_granted(const CallResult& result, const IntraBlockState& intra_block_state) noexcept = 0;
 };
+
 using EvmTracers = std::vector<std::reference_wrapper<EvmTracer>>;
 
-using EvmoneExecutionState = evmone::advanced::AdvancedExecutionState;
+using AnalysisCache = lru_cache<evmc::bytes32, std::shared_ptr<evmone::baseline::CodeAnalysis>>;
 
 class EVM {
   public:
@@ -87,13 +90,8 @@ class EVM {
     void add_tracer(EvmTracer& tracer) noexcept;
     [[nodiscard]] const EvmTracers& tracers() const noexcept { return tracers_; };
 
-    // Use for better performance with evmone baseline interpreter
-    BaselineAnalysisCache* baseline_analysis_cache{nullptr};
-
-    // Point to a cache instance in order to enable execution with evmone advanced rather than baseline interpreter
-    AdvancedAnalysisCache* advanced_analysis_cache{nullptr};
-
-    ObjectPool<EvmoneExecutionState>* state_pool{nullptr};  // use for better performance
+    AnalysisCache* analysis_cache{nullptr};                   // provide one for better performance
+    ObjectPool<evmone::ExecutionState>* state_pool{nullptr};  // ditto
 
     evmc_vm* exo_evm{nullptr};  // it's possible to use an exogenous EVMC VM
 
@@ -111,11 +109,8 @@ class EVM {
     evmc_result execute_with_baseline_interpreter(evmc_revision rev, const evmc_message& message, ByteView code,
                                                   const evmc::bytes32* code_hash) noexcept;
 
-    evmc_result execute_with_advanced_interpreter(evmc_revision rev, const evmc_message& message, ByteView code,
-                                                  const evmc::bytes32& code_hash) noexcept;
-
-    gsl::owner<EvmoneExecutionState*> acquire_state() const noexcept;
-    void release_state(gsl::owner<EvmoneExecutionState*> state) const noexcept;
+    gsl::owner<evmone::ExecutionState*> acquire_state() const noexcept;
+    void release_state(gsl::owner<evmone::ExecutionState*> state) const noexcept;
 
     const Block& block_;
     IntraBlockState& state_;

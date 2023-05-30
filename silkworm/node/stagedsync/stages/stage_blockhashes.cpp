@@ -16,6 +16,8 @@
 
 #include "stage_blockhashes.hpp"
 
+#include <magic_enum.hpp>
+
 #include <silkworm/core/common/endian.hpp>
 
 namespace silkworm::stagedsync {

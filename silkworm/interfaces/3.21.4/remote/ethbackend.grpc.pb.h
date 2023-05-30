@@ -98,13 +98,13 @@ class ETHBACKEND final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::EngineGetPayloadBodiesV1Response>> PrepareAsyncEngineGetPayloadBodiesByRangeV1(::grpc::ClientContext* context, const ::remote::EngineGetPayloadBodiesByRangeV1Request& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::EngineGetPayloadBodiesV1Response>>(PrepareAsyncEngineGetPayloadBodiesByRangeV1Raw(context, request, cq));
     }
-    // Fetch the blobs bundle using its ID.
-    virtual ::grpc::Status EngineGetBlobsBundleV1(::grpc::ClientContext* context, const ::remote::EngineGetBlobsBundleRequest& request, ::types::BlobsBundleV1* response) = 0;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::types::BlobsBundleV1>> AsyncEngineGetBlobsBundleV1(::grpc::ClientContext* context, const ::remote::EngineGetBlobsBundleRequest& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::types::BlobsBundleV1>>(AsyncEngineGetBlobsBundleV1Raw(context, request, cq));
+    // Fetch the payload along with its blobs bundle using its ID.
+    virtual ::grpc::Status EngineGetPayloadWithBlobs(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest& request, ::remote::EngineGetPayloadResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::EngineGetPayloadResponse>> AsyncEngineGetPayloadWithBlobs(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::EngineGetPayloadResponse>>(AsyncEngineGetPayloadWithBlobsRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::types::BlobsBundleV1>> PrepareAsyncEngineGetBlobsBundleV1(::grpc::ClientContext* context, const ::remote::EngineGetBlobsBundleRequest& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::types::BlobsBundleV1>>(PrepareAsyncEngineGetBlobsBundleV1Raw(context, request, cq));
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::EngineGetPayloadResponse>> PrepareAsyncEngineGetPayloadWithBlobs(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::remote::EngineGetPayloadResponse>>(PrepareAsyncEngineGetPayloadWithBlobsRaw(context, request, cq));
     }
     // End of Engine API requests
     // ------------------------------------------------------------------------
@@ -220,9 +220,9 @@ class ETHBACKEND final {
       virtual void EngineGetPayloadBodiesByHashV1(::grpc::ClientContext* context, const ::remote::EngineGetPayloadBodiesByHashV1Request* request, ::remote::EngineGetPayloadBodiesV1Response* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void EngineGetPayloadBodiesByRangeV1(::grpc::ClientContext* context, const ::remote::EngineGetPayloadBodiesByRangeV1Request* request, ::remote::EngineGetPayloadBodiesV1Response* response, std::function<void(::grpc::Status)>) = 0;
       virtual void EngineGetPayloadBodiesByRangeV1(::grpc::ClientContext* context, const ::remote::EngineGetPayloadBodiesByRangeV1Request* request, ::remote::EngineGetPayloadBodiesV1Response* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      // Fetch the blobs bundle using its ID.
-      virtual void EngineGetBlobsBundleV1(::grpc::ClientContext* context, const ::remote::EngineGetBlobsBundleRequest* request, ::types::BlobsBundleV1* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void EngineGetBlobsBundleV1(::grpc::ClientContext* context, const ::remote::EngineGetBlobsBundleRequest* request, ::types::BlobsBundleV1* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      // Fetch the payload along with its blobs bundle using its ID.
+      virtual void EngineGetPayloadWithBlobs(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest* request, ::remote::EngineGetPayloadResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void EngineGetPayloadWithBlobs(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest* request, ::remote::EngineGetPayloadResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       // End of Engine API requests
       // ------------------------------------------------------------------------
       //
@@ -276,8 +276,8 @@ class ETHBACKEND final {
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::EngineGetPayloadBodiesV1Response>* PrepareAsyncEngineGetPayloadBodiesByHashV1Raw(::grpc::ClientContext* context, const ::remote::EngineGetPayloadBodiesByHashV1Request& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::EngineGetPayloadBodiesV1Response>* AsyncEngineGetPayloadBodiesByRangeV1Raw(::grpc::ClientContext* context, const ::remote::EngineGetPayloadBodiesByRangeV1Request& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::EngineGetPayloadBodiesV1Response>* PrepareAsyncEngineGetPayloadBodiesByRangeV1Raw(::grpc::ClientContext* context, const ::remote::EngineGetPayloadBodiesByRangeV1Request& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::types::BlobsBundleV1>* AsyncEngineGetBlobsBundleV1Raw(::grpc::ClientContext* context, const ::remote::EngineGetBlobsBundleRequest& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::types::BlobsBundleV1>* PrepareAsyncEngineGetBlobsBundleV1Raw(::grpc::ClientContext* context, const ::remote::EngineGetBlobsBundleRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::EngineGetPayloadResponse>* AsyncEngineGetPayloadWithBlobsRaw(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::EngineGetPayloadResponse>* PrepareAsyncEngineGetPayloadWithBlobsRaw(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::types::VersionReply>* AsyncVersionRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::types::VersionReply>* PrepareAsyncVersionRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::remote::ProtocolVersionReply>* AsyncProtocolVersionRaw(::grpc::ClientContext* context, const ::remote::ProtocolVersionRequest& request, ::grpc::CompletionQueue* cq) = 0;
@@ -360,12 +360,12 @@ class ETHBACKEND final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::EngineGetPayloadBodiesV1Response>> PrepareAsyncEngineGetPayloadBodiesByRangeV1(::grpc::ClientContext* context, const ::remote::EngineGetPayloadBodiesByRangeV1Request& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::EngineGetPayloadBodiesV1Response>>(PrepareAsyncEngineGetPayloadBodiesByRangeV1Raw(context, request, cq));
     }
-    ::grpc::Status EngineGetBlobsBundleV1(::grpc::ClientContext* context, const ::remote::EngineGetBlobsBundleRequest& request, ::types::BlobsBundleV1* response) override;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::types::BlobsBundleV1>> AsyncEngineGetBlobsBundleV1(::grpc::ClientContext* context, const ::remote::EngineGetBlobsBundleRequest& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::types::BlobsBundleV1>>(AsyncEngineGetBlobsBundleV1Raw(context, request, cq));
+    ::grpc::Status EngineGetPayloadWithBlobs(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest& request, ::remote::EngineGetPayloadResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::EngineGetPayloadResponse>> AsyncEngineGetPayloadWithBlobs(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::EngineGetPayloadResponse>>(AsyncEngineGetPayloadWithBlobsRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::types::BlobsBundleV1>> PrepareAsyncEngineGetBlobsBundleV1(::grpc::ClientContext* context, const ::remote::EngineGetBlobsBundleRequest& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::types::BlobsBundleV1>>(PrepareAsyncEngineGetBlobsBundleV1Raw(context, request, cq));
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::EngineGetPayloadResponse>> PrepareAsyncEngineGetPayloadWithBlobs(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::remote::EngineGetPayloadResponse>>(PrepareAsyncEngineGetPayloadWithBlobsRaw(context, request, cq));
     }
     ::grpc::Status Version(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::types::VersionReply* response) override;
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::types::VersionReply>> AsyncVersion(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
@@ -460,8 +460,8 @@ class ETHBACKEND final {
       void EngineGetPayloadBodiesByHashV1(::grpc::ClientContext* context, const ::remote::EngineGetPayloadBodiesByHashV1Request* request, ::remote::EngineGetPayloadBodiesV1Response* response, ::grpc::ClientUnaryReactor* reactor) override;
       void EngineGetPayloadBodiesByRangeV1(::grpc::ClientContext* context, const ::remote::EngineGetPayloadBodiesByRangeV1Request* request, ::remote::EngineGetPayloadBodiesV1Response* response, std::function<void(::grpc::Status)>) override;
       void EngineGetPayloadBodiesByRangeV1(::grpc::ClientContext* context, const ::remote::EngineGetPayloadBodiesByRangeV1Request* request, ::remote::EngineGetPayloadBodiesV1Response* response, ::grpc::ClientUnaryReactor* reactor) override;
-      void EngineGetBlobsBundleV1(::grpc::ClientContext* context, const ::remote::EngineGetBlobsBundleRequest* request, ::types::BlobsBundleV1* response, std::function<void(::grpc::Status)>) override;
-      void EngineGetBlobsBundleV1(::grpc::ClientContext* context, const ::remote::EngineGetBlobsBundleRequest* request, ::types::BlobsBundleV1* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void EngineGetPayloadWithBlobs(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest* request, ::remote::EngineGetPayloadResponse* response, std::function<void(::grpc::Status)>) override;
+      void EngineGetPayloadWithBlobs(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest* request, ::remote::EngineGetPayloadResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void Version(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::types::VersionReply* response, std::function<void(::grpc::Status)>) override;
       void Version(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::types::VersionReply* response, ::grpc::ClientUnaryReactor* reactor) override;
       void ProtocolVersion(::grpc::ClientContext* context, const ::remote::ProtocolVersionRequest* request, ::remote::ProtocolVersionReply* response, std::function<void(::grpc::Status)>) override;
@@ -507,8 +507,8 @@ class ETHBACKEND final {
     ::grpc::ClientAsyncResponseReader< ::remote::EngineGetPayloadBodiesV1Response>* PrepareAsyncEngineGetPayloadBodiesByHashV1Raw(::grpc::ClientContext* context, const ::remote::EngineGetPayloadBodiesByHashV1Request& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::remote::EngineGetPayloadBodiesV1Response>* AsyncEngineGetPayloadBodiesByRangeV1Raw(::grpc::ClientContext* context, const ::remote::EngineGetPayloadBodiesByRangeV1Request& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::remote::EngineGetPayloadBodiesV1Response>* PrepareAsyncEngineGetPayloadBodiesByRangeV1Raw(::grpc::ClientContext* context, const ::remote::EngineGetPayloadBodiesByRangeV1Request& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::types::BlobsBundleV1>* AsyncEngineGetBlobsBundleV1Raw(::grpc::ClientContext* context, const ::remote::EngineGetBlobsBundleRequest& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::types::BlobsBundleV1>* PrepareAsyncEngineGetBlobsBundleV1Raw(::grpc::ClientContext* context, const ::remote::EngineGetBlobsBundleRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::remote::EngineGetPayloadResponse>* AsyncEngineGetPayloadWithBlobsRaw(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::remote::EngineGetPayloadResponse>* PrepareAsyncEngineGetPayloadWithBlobsRaw(::grpc::ClientContext* context, const ::remote::EngineGetPayloadRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::types::VersionReply>* AsyncVersionRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::types::VersionReply>* PrepareAsyncVersionRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::remote::ProtocolVersionReply>* AsyncProtocolVersionRaw(::grpc::ClientContext* context, const ::remote::ProtocolVersionRequest& request, ::grpc::CompletionQueue* cq) override;
@@ -539,7 +539,7 @@ class ETHBACKEND final {
     const ::grpc::internal::RpcMethod rpcmethod_EngineGetPayload_;
     const ::grpc::internal::RpcMethod rpcmethod_EngineGetPayloadBodiesByHashV1_;
     const ::grpc::internal::RpcMethod rpcmethod_EngineGetPayloadBodiesByRangeV1_;
-    const ::grpc::internal::RpcMethod rpcmethod_EngineGetBlobsBundleV1_;
+    const ::grpc::internal::RpcMethod rpcmethod_EngineGetPayloadWithBlobs_;
     const ::grpc::internal::RpcMethod rpcmethod_Version_;
     const ::grpc::internal::RpcMethod rpcmethod_ProtocolVersion_;
     const ::grpc::internal::RpcMethod rpcmethod_ClientVersion_;
@@ -572,8 +572,8 @@ class ETHBACKEND final {
     virtual ::grpc::Status EngineGetPayload(::grpc::ServerContext* context, const ::remote::EngineGetPayloadRequest* request, ::remote::EngineGetPayloadResponse* response);
     virtual ::grpc::Status EngineGetPayloadBodiesByHashV1(::grpc::ServerContext* context, const ::remote::EngineGetPayloadBodiesByHashV1Request* request, ::remote::EngineGetPayloadBodiesV1Response* response);
     virtual ::grpc::Status EngineGetPayloadBodiesByRangeV1(::grpc::ServerContext* context, const ::remote::EngineGetPayloadBodiesByRangeV1Request* request, ::remote::EngineGetPayloadBodiesV1Response* response);
-    // Fetch the blobs bundle using its ID.
-    virtual ::grpc::Status EngineGetBlobsBundleV1(::grpc::ServerContext* context, const ::remote::EngineGetBlobsBundleRequest* request, ::types::BlobsBundleV1* response);
+    // Fetch the payload along with its blobs bundle using its ID.
+    virtual ::grpc::Status EngineGetPayloadWithBlobs(::grpc::ServerContext* context, const ::remote::EngineGetPayloadRequest* request, ::remote::EngineGetPayloadResponse* response);
     // End of Engine API requests
     // ------------------------------------------------------------------------
     //
@@ -760,22 +760,22 @@ class ETHBACKEND final {
     }
   };
   template <class BaseClass>
-  class WithAsyncMethod_EngineGetBlobsBundleV1 : public BaseClass {
+  class WithAsyncMethod_EngineGetPayloadWithBlobs : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithAsyncMethod_EngineGetBlobsBundleV1() {
+    WithAsyncMethod_EngineGetPayloadWithBlobs() {
       ::grpc::Service::MarkMethodAsync(8);
     }
-    ~WithAsyncMethod_EngineGetBlobsBundleV1() override {
+    ~WithAsyncMethod_EngineGetPayloadWithBlobs() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status EngineGetBlobsBundleV1(::grpc::ServerContext* /*context*/, const ::remote::EngineGetBlobsBundleRequest* /*request*/, ::types::BlobsBundleV1* /*response*/) override {
+    ::grpc::Status EngineGetPayloadWithBlobs(::grpc::ServerContext* /*context*/, const ::remote::EngineGetPayloadRequest* /*request*/, ::remote::EngineGetPayloadResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    void RequestEngineGetBlobsBundleV1(::grpc::ServerContext* context, ::remote::EngineGetBlobsBundleRequest* request, ::grpc::ServerAsyncResponseWriter< ::types::BlobsBundleV1>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+    void RequestEngineGetPayloadWithBlobs(::grpc::ServerContext* context, ::remote::EngineGetPayloadRequest* request, ::grpc::ServerAsyncResponseWriter< ::remote::EngineGetPayloadResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
       ::grpc::Service::RequestAsyncUnary(8, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
@@ -979,7 +979,7 @@ class ETHBACKEND final {
       ::grpc::Service::RequestAsyncUnary(18, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_Etherbase<WithAsyncMethod_NetVersion<WithAsyncMethod_NetPeerCount<WithAsyncMethod_EngineNewPayload<WithAsyncMethod_EngineForkChoiceUpdated<WithAsyncMethod_EngineGetPayload<WithAsyncMethod_EngineGetPayloadBodiesByHashV1<WithAsyncMethod_EngineGetPayloadBodiesByRangeV1<WithAsyncMethod_EngineGetBlobsBundleV1<WithAsyncMethod_Version<WithAsyncMethod_ProtocolVersion<WithAsyncMethod_ClientVersion<WithAsyncMethod_Subscribe<WithAsyncMethod_SubscribeLogs<WithAsyncMethod_Block<WithAsyncMethod_TxnLookup<WithAsyncMethod_NodeInfo<WithAsyncMethod_Peers<WithAsyncMethod_PendingBlock<Service > > > > > > > > > > > > > > > > > > > AsyncService;
+  typedef WithAsyncMethod_Etherbase<WithAsyncMethod_NetVersion<WithAsyncMethod_NetPeerCount<WithAsyncMethod_EngineNewPayload<WithAsyncMethod_EngineForkChoiceUpdated<WithAsyncMethod_EngineGetPayload<WithAsyncMethod_EngineGetPayloadBodiesByHashV1<WithAsyncMethod_EngineGetPayloadBodiesByRangeV1<WithAsyncMethod_EngineGetPayloadWithBlobs<WithAsyncMethod_Version<WithAsyncMethod_ProtocolVersion<WithAsyncMethod_ClientVersion<WithAsyncMethod_Subscribe<WithAsyncMethod_SubscribeLogs<WithAsyncMethod_Block<WithAsyncMethod_TxnLookup<WithAsyncMethod_NodeInfo<WithAsyncMethod_Peers<WithAsyncMethod_PendingBlock<Service > > > > > > > > > > > > > > > > > > > AsyncService;
   template <class BaseClass>
   class WithCallbackMethod_Etherbase : public BaseClass {
    private:
@@ -1197,31 +1197,31 @@ class ETHBACKEND final {
       ::grpc::CallbackServerContext* /*context*/, const ::remote::EngineGetPayloadBodiesByRangeV1Request* /*request*/, ::remote::EngineGetPayloadBodiesV1Response* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
-  class WithCallbackMethod_EngineGetBlobsBundleV1 : public BaseClass {
+  class WithCallbackMethod_EngineGetPayloadWithBlobs : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithCallbackMethod_EngineGetBlobsBundleV1() {
+    WithCallbackMethod_EngineGetPayloadWithBlobs() {
       ::grpc::Service::MarkMethodCallback(8,
-          new ::grpc::internal::CallbackUnaryHandler< ::remote::EngineGetBlobsBundleRequest, ::types::BlobsBundleV1>(
+          new ::grpc::internal::CallbackUnaryHandler< ::remote::EngineGetPayloadRequest, ::remote::EngineGetPayloadResponse>(
             [this](
-                   ::grpc::CallbackServerContext* context, const ::remote::EngineGetBlobsBundleRequest* request, ::types::BlobsBundleV1* response) { return this->EngineGetBlobsBundleV1(context, request, response); }));}
-    void SetMessageAllocatorFor_EngineGetBlobsBundleV1(
-        ::grpc::MessageAllocator< ::remote::EngineGetBlobsBundleRequest, ::types::BlobsBundleV1>* allocator) {
+                   ::grpc::CallbackServerContext* context, const ::remote::EngineGetPayloadRequest* request, ::remote::EngineGetPayloadResponse* response) { return this->EngineGetPayloadWithBlobs(context, request, response); }));}
+    void SetMessageAllocatorFor_EngineGetPayloadWithBlobs(
+        ::grpc::MessageAllocator< ::remote::EngineGetPayloadRequest, ::remote::EngineGetPayloadResponse>* allocator) {
       ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(8);
-      static_cast<::grpc::internal::CallbackUnaryHandler< ::remote::EngineGetBlobsBundleRequest, ::types::BlobsBundleV1>*>(handler)
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::remote::EngineGetPayloadRequest, ::remote::EngineGetPayloadResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
-    ~WithCallbackMethod_EngineGetBlobsBundleV1() override {
+    ~WithCallbackMethod_EngineGetPayloadWithBlobs() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status EngineGetBlobsBundleV1(::grpc::ServerContext* /*context*/, const ::remote::EngineGetBlobsBundleRequest* /*request*/, ::types::BlobsBundleV1* /*response*/) override {
+    ::grpc::Status EngineGetPayloadWithBlobs(::grpc::ServerContext* /*context*/, const ::remote::EngineGetPayloadRequest* /*request*/, ::remote::EngineGetPayloadResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    virtual ::grpc::ServerUnaryReactor* EngineGetBlobsBundleV1(
-      ::grpc::CallbackServerContext* /*context*/, const ::remote::EngineGetBlobsBundleRequest* /*request*/, ::types::BlobsBundleV1* /*response*/)  { return nullptr; }
+    virtual ::grpc::ServerUnaryReactor* EngineGetPayloadWithBlobs(
+      ::grpc::CallbackServerContext* /*context*/, const ::remote::EngineGetPayloadRequest* /*request*/, ::remote::EngineGetPayloadResponse* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
   class WithCallbackMethod_Version : public BaseClass {
@@ -1484,7 +1484,7 @@ class ETHBACKEND final {
     virtual ::grpc::ServerUnaryReactor* PendingBlock(
       ::grpc::CallbackServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::remote::PendingBlockReply* /*response*/)  { return nullptr; }
   };
-  typedef WithCallbackMethod_Etherbase<WithCallbackMethod_NetVersion<WithCallbackMethod_NetPeerCount<WithCallbackMethod_EngineNewPayload<WithCallbackMethod_EngineForkChoiceUpdated<WithCallbackMethod_EngineGetPayload<WithCallbackMethod_EngineGetPayloadBodiesByHashV1<WithCallbackMethod_EngineGetPayloadBodiesByRangeV1<WithCallbackMethod_EngineGetBlobsBundleV1<WithCallbackMethod_Version<WithCallbackMethod_ProtocolVersion<WithCallbackMethod_ClientVersion<WithCallbackMethod_Subscribe<WithCallbackMethod_SubscribeLogs<WithCallbackMethod_Block<WithCallbackMethod_TxnLookup<WithCallbackMethod_NodeInfo<WithCallbackMethod_Peers<WithCallbackMethod_PendingBlock<Service > > > > > > > > > > > > > > > > > > > CallbackService;
+  typedef WithCallbackMethod_Etherbase<WithCallbackMethod_NetVersion<WithCallbackMethod_NetPeerCount<WithCallbackMethod_EngineNewPayload<WithCallbackMethod_EngineForkChoiceUpdated<WithCallbackMethod_EngineGetPayload<WithCallbackMethod_EngineGetPayloadBodiesByHashV1<WithCallbackMethod_EngineGetPayloadBodiesByRangeV1<WithCallbackMethod_EngineGetPayloadWithBlobs<WithCallbackMethod_Version<WithCallbackMethod_ProtocolVersion<WithCallbackMethod_ClientVersion<WithCallbackMethod_Subscribe<WithCallbackMethod_SubscribeLogs<WithCallbackMethod_Block<WithCallbackMethod_TxnLookup<WithCallbackMethod_NodeInfo<WithCallbackMethod_Peers<WithCallbackMethod_PendingBlock<Service > > > > > > > > > > > > > > > > > > > CallbackService;
   typedef CallbackService ExperimentalCallbackService;
   template <class BaseClass>
   class WithGenericMethod_Etherbase : public BaseClass {
@@ -1623,18 +1623,18 @@ class ETHBACKEND final {
     }
   };
   template <class BaseClass>
-  class WithGenericMethod_EngineGetBlobsBundleV1 : public BaseClass {
+  class WithGenericMethod_EngineGetPayloadWithBlobs : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithGenericMethod_EngineGetBlobsBundleV1() {
+    WithGenericMethod_EngineGetPayloadWithBlobs() {
       ::grpc::Service::MarkMethodGeneric(8);
     }
-    ~WithGenericMethod_EngineGetBlobsBundleV1() override {
+    ~WithGenericMethod_EngineGetPayloadWithBlobs() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status EngineGetBlobsBundleV1(::grpc::ServerContext* /*context*/, const ::remote::EngineGetBlobsBundleRequest* /*request*/, ::types::BlobsBundleV1* /*response*/) override {
+    ::grpc::Status EngineGetPayloadWithBlobs(::grpc::ServerContext* /*context*/, const ::remote::EngineGetPayloadRequest* /*request*/, ::remote::EngineGetPayloadResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1970,22 +1970,22 @@ class ETHBACKEND final {
     }
   };
   template <class BaseClass>
-  class WithRawMethod_EngineGetBlobsBundleV1 : public BaseClass {
+  class WithRawMethod_EngineGetPayloadWithBlobs : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithRawMethod_EngineGetBlobsBundleV1() {
+    WithRawMethod_EngineGetPayloadWithBlobs() {
       ::grpc::Service::MarkMethodRaw(8);
     }
-    ~WithRawMethod_EngineGetBlobsBundleV1() override {
+    ~WithRawMethod_EngineGetPayloadWithBlobs() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status EngineGetBlobsBundleV1(::grpc::ServerContext* /*context*/, const ::remote::EngineGetBlobsBundleRequest* /*request*/, ::types::BlobsBundleV1* /*response*/) override {
+    ::grpc::Status EngineGetPayloadWithBlobs(::grpc::ServerContext* /*context*/, const ::remote::EngineGetPayloadRequest* /*request*/, ::remote::EngineGetPayloadResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    void RequestEngineGetBlobsBundleV1(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+    void RequestEngineGetPayloadWithBlobs(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
       ::grpc::Service::RequestAsyncUnary(8, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
@@ -2366,25 +2366,25 @@ class ETHBACKEND final {
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
-  class WithRawCallbackMethod_EngineGetBlobsBundleV1 : public BaseClass {
+  class WithRawCallbackMethod_EngineGetPayloadWithBlobs : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithRawCallbackMethod_EngineGetBlobsBundleV1() {
+    WithRawCallbackMethod_EngineGetPayloadWithBlobs() {
       ::grpc::Service::MarkMethodRawCallback(8,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
-                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->EngineGetBlobsBundleV1(context, request, response); }));
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->EngineGetPayloadWithBlobs(context, request, response); }));
     }
-    ~WithRawCallbackMethod_EngineGetBlobsBundleV1() override {
+    ~WithRawCallbackMethod_EngineGetPayloadWithBlobs() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status EngineGetBlobsBundleV1(::grpc::ServerContext* /*context*/, const ::remote::EngineGetBlobsBundleRequest* /*request*/, ::types::BlobsBundleV1* /*response*/) override {
+    ::grpc::Status EngineGetPayloadWithBlobs(::grpc::ServerContext* /*context*/, const ::remote::EngineGetPayloadRequest* /*request*/, ::remote::EngineGetPayloadResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    virtual ::grpc::ServerUnaryReactor* EngineGetBlobsBundleV1(
+    virtual ::grpc::ServerUnaryReactor* EngineGetPayloadWithBlobs(
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
@@ -2825,31 +2825,31 @@ class ETHBACKEND final {
     virtual ::grpc::Status StreamedEngineGetPayloadBodiesByRangeV1(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::remote::EngineGetPayloadBodiesByRangeV1Request,::remote::EngineGetPayloadBodiesV1Response>* server_unary_streamer) = 0;
   };
   template <class BaseClass>
-  class WithStreamedUnaryMethod_EngineGetBlobsBundleV1 : public BaseClass {
+  class WithStreamedUnaryMethod_EngineGetPayloadWithBlobs : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithStreamedUnaryMethod_EngineGetBlobsBundleV1() {
+    WithStreamedUnaryMethod_EngineGetPayloadWithBlobs() {
       ::grpc::Service::MarkMethodStreamed(8,
         new ::grpc::internal::StreamedUnaryHandler<
-          ::remote::EngineGetBlobsBundleRequest, ::types::BlobsBundleV1>(
+          ::remote::EngineGetPayloadRequest, ::remote::EngineGetPayloadResponse>(
             [this](::grpc::ServerContext* context,
                    ::grpc::ServerUnaryStreamer<
-                     ::remote::EngineGetBlobsBundleRequest, ::types::BlobsBundleV1>* streamer) {
-                       return this->StreamedEngineGetBlobsBundleV1(context,
+                     ::remote::EngineGetPayloadRequest, ::remote::EngineGetPayloadResponse>* streamer) {
+                       return this->StreamedEngineGetPayloadWithBlobs(context,
                          streamer);
                   }));
     }
-    ~WithStreamedUnaryMethod_EngineGetBlobsBundleV1() override {
+    ~WithStreamedUnaryMethod_EngineGetPayloadWithBlobs() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status EngineGetBlobsBundleV1(::grpc::ServerContext* /*context*/, const ::remote::EngineGetBlobsBundleRequest* /*request*/, ::types::BlobsBundleV1* /*response*/) override {
+    ::grpc::Status EngineGetPayloadWithBlobs(::grpc::ServerContext* /*context*/, const ::remote::EngineGetPayloadRequest* /*request*/, ::remote::EngineGetPayloadResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedEngineGetBlobsBundleV1(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::remote::EngineGetBlobsBundleRequest,::types::BlobsBundleV1>* server_unary_streamer) = 0;
+    virtual ::grpc::Status StreamedEngineGetPayloadWithBlobs(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::remote::EngineGetPayloadRequest,::remote::EngineGetPayloadResponse>* server_unary_streamer) = 0;
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_Version : public BaseClass {
@@ -3067,7 +3067,7 @@ class ETHBACKEND final {
     // replace default version of method with streamed unary
     virtual ::grpc::Status StreamedPendingBlock(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::google::protobuf::Empty,::remote::PendingBlockReply>* server_unary_streamer) = 0;
   };
-  typedef WithStreamedUnaryMethod_Etherbase<WithStreamedUnaryMethod_NetVersion<WithStreamedUnaryMethod_NetPeerCount<WithStreamedUnaryMethod_EngineNewPayload<WithStreamedUnaryMethod_EngineForkChoiceUpdated<WithStreamedUnaryMethod_EngineGetPayload<WithStreamedUnaryMethod_EngineGetPayloadBodiesByHashV1<WithStreamedUnaryMethod_EngineGetPayloadBodiesByRangeV1<WithStreamedUnaryMethod_EngineGetBlobsBundleV1<WithStreamedUnaryMethod_Version<WithStreamedUnaryMethod_ProtocolVersion<WithStreamedUnaryMethod_ClientVersion<WithStreamedUnaryMethod_Block<WithStreamedUnaryMethod_TxnLookup<WithStreamedUnaryMethod_NodeInfo<WithStreamedUnaryMethod_Peers<WithStreamedUnaryMethod_PendingBlock<Service > > > > > > > > > > > > > > > > > StreamedUnaryService;
+  typedef WithStreamedUnaryMethod_Etherbase<WithStreamedUnaryMethod_NetVersion<WithStreamedUnaryMethod_NetPeerCount<WithStreamedUnaryMethod_EngineNewPayload<WithStreamedUnaryMethod_EngineForkChoiceUpdated<WithStreamedUnaryMethod_EngineGetPayload<WithStreamedUnaryMethod_EngineGetPayloadBodiesByHashV1<WithStreamedUnaryMethod_EngineGetPayloadBodiesByRangeV1<WithStreamedUnaryMethod_EngineGetPayloadWithBlobs<WithStreamedUnaryMethod_Version<WithStreamedUnaryMethod_ProtocolVersion<WithStreamedUnaryMethod_ClientVersion<WithStreamedUnaryMethod_Block<WithStreamedUnaryMethod_TxnLookup<WithStreamedUnaryMethod_NodeInfo<WithStreamedUnaryMethod_Peers<WithStreamedUnaryMethod_PendingBlock<Service > > > > > > > > > > > > > > > > > StreamedUnaryService;
   template <class BaseClass>
   class WithSplitStreamingMethod_Subscribe : public BaseClass {
    private:
@@ -3096,7 +3096,7 @@ class ETHBACKEND final {
     virtual ::grpc::Status StreamedSubscribe(::grpc::ServerContext* context, ::grpc::ServerSplitStreamer< ::remote::SubscribeRequest,::remote::SubscribeReply>* server_split_streamer) = 0;
   };
   typedef WithSplitStreamingMethod_Subscribe<Service > SplitStreamedService;
-  typedef WithStreamedUnaryMethod_Etherbase<WithStreamedUnaryMethod_NetVersion<WithStreamedUnaryMethod_NetPeerCount<WithStreamedUnaryMethod_EngineNewPayload<WithStreamedUnaryMethod_EngineForkChoiceUpdated<WithStreamedUnaryMethod_EngineGetPayload<WithStreamedUnaryMethod_EngineGetPayloadBodiesByHashV1<WithStreamedUnaryMethod_EngineGetPayloadBodiesByRangeV1<WithStreamedUnaryMethod_EngineGetBlobsBundleV1<WithStreamedUnaryMethod_Version<WithStreamedUnaryMethod_ProtocolVersion<WithStreamedUnaryMethod_ClientVersion<WithSplitStreamingMethod_Subscribe<WithStreamedUnaryMethod_Block<WithStreamedUnaryMethod_TxnLookup<WithStreamedUnaryMethod_NodeInfo<WithStreamedUnaryMethod_Peers<WithStreamedUnaryMethod_PendingBlock<Service > > > > > > > > > > > > > > > > > > StreamedService;
+  typedef WithStreamedUnaryMethod_Etherbase<WithStreamedUnaryMethod_NetVersion<WithStreamedUnaryMethod_NetPeerCount<WithStreamedUnaryMethod_EngineNewPayload<WithStreamedUnaryMethod_EngineForkChoiceUpdated<WithStreamedUnaryMethod_EngineGetPayload<WithStreamedUnaryMethod_EngineGetPayloadBodiesByHashV1<WithStreamedUnaryMethod_EngineGetPayloadBodiesByRangeV1<WithStreamedUnaryMethod_EngineGetPayloadWithBlobs<WithStreamedUnaryMethod_Version<WithStreamedUnaryMethod_ProtocolVersion<WithStreamedUnaryMethod_ClientVersion<WithSplitStreamingMethod_Subscribe<WithStreamedUnaryMethod_Block<WithStreamedUnaryMethod_TxnLookup<WithStreamedUnaryMethod_NodeInfo<WithStreamedUnaryMethod_Peers<WithStreamedUnaryMethod_PendingBlock<Service > > > > > > > > > > > > > > > > > > StreamedService;
 };
 
 }  // namespace remote

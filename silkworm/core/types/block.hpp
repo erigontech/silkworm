@@ -72,7 +72,10 @@ struct BlockHeader {
 
     std::optional<intx::uint256> base_fee_per_gas{std::nullopt};  // EIP-1559
     std::optional<evmc::bytes32> withdrawals_root{std::nullopt};  // EIP-4895
-    std::optional<intx::uint256> excess_data_gas{std::nullopt};   // EIP-4844
+
+    // EIP-4844: Shard Blob Transactions
+    std::optional<uint64_t> data_gas_used{std::nullopt};
+    std::optional<uint64_t> excess_data_gas{std::nullopt};
 
     [[nodiscard]] evmc::bytes32 hash(bool for_sealing = false, bool exclude_extra_data_sig = false) const;
 

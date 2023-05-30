@@ -39,3 +39,6 @@
 [submodule "third_party/ethash"]
 	path = third_party/ethash
 	url = https://github.com/chfast/ethash.git
+[submodule "third_party/libtorrent"]
+	path = third_party/libtorrent
+	url = https://github.com/arvidn/libtorrent

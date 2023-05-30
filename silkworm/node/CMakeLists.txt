@@ -19,7 +19,6 @@ find_package(asio-grpc REQUIRED)
 find_package(Boost REQUIRED container thread)
 find_package(nlohmann_json REQUIRED)
 find_package(gRPC REQUIRED)
-find_package(LibtorrentRasterbar REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(roaring REQUIRED)
@@ -102,7 +101,7 @@ set(SILKWORM_NODE_PUBLIC_LIBS
     nlohmann_json::nlohmann_json
     protobuf::libprotobuf
     roaring::roaring
-    LibtorrentRasterbar::torrent-rasterbar
+    torrent-rasterbar
 )
 
 # cmake-format: off

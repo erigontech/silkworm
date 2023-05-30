@@ -884,7 +884,7 @@ awaitable<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& re
         const auto latest_block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, latest_block_number);
         const auto latest_block = latest_block_with_hash->block;
         StateReader state_reader(cached_database);
-        auto state = tx->create_state(io_context_, cached_database, latest_block.header.number);
+        auto state = co_await tx->create_state(cached_database, latest_block.header.number);
 
         Tracers tracers;
         EVMExecutor evm_executor{*chain_config_ptr, workers_, state};
@@ -1116,9 +1116,8 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
         const auto chain_config_ptr = lookup_chain_config(chain_id);
         const auto [block_number, is_latest_block] = co_await core::get_block_number(block_id, tx_database, /*latest_required=*/true);
 
-        auto state = tx->create_state(io_context_,
-                                      is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database),
-                                      block_number);
+        auto state = co_await tx->create_state(is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database),
+                                               block_number);
         EVMExecutor executor{*chain_config_ptr, workers_, state};
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
         silkworm::Transaction txn{call.to_transaction()};
@@ -1205,7 +1204,7 @@ awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::js
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
         StateReader state_reader(db_reader);
-        auto state = tx->create_state(io_context_, db_reader, block_with_hash->block.header.number);
+        auto state = co_await tx->create_state(db_reader, block_with_hash->block.header.number);
 
         evmc::address to{};
         if (call.to) {
@@ -1307,7 +1306,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& req
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
         auto block_number = block_with_hash->block.header.number;
-        auto state = tx->create_state(io_context_, db_reader, block_number);
+        auto state = co_await tx->create_state(db_reader, block_number);
 
         const auto start_time = clock_time::now();
 

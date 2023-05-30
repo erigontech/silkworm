@@ -19,6 +19,7 @@ protobuf/3.21.4 # grpc dependency
 roaring/1.1.2
 snappy/1.1.7
 tl-expected/1.1.0
+tomlplusplus/3.3.0
 
 [generators]
 cmake_find_package

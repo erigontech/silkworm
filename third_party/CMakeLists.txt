@@ -161,5 +161,4 @@ if(NOT SILKWORM_CORE_ONLY)
 
   add_subdirectory(cbor-cpp)
   add_subdirectory(glaze)
-  add_subdirectory(tomlplusplus)
 endif()

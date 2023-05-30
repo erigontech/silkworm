@@ -23,6 +23,7 @@ find_package(LibtorrentRasterbar REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(roaring REQUIRED)
+find_package(tomlplusplus REQUIRED)
 
 # Generate source files containing snapshot TOML files as binary data
 set(SILKWORM_EMBED embed)
@@ -84,13 +85,7 @@ if(SILKWORM_SANITIZE)
   target_compile_definitions(silkworm_node PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
 endif()
 
-# cmake-format: off
-target_include_directories(
-  silkworm_node
-  PUBLIC "${SILKWORM_MAIN_DIR}"
-         "${SILKWORM_MAIN_DIR}/third_party/tomlplusplus"
-)
-# cmake-format: on
+target_include_directories(silkworm_node PUBLIC "${SILKWORM_MAIN_DIR}")
 
 set(SILKWORM_NODE_PUBLIC_LIBS
     silkworm_core
@@ -116,6 +111,7 @@ set(SILKWORM_NODE_PRIVATE_LIBS
     evmone
     magic_enum::magic_enum
     silkworm_interfaces
+    tomlplusplus::tomlplusplus
 )
 # cmake-format: on
 if(MSVC)

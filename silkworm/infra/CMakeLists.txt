@@ -32,6 +32,8 @@ if(SILKWORM_SANITIZE)
   target_compile_definitions(silkworm_infra PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
 endif()
 
+target_include_directories(silkworm_infra PUBLIC "${SILKWORM_MAIN_DIR}")
+
 set(LIBS_PUBLIC
     silkworm_core
     silkworm_interfaces

@@ -32,6 +32,8 @@ set(SILKWORM_SYNC_PUBLIC_LIBS
     absl::btree
 )
 
+target_include_directories(silkworm_sync PUBLIC "${SILKWORM_MAIN_DIR}")
+
 # cmake-format: off
 set(SILKWORM_SYNC_PRIVATE_LIBS
     cborcpp

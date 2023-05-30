@@ -164,11 +164,6 @@ if(NOT SILKWORM_CORE_ONLY)
   target_include_directories(mdbx-static INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/libmdbx)
   target_compile_definitions(mdbx-static PUBLIC CONSTEXPR_ASSERT=assert)
 
-  # libtorrent
-  add_subdirectory(libtorrent)
-  target_compile_options(torrent-rasterbar PRIVATE -w)
-
   add_subdirectory(cbor-cpp)
   add_subdirectory(glaze)
-  add_subdirectory(tomlplusplus)
 endif()

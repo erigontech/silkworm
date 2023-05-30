@@ -7,9 +7,6 @@
 [submodule "cbor-cpp"]
 	path = third_party/cbor-cpp
 	url = https://github.com/torquem-ch/cbor-cpp.git
-[submodule "magic_enum"]
-	path = third_party/magic_enum
-	url = https://github.com/Neargye/magic_enum.git
 [submodule "libmdbx"]
 	path = third_party/libmdbx
 	url = https://github.com/torquem-ch/libmdbx.git
@@ -17,21 +14,12 @@
 	path = silkworm/interfaces/proto
 	url = https://github.com/ledgerwatch/interfaces.git
 	branch = stable
-[submodule "third_party/libtorrent"]
-	path = third_party/libtorrent
-	url = https://github.com/arvidn/libtorrent
 [submodule "third_party/stbrumme-crc32"]
 	path = third_party/stbrumme-crc32
 	url = https://github.com/battlmonstr/stbrumme-crc32.git
 [submodule "third_party/erigon-snapshot"]
 	path = third_party/erigon-snapshot
 	url = https://github.com/ledgerwatch/erigon-snapshot
-[submodule "third_party/tomlplusplus"]
-	path = third_party/tomlplusplus
-	url = https://github.com/marzer/tomlplusplus.git
-[submodule "third_party/expected"]
-	path = third_party/expected
-	url = https://github.com/TartanLlama/expected.git
 [submodule "third_party/secp256k1"]
 	path = third_party/secp256k1
 	url = https://github.com/bitcoin-core/secp256k1.git

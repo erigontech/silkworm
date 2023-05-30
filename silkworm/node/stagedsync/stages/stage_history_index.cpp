@@ -16,6 +16,8 @@
 
 #include "stage_history_index.hpp"
 
+#include <magic_enum.hpp>
+
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/common/endian.hpp>
 

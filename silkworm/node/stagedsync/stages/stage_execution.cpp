@@ -19,6 +19,8 @@
 #include <span>
 #include <stdexcept>
 
+#include <magic_enum.hpp>
+
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/execution/processor.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>

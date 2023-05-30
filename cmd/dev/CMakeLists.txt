@@ -18,6 +18,8 @@ find_package(absl REQUIRED)
 find_package(Boost REQUIRED)
 find_package(CLI11 REQUIRED)
 find_package(gRPC REQUIRED)
+find_package(LibtorrentRasterbar REQUIRED)
+find_package(magic_enum REQUIRED)
 find_package(Protobuf REQUIRED)
 
 # cmake-format: off
@@ -63,7 +65,9 @@ add_executable(scan_txs scan_txs.cpp)
 target_link_libraries(scan_txs PRIVATE silkworm_node CLI11::CLI11 absl::time)
 
 add_executable(snapshots snapshots.cpp)
-target_link_libraries(snapshots PRIVATE silkworm_node cmd_common torrent-rasterbar)
+target_link_libraries(
+  snapshots PRIVATE silkworm_node cmd_common LibtorrentRasterbar::torrent-rasterbar magic_enum::magic_enum
+)
 
 add_executable(toolbox toolbox.cpp)
-target_link_libraries(toolbox PRIVATE silkworm_node CLI11::CLI11)
+target_link_libraries(toolbox PRIVATE silkworm_node CLI11::CLI11 magic_enum::magic_enum)

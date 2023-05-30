@@ -22,7 +22,6 @@ if(NOT SILKWORM_CORE_ONLY)
   add_subdirectory(benchmark)
 
   find_package(absl REQUIRED)
-  find_package(Boost REQUIRED)
   find_package(CLI11 REQUIRED)
 
   if(SILKWORM_USE_MIMALLOC)

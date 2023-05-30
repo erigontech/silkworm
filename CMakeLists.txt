@@ -66,13 +66,6 @@ if(NOT SILKWORM_CORE_ONLY)
   # Silence CMake policy warnings in submodules
   set(CMAKE_POLICY_DEFAULT_CMP0048 NEW) # project() command manages VERSION variables
   set(CMAKE_POLICY_DEFAULT_CMP0063 NEW) # Honor visibility properties for all target types
-
-  find_package(Boost REQUIRED)
-  # Define Boost::headers target if missing because libtorrent needs it
-  if(NOT TARGET Boost::headers)
-    add_library(Boost::headers INTERFACE IMPORTED)
-    target_include_directories(Boost::headers INTERFACE ${Boost_INCLUDE_DIRS})
-  endif()
 endif()
 
 add_subdirectory(third_party)

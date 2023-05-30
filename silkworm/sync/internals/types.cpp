@@ -1,4 +1,4 @@
-#[[
+/*
    Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,20 +12,17 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-]]
+*/
 
-if(NOT SILKWORM_CORE_ONLY)
-  find_package(CLI11 REQUIRED)
+#include "types.hpp"
 
-  set(COMMON_SRC
-      common.cpp
-      common.hpp
-      ip_endpoint_option.cpp
-      ip_endpoint_option.hpp
-      shutdown_signal.cpp
-      shutdown_signal.hpp
-  )
-  add_library(cmd_common "${COMMON_SRC}")
-  target_link_libraries(cmd_common silkworm-buildinfo CLI11::CLI11 silkworm_infra)
+#include <magic_enum.hpp>
 
-endif()
+namespace silkworm {
+
+std::ostream& operator<<(std::ostream& os, const PeerPenalization& penalization) {
+    os << "peerId=" << penalization.peerId << " cause=" << magic_enum::enum_name(penalization.penalty);
+    return os;
+}
+
+}  // namespace silkworm

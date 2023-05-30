@@ -62,7 +62,7 @@ static const std::vector<fs::path> kFailingTests{};
 
 static constexpr size_t kColumnWidth{80};
 
-ObjectPool<EvmoneExecutionState> execution_state_pool{/*thread_safe=*/true};
+ObjectPool<evmone::ExecutionState> execution_state_pool{/*thread_safe=*/true};
 evmc_vm* exo_evm{nullptr};
 
 // https://ethereum-tests.readthedocs.io/en/latest/test_types/blockchain_tests.html#pre-prestate-section

@@ -96,7 +96,6 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
                 return ValidationResult::kWrongBlobCommitmentVersion;
             }
         }
-        SILKWORM_ASSERT(txn.max_fee_per_data_gas);
         SILKWORM_ASSERT(data_gas_price);
         if (txn.max_fee_per_data_gas < data_gas_price) {
             return ValidationResult::kMaxFeePerDataGasTooLow;

@@ -60,7 +60,7 @@ struct UnsignedTransaction {
     std::vector<AccessListEntry> access_list{};  // EIP-2930
 
     // EIP-4844: Shard Blob Transactions
-    std::optional<intx::uint256> max_fee_per_data_gas{std::nullopt};  // must be non-null for EIP-4844 transactions
+    intx::uint256 max_fee_per_data_gas{0};
     std::vector<Hash> blob_versioned_hashes{};
 
     //! \brief Maximum possible cost of normal and data (EIP-4844) gas

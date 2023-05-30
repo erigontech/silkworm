@@ -54,18 +54,18 @@ constexpr int kCacheSize = 32000;
 template <typename T>
 using ServiceBase = boost::asio::detail::execution_context_service_base<T>;
 
-class BaselineAnalysisCacheService : public ServiceBase<BaselineAnalysisCacheService> {
+class AnalysisCacheService : public ServiceBase<AnalysisCacheService> {
   public:
-    explicit BaselineAnalysisCacheService(boost::asio::execution_context& owner)
-        : ServiceBase<BaselineAnalysisCacheService>(owner) {}
+    explicit AnalysisCacheService(boost::asio::execution_context& owner)
+        : ServiceBase<AnalysisCacheService>(owner) {}
 
     void shutdown() override {}
-    ObjectPool<EvmoneExecutionState>* get_object_pool() { return &state_pool_; }
-    BaselineAnalysisCache* get_baseline_analysis_cache() { return &analysis_cache_; }
+    ObjectPool<evmone::ExecutionState>* get_object_pool() { return &state_pool_; }
+    AnalysisCache* get_analysis_cache() { return &analysis_cache_; }
 
   private:
-    ObjectPool<EvmoneExecutionState> state_pool_{true};
-    BaselineAnalysisCache analysis_cache_{kCacheSize, true};
+    ObjectPool<evmone::ExecutionState> state_pool_{true};
+    AnalysisCache analysis_cache_{kCacheSize, true};
 };
 
 using Tracers = std::vector<std::shared_ptr<EvmTracer>>;
@@ -82,8 +82,8 @@ class EVMExecutor {
           ibs_state_{state1_},
           rule_set_(protocol::rule_set_factory(config)) {
         SILKWORM_ASSERT(rule_set_);
-        if (!has_service<BaselineAnalysisCacheService>(workers_)) {
-            make_service<BaselineAnalysisCacheService>(workers_);
+        if (!has_service<AnalysisCacheService>(workers_)) {
+            make_service<AnalysisCacheService>(workers_);
         }
     }
 
@@ -95,8 +95,8 @@ class EVMExecutor {
           ibs_state_{*state_},
           rule_set_(protocol::rule_set_factory(config)) {
         SILKWORM_ASSERT(rule_set_);
-        if (!has_service<BaselineAnalysisCacheService>(workers_)) {
-            make_service<BaselineAnalysisCacheService>(workers_);
+        if (!has_service<AnalysisCacheService>(workers_)) {
+            make_service<AnalysisCacheService>(workers_);
         }
     }
     virtual ~EVMExecutor() = default;

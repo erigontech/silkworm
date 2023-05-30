@@ -149,6 +149,37 @@ TEST_CASE("EIP-1559 Transaction RLP") {
     CHECK(decoded == txn);
 }
 
+TEST_CASE("EIP-4844 Transaction RLP") {
+    Transaction txn{
+        {.type = TransactionType::kEip4844,
+         .chain_id = 5,
+         .nonce = 7,
+         .max_priority_fee_per_gas = 10000000000,
+         .max_fee_per_gas = 30000000000,
+         .gas_limit = 5748100,
+         .to = 0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address,
+         .data = *from_hex("04f7"),
+         .access_list = access_list,
+         .max_fee_per_data_gas = 123,
+         .blob_versioned_hashes = {
+             0xc6bdd1de713471bd6cfa62dd8b5a5b42969ed09e26212d3377f3f8426d8ec210_bytes32,
+             0x8aaeccaf3873d07cef005aca28c39f8a9f8bdb1ec8d79ffc25afc0a4fa2ab736_bytes32,
+         }},
+        true,                                                                                                    // odd_y_parity
+        intx::from_string<intx::uint256>("0x36b241b061a36a32ab7fe86c7aa9eb592dd59018cd0443adc0903590c16b02b0"),  // r
+        intx::from_string<intx::uint256>("0x5edcc541b4741c5cc6dd347c5ed9577ef293a62787b4510465fadbfe39ee4094"),  // s
+    };
+
+    Bytes encoded{};
+    rlp::encode(encoded, txn);
+
+    Transaction decoded;
+    ByteView view{encoded};
+    REQUIRE(rlp::decode(view, decoded));
+    CHECK(view.empty());
+    CHECK(decoded == txn);
+}
+
 TEST_CASE("Recover sender 1") {
     // https://etherscan.io/tx/0x5c504ed432cb51138bcf09aa5e8a410dd4a1e204ef84bfed1be16dfba1b22060
     // Block 46147

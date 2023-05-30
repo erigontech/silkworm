@@ -307,10 +307,9 @@ TEST_CASE("ExecutionEngine") {
         CHECK(exec_engine.last_finalized_block() == BlockId{1, block1_hash});
 
         // Creating a fork and changing the head (trigger unwind)
+        auto block4 = generateSampleChildrenBlock(block3->header);
+        auto block4_hash = block4->header.hash();
         {
-            auto block4 = generateSampleChildrenBlock(block3->header);
-            auto block4_hash = block4->header.hash();
-
             // inserting & verifying the block
             exec_engine.insert_block(block4);
             verification = exec_engine.verify_chain(block4_hash).get();
@@ -351,7 +350,15 @@ TEST_CASE("ExecutionEngine") {
             CHECK(final_canonical_head == BlockId{2, block2b_hash});
             CHECK(exec_engine.last_fork_choice() == BlockId{2, block2b_hash});
             CHECK(exec_engine.last_finalized_block() == BlockId{0, *block0_hash});
+
+            CHECK(exec_engine.get_canonical_header(2));
+            CHECK(not exec_engine.get_canonical_header(3).has_value());
+            CHECK(not exec_engine.get_canonical_header(4).has_value());
         }
+
+        CHECK(not exec_engine.get_header(block4_hash).has_value());
+        CHECK(not exec_engine.get_header(block3_hash).has_value());
+        CHECK(not exec_engine.get_header(block2_hash).has_value());
     }
 }
 

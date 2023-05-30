@@ -73,9 +73,8 @@ TEST_CASE("EVMExecutor") {
         txn.from = 0xa872626373628737383927236382161739290870_address;
         silkworm::Block block{};
         block.header.number = block_number;
-        boost::asio::io_context& io_context = my_pool.next_io_context();
 
-        auto current_executor = co_await boost::asio::this_coro::executor;
+        boost::asio::any_io_executor current_executor = my_pool.next_io_context().get_executor();
         state::RemoteState remote_state{current_executor, tx_database, block_number};
         EVMExecutor executor{*chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}), boost::asio::use_future);
@@ -103,7 +102,7 @@ TEST_CASE("EVMExecutor") {
         txn.max_fee_per_gas = 0x2;
         txn.from = 0xa872626373628737383927236382161739290870_address;
 
-        auto current_executor = co_await boost::asio::this_coro::executor;
+        boost::asio::any_io_executor current_executor = my_pool.next_io_context().get_executor();
         state::RemoteState remote_state{current_executor, tx_database, block_number};
         EVMExecutor executor{*chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}), boost::asio::use_future);
@@ -132,7 +131,7 @@ TEST_CASE("EVMExecutor") {
         txn.from = 0xa872626373628737383927236382161739290870_address;
         txn.max_priority_fee_per_gas = 0x18;
 
-        auto current_executor = co_await boost::asio::this_coro::executor;
+        boost::asio::any_io_executor current_executor = my_pool.next_io_context().get_executor();
         state::RemoteState remote_state{current_executor, tx_database, block_number};
         EVMExecutor executor{*chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}), boost::asio::use_future);
@@ -161,7 +160,7 @@ TEST_CASE("EVMExecutor") {
         txn.gas_limit = 60000;
         txn.from = 0xa872626373628737383927236382161739290870_address;
 
-        auto current_executor = co_await boost::asio::this_coro::executor;
+        boost::asio::any_io_executor current_executor = my_pool.next_io_context().get_executor();
         state::RemoteState remote_state{current_executor, tx_database, block_number};
         EVMExecutor executor{*chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}), boost::asio::use_future);
@@ -190,7 +189,7 @@ TEST_CASE("EVMExecutor") {
         txn.gas_limit = 60000;
         txn.from = 0xa872626373628737383927236382161739290870_address;
 
-        auto current_executor = co_await boost::asio::this_coro::executor;
+        boost::asio::any_io_executor current_executor = my_pool.next_io_context().get_executor();
         state::RemoteState remote_state{current_executor, tx_database, block_number};
         EVMExecutor executor{*chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}, false, /* gasBailout */ true), boost::asio::use_future);
@@ -227,7 +226,7 @@ TEST_CASE("EVMExecutor") {
         txn.from = 0xa872626373628737383927236382161739290870_address;
         txn.access_list = access_list;
 
-        auto current_executor = co_await boost::asio::this_coro::executor;
+        boost::asio::any_io_executor current_executor = my_pool.next_io_context().get_executor();
         state::RemoteState remote_state{current_executor, tx_database, block_number};
         EVMExecutor executor{*chain_config_ptr, workers, remote_state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}, true, true), boost::asio::use_future);

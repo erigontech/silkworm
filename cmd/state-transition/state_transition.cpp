@@ -65,11 +65,11 @@ std::string StateTransition::name() {
 std::string StateTransition::get_env(const std::string& key) {
     return test_data_.at("env").at(key);
 }
+
 bool StateTransition::contains_env(const std::string& key) {
     return test_data_.at("env").contains(key);
 }
 
-// get transaction
 std::vector<ExpectedState> StateTransition::get_expected_states() {
     std::vector<ExpectedState> expectedStates;
 
@@ -94,7 +94,6 @@ evmc::address StateTransition::to_evmc_address(const std::string& address) {
     return out;
 }
 
-// get block
 silkworm::Block StateTransition::get_block(protocol::IRuleSet& /*rule_set*/, InMemoryState& state, ChainConfig& chain_config) {
     auto block = silkworm::Block();
 
@@ -111,7 +110,7 @@ silkworm::Block StateTransition::get_block(protocol::IRuleSet& /*rule_set*/, InM
 
     const evmc_revision rev{chain_config.revision(block.header.number, block.header.timestamp)};
 
-    //    if (rev <= EVMC_LONDON) {
+    //    if (rev <= EVMC_LONDON)
     if (!chain_config.terminal_total_difficulty.has_value()) {
         block.header.difficulty = intx::from_string<intx::uint256>(get_env("currentDifficulty"));
     }

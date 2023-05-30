@@ -159,8 +159,7 @@ TEST_CASE("Fork") {
                 // run pipeline and validate stage progress and results
 
                 fork.close();
-            }
-            catch(...) {
+            } catch (...) {
                 test_failure = std::current_exception();
             }
         });

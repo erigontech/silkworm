@@ -144,7 +144,7 @@ TEST_CASE("PatternTable::PatternTable", "[silkworm][snapshot][decompressor]") {
 TEST_CASE("PatternTable::build_condensed", "[silkworm][snapshot][decompressor]") {
     PatternTable table1{0};
 
-    std::span<Pattern> patterns0{};
+    std::vector<Pattern> patterns0{};
     Bytes v1{0x00, 0x11};
     std::vector<Pattern> patterns1{{0, v1}};
     Bytes v2{0x00, 0x22};

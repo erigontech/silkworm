@@ -80,11 +80,6 @@ boost::asio::awaitable<std::optional<evmc::bytes32>> AsyncRemoteState::canonical
     co_return co_await core::rawdb::read_canonical_block_hash(db_reader_, block_number);
 }
 
-boost::asio::awaitable<void> RemoteState::xxx(const evmc::address& address) const noexcept {
-    auto executor = co_await boost::asio::this_coro::executor;
-    std::future<std::optional<silkworm::Account>> result{boost::asio::co_spawn(executor, async_state_.read_account(address), boost::asio::use_future)};
-}
-
 std::optional<silkworm::Account> RemoteState::read_account(const evmc::address& address) const noexcept {
     SILK_DEBUG << "RemoteState::read_account address=" << address << " start";
     try {

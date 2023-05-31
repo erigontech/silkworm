@@ -1213,13 +1213,14 @@ awaitable<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transacti
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     auto chain_config_ptr = lookup_chain_config(chain_id);
 
-    state::RemoteState remote_state{io_context_, database_reader_, block_number - 1};
+    auto current_executor = co_await boost::asio::this_coro::executor;
+    state::RemoteState remote_state{current_executor, database_reader_, block_number - 1};
     IntraBlockState initial_ibs{remote_state};
 
     StateAddresses state_addresses(initial_ibs);
     std::shared_ptr<EvmTracer> ibsTracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
 
-    state::RemoteState curr_remote_state{io_context_, database_reader_, block_number - 1};
+    state::RemoteState curr_remote_state{current_executor, database_reader_, block_number - 1};
     EVMExecutor executor{*chain_config_ptr, workers_, curr_remote_state};
 
     std::vector<TraceCallResult> trace_call_result(transactions.size());
@@ -1279,11 +1280,12 @@ awaitable<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Bl
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     const auto chain_config_ptr = lookup_chain_config(chain_id);
 
-    state::RemoteState remote_state{io_context_, database_reader_, block_number};
+    auto current_executor = co_await boost::asio::this_coro::executor;
+    state::RemoteState remote_state{current_executor, database_reader_, block_number};
     silkworm::IntraBlockState initial_ibs{remote_state};
     StateAddresses state_addresses(initial_ibs);
 
-    state::RemoteState curr_remote_state{io_context_, database_reader_, block_number};
+    state::RemoteState curr_remote_state{current_executor, database_reader_, block_number};
     EVMExecutor executor{*chain_config_ptr, workers_, remote_state};
 
     std::shared_ptr<silkworm::EvmTracer> ibsTracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
@@ -1338,10 +1340,11 @@ boost::asio::awaitable<TraceDeployResult> TraceCallExecutor::trace_deploy_transa
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     const auto chain_config_ptr = lookup_chain_config(chain_id);
 
-    state::RemoteState remote_state{io_context_, database_reader_, block_number - 1};
+    auto current_executor = co_await boost::asio::this_coro::executor;
+    state::RemoteState remote_state{current_executor, database_reader_, block_number - 1};
     silkworm::IntraBlockState initial_ibs{remote_state};
 
-    state::RemoteState curr_remote_state{io_context_, database_reader_, block_number - 1};
+    state::RemoteState curr_remote_state{current_executor, database_reader_, block_number - 1};
     EVMExecutor executor{*chain_config_ptr, workers_, curr_remote_state};
 
     TraceDeployResult result;
@@ -1399,10 +1402,11 @@ boost::asio::awaitable<TraceEntriesResult> TraceCallExecutor::trace_transaction_
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     const auto chain_config_ptr = lookup_chain_config(chain_id);
 
-    state::RemoteState remote_state{io_context_, database_reader_, block_number - 1};
+    auto current_executor = co_await boost::asio::this_coro::executor;
+    state::RemoteState remote_state{current_executor, database_reader_, block_number - 1};
     silkworm::IntraBlockState initial_ibs{remote_state};
 
-    state::RemoteState curr_remote_state{io_context_, database_reader_, block_number - 1};
+    state::RemoteState curr_remote_state{current_executor, database_reader_, block_number - 1};
     EVMExecutor executor{*chain_config_ptr, workers_, curr_remote_state};
 
     auto entry_tracer = std::make_shared<trace::EntryTracer>(initial_ibs);
@@ -1420,10 +1424,11 @@ boost::asio::awaitable<std::string> TraceCallExecutor::trace_transaction_error(c
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     const auto chain_config_ptr = lookup_chain_config(chain_id);
 
-    state::RemoteState remote_state{io_context_, database_reader_, block_number - 1};
+    auto current_executor = co_await boost::asio::this_coro::executor;
+    state::RemoteState remote_state{current_executor, database_reader_, block_number - 1};
     silkworm::IntraBlockState initial_ibs{remote_state};
 
-    state::RemoteState curr_remote_state{io_context_, database_reader_, block_number - 1};
+    state::RemoteState curr_remote_state{current_executor, database_reader_, block_number - 1};
     EVMExecutor executor{*chain_config_ptr, workers_, curr_remote_state};
 
     Tracers tracers{};
@@ -1498,7 +1503,8 @@ awaitable<TraceCallResult> TraceCallExecutor::execute(std::uint64_t block_number
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     const auto chain_config_ptr = lookup_chain_config(chain_id);
 
-    state::RemoteState remote_state{io_context_, database_reader_, block_number};
+    auto current_executor = co_await boost::asio::this_coro::executor;
+    state::RemoteState remote_state{current_executor, database_reader_, block_number};
     silkworm::IntraBlockState initial_ibs{remote_state};
 
     Tracers tracers;
@@ -1506,7 +1512,7 @@ awaitable<TraceCallResult> TraceCallExecutor::execute(std::uint64_t block_number
     std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
     tracers.push_back(tracer);
 
-    state::RemoteState curr_remote_state{io_context_, database_reader_, block_number};
+    state::RemoteState curr_remote_state{current_executor, database_reader_, block_number};
     EVMExecutor executor{*chain_config_ptr, workers_, curr_remote_state};
     for (std::size_t idx{0}; idx < transaction.transaction_index; idx++) {
         silkworm::Transaction txn{block.transactions[idx]};

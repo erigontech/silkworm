@@ -30,7 +30,6 @@ using namespace boost::asio;
 ExecutionEngine::ExecutionEngine(asio::io_context& ctx, NodeSettings& ns, db::RWAccess dba)
     : io_context_{ctx},
       node_settings_{ns},
-      db_access_{dba},
       main_chain_(ctx, ns, dba),
       block_cache_{kDefaultCacheSize} {
     // To initialize canonical_head_status_ & last_fork_choice_ we need to call verify_chain(). Enable?
@@ -92,8 +91,7 @@ bool ExecutionEngine::insert_block(const std::shared_ptr<Block> block) {
         // the block extends a fork
         SILK_DEBUG << "ExecutionEngine: extending a fork";
 
-        f->extend_with(header_hash, *block);
-
+        (*f)->extend_with(header_hash, *block);
     } else {
         // the block must be put to a new fork
         // (to avoid complicated code we ignore the case whether the attaching point is inside a current fork)
@@ -109,16 +107,16 @@ bool ExecutionEngine::insert_block(const std::shared_ptr<Block> block) {
 
         auto& new_fork = forks_.back();
         BlockId new_head = {.number = block->header.number, .hash = header_hash};
-        new_fork.start_with(new_head, std::move(forking_path->blocks));
+        new_fork->start_with(new_head, std::move(forking_path->blocks));
     }
 
     return true;
 }
 
 auto ExecutionEngine::find_forking_point(const BlockHeader& header) const -> std::optional<ForkingPath> {
-    ForkingPath path;
+    ForkingPath path;  // a path from the header to the first block of the main chain using parent-child relationship
 
-    // search in cache
+    // search in cache till to the main chain
     path.forking_point = {.number = header.number - 1, .hash = header.parent_hash};
     while (path.forking_point.number > main_chain_.canonical_head().number) {
         auto parent = block_cache_.get_as_copy(path.forking_point.hash);  // parent is a pointer
@@ -131,6 +129,8 @@ auto ExecutionEngine::find_forking_point(const BlockHeader& header) const -> std
     if (path.forking_point == main_chain_.canonical_head()) return {std::move(path)};
 
     // search remaining path on main chain
+    if (main_chain_.is_canonical(path.forking_point)) return {std::move(path)};
+
     auto forking_point = main_chain_.find_forking_point(path.forking_point.hash);
     if (!forking_point) return {};  // not found
 
@@ -154,17 +154,15 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> concurrency::Awaitab
         return promise.get_future();
     }
 
-    auto f = find_fork_by_head(forks_, head_block_hash);
-    if (f == forks_.end()) {
+    auto fork = find_fork_by_head(forks_, head_block_hash);
+    if (fork == forks_.end()) {
         SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at verification time";
         concurrency::AwaitablePromise<VerificationResult> promise{io_context_};
         promise.set_value(ValidationError{});
         return promise.get_future();
     }
 
-    ExtendingFork& fork = *f;
-
-    return fork.verify_chain();
+    return (*fork)->verify_chain();
 }
 
 bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
@@ -183,19 +181,19 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
             SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at fork choice update time";
             return false;
         }
-        ExtendingFork&& fork = std::move(*f);
-
+        std::unique_ptr<ExtendingFork> fork = std::move(*f);
+        forks_.erase(f);
         discard_all_forks();  // remove all other forks
 
         // notify the fork of the update - we need to block here to restore the invariant
-        auto updated = fork.notify_fork_choice_update(head_block_hash, finalized_block_hash).get();  // BLOCKING
+        auto updated = fork->notify_fork_choice_update(head_block_hash, finalized_block_hash).get();  // BLOCKING
         if (!updated) return false;
 
-        last_fork_choice_ = fork.current_head();
+        last_fork_choice_ = fork->current_head();
 
-        main_chain_.reintegrate_fork(fork);  // BLOCKING
+        main_chain_.reintegrate_fork(*fork);  // BLOCKING
 
-        fork.close();
+        fork->close();
     }
 
     if (finalized_block_hash) {
@@ -214,8 +212,8 @@ void ExecutionEngine::discard_all_forks() {
     // ensure a clean exit of all those forks that can be busy in a VerifyChain
     // method or something else; maybe use a sweeper thread
 
-    for (auto it = forks_.begin(); it != forks_.end();) {
-        it->close();  // todo: maybe we should wait for the fork to close in another thread, a sweeper thread
+    for (auto it = forks_.begin(); it != forks_.end(); ++it) {
+        (*it)->close();  // todo: maybe we should wait for the fork to close in another thread, a sweeper thread
     }
     forks_.clear();
 }

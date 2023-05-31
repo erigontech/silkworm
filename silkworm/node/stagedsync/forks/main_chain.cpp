@@ -234,6 +234,8 @@ void MainChain::reintegrate_fork(ExtendingFork& extending_fork) {
 
     fork->flush(tx_);  // this must be done here, in the tx_ thread, due to MDBX limitations
 
+    tx_.commit_and_renew();
+
     canonical_chain_.set_current_head(fork->current_head());
     canonical_head_status_ = fork->last_head_status();
     last_fork_choice_ = fork->last_fork_choice();

@@ -16,13 +16,13 @@
 
 #include "intra_block_state.hpp"
 
+#include <bit>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/common/random_number.hpp>
 
 #include "in_memory_state.hpp"
@@ -61,7 +61,7 @@ TEST_CASE("Code view stability") {
         Bytes code(random_code());
         existing_codes[i] = {addr, code};
 
-        evmc_bytes32 code_hash{bit_cast<evmc_bytes32>(keccak256(code))};
+        evmc_bytes32 code_hash{std::bit_cast<evmc_bytes32>(keccak256(code))};
         Account account{.code_hash = code_hash, .incarnation = kDefaultIncarnation};
         db.update_account(addr, /*initial=*/std::nullopt, /*current=*/account);
         db.update_account_code(addr, kDefaultIncarnation, code_hash, code);
@@ -94,7 +94,7 @@ TEST_CASE("Code view stability") {
 
     // Check that all previously returned code views have correct code hashes
     for (const auto& cv : code_views) {
-        evmc_bytes32 code_hash{bit_cast<evmc_bytes32>(keccak256(cv.second))};
+        evmc_bytes32 code_hash{std::bit_cast<evmc_bytes32>(keccak256(cv.second))};
         CHECK(state.get_code_hash(cv.first) == code_hash);
     }
 }

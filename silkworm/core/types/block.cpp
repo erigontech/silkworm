@@ -16,7 +16,8 @@
 
 #include "block.hpp"
 
-#include <silkworm/core/common/cast.hpp>
+#include <bit>
+
 #include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
@@ -28,7 +29,7 @@ BlockNum height(const BlockId& b) { return b.number; }
 evmc::bytes32 BlockHeader::hash(bool for_sealing, bool exclude_extra_data_sig) const {
     Bytes rlp;
     rlp::encode(rlp, *this, for_sealing, exclude_extra_data_sig);
-    return bit_cast<evmc_bytes32>(keccak256(rlp));
+    return std::bit_cast<evmc_bytes32>(keccak256(rlp));
 }
 
 ethash::hash256 BlockHeader::boundary() const {

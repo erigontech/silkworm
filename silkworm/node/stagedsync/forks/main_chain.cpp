@@ -225,8 +225,8 @@ std::set<Hash> MainChain::collect_bad_headers(db::RWTxn& tx, InvalidChain& inval
     return bad_headers;
 }
 
-auto MainChain::fork(BlockId forking_point) -> ExtendingFork {
-    return ExtendingFork{forking_point, *this, io_context_};
+auto MainChain::fork(BlockId forking_point) -> std::unique_ptr<ExtendingFork> {
+    return std::make_unique<ExtendingFork>(forking_point, *this, io_context_);
 }
 
 void MainChain::reintegrate_fork(ExtendingFork& extending_fork) {

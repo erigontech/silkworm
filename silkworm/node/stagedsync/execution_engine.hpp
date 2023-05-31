@@ -95,10 +95,9 @@ class ExecutionEngine : public Stoppable {
 
     asio::io_context& io_context_;
     NodeSettings& node_settings_;
-    db::RWAccess db_access_;
 
     MainChain main_chain_;
-    std::vector<ExtendingFork> forks_;
+    ForkContainer forks_;
 
     static constexpr size_t kDefaultCacheSize = 1000;
     mutable lru_cache<Hash, std::shared_ptr<Block>> block_cache_;

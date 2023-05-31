@@ -18,6 +18,8 @@
 
 #include <stdexcept>
 
+#include <magic_enum.hpp>
+
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/node/db/access_layer.hpp>

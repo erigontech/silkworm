@@ -269,7 +269,8 @@ awaitable<void> DebugExecutor::execute(json::Stream& stream, const silkworm::Blo
 
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     const auto chain_config_ptr = lookup_chain_config(chain_id);
-    state::RemoteState remote_state{io_context_, database_reader_, block_number - 1};
+    auto current_executor = co_await boost::asio::this_coro::executor;
+    state::RemoteState remote_state{current_executor, database_reader_, block_number - 1};
     EVMExecutor executor{*chain_config_ptr, workers_, remote_state};
 
     for (std::uint64_t idx = 0; idx < transactions.size(); idx++) {
@@ -324,7 +325,8 @@ awaitable<void> DebugExecutor::execute(json::Stream& stream, uint64_t block_numb
 
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     const auto chain_config_ptr = lookup_chain_config(chain_id);
-    state::RemoteState remote_state{io_context_, database_reader_, block_number};
+    auto current_executor = co_await boost::asio::this_coro::executor;
+    state::RemoteState remote_state{current_executor, database_reader_, block_number};
     EVMExecutor executor{*chain_config_ptr, workers_, remote_state};
 
     for (auto idx{0}; idx < index; idx++) {

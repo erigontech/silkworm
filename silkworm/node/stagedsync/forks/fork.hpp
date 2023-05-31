@@ -39,6 +39,7 @@ class Fork {
     Fork(const Fork&) = delete;
 
     void close();
+    void flush(db::RWTxn& main_chain_tx_);
 
     // extension & contraction
     void extend_with(const std::list<std::shared_ptr<Block>>&);
@@ -63,8 +64,6 @@ class Fork {
     BlockNum distance_from_root(const BlockId&) const;
 
   protected:
-    friend class MainChain;
-
     Hash insert_header(const BlockHeader&);
     void insert_body(const Block&, const Hash& block_hash);
 

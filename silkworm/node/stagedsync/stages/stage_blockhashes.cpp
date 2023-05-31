@@ -16,6 +16,8 @@
 
 #include "stage_blockhashes.hpp"
 
+#include <magic_enum.hpp>
+
 #include <silkworm/core/common/endian.hpp>
 
 namespace silkworm::stagedsync {
@@ -174,8 +176,8 @@ void BlockHashes::collect_and_load(db::RWTxn& txn, const BlockNum from, const Bl
     current_phase_ = 1;  // Collect
     auto expected_block_number{from + 1};
     auto header_key{db::block_key(expected_block_number)};
-    db::PooledCursor table(txn, db::table::kCanonicalHashes);
-    auto data{table.find(db::to_slice(header_key), /*throw_notfound=*/false)};
+    auto canon_hashes_cursor = txn.rw_cursor(db::table::kCanonicalHashes);
+    auto data{canon_hashes_cursor->find(db::to_slice(header_key), /*throw_notfound=*/false)};
     while (data.done) {
         reached_block_num_ = endian::load_big_u64(static_cast<uint8_t*>(data.key.data()));
         if (reached_block_num_ > to) {
@@ -200,13 +202,13 @@ void BlockHashes::collect_and_load(db::RWTxn& txn, const BlockNum from, const Bl
         }
 
         expected_block_number++;
-        data = table.to_next(/*throw_notfound=*/false);
+        data = canon_hashes_cursor->to_next(/*throw_notfound=*/false);
     }
 
     current_phase_ = 2;  // Load
-    table.bind(txn, db::table::kHeaderNumbers);
-    const MDBX_put_flags_t db_flags{table.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT};
-    collector_->load(table, nullptr, db_flags);
+    auto header_numbers_cursor = txn.rw_cursor_dup_sort(db::table::kHeaderNumbers);
+    const MDBX_put_flags_t db_flags{header_numbers_cursor->empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT};
+    collector_->load(*header_numbers_cursor, nullptr, db_flags);
 }
 
 }  // namespace silkworm::stagedsync

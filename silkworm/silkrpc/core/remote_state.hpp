@@ -69,8 +69,8 @@ class AsyncRemoteState {
 
 class RemoteState : public silkworm::State {
   public:
-    explicit RemoteState(boost::asio::io_context& io_context, const core::rawdb::DatabaseReader& db_reader, uint64_t block_number)
-        : io_context_(io_context), async_state_{db_reader, block_number} {}
+    explicit RemoteState(boost::asio::any_io_executor& executor, const core::rawdb::DatabaseReader& db_reader, uint64_t block_number)
+        : executor_(executor), async_state_{db_reader, block_number} {}
 
     std::optional<silkworm::Account> read_account(const evmc::address& address) const noexcept override;
 
@@ -123,7 +123,7 @@ class RemoteState : public silkworm::State {
     void unwind_state_changes(uint64_t /*block_number*/) override {}
 
   private:
-    boost::asio::io_context& io_context_;
+    boost::asio::any_io_executor executor_;
     AsyncRemoteState async_state_;
 };
 

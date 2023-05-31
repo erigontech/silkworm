@@ -20,6 +20,7 @@
 #include <utility>
 
 #include <absl/container/btree_set.h>
+#include <magic_enum.hpp>
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/lru_cache.hpp>

@@ -15,6 +15,7 @@
 ]]
 
 find_package(Catch2 REQUIRED)
+find_package(magic_enum REQUIRED)
 
 # Silkworm Core Tests
 file(GLOB_RECURSE SILKWORM_CORE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/core/*_test.cpp")
@@ -78,11 +79,11 @@ if(NOT SILKWORM_CORE_ONLY)
   find_package(CLI11 REQUIRED)
   add_executable(ethereum ethereum.cpp)
   target_compile_definitions(ethereum PRIVATE SILKWORM_ETHEREUM_TESTS_DIR="${SILKWORM_MAIN_DIR}/third_party/tests")
-  target_link_libraries(ethereum PRIVATE silkworm_infra evmc::loader CLI11::CLI11)
+  target_link_libraries(ethereum PRIVATE silkworm_infra evmc::loader CLI11::CLI11 magic_enum::magic_enum)
 
   # BE&KV Tests
   add_executable(backend_kv_test "backend_kv_test.cpp" "../common/shutdown_signal.hpp" "../common/shutdown_signal.cpp")
-  target_link_libraries(backend_kv_test PRIVATE silkworm_node CLI11::CLI11)
+  target_link_libraries(backend_kv_test PRIVATE silkworm_node CLI11::CLI11 magic_enum::magic_enum)
 
   add_executable(sentry_client_test "sentry_client_test.cpp")
   target_link_libraries(sentry_client_test PRIVATE silkworm_sentry)

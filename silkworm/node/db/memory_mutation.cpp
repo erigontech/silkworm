@@ -140,6 +140,8 @@ bool MemoryMutation::clear_table(const std::string& table) {
 }
 
 void MemoryMutation::flush(db::RWTxn& rw_txn) {
+    reopen();
+
     // Obliterate buckets that need to be deleted
     for (const auto& [table, _] : cleared_tables_) {
         rw_txn->clear_map(table);
@@ -179,6 +181,8 @@ void MemoryMutation::flush(db::RWTxn& rw_txn) {
             mem_cursor_result = mem_cursor->to_next(/*throw_notfound =*/false);
         }
     }
+
+    rollback();
 }
 
 void MemoryMutation::rollback() {

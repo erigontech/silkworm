@@ -166,7 +166,7 @@ void HashBuilder::gen_struct_step(ByteView current, const ByteView succeeding) {
 
         const ByteView short_node_key{current.substr(from)};
         if (!build_extensions) {
-            if (const Bytes* leaf_value{std::get_if<Bytes>(&value_)}) {
+            if (const Bytes * leaf_value{std::get_if<Bytes>(&value_)}) {
                 stack_.push_back(node_ref(leaf_node_rlp(short_node_key, *leaf_value)));
             } else {
                 stack_.push_back(wrap_hash(std::get<evmc::bytes32>(value_).bytes));

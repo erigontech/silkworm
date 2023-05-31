@@ -353,12 +353,12 @@ TEST_CASE("ExecutionEngine") {
 
             CHECK(exec_engine.get_canonical_header(2));
             CHECK(not exec_engine.get_canonical_header(3).has_value());
-            //CHECK(not exec_engine.get_canonical_header(4).has_value());
+            // CHECK(not exec_engine.get_canonical_header(4).has_value());
         }
 
-        //CHECK(not exec_engine.get_header(block4_hash).has_value());
-        //CHECK(not exec_engine.get_header(block3_hash).has_value());
-        //CHECK(not exec_engine.get_header(block2_hash).has_value());
+        // CHECK(not exec_engine.get_header(block4_hash).has_value());
+        // CHECK(not exec_engine.get_header(block3_hash).has_value());
+        // CHECK(not exec_engine.get_header(block2_hash).has_value());
     }
 }
 

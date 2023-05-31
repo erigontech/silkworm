@@ -235,22 +235,20 @@ void StateTransition::validate_transition(const silkworm::Receipt& receipt, cons
         if (receipt.success) {
             print_error_message(expected_state, expected_sub_state, "Failed: Exception expected");
             ++failed_count_;
-        } else {
-            print_diagnostic_message(expected_state, expected_sub_state, "OK (Exception Expected)");
         }
+    }
+
+    if (state.state_root_hash() != expected_sub_state.stateHash) {
+        print_error_message(expected_state, expected_sub_state, "Failed: State root hash does not match");
+        failed_count_++;
     } else {
-        if (state.state_root_hash() != expected_sub_state.stateHash) {
-            print_error_message(expected_state, expected_sub_state, "Failed: State root hash does not match");
+        Bytes encoded;
+        rlp::encode(encoded, receipt.logs);
+        if (silkworm::bit_cast<evmc_bytes32>(keccak256(encoded)) != expected_sub_state.logsHash) {
+            print_error_message(expected_state, expected_sub_state, "Failed: Logs hash does not match");
             failed_count_++;
         } else {
-            Bytes encoded;
-            rlp::encode(encoded, receipt.logs);
-            if (silkworm::bit_cast<evmc_bytes32>(keccak256(encoded)) != expected_sub_state.logsHash) {
-                print_error_message(expected_state, expected_sub_state, "Failed: Logs hash does not match");
-                failed_count_++;
-            } else {
-                print_diagnostic_message(expected_state, expected_sub_state, "OK");
-            }
+            print_diagnostic_message(expected_state, expected_sub_state, "OK");
         }
     }
 }
@@ -288,14 +286,20 @@ void StateTransition::run() {
             silkworm::ExecutionProcessor processor{block, *ruleSet, *state, config};
             silkworm::Receipt receipt;
 
-            auto pre_validation = ruleSet->pre_validate_block_body(block, *state);
+            const evmc_revision rev{config.revision(block.header.number, block.header.timestamp)};
+
+            auto pre_block_validation = ruleSet->pre_validate_block_body(block, *state);
             auto block_validation = ruleSet->validate_block_header(block.header, *state, true);
+            auto pre_txn_validation = protocol::pre_validate_transaction(txn, rev, config.chain_id, block.header.base_fee_per_gas, block.header.data_gas_price());
             auto txn_validation = processor.validate_transaction(txn);
 
             // std::cout << "pre: " << std::endl;
             // state->print_state_root_hash();
 
-            if (pre_validation == ValidationResult::kOk && block_validation == ValidationResult::kOk && txn_validation == ValidationResult::kOk) {
+            if (pre_block_validation == ValidationResult::kOk &&
+                block_validation == ValidationResult::kOk &&
+                pre_txn_validation == ValidationResult::kOk &&
+                txn_validation == ValidationResult::kOk) {
                 processor.execute_transaction(txn, receipt);
                 processor.evm().state().write_to_db(block.header.number);
             } else {

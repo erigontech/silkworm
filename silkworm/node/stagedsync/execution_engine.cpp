@@ -116,9 +116,9 @@ bool ExecutionEngine::insert_block(const std::shared_ptr<Block> block) {
 }
 
 auto ExecutionEngine::find_forking_point(const BlockHeader& header) const -> std::optional<ForkingPath> {
-    ForkingPath path;
+    ForkingPath path;  // a path from the header to the first block of the main chain using parent-child relationship
 
-    // search in cache
+    // search in cache till to the main chain
     path.forking_point = {.number = header.number - 1, .hash = header.parent_hash};
     while (path.forking_point.number > main_chain_.canonical_head().number) {
         auto parent = block_cache_.get_as_copy(path.forking_point.hash);  // parent is a pointer
@@ -131,6 +131,8 @@ auto ExecutionEngine::find_forking_point(const BlockHeader& header) const -> std
     if (path.forking_point == main_chain_.canonical_head()) return {std::move(path)};
 
     // search remaining path on main chain
+    if (main_chain_.is_canonical(path.forking_point)) return {std::move(path)};
+
     auto forking_point = main_chain_.find_forking_point(path.forking_point.hash);
     if (!forking_point) return {};  // not found
 
@@ -183,7 +185,7 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
             SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at fork choice update time";
             return false;
         }
-        ExtendingFork&& fork = std::move(*f);
+        ExtendingFork fork = std::move(*f);
 
         discard_all_forks();  // remove all other forks
 
@@ -214,7 +216,7 @@ void ExecutionEngine::discard_all_forks() {
     // ensure a clean exit of all those forks that can be busy in a VerifyChain
     // method or something else; maybe use a sweeper thread
 
-    for (auto it = forks_.begin(); it != forks_.end();) {
+    for (auto it = forks_.begin(); it != forks_.end(); ++it) {
         it->close();  // todo: maybe we should wait for the fork to close in another thread, a sweeper thread
     }
     forks_.clear();

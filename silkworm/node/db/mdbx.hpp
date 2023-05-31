@@ -202,7 +202,7 @@ class ROTxn {
     operator mdbx::txn&() { return managed_txn_; }  // NOLINT(google-explicit-constructor)
 
     [[nodiscard]] uint64_t id() const { return managed_txn_.id(); }
-
+    [[nodiscard]] bool is_open() const { return managed_txn_.txn::operator bool(); }
     [[nodiscard]] mdbx::env db() const { return managed_txn_.env(); }
 
     virtual std::unique_ptr<ROCursor> ro_cursor(const MapConfig& config);

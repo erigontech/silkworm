@@ -121,7 +121,6 @@ class RemoteState : public silkworm::State {
         const evmc::bytes32& /*current*/) override {}
 
     void unwind_state_changes(uint64_t /*block_number*/) override {}
-    boost::asio::awaitable<void> xxx(const evmc::address& address) const noexcept;
 
   private:
     boost::asio::any_io_executor executor_;

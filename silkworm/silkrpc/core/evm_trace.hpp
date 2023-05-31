@@ -420,11 +420,10 @@ struct Filter {
 
 class TraceCallExecutor {
   public:
-    explicit TraceCallExecutor(boost::asio::io_context& io_context,
-                               silkworm::BlockCache& block_cache,
+    explicit TraceCallExecutor(silkworm::BlockCache& block_cache,
                                const core::rawdb::DatabaseReader& database_reader,
                                boost::asio::thread_pool& workers)
-        : io_context_(io_context), block_cache_(block_cache), database_reader_(database_reader), workers_{workers} {}
+        : block_cache_(block_cache), database_reader_(database_reader), workers_{workers} {}
     virtual ~TraceCallExecutor() = default;
 
     TraceCallExecutor(const TraceCallExecutor&) = delete;
@@ -447,7 +446,6 @@ class TraceCallExecutor {
     boost::asio::awaitable<TraceCallResult> execute(std::uint64_t block_number, const silkworm::Block& block,
                                                     const rpc::Transaction& transaction, std::int32_t index, const TraceConfig& config);
 
-    boost::asio::io_context& io_context_;
     silkworm::BlockCache& block_cache_;
     const core::rawdb::DatabaseReader& database_reader_;
     boost::asio::thread_pool& workers_;

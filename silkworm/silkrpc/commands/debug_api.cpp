@@ -290,7 +290,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json
             const Error error{-32000, oss.str()};
             stream.write_field("error", error);
         } else {
-            debug::DebugExecutor executor{io_context_, tx_database, workers_, config};
+            debug::DebugExecutor executor{tx_database, workers_, config};
 
             stream.write_field("result");
             stream.open_object();
@@ -347,7 +347,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& reque
         const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash->block.header.number, tx_database);
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
-        debug::DebugExecutor executor{io_context_, db_reader, workers_, config};
+        debug::DebugExecutor executor{db_reader, workers_, config};
 
         stream.write_field("result");
         stream.open_object();
@@ -401,7 +401,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::
 
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
 
-        debug::DebugExecutor executor{io_context_, tx_database, workers_, config};
+        debug::DebugExecutor executor{tx_database, workers_, config};
 
         stream.write_field("result");
         stream.open_array();
@@ -459,7 +459,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::js
 
         const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
 
-        debug::DebugExecutor executor{io_context_, tx_database, workers_, config};
+        debug::DebugExecutor executor{tx_database, workers_, config};
 
         stream.write_field("result");
         stream.open_array();

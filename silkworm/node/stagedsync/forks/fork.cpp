@@ -59,7 +59,8 @@ Fork::Fork(Fork&& orig) noexcept
 */
 
 void Fork::close() {
-    memory_tx_.abort();
+    if (memory_tx_.is_open())
+        memory_tx_.abort();
 }
 
 void Fork::flush(db::RWTxn& main_chain_tx_) {

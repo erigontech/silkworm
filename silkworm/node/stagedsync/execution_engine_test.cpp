@@ -343,7 +343,7 @@ TEST_CASE("ExecutionEngine") {
             CHECK(exec_engine.get_canonical_hash(4) == block4_hash);
             CHECK(exec_engine.get_canonical_header(4).has_value());
 
-            auto [head_height, head_hash] = db::read_canonical_head(tx);
+            std::tie(head_height, head_hash) = db::read_canonical_head(tx);
             CHECK(head_height == 4);
             CHECK(head_hash == block4_hash);
         }
@@ -375,7 +375,7 @@ TEST_CASE("ExecutionEngine") {
             CHECK(not exec_engine.get_canonical_header(3).has_value());
             CHECK(not exec_engine.get_canonical_header(4).has_value());
 
-            auto [head_height, head_hash] = db::read_canonical_head(tx);
+            std::tie(head_height, head_hash) = db::read_canonical_head(tx);
             CHECK(head_height == 2);
             CHECK(head_hash == block2b_hash);
         }

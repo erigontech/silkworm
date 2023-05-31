@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -52,11 +52,11 @@ class StateTransition {
     bool contains_env(const std::string& key);
     std::vector<ExpectedState> get_expected_states();
     static evmc::address to_evmc_address(const std::string& address);
-    silkworm::Block get_block(protocol::IRuleSet& rule_set, InMemoryState& state, ChainConfig& chain_config);
-    std::unique_ptr<silkworm::InMemoryState> get_state();
+    Block get_block(InMemoryState& state, ChainConfig& chain_config);
+    std::unique_ptr<InMemoryState> get_state();
     static std::unique_ptr<evmc::address> private_key_to_address(const std::string& private_key);
-    silkworm::Transaction get_transaction(ExpectedSubState expected_sub_state);
-    void validate_transition(const silkworm::Receipt& receipt, const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const InMemoryState& state);
+    Transaction get_transaction(const ExpectedSubState& expected_sub_state);
+    void validate_transition(const Receipt& receipt, const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const InMemoryState& state);
     void run();
 };
 }  // namespace silkworm::cmd::state_transition

@@ -31,6 +31,9 @@ if(NOT SILKWORM_CORE_ONLY)
   # Common modules for commands
   add_subdirectory(common)
 
+  # State transtion and fuzzy tests runner tool
+  add_subdirectory(state-transition)
+
   # Development utility tools
   add_subdirectory(dev)
 

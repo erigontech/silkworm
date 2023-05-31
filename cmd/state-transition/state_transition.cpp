@@ -16,14 +16,16 @@
 
 #include "state_transition.hpp"
 
+#include <bit>
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
 
+#include <ethash/keccak.hpp>
 #include <nlohmann/json.hpp>
 
-#include "cmd/state-transition/expected_state.hpp"
+#include "expected_state.hpp"
 #include "silkworm/core/common/cast.hpp"
 #include "silkworm/core/execution/execution.hpp"
 #include "silkworm/core/protocol/param.hpp"
@@ -31,7 +33,6 @@
 #include "silkworm/core/rlp/encode_vector.hpp"
 #include "silkworm/core/state/in_memory_state.hpp"
 #include "silkworm/sentry/common/ecc_key_pair.hpp"
-#include "third_party/ethash/include/ethash/keccak.hpp"
 
 namespace silkworm::cmd::state_transition {
 
@@ -151,7 +152,7 @@ std::unique_ptr<silkworm::InMemoryState> StateTransition::get_state() {
         account.nonce = std::stoull(std::string(preStateValue.at("nonce")), nullptr, 16);
 
         const Bytes code{from_hex(std::string(preStateValue.at("code"))).value()};
-        account.code_hash = silkworm::bit_cast<evmc_bytes32>(keccak256(code));
+        account.code_hash = std::bit_cast<evmc_bytes32>(keccak256(code));
         account.incarnation = kDefaultIncarnation;
 
         state->update_account(address, /*initial=*/std::nullopt, account);
@@ -245,7 +246,7 @@ void StateTransition::validate_transition(const silkworm::Receipt& receipt, cons
         } else {
             Bytes encoded;
             rlp::encode(encoded, receipt.logs);
-            if (silkworm::bit_cast<evmc_bytes32>(keccak256(encoded)) != expected_sub_state.logsHash) {
+            if (std::bit_cast<evmc_bytes32>(keccak256(encoded)) != expected_sub_state.logsHash) {
                 print_error_message(expected_state, expected_sub_state, "Failed: Logs hash does not match");
                 failed_count_++;
             } else {

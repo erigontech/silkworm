@@ -59,7 +59,7 @@ git submodule update --init --recursive
 ## Building on Linux & macOS
 
 Building Silkworm requires:
-* C++20 compiler: [GCC](https://www.gnu.org/software/gcc/) >= 11.2 or [Clang](https://clang.llvm.org/) >= 13
+* C++20 compiler: [GCC](https://www.gnu.org/software/gcc/) >= 11.2 or [Clang](https://clang.llvm.org/) >= 14
 or AppleClang ([Xcode](https://developer.apple.com/xcode/) >= 14.3)
 * [CMake](https://cmake.org)
 * [Conan](https://conan.io)

@@ -327,7 +327,7 @@ jobs:
 parameters:
   clang_version_min:
     type: integer
-    default: 13
+    default: 14
   clang_version_latest:
     type: integer
     default: 15

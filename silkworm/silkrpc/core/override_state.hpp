@@ -27,8 +27,7 @@ namespace silkworm::rpc::state {
 
 class OverrideState : public silkworm::State {
   public:
-    explicit OverrideState(silkworm::State& inner_state, const StateOverrides& state_overrides)
-        : inner_state_{inner_state}, state_overrides_{state_overrides} {}
+    explicit OverrideState(silkworm::State& inner_state, const AccountsOverrides& accounts_overrides);
 
     std::optional<silkworm::Account> read_account(const evmc::address& address) const noexcept override;
 
@@ -106,9 +105,8 @@ class OverrideState : public silkworm::State {
 
   private:
     silkworm::State& inner_state_;
-    const StateOverrides& state_overrides_;
+    const AccountsOverrides& accounts_overrides_;
+    std::map<evmc::bytes32, silkworm::ByteView> code_hash_;
 };
-
-std::ostream& operator<<(std::ostream& out, const OverrideState& s);
 
 }  // namespace silkworm::rpc::state

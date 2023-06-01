@@ -1186,9 +1186,9 @@ awaitable<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& reque
 
     const auto simulation_context = params[1].get<SimulationContext>();
 
-    StateOverrides state_overrides;
+    AccountsOverrides accounts_overrides;
     if (params.size() > 2) {
-        from_json(params[2], state_overrides);
+        from_json(params[2], accounts_overrides);
     }
     std::optional<std::uint64_t> timeout;
     if (params.size() > 3) {
@@ -1197,14 +1197,14 @@ awaitable<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& reque
 
     SILK_INFO << "bundles: " << bundles
               << " simulation_context: " << simulation_context
-              << " state_overrides #" << state_overrides.size()
+              << " accounts_overrides #" << accounts_overrides.size()
               << " timeout: " << timeout.value_or(0);
 
     auto tx = co_await database_->begin();
 
     try {
         call::CallExecutor executor{io_context_, *tx, *block_cache_, *state_cache_, workers_};
-        const auto result = co_await executor.execute(bundles, simulation_context, state_overrides, timeout);
+        const auto result = co_await executor.execute(bundles, simulation_context, accounts_overrides, timeout);
 
         if (result.error) {
             reply = make_json_error(request["id"], -32000, result.error.value());

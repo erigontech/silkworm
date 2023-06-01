@@ -81,10 +81,10 @@ std::ostream& operator<<(std::ostream& out, const SimulationContext& sc) {
     return out;
 }
 
-std::ostream& operator<<(std::ostream& out, const StateOverrides& so) {
+std::ostream& operator<<(std::ostream& out, const AccountsOverrides& ao) {
     out << "{";
     bool first = true;
-    for (const auto& item : so) {
+    for (const auto& item : ao) {
         if (!first) {
             out << ", ";
         }

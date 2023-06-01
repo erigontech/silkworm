@@ -176,20 +176,30 @@ void from_json(const nlohmann::json& json, BlockOverrides& bo) {
         bo.difficulty = json["difficulty"].get<intx::uint256>();
     }
     if (json.contains("gasLimit")) {
-        bo.gas_limit = json["gasLimit"].get<std::uint64_t>();
+        const auto& jbn = json["gasLimit"];
+        if (jbn.is_string()) {
+            bo.gas_limit = std::stoull(jbn.get<std::string>(), nullptr, /*base=*/16);
+        } else {
+            bo.gas_limit = jbn.get<uint64_t>();
+        }
     }
     if (json.contains("baseFee")) {
-        bo.base_fee = json["baseFee"].get<std::uint64_t>();
+        const auto& jbn = json["baseFee"];
+        if (jbn.is_string()) {
+            bo.base_fee = std::stoull(jbn.get<std::string>(), nullptr, /*base=*/16);
+        } else {
+            bo.base_fee = jbn.get<uint64_t>();
+        }
     }
 }
 
-void from_json(const nlohmann::json& json, StateOverrides& state_overrides) {
+void from_json(const nlohmann::json& json, AccountsOverrides& accounts_overrides) {
     for (const auto& el : json.items()) {
         const auto address_bytes = silkworm::from_hex(el.key());
         const auto key = silkworm::to_evmc_address(address_bytes.value_or(silkworm::Bytes{}));
         const auto value = el.value().get<AccountOverrides>();
 
-        state_overrides.emplace(key, value);
+        accounts_overrides.emplace(key, value);
     }
 }
 }  // namespace silkworm::rpc

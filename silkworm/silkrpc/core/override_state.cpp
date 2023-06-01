@@ -22,77 +22,91 @@
 
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/use_future.hpp>
+#include <ethash/keccak.hpp>
 
+#include <silkworm/core/common/cast.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 
 namespace silkworm::rpc::state {
 
-silkworm::Account get_account(const AccountOverrides& overrides) {
-    auto overridden_account = silkworm::Account{};
-    overridden_account.nonce = overrides.nonce.value_or(0);
-    overridden_account.balance = overrides.balance.value_or(0);
+silkworm::Account get_account(const AccountOverrides& overrides, const std::optional<silkworm::Account>& optional_account) {
+    auto overridden_account = optional_account.value_or(silkworm::Account{});
+    if (overrides.nonce) {
+        overridden_account.nonce = overrides.nonce.value();
+    }
+    if (overrides.balance) {
+        overridden_account.balance = overrides.balance.value();
+    }
 
     return overridden_account;
 }
 
-std::optional<silkworm::Account> OverrideState::read_account(const evmc::address& address) const noexcept {
-    SILK_INFO << "OverrideState::read_account address=" << address << " start";
-    std::cout << "*********** OverrideState::read_account address=: " << address << "\n";
-    auto optional_account = inner_state_.read_account(address);
-    auto it = state_overrides_.find(address);
+OverrideState::OverrideState(silkworm::State& inner_state, const AccountsOverrides& accounts_overrides)
+    : inner_state_{inner_state}, accounts_overrides_{accounts_overrides} {
+    for (const auto& [key, value] : accounts_overrides_) {
+        if (value.code) {
+            evmc::bytes32 code_hash{bit_cast<evmc_bytes32>(keccak256(value.code.value()))};
+            code_hash_.emplace(code_hash, value.code.value());
+        }
+    }
+}
 
-    if (it != state_overrides_.end()) {
-        auto overridden_account = get_account(it->second);
-        auto account = optional_account.value_or(overridden_account);
-        account.nonce = it->second.nonce.value_or(account.nonce);
-        account.balance = it->second.balance.value_or(account.balance);
-        std::cout << "*********** OverrideState::read_account account overridden " << account << "\n";
-        optional_account = account;
+std::optional<silkworm::Account> OverrideState::read_account(const evmc::address& address) const noexcept {
+    SILK_DEBUG << "OverrideState::read_account address=" << address << " start";
+
+    auto optional_account = inner_state_.read_account(address);
+
+    auto it = accounts_overrides_.find(address);
+    if (it != accounts_overrides_.end()) {
+        auto overridden_account = get_account(it->second, optional_account);
+        SILK_DEBUG << "OverrideState::read_account address=" << address << " account=" << overridden_account;
+        optional_account = overridden_account;
     }
     return optional_account;
 }
 
 silkworm::ByteView OverrideState::read_code(const evmc::bytes32& code_hash) const noexcept {
-    SILK_INFO << "OverrideState::read_code code_hash=" << code_hash << " start";
-    // auto it = state_overrides_.find(address);
-    // if (it != state_overrides_.end()) {
-    //     return it->second.code;
-    // }
+    SILK_DEBUG << "OverrideState::read_code code_hash=" << code_hash << " start";
+    auto it = code_hash_.find(code_hash);
+    if (it != code_hash_.end()) {
+        SILK_DEBUG << "OverrideState::read_code code_hash=" << code_hash << " code: " << it->second;
+        return it->second;
+    }
     return inner_state_.read_code(code_hash);
 }
 
 evmc::bytes32 OverrideState::read_storage(const evmc::address& address, uint64_t incarnation, const evmc::bytes32& location) const noexcept {
-    SILK_INFO << "OverrideState::read_storage address=" << address << " incarnation=" << incarnation << " location=" << location << " start";
+    SILK_DEBUG << "OverrideState::read_storage address=" << address << " incarnation=" << incarnation << " location=" << location << " start";
     auto storage_value = inner_state_.read_storage(address, incarnation, location);
-    SILK_INFO << "OverrideState::read_storage storage_value=" << storage_value;
+    SILK_DEBUG << "OverrideState::read_storage storage_value=" << storage_value;
     return storage_value;
 }
 
 std::optional<silkworm::BlockHeader> OverrideState::read_header(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
-    SILK_INFO << "OverrideState::read_header block_number=" << block_number << " block_hash=" << block_hash;
+    SILK_DEBUG << "OverrideState::read_header block_number=" << block_number << " block_hash=" << block_hash;
     auto optional_header = inner_state_.read_header(block_number, block_hash);
     return optional_header;
 }
 
 bool OverrideState::read_body(uint64_t block_number, const evmc::bytes32& block_hash, silkworm::BlockBody& filled_body) const noexcept {
-    SILK_INFO << "OverrideState::read_body block_number=" << block_number << " block_hash=" << block_hash;
+    SILK_DEBUG << "OverrideState::read_body block_number=" << block_number << " block_hash=" << block_hash;
     auto result = inner_state_.read_body(block_number, block_hash, filled_body);
     return result;
 }
 
 std::optional<intx::uint256> OverrideState::total_difficulty(uint64_t block_number, const evmc::bytes32& block_hash) const noexcept {
-    SILK_INFO << "OverrideState::total_difficulty block_number=" << block_number << " block_hash=" << block_hash;
+    SILK_DEBUG << "OverrideState::total_difficulty block_number=" << block_number << " block_hash=" << block_hash;
     auto optional_total_difficulty = inner_state_.total_difficulty(block_number, block_hash);
-    SILK_INFO << "OverrideState::total_difficulty optional_total_difficulty=" << optional_total_difficulty.value_or(intx::uint256{});
+    SILK_DEBUG << "OverrideState::total_difficulty optional_total_difficulty=" << optional_total_difficulty.value_or(intx::uint256{});
     return optional_total_difficulty;
 }
 
 std::optional<evmc::bytes32> OverrideState::canonical_hash(uint64_t block_number) const {
-    SILK_INFO << "OverrideState::canonical_hash block_number=" << block_number;
+    SILK_DEBUG << "OverrideState::canonical_hash block_number=" << block_number;
     auto optional_canonical_hash = inner_state_.canonical_hash(block_number);
-    SILK_INFO << "OverrideState::canonical_hash optional_canonical_hash=" << optional_canonical_hash.value_or(evmc::bytes32{});
+    SILK_DEBUG << "OverrideState::canonical_hash optional_canonical_hash=" << optional_canonical_hash.value_or(evmc::bytes32{});
     return optional_canonical_hash;
 }
 

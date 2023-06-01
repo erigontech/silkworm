@@ -107,13 +107,13 @@ struct Bundle {
 };
 
 using Bundles = std::vector<Bundle>;
-using StateOverrides = std::map<evmc::address, AccountOverrides>;
+using AccountsOverrides = std::map<evmc::address, AccountOverrides>;
 
 std::ostream& operator<<(std::ostream& out, const Bundles& bundles);
 std::ostream& operator<<(std::ostream& out, const Bundle& bundle);
 std::ostream& operator<<(std::ostream& out, const BlockOverrides& bo);
 std::ostream& operator<<(std::ostream& out, const SimulationContext& sc);
-std::ostream& operator<<(std::ostream& out, const StateOverrides& so);
+std::ostream& operator<<(std::ostream& out, const AccountsOverrides& so);
 std::ostream& operator<<(std::ostream& out, const AccountOverrides& ao);
 
 }  // namespace silkworm::rpc

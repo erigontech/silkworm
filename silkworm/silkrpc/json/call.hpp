@@ -29,6 +29,6 @@ void from_json(const nlohmann::json& json, Bundle& bundle);
 void from_json(const nlohmann::json& json, SimulationContext& state_context);
 void from_json(const nlohmann::json& json, AccountOverrides& state_overrides);
 void from_json(const nlohmann::json& json, BlockOverrides& block_overrides);
-void from_json(const nlohmann::json& json, StateOverrides& state_overrides);
+void from_json(const nlohmann::json& json, AccountsOverrides& accounts_overrides);
 
 }  // namespace silkworm::rpc

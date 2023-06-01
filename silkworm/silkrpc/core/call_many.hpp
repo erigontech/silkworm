@@ -52,9 +52,8 @@ class CallExecutor {
     explicit CallExecutor(
         ethdb::Transaction& transaction,
         BlockCache& block_cache,
-        ethdb::kv::StateCache& state_cache,
         boost::asio::thread_pool& workers)
-        : transaction_(transaction), block_cache_(block_cache), state_cache_(state_cache), workers_{workers} {}
+        : transaction_(transaction), block_cache_(block_cache), workers_{workers} {}
     virtual ~CallExecutor() = default;
 
     CallExecutor(const CallExecutor&) = delete;
@@ -65,7 +64,6 @@ class CallExecutor {
   private:
     ethdb::Transaction& transaction_;
     BlockCache& block_cache_;
-    ethdb::kv::StateCache& state_cache_;
     boost::asio::thread_pool& workers_;
 };
 }  // namespace silkworm::rpc::call

@@ -1197,7 +1197,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& reque
     auto tx = co_await database_->begin();
 
     try {
-        call::CallExecutor executor{*tx, *block_cache_, *state_cache_, workers_};
+        call::CallExecutor executor{*tx, *block_cache_, workers_};
         const auto result = co_await executor.execute(bundles, simulation_context, accounts_overrides, timeout);
 
         if (result.error) {

@@ -61,14 +61,10 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
     const auto chain_id = co_await core::rawdb::read_chain_id(tx_database);
 
     const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, tx_database, context.block_number);
-    auto transaction_index = context.transaction_index;
     auto block_number = block_with_hash->block.header.number;
     const auto& block = block_with_hash->block;
     const auto& block_transactions = block.transactions;
 
-    if (transaction_index == -1) {
-        transaction_index = block_transactions.size();
-    }
 
     auto state = co_await transaction_.create_state(tx_database, block_number);
     state::OverrideState override_state{*state, accounts_overrides};
@@ -77,6 +73,10 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
 
     EVMExecutor executor{*chain_config_ptr, workers_, override_state};
 
+    auto transaction_index = context.transaction_index;
+    if (transaction_index == -1) {
+        transaction_index = static_cast<std::int32_t>(block_transactions.size());
+    }
     for (auto idx{0}; idx < transaction_index; idx++) {
         silkworm::Transaction txn{block_transactions[std::size_t(idx)]};
 
@@ -91,7 +91,7 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
     for (const auto& bundle : bundles) {
         const auto& block_override = bundle.block_override;
 
-        rpc::Block blockContext{block_with_hash->block};
+        rpc::Block blockContext{{block_with_hash->block}};
         if (block_override.block_number) {
             blockContext.block.header.number = block_override.block_number.value();
         }
@@ -131,7 +131,7 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
                 if (execution_result.data.empty()) {
                     reply["error"] = error_message;
                 } else {
-                    RevertError revert_error{3, error_message, execution_result.data};
+                    RevertError revert_error{{3, error_message}, execution_result.data};
                     reply = revert_error;
                 }
             }

@@ -70,12 +70,12 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
         transaction_index = block_transactions.size();
     }
 
-    state::RemoteState remote_state{io_context_, tx_database, block_number};
-    state::OverrideState state{remote_state, accounts_overrides};
+    auto state = co_await transaction_.create_state(tx_database, block_number);
+    state::OverrideState override_state{*state, accounts_overrides};
 
     const auto chain_config_ptr = lookup_chain_config(chain_id);
 
-    EVMExecutor executor{*chain_config_ptr, workers_, state};
+    EVMExecutor executor{*chain_config_ptr, workers_, override_state};
 
     for (auto idx{0}; idx < transaction_index; idx++) {
         silkworm::Transaction txn{block_transactions[std::size_t(idx)]};

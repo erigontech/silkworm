@@ -1123,13 +1123,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
         EVMExecutor executor{*chain_config_ptr, workers_, state};
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
 
-        // rpc::Block initial_block{block_with_hash->block};
-        // std::cout << "***********  block: " << initial_block << "\n";
-
         silkworm::Transaction txn{call.to_transaction()};
-
-        // rpc::Transaction trans{txn};
-        // std::cout << "***********  transaction: " << trans << "\n";
 
         const auto execution_result = co_await executor.call(block_with_hash->block, txn);
 
@@ -1203,7 +1197,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& reque
     auto tx = co_await database_->begin();
 
     try {
-        call::CallExecutor executor{io_context_, *tx, *block_cache_, *state_cache_, workers_};
+        call::CallExecutor executor{*tx, *block_cache_, *state_cache_, workers_};
         const auto result = co_await executor.execute(bundles, simulation_context, accounts_overrides, timeout);
 
         if (result.error) {

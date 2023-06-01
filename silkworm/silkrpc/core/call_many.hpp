@@ -50,12 +50,11 @@ struct CallManyResult {
 class CallExecutor {
   public:
     explicit CallExecutor(
-        boost::asio::io_context& io_context,
         ethdb::Transaction& transaction,
         BlockCache& block_cache,
         ethdb::kv::StateCache& state_cache,
         boost::asio::thread_pool& workers)
-        : io_context_(io_context), transaction_(transaction), block_cache_(block_cache), state_cache_(state_cache), workers_{workers} {}
+        : transaction_(transaction), block_cache_(block_cache), state_cache_(state_cache), workers_{workers} {}
     virtual ~CallExecutor() = default;
 
     CallExecutor(const CallExecutor&) = delete;
@@ -64,7 +63,6 @@ class CallExecutor {
     boost::asio::awaitable<CallManyResult> execute(const Bundles& bundles, const SimulationContext& context, const AccountsOverrides& accounts_overrides, std::optional<std::uint64_t> timeout);
 
   private:
-    boost::asio::io_context& io_context_;
     ethdb::Transaction& transaction_;
     BlockCache& block_cache_;
     ethdb::kv::StateCache& state_cache_;

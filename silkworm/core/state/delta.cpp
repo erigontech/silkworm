@@ -16,9 +16,17 @@
 
 #include "delta.hpp"
 
-#include <utility>
+#include <optional>     // for optional
+#include <type_traits>  // for remove_referenc...
+#include <utility>      // for move
 
-#include <silkworm/core/state/intra_block_state.hpp>
+#include <absl/container/flat_hash_map.h>  // for BitMask, raw_ha...
+#include <absl/container/flat_hash_set.h>  // for flat_hash_set
+
+#include <silkworm/core/state/intra_block_state.hpp>  // for IntraBlockState
+
+#include "silkworm/core/common/hash_maps.hpp"  // for FlatHashMap
+#include "silkworm/core/state/object.hpp"      // for Object, Storage
 
 namespace silkworm::state {
 

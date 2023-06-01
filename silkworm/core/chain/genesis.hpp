@@ -16,12 +16,17 @@
 
 #pragma once
 
+#include <stdint.h>  // for uint64_t
+
 #include <cstddef>
-#include <string>
+#include <string>  // for string
 
 #include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>  // for json
 
-#include <silkworm/core/types/block.hpp>
+#include <silkworm/core/types/block.hpp>  // for BlockHeader
+
+#include "evmc/evmc.hpp"  // for bytes32
 
 namespace silkworm {
 

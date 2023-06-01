@@ -16,7 +16,11 @@
 
 #pragma once
 
-#include <silkworm/core/protocol/ethash_rule_set.hpp>
+#include <silkworm/core/protocol/ethash_rule_set.hpp>  // for EthashRuleSet
+
+#include "silkworm/core/chain/config.hpp"         // for ChainConfig
+#include "silkworm/core/protocol/validation.hpp"  // for ValidationResult
+#include "silkworm/core/types/block.hpp"          // for BlockHeader
 
 namespace silkworm::protocol {
 

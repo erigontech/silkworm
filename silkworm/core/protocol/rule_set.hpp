@@ -16,14 +16,17 @@
 
 #pragma once
 
-#include <memory>
+#include <memory>  // for unique_ptr
 
-#include <silkworm/core/chain/config.hpp>
-#include <silkworm/core/protocol/validation.hpp>
-#include <silkworm/core/state/intra_block_state.hpp>
+#include <silkworm/core/chain/config.hpp>             // for ChainConfig
+#include <silkworm/core/protocol/validation.hpp>      // for ValidationResult
+#include <silkworm/core/state/intra_block_state.hpp>  // for IntraBlockState
 #include <silkworm/core/state/state.hpp>
-#include <silkworm/core/types/block.hpp>
+#include <silkworm/core/types/block.hpp>  // for Block, BlockHeader
 #include <silkworm/core/types/receipt.hpp>
+
+#include "evmc/evmc.hpp"                        // for address
+#include "silkworm/core/state/block_state.hpp"  // for BlockState
 
 namespace silkworm::protocol {
 

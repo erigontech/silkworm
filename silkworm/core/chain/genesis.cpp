@@ -16,13 +16,27 @@
 
 #include "genesis.hpp"
 
-#include <cassert>
-#include <stdexcept>
+#include <cassert>      // for assert
+#include <cstddef>      // for size_t
+#include <cstring>      // for memcpy
+#include <map>          // for operator!=
+#include <optional>     // for optional
+#include <type_traits>  // for remove_reference<>::type
 
-#include <silkworm/core/chain/config.hpp>
-#include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/common/cast.hpp>
-#include <silkworm/core/protocol/param.hpp>
+#include <nlohmann/detail/json_pointer.hpp>  // for json_pointer<>::string_t
+#include <nlohmann/json.hpp>                 // for basic_json<>::object_t
+
+#include <silkworm/core/chain/config.hpp>    // for ChainConfig, kGoerliConfig
+#include <silkworm/core/common/assert.hpp>   // for SILKWORM_ASSERT
+#include <silkworm/core/common/cast.hpp>     // for string_view_to_byte_view
+#include <silkworm/core/protocol/param.hpp>  // for kInitialBaseFee
+
+#include "evmc/evmc.h"                      // for EVMC_LONDON
+#include "intx/intx.hpp"                    // for uint256, from_string
+#include "silkworm/core/common/base.hpp"    // for Bytes, ByteView, kEmptyRoot
+#include "silkworm/core/common/endian.hpp"  // for store_big_u64
+#include "silkworm/core/common/util.hpp"    // for from_hex, has_hex_prefix
+#include "silkworm/core/types/block.hpp"    // for BlockHeader, BlockHeader...
 
 extern const char* genesis_mainnet_data();
 extern size_t sizeof_genesis_mainnet_data();

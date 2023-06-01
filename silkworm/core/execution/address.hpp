@@ -16,7 +16,11 @@
 
 #pragma once
 
+#include <stdint.h>  // for uint64_t, uint8_t
+
 #include <silkworm/core/common/base.hpp>
+
+#include "evmc/evmc.hpp"  // for address, bytes32
 
 namespace silkworm {
 // Yellow Paper, Section 7

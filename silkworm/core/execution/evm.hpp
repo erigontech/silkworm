@@ -16,20 +16,30 @@
 
 #pragma once
 
-#include <functional>
+#include <stddef.h>  // for size_t
+#include <stdint.h>  // for int64_t, uint64_t
+
+#include <functional>  // for reference_wrapper
+#include <memory>      // for shared_ptr
 #include <stack>
-#include <vector>
+#include <vector>  // for vector
 
-#include <evmone/baseline.hpp>
-#include <evmone/execution_state.hpp>
-#include <intx/intx.hpp>
+#include <evmone/baseline.hpp>         // for CodeAnalysis
+#include <evmone/execution_state.hpp>  // for ExecutionState
+#include <gsl/pointers>                // for owner
+#include <intx/intx.hpp>               // for uint256
 
-#include <silkworm/core/chain/config.hpp>
-#include <silkworm/core/common/lru_cache.hpp>
-#include <silkworm/core/common/object_pool.hpp>
+#include <silkworm/core/chain/config.hpp>        // for ChainConfig
+#include <silkworm/core/common/lru_cache.hpp>    // for lru_cache
+#include <silkworm/core/common/object_pool.hpp>  // for ObjectPool
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/state/intra_block_state.hpp>
-#include <silkworm/core/types/block.hpp>
+#include <silkworm/core/state/intra_block_state.hpp>  // for IntraBlockState
+#include <silkworm/core/types/block.hpp>              // for Block
+
+#include "evmc/evmc.h"                          // for evmc_result
+#include "evmc/evmc.hpp"                        // for bytes32, address
+#include "silkworm/core/common/base.hpp"        // for ByteView, Bytes
+#include "silkworm/core/types/transaction.hpp"  // for Transaction
 
 namespace silkworm {
 

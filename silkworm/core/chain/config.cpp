@@ -16,10 +16,17 @@
 
 #include "config.hpp"
 
-#include <functional>
-#include <set>
+#include <set>          // for set
+#include <string_view>  // for basic_string_view
 
-#include <silkworm/core/common/as_range.hpp>
+#include <nlohmann/detail/json_pointer.hpp>  // for json_pointer<>::string_t
+#include <nlohmann/json.hpp>                 // for basic_json<>::object_t
+
+#include <silkworm/core/common/as_range.hpp>  // for find_if, for_each
+
+#include "evmc/evmc.h"                    // for EVMC_BERLIN, EVMC_BYZAN...
+#include "intx/intx.hpp"                  // for uint, uint256, from_string
+#include "silkworm/core/common/util.hpp"  // for iequals, from_string_sci
 
 namespace silkworm {
 

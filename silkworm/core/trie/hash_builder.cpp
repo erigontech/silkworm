@@ -16,16 +16,24 @@
 
 #include "hash_builder.hpp"
 
-#include <bit>
-#include <cstring>
-#include <span>
+#include <algorithm>    // for max
+#include <bit>          // for popcount
+#include <cstring>      // for size_t, memcpy
+#include <iterator>     // for next
+#include <span>         // for span
+#include <string>       // for operator>, basic_string
+#include <string_view>  // for basic_string_view
+#include <utility>      // for move
 
-#include <ethash/keccak.hpp>
+#include <silkworm/core/common/assert.hpp>  // for SILKWORM_ASSERT
+#include <silkworm/core/common/cast.hpp>    // for bit_cast
+#include <silkworm/core/common/util.hpp>    // for keccak256, prefix_length
+#include <silkworm/core/rlp/encode.hpp>     // for length, encode, encode_he...
 
-#include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/common/cast.hpp>
-#include <silkworm/core/common/util.hpp>
-#include <silkworm/core/rlp/encode.hpp>
+#include "ethash/hash_types.hpp"          // for hash256
+#include "evmc/evmc.h"                    // for evmc_bytes32
+#include "silkworm/core/common/base.hpp"  // for Bytes, ByteView, kHashLength
+#include "silkworm/core/trie/node.hpp"    // for is_subset, Node
 
 namespace silkworm::trie {
 

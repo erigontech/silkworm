@@ -18,7 +18,16 @@
 
 #include <memory>
 
-#include <silkworm/core/protocol/base_rule_set.hpp>
+#include <silkworm/core/protocol/base_rule_set.hpp>  // for BaseRuleSet
+
+#include "evmc/evmc.hpp"                              // for address
+#include "intx/intx.hpp"                              // for uint256
+#include "silkworm/core/chain/config.hpp"             // for ChainConfig
+#include "silkworm/core/protocol/rule_set.hpp"        // for RuleSetPtr
+#include "silkworm/core/protocol/validation.hpp"      // for ValidationResult
+#include "silkworm/core/state/block_state.hpp"        // for BlockState
+#include "silkworm/core/state/intra_block_state.hpp"  // for IntraBlockState
+#include "silkworm/core/types/block.hpp"              // for BlockHeader, Block
 
 namespace silkworm::protocol {
 

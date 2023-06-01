@@ -16,13 +16,25 @@
 
 #include "validation.hpp"
 
-#include <silkworm/core/common/cast.hpp>
-#include <silkworm/core/crypto/secp256k1n.hpp>
-#include <silkworm/core/rlp/encode_vector.hpp>
-#include <silkworm/core/trie/vector_root.hpp>
+#include <iterator>  // for size
+#include <vector>    // for vector
 
-#include "intrinsic_gas.hpp"
-#include "param.hpp"
+#include <silkworm/core/common/cast.hpp>        // for bit_cast
+#include <silkworm/core/crypto/secp256k1n.hpp>  // for is_valid_signature
+#include <silkworm/core/rlp/encode_vector.hpp>  // for encode
+#include <silkworm/core/trie/vector_root.hpp>   // for root_hash
+
+#include "ethash/hash_types.hpp"                // for hash256
+#include "evmc/evmc.h"                          // for evmc_bytes32, evmc_re...
+#include "intrinsic_gas.hpp"                    // for intrinsic_gas
+#include "param.hpp"                            // for kBaseFeeMaxChangeDeno...
+#include "silkworm/core/common/assert.hpp"      // for SILKWORM_ASSERT
+#include "silkworm/core/common/base.hpp"        // for Bytes, kEmptyListHash
+#include "silkworm/core/common/util.hpp"        // for keccak256
+#include "silkworm/core/types/block.hpp"        // for BlockHeader, BlockBody
+#include "silkworm/core/types/hash.hpp"         // for Hash
+#include "silkworm/core/types/transaction.hpp"  // for Transaction, encode
+#include "silkworm/core/types/withdrawal.hpp"   // for Withdrawal, encode
 
 namespace silkworm::protocol {
 

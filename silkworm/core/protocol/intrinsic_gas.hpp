@@ -16,9 +16,11 @@
 
 #pragma once
 
-#include <intx/intx.hpp>
+#include <intx/intx.hpp>  // for uint128
 
-#include <silkworm/core/types/transaction.hpp>
+#include <silkworm/core/types/transaction.hpp>  // for UnsignedTransaction
+
+#include "evmc/evmc.h"  // for evmc_revision
 
 namespace silkworm::protocol {
 

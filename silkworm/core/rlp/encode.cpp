@@ -16,6 +16,12 @@
 
 #include "encode.hpp"
 
+#include <string_view>  // for basic_string_view
+
+#include "intx/intx.hpp"                    // for count_significant_bytes
+#include "silkworm/core/common/base.hpp"    // for ByteView, Bytes
+#include "silkworm/core/common/endian.hpp"  // for to_big_compact
+
 namespace silkworm::rlp {
 
 void encode_header(Bytes& to, Header header) {

@@ -16,14 +16,21 @@
 
 #pragma once
 
-#include <optional>
-#include <vector>
+#include <stddef.h>  // for size_t
+#include <stdint.h>  // for uint64_t, uint8_t
 
-#include <intx/intx.hpp>
+#include <optional>  // for nullopt, optional
+#include <vector>    // for vector
 
-#include <silkworm/core/common/base.hpp>
-#include <silkworm/core/rlp/decode.hpp>
-#include <silkworm/core/types/hash.hpp>
+#include <intx/intx.hpp>  // for uint256, uint512
+
+#include <silkworm/core/common/base.hpp>  // for ByteView, Bytes
+#include <silkworm/core/rlp/decode.hpp>   // for Leftover, Leftov...
+#include <silkworm/core/types/hash.hpp>   // for Hash
+
+#include "evmc/evmc.hpp"                             // for address, bytes32
+#include "silkworm/core/common/decoding_result.hpp"  // for DecodingResult
+#include "silkworm/core/rlp/encode.hpp"              // for Header
 
 namespace silkworm {
 

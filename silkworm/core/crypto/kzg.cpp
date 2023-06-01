@@ -16,10 +16,12 @@
 
 #include "kzg.hpp"
 
-#include <blst.h>
+#include <blst.h>  // for blst_scalar, blst_miller...
 
-#include <silkworm/core/crypto/sha256.h>
-#include <silkworm/core/protocol/param.hpp>
+#include <silkworm/core/crypto/sha256.h>     // for silkworm_sha256
+#include <silkworm/core/protocol/param.hpp>  // for kBlobCommitmentVersionKzg
+
+#include "silkworm/core/types/hash.hpp"  // for Hash
 
 // Based on https://github.com/ethereum/c-kzg-4844/blob/main/src/c_kzg_4844.c
 // and modified for Silkworm.

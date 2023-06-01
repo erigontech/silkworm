@@ -16,10 +16,20 @@
 
 #include "base_rule_set.hpp"
 
-#include <silkworm/core/common/as_range.hpp>
-#include <silkworm/core/trie/vector_root.hpp>
+#include <stdint.h>  // for uint64_t, INT64_MAX
 
-#include "param.hpp"
+#include <ctime>        // for time, time_t, size_t
+#include <string>       // for char_traits, operator!=
+#include <string_view>  // for operator!=, basic_str...
+#include <type_traits>  // for remove_reference<>::type
+
+#include <silkworm/core/common/as_range.hpp>  // for find
+
+#include "evmc/evmc.h"                          // for EVMC_SHANGHAI, evmc_r...
+#include "param.hpp"                            // for kDataGasPerBlob, kEla...
+#include "silkworm/core/common/base.hpp"        // for Bytes, ByteView, kEmp...
+#include "silkworm/core/common/util.hpp"        // for from_hex
+#include "silkworm/core/types/transaction.hpp"  // for Transaction
 
 namespace silkworm::protocol {
 

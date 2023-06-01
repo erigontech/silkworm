@@ -16,21 +16,27 @@
 
 #pragma once
 
-#include <array>
-#include <cstdint>
-#include <optional>
-#include <vector>
+#include <stddef.h>  // for size_t
 
-#include <ethash/hash_types.hpp>
-#include <intx/intx.hpp>
+#include <array>     // for array
+#include <cstdint>   // for uint8_t, uint64_t
+#include <optional>  // for optional, nullopt
+#include <vector>    // for vector
+
+#include <ethash/hash_types.hpp>  // for hash256
+#include <intx/intx.hpp>          // for uint256, operator==
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/core/rlp/decode.hpp>
-#include <silkworm/core/types/bloom.hpp>
-#include <silkworm/core/types/hash.hpp>
-#include <silkworm/core/types/transaction.hpp>
-#include <silkworm/core/types/withdrawal.hpp>
+#include <silkworm/core/rlp/decode.hpp>         // for Leftover, Leftov...
+#include <silkworm/core/types/bloom.hpp>        // for Bloom
+#include <silkworm/core/types/hash.hpp>         // for Hash
+#include <silkworm/core/types/transaction.hpp>  // for Transaction
+#include <silkworm/core/types/withdrawal.hpp>   // for Withdrawal
+
+#include "evmc/evmc.hpp"                             // for bytes32, operator==
+#include "silkworm/core/common/base.hpp"             // for Bytes, BlockNum
+#include "silkworm/core/common/decoding_result.hpp"  // for DecodingResult
 
 namespace silkworm {
 

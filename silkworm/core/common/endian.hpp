@@ -21,13 +21,15 @@ Facilities to deal with byte order/endianness
 See https://en.wikipedia.org/wiki/Endianness
 */
 
-#include <cstdint>
-#include <cstring>
+#include <cstdint>      // for uint64_t, uint16_t
+#include <cstring>      // for memcpy
+#include <string_view>  // for basic_string_view
 
-#include <intx/intx.hpp>
+#include <intx/intx.hpp>    // for load, store, to_...
+#include <tl/expected.hpp>  // for unexpected
 
-#include <silkworm/core/common/base.hpp>
-#include <silkworm/core/common/decoding_result.hpp>
+#include <silkworm/core/common/base.hpp>             // for ByteView
+#include <silkworm/core/common/decoding_result.hpp>  // for DecodingError
 
 namespace silkworm::endian {
 

@@ -16,11 +16,17 @@
 
 #include "intrinsic_gas.hpp"
 
-#include <algorithm>
+#include <stdint.h>  // for uint64_t, uint8_t
 
-#include <silkworm/core/common/as_range.hpp>
+#include <optional>  // for optional
+#include <vector>    // for vector
 
-#include "param.hpp"
+#include <silkworm/core/common/as_range.hpp>  // for count_if
+
+#include "intx/intx.hpp"                        // for uint128, operator+=
+#include "param.hpp"                            // for kAccessListAddressCost
+#include "silkworm/core/common/base.hpp"        // for Bytes
+#include "silkworm/core/types/transaction.hpp"  // for UnsignedTransaction
 
 namespace silkworm::protocol {
 

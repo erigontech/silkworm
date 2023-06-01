@@ -16,10 +16,19 @@
 
 #include "util.hpp"
 
-#include <cstdio>
-#include <regex>
+#include <algorithm>  // for min, equal
+#include <cstdint>    // for uint8_t, uint64_t, uint...
+#include <cstdio>     // for snprintf
+#include <cstdlib>    // for strtoul, strtoull
+#include <iterator>   // for distance
+#include <regex>      // for match_results, sub_match
 
-#include <silkworm/core/common/as_range.hpp>
+#include <_ctype.h>  // for tolower
+
+#include <silkworm/core/common/as_range.hpp>  // for find_if_not
+
+#include "intx/intx.hpp"                  // for as_words, uint256
+#include "silkworm/core/common/base.hpp"  // for ByteView, Bytes, kAddre...
 
 namespace silkworm {
 

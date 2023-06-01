@@ -16,12 +16,19 @@
 
 #pragma once
 
-#include <optional>
+#include <stdint.h>  // for uint64_t
 
-#include <evmc/evmc.h>
+#include <cstddef>   // for size_t
+#include <optional>  // for optional
 
-#include <silkworm/core/types/block.hpp>
-#include <silkworm/core/types/transaction.hpp>
+#include <evmc/evmc.h>  // for evmc_revision
+
+#include <silkworm/core/types/block.hpp>        // for BlockBody, BlockHeader
+#include <silkworm/core/types/transaction.hpp>  // for Transaction, Transact...
+
+#include "evmc/evmc.hpp"                   // for bytes32
+#include "intx/intx.hpp"                   // for uint256
+#include "silkworm/core/chain/config.hpp"  // for ChainConfig
 
 namespace silkworm {
 

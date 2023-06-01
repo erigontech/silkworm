@@ -16,8 +16,11 @@
 
 #include "receipt.hpp"
 
-#include <silkworm/core/common/util.hpp>
-#include <silkworm/core/rlp/encode_vector.hpp>
+#include <silkworm/core/rlp/encode_vector.hpp>  // for encode, length
+
+#include "silkworm/core/rlp/encode.hpp"         // for encode, Header, length
+#include "silkworm/core/types/log.hpp"          // for length, encode
+#include "silkworm/core/types/transaction.hpp"  // for TransactionType, Tran...
 
 namespace silkworm::rlp {
 

@@ -16,6 +16,8 @@
 
 #include "secp256k1n.hpp"
 
+#include "intx/intx.hpp"  // for uint256, operator>=, operator>
+
 namespace silkworm {
 
 bool is_valid_signature(const intx::uint256& r, const intx::uint256& s, bool homestead) noexcept {

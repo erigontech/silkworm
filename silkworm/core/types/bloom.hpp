@@ -16,12 +16,17 @@
 
 #pragma once
 
-#include <array>
-#include <cstddef>
-#include <cstdint>
-#include <vector>
+#include <array>        // for array
+#include <cstddef>      // for size_t
+#include <cstdint>      // for uint8_t
+#include <string_view>  // for basic_string_view
+#include <vector>       // for vector
 
-#include <silkworm/core/types/log.hpp>
+#include <__fwd/string_view.h>  // for string_view
+
+#include <silkworm/core/types/log.hpp>  // for Log
+
+#include "silkworm/core/common/base.hpp"  // for ByteView
 
 namespace silkworm {
 

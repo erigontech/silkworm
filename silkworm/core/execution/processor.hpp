@@ -16,15 +16,19 @@
 
 #pragma once
 
-#include <cstdint>
-#include <vector>
+#include <cstdint>  // for uint64_t
+#include <vector>   // for vector
 
-#include <silkworm/core/execution/evm.hpp>
-#include <silkworm/core/protocol/rule_set.hpp>
-#include <silkworm/core/state/state.hpp>
-#include <silkworm/core/types/block.hpp>
-#include <silkworm/core/types/receipt.hpp>
-#include <silkworm/core/types/transaction.hpp>
+#include <silkworm/core/execution/evm.hpp>      // for EVM
+#include <silkworm/core/protocol/rule_set.hpp>  // for IRuleSet
+#include <silkworm/core/state/state.hpp>        // for State
+#include <silkworm/core/types/block.hpp>        // for Block
+#include <silkworm/core/types/receipt.hpp>      // for Receipt
+#include <silkworm/core/types/transaction.hpp>  // for Transaction
+
+#include "silkworm/core/chain/config.hpp"             // for ChainConfig
+#include "silkworm/core/protocol/validation.hpp"      // for ValidationResult
+#include "silkworm/core/state/intra_block_state.hpp"  // for IntraBlockState
 
 namespace silkworm {
 

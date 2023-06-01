@@ -16,8 +16,16 @@
 
 #include "account.hpp"
 
-#include <silkworm/core/common/endian.hpp>
-#include <silkworm/core/rlp/encode.hpp>
+#include <cstdint>      // for uint64_t, uint8_t
+#include <cstring>      // for memcpy, size_t
+#include <string_view>  // for basic_string_view
+
+#include <silkworm/core/common/endian.hpp>  // for to_big_compact
+#include <silkworm/core/rlp/encode.hpp>     // for encode, length
+
+#include "intx/intx.hpp"                             // for uint256, unreach...
+#include "silkworm/core/common/base.hpp"             // for ByteView, Bytes
+#include "silkworm/core/common/decoding_result.hpp"  // for DecodingError
 
 namespace silkworm {
 

@@ -16,10 +16,20 @@
 
 #include "node.hpp"
 
-#include <bit>
+#include <bit>          // for popcount
+#include <cstdint>      // for uint16_t
+#include <cstring>      // for memcpy, size_t
+#include <string_view>  // for basic_string_view
+#include <type_traits>  // for remove_reference...
+#include <utility>      // for move
 
-#include <silkworm/core/common/assert.hpp>
-#include <silkworm/core/common/endian.hpp>
+#include <tl/expected.hpp>  // for unexpected
+
+#include <silkworm/core/common/assert.hpp>  // for SILKWORM_ASSERT
+#include <silkworm/core/common/endian.hpp>  // for load_big_u16
+
+#include "silkworm/core/common/base.hpp"             // for ByteView, kHashL...
+#include "silkworm/core/common/decoding_result.hpp"  // for DecodingError
 
 namespace silkworm::trie {
 

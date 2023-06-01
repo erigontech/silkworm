@@ -16,16 +16,25 @@
 
 #pragma once
 
-#include <cstdint>
-#include <map>
-#include <optional>
+#include <cstdint>   // for uint64_t
+#include <iosfwd>    // for ostream
+#include <map>       // for map
+#include <optional>  // for optional, nullopt
+#include <string>    // for string
 #include <string_view>
+#include <utility>  // for pair
+#include <vector>   // for vector
 
-#include <evmc/evmc.h>
-#include <intx/intx.hpp>
+#include <__fwd/string_view.h>  // for string_view
+#include <evmc/evmc.h>          // for evmc_revision
+#include <intx/intx.hpp>        // for uint256, uint, from_string
 #include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>  // for json
 
 #include <silkworm/core/common/util.hpp>
+
+#include "evmc/evmc.hpp"                  // for bytes32, operator""_bytes32
+#include "silkworm/core/common/base.hpp"  // for BlockNum
 
 namespace silkworm {
 

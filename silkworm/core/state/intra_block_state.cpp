@@ -16,10 +16,28 @@
 
 #include "intra_block_state.hpp"
 
-#include <ethash/keccak.hpp>
+#include <__tuple>      // for tuple_element<>::type
+#include <cstdint>      // for uint64_t
+#include <optional>     // for optional, optional<>::...
+#include <type_traits>  // for remove_reference<>::type
+#include <utility>      // for pair
 
-#include <silkworm/core/common/cast.hpp>
-#include <silkworm/core/common/util.hpp>
+#include <absl/container/flat_hash_map.h>  // for BitMask, operator!=
+#include <absl/container/flat_hash_set.h>  // for flat_hash_set
+#include <absl/meta/type_traits.h>         // for remove_reference_t
+
+#include <silkworm/core/common/cast.hpp>  // for bit_cast
+#include <silkworm/core/common/util.hpp>  // for keccak256
+
+#include "ethash/hash_types.hpp"               // for hash256
+#include "intx/intx.hpp"                       // for uint256, operator==
+#include "silkworm/core/common/base.hpp"       // for ByteView, kEmptyHash
+#include "silkworm/core/common/hash_maps.hpp"  // for FlatHashMap, FlatHashSet
+#include "silkworm/core/state/delta.hpp"       // for Delta, UpdateDelta
+#include "silkworm/core/state/object.hpp"      // for Object, Storage, Commi...
+#include "silkworm/core/state/state.hpp"       // for State
+#include "silkworm/core/types/account.hpp"     // for Account
+#include "silkworm/core/types/log.hpp"         // for Log
 
 namespace silkworm {
 

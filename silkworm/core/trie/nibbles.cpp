@@ -16,6 +16,13 @@
 
 #include "nibbles.hpp"
 
+#include <stddef.h>  // for size_t
+#include <stdint.h>  // for uint8_t
+
+#include <string_view>  // for basic_string_view
+
+#include "silkworm/core/common/base.hpp"  // for ByteView, Bytes
+
 namespace silkworm::trie {
 
 Bytes pack_nibbles(ByteView unpacked) {

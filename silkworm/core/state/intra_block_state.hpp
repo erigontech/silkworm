@@ -16,17 +16,23 @@
 
 #pragma once
 
-#include <memory>
-#include <vector>
+#include <stddef.h>  // for size_t
+#include <stdint.h>  // for uint64_t, uint8_t
 
-#include <intx/intx.hpp>
+#include <memory>  // for unique_ptr
+#include <vector>  // for vector
 
-#include <silkworm/core/common/base.hpp>
-#include <silkworm/core/common/hash_maps.hpp>
-#include <silkworm/core/state/delta.hpp>
-#include <silkworm/core/state/object.hpp>
-#include <silkworm/core/state/state.hpp>
-#include <silkworm/core/types/log.hpp>
+#include <intx/intx.hpp>  // for uint256
+
+#include <silkworm/core/common/base.hpp>       // for ByteView
+#include <silkworm/core/common/hash_maps.hpp>  // for FlatHashSet, FlatHashMap
+#include <silkworm/core/state/delta.hpp>       // for Delta, AccountAccessDelta
+#include <silkworm/core/state/object.hpp>      // for Object, Storage
+#include <silkworm/core/state/state.hpp>       // for State
+#include <silkworm/core/types/log.hpp>         // for Log
+
+#include "evmc/evmc.h"    // for evmc_access_status
+#include "evmc/evmc.hpp"  // for address, bytes32
 
 namespace silkworm {
 

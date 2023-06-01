@@ -16,10 +16,15 @@
 
 #include "address.hpp"
 
-#include <ethash/keccak.hpp>
+#include <cstring>  // for memcpy, size_t
 
-#include <silkworm/core/common/util.hpp>
-#include <silkworm/core/rlp/encode.hpp>
+#include <ethash/keccak.hpp>  // for keccak256
+
+#include <silkworm/core/common/util.hpp>  // for keccak256
+#include <silkworm/core/rlp/encode.hpp>   // for encode, encode_header, length
+
+#include "ethash/hash_types.hpp"          // for hash256
+#include "silkworm/core/common/base.hpp"  // for kAddressLength, kHashLength
 
 namespace silkworm {
 

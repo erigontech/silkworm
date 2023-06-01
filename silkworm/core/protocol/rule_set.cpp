@@ -16,10 +16,14 @@
 
 #include "rule_set.hpp"
 
-#include "clique_rule_set.hpp"
-#include "ethash_rule_set.hpp"
-#include "merge_rule_set.hpp"
-#include "no_proof_rule_set.hpp"
+#include <optional>  // for optional
+#include <utility>   // for move
+
+#include "clique_rule_set.hpp"             // for CliqueRuleSet
+#include "ethash_rule_set.hpp"             // for EthashRuleSet
+#include "merge_rule_set.hpp"              // for MergeRuleSet
+#include "no_proof_rule_set.hpp"           // for NoProofRuleSet
+#include "silkworm/core/chain/config.hpp"  // for ChainConfig, RuleSetType
 
 namespace silkworm::protocol {
 

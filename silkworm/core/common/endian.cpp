@@ -16,7 +16,10 @@
 
 #include "endian.hpp"
 
-#include <silkworm/core/common/util.hpp>
+#include <silkworm/core/common/util.hpp>  // for zeroless_view
+
+#include "intx/intx.hpp"                  // for uint256, store
+#include "silkworm/core/common/base.hpp"  // for ByteView, SILKWORM_THREAD_L...
 
 namespace silkworm::endian {
 

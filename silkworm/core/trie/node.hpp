@@ -16,11 +16,15 @@
 
 #pragma once
 
-#include <optional>
-#include <vector>
+#include <stdint.h>  // for uint16_t
 
-#include <silkworm/core/common/base.hpp>
-#include <silkworm/core/common/decoding_result.hpp>
+#include <optional>  // for optional, nullopt
+#include <vector>    // for vector
+
+#include <silkworm/core/common/base.hpp>             // for ByteView, Bytes
+#include <silkworm/core/common/decoding_result.hpp>  // for DecodingResult
+
+#include "evmc/evmc.hpp"  // for bytes32
 
 namespace silkworm::trie {
 

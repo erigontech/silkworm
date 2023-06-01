@@ -18,7 +18,9 @@
 
 // https://eips.ethereum.org/EIPS/eip-779
 
-#include <silkworm/core/state/intra_block_state.hpp>
+#include <silkworm/core/state/intra_block_state.hpp>  // for IntraBlockState
+
+#include "evmc/evmc.hpp"                              // for operator""_address
 
 namespace silkworm::dao {
 

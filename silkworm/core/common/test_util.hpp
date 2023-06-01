@@ -16,10 +16,20 @@
 
 #pragma once
 
-#include <silkworm/core/chain/config.hpp>
+#include <cstdint>   // for uint64_t
+#include <map>       // for map
+#include <optional>  // for optional
+#include <string>    // for string, operator<
+#include <vector>    // for vector
+
+#include <silkworm/core/chain/config.hpp>  // for RuleSetType, RuleSetT...
 #include <silkworm/core/types/block.hpp>
-#include <silkworm/core/types/receipt.hpp>
-#include <silkworm/core/types/transaction.hpp>
+#include <silkworm/core/types/receipt.hpp>      // for Receipt
+#include <silkworm/core/types/transaction.hpp>  // for Transaction
+
+#include "evmc/evmc.hpp"                  // for bytes32
+#include "intx/intx.hpp"                  // for uint256
+#include "silkworm/core/common/base.hpp"  // for BlockNum
 
 namespace silkworm::test {
 

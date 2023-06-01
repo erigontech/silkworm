@@ -16,8 +16,14 @@
 
 #pragma once
 
-#include <silkworm/core/common/base.hpp>
-#include <silkworm/core/rlp/decode.hpp>
+#include <stddef.h>  // for size_t
+#include <stdint.h>  // for uint64_t
+
+#include <silkworm/core/common/base.hpp>  // for ByteView, Bytes
+#include <silkworm/core/rlp/decode.hpp>   // for Leftover, Leftov...
+
+#include "evmc/evmc.hpp"                             // for address
+#include "silkworm/core/common/decoding_result.hpp"  // for DecodingResult
 
 namespace silkworm {
 

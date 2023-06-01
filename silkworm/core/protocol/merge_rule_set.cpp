@@ -16,8 +16,16 @@
 
 #include "merge_rule_set.hpp"
 
-#include <optional>
-#include <utility>
+#include <array>        // for operator==
+#include <memory>       // for unique_ptr
+#include <optional>     // for optional, operat...
+#include <type_traits>  // for remove_reference...
+#include <utility>      // for move
+#include <vector>       // for vector
+
+#include "silkworm/core/common/base.hpp"             // for kGiga
+#include "silkworm/core/protocol/base_rule_set.hpp"  // for BaseRuleSet
+#include "silkworm/core/types/withdrawal.hpp"        // for Withdrawal
 
 namespace silkworm::protocol {
 

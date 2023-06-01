@@ -16,20 +16,36 @@
 
 #include "evm.hpp"
 
-#include <algorithm>
-#include <cassert>
-#include <cstring>
-#include <iterator>
-#include <memory>
+#include <algorithm>    // for copy_n, min
+#include <cassert>      // for assert
+#include <cstdint>      // for uint8_t, int64_t
+#include <cstring>      // for size_t, memcpy
+#include <iterator>     // for back_insert_ite...
+#include <memory>       // for shared_ptr, mak...
+#include <optional>     // for optional, optio...
+#include <string>       // for basic_string
+#include <string_view>  // for basic_string_view
+#include <type_traits>  // for remove_referenc...
 
-#include <ethash/keccak.hpp>
-#include <evmone/evmone.h>
-#include <evmone/tracing.hpp>
-#include <evmone/vm.hpp>
+#include <ethash/keccak.hpp>   // for keccak256
+#include <evmone/evmone.h>     // for evmc_create_evmone
+#include <evmone/tracing.hpp>  // for Tracer, bytes_view
+#include <evmone/vm.hpp>       // for VM
 
-#include <silkworm/core/execution/address.hpp>
-#include <silkworm/core/execution/precompile.hpp>
-#include <silkworm/core/protocol/param.hpp>
+#include <silkworm/core/execution/address.hpp>     // for create2_address
+#include <silkworm/core/execution/precompile.hpp>  // for is_precompile
+#include <silkworm/core/protocol/param.hpp>        // for kGCodeDeposit
+
+#include "ethash/hash_types.h"                        // for ethash_hash256
+#include "evmone/baseline.hpp"                        // for CodeAnalysis
+#include "evmone/execution_state.hpp"                 // for ExecutionState
+#include "intx/intx.hpp"                              // for uint256, store
+#include "silkworm/core/chain/config.hpp"             // for ChainConfig
+#include "silkworm/core/common/object_pool.hpp"       // for ObjectPool
+#include "silkworm/core/state/intra_block_state.hpp"  // for IntraBlockState
+#include "silkworm/core/state/state.hpp"              // for State
+#include "silkworm/core/types/block.hpp"              // for BlockHeader, Block
+#include "silkworm/core/types/log.hpp"                // for Log
 
 namespace silkworm {
 

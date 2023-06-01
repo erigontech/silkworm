@@ -16,7 +16,10 @@
 
 #include "log.hpp"
 
-#include <silkworm/core/rlp/encode_vector.hpp>
+#include <silkworm/core/rlp/encode_vector.hpp>  // for encode, length
+
+#include "silkworm/core/common/base.hpp"  // for Bytes, kAddressLength
+#include "silkworm/core/rlp/encode.hpp"   // for Header, encode, encod...
 
 namespace silkworm ::rlp {
 

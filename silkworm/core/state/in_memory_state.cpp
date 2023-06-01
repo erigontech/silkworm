@@ -16,14 +16,18 @@
 
 #include "in_memory_state.hpp"
 
-#include <map>
+#include <__tuple>      // for tuple_element<>::type
+#include <iterator>     // for reverse_iterator
+#include <map>          // for map, operator!=, __ma...
+#include <type_traits>  // for add_const<>::type
+#include <utility>      // for pair
 
-#include <ethash/keccak.hpp>
+#include <silkworm/core/common/util.hpp>        // for keccak256, to_bytes32
+#include <silkworm/core/rlp/encode.hpp>         // for encode
+#include <silkworm/core/trie/hash_builder.hpp>  // for HashBuilder
+#include <silkworm/core/trie/nibbles.hpp>       // for unpack_nibbles
 
-#include <silkworm/core/common/util.hpp>
-#include <silkworm/core/rlp/encode.hpp>
-#include <silkworm/core/trie/hash_builder.hpp>
-#include <silkworm/core/trie/nibbles.hpp>
+#include "ethash/hash_types.hpp"  // for hash256
 
 namespace silkworm {
 

@@ -16,16 +16,26 @@
 
 #pragma once
 
+#include <stdint.h>  // for uint64_t, uint8_t
+
 #include <cmath>
-#include <cstring>
-#include <optional>
-#include <string_view>
+#include <cstring>      // for size_t
+#include <limits>       // for numeric_limits
+#include <optional>     // for optional
+#include <stdexcept>    // for out_of_range
+#include <string>       // for string
+#include <string_view>  // for basic_string_view
+#include <type_traits>  // for enable_if_t
 #include <vector>
 
-#include <ethash/keccak.hpp>
-#include <intx/intx.hpp>
+#include <__fwd/string_view.h>  // for string_view
+#include <ethash/keccak.hpp>    // for keccak256
+#include <intx/intx.hpp>        // for throw_, from_dec_digit, store
 
-#include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/base.hpp>  // for ByteView, Bytes
+
+#include "ethash/hash_types.hpp"  // for hash256
+#include "evmc/evmc.hpp"          // for address, bytes32
 
 namespace silkworm {
 

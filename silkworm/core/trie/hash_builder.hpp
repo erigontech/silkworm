@@ -16,13 +16,16 @@
 
 #pragma once
 
-#include <functional>
+#include <cstdint>     // for uint16_t
+#include <functional>  // for function
 #include <optional>
-#include <variant>
-#include <vector>
+#include <variant>  // for variant
+#include <vector>   // for vector
 
-#include <silkworm/core/common/base.hpp>
-#include <silkworm/core/trie/node.hpp>
+#include <silkworm/core/common/base.hpp>  // for Bytes, ByteView
+#include <silkworm/core/trie/node.hpp>    // for Node
+
+#include "evmc/evmc.hpp"  // for bytes32
 
 namespace silkworm::trie {
 

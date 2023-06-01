@@ -57,9 +57,13 @@ TEST_CASE("Legacy Transaction RLP") {
     CHECK(view.empty());
     CHECK(decoded == txn);
 
-    // check that access_list and from is cleared
+    // Check that non-legacy fields (access_list, max_fee_per_data_gas, blob_versioned_hashes) and from are cleared
+    decoded.max_priority_fee_per_gas = 17;
+    decoded.max_fee_per_gas = 31;
     decoded.access_list = access_list;
-    decoded.from.emplace(0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address);
+    decoded.max_fee_per_data_gas = 123;
+    decoded.blob_versioned_hashes.push_back(0xefc552d1df2a6a8e2643912171d040e4de0db43cd53b728c3e4d26952f710be8_bytes32);
+    decoded.from = 0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address;
     view = encoded;
     REQUIRE(rlp::decode(view, decoded));
     CHECK(view.empty());
@@ -120,6 +124,17 @@ TEST_CASE("EIP-2930 Transaction RLP") {
     REQUIRE(rlp::decode_transaction(view, decoded, rlp::Eip2718Wrapping::kBoth));
     CHECK(view.empty());
     CHECK(decoded == txn);
+
+    // Check that post-EIP-2930 fields (max_fee_per_data_gas, blob_versioned_hashes) and from are cleared
+    decoded.max_priority_fee_per_gas = 17;
+    decoded.max_fee_per_gas = 31;
+    decoded.max_fee_per_data_gas = 123;
+    decoded.blob_versioned_hashes.push_back(0xefc552d1df2a6a8e2643912171d040e4de0db43cd53b728c3e4d26952f710be8_bytes32);
+    decoded.from = 0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address;
+    view = encoded_wrapped;
+    REQUIRE(rlp::decode(view, decoded));
+    CHECK(decoded == txn);
+    CHECK(!decoded.from);
 }
 
 TEST_CASE("EIP-1559 Transaction RLP") {

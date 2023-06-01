@@ -27,8 +27,7 @@ namespace silkworm::sentry {
 
 using namespace boost::asio;
 
-class SessionSentryClientImpl : public api::api_common::SentryClient
-{
+class SessionSentryClientImpl : public api::api_common::SentryClient {
   private:
     enum class State {
         kInit,

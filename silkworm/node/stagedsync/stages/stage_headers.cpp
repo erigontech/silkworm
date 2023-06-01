@@ -76,6 +76,8 @@ void HeadersStage::HeaderDataModel::remove_headers(BlockNum unwind_point, db::RW
         throw std::logic_error("Headers stage, expected canonical hash at height " + std::to_string(unwind_point));
     }
     db::write_head_header_hash(tx, *canonical_hash);
+
+    // maybe we should remove only the bad header
 }
 
 // HeadersStage

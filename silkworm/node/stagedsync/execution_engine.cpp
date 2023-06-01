@@ -258,6 +258,10 @@ auto ExecutionEngine::get_canonical_header(BlockNum bn) const -> std::optional<B
     return main_chain_.get_header(*hash);
 }
 
+auto ExecutionEngine::get_canonical_hash(BlockNum bn) const -> std::optional<Hash> {
+    return main_chain_.get_canonical_hash(bn);
+}
+
 auto ExecutionEngine::get_canonical_body(BlockNum bn) const -> std::optional<BlockBody> {
     auto hash = main_chain_.get_canonical_hash(bn);
     if (!hash) return {};

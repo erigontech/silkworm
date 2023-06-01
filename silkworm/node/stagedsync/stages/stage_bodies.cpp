@@ -85,6 +85,7 @@ void BodiesStage::BodyDataModel::close() {
 
 void BodiesStage::BodyDataModel::remove_bodies(BlockNum, std::optional<Hash>, db::RWTxn&) {
     // we do not erase "wrong" blocks, only stage progress will be updated by bodies stage unwind operation
+    // maybe we should remove only the bad block
 }
 
 BodiesStage::BodiesStage(NodeSettings* ns, SyncContext* sc)

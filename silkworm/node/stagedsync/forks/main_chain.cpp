@@ -225,14 +225,16 @@ std::set<Hash> MainChain::collect_bad_headers(db::RWTxn& tx, InvalidChain& inval
     return bad_headers;
 }
 
-auto MainChain::fork(BlockId forking_point) -> ExtendingFork {
-    return ExtendingFork{forking_point, *this, io_context_};
+auto MainChain::fork(BlockId forking_point) -> std::unique_ptr<ExtendingFork> {
+    return std::make_unique<ExtendingFork>(forking_point, *this, io_context_);
 }
 
 void MainChain::reintegrate_fork(ExtendingFork& extending_fork) {
     Fork* fork = extending_fork.fork_.get();
 
     fork->flush(tx_);  // this must be done here, in the tx_ thread, due to MDBX limitations
+
+    tx_.commit_and_renew();
 
     canonical_chain_.set_current_head(fork->current_head());
     canonical_head_status_ = fork->last_head_status();

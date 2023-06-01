@@ -40,7 +40,7 @@ class ExtendingFork {
   public:
     explicit ExtendingFork(BlockId forking_point, MainChain&, asio::io_context&);
     ExtendingFork(const ExtendingFork&) = delete;
-    ExtendingFork(ExtendingFork&& orig) noexcept;
+    ExtendingFork(ExtendingFork&& orig) = delete;  // not movable, it schedules methods execution in another thread
     ~ExtendingFork();
 
     // opening & closing
@@ -79,12 +79,14 @@ class ExtendingFork {
     BlockId current_head_{};
 };
 
+using ForkContainer = std::vector<std::unique_ptr<ExtendingFork>>;
+
 // find the fork with the specified head
-auto find_fork_by_head(std::vector<ExtendingFork>& forks, const Hash& requested_head_hash)
-    -> std::vector<ExtendingFork>::iterator;
+auto find_fork_by_head(ForkContainer& forks, const Hash& requested_head_hash)
+    -> ForkContainer::iterator;
 
 // find the fork with the head to extend
-auto find_fork_to_extend(std::vector<ExtendingFork>& forks, const BlockHeader& header)
-    -> std::vector<ExtendingFork>::iterator;
+auto find_fork_to_extend(ForkContainer& forks, const BlockHeader& header)
+    -> ForkContainer::iterator;
 
 }  // namespace silkworm::stagedsync

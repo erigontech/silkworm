@@ -77,6 +77,7 @@ class ExecutionEngine : public Stoppable {
     // header/body retrieval
     auto get_header(Hash) const -> std::optional<BlockHeader>;
     auto get_canonical_header(BlockNum) const -> std::optional<BlockHeader>;
+    auto get_canonical_hash(BlockNum) const -> std::optional<Hash>;
     auto get_body(Hash) const -> std::optional<BlockBody>;
     auto get_canonical_body(BlockNum) const -> std::optional<BlockBody>;
     bool is_canonical(Hash) const;
@@ -95,10 +96,9 @@ class ExecutionEngine : public Stoppable {
 
     asio::io_context& io_context_;
     NodeSettings& node_settings_;
-    db::RWAccess db_access_;
 
     MainChain main_chain_;
-    std::vector<ExtendingFork> forks_;
+    ForkContainer forks_;
 
     static constexpr size_t kDefaultCacheSize = 1000;
     mutable lru_cache<Hash, std::shared_ptr<Block>> block_cache_;

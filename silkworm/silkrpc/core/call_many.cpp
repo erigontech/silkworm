@@ -65,7 +65,6 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
     const auto& block = block_with_hash->block;
     const auto& block_transactions = block.transactions;
 
-
     auto state = co_await transaction_.create_state(tx_database, block_number);
     state::OverrideState override_state{*state, accounts_overrides};
 

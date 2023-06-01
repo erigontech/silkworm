@@ -16,22 +16,10 @@
 
 #include "block.hpp"
 
-#include <tl/expected.hpp>  // for expected, unexpected
-
-#include <silkworm/core/common/cast.hpp>        // for bit_cast
-#include <silkworm/core/protocol/param.hpp>     // for kDataGasPriceUpdateFr...
-#include <silkworm/core/rlp/decode_vector.hpp>  // for decode_items, decode
-#include <silkworm/core/rlp/encode_vector.hpp>  // for encode, length
-
-#include "ethash/hash_types.hpp"                // for hash256
-#include "evmc/evmc.h"                          // for evmc_bytes32
-#include "intx/intx.hpp"                        // for uint256, uint, operator/
-#include "silkworm/core/common/util.hpp"        // for keccak256
-#include "silkworm/core/rlp/decode.hpp"         // for decode, decode_header
-#include "silkworm/core/rlp/encode.hpp"         // for encode, Header, length
-#include "silkworm/core/types/bloom.hpp"        // for kBloomByteLength
-#include "silkworm/core/types/transaction.hpp"  // for decode, length, Trans...
-#include "silkworm/core/types/withdrawal.hpp"   // for Withdrawal, decode
+#include <silkworm/core/common/cast.hpp>
+#include <silkworm/core/protocol/param.hpp>
+#include <silkworm/core/rlp/decode_vector.hpp>
+#include <silkworm/core/rlp/encode_vector.hpp>
 
 namespace silkworm {
 

@@ -16,11 +16,7 @@
 
 #include "test_util.hpp"
 
-#include <silkworm/core/types/log.hpp>  // for Log
-
-#include "silkworm/core/common/util.hpp"        // for from_hex, to_bytes32
-#include "silkworm/core/types/receipt.hpp"      // for Receipt
-#include "silkworm/core/types/transaction.hpp"  // for Transaction, Transact...
+#include <silkworm/core/types/log.hpp>
 
 namespace silkworm::test {
 

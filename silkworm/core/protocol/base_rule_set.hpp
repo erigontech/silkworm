@@ -16,17 +16,7 @@
 
 #pragma once
 
-#include <optional>  // for optional
-#include <vector>    // for vector
-
-#include <silkworm/core/protocol/rule_set.hpp>  // for IRuleSet
-
-#include "evmc/evmc.hpp"                          // for address, bytes32
-#include "intx/intx.hpp"                          // for uint256
-#include "silkworm/core/chain/config.hpp"         // for ChainConfig
-#include "silkworm/core/protocol/validation.hpp"  // for ValidationResult
-#include "silkworm/core/state/block_state.hpp"    // for BlockState
-#include "silkworm/core/types/block.hpp"          // for BlockHeader, Block
+#include <silkworm/core/protocol/rule_set.hpp>
 
 namespace silkworm::protocol {
 

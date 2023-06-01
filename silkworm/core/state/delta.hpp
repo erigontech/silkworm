@@ -17,10 +17,7 @@
 #pragma once
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/core/state/object.hpp>  // for Object, Storage
-
-#include "evmc/evmc.hpp"  // for address, bytes32
-#include "intx/intx.hpp"  // for uint256
+#include <silkworm/core/state/object.hpp>
 
 namespace silkworm {
 

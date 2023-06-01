@@ -19,22 +19,15 @@
 
 #pragma once
 
-#include <stdint.h>  // for uint8_t
+#include <array>
+#include <cstring>
+#include <span>
 
-#include <array>    // for array
-#include <cstring>  // for memcpy, size_t
-#include <span>     // for span
-
-#include <__fwd/span.h>  // for dynamic_extent
 #include <intx/intx.hpp>
-#include <tl/expected.hpp>  // for expected, unexpe...
 
-#include <silkworm/core/common/base.hpp>             // for ByteView, Bytes
-#include <silkworm/core/common/decoding_result.hpp>  // for DecodingResult
-#include <silkworm/core/rlp/encode.hpp>              // for Header
-
-#include "evmc/evmc.hpp"                    // for bytes32
-#include "silkworm/core/common/endian.hpp"  // for from_big_compact
+#include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/decoding_result.hpp>
+#include <silkworm/core/rlp/encode.hpp>
 
 namespace silkworm::rlp {
 

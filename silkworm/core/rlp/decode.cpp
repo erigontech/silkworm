@@ -16,13 +16,10 @@
 
 #include "decode.hpp"
 
-#include <string_view>  // for basic_string_view
+#include <cassert>
+#include <tuple>
 
-#include <silkworm/core/common/endian.hpp>  // for from_big_compact
-
-#include "silkworm/core/common/base.hpp"             // for ByteView, Bytes
-#include "silkworm/core/common/decoding_result.hpp"  // for DecodingError
-#include "silkworm/core/rlp/encode.hpp"              // for Header
+#include <silkworm/core/common/endian.hpp>
 
 namespace silkworm::rlp {
 

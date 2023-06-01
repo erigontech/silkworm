@@ -16,8 +16,6 @@
 
 #include "dao.hpp"
 
-#include "silkworm/core/state/intra_block_state.hpp"  // for IntraBlockState
-
 namespace silkworm::dao {
 
 void transfer_balances(IntraBlockState& state) {

@@ -16,22 +16,11 @@
 
 #pragma once
 
-#include <stddef.h>  // for size_t
+#include <map>
+#include <unordered_map>
+#include <vector>
 
-#include <cstdint>        // for uint64_t
-#include <map>            // for map
-#include <optional>       // for optional
-#include <unordered_map>  // for unordered_map
-#include <vector>         // for vector
-
-#include <silkworm/core/state/state.hpp>  // for State
-
-#include "evmc/evmc.hpp"                    // for address, bytes32, hash
-#include "intx/intx.hpp"                    // for uint256
-#include "silkworm/core/common/base.hpp"    // for BlockNum, ByteView, Bytes
-#include "silkworm/core/types/account.hpp"  // for Account
-#include "silkworm/core/types/block.hpp"    // for BlockBody, BlockHeader
-#include "silkworm/core/types/receipt.hpp"  // for Receipt
+#include <silkworm/core/state/state.hpp>
 
 namespace silkworm {
 

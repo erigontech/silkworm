@@ -16,11 +16,9 @@
 
 #include "bloom.hpp"
 
-#include <silkworm/core/common/util.hpp>  // for keccak256
+#include <ethash/keccak.hpp>
 
-#include "ethash/hash_types.hpp"        // for hash256
-#include "evmc/evmc.hpp"                // for bytes32
-#include "silkworm/core/types/log.hpp"  // for Log
+#include <silkworm/core/common/util.hpp>
 
 namespace silkworm {
 

@@ -16,22 +16,8 @@
 
 #include "blockchain.hpp"
 
-#include <stddef.h>  // for size_t
-
-#include <memory>       // for unique_ptr
-#include <optional>     // for optional, operator!=
-#include <type_traits>  // for remove_reference<>:...
-#include <utility>      // for move, pair
-
-#include <silkworm/core/common/assert.hpp>        // for SILKWORM_ASSERT
-#include <silkworm/core/execution/processor.hpp>  // for ExecutionProcessor
-
-#include "intx/intx.hpp"                        // for operator>=, uint256
-#include "silkworm/core/execution/evm.hpp"      // for EVM
-#include "silkworm/core/protocol/rule_set.hpp"  // for rule_set_factory
-#include "silkworm/core/state/state.hpp"        // for State
-#include "silkworm/core/types/receipt.hpp"      // for Receipt
-#include "silkworm/core/types/transaction.hpp"  // for Transaction
+#include <silkworm/core/common/assert.hpp>
+#include <silkworm/core/execution/processor.hpp>
 
 namespace silkworm::protocol {
 

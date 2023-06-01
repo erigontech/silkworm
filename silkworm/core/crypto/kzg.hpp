@@ -16,13 +16,9 @@
 
 #pragma once
 
-#include <stdint.h>  // for uint8_t
+#include <span>
 
-#include <span>  // for span
-
-#include <silkworm/core/types/hash.hpp>  // for Hash
-
-#include "silkworm/core/common/base.hpp"  // for ByteView
+#include <silkworm/core/types/hash.hpp>
 
 // Cryptographic support for EIP-4844: Shard Blob Transactions.
 // KZG stands for the commitment scheme introduced by Kate, Zaverucha, and Goldberg.

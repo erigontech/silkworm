@@ -16,25 +16,15 @@
 
 #include "transaction.hpp"
 
-#include <algorithm>    // for min
-#include <string_view>  // for basic_string_view
-#include <type_traits>  // for remove_reference<>::type
+#include <ethash/keccak.hpp>
 
-#include <tl/expected.hpp>  // for expected, unexpected
+#include <silkworm/core/common/util.hpp>
+#include <silkworm/core/crypto/ecdsa.h>
+#include <silkworm/core/protocol/param.hpp>
+#include <silkworm/core/rlp/decode_vector.hpp>
+#include <silkworm/core/rlp/encode_vector.hpp>
 
-#include <silkworm/core/common/util.hpp>        // for keccak256
-#include <silkworm/core/crypto/ecdsa.h>         // for silkworm_recover_address
-#include <silkworm/core/protocol/param.hpp>     // for kDataGasPerBlob
-#include <silkworm/core/rlp/decode_vector.hpp>  // for decode_items, decode
-#include <silkworm/core/rlp/encode_vector.hpp>  // for length, encode
-
-#include "ethash/hash_types.hpp"            // for hash256
-#include "intx/intx.hpp"                    // for uint256, umul, store
-#include "secp256k1.h"                      // for secp256k1_context_create
-#include "silkworm/core/common/assert.hpp"  // for SILKWORM_ASSERT
-#include "silkworm/core/common/base.hpp"    // for ByteView, Bytes, kAdd...
-#include "silkworm/core/rlp/decode.hpp"     // for decode, decode_header
-#include "y_parity_and_chain_id.hpp"        // for v_to_y_parity_and_cha...
+#include "y_parity_and_chain_id.hpp"
 
 namespace silkworm {
 

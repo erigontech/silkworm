@@ -19,13 +19,10 @@
 
 #pragma once
 
-#include <stddef.h>  // for size_t
-#include <stdint.h>  // for uint8_t, uint64_t
+#include <intx/intx.hpp>
 
-#include <intx/intx.hpp>  // for count_significant_bytes
-
-#include <silkworm/core/common/base.hpp>    // for ByteView, Bytes
-#include <silkworm/core/common/endian.hpp>  // for to_big_compact
+#include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/endian.hpp>
 
 namespace silkworm::rlp {
 

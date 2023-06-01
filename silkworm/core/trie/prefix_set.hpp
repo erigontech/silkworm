@@ -16,12 +16,9 @@
 
 #pragma once
 
-#include <stddef.h>  // for size_t
+#include <vector>
 
-#include <utility>  // for pair
-#include <vector>   // for vector
-
-#include <silkworm/core/common/base.hpp>  // for Bytes, ByteView
+#include <silkworm/core/common/base.hpp>
 
 namespace silkworm::trie {
 

@@ -16,13 +16,9 @@
 
 #pragma once
 
-#include <stddef.h>  // for size_t
+#include <vector>
 
-#include <vector>  // for vector
-
-#include <silkworm/core/common/base.hpp>  // for Bytes
-
-#include "evmc/evmc.hpp"  // for bytes32, address
+#include <silkworm/core/common/base.hpp>
 
 namespace silkworm {
 

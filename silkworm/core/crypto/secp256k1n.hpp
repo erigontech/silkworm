@@ -21,7 +21,7 @@
 
 #include <optional>
 
-#include <intx/intx.hpp>  // for uint256, from_string, operator>>, uint
+#include <intx/intx.hpp>
 
 namespace silkworm {
 

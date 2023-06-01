@@ -16,15 +16,11 @@
 
 #pragma once
 
-#include <stdint.h>  // for uint64_t
+#include <optional>
 
-#include <optional>  // for optional, nullopt
+#include <evmc/evmc.h>
 
-#include <evmc/evmc.h>  // for EVMC_BYZANTIUM, EVMC_FRONTIER
-
-#include <silkworm/core/common/base.hpp>  // for ByteView, Bytes
-
-#include "evmc/evmc.hpp"  // for address
+#include <silkworm/core/common/base.hpp>
 
 // See Yellow Paper, Appendix E "Precompiled Contracts"
 namespace silkworm::precompile {

@@ -16,16 +16,10 @@
 
 #pragma once
 
-#include <stddef.h>  // for size_t
-#include <stdint.h>  // for uint64_t
+#include <intx/intx.hpp>
 
-#include <intx/intx.hpp>    // for uint256
-#include <tl/expected.hpp>  // for expected
-
-#include <silkworm/core/common/base.hpp>             // for ByteView, Bytes
-#include <silkworm/core/common/decoding_result.hpp>  // for DecodingError
-
-#include "evmc/evmc.hpp"  // for bytes32
+#include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/decoding_result.hpp>
 
 namespace silkworm {
 

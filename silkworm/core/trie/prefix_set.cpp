@@ -16,14 +16,7 @@
 
 #include "prefix_set.hpp"
 
-#include <__tuple>      // for tuple_element<>::type
-#include <algorithm>    // for min, sort, unique
-#include <cstring>      // for memcmp, size_t
-#include <string>       // for operator<, operator==, basi...
-#include <string_view>  // for operator>, basic_string_view
-#include <type_traits>  // for add_const<>::type
-
-#include "silkworm/core/common/base.hpp"  // for Bytes, ByteView
+#include <algorithm>
 
 namespace silkworm::trie {
 

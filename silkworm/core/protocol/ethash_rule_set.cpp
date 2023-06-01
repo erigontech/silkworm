@@ -16,19 +16,9 @@
 
 #include "ethash_rule_set.hpp"
 
-#include <cstddef>       // for size_t
-#include <memory>        // for unique_ptr
-#include <optional>      // for operator>=, optional
-#include <system_error>  // for error_code
+#include <silkworm/core/common/endian.hpp>
 
-#include <silkworm/core/common/endian.hpp>  // for load_big_u64
-
-#include "ethash/ethash.hpp"              // for hash256_from_bytes, verif...
-#include "ethash/hash_types.hpp"          // for hash256
-#include "evmc/evmc.h"                    // for EVMC_BYZANTIUM, evmc_revi...
-#include "evmc/evmc.hpp"                  // for bytes32, operator!=
-#include "param.hpp"                      // for kBlockRewardByzantium
-#include "silkworm/core/common/base.hpp"  // for kEmptyListHash, BlockNum
+#include "param.hpp"
 
 namespace silkworm::protocol {
 

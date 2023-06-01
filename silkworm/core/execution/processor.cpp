@@ -16,27 +16,12 @@
 
 #include "processor.hpp"
 
-#include <algorithm>  // for min
-#include <array>      // for operator!=, array
-#include <cassert>    // for assert
-#include <optional>   // for optional, operat...
+#include <cassert>
 
-#include <silkworm/core/chain/dao.hpp>               // for transfer_balances
-#include <silkworm/core/protocol/intrinsic_gas.hpp>  // for intrinsic_gas
-#include <silkworm/core/protocol/param.hpp>          // for kMaxRefundQuotie...
-#include <silkworm/core/trie/vector_root.hpp>        // for root_hash
-
-#include "evmc/evmc.h"                          // for EVMC_LONDON, EVM...
-#include "evmc/evmc.hpp"                        // for bytes32, operator!=
-#include "intx/intx.hpp"                        // for uint256, operator*
-#include "silkworm/core/common/base.hpp"        // for Bytes, kEmptyHash
-#include "silkworm/core/execution/evm.hpp"      // for EVM, CallResult
-#include "silkworm/core/protocol/rule_set.hpp"  // for IRuleSet
-#include "silkworm/core/state/state.hpp"        // for State
-#include "silkworm/core/types/block.hpp"        // for Block, BlockHeader
-#include "silkworm/core/types/bloom.hpp"        // for join, logs_bloom
-#include "silkworm/core/types/receipt.hpp"      // for Receipt, encode
-#include "silkworm/core/types/transaction.hpp"  // for Transaction, Acc...
+#include <silkworm/core/chain/dao.hpp>
+#include <silkworm/core/protocol/intrinsic_gas.hpp>
+#include <silkworm/core/protocol/param.hpp>
+#include <silkworm/core/trie/vector_root.hpp>
 
 namespace silkworm {
 

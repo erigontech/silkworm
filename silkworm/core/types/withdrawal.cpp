@@ -16,11 +16,8 @@
 
 #include "withdrawal.hpp"
 
-#include <silkworm/core/rlp/decode_vector.hpp>  // for decode
-#include <silkworm/core/rlp/encode.hpp>         // for encode, length, Header
-
-#include "silkworm/core/common/base.hpp"  // for ByteView, Bytes
-#include "silkworm/core/rlp/decode.hpp"   // for Leftover
+#include <silkworm/core/rlp/decode_vector.hpp>
+#include <silkworm/core/rlp/encode.hpp>
 
 namespace silkworm::rlp {
 

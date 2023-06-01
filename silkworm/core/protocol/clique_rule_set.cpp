@@ -16,11 +16,7 @@
 
 #include "clique_rule_set.hpp"
 
-#include <silkworm/core/crypto/ecdsa.h>  // for silkworm_recover...
-
-#include "secp256k1.h"                               // for secp256k1_contex...
-#include "silkworm/core/common/base.hpp"             // for Bytes, kExtraSea...
-#include "silkworm/core/protocol/base_rule_set.hpp"  // for BaseRuleSet
+#include <silkworm/core/crypto/ecdsa.h>
 
 namespace silkworm::protocol {
 

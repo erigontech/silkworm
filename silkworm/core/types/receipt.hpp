@@ -16,16 +16,11 @@
 
 #pragma once
 
-#include <stdint.h>  // for uint64_t
-
 #include <optional>
-#include <vector>  // for vector
 
-#include <silkworm/core/types/bloom.hpp>        // for Bloom
-#include <silkworm/core/types/log.hpp>          // for Log
-#include <silkworm/core/types/transaction.hpp>  // for TransactionType, Tran...
-
-#include "silkworm/core/common/base.hpp"  // for Bytes
+#include <silkworm/core/types/bloom.hpp>
+#include <silkworm/core/types/log.hpp>
+#include <silkworm/core/types/transaction.hpp>
 
 namespace silkworm {
 

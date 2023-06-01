@@ -16,24 +16,15 @@
 
 #pragma once
 
-#include <stdint.h>  // for uint64_t
+#include <unordered_map>
+#include <vector>
 
-#include <unordered_map>  // for unordered_map
-#include <vector>         // for vector
-
-#include <evmc/evmc.h>  // for evmc_vm
+#include <evmc/evmc.h>
 
 #include <silkworm/core/execution/evm.hpp>
-#include <silkworm/core/protocol/rule_set.hpp>  // for RuleSetPtr
-#include <silkworm/core/state/state.hpp>        // for State
-#include <silkworm/core/types/receipt.hpp>      // for Receipt
-
-#include "evmc/evmc.hpp"                          // for bytes32, hash, oper...
-#include "evmone/execution_state.hpp"             // for ExecutionState
-#include "silkworm/core/chain/config.hpp"         // for ChainConfig
-#include "silkworm/core/common/object_pool.hpp"   // for ObjectPool
-#include "silkworm/core/protocol/validation.hpp"  // for ValidationResult
-#include "silkworm/core/types/block.hpp"          // for Block, BlockHeader
+#include <silkworm/core/protocol/rule_set.hpp>
+#include <silkworm/core/state/state.hpp>
+#include <silkworm/core/types/receipt.hpp>
 
 namespace silkworm::protocol {
 

@@ -273,6 +273,26 @@ jobs:
               echo "Try #$counter..."
             done
 
+  linux-clang-iwyu:
+    environment:
+      # see: https://github.com/include-what-you-use/include-what-you-use/blob/master/iwyu_globals.cc#L63
+      BUILD_CMAKE_ARGS: -DCMAKE_CXX_INCLUDE_WHAT_YOU_USE=include-what-you-use;-Xiwyu;--verbose=1;-Xiwyu;--no_fwd_decls
+    machine:
+      image: ubuntu-2204:2023.04.2
+    resource_class: xlarge
+    steps:
+      - run:
+          name: "Install iwyu"
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y iwyu
+      - checkout_with_submodules:
+          ethereum_tests: false
+      - build_using_conan:
+          build_type: Debug
+          compiler_id: clang
+          compiler_version: 13
+
   linux-wasm-build:
     environment:
       WASI_SDK_VERSION: 14
@@ -347,3 +367,4 @@ workflows:
         - equal: [ master, <<pipeline.git.branch>> ]
         - matches: { pattern: "^ci\\/.+$", value: <<pipeline.git.branch>> }
     jobs:
+      - linux-clang-iwyu

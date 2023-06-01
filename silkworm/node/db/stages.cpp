@@ -29,12 +29,12 @@ static BlockNum get_stage_data(ROTxn& txn, const char* stage_name, const db::Map
     }
 
     try {
-        db::PooledCursor src(txn, domain);
+        auto cursor = txn.ro_cursor(domain);
         std::string item_key{stage_name};
         if (key_prefix) {
             item_key.insert(0, std::string(key_prefix));
         }
-        auto data{src.find(mdbx::slice(item_key.c_str()), /*throw_notfound*/ false)};
+        auto data{cursor->find(mdbx::slice(item_key.c_str()), /*throw_notfound*/ false)};
         if (!data) {
             return 0;
         } else if (data.value.size() != sizeof(uint64_t)) {
@@ -60,10 +60,10 @@ static void set_stage_data(RWTxn& txn, const char* stage_name, uint64_t block_nu
         }
         Bytes stage_progress(sizeof(block_num), 0);
         endian::store_big_u64(stage_progress.data(), block_num);
-        db::PooledCursor target(txn, domain);
+        auto target = txn.rw_cursor(domain);
         mdbx::slice key(item_key.c_str());
         mdbx::slice value{db::to_slice(stage_progress)};
-        target.upsert(key, value);
+        target->upsert(key, value);
     } catch (const mdbx::exception& ex) {
         std::string what("Error in " + std::string(__FUNCTION__) + " " + std::string(ex.what()));
         throw std::runtime_error(what);

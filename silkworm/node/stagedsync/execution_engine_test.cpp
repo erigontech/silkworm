@@ -271,9 +271,9 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(exec_engine.last_finalized_block() == BlockId{0, *block0_hash});
     }
 
-    SECTION("a fork") {
-        auto header0_hash = db::read_canonical_hash(tx, 0);
-        REQUIRE(header0_hash.has_value());
+    SECTION("a block that creates a fork") {
+        auto block0_hash = db::read_canonical_hash(tx, 0);
+        REQUIRE(block0_hash.has_value());
 
         auto header0 = db::read_canonical_header(tx, 0);
         REQUIRE(header0.has_value());
@@ -282,7 +282,7 @@ TEST_CASE("ExecutionEngine") {
         auto block1_hash = block1->header.hash();
 
         auto block2 = generateSampleChildrenBlock(block1->header);
-        // auto block2_hash = block2->header.hash();
+        auto block2_hash = block2->header.hash();
 
         auto block3 = generateSampleChildrenBlock(block2->header);
         auto block3_hash = block3->header.hash();
@@ -306,38 +306,53 @@ TEST_CASE("ExecutionEngine") {
         CHECK(exec_engine.last_fork_choice() == BlockId{3, block3_hash});
         CHECK(exec_engine.last_finalized_block() == BlockId{1, block1_hash});
 
-        // Creating a fork and changing the head (trigger unwind)
-        {
-            auto block4 = generateSampleChildrenBlock(block3->header);
-            auto block4_hash = block4->header.hash();
+        CHECK(exec_engine.get_canonical_hash(2) == block2_hash);
+        CHECK(exec_engine.get_canonical_header(2).has_value());
+        CHECK(exec_engine.get_canonical_hash(3) == block3_hash);
+        CHECK(exec_engine.get_canonical_header(3).has_value());
 
+        auto [head_height, head_hash] = db::read_canonical_head(tx);
+        CHECK(head_height == 3);
+        CHECK(head_hash == block3_hash);
+
+        // creating and reintegrating a fork
+        auto block4 = generateSampleChildrenBlock(block3->header);
+        auto block4_hash = block4->header.hash();
+        {
             // inserting & verifying the block
             exec_engine.insert_block(block4);
-            /*verification =*/exec_engine.verify_chain(block4_hash).get();
+            verification = exec_engine.verify_chain(block4_hash).get();
 
-            /* replace PooledCursor from BlockHashes to make this part work
             REQUIRE(holds_alternative<ValidChain>(verification));
             valid_chain = std::get<ValidChain>(verification);
             CHECK(valid_chain.current_head == BlockId{4, block4_hash});
 
-            // confirming the chain
-            fcu_updated = exec_engine.notify_fork_choice_update(block4_hash, block2_hash);
+            // confirming the chain (i.e. flushing the memory mutation on the main db)
+            fcu_updated = exec_engine.notify_fork_choice_update(block4_hash, block1_hash);
             CHECK(fcu_updated);
 
             final_canonical_head = exec_engine.main_chain_.canonical_head();
             CHECK(final_canonical_head == BlockId{4, block4_hash});
             CHECK(exec_engine.last_fork_choice() == BlockId{4, block4_hash});
-            CHECK(exec_engine.last_finalized_block() == BlockId{2, block2_hash});
-            */
+            CHECK(exec_engine.last_finalized_block() == BlockId{1, block1_hash});
+
+            CHECK(exec_engine.get_canonical_hash(2) == block2_hash);
+            CHECK(exec_engine.get_canonical_header(2).has_value());
+            CHECK(exec_engine.get_canonical_hash(3) == block3_hash);
+            CHECK(exec_engine.get_canonical_header(3).has_value());
+            CHECK(exec_engine.get_canonical_hash(4) == block4_hash);
+            CHECK(exec_engine.get_canonical_header(4).has_value());
+
+            std::tie(head_height, head_hash) = db::read_canonical_head(tx);
+            CHECK(head_height == 4);
+            CHECK(head_hash == block4_hash);
         }
 
-        /*
-        // Creating a fork and changing the head (trigger unwind)
+        // creating a fork and changing the head (trigger unwind)
+        auto block2b = generateSampleChildrenBlock(block1->header);
+        block2b->header.extra_data = string_view_to_byte_view("I'm different");  // to make it different from block2
+        auto block2b_hash = block2b->header.hash();
         {
-            auto block2b = generateSampleChildrenBlock(block1->header);
-            block2b->header.extra_data = string_view_to_byte_view("I'm different");  // to make it different from block2
-            auto block2b_hash = block2b->header.hash();
-
             // inserting & verifying the block
             exec_engine.insert_block(block2b);
             verification = exec_engine.verify_chain(block2b_hash).get();
@@ -347,15 +362,28 @@ TEST_CASE("ExecutionEngine") {
             CHECK(valid_chain.current_head == BlockId{2, block2b_hash});
 
             // confirming the chain
-            fcu_updated = exec_engine.notify_fork_choice_update(block2b_hash, block1_hash);
+            fcu_updated = exec_engine.notify_fork_choice_update(block2b_hash, block0_hash);
             CHECK(fcu_updated);
 
             final_canonical_head = exec_engine.main_chain_.canonical_head();
             CHECK(final_canonical_head == BlockId{2, block2b_hash});
             CHECK(exec_engine.last_fork_choice() == BlockId{2, block2b_hash});
-            CHECK(exec_engine.last_finalized_block() == BlockId{1, block1_hash});
+            CHECK(exec_engine.last_finalized_block() == BlockId{0, *block0_hash});
+
+            CHECK(exec_engine.get_canonical_hash(2) == block2b_hash);
+            CHECK(exec_engine.get_canonical_header(2).has_value());
+            CHECK(not exec_engine.get_canonical_header(3).has_value());
+            CHECK(not exec_engine.get_canonical_header(4).has_value());
+
+            std::tie(head_height, head_hash) = db::read_canonical_head(tx);
+            CHECK(head_height == 2);
+            CHECK(head_hash == block2b_hash);
         }
-        */
+
+        CHECK(exec_engine.get_header(block2b_hash).has_value());  // we do not remove old blocks
+        CHECK(exec_engine.get_header(block2_hash).has_value());   // we do not remove old blocks
+        CHECK(exec_engine.get_header(block3_hash).has_value());   // we do not remove old blocks
+        CHECK(exec_engine.get_header(block4_hash).has_value());   // we do not remove old blocks
     }
 }
 

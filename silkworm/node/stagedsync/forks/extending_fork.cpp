@@ -34,15 +34,6 @@ ExtendingFork::ExtendingFork(BlockId forking_point, MainChain& main_chain, asio:
       io_context_{ctx},
       current_head_{forking_point} {}
 
-ExtendingFork::ExtendingFork(ExtendingFork&& orig) noexcept
-    : forking_point_{orig.forking_point_},
-      main_chain_{orig.main_chain_},
-      io_context_{orig.io_context_},
-      fork_{std::move(orig.fork_)},
-      executor_{std::move(orig.executor_)},
-      thread_{std::move(orig.thread_)},
-      current_head_{orig.current_head_} {}
-
 ExtendingFork::~ExtendingFork() {
     close();
 }
@@ -67,7 +58,7 @@ void ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block
     current_head_ = new_head;  // setting this here is important for find_fork_by_head() due to the fact that block
                                // insertion and head computation is delayed but find_fork_by_head() is called immediately
 
-    post(*executor_, [this, new_head, blocks_ = std::move(blocks)]() {
+    post(*executor_, [this, new_head, blocks_ = std::move(blocks)]() {  // note: this requires a "stable" this pointer
         try {
             if (exception_) return;
             fork_ = std::make_unique<Fork>(forking_point_,
@@ -143,13 +134,13 @@ auto ExtendingFork::notify_fork_choice_update(Hash head_block_hash, std::optiona
     return awaitable_future;
 }
 
-std::vector<ExtendingFork>::iterator find_fork_by_head(std::vector<ExtendingFork>& forks, const Hash& requested_head_hash) {
+ForkContainer::iterator find_fork_by_head(ForkContainer& forks, const Hash& requested_head_hash) {
     return std::find_if(forks.begin(), forks.end(), [&](const auto& fork) {
-        return fork.current_head().hash == requested_head_hash;
+        return fork->current_head().hash == requested_head_hash;
     });
 }
 
-std::vector<ExtendingFork>::iterator find_fork_to_extend(std::vector<ExtendingFork>& forks, const BlockHeader& header) {
+ForkContainer::iterator find_fork_to_extend(ForkContainer& forks, const BlockHeader& header) {
     return find_fork_by_head(forks, header.parent_hash);
 }
 

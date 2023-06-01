@@ -436,8 +436,8 @@ Stage::Result HashState::hash_from_account_changeset(db::RWTxn& txn, BlockNum pr
         auto source_plainstate = txn.ro_cursor_dup_sort(db::table::kPlainState);
         auto changeset_data{
             source_changeset->find(db::to_slice(source_initial_key),  // Initial record MUST be found because
-                                  /*throw_notfound=*/true)};         // there is at least 1 change per block
-                                                                     // (the miner reward)
+                                   /*throw_notfound=*/true)};         // there is at least 1 change per block
+                                                                      // (the miner reward)
         while (changeset_data.done) {
             reached_blocknum = endian::load_big_u64(db::from_slice(changeset_data.key).data());
             check_block_sequence(reached_blocknum, expected_blocknum);
@@ -624,7 +624,7 @@ Stage::Result HashState::unwind_from_account_changeset(db::RWTxn& txn, BlockNum 
         auto source_changeset = txn.ro_cursor_dup_sort(db::table::kAccountChangeSet);
         auto source_initial_key{db::block_key(expected_blocknum)};
         auto changeset_data{source_changeset->lower_bound(db::to_slice(source_initial_key),
-                                                         /*throw_notfound=*/true)};  // Initial record MUST be found
+                                                          /*throw_notfound=*/true)};  // Initial record MUST be found
 
         while (changeset_data.done) {
             reached_blocknum = endian::load_big_u64(db::from_slice(changeset_data.key).data());
@@ -815,7 +815,7 @@ Stage::Result HashState::write_changes_from_changed_addresses(db::RWTxn& txn, co
                 endian::store_big_u64(&hashed_code_key[kHashLength], *incarnation);
                 endian::store_big_u64(&plain_code_key[kAddressLength], *incarnation);
                 auto code_data{source_plaincode->find(db::to_slice(plain_code_key),
-                                                     /*throw_notfound=*/false)};
+                                                      /*throw_notfound=*/false)};
                 if (code_data.done && !code_data.value.empty()) {
                     target_hashed_code->upsert(db::to_slice(hashed_code_key), code_data.value);
                 } else {

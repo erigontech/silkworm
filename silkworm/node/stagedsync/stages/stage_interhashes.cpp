@@ -225,10 +225,10 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
     const Bytes starting_key{db::block_key(expected_blocknum)};
     trie::PrefixSet ret;
 
-    db::PooledCursor account_changeset(txn, db::table::kAccountChangeSet);
-    db::PooledCursor plain_state(txn, db::table::kPlainState);
+    auto account_changeset = txn.ro_cursor_dup_sort(db::table::kAccountChangeSet);
+    auto plain_state = txn.ro_cursor_dup_sort(db::table::kPlainState);
 
-    auto changeset_data{account_changeset.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)};
+    auto changeset_data{account_changeset->lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)};
 
     while (changeset_data) {
         reached_blocknum = endian::load_big_u64(db::from_slice(changeset_data.key).data());
@@ -261,7 +261,7 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
             if (auto item{plainstate_accounts.get(address)}; item != nullptr) {
                 plainstate_account = *item;
             } else {
-                auto ps_data{plain_state.find(db::to_slice(address.bytes), false)};
+                auto ps_data{plain_state->find(db::to_slice(address.bytes), false)};
                 if (ps_data && ps_data.value.length()) {
                     const auto account{Account::from_encoded_storage(db::from_slice(ps_data.value))};
                     success_or_throw(account);
@@ -314,22 +314,22 @@ trie::PrefixSet InterHashes::collect_account_changes(db::RWTxn& txn, BlockNum fr
             }
 
             ret.insert(trie::unpack_nibbles(hashed_addresses_it->second.bytes), account_created);
-            changeset_data = account_changeset.to_current_next_multi(/*throw_notfound=*/false);
+            changeset_data = account_changeset->to_current_next_multi(/*throw_notfound=*/false);
         }
 
         ++expected_blocknum;
-        changeset_data = account_changeset.to_next(/*throw_notfound=*/false);
+        changeset_data = account_changeset->to_next(/*throw_notfound=*/false);
     }
 
     // Eventually delete nodes from trie for deleted accounts
     if (!deleted_ts_prefixes.empty()) {
-        db::PooledCursor trie_storage(txn, db::table::kTrieOfStorage);
+        auto trie_storage = txn.rw_cursor(db::table::kTrieOfStorage);
         for (const auto& prefix : deleted_ts_prefixes) {
             const auto prefix_slice{db::to_slice(prefix)};
-            auto data{trie_storage.lower_bound(prefix_slice, /*throw_notfound=*/false)};
+            auto data{trie_storage->lower_bound(prefix_slice, /*throw_notfound=*/false)};
             while (data && data.key.starts_with(prefix_slice)) {
-                trie_storage.erase();
-                data = trie_storage.to_next(/*throw_notfound=*/false);
+                trie_storage->erase();
+                data = trie_storage->to_next(/*throw_notfound=*/false);
             }
         }
     }
@@ -365,8 +365,8 @@ trie::PrefixSet InterHashes::collect_storage_changes(db::RWTxn& txn, BlockNum fr
     // Don't rehash same addresses
     absl::btree_map<evmc::address, ethash_hash256>::iterator hashed_addresses_it{hashed_addresses.begin()};
 
-    db::PooledCursor storage_changeset(txn, db::table::kStorageChangeSet);
-    auto changeset_data{storage_changeset.lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)};
+    auto storage_changeset = txn.ro_cursor_dup_sort(db::table::kStorageChangeSet);
+    auto changeset_data{storage_changeset->lower_bound(db::to_slice(starting_key), /*throw_notfound=*/false)};
 
     while (changeset_data) {
         auto changeset_key_view{db::from_slice(changeset_data.key)};
@@ -409,10 +409,10 @@ trie::PrefixSet InterHashes::collect_storage_changes(db::RWTxn& txn, BlockNum fr
             auto ret_item{ByteView(hashed_key.data(), db::kHashedStoragePrefixLength + unpacked_location.length())};
 
             ret.insert(ret_item, changeset_value_view.length() == kHashLength);
-            changeset_data = storage_changeset.to_current_next_multi(/*throw_notfound=*/false);
+            changeset_data = storage_changeset->to_current_next_multi(/*throw_notfound=*/false);
         }
 
-        changeset_data = storage_changeset.to_next(/*throw_notfound=*/false);
+        changeset_data = storage_changeset->to_next(/*throw_notfound=*/false);
     }
 
     if (sw) {
@@ -445,7 +445,7 @@ Stage::Result InterHashes::regenerate_intermediate_hashes(db::RWTxn& txn, const 
         current_source_ = "HashState";
         current_target_.clear();
         current_key_.clear();
-        trie_loader_ = std::make_unique<trie::TrieLoader>(*txn, nullptr, nullptr, account_collector_.get(),
+        trie_loader_ = std::make_unique<trie::TrieLoader>(txn, nullptr, nullptr, account_collector_.get(),
                                                           storage_collector_.get());
         log_lck.unlock();
 
@@ -509,7 +509,7 @@ Stage::Result InterHashes::increment_intermediate_hashes(db::RWTxn& txn, BlockNu
         current_source_ = "ChangeSets";
         current_target_.clear();
         current_key_.clear();
-        trie_loader_ = std::make_unique<trie::TrieLoader>(*txn, &account_changes, &storage_changes,
+        trie_loader_ = std::make_unique<trie::TrieLoader>(txn, &account_changes, &storage_changes,
                                                           account_collector_.get(), storage_collector_.get());
         log_lck.unlock();
 
@@ -560,18 +560,18 @@ void InterHashes::flush_collected_nodes(db::RWTxn& txn) {
     current_target_ = std::string(db::table::kTrieOfAccounts.name);
     log_lck.unlock();
 
-    db::PooledCursor target(txn, db::table::kTrieOfAccounts);
-    MDBX_put_flags_t flags{target.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT};
-    loading_collector_->load(target, nullptr, flags);
+    auto target = txn.rw_cursor_dup_sort(db::table::kTrieOfAccounts);  // note: not a multi-value table
+    MDBX_put_flags_t flags{target->empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT};
+    loading_collector_->load(*target, nullptr, flags);
 
     log_lck.lock();
     loading_collector_ = std::move(storage_collector_);
     current_target_ = std::string(db::table::kTrieOfStorage.name);
     log_lck.unlock();
 
-    target.bind(txn, db::table::kTrieOfStorage);
-    flags = target.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT;
-    loading_collector_->load(target, nullptr, flags);
+    target->bind(txn, db::table::kTrieOfStorage);
+    flags = target->empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT;
+    loading_collector_->load(*target, nullptr, flags);
 
     log_lck.lock();
     current_source_.clear();

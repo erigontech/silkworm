@@ -26,7 +26,7 @@
 
 namespace silkworm::trie {
 
-TrieLoader::TrieLoader(mdbx::txn& txn, PrefixSet* account_changes, PrefixSet* storage_changes,
+TrieLoader::TrieLoader(db::ROTxn& txn, PrefixSet* account_changes, PrefixSet* storage_changes,
                        etl::Collector* account_trie_node_collector, etl::Collector* storage_trie_node_collector)
     : txn_{txn},
       account_changes_{account_changes},
@@ -46,14 +46,14 @@ evmc::bytes32 TrieLoader::calculate_root() {
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 
-    db::PooledCursor hashed_accounts(txn_, db::table::kHashedAccounts);
-    db::PooledCursor hashed_storage(txn_, db::table::kHashedStorage);
-    db::PooledCursor trie_accounts(txn_, db::table::kTrieOfAccounts);
-    db::PooledCursor trie_storage(txn_, db::table::kTrieOfStorage);
+    auto hashed_accounts = txn_.ro_cursor(db::table::kHashedAccounts);
+    auto hashed_storage = txn_.ro_cursor_dup_sort(db::table::kHashedStorage);
+    auto trie_accounts = txn_.ro_cursor(db::table::kTrieOfAccounts);
+    auto trie_storage = txn_.ro_cursor(db::table::kTrieOfStorage);
 
     // On full regeneration we must assert both trees are empty
     if (!account_changes_) {
-        if (!trie_accounts.empty() || !trie_storage.empty()) {
+        if (!trie_accounts->empty() || !trie_storage->empty()) {
             throw std::domain_error(" full regeneration detected but either " +
                                     std::string(db::table::kTrieOfAccounts.name) + " or " +
                                     std::string(db::table::kTrieOfStorage.name) + " aren't empty");
@@ -78,8 +78,8 @@ evmc::bytes32 TrieLoader::calculate_root() {
     };
 
     // Open both tries (Account and Storage) to avoid reallocation of Storage on every contract
-    TrieCursor trie_account_cursor(trie_accounts, account_changes_, account_trie_node_collector_);
-    TrieCursor trie_storage_cursor(trie_storage, storage_changes_, storage_trie_node_collector_);
+    TrieCursor trie_account_cursor(*trie_accounts, account_changes_, account_trie_node_collector_);
+    TrieCursor trie_storage_cursor(*trie_storage, storage_changes_, storage_trie_node_collector_);
 
     // Begin loop on accounts
     auto trie_account_data{trie_account_cursor.to_prefix({})};
@@ -87,8 +87,8 @@ evmc::bytes32 TrieLoader::calculate_root() {
         if (trie_account_data.first_uncovered.has_value()) {
             auto hashed_account_seek_slice{db::to_slice(trie_account_data.first_uncovered.value())};
             auto hashed_account_data{hashed_account_seek_slice.empty()
-                                         ? hashed_accounts.to_first(false)
-                                         : hashed_accounts.lower_bound(hashed_account_seek_slice, false)};
+                                         ? hashed_accounts->to_first(false)
+                                         : hashed_accounts->lower_bound(hashed_account_seek_slice, false)};
             while (hashed_account_data) {
                 auto hashed_account_data_key_view{db::from_slice(hashed_account_data.key)};
 
@@ -113,12 +113,12 @@ evmc::bytes32 TrieLoader::calculate_root() {
                 if (account->incarnation) {
                     // Calc storage root
                     storage_prefix_buffer.assign(db::storage_prefix(hashed_account_data_key_view, account->incarnation));
-                    storage_root = calculate_storage_root(trie_storage_cursor, storage_hash_builder, hashed_storage,
+                    storage_root = calculate_storage_root(trie_storage_cursor, storage_hash_builder, *hashed_storage,
                                                           storage_prefix_buffer);
                 }
 
                 account_hash_builder.add_leaf(hashed_account_data_key_nibbled, account->rlp(storage_root));
-                hashed_account_data = hashed_accounts.to_next(false);
+                hashed_account_data = hashed_accounts->to_next(false);
             }
         }
 
@@ -144,7 +144,7 @@ evmc::bytes32 TrieLoader::calculate_root() {
 }
 
 evmc::bytes32 TrieLoader::calculate_storage_root(TrieCursor& trie_storage_cursor, HashBuilder& storage_hash_builder,
-                                                 db::PooledCursor& hashed_storage, const Bytes& db_storage_prefix) {
+                                                 db::ROCursorDupSort& hashed_storage, const Bytes& db_storage_prefix) {
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 

@@ -95,10 +95,10 @@ Stage::Result Senders::unwind(db::RWTxn& txn) {
                        "span", std::to_string(segment_width)});
         }
 
-        db::PooledCursor unwind_table(txn, db::table::kSenders);
+        auto unwind_cursor = txn.rw_cursor(db::table::kSenders);
         const auto start_key{db::block_key(to + 1)};
         size_t erased{0};
-        auto data{unwind_table.lower_bound(db::to_slice(start_key), /*throw_notfound=*/false)};
+        auto data{unwind_cursor->lower_bound(db::to_slice(start_key), /*throw_notfound=*/false)};
         while (data) {
             // Log and abort check
             if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
@@ -108,9 +108,9 @@ Stage::Result Senders::unwind(db::RWTxn& txn) {
                 current_key_ = std::to_string(reached_block_number);
                 log_time = now + 5s;
             }
-            unwind_table.erase();
+            unwind_cursor->erase();
             ++erased;
-            data = unwind_table.to_next(/*throw_notfound=*/false);
+            data = unwind_cursor->to_next(/*throw_notfound=*/false);
         }
         if (sw) {
             const auto [_, duration]{sw->lap()};
@@ -187,10 +187,10 @@ Stage::Result Senders::prune(db::RWTxn& txn) {
                        "threshold", std::to_string(prune_threshold)});
         }
 
-        db::PooledCursor prune_table(txn, db::table::kSenders);
+        auto prune_cursor = txn.rw_cursor(db::table::kSenders);
         const auto upper_key{db::block_key(prune_threshold)};
         size_t erased{0};
-        auto prune_data{prune_table.lower_bound(db::to_slice(upper_key), /*throw_notfound=*/false)};
+        auto prune_data{prune_cursor->lower_bound(db::to_slice(upper_key), /*throw_notfound=*/false)};
         while (prune_data) {
             const auto reached_block_number{endian::load_big_u64(db::from_slice(prune_data.key).data())};
             // Log and abort check
@@ -201,10 +201,10 @@ Stage::Result Senders::prune(db::RWTxn& txn) {
                 log_time = now + 5s;
             }
             if (reached_block_number <= prune_threshold) {
-                prune_table.erase();
+                prune_cursor->erase();
                 ++erased;
             }
-            prune_data = prune_table.to_previous(/*throw_notfound=*/false);
+            prune_data = prune_cursor->to_previous(/*throw_notfound=*/false);
         }
 
         throw_if_stopping();

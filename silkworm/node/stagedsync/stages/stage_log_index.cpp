@@ -342,8 +342,8 @@ void LogIndex::collect_bitmaps_from_logs(db::RWTxn& txn,
     CborListener listener{on_log_bytes};
 
     auto start_key{db::block_key(from + 1)};
-    db::PooledCursor source(txn, source_config);
-    auto source_data{source.lower_bound(db::to_slice(start_key), false)};
+    auto source = txn.ro_cursor(source_config);
+    auto source_data{source->lower_bound(db::to_slice(start_key), false)};
     while (source_data) {
         reached_block_number = endian::load_big_u64(static_cast<uint8_t*>(source_data.key.data()));
         if (reached_block_number > max_block_number) break;
@@ -376,7 +376,7 @@ void LogIndex::collect_bitmaps_from_logs(db::RWTxn& txn,
             addresses_bitmaps_size = 0;
         }
 
-        source_data = source.to_next(/*throw_notfound=*/false);
+        source_data = source->to_next(/*throw_notfound=*/false);
     }
 }
 
@@ -411,8 +411,8 @@ void LogIndex::collect_unique_keys_from_logs(db::RWTxn& txn,
     CborListener listener{on_log_bytes};
 
     auto start_key{db::block_key(expected_block_number)};
-    db::PooledCursor source(txn, source_config);
-    auto source_data{source.lower_bound(db::to_slice(start_key), false)};
+    auto source = txn.ro_cursor(source_config);
+    auto source_data{source->lower_bound(db::to_slice(start_key), false)};
     while (source_data) {
         reached_block_number = endian::load_big_u64(static_cast<uint8_t*>(source_data.key.data()));
         if (reached_block_number > max_block_number) break;
@@ -429,7 +429,7 @@ void LogIndex::collect_unique_keys_from_logs(db::RWTxn& txn,
         cbor::input input(source_data.value.data(), static_cast<int>(source_data.value.length()));
         cbor::decoder decoder(input, listener);
         decoder.run();
-        source_data = source.to_next(/*throw_notfound=*/false);
+        source_data = source->to_next(/*throw_notfound=*/false);
     }
 }
 

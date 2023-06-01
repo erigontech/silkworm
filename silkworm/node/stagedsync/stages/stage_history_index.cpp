@@ -346,9 +346,9 @@ void HistoryIndex::collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapC
     BlockNum reached_block_number{0};
 
     auto start_key{db::block_key(from + 1)};
-    db::PooledCursor source(txn, source_config);
-    auto source_data{storage ? source.lower_bound(db::to_slice(start_key), false)
-                             : source.find(db::to_slice(start_key), false)};
+    auto source = txn.ro_cursor_dup_sort(source_config);
+    auto source_data{storage ? source->lower_bound(db::to_slice(start_key), false)
+                             : source->find(db::to_slice(start_key), false)};
     while (source_data) {
         auto source_data_key_view{db::from_slice(source_data.key)};
         reached_block_number = endian::load_big_u64(source_data_key_view.data());
@@ -386,7 +386,7 @@ void HistoryIndex::collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapC
             bitmaps_size += sizeof(uint32_t);  // All blocks <= UINT32_MAX
                                                // Is there a chain exceeding that height ?
 
-            source_data = source.to_current_next_multi(false);
+            source_data = source->to_current_next_multi(false);
         }
 
         // Flush bitmaps to etl if necessary
@@ -395,7 +395,7 @@ void HistoryIndex::collect_bitmaps_from_changeset(db::RWTxn& txn, const db::MapC
             bitmaps_size = 0;
         }
 
-        source_data = source.to_next(false);
+        source_data = source->to_next(false);
     }
 
     if (bitmaps_size) {
@@ -417,9 +417,9 @@ std::map<Bytes, bool> HistoryIndex::collect_unique_keys_from_changeset(
     BlockNum reached_block_number{0};
 
     auto start_key{db::block_key(expected_block_number)};
-    db::PooledCursor source(txn, source_config);
-    auto source_data{storage ? source.lower_bound(db::to_slice(start_key), false)
-                             : source.find(db::to_slice(start_key), false)};
+    auto source = txn.ro_cursor_dup_sort(source_config);
+    auto source_data{storage ? source->lower_bound(db::to_slice(start_key), false)
+                             : source->find(db::to_slice(start_key), false)};
 
     while (source_data) {
         auto source_data_key_view{db::from_slice(source_data.key)};
@@ -451,11 +451,11 @@ std::map<Bytes, bool> HistoryIndex::collect_unique_keys_from_changeset(
             if (!ret.contains(unique_key)) {
                 (void)ret.emplace(unique_key, source_data_value_view.empty());
             }
-            source_data = source.to_current_next_multi(false);
+            source_data = source->to_current_next_multi(false);
         }
 
         ++expected_block_number;
-        source_data = source.to_next(false);
+        source_data = source->to_next(false);
     }
 
     return ret;

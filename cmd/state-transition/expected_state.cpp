@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -25,9 +25,9 @@
 
 namespace silkworm::cmd::state_transition {
 
-silkworm::ChainConfig ExpectedState::get_config() const {
-    const auto config_it{silkworm::test::kNetworkConfig.find(fork_name_)};
-    if (config_it == silkworm::test::kNetworkConfig.end()) {
+ChainConfig ExpectedState::get_config() const {
+    const auto config_it{test::kNetworkConfig.find(fork_name_)};
+    if (config_it == test::kNetworkConfig.end()) {
         std::cout << "unknown network " << fork_name_ << std::endl;
         throw std::invalid_argument(fork_name_);
     }
@@ -42,8 +42,8 @@ std::vector<ExpectedSubState> ExpectedState::get_sub_states() {
     for (auto& tx : state_data_) {
         ExpectedSubState subState;
 
-        subState.stateHash = silkworm::to_bytes32(from_hex(tx["hash"].get<std::string>()).value_or(Bytes{}));
-        subState.logsHash = silkworm::to_bytes32(from_hex(tx["logs"].get<std::string>()).value_or(Bytes{}));
+        subState.stateHash = to_bytes32(from_hex(tx["hash"].get<std::string>()).value_or(Bytes{}));
+        subState.logsHash = to_bytes32(from_hex(tx["logs"].get<std::string>()).value_or(Bytes{}));
         subState.dataIndex = tx["indexes"]["data"].get<unsigned long>();
         subState.gasIndex = tx["indexes"]["gas"].get<unsigned long>();
         subState.valueIndex = tx["indexes"]["value"].get<unsigned long>();

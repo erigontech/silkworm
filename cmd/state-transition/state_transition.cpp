@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -87,30 +87,30 @@ std::vector<ExpectedState> StateTransition::get_expected_states() {
 evmc::address StateTransition::to_evmc_address(const std::string& address) {
     evmc::address out;
     if (!address.empty()) {
-        auto bytes = silkworm::from_hex(address);
+        auto bytes = from_hex(address);
         out = silkworm::to_evmc_address(bytes.value_or(Bytes{}));
     }
 
     return out;
 }
 
-silkworm::Block StateTransition::get_block(protocol::IRuleSet& /*rule_set*/, InMemoryState& state, ChainConfig& chain_config) {
-    auto block = silkworm::Block();
+Block StateTransition::get_block(InMemoryState& state, ChainConfig& chain_config) {
+    auto block = Block();
 
     block.header.beneficiary = to_evmc_address(get_env("currentCoinbase"));
 
     block.header.gas_limit = std::stoull(get_env("currentGasLimit"), nullptr, /*base=*/16);
     block.header.number = std::stoull(get_env("currentNumber"), nullptr, /*base=*/16);
     block.header.timestamp = std::stoull(get_env("currentTimestamp"), nullptr, /*base=*/16);
-    block.header.parent_hash = to_bytes32(silkworm::from_hex(get_env("previousHash")).value_or(silkworm::Bytes{}));
+    block.header.parent_hash = to_bytes32(from_hex(get_env("previousHash")).value_or(Bytes{}));
 
     if (contains_env("currentRandom")) {
-        block.header.prev_randao = to_bytes32(silkworm::from_hex(get_env("currentRandom")).value_or(silkworm::Bytes{}));
+        block.header.prev_randao = to_bytes32(from_hex(get_env("currentRandom")).value_or(Bytes{}));
     }
 
     const evmc_revision rev{chain_config.revision(block.header.number, block.header.timestamp)};
 
-    //    if (rev <= EVMC_LONDON)
+    // set difficulty only for revisions before The Merge
     if (!chain_config.terminal_total_difficulty.has_value()) {
         block.header.difficulty = intx::from_string<intx::uint256>(get_env("currentDifficulty"));
     }
@@ -127,7 +127,7 @@ silkworm::Block StateTransition::get_block(protocol::IRuleSet& /*rule_set*/, InM
     block.header.transactions_root = protocol::compute_transaction_root(block);
     block.header.ommers_hash = kEmptyListHash;
 
-    auto parent_block = silkworm::Block();
+    auto parent_block = Block();
     parent_block.header.gas_limit = block.header.gas_limit;
     parent_block.header.gas_used = parent_block.header.gas_limit / protocol::kElasticityMultiplier;
     parent_block.header.number = block.header.number - 1;
@@ -137,8 +137,8 @@ silkworm::Block StateTransition::get_block(protocol::IRuleSet& /*rule_set*/, InM
     return block;
 }
 
-std::unique_ptr<silkworm::InMemoryState> StateTransition::get_state() {
-    auto state = std::make_unique<silkworm::InMemoryState>();
+std::unique_ptr<InMemoryState> StateTransition::get_state() {
+    auto state = std::make_unique<InMemoryState>();
 
     auto pre = test_data_["pre"];
 
@@ -146,12 +146,12 @@ std::unique_ptr<silkworm::InMemoryState> StateTransition::get_state() {
         const auto address = to_evmc_address(preState.key());
         const nlohmann::json preStateValue = preState.value();
 
-        auto account = silkworm::Account();
+        auto account = Account();
         account.balance = intx::from_string<intx::uint256>(preStateValue.at("balance"));
         account.nonce = std::stoull(std::string(preStateValue.at("nonce")), nullptr, 16);
 
         const Bytes code{from_hex(std::string(preStateValue.at("code"))).value()};
-        account.code_hash = silkworm::bit_cast<evmc_bytes32>(keccak256(code));
+        account.code_hash = bit_cast<evmc_bytes32>(keccak256(code));
         account.incarnation = kDefaultIncarnation;
 
         state->update_account(address, /*initial=*/std::nullopt, account);
@@ -175,17 +175,17 @@ std::unique_ptr<evmc::address> StateTransition::private_key_to_address(const std
 
     auto private_key_bytes = from_hex(private_key).value();
 
-    silkworm::sentry::common::EccKeyPair pair = silkworm::sentry::common::EccKeyPair(private_key_bytes);
+    sentry::common::EccKeyPair pair = sentry::common::EccKeyPair(private_key_bytes);
 
-    uint8_t out[20];
+    uint8_t out[kAddressLength];
     auto public_key_hash = keccak256(pair.public_key().serialized());
     std::memcpy(out, public_key_hash.bytes + 12, sizeof(out));
 
     return std::make_unique<evmc::address>(silkworm::to_evmc_address(out));
 }
 
-silkworm::Transaction StateTransition::get_transaction(ExpectedSubState expected_sub_state) {
-    silkworm::Transaction txn;
+Transaction StateTransition::get_transaction(const ExpectedSubState& expected_sub_state) {
+    Transaction txn;
     auto jTransaction = test_data_["transaction"];
 
     txn.nonce = std::stoull(jTransaction.at("nonce").get<std::string>(), nullptr, 16);
@@ -198,11 +198,11 @@ silkworm::Transaction StateTransition::get_transaction(ExpectedSubState expected
     //        std::cout << "from address: " << to_hex(txn.from.value()) << std::endl;
 
     if (jTransaction.contains("gasPrice")) {
-        txn.type = silkworm::TransactionType::kLegacy;
+        txn.type = TransactionType::kLegacy;
         txn.max_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("gasPrice").get<std::string>());
         txn.max_priority_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("gasPrice").get<std::string>());
     } else {
-        txn.type = silkworm::TransactionType::kEip1559;
+        txn.type = TransactionType::kEip1559;
         txn.max_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("maxFeePerGas").get<std::string>());
         txn.max_priority_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("maxPriorityFeePerGas").get<std::string>());
     }
@@ -230,27 +230,25 @@ silkworm::Transaction StateTransition::get_transaction(ExpectedSubState expected
     return txn;
 }
 
-void StateTransition::validate_transition(const silkworm::Receipt& receipt, const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const InMemoryState& state) {
+void StateTransition::validate_transition(const Receipt& receipt, const ExpectedState& expected_state, const ExpectedSubState& expected_sub_state, const InMemoryState& state) {
     if (expected_sub_state.exceptionExpected) {
         if (receipt.success) {
             print_error_message(expected_state, expected_sub_state, "Failed: Exception expected");
             ++failed_count_;
-        } else {
-            print_diagnostic_message(expected_state, expected_sub_state, "OK (Exception Expected)");
         }
+    }
+
+    if (state.state_root_hash() != expected_sub_state.stateHash) {
+        print_error_message(expected_state, expected_sub_state, "Failed: State root hash does not match");
+        failed_count_++;
     } else {
-        if (state.state_root_hash() != expected_sub_state.stateHash) {
-            print_error_message(expected_state, expected_sub_state, "Failed: State root hash does not match");
+        Bytes encoded;
+        rlp::encode(encoded, receipt.logs);
+        if (bit_cast<evmc_bytes32>(keccak256(encoded)) != expected_sub_state.logsHash) {
+            print_error_message(expected_state, expected_sub_state, "Failed: Logs hash does not match");
             failed_count_++;
         } else {
-            Bytes encoded;
-            rlp::encode(encoded, receipt.logs);
-            if (silkworm::bit_cast<evmc_bytes32>(keccak256(encoded)) != expected_sub_state.logsHash) {
-                print_error_message(expected_state, expected_sub_state, "Failed: Logs hash does not match");
-                failed_count_++;
-            } else {
-                print_diagnostic_message(expected_state, expected_sub_state, "OK");
-            }
+            print_diagnostic_message(expected_state, expected_sub_state, "OK");
         }
     }
 }
@@ -282,20 +280,26 @@ void StateTransition::run() {
             auto config = expectedState.get_config();
             auto ruleSet = protocol::rule_set_factory(config);
             auto state = get_state();
-            auto block = get_block(*ruleSet, *state, config);
+            auto block = get_block(*state, config);
             auto txn = get_transaction(expectedSubState);
 
-            silkworm::ExecutionProcessor processor{block, *ruleSet, *state, config};
-            silkworm::Receipt receipt;
+            ExecutionProcessor processor{block, *ruleSet, *state, config};
+            Receipt receipt;
 
-            auto pre_validation = ruleSet->pre_validate_block_body(block, *state);
+            const evmc_revision rev{config.revision(block.header.number, block.header.timestamp)};
+
+            auto pre_block_validation = ruleSet->pre_validate_block_body(block, *state);
             auto block_validation = ruleSet->validate_block_header(block.header, *state, true);
+            auto pre_txn_validation = protocol::pre_validate_transaction(txn, rev, config.chain_id, block.header.base_fee_per_gas, block.header.data_gas_price());
             auto txn_validation = processor.validate_transaction(txn);
 
             // std::cout << "pre: " << std::endl;
             // state->print_state_root_hash();
 
-            if (pre_validation == ValidationResult::kOk && block_validation == ValidationResult::kOk && txn_validation == ValidationResult::kOk) {
+            if (pre_block_validation == ValidationResult::kOk &&
+                block_validation == ValidationResult::kOk &&
+                pre_txn_validation == ValidationResult::kOk &&
+                txn_validation == ValidationResult::kOk) {
                 processor.execute_transaction(txn, receipt);
                 processor.evm().state().write_to_db(block.header.number);
             } else {

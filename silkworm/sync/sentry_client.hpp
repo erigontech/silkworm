@@ -109,14 +109,11 @@ class SentryClient {
     // notifying registered subscribers
     boost::asio::awaitable<void> publish(const silkworm::sentry::api::api_common::MessageFromPeer& message_from_peer);
 
-    boost::asio::awaitable<void> on_peer_event(silkworm::sentry::api::api_common::PeerEvent event);
-
     boost::asio::io_context& io_context_;
     std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> sentry_client_;
     concurrency::TaskGroup tasks_;
 
     std::atomic<uint64_t> active_peers_{0};
-    std::map<PeerId, std::string> peer_infos_;
 };
 
 }  // namespace silkworm

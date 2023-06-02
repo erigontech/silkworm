@@ -28,24 +28,24 @@ class DirectService : public api_common::Service {
         : router_(std::move(router)) {}
     ~DirectService() override = default;
 
-    boost::asio::awaitable<void> set_status(eth::StatusData status_data) override;
-    boost::asio::awaitable<uint8_t> handshake() override;
-    boost::asio::awaitable<NodeInfos> node_infos() override;
+    Task<void> set_status(eth::StatusData status_data) override;
+    Task<uint8_t> handshake() override;
+    Task<NodeInfos> node_infos() override;
 
-    boost::asio::awaitable<PeerKeys> send_message_by_id(common::Message message, common::EccPublicKey public_key) override;
-    boost::asio::awaitable<PeerKeys> send_message_to_random_peers(common::Message message, size_t max_peers) override;
-    boost::asio::awaitable<PeerKeys> send_message_to_all(common::Message message) override;
-    boost::asio::awaitable<PeerKeys> send_message_by_min_block(common::Message message, size_t max_peers) override;
-    boost::asio::awaitable<void> peer_min_block(common::EccPublicKey public_key) override;
-    boost::asio::awaitable<void> messages(
+    Task<PeerKeys> send_message_by_id(common::Message message, common::EccPublicKey public_key) override;
+    Task<PeerKeys> send_message_to_random_peers(common::Message message, size_t max_peers) override;
+    Task<PeerKeys> send_message_to_all(common::Message message) override;
+    Task<PeerKeys> send_message_by_min_block(common::Message message, size_t max_peers) override;
+    Task<void> peer_min_block(common::EccPublicKey public_key) override;
+    Task<void> messages(
         api_common::MessageIdSet message_id_filter,
-        std::function<boost::asio::awaitable<void>(api_common::MessageFromPeer)> consumer) override;
+        std::function<Task<void>(api_common::MessageFromPeer)> consumer) override;
 
-    boost::asio::awaitable<api_common::PeerInfos> peers() override;
-    boost::asio::awaitable<size_t> peer_count() override;
-    boost::asio::awaitable<std::optional<api_common::PeerInfo>> peer_by_id(common::EccPublicKey public_key) override;
-    boost::asio::awaitable<void> penalize_peer(common::EccPublicKey public_key) override;
-    boost::asio::awaitable<void> peer_events(std::function<boost::asio::awaitable<void>(api_common::PeerEvent)> consumer) override;
+    Task<api_common::PeerInfos> peers() override;
+    Task<size_t> peer_count() override;
+    Task<std::optional<api_common::PeerInfo>> peer_by_id(common::EccPublicKey public_key) override;
+    Task<void> penalize_peer(common::EccPublicKey public_key) override;
+    Task<void> peer_events(std::function<Task<void>(api_common::PeerEvent)> consumer) override;
 
   private:
     ServiceRouter router_;

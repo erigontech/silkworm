@@ -18,9 +18,7 @@
 
 #include <vector>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/sentry/common/enode_url.hpp>
 
@@ -30,9 +28,9 @@ class Discovery {
   public:
     Discovery(std::vector<common::EnodeUrl> peer_urls);
 
-    boost::asio::awaitable<void> start();
+    Task<void> start();
 
-    boost::asio::awaitable<std::vector<common::EnodeUrl>> request_peer_urls(
+    Task<std::vector<common::EnodeUrl>> request_peer_urls(
         size_t max_count,
         std::vector<common::EnodeUrl> exclude_urls);
 

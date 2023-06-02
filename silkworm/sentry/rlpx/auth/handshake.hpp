@@ -21,9 +21,7 @@
 #include <string>
 #include <utility>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
@@ -56,7 +54,7 @@ class Handshake {
         HelloMessage hello_reply_message;
     };
 
-    boost::asio::awaitable<HandshakeResult> execute(common::SocketStream& stream);
+    Task<HandshakeResult> execute(common::SocketStream& stream);
 
     class DisconnectError : public std::runtime_error {
       public:
@@ -64,7 +62,7 @@ class Handshake {
     };
 
   private:
-    boost::asio::awaitable<AuthKeys> auth(common::SocketStream& stream);
+    Task<AuthKeys> auth(common::SocketStream& stream);
 
     common::EccKeyPair node_key_;
     std::string client_id_;

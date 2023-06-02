@@ -16,9 +16,8 @@
 
 #pragma once
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 
 #include <silkworm/infra/concurrency/channel.hpp>
@@ -34,9 +33,9 @@ class StatusManager {
         : status_channel_(io_context),
           status_(eth::StatusData{}) {}
 
-    boost::asio::awaitable<void> wait_for_status();
+    Task<void> wait_for_status();
 
-    boost::asio::awaitable<void> start();
+    Task<void> start();
 
     concurrency::Channel<eth::StatusData>& status_channel() {
         return status_channel_;

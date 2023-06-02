@@ -19,9 +19,7 @@
 #include <functional>
 #include <memory>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/sentry/api/api_common/sentry_client.hpp>
 #include <silkworm/sentry/eth/status_data.hpp>
@@ -32,18 +30,18 @@ class SessionSentryClientImpl;
 
 class SessionSentryClient : public api::api_common::SentryClient {
   public:
-    using StatusDataProvider = std::function<boost::asio::awaitable<eth::StatusData>(uint8_t eth_version)>;
+    using StatusDataProvider = std::function<Task<eth::StatusData>(uint8_t eth_version)>;
 
     SessionSentryClient(
         std::shared_ptr<api::api_common::SentryClient> sentry_client,
         StatusDataProvider status_data_provider);
     ~SessionSentryClient() override;
 
-    boost::asio::awaitable<std::shared_ptr<api::api_common::Service>> service() override;
+    Task<std::shared_ptr<api::api_common::Service>> service() override;
 
     [[nodiscard]] bool is_ready() override;
-    void on_disconnect(std::function<boost::asio::awaitable<void>()> callback) override;
-    boost::asio::awaitable<void> reconnect() override;
+    void on_disconnect(std::function<Task<void>()> callback) override;
+    Task<void> reconnect() override;
 
   private:
     std::unique_ptr<SessionSentryClientImpl> p_impl_;

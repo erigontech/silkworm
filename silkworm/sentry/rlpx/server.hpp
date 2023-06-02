@@ -20,9 +20,8 @@
 #include <memory>
 #include <string>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -42,7 +41,7 @@ class Server final {
         boost::asio::io_context& io_context,
         uint16_t port);
 
-    boost::asio::awaitable<void> start(
+    Task<void> start(
         silkworm::rpc::ServerContextPool& context_pool,
         common::EccKeyPair node_key,
         std::string client_id,

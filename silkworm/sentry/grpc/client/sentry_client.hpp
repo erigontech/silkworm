@@ -35,11 +35,11 @@ class SentryClient : public api::api_common::SentryClient {
     SentryClient(SentryClient&&) = default;
     SentryClient& operator=(SentryClient&&) = default;
 
-    boost::asio::awaitable<std::shared_ptr<api::api_common::Service>> service() override;
+    Task<std::shared_ptr<api::api_common::Service>> service() override;
 
     [[nodiscard]] bool is_ready() override;
-    void on_disconnect(std::function<boost::asio::awaitable<void>()> callback) override;
-    boost::asio::awaitable<void> reconnect() override;
+    void on_disconnect(std::function<Task<void>()> callback) override;
+    Task<void> reconnect() override;
 
   private:
     std::shared_ptr<SentryClientImpl> p_impl_;

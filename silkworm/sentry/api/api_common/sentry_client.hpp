@@ -19,9 +19,7 @@
 #include <functional>
 #include <memory>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include "service.hpp"
 
@@ -30,12 +28,12 @@ namespace silkworm::sentry::api::api_common {
 struct SentryClient {
     virtual ~SentryClient() = default;
 
-    virtual boost::asio::awaitable<std::shared_ptr<Service>> service() = 0;
+    virtual Task<std::shared_ptr<Service>> service() = 0;
 
     //! Connected or just created an ready to handle calls. service() is unlikely to block for long.
     [[nodiscard]] virtual bool is_ready() = 0;
-    virtual void on_disconnect(std::function<boost::asio::awaitable<void>()> callback) = 0;
-    virtual boost::asio::awaitable<void> reconnect() = 0;
+    virtual void on_disconnect(std::function<Task<void>()> callback) = 0;
+    virtual Task<void> reconnect() = 0;
 };
 
 }  // namespace silkworm::sentry::api::api_common

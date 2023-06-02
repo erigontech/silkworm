@@ -20,9 +20,8 @@
 #include <memory>
 #include <optional>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/strand.hpp>
 
@@ -56,7 +55,7 @@ class PeerManagerApi : public PeerManagerObserver {
           events_unsubscription_tasks_(strand_, 1000),
           peer_events_channel_(io_context, 1000) {}
 
-    static boost::asio::awaitable<void> start(std::shared_ptr<PeerManagerApi> self);
+    static Task<void> start(std::shared_ptr<PeerManagerApi> self);
 
     template <typename T>
     using Channel = concurrency::Channel<T>;
@@ -82,13 +81,13 @@ class PeerManagerApi : public PeerManagerObserver {
     }
 
   private:
-    boost::asio::awaitable<void> handle_peer_count_calls();
-    boost::asio::awaitable<void> handle_peers_calls();
-    boost::asio::awaitable<void> handle_peer_calls();
-    boost::asio::awaitable<void> handle_peer_penalize_calls();
-    boost::asio::awaitable<void> handle_peer_events_calls();
-    boost::asio::awaitable<void> unsubscribe_peer_events_on_signal(std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal);
-    boost::asio::awaitable<void> forward_peer_events();
+    Task<void> handle_peer_count_calls();
+    Task<void> handle_peers_calls();
+    Task<void> handle_peer_calls();
+    Task<void> handle_peer_penalize_calls();
+    Task<void> handle_peer_events_calls();
+    Task<void> unsubscribe_peer_events_on_signal(std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal);
+    Task<void> forward_peer_events();
 
     // PeerManagerObserver
     void on_peer_added(std::shared_ptr<rlpx::Peer> peer) override;

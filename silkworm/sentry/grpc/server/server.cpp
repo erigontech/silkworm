@@ -18,10 +18,9 @@
 
 #include <utility>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <agrpc/grpc_context.hpp>
-#include <boost/asio/awaitable.hpp>
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/server/call.hpp>
@@ -57,7 +56,7 @@ class ServerImpl final : public silkworm::rpc::Server {
         agrpc::GrpcContext* grpc_context) {
         auto async_service = &async_service_;
         const auto& router = router_;
-        silkworm::rpc::request_repeatedly(*grpc_context, async_service, rpc, [router](auto&&... args) -> boost::asio::awaitable<void> {
+        silkworm::rpc::request_repeatedly(*grpc_context, async_service, rpc, [router](auto&&... args) -> Task<void> {
             co_await RequestHandler{std::forward<decltype(args)>(args)...}(router);
         });
     }
@@ -117,7 +116,7 @@ Server::~Server() {
     log::Trace("sentry") << "silkworm::sentry::grpc::server::Server::~Server";
 }
 
-boost::asio::awaitable<void> Server::async_run() {
+Task<void> Server::async_run() {
     return p_impl_->async_run();
 }
 

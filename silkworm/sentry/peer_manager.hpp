@@ -24,9 +24,8 @@
 #include <set>
 #include <vector>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/strand.hpp>
 
@@ -60,42 +59,42 @@ class PeerManager {
           connect_peer_tasks_(strand_, max_peers),
           client_peer_channel_(io_context) {}
 
-    boost::asio::awaitable<void> start(
+    Task<void> start(
         rlpx::Server& server,
         discovery::Discovery& discovery,
         std::function<std::unique_ptr<rlpx::Client>()> client_factory);
 
     using EnumeratePeersCallback = std::function<void(std::shared_ptr<rlpx::Peer>)>;
 
-    boost::asio::awaitable<size_t> count_peers();
-    boost::asio::awaitable<void> enumerate_peers(EnumeratePeersCallback callback);
-    boost::asio::awaitable<void> enumerate_random_peers(size_t max_count, EnumeratePeersCallback callback);
+    Task<size_t> count_peers();
+    Task<void> enumerate_peers(EnumeratePeersCallback callback);
+    Task<void> enumerate_random_peers(size_t max_count, EnumeratePeersCallback callback);
 
     void add_observer(std::weak_ptr<PeerManagerObserver> observer);
 
   private:
-    boost::asio::awaitable<void> start_in_strand(concurrency::Channel<std::shared_ptr<rlpx::Peer>>& peer_channel);
-    boost::asio::awaitable<void> start_peer(std::shared_ptr<rlpx::Peer> peer);
-    boost::asio::awaitable<void> wait_for_peer_handshake(std::shared_ptr<rlpx::Peer> peer);
-    boost::asio::awaitable<void> drop_peer(
+    Task<void> start_in_strand(concurrency::Channel<std::shared_ptr<rlpx::Peer>>& peer_channel);
+    Task<void> start_peer(std::shared_ptr<rlpx::Peer> peer);
+    Task<void> wait_for_peer_handshake(std::shared_ptr<rlpx::Peer> peer);
+    Task<void> drop_peer(
         std::shared_ptr<rlpx::Peer> peer,
         rlpx::rlpx_common::DisconnectReason reason);
 
     static constexpr size_t kMaxSimultaneousDropPeerTasks = 10;
 
-    boost::asio::awaitable<size_t> count_peers_in_strand();
-    boost::asio::awaitable<void> enumerate_peers_in_strand(EnumeratePeersCallback callback);
-    boost::asio::awaitable<void> enumerate_random_peers_in_strand(size_t max_count, EnumeratePeersCallback callback);
+    Task<size_t> count_peers_in_strand();
+    Task<void> enumerate_peers_in_strand(EnumeratePeersCallback callback);
+    Task<void> enumerate_random_peers_in_strand(size_t max_count, EnumeratePeersCallback callback);
 
     [[nodiscard]] std::list<std::shared_ptr<PeerManagerObserver>> observers();
     void on_peer_added(const std::shared_ptr<rlpx::Peer>& peer);
     void on_peer_removed(const std::shared_ptr<rlpx::Peer>& peer);
 
     static std::vector<common::EnodeUrl> peer_urls(const std::list<std::shared_ptr<rlpx::Peer>>& peers);
-    boost::asio::awaitable<void> discover_peers(
+    Task<void> discover_peers(
         discovery::Discovery& discovery,
         std::function<std::unique_ptr<rlpx::Client>()> client_factory);
-    boost::asio::awaitable<void> connect_peer(
+    Task<void> connect_peer(
         common::EnodeUrl peer_url,
         bool is_static_peer,
         std::unique_ptr<rlpx::Client> client);

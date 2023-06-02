@@ -20,10 +20,9 @@
 #include <optional>
 #include <string>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/strand.hpp>
@@ -107,13 +106,13 @@ class Peer {
 
     ~Peer();
 
-    static boost::asio::awaitable<void> start(std::shared_ptr<Peer> peer);
-    static boost::asio::awaitable<void> drop(const std::shared_ptr<Peer>& peer, rlpx_common::DisconnectReason reason);
+    static Task<void> start(std::shared_ptr<Peer> peer);
+    static Task<void> drop(const std::shared_ptr<Peer>& peer, rlpx_common::DisconnectReason reason);
     void disconnect(rlpx_common::DisconnectReason reason);
-    static boost::asio::awaitable<bool> wait_for_handshake(std::shared_ptr<Peer> self);
+    static Task<bool> wait_for_handshake(std::shared_ptr<Peer> self);
 
     static void post_message(const std::shared_ptr<Peer>& peer, const common::Message& message);
-    boost::asio::awaitable<common::Message> receive_message();
+    Task<common::Message> receive_message();
 
     class DisconnectedError : public std::runtime_error {
       public:
@@ -144,19 +143,19 @@ class Peer {
     }
 
   private:
-    static boost::asio::awaitable<void> handle(std::shared_ptr<Peer> peer);
-    boost::asio::awaitable<void> handle();
-    static boost::asio::awaitable<void> drop_in_strand(std::shared_ptr<Peer> peer, rlpx_common::DisconnectReason reason);
-    boost::asio::awaitable<void> drop(rlpx_common::DisconnectReason reason);
-    boost::asio::awaitable<framing::MessageStream> handshake();
+    static Task<void> handle(std::shared_ptr<Peer> peer);
+    Task<void> handle();
+    static Task<void> drop_in_strand(std::shared_ptr<Peer> peer, rlpx_common::DisconnectReason reason);
+    Task<void> drop(rlpx_common::DisconnectReason reason);
+    Task<framing::MessageStream> handshake();
     void close();
 
-    static boost::asio::awaitable<void> send_message_tasks_wait(std::shared_ptr<Peer> self);
-    static boost::asio::awaitable<void> send_message(std::shared_ptr<Peer> peer, common::Message message);
-    boost::asio::awaitable<void> send_message(common::Message message);
-    boost::asio::awaitable<void> send_messages(framing::MessageStream& message_stream);
-    boost::asio::awaitable<void> receive_messages(framing::MessageStream& message_stream);
-    boost::asio::awaitable<void> ping_periodically(framing::MessageStream& message_stream);
+    static Task<void> send_message_tasks_wait(std::shared_ptr<Peer> self);
+    static Task<void> send_message(std::shared_ptr<Peer> peer, common::Message message);
+    Task<void> send_message(common::Message message);
+    Task<void> send_messages(framing::MessageStream& message_stream);
+    Task<void> receive_messages(framing::MessageStream& message_stream);
+    Task<void> ping_periodically(framing::MessageStream& message_stream);
 
     common::SocketStream stream_;
     common::EccKeyPair node_key_;

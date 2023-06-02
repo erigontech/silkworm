@@ -58,10 +58,10 @@ class SessionSentryClientImpl : public api::api_common::SentryClient {
     }
 
     ~SessionSentryClientImpl() override {
-        sentry_client_->on_disconnect([]() -> awaitable<void> { co_return; });
+        sentry_client_->on_disconnect([]() -> Task<void> { co_return; });
     }
 
-    boost::asio::awaitable<std::shared_ptr<api::api_common::Service>> service() override {
+    Task<std::shared_ptr<api::api_common::Service>> service() override {
         co_await run_transitions_until_ready(Event::kSessionRequired);
         co_return (co_await sentry_client_->service());
     }
@@ -71,11 +71,11 @@ class SessionSentryClientImpl : public api::api_common::SentryClient {
         return (state_ == State::kReady) || (state_ == State::kInit);
     }
 
-    void on_disconnect(std::function<boost::asio::awaitable<void>()> /*callback*/) override {
+    void on_disconnect(std::function<Task<void>()> /*callback*/) override {
         assert(false);
     }
 
-    awaitable<void> reconnect() override {
+    Task<void> reconnect() override {
         co_await run_transitions_until_ready(Event::kSessionRequired);
     }
 
@@ -117,7 +117,7 @@ class SessionSentryClientImpl : public api::api_common::SentryClient {
         return {new_state, std::move(ready_waiter)};
     }
 
-    awaitable<void> transition_to_state(State new_state) {
+    Task<void> transition_to_state(State new_state) {
         using namespace std::chrono_literals;
 
         switch (new_state) {
@@ -151,7 +151,7 @@ class SessionSentryClientImpl : public api::api_common::SentryClient {
         }
     }
 
-    awaitable<void> run_transitions_until_ready(Event event) {
+    Task<void> run_transitions_until_ready(Event event) {
         State state;
         std::optional<Waiter> ready_waiter;
         do {
@@ -166,7 +166,7 @@ class SessionSentryClientImpl : public api::api_common::SentryClient {
         } while (state != State::kReady);
     }
 
-    awaitable<void> handle_disconnect() {
+    Task<void> handle_disconnect() {
         return run_transitions_until_ready(Event::kDisconnected);
     }
 
@@ -188,7 +188,7 @@ SessionSentryClient::~SessionSentryClient() {
     [[maybe_unused]] int non_trivial_destructor;  // silent clang-tidy
 }
 
-awaitable<std::shared_ptr<api::api_common::Service>> SessionSentryClient::service() {
+Task<std::shared_ptr<api::api_common::Service>> SessionSentryClient::service() {
     return p_impl_->service();
 }
 
@@ -196,11 +196,11 @@ bool SessionSentryClient::is_ready() {
     return p_impl_->is_ready();
 }
 
-void SessionSentryClient::on_disconnect(std::function<boost::asio::awaitable<void>()> callback) {
+void SessionSentryClient::on_disconnect(std::function<Task<void>()> callback) {
     p_impl_->on_disconnect(callback);
 }
 
-awaitable<void> SessionSentryClient::reconnect() {
+Task<void> SessionSentryClient::reconnect() {
     return p_impl_->reconnect();
 }
 

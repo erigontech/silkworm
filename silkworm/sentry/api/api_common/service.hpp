@@ -21,9 +21,7 @@
 #include <optional>
 #include <vector>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/message.hpp>
@@ -41,52 +39,52 @@ struct Service {
     virtual ~Service() = default;
 
     // rpc SetStatus(StatusData) returns (SetStatusReply);
-    virtual boost::asio::awaitable<void> set_status(eth::StatusData status_data) = 0;
+    virtual Task<void> set_status(eth::StatusData status_data) = 0;
 
     // rpc HandShake(google.protobuf.Empty) returns (HandShakeReply);
-    virtual boost::asio::awaitable<uint8_t> handshake() = 0;
+    virtual Task<uint8_t> handshake() = 0;
 
     using NodeInfos = std::vector<NodeInfo>;
 
     // rpc NodeInfo(google.protobuf.Empty) returns(types.NodeInfoReply);
-    virtual boost::asio::awaitable<NodeInfos> node_infos() = 0;
+    virtual Task<NodeInfos> node_infos() = 0;
 
     using PeerKeys = std::vector<sentry::common::EccPublicKey>;
 
     // rpc SendMessageById(SendMessageByIdRequest) returns (SentPeers);
-    virtual boost::asio::awaitable<PeerKeys> send_message_by_id(common::Message message, common::EccPublicKey public_key) = 0;
+    virtual Task<PeerKeys> send_message_by_id(common::Message message, common::EccPublicKey public_key) = 0;
 
     // rpc SendMessageToRandomPeers(SendMessageToRandomPeersRequest) returns (SentPeers);
-    virtual boost::asio::awaitable<PeerKeys> send_message_to_random_peers(common::Message message, size_t max_peers) = 0;
+    virtual Task<PeerKeys> send_message_to_random_peers(common::Message message, size_t max_peers) = 0;
 
     // rpc SendMessageToAll(OutboundMessageData) returns (SentPeers);
-    virtual boost::asio::awaitable<PeerKeys> send_message_to_all(common::Message message) = 0;
+    virtual Task<PeerKeys> send_message_to_all(common::Message message) = 0;
 
     // rpc SendMessageByMinBlock(SendMessageByMinBlockRequest) returns (SentPeers);
-    virtual boost::asio::awaitable<PeerKeys> send_message_by_min_block(common::Message message, size_t max_peers) = 0;
+    virtual Task<PeerKeys> send_message_by_min_block(common::Message message, size_t max_peers) = 0;
 
     // rpc PeerMinBlock(PeerMinBlockRequest) returns (google.protobuf.Empty);
-    virtual boost::asio::awaitable<void> peer_min_block(common::EccPublicKey public_key) = 0;
+    virtual Task<void> peer_min_block(common::EccPublicKey public_key) = 0;
 
     // rpc Messages(MessagesRequest) returns (stream InboundMessage);
-    virtual boost::asio::awaitable<void> messages(
+    virtual Task<void> messages(
         MessageIdSet message_id_filter,
-        std::function<boost::asio::awaitable<void>(MessageFromPeer)> consumer) = 0;
+        std::function<Task<void>(MessageFromPeer)> consumer) = 0;
 
     // rpc Peers(google.protobuf.Empty) returns (PeersReply);
-    virtual boost::asio::awaitable<PeerInfos> peers() = 0;
+    virtual Task<PeerInfos> peers() = 0;
 
     // rpc PeerCount(PeerCountRequest) returns (PeerCountReply);
-    virtual boost::asio::awaitable<size_t> peer_count() = 0;
+    virtual Task<size_t> peer_count() = 0;
 
     // rpc PeerById(PeerByIdRequest) returns (PeerByIdReply);
-    virtual boost::asio::awaitable<std::optional<PeerInfo>> peer_by_id(common::EccPublicKey public_key) = 0;
+    virtual Task<std::optional<PeerInfo>> peer_by_id(common::EccPublicKey public_key) = 0;
 
     // rpc PenalizePeer(PenalizePeerRequest) returns (google.protobuf.Empty);
-    virtual boost::asio::awaitable<void> penalize_peer(common::EccPublicKey public_key) = 0;
+    virtual Task<void> penalize_peer(common::EccPublicKey public_key) = 0;
 
     // rpc PeerEvents(PeerEventsRequest) returns (stream PeerEvent);
-    virtual boost::asio::awaitable<void> peer_events(std::function<boost::asio::awaitable<void>(PeerEvent)> consumer) = 0;
+    virtual Task<void> peer_events(std::function<Task<void>(PeerEvent)> consumer) = 0;
 };
 
 }  // namespace silkworm::sentry::api::api_common

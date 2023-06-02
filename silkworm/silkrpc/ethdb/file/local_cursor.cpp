@@ -42,13 +42,12 @@ boost::asio::awaitable<KeyValue> LocalCursor::seek(ByteView key) {
     SILK_DEBUG << "LocalCursor::seek result: " << db::detail::dump_mdbx_result(result);
 
     if (result) {
-        SILK_DEBUG << "LocalCursor::seek found: "
-                   << " key: " << key << " value: " << byte_view_of_string(result.value.as_string());
+        SILK_DEBUG << "LocalCursor::seek found: key: " << key << " value: " << byte_view_of_string(result.value.as_string());
         co_return KeyValue{bytes_of_string(result.key.as_string()), bytes_of_string(result.value.as_string())};
     } else {
-        SILK_ERROR << "LocalCursor::seek !result key: " << key;
+        SILK_DEBUG << "LocalCursor::seek not found key: " << key;
+        co_return KeyValue{};
     }
-    co_return KeyValue{};
 }
 
 boost::asio::awaitable<KeyValue> LocalCursor::seek_exact(ByteView key) {

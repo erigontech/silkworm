@@ -48,7 +48,7 @@ class Daemon {
   public:
     static int run(const DaemonSettings& settings, const DaemonInfo& info = {});
 
-    explicit Daemon(DaemonSettings settings);
+    explicit Daemon(DaemonSettings settings, std::shared_ptr<mdbx::env_managed> chaindata_env = nullptr);
 
     Daemon(const Daemon&) = delete;
     Daemon& operator=(const Daemon&) = delete;

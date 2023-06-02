@@ -842,7 +842,7 @@ const char descriptor_table_protodef_remote_2fethbackend_2eproto[] PROTOBUF_SECT
   "\014PENDING_LOGS\020\001\022\021\n\rPENDING_BLOCK\020\002\022\020\n\014NE"
   "W_SNAPSHOT\020\003*Y\n\014EngineStatus\022\t\n\005VALID\020\000\022"
   "\013\n\007INVALID\020\001\022\013\n\007SYNCING\020\002\022\014\n\010ACCEPTED\020\003\022"
-  "\026\n\022INVALID_BLOCK_HASH\020\0042\303\013\n\nETHBACKEND\022="
+  "\026\n\022INVALID_BLOCK_HASH\020\0042\343\n\n\nETHBACKEND\022="
   "\n\tEtherbase\022\030.remote.EtherbaseRequest\032\026."
   "remote.EtherbaseReply\022@\n\nNetVersion\022\031.re"
   "mote.NetVersionRequest\032\027.remote.NetVersi"
@@ -860,27 +860,24 @@ const char descriptor_table_protodef_remote_2fethbackend_2eproto[] PROTOBUF_SECT
   "ngineGetPayloadBodiesV1Response\022{\n\037Engin"
   "eGetPayloadBodiesByRangeV1\022..remote.Engi"
   "neGetPayloadBodiesByRangeV1Request\032(.rem"
-  "ote.EngineGetPayloadBodiesV1Response\022^\n\031"
-  "EngineGetPayloadWithBlobs\022\037.remote.Engin"
-  "eGetPayloadRequest\032 .remote.EngineGetPay"
-  "loadResponse\0226\n\007Version\022\026.google.protobu"
-  "f.Empty\032\023.types.VersionReply\022O\n\017Protocol"
-  "Version\022\036.remote.ProtocolVersionRequest\032"
-  "\034.remote.ProtocolVersionReply\022I\n\rClientV"
-  "ersion\022\034.remote.ClientVersionRequest\032\032.r"
-  "emote.ClientVersionReply\022\?\n\tSubscribe\022\030."
-  "remote.SubscribeRequest\032\026.remote.Subscri"
-  "beReply0\001\022J\n\rSubscribeLogs\022\031.remote.Logs"
-  "FilterRequest\032\032.remote.SubscribeLogsRepl"
-  "y(\0010\001\0221\n\005Block\022\024.remote.BlockRequest\032\022.r"
-  "emote.BlockReply\022=\n\tTxnLookup\022\030.remote.T"
-  "xnLookupRequest\032\026.remote.TxnLookupReply\022"
-  "<\n\010NodeInfo\022\030.remote.NodesInfoRequest\032\026."
-  "remote.NodesInfoReply\0223\n\005Peers\022\026.google."
-  "protobuf.Empty\032\022.remote.PeersReply\022A\n\014Pe"
-  "ndingBlock\022\026.google.protobuf.Empty\032\031.rem"
-  "ote.PendingBlockReplyB\021Z\017./remote;remote"
-  "b\006proto3"
+  "ote.EngineGetPayloadBodiesV1Response\0226\n\007"
+  "Version\022\026.google.protobuf.Empty\032\023.types."
+  "VersionReply\022O\n\017ProtocolVersion\022\036.remote"
+  ".ProtocolVersionRequest\032\034.remote.Protoco"
+  "lVersionReply\022I\n\rClientVersion\022\034.remote."
+  "ClientVersionRequest\032\032.remote.ClientVers"
+  "ionReply\022\?\n\tSubscribe\022\030.remote.Subscribe"
+  "Request\032\026.remote.SubscribeReply0\001\022J\n\rSub"
+  "scribeLogs\022\031.remote.LogsFilterRequest\032\032."
+  "remote.SubscribeLogsReply(\0010\001\0221\n\005Block\022\024"
+  ".remote.BlockRequest\032\022.remote.BlockReply"
+  "\022=\n\tTxnLookup\022\030.remote.TxnLookupRequest\032"
+  "\026.remote.TxnLookupReply\022<\n\010NodeInfo\022\030.re"
+  "mote.NodesInfoRequest\032\026.remote.NodesInfo"
+  "Reply\0223\n\005Peers\022\026.google.protobuf.Empty\032\022"
+  ".remote.PeersReply\022A\n\014PendingBlock\022\026.goo"
+  "gle.protobuf.Empty\032\031.remote.PendingBlock"
+  "ReplyB\021Z\017./remote;remoteb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_remote_2fethbackend_2eproto_deps[2] = {
   &::descriptor_table_google_2fprotobuf_2fempty_2eproto,
@@ -888,7 +885,7 @@ static const ::_pbi::DescriptorTable* const descriptor_table_remote_2fethbackend
 };
 static ::_pbi::once_flag descriptor_table_remote_2fethbackend_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_remote_2fethbackend_2eproto = {
-    false, false, 4088, descriptor_table_protodef_remote_2fethbackend_2eproto,
+    false, false, 3992, descriptor_table_protodef_remote_2fethbackend_2eproto,
     "remote/ethbackend.proto",
     &descriptor_table_remote_2fethbackend_2eproto_once, descriptor_table_remote_2fethbackend_2eproto_deps, 2, 32,
     schemas, file_default_instances, TableStruct_remote_2fethbackend_2eproto::offsets,

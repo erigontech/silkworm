@@ -16,6 +16,7 @@
 
 #include "config.hpp"
 
+#include <algorithm>
 #include <functional>
 #include <set>
 
@@ -169,10 +170,10 @@ evmc_revision ChainConfig::revision(uint64_t block_number, uint64_t block_time) 
     return EVMC_FRONTIER;
 }
 
-// TODO (Andrew) extend fork ID to time-triggered forks
 std::vector<BlockNum> ChainConfig::distinct_fork_numbers() const {
     std::set<BlockNum> ret;
 
+    // Add forks identified by *block number* in ascending order
     ret.insert(homestead_block.value_or(0));
     ret.insert(dao_block.value_or(0));
     ret.insert(tangerine_whistle_block.value_or(0));
@@ -190,6 +191,28 @@ std::vector<BlockNum> ChainConfig::distinct_fork_numbers() const {
 
     ret.erase(0);  // Block 0 is not a fork number
     return {ret.cbegin(), ret.cend()};
+}
+
+std::vector<BlockTimestamp> ChainConfig::distinct_fork_timestamps() const {
+    std::set<BlockTimestamp> ret;
+
+    // Add forks identified by *block timestamp* in ascending order
+    ret.insert(shanghai_time.value_or(0));
+
+    ret.erase(0);  // Block 0 is not a fork timestamp
+    return {ret.cbegin(), ret.cend()};
+}
+
+std::vector<uint64_t> ChainConfig::distinct_fork_points() const {
+    auto numbers{distinct_fork_numbers()};
+    auto timestamps{distinct_fork_timestamps()};
+
+    std::vector<uint64_t> points;
+    points.resize(numbers.size() + timestamps.size());
+    std::move(numbers.begin(), numbers.end(), points.begin());
+    std::move(timestamps.begin(), timestamps.end(), points.begin() + (numbers.end() - numbers.begin()));
+
+    return points;
 }
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj) { return out << obj.to_json(); }

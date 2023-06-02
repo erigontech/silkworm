@@ -19,7 +19,6 @@
 #include <Crc32.h>
 
 #include <optional>
-#include <stdexcept>
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/rlp/decode_vector.hpp>
@@ -47,24 +46,24 @@ ForkId::ForkId(uint32_t hash, BlockNum next)
 
 ForkId::ForkId(
     ByteView genesis_hash,
-    const std::vector<BlockNum>& fork_block_numbers,
+    const std::vector<uint64_t>& fork_points,
     BlockNum head_block_num) : ForkId() {
     uint32_t hash = crc32_fast(genesis_hash.data(), genesis_hash.size());
     endian::store_big_u32(hash_bytes_.data(), hash);
 
-    for (auto fork_block_num : fork_block_numbers) {
-        if (fork_block_num > head_block_num) {
-            next_ = fork_block_num;
+    for (uint64_t fork : fork_points) {
+        if (fork > head_block_num) {
+            next_ = fork;
             break;
         }
 
-        add_fork_block_number(fork_block_num);
+        add_fork_point(fork);
     }
 }
 
-void ForkId::add_fork_block_number(BlockNum fork_block_num) {
+void ForkId::add_fork_point(uint64_t fork_point) {
     Bytes fork_bytes(sizeof(uint64_t), 0);
-    endian::store_big_u64(fork_bytes.data(), fork_block_num);
+    endian::store_big_u64(fork_bytes.data(), fork_point);
 
     uint32_t hash = crc32_fast(fork_bytes.data(), fork_bytes.size(), this->hash());
     endian::store_big_u32(hash_bytes_.data(), hash);
@@ -88,21 +87,21 @@ ForkId ForkId::rlp_decode(ByteView data) {
 
 bool ForkId::is_compatible_with(
     ByteView genesis_hash,
-    const std::vector<BlockNum>& fork_block_numbers,
+    const std::vector<uint64_t>& fork_points,
     BlockNum head_block_num) const {
     // common_fork is a fork block number with a matching hash (or 0 if we are at genesis)
     std::optional<BlockNum> common_fork;
     // next_fork is the next known fork block number after the common_fork
-    auto next_fork = fork_block_numbers.cbegin();
+    auto next_fork = fork_points.cbegin();
 
     // find common and next fork block numbers
     ForkId other{genesis_hash, {}, head_block_num};
     if (this->hash() == other.hash()) {
         common_fork = {0};
     } else {
-        while (next_fork != fork_block_numbers.cend()) {
+        while (next_fork != fork_points.cend()) {
             auto fork = *next_fork++;
-            other.add_fork_block_number(fork);
+            other.add_fork_point(fork);
             if (this->hash() == other.hash()) {
                 common_fork = {fork};
                 break;
@@ -113,7 +112,7 @@ bool ForkId::is_compatible_with(
     if (!common_fork)
         return false;
 
-    bool is_next_fork_before_head = (next_fork != fork_block_numbers.cend()) &&
+    bool is_next_fork_before_head = (next_fork != fork_points.cend()) &&
                                     (*next_fork <= head_block_num);
 
     return (head_block_num < common_fork.value()) ||

@@ -69,7 +69,7 @@ EthStatusDataProvider::StatusData EthStatusDataProvider::make_status_data(
     HeadInfo head_info,
     uint8_t eth_version,
     const ChainConfig& chain_config) {
-    auto fork_block_numbers = chain_config.distinct_fork_numbers();
+    auto fork_points = chain_config.distinct_fork_points();
     auto best_block_hash = Bytes{ByteView{head_info.hash}};
     auto genesis_hash = ByteView{chain_config.genesis_hash.value()};
 
@@ -79,11 +79,11 @@ EthStatusDataProvider::StatusData EthStatusDataProvider::make_status_data(
         head_info.total_difficulty,
         best_block_hash,
         Bytes{genesis_hash},
-        silkworm::sentry::eth::ForkId(genesis_hash, fork_block_numbers, head_info.block_num),
+        silkworm::sentry::eth::ForkId(genesis_hash, fork_points, head_info.block_num),
     };
 
     silkworm::sentry::eth::StatusData status_data = {
-        std::move(fork_block_numbers),
+        std::move(fork_points),
         head_info.block_num,
         std::move(status_message),
     };

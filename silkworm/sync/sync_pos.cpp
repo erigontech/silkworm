@@ -16,6 +16,8 @@
 
 #include "sync_pos.hpp"
 
+#include <iterator>
+
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <magic_enum.hpp>
@@ -139,7 +141,8 @@ std::shared_ptr<Block> PoSSync::make_execution_block(const rpc::ExecutionPayload
     // as per EIP-4895
     if (payload.withdrawals) {
         block->withdrawals = std::vector<Withdrawal>{};
-        std::copy(payload.withdrawals->begin(), payload.withdrawals->end(), block->withdrawals->begin());
+        block->withdrawals->reserve(payload.withdrawals->size());
+        std::copy(payload.withdrawals->begin(), payload.withdrawals->end(), std::back_inserter(*block->withdrawals));
         header.withdrawals_root = protocol::compute_withdrawals_root(*block);
     }
 
@@ -169,8 +172,8 @@ void PoSSync::do_sanity_checks(const BlockHeader&, /*const BlockHeader& parent,*
     //  here Geth return last_valid = fcu head
 }
 
-auto PoSSync::has_bad_ancestor(const Hash&) -> std::tuple<bool, Hash> {
-    return {false, Hash()};  // todo: implement, return if it is valid or the first valid ancestor
+auto PoSSync::has_valid_ancestor(const Hash&) -> std::tuple<bool, Hash> {
+    return {true, Hash()};  // todo: implement, return if it is valid or the first valid ancestor
 }
 
 auto PoSSync::new_payload(const rpc::ExecutionPayload& payload) -> asio::awaitable<rpc::PayloadStatus> {
@@ -187,7 +190,7 @@ auto PoSSync::new_payload(const rpc::ExecutionPayload& payload) -> asio::awaitab
         Hash block_hash = block->header.hash();
         if (payload.block_hash != block_hash) co_return rpc::PayloadStatus::InvalidBlockHash;
 
-        auto [valid, last_valid] = has_bad_ancestor(block_hash);
+        auto [valid, last_valid] = has_valid_ancestor(block_hash);
         if (!valid) co_return rpc::PayloadStatus{rpc::PayloadStatus::kInvalid, last_valid, "bad ancestor"};
 
         // find attaching point using chain_fork_view_ first to avoid remote access to execution
@@ -264,7 +267,7 @@ auto PoSSync::fork_choice_update(const rpc::ForkChoiceState& state,
         Hash head_header_hash = state.head_block_hash;
         auto head_header = co_await exec_engine_.get_header(head_header_hash);  // todo: decide whether to use chain_fork_view_ cache instead
         if (!head_header) {
-            auto [valid, last_valid] = has_bad_ancestor(head_header_hash);
+            auto [valid, last_valid] = has_valid_ancestor(head_header_hash);
             if (!valid) co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalid, last_valid, "bad ancestor"}, no_payload_id};
 
             // send payload to the block exchange to extend the chain up to it

@@ -42,6 +42,7 @@ void add_sentry_options(CLI::App& cli, silkworm::sentry::Settings& settings) {
     nat_option->description(
         "NAT port mapping mechanism (none|extip:<IP>)\n"
         "- none              no NAT, use a local IP as public\n"
+        "- stun              detect a public IP using STUN (default)"
         "- extip:1.2.3.4     use the given public IP");
     nat_option->default_str("none");
 

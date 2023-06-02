@@ -20,6 +20,8 @@
 #include <optional>
 #include <string>
 
+#include <boost/asio/ip/address.hpp>
+
 #include <silkworm/buildinfo.h>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -35,6 +37,7 @@
 #include "grpc/server/server.hpp"
 #include "message_receiver.hpp"
 #include "message_sender.hpp"
+#include "nat/ip_resolver.hpp"
 #include "node_key_config.hpp"
 #include "peer_manager.hpp"
 #include "peer_manager_api.hpp"
@@ -80,6 +83,7 @@ class SentryImpl final {
 
     Settings settings_;
     std::optional<NodeKey> node_key_;
+    std::optional<boost::asio::ip::address> public_ip_;
     silkworm::rpc::ServerContextPool& context_pool_;
 
     StatusManager status_manager_;
@@ -145,7 +149,10 @@ boost::asio::awaitable<void> SentryImpl::run() {
 
     setup_node_key();
 
-    return (run_tasks() && start_grpc_server());
+    public_ip_ = co_await nat::ip_resolver(settings_.nat);
+    log::Info("sentry") << "Node URL: " << make_node_url().to_string();
+
+    co_await (run_tasks() && start_grpc_server());
 }
 
 void SentryImpl::setup_node_key() {
@@ -237,8 +244,7 @@ std::string SentryImpl::client_id() const {
 common::EnodeUrl SentryImpl::make_node_url() const {
     return common::EnodeUrl{
         node_key_.value().public_key(),
-        // TODO: need an external IP here
-        rlpx_server_.ip(),
+        public_ip_.value(),
         settings_.port,
     };
 }

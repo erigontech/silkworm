@@ -39,6 +39,9 @@ set(CONAN_BINARY_DIR "${CMAKE_BINARY_DIR}/conan")
 list(APPEND CMAKE_MODULE_PATH ${CONAN_BINARY_DIR})
 list(APPEND CMAKE_PREFIX_PATH ${CONAN_BINARY_DIR})
 
+# disable verbose logging from FindXXX.cmake files
+set(CONAN_CMAKE_SILENT_OUTPUT ON)
+
 include("${CMAKE_SOURCE_DIR}/third_party/cmake-conan/conan.cmake")
 
 # provide a static conanfile.txt instead of generating it with conan_cmake_configure()

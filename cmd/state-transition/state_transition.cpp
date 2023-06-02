@@ -288,6 +288,25 @@ void StateTransition::print_message(const ExpectedState& expected_state, const E
     std::cout << "[" << test_name_ << ":" << expected_state.fork_name() << ":" << expected_sub_state.index << "] " << message << std::endl;
 }
 
+/*
+ * This function is used to cleanup the state after a failed block execution.
+ * Certain post-processing would be a part of the execute_transaction() function,
+ * but since the validation failed, we need to do it manually.
+ */
+void cleanup_error_block(Block& block, ExecutionProcessor& processor, const evmc_revision rev) {
+    if (rev >= EVMC_SHANGHAI) {
+        processor.evm().state().access_account(block.header.beneficiary);
+    }
+    processor.evm().state().add_to_balance(block.header.beneficiary, 0);
+
+    processor.evm().state().destruct_suicides();
+    if (rev >= EVMC_SPURIOUS_DRAGON) {
+        processor.evm().state().destruct_touched_dead();
+    }
+
+    processor.evm().state().write_to_db(block.header.number);
+}
+
 void StateTransition::run() {
     failed_count_ = 0;
     total_count_ = 0;
@@ -321,6 +340,7 @@ void StateTransition::run() {
                 processor.execute_transaction(txn, receipt);
                 processor.evm().state().write_to_db(block.header.number);
             } else {
+                cleanup_error_block(block, processor, rev);
                 receipt.success = false;
             }
 

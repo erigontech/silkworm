@@ -46,7 +46,7 @@ struct EngineRpcSettings {
 class Sync {
   public:
     Sync(boost::asio::io_context& io_context,
-         mdbx::env& chaindata_env,
+         mdbx::env_managed& chaindata_env,
          execution::Client& execution,
          const std::shared_ptr<silkworm::sentry::api::api_common::SentryClient>& sentry_client,
          const ChainConfig& config,

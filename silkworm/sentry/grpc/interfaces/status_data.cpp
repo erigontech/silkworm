@@ -52,7 +52,7 @@ eth::StatusData status_data_from_proto(const proto::StatusData& data, uint8_t et
         uint256_from_H256(data.total_difficulty()),
         Bytes{hash_from_H256(data.best_hash())},
         genesis_hash,
-        eth::ForkId{genesis_hash, fork_block_numbers, data.max_block_height()},
+        eth::ForkId{genesis_hash, fork_block_numbers, fork_block_times, data.max_block_height()},
     };
 
     return eth::StatusData{

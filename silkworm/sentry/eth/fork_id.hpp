@@ -27,7 +27,8 @@ class ForkId {
   public:
     ForkId(
         ByteView genesis_hash,
-        const std::vector<uint64_t>& fork_points,
+        const std::vector<BlockNum>& fork_block_numbers,
+        const std::vector<BlockTime>& fork_block_times,
         BlockNum head_block_num);
 
     ForkId(uint32_t hash, BlockNum next);
@@ -47,7 +48,8 @@ class ForkId {
 
     [[nodiscard]] bool is_compatible_with(
         ByteView genesis_hash,
-        const std::vector<uint64_t>& fork_points,
+        const std::vector<BlockNum>& fork_block_numbers,
+        const std::vector<BlockTime>& fork_block_times,
         BlockNum head_block_num) const;
 
     friend bool operator==(const ForkId&, const ForkId&) = default;

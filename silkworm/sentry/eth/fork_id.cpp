@@ -46,11 +46,16 @@ ForkId::ForkId(uint32_t hash, BlockNum next)
 
 ForkId::ForkId(
     ByteView genesis_hash,
-    const std::vector<uint64_t>& fork_points,
+    const std::vector<BlockNum>& fork_block_numbers,
+    const std::vector<BlockTime>& fork_block_times,
     BlockNum head_block_num) : ForkId() {
     uint32_t hash = crc32_fast(genesis_hash.data(), genesis_hash.size());
     endian::store_big_u32(hash_bytes_.data(), hash);
 
+    std::vector<uint64_t> fork_points;
+    std::merge(fork_block_numbers.cbegin(), fork_block_numbers.cend(),
+               fork_block_times.cbegin(), fork_block_times.cend(),
+               std::back_inserter(fork_points));
     for (uint64_t fork : fork_points) {
         if (fork > head_block_num) {
             next_ = fork;
@@ -87,15 +92,20 @@ ForkId ForkId::rlp_decode(ByteView data) {
 
 bool ForkId::is_compatible_with(
     ByteView genesis_hash,
-    const std::vector<uint64_t>& fork_points,
+    const std::vector<BlockNum>& fork_block_numbers,
+    const std::vector<BlockTime>& fork_block_times,
     BlockNum head_block_num) const {
+    std::vector<uint64_t> fork_points;
+    std::merge(fork_block_numbers.cbegin(), fork_block_numbers.cend(),
+               fork_block_times.cbegin(), fork_block_times.cend(),
+               std::back_inserter(fork_points));
     // common_fork is a fork block point with a matching hash (or 0 if we are at genesis)
     std::optional<uint64_t> common_fork;
     // next_fork is the next known fork block number after the common_fork
     auto next_fork = fork_points.cbegin();
 
     // find common and next fork block numbers
-    ForkId other{genesis_hash, {}, head_block_num};
+    ForkId other{genesis_hash, {}, {}, head_block_num};
     if (this->hash() == other.hash()) {
         common_fork = {0};
     } else {

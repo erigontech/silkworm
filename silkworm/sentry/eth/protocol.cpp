@@ -36,6 +36,7 @@ void Protocol::handle_peer_first_message(const common::Message& message) {
         peer_status.fork_id.is_compatible_with(
             my_status.message.genesis_hash,
             my_status.fork_block_numbers,
+            my_status.fork_block_times,
             my_status.head_block_num);
 
     if (!is_compatible)

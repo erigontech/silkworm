@@ -89,8 +89,8 @@ bool ForkId::is_compatible_with(
     ByteView genesis_hash,
     const std::vector<uint64_t>& fork_points,
     BlockNum head_block_num) const {
-    // common_fork is a fork block number with a matching hash (or 0 if we are at genesis)
-    std::optional<BlockNum> common_fork;
+    // common_fork is a fork block point with a matching hash (or 0 if we are at genesis)
+    std::optional<uint64_t> common_fork;
     // next_fork is the next known fork block number after the common_fork
     auto next_fork = fork_points.cbegin();
 

@@ -82,8 +82,11 @@ EthStatusDataProvider::StatusData EthStatusDataProvider::make_status_data(
         silkworm::sentry::eth::ForkId(genesis_hash, fork_points, head_info.block_num),
     };
 
+    auto fork_numbers = chain_config.distinct_fork_numbers();
+    auto fork_timestamps = chain_config.distinct_fork_timestamps();
     silkworm::sentry::eth::StatusData status_data = {
-        std::move(fork_points),
+        std::move(fork_numbers),
+        std::move(fork_timestamps),
         head_info.block_num,
         std::move(status_message),
     };

@@ -89,34 +89,6 @@ TEST_CASE("ForkId.forks.mainnet") {
     }
 }
 
-TEST_CASE("ForkId.forks.rinkeby") {
-    std::vector<ForksExampleSpec> examples = {
-        {0, ForkId{0x3b8e0691, 1}},              // Unsynced, last Frontier block
-        {1, ForkId{0x60949295, 2}},              // First and last Homestead block
-        {2, ForkId{0x8bde40dd, 3}},              // First and last Tangerine block
-        {3, ForkId{0xcb3a64bb, 1035301}},        // First Spurious block
-        {1035300, ForkId{0xcb3a64bb, 1035301}},  // Last Spurious block
-        {1035301, ForkId{0x8d748b57, 3660663}},  // First Byzantium block
-        {3660662, ForkId{0x8d748b57, 3660663}},  // Last Byzantium block
-        {3660663, ForkId{0xe49cab14, 4321234}},  // First Constantinople block
-        {4321233, ForkId{0xe49cab14, 4321234}},  // Last Constantinople block
-        {4321234, ForkId{0xafec6b27, 5435345}},  // First Petersburg block
-        {5435344, ForkId{0xafec6b27, 5435345}},  // Last Petersburg block
-        {5435345, ForkId{0xcbdb8838, 8290928}},  // First Istanbul block
-        {8290927, ForkId{0xcbdb8838, 8290928}},  // Last Istanbul block
-        {8290928, ForkId{0x6910c8bd, 8897988}},  // First Berlin block
-        {8897987, ForkId{0x6910c8bd, 8897988}},  // Last Berlin block
-        {8897988, ForkId{0x8E29F2F3, 0}},        // First London block
-        {10000000, ForkId{0x8E29F2F3, 0}},       // Future London block
-    };
-
-    auto chain_config{kRinkebyConfig};
-    chain_config.genesis_hash.emplace(kRinkebyGenesisHash);
-    for (auto& example : examples) {
-        CHECK(fork_id_at(example.head_block_num, chain_config) == example.fork_id);
-    }
-}
-
 TEST_CASE("ForkId.forks.goerli") {
     std::vector<ForksExampleSpec> examples = {
         {0, ForkId{0xa3f5ab08, 1561651}},        // Unsynced, last Frontier, Homestead, Tangerine, Spurious, Byzantium, Constantinople and first Petersburg block

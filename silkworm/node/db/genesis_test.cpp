@@ -43,12 +43,6 @@ namespace db {
             REQUIRE(db::initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false));
             CHECK(db::read_chain_config(txn) == silkworm::kGoerliConfig);
         }
-        SECTION("Initialize with Rinkeby") {
-            auto source_data{silkworm::read_genesis_data(silkworm::kRinkebyConfig.chain_id)};
-            auto genesis_json = nlohmann::json::parse(source_data, nullptr, /*allow_exceptions=*/false);
-            REQUIRE(db::initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false));
-            CHECK(db::read_chain_config(txn) == silkworm::kRinkebyConfig);
-        }
         SECTION("Initialize with Sepolia") {
             auto source_data{silkworm::read_genesis_data(silkworm::kSepoliaConfig.chain_id)};
             auto genesis_json = nlohmann::json::parse(source_data, nullptr, /*allow_exceptions=*/false);

@@ -47,9 +47,9 @@ struct Forks {
                 block_numbers.push_back(fork_block_number);
             }
         }
-        for (auto& fork_block_timestamp : cc->distinct_fork_timestamps()) {
-            if (fork_block_timestamp) {  // Skip any forks in block 0, that's the genesis ruleset
-                block_times.push_back(fork_block_timestamp);
+        for (auto& fork_block_time : cc->distinct_fork_times()) {
+            if (fork_block_time) {  // Skip any forks in block 0, that's the genesis ruleset
+                block_times.push_back(fork_block_time);
             }
         }
     }

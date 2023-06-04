@@ -193,8 +193,8 @@ std::vector<BlockNum> ChainConfig::distinct_fork_numbers() const {
     return {ret.cbegin(), ret.cend()};
 }
 
-std::vector<BlockTimestamp> ChainConfig::distinct_fork_timestamps() const {
-    std::set<BlockTimestamp> ret;
+std::vector<BlockTime> ChainConfig::distinct_fork_times() const {
+    std::set<BlockTime> ret;
 
     // Add forks identified by *block timestamp* in ascending order
     ret.insert(shanghai_time.value_or(0));
@@ -205,12 +205,12 @@ std::vector<BlockTimestamp> ChainConfig::distinct_fork_timestamps() const {
 
 std::vector<uint64_t> ChainConfig::distinct_fork_points() const {
     auto numbers{distinct_fork_numbers()};
-    auto timestamps{distinct_fork_timestamps()};
+    auto times{distinct_fork_times()};
 
     std::vector<uint64_t> points;
-    points.resize(numbers.size() + timestamps.size());
+    points.resize(numbers.size() + times.size());
     std::move(numbers.begin(), numbers.end(), points.begin());
-    std::move(timestamps.begin(), timestamps.end(), points.begin() + (numbers.end() - numbers.begin()));
+    std::move(times.begin(), times.end(), points.begin() + (numbers.end() - numbers.begin()));
 
     return points;
 }

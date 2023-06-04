@@ -83,10 +83,10 @@ EthStatusDataProvider::StatusData EthStatusDataProvider::make_status_data(
     };
 
     auto fork_numbers = chain_config.distinct_fork_numbers();
-    auto fork_timestamps = chain_config.distinct_fork_timestamps();
+    auto fork_times = chain_config.distinct_fork_times();
     silkworm::sentry::eth::StatusData status_data = {
         std::move(fork_numbers),
-        std::move(fork_timestamps),
+        std::move(fork_times),
         head_info.block_num,
         std::move(status_message),
     };

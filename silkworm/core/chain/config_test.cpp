@@ -97,7 +97,7 @@ TEST_CASE("Config revision") {
     CHECK(test::kShanghaiConfig.revision(0, 0) == EVMC_SHANGHAI);
 }
 
-TEST_CASE("distinct_fork_numbers") {
+TEST_CASE("distinct_fork_points") {
     const std::vector<BlockNum> kExpectedMainnetForkNumbers{
         1'150'000,
         1'920'000,
@@ -112,16 +112,16 @@ TEST_CASE("distinct_fork_numbers") {
         13'773'000,
         15'050'000,
     };
-    const std::vector<BlockNum> kExpectedMainnetForkTimestamps{
+    const std::vector<BlockNum> kExpectedMainnetForkTimes{
         1'681'338'455,
     };
     std::vector<uint64_t> kExpectedMainnetForkPoints;
     std::merge(kExpectedMainnetForkNumbers.begin(), kExpectedMainnetForkNumbers.end(),
-               kExpectedMainnetForkTimestamps.begin(), kExpectedMainnetForkTimestamps.end(),
+               kExpectedMainnetForkTimes.begin(), kExpectedMainnetForkTimes.end(),
                std::back_inserter(kExpectedMainnetForkPoints));
 
     CHECK(kMainnetConfig.distinct_fork_numbers() == kExpectedMainnetForkNumbers);
-    CHECK(kMainnetConfig.distinct_fork_timestamps() == kExpectedMainnetForkTimestamps);
+    CHECK(kMainnetConfig.distinct_fork_times() == kExpectedMainnetForkTimes);
     CHECK(kMainnetConfig.distinct_fork_points() == kExpectedMainnetForkPoints);
 
     const std::vector<BlockNum> kExpectedGoerliForkNumbers{
@@ -129,16 +129,16 @@ TEST_CASE("distinct_fork_numbers") {
         4'460'644,
         5'062'605,
     };
-    const std::vector<BlockNum> kExpectedGoerliForkTimestamps{
+    const std::vector<BlockNum> kExpectedGoerliForkTimes{
         1'678'832'736,
     };
     std::vector<uint64_t> kExpectedGoerliForkPoints;
     std::merge(kExpectedGoerliForkNumbers.begin(), kExpectedGoerliForkNumbers.end(),
-               kExpectedGoerliForkTimestamps.begin(), kExpectedGoerliForkTimestamps.end(),
+               kExpectedGoerliForkTimes.begin(), kExpectedGoerliForkTimes.end(),
                std::back_inserter(kExpectedGoerliForkPoints));
 
     CHECK(kGoerliConfig.distinct_fork_numbers() == kExpectedGoerliForkNumbers);
-    CHECK(kGoerliConfig.distinct_fork_timestamps() == kExpectedGoerliForkTimestamps);
+    CHECK(kGoerliConfig.distinct_fork_times() == kExpectedGoerliForkTimes);
     CHECK(kGoerliConfig.distinct_fork_points() == kExpectedGoerliForkPoints);
 }
 

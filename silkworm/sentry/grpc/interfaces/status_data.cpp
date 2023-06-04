@@ -36,7 +36,7 @@ eth::StatusData status_data_from_proto(const proto::StatusData& data, uint8_t et
     std::copy(height_forks.cbegin(), height_forks.cend(), fork_block_numbers.begin());
 
     const auto& time_forks = data.fork_data().time_forks();
-    std::vector<BlockTimestamp> fork_block_times;
+    std::vector<BlockTime> fork_block_times;
     fork_block_times.resize(static_cast<size_t>(time_forks.size()));
     std::copy(time_forks.cbegin(), time_forks.cend(), fork_block_times.begin());
 
@@ -64,7 +64,7 @@ eth::StatusData status_data_from_proto(const proto::StatusData& data, uint8_t et
 }
 
 static proto::Forks make_proto_forks(ByteView genesis_hash, const std::vector<BlockNum>& fork_block_numbers,
-                                     const std::vector<BlockTimestamp>& fork_block_times) {
+                                     const std::vector<BlockTime>& fork_block_times) {
     proto::Forks forks;
     forks.mutable_genesis()->CopyFrom(*H256_from_bytes(genesis_hash));
 

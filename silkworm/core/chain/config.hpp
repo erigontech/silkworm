@@ -74,8 +74,8 @@ struct ChainConfig {
     std::optional<BlockNum> merge_netsplit_block{std::nullopt};  // FORK_NEXT_VALUE in EIP-3675
 
     // Starting from Shanghai, forks are triggered by block time rather than number
-    std::optional<BlockTimestamp> shanghai_time{std::nullopt};
-    std::optional<BlockTimestamp> cancun_time{std::nullopt};
+    std::optional<BlockTime> shanghai_time{std::nullopt};
+    std::optional<BlockTime> cancun_time{std::nullopt};
 
     //! \brief Returns the revision level at given block number
     //! \details In other words, on behalf of Json chain config data
@@ -83,7 +83,7 @@ struct ChainConfig {
     [[nodiscard]] evmc_revision revision(uint64_t block_number, uint64_t block_time) const noexcept;
 
     [[nodiscard]] std::vector<BlockNum> distinct_fork_numbers() const;
-    [[nodiscard]] std::vector<BlockTimestamp> distinct_fork_timestamps() const;
+    [[nodiscard]] std::vector<BlockTime> distinct_fork_times() const;
     [[nodiscard]] std::vector<uint64_t> distinct_fork_points() const;
 
     //! \brief Return the JSON representation of this object

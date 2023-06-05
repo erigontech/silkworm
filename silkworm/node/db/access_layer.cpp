@@ -831,4 +831,122 @@ uint64_t reset_map_sequence(RWTxn& txn, const char* map_name, uint64_t new_seque
     return current_sequence;
 }
 
+
+const std::string kHeadBlockHash = "headBlockHash";
+const std::string kSafeBlockHash = "safeBlockHash";
+const std::string kFinalizedBlockHash = "finalizedBlockHash";
+
+std::optional<evmc::bytes32> read_last_fcu_field(ROTxn& txn, const std::string& field) {
+    auto cursor = txn.ro_cursor(table::kLastForkchoice);
+
+    Bytes key{field.begin(), field.end()};
+    auto skey = db::to_slice(key);
+
+    auto data{cursor->find(skey, /*throw_notfound=*/false)};
+    if (!data || data.value.length() != kHashLength) {
+        return std::nullopt;
+    }
+    return to_bytes32(from_slice(data.value));
+}
+
+void write_last_fcu_field(RWTxn& txn, const std::string& field, const evmc::bytes32& hash) {
+    auto cursor = txn.rw_cursor(table::kLastForkchoice);
+
+    Bytes key{field.begin(), field.end()};
+    auto skey = db::to_slice(key);
+
+    cursor->upsert(skey, to_slice(hash));
+}
+
+std::optional<evmc::bytes32> read_last_head_block(ROTxn& txn) {
+    return read_last_fcu_field(txn, kHeadBlockHash);
+}
+
+std::optional<evmc::bytes32> read_last_safe_block(ROTxn& txn) {
+    return read_last_fcu_field(txn, kSafeBlockHash);
+}
+
+std::optional<evmc::bytes32> read_last_finalized_block(ROTxn& txn) {
+    return read_last_fcu_field(txn, kFinalizedBlockHash);
+}
+
+void write_last_head_block(RWTxn& txn, const evmc::bytes32& hash) {
+    write_last_fcu_field(txn, kHeadBlockHash, hash);
+}
+
+void write_last_safe_block(RWTxn& txn, const evmc::bytes32& hash) {
+    write_last_fcu_field(txn, kSafeBlockHash, hash);
+}
+
+void write_last_finalized_block(RWTxn& txn, const evmc::bytes32& hash) {
+    write_last_fcu_field(txn, kFinalizedBlockHash, hash);
+}
+
+/*
+
+// ReadForkchoiceHead retrieves headBlockHash from the last Engine API forkChoiceUpdated.
+func ReadForkchoiceHead(db kv.Getter) libcommon.Hash {
+        data, err := db.GetOne(kv.LastForkchoice, []byte("headBlockHash"))
+        if err != nil {
+                log.Error("ReadForkchoiceHead failed", "err", err)
+        }
+        if len(data) == 0 {
+                return libcommon.Hash{}
+        }
+        return libcommon.BytesToHash(data)
+}
+
+// WriteForkchoiceHead stores headBlockHash from the last Engine API forkChoiceUpdated.
+func WriteForkchoiceHead(db kv.Putter, hash libcommon.Hash) {
+        if err := db.Put(kv.LastForkchoice, []byte("headBlockHash"), hash[:]); err != nil {
+                log.Crit("Failed to store head block hash", "err", err)
+        }
+}
+
+// ReadForkchoiceSafe retrieves safeBlockHash from the last Engine API forkChoiceUpdated.
+func ReadForkchoiceSafe(db kv.Getter) libcommon.Hash {
+        data, err := db.GetOne(kv.LastForkchoice, []byte("safeBlockHash"))
+        if err != nil {
+                log.Error("ReadForkchoiceSafe failed", "err", err)
+                return libcommon.Hash{}
+        }
+
+        if len(data) == 0 {
+                return libcommon.Hash{}
+        }
+
+        return libcommon.BytesToHash(data)
+}
+
+// WriteForkchoiceSafe stores safeBlockHash from the last Engine API forkChoiceUpdated.
+func WriteForkchoiceSafe(db kv.Putter, hash libcommon.Hash) {
+        if err := db.Put(kv.LastForkchoice, []byte("safeBlockHash"), hash[:]); err != nil {
+                log.Crit("Failed to store safe block hash", "err", err)
+        }
+}
+
+// ReadForkchoiceFinalized retrieves finalizedBlockHash from the last Engine API forkChoiceUpdated.
+func ReadForkchoiceFinalized(db kv.Getter) libcommon.Hash {
+        data, err := db.GetOne(kv.LastForkchoice, []byte("finalizedBlockHash"))
+        if err != nil {
+                log.Error("ReadForkchoiceFinalize failed", "err", err)
+                return libcommon.Hash{}
+        }
+
+        if len(data) == 0 {
+                return libcommon.Hash{}
+        }
+
+        return libcommon.BytesToHash(data)
+}
+
+// WriteForkchoiceFinalized stores finalizedBlockHash from the last Engine API forkChoiceUpdated.
+func WriteForkchoiceFinalized(db kv.Putter, hash libcommon.Hash) {
+        if err := db.Put(kv.LastForkchoice, []byte("finalizedBlockHash"), hash[:]); err != nil {
+                log.Crit("Failed to safe finalized block hash", "err", err)
+        }
+}
+
+*/
+
 }  // namespace silkworm::db

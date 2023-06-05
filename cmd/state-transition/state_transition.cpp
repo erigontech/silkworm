@@ -73,9 +73,7 @@ bool StateTransition::contains_env(const std::string& key) {
 std::vector<ExpectedState> StateTransition::get_expected_states() {
     std::vector<ExpectedState> expectedStates;
 
-    auto post = test_data_.at("post");
-
-    for (const auto& postState : post.items()) {
+    for (const auto& postState : test_data_.at("post").items()) {
         nlohmann::json data = postState.value();
         const std::string& key = postState.key();
         expectedStates.emplace_back(data, key);
@@ -140,9 +138,7 @@ Block StateTransition::get_block(InMemoryState& state, ChainConfig& chain_config
 std::unique_ptr<InMemoryState> StateTransition::get_state() {
     auto state = std::make_unique<InMemoryState>();
 
-    auto pre = test_data_["pre"];
-
-    for (const auto& preState : pre.items()) {
+    for (const auto& preState : test_data_["pre"].items()) {
         const auto address = to_evmc_address(preState.key());
         const nlohmann::json preStateValue = preState.value();
 
@@ -186,45 +182,67 @@ std::unique_ptr<evmc::address> StateTransition::private_key_to_address(const std
 
 Transaction StateTransition::get_transaction(const ExpectedSubState& expected_sub_state) {
     Transaction txn;
-    auto jTransaction = test_data_["transaction"];
+    auto j_transaction = test_data_["transaction"];
 
-    txn.nonce = std::stoull(jTransaction.at("nonce").get<std::string>(), nullptr, 16);
-    txn.from = *private_key_to_address(jTransaction["secretKey"]);
+    txn.nonce = std::stoull(j_transaction.at("nonce").get<std::string>(), nullptr, 16);
+    txn.from = *private_key_to_address(j_transaction["secretKey"]);
 
-    const auto to_address = jTransaction.at("to").get<std::string>();
+    const auto to_address = j_transaction.at("to").get<std::string>();
     if (!to_address.empty()) {
         txn.to = to_evmc_address(to_address);
     }
     //        std::cout << "from address: " << to_hex(txn.from.value()) << std::endl;
 
-    if (jTransaction.contains("gasPrice")) {
+    if (j_transaction.contains("gasPrice")) {
         txn.type = TransactionType::kLegacy;
-        txn.max_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("gasPrice").get<std::string>());
-        txn.max_priority_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("gasPrice").get<std::string>());
+        txn.max_fee_per_gas = intx::from_string<intx::uint256>(j_transaction.at("gasPrice").get<std::string>());
+        txn.max_priority_fee_per_gas = intx::from_string<intx::uint256>(j_transaction.at("gasPrice").get<std::string>());
     } else {
         txn.type = TransactionType::kEip1559;
-        txn.max_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("maxFeePerGas").get<std::string>());
-        txn.max_priority_fee_per_gas = intx::from_string<intx::uint256>(jTransaction.at("maxPriorityFeePerGas").get<std::string>());
+        txn.max_fee_per_gas = intx::from_string<intx::uint256>(j_transaction.at("maxFeePerGas").get<std::string>());
+        txn.max_priority_fee_per_gas = intx::from_string<intx::uint256>(j_transaction.at("maxPriorityFeePerGas").get<std::string>());
     }
 
-    if (expected_sub_state.dataIndex >= jTransaction.at("data").size()) {
+    if (expected_sub_state.dataIndex >= j_transaction.at("data").size()) {
         throw std::runtime_error("data index out of range");
     } else {
-        txn.data = from_hex(jTransaction.at("data").at(expected_sub_state.dataIndex).get<std::string>()).value();
+        txn.data = from_hex(j_transaction.at("data").at(expected_sub_state.dataIndex).get<std::string>()).value();
     }
 
-    if (expected_sub_state.gasIndex >= jTransaction.at("gasLimit").size()) {
+    if (expected_sub_state.gasIndex >= j_transaction.at("gasLimit").size()) {
         throw std::runtime_error("gas limit index out of range");
     } else {
-        txn.gas_limit = std::stoull(jTransaction.at("gasLimit").at(expected_sub_state.gasIndex).get<std::string>(), nullptr, 16);
+        txn.gas_limit = std::stoull(j_transaction.at("gasLimit").at(expected_sub_state.gasIndex).get<std::string>(), nullptr, 16);
     }
 
-    if (expected_sub_state.valueIndex >= jTransaction.at("value").size()) {
+    if (expected_sub_state.valueIndex >= j_transaction.at("value").size()) {
         throw std::runtime_error("value index out of range");
     } else {
-        auto value_str = jTransaction.at("value").at(expected_sub_state.valueIndex).get<std::string>();
+        auto value_str = j_transaction.at("value").at(expected_sub_state.valueIndex).get<std::string>();
         // in case of bigint, set max value; compatible with all test cases so far
         txn.value = (value_str.starts_with("0x:bigint ")) ? std::numeric_limits<intx::uint256>::max() : intx::from_string<intx::uint256>(value_str);
+    }
+
+    if (j_transaction.contains("accessLists")) {
+        auto j_access_list = j_transaction.at("accessLists").at(expected_sub_state.dataIndex);
+
+        for (const auto& j_access_entry : j_access_list.items()) {
+            AccessListEntry entry;
+            entry.account = to_evmc_address(j_access_entry.value().at("address"));
+
+            for (const auto& j_storage_key : j_access_entry.value().at("storageKeys").items()) {
+                if (j_storage_key.value().is_string()) {
+                    auto hex_storage = from_hex(j_storage_key.value().get<std::string>());
+                    entry.storage_keys.emplace_back(to_bytes32(hex_storage.value()));
+                }
+            }
+
+            txn.access_list.emplace_back(entry);
+        }
+
+        if (txn.type == TransactionType::kLegacy) {
+            txn.type = TransactionType::kEip2930;
+        }
     }
 
     return txn;
@@ -270,6 +288,25 @@ void StateTransition::print_message(const ExpectedState& expected_state, const E
     std::cout << "[" << test_name_ << ":" << expected_state.fork_name() << ":" << expected_sub_state.index << "] " << message << std::endl;
 }
 
+/*
+ * This function is used to cleanup the state after a failed block execution.
+ * Certain post-processing would be a part of the execute_transaction() function,
+ * but since the validation failed, we need to do it manually.
+ */
+void cleanup_error_block(Block& block, ExecutionProcessor& processor, const evmc_revision rev) {
+    if (rev >= EVMC_SHANGHAI) {
+        processor.evm().state().access_account(block.header.beneficiary);
+    }
+    processor.evm().state().add_to_balance(block.header.beneficiary, 0);
+
+    processor.evm().state().destruct_suicides();
+    if (rev >= EVMC_SPURIOUS_DRAGON) {
+        processor.evm().state().destruct_touched_dead();
+    }
+
+    processor.evm().state().write_to_db(block.header.number);
+}
+
 void StateTransition::run() {
     failed_count_ = 0;
     total_count_ = 0;
@@ -303,6 +340,7 @@ void StateTransition::run() {
                 processor.execute_transaction(txn, receipt);
                 processor.evm().state().write_to_db(block.header.number);
             } else {
+                cleanup_error_block(block, processor, rev);
                 receipt.success = false;
             }
 

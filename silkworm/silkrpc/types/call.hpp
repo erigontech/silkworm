@@ -25,6 +25,7 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/core/types/transaction.hpp>
+#include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
 
 namespace silkworm::rpc {
@@ -76,5 +77,43 @@ struct Call {
 };
 
 std::ostream& operator<<(std::ostream& out, const Call& call);
+
+struct BlockOverrides {
+    std::optional<std::uint64_t> block_number;
+    std::optional<evmc::address> coin_base;
+    std::optional<std::uint64_t> timestamp;
+    std::optional<intx::uint256> difficulty;
+    std::optional<std::uint64_t> gas_limit;
+    std::optional<std::uint64_t> base_fee;
+    std::map<std::uint64_t, evmc::bytes32> block_hash;
+};
+
+struct SimulationContext {
+    BlockNumberOrHash block_number{0};
+    std::int32_t transaction_index{-1};
+};
+
+struct AccountOverrides {
+    std::optional<std::uint64_t> nonce;
+    std::optional<intx::uint256> balance;
+    std::optional<silkworm::Bytes> code;
+    std::map<evmc::bytes32, intx::uint256> state;
+    std::map<evmc::bytes32, intx::uint256> state_diff;
+};
+
+struct Bundle {
+    std::vector<Call> transactions;
+    BlockOverrides block_override;
+};
+
+using Bundles = std::vector<Bundle>;
+using AccountsOverrides = std::map<evmc::address, AccountOverrides>;
+
+std::ostream& operator<<(std::ostream& out, const Bundles& bundles);
+std::ostream& operator<<(std::ostream& out, const Bundle& bundle);
+std::ostream& operator<<(std::ostream& out, const BlockOverrides& bo);
+std::ostream& operator<<(std::ostream& out, const SimulationContext& sc);
+std::ostream& operator<<(std::ostream& out, const AccountsOverrides& so);
+std::ostream& operator<<(std::ostream& out, const AccountOverrides& ao);
 
 }  // namespace silkworm::rpc

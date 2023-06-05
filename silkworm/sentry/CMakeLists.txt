@@ -23,6 +23,20 @@ find_package(Microsoft.GSL REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(Snappy REQUIRED)
 
+# stbrumme-crc32
+add_library(stbrumme_crc32 "${SILKWORM_MAIN_DIR}/third_party/stbrumme-crc32/Crc32.cpp")
+target_include_directories(stbrumme_crc32 PUBLIC "${SILKWORM_MAIN_DIR}/third_party/stbrumme-crc32")
+
+# stbrumme-keccak
+add_library(stbrumme_keccak "${SILKWORM_MAIN_DIR}/third_party/stbrumme-keccak/keccak.cpp")
+target_include_directories(stbrumme_keccak PUBLIC "${SILKWORM_MAIN_DIR}/third_party/stbrumme-keccak")
+
+# stun-msg
+file(GLOB STUN_MSG_SRC "${SILKWORM_MAIN_DIR}/third_party/stun-msg/src/*.*")
+add_library(stun_msg "${STUN_MSG_SRC}")
+target_include_directories(stun_msg PUBLIC "${SILKWORM_MAIN_DIR}/third_party/stun-msg/include")
+target_compile_options(stun_msg PRIVATE -w) # disable warnings
+
 set(SRC "")
 file(
   GLOB_RECURSE
@@ -36,9 +50,6 @@ file(
 )
 list(FILTER SRC EXCLUDE REGEX "_test\\.cpp$")
 
-list(PREPEND SRC "${SILKWORM_MAIN_DIR}/third_party/stbrumme-keccak/keccak.cpp")
-list(PREPEND SRC "${SILKWORM_MAIN_DIR}/third_party/stbrumme-crc32/Crc32.cpp")
-
 add_library(${TARGET} ${SRC})
 
 # Suppress ASAN/TSAN in gRPC to avoid ODR violation when building Silkworm with sanitizers See
@@ -47,20 +58,16 @@ if(SILKWORM_SANITIZE)
   target_compile_definitions(${TARGET} PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
 endif()
 
-# cmake-format: off
-target_include_directories(
-  ${TARGET}
-  PUBLIC "${SILKWORM_MAIN_DIR}"
-         "${SILKWORM_MAIN_DIR}/third_party/stbrumme-keccak"
-         "${SILKWORM_MAIN_DIR}/third_party/stbrumme-crc32"
-)
-# cmake-format: on
+target_include_directories(${TARGET} PUBLIC "${SILKWORM_MAIN_DIR}")
 
 set(LIBS_PRIVATE
     gRPC::grpc++
     protobuf::libprotobuf
     OpenSSL::Crypto
     Snappy::snappy
+    stbrumme_crc32
+    stbrumme_keccak
+    stun_msg
     silkworm_core
     silkworm_interfaces
     silkworm-buildinfo

@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,23 +16,12 @@
 
 #pragma once
 
-#include <optional>
-#include <string>
-
 #include <boost/asio/ip/address.hpp>
 
-namespace silkworm::sentry {
+#include <silkworm/infra/concurrency/task.hpp>
 
-enum class NatMode {
-    kNone,
-    kExternalIP,
-};
+namespace silkworm::sentry::nat {
 
-struct NatOption {
-    NatMode mode{NatMode::kNone};
-    std::optional<boost::asio::ip::address> value;
-};
+Task<boost::asio::ip::address> stun_ip_resolver();
 
-bool lexical_cast(const std::string& input, NatOption& value);
-
-}  // namespace silkworm::sentry
+}  // namespace silkworm::sentry::nat

@@ -18,7 +18,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
-namespace silkworm::sentry {
+namespace silkworm::sentry::nat {
 
 bool lexical_cast(const std::string& input, NatOption& value) {
     if (input == "none") {
@@ -32,7 +32,11 @@ bool lexical_cast(const std::string& input, NatOption& value) {
         value = {NatMode::kExternalIP, {ip}};
         return !err;
     }
+    if (input == "stun") {
+        value = {NatMode::kStun, std::nullopt};
+        return true;
+    }
     return false;
 }
 
-}  // namespace silkworm::sentry
+}  // namespace silkworm::sentry::nat

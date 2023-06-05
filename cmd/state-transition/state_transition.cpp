@@ -109,8 +109,13 @@ Block StateTransition::get_block(InMemoryState& state, ChainConfig& chain_config
     const evmc_revision rev{chain_config.revision(block.header.number, block.header.timestamp)};
 
     // set difficulty only for revisions before The Merge
+    // current block difficulty cannot fall below miniumum: https://eips.ethereum.org/EIPS/eip-2
+    static constexpr uint64_t kMinDifficulty{0x20000};
     if (!chain_config.terminal_total_difficulty.has_value()) {
         block.header.difficulty = intx::from_string<intx::uint256>(get_env("currentDifficulty"));
+        if (block.header.difficulty < kMinDifficulty && rev <= EVMC_LONDON) {
+            block.header.difficulty = kMinDifficulty;
+        }
     }
 
     if (contains_env("currentBaseFee") && rev >= EVMC_LONDON) {
@@ -130,6 +135,8 @@ Block StateTransition::get_block(InMemoryState& state, ChainConfig& chain_config
     parent_block.header.gas_used = parent_block.header.gas_limit / protocol::kElasticityMultiplier;
     parent_block.header.number = block.header.number - 1;
     parent_block.header.base_fee_per_gas = block.header.base_fee_per_gas;
+    parent_block.header.ommers_hash = kEmptyListHash;
+    parent_block.header.difficulty = intx::from_string<intx::uint256>(get_env("currentDifficulty"));
     state.insert_block(parent_block, block.header.parent_hash);
 
     return block;

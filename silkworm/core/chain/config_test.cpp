@@ -115,7 +115,7 @@ TEST_CASE("distinct_fork_points") {
         1'681'338'455,
     };
     std::vector<uint64_t> kExpectedMainnetForkPoints{kExpectedMainnetForkNumbers};
-    kExpectedMainnetForkPoints.insert(kExpectedMainnetForkNumbers.end(),
+    kExpectedMainnetForkPoints.insert(kExpectedMainnetForkPoints.end(),
                                       kExpectedMainnetForkTimes.cbegin(), kExpectedMainnetForkTimes.cend());
 
     CHECK(kMainnetConfig.distinct_fork_numbers() == kExpectedMainnetForkNumbers);
@@ -131,7 +131,7 @@ TEST_CASE("distinct_fork_points") {
         1'678'832'736,
     };
     std::vector<uint64_t> kExpectedGoerliForkPoints{kExpectedGoerliForkNumbers};
-    kExpectedGoerliForkPoints.insert(kExpectedGoerliForkNumbers.end(),
+    kExpectedGoerliForkPoints.insert(kExpectedGoerliForkPoints.end(),
                                      kExpectedGoerliForkTimes.cbegin(), kExpectedGoerliForkTimes.cend());
 
     CHECK(kGoerliConfig.distinct_fork_numbers() == kExpectedGoerliForkNumbers);

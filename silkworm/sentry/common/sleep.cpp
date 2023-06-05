@@ -25,7 +25,7 @@ namespace silkworm::sentry::common {
 
 using namespace boost::asio;
 
-awaitable<void> sleep(std::chrono::milliseconds duration) {
+Task<void> sleep(std::chrono::milliseconds duration) {
     auto executor = co_await this_coro::executor;
     deadline_timer timer(executor);
     timer.expires_from_now(boost::posix_time::milliseconds(duration.count()));

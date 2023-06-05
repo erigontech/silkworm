@@ -19,9 +19,8 @@
 #include <functional>
 #include <stdexcept>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <grpcpp/grpcpp.h>
 
@@ -42,7 +41,6 @@
 
 namespace silkworm::sentry::grpc::client {
 
-using boost::asio::awaitable;
 namespace proto = ::sentry;
 using Stub = proto::Sentry::Stub;
 namespace sw_rpc = silkworm::rpc;
@@ -58,7 +56,7 @@ class SentryClientImpl final : public api::api_common::Service {
         : channel_(make_grpc_channel(address_uri)),
           stub_(proto::Sentry::NewStub(channel_)),
           grpc_context_(grpc_context),
-          on_disconnect_([]() -> awaitable<void> { co_return; }) {}
+          on_disconnect_([]() -> Task<void> { co_return; }) {}
 
     ~SentryClientImpl() override = default;
 
@@ -70,22 +68,22 @@ class SentryClientImpl final : public api::api_common::Service {
         return (state == GRPC_CHANNEL_READY) || (state == GRPC_CHANNEL_IDLE);
     }
 
-    void on_disconnect(std::function<awaitable<void>()> callback) {
+    void on_disconnect(std::function<Task<void>()> callback) {
         on_disconnect_ = std::move(callback);
     }
 
-    awaitable<void> reconnect() {
+    Task<void> reconnect() {
         co_await sw_rpc::reconnect_channel(*channel_);
     }
 
     // rpc SetStatus(StatusData) returns (SetStatusReply);
-    awaitable<void> set_status(eth::StatusData status_data) override {
+    Task<void> set_status(eth::StatusData status_data) override {
         proto::StatusData request = interfaces::proto_status_data_from_status_data(status_data);
         co_await sw_rpc::unary_rpc_with_retries(&Stub::AsyncSetStatus, stub_, std::move(request), grpc_context_, on_disconnect_, *channel_);
     }
 
     // rpc HandShake(google.protobuf.Empty) returns (HandShakeReply);
-    awaitable<uint8_t> handshake() override {
+    Task<uint8_t> handshake() override {
         google::protobuf::Empty request;
         proto::HandShakeReply reply = co_await sw_rpc::unary_rpc_with_retries(&Stub::AsyncHandShake, stub_, std::move(request), grpc_context_, on_disconnect_, *channel_);
         uint8_t result = interfaces::eth_version_from_protocol(reply.protocol());
@@ -93,7 +91,7 @@ class SentryClientImpl final : public api::api_common::Service {
     }
 
     // rpc NodeInfo(google.protobuf.Empty) returns(types.NodeInfoReply);
-    awaitable<NodeInfos> node_infos() override {
+    Task<NodeInfos> node_infos() override {
         google::protobuf::Empty request;
         types::NodeInfoReply reply = co_await sw_rpc::unary_rpc_with_retries(&Stub::AsyncNodeInfo, stub_, std::move(request), grpc_context_, on_disconnect_, *channel_);
         auto result = interfaces::node_info_from_proto_node_info(reply);
@@ -101,7 +99,7 @@ class SentryClientImpl final : public api::api_common::Service {
     }
 
     // rpc SendMessageById(SendMessageByIdRequest) returns (SentPeers);
-    awaitable<PeerKeys> send_message_by_id(common::Message message, common::EccPublicKey public_key) override {
+    Task<PeerKeys> send_message_by_id(common::Message message, common::EccPublicKey public_key) override {
         proto::SendMessageByIdRequest request;
         request.mutable_data()->CopyFrom(interfaces::outbound_data_from_message(message));
         request.mutable_peer_id()->CopyFrom(interfaces::peer_id_from_public_key(public_key));
@@ -112,7 +110,7 @@ class SentryClientImpl final : public api::api_common::Service {
     }
 
     // rpc SendMessageToRandomPeers(SendMessageToRandomPeersRequest) returns (SentPeers);
-    awaitable<PeerKeys> send_message_to_random_peers(common::Message message, size_t max_peers) override {
+    Task<PeerKeys> send_message_to_random_peers(common::Message message, size_t max_peers) override {
         proto::SendMessageToRandomPeersRequest request;
         request.mutable_data()->CopyFrom(interfaces::outbound_data_from_message(message));
         request.set_max_peers(max_peers);
@@ -123,7 +121,7 @@ class SentryClientImpl final : public api::api_common::Service {
     }
 
     // rpc SendMessageToAll(OutboundMessageData) returns (SentPeers);
-    awaitable<PeerKeys> send_message_to_all(common::Message message) override {
+    Task<PeerKeys> send_message_to_all(common::Message message) override {
         proto::OutboundMessageData request = interfaces::outbound_data_from_message(message);
         proto::SentPeers reply = co_await sw_rpc::unary_rpc_with_retries(&Stub::AsyncSendMessageToAll, stub_, std::move(request), grpc_context_, on_disconnect_, *channel_);
         auto result = interfaces::peer_keys_from_sent_peers_ids(reply);
@@ -131,7 +129,7 @@ class SentryClientImpl final : public api::api_common::Service {
     }
 
     // rpc SendMessageByMinBlock(SendMessageByMinBlockRequest) returns (SentPeers);
-    awaitable<PeerKeys> send_message_by_min_block(common::Message message, size_t max_peers) override {
+    Task<PeerKeys> send_message_by_min_block(common::Message message, size_t max_peers) override {
         proto::SendMessageByMinBlockRequest request;
         request.mutable_data()->CopyFrom(interfaces::outbound_data_from_message(message));
         // TODO: set_min_block
@@ -144,7 +142,7 @@ class SentryClientImpl final : public api::api_common::Service {
     }
 
     // rpc PeerMinBlock(PeerMinBlockRequest) returns (google.protobuf.Empty);
-    awaitable<void> peer_min_block(common::EccPublicKey public_key) override {
+    Task<void> peer_min_block(common::EccPublicKey public_key) override {
         proto::PeerMinBlockRequest request;
         request.mutable_peer_id()->CopyFrom(interfaces::peer_id_from_public_key(public_key));
         // TODO: set_min_block
@@ -153,13 +151,13 @@ class SentryClientImpl final : public api::api_common::Service {
     }
 
     // rpc Messages(MessagesRequest) returns (stream InboundMessage);
-    awaitable<void> messages(
+    Task<void> messages(
         MessageIdSet message_id_filter,
-        std::function<awaitable<void>(MessageFromPeer)> consumer) override {
+        std::function<Task<void>(MessageFromPeer)> consumer) override {
         proto::MessagesRequest request = interfaces::messages_request_from_message_id_set(message_id_filter);
 
-        std::function<awaitable<void>(proto::InboundMessage)> proto_consumer =
-            [consumer = std::move(consumer)](proto::InboundMessage message) -> awaitable<void> {
+        std::function<Task<void>(proto::InboundMessage)> proto_consumer =
+            [consumer = std::move(consumer)](proto::InboundMessage message) -> Task<void> {
             MessageFromPeer message_from_peer{
                 interfaces::message_from_inbound_message(message),
                 {interfaces::peer_public_key_from_id(message.peer_id())},
@@ -178,7 +176,7 @@ class SentryClientImpl final : public api::api_common::Service {
     }
 
     // rpc Peers(google.protobuf.Empty) returns (PeersReply);
-    awaitable<PeerInfos> peers() override {
+    Task<PeerInfos> peers() override {
         google::protobuf::Empty request;
         proto::PeersReply reply = co_await sw_rpc::unary_rpc_with_retries(&Stub::AsyncPeers, stub_, std::move(request), grpc_context_, on_disconnect_, *channel_);
         auto result = interfaces::peer_infos_from_proto_peers_reply(reply);
@@ -186,7 +184,7 @@ class SentryClientImpl final : public api::api_common::Service {
     }
 
     // rpc PeerCount(PeerCountRequest) returns (PeerCountReply);
-    awaitable<size_t> peer_count() override {
+    Task<size_t> peer_count() override {
         proto::PeerCountRequest request;
         proto::PeerCountReply reply = co_await sw_rpc::unary_rpc_with_retries(&Stub::AsyncPeerCount, stub_, std::move(request), grpc_context_, on_disconnect_, *channel_);
         auto result = static_cast<size_t>(reply.count());
@@ -194,7 +192,7 @@ class SentryClientImpl final : public api::api_common::Service {
     }
 
     // rpc PeerById(PeerByIdRequest) returns (PeerByIdReply);
-    awaitable<std::optional<PeerInfo>> peer_by_id(common::EccPublicKey public_key) override {
+    Task<std::optional<PeerInfo>> peer_by_id(common::EccPublicKey public_key) override {
         proto::PeerByIdRequest request;
         request.mutable_peer_id()->CopyFrom(interfaces::peer_id_from_public_key(public_key));
         proto::PeerByIdReply reply = co_await sw_rpc::unary_rpc_with_retries(&Stub::AsyncPeerById, stub_, std::move(request), grpc_context_, on_disconnect_, *channel_);
@@ -203,7 +201,7 @@ class SentryClientImpl final : public api::api_common::Service {
     }
 
     // rpc PenalizePeer(PenalizePeerRequest) returns (google.protobuf.Empty);
-    awaitable<void> penalize_peer(common::EccPublicKey public_key) override {
+    Task<void> penalize_peer(common::EccPublicKey public_key) override {
         proto::PenalizePeerRequest request;
         request.mutable_peer_id()->CopyFrom(interfaces::peer_id_from_public_key(public_key));
         request.set_penalty(proto::PenaltyKind::Kick);
@@ -211,12 +209,12 @@ class SentryClientImpl final : public api::api_common::Service {
     }
 
     // rpc PeerEvents(PeerEventsRequest) returns (stream PeerEvent);
-    awaitable<void> peer_events(
-        std::function<awaitable<void>(PeerEvent)> consumer) override {
+    Task<void> peer_events(
+        std::function<Task<void>(PeerEvent)> consumer) override {
         proto::PeerEventsRequest request;
 
-        std::function<awaitable<void>(proto::PeerEvent)> proto_consumer =
-            [consumer = std::move(consumer)](proto::PeerEvent event) -> awaitable<void> {
+        std::function<Task<void>(proto::PeerEvent)> proto_consumer =
+            [consumer = std::move(consumer)](proto::PeerEvent event) -> Task<void> {
             co_await consumer(interfaces::peer_event_from_proto_peer_event(event));
         };
 
@@ -234,7 +232,7 @@ class SentryClientImpl final : public api::api_common::Service {
     std::shared_ptr<::grpc::Channel> channel_;
     std::unique_ptr<Stub> stub_;
     agrpc::GrpcContext& grpc_context_;
-    std::function<awaitable<void>()> on_disconnect_;
+    std::function<Task<void>()> on_disconnect_;
 };
 
 SentryClient::SentryClient(const std::string& address_uri, agrpc::GrpcContext& grpc_context)
@@ -244,7 +242,7 @@ SentryClient::~SentryClient() {
     log::Trace("sentry") << "silkworm::sentry::grpc::client::SentryClient::~SentryClient";
 }
 
-awaitable<std::shared_ptr<api::api_common::Service>> SentryClient::service() {
+Task<std::shared_ptr<api::api_common::Service>> SentryClient::service() {
     co_return p_impl_;
 }
 
@@ -252,11 +250,11 @@ bool SentryClient::is_ready() {
     return p_impl_->is_ready();
 }
 
-void SentryClient::on_disconnect(std::function<awaitable<void>()> callback) {
+void SentryClient::on_disconnect(std::function<Task<void>()> callback) {
     p_impl_->on_disconnect(std::move(callback));
 }
 
-awaitable<void> SentryClient::reconnect() {
+Task<void> SentryClient::reconnect() {
     return p_impl_->reconnect();
 }
 

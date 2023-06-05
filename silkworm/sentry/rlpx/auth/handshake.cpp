@@ -32,7 +32,7 @@ using namespace std::chrono_literals;
 using namespace concurrency::awaitable_wait_for_one;
 using common::Message;
 
-boost::asio::awaitable<AuthKeys> Handshake::auth(common::SocketStream& stream) {
+Task<AuthKeys> Handshake::auth(common::SocketStream& stream) {
     if (peer_public_key_) {
         auth::AuthInitiator auth_initiator{node_key_, peer_public_key_.value()};
         co_return (co_await auth_initiator.execute(stream));
@@ -42,7 +42,7 @@ boost::asio::awaitable<AuthKeys> Handshake::auth(common::SocketStream& stream) {
     }
 }
 
-boost::asio::awaitable<Handshake::HandshakeResult> Handshake::execute(common::SocketStream& stream) {
+Task<Handshake::HandshakeResult> Handshake::execute(common::SocketStream& stream) {
     auto auth_keys = co_await auth(stream);
     log::Debug("sentry") << "rlpx::auth::Handshake AuthKeys.peer_ephemeral_public_key: " << auth_keys.peer_ephemeral_public_key.hex();
 

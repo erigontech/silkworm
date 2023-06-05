@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <boost/asio/ip/address.hpp>
-
 #include <silkworm/infra/concurrency/task.hpp>
+
+#include <boost/asio/ip/address.hpp>
 
 namespace silkworm::sentry::nat {
 

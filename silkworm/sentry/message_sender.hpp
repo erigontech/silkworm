@@ -16,9 +16,8 @@
 
 #pragma once
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 
 #include <silkworm/infra/concurrency/channel.hpp>
@@ -37,7 +36,7 @@ class MessageSender {
         return send_message_channel_;
     }
 
-    boost::asio::awaitable<void> start(PeerManager& peer_manager);
+    Task<void> start(PeerManager& peer_manager);
 
   private:
     concurrency::Channel<api::router::SendMessageCall> send_message_channel_;

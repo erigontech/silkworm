@@ -19,10 +19,9 @@
 #include <memory>
 #include <vector>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/awaitable.hpp>
 
 #include <silkworm/infra/concurrency/awaitable_future.hpp>
 #include <silkworm/sentry/api/api_common/peer_filter.hpp>
@@ -48,7 +47,7 @@ class SendMessageCall final {
     [[nodiscard]] const sentry::common::Message& message() const { return message_; }
     [[nodiscard]] const api_common::PeerFilter& peer_filter() const { return peer_filter_; }
 
-    boost::asio::awaitable<PeerKeys> result() {
+    Task<PeerKeys> result() {
         auto future = result_promise_->get_future();
         co_return (co_await future.get_async());
     }

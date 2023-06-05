@@ -35,7 +35,7 @@ namespace silkworm::sentry {
 
 using namespace boost::asio;
 
-awaitable<void> PeerManagerApi::start(std::shared_ptr<PeerManagerApi> self) {
+Task<void> PeerManagerApi::start(std::shared_ptr<PeerManagerApi> self) {
     using namespace concurrency::awaitable_wait_for_all;
 
     self->peer_manager_.add_observer(std::weak_ptr(self));
@@ -51,7 +51,7 @@ awaitable<void> PeerManagerApi::start(std::shared_ptr<PeerManagerApi> self) {
     co_await co_spawn(self->strand_, std::move(start), use_awaitable);
 }
 
-awaitable<void> PeerManagerApi::handle_peer_count_calls() {
+Task<void> PeerManagerApi::handle_peer_count_calls() {
     // loop until receive() throws a cancelled exception
     while (true) {
         auto call = co_await peer_count_calls_channel_.receive();
@@ -85,7 +85,7 @@ static std::optional<api::api_common::PeerInfo> make_peer_info(rlpx::Peer& peer)
     };
 }
 
-awaitable<void> PeerManagerApi::handle_peers_calls() {
+Task<void> PeerManagerApi::handle_peers_calls() {
     // loop until receive() throws a cancelled exception
     while (true) {
         auto call = co_await peers_calls_channel_.receive();
@@ -102,7 +102,7 @@ awaitable<void> PeerManagerApi::handle_peers_calls() {
     }
 }
 
-awaitable<void> PeerManagerApi::handle_peer_calls() {
+Task<void> PeerManagerApi::handle_peer_calls() {
     // loop until receive() throws a cancelled exception
     while (true) {
         auto call = co_await peer_calls_channel_.receive();
@@ -120,7 +120,7 @@ awaitable<void> PeerManagerApi::handle_peer_calls() {
     }
 }
 
-awaitable<void> PeerManagerApi::handle_peer_penalize_calls() {
+Task<void> PeerManagerApi::handle_peer_penalize_calls() {
     // loop until receive() throws a cancelled exception
     while (true) {
         auto peer_public_key_opt = co_await peer_penalize_calls_channel_.receive();
@@ -134,7 +134,7 @@ awaitable<void> PeerManagerApi::handle_peer_penalize_calls() {
     }
 }
 
-awaitable<void> PeerManagerApi::handle_peer_events_calls() {
+Task<void> PeerManagerApi::handle_peer_events_calls() {
     auto executor = co_await this_coro::executor;
 
     // loop until receive() throws a cancelled exception
@@ -156,7 +156,7 @@ awaitable<void> PeerManagerApi::handle_peer_events_calls() {
     }
 }
 
-awaitable<void> PeerManagerApi::unsubscribe_peer_events_on_signal(std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal) {
+Task<void> PeerManagerApi::unsubscribe_peer_events_on_signal(std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal) {
     try {
         co_await unsubscribe_signal->wait();
     } catch (const boost::system::system_error& ex) {
@@ -180,7 +180,7 @@ awaitable<void> PeerManagerApi::unsubscribe_peer_events_on_signal(std::shared_pt
     }
 }
 
-awaitable<void> PeerManagerApi::forward_peer_events() {
+Task<void> PeerManagerApi::forward_peer_events() {
     // loop until receive() throws a cancelled exception
     while (true) {
         auto event = co_await peer_events_channel_.receive();

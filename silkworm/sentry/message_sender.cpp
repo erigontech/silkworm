@@ -22,7 +22,7 @@
 
 namespace silkworm::sentry {
 
-boost::asio::awaitable<void> MessageSender::start(PeerManager& peer_manager) {
+Task<void> MessageSender::start(PeerManager& peer_manager) {
     // loop until receive() throws a cancelled exception
     while (true) {
         auto call = co_await send_message_channel_.receive();

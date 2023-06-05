@@ -16,9 +16,7 @@
 
 #pragma once
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/sentry/common/message.hpp>
 #include <silkworm/sentry/common/socket_stream.hpp>
@@ -36,8 +34,8 @@ class MessageStream {
 
     MessageStream(MessageStream&&) = default;
 
-    boost::asio::awaitable<void> send(common::Message message);
-    boost::asio::awaitable<common::Message> receive();
+    Task<void> send(common::Message message);
+    Task<common::Message> receive();
 
     void enable_compression();
 

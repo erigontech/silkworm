@@ -19,9 +19,8 @@
 #include <list>
 #include <memory>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/strand.hpp>
 
@@ -50,17 +49,17 @@ class MessageReceiver : public PeerManagerObserver {
         return message_calls_channel_;
     }
 
-    static boost::asio::awaitable<void> start(std::shared_ptr<MessageReceiver> self, PeerManager& peer_manager);
+    static Task<void> start(std::shared_ptr<MessageReceiver> self, PeerManager& peer_manager);
 
   private:
-    boost::asio::awaitable<void> handle_calls();
-    boost::asio::awaitable<void> unsubscribe_on_signal(std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal);
-    boost::asio::awaitable<void> receive_messages(std::shared_ptr<rlpx::Peer> peer);
+    Task<void> handle_calls();
+    Task<void> unsubscribe_on_signal(std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal);
+    Task<void> receive_messages(std::shared_ptr<rlpx::Peer> peer);
 
     // PeerManagerObserver
     void on_peer_added(std::shared_ptr<rlpx::Peer> peer) override;
     void on_peer_removed(std::shared_ptr<rlpx::Peer> peer) override;
-    boost::asio::awaitable<void> on_peer_added_in_strand(std::shared_ptr<rlpx::Peer> peer);
+    Task<void> on_peer_added_in_strand(std::shared_ptr<rlpx::Peer> peer);
 
     concurrency::Channel<api::router::MessagesCall> message_calls_channel_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;

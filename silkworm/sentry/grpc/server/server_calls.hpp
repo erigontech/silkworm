@@ -19,9 +19,8 @@
 #include <sstream>
 #include <vector>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/this_coro.hpp>
 #include <grpcpp/grpcpp.h>
 #include <gsl/util>
@@ -53,7 +52,6 @@
 
 namespace silkworm::sentry::grpc::server {
 
-using boost::asio::awaitable;
 using boost::asio::io_context;
 namespace protobuf = google::protobuf;
 namespace proto = ::sentry;
@@ -67,7 +65,7 @@ class SetStatusCall : public sw_rpc::server::UnaryCall<proto::StatusData, proto:
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceRouter& router) {
+    Task<void> operator()(const ServiceRouter& router) {
         auto status = interfaces::status_data_from_proto(request_, router.eth_version);
         co_await router.status_channel.send(status);
         co_await agrpc::finish(responder_, proto::SetStatusReply{}, ::grpc::Status::OK);
@@ -81,7 +79,7 @@ class HandshakeCall : public sw_rpc::server::UnaryCall<protobuf::Empty, proto::H
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceRouter& router) {
+    Task<void> operator()(const ServiceRouter& router) {
         proto::HandShakeReply reply;
         auto protocol = interfaces::protocol_from_eth_version(router.eth_version);
         reply.set_protocol(protocol);
@@ -95,13 +93,13 @@ class NodeInfoCall : public sw_rpc::server::UnaryCall<protobuf::Empty, proto_typ
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceRouter& router) {
+    Task<void> operator()(const ServiceRouter& router) {
         auto reply = interfaces::proto_node_info_from_node_info(router.node_info_provider());
         co_await agrpc::finish(responder_, reply, ::grpc::Status::OK);
     }
 };
 
-awaitable<proto::SentPeers> do_send_message_call(
+Task<proto::SentPeers> do_send_message_call(
     const ServiceRouter& router,
     const proto::OutboundMessageData& request,
     api::api_common::PeerFilter peer_filter) {
@@ -123,7 +121,7 @@ class SendMessageByIdCall : public sw_rpc::server::UnaryCall<proto::SendMessageB
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceRouter& router) {
+    Task<void> operator()(const ServiceRouter& router) {
         auto peer_public_key = interfaces::peer_public_key_from_id(request_.peer_id());
         proto::SentPeers reply = co_await do_send_message_call(
             router,
@@ -138,7 +136,7 @@ class SendMessageToRandomPeersCall : public sw_rpc::server::UnaryCall<proto::Sen
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceRouter& router) {
+    Task<void> operator()(const ServiceRouter& router) {
         proto::SentPeers reply = co_await do_send_message_call(
             router,
             request_.data(),
@@ -152,7 +150,7 @@ class SendMessageToAllCall : public sw_rpc::server::UnaryCall<proto::OutboundMes
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceRouter& router) {
+    Task<void> operator()(const ServiceRouter& router) {
         proto::SentPeers reply = co_await do_send_message_call(router, request_, api::api_common::PeerFilter{});
         co_await agrpc::finish(responder_, reply, ::grpc::Status::OK);
     }
@@ -163,7 +161,7 @@ class SendMessageByMinBlockCall : public sw_rpc::server::UnaryCall<proto::SendMe
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceRouter& router) {
+    Task<void> operator()(const ServiceRouter& router) {
         // TODO: use request_.min_block()
         proto::SentPeers reply = co_await do_send_message_call(
             router,
@@ -178,7 +176,7 @@ class PeerMinBlockCall : public sw_rpc::server::UnaryCall<proto::PeerMinBlockReq
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceRouter& /*router*/) {
+    Task<void> operator()(const ServiceRouter& /*router*/) {
         // TODO: implement
         co_await agrpc::finish(responder_, protobuf::Empty{}, ::grpc::Status::OK);
     }
@@ -192,7 +190,7 @@ class MessagesCall : public sw_rpc::server::ServerStreamingCall<proto::MessagesR
   public:
     using Base::ServerStreamingCall;
 
-    awaitable<void> operator()(const ServiceRouter& router) {
+    Task<void> operator()(const ServiceRouter& router) {
         auto executor = co_await boost::asio::this_coro::executor;
         api::router::MessagesCall call{
             interfaces::message_id_set_from_messages_request(request_),
@@ -226,7 +224,7 @@ class PeersCall : public sw_rpc::server::UnaryCall<protobuf::Empty, proto::Peers
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceRouter& router) {
+    Task<void> operator()(const ServiceRouter& router) {
         auto executor = co_await boost::asio::this_coro::executor;
         auto call = std::make_shared<concurrency::AwaitablePromise<api::api_common::PeerInfos>>(executor);
         auto call_future = call->get_future();
@@ -245,7 +243,7 @@ class PeerCountCall : public sw_rpc::server::UnaryCall<proto::PeerCountRequest, 
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceRouter& router) {
+    Task<void> operator()(const ServiceRouter& router) {
         auto executor = co_await boost::asio::this_coro::executor;
         auto call = std::make_shared<concurrency::AwaitablePromise<size_t>>(executor);
         auto call_future = call->get_future();
@@ -264,7 +262,7 @@ class PeerByIdCall : public sw_rpc::server::UnaryCall<proto::PeerByIdRequest, pr
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceRouter& router) {
+    Task<void> operator()(const ServiceRouter& router) {
         auto peer_public_key = interfaces::peer_public_key_from_id(request_.peer_id());
         auto executor = co_await boost::asio::this_coro::executor;
         api::router::PeerCall call{peer_public_key, executor};
@@ -283,7 +281,7 @@ class PenalizePeerCall : public sw_rpc::server::UnaryCall<proto::PenalizePeerReq
   public:
     using Base::UnaryCall;
 
-    awaitable<void> operator()(const ServiceRouter& router) {
+    Task<void> operator()(const ServiceRouter& router) {
         auto peer_public_key = interfaces::peer_public_key_from_id(request_.peer_id());
 
         co_await router.peer_penalize_calls_channel.send({peer_public_key});
@@ -298,7 +296,7 @@ class PeerEventsCall : public sw_rpc::server::ServerStreamingCall<proto::PeerEve
   public:
     using Base::ServerStreamingCall;
 
-    awaitable<void> operator()(const ServiceRouter& router) {
+    Task<void> operator()(const ServiceRouter& router) {
         auto executor = co_await boost::asio::this_coro::executor;
         api::router::PeerEventsCall call{executor};
         auto call_future = call.result_promise->get_future();

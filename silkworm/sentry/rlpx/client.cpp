@@ -31,7 +31,7 @@ namespace silkworm::sentry::rlpx {
 using namespace std::chrono_literals;
 using namespace boost::asio;
 
-awaitable<std::unique_ptr<Peer>> Client::connect(
+Task<std::unique_ptr<Peer>> Client::connect(
     common::EnodeUrl peer_url,
     bool is_static_peer) {
     log::Debug("sentry") << "rlpx::Client connecting to " << peer_url.to_string();

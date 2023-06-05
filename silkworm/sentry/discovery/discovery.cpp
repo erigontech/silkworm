@@ -29,7 +29,7 @@ Discovery::Discovery(std::vector<common::EnodeUrl> peer_urls)
     : peer_urls_(std::move(peer_urls)) {
 }
 
-awaitable<void> Discovery::start() {
+Task<void> Discovery::start() {
     co_return;
 }
 
@@ -47,7 +47,7 @@ static std::vector<T> exclude_vector_items(
     return remaining_items;
 }
 
-awaitable<std::vector<common::EnodeUrl>> Discovery::request_peer_urls(
+Task<std::vector<common::EnodeUrl>> Discovery::request_peer_urls(
     size_t max_count,
     std::vector<common::EnodeUrl> exclude_urls) {
     auto peer_urls = exclude_vector_items(peer_urls_, std::move(exclude_urls));

@@ -35,6 +35,7 @@
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
+#include <silkworm/silkrpc/json/call.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkworm::rpc::trace {

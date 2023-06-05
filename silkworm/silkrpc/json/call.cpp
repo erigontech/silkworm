@@ -20,6 +20,8 @@
 #include <utility>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/silkrpc/common/util.hpp>
+#include <silkworm/silkrpc/json/types.hpp>
 
 #include "types.hpp"
 
@@ -107,4 +109,97 @@ void make_glaze_json_content(std::string& reply, uint32_t id, const silkworm::By
     }
 }
 
+void from_json(const nlohmann::json& json, Bundle& call) {
+    call.transactions = json.at("transactions").get<std::vector<Call>>();
+    if (json.contains("blockOverride")) {
+        call.block_override = json["blockOverride"].get<BlockOverrides>();
+    }
+}
+
+void from_json(const nlohmann::json& json, SimulationContext& sc) {
+    sc.block_number = json["blockNumber"].get<BlockNumberOrHash>();
+
+    if (json.contains("transactionIndex")) {
+        sc.transaction_index = json["transactionIndex"].get<std::int32_t>();
+    }
+}
+
+void from_json(const nlohmann::json& json, AccountOverrides& ao) {
+    if (json.contains("balance")) {
+        ao.balance = json["balance"].get<intx::uint256>();
+    }
+    if (json.contains("nonce")) {
+        ao.nonce = json["nonce"].get<std::uint64_t>();
+    }
+    if (json.contains("code")) {
+        const auto json_data = json.at("code").get<std::string>();
+        ao.code = silkworm::from_hex(json_data);
+    }
+    if (json.contains("state")) {
+        const auto& state = json["state"];
+        auto ss = state.get<std::map<std::string, std::string>>();
+        for (const auto& entry : ss) {
+            auto b32 = bytes32_from_hex(entry.first);
+            auto u256 = intx::from_string<intx::uint256>(entry.second);
+
+            ao.state.emplace(b32, u256);
+        }
+    }
+    if (json.contains("stateDiff")) {
+        const auto& state = json["stateDiff"];
+        auto ss = state.get<std::map<std::string, std::string>>();
+        for (const auto& entry : ss) {
+            auto b32 = bytes32_from_hex(entry.first);
+            auto u256 = intx::from_string<intx::uint256>(entry.second);
+
+            ao.state_diff.emplace(b32, u256);
+        }
+    }
+}
+
+void from_json(const nlohmann::json& json, BlockOverrides& bo) {
+    if (json.contains("blockNumber")) {
+        const auto& jbn = json["blockNumber"];
+        if (jbn.is_string()) {
+            bo.block_number = std::stoull(jbn.get<std::string>(), nullptr, /*base=*/16);
+        } else {
+            bo.block_number = jbn.get<uint64_t>();
+        }
+    }
+    if (json.contains("coinbase")) {
+        bo.coin_base = json["coinbase"].get<evmc::address>();
+    }
+    if (json.contains("timestamp")) {
+        bo.timestamp = json["timestamp"].get<std::uint64_t>();
+    }
+    if (json.contains("difficulty")) {
+        bo.difficulty = json["difficulty"].get<intx::uint256>();
+    }
+    if (json.contains("gasLimit")) {
+        const auto& jbn = json["gasLimit"];
+        if (jbn.is_string()) {
+            bo.gas_limit = std::stoull(jbn.get<std::string>(), nullptr, /*base=*/16);
+        } else {
+            bo.gas_limit = jbn.get<uint64_t>();
+        }
+    }
+    if (json.contains("baseFee")) {
+        const auto& jbn = json["baseFee"];
+        if (jbn.is_string()) {
+            bo.base_fee = std::stoull(jbn.get<std::string>(), nullptr, /*base=*/16);
+        } else {
+            bo.base_fee = jbn.get<uint64_t>();
+        }
+    }
+}
+
+void from_json(const nlohmann::json& json, AccountsOverrides& accounts_overrides) {
+    for (const auto& el : json.items()) {
+        const auto address_bytes = silkworm::from_hex(el.key());
+        const auto key = silkworm::to_evmc_address(address_bytes.value_or(silkworm::Bytes{}));
+        const auto value = el.value().get<AccountOverrides>();
+
+        accounts_overrides.emplace(key, value);
+    }
+}
 }  // namespace silkworm::rpc

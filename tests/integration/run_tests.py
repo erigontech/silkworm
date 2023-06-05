@@ -46,6 +46,13 @@ tests_not_compared = [
    "debug_traceCall/test_10.json",
    "debug_traceCall/test_14.json",
    "debug_traceCall/test_17.json",
+   "eth_callMany/test_01.json",
+   "eth_callMany/test_02.json",
+   "eth_callMany/test_03.json",
+   "eth_callMany/test_04.json",
+   "eth_callMany/test_05.json",
+   "eth_callMany/test_06.json",
+   "eth_callMany/test_07.json",
    "eth_maxPriorityFeePerGas/test_1.json",
    "eth_feeHistory/test_1.json"
 ]

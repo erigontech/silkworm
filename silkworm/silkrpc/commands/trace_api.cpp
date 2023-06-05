@@ -28,6 +28,7 @@
 #include <silkworm/silkrpc/core/evm_trace.hpp>
 #include <silkworm/silkrpc/ethdb/kv/cached_database.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
+#include <silkworm/silkrpc/json/call.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/types/call.hpp>
 

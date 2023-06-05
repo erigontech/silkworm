@@ -831,7 +831,6 @@ uint64_t reset_map_sequence(RWTxn& txn, const char* map_name, uint64_t new_seque
     return current_sequence;
 }
 
-
 const std::string kHeadBlockHash = "headBlockHash";
 const std::string kSafeBlockHash = "safeBlockHash";
 const std::string kFinalizedBlockHash = "finalizedBlockHash";

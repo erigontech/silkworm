@@ -16,8 +16,7 @@
 
 #include "config.hpp"
 
-#include <algorithm>
-#include <iterator>
+#include <vector>
 
 #include <catch2/catch.hpp>
 
@@ -115,10 +114,9 @@ TEST_CASE("distinct_fork_points") {
     const std::vector<BlockNum> kExpectedMainnetForkTimes{
         1'681'338'455,
     };
-    std::vector<uint64_t> kExpectedMainnetForkPoints;
-    std::merge(kExpectedMainnetForkNumbers.begin(), kExpectedMainnetForkNumbers.end(),
-               kExpectedMainnetForkTimes.begin(), kExpectedMainnetForkTimes.end(),
-               std::back_inserter(kExpectedMainnetForkPoints));
+    std::vector<uint64_t> kExpectedMainnetForkPoints{kExpectedMainnetForkNumbers};
+    kExpectedMainnetForkPoints.insert(kExpectedMainnetForkNumbers.end(),
+                                      kExpectedMainnetForkTimes.cbegin(), kExpectedMainnetForkTimes.cend());
 
     CHECK(kMainnetConfig.distinct_fork_numbers() == kExpectedMainnetForkNumbers);
     CHECK(kMainnetConfig.distinct_fork_times() == kExpectedMainnetForkTimes);
@@ -132,10 +130,9 @@ TEST_CASE("distinct_fork_points") {
     const std::vector<BlockNum> kExpectedGoerliForkTimes{
         1'678'832'736,
     };
-    std::vector<uint64_t> kExpectedGoerliForkPoints;
-    std::merge(kExpectedGoerliForkNumbers.begin(), kExpectedGoerliForkNumbers.end(),
-               kExpectedGoerliForkTimes.begin(), kExpectedGoerliForkTimes.end(),
-               std::back_inserter(kExpectedGoerliForkPoints));
+    std::vector<uint64_t> kExpectedGoerliForkPoints{kExpectedGoerliForkNumbers};
+    kExpectedGoerliForkPoints.insert(kExpectedGoerliForkNumbers.end(),
+                                     kExpectedGoerliForkTimes.cbegin(), kExpectedGoerliForkTimes.cend());
 
     CHECK(kGoerliConfig.distinct_fork_numbers() == kExpectedGoerliForkNumbers);
     CHECK(kGoerliConfig.distinct_fork_times() == kExpectedGoerliForkTimes);

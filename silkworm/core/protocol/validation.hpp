@@ -90,6 +90,7 @@ enum class [[nodiscard]] ValidationResult{
     kWrongWithdrawalsRoot,
 
     // EIP-4844: Shard Blob Transactions
+    kWrongDataGasUsed,
     kWrongExcessDataGas,
     kNoBlobs,
     kTooManyBlobs,
@@ -114,8 +115,7 @@ namespace protocol {
     std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& parent, const evmc_revision);
 
     //! \see EIP-4844: Shard Blob Transactions
-    std::optional<intx::uint256> calc_excess_data_gas(const BlockHeader& parent, std::size_t num_blobs,
-                                                      const evmc_revision);
+    std::optional<uint64_t> calc_excess_data_gas(const BlockHeader& parent, const evmc_revision);
 
     //! \brief Calculate the transaction root of a block body
     evmc::bytes32 compute_transaction_root(const BlockBody& body);

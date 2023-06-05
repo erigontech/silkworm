@@ -81,12 +81,13 @@ PROTOBUF_CONSTEXPR Header::Header(
   , /*decltype(_impl_.transaction_hash_)*/nullptr
   , /*decltype(_impl_.base_fee_per_gas_)*/nullptr
   , /*decltype(_impl_.withdrawal_hash_)*/nullptr
-  , /*decltype(_impl_.excess_data_gas_)*/nullptr
   , /*decltype(_impl_.block_number_)*/uint64_t{0u}
   , /*decltype(_impl_.gas_limit_)*/uint64_t{0u}
   , /*decltype(_impl_.gas_used_)*/uint64_t{0u}
   , /*decltype(_impl_.timestamp_)*/uint64_t{0u}
-  , /*decltype(_impl_.nonce_)*/uint64_t{0u}} {}
+  , /*decltype(_impl_.nonce_)*/uint64_t{0u}
+  , /*decltype(_impl_.data_gas_used_)*/uint64_t{0u}
+  , /*decltype(_impl_.excess_data_gas_)*/uint64_t{0u}} {}
 struct HeaderDefaultTypeInternal {
   PROTOBUF_CONSTEXPR HeaderDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
@@ -264,6 +265,7 @@ const uint32_t TableStruct_execution_2fexecution_2eproto::offsets[] PROTOBUF_SEC
   PROTOBUF_FIELD_OFFSET(::execution::Header, _impl_.transaction_hash_),
   PROTOBUF_FIELD_OFFSET(::execution::Header, _impl_.base_fee_per_gas_),
   PROTOBUF_FIELD_OFFSET(::execution::Header, _impl_.withdrawal_hash_),
+  PROTOBUF_FIELD_OFFSET(::execution::Header, _impl_.data_gas_used_),
   PROTOBUF_FIELD_OFFSET(::execution::Header, _impl_.excess_data_gas_),
   ~0u,
   ~0u,
@@ -284,6 +286,7 @@ const uint32_t TableStruct_execution_2fexecution_2eproto::offsets[] PROTOBUF_SEC
   0,
   1,
   2,
+  3,
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::execution::BlockBody, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -354,15 +357,15 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 0, -1, -1, sizeof(::execution::ForkChoiceReceipt)},
   { 8, 17, -1, sizeof(::execution::ValidationReceipt)},
   { 20, -1, -1, sizeof(::execution::IsCanonicalResponse)},
-  { 27, 52, -1, sizeof(::execution::Header)},
-  { 71, -1, -1, sizeof(::execution::BlockBody)},
-  { 82, 89, -1, sizeof(::execution::GetHeaderResponse)},
-  { 90, 97, -1, sizeof(::execution::GetBodyResponse)},
-  { 98, 105, -1, sizeof(::execution::GetHeaderHashNumberResponse)},
-  { 106, 114, -1, sizeof(::execution::GetSegmentRequest)},
-  { 116, -1, -1, sizeof(::execution::InsertHeadersRequest)},
-  { 123, -1, -1, sizeof(::execution::InsertBodiesRequest)},
-  { 130, -1, -1, sizeof(::execution::EmptyMessage)},
+  { 27, 53, -1, sizeof(::execution::Header)},
+  { 73, -1, -1, sizeof(::execution::BlockBody)},
+  { 84, 91, -1, sizeof(::execution::GetHeaderResponse)},
+  { 92, 99, -1, sizeof(::execution::GetBodyResponse)},
+  { 100, 107, -1, sizeof(::execution::GetHeaderHashNumberResponse)},
+  { 108, 116, -1, sizeof(::execution::GetSegmentRequest)},
+  { 118, -1, -1, sizeof(::execution::InsertHeadersRequest)},
+  { 125, -1, -1, sizeof(::execution::InsertBodiesRequest)},
+  { 132, -1, -1, sizeof(::execution::EmptyMessage)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -389,7 +392,7 @@ const char descriptor_table_protodef_execution_2fexecution_2eproto[] PROTOBUF_SE
   "idationStatus\022&\n\021latest_valid_hash\030\002 \001(\013"
   "2\013.types.H256\022&\n\014missing_hash\030\003 \001(\0132\013.ty"
   "pes.H256H\000\210\001\001B\017\n\r_missing_hash\"(\n\023IsCano"
-  "nicalResponse\022\021\n\tcanonical\030\001 \001(\010\"\213\005\n\006Hea"
+  "nicalResponse\022\021\n\tcanonical\030\001 \001(\010\"\254\005\n\006Hea"
   "der\022 \n\013parent_hash\030\001 \001(\0132\013.types.H256\022\035\n"
   "\010coinbase\030\002 \001(\0132\013.types.H160\022\037\n\nstate_ro"
   "ot\030\003 \001(\0132\013.types.H256\022!\n\014receipt_root\030\004 "
@@ -403,51 +406,52 @@ const char descriptor_table_protodef_execution_2fexecution_2eproto[] PROTOBUF_SE
   "\001(\0132\013.types.H256\022%\n\020transaction_hash\030\020 \001"
   "(\0132\013.types.H256\022*\n\020base_fee_per_gas\030\021 \001("
   "\0132\013.types.H256H\000\210\001\001\022)\n\017withdrawal_hash\030\022"
-  " \001(\0132\013.types.H256H\001\210\001\001\022)\n\017excess_data_ga"
-  "s\030\023 \001(\0132\013.types.H256H\002\210\001\001B\023\n\021_base_fee_p"
-  "er_gasB\022\n\020_withdrawal_hashB\022\n\020_excess_da"
-  "ta_gas\"\243\001\n\tBlockBody\022\037\n\nblock_hash\030\001 \001(\013"
-  "2\013.types.H256\022\024\n\014block_number\030\002 \001(\004\022\024\n\014t"
-  "ransactions\030\003 \003(\014\022!\n\006uncles\030\004 \003(\0132\021.exec"
-  "ution.Header\022&\n\013withdrawals\030\005 \003(\0132\021.type"
-  "s.Withdrawal\"F\n\021GetHeaderResponse\022&\n\006hea"
-  "der\030\001 \001(\0132\021.execution.HeaderH\000\210\001\001B\t\n\007_he"
-  "ader\"C\n\017GetBodyResponse\022\'\n\004body\030\001 \001(\0132\024."
-  "execution.BlockBodyH\000\210\001\001B\007\n\005_body\"I\n\033Get"
-  "HeaderHashNumberResponse\022\031\n\014block_number"
-  "\030\001 \001(\004H\000\210\001\001B\017\n\r_block_number\"t\n\021GetSegme"
-  "ntRequest\022\031\n\014block_number\030\001 \001(\004H\000\210\001\001\022$\n\n"
-  "block_hash\030\002 \001(\0132\013.types.H256H\001\210\001\001B\017\n\r_b"
-  "lock_numberB\r\n\013_block_hash\":\n\024InsertHead"
-  "ersRequest\022\"\n\007headers\030\001 \003(\0132\021.execution."
-  "Header\";\n\023InsertBodiesRequest\022$\n\006bodies\030"
-  "\001 \003(\0132\024.execution.BlockBody\"\016\n\014EmptyMess"
-  "age*U\n\020ValidationStatus\022\013\n\007Success\020\000\022\020\n\014"
-  "InvalidChain\020\001\022\016\n\nTooFarAway\020\002\022\022\n\016Missin"
-  "gSegment\020\0032\367\004\n\tExecution\022I\n\rInsertHeader"
-  "s\022\037.execution.InsertHeadersRequest\032\027.exe"
-  "cution.EmptyMessage\022G\n\014InsertBodies\022\036.ex"
-  "ecution.InsertBodiesRequest\032\027.execution."
-  "EmptyMessage\022:\n\rValidateChain\022\013.types.H2"
-  "56\032\034.execution.ValidationReceipt\022=\n\020Upda"
-  "teForkChoice\022\013.types.H256\032\034.execution.Fo"
-  "rkChoiceReceipt\022A\n\rAssembleBlock\022\027.execu"
-  "tion.EmptyMessage\032\027.types.ExecutionPaylo"
-  "ad\022G\n\tGetHeader\022\034.execution.GetSegmentRe"
-  "quest\032\034.execution.GetHeaderResponse\022C\n\007G"
-  "etBody\022\034.execution.GetSegmentRequest\032\032.e"
-  "xecution.GetBodyResponse\022>\n\017IsCanonicalH"
-  "ash\022\013.types.H256\032\036.execution.IsCanonical"
-  "Response\022J\n\023GetHeaderHashNumber\022\013.types."
-  "H256\032&.execution.GetHeaderHashNumberResp"
-  "onseB\027Z\025./execution;executionb\006proto3"
+  " \001(\0132\013.types.H256H\001\210\001\001\022\032\n\rdata_gas_used\030"
+  "\023 \001(\004H\002\210\001\001\022\034\n\017excess_data_gas\030\024 \001(\004H\003\210\001\001"
+  "B\023\n\021_base_fee_per_gasB\022\n\020_withdrawal_has"
+  "hB\020\n\016_data_gas_usedB\022\n\020_excess_data_gas\""
+  "\243\001\n\tBlockBody\022\037\n\nblock_hash\030\001 \001(\0132\013.type"
+  "s.H256\022\024\n\014block_number\030\002 \001(\004\022\024\n\014transact"
+  "ions\030\003 \003(\014\022!\n\006uncles\030\004 \003(\0132\021.execution.H"
+  "eader\022&\n\013withdrawals\030\005 \003(\0132\021.types.Withd"
+  "rawal\"F\n\021GetHeaderResponse\022&\n\006header\030\001 \001"
+  "(\0132\021.execution.HeaderH\000\210\001\001B\t\n\007_header\"C\n"
+  "\017GetBodyResponse\022\'\n\004body\030\001 \001(\0132\024.executi"
+  "on.BlockBodyH\000\210\001\001B\007\n\005_body\"I\n\033GetHeaderH"
+  "ashNumberResponse\022\031\n\014block_number\030\001 \001(\004H"
+  "\000\210\001\001B\017\n\r_block_number\"t\n\021GetSegmentReque"
+  "st\022\031\n\014block_number\030\001 \001(\004H\000\210\001\001\022$\n\nblock_h"
+  "ash\030\002 \001(\0132\013.types.H256H\001\210\001\001B\017\n\r_block_nu"
+  "mberB\r\n\013_block_hash\":\n\024InsertHeadersRequ"
+  "est\022\"\n\007headers\030\001 \003(\0132\021.execution.Header\""
+  ";\n\023InsertBodiesRequest\022$\n\006bodies\030\001 \003(\0132\024"
+  ".execution.BlockBody\"\016\n\014EmptyMessage*U\n\020"
+  "ValidationStatus\022\013\n\007Success\020\000\022\020\n\014Invalid"
+  "Chain\020\001\022\016\n\nTooFarAway\020\002\022\022\n\016MissingSegmen"
+  "t\020\0032\367\004\n\tExecution\022I\n\rInsertHeaders\022\037.exe"
+  "cution.InsertHeadersRequest\032\027.execution."
+  "EmptyMessage\022G\n\014InsertBodies\022\036.execution"
+  ".InsertBodiesRequest\032\027.execution.EmptyMe"
+  "ssage\022:\n\rValidateChain\022\013.types.H256\032\034.ex"
+  "ecution.ValidationReceipt\022=\n\020UpdateForkC"
+  "hoice\022\013.types.H256\032\034.execution.ForkChoic"
+  "eReceipt\022A\n\rAssembleBlock\022\027.execution.Em"
+  "ptyMessage\032\027.types.ExecutionPayload\022G\n\tG"
+  "etHeader\022\034.execution.GetSegmentRequest\032\034"
+  ".execution.GetHeaderResponse\022C\n\007GetBody\022"
+  "\034.execution.GetSegmentRequest\032\032.executio"
+  "n.GetBodyResponse\022>\n\017IsCanonicalHash\022\013.t"
+  "ypes.H256\032\036.execution.IsCanonicalRespons"
+  "e\022J\n\023GetHeaderHashNumber\022\013.types.H256\032&."
+  "execution.GetHeaderHashNumberResponseB\027Z"
+  "\025./execution;executionb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_execution_2fexecution_2eproto_deps[1] = {
   &::descriptor_table_types_2ftypes_2eproto,
 };
 static ::_pbi::once_flag descriptor_table_execution_2fexecution_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_execution_2fexecution_2eproto = {
-    false, false, 2397, descriptor_table_protodef_execution_2fexecution_2eproto,
+    false, false, 2430, descriptor_table_protodef_execution_2fexecution_2eproto,
     "execution/execution.proto",
     &descriptor_table_execution_2fexecution_2eproto_once, descriptor_table_execution_2fexecution_2eproto_deps, 1, 12,
     schemas, file_default_instances, TableStruct_execution_2fexecution_2eproto::offsets,
@@ -1199,9 +1203,11 @@ class Header::_Internal {
   static void set_has_withdrawal_hash(HasBits* has_bits) {
     (*has_bits)[0] |= 2u;
   }
-  static const ::types::H256& excess_data_gas(const Header* msg);
-  static void set_has_excess_data_gas(HasBits* has_bits) {
+  static void set_has_data_gas_used(HasBits* has_bits) {
     (*has_bits)[0] |= 4u;
+  }
+  static void set_has_excess_data_gas(HasBits* has_bits) {
+    (*has_bits)[0] |= 8u;
   }
 };
 
@@ -1252,10 +1258,6 @@ Header::_Internal::base_fee_per_gas(const Header* msg) {
 const ::types::H256&
 Header::_Internal::withdrawal_hash(const Header* msg) {
   return *msg->_impl_.withdrawal_hash_;
-}
-const ::types::H256&
-Header::_Internal::excess_data_gas(const Header* msg) {
-  return *msg->_impl_.excess_data_gas_;
 }
 void Header::clear_parent_hash() {
   if (GetArenaForAllocation() == nullptr && _impl_.parent_hash_ != nullptr) {
@@ -1325,10 +1327,6 @@ void Header::clear_withdrawal_hash() {
   if (_impl_.withdrawal_hash_ != nullptr) _impl_.withdrawal_hash_->Clear();
   _impl_._has_bits_[0] &= ~0x00000002u;
 }
-void Header::clear_excess_data_gas() {
-  if (_impl_.excess_data_gas_ != nullptr) _impl_.excess_data_gas_->Clear();
-  _impl_._has_bits_[0] &= ~0x00000004u;
-}
 Header::Header(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
@@ -1354,12 +1352,13 @@ Header::Header(const Header& from)
     , decltype(_impl_.transaction_hash_){nullptr}
     , decltype(_impl_.base_fee_per_gas_){nullptr}
     , decltype(_impl_.withdrawal_hash_){nullptr}
-    , decltype(_impl_.excess_data_gas_){nullptr}
     , decltype(_impl_.block_number_){}
     , decltype(_impl_.gas_limit_){}
     , decltype(_impl_.gas_used_){}
     , decltype(_impl_.timestamp_){}
-    , decltype(_impl_.nonce_){}};
+    , decltype(_impl_.nonce_){}
+    , decltype(_impl_.data_gas_used_){}
+    , decltype(_impl_.excess_data_gas_){}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   _impl_.extra_data_.InitDefault();
@@ -1406,12 +1405,9 @@ Header::Header(const Header& from)
   if (from._internal_has_withdrawal_hash()) {
     _this->_impl_.withdrawal_hash_ = new ::types::H256(*from._impl_.withdrawal_hash_);
   }
-  if (from._internal_has_excess_data_gas()) {
-    _this->_impl_.excess_data_gas_ = new ::types::H256(*from._impl_.excess_data_gas_);
-  }
   ::memcpy(&_impl_.block_number_, &from._impl_.block_number_,
-    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.nonce_) -
-    reinterpret_cast<char*>(&_impl_.block_number_)) + sizeof(_impl_.nonce_));
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.excess_data_gas_) -
+    reinterpret_cast<char*>(&_impl_.block_number_)) + sizeof(_impl_.excess_data_gas_));
   // @@protoc_insertion_point(copy_constructor:execution.Header)
 }
 
@@ -1435,12 +1431,13 @@ inline void Header::SharedCtor(
     , decltype(_impl_.transaction_hash_){nullptr}
     , decltype(_impl_.base_fee_per_gas_){nullptr}
     , decltype(_impl_.withdrawal_hash_){nullptr}
-    , decltype(_impl_.excess_data_gas_){nullptr}
     , decltype(_impl_.block_number_){uint64_t{0u}}
     , decltype(_impl_.gas_limit_){uint64_t{0u}}
     , decltype(_impl_.gas_used_){uint64_t{0u}}
     , decltype(_impl_.timestamp_){uint64_t{0u}}
     , decltype(_impl_.nonce_){uint64_t{0u}}
+    , decltype(_impl_.data_gas_used_){uint64_t{0u}}
+    , decltype(_impl_.excess_data_gas_){uint64_t{0u}}
   };
   _impl_.extra_data_.InitDefault();
   #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
@@ -1472,7 +1469,6 @@ inline void Header::SharedDtor() {
   if (this != internal_default_instance()) delete _impl_.transaction_hash_;
   if (this != internal_default_instance()) delete _impl_.base_fee_per_gas_;
   if (this != internal_default_instance()) delete _impl_.withdrawal_hash_;
-  if (this != internal_default_instance()) delete _impl_.excess_data_gas_;
 }
 
 void Header::SetCachedSize(int size) const {
@@ -1527,7 +1523,7 @@ void Header::Clear() {
   }
   _impl_.transaction_hash_ = nullptr;
   cached_has_bits = _impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000007u) {
+  if (cached_has_bits & 0x00000003u) {
     if (cached_has_bits & 0x00000001u) {
       GOOGLE_DCHECK(_impl_.base_fee_per_gas_ != nullptr);
       _impl_.base_fee_per_gas_->Clear();
@@ -1536,14 +1532,15 @@ void Header::Clear() {
       GOOGLE_DCHECK(_impl_.withdrawal_hash_ != nullptr);
       _impl_.withdrawal_hash_->Clear();
     }
-    if (cached_has_bits & 0x00000004u) {
-      GOOGLE_DCHECK(_impl_.excess_data_gas_ != nullptr);
-      _impl_.excess_data_gas_->Clear();
-    }
   }
   ::memset(&_impl_.block_number_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&_impl_.nonce_) -
       reinterpret_cast<char*>(&_impl_.block_number_)) + sizeof(_impl_.nonce_));
+  if (cached_has_bits & 0x0000000cu) {
+    ::memset(&_impl_.data_gas_used_, 0, static_cast<size_t>(
+        reinterpret_cast<char*>(&_impl_.excess_data_gas_) -
+        reinterpret_cast<char*>(&_impl_.data_gas_used_)) + sizeof(_impl_.excess_data_gas_));
+  }
   _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
@@ -1700,10 +1697,20 @@ const char* Header::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
         } else
           goto handle_unusual;
         continue;
-      // optional .types.H256 excess_data_gas = 19;
+      // optional uint64 data_gas_used = 19;
       case 19:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 154)) {
-          ptr = ctx->ParseMessage(_internal_mutable_excess_data_gas(), ptr);
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 152)) {
+          _Internal::set_has_data_gas_used(&has_bits);
+          _impl_.data_gas_used_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // optional uint64 excess_data_gas = 20;
+      case 20:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 160)) {
+          _Internal::set_has_excess_data_gas(&has_bits);
+          _impl_.excess_data_gas_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -1858,11 +1865,16 @@ uint8_t* Header::_InternalSerialize(
         _Internal::withdrawal_hash(this).GetCachedSize(), target, stream);
   }
 
-  // optional .types.H256 excess_data_gas = 19;
+  // optional uint64 data_gas_used = 19;
+  if (_internal_has_data_gas_used()) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(19, this->_internal_data_gas_used(), target);
+  }
+
+  // optional uint64 excess_data_gas = 20;
   if (_internal_has_excess_data_gas()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(19, _Internal::excess_data_gas(this),
-        _Internal::excess_data_gas(this).GetCachedSize(), target, stream);
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(20, this->_internal_excess_data_gas(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1959,7 +1971,7 @@ size_t Header::ByteSizeLong() const {
   }
 
   cached_has_bits = _impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000007u) {
+  if (cached_has_bits & 0x00000003u) {
     // optional .types.H256 base_fee_per_gas = 17;
     if (cached_has_bits & 0x00000001u) {
       total_size += 2 +
@@ -1972,13 +1984,6 @@ size_t Header::ByteSizeLong() const {
       total_size += 2 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
           *_impl_.withdrawal_hash_);
-    }
-
-    // optional .types.H256 excess_data_gas = 19;
-    if (cached_has_bits & 0x00000004u) {
-      total_size += 2 +
-        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-          *_impl_.excess_data_gas_);
     }
 
   }
@@ -2007,6 +2012,22 @@ size_t Header::ByteSizeLong() const {
     total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_nonce());
   }
 
+  if (cached_has_bits & 0x0000000cu) {
+    // optional uint64 data_gas_used = 19;
+    if (cached_has_bits & 0x00000004u) {
+      total_size += 2 +
+        ::_pbi::WireFormatLite::UInt64Size(
+          this->_internal_data_gas_used());
+    }
+
+    // optional uint64 excess_data_gas = 20;
+    if (cached_has_bits & 0x00000008u) {
+      total_size += 2 +
+        ::_pbi::WireFormatLite::UInt64Size(
+          this->_internal_excess_data_gas());
+    }
+
+  }
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
@@ -2069,7 +2090,7 @@ void Header::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBU
         from._internal_transaction_hash());
   }
   cached_has_bits = from._impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000007u) {
+  if (cached_has_bits & 0x00000003u) {
     if (cached_has_bits & 0x00000001u) {
       _this->_internal_mutable_base_fee_per_gas()->::types::H256::MergeFrom(
           from._internal_base_fee_per_gas());
@@ -2077,10 +2098,6 @@ void Header::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBU
     if (cached_has_bits & 0x00000002u) {
       _this->_internal_mutable_withdrawal_hash()->::types::H256::MergeFrom(
           from._internal_withdrawal_hash());
-    }
-    if (cached_has_bits & 0x00000004u) {
-      _this->_internal_mutable_excess_data_gas()->::types::H256::MergeFrom(
-          from._internal_excess_data_gas());
     }
   }
   if (from._internal_block_number() != 0) {
@@ -2097,6 +2114,15 @@ void Header::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBU
   }
   if (from._internal_nonce() != 0) {
     _this->_internal_set_nonce(from._internal_nonce());
+  }
+  if (cached_has_bits & 0x0000000cu) {
+    if (cached_has_bits & 0x00000004u) {
+      _this->_impl_.data_gas_used_ = from._impl_.data_gas_used_;
+    }
+    if (cached_has_bits & 0x00000008u) {
+      _this->_impl_.excess_data_gas_ = from._impl_.excess_data_gas_;
+    }
+    _this->_impl_._has_bits_[0] |= cached_has_bits;
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -2123,8 +2149,8 @@ void Header::InternalSwap(Header* other) {
       &other->_impl_.extra_data_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(Header, _impl_.nonce_)
-      + sizeof(Header::_impl_.nonce_)
+      PROTOBUF_FIELD_OFFSET(Header, _impl_.excess_data_gas_)
+      + sizeof(Header::_impl_.excess_data_gas_)
       - PROTOBUF_FIELD_OFFSET(Header, _impl_.parent_hash_)>(
           reinterpret_cast<char*>(&_impl_.parent_hash_),
           reinterpret_cast<char*>(&other->_impl_.parent_hash_));

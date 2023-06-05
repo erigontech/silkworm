@@ -1446,11 +1446,12 @@ class ExecutionPayload final :
     kPrevRandaoFieldNumber = 7,
     kBaseFeePerGasFieldNumber = 13,
     kBlockHashFieldNumber = 14,
-    kExcessDataGasFieldNumber = 17,
     kBlockNumberFieldNumber = 8,
     kGasLimitFieldNumber = 9,
     kGasUsedFieldNumber = 10,
     kTimestampFieldNumber = 11,
+    kDataGasUsedFieldNumber = 17,
+    kExcessDataGasFieldNumber = 18,
     kVersionFieldNumber = 1,
   };
   // repeated bytes transactions = 15;
@@ -1653,24 +1654,6 @@ class ExecutionPayload final :
       ::types::H256* block_hash);
   ::types::H256* unsafe_arena_release_block_hash();
 
-  // optional .types.H256 excess_data_gas = 17;
-  bool has_excess_data_gas() const;
-  private:
-  bool _internal_has_excess_data_gas() const;
-  public:
-  void clear_excess_data_gas();
-  const ::types::H256& excess_data_gas() const;
-  PROTOBUF_NODISCARD ::types::H256* release_excess_data_gas();
-  ::types::H256* mutable_excess_data_gas();
-  void set_allocated_excess_data_gas(::types::H256* excess_data_gas);
-  private:
-  const ::types::H256& _internal_excess_data_gas() const;
-  ::types::H256* _internal_mutable_excess_data_gas();
-  public:
-  void unsafe_arena_set_allocated_excess_data_gas(
-      ::types::H256* excess_data_gas);
-  ::types::H256* unsafe_arena_release_excess_data_gas();
-
   // uint64 block_number = 8;
   void clear_block_number();
   uint64_t block_number() const;
@@ -1707,6 +1690,32 @@ class ExecutionPayload final :
   void _internal_set_timestamp(uint64_t value);
   public:
 
+  // optional uint64 data_gas_used = 17;
+  bool has_data_gas_used() const;
+  private:
+  bool _internal_has_data_gas_used() const;
+  public:
+  void clear_data_gas_used();
+  uint64_t data_gas_used() const;
+  void set_data_gas_used(uint64_t value);
+  private:
+  uint64_t _internal_data_gas_used() const;
+  void _internal_set_data_gas_used(uint64_t value);
+  public:
+
+  // optional uint64 excess_data_gas = 18;
+  bool has_excess_data_gas() const;
+  private:
+  bool _internal_has_excess_data_gas() const;
+  public:
+  void clear_excess_data_gas();
+  uint64_t excess_data_gas() const;
+  void set_excess_data_gas(uint64_t value);
+  private:
+  uint64_t _internal_excess_data_gas() const;
+  void _internal_set_excess_data_gas(uint64_t value);
+  public:
+
   // uint32 version = 1;
   void clear_version();
   uint32_t version() const;
@@ -1737,11 +1746,12 @@ class ExecutionPayload final :
     ::types::H256* prev_randao_;
     ::types::H256* base_fee_per_gas_;
     ::types::H256* block_hash_;
-    ::types::H256* excess_data_gas_;
     uint64_t block_number_;
     uint64_t gas_limit_;
     uint64_t gas_used_;
     uint64_t timestamp_;
+    uint64_t data_gas_used_;
+    uint64_t excess_data_gas_;
     uint32_t version_;
   };
   union { Impl_ _impl_; };
@@ -2060,35 +2070,35 @@ class BlobsBundleV1 final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kKzgsFieldNumber = 2,
-    kBlobsFieldNumber = 3,
-    kBlockHashFieldNumber = 1,
+    kCommitmentsFieldNumber = 1,
+    kBlobsFieldNumber = 2,
+    kProofsFieldNumber = 3,
   };
-  // repeated bytes kzgs = 2;
-  int kzgs_size() const;
+  // repeated bytes commitments = 1;
+  int commitments_size() const;
   private:
-  int _internal_kzgs_size() const;
+  int _internal_commitments_size() const;
   public:
-  void clear_kzgs();
-  const std::string& kzgs(int index) const;
-  std::string* mutable_kzgs(int index);
-  void set_kzgs(int index, const std::string& value);
-  void set_kzgs(int index, std::string&& value);
-  void set_kzgs(int index, const char* value);
-  void set_kzgs(int index, const void* value, size_t size);
-  std::string* add_kzgs();
-  void add_kzgs(const std::string& value);
-  void add_kzgs(std::string&& value);
-  void add_kzgs(const char* value);
-  void add_kzgs(const void* value, size_t size);
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& kzgs() const;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_kzgs();
+  void clear_commitments();
+  const std::string& commitments(int index) const;
+  std::string* mutable_commitments(int index);
+  void set_commitments(int index, const std::string& value);
+  void set_commitments(int index, std::string&& value);
+  void set_commitments(int index, const char* value);
+  void set_commitments(int index, const void* value, size_t size);
+  std::string* add_commitments();
+  void add_commitments(const std::string& value);
+  void add_commitments(std::string&& value);
+  void add_commitments(const char* value);
+  void add_commitments(const void* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& commitments() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_commitments();
   private:
-  const std::string& _internal_kzgs(int index) const;
-  std::string* _internal_add_kzgs();
+  const std::string& _internal_commitments(int index) const;
+  std::string* _internal_add_commitments();
   public:
 
-  // repeated bytes blobs = 3;
+  // repeated bytes blobs = 2;
   int blobs_size() const;
   private:
   int _internal_blobs_size() const;
@@ -2112,23 +2122,29 @@ class BlobsBundleV1 final :
   std::string* _internal_add_blobs();
   public:
 
-  // .types.H256 block_hash = 1;
-  bool has_block_hash() const;
+  // repeated bytes proofs = 3;
+  int proofs_size() const;
   private:
-  bool _internal_has_block_hash() const;
+  int _internal_proofs_size() const;
   public:
-  void clear_block_hash();
-  const ::types::H256& block_hash() const;
-  PROTOBUF_NODISCARD ::types::H256* release_block_hash();
-  ::types::H256* mutable_block_hash();
-  void set_allocated_block_hash(::types::H256* block_hash);
+  void clear_proofs();
+  const std::string& proofs(int index) const;
+  std::string* mutable_proofs(int index);
+  void set_proofs(int index, const std::string& value);
+  void set_proofs(int index, std::string&& value);
+  void set_proofs(int index, const char* value);
+  void set_proofs(int index, const void* value, size_t size);
+  std::string* add_proofs();
+  void add_proofs(const std::string& value);
+  void add_proofs(std::string&& value);
+  void add_proofs(const char* value);
+  void add_proofs(const void* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& proofs() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_proofs();
   private:
-  const ::types::H256& _internal_block_hash() const;
-  ::types::H256* _internal_mutable_block_hash();
+  const std::string& _internal_proofs(int index) const;
+  std::string* _internal_add_proofs();
   public:
-  void unsafe_arena_set_allocated_block_hash(
-      ::types::H256* block_hash);
-  ::types::H256* unsafe_arena_release_block_hash();
 
   // @@protoc_insertion_point(class_scope:types.BlobsBundleV1)
  private:
@@ -2138,9 +2154,9 @@ class BlobsBundleV1 final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
-    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> kzgs_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> commitments_;
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> blobs_;
-    ::types::H256* block_hash_;
+    ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> proofs_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -4999,94 +5015,60 @@ ExecutionPayload::withdrawals() const {
   return _impl_.withdrawals_;
 }
 
-// optional .types.H256 excess_data_gas = 17;
-inline bool ExecutionPayload::_internal_has_excess_data_gas() const {
+// optional uint64 data_gas_used = 17;
+inline bool ExecutionPayload::_internal_has_data_gas_used() const {
   bool value = (_impl_._has_bits_[0] & 0x00000001u) != 0;
-  PROTOBUF_ASSUME(!value || _impl_.excess_data_gas_ != nullptr);
+  return value;
+}
+inline bool ExecutionPayload::has_data_gas_used() const {
+  return _internal_has_data_gas_used();
+}
+inline void ExecutionPayload::clear_data_gas_used() {
+  _impl_.data_gas_used_ = uint64_t{0u};
+  _impl_._has_bits_[0] &= ~0x00000001u;
+}
+inline uint64_t ExecutionPayload::_internal_data_gas_used() const {
+  return _impl_.data_gas_used_;
+}
+inline uint64_t ExecutionPayload::data_gas_used() const {
+  // @@protoc_insertion_point(field_get:types.ExecutionPayload.data_gas_used)
+  return _internal_data_gas_used();
+}
+inline void ExecutionPayload::_internal_set_data_gas_used(uint64_t value) {
+  _impl_._has_bits_[0] |= 0x00000001u;
+  _impl_.data_gas_used_ = value;
+}
+inline void ExecutionPayload::set_data_gas_used(uint64_t value) {
+  _internal_set_data_gas_used(value);
+  // @@protoc_insertion_point(field_set:types.ExecutionPayload.data_gas_used)
+}
+
+// optional uint64 excess_data_gas = 18;
+inline bool ExecutionPayload::_internal_has_excess_data_gas() const {
+  bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
   return value;
 }
 inline bool ExecutionPayload::has_excess_data_gas() const {
   return _internal_has_excess_data_gas();
 }
 inline void ExecutionPayload::clear_excess_data_gas() {
-  if (_impl_.excess_data_gas_ != nullptr) _impl_.excess_data_gas_->Clear();
-  _impl_._has_bits_[0] &= ~0x00000001u;
+  _impl_.excess_data_gas_ = uint64_t{0u};
+  _impl_._has_bits_[0] &= ~0x00000002u;
 }
-inline const ::types::H256& ExecutionPayload::_internal_excess_data_gas() const {
-  const ::types::H256* p = _impl_.excess_data_gas_;
-  return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
-      ::types::_H256_default_instance_);
+inline uint64_t ExecutionPayload::_internal_excess_data_gas() const {
+  return _impl_.excess_data_gas_;
 }
-inline const ::types::H256& ExecutionPayload::excess_data_gas() const {
+inline uint64_t ExecutionPayload::excess_data_gas() const {
   // @@protoc_insertion_point(field_get:types.ExecutionPayload.excess_data_gas)
   return _internal_excess_data_gas();
 }
-inline void ExecutionPayload::unsafe_arena_set_allocated_excess_data_gas(
-    ::types::H256* excess_data_gas) {
-  if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.excess_data_gas_);
-  }
-  _impl_.excess_data_gas_ = excess_data_gas;
-  if (excess_data_gas) {
-    _impl_._has_bits_[0] |= 0x00000001u;
-  } else {
-    _impl_._has_bits_[0] &= ~0x00000001u;
-  }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:types.ExecutionPayload.excess_data_gas)
+inline void ExecutionPayload::_internal_set_excess_data_gas(uint64_t value) {
+  _impl_._has_bits_[0] |= 0x00000002u;
+  _impl_.excess_data_gas_ = value;
 }
-inline ::types::H256* ExecutionPayload::release_excess_data_gas() {
-  _impl_._has_bits_[0] &= ~0x00000001u;
-  ::types::H256* temp = _impl_.excess_data_gas_;
-  _impl_.excess_data_gas_ = nullptr;
-#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
-  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
-  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  if (GetArenaForAllocation() == nullptr) { delete old; }
-#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
-  if (GetArenaForAllocation() != nullptr) {
-    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  }
-#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
-  return temp;
-}
-inline ::types::H256* ExecutionPayload::unsafe_arena_release_excess_data_gas() {
-  // @@protoc_insertion_point(field_release:types.ExecutionPayload.excess_data_gas)
-  _impl_._has_bits_[0] &= ~0x00000001u;
-  ::types::H256* temp = _impl_.excess_data_gas_;
-  _impl_.excess_data_gas_ = nullptr;
-  return temp;
-}
-inline ::types::H256* ExecutionPayload::_internal_mutable_excess_data_gas() {
-  _impl_._has_bits_[0] |= 0x00000001u;
-  if (_impl_.excess_data_gas_ == nullptr) {
-    auto* p = CreateMaybeMessage<::types::H256>(GetArenaForAllocation());
-    _impl_.excess_data_gas_ = p;
-  }
-  return _impl_.excess_data_gas_;
-}
-inline ::types::H256* ExecutionPayload::mutable_excess_data_gas() {
-  ::types::H256* _msg = _internal_mutable_excess_data_gas();
-  // @@protoc_insertion_point(field_mutable:types.ExecutionPayload.excess_data_gas)
-  return _msg;
-}
-inline void ExecutionPayload::set_allocated_excess_data_gas(::types::H256* excess_data_gas) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
-  if (message_arena == nullptr) {
-    delete _impl_.excess_data_gas_;
-  }
-  if (excess_data_gas) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(excess_data_gas);
-    if (message_arena != submessage_arena) {
-      excess_data_gas = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, excess_data_gas, submessage_arena);
-    }
-    _impl_._has_bits_[0] |= 0x00000001u;
-  } else {
-    _impl_._has_bits_[0] &= ~0x00000001u;
-  }
-  _impl_.excess_data_gas_ = excess_data_gas;
-  // @@protoc_insertion_point(field_set_allocated:types.ExecutionPayload.excess_data_gas)
+inline void ExecutionPayload::set_excess_data_gas(uint64_t value) {
+  _internal_set_excess_data_gas(value);
+  // @@protoc_insertion_point(field_set:types.ExecutionPayload.excess_data_gas)
 }
 
 // -------------------------------------------------------------------
@@ -5247,172 +5229,82 @@ inline void Withdrawal::set_amount(uint64_t value) {
 
 // BlobsBundleV1
 
-// .types.H256 block_hash = 1;
-inline bool BlobsBundleV1::_internal_has_block_hash() const {
-  return this != internal_default_instance() && _impl_.block_hash_ != nullptr;
+// repeated bytes commitments = 1;
+inline int BlobsBundleV1::_internal_commitments_size() const {
+  return _impl_.commitments_.size();
 }
-inline bool BlobsBundleV1::has_block_hash() const {
-  return _internal_has_block_hash();
+inline int BlobsBundleV1::commitments_size() const {
+  return _internal_commitments_size();
 }
-inline void BlobsBundleV1::clear_block_hash() {
-  if (GetArenaForAllocation() == nullptr && _impl_.block_hash_ != nullptr) {
-    delete _impl_.block_hash_;
-  }
-  _impl_.block_hash_ = nullptr;
+inline void BlobsBundleV1::clear_commitments() {
+  _impl_.commitments_.Clear();
 }
-inline const ::types::H256& BlobsBundleV1::_internal_block_hash() const {
-  const ::types::H256* p = _impl_.block_hash_;
-  return p != nullptr ? *p : reinterpret_cast<const ::types::H256&>(
-      ::types::_H256_default_instance_);
-}
-inline const ::types::H256& BlobsBundleV1::block_hash() const {
-  // @@protoc_insertion_point(field_get:types.BlobsBundleV1.block_hash)
-  return _internal_block_hash();
-}
-inline void BlobsBundleV1::unsafe_arena_set_allocated_block_hash(
-    ::types::H256* block_hash) {
-  if (GetArenaForAllocation() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.block_hash_);
-  }
-  _impl_.block_hash_ = block_hash;
-  if (block_hash) {
-    
-  } else {
-    
-  }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:types.BlobsBundleV1.block_hash)
-}
-inline ::types::H256* BlobsBundleV1::release_block_hash() {
-  
-  ::types::H256* temp = _impl_.block_hash_;
-  _impl_.block_hash_ = nullptr;
-#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
-  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
-  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  if (GetArenaForAllocation() == nullptr) { delete old; }
-#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
-  if (GetArenaForAllocation() != nullptr) {
-    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  }
-#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
-  return temp;
-}
-inline ::types::H256* BlobsBundleV1::unsafe_arena_release_block_hash() {
-  // @@protoc_insertion_point(field_release:types.BlobsBundleV1.block_hash)
-  
-  ::types::H256* temp = _impl_.block_hash_;
-  _impl_.block_hash_ = nullptr;
-  return temp;
-}
-inline ::types::H256* BlobsBundleV1::_internal_mutable_block_hash() {
-  
-  if (_impl_.block_hash_ == nullptr) {
-    auto* p = CreateMaybeMessage<::types::H256>(GetArenaForAllocation());
-    _impl_.block_hash_ = p;
-  }
-  return _impl_.block_hash_;
-}
-inline ::types::H256* BlobsBundleV1::mutable_block_hash() {
-  ::types::H256* _msg = _internal_mutable_block_hash();
-  // @@protoc_insertion_point(field_mutable:types.BlobsBundleV1.block_hash)
-  return _msg;
-}
-inline void BlobsBundleV1::set_allocated_block_hash(::types::H256* block_hash) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
-  if (message_arena == nullptr) {
-    delete _impl_.block_hash_;
-  }
-  if (block_hash) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(block_hash);
-    if (message_arena != submessage_arena) {
-      block_hash = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, block_hash, submessage_arena);
-    }
-    
-  } else {
-    
-  }
-  _impl_.block_hash_ = block_hash;
-  // @@protoc_insertion_point(field_set_allocated:types.BlobsBundleV1.block_hash)
-}
-
-// repeated bytes kzgs = 2;
-inline int BlobsBundleV1::_internal_kzgs_size() const {
-  return _impl_.kzgs_.size();
-}
-inline int BlobsBundleV1::kzgs_size() const {
-  return _internal_kzgs_size();
-}
-inline void BlobsBundleV1::clear_kzgs() {
-  _impl_.kzgs_.Clear();
-}
-inline std::string* BlobsBundleV1::add_kzgs() {
-  std::string* _s = _internal_add_kzgs();
-  // @@protoc_insertion_point(field_add_mutable:types.BlobsBundleV1.kzgs)
+inline std::string* BlobsBundleV1::add_commitments() {
+  std::string* _s = _internal_add_commitments();
+  // @@protoc_insertion_point(field_add_mutable:types.BlobsBundleV1.commitments)
   return _s;
 }
-inline const std::string& BlobsBundleV1::_internal_kzgs(int index) const {
-  return _impl_.kzgs_.Get(index);
+inline const std::string& BlobsBundleV1::_internal_commitments(int index) const {
+  return _impl_.commitments_.Get(index);
 }
-inline const std::string& BlobsBundleV1::kzgs(int index) const {
-  // @@protoc_insertion_point(field_get:types.BlobsBundleV1.kzgs)
-  return _internal_kzgs(index);
+inline const std::string& BlobsBundleV1::commitments(int index) const {
+  // @@protoc_insertion_point(field_get:types.BlobsBundleV1.commitments)
+  return _internal_commitments(index);
 }
-inline std::string* BlobsBundleV1::mutable_kzgs(int index) {
-  // @@protoc_insertion_point(field_mutable:types.BlobsBundleV1.kzgs)
-  return _impl_.kzgs_.Mutable(index);
+inline std::string* BlobsBundleV1::mutable_commitments(int index) {
+  // @@protoc_insertion_point(field_mutable:types.BlobsBundleV1.commitments)
+  return _impl_.commitments_.Mutable(index);
 }
-inline void BlobsBundleV1::set_kzgs(int index, const std::string& value) {
-  _impl_.kzgs_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set:types.BlobsBundleV1.kzgs)
+inline void BlobsBundleV1::set_commitments(int index, const std::string& value) {
+  _impl_.commitments_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:types.BlobsBundleV1.commitments)
 }
-inline void BlobsBundleV1::set_kzgs(int index, std::string&& value) {
-  _impl_.kzgs_.Mutable(index)->assign(std::move(value));
-  // @@protoc_insertion_point(field_set:types.BlobsBundleV1.kzgs)
+inline void BlobsBundleV1::set_commitments(int index, std::string&& value) {
+  _impl_.commitments_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:types.BlobsBundleV1.commitments)
 }
-inline void BlobsBundleV1::set_kzgs(int index, const char* value) {
+inline void BlobsBundleV1::set_commitments(int index, const char* value) {
   GOOGLE_DCHECK(value != nullptr);
-  _impl_.kzgs_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set_char:types.BlobsBundleV1.kzgs)
+  _impl_.commitments_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:types.BlobsBundleV1.commitments)
 }
-inline void BlobsBundleV1::set_kzgs(int index, const void* value, size_t size) {
-  _impl_.kzgs_.Mutable(index)->assign(
+inline void BlobsBundleV1::set_commitments(int index, const void* value, size_t size) {
+  _impl_.commitments_.Mutable(index)->assign(
     reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_set_pointer:types.BlobsBundleV1.kzgs)
+  // @@protoc_insertion_point(field_set_pointer:types.BlobsBundleV1.commitments)
 }
-inline std::string* BlobsBundleV1::_internal_add_kzgs() {
-  return _impl_.kzgs_.Add();
+inline std::string* BlobsBundleV1::_internal_add_commitments() {
+  return _impl_.commitments_.Add();
 }
-inline void BlobsBundleV1::add_kzgs(const std::string& value) {
-  _impl_.kzgs_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add:types.BlobsBundleV1.kzgs)
+inline void BlobsBundleV1::add_commitments(const std::string& value) {
+  _impl_.commitments_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:types.BlobsBundleV1.commitments)
 }
-inline void BlobsBundleV1::add_kzgs(std::string&& value) {
-  _impl_.kzgs_.Add(std::move(value));
-  // @@protoc_insertion_point(field_add:types.BlobsBundleV1.kzgs)
+inline void BlobsBundleV1::add_commitments(std::string&& value) {
+  _impl_.commitments_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:types.BlobsBundleV1.commitments)
 }
-inline void BlobsBundleV1::add_kzgs(const char* value) {
+inline void BlobsBundleV1::add_commitments(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
-  _impl_.kzgs_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add_char:types.BlobsBundleV1.kzgs)
+  _impl_.commitments_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:types.BlobsBundleV1.commitments)
 }
-inline void BlobsBundleV1::add_kzgs(const void* value, size_t size) {
-  _impl_.kzgs_.Add()->assign(reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_add_pointer:types.BlobsBundleV1.kzgs)
+inline void BlobsBundleV1::add_commitments(const void* value, size_t size) {
+  _impl_.commitments_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:types.BlobsBundleV1.commitments)
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
-BlobsBundleV1::kzgs() const {
-  // @@protoc_insertion_point(field_list:types.BlobsBundleV1.kzgs)
-  return _impl_.kzgs_;
+BlobsBundleV1::commitments() const {
+  // @@protoc_insertion_point(field_list:types.BlobsBundleV1.commitments)
+  return _impl_.commitments_;
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
-BlobsBundleV1::mutable_kzgs() {
-  // @@protoc_insertion_point(field_mutable_list:types.BlobsBundleV1.kzgs)
-  return &_impl_.kzgs_;
+BlobsBundleV1::mutable_commitments() {
+  // @@protoc_insertion_point(field_mutable_list:types.BlobsBundleV1.commitments)
+  return &_impl_.commitments_;
 }
 
-// repeated bytes blobs = 3;
+// repeated bytes blobs = 2;
 inline int BlobsBundleV1::_internal_blobs_size() const {
   return _impl_.blobs_.size();
 }
@@ -5485,6 +5377,81 @@ inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
 BlobsBundleV1::mutable_blobs() {
   // @@protoc_insertion_point(field_mutable_list:types.BlobsBundleV1.blobs)
   return &_impl_.blobs_;
+}
+
+// repeated bytes proofs = 3;
+inline int BlobsBundleV1::_internal_proofs_size() const {
+  return _impl_.proofs_.size();
+}
+inline int BlobsBundleV1::proofs_size() const {
+  return _internal_proofs_size();
+}
+inline void BlobsBundleV1::clear_proofs() {
+  _impl_.proofs_.Clear();
+}
+inline std::string* BlobsBundleV1::add_proofs() {
+  std::string* _s = _internal_add_proofs();
+  // @@protoc_insertion_point(field_add_mutable:types.BlobsBundleV1.proofs)
+  return _s;
+}
+inline const std::string& BlobsBundleV1::_internal_proofs(int index) const {
+  return _impl_.proofs_.Get(index);
+}
+inline const std::string& BlobsBundleV1::proofs(int index) const {
+  // @@protoc_insertion_point(field_get:types.BlobsBundleV1.proofs)
+  return _internal_proofs(index);
+}
+inline std::string* BlobsBundleV1::mutable_proofs(int index) {
+  // @@protoc_insertion_point(field_mutable:types.BlobsBundleV1.proofs)
+  return _impl_.proofs_.Mutable(index);
+}
+inline void BlobsBundleV1::set_proofs(int index, const std::string& value) {
+  _impl_.proofs_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:types.BlobsBundleV1.proofs)
+}
+inline void BlobsBundleV1::set_proofs(int index, std::string&& value) {
+  _impl_.proofs_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:types.BlobsBundleV1.proofs)
+}
+inline void BlobsBundleV1::set_proofs(int index, const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.proofs_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:types.BlobsBundleV1.proofs)
+}
+inline void BlobsBundleV1::set_proofs(int index, const void* value, size_t size) {
+  _impl_.proofs_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:types.BlobsBundleV1.proofs)
+}
+inline std::string* BlobsBundleV1::_internal_add_proofs() {
+  return _impl_.proofs_.Add();
+}
+inline void BlobsBundleV1::add_proofs(const std::string& value) {
+  _impl_.proofs_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:types.BlobsBundleV1.proofs)
+}
+inline void BlobsBundleV1::add_proofs(std::string&& value) {
+  _impl_.proofs_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:types.BlobsBundleV1.proofs)
+}
+inline void BlobsBundleV1::add_proofs(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  _impl_.proofs_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:types.BlobsBundleV1.proofs)
+}
+inline void BlobsBundleV1::add_proofs(const void* value, size_t size) {
+  _impl_.proofs_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:types.BlobsBundleV1.proofs)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
+BlobsBundleV1::proofs() const {
+  // @@protoc_insertion_point(field_list:types.BlobsBundleV1.proofs)
+  return _impl_.proofs_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
+BlobsBundleV1::mutable_proofs() {
+  // @@protoc_insertion_point(field_mutable_list:types.BlobsBundleV1.proofs)
+  return &_impl_.proofs_;
 }
 
 // -------------------------------------------------------------------

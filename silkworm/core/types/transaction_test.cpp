@@ -57,9 +57,13 @@ TEST_CASE("Legacy Transaction RLP") {
     CHECK(view.empty());
     CHECK(decoded == txn);
 
-    // check that access_list and from is cleared
+    // Check that non-legacy fields (access_list, max_fee_per_data_gas, blob_versioned_hashes) and from are cleared
+    decoded.max_priority_fee_per_gas = 17;
+    decoded.max_fee_per_gas = 31;
     decoded.access_list = access_list;
-    decoded.from.emplace(0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address);
+    decoded.max_fee_per_data_gas = 123;
+    decoded.blob_versioned_hashes.push_back(0xefc552d1df2a6a8e2643912171d040e4de0db43cd53b728c3e4d26952f710be8_bytes32);
+    decoded.from = 0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address;
     view = encoded;
     REQUIRE(rlp::decode(view, decoded));
     CHECK(view.empty());
@@ -120,6 +124,17 @@ TEST_CASE("EIP-2930 Transaction RLP") {
     REQUIRE(rlp::decode_transaction(view, decoded, rlp::Eip2718Wrapping::kBoth));
     CHECK(view.empty());
     CHECK(decoded == txn);
+
+    // Check that post-EIP-2930 fields (max_fee_per_data_gas, blob_versioned_hashes) and from are cleared
+    decoded.max_priority_fee_per_gas = 17;
+    decoded.max_fee_per_gas = 31;
+    decoded.max_fee_per_data_gas = 123;
+    decoded.blob_versioned_hashes.push_back(0xefc552d1df2a6a8e2643912171d040e4de0db43cd53b728c3e4d26952f710be8_bytes32);
+    decoded.from = 0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address;
+    view = encoded_wrapped;
+    REQUIRE(rlp::decode(view, decoded));
+    CHECK(decoded == txn);
+    CHECK(!decoded.from);
 }
 
 TEST_CASE("EIP-1559 Transaction RLP") {
@@ -135,6 +150,37 @@ TEST_CASE("EIP-1559 Transaction RLP") {
          .data = *from_hex("6ebaf477f83e051589c1188bcc6ddccd"),
          .access_list = access_list},
         false,                                                                                                   // odd_y_parity
+        intx::from_string<intx::uint256>("0x36b241b061a36a32ab7fe86c7aa9eb592dd59018cd0443adc0903590c16b02b0"),  // r
+        intx::from_string<intx::uint256>("0x5edcc541b4741c5cc6dd347c5ed9577ef293a62787b4510465fadbfe39ee4094"),  // s
+    };
+
+    Bytes encoded{};
+    rlp::encode(encoded, txn);
+
+    Transaction decoded;
+    ByteView view{encoded};
+    REQUIRE(rlp::decode(view, decoded));
+    CHECK(view.empty());
+    CHECK(decoded == txn);
+}
+
+TEST_CASE("EIP-4844 Transaction RLP") {
+    Transaction txn{
+        {.type = TransactionType::kEip4844,
+         .chain_id = 5,
+         .nonce = 7,
+         .max_priority_fee_per_gas = 10000000000,
+         .max_fee_per_gas = 30000000000,
+         .gas_limit = 5748100,
+         .to = 0x811a752c8cd697e3cb27279c330ed1ada745a8d7_address,
+         .data = *from_hex("04f7"),
+         .access_list = access_list,
+         .max_fee_per_data_gas = 123,
+         .blob_versioned_hashes = {
+             0xc6bdd1de713471bd6cfa62dd8b5a5b42969ed09e26212d3377f3f8426d8ec210_bytes32,
+             0x8aaeccaf3873d07cef005aca28c39f8a9f8bdb1ec8d79ffc25afc0a4fa2ab736_bytes32,
+         }},
+        true,                                                                                                    // odd_y_parity
         intx::from_string<intx::uint256>("0x36b241b061a36a32ab7fe86c7aa9eb592dd59018cd0443adc0903590c16b02b0"),  // r
         intx::from_string<intx::uint256>("0x5edcc541b4741c5cc6dd347c5ed9577ef293a62787b4510465fadbfe39ee4094"),  // s
     };

@@ -19,6 +19,7 @@
 #include <Crc32.h>
 
 #include <optional>
+#include <vector>
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/rlp/decode_vector.hpp>
@@ -52,10 +53,10 @@ ForkId::ForkId(
     uint32_t hash = crc32_fast(genesis_hash.data(), genesis_hash.size());
     endian::store_big_u32(hash_bytes_.data(), hash);
 
-    std::vector<uint64_t> fork_points;
-    std::merge(fork_block_numbers.cbegin(), fork_block_numbers.cend(),
-               fork_block_times.cbegin(), fork_block_times.cend(),
-               std::back_inserter(fork_points));
+    // Both fork_block_numbers and fork_block_times are sorted in ascending order
+    // First fork block time (Shanghai) is greater than last fork block number
+    std::vector<uint64_t> fork_points{fork_block_numbers};
+    fork_points.insert(fork_points.end(), fork_block_times.cbegin(), fork_block_times.cend());
     for (uint64_t fork : fork_points) {
         if (fork > head_block_num) {
             next_ = fork;
@@ -95,10 +96,11 @@ bool ForkId::is_compatible_with(
     const std::vector<BlockNum>& fork_block_numbers,
     const std::vector<BlockTime>& fork_block_times,
     BlockNum head_block_num) const {
-    std::vector<uint64_t> fork_points;
-    std::merge(fork_block_numbers.cbegin(), fork_block_numbers.cend(),
-               fork_block_times.cbegin(), fork_block_times.cend(),
-               std::back_inserter(fork_points));
+    // Both fork_block_numbers and fork_block_times are sorted in ascending order
+    // First fork block time (Shanghai) is greater than last fork block number
+    std::vector<uint64_t> fork_points{fork_block_numbers};
+    fork_points.insert(fork_points.end(), fork_block_times.cbegin(), fork_block_times.cend());
+
     // common_fork is a fork block point with a matching hash (or 0 if we are at genesis)
     std::optional<uint64_t> common_fork;
     // next_fork is the next known fork block number after the common_fork

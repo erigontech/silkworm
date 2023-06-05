@@ -198,6 +198,7 @@ std::vector<BlockTime> ChainConfig::distinct_fork_times() const {
 
     // Add forks identified by *block timestamp* in ascending order
     ret.insert(shanghai_time.value_or(0));
+    ret.insert(cancun_time.value_or(0));
 
     ret.erase(0);  // Block 0 is not a fork timestamp
     return {ret.cbegin(), ret.cend()};

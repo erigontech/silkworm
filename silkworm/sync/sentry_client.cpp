@@ -18,6 +18,7 @@
 
 #include <future>
 #include <optional>
+#include <sstream>
 
 #include <boost/asio/co_spawn.hpp>
 
@@ -241,34 +242,36 @@ boost::asio::awaitable<void> SentryClient::receive_messages() {
     co_await service->messages(make_message_id_filter(), std::move(consumer));
 }
 
-boost::asio::awaitable<void> SentryClient::on_peer_event(silkworm::sentry::api::api_common::PeerEvent event) {
-    auto peer_id = event.peer_public_key->serialized();
-    std::string event_desc;
-    std::string info;
+static std::string describe_peer_info(const std::optional<silkworm::sentry::api::api_common::PeerInfo>& peer_info_opt) {
+    if (!peer_info_opt) {
+        return "-info-not-found-";
+    } else {
+        auto peer_info = peer_info_opt.value();
+        std::string info = "client_id=" + peer_info.client_id + " / enode_url=" + peer_info.url.to_string();
+        return info;
+    }
+}
 
+static std::string describe_peer_event(
+    const silkworm::sentry::api::api_common::PeerEvent& event,
+    const std::optional<silkworm::sentry::api::api_common::PeerInfo>& peer_info_opt,
+    uint64_t active_peers) {
+    PeerId peer_id = event.peer_public_key->serialized();
+    std::string info = describe_peer_info(peer_info_opt);
+
+    std::string event_desc;
     if (event.event_id == silkworm::sentry::api::api_common::PeerEventId::kAdded) {
         event_desc = "connected";
-        active_peers_++;
-
-        try {
-            info = co_await request_peer_info_async(peer_id);
-        } catch (std::exception&) {
-            info = "unknown";  // workaround for EnodeUrl fragility
-        }
-
-        peer_infos_[peer_id] = info;
     } else {
         event_desc = "disconnected";
-        if (active_peers_ > 0) active_peers_--;
-
-        info = peer_infos_[peer_id];
-        peer_infos_.erase(peer_id);
     }
 
-    log::Info(kLogTitle) << "Peer " << human_readable_id(peer_id)
-                         << " " << event_desc
-                         << ", active " << active_peers()
-                         << ", info: " << info;
+    std::ostringstream out;
+    out << "Peer " << human_readable_id(peer_id)
+        << " " << event_desc
+        << ", active " << active_peers
+        << ", info: " << info;
+    return out.str();
 }
 
 boost::asio::awaitable<void> SentryClient::receive_peer_events() {
@@ -277,7 +280,12 @@ boost::asio::awaitable<void> SentryClient::receive_peer_events() {
     log::Info(kLogTitle) << (co_await count_active_peers_async()) << " active peers";
 
     std::function<awaitable<void>(silkworm::sentry::api::api_common::PeerEvent)> consumer = [this](auto event) -> awaitable<void> {
-        co_await this->on_peer_event(event);
+        co_await count_active_peers_async();
+
+        auto service = co_await sentry_client_->service();
+        auto peer_info_opt = co_await service->peer_by_id(event.peer_public_key.value());
+
+        log::Info(kLogTitle) << describe_peer_event(event, peer_info_opt, active_peers());
     };
 
     auto service = co_await sentry_client_->service();
@@ -299,14 +307,7 @@ boost::asio::awaitable<std::string> SentryClient::request_peer_info_async(PeerId
     auto peer_public_key = sentry::common::EccPublicKey::deserialize(peer_id);
     auto service = co_await sentry_client_->service();
     auto peer_info_opt = co_await service->peer_by_id(std::move(peer_public_key));
-
-    if (!peer_info_opt) {
-        co_return "-info-not-found-";
-    } else {
-        auto peer_info = peer_info_opt.value();
-        std::string info = "client_id=" + peer_info.client_id + " / enode_url=" + peer_info.url.to_string();
-        co_return info;
-    }
+    co_return describe_peer_info(peer_info_opt);
 }
 
 std::string SentryClient::request_peer_info(PeerId peer_id) {

@@ -30,8 +30,6 @@ TEST_CASE("Rule Set factory") {
     CHECK(rule_set != nullptr);
     rule_set = rule_set_factory(test::kLondonConfig);  // No-proof rule set
     CHECK(rule_set != nullptr);
-    rule_set = rule_set_factory(kRinkebyConfig);  // Clique rule set
-    CHECK(rule_set != nullptr);
     rule_set = rule_set_factory(kGoerliConfig);  // Clique rule set
     CHECK(rule_set != nullptr);
     rule_set = rule_set_factory(ChainConfig{.protocol_rule_set = RuleSetType::kAuRa});

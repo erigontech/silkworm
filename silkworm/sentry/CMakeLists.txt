@@ -41,6 +41,9 @@ target_compile_options(stun_msg PRIVATE -w) # disable warnings
 # sentry common
 add_subdirectory(common)
 
+# disc v4
+add_subdirectory(discovery/disc_v4)
+
 set(SRC "")
 file(
   GLOB_RECURSE
@@ -54,6 +57,7 @@ file(
 )
 list(FILTER SRC EXCLUDE REGEX "_test\\.cpp$")
 list(FILTER SRC EXCLUDE REGEX "sentry/common")
+list(FILTER SRC EXCLUDE REGEX "disc_v4")
 
 add_library(${TARGET} ${SRC})
 
@@ -77,6 +81,7 @@ set(LIBS_PRIVATE
     silkworm_interfaces
     silkworm-buildinfo
     silkworm_sentry_common
+    silkworm_sentry_disc_v4
 )
 if(MSVC)
   list(APPEND LIBS_PRIVATE ntdll.lib)
@@ -100,6 +105,7 @@ target_link_libraries(
 set(TEST_TARGET sentry_test)
 file(GLOB_RECURSE TEST_SRC CONFIGURE_DEPENDS "*_test.cpp")
 list(FILTER TEST_SRC EXCLUDE REGEX "sentry/common")
+list(FILTER TEST_SRC EXCLUDE REGEX "disc_v4")
 add_executable(${TEST_TARGET} "${SILKWORM_MAIN_DIR}/cmd/test/unit_test.cpp" ${TEST_SRC})
 if(SILKWORM_SANITIZE)
   target_compile_definitions(${TEST_TARGET} PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)

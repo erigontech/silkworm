@@ -18,6 +18,7 @@ set(TARGET silkworm_sentry)
 
 find_package(absl REQUIRED)
 find_package(Boost REQUIRED thread)
+find_package(Catch2 REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(Microsoft.GSL REQUIRED)
 find_package(OpenSSL REQUIRED)
@@ -89,3 +90,12 @@ target_link_libraries(
   PUBLIC "${LIBS_PUBLIC}"
   PRIVATE "${LIBS_PRIVATE}"
 )
+
+# unit tests
+set(TEST_TARGET sentry_test)
+file(GLOB_RECURSE TEST_SRC CONFIGURE_DEPENDS "*_test.cpp")
+add_executable(${TEST_TARGET} "${SILKWORM_MAIN_DIR}/cmd/test/unit_test.cpp" ${TEST_SRC})
+if(SILKWORM_SANITIZE)
+  target_compile_definitions(${TEST_TARGET} PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
+endif()
+target_link_libraries(${TEST_TARGET} ${TARGET} Catch2::Catch2)

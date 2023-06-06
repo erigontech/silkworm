@@ -59,14 +59,6 @@ if(NOT SILKWORM_CORE_ONLY)
   )
   target_link_libraries(rpcdaemon_test silkrpc Catch2::Catch2 GTest::gmock)
 
-  # Silkworm Sentry Tests
-  file(GLOB_RECURSE SENTRY_TEST_FILES CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/sentry/*_test.cpp")
-  add_executable(sentry_test unit_test.cpp ${SENTRY_TEST_FILES})
-  if(SILKWORM_SANITIZE)
-    target_compile_definitions(sentry_test PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
-  endif()
-  target_link_libraries(sentry_test silkworm_sentry Catch2::Catch2)
-
   # Silkworm Sync Tests
   file(GLOB_RECURSE SILKWORM_SYNC_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/sync/*_test.cpp")
   add_executable(sync_test unit_test.cpp ${SILKWORM_SYNC_TESTS})

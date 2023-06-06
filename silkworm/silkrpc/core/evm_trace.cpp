@@ -300,7 +300,7 @@ void to_json(nlohmann::json& json, const TraceEntry& trace_entry) {
     json["input"] = trace_entry.input;
 }
 
-void to_json (nlohmann::json& json, const InternalOperation& trace_operation) {
+void to_json(nlohmann::json& json, const InternalOperation& trace_operation) {
     json["type"] = trace_operation.type;
     json["from"] = trace_operation.from;
     json["to"] = trace_operation.to;
@@ -1471,7 +1471,7 @@ boost::asio::awaitable<TraceOperationsResult> TraceCallExecutor::trace_operation
 
     auto tracer = std::make_shared<trace::OperationTracer>(initial_ibs);
 
-    Tracers tracers{ tracer };
+    Tracers tracers{tracer};
 
     auto execution_result = co_await executor.call(transaction_with_block.block_with_hash.block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
 
@@ -1627,10 +1627,10 @@ void EntryTracer::on_execution_start(evmc_revision, const evmc_message& msg, evm
     }
 
     if (create) {
-        if (msg.depth > 0){
-            if (msg.kind == evmc_call_kind::EVMC_CREATE){
+        if (msg.depth > 0) {
+            if (msg.kind == evmc_call_kind::EVMC_CREATE) {
                 result_.push_back(TraceEntry{"CREATE", msg.depth, sender, recipient, str_value, str_input});
-            } else if (msg.kind == evmc_call_kind::EVMC_CREATE2){
+            } else if (msg.kind == evmc_call_kind::EVMC_CREATE2) {
                 result_.push_back(TraceEntry{"CREATE2", msg.depth, sender, recipient, str_value, str_input});
             }
         } else {
@@ -1640,8 +1640,7 @@ void EntryTracer::on_execution_start(evmc_revision, const evmc_message& msg, evm
         bool in_static_mode = (msg.flags & evmc_flags::EVMC_STATIC) != 0;
         switch (msg.kind) {
             case evmc_call_kind::EVMC_CALL:
-                in_static_mode ? result_.push_back(TraceEntry{"STATICCALL", msg.depth, sender, recipient, "", str_input}) :
-                               result_.push_back(TraceEntry{"CALL", msg.depth, sender, recipient, str_value, str_input});
+                in_static_mode ? result_.push_back(TraceEntry{"STATICCALL", msg.depth, sender, recipient, "", str_input}) : result_.push_back(TraceEntry{"CALL", msg.depth, sender, recipient, str_value, str_input});
                 break;
             case evmc_call_kind::EVMC_DELEGATECALL:
                 result_.push_back(TraceEntry{"DELEGATECALL", msg.depth, recipient, code_address, "", str_input});
@@ -1679,10 +1678,9 @@ void OperationTracer::on_execution_start(evmc_revision, const evmc_message& msg,
     auto str_value = "0x" + intx::hex(intx::be::load<intx::uint256>(msg.value));
 
     if (create && msg.depth > 0) {
-        if (msg.kind == evmc_call_kind::EVMC_CREATE){
+        if (msg.kind == evmc_call_kind::EVMC_CREATE) {
             result_.push_back(InternalOperation{OperationType::OP_CREATE, sender, recipient, str_value});
-        }
-        else if (msg.kind == evmc_call_kind::EVMC_CREATE2){
+        } else if (msg.kind == evmc_call_kind::EVMC_CREATE2) {
             result_.push_back(InternalOperation{OperationType::OP_CREATE2, sender, recipient, str_value});
         }
     } else if (msg.kind == evmc_call_kind::EVMC_CALL && intx::be::load<intx::uint256>(msg.value) > 0) {

@@ -338,7 +338,10 @@ struct TraceEntry {
 };
 
 enum OperationType : int {
-    OP_TRANSFER = 0, OP_SELF_DESTRUCT = 1, OP_CREATE = 2, OP_CREATE2 = 3
+    OP_TRANSFER = 0,
+    OP_SELF_DESTRUCT = 1,
+    OP_CREATE = 2,
+    OP_CREATE2 = 3
 };
 
 struct InternalOperation {
@@ -431,7 +434,7 @@ class OperationTracer : public silkworm::EvmTracer {
     OperationTracer& operator=(const EntryTracer&) = delete;
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view code) noexcept override;
-    void on_instruction_start(uint32_t /*pc*/, const intx::uint256*/*stack_top*/, int /*stack_height*/,
+    void on_instruction_start(uint32_t /*pc*/, const intx::uint256* /*stack_top*/, int /*stack_height*/,
                               int64_t /*gas*/, const evmone::ExecutionState& /*execution_state*/,
                               const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_execution_end(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}

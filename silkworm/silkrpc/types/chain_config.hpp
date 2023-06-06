@@ -42,16 +42,15 @@ struct Forks {
         if (!cc) {
             throw std::system_error{std::make_error_code(std::errc::invalid_argument), "Chain config missing"};
         }
-        for (auto& fork_block : cc->distinct_fork_numbers()) {
-            if (fork_block) {  // Skip any forks in block 0, that's the genesis ruleset
-                block_numbers.push_back(fork_block);
+        for (auto& fork_block_number : cc->distinct_fork_numbers()) {
+            if (fork_block_number) {  // Skip any forks in block 0, that's the genesis ruleset
+                block_numbers.push_back(fork_block_number);
             }
         }
-        if (cc->shanghai_time) {
-            block_times.push_back(*cc->shanghai_time);
-        }
-        if (cc->cancun_time) {
-            block_times.push_back(*cc->cancun_time);
+        for (auto& fork_block_time : cc->distinct_fork_times()) {
+            if (fork_block_time) {  // Skip any forks in block 0, that's the genesis ruleset
+                block_times.push_back(fork_block_time);
+            }
         }
     }
 };

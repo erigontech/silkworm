@@ -28,6 +28,7 @@ class ForkId {
     ForkId(
         ByteView genesis_hash,
         const std::vector<BlockNum>& fork_block_numbers,
+        const std::vector<BlockTime>& fork_block_times,
         BlockNum head_block_num);
 
     ForkId(uint32_t hash, BlockNum next);
@@ -45,15 +46,16 @@ class ForkId {
     [[nodiscard]] Bytes rlp_encode() const;
     [[nodiscard]] static ForkId rlp_decode(ByteView data);
 
-    bool is_compatible_with(
+    [[nodiscard]] bool is_compatible_with(
         ByteView genesis_hash,
         const std::vector<BlockNum>& fork_block_numbers,
+        const std::vector<BlockTime>& fork_block_times,
         BlockNum head_block_num) const;
 
     friend bool operator==(const ForkId&, const ForkId&) = default;
 
   private:
-    void add_fork_block_number(BlockNum fork_block_num);
+    void add_fork_point(uint64_t fork_point);
 
     Bytes hash_bytes_;
     BlockNum next_;

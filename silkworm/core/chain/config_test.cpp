@@ -16,6 +16,8 @@
 
 #include "config.hpp"
 
+#include <vector>
+
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/test_util.hpp>
@@ -93,8 +95,8 @@ TEST_CASE("Config revision") {
     CHECK(test::kShanghaiConfig.revision(0, 0) == EVMC_SHANGHAI);
 }
 
-TEST_CASE("distinct_fork_numbers") {
-    std::vector<BlockNum> expectedMainnetForkNumbers{
+TEST_CASE("distinct_fork_points") {
+    const std::vector<BlockNum> kExpectedMainnetForkNumbers{
         1'150'000,
         1'920'000,
         2'463'000,
@@ -108,16 +110,32 @@ TEST_CASE("distinct_fork_numbers") {
         13'773'000,
         15'050'000,
     };
+    const std::vector<BlockNum> kExpectedMainnetForkTimes{
+        1'681'338'455,
+    };
+    std::vector<uint64_t> kExpectedMainnetForkPoints{kExpectedMainnetForkNumbers};
+    kExpectedMainnetForkPoints.insert(kExpectedMainnetForkPoints.end(),
+                                      kExpectedMainnetForkTimes.cbegin(), kExpectedMainnetForkTimes.cend());
 
-    CHECK(kMainnetConfig.distinct_fork_numbers() == expectedMainnetForkNumbers);
+    CHECK(kMainnetConfig.distinct_fork_numbers() == kExpectedMainnetForkNumbers);
+    CHECK(kMainnetConfig.distinct_fork_times() == kExpectedMainnetForkTimes);
+    CHECK(kMainnetConfig.distinct_fork_points() == kExpectedMainnetForkPoints);
 
-    std::vector<BlockNum> expectedGoerliForkNumbers{
+    const std::vector<BlockNum> kExpectedGoerliForkNumbers{
         1'561'651,
         4'460'644,
         5'062'605,
     };
+    const std::vector<BlockNum> kExpectedGoerliForkTimes{
+        1'678'832'736,
+    };
+    std::vector<uint64_t> kExpectedGoerliForkPoints{kExpectedGoerliForkNumbers};
+    kExpectedGoerliForkPoints.insert(kExpectedGoerliForkPoints.end(),
+                                     kExpectedGoerliForkTimes.cbegin(), kExpectedGoerliForkTimes.cend());
 
-    CHECK(kGoerliConfig.distinct_fork_numbers() == expectedGoerliForkNumbers);
+    CHECK(kGoerliConfig.distinct_fork_numbers() == kExpectedGoerliForkNumbers);
+    CHECK(kGoerliConfig.distinct_fork_times() == kExpectedGoerliForkTimes);
+    CHECK(kGoerliConfig.distinct_fork_points() == kExpectedGoerliForkPoints);
 }
 
 TEST_CASE("JSON serialization") {

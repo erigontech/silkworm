@@ -77,6 +77,7 @@ class ByteView : public std::basic_string_view<uint8_t> {
 
 using BlockNum = uint64_t;
 using BlockNumRange = std::pair<BlockNum, BlockNum>;
+using BlockTime = uint64_t;
 
 inline constexpr size_t kAddressLength{20};
 

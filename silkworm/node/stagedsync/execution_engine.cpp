@@ -32,12 +32,8 @@ ExecutionEngine::ExecutionEngine(asio::io_context& ctx, NodeSettings& ns, db::RW
       node_settings_{ns},
       main_chain_(ctx, ns, dba),
       block_cache_{kDefaultCacheSize} {
-    // To initialize canonical_head_status_ & last_fork_choice_ we need to call verify_chain(). Enable?
-    // verify_chain(canonical_chain_.current_head().hash);
-
-    // At start-up we can let last_finalized_block_ point to the genesis block so to accept all forking points
-    last_finalized_block_ = {0, ns.chain_config.value().genesis_hash.value()};
-    last_fork_choice_ = last_finalized_block_;
+    last_finalized_block_ = main_chain_.last_finalized_head();
+    last_fork_choice_ = main_chain_.last_chosen_head();
 }
 
 void ExecutionEngine::open() {  // needed to circumvent mdbx threading model limitations
@@ -118,7 +114,7 @@ auto ExecutionEngine::find_forking_point(const BlockHeader& header) const -> std
 
     // search in cache till to the main chain
     path.forking_point = {.number = header.number - 1, .hash = header.parent_hash};
-    while (path.forking_point.number > main_chain_.canonical_head().number) {
+    while (path.forking_point.number > main_chain_.current_head().number) {
         auto parent = block_cache_.get_as_copy(path.forking_point.hash);  // parent is a pointer
         if (!parent) return {};                                           // not found
         path.blocks.push_front(*parent);                                  // in reverse order
@@ -126,7 +122,7 @@ auto ExecutionEngine::find_forking_point(const BlockHeader& header) const -> std
     }
 
     // forking point is on main chain canonical head
-    if (path.forking_point == main_chain_.canonical_head()) return {std::move(path)};
+    if (path.forking_point == main_chain_.current_head()) return {std::move(path)};
 
     // search remaining path on main chain
     if (main_chain_.is_canonical(path.forking_point)) return {std::move(path)};
@@ -179,7 +175,7 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
         bool updated = main_chain_.notify_fork_choice_update(head_block_hash, finalized_block_hash);  // BLOCKING
         if (!updated) return false;
 
-        last_fork_choice_ = main_chain_.canonical_head();
+        last_fork_choice_ = main_chain_.current_head();
         fork_tracking_active_ = true;
     } else {
         // chose the fork with the given head
@@ -214,8 +210,7 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
         auto finalized_header = main_chain_.get_header(*finalized_block_hash);  // BLOCKING
         ensure_invariant(finalized_header.has_value(), "finalized block not found in main chain");
 
-        last_finalized_block_.hash = *finalized_block_hash;
-        last_finalized_block_.number = finalized_header->number;
+        last_finalized_block_ = {finalized_header->number, *finalized_block_hash};
     }
 
     return true;
@@ -291,10 +286,7 @@ auto ExecutionEngine::get_block_number(Hash header_hash) const -> std::optional<
 }
 
 bool ExecutionEngine::is_canonical(Hash header_hash) const {
-    auto header = main_chain_.get_header(header_hash);
-    if (!header) return false;
-    auto canonical_hash_at_same_height = main_chain_.get_canonical_hash(header->number);
-    return (canonical_hash_at_same_height == header_hash);
+    return main_chain_.is_canonical(header_hash);
 }
 
 }  // namespace silkworm::stagedsync

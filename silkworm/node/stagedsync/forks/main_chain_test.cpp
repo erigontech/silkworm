@@ -109,7 +109,7 @@ TEST_CASE("MainChain") {
         auto initial_progress = main_chain.get_block_progress();
         REQUIRE(initial_progress == 0);
 
-        auto initial_canonical_head = main_chain.canonical_head();
+        auto initial_canonical_head = main_chain.current_head();
         REQUIRE(initial_canonical_head.number == 0);
         REQUIRE(initial_canonical_head.hash == *header0_hash);
 
@@ -127,7 +127,7 @@ TEST_CASE("MainChain") {
         auto progress = main_chain.get_block_progress();
         REQUIRE(progress == 1);
 
-        auto canonical_head = main_chain.canonical_head();
+        auto canonical_head = main_chain.current_head();
         REQUIRE(canonical_head == initial_canonical_head);  // doesn't change
 
         // verifying the chain
@@ -153,7 +153,7 @@ TEST_CASE("MainChain") {
         auto final_progress = main_chain.get_block_progress();
         REQUIRE(final_progress == block1.header.number);
 
-        auto final_canonical_head = main_chain.canonical_head();
+        auto final_canonical_head = main_chain.current_head();
         REQUIRE(final_canonical_head.number == block1.header.number);
         REQUIRE(final_canonical_head.hash == block1_hash);
         REQUIRE(main_chain.canonical_chain_.current_head().number == block1.header.number);
@@ -173,7 +173,7 @@ TEST_CASE("MainChain") {
         present_in_canonical = main_chain.get_canonical_hash(block1.header.number);
         REQUIRE(!present_in_canonical);
 
-        final_canonical_head = main_chain.canonical_head();
+        final_canonical_head = main_chain.current_head();
         REQUIRE(final_canonical_head == initial_canonical_head);
         REQUIRE(main_chain.canonical_chain_.current_head() == initial_canonical_head);
 
@@ -214,7 +214,7 @@ TEST_CASE("MainChain") {
         auto initial_progress = main_chain.get_block_progress();
         REQUIRE(initial_progress == 0);
 
-        auto initial_canonical_head = main_chain.canonical_head();
+        auto initial_canonical_head = main_chain.current_head();
         REQUIRE(initial_canonical_head.number == 0);
         REQUIRE(initial_canonical_head.hash == *header0_hash);
 
@@ -233,7 +233,7 @@ TEST_CASE("MainChain") {
         REQUIRE(main_chain.pipeline_.head_header_number() == block1.header.number);
         REQUIRE(main_chain.pipeline_.head_header_hash() == block1_hash);
 
-        auto final_canonical_head = main_chain.canonical_head();
+        auto final_canonical_head = main_chain.current_head();
         REQUIRE(final_canonical_head.number == block1.header.number);
         REQUIRE(final_canonical_head.hash == block1_hash);
 
@@ -260,7 +260,7 @@ TEST_CASE("MainChain") {
         present_in_canonical = main_chain.get_canonical_hash(block1.header.number);
         REQUIRE(present_in_canonical);
 
-        final_canonical_head = main_chain.canonical_head();
+        final_canonical_head = main_chain.current_head();
         REQUIRE(final_canonical_head.number == block1.header.number);
         REQUIRE(final_canonical_head.hash == block1_hash);
         REQUIRE(main_chain.canonical_chain_.current_head().number == block1.header.number);
@@ -298,7 +298,7 @@ TEST_CASE("MainChain") {
         present_in_canonical = main_chain.get_canonical_hash(block1.header.number);
         REQUIRE(!present_in_canonical);
 
-        final_canonical_head = main_chain.canonical_head();
+        final_canonical_head = main_chain.current_head();
         REQUIRE(final_canonical_head == initial_canonical_head);
         REQUIRE(main_chain.canonical_chain_.current_head() == initial_canonical_head);
 
@@ -335,7 +335,7 @@ TEST_CASE("MainChain") {
         auto fcu_updated = main_chain.notify_fork_choice_update(block3_hash);
         CHECK(fcu_updated);
 
-        auto final_canonical_head = main_chain.canonical_head();
+        auto final_canonical_head = main_chain.current_head();
         CHECK(final_canonical_head == BlockId{3, block3_hash});
         CHECK(main_chain.canonical_chain_.current_head() == final_canonical_head);
 
@@ -357,7 +357,7 @@ TEST_CASE("MainChain") {
             fcu_updated = main_chain.notify_fork_choice_update(block2b_hash);
             CHECK(fcu_updated);
 
-            final_canonical_head = main_chain.canonical_head();
+            final_canonical_head = main_chain.current_head();
             CHECK(final_canonical_head == BlockId{2, block2b_hash});
             CHECK(main_chain.canonical_chain_.current_head() == final_canonical_head);
         }

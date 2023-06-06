@@ -34,9 +34,27 @@ MainChain::MainChain(asio::io_context& ctx, NodeSettings& ns, const db::RWAccess
       tx_{db_access_.start_rw_tx()},
       pipeline_{&ns},
       canonical_chain_(tx_) {
+    auto last_finalized_hash = db::read_last_finalized_block(tx_);
+    if (last_finalized_hash) {
+        auto header = get_header(*last_finalized_hash);
+        ensure_invariant(header.has_value(), "last finalized block not found in db");
+        last_finalized_head_ = {header->number, *last_finalized_hash};
+    } else
+        last_finalized_head_ = {0, ns.chain_config.value().genesis_hash.value()};
+
+    auto last_head_hash = db::read_last_head_block(tx_);
+    if (last_head_hash) {
+        auto header = get_header(*last_head_hash);
+        ensure_invariant(header.has_value(), "last head block not found in db");
+        last_fork_choice_ = {header->number, *last_head_hash};
+    } else
+        last_fork_choice_ = last_finalized_head_;
+
+    if (canonical_chain_.current_head() == last_fork_choice_) {
+        canonical_head_status_ = ValidChain{canonical_chain_.current_head()};
+    }
+
     tx_.commit_and_stop();
-    // To initialize canonical_head_status_ & last_fork_choice_ we need to call verify_chain()
-    // but they are not used at the moment
 }
 
 void MainChain::open() {
@@ -55,8 +73,16 @@ db::RWTxn& MainChain::tx() {
     return tx_;
 }
 
-auto MainChain::canonical_head() const -> BlockId {
+auto MainChain::current_head() const -> BlockId {
     return canonical_chain_.current_head();
+}
+
+auto MainChain::last_chosen_head() const -> BlockId {
+    return last_fork_choice_;
+}
+
+auto MainChain::last_finalized_head() const -> BlockId {
+    return last_finalized_head_;
 }
 
 std::optional<BlockId> MainChain::find_forking_point(const BlockHeader& header, const Hash& header_hash) const {
@@ -197,6 +223,10 @@ bool MainChain::notify_fork_choice_update(Hash head_block_hash, std::optional<Ha
     tx_.commit_and_renew();
 
     last_fork_choice_ = canonical_chain_.current_head();
+    if (finalized_block_hash) {
+        auto finalized_header = get_header(*finalized_block_hash);
+        last_finalized_head_ = {finalized_header->number, *finalized_block_hash};
+    }
 
     is_first_sync_ = false;
 
@@ -333,9 +363,8 @@ auto MainChain::extends(BlockId block, BlockId supposed_parent) const -> bool {
 auto MainChain::is_canonical(Hash block_hash) const -> bool {
     auto header = get_header(block_hash);
     if (!header) return false;
-    auto canonical_hash = canonical_chain_.get_hash(header->number);
-    if (!canonical_hash) return false;
-    return *canonical_hash == block_hash;
+    auto canonical_hash_at_same_height = canonical_chain_.get_hash(header->number);
+    return canonical_hash_at_same_height == block_hash;
 }
 
 /*

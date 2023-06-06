@@ -67,7 +67,9 @@ class MainChain {
                                    std::optional<Hash> finalized_block_hash = std::nullopt);
 
     // state
-    auto canonical_head() const -> BlockId;
+    auto current_head() const -> BlockId;
+    auto last_chosen_head() const -> BlockId;
+    auto last_finalized_head() const -> BlockId;
 
     // header/body retrieval
     auto get_block_progress() const -> BlockNum;
@@ -102,6 +104,7 @@ class MainChain {
     CanonicalChain canonical_chain_;
     VerificationResult canonical_head_status_;
     BlockId last_fork_choice_;
+    BlockId last_finalized_head_;
 };
 
 }  // namespace silkworm::stagedsync

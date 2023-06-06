@@ -146,7 +146,7 @@ TEST_CASE("ExecutionEngine") {
         // getting initial status
         auto initial_progress = exec_engine.block_progress();
         REQUIRE(initial_progress == 0);
-        auto initial_canonical_head = exec_engine.main_chain_.canonical_head();
+        auto initial_canonical_head = exec_engine.main_chain_.current_head();
         auto last_fcu_at_start_time = exec_engine.last_fork_choice();
 
         // inserting headers & bodies
@@ -183,7 +183,7 @@ TEST_CASE("ExecutionEngine") {
         auto final_progress = exec_engine.block_progress();
         CHECK(final_progress == block1->header.number);
 
-        auto final_canonical_head = exec_engine.main_chain_.canonical_head();
+        auto final_canonical_head = exec_engine.main_chain_.current_head();
         CHECK(final_canonical_head.number == block1->header.number);
         CHECK(final_canonical_head.hash == block1->header.hash());
 
@@ -191,7 +191,7 @@ TEST_CASE("ExecutionEngine") {
         bool updated = exec_engine.notify_fork_choice_update(*header0_hash);
         CHECK(updated);
 
-        final_canonical_head = exec_engine.main_chain_.canonical_head();
+        final_canonical_head = exec_engine.main_chain_.current_head();
         REQUIRE(final_canonical_head == initial_canonical_head);
 
         REQUIRE(last_fcu_at_start_time == exec_engine.last_fork_choice());
@@ -229,7 +229,7 @@ TEST_CASE("ExecutionEngine") {
         auto initial_progress = exec_engine.block_progress();
         REQUIRE(initial_progress == 0);
 
-        auto initial_canonical_head = exec_engine.main_chain_.canonical_head();
+        auto initial_canonical_head = exec_engine.main_chain_.current_head();
         REQUIRE(initial_canonical_head.number == 0);
         REQUIRE(initial_canonical_head.hash == *block0_hash);
 
@@ -244,7 +244,7 @@ TEST_CASE("ExecutionEngine") {
         REQUIRE(valid_chain.current_head == BlockId{1, block1_hash});
 
         // check status
-        auto final_canonical_head = exec_engine.main_chain_.canonical_head();
+        auto final_canonical_head = exec_engine.main_chain_.current_head();
         REQUIRE(final_canonical_head.number == block1->header.number);
         REQUIRE(final_canonical_head.hash == block1_hash);
 
@@ -263,7 +263,7 @@ TEST_CASE("ExecutionEngine") {
         // present_in_canonical = exec_engine.is_canonical_hash(block1.header.number);
         // REQUIRE(present_in_canonical);
 
-        final_canonical_head = exec_engine.main_chain_.canonical_head();
+        final_canonical_head = exec_engine.main_chain_.current_head();
         REQUIRE(final_canonical_head.number == block1->header.number);
         REQUIRE(final_canonical_head.hash == block1_hash);
 
@@ -301,7 +301,7 @@ TEST_CASE("ExecutionEngine") {
         auto fcu_updated = exec_engine.notify_fork_choice_update(block3_hash, block1_hash);
         CHECK(fcu_updated);
 
-        auto final_canonical_head = exec_engine.main_chain_.canonical_head();
+        auto final_canonical_head = exec_engine.main_chain_.current_head();
         CHECK(final_canonical_head == BlockId{3, block3_hash});
         CHECK(exec_engine.last_fork_choice() == BlockId{3, block3_hash});
         CHECK(exec_engine.last_finalized_block() == BlockId{1, block1_hash});
@@ -331,7 +331,7 @@ TEST_CASE("ExecutionEngine") {
             fcu_updated = exec_engine.notify_fork_choice_update(block4_hash, block1_hash);
             CHECK(fcu_updated);
 
-            final_canonical_head = exec_engine.main_chain_.canonical_head();
+            final_canonical_head = exec_engine.main_chain_.current_head();
             CHECK(final_canonical_head == BlockId{4, block4_hash});
             CHECK(exec_engine.last_fork_choice() == BlockId{4, block4_hash});
             CHECK(exec_engine.last_finalized_block() == BlockId{1, block1_hash});
@@ -365,7 +365,7 @@ TEST_CASE("ExecutionEngine") {
             fcu_updated = exec_engine.notify_fork_choice_update(block2b_hash, block0_hash);
             CHECK(fcu_updated);
 
-            final_canonical_head = exec_engine.main_chain_.canonical_head();
+            final_canonical_head = exec_engine.main_chain_.current_head();
             CHECK(final_canonical_head == BlockId{2, block2b_hash});
             CHECK(exec_engine.last_fork_choice() == BlockId{2, block2b_hash});
             CHECK(exec_engine.last_finalized_block() == BlockId{0, *block0_hash});

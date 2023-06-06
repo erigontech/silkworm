@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch.hpp>
@@ -32,7 +33,7 @@ static void check_binary_find_if(const std::vector<int>& vec, const int value) {
     const auto res2{as_range::find_if(vec, [&](int x) { return x > value; })};
     CHECK(res1 == res2);
     const auto res3{binary_find_if(vec.size(), [&](size_t i) { return vec[i] > value; })};
-    CHECK(static_cast<size_t>(res1 - vec.begin()) == res3);
+    CHECK(std::cmp_equal(res1 - vec.begin(), res3));
 }
 
 TEST_CASE("binary_find_if") {

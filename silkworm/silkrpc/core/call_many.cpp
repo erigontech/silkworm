@@ -17,8 +17,10 @@
 #include "call_many.hpp"
 
 #include <memory>
+#include <sstream>
 #include <string>
 
+#include <boost/format.hpp>
 #include <evmc/hex.hpp>
 #include <evmc/instructions.h>
 #include <evmone/execution_state.hpp>
@@ -26,6 +28,7 @@
 #include <intx/intx.hpp>
 
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/silkrpc/common/clock_time.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
@@ -41,7 +44,8 @@ namespace silkworm::rpc::call {
 using boost::asio::awaitable;
 
 boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bundles, const SimulationContext& context,
-                                                             const AccountsOverrides& accounts_overrides, std::optional<std::uint64_t> /*timeout*/) {
+                                                             const AccountsOverrides& accounts_overrides,
+                                                             std::optional<std::uint64_t> opt_timeout) {
     ethdb::TransactionDatabase tx_database{transaction_};
 
     std::uint16_t count{0};
@@ -76,6 +80,9 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
     if (transaction_index == -1) {
         transaction_index = static_cast<std::int32_t>(block_transactions.size());
     }
+
+    std::uint64_t timeout = opt_timeout.value_or(5000);
+    const auto start_time = clock_time::now();
     for (auto idx{0}; idx < transaction_index; idx++) {
         silkworm::Transaction txn{block_transactions[std::size_t(idx)]};
 
@@ -83,6 +90,13 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
             txn.recover_sender();
         }
         co_await executor.call(block, txn);
+
+        if ((clock_time::since(start_time) / 1000000) > timeout) {
+            std::ostringstream oss;
+            oss << "execution aborted (timeout = " << static_cast<double>(timeout) / 1000.0 << "s)";
+            result.error = oss.str();
+            co_return result;
+        }
     }
     executor.reset();
 
@@ -119,6 +133,13 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
 
             if (execution_result.pre_check_error) {
                 result.error = execution_result.pre_check_error;
+                co_return result;
+            }
+
+            if ((clock_time::since(start_time) / 1000000) > timeout) {
+                std::ostringstream oss;
+                oss << "execution aborted (timeout = " << static_cast<double>(timeout) / 1000.0 << "s)";
+                result.error = oss.str();
                 co_return result;
             }
 

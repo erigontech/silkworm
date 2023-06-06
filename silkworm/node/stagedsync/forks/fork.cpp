@@ -71,8 +71,8 @@ BlockId Fork::current_head() const {
     return current_head_;
 }
 
-BlockId Fork::last_verified_head() const {
-    return last_verified_head_;
+auto Fork::last_finalized_head() const -> BlockId {
+    return last_finalized_head_;
 }
 
 VerificationResult Fork::last_head_status() const {
@@ -81,6 +81,10 @@ VerificationResult Fork::last_head_status() const {
 
 BlockId Fork::last_fork_choice() const {
     return last_fork_choice_;
+}
+
+BlockId Fork::last_verified_head() const {
+    return last_verified_head_;
 }
 
 bool Fork::extends_head(const BlockHeader& header) const {
@@ -198,7 +202,7 @@ VerificationResult Fork::verify_chain() {
             invalid_chain.unwind_point.hash = *canonical_chain_.get_hash(*pipeline_.unwind_point());
             if (pipeline_.bad_block()) {
                 invalid_chain.bad_block = pipeline_.bad_block();
-                invalid_chain.bad_headers = collect_bad_headers(memory_tx_, invalid_chain);
+                invalid_chain.bad_headers = collect_bad_headers(invalid_chain);
             }
             verify_result = invalid_chain;
             break;
@@ -258,21 +262,30 @@ bool Fork::fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block
     memory_tx_.commit_and_stop();
 
     last_fork_choice_ = canonical_chain_.current_head();
+    if (finalized_block_hash) {  // todo: comment out those lines
+        // auto finalized_header = get_header(*finalized_block_hash);
+        // last_finalized_head_ = {finalized_header->number, *finalized_block_hash};
+    }
 
     return true;
 }
 
-std::set<Hash> Fork::collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain) {
+std::set<Hash> Fork::collect_bad_headers(InvalidChain& invalid_chain) {
     if (!invalid_chain.bad_block) return {};
 
     std::set<Hash> bad_headers;
     for (BlockNum current_height = canonical_chain_.current_head().number;
          current_height > invalid_chain.unwind_point.number; current_height--) {
-        auto current_hash = db::read_canonical_hash(tx, current_height);
+        auto current_hash = canonical_chain_.get_hash(current_height);
         bad_headers.insert(*current_hash);
     }
 
     return bad_headers;
+}
+
+auto Fork::get_header(Hash header_hash) const -> std::optional<BlockHeader> {
+    std::optional<BlockHeader> header = db::read_header(memory_tx_, header_hash);
+    return header;
 }
 
 std::vector<Fork>::iterator find_fork_by_head(std::vector<Fork>& forks, const Hash& requested_head_hash) {

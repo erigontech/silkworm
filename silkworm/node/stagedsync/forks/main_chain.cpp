@@ -277,6 +277,7 @@ void MainChain::reintegrate_fork(ExtendingFork& extending_fork) {
     canonical_chain_.set_current_head(fork->current_head());
     canonical_head_status_ = fork->last_head_status();
     last_fork_choice_ = fork->last_fork_choice();
+    last_finalized_head_ = fork->last_finalized_head();
 }
 
 auto MainChain::get_header(Hash header_hash) const -> std::optional<BlockHeader> {

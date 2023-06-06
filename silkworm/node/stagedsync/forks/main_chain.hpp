@@ -67,8 +67,8 @@ class MainChain {
                                    std::optional<Hash> finalized_block_hash = std::nullopt);
 
     // state
-    auto current_head() const -> BlockId;
-    auto last_chosen_head() const -> BlockId;
+    auto current_head() const -> BlockId;      // set by verify_chain(), can be invalid
+    auto last_chosen_head() const -> BlockId;  // set by notify_fork_choice_update(), is always valid
     auto last_finalized_head() const -> BlockId;
 
     // header/body retrieval

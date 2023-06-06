@@ -338,7 +338,6 @@ auto MainChain::is_canonical(Hash block_hash) const -> bool {
     return *canonical_hash == block_hash;
 }
 
-
 /*
 auto MainChain::get_canonical_head_from_db() -> ChainHead {
     auto [height, hash] = db::read_canonical_head(tx_);

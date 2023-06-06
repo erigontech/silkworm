@@ -161,8 +161,7 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> concurrency::Awaitab
             concurrency::AwaitablePromise<VerificationResult> promise{io_context_};
             promise.set_value(ValidChain{last_fork_choice_});
             return promise.get_future();
-        }
-        else {
+        } else {
             SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at verification time";
             concurrency::AwaitablePromise<VerificationResult> promise{io_context_};
             promise.set_value(ValidationError{});
@@ -190,8 +189,7 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
             if (main_chain_.is_canonical(head_block_hash)) {
                 SILK_DEBUG << "ExecutionEngine: chain " << head_block_hash.to_hex() << " already chosen";
                 return true;
-            }
-            else {
+            } else {
                 SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at fork choice update time";
                 return false;
             }

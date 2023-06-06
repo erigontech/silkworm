@@ -14,4 +14,14 @@
    limitations under the License.
 */
 
-int x = 1;
+#pragma once
+
+#include <chrono>
+#include <cstdint>
+
+namespace silkworm::sentry::discovery::disc_v4::disc_v4_common {
+
+uint64_t unix_timestamp_from_time_point(std::chrono::time_point<std::chrono::system_clock> time_point);
+std::chrono::time_point<std::chrono::system_clock> time_point_from_unix_timestamp(uint64_t timestamp);
+
+}  // namespace silkworm::sentry::discovery::disc_v4::disc_v4_common

@@ -72,4 +72,8 @@ boost::asio::awaitable<std::shared_ptr<silkworm::State>> RemoteTransaction::crea
     co_return std::make_shared<silkworm::rpc::state::RemoteState>(executor, db_reader, block_number);
 }
 
+std::shared_ptr<silkworm::State> RemoteTransaction::create_state(boost::asio::any_io_executor& executor, const core::rawdb::DatabaseReader& db_reader, uint64_t block_number) {
+    return std::make_shared<silkworm::rpc::state::RemoteState>(executor, db_reader, block_number);
+}
+
 }  // namespace silkworm::rpc::ethdb::kv

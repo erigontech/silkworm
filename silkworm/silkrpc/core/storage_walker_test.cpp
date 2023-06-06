@@ -172,6 +172,10 @@ class DummyTransaction : public ethdb::Transaction {
         co_return nullptr;
     }
 
+    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor&, const core::rawdb::DatabaseReader&, uint64_t) override {
+        return nullptr;
+    }
+
     boost::asio::awaitable<void> close() override {
         co_return;
     }

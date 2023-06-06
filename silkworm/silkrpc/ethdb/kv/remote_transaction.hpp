@@ -51,6 +51,7 @@ class RemoteTransaction : public Transaction {
     boost::asio::awaitable<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& table) override;
 
     boost::asio::awaitable<std::shared_ptr<silkworm::State>> create_state(const core::rawdb::DatabaseReader& db_reader, uint64_t block_number) override;
+    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const core::rawdb::DatabaseReader& db_reader, uint64_t block_number) override;
 
     boost::asio::awaitable<void> close() override;
 

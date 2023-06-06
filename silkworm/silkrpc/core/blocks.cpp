@@ -28,7 +28,7 @@ constexpr const char* kHeadBlockHash = "headBlockHash";
 constexpr const char* kFinalizedBlockHash = "finalizedBlockHash";
 constexpr const char* kSafeBlockHash = "safeBlockHash";
 
-static boost::asio::awaitable<uint64_t> get_forkchoice_block_number(const rawdb::DatabaseReader& reader, const std::string& block_hash_tag) {
+static boost::asio::awaitable<uint64_t> get_forkchoice_block_number(const rawdb::DatabaseReader& reader, const char* block_hash_tag) {
     const auto kv_pair = co_await reader.get(db::table::kLastForkchoiceName, bytes_of_string(block_hash_tag));
     const auto block_hash_data = kv_pair.value;
     if (block_hash_data.empty()) {
@@ -117,11 +117,11 @@ boost::asio::awaitable<uint64_t> get_latest_block_number(const rawdb::DatabaseRe
 }
 
 boost::asio::awaitable<uint64_t> get_forkchoice_finalized_block_number(const rawdb::DatabaseReader& reader) {
-    return get_forkchoice_block_number(reader, kFinalizedBlockHash);
+    co_return co_await get_forkchoice_block_number(reader, kFinalizedBlockHash);
 }
 
 boost::asio::awaitable<uint64_t> get_forkchoice_safe_block_number(const rawdb::DatabaseReader& reader) {
-    return get_forkchoice_block_number(reader, kSafeBlockHash);
+    co_return co_await get_forkchoice_block_number(reader, kSafeBlockHash);
 }
 
 boost::asio::awaitable<bool> is_latest_block_number(const BlockNumberOrHash& bnoh, const rawdb::DatabaseReader& reader) {

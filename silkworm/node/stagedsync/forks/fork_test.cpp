@@ -159,7 +159,7 @@ TEST_CASE("Fork") {
                 CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kBlockBodiesKey) == 4);
 
                 // fork choice
-                bool updated = fork.notify_fork_choice_update(block4_hash, block3_hash);
+                bool updated = fork.fork_choice(block4_hash, block3_hash);
                 CHECK(updated);
                 CHECK(fork.current_head() == BlockId{4, block4_hash});
                 CHECK(fork.last_fork_choice() == BlockId{4, block4_hash});

@@ -253,7 +253,8 @@ TEST_CASE("MainChain") {
         REQUIRE(present_in_canonical);
 
         // confirming the chain
-        main_chain.notify_fork_choice_update(block1_hash);
+        auto updated = main_chain.notify_fork_choice_update(block1_hash);
+        CHECK(updated);
 
         // checking the status
         present_in_canonical = main_chain.get_canonical_hash(block1.header.number);
@@ -288,8 +289,10 @@ TEST_CASE("MainChain") {
         extends_canonical = main_chain.extends_last_fork_choice(block3.header.number, block3.header.hash());
         CHECK(extends_canonical);
 
-        // reverting the chain
-        main_chain.notify_fork_choice_update(*header0_hash);
+        // reverting the chain simulating invalid block
+        main_chain.canonical_head_status_ = InvalidChain{BlockId{1, block1_hash}};
+        updated = main_chain.notify_fork_choice_update(*header0_hash);
+        CHECK(updated);
 
         // checking the status
         present_in_canonical = main_chain.get_canonical_hash(block1.header.number);

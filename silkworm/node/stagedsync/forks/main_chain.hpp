@@ -81,6 +81,7 @@ class MainChain {
     auto extends_last_fork_choice(BlockNum, Hash) const -> bool;
     auto extends(BlockId block, BlockId supposed_parent) const -> bool;
     auto is_ancestor(BlockId supposed_parent, BlockId block) const -> bool;
+    auto is_canonical(Hash) const -> bool;
 
     NodeSettings& node_settings();
     db::RWTxn& tx();  // only for testing purposes due to MDBX limitations

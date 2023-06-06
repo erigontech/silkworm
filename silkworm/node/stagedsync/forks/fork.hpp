@@ -47,9 +47,9 @@ class Fork {
     void reduce_down_to(BlockId new_head);  // remove blocks & state down to the specified head
 
     // verification
-    auto verify_chain() -> VerificationResult;            // verify chain up to current head
-    bool notify_fork_choice_update(Hash head_block_hash,  // accept the current chain up to head_block_hash
-                                   std::optional<Hash> finalized_block_hash = std::nullopt);
+    auto verify_chain() -> VerificationResult;  // verify chain up to current head
+    bool fork_choice(Hash head_block_hash,      // accept the current chain up to head_block_hash
+                     std::optional<Hash> finalized_block_hash = std::nullopt);
 
     // state
     auto current_head() const -> BlockId;

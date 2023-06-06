@@ -156,10 +156,18 @@ auto ExecutionEngine::verify_chain(Hash head_block_hash) -> concurrency::Awaitab
 
     auto fork = find_fork_by_head(forks_, head_block_hash);
     if (fork == forks_.end()) {
-        SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at verification time";
-        concurrency::AwaitablePromise<VerificationResult> promise{io_context_};
-        promise.set_value(ValidationError{});
-        return promise.get_future();
+        if (main_chain_.is_canonical(head_block_hash)) {
+            SILK_DEBUG << "ExecutionEngine: chain " << head_block_hash.to_hex() << " already verified";
+            concurrency::AwaitablePromise<VerificationResult> promise{io_context_};
+            promise.set_value(ValidChain{last_fork_choice_});
+            return promise.get_future();
+        }
+        else {
+            SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at verification time";
+            concurrency::AwaitablePromise<VerificationResult> promise{io_context_};
+            promise.set_value(ValidationError{});
+            return promise.get_future();
+        }
     }
 
     return (*fork)->verify_chain();
@@ -177,17 +185,25 @@ bool ExecutionEngine::notify_fork_choice_update(Hash head_block_hash, std::optio
     } else {
         // chose the fork with the given head
         auto f = find_fork_by_head(forks_, head_block_hash);
+
         if (f == forks_.end()) {
-            SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at fork choice update time";
-            return false;
+            if (main_chain_.is_canonical(head_block_hash)) {
+                SILK_DEBUG << "ExecutionEngine: chain " << head_block_hash.to_hex() << " already chosen";
+                return true;
+            }
+            else {
+                SILK_WARN << "ExecutionEngine: chain " << head_block_hash.to_hex() << " not found at fork choice update time";
+                return false;
+            }
         }
+
+        // notify the fork of the update - we need to block here to restore the invariant
+        auto updated = (*f)->fork_choice(head_block_hash, finalized_block_hash).get();  // BLOCKING
+        if (!updated) return false;
+
         std::unique_ptr<ExtendingFork> fork = std::move(*f);
         forks_.erase(f);
         discard_all_forks();  // remove all other forks
-
-        // notify the fork of the update - we need to block here to restore the invariant
-        auto updated = fork->notify_fork_choice_update(head_block_hash, finalized_block_hash).get();  // BLOCKING
-        if (!updated) return false;
 
         last_fork_choice_ = fork->current_head();
 

@@ -216,9 +216,11 @@ VerificationResult Fork::verify_chain() {
     return verify_result;
 }
 
-bool Fork::notify_fork_choice_update(Hash head_block_hash, [[maybe_unused]] std::optional<Hash> finalized_block_hash) {
+bool Fork::fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash) {
     SILK_TRACE << "Fork: fork choice update " << head_block_hash.to_hex();
 
+    /* this block is to handle fork choice in the middle of this fork; it requires suitable ExecutionEngine behavior
+       to be enabled, which is not the case at the moment
     if (last_verified_head_.hash != head_block_hash) {
         // usually update_fork_choice must follow verify_chain with the same header
         // except when verify_chain returned InvalidChain, in which case we expect
@@ -241,8 +243,16 @@ bool Fork::notify_fork_choice_update(Hash head_block_hash, [[maybe_unused]] std:
         last_verified_head_ = {*head_block_num, head_block_hash};
         last_head_status_ = ValidChain{*head_block_num, head_block_hash};
     }
+    */
+
+    ensure_invariant(current_head_.hash == head_block_hash, "fork choice update with wrong head block hash");
 
     if (!holds_alternative<ValidChain>(last_head_status_)) return false;
+
+    // todo: check if is_canonical(*finalized_block_hash)
+
+    db::write_last_head_block(memory_tx_, head_block_hash);
+    if (finalized_block_hash) db::write_last_finalized_block(memory_tx_, *finalized_block_hash);
 
     memory_tx_.enable_commit();
     memory_tx_.commit_and_stop();

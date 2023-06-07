@@ -420,7 +420,6 @@ TEST_CASE("MemoryMutationCursor: to_next", "[silkworm][node][db][memory_mutation
             CHECK(result1.done);
             CHECK(result1.key == "BB");
             CHECK(result1.value == "11");
-
         }
     }
 }

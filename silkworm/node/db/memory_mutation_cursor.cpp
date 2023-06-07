@@ -115,23 +115,23 @@ CursorResult MemoryMutationCursor::to_first(bool throw_notfound) {
     if (key_diff == 0) {  // memory.key == db.key
         if (memory_result.value < db_result.value) {
             current_pair_ = current_memory_entry_;
-            //current_db_entry_ = CursorResult{{}, {}, false};
+            // current_db_entry_ = CursorResult{{}, {}, false};
             is_previous_from_db_ = false;
             return memory_result;
         } else {
             current_pair_ = current_db_entry_;
-            //current_memory_entry_ = CursorResult{{}, {}, false};
+            // current_memory_entry_ = CursorResult{{}, {}, false};
             is_previous_from_db_ = true;
             return db_result;
         }
     } else if (key_diff < 0) {  // memory.key < db.key
         current_pair_ = current_memory_entry_;
-        //current_db_entry_ = CursorResult{{}, {}, false};
+        // current_db_entry_ = CursorResult{{}, {}, false};
         is_previous_from_db_ = false;
         return memory_result;
     } else {  // memory.key > db.key
         current_pair_ = current_db_entry_;
-        //current_memory_entry_ = CursorResult{{}, {}, false};
+        // current_memory_entry_ = CursorResult{{}, {}, false};
         is_previous_from_db_ = true;
         return db_result;
     }
@@ -194,23 +194,23 @@ CursorResult MemoryMutationCursor::to_previous(bool throw_notfound) {
     if (key_diff == 0) {
         if (memory_result.value > db_result.value) {
             current_pair_ = current_memory_entry_;
-            //current_db_entry_ = CursorResult{{}, {}, false};
+            // current_db_entry_ = CursorResult{{}, {}, false};
             is_previous_from_db_ = false;
             return memory_result;
         } else {
             current_pair_ = current_db_entry_;
-            //current_memory_entry_ = CursorResult{{}, {}, false};
+            // current_memory_entry_ = CursorResult{{}, {}, false};
             is_previous_from_db_ = true;
             return db_result;
         }
     } else if (key_diff < 0) {
         current_pair_ = current_memory_entry_;
-        //current_db_entry_ = CursorResult{{}, {}, false};
+        // current_db_entry_ = CursorResult{{}, {}, false};
         is_previous_from_db_ = false;
         return memory_result;
     } else {  // key_diff > 0
         current_pair_ = current_db_entry_;
-        //current_memory_entry_ = CursorResult{{}, {}, false};
+        // current_memory_entry_ = CursorResult{{}, {}, false};
         is_previous_from_db_ = true;
         return db_result;
     }
@@ -322,23 +322,23 @@ CursorResult MemoryMutationCursor::to_last(bool throw_notfound) {
     if (key_diff == 0) {
         if (memory_result.value > db_result.value) {
             current_pair_ = current_memory_entry_;
-            //current_db_entry_ = CursorResult{{}, {}, false};
+            // current_db_entry_ = CursorResult{{}, {}, false};
             is_previous_from_db_ = false;
             return memory_result;
         } else {
             current_pair_ = current_db_entry_;
-            //current_memory_entry_ = CursorResult{{}, {}, false};
+            // current_memory_entry_ = CursorResult{{}, {}, false};
             is_previous_from_db_ = true;
             return db_result;
         }
     } else if (key_diff > 0) {
         current_pair_ = current_memory_entry_;
-        //current_db_entry_ = CursorResult{{}, {}, false};
+        // current_db_entry_ = CursorResult{{}, {}, false};
         is_previous_from_db_ = false;
         return memory_result;
     } else {  // key_diff < 0
         current_pair_ = current_db_entry_;
-        //current_memory_entry_ = CursorResult{{}, {}, false};
+        // current_memory_entry_ = CursorResult{{}, {}, false};
         is_previous_from_db_ = true;
         return db_result;
     }

@@ -123,7 +123,7 @@ TEST_CASE("Fork") {
     auto fcu_updated = main_chain.notify_fork_choice_update(block3_hash, block1_hash);
     REQUIRE(fcu_updated);
 
-    auto final_canonical_head = main_chain.current_head();
+    auto final_canonical_head = main_chain.last_chosen_head();
     REQUIRE(final_canonical_head == BlockId{3, block3_hash});
 
     SECTION("creating a fork") {
@@ -133,7 +133,7 @@ TEST_CASE("Fork") {
                 auto block4 = generateSampleChildrenBlock(block3.header);
                 auto block4_hash = block4.header.hash();
 
-                BlockId forking_point = main_chain.current_head();
+                BlockId forking_point = main_chain.last_chosen_head();
 
                 Fork_ForTest fork{forking_point,
                                   db::ROTxn(main_chain.tx().db()),  // this need to be on a different thread than main_chain

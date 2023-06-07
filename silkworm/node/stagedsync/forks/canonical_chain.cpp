@@ -58,6 +58,7 @@ CanonicalChain::CanonicalChain(CanonicalChain&& orig) noexcept
 
 void CanonicalChain::set_current_head(BlockId head) {
     current_head_ = head;
+    canonical_hash_cache_->clear();  // invalidate cache
 }
 
 BlockId CanonicalChain::initial_head() const { return initial_head_; }
@@ -177,6 +178,13 @@ auto CanonicalChain::get_hash(BlockNum height) const -> std::optional<Hash> {
         if (canon_hash) canonical_hash_cache_->put(height, *canon_hash);  // and cache it
     }
     return canon_hash;
+}
+
+auto CanonicalChain::has(Hash block_hash) const -> bool {
+    auto header = db::read_header(tx_, block_hash);
+    if (!header) return false;
+    auto canonical_hash_at_same_height = get_hash(header->number);
+    return canonical_hash_at_same_height == block_hash;
 }
 
 }  // namespace silkworm::stagedsync

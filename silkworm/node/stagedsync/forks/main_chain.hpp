@@ -67,7 +67,6 @@ class MainChain {
                                    std::optional<Hash> finalized_block_hash = std::nullopt);
 
     // state
-    auto current_head() const -> BlockId;      // set by verify_chain(), can be invalid
     auto last_chosen_head() const -> BlockId;  // set by notify_fork_choice_update(), is always valid
     auto last_finalized_head() const -> BlockId;
 
@@ -91,6 +90,8 @@ class MainChain {
   protected:
     Hash insert_header(const BlockHeader&);
     void insert_body(const Block&, const Hash& block_hash);
+
+    auto current_head() const -> BlockId;  // private state, it is implementation dependent, this head can be invalid
 
     std::set<Hash> collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain);
 

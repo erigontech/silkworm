@@ -96,6 +96,7 @@ std::optional<BlockId> MainChain::find_forking_point(const Hash& header_hash) co
 }
 
 auto MainChain::is_canonical(BlockId block) const -> bool {
+    if (block.number > last_fork_choice_.number) return false;
     return (canonical_chain_.get_hash(block.number) == block.hash);
 }
 
@@ -198,7 +199,7 @@ bool MainChain::notify_fork_choice_update(Hash head_block_hash, std::optional<Ha
         // 1) (PoS) CL is syncing so head_block_hash is referring to a previous valid head
         // 2) (PoW) previous verify_chain returned InvalidChain so CL is issuing a fcu with a previous valid head
 
-        if (is_canonical(head_block_hash) &&
+        if (canonical_chain_.has(head_block_hash) &&
             std::holds_alternative<ValidChain>(canonical_head_status_)) return true;
 
         auto verification = verify_chain(head_block_hash);  // this will reset canonical chain to head_block_hash
@@ -215,7 +216,7 @@ bool MainChain::notify_fork_choice_update(Hash head_block_hash, std::optional<Ha
     ensure_invariant(canonical_chain_.current_head() == valid_chain.current_head,
                      "canonical head not aligned with recorded head status");
 
-    if (finalized_block_hash && !is_canonical(*finalized_block_hash)) return false;
+    if (finalized_block_hash && !canonical_chain_.has(*finalized_block_hash)) return false;
 
     db::write_last_head_block(tx_, head_block_hash);
     if (finalized_block_hash) db::write_last_finalized_block(tx_, *finalized_block_hash);
@@ -264,6 +265,7 @@ std::set<Hash> MainChain::collect_bad_headers(db::RWTxn& tx, InvalidChain& inval
 }
 
 auto MainChain::fork(BlockId forking_point) -> std::unique_ptr<ExtendingFork> {
+    ensure(std::holds_alternative<ValidChain>(canonical_head_status_), "forking is allowed from a valid state");
     return std::make_unique<ExtendingFork>(forking_point, *this, io_context_);
 }
 
@@ -299,8 +301,8 @@ auto MainChain::get_header(BlockNum header_height, Hash header_hash) const -> st
 }
 
 auto MainChain::get_canonical_hash(BlockNum height) const -> std::optional<Hash> {
-    // return canonical_chain_.get_hash(height);
-    return db::read_canonical_hash(tx_, height);
+    if (height > last_fork_choice_.number) return {};
+    return canonical_chain_.get_hash(height);
 }
 
 auto MainChain::get_header_td(BlockNum header_height, Hash header_hash) const -> std::optional<TotalDifficulty> {
@@ -364,6 +366,7 @@ auto MainChain::extends(BlockId block, BlockId supposed_parent) const -> bool {
 auto MainChain::is_canonical(Hash block_hash) const -> bool {
     auto header = get_header(block_hash);
     if (!header) return false;
+    if (header->number > last_fork_choice_.number) return false;
     auto canonical_hash_at_same_height = canonical_chain_.get_hash(header->number);
     return canonical_hash_at_same_height == block_hash;
 }

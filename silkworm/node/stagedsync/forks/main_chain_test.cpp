@@ -40,6 +40,7 @@ class MainChain_ForTest : public stagedsync::MainChain {
   public:
     using stagedsync::MainChain::canonical_chain_;
     using stagedsync::MainChain::canonical_head_status_;
+    using stagedsync::MainChain::current_head;
     using stagedsync::MainChain::insert_block;
     using stagedsync::MainChain::MainChain;
     using stagedsync::MainChain::pipeline_;
@@ -84,6 +85,24 @@ TEST_CASE("MainChain") {
 
     auto& tx = main_chain.tx();
 
+    auto header0_hash = db::read_canonical_hash(tx, 0);
+    REQUIRE(header0_hash.has_value());
+
+    auto header0 = db::read_canonical_header(tx, 0);
+    REQUIRE(header0.has_value());
+
+    BlockId block0_id{0, *header0_hash};
+
+    // initial status
+    auto initial_progress = main_chain.get_block_progress();
+    REQUIRE(initial_progress == 0);
+
+    auto initial_canonical_head = main_chain.current_head();
+    REQUIRE(initial_canonical_head == block0_id);
+    REQUIRE(main_chain.last_chosen_head() == block0_id);
+    REQUIRE(initial_canonical_head.number == initial_progress);
+    REQUIRE(main_chain.canonical_chain_.current_head() == initial_canonical_head);
+
     /* status:
      *         h0
      * input:
@@ -91,12 +110,6 @@ TEST_CASE("MainChain") {
      */
 
     SECTION("one invalid body after the genesis") {
-        auto header0_hash = db::read_canonical_hash(tx, 0);
-        REQUIRE(header0_hash.has_value());
-
-        auto header0 = db::read_canonical_header(tx, 0);
-        REQUIRE(header0.has_value());
-
         Block block1;
         block1.header.number = 1;
         block1.header.difficulty = 17'171'480'576;  // a random value
@@ -104,17 +117,7 @@ TEST_CASE("MainChain") {
         // auto header1_hash = block1.header.hash();
         block1.ommers.push_back(BlockHeader{});  // generate error InvalidOmmerHeader
         auto block1_hash = block1.header.hash();
-
-        // getting initial status
-        auto initial_progress = main_chain.get_block_progress();
-        REQUIRE(initial_progress == 0);
-
-        auto initial_canonical_head = main_chain.current_head();
-        REQUIRE(initial_canonical_head.number == 0);
-        REQUIRE(initial_canonical_head.hash == *header0_hash);
-
-        REQUIRE(initial_canonical_head.number == initial_progress);
-        REQUIRE(main_chain.canonical_chain_.current_head() == initial_canonical_head);
+        BlockId block1_id{1, block1_hash};
 
         // inserting headers & bodies
         main_chain.insert_block(block1);
@@ -143,7 +146,7 @@ TEST_CASE("MainChain") {
         REQUIRE(holds_alternative<InvalidChain>(verification));
         auto invalid_chain = std::get<InvalidChain>(verification);
 
-        REQUIRE(invalid_chain.unwind_point == BlockId{0, *header0_hash});
+        REQUIRE(invalid_chain.unwind_point == block0_id);
         REQUIRE(invalid_chain.bad_block.has_value());
         REQUIRE(invalid_chain.bad_block.value() == block1_hash);
         REQUIRE(invalid_chain.bad_headers.size() == 1);
@@ -154,20 +157,20 @@ TEST_CASE("MainChain") {
         REQUIRE(final_progress == block1.header.number);
 
         auto final_canonical_head = main_chain.current_head();
-        REQUIRE(final_canonical_head.number == block1.header.number);
-        REQUIRE(final_canonical_head.hash == block1_hash);
-        REQUIRE(main_chain.canonical_chain_.current_head().number == block1.header.number);
-        REQUIRE(main_chain.canonical_chain_.current_head().hash == block1_hash);
+        REQUIRE(final_canonical_head == block1_id);
+        REQUIRE(main_chain.canonical_chain_.current_head() == block1_id);
+        REQUIRE(main_chain.last_chosen_head() == block0_id);  // not changed
 
         auto current_status = main_chain.canonical_head_status_;
         REQUIRE(holds_alternative<InvalidChain>(current_status));
 
         // check canonical
         auto present_in_canonical = main_chain.get_canonical_hash(block1.header.number);
-        REQUIRE(present_in_canonical);
+        REQUIRE(!present_in_canonical);
 
         // reverting the chain
-        main_chain.notify_fork_choice_update(*header0_hash);
+        auto updated = main_chain.notify_fork_choice_update(*header0_hash);
+        CHECK(updated);
 
         // checking the status
         present_in_canonical = main_chain.get_canonical_hash(block1.header.number);
@@ -176,19 +179,14 @@ TEST_CASE("MainChain") {
         final_canonical_head = main_chain.current_head();
         REQUIRE(final_canonical_head == initial_canonical_head);
         REQUIRE(main_chain.canonical_chain_.current_head() == initial_canonical_head);
+        REQUIRE(main_chain.last_chosen_head() == block0_id);  // not changed
 
         current_status = main_chain.canonical_head_status_;
         REQUIRE(holds_alternative<ValidChain>(current_status));
-        REQUIRE(std::get<ValidChain>(current_status).current_head == BlockId{0, *header0_hash});
+        REQUIRE(std::get<ValidChain>(current_status).current_head == block0_id);
     }
 
     SECTION("one valid body after the genesis") {
-        auto header0_hash = db::read_canonical_hash(tx, 0);
-        REQUIRE(header0_hash.has_value());
-
-        auto header0 = db::read_canonical_header(tx, 0);
-        REQUIRE(header0.has_value());
-
         std::string raw_header1 =
             "f90211a0d4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3a01dcc4de8dec75d7aab85b567b6ccd41a"
             "d312451b948a7413f0a142fd40d493479405a56e2d52c817161883f50c441c3228cfe54d9fa0d67e4d450343046425ae4271474353"
@@ -209,17 +207,7 @@ TEST_CASE("MainChain") {
         // Note: block1 has zero transactions and zero ommers on mainnet
         REQUIRE(decoding_result);
         auto block1_hash = block1.header.hash();
-
-        // getting initial status
-        auto initial_progress = main_chain.get_block_progress();
-        REQUIRE(initial_progress == 0);
-
-        auto initial_canonical_head = main_chain.current_head();
-        REQUIRE(initial_canonical_head.number == 0);
-        REQUIRE(initial_canonical_head.hash == *header0_hash);
-
-        REQUIRE(initial_canonical_head.number == initial_progress);
-        REQUIRE(main_chain.canonical_chain_.current_head() == initial_canonical_head);
+        BlockId block1_id{1, block1_hash};
 
         // inserting & verifying the block
         main_chain.insert_block(block1);
@@ -227,22 +215,21 @@ TEST_CASE("MainChain") {
 
         REQUIRE(holds_alternative<ValidChain>(verification));
         auto valid_chain = std::get<ValidChain>(verification);
-        REQUIRE(valid_chain.current_head == BlockId{1, block1_hash});
+        REQUIRE(valid_chain.current_head == block1_id);
 
         // check status
         REQUIRE(main_chain.pipeline_.head_header_number() == block1.header.number);
         REQUIRE(main_chain.pipeline_.head_header_hash() == block1_hash);
 
         auto final_canonical_head = main_chain.current_head();
-        REQUIRE(final_canonical_head.number == block1.header.number);
-        REQUIRE(final_canonical_head.hash == block1_hash);
+        REQUIRE(final_canonical_head == block1_id);
+        REQUIRE(main_chain.last_chosen_head() == block0_id);  // not changed
 
-        REQUIRE(main_chain.canonical_chain_.current_head().number == block1.header.number);
-        REQUIRE(main_chain.canonical_chain_.current_head().hash == block1_hash);
+        REQUIRE(main_chain.canonical_chain_.current_head() == block1_id);
 
         auto current_status = main_chain.canonical_head_status_;
         REQUIRE(holds_alternative<ValidChain>(current_status));
-        REQUIRE(std::get<ValidChain>(current_status).current_head == BlockId{1, block1_hash});
+        REQUIRE(std::get<ValidChain>(current_status).current_head == block1_id);
 
         // check db content
         BlockBody saved_body;
@@ -250,7 +237,7 @@ TEST_CASE("MainChain") {
         REQUIRE(present);
 
         auto present_in_canonical = main_chain.get_canonical_hash(block1.header.number);
-        REQUIRE(present_in_canonical);
+        REQUIRE(!present_in_canonical);  // not yet
 
         // confirming the chain
         auto updated = main_chain.notify_fork_choice_update(block1_hash);
@@ -261,10 +248,9 @@ TEST_CASE("MainChain") {
         REQUIRE(present_in_canonical);
 
         final_canonical_head = main_chain.current_head();
-        REQUIRE(final_canonical_head.number == block1.header.number);
-        REQUIRE(final_canonical_head.hash == block1_hash);
-        REQUIRE(main_chain.canonical_chain_.current_head().number == block1.header.number);
-        REQUIRE(main_chain.canonical_chain_.current_head().hash == block1_hash);
+        REQUIRE(final_canonical_head == block1_id);
+        REQUIRE(main_chain.canonical_chain_.current_head() == block1_id);
+        REQUIRE(main_chain.last_chosen_head() == block1_id);
 
         // testing other methods
         Block block1b;
@@ -301,25 +287,21 @@ TEST_CASE("MainChain") {
         final_canonical_head = main_chain.current_head();
         REQUIRE(final_canonical_head == initial_canonical_head);
         REQUIRE(main_chain.canonical_chain_.current_head() == initial_canonical_head);
+        REQUIRE(main_chain.last_chosen_head() == block0_id);
 
         current_status = main_chain.canonical_head_status_;
         REQUIRE(holds_alternative<ValidChain>(current_status));
-        REQUIRE(std::get<ValidChain>(current_status).current_head == BlockId{0, *header0_hash});
+        REQUIRE(std::get<ValidChain>(current_status).current_head == block0_id);
     }
 
     SECTION("diverting the head") {
-        auto header0_hash = db::read_canonical_hash(tx, 0);
-        REQUIRE(header0_hash.has_value());
-
-        auto header0 = db::read_canonical_header(tx, 0);
-        REQUIRE(header0.has_value());
-
         Block block1 = generateSampleChildrenBlock(*header0);
 
         Block block2 = generateSampleChildrenBlock(block1.header);
 
         Block block3 = generateSampleChildrenBlock(block2.header);
         auto block3_hash = block3.header.hash();
+        BlockId block3_id{3, block3_hash};
 
         // inserting & verifying the block
         main_chain.insert_block(block1);
@@ -336,14 +318,16 @@ TEST_CASE("MainChain") {
         CHECK(fcu_updated);
 
         auto final_canonical_head = main_chain.current_head();
-        CHECK(final_canonical_head == BlockId{3, block3_hash});
-        CHECK(main_chain.canonical_chain_.current_head() == final_canonical_head);
+        CHECK(final_canonical_head == block3_id);
+        CHECK(main_chain.canonical_chain_.current_head() == block3_id);
+        REQUIRE(main_chain.last_chosen_head() == block3_id);  // not changed
 
         // Creating a fork and changing the head (trigger unwind)
         {
             Block block2b = generateSampleChildrenBlock(block1.header);
             block2b.header.extra_data = string_view_to_byte_view("I'm different");  // to make it different from block2
             auto block2b_hash = block2b.header.hash();
+            BlockId block2b_id{2, block2b_hash};
 
             // inserting & verifying the block
             main_chain.insert_block(block2b);
@@ -351,15 +335,16 @@ TEST_CASE("MainChain") {
 
             REQUIRE(holds_alternative<ValidChain>(verification));
             valid_chain = std::get<ValidChain>(verification);
-            CHECK(valid_chain.current_head == BlockId{2, block2b_hash});
+            CHECK(valid_chain.current_head == block2b_id);
 
             // confirming the chain
             fcu_updated = main_chain.notify_fork_choice_update(block2b_hash);
             CHECK(fcu_updated);
 
             final_canonical_head = main_chain.current_head();
-            CHECK(final_canonical_head == BlockId{2, block2b_hash});
-            CHECK(main_chain.canonical_chain_.current_head() == final_canonical_head);
+            CHECK(final_canonical_head == block2b_id);
+            CHECK(main_chain.canonical_chain_.current_head() == block2b_id);
+            REQUIRE(main_chain.last_chosen_head() == block2b_id);  // not changed
         }
     }
 }

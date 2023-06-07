@@ -1682,9 +1682,9 @@ void OperationTracer::on_execution_start(evmc_revision, const evmc_message& msg,
             result_.push_back(InternalOperation{OperationType::OP_CREATE, sender, recipient, str_value});
         } else if (msg.kind == evmc_call_kind::EVMC_CREATE2) {
             result_.push_back(InternalOperation{OperationType::OP_CREATE2, sender, recipient, str_value});
+        } else if (msg.kind == evmc_call_kind::EVMC_CALL && intx::be::load<intx::uint256>(msg.value) > 0) {
+            result_.push_back(InternalOperation{OperationType::OP_TRANSFER, sender, recipient, str_value});
         }
-    } else if (msg.kind == evmc_call_kind::EVMC_CALL && intx::be::load<intx::uint256>(msg.value) > 0) {
-        result_.push_back(InternalOperation{OperationType::OP_TRANSFER, sender, recipient, str_value});
     }
 
     SILK_DEBUG << "OperationTracer::on_execution_start: gas: " << std::dec << msg.gas

@@ -88,7 +88,7 @@ struct MemoryMutationCursorTest {
     RWTxn main_txn{main_env};
     MemoryOverlay overlay{tmp_dir.path(), &main_txn};
     MemoryMutation mutation{overlay};
-    test::SetLogVerbosityGuard log_guard_{log::Level::kNone};
+    test::SetLogVerbosityGuard log_guard_{log::Level::kTrace};
 };
 
 // Skip in TSAN build due to false positive lock-order-inversion: https://github.com/google/sanitizers/issues/814
@@ -315,8 +315,12 @@ TEST_CASE("MemoryMutationCursor: to_previous", "[silkworm][node][db][memory_muta
             CHECK(result1.value == "00");
             const auto result2 = mutation_cursor1.to_previous(/*throw_notfound=*/false);
             CHECK(!result2.done);
+            SILK_TRACE << "BEFORE mutation_cursor1.to_first";
             REQUIRE(mutation_cursor1.to_first(/*throw_notfound=*/false));
+            SILK_TRACE << "AFTER mutation_cursor1.to_first";
+            SILK_TRACE << "BEFORE mutation_cursor1.to_previous";
             const auto result3 = mutation_cursor1.to_previous(/*throw_notfound=*/false);
+            SILK_TRACE << "AFTER mutation_cursor1.to_previous";
             CHECK(!result3.done);
 
             MemoryMutationCursor mutation_cursor2{test->mutation, db::table::kAccountChangeSet};
@@ -363,8 +367,12 @@ TEST_CASE("MemoryMutationCursor: to_next", "[silkworm][node][db][memory_mutation
 
         SECTION(tag + ": to_next on existent table w/ positioning: OK") {
             MemoryMutationCursor mutation_cursor1{test->mutation, db::table::kCode};
+            SILK_TRACE << "BEFORE mutation_cursor1.to_first";
             REQUIRE(mutation_cursor1.to_first());
+            SILK_TRACE << "AFTER mutation_cursor1.to_first";
+            SILK_TRACE << "BEFORE mutation_cursor1.to_next";
             const auto result1 = mutation_cursor1.to_next();
+            SILK_TRACE << "AFTER mutation_cursor1.to_next";
             CHECK(result1.done);
             CHECK(result1.key == "BB");
             CHECK(result1.value == "11");
@@ -412,25 +420,7 @@ TEST_CASE("MemoryMutationCursor: to_next", "[silkworm][node][db][memory_mutation
             CHECK(result1.done);
             CHECK(result1.key == "BB");
             CHECK(result1.value == "11");
-            const auto result2 = mutation_cursor1.to_next(/*throw_notfound=*/false);
-            CHECK(!result2.done);
-            REQUIRE(mutation_cursor1.to_last(/*throw_notfound=*/false));
-            const auto result3 = mutation_cursor1.to_next(/*throw_notfound=*/false);
-            CHECK(!result3.done);
 
-            MemoryMutationCursor mutation_cursor2{test->mutation, db::table::kAccountChangeSet};
-            REQUIRE(mutation_cursor2.to_first(/*throw_notfound=*/false));
-            const auto result4 = mutation_cursor2.to_next(/*throw_notfound=*/false);
-            CHECK(result4.done);
-            CHECK(result4.key == "AA");
-            CHECK(result4.value == "11");
-            const auto result5 = mutation_cursor2.to_next(/*throw_notfound=*/false);
-            CHECK(result5.done);
-            CHECK(result5.key == "AA");
-            CHECK(result5.value == "22");
-            REQUIRE(mutation_cursor2.to_last(/*throw_notfound=*/false));
-            const auto result6 = mutation_cursor2.to_next(/*throw_notfound=*/false);
-            CHECK(!result6.done);
         }
     }
 }

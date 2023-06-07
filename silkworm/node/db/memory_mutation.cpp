@@ -180,6 +180,8 @@ void MemoryMutation::flush(db::RWTxn& rw_txn) {
             const auto& mem_value = mem_cursor_result.value;
             db_cursor->upsert(mem_key, mem_value);
 
+            SILK_TRACE << "Memory mutation change key: " << mem_key.as_string() << " value: " << mem_value.as_string();
+
             mem_cursor_result = mem_cursor->to_next(/*throw_notfound =*/false);
         }
     }

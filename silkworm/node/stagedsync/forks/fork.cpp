@@ -258,14 +258,14 @@ bool Fork::fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block
     db::write_last_head_block(memory_tx_, head_block_hash);
     if (finalized_block_hash) db::write_last_finalized_block(memory_tx_, *finalized_block_hash);
 
+    last_fork_choice_ = canonical_chain_.current_head();
+    if (finalized_block_hash) {
+        auto finalized_header = get_header(*finalized_block_hash);
+        last_finalized_head_ = {finalized_header->number, *finalized_block_hash};
+    }
+
     memory_tx_.enable_commit();
     memory_tx_.commit_and_stop();
-
-    last_fork_choice_ = canonical_chain_.current_head();
-    if (finalized_block_hash) {  // todo: comment out those lines
-        // auto finalized_header = get_header(*finalized_block_hash);
-        // last_finalized_head_ = {finalized_header->number, *finalized_block_hash};
-    }
 
     return true;
 }

@@ -88,7 +88,7 @@ struct MemoryMutationCursorTest {
     RWTxn main_txn{main_env};
     MemoryOverlay overlay{tmp_dir.path(), &main_txn};
     MemoryMutation mutation{overlay};
-    test::SetLogVerbosityGuard log_guard_{log::Level::kTrace};
+    test::SetLogVerbosityGuard log_guard_{log::Level::kNone};
 };
 
 // Skip in TSAN build due to false positive lock-order-inversion: https://github.com/google/sanitizers/issues/814
@@ -246,7 +246,7 @@ TEST_CASE("MemoryMutationCursor: to_previous", "[silkworm][node][db][memory_muta
     test2.fill_mutation_tables();
 
     std::map<std::string, MemoryMutationCursorTest*> mutation_tests = {
-        // {"Empty overlay", &test1},
+        {"Empty overlay", &test1},
         {"Nonempty overlay", &test2},
     };
     for (auto [tag, test] : mutation_tests) {
@@ -315,12 +315,8 @@ TEST_CASE("MemoryMutationCursor: to_previous", "[silkworm][node][db][memory_muta
             CHECK(result1.value == "00");
             const auto result2 = mutation_cursor1.to_previous(/*throw_notfound=*/false);
             CHECK(!result2.done);
-            SILK_TRACE << "BEFORE mutation_cursor1.to_first";
             REQUIRE(mutation_cursor1.to_first(/*throw_notfound=*/false));
-            SILK_TRACE << "AFTER mutation_cursor1.to_first";
-            SILK_TRACE << "BEFORE mutation_cursor1.to_previous";
             const auto result3 = mutation_cursor1.to_previous(/*throw_notfound=*/false);
-            SILK_TRACE << "AFTER mutation_cursor1.to_previous";
             CHECK(!result3.done);
 
             MemoryMutationCursor mutation_cursor2{test->mutation, db::table::kAccountChangeSet};
@@ -349,7 +345,7 @@ TEST_CASE("MemoryMutationCursor: to_next", "[silkworm][node][db][memory_mutation
     test2.fill_mutation_tables();
 
     std::map<std::string, MemoryMutationCursorTest*> mutation_tests = {
-        // {"Empty overlay", &test1},
+        {"Empty overlay", &test1},
         {"Nonempty overlay", &test2},
     };
     for (auto [tag, test] : mutation_tests) {
@@ -367,12 +363,8 @@ TEST_CASE("MemoryMutationCursor: to_next", "[silkworm][node][db][memory_mutation
 
         SECTION(tag + ": to_next on existent table w/ positioning: OK") {
             MemoryMutationCursor mutation_cursor1{test->mutation, db::table::kCode};
-            SILK_TRACE << "BEFORE mutation_cursor1.to_first";
             REQUIRE(mutation_cursor1.to_first());
-            SILK_TRACE << "AFTER mutation_cursor1.to_first";
-            SILK_TRACE << "BEFORE mutation_cursor1.to_next";
             const auto result1 = mutation_cursor1.to_next();
-            SILK_TRACE << "AFTER mutation_cursor1.to_next";
             CHECK(result1.done);
             CHECK(result1.key == "BB");
             CHECK(result1.value == "11");
@@ -812,19 +804,15 @@ TEST_CASE("MemoryMutationCursor: Previous mem->db after find", "[silkworm][node]
     CHECK(mem_result.key == "key3");
     CHECK(mem_result.value == "value3");
 
-    SILK_DEBUG << "1) BEFORE to_previous";
     mem_result = mem_cursor->to_previous(/*throw_notfound=*/false);
     CHECK(mem_result.done);
     CHECK(mem_result.key == "key2");
     CHECK(mem_result.value == "value2");
-    SILK_DEBUG << "1) AFTER to_previous";
 
-    SILK_DEBUG << "2) BEFORE to_previous";
     mem_result = mem_cursor->to_previous(/*throw_notfound=*/false);
     CHECK(mem_result.done);
     CHECK(mem_result.key == "key1");
     CHECK(mem_result.value == "value1");
-    SILK_DEBUG << "2) AFTER to_previous";
 
     mem_result = mem_cursor->to_previous(/*throw_notfound=*/false);
     CHECK(!mem_result.done);

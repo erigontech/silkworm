@@ -85,8 +85,7 @@ uint64_t LocalState::current_canonical_block() const {
 }
 
 void LocalState::reset() {
-    rotxn_.reset(nullptr);
-    rotxn_ = nullptr;
+    rotxn_.reset();
 }
 
 std::optional<evmc::bytes32> LocalState::canonical_hash(uint64_t block_number) const {

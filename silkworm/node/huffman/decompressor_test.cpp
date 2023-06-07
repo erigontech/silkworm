@@ -152,8 +152,8 @@ TEST_CASE("PatternTable::build_condensed", "[silkworm][snapshot][decompressor]")
     std::vector<Pattern> patterns2{{1, v1}, {2, v2}};
     std::map<std::string, std::span<Pattern>> test_spans{
         {"zero patterns", patterns0},
-        {"one pattern", std::span<Pattern>{patterns1.begin(), patterns1.end()}},
-        {"two patterns", std::span<Pattern>{patterns2.begin(), patterns2.end()}},
+        {"one pattern", std::span<Pattern>{&patterns1[0], patterns1.size()}},
+        {"two patterns", std::span<Pattern>{&patterns2[0], patterns2.size()}},
     };
 
     for (const auto& [test_name, pattern_span] : test_spans) {

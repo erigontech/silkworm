@@ -16,8 +16,6 @@
 
 #include "memory_mutation_cursor.hpp"
 
-#include <stdexcept>
-
 #include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::db {
@@ -76,11 +74,11 @@ CursorResult MemoryMutationCursor::to_first(bool throw_notfound) {
 
     auto db_result = cursor_->to_first(false);
     if (db_result.key && is_entry_deleted(db_result.key)) {
-        db_result = next_on_db(NextType::kNormal, throw_notfound);
+        db_result = next_on_db(MoveType::kNext, throw_notfound);
     }
     SILK_TRACE << "to_first: db_result=" << db_result;
 
-    const auto result = resolve_priority(memory_result, db_result, NextType::kNormal);
+    const auto result = resolve_priority(memory_result, db_result, MoveType::kNext);
     if (!result.done && throw_notfound) throw_error_notfound();
     return result;
 }
@@ -89,8 +87,79 @@ CursorResult MemoryMutationCursor::to_previous() {
     return to_previous(/*throw_notfound =*/true);
 }
 
-CursorResult MemoryMutationCursor::to_previous(bool /*throw_notfound*/) {
-    throw std::logic_error{"not implemented"};
+CursorResult MemoryMutationCursor::to_previous(bool throw_notfound) {
+    if (is_table_cleared()) {
+        return memory_cursor_->to_previous(throw_notfound);
+    }
+
+    const auto memory_result = memory_cursor_->to_previous(false);
+    auto db_result = cursor_->to_previous(false);
+
+    db_result = skip_intersection(memory_result, db_result, MoveType::kPrevious);
+
+    // Basic checks
+    current_db_entry_ = db_result.done ? db_result : CursorResult{{}, {}, false};
+    current_memory_entry_ = memory_result.done ? memory_result : CursorResult{{}, {}, false};
+
+    if (memory_result.done) {
+        const auto mem_key = memory_result.key.as_string();
+        const auto mem_value = memory_result.value.as_string();
+        SILK_TRACE << "to_previous: memory_result.key=" << mem_key << " memory_result.value=" << mem_value;
+    }
+    if (db_result.done) {
+        const auto db_key = db_result.key.as_string();
+        const auto db_value = db_result.value.as_string();
+        SILK_TRACE << "to_previous: db_result.key=" << db_key << " db_result.value=" << db_value;
+    }
+
+    if (db_result.done && db_result.key && is_entry_deleted(db_result.key)) {
+        current_pair_ = current_memory_entry_;
+        current_db_entry_ = CursorResult{{}, {}, true};
+        is_previous_from_db_ = false;
+        if (!memory_result.done && throw_notfound) throw_error_notfound();
+        return memory_result;
+    }
+
+    if (!db_result.done || (db_result.done && !db_result.value)) {
+        current_pair_ = current_memory_entry_;
+        is_previous_from_db_ = false;
+        if (!memory_result.done && throw_notfound) throw_error_notfound();
+        return memory_result;
+    }
+
+    if (!memory_result.done || (memory_result.done && !memory_result.value)) {
+        current_pair_ = current_db_entry_;
+        is_previous_from_db_ = true;
+        if (!db_result.done && throw_notfound) throw_error_notfound();
+        SILK_TRACE << "to_previous: db_key=" << db_result.key.as_string() << " db_value=" << db_result.value.as_string();
+        return db_result;
+    }
+
+    // Determine which one is previous
+    const auto key_diff = Slice::compare_fast(memory_result.key, db_result.key);
+    if (key_diff == 0) {
+        if (memory_result.value > db_result.value) {
+            current_pair_ = current_memory_entry_;
+            current_db_entry_ = CursorResult{{}, {}, false};
+            is_previous_from_db_ = false;
+            return memory_result;
+        } else {
+            current_pair_ = current_db_entry_;
+            current_memory_entry_ = CursorResult{{}, {}, false};
+            is_previous_from_db_ = true;
+            return db_result;
+        }
+    } else if (key_diff < 0) {
+        current_pair_ = current_memory_entry_;
+        current_db_entry_ = CursorResult{{}, {}, false};
+        is_previous_from_db_ = false;
+        return memory_result;
+    } else {  // key_diff > 0
+        current_pair_ = current_db_entry_;
+        current_memory_entry_ = CursorResult{{}, {}, false};
+        is_previous_from_db_ = true;
+        return db_result;
+    }
 }
 
 CursorResult MemoryMutationCursor::current() const {
@@ -120,16 +189,16 @@ CursorResult MemoryMutationCursor::to_next(bool throw_notfound) {
     }
 
     if (is_previous_from_db_) {
-        const auto db_result = next_on_db(NextType::kNormal, false);
+        const auto db_result = next_on_db(MoveType::kNext, false);
         SILK_TRACE << "to_next: db_result.key=" << db_result.key << " db_result.value=" << db_result.value;
 
-        const auto result = resolve_priority(current_memory_entry_, db_result, NextType::kNormal);
+        const auto result = resolve_priority(current_memory_entry_, db_result, MoveType::kNext);
         if (!result.done && throw_notfound) throw_error_notfound();
         return result;
     } else {
         const auto memory_result = memory_cursor_->to_next(false);
 
-        const auto result = resolve_priority(memory_result, current_db_entry_, NextType::kNormal);
+        const auto result = resolve_priority(memory_result, current_db_entry_, MoveType::kNext);
         if (!result.done && throw_notfound) throw_error_notfound();
         return result;
     }
@@ -147,7 +216,7 @@ CursorResult MemoryMutationCursor::to_last(bool throw_notfound) {
     const auto memory_result = memory_cursor_->to_last(false);
     auto db_result = cursor_->to_last(false);
 
-    db_result = skip_intersection(memory_result, db_result, NextType::kNormal);
+    db_result = skip_intersection(memory_result, db_result, MoveType::kPrevious);
 
     // Basic checks
     current_db_entry_ = db_result.done ? db_result : CursorResult{{}, {}, false};
@@ -156,12 +225,12 @@ CursorResult MemoryMutationCursor::to_last(bool throw_notfound) {
     if (memory_result.done) {
         const auto mem_key = memory_result.key.as_string();
         const auto mem_value = memory_result.value.as_string();
-        SILK_DEBUG << " to_last: memory_result.key=" << mem_key << " memory_result.value=" << mem_value;
+        SILK_TRACE << "to_last: memory_result.key=" << mem_key << " memory_result.value=" << mem_value;
     }
     if (db_result.done) {
         const auto db_key = db_result.key.as_string();
         const auto db_value = db_result.value.as_string();
-        SILK_DEBUG << " to_last: db_result.key=" << db_key << " db_result.value=" << db_value;
+        SILK_TRACE << "to_last: db_result.key=" << db_key << " db_result.value=" << db_value;
     }
 
     if (db_result.done && db_result.key && is_entry_deleted(db_result.key)) {
@@ -183,7 +252,7 @@ CursorResult MemoryMutationCursor::to_last(bool throw_notfound) {
         current_pair_ = current_db_entry_;
         is_previous_from_db_ = true;
         if (!db_result.done && throw_notfound) throw_error_notfound();
-        SILK_DEBUG << " to_last: db_key=" << db_result.key.as_string() << " db_value=" << db_result.value.as_string();
+        SILK_TRACE << "to_last: db_key=" << db_result.key.as_string() << " db_value=" << db_result.value.as_string();
         return db_result;
     }
 
@@ -229,15 +298,15 @@ CursorResult MemoryMutationCursor::find(const Slice& key, bool throw_notfound) {
 
     // We need to compare and cache memory and db results, so we need "key_lowerbound" semantics hereafter
     const auto memory_result = memory_cursor_->lower_bound(key, false);
-    SILK_DEBUG << "find: memory_result=" << memory_result;
+    SILK_TRACE << "find: memory_result=" << memory_result;
 
     auto db_result = cursor_->lower_bound(key, false);
     if (db_result.key && is_entry_deleted(db_result.key)) {
-        db_result = next_on_db(NextType::kNormal, throw_notfound);
+        db_result = next_on_db(MoveType::kNext, throw_notfound);
     }
-    SILK_DEBUG << "find: db_result=" << db_result;
+    SILK_TRACE << "find: db_result=" << db_result;
 
-    const auto result = resolve_priority(memory_result, db_result, NextType::kNormal);
+    const auto result = resolve_priority(memory_result, db_result, MoveType::kNext);
     if (!result.done && throw_notfound) throw_error_notfound();
 
     // In the end, we need to enforce "key_exact" semantics before returning
@@ -273,11 +342,11 @@ bool MemoryMutationCursor::seek(const Slice& key) {
 
     bool found_in_db = cursor_->seek(key);
     if (is_entry_deleted(key)) {
-        found_in_db = next_on_db(NextType::kNormal, /*throw_notfound=*/false);
+        found_in_db = next_on_db(MoveType::kNext, /*throw_notfound=*/false);
     }
     CursorResult db_result{key, {}, found_in_db};
 
-    const auto result = resolve_priority(memory_result, db_result, NextType::kNormal);
+    const auto result = resolve_priority(memory_result, db_result, MoveType::kNext);
     return result.done;
 }
 
@@ -304,7 +373,23 @@ CursorResult MemoryMutationCursor::to_previous_last_multi() {
 }
 
 CursorResult MemoryMutationCursor::to_previous_last_multi(bool throw_notfound) {
-    return CursorResult{{}, {}, throw_notfound};
+    if (is_table_cleared()) {
+        return memory_cursor_->to_previous_last_multi(throw_notfound);
+    }
+
+    if (is_previous_from_db_) {
+        const auto db_result = previous_on_db(MoveType::kPreviousNoDup, false);
+
+        const auto result = resolve_priority(current_memory_entry_, db_result, MoveType::kPreviousNoDup);
+        if (!result.done && throw_notfound) throw_error_notfound();
+        return result;
+    } else {
+        const auto memory_result = memory_cursor_->to_previous_last_multi(false);
+
+        const auto result = resolve_priority(memory_result, current_db_entry_, MoveType::kPreviousNoDup);
+        if (!result.done && throw_notfound) throw_error_notfound();
+        return result;
+    }
 }
 
 CursorResult MemoryMutationCursor::to_current_first_multi() {
@@ -320,7 +405,23 @@ CursorResult MemoryMutationCursor::to_current_prev_multi() {
 }
 
 CursorResult MemoryMutationCursor::to_current_prev_multi(bool throw_notfound) {
-    return CursorResult{{}, {}, throw_notfound};
+    if (is_table_cleared()) {
+        return memory_cursor_->to_current_prev_multi(throw_notfound);
+    }
+
+    if (is_previous_from_db_) {
+        const auto db_result = previous_on_db(MoveType::kPreviousDup, false);
+
+        const auto result = resolve_priority(current_memory_entry_, db_result, MoveType::kPreviousDup);
+        if (!result.done && throw_notfound) throw_error_notfound();
+        return result;
+    } else {
+        const auto memory_result = memory_cursor_->to_current_prev_multi(false);
+
+        const auto result = resolve_priority(memory_result, current_db_entry_, MoveType::kPreviousDup);
+        if (!result.done && throw_notfound) throw_error_notfound();
+        return result;
+    }
 }
 
 CursorResult MemoryMutationCursor::to_current_next_multi() {
@@ -333,15 +434,15 @@ CursorResult MemoryMutationCursor::to_current_next_multi(bool throw_notfound) {
     }
 
     if (is_previous_from_db_) {
-        const auto db_result = next_on_db(NextType::kDup, false);
+        const auto db_result = next_on_db(MoveType::kNextDup, false);
 
-        const auto result = resolve_priority(current_memory_entry_, db_result, NextType::kDup);
+        const auto result = resolve_priority(current_memory_entry_, db_result, MoveType::kNextDup);
         if (!result.done && throw_notfound) throw_error_notfound();
         return result;
     } else {
         const auto memory_result = memory_cursor_->to_current_next_multi(false);
 
-        const auto result = resolve_priority(memory_result, current_db_entry_, NextType::kDup);
+        const auto result = resolve_priority(memory_result, current_db_entry_, MoveType::kNextDup);
         if (!result.done && throw_notfound) throw_error_notfound();
         return result;
     }
@@ -365,15 +466,15 @@ CursorResult MemoryMutationCursor::to_next_first_multi(bool throw_notfound) {
     }
 
     if (is_previous_from_db_) {
-        const auto db_result = next_on_db(NextType::kNoDup, false);
+        const auto db_result = next_on_db(MoveType::kNextNoDup, false);
 
-        const auto result = resolve_priority(current_memory_entry_, db_result, NextType::kNoDup);
+        const auto result = resolve_priority(current_memory_entry_, db_result, MoveType::kNextNoDup);
         if (!result.done && throw_notfound) throw_error_notfound();
         return result;
     } else {
         const auto memory_result = memory_cursor_->to_next_first_multi(false);
 
-        const auto result = resolve_priority(memory_result, current_db_entry_, NextType::kNoDup);
+        const auto result = resolve_priority(memory_result, current_db_entry_, MoveType::kNextNoDup);
         if (!result.done && throw_notfound) throw_error_notfound();
         return result;
     }
@@ -392,10 +493,10 @@ CursorResult MemoryMutationCursor::find_multivalue(const Slice& key, const Slice
 
     auto db_result = cursor_->find_multivalue(key, value, false);
     if (db_result.key && is_entry_deleted(db_result.key)) {
-        db_result = next_on_db(NextType::kDup, throw_notfound);
+        db_result = next_on_db(MoveType::kNextDup, throw_notfound);
     }
 
-    const auto result = resolve_priority(memory_result, db_result, NextType::kDup);
+    const auto result = resolve_priority(memory_result, db_result, MoveType::kNextDup);
     if (!result.done && throw_notfound) throw_error_notfound();
     return result;
 }
@@ -413,10 +514,10 @@ CursorResult MemoryMutationCursor::lower_bound_multivalue(const Slice& key, cons
 
     auto db_result = cursor_->lower_bound_multivalue(key, value, false);
     if (db_result.key && is_entry_deleted(db_result.key)) {
-        db_result = next_on_db(NextType::kDup, throw_notfound);
+        db_result = next_on_db(MoveType::kNextDup, throw_notfound);
     }
 
-    const auto result = resolve_priority(memory_result, db_result, NextType::kDup);
+    const auto result = resolve_priority(memory_result, db_result, MoveType::kNextDup);
     if (!result.done && throw_notfound) throw_error_notfound();
     return result;
 }
@@ -480,7 +581,7 @@ bool MemoryMutationCursor::erase(const Slice& key, const Slice& value) {
     return memory_mutation_.erase(config_, key, value);
 }
 
-CursorResult MemoryMutationCursor::next_on_db(MemoryMutationCursor::NextType type, bool throw_notfound) {
+CursorResult MemoryMutationCursor::next_on_db(MemoryMutationCursor::MoveType type, bool throw_notfound) {
     CursorResult result = next_by_type(type, throw_notfound);
     if (!result.done) return result;
 
@@ -492,15 +593,15 @@ CursorResult MemoryMutationCursor::next_on_db(MemoryMutationCursor::NextType typ
     return result;
 }
 
-CursorResult MemoryMutationCursor::next_by_type(MemoryMutationCursor::NextType type, bool throw_notfound) {
+CursorResult MemoryMutationCursor::next_by_type(MemoryMutationCursor::MoveType type, bool throw_notfound) {
     switch (type) {
-        case NextType::kNormal: {
+        case MoveType::kNext: {
             return cursor_->to_next(throw_notfound);
         }
-        case NextType::kDup: {
+        case MoveType::kNextDup: {
             return cursor_->to_current_next_multi(throw_notfound);
         }
-        case NextType::kNoDup: {
+        case MoveType::kNextNoDup: {
             return cursor_->to_next_first_multi(throw_notfound);
         }
         default: {  // Avoid GCC complaining w/ error: control reaches end of non-void function
@@ -509,8 +610,37 @@ CursorResult MemoryMutationCursor::next_by_type(MemoryMutationCursor::NextType t
     }
 }
 
-CursorResult MemoryMutationCursor::resolve_priority(CursorResult memory_result, CursorResult db_result, NextType type) {
-    SILK_DEBUG << "resolve_priority: memory_result.done=" << memory_result.done << " db_result.done=" << db_result.done;
+CursorResult MemoryMutationCursor::previous_on_db(MemoryMutationCursor::MoveType type, bool throw_notfound) {
+    CursorResult result = previous_by_type(type, throw_notfound);
+    if (!result.done) return result;
+
+    while (result.key && result.value && is_entry_deleted(result.key)) {
+        result = previous_by_type(type, throw_notfound);
+        if (!result.done) return result;
+    }
+
+    return result;
+}
+
+CursorResult MemoryMutationCursor::previous_by_type(MemoryMutationCursor::MoveType type, bool throw_notfound) {
+    switch (type) {
+        case MoveType::kPrevious: {
+            return cursor_->to_previous(throw_notfound);
+        }
+        case MoveType::kPreviousDup: {
+            return cursor_->to_current_prev_multi(throw_notfound);
+        }
+        case MoveType::kPreviousNoDup: {
+            return cursor_->to_previous_last_multi(throw_notfound);
+        }
+        default: {  // Avoid GCC complaining w/ error: control reaches end of non-void function
+            return CursorResult{{}, {}, false};
+        }
+    }
+}
+
+CursorResult MemoryMutationCursor::resolve_priority(CursorResult memory_result, CursorResult db_result, MoveType type) {
+    SILK_TRACE << "resolve_priority: memory_result.done=" << memory_result.done << " db_result.done=" << db_result.done;
 
     if (!memory_result.done && !db_result.done) {
         return CursorResult{{}, {}, false};
@@ -526,12 +656,12 @@ CursorResult MemoryMutationCursor::resolve_priority(CursorResult memory_result, 
     if (memory_result.done) {
         const auto mem_key = memory_result.key.as_string();
         const auto mem_value = memory_result.value.as_string();
-        SILK_DEBUG << " memory_result.key=" << mem_key << " memory_result.value=" << mem_value;
+        SILK_TRACE << " memory_result.key=" << mem_key << " memory_result.value=" << mem_value;
     }
     if (db_result.done) {
         const auto db_key = db_result.key.as_string();
         const auto db_value = db_result.value.as_string();
-        SILK_DEBUG << " db_result.key=" << db_key << " db_result.value=" << db_value;
+        SILK_TRACE << " db_result.key=" << db_key << " db_result.value=" << db_value;
     }
 
     if (memory_result.done && db_result.done) {
@@ -553,19 +683,23 @@ CursorResult MemoryMutationCursor::resolve_priority(CursorResult memory_result, 
     return current_pair_;
 }
 
-CursorResult MemoryMutationCursor::skip_intersection(CursorResult memory_result, CursorResult db_result, NextType type) {
+CursorResult MemoryMutationCursor::skip_intersection(CursorResult memory_result, CursorResult db_result, MoveType type) {
     CursorResult new_db_result = db_result;
 
     // Check for duplicates
     if (memory_result.done && db_result.done && memory_result.key == db_result.key) {
         bool skip;
-        if (type == NextType::kNormal) {
+        if (type == MoveType::kNext || type == MoveType::kPrevious) {
             skip = !cursor_->is_multi_value() || memory_result.value == db_result.value;
         } else {
             skip = memory_result.value == db_result.value;
         }
         if (skip) {
-            new_db_result = next_on_db(type, /*.throw_notfound=*/false);
+            if (type == MoveType::kNext || type == MoveType::kNextDup || type == MoveType::kNextNoDup) {
+                new_db_result = next_on_db(type, /*.throw_notfound=*/false);
+            } else if (type == MoveType::kPrevious || type == MoveType::kPreviousDup || type == MoveType::kPreviousNoDup) {
+                new_db_result = previous_on_db(type, /*.throw_notfound=*/false);
+            }
         }
     }
 

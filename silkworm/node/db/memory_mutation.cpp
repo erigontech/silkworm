@@ -149,7 +149,7 @@ void MemoryMutation::flush(db::RWTxn& rw_txn) {
 
     // Obliterate entries that need to be deleted
     for (const auto& [table, keys] : this->deleted_entries_) {
-        const auto& table_config = db::table::get_map_config(table.c_str());
+        const auto& table_config = db::table::get_map_config(table);
         if (!table_config) {
             SILK_WARN << "Unknown table " << table << " in memory mutation, ignored";
             continue;
@@ -163,7 +163,7 @@ void MemoryMutation::flush(db::RWTxn& rw_txn) {
     // Iterate over each touched bucket and apply changes accordingly
     const auto tables = db::list_maps(managed_txn_);
     for (const auto& table : tables) {
-        const auto& table_config = db::table::get_map_config(table.c_str());
+        const auto& table_config = db::table::get_map_config(table);
         if (!table_config) {
             SILK_WARN << "Unknown table " << table << " in memory mutation, ignored";
             continue;
@@ -171,6 +171,8 @@ void MemoryMutation::flush(db::RWTxn& rw_txn) {
 
         const auto mem_cursor = make_cursor(*table_config);
         const auto db_cursor = rw_txn.rw_cursor_dup_sort(*table_config);
+
+        SILK_TRACE << "Apply memory mutation changes for table: " << table_config->name;
 
         auto mem_cursor_result = mem_cursor->to_first(/*throw_notfound =*/false);
         while (mem_cursor_result.done) {

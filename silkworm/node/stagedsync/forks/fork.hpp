@@ -53,10 +53,8 @@ class Fork {
 
     // state
     auto current_head() const -> BlockId;
-    auto last_verified_head() const -> BlockId;
-    auto last_head_status() const -> VerificationResult;
-    auto last_fork_choice() const -> BlockId;
-    auto last_finalized_head() const -> BlockId;
+    auto head_status() const -> std::optional<VerificationResult>;
+    auto finalized_head() const -> BlockId;
 
     // checks
     bool extends_head(const BlockHeader&) const;
@@ -80,12 +78,9 @@ class Fork {
     ExecutionPipeline pipeline_;
     CanonicalChain canonical_chain_;
 
-    BlockId current_head_;  // todo: check if this is needed
-
-    BlockId last_verified_head_;           // todo: check if this is needed
-    VerificationResult last_head_status_;  // todo: check if this is needed
-    BlockId last_fork_choice_;             // todo: check if this is needed
-    BlockId last_finalized_head_;
+    BlockId current_head_;
+    std::optional<VerificationResult> head_status_;
+    BlockId finalized_head_;
 };
 
 // find the fork with the specified head

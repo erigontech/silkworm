@@ -44,20 +44,6 @@ Fork::Fork(BlockId forking_point, db::ROTxn&& main_chain_tx, NodeSettings& ns)
     }
 }
 
-/*
-Fork::Fork(Fork&& orig) noexcept
-    : main_tx_{std::move(orig.main_chain_)},
-      memory_db_{std::move(orig.memory_db_)},
-      memory_tx_{std::move(orig.memory_tx_)},
-      pipeline_{&(orig.pipeline_.node_settings())},  // warning: pipeline is not movable, we build a new one here
-      canonical_chain_{std::move(orig.canonical_chain_), memory_tx_},
-      current_head_{std::move(orig.current_head_)},
-      last_verified_head_{std::move(orig.last_verified_head_)},
-      last_head_status_{std::move(orig.last_head_status_)},
-      last_fork_choice_{std::move(orig.last_fork_choice_)} {
-}
-*/
-
 void Fork::close() {
     if (memory_tx_.is_open())
         memory_tx_.abort();
@@ -71,20 +57,12 @@ BlockId Fork::current_head() const {
     return current_head_;
 }
 
-auto Fork::last_finalized_head() const -> BlockId {
-    return last_finalized_head_;
+auto Fork::finalized_head() const -> BlockId {
+    return finalized_head_;
 }
 
-VerificationResult Fork::last_head_status() const {
-    return last_head_status_;
-}
-
-BlockId Fork::last_fork_choice() const {
-    return last_fork_choice_;
-}
-
-BlockId Fork::last_verified_head() const {
-    return last_verified_head_;
+std::optional<VerificationResult> Fork::head_status() const {
+    return head_status_;
 }
 
 bool Fork::extends_head(const BlockHeader& header) const {
@@ -167,8 +145,7 @@ void Fork::reduce_down_to(BlockId unwind_point) {
     ensure_invariant(canonical_chain_.current_head().hash == unwind_point.hash,
                      "canonical chain not updated to unwind point");
 
-    last_verified_head_ = unwind_point;
-    last_head_status_ = ValidChain{unwind_point};
+    head_status_ = ValidChain{unwind_point};
 
     current_head_ = unwind_point;
 }
@@ -213,8 +190,8 @@ VerificationResult Fork::verify_chain() {
         default:
             verify_result = ValidationError{pipeline_.head_header_number(), pipeline_.head_header_hash()};
     }
-    last_verified_head_ = current_head_;
-    last_head_status_ = verify_result;
+
+    head_status_ = verify_result;
 
     // finish, no commit here
     return verify_result;
@@ -244,24 +221,23 @@ bool Fork::fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block
         ensure_invariant(canonical_chain_.current_head().hash == head_block_hash,
                          "fork choice update failed to update canonical chain");
 
-        last_verified_head_ = {*head_block_num, head_block_hash};
-        last_head_status_ = ValidChain{*head_block_num, head_block_hash};
+        current_head_ = {*head_block_num, head_block_hash};
+        head_status_ = ValidChain{*head_block_num, head_block_hash};
     }
     */
 
     ensure_invariant(current_head_.hash == head_block_hash, "fork choice update with wrong head block hash");
 
-    if (!holds_alternative<ValidChain>(last_head_status_)) return false;
+    if (!head_status_ || !holds_alternative<ValidChain>(*head_status_)) return false;
 
     // todo: check if is_canonical(*finalized_block_hash)
 
     db::write_last_head_block(memory_tx_, head_block_hash);
-    if (finalized_block_hash) db::write_last_finalized_block(memory_tx_, *finalized_block_hash);
 
-    last_fork_choice_ = canonical_chain_.current_head();
     if (finalized_block_hash) {
+        db::write_last_finalized_block(memory_tx_, *finalized_block_hash);
         auto finalized_header = get_header(*finalized_block_hash);
-        last_finalized_head_ = {finalized_header->number, *finalized_block_hash};
+        finalized_head_ = {finalized_header->number, *finalized_block_hash};
     }
 
     memory_tx_.enable_commit();

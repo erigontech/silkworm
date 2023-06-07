@@ -272,14 +272,17 @@ auto MainChain::fork(BlockId forking_point) -> std::unique_ptr<ExtendingFork> {
 void MainChain::reintegrate_fork(ExtendingFork& extending_fork) {
     Fork* fork = extending_fork.fork_.get();
 
+    ensure(fork->head_status() && std::holds_alternative<ValidChain>(*fork->head_status()),
+           "fork to be reintegrated must be valid");
+
     fork->flush(tx_);  // this must be done here, in the tx_ thread, due to MDBX limitations
 
     tx_.commit_and_renew();
 
     canonical_chain_.set_current_head(fork->current_head());
-    canonical_head_status_ = fork->last_head_status();
-    last_fork_choice_ = fork->last_fork_choice();
-    last_finalized_head_ = fork->last_finalized_head();
+    canonical_head_status_ = *fork->head_status();
+    last_fork_choice_ = fork->current_head();
+    last_finalized_head_ = fork->finalized_head();
 }
 
 auto MainChain::get_header(Hash header_hash) const -> std::optional<BlockHeader> {

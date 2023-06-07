@@ -43,9 +43,6 @@ class Fork_ForTest : public Fork {
     using Fork::canonical_chain_;
     using Fork::current_head_;
     using Fork::Fork;
-    using Fork::last_fork_choice_;
-    using Fork::last_head_status_;
-    using Fork::last_verified_head_;
     using Fork::main_tx_;
     using Fork::memory_db_;
     using Fork::memory_tx_;
@@ -143,6 +140,8 @@ TEST_CASE("Fork") {
                 CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kBlockHashesKey) == 3);
                 CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kBlockBodiesKey) == 3);
 
+                CHECK(!fork.head_status().has_value());
+
                 // inserting blocks
                 fork.extend_with(block4);
                 CHECK(db::read_header(fork.memory_tx_, 4, block4_hash));
@@ -162,7 +161,7 @@ TEST_CASE("Fork") {
                 bool updated = fork.fork_choice(block4_hash, block3_hash);
                 CHECK(updated);
                 CHECK(fork.current_head() == BlockId{4, block4_hash});
-                CHECK(fork.last_fork_choice() == BlockId{4, block4_hash});
+                CHECK((fork.head_status().has_value() && holds_alternative<ValidChain>(*fork.head_status())));
 
                 // close
                 fork.close();

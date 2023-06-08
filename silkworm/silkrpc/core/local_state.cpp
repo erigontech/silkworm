@@ -84,6 +84,10 @@ uint64_t LocalState::current_canonical_block() const {
     return 0;
 }
 
+void LocalState::reset() {
+    rotxn_.reset();
+}
+
 std::optional<evmc::bytes32> LocalState::canonical_hash(uint64_t block_number) const {
     if (!rotxn_) {
         rotxn_ = std::make_unique<db::ROTxn>(*chaindata_env_);

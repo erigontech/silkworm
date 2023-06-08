@@ -235,7 +235,7 @@ CursorResult MemoryMutationCursor::to_next(bool throw_notfound) {
     }
 
     if (is_previous_from_db_) {
-        if (current_memory_entry_ == current_db_entry_) {  // requires custom CursorResult::operator==
+        if (current_memory_entry_ == current_db_entry_) {
             current_memory_entry_ = memory_cursor_->to_next(false);
         }
         const auto db_result = next_on_db(MoveType::kNext, false);
@@ -351,12 +351,16 @@ CursorResult MemoryMutationCursor::find(const Slice& key, bool throw_notfound) {
     }
     SILK_TRACE << "find: db_result=" << db_result;
 
-    const auto result = resolve_priority(memory_result, db_result, MoveType::kNext);
+    const auto result = resolve_priority(memory_result, db_result, MoveType::kNone);
     if (!result.done && throw_notfound) throw_error_notfound();
 
     // In the end, we need to enforce "key_exact" semantics before returning
     if (result.done && result.key != key) {
         return CursorResult{{}, {}, false};
+    }
+    if (current_memory_entry_.key == current_db_entry_.key and current_memory_entry_.key == key) {
+        // Choose memory value if both memory and db entries match the specified key
+        return current_memory_entry_;
     }
     return result;
 }
@@ -595,7 +599,13 @@ void MemoryMutationCursor::upsert(const Slice& key, const Slice& value) {
 }
 
 void MemoryMutationCursor::update(const Slice& key, const Slice& value) {
-    memory_mutation_->update(memory_cursor_->map(), key, value);
+    // Key *MUST* exist to perform update, so
+    const auto result{find(key)};
+    if (!result.done) {
+        throw_error_notfound();
+    }
+    // *UPSERT* because we need to insert key in memory if it doesn't exist
+    memory_mutation_->upsert(memory_cursor_->map(), key, value);
 }
 
 bool MemoryMutationCursor::erase() {
@@ -749,7 +759,7 @@ CursorResult MemoryMutationCursor::skip_intersection(CursorResult memory_result,
         if (skip) {
             if (type == MoveType::kNext || type == MoveType::kNextDup || type == MoveType::kNextNoDup) {
                 new_db_result = next_on_db(type, /*.throw_notfound=*/false);
-            } else {
+            } else if (type == MoveType::kPrevious || type == MoveType::kPreviousDup || type == MoveType::kPreviousNoDup) {
                 new_db_result = previous_on_db(type, /*.throw_notfound=*/false);
             }
         }

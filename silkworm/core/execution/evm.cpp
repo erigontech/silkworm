@@ -21,6 +21,7 @@
 #include <cstring>
 #include <iterator>
 #include <memory>
+#include <utility>
 
 #include <ethash/keccak.hpp>
 #include <evmone/evmone.h>
@@ -161,7 +162,7 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
         } else if (rev >= EVMC_LONDON && code_len > 0 && evm_res.output_data[0] == 0xEF) {
             // EIP-3541: Reject new contract code starting with the 0xEF byte
             evm_res.status_code = EVMC_CONTRACT_VALIDATION_FAILURE;
-        } else if (evm_res.gas_left >= 0 && static_cast<uint64_t>(evm_res.gas_left) >= code_deploy_gas) {
+        } else if (std::cmp_greater_equal(evm_res.gas_left, code_deploy_gas)) {
             evm_res.gas_left -= static_cast<int64_t>(code_deploy_gas);
             state_.set_code(contract_addr, {evm_res.output_data, evm_res.output_size});
         } else if (rev >= EVMC_HOMESTEAD) {
@@ -216,13 +217,14 @@ evmc::Result EVM::call(const evmc_message& message) noexcept {
         const uint8_t num{message.code_address.bytes[kAddressLength - 1]};
         const precompile::Contract& contract{precompile::kContracts[num]->contract};
         const ByteView input{message.input_data, message.input_size};
-        const int64_t gas{static_cast<int64_t>(contract.gas(input, rev))};
-        if (gas < 0 || gas > message.gas) {
+        const uint64_t gas{contract.gas(input, rev)};
+        if (std::cmp_greater(gas, message.gas)) {
             res.status_code = EVMC_OUT_OF_GAS;
         } else {
             const std::optional<Bytes> output{contract.run(input)};
             if (output) {
-                res = evmc::Result{EVMC_SUCCESS, message.gas - gas, 0, output->data(), output->size()};
+                res = evmc::Result{EVMC_SUCCESS, message.gas - static_cast<int64_t>(gas), 0,
+                                   output->data(), output->size()};
             } else {
                 res.status_code = EVMC_PRECOMPILE_FAILURE;
             }
@@ -482,9 +484,12 @@ evmc_tx_context EvmHost::get_tx_context() const noexcept {
 }
 
 evmc::bytes32 EvmHost::get_block_hash(int64_t n) const noexcept {
-    const uint64_t base_number{evm_.block_.header.number};
-    const auto new_size{static_cast<size_t>(base_number - static_cast<uint64_t>(n))};
-    assert(new_size <= 256);
+    assert(n >= 0);
+    const uint64_t current_block_num{evm_.block_.header.number};
+    assert(static_cast<uint64_t>(n) < current_block_num);
+    const uint64_t new_size_u64{current_block_num - static_cast<uint64_t>(n)};
+    assert(std::in_range<std::size_t>(new_size_u64));
+    const size_t new_size{static_cast<size_t>(new_size_u64)};
 
     std::vector<evmc::bytes32>& hashes{evm_.block_hashes_};
     if (hashes.empty()) {
@@ -497,7 +502,7 @@ evmc::bytes32 EvmHost::get_block_hash(int64_t n) const noexcept {
     }
 
     for (size_t i{old_size}; i < new_size; ++i) {
-        std::optional<BlockHeader> header{evm_.state().db().read_header(base_number - i, hashes[i - 1])};
+        std::optional<BlockHeader> header{evm_.state().db().read_header(current_block_num - i, hashes[i - 1])};
         if (!header) {
             break;
         }

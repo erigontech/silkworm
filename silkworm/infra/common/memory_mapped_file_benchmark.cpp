@@ -16,6 +16,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <utility>
 
 #include <benchmark/benchmark.h>
 
@@ -50,7 +51,7 @@ static void benchmark_checksum_ifstream(benchmark::State& state) {
         std::size_t count{0};
         while (snapshot_stream) {
             snapshot_stream.read(buffer.get(), kPageSize);
-            for (uint64_t i{0}; i < static_cast<uint64_t>(snapshot_stream.gcount()); ++i, ++count) {
+            for (size_t i{0}; std::cmp_less(i, snapshot_stream.gcount()); ++i, ++count) {
                 const auto byte{static_cast<unsigned char>(buffer[i])};
                 checksum += byte;
             }

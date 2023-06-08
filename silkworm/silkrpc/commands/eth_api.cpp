@@ -1275,7 +1275,6 @@ awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::js
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
         StateReader state_reader(db_reader);
-        auto state = co_await tx->create_state(db_reader, block_with_hash->block.header.number);
 
         evmc::address to{};
         if (call.to) {
@@ -1305,10 +1304,15 @@ awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::js
         Tracers tracers{tracer};
         bool access_lists_match{false};
         do {
-            EVMExecutor executor{*chain_config_ptr, workers_, state};
-            const auto txn = call.to_transaction();
+            auto txn = call.to_transaction();
             tracer->reset_access_list();
-            const auto execution_result = co_await executor.call(block_with_hash->block, txn, tracers, /* refund */ true, /* gasBailout */ false);
+
+            const auto execution_result = co_await EVMExecutor::call(
+                *chain_config_ptr, workers_, block_with_hash->block, txn, [&](auto& io_executor, auto block_num) {
+                    return tx->create_state(io_executor, db_reader, block_num);
+                },
+                tracers, /* refund */ true, /* gasBailout */ false);
+
             if (execution_result.pre_check_error) {
                 reply = make_json_error(request["id"], -32000, execution_result.pre_check_error.value());
                 break;
@@ -1376,8 +1380,6 @@ awaitable<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& req
         const bool is_latest_block = co_await core::get_latest_executed_block_number(tx_database) == block_with_hash->block.header.number;
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
-        auto block_number = block_with_hash->block.header.number;
-        auto state = co_await tx->create_state(db_reader, block_number);
 
         const auto start_time = clock_time::now();
 
@@ -1388,7 +1390,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& req
 
         for (std::size_t i{0}; i < tx_hash_list.size(); i++) {
             struct CallBundleTxInfo tx_info {};
-            const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, tx_database, tx_hash_list[i]);
+            auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, tx_database, tx_hash_list[i]);
             if (!tx_with_block) {
                 const auto error_msg = "invalid transaction hash";
                 SILK_ERROR << error_msg;
@@ -1396,8 +1398,10 @@ awaitable<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& req
                 break;
             }
 
-            EVMExecutor executor{*chain_config_ptr, workers_, state};
-            const auto execution_result = co_await executor.call(block_with_hash->block, tx_with_block->transaction);
+            const auto execution_result = co_await EVMExecutor::call(
+                *chain_config_ptr, workers_, block_with_hash->block, tx_with_block->transaction, [&](auto& io_executor, auto block_num) {
+                    return tx->create_state(io_executor, db_reader, block_num);
+                });
             if (execution_result.pre_check_error) {
                 reply = make_json_error(request["id"], -32000, execution_result.pre_check_error.value());
                 error = true;

@@ -114,7 +114,6 @@ TEST_CASE("MainChain") {
         block1.header.number = 1;
         block1.header.difficulty = 17'171'480'576;  // a random value
         block1.header.parent_hash = *header0_hash;
-        // auto header1_hash = block1.header.hash();
         block1.ommers.push_back(BlockHeader{});  // generate error InvalidOmmerHeader
         auto block1_hash = block1.header.hash();
         BlockId block1_id{1, block1_hash};
@@ -346,6 +345,36 @@ TEST_CASE("MainChain") {
             CHECK(main_chain.canonical_chain_.current_head() == block2b_id);
             REQUIRE(main_chain.last_chosen_head() == block2b_id);  // not changed
         }
+    }
+
+    SECTION("starting after fcu") {
+        Block block1;
+        block1.header.number = 1;
+        block1.header.difficulty = 17'171'480'576;  // a random value
+        block1.header.parent_hash = *header0_hash;
+        auto block1_hash = block1.header.hash();
+        BlockId block1_id{1, block1_hash};
+
+        // inserting, verifying & confirming
+        main_chain.insert_block(block1);
+        auto verification = main_chain.verify_chain(block1_hash);
+        REQUIRE(holds_alternative<ValidChain>(verification));
+        auto fcu_updated = main_chain.notify_fork_choice_update(block1_hash);
+        CHECK(fcu_updated);
+
+        // closing the chain (-> application shutdown)
+        main_chain.close();
+
+        // opening another main chain (-> application start up)
+        MainChain_ForTest main_chain2{io, context.node_settings(), db_access};
+        main_chain2.open();
+
+        // checking that the initial state sees the prev fcu
+        auto& tx2 = main_chain2.tx();
+        CHECK(main_chain2.last_chosen_head() == block1_id);
+        CHECK(main_chain2.last_finalized_head() == block0_id);
+
+        CHECK(holds_alternative<ValidChain>(main_chain2.canonical_head_status_));
     }
 }
 

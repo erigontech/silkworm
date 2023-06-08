@@ -66,10 +66,6 @@ uint64_t LocalState::current_canonical_block() const {
     return 0;
 }
 
-void LocalState::reset() {
-    rotxn_.reset();
-}
-
 std::optional<evmc::bytes32> LocalState::canonical_hash(uint64_t block_number) const {
     // This method should not be called by EVM::execute
     return silkworm::db::read_canonical_hash(rotxn_, block_number);

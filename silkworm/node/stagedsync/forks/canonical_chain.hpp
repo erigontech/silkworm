@@ -53,6 +53,7 @@ class CanonicalChain {
     BlockId current_head() const;
 
     auto get_hash(BlockNum height) const -> std::optional<Hash>;
+    auto has(Hash block_hash) const -> bool;
 
   private:
     db::RWTxn& tx_;

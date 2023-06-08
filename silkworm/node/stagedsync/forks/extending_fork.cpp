@@ -113,7 +113,7 @@ auto ExtendingFork::verify_chain() -> concurrency::AwaitableFuture<VerificationR
     return awaitable_future;
 }
 
-auto ExtendingFork::notify_fork_choice_update(Hash head_block_hash, std::optional<Hash> finalized_block_hash)
+auto ExtendingFork::fork_choice(Hash head_block_hash, std::optional<Hash> finalized_block_hash)
     -> concurrency::AwaitableFuture<bool> {
     propagate_exception_if_any();
 
@@ -123,7 +123,7 @@ auto ExtendingFork::notify_fork_choice_update(Hash head_block_hash, std::optiona
     post(*executor_, [this, promise_ = std::move(promise), head_block_hash, finalized_block_hash]() mutable {
         try {
             if (exception_) return;
-            auto updated = fork_->notify_fork_choice_update(head_block_hash, finalized_block_hash);
+            auto updated = fork_->fork_choice(head_block_hash, finalized_block_hash);
             current_head_ = fork_->current_head();
             promise_.set_value(updated);
         } catch (...) {

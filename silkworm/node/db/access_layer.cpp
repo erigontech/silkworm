@@ -831,4 +831,54 @@ uint64_t reset_map_sequence(RWTxn& txn, const char* map_name, uint64_t new_seque
     return current_sequence;
 }
 
+const std::string kHeadBlockHash = "headBlockHash";
+const std::string kSafeBlockHash = "safeBlockHash";
+const std::string kFinalizedBlockHash = "finalizedBlockHash";
+
+std::optional<evmc::bytes32> read_last_fcu_field(ROTxn& txn, const std::string& field) {
+    auto cursor = txn.ro_cursor(table::kLastForkchoice);
+
+    Bytes key{field.begin(), field.end()};
+    auto skey = db::to_slice(key);
+
+    auto data{cursor->find(skey, /*throw_notfound=*/false)};
+    if (!data || data.value.length() != kHashLength) {
+        return std::nullopt;
+    }
+    return to_bytes32(from_slice(data.value));
+}
+
+void write_last_fcu_field(RWTxn& txn, const std::string& field, const evmc::bytes32& hash) {
+    auto cursor = txn.rw_cursor(table::kLastForkchoice);
+
+    Bytes key{field.begin(), field.end()};
+    auto skey = db::to_slice(key);
+
+    cursor->upsert(skey, to_slice(hash));
+}
+
+std::optional<evmc::bytes32> read_last_head_block(ROTxn& txn) {
+    return read_last_fcu_field(txn, kHeadBlockHash);
+}
+
+std::optional<evmc::bytes32> read_last_safe_block(ROTxn& txn) {
+    return read_last_fcu_field(txn, kSafeBlockHash);
+}
+
+std::optional<evmc::bytes32> read_last_finalized_block(ROTxn& txn) {
+    return read_last_fcu_field(txn, kFinalizedBlockHash);
+}
+
+void write_last_head_block(RWTxn& txn, const evmc::bytes32& hash) {
+    write_last_fcu_field(txn, kHeadBlockHash, hash);
+}
+
+void write_last_safe_block(RWTxn& txn, const evmc::bytes32& hash) {
+    write_last_fcu_field(txn, kSafeBlockHash, hash);
+}
+
+void write_last_finalized_block(RWTxn& txn, const evmc::bytes32& hash) {
+    write_last_fcu_field(txn, kFinalizedBlockHash, hash);
+}
+
 }  // namespace silkworm::db

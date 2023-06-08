@@ -221,4 +221,22 @@ uint64_t read_map_sequence(ROTxn& txn, const char* map_name);
 //! committed
 uint64_t reset_map_sequence(RWTxn& txn, const char* map_name, uint64_t new_sequence);
 
+//! \brief Read the last head block as stated by the last FCU
+std::optional<evmc::bytes32> read_last_head_block(ROTxn& txn);
+
+//! \brief Read the last safe block as stated by the last FCU
+std::optional<evmc::bytes32> read_last_safe_block(ROTxn& txn);
+
+//! \brief Read the last finalized block as stated by the last FCU
+std::optional<evmc::bytes32> read_last_finalized_block(ROTxn& txn);
+
+//! \brief Write the last head block as stated by the last FCU
+void write_last_head_block(RWTxn& txn, const evmc::bytes32& hash);
+
+//! \brief Write the last safe block as stated by the last FCU
+void write_last_safe_block(RWTxn& txn, const evmc::bytes32& hash);
+
+//! \brief Write the last finalized block as stated by the last FCU
+void write_last_finalized_block(RWTxn& txn, const evmc::bytes32& hash);
+
 }  // namespace silkworm::db

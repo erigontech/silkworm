@@ -17,6 +17,7 @@
 #include "node.hpp"
 
 #include <bit>
+#include <utility>
 
 #include <catch2/catch.hpp>
 
@@ -35,7 +36,7 @@ TEST_CASE("Node marshalling") {
            },
            /*root_hash*/ 0xaaaabbbb0006767767776fffffeee44444000005567645600000000eeddddddd_bytes32};
 
-    REQUIRE(n.hashes().size() == static_cast<size_t>(std::popcount(n.hash_mask())));
+    REQUIRE(std::cmp_equal(n.hashes().size(), std::popcount(n.hash_mask())));
 
     Bytes raw{n.encode_for_storage()};
     Node from_raw;

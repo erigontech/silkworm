@@ -87,6 +87,8 @@ class LocalState : public silkworm::State {
 
     void unwind_state_changes(uint64_t /*block_number*/) override {}
 
+    void reset();
+
   private:
     uint64_t block_number_;
     std::shared_ptr<mdbx::env_managed> chaindata_env_;

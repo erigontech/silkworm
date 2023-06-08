@@ -31,6 +31,7 @@
 #include <silkworm/core/protocol/param.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
+#include <silkworm/silkrpc/core/local_state.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
 
 namespace silkworm::rpc {
@@ -300,6 +301,10 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor::call(
                 }
                 ibs_state_.finalize_transaction();
 
+                auto local_state = dynamic_cast<state::LocalState*>(state_.get());
+                if (local_state) {
+                    local_state->reset();
+                }
                 ExecutionResult exec_result{result.status, gas_left, result.data};
                 boost::asio::post(this_executor, [exec_result, self = std::move(self)]() mutable {
                     self.complete(exec_result);

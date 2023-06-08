@@ -25,8 +25,6 @@
 #include <string>
 #include <utility>
 
-#include <boost/asio/compose.hpp>
-#include <boost/asio/post.hpp>
 #include <boost/endian/conversion.hpp>
 #include <evmc/evmc.hpp>
 

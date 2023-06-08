@@ -46,6 +46,21 @@ using CursorResult = ::mdbx::pair_result;
 using MoveResult = ::mdbx::cursor::move_result;
 using Slice = ::mdbx::slice;
 
+//! Comparison operator for CursorResult taking care to compare keys and values only *after*
+//! checking the `done` flag to avoid comparing uninitialized key/value slices
+inline bool operator==(const CursorResult& lhs, const CursorResult& rhs) noexcept {
+    if (lhs.done != rhs.done) return false;
+    if (lhs.done) {
+        if (lhs.key && rhs.key && lhs.key != rhs.key) {
+            return false;
+        }
+        if (lhs.value && rhs.value) {
+            return lhs.value == rhs.value;
+        }
+    }
+    return true;
+}
+
 namespace detail {
     struct cursor_handle_deleter {  // default deleter for pooled cursors
         constexpr cursor_handle_deleter() noexcept = default;

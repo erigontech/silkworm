@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,25 +14,16 @@
    limitations under the License.
 */
 
+#pragma once
+
+#include <silkworm/infra/concurrency/task.hpp>
+
+#include <boost/asio/ip/address.hpp>
+
 #include "nat_option.hpp"
 
-#include <boost/algorithm/string/predicate.hpp>
+namespace silkworm::sentry::nat {
 
-namespace silkworm::sentry {
+Task<boost::asio::ip::address> ip_resolver(const NatOption& option);
 
-bool lexical_cast(const std::string& input, NatOption& value) {
-    if (input == "none") {
-        value = {};
-        return true;
-    }
-    if (boost::algorithm::istarts_with(input, "extip:")) {
-        auto ip_str = input.c_str() + 6;
-        boost::system::error_code err;
-        auto ip = boost::asio::ip::make_address(ip_str, err);
-        value = {NatMode::kExternalIP, {ip}};
-        return !err;
-    }
-    return false;
-}
-
-}  // namespace silkworm::sentry
+}  // namespace silkworm::sentry::nat

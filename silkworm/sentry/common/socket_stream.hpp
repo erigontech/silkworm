@@ -16,10 +16,9 @@
 
 #pragma once
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
@@ -39,11 +38,11 @@ class SocketStream {
     [[nodiscard]] boost::asio::ip::tcp::socket& socket() { return socket_; }
     [[nodiscard]] const boost::asio::ip::tcp::socket& socket() const { return socket_; }
 
-    boost::asio::awaitable<void> send(Bytes data);
+    Task<void> send(Bytes data);
 
-    boost::asio::awaitable<uint16_t> receive_short();
-    boost::asio::awaitable<Bytes> receive_fixed(std::size_t size);
-    boost::asio::awaitable<ByteView> receive_size_and_data(Bytes& raw_data);
+    Task<uint16_t> receive_short();
+    Task<Bytes> receive_fixed(std::size_t size);
+    Task<ByteView> receive_size_and_data(Bytes& raw_data);
 
   private:
     boost::asio::ip::tcp::socket socket_;

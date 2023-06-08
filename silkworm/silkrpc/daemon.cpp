@@ -27,6 +27,7 @@
 #include <boost/process/environment.hpp>
 #include <grpcpp/grpcpp.h>
 
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
@@ -172,12 +173,15 @@ ChannelFactory Daemon::make_channel_factory(const DaemonSettings& settings) {
     };
 }
 
-Daemon::Daemon(DaemonSettings settings)
+Daemon::Daemon(DaemonSettings settings, std::shared_ptr<mdbx::env_managed> chaindata_env)
     : settings_(std::move(settings)),
       create_channel_{make_channel_factory(settings_)},
       context_pool_{settings_.context_pool_settings.num_contexts},
       worker_pool_{settings_.num_workers},
       kv_stub_{::remote::KV::NewStub(create_channel_())} {
+    // Check pre-conditions
+    ensure(!settings_.datadir || !chaindata_env, "Daemon::Daemon datadir and chaindata_env are alternative");
+
     // Load the channel authentication token (if required)
     if (settings_.jwt_secret_file) {
         jwt_secret_ = load_jwt_token(*settings_.jwt_secret_file);
@@ -185,6 +189,7 @@ Daemon::Daemon(DaemonSettings settings)
 
     // Activate the local chaindata access (if required)
     if (settings_.datadir) {
+        // Create a new local chaindata environment
         chaindata_env_ = std::make_shared<mdbx::env_managed>();
         silkworm::db::EnvConfig db_config{
             .path = settings_.datadir->string() + kChaindataRelativePath,
@@ -192,6 +197,9 @@ Daemon::Daemon(DaemonSettings settings)
             .shared = true,
             .max_readers = kDatabaseMaxReaders};
         *chaindata_env_ = silkworm::db::open_env(db_config);
+    } else if (chaindata_env) {
+        // Use the existing chaindata environment
+        chaindata_env_ = std::move(chaindata_env);
     }
 
     // Create private and shared state in execution contexts

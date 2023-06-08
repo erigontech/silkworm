@@ -1,0 +1,57 @@
+[
+  {
+    "request": {
+      "id": 1,
+      "jsonrpc": "2.0",
+      "method": "eth_callMany",
+      "params": [
+        [
+          {
+            "blockOverride": {
+              "blockNumber": "0x52a0b3"
+            },
+            "transactions": [
+              {
+                "data": "0xd02042a3",
+                "from": "0x4ba4880d287d504e503bc5883848cbcce839e495",
+                "gas": "0x11FAB",
+                "gasPrice": "0x7",
+                "to": "0x30d9ED9054681c56BF3cff638b4F3109ed06339A",
+                "value": "0x0"
+              }
+            ]
+          }
+        ],
+        {
+          "blockNumber": "0x52a0b3",
+          "transactionIndex": -1
+        },
+        {
+          "0x79a4d418f7887dd4d5123a41b6c8c186686ae8cb": {
+            "balance": "0xde0b6b3a7640000"
+          },
+          "0x8C1E1e5B47980d214965F3bD8Ea34c413e120Ae5": {
+            "balance": "0x165AF8670"
+          },
+          "0x8d33e8d7e4da2915d20bdb847e0b54f46e09dcfc": {
+            "balance": "0xECA66"
+          },
+          "0xB344147eA92cF102CD92eC996b8986DdCA4a918C": {
+            "balance": "0xde0b6b3a7640000"
+          }
+        }
+      ]
+    },
+    "response": {
+      "id": 1,
+      "jsonrpc": "2.0",
+      "result": [
+        [
+          {
+            "error": "execution reverted"
+          }
+        ]
+      ]
+    }
+  }
+]

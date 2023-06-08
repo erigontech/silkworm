@@ -72,7 +72,7 @@ Peer::~Peer() {
     log::Debug("sentry") << "silkworm::sentry::rlpx::Peer::~Peer";
 }
 
-awaitable<void> Peer::start(std::shared_ptr<Peer> peer) {
+Task<void> Peer::start(std::shared_ptr<Peer> peer) {
     using namespace concurrency::awaitable_wait_for_one;
 
     auto start = Peer::handle(peer) || Peer::send_message_tasks_wait(peer);
@@ -94,11 +94,11 @@ class PingTimeoutError : public std::runtime_error {
     PingTimeoutError() : std::runtime_error("rlpx::Peer ping timed out") {}
 };
 
-awaitable<void> Peer::handle(std::shared_ptr<Peer> peer) {
+Task<void> Peer::handle(std::shared_ptr<Peer> peer) {
     co_await peer->handle();
 }
 
-awaitable<void> Peer::handle() {
+Task<void> Peer::handle() {
     using namespace concurrency::awaitable_wait_for_all;
     using namespace concurrency::awaitable_wait_for_one;
 
@@ -198,15 +198,15 @@ awaitable<void> Peer::handle() {
     }
 }
 
-awaitable<void> Peer::drop(const std::shared_ptr<Peer>& peer, DisconnectReason reason) {
+Task<void> Peer::drop(const std::shared_ptr<Peer>& peer, DisconnectReason reason) {
     return co_spawn(peer->strand_, Peer::drop_in_strand(peer, reason), use_awaitable);
 }
 
-awaitable<void> Peer::drop_in_strand(std::shared_ptr<Peer> self, DisconnectReason reason) {
+Task<void> Peer::drop_in_strand(std::shared_ptr<Peer> self, DisconnectReason reason) {
     co_await self->drop(reason);
 }
 
-awaitable<void> Peer::drop(DisconnectReason reason) {
+Task<void> Peer::drop(DisconnectReason reason) {
     using namespace concurrency::awaitable_wait_for_one;
 
     log::Debug("sentry") << "Peer::drop reason " << static_cast<int>(reason);
@@ -242,7 +242,7 @@ void Peer::disconnect(DisconnectReason reason) {
     this->close();
 }
 
-awaitable<framing::MessageStream> Peer::handshake() {
+Task<framing::MessageStream> Peer::handshake() {
     auth::Handshake handshake{
         node_key_,
         client_id_,
@@ -256,7 +256,7 @@ awaitable<framing::MessageStream> Peer::handshake() {
     co_return std::move(result.message_stream);
 }
 
-awaitable<bool> Peer::wait_for_handshake(std::shared_ptr<Peer> self) {
+Task<bool> Peer::wait_for_handshake(std::shared_ptr<Peer> self) {
     auto future = self->handshake_promise_.get_future();
     co_return (co_await future.get_async());
 }
@@ -275,11 +275,11 @@ void Peer::post_message(const std::shared_ptr<Peer>& peer, const common::Message
     peer->send_message_tasks_.spawn(peer->strand_, Peer::send_message(peer, message));
 }
 
-awaitable<void> Peer::send_message_tasks_wait(std::shared_ptr<Peer> self) {
+Task<void> Peer::send_message_tasks_wait(std::shared_ptr<Peer> self) {
     co_await self->send_message_tasks_.wait();
 }
 
-awaitable<void> Peer::send_message(std::shared_ptr<Peer> peer, common::Message message) {
+Task<void> Peer::send_message(std::shared_ptr<Peer> peer, common::Message message) {
     try {
         co_await peer->send_message(std::move(message));
     } catch (const DisconnectedError& ex) {
@@ -297,7 +297,7 @@ awaitable<void> Peer::send_message(std::shared_ptr<Peer> peer, common::Message m
     }
 }
 
-awaitable<void> Peer::send_message(common::Message message) {
+Task<void> Peer::send_message(common::Message message) {
     try {
         co_await send_message_channel_.send(std::move(message));
     } catch (const boost::system::system_error& ex) {
@@ -307,7 +307,7 @@ awaitable<void> Peer::send_message(common::Message message) {
     }
 }
 
-awaitable<void> Peer::send_messages(framing::MessageStream& message_stream) {
+Task<void> Peer::send_messages(framing::MessageStream& message_stream) {
     // loop until message_stream exception
     while (true) {
         common::Message message;
@@ -322,7 +322,7 @@ awaitable<void> Peer::send_messages(framing::MessageStream& message_stream) {
     }
 }
 
-awaitable<common::Message> Peer::receive_message() {
+Task<common::Message> Peer::receive_message() {
     try {
         co_return (co_await receive_message_channel_.receive());
     } catch (const boost::system::system_error& ex) {
@@ -332,7 +332,7 @@ awaitable<common::Message> Peer::receive_message() {
     }
 }
 
-awaitable<void> Peer::receive_messages(framing::MessageStream& message_stream) {
+Task<void> Peer::receive_messages(framing::MessageStream& message_stream) {
     // loop until message_stream exception
     while (true) {
         auto message = co_await message_stream.receive();
@@ -363,7 +363,7 @@ awaitable<void> Peer::receive_messages(framing::MessageStream& message_stream) {
     }
 }
 
-awaitable<void> Peer::ping_periodically(framing::MessageStream& message_stream) {
+Task<void> Peer::ping_periodically(framing::MessageStream& message_stream) {
     using namespace concurrency::awaitable_wait_for_one;
 
     // loop until message_stream exception

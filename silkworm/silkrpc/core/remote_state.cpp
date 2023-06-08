@@ -17,6 +17,7 @@
 #include "remote_state.hpp"
 
 #include <future>
+#include <stdexcept>
 #include <unordered_map>
 #include <utility>
 
@@ -127,7 +128,7 @@ std::optional<silkworm::BlockHeader> RemoteState::read_header(uint64_t block_num
     SILK_DEBUG << "RemoteState::read_header block_number=" << block_number << " block_hash=" << block_hash;
     try {
         std::future<std::optional<silkworm::BlockHeader>> result{boost::asio::co_spawn(executor_, async_state_.read_header(block_number, block_hash), boost::asio::use_future)};
-        const auto optional_header{result.get()};
+        auto optional_header{result.get()};
         SILK_DEBUG << "RemoteState::read_header block_number=" << block_number << " block_hash=" << block_hash;
         return optional_header;
     } catch (const std::exception& e) {
@@ -162,18 +163,15 @@ std::optional<intx::uint256> RemoteState::total_difficulty(uint64_t block_number
 }
 
 evmc::bytes32 RemoteState::state_root_hash() const {
-    SILK_DEBUG << "RemoteState::state_root_hash";
-    return evmc::bytes32{};
+    throw std::logic_error{"RemoteState::state_root_hash not yet implemented"};
 }
 
 uint64_t RemoteState::current_canonical_block() const {
-    SILK_DEBUG << "RemoteState::current_canonical_block";
-    return 0;
+    throw std::logic_error{"RemoteState::current_canonical_block not yet implemented"};
 }
 
-std::optional<evmc::bytes32> RemoteState::canonical_hash(uint64_t block_number) const {
-    SILK_DEBUG << "RemoteState::canonical_hash block_number=" << block_number;
-    return std::nullopt;
+std::optional<evmc::bytes32> RemoteState::canonical_hash(uint64_t /*block_number*/) const {
+    throw std::logic_error{"RemoteState::canonical_hash not yet implemented"};
 }
 
 }  // namespace silkworm::rpc::state

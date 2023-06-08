@@ -173,7 +173,7 @@ static bool pairings_verify(
  */
 static bool bytes_to_bls_field(Fr* out, std::span<const uint8_t, 32> b) {
     blst_scalar tmp;
-    blst_scalar_from_lendian(&tmp, b.data());
+    blst_scalar_from_bendian(&tmp, b.data());
     if (!blst_scalar_fr_check(&tmp)) {
         return false;
     }

@@ -77,6 +77,7 @@ class ExecutionEngine : public Stoppable {
     // header/body retrieval
     auto get_header(Hash) const -> std::optional<BlockHeader>;
     auto get_canonical_header(BlockNum) const -> std::optional<BlockHeader>;
+    auto get_canonical_hash(BlockNum) const -> std::optional<Hash>;
     auto get_body(Hash) const -> std::optional<BlockBody>;
     auto get_canonical_body(BlockNum) const -> std::optional<BlockBody>;
     bool is_canonical(Hash) const;

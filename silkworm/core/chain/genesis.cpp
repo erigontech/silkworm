@@ -30,9 +30,6 @@ extern size_t sizeof_genesis_mainnet_data();
 extern const char* genesis_goerli_data();
 extern size_t sizeof_genesis_goerli_data();
 
-extern const char* genesis_rinkeby_data();
-extern size_t sizeof_genesis_rinkeby_data();
-
 extern const char* genesis_sepolia_data();
 extern size_t sizeof_genesis_sepolia_data();
 
@@ -43,9 +40,6 @@ std::string read_genesis_data(uint64_t chain_id) {
         case kMainnetConfig.chain_id:
             assert(sizeof_genesis_mainnet_data() != 0);
             return std::string(genesis_mainnet_data(), sizeof_genesis_mainnet_data());
-        case kRinkebyConfig.chain_id:
-            assert(sizeof_genesis_rinkeby_data() != 0);
-            return std::string(genesis_rinkeby_data(), sizeof_genesis_rinkeby_data());
         case kGoerliConfig.chain_id:
             assert(sizeof_genesis_goerli_data() != 0);
             return std::string(genesis_goerli_data(), sizeof_genesis_goerli_data());

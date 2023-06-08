@@ -121,6 +121,7 @@ class EthereumRpcApi {
     awaitable<void> handle_eth_unsubscribe(const nlohmann::json& request, nlohmann::json& reply);
     awaitable<void> handle_eth_max_priority_fee_per_gas(const nlohmann::json& request, nlohmann::json& reply);
     awaitable<void> handle_fee_history(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_eth_call_many(const nlohmann::json& request, nlohmann::json& reply);
 
     // GLAZE format routine
     awaitable<void> handle_eth_get_logs(const nlohmann::json& request, std::string& reply);

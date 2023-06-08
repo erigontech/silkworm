@@ -47,7 +47,7 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | eth_getTransactionCount                    | Yes          |                                            |
 | eth_getStorageAt                           | Yes          |                                            |
 | eth_call                                   | Yes          |                                            |
-| eth_callMany                               | -            | not yet implemented (see Erigon PR #4567)  |
+| eth_callMany                               | Yes          | partially implemented                      |
 | eth_callBundle                             | Yes          |                                            |
 | eth_createAccessList                       | Yes          |                                            |
 |                                            |              |                                            |

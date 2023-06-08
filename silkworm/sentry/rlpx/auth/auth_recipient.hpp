@@ -16,9 +16,7 @@
 
 #pragma once
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
@@ -33,7 +31,7 @@ class AuthRecipient {
     explicit AuthRecipient(common::EccKeyPair recipient_key_pair)
         : recipient_key_pair_(std::move(recipient_key_pair)) {}
 
-    boost::asio::awaitable<AuthKeys> execute(common::SocketStream& stream);
+    Task<AuthKeys> execute(common::SocketStream& stream);
 
   private:
     common::EccKeyPair recipient_key_pair_;

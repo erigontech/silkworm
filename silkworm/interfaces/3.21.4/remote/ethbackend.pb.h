@@ -70,9 +70,6 @@ extern EngineForkChoiceUpdatedRequestDefaultTypeInternal _EngineForkChoiceUpdate
 class EngineForkChoiceUpdatedResponse;
 struct EngineForkChoiceUpdatedResponseDefaultTypeInternal;
 extern EngineForkChoiceUpdatedResponseDefaultTypeInternal _EngineForkChoiceUpdatedResponse_default_instance_;
-class EngineGetBlobsBundleRequest;
-struct EngineGetBlobsBundleRequestDefaultTypeInternal;
-extern EngineGetBlobsBundleRequestDefaultTypeInternal _EngineGetBlobsBundleRequest_default_instance_;
 class EngineGetPayloadBodiesByHashV1Request;
 struct EngineGetPayloadBodiesByHashV1RequestDefaultTypeInternal;
 extern EngineGetPayloadBodiesByHashV1RequestDefaultTypeInternal _EngineGetPayloadBodiesByHashV1Request_default_instance_;
@@ -157,7 +154,6 @@ template<> ::remote::ClientVersionRequest* Arena::CreateMaybeMessage<::remote::C
 template<> ::remote::EngineForkChoiceState* Arena::CreateMaybeMessage<::remote::EngineForkChoiceState>(Arena*);
 template<> ::remote::EngineForkChoiceUpdatedRequest* Arena::CreateMaybeMessage<::remote::EngineForkChoiceUpdatedRequest>(Arena*);
 template<> ::remote::EngineForkChoiceUpdatedResponse* Arena::CreateMaybeMessage<::remote::EngineForkChoiceUpdatedResponse>(Arena*);
-template<> ::remote::EngineGetBlobsBundleRequest* Arena::CreateMaybeMessage<::remote::EngineGetBlobsBundleRequest>(Arena*);
 template<> ::remote::EngineGetPayloadBodiesByHashV1Request* Arena::CreateMaybeMessage<::remote::EngineGetPayloadBodiesByHashV1Request>(Arena*);
 template<> ::remote::EngineGetPayloadBodiesByRangeV1Request* Arena::CreateMaybeMessage<::remote::EngineGetPayloadBodiesByRangeV1Request>(Arena*);
 template<> ::remote::EngineGetPayloadBodiesV1Response* Arena::CreateMaybeMessage<::remote::EngineGetPayloadBodiesV1Response>(Arena*);
@@ -1198,154 +1194,6 @@ class EngineGetPayloadRequest final :
 };
 // -------------------------------------------------------------------
 
-class EngineGetBlobsBundleRequest final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.EngineGetBlobsBundleRequest) */ {
- public:
-  inline EngineGetBlobsBundleRequest() : EngineGetBlobsBundleRequest(nullptr) {}
-  ~EngineGetBlobsBundleRequest() override;
-  explicit PROTOBUF_CONSTEXPR EngineGetBlobsBundleRequest(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
-
-  EngineGetBlobsBundleRequest(const EngineGetBlobsBundleRequest& from);
-  EngineGetBlobsBundleRequest(EngineGetBlobsBundleRequest&& from) noexcept
-    : EngineGetBlobsBundleRequest() {
-    *this = ::std::move(from);
-  }
-
-  inline EngineGetBlobsBundleRequest& operator=(const EngineGetBlobsBundleRequest& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  inline EngineGetBlobsBundleRequest& operator=(EngineGetBlobsBundleRequest&& from) noexcept {
-    if (this == &from) return *this;
-    if (GetOwningArena() == from.GetOwningArena()
-  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
-        && GetOwningArena() != nullptr
-  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
-    ) {
-      InternalSwap(&from);
-    } else {
-      CopyFrom(from);
-    }
-    return *this;
-  }
-
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
-    return GetDescriptor();
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
-    return default_instance().GetMetadata().descriptor;
-  }
-  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
-    return default_instance().GetMetadata().reflection;
-  }
-  static const EngineGetBlobsBundleRequest& default_instance() {
-    return *internal_default_instance();
-  }
-  static inline const EngineGetBlobsBundleRequest* internal_default_instance() {
-    return reinterpret_cast<const EngineGetBlobsBundleRequest*>(
-               &_EngineGetBlobsBundleRequest_default_instance_);
-  }
-  static constexpr int kIndexInFileMessages =
-    7;
-
-  friend void swap(EngineGetBlobsBundleRequest& a, EngineGetBlobsBundleRequest& b) {
-    a.Swap(&b);
-  }
-  inline void Swap(EngineGetBlobsBundleRequest* other) {
-    if (other == this) return;
-  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() != nullptr &&
-        GetOwningArena() == other->GetOwningArena()) {
-   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
-    if (GetOwningArena() == other->GetOwningArena()) {
-  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
-      InternalSwap(other);
-    } else {
-      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
-    }
-  }
-  void UnsafeArenaSwap(EngineGetBlobsBundleRequest* other) {
-    if (other == this) return;
-    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
-    InternalSwap(other);
-  }
-
-  // implements Message ----------------------------------------------
-
-  EngineGetBlobsBundleRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<EngineGetBlobsBundleRequest>(arena);
-  }
-  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const EngineGetBlobsBundleRequest& from);
-  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom( const EngineGetBlobsBundleRequest& from) {
-    EngineGetBlobsBundleRequest::MergeImpl(*this, from);
-  }
-  private:
-  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
-  public:
-  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
-  bool IsInitialized() const final;
-
-  size_t ByteSizeLong() const final;
-  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
-  uint8_t* _InternalSerialize(
-      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
-  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
-
-  private:
-  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
-  void SharedDtor();
-  void SetCachedSize(int size) const final;
-  void InternalSwap(EngineGetBlobsBundleRequest* other);
-
-  private:
-  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
-  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "remote.EngineGetBlobsBundleRequest";
-  }
-  protected:
-  explicit EngineGetBlobsBundleRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                       bool is_message_owned = false);
-  public:
-
-  static const ClassData _class_data_;
-  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
-
-  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
-
-  // nested types ----------------------------------------------------
-
-  // accessors -------------------------------------------------------
-
-  enum : int {
-    kPayloadIdFieldNumber = 1,
-  };
-  // uint64 payload_id = 1;
-  void clear_payload_id();
-  uint64_t payload_id() const;
-  void set_payload_id(uint64_t value);
-  private:
-  uint64_t _internal_payload_id() const;
-  void _internal_set_payload_id(uint64_t value);
-  public:
-
-  // @@protoc_insertion_point(class_scope:remote.EngineGetBlobsBundleRequest)
- private:
-  class _Internal;
-
-  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
-  typedef void InternalArenaConstructable_;
-  typedef void DestructorSkippable_;
-  struct Impl_ {
-    uint64_t payload_id_;
-    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-  };
-  union { Impl_ _impl_; };
-  friend struct ::TableStruct_remote_2fethbackend_2eproto;
-};
-// -------------------------------------------------------------------
-
 class EnginePayloadStatus final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:remote.EnginePayloadStatus) */ {
  public:
@@ -1394,7 +1242,7 @@ class EnginePayloadStatus final :
                &_EnginePayloadStatus_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    8;
+    7;
 
   friend void swap(EnginePayloadStatus& a, EnginePayloadStatus& b) {
     a.Swap(&b);
@@ -1578,7 +1426,7 @@ class EnginePayloadAttributes final :
                &_EnginePayloadAttributes_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    9;
+    8;
 
   friend void swap(EnginePayloadAttributes& a, EnginePayloadAttributes& b) {
     a.Swap(&b);
@@ -1797,7 +1645,7 @@ class EngineForkChoiceState final :
                &_EngineForkChoiceState_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    10;
+    9;
 
   friend void swap(EngineForkChoiceState& a, EngineForkChoiceState& b) {
     a.Swap(&b);
@@ -1994,7 +1842,7 @@ class EngineForkChoiceUpdatedRequest final :
                &_EngineForkChoiceUpdatedRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    11;
+    10;
 
   friend void swap(EngineForkChoiceUpdatedRequest& a, EngineForkChoiceUpdatedRequest& b) {
     a.Swap(&b);
@@ -2171,7 +2019,7 @@ class EngineForkChoiceUpdatedResponse final :
                &_EngineForkChoiceUpdatedResponse_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    12;
+    11;
 
   friend void swap(EngineForkChoiceUpdatedResponse& a, EngineForkChoiceUpdatedResponse& b) {
     a.Swap(&b);
@@ -2339,7 +2187,7 @@ class EngineGetPayloadResponse final :
                &_EngineGetPayloadResponse_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    13;
+    12;
 
   friend void swap(EngineGetPayloadResponse& a, EngineGetPayloadResponse& b) {
     a.Swap(&b);
@@ -2414,6 +2262,7 @@ class EngineGetPayloadResponse final :
   enum : int {
     kExecutionPayloadFieldNumber = 1,
     kBlockValueFieldNumber = 2,
+    kBlobsBundleFieldNumber = 3,
   };
   // .types.ExecutionPayload execution_payload = 1;
   bool has_execution_payload() const;
@@ -2451,6 +2300,24 @@ class EngineGetPayloadResponse final :
       ::types::H256* block_value);
   ::types::H256* unsafe_arena_release_block_value();
 
+  // .types.BlobsBundleV1 blobs_bundle = 3;
+  bool has_blobs_bundle() const;
+  private:
+  bool _internal_has_blobs_bundle() const;
+  public:
+  void clear_blobs_bundle();
+  const ::types::BlobsBundleV1& blobs_bundle() const;
+  PROTOBUF_NODISCARD ::types::BlobsBundleV1* release_blobs_bundle();
+  ::types::BlobsBundleV1* mutable_blobs_bundle();
+  void set_allocated_blobs_bundle(::types::BlobsBundleV1* blobs_bundle);
+  private:
+  const ::types::BlobsBundleV1& _internal_blobs_bundle() const;
+  ::types::BlobsBundleV1* _internal_mutable_blobs_bundle();
+  public:
+  void unsafe_arena_set_allocated_blobs_bundle(
+      ::types::BlobsBundleV1* blobs_bundle);
+  ::types::BlobsBundleV1* unsafe_arena_release_blobs_bundle();
+
   // @@protoc_insertion_point(class_scope:remote.EngineGetPayloadResponse)
  private:
   class _Internal;
@@ -2461,6 +2328,7 @@ class EngineGetPayloadResponse final :
   struct Impl_ {
     ::types::ExecutionPayload* execution_payload_;
     ::types::H256* block_value_;
+    ::types::BlobsBundleV1* blobs_bundle_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -2515,7 +2383,7 @@ class ProtocolVersionRequest final :
                &_ProtocolVersionRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    14;
+    13;
 
   friend void swap(ProtocolVersionRequest& a, ProtocolVersionRequest& b) {
     a.Swap(&b);
@@ -2634,7 +2502,7 @@ class ProtocolVersionReply final :
                &_ProtocolVersionReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    15;
+    14;
 
   friend void swap(ProtocolVersionReply& a, ProtocolVersionReply& b) {
     a.Swap(&b);
@@ -2781,7 +2649,7 @@ class ClientVersionRequest final :
                &_ClientVersionRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    16;
+    15;
 
   friend void swap(ClientVersionRequest& a, ClientVersionRequest& b) {
     a.Swap(&b);
@@ -2900,7 +2768,7 @@ class ClientVersionReply final :
                &_ClientVersionReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    17;
+    16;
 
   friend void swap(ClientVersionReply& a, ClientVersionReply& b) {
     a.Swap(&b);
@@ -3053,7 +2921,7 @@ class SubscribeRequest final :
                &_SubscribeRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    18;
+    17;
 
   friend void swap(SubscribeRequest& a, SubscribeRequest& b) {
     a.Swap(&b);
@@ -3201,7 +3069,7 @@ class SubscribeReply final :
                &_SubscribeReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    19;
+    18;
 
   friend void swap(SubscribeReply& a, SubscribeReply& b) {
     a.Swap(&b);
@@ -3365,7 +3233,7 @@ class LogsFilterRequest final :
                &_LogsFilterRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    20;
+    19;
 
   friend void swap(LogsFilterRequest& a, LogsFilterRequest& b) {
     a.Swap(&b);
@@ -3564,7 +3432,7 @@ class SubscribeLogsReply final :
                &_SubscribeLogsReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    21;
+    20;
 
   friend void swap(SubscribeLogsReply& a, SubscribeLogsReply& b) {
     a.Swap(&b);
@@ -3841,7 +3709,7 @@ class BlockRequest final :
                &_BlockRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    22;
+    21;
 
   friend void swap(BlockRequest& a, BlockRequest& b) {
     a.Swap(&b);
@@ -4009,7 +3877,7 @@ class BlockReply final :
                &_BlockReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    23;
+    22;
 
   friend void swap(BlockReply& a, BlockReply& b) {
     a.Swap(&b);
@@ -4178,7 +4046,7 @@ class TxnLookupRequest final :
                &_TxnLookupRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    24;
+    23;
 
   friend void swap(TxnLookupRequest& a, TxnLookupRequest& b) {
     a.Swap(&b);
@@ -4335,7 +4203,7 @@ class TxnLookupReply final :
                &_TxnLookupReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    25;
+    24;
 
   friend void swap(TxnLookupReply& a, TxnLookupReply& b) {
     a.Swap(&b);
@@ -4483,7 +4351,7 @@ class NodesInfoRequest final :
                &_NodesInfoRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    26;
+    25;
 
   friend void swap(NodesInfoRequest& a, NodesInfoRequest& b) {
     a.Swap(&b);
@@ -4631,7 +4499,7 @@ class NodesInfoReply final :
                &_NodesInfoReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    27;
+    26;
 
   friend void swap(NodesInfoReply& a, NodesInfoReply& b) {
     a.Swap(&b);
@@ -4788,7 +4656,7 @@ class PeersReply final :
                &_PeersReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    28;
+    27;
 
   friend void swap(PeersReply& a, PeersReply& b) {
     a.Swap(&b);
@@ -4945,7 +4813,7 @@ class PendingBlockReply final :
                &_PendingBlockReply_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    29;
+    28;
 
   friend void swap(PendingBlockReply& a, PendingBlockReply& b) {
     a.Swap(&b);
@@ -5098,7 +4966,7 @@ class EngineGetPayloadBodiesByHashV1Request final :
                &_EngineGetPayloadBodiesByHashV1Request_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    30;
+    29;
 
   friend void swap(EngineGetPayloadBodiesByHashV1Request& a, EngineGetPayloadBodiesByHashV1Request& b) {
     a.Swap(&b);
@@ -5255,7 +5123,7 @@ class EngineGetPayloadBodiesByRangeV1Request final :
                &_EngineGetPayloadBodiesByRangeV1Request_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    31;
+    30;
 
   friend void swap(EngineGetPayloadBodiesByRangeV1Request& a, EngineGetPayloadBodiesByRangeV1Request& b) {
     a.Swap(&b);
@@ -5414,7 +5282,7 @@ class EngineGetPayloadBodiesV1Response final :
                &_EngineGetPayloadBodiesV1Response_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    32;
+    31;
 
   friend void swap(EngineGetPayloadBodiesV1Response& a, EngineGetPayloadBodiesV1Response& b) {
     a.Swap(&b);
@@ -5699,30 +5567,6 @@ inline void EngineGetPayloadRequest::_internal_set_payload_id(uint64_t value) {
 inline void EngineGetPayloadRequest::set_payload_id(uint64_t value) {
   _internal_set_payload_id(value);
   // @@protoc_insertion_point(field_set:remote.EngineGetPayloadRequest.payload_id)
-}
-
-// -------------------------------------------------------------------
-
-// EngineGetBlobsBundleRequest
-
-// uint64 payload_id = 1;
-inline void EngineGetBlobsBundleRequest::clear_payload_id() {
-  _impl_.payload_id_ = uint64_t{0u};
-}
-inline uint64_t EngineGetBlobsBundleRequest::_internal_payload_id() const {
-  return _impl_.payload_id_;
-}
-inline uint64_t EngineGetBlobsBundleRequest::payload_id() const {
-  // @@protoc_insertion_point(field_get:remote.EngineGetBlobsBundleRequest.payload_id)
-  return _internal_payload_id();
-}
-inline void EngineGetBlobsBundleRequest::_internal_set_payload_id(uint64_t value) {
-  
-  _impl_.payload_id_ = value;
-}
-inline void EngineGetBlobsBundleRequest::set_payload_id(uint64_t value) {
-  _internal_set_payload_id(value);
-  // @@protoc_insertion_point(field_set:remote.EngineGetBlobsBundleRequest.payload_id)
 }
 
 // -------------------------------------------------------------------
@@ -6864,6 +6708,91 @@ inline void EngineGetPayloadResponse::set_allocated_block_value(::types::H256* b
   }
   _impl_.block_value_ = block_value;
   // @@protoc_insertion_point(field_set_allocated:remote.EngineGetPayloadResponse.block_value)
+}
+
+// .types.BlobsBundleV1 blobs_bundle = 3;
+inline bool EngineGetPayloadResponse::_internal_has_blobs_bundle() const {
+  return this != internal_default_instance() && _impl_.blobs_bundle_ != nullptr;
+}
+inline bool EngineGetPayloadResponse::has_blobs_bundle() const {
+  return _internal_has_blobs_bundle();
+}
+inline const ::types::BlobsBundleV1& EngineGetPayloadResponse::_internal_blobs_bundle() const {
+  const ::types::BlobsBundleV1* p = _impl_.blobs_bundle_;
+  return p != nullptr ? *p : reinterpret_cast<const ::types::BlobsBundleV1&>(
+      ::types::_BlobsBundleV1_default_instance_);
+}
+inline const ::types::BlobsBundleV1& EngineGetPayloadResponse::blobs_bundle() const {
+  // @@protoc_insertion_point(field_get:remote.EngineGetPayloadResponse.blobs_bundle)
+  return _internal_blobs_bundle();
+}
+inline void EngineGetPayloadResponse::unsafe_arena_set_allocated_blobs_bundle(
+    ::types::BlobsBundleV1* blobs_bundle) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.blobs_bundle_);
+  }
+  _impl_.blobs_bundle_ = blobs_bundle;
+  if (blobs_bundle) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:remote.EngineGetPayloadResponse.blobs_bundle)
+}
+inline ::types::BlobsBundleV1* EngineGetPayloadResponse::release_blobs_bundle() {
+  
+  ::types::BlobsBundleV1* temp = _impl_.blobs_bundle_;
+  _impl_.blobs_bundle_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::types::BlobsBundleV1* EngineGetPayloadResponse::unsafe_arena_release_blobs_bundle() {
+  // @@protoc_insertion_point(field_release:remote.EngineGetPayloadResponse.blobs_bundle)
+  
+  ::types::BlobsBundleV1* temp = _impl_.blobs_bundle_;
+  _impl_.blobs_bundle_ = nullptr;
+  return temp;
+}
+inline ::types::BlobsBundleV1* EngineGetPayloadResponse::_internal_mutable_blobs_bundle() {
+  
+  if (_impl_.blobs_bundle_ == nullptr) {
+    auto* p = CreateMaybeMessage<::types::BlobsBundleV1>(GetArenaForAllocation());
+    _impl_.blobs_bundle_ = p;
+  }
+  return _impl_.blobs_bundle_;
+}
+inline ::types::BlobsBundleV1* EngineGetPayloadResponse::mutable_blobs_bundle() {
+  ::types::BlobsBundleV1* _msg = _internal_mutable_blobs_bundle();
+  // @@protoc_insertion_point(field_mutable:remote.EngineGetPayloadResponse.blobs_bundle)
+  return _msg;
+}
+inline void EngineGetPayloadResponse::set_allocated_blobs_bundle(::types::BlobsBundleV1* blobs_bundle) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(_impl_.blobs_bundle_);
+  }
+  if (blobs_bundle) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(blobs_bundle));
+    if (message_arena != submessage_arena) {
+      blobs_bundle = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, blobs_bundle, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  _impl_.blobs_bundle_ = blobs_bundle;
+  // @@protoc_insertion_point(field_set_allocated:remote.EngineGetPayloadResponse.blobs_bundle)
 }
 
 // -------------------------------------------------------------------
@@ -8209,8 +8138,6 @@ EngineGetPayloadBodiesV1Response::bodies() const {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
-// -------------------------------------------------------------------
-
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

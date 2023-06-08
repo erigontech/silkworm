@@ -29,7 +29,7 @@ namespace silkworm::sentry {
 
 using namespace boost::asio;
 
-awaitable<void> PeerManager::start(
+Task<void> PeerManager::start(
     rlpx::Server& server,
     discovery::Discovery& discovery,
     std::function<std::unique_ptr<rlpx::Client>()> client_factory) {
@@ -47,7 +47,7 @@ awaitable<void> PeerManager::start(
     co_await co_spawn(strand_, std::move(start), use_awaitable);
 }
 
-awaitable<void> PeerManager::start_in_strand(concurrency::Channel<std::shared_ptr<rlpx::Peer>>& peer_channel) {
+Task<void> PeerManager::start_in_strand(concurrency::Channel<std::shared_ptr<rlpx::Peer>>& peer_channel) {
     // loop until receive() throws a cancelled exception
     while (true) {
         auto peer = co_await peer_channel.receive();
@@ -67,7 +67,7 @@ awaitable<void> PeerManager::start_in_strand(concurrency::Channel<std::shared_pt
     }
 }
 
-boost::asio::awaitable<void> PeerManager::start_peer(std::shared_ptr<rlpx::Peer> peer) {
+Task<void> PeerManager::start_peer(std::shared_ptr<rlpx::Peer> peer) {
     using namespace concurrency::awaitable_wait_for_all;
 
     try {
@@ -90,7 +90,7 @@ boost::asio::awaitable<void> PeerManager::start_peer(std::shared_ptr<rlpx::Peer>
     need_peers_notifier_.notify();
 }
 
-boost::asio::awaitable<void> PeerManager::wait_for_peer_handshake(std::shared_ptr<rlpx::Peer> peer) {
+Task<void> PeerManager::wait_for_peer_handshake(std::shared_ptr<rlpx::Peer> peer) {
     bool ok = co_await rlpx::Peer::wait_for_handshake(peer);
     if (starting_peers_.remove(peer) && ok) {
         peers_.push_back(peer);
@@ -98,7 +98,7 @@ boost::asio::awaitable<void> PeerManager::wait_for_peer_handshake(std::shared_pt
     }
 }
 
-boost::asio::awaitable<void> PeerManager::drop_peer(
+Task<void> PeerManager::drop_peer(
     std::shared_ptr<rlpx::Peer> peer,
     rlpx::rlpx_common::DisconnectReason reason) {
     auto _ = gsl::finally([this] { this->drop_peer_tasks_count_--; });
@@ -116,30 +116,30 @@ boost::asio::awaitable<void> PeerManager::drop_peer(
     }
 }
 
-awaitable<size_t> PeerManager::count_peers() {
+Task<size_t> PeerManager::count_peers() {
     co_return (co_await co_spawn(strand_, count_peers_in_strand(), use_awaitable));
 }
 
-awaitable<void> PeerManager::enumerate_peers(EnumeratePeersCallback callback) {
+Task<void> PeerManager::enumerate_peers(EnumeratePeersCallback callback) {
     co_await co_spawn(strand_, enumerate_peers_in_strand(callback), use_awaitable);
 }
 
-awaitable<void> PeerManager::enumerate_random_peers(size_t max_count, EnumeratePeersCallback callback) {
+Task<void> PeerManager::enumerate_random_peers(size_t max_count, EnumeratePeersCallback callback) {
     co_await co_spawn(strand_, enumerate_random_peers_in_strand(max_count, callback), use_awaitable);
 }
 
-awaitable<size_t> PeerManager::count_peers_in_strand() {
+Task<size_t> PeerManager::count_peers_in_strand() {
     co_return peers_.size();
 }
 
-awaitable<void> PeerManager::enumerate_peers_in_strand(EnumeratePeersCallback callback) {
+Task<void> PeerManager::enumerate_peers_in_strand(EnumeratePeersCallback callback) {
     for (auto& peer : peers_) {
         callback(peer);
     }
     co_return;
 }
 
-awaitable<void> PeerManager::enumerate_random_peers_in_strand(size_t max_count, EnumeratePeersCallback callback) {
+Task<void> PeerManager::enumerate_random_peers_in_strand(size_t max_count, EnumeratePeersCallback callback) {
     for (auto peer_ptr : common::random_list_items(peers_, max_count)) {
         callback(*peer_ptr);
     }
@@ -186,7 +186,7 @@ std::vector<common::EnodeUrl> PeerManager::peer_urls(const std::list<std::shared
     return urls;
 }
 
-awaitable<void> PeerManager::discover_peers(
+Task<void> PeerManager::discover_peers(
     discovery::Discovery& discovery,
     std::function<std::unique_ptr<rlpx::Client>()> client_factory) {
     // loop until a cancelled exception
@@ -212,7 +212,7 @@ awaitable<void> PeerManager::discover_peers(
     }
 }
 
-awaitable<void> PeerManager::connect_peer(common::EnodeUrl peer_url, bool is_static_peer, std::unique_ptr<rlpx::Client> client) {
+Task<void> PeerManager::connect_peer(common::EnodeUrl peer_url, bool is_static_peer, std::unique_ptr<rlpx::Client> client) {
     auto _ = gsl::finally([this, peer_url] { this->connecting_peer_urls_.erase(peer_url); });
 
     try {

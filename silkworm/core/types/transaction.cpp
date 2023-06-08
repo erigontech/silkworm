@@ -71,7 +71,7 @@ namespace rlp {
         }
 
         h.payload_length += length(txn.nonce);
-        if (txn.type == TransactionType::kEip1559) {
+        if (txn.type == TransactionType::kEip1559 || txn.type == TransactionType::kEip4844) {
             h.payload_length += length(txn.max_priority_fee_per_gas);
         }
         h.payload_length += length(txn.max_fee_per_gas);
@@ -81,8 +81,11 @@ namespace rlp {
         h.payload_length += length(txn.data);
 
         if (txn.type != TransactionType::kLegacy) {
-            SILKWORM_ASSERT(txn.type == TransactionType::kEip2930 || txn.type == TransactionType::kEip1559);
             h.payload_length += length(txn.access_list);
+            if (txn.type == TransactionType::kEip4844) {
+                h.payload_length += length(txn.max_fee_per_data_gas);
+                h.payload_length += length(txn.blob_versioned_hashes);
+            }
         }
 
         return h;
@@ -134,8 +137,6 @@ namespace rlp {
     }
 
     static void eip2718_encode_for_signing(Bytes& to, const UnsignedTransaction& txn, const Header h, bool wrap_into_array) {
-        SILKWORM_ASSERT(txn.type == TransactionType::kEip2930 || txn.type == TransactionType::kEip1559);
-
         if (wrap_into_array) {
             auto rlp_len{static_cast<size_t>(length_of_length(h.payload_length) + h.payload_length)};
             encode_header(to, {false, rlp_len + 1});
@@ -148,7 +149,7 @@ namespace rlp {
         encode(to, txn.chain_id.value_or(0));
 
         encode(to, txn.nonce);
-        if (txn.type == TransactionType::kEip1559) {
+        if (txn.type != TransactionType::kEip2930) {
             encode(to, txn.max_priority_fee_per_gas);
         }
         encode(to, txn.max_fee_per_gas);
@@ -161,6 +162,11 @@ namespace rlp {
         encode(to, txn.value);
         encode(to, txn.data);
         encode(to, txn.access_list);
+
+        if (txn.type == TransactionType::kEip4844) {
+            encode(to, txn.max_fee_per_data_gas);
+            encode(to, txn.blob_versioned_hashes);
+        }
     }
 
     void encode(Bytes& to, const Transaction& txn, bool wrap_eip2718_into_string) {
@@ -210,7 +216,9 @@ namespace rlp {
     }
 
     static DecodingResult eip2718_decode(ByteView& from, Transaction& to) noexcept {
-        if (to.type != TransactionType::kEip2930 && to.type != TransactionType::kEip1559) {
+        if (to.type != TransactionType::kEip2930 &&
+            to.type != TransactionType::kEip1559 &&
+            to.type != TransactionType::kEip4844) {
             return tl::unexpected{DecodingError::kUnsupportedTransactionType};
         }
 
@@ -252,7 +260,18 @@ namespace rlp {
             }
         }
 
-        return decode_items(from, to.value, to.data, to.access_list, to.odd_y_parity, to.r, to.s);
+        if (DecodingResult res{decode_items(from, to.value, to.data, to.access_list)}; !res) {
+            return res;
+        }
+
+        if (to.type != TransactionType::kEip4844) {
+            to.max_fee_per_data_gas = 0;
+            to.blob_versioned_hashes.clear();
+        } else if (DecodingResult res{decode_items(from, to.max_fee_per_data_gas, to.blob_versioned_hashes)}; !res) {
+            return res;
+        }
+
+        return decode_items(from, to.odd_y_parity, to.r, to.s);
     }
 
     DecodingResult decode_transaction(ByteView& from, Transaction& to, Eip2718Wrapping allowed,
@@ -282,6 +301,9 @@ namespace rlp {
         if (h->list) {  // Legacy transaction
             to.type = TransactionType::kLegacy;
             to.access_list.clear();
+            to.max_fee_per_data_gas = 0;
+            to.blob_versioned_hashes.clear();
+
             const uint64_t leftover{from.length() - h->payload_length};
             if (mode != Leftover::kAllow && leftover) {
                 return tl::unexpected{DecodingError::kInputTooLong};
@@ -390,9 +412,7 @@ intx::uint512 UnsignedTransaction::maximum_gas_cost() const {
     // See https://github.com/ethereum/EIPs/pull/3594
     intx::uint512 max_gas_cost{intx::umul(intx::uint256{gas_limit}, max_fee_per_gas)};
     // and https://eips.ethereum.org/EIPS/eip-4844#gas-accounting
-    if (max_fee_per_data_gas) {
-        max_gas_cost += intx::umul(intx::uint256{total_data_gas()}, *max_fee_per_data_gas);
-    }
+    max_gas_cost += intx::umul(intx::uint256{total_data_gas()}, max_fee_per_data_gas);
     return max_gas_cost;
 }
 

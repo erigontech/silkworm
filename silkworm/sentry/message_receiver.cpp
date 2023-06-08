@@ -33,7 +33,7 @@ namespace silkworm::sentry {
 
 using namespace boost::asio;
 
-awaitable<void> MessageReceiver::start(std::shared_ptr<MessageReceiver> self, PeerManager& peer_manager) {
+Task<void> MessageReceiver::start(std::shared_ptr<MessageReceiver> self, PeerManager& peer_manager) {
     using namespace concurrency::awaitable_wait_for_all;
 
     peer_manager.add_observer(std::weak_ptr(self));
@@ -45,7 +45,7 @@ awaitable<void> MessageReceiver::start(std::shared_ptr<MessageReceiver> self, Pe
     co_await co_spawn(self->strand_, std::move(start), use_awaitable);
 }
 
-awaitable<void> MessageReceiver::handle_calls() {
+Task<void> MessageReceiver::handle_calls() {
     auto executor = co_await this_coro::executor;
 
     // loop until receive() throws a cancelled exception
@@ -66,7 +66,7 @@ awaitable<void> MessageReceiver::handle_calls() {
     }
 }
 
-awaitable<void> MessageReceiver::unsubscribe_on_signal(std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal) {
+Task<void> MessageReceiver::unsubscribe_on_signal(std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal) {
     try {
         co_await unsubscribe_signal->wait();
     } catch (const boost::system::system_error& ex) {
@@ -90,7 +90,7 @@ awaitable<void> MessageReceiver::unsubscribe_on_signal(std::shared_ptr<concurren
     }
 }
 
-awaitable<void> MessageReceiver::receive_messages(std::shared_ptr<rlpx::Peer> peer) {
+Task<void> MessageReceiver::receive_messages(std::shared_ptr<rlpx::Peer> peer) {
     // loop until DisconnectedError
     while (true) {
         common::Message message;
@@ -134,7 +134,7 @@ void MessageReceiver::on_peer_added(std::shared_ptr<rlpx::Peer> peer) {
 void MessageReceiver::on_peer_removed(std::shared_ptr<rlpx::Peer> /*peer*/) {
 }
 
-awaitable<void> MessageReceiver::on_peer_added_in_strand(std::shared_ptr<rlpx::Peer> peer) {
+Task<void> MessageReceiver::on_peer_added_in_strand(std::shared_ptr<rlpx::Peer> peer) {
     try {
         co_await receive_messages(peer);
     } catch (const boost::system::system_error& ex) {

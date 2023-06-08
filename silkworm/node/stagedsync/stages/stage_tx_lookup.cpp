@@ -236,9 +236,9 @@ void TxLookup::forward_impl(db::RWTxn& txn, const BlockNum from, const BlockNum 
     current_key_.clear();
     log_lck.unlock();
 
-    db::PooledCursor target(txn, db::table::kTxLookup);
-    collector_->load(target, nullptr,
-                     target.empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT);
+    auto target = txn.rw_cursor_dup_sort(db::table::kTxLookup);  // note: not a multi-value table
+    collector_->load(*target, nullptr,
+                     target->empty() ? MDBX_put_flags_t::MDBX_APPEND : MDBX_put_flags_t::MDBX_UPSERT);
 
     log_lck.lock();
     loading_ = false;
@@ -268,8 +268,8 @@ void TxLookup::unwind_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     current_key_.clear();
     log_lck.unlock();
 
-    db::PooledCursor target(txn, db::table::kTxLookup);
-    collector_->load(target, nullptr, MDBX_put_flags_t::MDBX_UPSERT);
+    auto target = txn.rw_cursor_dup_sort(db::table::kTxLookup);  // note: not a multi-value table
+    collector_->load(*target, nullptr, MDBX_put_flags_t::MDBX_UPSERT);
 
     log_lck.lock();
     loading_ = false;
@@ -301,8 +301,8 @@ void TxLookup::prune_impl(db::RWTxn& txn, BlockNum from, BlockNum to) {
     current_key_.clear();
     log_lck.unlock();
 
-    db::PooledCursor target(txn, db::table::kTxLookup);
-    collector_->load(target, nullptr, MDBX_put_flags_t::MDBX_UPSERT);
+    auto target = txn.rw_cursor_dup_sort(db::table::kTxLookup);  // note: not a multi-value table
+    collector_->load(*target, nullptr, MDBX_put_flags_t::MDBX_UPSERT);
 
     log_lck.lock();
     loading_ = false;
@@ -325,11 +325,11 @@ void TxLookup::collect_transaction_hashes_from_canonical_bodies(db::RWTxn& txn,
 
     auto start_key{db::block_key(expected_block_number)};
     Bytes etl_value{};
-    db::PooledCursor canonicals(txn, db::table::kCanonicalHashes);
-    db::PooledCursor bodies(txn, db::table::kBlockBodies);
-    db::PooledCursor transactions{txn, db::table::kBlockTransactions};
+    auto canonicals = txn.ro_cursor(db::table::kCanonicalHashes);
+    auto bodies = txn.ro_cursor(db::table::kBlockBodies);
+    auto transactions = txn.ro_cursor(db::table::kBlockTransactions);
 
-    auto canonical_data{canonicals.find(db::to_slice(start_key), /*throw_notfound=*/false)};
+    auto canonical_data{canonicals->find(db::to_slice(start_key), /*throw_notfound=*/false)};
     if (!canonical_data) {
         throw StageError(Stage::Result::kBadChainSequence,
                          "Missing canonical hash for block " + std::to_string(expected_block_number));
@@ -354,7 +354,7 @@ void TxLookup::collect_transaction_hashes_from_canonical_bodies(db::RWTxn& txn,
 
         const evmc::bytes32 header_hash{to_bytes32(db::from_slice(canonical_data.value))};
         const auto body_key{db::block_key(reached_block_number, header_hash.bytes)};
-        const auto body_data{bodies.find(db::to_slice(body_key), /*throw_notfound=*/false)};
+        const auto body_data{bodies->find(db::to_slice(body_key), /*throw_notfound=*/false)};
         if (!body_data) {
             throw StageError(Stage::Result::kDbError,
                              "Could not load block body " + std::to_string(reached_block_number));
@@ -375,7 +375,7 @@ void TxLookup::collect_transaction_hashes_from_canonical_bodies(db::RWTxn& txn,
 
             const Bytes transactions_base_key{db::block_key(block_body.base_txn_id)};
             auto transactions_data{
-                transactions.lower_bound(db::to_slice(transactions_base_key), /*throw_notfound=*/false)};
+                transactions->lower_bound(db::to_slice(transactions_base_key), /*throw_notfound=*/false)};
             while (transactions_data) {
                 const auto reached_transaction_id{
                     endian::load_big_u64(static_cast<uint8_t*>(transactions_data.key.data()))};
@@ -387,7 +387,7 @@ void TxLookup::collect_transaction_hashes_from_canonical_bodies(db::RWTxn& txn,
                 collector_->collect({Bytes(transaction_hash.bytes, kHashLength), etl_value});
 
                 ++processed_transactions;
-                transactions_data = transactions.to_next(/*throw_notfound=*/false);
+                transactions_data = transactions->to_next(/*throw_notfound=*/false);
             }
 
             if (processed_transactions != block_body.txn_count) {
@@ -400,7 +400,7 @@ void TxLookup::collect_transaction_hashes_from_canonical_bodies(db::RWTxn& txn,
         }
 
         ++expected_block_number;
-        canonical_data = canonicals.to_next(/*throw_notfound=*/false);
+        canonical_data = canonicals->to_next(/*throw_notfound=*/false);
     }
 }
 

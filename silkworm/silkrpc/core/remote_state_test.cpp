@@ -208,8 +208,7 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         const uint64_t block_number = 1'000'000;
         boost::asio::any_io_executor current_executor = io_context.get_executor();
         RemoteState remote_state(current_executor, db_reader, block_number);
-        auto canonical_block = remote_state.current_canonical_block();
-        CHECK(canonical_block == 0);
+        CHECK_THROWS_AS(remote_state.current_canonical_block(), std::logic_error);
         io_context.stop();
         io_context_thread.join();
     }
@@ -223,8 +222,7 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         const uint64_t block_number = 1'000'000;
         boost::asio::any_io_executor current_executor = io_context.get_executor();
         RemoteState remote_state(current_executor, db_reader, block_number);
-        auto canonical_block = remote_state.canonical_hash(block_number);
-        CHECK(canonical_block == std::nullopt);
+        CHECK_THROWS_AS(remote_state.canonical_hash(block_number), std::logic_error);
         io_context.stop();
         io_context_thread.join();
     }
@@ -238,8 +236,7 @@ TEST_CASE("async remote buffer", "[silkrpc][core][remote_buffer]") {
         const uint64_t block_number = 1'000'000;
         boost::asio::any_io_executor current_executor = io_context.get_executor();
         RemoteState remote_state(current_executor, db_reader, block_number);
-        auto root_hash = remote_state.state_root_hash();
-        CHECK(root_hash == evmc::bytes32{});
+        CHECK_THROWS_AS(remote_state.state_root_hash(), std::logic_error);
         io_context.stop();
         io_context_thread.join();
     }

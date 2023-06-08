@@ -18,12 +18,10 @@
 
 #include <chrono>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 namespace silkworm::sentry::common {
 
-boost::asio::awaitable<void> sleep(std::chrono::milliseconds duration);
+Task<void> sleep(std::chrono::milliseconds duration);
 
 }  // namespace silkworm::sentry::common

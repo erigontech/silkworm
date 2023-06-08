@@ -20,6 +20,8 @@
 #include <optional>
 #include <string>
 
+#include <boost/asio/ip/address.hpp>
+
 #include <silkworm/buildinfo.h>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -35,6 +37,7 @@
 #include "grpc/server/server.hpp"
 #include "message_receiver.hpp"
 #include "message_sender.hpp"
+#include "nat/ip_resolver.hpp"
 #include "node_key_config.hpp"
 #include "peer_manager.hpp"
 #include "peer_manager_api.hpp"
@@ -54,21 +57,21 @@ class SentryImpl final {
     SentryImpl(const SentryImpl&) = delete;
     SentryImpl& operator=(const SentryImpl&) = delete;
 
-    boost::asio::awaitable<void> run();
+    Task<void> run();
 
     [[nodiscard]] std::shared_ptr<api::api_common::Service> service() { return direct_service_; }
 
   private:
     void setup_node_key();
-    boost::asio::awaitable<void> run_tasks();
-    boost::asio::awaitable<void> start_status_manager();
-    boost::asio::awaitable<void> start_server();
-    boost::asio::awaitable<void> start_discovery();
-    boost::asio::awaitable<void> start_peer_manager();
-    boost::asio::awaitable<void> start_message_sender();
-    boost::asio::awaitable<void> start_message_receiver();
-    boost::asio::awaitable<void> start_peer_manager_api();
-    boost::asio::awaitable<void> start_grpc_server();
+    Task<void> run_tasks();
+    Task<void> start_status_manager();
+    Task<void> start_server();
+    Task<void> start_discovery();
+    Task<void> start_peer_manager();
+    Task<void> start_message_sender();
+    Task<void> start_message_receiver();
+    Task<void> start_peer_manager_api();
+    Task<void> start_grpc_server();
     std::unique_ptr<rlpx::Protocol> make_protocol();
     std::function<std::unique_ptr<rlpx::Protocol>()> protocol_factory();
     std::unique_ptr<rlpx::Client> make_client();
@@ -80,6 +83,7 @@ class SentryImpl final {
 
     Settings settings_;
     std::optional<NodeKey> node_key_;
+    std::optional<boost::asio::ip::address> public_ip_;
     silkworm::rpc::ServerContextPool& context_pool_;
 
     StatusManager status_manager_;
@@ -140,12 +144,15 @@ SentryImpl::SentryImpl(Settings settings, silkworm::rpc::ServerContextPool& cont
       grpc_server_(make_server_config(settings_), service_router_) {
 }
 
-boost::asio::awaitable<void> SentryImpl::run() {
+Task<void> SentryImpl::run() {
     using namespace concurrency::awaitable_wait_for_all;
 
     setup_node_key();
 
-    return (run_tasks() && start_grpc_server());
+    public_ip_ = co_await nat::ip_resolver(settings_.nat);
+    log::Info("sentry") << "Node URL: " << make_node_url().to_string();
+
+    co_await (run_tasks() && start_grpc_server());
 }
 
 void SentryImpl::setup_node_key() {
@@ -154,7 +161,7 @@ void SentryImpl::setup_node_key() {
     node_key_ = {node_key};
 }
 
-boost::asio::awaitable<void> SentryImpl::run_tasks() {
+Task<void> SentryImpl::run_tasks() {
     using namespace concurrency::awaitable_wait_for_all;
 
     log::Info("sentry") << "Sentry is waiting for status message...";
@@ -179,11 +186,11 @@ std::function<std::unique_ptr<rlpx::Protocol>()> SentryImpl::protocol_factory() 
     return [this] { return this->make_protocol(); };
 }
 
-boost::asio::awaitable<void> SentryImpl::start_status_manager() {
+Task<void> SentryImpl::start_status_manager() {
     return status_manager_.start();
 }
 
-boost::asio::awaitable<void> SentryImpl::start_server() {
+Task<void> SentryImpl::start_server() {
     return rlpx_server_.start(context_pool_, node_key_.value(), client_id(), protocol_factory());
 }
 
@@ -195,27 +202,27 @@ std::function<std::unique_ptr<rlpx::Client>()> SentryImpl::client_factory() {
     return [this] { return this->make_client(); };
 }
 
-boost::asio::awaitable<void> SentryImpl::start_discovery() {
+Task<void> SentryImpl::start_discovery() {
     return discovery_.start();
 }
 
-boost::asio::awaitable<void> SentryImpl::start_peer_manager() {
+Task<void> SentryImpl::start_peer_manager() {
     return peer_manager_.start(rlpx_server_, discovery_, client_factory());
 }
 
-boost::asio::awaitable<void> SentryImpl::start_message_sender() {
+Task<void> SentryImpl::start_message_sender() {
     return message_sender_.start(peer_manager_);
 }
 
-boost::asio::awaitable<void> SentryImpl::start_message_receiver() {
+Task<void> SentryImpl::start_message_receiver() {
     return MessageReceiver::start(message_receiver_, peer_manager_);
 }
 
-boost::asio::awaitable<void> SentryImpl::start_peer_manager_api() {
+Task<void> SentryImpl::start_peer_manager_api() {
     return PeerManagerApi::start(peer_manager_api_);
 }
 
-boost::asio::awaitable<void> SentryImpl::start_grpc_server() {
+Task<void> SentryImpl::start_grpc_server() {
     if (!settings_.api_address.empty()) {
         co_await grpc_server_.async_run();
     }
@@ -237,8 +244,7 @@ std::string SentryImpl::client_id() const {
 common::EnodeUrl SentryImpl::make_node_url() const {
     return common::EnodeUrl{
         node_key_.value().public_key(),
-        // TODO: need an external IP here
-        rlpx_server_.ip(),
+        public_ip_.value(),
         settings_.port,
     };
 }
@@ -264,11 +270,11 @@ Sentry::~Sentry() {
     log::Trace("sentry") << "silkworm::sentry::Sentry::~Sentry";
 }
 
-boost::asio::awaitable<void> Sentry::run() {
+Task<void> Sentry::run() {
     return p_impl_->run();
 }
 
-boost::asio::awaitable<std::shared_ptr<api::api_common::Service>> Sentry::service() {
+Task<std::shared_ptr<api::api_common::Service>> Sentry::service() {
     co_return p_impl_->service();
 }
 
@@ -277,11 +283,11 @@ bool Sentry::is_ready() {
     return true;
 }
 
-void Sentry::on_disconnect(std::function<boost::asio::awaitable<void>()> /*callback*/) {
+void Sentry::on_disconnect(std::function<Task<void>()> /*callback*/) {
     // the direct client never disconnects
 }
 
-boost::asio::awaitable<void> Sentry::reconnect() {
+Task<void> Sentry::reconnect() {
     // the direct client never disconnects
     co_return;
 }

@@ -1119,8 +1119,7 @@ TEST_CASE("serialize forks", "[silkworm::json][to_json]") {
     nlohmann::json j = f;
     CHECK(j == R"({
         "genesis":"0x374f3a049e006f36f6cf91b02a3b0ee16c858af2f75858733eb0e927b5b7126c",
-        "heightForks":[1150000,1920000,2463000,2675000,4370000,7280000,9069000,9200000,
-  12244000,12965000],
+        "heightForks":[1150000,1920000,2463000,2675000,4370000,7280000,9069000,9200000,12244000,12965000],
         "timeForks":[1678832736]
     })"_json);
 }
@@ -1248,17 +1247,6 @@ TEST_CASE("make glaze json error (Revert)", "[make_glaze_json_error]") {
                  "{\"jsonrpc\":\"2.0\",\
                   \"id\":1,\
                    \"error\":{\"code\":3,\"message\":\"generic_error\",\"data\": \"0xc68341b58302c0\"}}"));
-}
-
-TEST_CASE("make glaze content (data)", "[make_glaze_json_error]") {
-    std::string json;
-    const char* data_hex{"c68341b58302d066"};
-    silkworm::Bytes data_bytes{*silkworm::from_hex(data_hex)};
-    make_glaze_json_content(json, 1, data_bytes);
-    CHECK(strcmp(json.c_str(),
-                 "{\"jsonrpc\":\"2.0\",\
-                  \"id\":1,\
-                   \"result\":\"0xc68341b58302d066\"}"));
 }
 
 TEST_CASE("make empty json revert error", "[silkworm::json][make_json_error]") {

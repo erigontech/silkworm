@@ -74,7 +74,7 @@ class EVMExecutor {
   public:
     static std::string get_error_message(int64_t error_code, const Bytes& error_data, bool full_error = true);
 
-    EVMExecutor(const silkworm::ChainConfig& config, boost::asio::thread_pool& workers, state::RemoteState& remote_state)
+    EVMExecutor(const silkworm::ChainConfig& config, boost::asio::thread_pool& workers, silkworm::State& remote_state)
         : config_(config),
           workers_{workers},
           state_{nullptr},

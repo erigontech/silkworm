@@ -20,10 +20,9 @@
 #include <optional>
 #include <utility>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/awaitable.hpp>
 
 #include <silkworm/infra/concurrency/awaitable_future.hpp>
 #include <silkworm/infra/concurrency/channel.hpp>
@@ -48,7 +47,7 @@ class MessagesCall final {
 
     [[nodiscard]] const api_common::MessageIdSet& message_id_filter() const { return message_id_filter_; }
 
-    boost::asio::awaitable<TResult> result() {
+    Task<TResult> result() {
         auto future = result_promise_->get_future();
         co_return (co_await future.get_async());
     }

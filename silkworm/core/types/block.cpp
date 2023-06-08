@@ -104,6 +104,9 @@ namespace rlp {
         if (header.withdrawals_root) {
             rlp_head.payload_length += kHashLength + 1;
         }
+        if (header.data_gas_used) {
+            rlp_head.payload_length += length(*header.data_gas_used);
+        }
         if (header.excess_data_gas) {
             rlp_head.payload_length += length(*header.excess_data_gas);
         }
@@ -146,6 +149,9 @@ namespace rlp {
         if (header.withdrawals_root) {
             encode(to, static_cast<ByteView>(*header.withdrawals_root));
         }
+        if (header.data_gas_used) {
+            encode(to, *header.data_gas_used);
+        }
         if (header.excess_data_gas) {
             encode(to, *header.excess_data_gas);
         }
@@ -184,31 +190,33 @@ namespace rlp {
             return res;
         }
 
-        to.base_fee_per_gas = std::nullopt;
         if (from.length() > leftover) {
-            intx::uint256 base_fee_per_gas;
-            if (DecodingResult res{decode(from, base_fee_per_gas, Leftover::kAllow)}; !res) {
+            to.base_fee_per_gas = 0;
+            if (DecodingResult res{decode(from, *to.base_fee_per_gas, Leftover::kAllow)}; !res) {
                 return res;
             }
-            to.base_fee_per_gas = base_fee_per_gas;
+        } else {
+            to.base_fee_per_gas = std::nullopt;
         }
 
-        to.withdrawals_root = std::nullopt;
         if (from.length() > leftover) {
-            evmc::bytes32 withdrawals_root;
-            if (DecodingResult res{decode(from, withdrawals_root, Leftover::kAllow)}; !res) {
+            to.withdrawals_root = evmc::bytes32{};
+            if (DecodingResult res{decode(from, *to.withdrawals_root, Leftover::kAllow)}; !res) {
                 return res;
             }
-            to.withdrawals_root = withdrawals_root;
+        } else {
+            to.withdrawals_root = std::nullopt;
         }
 
-        to.excess_data_gas = std::nullopt;
         if (from.length() > leftover) {
-            intx::uint256 excess_data_gas;
-            if (DecodingResult res{decode(from, excess_data_gas, Leftover::kAllow)}; !res) {
+            to.data_gas_used = 0;
+            to.excess_data_gas = 0;
+            if (DecodingResult res{decode_items(from, *to.data_gas_used, *to.excess_data_gas)}; !res) {
                 return res;
             }
-            to.excess_data_gas = excess_data_gas;
+        } else {
+            to.data_gas_used = std::nullopt;
+            to.excess_data_gas = std::nullopt;
         }
 
         if (from.length() != leftover) {

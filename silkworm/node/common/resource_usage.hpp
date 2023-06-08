@@ -16,9 +16,10 @@
 
 #pragma once
 
+#include <silkworm/infra/concurrency/task.hpp>
+
 #include <boost/asio/steady_timer.hpp>
 
-#include <silkworm/infra/concurrency/task.hpp>
 #include <silkworm/node/common/settings.hpp>
 
 namespace silkworm {

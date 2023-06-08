@@ -48,21 +48,18 @@ ValidationResult BaseRuleSet::pre_validate_block_body(const Block& block, const 
         return ValidationResult::kWrongWithdrawalsRoot;
     }
 
-    size_t total_blobs{0};
-    for (const Transaction& tx : block.transactions) {
-        total_blobs += tx.blob_versioned_hashes.size();
+    std::optional<uint64_t> data_gas_used{std::nullopt};
+    if (rev >= EVMC_CANCUN) {
+        data_gas_used = 0;
+        for (const Transaction& tx : block.transactions) {
+            *data_gas_used += tx.total_data_gas();
+        }
+        if (data_gas_used > kMaxDataGasPerBlock) {
+            return ValidationResult::kTooManyBlobs;
+        }
     }
-    if (total_blobs > kMaxDataGasPerBlock / kDataGasPerBlob) {
-        return ValidationResult::kTooManyBlobs;
-    }
-
-    const std::optional<BlockHeader> parent{get_parent_header(state, header)};
-    if (!parent) {
-        return ValidationResult::kUnknownParent;
-    }
-
-    if (header.excess_data_gas != calc_excess_data_gas(*parent, total_blobs, rev)) {
-        return ValidationResult::kWrongExcessDataGas;
+    if (header.data_gas_used != data_gas_used) {
+        return ValidationResult::kWrongDataGasUsed;
     }
 
     if (block.ommers.empty()) {
@@ -189,6 +186,10 @@ ValidationResult BaseRuleSet::validate_block_header(const BlockHeader& header, c
     }
     if (rev >= EVMC_SHANGHAI && !header.withdrawals_root) {
         return ValidationResult::kMissingWithdrawals;
+    }
+
+    if (header.excess_data_gas != calc_excess_data_gas(*parent, rev)) {
+        return ValidationResult::kWrongExcessDataGas;
     }
 
     return validate_seal(header);

@@ -92,16 +92,21 @@ class MemoryMutationCursor : public RWCursorDupSort {
     static inline void throw_error_nodata();
     static inline void throw_error_notfound();
 
-    enum class NextType {
-        kNormal,
-        kDup,
-        kNoDup
+    enum class MoveType {
+        kNext,
+        kNextDup,
+        kNextNoDup,
+        kPrevious,
+        kPreviousDup,
+        kPreviousNoDup
     };
 
-    CursorResult resolve_priority(CursorResult memory_result, CursorResult db_result, NextType type);
-    CursorResult skip_intersection(CursorResult memory_result, CursorResult db_result, NextType type);
-    CursorResult next_on_db(NextType type, bool throw_notfound);
-    CursorResult next_by_type(NextType type, bool throw_notfound);
+    CursorResult resolve_priority(CursorResult memory_result, CursorResult db_result, MoveType type);
+    CursorResult skip_intersection(CursorResult memory_result, CursorResult db_result, MoveType type);
+    CursorResult next_on_db(MoveType type, bool throw_notfound);
+    CursorResult next_by_type(MoveType type, bool throw_notfound);
+    CursorResult previous_on_db(MoveType type, bool throw_notfound);
+    CursorResult previous_by_type(MoveType type, bool throw_notfound);
 
     MemoryMutation& memory_mutation_;
     const MapConfig& config_;

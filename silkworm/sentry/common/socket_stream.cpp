@@ -27,23 +27,23 @@ namespace silkworm::sentry::common {
 
 using namespace boost::asio;
 
-awaitable<void> SocketStream::send(Bytes data) {
+Task<void> SocketStream::send(Bytes data) {
     co_await async_write(socket_, buffer(data), use_awaitable);
 }
 
-awaitable<uint16_t> SocketStream::receive_short() {
+Task<uint16_t> SocketStream::receive_short() {
     Bytes data = co_await receive_fixed(sizeof(uint16_t));
     uint16_t value = endian::load_big_u16(data.data());
     co_return value;
 }
 
-awaitable<Bytes> SocketStream::receive_fixed(std::size_t size) {
+Task<Bytes> SocketStream::receive_fixed(std::size_t size) {
     Bytes data(size, 0);
     co_await async_read(socket_, buffer(data), use_awaitable);
     co_return std::move(data);
 }
 
-awaitable<ByteView> SocketStream::receive_size_and_data(Bytes& raw_data) {
+Task<ByteView> SocketStream::receive_size_and_data(Bytes& raw_data) {
     raw_data.resize(sizeof(uint16_t));
     co_await async_read(socket_, buffer(raw_data), use_awaitable);
     uint16_t size = endian::load_big_u16(raw_data.data());

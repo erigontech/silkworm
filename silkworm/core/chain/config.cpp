@@ -16,6 +16,7 @@
 
 #include "config.hpp"
 
+#include <algorithm>
 #include <functional>
 #include <set>
 
@@ -25,7 +26,6 @@ namespace silkworm {
 
 static const std::vector<std::pair<std::string, const ChainConfig*>> kKnownChainConfigs{
     {"mainnet", &kMainnetConfig},
-    {"rinkeby", &kRinkebyConfig},
     {"goerli", &kGoerliConfig},
     {"sepolia", &kSepoliaConfig},
 };
@@ -169,10 +169,10 @@ evmc_revision ChainConfig::revision(uint64_t block_number, uint64_t block_time) 
     return EVMC_FRONTIER;
 }
 
-// TODO (Andrew) extend fork ID to time-triggered forks
 std::vector<BlockNum> ChainConfig::distinct_fork_numbers() const {
     std::set<BlockNum> ret;
 
+    // Add forks identified by *block number* in ascending order
     ret.insert(homestead_block.value_or(0));
     ret.insert(dao_block.value_or(0));
     ret.insert(tangerine_whistle_block.value_or(0));
@@ -190,6 +190,29 @@ std::vector<BlockNum> ChainConfig::distinct_fork_numbers() const {
 
     ret.erase(0);  // Block 0 is not a fork number
     return {ret.cbegin(), ret.cend()};
+}
+
+std::vector<BlockTime> ChainConfig::distinct_fork_times() const {
+    std::set<BlockTime> ret;
+
+    // Add forks identified by *block timestamp* in ascending order
+    ret.insert(shanghai_time.value_or(0));
+    ret.insert(cancun_time.value_or(0));
+
+    ret.erase(0);  // Block 0 is not a fork timestamp
+    return {ret.cbegin(), ret.cend()};
+}
+
+std::vector<uint64_t> ChainConfig::distinct_fork_points() const {
+    auto numbers{distinct_fork_numbers()};
+    auto times{distinct_fork_times()};
+
+    std::vector<uint64_t> points;
+    points.resize(numbers.size() + times.size());
+    std::move(numbers.begin(), numbers.end(), points.begin());
+    std::move(times.begin(), times.end(), points.begin() + (numbers.end() - numbers.begin()));
+
+    return points;
 }
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj) { return out << obj.to_json(); }

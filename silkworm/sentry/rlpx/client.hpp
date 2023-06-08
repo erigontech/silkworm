@@ -20,9 +20,7 @@
 #include <memory>
 #include <string>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/awaitable.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
@@ -45,7 +43,7 @@ class Client {
           protocol_factory_(std::move(protocol_factory)) {
     }
 
-    boost::asio::awaitable<std::unique_ptr<Peer>> connect(
+    Task<std::unique_ptr<Peer>> connect(
         common::EnodeUrl peer_url,
         bool is_static_peer);
 

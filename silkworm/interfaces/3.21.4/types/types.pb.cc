@@ -135,11 +135,12 @@ PROTOBUF_CONSTEXPR ExecutionPayload::ExecutionPayload(
   , /*decltype(_impl_.prev_randao_)*/nullptr
   , /*decltype(_impl_.base_fee_per_gas_)*/nullptr
   , /*decltype(_impl_.block_hash_)*/nullptr
-  , /*decltype(_impl_.excess_data_gas_)*/nullptr
   , /*decltype(_impl_.block_number_)*/uint64_t{0u}
   , /*decltype(_impl_.gas_limit_)*/uint64_t{0u}
   , /*decltype(_impl_.gas_used_)*/uint64_t{0u}
   , /*decltype(_impl_.timestamp_)*/uint64_t{0u}
+  , /*decltype(_impl_.data_gas_used_)*/uint64_t{0u}
+  , /*decltype(_impl_.excess_data_gas_)*/uint64_t{0u}
   , /*decltype(_impl_.version_)*/0u} {}
 struct ExecutionPayloadDefaultTypeInternal {
   PROTOBUF_CONSTEXPR ExecutionPayloadDefaultTypeInternal()
@@ -168,9 +169,9 @@ struct WithdrawalDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 WithdrawalDefaultTypeInternal _Withdrawal_default_instance_;
 PROTOBUF_CONSTEXPR BlobsBundleV1::BlobsBundleV1(
     ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.kzgs_)*/{}
+    /*decltype(_impl_.commitments_)*/{}
   , /*decltype(_impl_.blobs_)*/{}
-  , /*decltype(_impl_.block_hash_)*/nullptr
+  , /*decltype(_impl_.proofs_)*/{}
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct BlobsBundleV1DefaultTypeInternal {
   PROTOBUF_CONSTEXPR BlobsBundleV1DefaultTypeInternal()
@@ -335,6 +336,7 @@ const uint32_t TableStruct_types_2ftypes_2eproto::offsets[] PROTOBUF_SECTION_VAR
   PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.block_hash_),
   PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.transactions_),
   PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.withdrawals_),
+  PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.data_gas_used_),
   PROTOBUF_FIELD_OFFSET(::types::ExecutionPayload, _impl_.excess_data_gas_),
   ~0u,
   ~0u,
@@ -353,6 +355,7 @@ const uint32_t TableStruct_types_2ftypes_2eproto::offsets[] PROTOBUF_SECTION_VAR
   ~0u,
   ~0u,
   0,
+  1,
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::types::Withdrawal, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -369,9 +372,9 @@ const uint32_t TableStruct_types_2ftypes_2eproto::offsets[] PROTOBUF_SECTION_VAR
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::types::BlobsBundleV1, _impl_.block_hash_),
-  PROTOBUF_FIELD_OFFSET(::types::BlobsBundleV1, _impl_.kzgs_),
+  PROTOBUF_FIELD_OFFSET(::types::BlobsBundleV1, _impl_.commitments_),
   PROTOBUF_FIELD_OFFSET(::types::BlobsBundleV1, _impl_.blobs_),
+  PROTOBUF_FIELD_OFFSET(::types::BlobsBundleV1, _impl_.proofs_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::types::NodeInfoPorts, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -426,13 +429,13 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 32, -1, -1, sizeof(::types::H1024)},
   { 40, -1, -1, sizeof(::types::H2048)},
   { 48, -1, -1, sizeof(::types::VersionReply)},
-  { 57, 80, -1, sizeof(::types::ExecutionPayload)},
-  { 97, -1, -1, sizeof(::types::Withdrawal)},
-  { 107, -1, -1, sizeof(::types::BlobsBundleV1)},
-  { 116, -1, -1, sizeof(::types::NodeInfoPorts)},
-  { 124, -1, -1, sizeof(::types::NodeInfoReply)},
-  { 137, -1, -1, sizeof(::types::PeerInfo)},
-  { 153, -1, -1, sizeof(::types::ExecutionPayloadBodyV1)},
+  { 57, 81, -1, sizeof(::types::ExecutionPayload)},
+  { 99, -1, -1, sizeof(::types::Withdrawal)},
+  { 109, -1, -1, sizeof(::types::BlobsBundleV1)},
+  { 118, -1, -1, sizeof(::types::NodeInfoPorts)},
+  { 126, -1, -1, sizeof(::types::NodeInfoReply)},
+  { 139, -1, -1, sizeof(::types::PeerInfo)},
+  { 155, -1, -1, sizeof(::types::ExecutionPayloadBodyV1)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -463,7 +466,7 @@ const char descriptor_table_protodef_types_2ftypes_2eproto[] PROTOBUF_SECTION_VA
   "es.H512\022\027\n\002lo\030\002 \001(\0132\013.types.H512\";\n\005H204"
   "8\022\030\n\002hi\030\001 \001(\0132\014.types.H1024\022\030\n\002lo\030\002 \001(\0132"
   "\014.types.H1024\";\n\014VersionReply\022\r\n\005major\030\001"
-  " \001(\r\022\r\n\005minor\030\002 \001(\r\022\r\n\005patch\030\003 \001(\r\"\223\004\n\020E"
+  " \001(\r\022\r\n\005minor\030\002 \001(\r\022\r\n\005patch\030\003 \001(\r\"\264\004\n\020E"
   "xecutionPayload\022\017\n\007version\030\001 \001(\r\022 \n\013pare"
   "nt_hash\030\002 \001(\0132\013.types.H256\022\035\n\010coinbase\030\003"
   " \001(\0132\013.types.H160\022\037\n\nstate_root\030\004 \001(\0132\013."
@@ -475,38 +478,39 @@ const char descriptor_table_protodef_types_2ftypes_2eproto[] PROTOBUF_SECTION_VA
   "_data\030\014 \001(\014\022%\n\020base_fee_per_gas\030\r \001(\0132\013."
   "types.H256\022\037\n\nblock_hash\030\016 \001(\0132\013.types.H"
   "256\022\024\n\014transactions\030\017 \003(\014\022&\n\013withdrawals"
-  "\030\020 \003(\0132\021.types.Withdrawal\022)\n\017excess_data"
-  "_gas\030\021 \001(\0132\013.types.H256H\000\210\001\001B\022\n\020_excess_"
-  "data_gas\"b\n\nWithdrawal\022\r\n\005index\030\001 \001(\004\022\027\n"
-  "\017validator_index\030\002 \001(\004\022\034\n\007address\030\003 \001(\0132"
-  "\013.types.H160\022\016\n\006amount\030\004 \001(\004\"M\n\rBlobsBun"
-  "dleV1\022\037\n\nblock_hash\030\001 \001(\0132\013.types.H256\022\014"
-  "\n\004kzgs\030\002 \003(\014\022\r\n\005blobs\030\003 \003(\014\"4\n\rNodeInfoP"
-  "orts\022\021\n\tdiscovery\030\001 \001(\r\022\020\n\010listener\030\002 \001("
-  "\r\"\224\001\n\rNodeInfoReply\022\n\n\002id\030\001 \001(\t\022\014\n\004name\030"
-  "\002 \001(\t\022\r\n\005enode\030\003 \001(\t\022\013\n\003enr\030\004 \001(\t\022#\n\005por"
-  "ts\030\005 \001(\0132\024.types.NodeInfoPorts\022\025\n\rlisten"
-  "er_addr\030\006 \001(\t\022\021\n\tprotocols\030\007 \001(\014\"\313\001\n\010Pee"
-  "rInfo\022\n\n\002id\030\001 \001(\t\022\014\n\004name\030\002 \001(\t\022\r\n\005enode"
-  "\030\003 \001(\t\022\013\n\003enr\030\004 \001(\t\022\014\n\004caps\030\005 \003(\t\022\027\n\017con"
-  "n_local_addr\030\006 \001(\t\022\030\n\020conn_remote_addr\030\007"
-  " \001(\t\022\027\n\017conn_is_inbound\030\010 \001(\010\022\027\n\017conn_is"
-  "_trusted\030\t \001(\010\022\026\n\016conn_is_static\030\n \001(\010\"V"
-  "\n\026ExecutionPayloadBodyV1\022\024\n\014transactions"
-  "\030\001 \003(\014\022&\n\013withdrawals\030\002 \003(\0132\021.types.With"
-  "drawal:=\n\025service_major_version\022\034.google"
-  ".protobuf.FileOptions\030\321\206\003 \001(\r:=\n\025service"
-  "_minor_version\022\034.google.protobuf.FileOpt"
-  "ions\030\322\206\003 \001(\r:=\n\025service_patch_version\022\034."
-  "google.protobuf.FileOptions\030\323\206\003 \001(\rB\017Z\r."
-  "/types;typesb\006proto3"
+  "\030\020 \003(\0132\021.types.Withdrawal\022\032\n\rdata_gas_us"
+  "ed\030\021 \001(\004H\000\210\001\001\022\034\n\017excess_data_gas\030\022 \001(\004H\001"
+  "\210\001\001B\020\n\016_data_gas_usedB\022\n\020_excess_data_ga"
+  "s\"b\n\nWithdrawal\022\r\n\005index\030\001 \001(\004\022\027\n\017valida"
+  "tor_index\030\002 \001(\004\022\034\n\007address\030\003 \001(\0132\013.types"
+  ".H160\022\016\n\006amount\030\004 \001(\004\"C\n\rBlobsBundleV1\022\023"
+  "\n\013commitments\030\001 \003(\014\022\r\n\005blobs\030\002 \003(\014\022\016\n\006pr"
+  "oofs\030\003 \003(\014\"4\n\rNodeInfoPorts\022\021\n\tdiscovery"
+  "\030\001 \001(\r\022\020\n\010listener\030\002 \001(\r\"\224\001\n\rNodeInfoRep"
+  "ly\022\n\n\002id\030\001 \001(\t\022\014\n\004name\030\002 \001(\t\022\r\n\005enode\030\003 "
+  "\001(\t\022\013\n\003enr\030\004 \001(\t\022#\n\005ports\030\005 \001(\0132\024.types."
+  "NodeInfoPorts\022\025\n\rlistener_addr\030\006 \001(\t\022\021\n\t"
+  "protocols\030\007 \001(\014\"\313\001\n\010PeerInfo\022\n\n\002id\030\001 \001(\t"
+  "\022\014\n\004name\030\002 \001(\t\022\r\n\005enode\030\003 \001(\t\022\013\n\003enr\030\004 \001"
+  "(\t\022\014\n\004caps\030\005 \003(\t\022\027\n\017conn_local_addr\030\006 \001("
+  "\t\022\030\n\020conn_remote_addr\030\007 \001(\t\022\027\n\017conn_is_i"
+  "nbound\030\010 \001(\010\022\027\n\017conn_is_trusted\030\t \001(\010\022\026\n"
+  "\016conn_is_static\030\n \001(\010\"V\n\026ExecutionPayloa"
+  "dBodyV1\022\024\n\014transactions\030\001 \003(\014\022&\n\013withdra"
+  "wals\030\002 \003(\0132\021.types.Withdrawal:=\n\025service"
+  "_major_version\022\034.google.protobuf.FileOpt"
+  "ions\030\321\206\003 \001(\r:=\n\025service_minor_version\022\034."
+  "google.protobuf.FileOptions\030\322\206\003 \001(\r:=\n\025s"
+  "ervice_patch_version\022\034.google.protobuf.F"
+  "ileOptions\030\323\206\003 \001(\rB\017Z\r./types;typesb\006pro"
+  "to3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_types_2ftypes_2eproto_deps[1] = {
   &::descriptor_table_google_2fprotobuf_2fdescriptor_2eproto,
 };
 static ::_pbi::once_flag descriptor_table_types_2ftypes_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_types_2ftypes_2eproto = {
-    false, false, 1860, descriptor_table_protodef_types_2ftypes_2eproto,
+    false, false, 1883, descriptor_table_protodef_types_2ftypes_2eproto,
     "types/types.proto",
     &descriptor_table_types_2ftypes_2eproto_once, descriptor_table_types_2ftypes_2eproto_deps, 1, 14,
     schemas, file_default_instances, TableStruct_types_2ftypes_2eproto::offsets,
@@ -2160,9 +2164,11 @@ class ExecutionPayload::_Internal {
   static const ::types::H256& prev_randao(const ExecutionPayload* msg);
   static const ::types::H256& base_fee_per_gas(const ExecutionPayload* msg);
   static const ::types::H256& block_hash(const ExecutionPayload* msg);
-  static const ::types::H256& excess_data_gas(const ExecutionPayload* msg);
-  static void set_has_excess_data_gas(HasBits* has_bits) {
+  static void set_has_data_gas_used(HasBits* has_bits) {
     (*has_bits)[0] |= 1u;
+  }
+  static void set_has_excess_data_gas(HasBits* has_bits) {
+    (*has_bits)[0] |= 2u;
   }
 };
 
@@ -2198,10 +2204,6 @@ const ::types::H256&
 ExecutionPayload::_Internal::block_hash(const ExecutionPayload* msg) {
   return *msg->_impl_.block_hash_;
 }
-const ::types::H256&
-ExecutionPayload::_Internal::excess_data_gas(const ExecutionPayload* msg) {
-  return *msg->_impl_.excess_data_gas_;
-}
 ExecutionPayload::ExecutionPayload(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
@@ -2225,11 +2227,12 @@ ExecutionPayload::ExecutionPayload(const ExecutionPayload& from)
     , decltype(_impl_.prev_randao_){nullptr}
     , decltype(_impl_.base_fee_per_gas_){nullptr}
     , decltype(_impl_.block_hash_){nullptr}
-    , decltype(_impl_.excess_data_gas_){nullptr}
     , decltype(_impl_.block_number_){}
     , decltype(_impl_.gas_limit_){}
     , decltype(_impl_.gas_used_){}
     , decltype(_impl_.timestamp_){}
+    , decltype(_impl_.data_gas_used_){}
+    , decltype(_impl_.excess_data_gas_){}
     , decltype(_impl_.version_){}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -2265,9 +2268,6 @@ ExecutionPayload::ExecutionPayload(const ExecutionPayload& from)
   if (from._internal_has_block_hash()) {
     _this->_impl_.block_hash_ = new ::types::H256(*from._impl_.block_hash_);
   }
-  if (from._internal_has_excess_data_gas()) {
-    _this->_impl_.excess_data_gas_ = new ::types::H256(*from._impl_.excess_data_gas_);
-  }
   ::memcpy(&_impl_.block_number_, &from._impl_.block_number_,
     static_cast<size_t>(reinterpret_cast<char*>(&_impl_.version_) -
     reinterpret_cast<char*>(&_impl_.block_number_)) + sizeof(_impl_.version_));
@@ -2292,11 +2292,12 @@ inline void ExecutionPayload::SharedCtor(
     , decltype(_impl_.prev_randao_){nullptr}
     , decltype(_impl_.base_fee_per_gas_){nullptr}
     , decltype(_impl_.block_hash_){nullptr}
-    , decltype(_impl_.excess_data_gas_){nullptr}
     , decltype(_impl_.block_number_){uint64_t{0u}}
     , decltype(_impl_.gas_limit_){uint64_t{0u}}
     , decltype(_impl_.gas_used_){uint64_t{0u}}
     , decltype(_impl_.timestamp_){uint64_t{0u}}
+    , decltype(_impl_.data_gas_used_){uint64_t{0u}}
+    , decltype(_impl_.excess_data_gas_){uint64_t{0u}}
     , decltype(_impl_.version_){0u}
   };
   _impl_.extra_data_.InitDefault();
@@ -2327,7 +2328,6 @@ inline void ExecutionPayload::SharedDtor() {
   if (this != internal_default_instance()) delete _impl_.prev_randao_;
   if (this != internal_default_instance()) delete _impl_.base_fee_per_gas_;
   if (this != internal_default_instance()) delete _impl_.block_hash_;
-  if (this != internal_default_instance()) delete _impl_.excess_data_gas_;
 }
 
 void ExecutionPayload::SetCachedSize(int size) const {
@@ -2375,14 +2375,16 @@ void ExecutionPayload::Clear() {
     delete _impl_.block_hash_;
   }
   _impl_.block_hash_ = nullptr;
-  cached_has_bits = _impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000001u) {
-    GOOGLE_DCHECK(_impl_.excess_data_gas_ != nullptr);
-    _impl_.excess_data_gas_->Clear();
-  }
   ::memset(&_impl_.block_number_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&_impl_.version_) -
-      reinterpret_cast<char*>(&_impl_.block_number_)) + sizeof(_impl_.version_));
+      reinterpret_cast<char*>(&_impl_.timestamp_) -
+      reinterpret_cast<char*>(&_impl_.block_number_)) + sizeof(_impl_.timestamp_));
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    ::memset(&_impl_.data_gas_used_, 0, static_cast<size_t>(
+        reinterpret_cast<char*>(&_impl_.excess_data_gas_) -
+        reinterpret_cast<char*>(&_impl_.data_gas_used_)) + sizeof(_impl_.excess_data_gas_));
+  }
+  _impl_.version_ = 0u;
   _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
@@ -2534,10 +2536,20 @@ const char* ExecutionPayload::_InternalParse(const char* ptr, ::_pbi::ParseConte
         } else
           goto handle_unusual;
         continue;
-      // optional .types.H256 excess_data_gas = 17;
+      // optional uint64 data_gas_used = 17;
       case 17:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 138)) {
-          ptr = ctx->ParseMessage(_internal_mutable_excess_data_gas(), ptr);
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 136)) {
+          _Internal::set_has_data_gas_used(&has_bits);
+          _impl_.data_gas_used_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // optional uint64 excess_data_gas = 18;
+      case 18:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 144)) {
+          _Internal::set_has_excess_data_gas(&has_bits);
+          _impl_.excess_data_gas_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -2678,11 +2690,16 @@ uint8_t* ExecutionPayload::_InternalSerialize(
         InternalWriteMessage(16, repfield, repfield.GetCachedSize(), target, stream);
   }
 
-  // optional .types.H256 excess_data_gas = 17;
+  // optional uint64 data_gas_used = 17;
+  if (_internal_has_data_gas_used()) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(17, this->_internal_data_gas_used(), target);
+  }
+
+  // optional uint64 excess_data_gas = 18;
   if (_internal_has_excess_data_gas()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(17, _Internal::excess_data_gas(this),
-        _Internal::excess_data_gas(this).GetCachedSize(), target, stream);
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(18, this->_internal_excess_data_gas(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -2779,14 +2796,6 @@ size_t ExecutionPayload::ByteSizeLong() const {
         *_impl_.block_hash_);
   }
 
-  // optional .types.H256 excess_data_gas = 17;
-  cached_has_bits = _impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000001u) {
-    total_size += 2 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.excess_data_gas_);
-  }
-
   // uint64 block_number = 8;
   if (this->_internal_block_number() != 0) {
     total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_block_number());
@@ -2807,6 +2816,23 @@ size_t ExecutionPayload::ByteSizeLong() const {
     total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_timestamp());
   }
 
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    // optional uint64 data_gas_used = 17;
+    if (cached_has_bits & 0x00000001u) {
+      total_size += 2 +
+        ::_pbi::WireFormatLite::UInt64Size(
+          this->_internal_data_gas_used());
+    }
+
+    // optional uint64 excess_data_gas = 18;
+    if (cached_has_bits & 0x00000002u) {
+      total_size += 2 +
+        ::_pbi::WireFormatLite::UInt64Size(
+          this->_internal_excess_data_gas());
+    }
+
+  }
   // uint32 version = 1;
   if (this->_internal_version() != 0) {
     total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_version());
@@ -2867,10 +2893,6 @@ void ExecutionPayload::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const
     _this->_internal_mutable_block_hash()->::types::H256::MergeFrom(
         from._internal_block_hash());
   }
-  if (from._internal_has_excess_data_gas()) {
-    _this->_internal_mutable_excess_data_gas()->::types::H256::MergeFrom(
-        from._internal_excess_data_gas());
-  }
   if (from._internal_block_number() != 0) {
     _this->_internal_set_block_number(from._internal_block_number());
   }
@@ -2882,6 +2904,16 @@ void ExecutionPayload::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const
   }
   if (from._internal_timestamp() != 0) {
     _this->_internal_set_timestamp(from._internal_timestamp());
+  }
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      _this->_impl_.data_gas_used_ = from._impl_.data_gas_used_;
+    }
+    if (cached_has_bits & 0x00000002u) {
+      _this->_impl_.excess_data_gas_ = from._impl_.excess_data_gas_;
+    }
+    _this->_impl_._has_bits_[0] |= cached_has_bits;
   }
   if (from._internal_version() != 0) {
     _this->_internal_set_version(from._internal_version());
@@ -3206,13 +3238,8 @@ void Withdrawal::InternalSwap(Withdrawal* other) {
 
 class BlobsBundleV1::_Internal {
  public:
-  static const ::types::H256& block_hash(const BlobsBundleV1* msg);
 };
 
-const ::types::H256&
-BlobsBundleV1::_Internal::block_hash(const BlobsBundleV1* msg) {
-  return *msg->_impl_.block_hash_;
-}
 BlobsBundleV1::BlobsBundleV1(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
@@ -3223,15 +3250,12 @@ BlobsBundleV1::BlobsBundleV1(const BlobsBundleV1& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   BlobsBundleV1* const _this = this; (void)_this;
   new (&_impl_) Impl_{
-      decltype(_impl_.kzgs_){from._impl_.kzgs_}
+      decltype(_impl_.commitments_){from._impl_.commitments_}
     , decltype(_impl_.blobs_){from._impl_.blobs_}
-    , decltype(_impl_.block_hash_){nullptr}
+    , decltype(_impl_.proofs_){from._impl_.proofs_}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  if (from._internal_has_block_hash()) {
-    _this->_impl_.block_hash_ = new ::types::H256(*from._impl_.block_hash_);
-  }
   // @@protoc_insertion_point(copy_constructor:types.BlobsBundleV1)
 }
 
@@ -3240,9 +3264,9 @@ inline void BlobsBundleV1::SharedCtor(
   (void)arena;
   (void)is_message_owned;
   new (&_impl_) Impl_{
-      decltype(_impl_.kzgs_){arena}
+      decltype(_impl_.commitments_){arena}
     , decltype(_impl_.blobs_){arena}
-    , decltype(_impl_.block_hash_){nullptr}
+    , decltype(_impl_.proofs_){arena}
     , /*decltype(_impl_._cached_size_)*/{}
   };
 }
@@ -3258,9 +3282,9 @@ BlobsBundleV1::~BlobsBundleV1() {
 
 inline void BlobsBundleV1::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.kzgs_.~RepeatedPtrField();
+  _impl_.commitments_.~RepeatedPtrField();
   _impl_.blobs_.~RepeatedPtrField();
-  if (this != internal_default_instance()) delete _impl_.block_hash_;
+  _impl_.proofs_.~RepeatedPtrField();
 }
 
 void BlobsBundleV1::SetCachedSize(int size) const {
@@ -3273,12 +3297,9 @@ void BlobsBundleV1::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _impl_.kzgs_.Clear();
+  _impl_.commitments_.Clear();
   _impl_.blobs_.Clear();
-  if (GetArenaForAllocation() == nullptr && _impl_.block_hash_ != nullptr) {
-    delete _impl_.block_hash_;
-  }
-  _impl_.block_hash_ = nullptr;
+  _impl_.proofs_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -3288,21 +3309,27 @@ const char* BlobsBundleV1::_InternalParse(const char* ptr, ::_pbi::ParseContext*
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // .types.H256 block_hash = 1;
+      // repeated bytes commitments = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          ptr = ctx->ParseMessage(_internal_mutable_block_hash(), ptr);
-          CHK_(ptr);
+          ptr -= 1;
+          do {
+            ptr += 1;
+            auto str = _internal_add_commitments();
+            ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<10>(ptr));
         } else
           goto handle_unusual;
         continue;
-      // repeated bytes kzgs = 2;
+      // repeated bytes blobs = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
           ptr -= 1;
           do {
             ptr += 1;
-            auto str = _internal_add_kzgs();
+            auto str = _internal_add_blobs();
             ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
@@ -3310,13 +3337,13 @@ const char* BlobsBundleV1::_InternalParse(const char* ptr, ::_pbi::ParseContext*
         } else
           goto handle_unusual;
         continue;
-      // repeated bytes blobs = 3;
+      // repeated bytes proofs = 3;
       case 3:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
           ptr -= 1;
           do {
             ptr += 1;
-            auto str = _internal_add_blobs();
+            auto str = _internal_add_proofs();
             ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
@@ -3353,22 +3380,21 @@ uint8_t* BlobsBundleV1::_InternalSerialize(
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // .types.H256 block_hash = 1;
-  if (this->_internal_has_block_hash()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(1, _Internal::block_hash(this),
-        _Internal::block_hash(this).GetCachedSize(), target, stream);
+  // repeated bytes commitments = 1;
+  for (int i = 0, n = this->_internal_commitments_size(); i < n; i++) {
+    const auto& s = this->_internal_commitments(i);
+    target = stream->WriteBytes(1, s, target);
   }
 
-  // repeated bytes kzgs = 2;
-  for (int i = 0, n = this->_internal_kzgs_size(); i < n; i++) {
-    const auto& s = this->_internal_kzgs(i);
+  // repeated bytes blobs = 2;
+  for (int i = 0, n = this->_internal_blobs_size(); i < n; i++) {
+    const auto& s = this->_internal_blobs(i);
     target = stream->WriteBytes(2, s, target);
   }
 
-  // repeated bytes blobs = 3;
-  for (int i = 0, n = this->_internal_blobs_size(); i < n; i++) {
-    const auto& s = this->_internal_blobs(i);
+  // repeated bytes proofs = 3;
+  for (int i = 0, n = this->_internal_proofs_size(); i < n; i++) {
+    const auto& s = this->_internal_proofs(i);
     target = stream->WriteBytes(3, s, target);
   }
 
@@ -3388,15 +3414,15 @@ size_t BlobsBundleV1::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // repeated bytes kzgs = 2;
+  // repeated bytes commitments = 1;
   total_size += 1 *
-      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_impl_.kzgs_.size());
-  for (int i = 0, n = _impl_.kzgs_.size(); i < n; i++) {
+      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_impl_.commitments_.size());
+  for (int i = 0, n = _impl_.commitments_.size(); i < n; i++) {
     total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-      _impl_.kzgs_.Get(i));
+      _impl_.commitments_.Get(i));
   }
 
-  // repeated bytes blobs = 3;
+  // repeated bytes blobs = 2;
   total_size += 1 *
       ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_impl_.blobs_.size());
   for (int i = 0, n = _impl_.blobs_.size(); i < n; i++) {
@@ -3404,11 +3430,12 @@ size_t BlobsBundleV1::ByteSizeLong() const {
       _impl_.blobs_.Get(i));
   }
 
-  // .types.H256 block_hash = 1;
-  if (this->_internal_has_block_hash()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.block_hash_);
+  // repeated bytes proofs = 3;
+  total_size += 1 *
+      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_impl_.proofs_.size());
+  for (int i = 0, n = _impl_.proofs_.size(); i < n; i++) {
+    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+      _impl_.proofs_.Get(i));
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -3429,12 +3456,9 @@ void BlobsBundleV1::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  _this->_impl_.kzgs_.MergeFrom(from._impl_.kzgs_);
+  _this->_impl_.commitments_.MergeFrom(from._impl_.commitments_);
   _this->_impl_.blobs_.MergeFrom(from._impl_.blobs_);
-  if (from._internal_has_block_hash()) {
-    _this->_internal_mutable_block_hash()->::types::H256::MergeFrom(
-        from._internal_block_hash());
-  }
+  _this->_impl_.proofs_.MergeFrom(from._impl_.proofs_);
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
@@ -3452,9 +3476,9 @@ bool BlobsBundleV1::IsInitialized() const {
 void BlobsBundleV1::InternalSwap(BlobsBundleV1* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  _impl_.kzgs_.InternalSwap(&other->_impl_.kzgs_);
+  _impl_.commitments_.InternalSwap(&other->_impl_.commitments_);
   _impl_.blobs_.InternalSwap(&other->_impl_.blobs_);
-  swap(_impl_.block_hash_, other->_impl_.block_hash_);
+  _impl_.proofs_.InternalSwap(&other->_impl_.proofs_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata BlobsBundleV1::GetMetadata() const {

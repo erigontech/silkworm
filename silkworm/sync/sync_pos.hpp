@@ -54,7 +54,7 @@ class PoSSync : public ChainSync {
   private:
     static auto make_execution_block(const rpc::ExecutionPayload& payload) -> std::shared_ptr<Block>;
     void do_sanity_checks(const BlockHeader& header, TotalDifficulty parent_td);
-    auto has_bad_ancestor(const Hash& block_hash) -> std::tuple<bool, Hash>;
+    auto has_valid_ancestor(const Hash& block_hash) -> std::tuple<bool, Hash>;
 };
 
 }  // namespace silkworm::chainsync

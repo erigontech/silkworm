@@ -19,6 +19,7 @@
 #include <memory>
 
 #include <silkworm/infra/concurrency/task.hpp>
+
 #include <silkworm/node/common/settings.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/settings.hpp>

@@ -30,13 +30,15 @@ namespace proto = ::sentry;
 eth::StatusData status_data_from_proto(const proto::StatusData& data, uint8_t eth_version) {
     Bytes genesis_hash{hash_from_H256(data.fork_data().genesis())};
 
-    auto& data_forks = data.fork_data().height_forks();
+    const auto& height_forks = data.fork_data().height_forks();
     std::vector<BlockNum> fork_block_numbers;
-    fork_block_numbers.resize(static_cast<size_t>(data_forks.size()));
-    std::copy(data_forks.cbegin(), data_forks.cend(), fork_block_numbers.begin());
+    fork_block_numbers.resize(static_cast<size_t>(height_forks.size()));
+    std::copy(height_forks.cbegin(), height_forks.cend(), fork_block_numbers.begin());
 
-    // TODO: handle time_forks
-    // data.fork_data().time_forks()
+    const auto& time_forks = data.fork_data().time_forks();
+    std::vector<BlockTime> fork_block_times;
+    fork_block_times.resize(static_cast<size_t>(time_forks.size()));
+    std::copy(time_forks.cbegin(), time_forks.cend(), fork_block_times.begin());
 
     // TODO: handle max_block_time
     // data.max_block_time()
@@ -50,17 +52,19 @@ eth::StatusData status_data_from_proto(const proto::StatusData& data, uint8_t et
         uint256_from_H256(data.total_difficulty()),
         Bytes{hash_from_H256(data.best_hash())},
         genesis_hash,
-        eth::ForkId{genesis_hash, fork_block_numbers, data.max_block_height()},
+        eth::ForkId{genesis_hash, fork_block_numbers, fork_block_times, data.max_block_height()},
     };
 
     return eth::StatusData{
         std::move(fork_block_numbers),
+        std::move(fork_block_times),
         data.max_block_height(),
         std::move(message),
     };
 }
 
-static proto::Forks make_proto_forks(ByteView genesis_hash, const std::vector<BlockNum>& fork_block_numbers) {
+static proto::Forks make_proto_forks(ByteView genesis_hash, const std::vector<BlockNum>& fork_block_numbers,
+                                     const std::vector<BlockTime>& fork_block_times) {
     proto::Forks forks;
     forks.mutable_genesis()->CopyFrom(*H256_from_bytes(genesis_hash));
 
@@ -68,8 +72,9 @@ static proto::Forks make_proto_forks(ByteView genesis_hash, const std::vector<Bl
         forks.add_height_forks(block_number);
     }
 
-    // TODO: handle time_forks
-    // forks.add_time_forks(block);
+    for (auto block_time : fork_block_times) {
+        forks.add_time_forks(block_time);
+    }
 
     return forks;
 }
@@ -79,7 +84,7 @@ proto::StatusData proto_status_data_from_status_data(const eth::StatusData& data
     result.set_network_id(data.message.network_id);
     result.mutable_total_difficulty()->CopyFrom(*H256_from_uint256(data.message.total_difficulty));
     result.mutable_best_hash()->CopyFrom(*H256_from_hash(Hash{data.message.best_block_hash}));
-    result.mutable_fork_data()->CopyFrom(make_proto_forks(data.message.genesis_hash, data.fork_block_numbers));
+    result.mutable_fork_data()->CopyFrom(make_proto_forks(data.message.genesis_hash, data.fork_block_numbers, data.fork_block_times));
     result.set_max_block_height(data.head_block_num);
 
     // TODO: set max_block_time

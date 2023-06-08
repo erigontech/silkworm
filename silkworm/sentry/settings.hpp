@@ -27,7 +27,7 @@
 #include <silkworm/infra/concurrency/context_pool_settings.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 
-#include "nat_option.hpp"
+#include "nat/nat_option.hpp"
 
 struct buildinfo;
 
@@ -42,7 +42,7 @@ struct Settings {
     // RLPx TCP port
     uint16_t port{30303};
 
-    NatOption nat;
+    nat::NatOption nat;
 
     // Settings for the GRPC server context pool
     concurrency::ContextPoolSettings context_pool_settings;

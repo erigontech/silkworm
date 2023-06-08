@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ class ExpectedSubState {
     unsigned long dataIndex{};
     unsigned long gasIndex{};
     unsigned long valueIndex{};
-    bool exceptionExpected;
+    bool exceptionExpected{false};
     std::string exceptionMessage;
 };
 
@@ -46,7 +46,7 @@ class ExpectedState {
         fork_name_ = name;
     }
 
-    [[nodiscard]] silkworm::ChainConfig get_config() const;
+    [[nodiscard]] ChainConfig get_config() const;
 
     std::vector<ExpectedSubState> get_sub_states();
 

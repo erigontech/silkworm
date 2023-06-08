@@ -40,6 +40,7 @@
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
+#include <silkworm/silkrpc/core/call_many.hpp>
 #include <silkworm/silkrpc/core/estimate_gas_oracle.hpp>
 #include <silkworm/silkrpc/core/evm_access_list_tracer.hpp>
 #include <silkworm/silkrpc/core/evm_executor.hpp>
@@ -53,6 +54,7 @@
 #include <silkworm/silkrpc/ethdb/cbor.hpp>
 #include <silkworm/silkrpc/ethdb/kv/cached_database.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
+#include <silkworm/silkrpc/json/call.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/stagedsync/stages.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
@@ -1120,7 +1122,9 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
                                                block_number);
         EVMExecutor executor{*chain_config_ptr, workers_, state};
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
+
         silkworm::Transaction txn{call.to_transaction()};
+
         const auto execution_result = co_await executor.call(block_with_hash->block, txn);
 
         if (execution_result.pre_check_error) {
@@ -1141,6 +1145,72 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
         make_glaze_json_error(reply, request["id"], 100, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+    co_return;
+}
+
+// https://eth.wiki/json-rpc/API#eth_callMany
+awaitable<void> EthereumRpcApi::handle_eth_call_many(const nlohmann::json& request, nlohmann::json& reply) {
+    if (!request.contains("params")) {
+        auto error_msg = "missing value for required arguments";
+        SILK_ERROR << error_msg << request.dump();
+        reply = make_json_error(request["id"], -32602, error_msg);
+
+        co_return;
+    }
+    const auto& params = request["params"];
+    if (params.size() < 2) {
+        auto error_msg = "invalid eth_callMany params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request["id"], -32602, error_msg);
+        co_return;
+    }
+
+    const auto bundles = params[0].get<Bundles>();
+
+    if (bundles.empty()) {
+        const auto error_msg = "invalid eth_callMany bundle list: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request["id"], 100, error_msg);
+
+        co_return;
+    }
+
+    const auto simulation_context = params[1].get<SimulationContext>();
+
+    AccountsOverrides accounts_overrides;
+    if (params.size() > 2) {
+        from_json(params[2], accounts_overrides);
+    }
+    std::optional<std::uint64_t> timeout;
+    if (params.size() > 3) {
+        timeout = params[3].get<std::uint64_t>();
+    }
+
+    SILK_INFO << "bundles: " << bundles
+              << " simulation_context: " << simulation_context
+              << " accounts_overrides #" << accounts_overrides.size()
+              << " timeout: " << timeout.value_or(0);
+
+    auto tx = co_await database_->begin();
+
+    try {
+        call::CallExecutor executor{*tx, *block_cache_, workers_};
+        const auto result = co_await executor.execute(bundles, simulation_context, accounts_overrides, timeout);
+
+        if (result.error) {
+            reply = make_json_error(request["id"], -32000, result.error.value());
+        } else {
+            reply = make_json_content(request["id"], result.results);
+        }
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        reply = make_json_error(request["id"], 100, "unexpected exception");
     }
 
     co_await tx->close();  // RAII not (yet) available with coroutines
@@ -1180,7 +1250,7 @@ awaitable<void> EthereumRpcApi::handle_eth_max_priority_fee_per_gas(const nlohma
 awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];
     if (params.size() != 2) {
-        auto error_msg = "invalid eth_call params: " + params.dump();
+        auto error_msg = "invalid eth_createAccessList params: " + params.dump();
         SILK_ERROR << error_msg;
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;

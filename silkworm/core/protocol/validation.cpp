@@ -34,8 +34,8 @@ bool transaction_type_is_supported(TransactionType type, evmc_revision rev) {
         EVMC_LONDON,    // kEip1559
         EVMC_CANCUN,    // kEip4844
     };
-    const auto n{static_cast<std::size_t>(type)};
-    return n < std::size(kMinRevisionByType) && rev >= kMinRevisionByType[n];
+    const auto i{static_cast<std::size_t>(type)};
+    return i < std::size(kMinRevisionByType) && rev >= kMinRevisionByType[i];
 }
 
 ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_revision rev, const uint64_t chain_id,
@@ -97,7 +97,6 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
                 return ValidationResult::kWrongBlobCommitmentVersion;
             }
         }
-        SILKWORM_ASSERT(txn.max_fee_per_data_gas);
         SILKWORM_ASSERT(data_gas_price);
         if (txn.max_fee_per_data_gas < data_gas_price) {
             return ValidationResult::kMaxFeePerDataGasTooLow;
@@ -162,15 +161,13 @@ std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& parent
     }
 }
 
-std::optional<intx::uint256> calc_excess_data_gas(const BlockHeader& parent,
-                                                  std::size_t num_blobs,
-                                                  const evmc_revision rev) {
+std::optional<uint64_t> calc_excess_data_gas(const BlockHeader& parent, const evmc_revision rev) {
     if (rev < EVMC_CANCUN) {
         return std::nullopt;
     }
 
-    const uint64_t consumed_data_gas{num_blobs * kDataGasPerBlob};
-    const intx::uint256 parent_excess_data_gas{parent.excess_data_gas.value_or(0)};
+    const uint64_t parent_excess_data_gas{parent.excess_data_gas.value_or(0)};
+    const uint64_t consumed_data_gas{parent.data_gas_used.value_or(0)};
 
     if (parent_excess_data_gas + consumed_data_gas < kTargetDataGasPerBlock) {
         return 0;

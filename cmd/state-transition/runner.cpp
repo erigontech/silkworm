@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -38,9 +38,6 @@ int main(int argc, char* argv[]) {
     app.add_flag("-d,--diagnostics", diagnostics_flag, "Enable extended diagnostics output");
 
     CLI11_PARSE(app, argc, argv)
-
-    //    path = "/home/jacek/dev/silkworm/cmd/state-transition/state_transition_sample3.json";
-    //    path = "/home/jacek/dev/ethereum-tests/GeneralStateTests/stTransactionTest/ValueOverflow.json";
 
     try {
         if (std::filesystem::is_directory(path)) {

@@ -20,6 +20,7 @@
 #include <map>
 #include <optional>
 #include <string_view>
+#include <tuple>
 
 #include <evmc/evmc.h>
 #include <intx/intx.hpp>
@@ -73,8 +74,8 @@ struct ChainConfig {
     std::optional<BlockNum> merge_netsplit_block{std::nullopt};  // FORK_NEXT_VALUE in EIP-3675
 
     // Starting from Shanghai, forks are triggered by block time rather than number
-    std::optional<uint64_t> shanghai_time{std::nullopt};
-    std::optional<uint64_t> cancun_time{std::nullopt};
+    std::optional<BlockTime> shanghai_time{std::nullopt};
+    std::optional<BlockTime> cancun_time{std::nullopt};
 
     //! \brief Returns the revision level at given block number
     //! \details In other words, on behalf of Json chain config data
@@ -82,6 +83,8 @@ struct ChainConfig {
     [[nodiscard]] evmc_revision revision(uint64_t block_number, uint64_t block_time) const noexcept;
 
     [[nodiscard]] std::vector<BlockNum> distinct_fork_numbers() const;
+    [[nodiscard]] std::vector<BlockTime> distinct_fork_times() const;
+    [[nodiscard]] std::vector<uint64_t> distinct_fork_points() const;
 
     //! \brief Return the JSON representation of this object
     [[nodiscard]] nlohmann::json to_json() const noexcept;
@@ -129,21 +132,6 @@ inline constexpr ChainConfig kMainnetConfig{
     .gray_glacier_block = 15'050'000,
     .terminal_total_difficulty = intx::from_string<intx::uint256>("58750000000000000000000"),
     .shanghai_time = 1681338455,
-};
-
-inline constexpr evmc::bytes32 kRinkebyGenesisHash{0x6341fd3daf94b748c72ced5a5b26028f2474f5f00d824504e4fa37a75767e177_bytes32};
-inline constexpr ChainConfig kRinkebyConfig{
-    .chain_id = 4,
-    .protocol_rule_set = protocol::RuleSetType::kClique,
-    .homestead_block = 1,
-    .tangerine_whistle_block = 2,
-    .spurious_dragon_block = 3,
-    .byzantium_block = 1'035'301,
-    .constantinople_block = 3'660'663,
-    .petersburg_block = 4'321'234,
-    .istanbul_block = 5'435'345,
-    .berlin_block = 8'290'928,
-    .london_block = 8'897'988,
 };
 
 inline constexpr evmc::bytes32 kGoerliGenesisHash{0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a_bytes32};

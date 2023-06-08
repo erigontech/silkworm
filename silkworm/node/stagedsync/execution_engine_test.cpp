@@ -122,6 +122,14 @@ TEST_CASE("ExecutionEngine") {
 
     auto& tx = exec_engine.main_chain_.tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
 
+    auto header0_hash = db::read_canonical_hash(tx, 0);
+    REQUIRE(header0_hash.has_value());
+
+    auto header0 = db::read_canonical_header(tx, 0);
+    REQUIRE(header0.has_value());
+
+    BlockId block0_id{0, *header0_hash};
+
     /* status:
      *         h0
      * input:
@@ -129,12 +137,6 @@ TEST_CASE("ExecutionEngine") {
      */
 
     SECTION("one invalid body after the genesis") {
-        auto header0_hash = db::read_canonical_hash(tx, 0);
-        REQUIRE(header0_hash.has_value());
-
-        auto header0 = db::read_canonical_header(tx, 0);
-        REQUIRE(header0.has_value());
-
         auto block1 = std::make_shared<Block>();
         block1->header.number = 1;
         block1->header.difficulty = 17'171'480'576;  // a random value
@@ -145,9 +147,9 @@ TEST_CASE("ExecutionEngine") {
 
         // getting initial status
         auto initial_progress = exec_engine.block_progress();
-        REQUIRE(initial_progress == 0);
-        auto initial_canonical_head = exec_engine.main_chain_.canonical_head();
+        CHECK(initial_progress == 0);
         auto last_fcu_at_start_time = exec_engine.last_fork_choice();
+        CHECK(last_fcu_at_start_time == block0_id);
 
         // inserting headers & bodies
         exec_engine.insert_block(block1);
@@ -155,10 +157,10 @@ TEST_CASE("ExecutionEngine") {
         // check db
         BlockBody saved_body;
         bool present = db::read_body(tx, header1_hash, block1->header.number, saved_body);
-        REQUIRE(present);
+        CHECK(present);
 
         auto progress = exec_engine.block_progress();
-        REQUIRE(progress == 1);
+        CHECK(progress == 1);
 
         // verifying the chain
         auto verification = exec_engine.verify_chain(header1_hash).get();
@@ -182,28 +184,22 @@ TEST_CASE("ExecutionEngine") {
         // check status
         auto final_progress = exec_engine.block_progress();
         CHECK(final_progress == block1->header.number);
+        CHECK(exec_engine.last_fork_choice() == last_fcu_at_start_time);  // not changed
 
-        auto final_canonical_head = exec_engine.main_chain_.canonical_head();
-        CHECK(final_canonical_head.number == block1->header.number);
-        CHECK(final_canonical_head.hash == block1->header.hash());
+        auto present_in_canonical = exec_engine.is_canonical(header1_hash);
+        CHECK(!present_in_canonical);
 
         // reverting the chain
         bool updated = exec_engine.notify_fork_choice_update(*header0_hash);
         CHECK(updated);
 
-        final_canonical_head = exec_engine.main_chain_.canonical_head();
-        REQUIRE(final_canonical_head == initial_canonical_head);
+        CHECK(exec_engine.last_fork_choice() == last_fcu_at_start_time);  // not changed
 
-        REQUIRE(last_fcu_at_start_time == exec_engine.last_fork_choice());
+        present_in_canonical = exec_engine.is_canonical(header1_hash);
+        CHECK(!present_in_canonical);
     }
 
     SECTION("one valid body after the genesis") {
-        auto block0_hash = db::read_canonical_hash(tx, 0);
-        REQUIRE(block0_hash.has_value());
-
-        auto header0 = db::read_canonical_header(tx, 0);
-        REQUIRE(header0.has_value());
-
         std::string raw_header1 =
             "f90211a0d4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3a01dcc4de8dec75d7aab85b567b6ccd41a"
             "d312451b948a7413f0a142fd40d493479405a56e2d52c817161883f50c441c3228cfe54d9fa0d67e4d450343046425ae4271474353"
@@ -224,16 +220,13 @@ TEST_CASE("ExecutionEngine") {
         // Note: block1 has zero transactions and zero ommers on mainnet
         REQUIRE(decoding_result);
         auto block1_hash = block1->header.hash();
+        BlockId block1_id{1, block1_hash};
 
         // getting initial status
         auto initial_progress = exec_engine.block_progress();
-        REQUIRE(initial_progress == 0);
-
-        auto initial_canonical_head = exec_engine.main_chain_.canonical_head();
-        REQUIRE(initial_canonical_head.number == 0);
-        REQUIRE(initial_canonical_head.hash == *block0_hash);
-
-        REQUIRE(initial_canonical_head.number == initial_progress);
+        CHECK(initial_progress == 0);
+        auto last_fcu_at_start_time = exec_engine.last_fork_choice();
+        CHECK(last_fcu_at_start_time == block0_id);
 
         // inserting & verifying the block
         exec_engine.insert_block(block1);
@@ -241,43 +234,33 @@ TEST_CASE("ExecutionEngine") {
 
         REQUIRE(holds_alternative<ValidChain>(verification));
         auto valid_chain = std::get<ValidChain>(verification);
-        REQUIRE(valid_chain.current_head == BlockId{1, block1_hash});
+        CHECK(valid_chain.current_head == block1_id);
 
         // check status
-        auto final_canonical_head = exec_engine.main_chain_.canonical_head();
-        REQUIRE(final_canonical_head.number == block1->header.number);
-        REQUIRE(final_canonical_head.hash == block1_hash);
+        auto final_progress = exec_engine.block_progress();
+        CHECK(final_progress == block1->header.number);
+        CHECK(exec_engine.last_fork_choice() == last_fcu_at_start_time);  // not changed
 
         // check db content
         BlockBody saved_body;
         bool present = db::read_body(tx, block1_hash, block1->header.number, saved_body);
-        REQUIRE(present);
+        CHECK(present);
 
-        // auto present_in_canonical = exec_engine.is_canonical_hash(block1.header.number);
-        // REQUIRE(present_in_canonical);
+        auto present_in_canonical = exec_engine.is_canonical(block1_hash);
+        CHECK(!present_in_canonical);  // the current head is not yet accepted
 
         // confirming the chain
-        exec_engine.notify_fork_choice_update(block1_hash, block0_hash);
+        exec_engine.notify_fork_choice_update(block1_hash, header0_hash);
 
         // checking the status
-        // present_in_canonical = exec_engine.is_canonical_hash(block1.header.number);
-        // REQUIRE(present_in_canonical);
+        CHECK(exec_engine.last_fork_choice() == block1_id);
+        CHECK(exec_engine.last_finalized_block() == block0_id);
 
-        final_canonical_head = exec_engine.main_chain_.canonical_head();
-        REQUIRE(final_canonical_head.number == block1->header.number);
-        REQUIRE(final_canonical_head.hash == block1_hash);
-
-        REQUIRE(exec_engine.last_fork_choice() == BlockId{block1->header.number, block1_hash});
-        REQUIRE(exec_engine.last_finalized_block() == BlockId{0, *block0_hash});
+        present_in_canonical = exec_engine.is_canonical(block1_hash);
+        CHECK(present_in_canonical);
     }
 
     SECTION("a block that creates a fork") {
-        auto block0_hash = db::read_canonical_hash(tx, 0);
-        REQUIRE(block0_hash.has_value());
-
-        auto header0 = db::read_canonical_header(tx, 0);
-        REQUIRE(header0.has_value());
-
         auto block1 = generateSampleChildrenBlock(*header0);
         auto block1_hash = block1->header.hash();
 
@@ -301,8 +284,6 @@ TEST_CASE("ExecutionEngine") {
         auto fcu_updated = exec_engine.notify_fork_choice_update(block3_hash, block1_hash);
         CHECK(fcu_updated);
 
-        auto final_canonical_head = exec_engine.main_chain_.canonical_head();
-        CHECK(final_canonical_head == BlockId{3, block3_hash});
         CHECK(exec_engine.last_fork_choice() == BlockId{3, block3_hash});
         CHECK(exec_engine.last_finalized_block() == BlockId{1, block1_hash});
 
@@ -331,8 +312,6 @@ TEST_CASE("ExecutionEngine") {
             fcu_updated = exec_engine.notify_fork_choice_update(block4_hash, block1_hash);
             CHECK(fcu_updated);
 
-            final_canonical_head = exec_engine.main_chain_.canonical_head();
-            CHECK(final_canonical_head == BlockId{4, block4_hash});
             CHECK(exec_engine.last_fork_choice() == BlockId{4, block4_hash});
             CHECK(exec_engine.last_finalized_block() == BlockId{1, block1_hash});
 
@@ -362,13 +341,12 @@ TEST_CASE("ExecutionEngine") {
             CHECK(valid_chain.current_head == BlockId{2, block2b_hash});
 
             // confirming the chain
-            fcu_updated = exec_engine.notify_fork_choice_update(block2b_hash, block0_hash);
+            fcu_updated = exec_engine.notify_fork_choice_update(block2b_hash, header0_hash);
             CHECK(fcu_updated);
 
-            final_canonical_head = exec_engine.main_chain_.canonical_head();
-            CHECK(final_canonical_head == BlockId{2, block2b_hash});
             CHECK(exec_engine.last_fork_choice() == BlockId{2, block2b_hash});
-            CHECK(exec_engine.last_finalized_block() == BlockId{0, *block0_hash});
+            CHECK(exec_engine.last_finalized_block() == block0_id);
+            CHECK(exec_engine.main_chain_.last_chosen_head() == BlockId{2, block2b_hash});
 
             CHECK(exec_engine.get_canonical_hash(2) == block2b_hash);
             CHECK(exec_engine.get_canonical_header(2).has_value());

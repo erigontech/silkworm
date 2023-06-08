@@ -811,5 +811,23 @@ namespace db {
         REQUIRE(db::read_head_header_hash(txn).value() == kSepoliaGenesisHash);
     }
 
+    TEST_CASE("Last Fork Choice") {
+        test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+        test::Context context;
+        auto& txn{context.rw_txn()};
+
+        auto hash1 = 0xb397a22bb95bf14753ec174f02f99df3f0bdf70d1851cdff813ebf745f5aeb55_bytes32;
+        auto hash2 = 0xc2bcdfd012534fa0b19ffba5fae6fc81edd390e9b7d5007d1e92e8e835286e9d_bytes32;
+        auto hash3 = 0x1fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804_bytes32;
+
+        db::write_last_head_block(txn, hash1);
+        db::write_last_safe_block(txn, hash2);
+        db::write_last_finalized_block(txn, hash3);
+
+        CHECK(db::read_last_head_block(txn) == hash1);
+        CHECK(db::read_last_safe_block(txn) == hash2);
+        CHECK(db::read_last_finalized_block(txn) == hash3);
+    }
+
 }  // namespace db
 }  // namespace silkworm

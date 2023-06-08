@@ -67,7 +67,8 @@ class MainChain {
                                    std::optional<Hash> finalized_block_hash = std::nullopt);
 
     // state
-    auto canonical_head() const -> BlockId;
+    auto last_chosen_head() const -> BlockId;  // set by notify_fork_choice_update(), is always valid
+    auto last_finalized_head() const -> BlockId;
 
     // header/body retrieval
     auto get_block_progress() const -> BlockNum;
@@ -81,6 +82,7 @@ class MainChain {
     auto extends_last_fork_choice(BlockNum, Hash) const -> bool;
     auto extends(BlockId block, BlockId supposed_parent) const -> bool;
     auto is_ancestor(BlockId supposed_parent, BlockId block) const -> bool;
+    auto is_canonical(Hash) const -> bool;
 
     NodeSettings& node_settings();
     db::RWTxn& tx();  // only for testing purposes due to MDBX limitations
@@ -88,6 +90,8 @@ class MainChain {
   protected:
     Hash insert_header(const BlockHeader&);
     void insert_body(const Block&, const Hash& block_hash);
+
+    auto current_head() const -> BlockId;  // private state, it is implementation dependent, this head can be invalid
 
     std::set<Hash> collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain);
 
@@ -101,6 +105,7 @@ class MainChain {
     CanonicalChain canonical_chain_;
     VerificationResult canonical_head_status_;
     BlockId last_fork_choice_;
+    BlockId last_finalized_head_;
 };
 
 }  // namespace silkworm::stagedsync

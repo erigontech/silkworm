@@ -28,8 +28,18 @@ constexpr const char* kHeadBlockHash = "headBlockHash";
 constexpr const char* kFinalizedBlockHash = "finalizedBlockHash";
 constexpr const char* kSafeBlockHash = "safeBlockHash";
 
+static boost::asio::awaitable<uint64_t> get_forkchoice_block_number(const rawdb::DatabaseReader& reader, const char* block_hash_tag) {
+    const auto kv_pair = co_await reader.get(db::table::kLastForkchoiceName, bytes_of_string(block_hash_tag));
+    const auto block_hash_data = kv_pair.value;
+    if (block_hash_data.empty()) {
+        co_return 0;
+    }
+    const auto block_hash = to_bytes32(block_hash_data);
+    co_return co_await rawdb::read_header_number(reader, block_hash);
+}
+
 boost::asio::awaitable<bool> is_latest_block_number(uint64_t block_number, const rawdb::DatabaseReader& db_reader) {
-    const auto last_executed_block_number = co_await core::get_latest_executed_block_number(db_reader);
+    const auto last_executed_block_number = co_await get_latest_executed_block_number(db_reader);
     co_return last_executed_block_number == block_number;
 }
 
@@ -85,55 +95,33 @@ boost::asio::awaitable<uint64_t> get_block_number(const std::string& block_id, c
 }
 
 boost::asio::awaitable<uint64_t> get_current_block_number(const rawdb::DatabaseReader& reader) {
-    const auto current_block_number = co_await stages::get_sync_stage_progress(reader, stages::kFinish);
-    co_return current_block_number;
+    co_return co_await stages::get_sync_stage_progress(reader, stages::kFinish);
 }
 
 boost::asio::awaitable<uint64_t> get_highest_block_number(const rawdb::DatabaseReader& reader) {
-    const auto highest_block_number = co_await stages::get_sync_stage_progress(reader, stages::kHeaders);
-    co_return highest_block_number;
+    co_return co_await stages::get_sync_stage_progress(reader, stages::kHeaders);
 }
 
 boost::asio::awaitable<uint64_t> get_latest_executed_block_number(const rawdb::DatabaseReader& reader) {
-    const auto latest_executed_block_number = co_await stages::get_sync_stage_progress(reader, stages::kExecution);
-    co_return latest_executed_block_number;
+    co_return co_await stages::get_sync_stage_progress(reader, stages::kExecution);
 }
 
 boost::asio::awaitable<uint64_t> get_latest_block_number(const rawdb::DatabaseReader& reader) {
-    const auto kv_pair = co_await reader.get(db::table::kLastForkchoiceName, silkworm::bytes_of_string(kHeadBlockHash));
+    const auto kv_pair = co_await reader.get(db::table::kLastForkchoiceName, bytes_of_string(kHeadBlockHash));
     const auto head_block_hash_data = kv_pair.value;
     if (!head_block_hash_data.empty()) {
-        const auto head_block_hash = silkworm::to_bytes32(head_block_hash_data);
-        const silkworm::BlockHeader head_block_header = co_await rawdb::read_header_by_hash(reader, head_block_hash);
-        co_return head_block_header.number;
+        const auto head_block_hash = to_bytes32(head_block_hash_data);
+        co_return co_await rawdb::read_header_number(reader, head_block_hash);
     }
-
-    const auto latest_block_number = co_await stages::get_sync_stage_progress(reader, stages::kExecution);
-    co_return latest_block_number;
+    co_return co_await get_latest_executed_block_number(reader);
 }
 
 boost::asio::awaitable<uint64_t> get_forkchoice_finalized_block_number(const rawdb::DatabaseReader& reader) {
-    const auto kv_pair = co_await reader.get(db::table::kLastForkchoiceName, silkworm::bytes_of_string(kFinalizedBlockHash));
-    const auto finalized_block_hash_data = kv_pair.value;
-    if (finalized_block_hash_data.empty()) {
-        co_return 0;
-    }
-    const auto finalized_block_hash = silkworm::to_bytes32(finalized_block_hash_data);
-
-    const auto finalized_header = co_await rawdb::read_header_by_hash(reader, finalized_block_hash);
-    co_return finalized_header.number;
+    co_return co_await get_forkchoice_block_number(reader, kFinalizedBlockHash);
 }
 
 boost::asio::awaitable<uint64_t> get_forkchoice_safe_block_number(const rawdb::DatabaseReader& reader) {
-    const auto kv_pair = co_await reader.get(db::table::kLastForkchoiceName, silkworm::bytes_of_string(kSafeBlockHash));
-    const auto safe_block_hash_data = kv_pair.value;
-    if (safe_block_hash_data.empty()) {
-        co_return 0;
-    }
-    const auto safe_block_hash = silkworm::to_bytes32(safe_block_hash_data);
-
-    const silkworm::BlockHeader safe_block_header = co_await rawdb::read_header_by_hash(reader, safe_block_hash);
-    co_return safe_block_header.number;
+    co_return co_await get_forkchoice_block_number(reader, kSafeBlockHash);
 }
 
 boost::asio::awaitable<bool> is_latest_block_number(const BlockNumberOrHash& bnoh, const rawdb::DatabaseReader& reader) {

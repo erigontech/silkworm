@@ -358,7 +358,7 @@ CursorResult MemoryMutationCursor::find(const Slice& key, bool throw_notfound) {
     if (result.done && result.key != key) {
         return CursorResult{{}, {}, false};
     }
-    if (current_memory_entry_.key == current_db_entry_.key and current_memory_entry_.key == key) {
+    if (current_memory_entry_.key == key and current_db_entry_.key == key) {
         // Choose memory value if both memory and db entries match the specified key
         return current_memory_entry_;
     }

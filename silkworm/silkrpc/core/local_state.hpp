@@ -35,7 +35,8 @@ namespace silkworm::rpc::state {
 
 class LocalState : public silkworm::State {
   public:
-    explicit LocalState(uint64_t block_number, std::shared_ptr<mdbx::env_managed> chaindata_env) : block_number_{block_number}, chaindata_env_{chaindata_env}, rotxn_{std::move(*chaindata_env)} {}
+    explicit LocalState(uint64_t block_number, std::shared_ptr<mdbx::env_managed> chaindata_env)
+        : block_number_{block_number}, chaindata_env_{chaindata_env}, rotxn_{*chaindata_env} {}
 
     std::optional<silkworm::Account> read_account(const evmc::address& address) const noexcept override;
 
@@ -92,7 +93,7 @@ class LocalState : public silkworm::State {
   private:
     uint64_t block_number_;
     std::shared_ptr<mdbx::env_managed> chaindata_env_;
-    mutable db::ROTxn rotxn_;
+    db::ROTxn rotxn_;
 };
 
 }  // namespace silkworm::rpc::state

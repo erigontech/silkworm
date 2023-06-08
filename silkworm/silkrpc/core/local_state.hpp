@@ -93,7 +93,7 @@ class LocalState : public silkworm::State {
   private:
     uint64_t block_number_;
     std::shared_ptr<mdbx::env_managed> chaindata_env_;
-    db::ROTxn rotxn_;
+    mutable db::ROTxn rotxn_;
 };
 
 }  // namespace silkworm::rpc::state

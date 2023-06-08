@@ -47,15 +47,14 @@ class Fork {
     void reduce_down_to(BlockId new_head);  // remove blocks & state down to the specified head
 
     // verification
-    auto verify_chain() -> VerificationResult;            // verify chain up to current head
-    bool notify_fork_choice_update(Hash head_block_hash,  // accept the current chain up to head_block_hash
-                                   std::optional<Hash> finalized_block_hash = std::nullopt);
+    auto verify_chain() -> VerificationResult;  // verify chain up to current head
+    bool fork_choice(Hash head_block_hash,      // accept the current chain up to head_block_hash
+                     std::optional<Hash> finalized_block_hash = std::nullopt);
 
     // state
     auto current_head() const -> BlockId;
-    auto last_verified_head() const -> BlockId;
-    auto last_head_status() const -> VerificationResult;
-    auto last_fork_choice() const -> BlockId;
+    auto head_status() const -> std::optional<VerificationResult>;
+    auto finalized_head() const -> BlockId;
 
     // checks
     bool extends_head(const BlockHeader&) const;
@@ -63,24 +62,25 @@ class Fork {
     auto find_attachment_point(const BlockHeader& header) const -> std::optional<BlockId>;
     BlockNum distance_from_root(const BlockId&) const;
 
+    // header/body retrieval
+    auto get_header(Hash) const -> std::optional<BlockHeader>;
+
   protected:
     Hash insert_header(const BlockHeader&);
     void insert_body(const Block&, const Hash& block_hash);
 
-    std::set<Hash> collect_bad_headers(db::RWTxn& tx, InvalidChain& invalid_chain);
+    std::set<Hash> collect_bad_headers(InvalidChain& invalid_chain);
 
     db::ROTxn main_tx_;
     db::MemoryOverlay memory_db_;
-    db::MemoryMutation memory_tx_;
+    mutable db::MemoryMutation memory_tx_;
 
     ExecutionPipeline pipeline_;
     CanonicalChain canonical_chain_;
 
     BlockId current_head_;
-
-    BlockId last_verified_head_;
-    VerificationResult last_head_status_;
-    BlockId last_fork_choice_;
+    std::optional<VerificationResult> head_status_;
+    BlockId finalized_head_;
 };
 
 // find the fork with the specified head

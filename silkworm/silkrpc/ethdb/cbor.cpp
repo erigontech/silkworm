@@ -17,6 +17,7 @@
 #include "cbor.hpp"
 
 #include <algorithm>
+#include <utility>
 #include <vector>
 
 #include <cbor/cbor.h>
@@ -156,7 +157,7 @@ class LogCborListener : public cbor::listener {
     }
 
     bool success() {
-        return static_cast<int>(logs_.size()) == num_logs_;
+        return std::cmp_equal(logs_.size(), num_logs_);
     }
 
   private:

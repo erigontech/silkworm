@@ -301,10 +301,6 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor::call(
                 }
                 ibs_state_.finalize_transaction();
 
-                auto local_state = dynamic_cast<state::LocalState*>(state_.get());
-                if (local_state) {
-                    local_state->reset();
-                }
                 ExecutionResult exec_result{result.status, gas_left, result.data};
                 boost::asio::post(this_executor, [exec_result, self = std::move(self)]() mutable {
                     self.complete(exec_result);

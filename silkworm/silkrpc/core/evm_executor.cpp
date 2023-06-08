@@ -410,7 +410,7 @@ ExecutionResult EVMExecutor::call_sync(
 awaitable<ExecutionResult> EVMExecutor::call(const silkworm::ChainConfig& config,
                                              boost::asio::thread_pool& workers,
                                              const silkworm::Block& block,
-                                             silkworm::Transaction& txn,
+                                             const silkworm::Transaction& txn,
                                              StateFactory state_factory,
                                              Tracers tracers,
                                              bool refund,

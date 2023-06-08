@@ -1302,7 +1302,7 @@ awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::js
         Tracers tracers{tracer};
         bool access_lists_match{false};
         do {
-            auto txn = call.to_transaction();
+            const auto txn = call.to_transaction();
             tracer->reset_access_list();
 
             const auto execution_result = co_await EVMExecutor::call(
@@ -1388,7 +1388,7 @@ awaitable<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& req
 
         for (std::size_t i{0}; i < tx_hash_list.size(); i++) {
             struct CallBundleTxInfo tx_info {};
-            auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, tx_database, tx_hash_list[i]);
+            const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, tx_database, tx_hash_list[i]);
             if (!tx_with_block) {
                 const auto error_msg = "invalid transaction hash";
                 SILK_ERROR << error_msg;

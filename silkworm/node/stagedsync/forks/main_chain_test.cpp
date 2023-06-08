@@ -370,7 +370,7 @@ TEST_CASE("MainChain") {
         main_chain2.open();
 
         // checking that the initial state sees the prev fcu
-        //auto& tx2 = main_chain2.tx();
+        // auto& tx2 = main_chain2.tx();
         CHECK(main_chain2.last_chosen_head() == block1_id);
         CHECK(main_chain2.last_finalized_head() == block0_id);
 

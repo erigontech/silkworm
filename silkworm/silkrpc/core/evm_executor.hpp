@@ -77,7 +77,10 @@ class EVMExecutor {
                                            boost::asio::thread_pool& workers,
                                            const silkworm::Block& block,
                                            silkworm::Transaction& txn,
-                                           StateFactory state_factory);
+                                           StateFactory state_factory,
+                                           Tracers tracers = {},
+                                           bool refund = true,
+                                           bool gas_bailout = false);
     static std::string get_error_message(int64_t error_code, const Bytes& error_data, bool full_error = true);
 
     EVMExecutor(const silkworm::ChainConfig& config, boost::asio::thread_pool& workers, silkworm::State& remote_state)

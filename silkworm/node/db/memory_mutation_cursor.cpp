@@ -235,7 +235,7 @@ CursorResult MemoryMutationCursor::to_next(bool throw_notfound) {
     }
 
     if (is_previous_from_db_) {
-        if (current_memory_entry_.key == current_db_entry_.key && current_memory_entry_.value == current_db_entry_.value) {
+        if (current_memory_entry_ == current_db_entry_) {  // requires custom CursorResult::operator==
             current_memory_entry_ = memory_cursor_->to_next(false);
         }
         const auto db_result = next_on_db(MoveType::kNext, false);
@@ -244,7 +244,7 @@ CursorResult MemoryMutationCursor::to_next(bool throw_notfound) {
         if (!result.done && throw_notfound) throw_error_notfound();
         return result;
     } else {
-        if (current_memory_entry_.key == current_db_entry_.key && current_memory_entry_.value == current_db_entry_.value) {
+        if (current_db_entry_ == current_memory_entry_) {
             current_db_entry_ = cursor_->to_next(false);
         }
         const auto memory_result = memory_cursor_->to_next(false);
@@ -479,7 +479,7 @@ CursorResult MemoryMutationCursor::to_current_next_multi(bool throw_notfound) {
     }
 
     if (is_previous_from_db_) {
-        if (current_memory_entry_.key == current_db_entry_.key && current_memory_entry_.value == current_db_entry_.value) {
+        if (current_memory_entry_ == current_db_entry_) {
             current_memory_entry_ = memory_cursor_->to_next(false);
         }
         const auto db_result = next_on_db(MoveType::kNextDup, false);
@@ -488,7 +488,7 @@ CursorResult MemoryMutationCursor::to_current_next_multi(bool throw_notfound) {
         if (!result.done && throw_notfound) throw_error_notfound();
         return result;
     } else {
-        if (current_memory_entry_.key == current_db_entry_.key && current_memory_entry_.value == current_db_entry_.value) {
+        if (current_db_entry_ == current_memory_entry_) {
             current_db_entry_ = cursor_->to_next(false);
         }
         const auto memory_result = memory_cursor_->to_current_next_multi(false);

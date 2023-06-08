@@ -410,14 +410,17 @@ awaitable<ExecutionResult> EVMExecutor::call(const silkworm::ChainConfig& config
                                              boost::asio::thread_pool& workers,
                                              const silkworm::Block& block,
                                              silkworm::Transaction& txn,
-                                             StateFactory state_factory) {
+                                             StateFactory state_factory,
+                                             Tracers tracers,
+                                             bool refund,
+                                             bool gas_bailout) {
     auto this_executor = co_await boost::asio::this_coro::executor;
     const auto execution_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(ExecutionResult)>(
         [&](auto&& self) {
             boost::asio::post(workers, [&, self = std::move(self)]() mutable {
                 auto state = state_factory(this_executor, block.header.number);
                 EVMExecutor executor{config, workers, state};
-                auto exec_result = executor.call_sync(block, txn);
+                auto exec_result = executor.call_sync(block, txn, tracers, refund, gas_bailout);
                 boost::asio::post(this_executor, [exec_result, self = std::move(self)]() mutable {
                     self.complete(exec_result);
                 });

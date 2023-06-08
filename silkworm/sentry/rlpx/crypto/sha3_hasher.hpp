@@ -16,24 +16,23 @@
 
 #pragma once
 
-#include <memory>
-
 #include <silkworm/core/common/base.hpp>
-
-class Keccak;
 
 namespace silkworm::sentry::rlpx::crypto {
 
 class Sha3Hasher final {
   public:
-    Sha3Hasher();
-    ~Sha3Hasher();
+    Sha3Hasher() = default;
+
+    // Not copyable nor movable
+    Sha3Hasher(const Sha3Hasher&) = delete;
+    Sha3Hasher& operator=(const Sha3Hasher&) = delete;
 
     void update(ByteView data);
     [[nodiscard]] Bytes hash();
 
   private:
-    std::unique_ptr<Keccak> impl_;
+    Bytes data_;
 };
 
 }  // namespace silkworm::sentry::rlpx::crypto

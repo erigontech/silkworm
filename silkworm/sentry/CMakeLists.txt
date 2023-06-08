@@ -27,10 +27,6 @@ find_package(Snappy REQUIRED)
 add_library(stbrumme_crc32 "${SILKWORM_MAIN_DIR}/third_party/stbrumme-crc32/Crc32.cpp")
 target_include_directories(stbrumme_crc32 PUBLIC "${SILKWORM_MAIN_DIR}/third_party/stbrumme-crc32")
 
-# stbrumme-keccak
-add_library(stbrumme_keccak "${SILKWORM_MAIN_DIR}/third_party/stbrumme-keccak/keccak.cpp")
-target_include_directories(stbrumme_keccak PUBLIC "${SILKWORM_MAIN_DIR}/third_party/stbrumme-keccak")
-
 # stun-msg
 file(GLOB STUN_MSG_SRC "${SILKWORM_MAIN_DIR}/third_party/stun-msg/src/*.*")
 add_library(stun_msg "${STUN_MSG_SRC}")
@@ -66,7 +62,6 @@ set(LIBS_PRIVATE
     OpenSSL::Crypto
     Snappy::snappy
     stbrumme_crc32
-    stbrumme_keccak
     stun_msg
     silkworm_core
     silkworm_interfaces

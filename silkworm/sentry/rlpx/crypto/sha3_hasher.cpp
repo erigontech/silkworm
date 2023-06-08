@@ -16,24 +16,17 @@
 
 #include "sha3_hasher.hpp"
 
-#include <keccak.h>
-
 #include <silkworm/core/common/util.hpp>
 
 namespace silkworm::sentry::rlpx::crypto {
 
-Sha3Hasher::Sha3Hasher() : impl_(std::make_unique<Keccak>()) {
-}
-
-Sha3Hasher::~Sha3Hasher() {
-}
-
 void Sha3Hasher::update(ByteView data) {
-    impl_->add(data.data(), data.size());
+    data_.append(data);
 }
 
 Bytes Sha3Hasher::hash() {
-    return from_hex(impl_->getHash()).value();
+    ethash::hash256 hash{keccak256(data_)};
+    return {std::begin(hash.bytes), std::end(hash.bytes)};
 }
 
 }  // namespace silkworm::sentry::rlpx::crypto

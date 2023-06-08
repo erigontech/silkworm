@@ -24,6 +24,8 @@ list(FILTER SRC EXCLUDE REGEX "_test\\.cpp$")
 
 add_library(${TARGET} ${SRC})
 
+target_include_directories(${TARGET} PUBLIC "${SILKWORM_MAIN_DIR}")
+
 target_link_libraries(
   ${TARGET}
   PUBLIC Boost::thread silkworm_core silkworm_infra

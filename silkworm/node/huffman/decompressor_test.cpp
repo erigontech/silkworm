@@ -18,6 +18,7 @@
 
 #include <filesystem>
 #include <map>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <tuple>
@@ -151,8 +152,8 @@ TEST_CASE("PatternTable::build_condensed", "[silkworm][snapshot][decompressor]")
     std::vector<Pattern> patterns2{{1, v1}, {2, v2}};
     std::map<std::string, std::span<Pattern>> test_spans{
         {"zero patterns", patterns0},
-        {"one pattern", patterns1},
-        {"two patterns", patterns2},
+        {"one pattern", std::span<Pattern>{patterns1.data(), patterns1.size()}},
+        {"two patterns", std::span<Pattern>{patterns2.data(), patterns2.size()}},
     };
 
     for (const auto& [test_name, pattern_span] : test_spans) {

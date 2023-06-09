@@ -16,6 +16,7 @@
 
 #include <catch2/catch.hpp>
 
+#include "block_bodies_packet.hpp"
 #include "block_headers_packet.hpp"
 #include "get_block_bodies_packet.hpp"
 #include "get_block_headers_packet.hpp"
@@ -1104,7 +1105,27 @@ decoded:
 */
 
 TEST_CASE("BlockBodiesPacket (eth/66) decoding/encoding") {
-    // todo: implement!
+    SECTION("empty list of bodies: VALID") {
+        Bytes rlp_bytes{*from_hex("0xca880d2c08e12ca20890c0")};
+        ByteView view{rlp_bytes};
+        BlockBodiesPacket66 packet;
+        CHECK(rlp::decode(view, packet));
+        CHECK(packet.requestId == 0x0d2c08e12ca20890);
+        CHECK(packet.request.empty());
+    }
+    SECTION("non-empty list of empty bodies: INVALID") {
+        Bytes rlp_bytes{*from_hex(
+            "0xf88b880d2c08e12ca20890f880c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c"
+            "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"
+            "c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0")};
+        ByteView view{rlp_bytes};
+        BlockBodiesPacket66 packet;
+        auto result = rlp::decode(view, packet);
+        CHECK(!result);
+        if (!result) {
+            CHECK(result.error() == DecodingError::kUnexpectedListElements);
+        }
+    }
 }
 
 }  // namespace silkworm

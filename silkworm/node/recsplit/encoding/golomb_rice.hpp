@@ -50,6 +50,7 @@
 #include <iostream>
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/recsplit/encoding/sequence.hpp>
 #include <silkworm/node/recsplit/support/common.hpp>
 
@@ -148,9 +149,13 @@ class GolombRiceVector {
 
             std::size_t idx = curr_fixed_offset >> 6;
             uint64_t shift = curr_fixed_offset & 63;
-            uint64_t fixed = (data.at(idx)) >> shift;
+            SILKWORM_ASSERT(idx < data.size());
+            SILK_LOG << "idx=" << idx << " data.size()=" << data.size();
+            uint64_t fixed = (data[idx]) >> shift;
             if (shift + log2golomb > 64) {
-                fixed |= data.at(idx + 1) << (64 - shift);
+                SILKWORM_ASSERT(idx + 1 < data.size());
+                SILK_LOG << "idx+1=" << (idx + 1) << " data.size()=" << data.size();
+                fixed |= data[idx + 1] << (64 - shift);
             }
             result |= fixed & ((uint64_t(1) << log2golomb) - 1);
             curr_fixed_offset += log2golomb;

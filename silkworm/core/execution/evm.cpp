@@ -141,7 +141,7 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
     state_.add_to_balance(contract_addr, value);
 
     const evmc_message deploy_message{
-        .kind = message.depth > 0 ? message.kind : EVMC_CALL,
+        .kind = message.kind,
         .depth = message.depth,
         .gas = message.gas,
         .recipient = contract_addr,

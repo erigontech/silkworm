@@ -52,6 +52,8 @@ class ProtocolErrorCategory : public boost::system::error_category {
                 return "unknown error occurred";
         }
     }
+
+    virtual ~ProtocolErrorCategory() = default;
 };
 
 boost::system::error_code to_system_code(ErrorCode e) {

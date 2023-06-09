@@ -146,11 +146,11 @@ class GolombRiceVector {
             result += pos;
             result <<= log2golomb;
 
-            uint64_t idx64 = curr_fixed_offset >> 6;
+            std::size_t idx = curr_fixed_offset >> 6;
             uint64_t shift = curr_fixed_offset & 63;
-            uint64_t fixed = (data[idx64]) >> shift;
+            uint64_t fixed = (data.at(idx)) >> shift;
             if (shift + log2golomb > 64) {
-                fixed |= data[idx64 + 1] << (64 - shift);
+                fixed |= data.at(idx + 1) << (64 - shift);
             }
             result |= fixed & ((uint64_t(1) << log2golomb) - 1);
             curr_fixed_offset += log2golomb;

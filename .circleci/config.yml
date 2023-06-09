@@ -257,39 +257,43 @@ jobs:
       - run:
           name: "Core unit tests"
           working_directory: ~/build
-          command: |
-            cmd/test/core_test
-            mv default.profraw core_test.profraw
+          command: LLVM_PROFILE_FILE=core_test.profraw cmd/test/core_test
+      - run:
+          name: "Infra unit tests"
+          working_directory: ~/build
+          command: LLVM_PROFILE_FILE=infra_test.profraw cmd/test/infra_test
       - run:
           name: "Node unit tests"
           working_directory: ~/build
-          command: |
-            cmd/test/node_test
-            mv default.profraw node_test.profraw
+          command: LLVM_PROFILE_FILE=node_test.profraw cmd/test/node_test
+      - run:
+          name: "RpcDaemon unit tests"
+          working_directory: ~/build
+          command: LLVM_PROFILE_FILE=rpcdaemon_test.profraw cmd/test/rpcdaemon_test
+      - run:
+          name: "Sentry unit tests"
+          working_directory: ~/build
+          command: LLVM_PROFILE_FILE=sentry_test.profraw cmd/test/sentry_test
+      - run:
+          name: "Sync unit tests"
+          working_directory: ~/build
+          command: LLVM_PROFILE_FILE=sync_test.profraw cmd/test/sync_test
       - run:
           name: "Ethereum EL tests"
           working_directory: ~/build
           no_output_timeout: 30m
-          command: |
-            cmd/test/ethereum
-            mv default.profraw ethereum.profraw
+          command: LLVM_PROFILE_FILE=ethereum.profraw cmd/test/ethereum
       - run:
           name: "Coverage"
           working_directory: ~/build
           command: |
             llvm-profdata merge *.profraw -o profdata
-            llvm-cov export -instr-profile profdata -format=lcov cmd/test/node_test -object cmd/test/ethereum > silkworm.lcov
-      - run:
-          name: "Upload to Codecov"
-          command: |
-            sudo pip install codecov==2.1.13
-
-            counter=1
-            until "$codecov" --required --file ~/build/silkworm.lcov -X gcov || [ $counter = 5 ]; do
-              counter=$((counter+1))
-              sleep 1
-              echo "Try #$counter..."
-            done
+            llvm-cov export -instr-profile profdata cmd/silkworm '-ignore-filename-regex=(third_party|silkworm/interfaces|test)' -format=lcov > /tmp/silkworm.lcov
+            llvm-cov report -instr-profile profdata cmd/silkworm '-ignore-filename-regex=(third_party|silkworm/interfaces|test)' > /tmp/report.txt
+      - store_artifacts:
+          path: /tmp/silkworm.lcov
+      - store_artifacts:
+          path: /tmp/report.txt
 
   linux-clang-tidy:
     environment:

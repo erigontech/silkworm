@@ -146,9 +146,13 @@ class GolombRiceVector {
             result += pos;
             result <<= log2golomb;
 
-            uint64_t fixed;
-            std::memcpy(&fixed, reinterpret_cast<const uint8_t*>(data.data()) + curr_fixed_offset / 8, 8);
-            result |= (fixed >> curr_fixed_offset % 8) & ((uint64_t(1) << log2golomb) - 1);
+            uint64_t idx64 = curr_fixed_offset >> 6;
+            uint64_t shift = curr_fixed_offset & 63;
+            uint64_t fixed = (data[idx64]) >> shift;
+            if (shift + log2golomb > 64) {
+                fixed |= data[idx64 + 1] << (64 - shift);
+            }
+            result |= fixed & ((uint64_t(1) << log2golomb) - 1);
             curr_fixed_offset += log2golomb;
             return result;
         }

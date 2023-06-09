@@ -16,7 +16,6 @@
 
 #include "rec_split.hpp"
 
-#include <cstdint>
 #include <vector>
 
 #include <catch2/catch.hpp>
@@ -44,7 +43,7 @@ TEST_CASE("RecSplit8", "[silkworm][recsplit]") {
         CHECK_NOTHROW(rs.add_key("first_key", 0));
         CHECK_THROWS_AS(rs.build(), std::logic_error);
         CHECK_NOTHROW(rs.add_key("second_key", 0));
-        CHECK_NOTHROW(rs.build());
+        CHECK(rs.build() == false /*collision_detected*/);
     }
 
     SECTION("duplicated keys") {
@@ -168,6 +167,52 @@ TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][recsplit]") {
             CHECK(rs.bucket_size() == settings.bucket_size);
             check_bijection(rs_index, hashed_keys);
         }
+    }
+}
+
+TEST_CASE("RecSplit8: index lookup", "[silkworm][recsplit]") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test::TemporaryFile index_file;
+    RecSplitSettings settings{
+        .keys_count = 100,
+        .bucket_size = 10,
+        .index_path = index_file.path(),
+        .base_data_id = 0,
+        .double_enum_index = false};
+    RecSplit8 rs1{settings, /*.salt=*/kTestSalt};
+
+    for (size_t i{0}; i < settings.keys_count; ++i) {
+        rs1.add_key("key " + std::to_string(i), i * 17);
+    }
+    CHECK(rs1.build() == false /*collision_detected*/);
+
+    RecSplit8 rs2{settings.index_path};
+    for (size_t i{0}; i < settings.keys_count; ++i) {
+        const std::string key{"key " + std::to_string(i)};
+        CHECK(rs2.lookup(key) == i * 17);
+    }
+}
+
+TEST_CASE("RecSplit8: double index lookup", "[silkworm][recsplit]") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test::TemporaryFile index_file;
+    RecSplitSettings settings{
+        .keys_count = 100,
+        .bucket_size = 10,
+        .index_path = index_file.path(),
+        .base_data_id = 0};
+    RecSplit8 rs1{settings, /*.salt=*/kTestSalt};
+
+    for (size_t i{0}; i < settings.keys_count; ++i) {
+        rs1.add_key("key " + std::to_string(i), i * 17);
+    }
+    CHECK(rs1.build() == false /*collision_detected*/);
+
+    RecSplit8 rs2{settings.index_path};
+    for (size_t i{0}; i < settings.keys_count; ++i) {
+        const auto enumeration_index = rs2.lookup("key " + std::to_string(i));
+        CHECK(enumeration_index == i);
+        CHECK(rs2.ordinal_lookup(enumeration_index) == i * 17);
     }
 }
 

@@ -267,6 +267,7 @@ class RecSplit {
         // Read salt
         salt_ = endian::load_big_u32(address + offset);
         offset += kSaltSizeLength;
+        hasher_ = std::make_unique<Murmur3>(salt_);
 
         // Read start seed
         const uint8_t start_seed_length = (address + offset)[0];
@@ -537,8 +538,7 @@ class RecSplit {
         hasher_->reset_seed(salt_);
     }
 
-    /** Returns the value associated with the given 128-bit hash.
-     *
+    /** Return the value associated with the given 128-bit hash.
      * Note that this method is mainly useful for benchmarking.
      * @param hash a 128-bit hash.
      * @return the associated value.
@@ -596,8 +596,27 @@ class RecSplit {
         return cum_keys + remap16(remix(hash.second + b + kStartSeed[level]), m);
     }
 
-    //! Return the value associated with the given key
+    //! Return the value associated with the given key within the MPHF mapping
     std::size_t operator()(const std::string& key) const { return operator()(murmur_hash_3(key.c_str(), key.size())); }
+
+    //! Return the value associated with the given key within the index
+    std::size_t lookup(ByteView key) const { return lookup(key.data(), key.size()); }
+
+    //! Return the value associated with the given key within the index
+    std::size_t lookup(const std::string& key) const { return lookup(key.data(), key.size()); }
+
+    //! Return the value associated with the given key within the index
+    std::size_t lookup(const void* key, const size_t length) const {
+        const auto record = operator()(murmur_hash_3(key, length));
+        const auto position = 1 + 8 + bytes_per_record_ * (record + 1);
+
+        const auto address = encoded_file_->address();
+        return endian::load_big_u64(address + position) & record_mask_;
+    }
+
+    //! Return the offset of the i-th element in the index. Perfect hash table lookup is not performed,
+    //! only access to the Elias-Fano structure containing all offsets
+    std::size_t ordinal_lookup(uint64_t i) const { return ef_offsets_->get(i); }
 
     //! Return the number of keys used to build the RecSplit instance
     std::size_t key_count() const { return key_count_; }
@@ -830,7 +849,7 @@ class RecSplit {
         }
     }
 
-    hash128_t inline murmur_hash_3(const void* data, const size_t length) {
+    hash128_t inline murmur_hash_3(const void* data, const size_t length) const {
         hash128_t h{};
         hasher_->hash_x64_128(data, length, &h);
         return h;

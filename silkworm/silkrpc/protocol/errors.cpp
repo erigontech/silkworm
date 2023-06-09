@@ -54,7 +54,7 @@ class ProtocolErrorCategory : public boost::system::error_category {
     }
 };
 
-boost::system::error_code make_error_code(ErrorCode e) {
+boost::system::error_code to_system_code(ErrorCode e) {
     thread_local ProtocolErrorCategory tls_category_instance{};
     return {static_cast<int>(e), tls_category_instance};
 }

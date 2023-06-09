@@ -301,10 +301,6 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor::call(
                 }
                 ibs_state_.finalize_transaction();
 
-                auto local_state = dynamic_cast<state::LocalState*>(state_.get());
-                if (local_state) {
-                    local_state->reset();
-                }
                 ExecutionResult exec_result{result.status, gas_left, result.data};
                 boost::asio::post(this_executor, [exec_result, self = std::move(self)]() mutable {
                     self.complete(exec_result);
@@ -316,6 +312,123 @@ boost::asio::awaitable<ExecutionResult> EVMExecutor::call(
     SILK_DEBUG << "EVMExecutor::call call_result: " << call_result.error_code << " #data: " << call_result.data.size() << " end";
 
     co_return call_result;
+}
+
+ExecutionResult EVMExecutor::call_sync(
+    const silkworm::Block& block,
+    const silkworm::Transaction& txn,
+    Tracers tracers,
+    bool refund,
+    bool gas_bailout) {
+    SILK_DEBUG << "EVMExecutor::call: " << block.header.number << " gasLimit: " << txn.gas_limit << " refund: " << refund << " gasBailout: " << gas_bailout;
+    SILK_DEBUG << "EVMExecutor::call: transaction: " << &txn;
+
+    auto& svc = use_service<AnalysisCacheService>(workers_);
+    EVM evm{block, ibs_state_, config_};
+    evm.analysis_cache = svc.get_analysis_cache();
+    evm.state_pool = svc.get_object_pool();
+    evm.beneficiary = rule_set_->get_beneficiary(block.header);
+
+    for (auto& tracer : tracers) {
+        evm.add_tracer(*tracer);
+    }
+
+    SILKWORM_ASSERT(txn.from.has_value());
+    ibs_state_.access_account(*txn.from);
+
+    const evmc_revision rev{evm.revision()};
+    const intx::uint256 base_fee_per_gas{evm.block().header.base_fee_per_gas.value_or(0)};
+    const intx::uint128 g0{protocol::intrinsic_gas(txn, rev)};
+    SILKWORM_ASSERT(g0 <= UINT64_MAX);  // true due to the precondition (transaction must be valid)
+
+    const auto error = pre_check(evm, txn, base_fee_per_gas, g0);
+    if (error) {
+        Bytes data{};
+        return {1000, txn.gas_limit, data, *error};
+    }
+
+    intx::uint256 want;
+    if (txn.max_fee_per_gas > 0 || txn.max_priority_fee_per_gas > 0) {
+        // This method should be called after check (max_fee and base_fee) present in pre_check() method
+        const intx::uint256 effective_gas_price{txn.effective_gas_price(base_fee_per_gas)};
+        want = txn.gas_limit * effective_gas_price;
+    } else {
+        want = 0;
+    }
+    const auto have = ibs_state_.get_balance(*txn.from);
+    if (have < want + txn.value) {
+        if (!gas_bailout) {
+            Bytes data{};
+            std::string from = to_hex(*txn.from);
+            std::string msg = "insufficient funds for gas * price + value: address 0x" + from + " have " + intx::to_string(have) + " want " + intx::to_string(want + txn.value);
+            return {1000, txn.gas_limit, data, msg};
+        }
+    } else {
+        ibs_state_.subtract_from_balance(*txn.from, want);
+    }
+
+    if (txn.to.has_value()) {
+        ibs_state_.access_account(*txn.to);
+        // EVM itself increments the nonce for contract creation
+        ibs_state_.set_nonce(*txn.from, ibs_state_.get_nonce(*txn.from) + 1);
+    }
+    for (const AccessListEntry& ae : txn.access_list) {
+        ibs_state_.access_account(ae.account);
+        for (const evmc::bytes32& key : ae.storage_keys) {
+            ibs_state_.access_storage(ae.account, key);
+        }
+    }
+
+    SILK_DEBUG << "EVMExecutor::call execute on EVM txn: " << &txn << " g0: " << static_cast<uint64_t>(g0) << " start";
+    const auto result{evm.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0))};
+    SILK_DEBUG << "EVMExecutor::call execute on EVM txn: " << &txn << " gas_left: " << result.gas_left << " end";
+
+    uint64_t gas_left = result.gas_left;
+    const uint64_t gas_used{txn.gas_limit - refund_gas(evm, txn, result.gas_left, result.gas_refund)};
+    if (refund) {
+        gas_left = txn.gas_limit - gas_used;
+    }
+
+    // Reward the fee recipient
+    const intx::uint256 priority_fee_per_gas{txn.max_fee_per_gas >= base_fee_per_gas ? txn.priority_fee_per_gas(base_fee_per_gas)
+                                                                                     : txn.max_priority_fee_per_gas};
+    SILK_DEBUG << "EVMExecutor::call evm.beneficiary: " << evm.beneficiary << " balance: " << priority_fee_per_gas * gas_used;
+    ibs_state_.add_to_balance(evm.beneficiary, priority_fee_per_gas * gas_used);
+
+    for (auto tracer : evm.tracers()) {
+        tracer.get().on_reward_granted(result, evm.state());
+    }
+    ibs_state_.finalize_transaction();
+
+    ExecutionResult exec_result{result.status, gas_left, result.data};
+
+    SILK_DEBUG << "EVMExecutor::call call_result: " << exec_result.error_code << " #data: " << exec_result.data.size() << " end";
+
+    return exec_result;
+}
+
+awaitable<ExecutionResult> EVMExecutor::call(const silkworm::ChainConfig& config,
+                                             boost::asio::thread_pool& workers,
+                                             const silkworm::Block& block,
+                                             const silkworm::Transaction& txn,
+                                             StateFactory state_factory,
+                                             Tracers tracers,
+                                             bool refund,
+                                             bool gas_bailout) {
+    auto this_executor = co_await boost::asio::this_coro::executor;
+    const auto execution_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(ExecutionResult)>(
+        [&](auto&& self) {
+            boost::asio::post(workers, [&, self = std::move(self)]() mutable {
+                auto state = state_factory(this_executor, block.header.number);
+                EVMExecutor executor{config, workers, state};
+                auto exec_result = executor.call_sync(block, txn, tracers, refund, gas_bailout);
+                boost::asio::post(this_executor, [exec_result, self = std::move(self)]() mutable {
+                    self.complete(exec_result);
+                });
+            });
+        },
+        boost::asio::use_awaitable);
+    co_return execution_result;
 }
 
 }  // namespace silkworm::rpc

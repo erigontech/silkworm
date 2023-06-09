@@ -27,6 +27,7 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/measure.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
+#include <silkworm/silkrpc/protocol/errors.hpp>
 
 namespace silkworm::chainsync {
 
@@ -243,11 +244,14 @@ auto PoSSync::new_payload(const rpc::ExecutionPayload& payload) -> asio::awaitab
         }
 
     } catch (const PayloadValidationError& e) {
-        log::Error("Sync") << "Error processing payload: " << e.what();
+        log::Error("Sync") << "Payload validation error: " << e.what();
         co_return rpc::PayloadStatus{rpc::PayloadStatus::kInvalid, no_latest_valid_hash, e.what()};
+    } catch (const boost::system::system_error& e) {
+        log::Error("Sync") << "Error processing payload: " << e.what();
+        throw;
     } catch (const std::exception& e) {
-        log::Error("Sync") << "Error processing payload: " << e.what();
-        co_return rpc::PayloadStatus{rpc::PayloadStatus::kInvalid, no_latest_valid_hash, e.what()};
+        log::Error("Sync") << "Unexpected error processing payload: " << e.what();
+        throw;
     }
 }
 
@@ -288,17 +292,8 @@ auto PoSSync::fork_choice_update(const rpc::ForkChoiceState& state,
 
         do_sanity_checks(*head_header, /**parent,*/ *parent_td);
 
-        /* todo: enable this check
-        auto last_fcu = co_await exec_engine_.last_fork_choice();
-        auto already_valid = co_await exec_engine_.is_ancestor(head, last_fcu);
-        //non ERIGON_API, maybe replace with co_await exec_engine_.is_canonical(head_header_hash);
-        if (already_valid) {
-            co_return ForkChoiceUpdateReply{{PayloadStatus::kValid, state.head_block_hash}, no_payload_id};
-        }
-        */
-
         // NOTE: from here the method execution can be cancelled
-        auto verification = co_await exec_engine_.validate_chain(head_header_hash);
+        auto verification = co_await exec_engine_.validate_chain(head_header_hash);  // does nothing if previously validated
 
         if (std::holds_alternative<InvalidChain>(verification)) {
             // INVALID
@@ -316,44 +311,45 @@ auto PoSSync::fork_choice_update(const rpc::ForkChoiceState& state,
         // VALID
         // auto valid_chain = std::get<ValidChain>(verification);
 
-        auto application = co_await exec_engine_.update_fork_choice(state.head_block_hash, state.finalized_block_hash);
+        std::optional<Hash> finalized_block_hash =
+            state.finalized_block_hash != kZeroHash ? std::optional<Hash>{state.finalized_block_hash} : std::nullopt;
+
+        auto application = co_await exec_engine_.update_fork_choice(state.head_block_hash, finalized_block_hash);
         if (!application.success) {
+            // at the moment application doesn't carry information to disambiguate between invalid head and
+            // finalized_block_hash not found, so we need additional calls:
+
+            if (finalized_block_hash) {
+                auto is_canonical = co_await exec_engine_.is_canonical(*finalized_block_hash);
+                if (!is_canonical) throw boost::system::system_error{rpc::to_system_code(rpc::ErrorCode::kInvalidForkChoiceState)};
+            }
+            if (state.safe_block_hash != kZeroHash) {
+                auto is_canonical = co_await exec_engine_.is_canonical(state.safe_block_hash);
+                if (!is_canonical) throw boost::system::system_error{rpc::to_system_code(rpc::ErrorCode::kInvalidForkChoiceState)};
+            }
+
             co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalid, application.current_head, "invalid fork choice update"}, no_payload_id};
         }
 
-        /* todo: enable those checks
-        auto is_ancestor = co_await exec_engine_.is_ancestor(state.finalized_block_hash, head);
-        // non ERIGON_API, maybe replace with exec_engine_.is_canonical(state.finalized_block_hash) ?
-        if (!is_ancestor) {
-            co_return ForkChoiceUpdateReply{{PayloadStatus::kInvalid, no_latest_valid_hash, "invalid fork choice state"}, no_payload_id};  // todo: return error code -38002
-        }
-        if (state.safe_block_hash != Hash()) {
-            auto ancestor = exec_engine_.is_ancestor(state.safe_block_hash, head);
-            // non ERIGON_API, maybe replace with exec_engine_.is_canonical(state.safe_block_hash);
-            if (!ancestor) co_return ForkChoiceUpdateReply{{PayloadStatus::kInvalid, no_latest_valid_hash, "invalid fork choice state"}, no_payload_id};  // todo: return error code -38002
-        }
-        */
-
         uint64_t buildProcessId = 0;
-
         if (attributes) {
             // payload build process
             if (attributes->timestamp <= head_header->timestamp) {
-                co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalid, no_latest_valid_hash, "invalid payload attributes"}, no_payload_id};  // todo: return error code -38003
+                throw boost::system::system_error{rpc::to_system_code(rpc::ErrorCode::kInvalidPayloadAttributes)};
                 // in this case spec states that forkchoiceState update MUST NOT be rolled back
             }
 
-            // buildProcessId = exec_engine_.build_payload(head_header_hash, attributes);  // todo: use timeout here
+            // buildProcessId = exec_engine_.build_payload(head_header_hash, attributes);
         }
 
         co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kValid, state.head_block_hash}, buildProcessId};
 
-    } catch (const PayloadValidationError& e) {
+    } catch (const boost::system::system_error& e) {
         log::Error("Sync") << "Error processing fork-choice: " << e.what();
-        co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalid, no_latest_valid_hash, e.what()}, no_payload_id};
+        throw;
     } catch (const std::exception& e) {
-        log::Error("Sync") << "Error processing fork-choice: " << e.what();
-        co_return rpc::ForkChoiceUpdatedReply{{rpc::PayloadStatus::kInvalid, no_latest_valid_hash, e.what()}, no_payload_id};
+        log::Error("Sync") << "Unexpected error processing fork-choice: " << e.what();
+        throw;
     }
 }
 

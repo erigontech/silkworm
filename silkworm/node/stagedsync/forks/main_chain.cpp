@@ -204,19 +204,18 @@ bool MainChain::notify_fork_choice_update(Hash head_block_hash, std::optional<Ha
 
         auto verification = verify_chain(head_block_hash);  // this will reset canonical chain to head_block_hash
 
-        if (!std::holds_alternative<ValidChain>(verification)) return false;
-
         ensure_invariant(canonical_chain_.current_head().hash == head_block_hash,
                          "canonical head not aligned with fork choice");
     }
 
-    if (!std::holds_alternative<ValidChain>(canonical_head_status_)) return false;
+    if (!std::holds_alternative<ValidChain>(canonical_head_status_)) return false;  // head is not valid
 
     auto valid_chain = std::get<ValidChain>(canonical_head_status_);
     ensure_invariant(canonical_chain_.current_head() == valid_chain.current_head,
                      "canonical head not aligned with recorded head status");
 
-    if (finalized_block_hash && !canonical_chain_.has(*finalized_block_hash)) return false;
+    if (finalized_block_hash && !canonical_chain_.has(*finalized_block_hash)) return false;  // finalized block not found
+    // we need a way to disambiguate this "false" from the one above
 
     db::write_last_head_block(tx_, head_block_hash);
     if (finalized_block_hash) db::write_last_finalized_block(tx_, *finalized_block_hash);

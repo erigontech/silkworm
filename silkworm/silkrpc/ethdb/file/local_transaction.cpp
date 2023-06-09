@@ -67,4 +67,8 @@ boost::asio::awaitable<std::shared_ptr<silkworm::State>> LocalTransaction::creat
     co_return std::make_shared<silkworm::rpc::state::LocalState>(block_number, chaindata_env_);
 }
 
+std::shared_ptr<silkworm::State> LocalTransaction::create_state(boost::asio::any_io_executor&, const core::rawdb::DatabaseReader&, uint64_t block_number) {
+    return std::make_shared<silkworm::rpc::state::LocalState>(block_number, chaindata_env_);
+}
+
 }  // namespace silkworm::rpc::ethdb::file

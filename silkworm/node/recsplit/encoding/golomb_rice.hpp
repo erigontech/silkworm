@@ -147,10 +147,7 @@ class GolombRiceVector {
             result += pos;
             result <<= log2golomb;
 
-            uint64_t fixed;
-            std::memcpy(&fixed, reinterpret_cast<const uint8_t*>(data.data()) + curr_fixed_offset / 8, 8);
-            result |= (fixed >> curr_fixed_offset % 8) & ((uint64_t(1) << log2golomb) - 1);
-            /*std::size_t idx = curr_fixed_offset >> 6;
+            std::size_t idx = curr_fixed_offset >> 6;
             uint64_t shift = curr_fixed_offset & 63;
             if (idx >= data.size()) {
                 SILK_LOG << "idx=" << idx << " data.size()=" << data.size();
@@ -162,7 +159,7 @@ class GolombRiceVector {
                 }
                 fixed |= data[idx + 1] << (64 - shift);
             }
-            result |= fixed & ((uint64_t(1) << log2golomb) - 1);*/
+            result |= fixed & ((uint64_t(1) << log2golomb) - 1);
             curr_fixed_offset += log2golomb;
             return result;
         }

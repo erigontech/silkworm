@@ -67,7 +67,7 @@ static void test_trees(GolombRiceVector& v, const Uint64Sequence& keys, uint64_t
     }
 }
 
-TEST_CASE("GolombRiceVector", "[silkworm][recsplit][golomb_rice]") {
+TEST_CASE("GolombRiceVector", "[silkworm][recsplit][golomb_rice][.]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
 
     const std::vector<std::size_t> golomb_params{0, 1, 2, 3, 4, 5, 6};

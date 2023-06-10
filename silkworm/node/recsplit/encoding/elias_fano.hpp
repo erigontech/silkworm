@@ -131,7 +131,7 @@ class EliasFanoList32 {
 
     [[nodiscard]] uint64_t get(uint64_t i) const {
         uint64_t lower = i * l_;
-        uint64_t idx64 = lower / 64;
+        std::size_t idx64 = lower / 64;
         uint64_t shift = lower % 64;
         lower = lower_bits_[idx64] >> shift;
         if (shift > 0) {

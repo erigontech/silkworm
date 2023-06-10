@@ -170,7 +170,7 @@ TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][recsplit]") {
     }
 }
 
-TEST_CASE("RecSplit8: index lookup", "[silkworm][recsplit]") {
+TEST_CASE("RecSplit8: index lookup", "[silkworm][recsplit][.]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
     RecSplitSettings settings{
@@ -193,7 +193,7 @@ TEST_CASE("RecSplit8: index lookup", "[silkworm][recsplit]") {
     }
 }
 
-TEST_CASE("RecSplit8: double index lookup", "[silkworm][recsplit]") {
+TEST_CASE("RecSplit8: double index lookup", "[silkworm][recsplit][.]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
     RecSplitSettings settings{

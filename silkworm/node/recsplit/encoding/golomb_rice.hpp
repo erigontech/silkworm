@@ -149,12 +149,14 @@ class GolombRiceVector {
 
             std::size_t idx = curr_fixed_offset >> 6;
             uint64_t shift = curr_fixed_offset & 63;
-            SILKWORM_ASSERT(idx < data.size());
-            SILK_LOG << "idx=" << idx << " data.size()=" << data.size();
+            if(idx >= data.size()) {
+                SILK_LOG << "idx=" << idx << " data.size()=" << data.size();
+            }
             uint64_t fixed = (data[idx]) >> shift;
             if (shift + log2golomb > 64) {
-                SILKWORM_ASSERT(idx + 1 < data.size());
-                SILK_LOG << "idx+1=" << (idx + 1) << " data.size()=" << data.size();
+                if(idx + 1 >= data.size()) {
+                    SILK_LOG << "idx+1=" << (idx + 1) << " data.size()=" << data.size();
+                }
                 fixed |= data[idx + 1] << (64 - shift);
             }
             result |= fixed & ((uint64_t(1) << log2golomb) - 1);

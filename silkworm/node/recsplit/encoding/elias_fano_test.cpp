@@ -57,6 +57,13 @@ TEST_CASE("EliasFanoList32", "[silkworm][recsplit][elias_fano]") {
           *from_hex("0000000000000012"  // count
                     "000000000000003f"  // u
                     "81bc0000000000000000000000000000a952095445490200000000000000000000000000000000000000000000000000"));
+
+    std::vector<uint64_t> data{ef_list.data()};
+    EliasFanoList32 ef_list2{0x12, 0x3f, data};
+    for (uint64_t i{0}; i < offsets.size(); i++) {
+        const uint64_t x = ef_list2.get(i);
+        CHECK(x == offsets[i]);
+    }
 }
 
 TEST_CASE("DoubleEliasFanoList16", "[silkworm][recsplit][elias_fano]") {

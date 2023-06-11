@@ -90,7 +90,7 @@ template <class T, std::size_t Extent>
 inline static void set_bits(std::span<T, Extent> bits, const uint64_t start, const uint64_t width, const uint64_t value) {
     const uint64_t shift = start & 63;
     const uint64_t mask = ((uint64_t(1) << width) - 1) << shift;
-    const uint64_t idx64 = start >> 6;
+    const std::size_t idx64 = start >> 6;
     bits[idx64] = (bits[idx64] & ~mask) | (value << shift);
     if (shift + width > 64) {
         // Change two 64-bit words
@@ -133,6 +133,9 @@ class EliasFanoList32 {
         uint64_t lower = i * l_;
         std::size_t idx64 = lower / 64;
         uint64_t shift = lower % 64;
+        if (idx64 >= lower_bits_.size()) {
+            SILK_LOG << "EliasFanoList32::get idx64=" << idx64 << " lower_bits_.size()=" << lower_bits_.size();
+        }
         lower = lower_bits_[idx64] >> shift;
         if (shift > 0) {
             lower |= lower_bits_[idx64 + 1] << (64 - shift);

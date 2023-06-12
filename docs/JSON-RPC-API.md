@@ -3,7 +3,7 @@
 The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/API) implementation status in `Silkrpc`.
 
 | Command                                    | Availability | Notes                                      |
-|:-------------------------------------------| :----------: | -----------------------------------------: |
+| :------------------------------------------| :----------: | -----------------------------------------: |
 | admin_nodeInfo                             | Yes          |                                            |
 | admin_peers                                | Yes          |                                            |
 |                                            |              |                                            |

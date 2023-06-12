@@ -133,11 +133,10 @@ class EliasFanoList32 {
         uint64_t lower = i * l_;
         std::size_t idx64 = lower / 64;
         uint64_t shift = lower % 64;
-        if (idx64 >= lower_bits_.size()) {
-            SILK_LOG << "EliasFanoList32::get idx64=" << idx64 << " lower_bits_.size()=" << lower_bits_.size();
-        }
+        SILKWORM_ASSERT(idx64 < lower_bits_.size());
         lower = lower_bits_[idx64] >> shift;
         if (shift > 0) {
+            SILKWORM_ASSERT(idx64 + 1 < lower_bits_.size());
             lower |= lower_bits_[idx64 + 1] << (64 - shift);
         }
 

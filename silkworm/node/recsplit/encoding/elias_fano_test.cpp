@@ -31,6 +31,8 @@ TEST_CASE("EliasFanoList32", "[silkworm][recsplit][elias_fano]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
 
     std::vector<uint64_t> offsets{1, 4, 6, 8, 10, 14, 16, 19, 22, 34, 37, 39, 41, 43, 48, 51, 54, 58, 62};
+
+    // Encode monotone ascending integer sequence using Elias-Fano representation
     uint64_t max_offset = *std::max_element(offsets.cbegin(), offsets.cend());
     EliasFanoList32 ef_list{offsets.size(), max_offset};
     for (const auto offset : offsets) {
@@ -59,6 +61,7 @@ TEST_CASE("EliasFanoList32", "[silkworm][recsplit][elias_fano]") {
                     "000000000000003f"  // u
                     "81bc0000000000000000000000000000a952095445490200000000000000000000000000000000000000000000000000"));
 
+    // Decode monotone ascending integer sequence from Elias-Fano representation and compare with original
     constexpr std::size_t kParamsSize{2 * sizeof(uint64_t)};  // count + u length in bytes
     std::span<uint8_t> data{ef_bytes.data() + kParamsSize, ef_bytes.size() - kParamsSize};
     EliasFanoList32 ef_list_copy{0x12, 0x3f, data};

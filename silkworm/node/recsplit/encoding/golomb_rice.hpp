@@ -175,7 +175,6 @@ class GolombRiceVector {
         }
 
         void read_reset(const std::size_t bit_pos, const std::size_t unary_offset) {
-            // assert(bit_pos < bit_count);
             curr_fixed_offset = bit_pos;
             std::size_t unary_pos = bit_pos + unary_offset;
             curr_ptr_unary = data.data() + unary_pos / 64;

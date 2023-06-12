@@ -20,6 +20,9 @@
 #include <sstream>
 #include <string>
 
+#include <boost/asio/compose.hpp>
+#include <boost/asio/post.hpp>
+#include <boost/asio/use_awaitable.hpp>
 #include <boost/format.hpp>
 #include <evmc/hex.hpp>
 #include <evmc/instructions.h>
@@ -43,43 +46,20 @@ namespace silkworm::rpc::call {
 
 using boost::asio::awaitable;
 
-boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bundles, const SimulationContext& context,
-                                                             const AccountsOverrides& accounts_overrides,
-                                                             std::optional<std::uint64_t> opt_timeout) {
-    ethdb::TransactionDatabase tx_database{transaction_};
-
-    std::uint16_t count{0};
-    bool empty = true;
-    for (const auto& bundle : bundles) {
-        SILK_DEBUG << "bundle[" << count++ << "]: " << bundle;
-        if (bundle.transactions.size() > 0) {
-            empty = false;
-        }
-    }
+CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig* config,
+                                                  const silkworm::BlockWithHash& block_with_hash,
+                                                  ethdb::TransactionDatabase& tx_database,
+                                                  const Bundles& bundles,
+                                                  std::optional<std::uint64_t> opt_timeout,
+                                                  const AccountsOverrides& accounts_overrides,
+                                                  int32_t transaction_index,
+                                                  boost::asio::any_io_executor& this_executor) {
     CallManyResult result;
-    if (empty) {
-        result.error = "empty all bundles transactions";
-        co_return result;
-    }
-
-    const auto chain_id = co_await core::rawdb::read_chain_id(tx_database);
-
-    const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, tx_database, context.block_number);
-    auto block_number = block_with_hash->block.header.number;
-    const auto& block = block_with_hash->block;
+    const auto& block = block_with_hash.block;
     const auto& block_transactions = block.transactions;
-
-    auto state = co_await transaction_.create_state(tx_database, block_number);
+    auto state = transaction_.create_state(this_executor, tx_database, block.header.number);
     state::OverrideState override_state{*state, accounts_overrides};
-
-    const auto chain_config_ptr = lookup_chain_config(chain_id);
-
-    EVMExecutor executor{*chain_config_ptr, workers_, override_state};
-
-    auto transaction_index = context.transaction_index;
-    if (transaction_index == -1) {
-        transaction_index = static_cast<std::int32_t>(block_transactions.size());
-    }
+    EVMExecutor executor{*config, workers_, state};
 
     std::uint64_t timeout = opt_timeout.value_or(5000);
     const auto start_time = clock_time::now();
@@ -89,13 +69,14 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
         if (!txn.from) {
             txn.recover_sender();
         }
-        co_await executor.call(block, txn);
+
+        auto exec_result = executor.call_sync(block, txn);
 
         if ((clock_time::since(start_time) / 1000000) > timeout) {
             std::ostringstream oss;
             oss << "execution aborted (timeout = " << static_cast<double>(timeout) / 1000.0 << "s)";
             result.error = oss.str();
-            co_return result;
+            return result;
         }
     }
     executor.reset();
@@ -104,7 +85,7 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
     for (const auto& bundle : bundles) {
         const auto& block_override = bundle.block_override;
 
-        rpc::Block blockContext{{block_with_hash->block}};
+        rpc::Block blockContext{{block_with_hash.block}};
         if (block_override.block_number) {
             blockContext.block.header.number = block_override.block_number.value();
         }
@@ -129,29 +110,29 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
         for (const auto& call : bundle.transactions) {
             silkworm::Transaction txn{call.to_transaction()};
 
-            auto execution_result = co_await executor.call(blockContext.block, txn);
+            auto call_execution_result = executor.call_sync(blockContext.block, txn);
 
-            if (execution_result.pre_check_error) {
-                result.error = execution_result.pre_check_error;
-                co_return result;
+            if (call_execution_result.pre_check_error) {
+                result.error = call_execution_result.pre_check_error;
+                return result;
             }
 
             if ((clock_time::since(start_time) / 1000000) > timeout) {
                 std::ostringstream oss;
                 oss << "execution aborted (timeout = " << static_cast<double>(timeout) / 1000.0 << "s)";
                 result.error = oss.str();
-                co_return result;
+                return result;
             }
 
             nlohmann::json reply;
-            if (execution_result.error_code == evmc_status_code::EVMC_SUCCESS) {
-                reply["value"] = "0x" + silkworm::to_hex(execution_result.data);
+            if (call_execution_result.error_code == evmc_status_code::EVMC_SUCCESS) {
+                reply["value"] = "0x" + silkworm::to_hex(call_execution_result.data);
             } else {
-                const auto error_message = EVMExecutor::get_error_message(execution_result.error_code, execution_result.data);
-                if (execution_result.data.empty()) {
+                const auto error_message = EVMExecutor::get_error_message(call_execution_result.error_code, call_execution_result.data);
+                if (call_execution_result.data.empty()) {
                     reply["error"] = error_message;
                 } else {
-                    RevertError revert_error{{3, error_message}, execution_result.data};
+                    RevertError revert_error{{3, error_message}, call_execution_result.data};
                     reply = revert_error;
                 }
             }
@@ -160,6 +141,49 @@ boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bund
         }
         result.results.push_back(results);
     }
+    return result;
+}
+
+boost::asio::awaitable<CallManyResult> CallExecutor::execute(const Bundles& bundles, const SimulationContext& context,
+                                                             const AccountsOverrides& accounts_overrides,
+                                                             std::optional<std::uint64_t> opt_timeout) {
+    ethdb::TransactionDatabase tx_database{transaction_};
+
+    std::uint16_t count{0};
+    bool empty = true;
+    for (const auto& bundle : bundles) {
+        SILK_DEBUG << "bundle[" << count++ << "]: " << bundle;
+        if (bundle.transactions.size() > 0) {
+            empty = false;
+        }
+    }
+    CallManyResult result;
+    if (empty) {
+        result.error = "empty all bundles transactions";
+        co_return result;
+    }
+
+    const auto chain_id = co_await core::rawdb::read_chain_id(tx_database);
+    const auto chain_config_ptr = lookup_chain_config(chain_id);
+
+    const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, tx_database, context.block_number);
+    auto transaction_index = context.transaction_index;
+    if (transaction_index == -1) {
+        transaction_index = static_cast<std::int32_t>(block_with_hash->block.transactions.size());
+    }
+
+    auto this_executor = co_await boost::asio::this_coro::executor;
+    result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(CallManyResult)>(
+        [&](auto&& self) {
+            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
+                result = executes_all_bundles(chain_config_ptr, *block_with_hash, tx_database, bundles, opt_timeout, accounts_overrides, transaction_index, this_executor);
+                boost::asio::post(this_executor, [result, self = std::move(self)]() mutable {
+                    self.complete(result);
+                });
+            });
+        },
+        boost::asio::use_awaitable);
+
     co_return result;
 }
 

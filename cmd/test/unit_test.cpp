@@ -14,5 +14,16 @@
    limitations under the License.
 */
 
-#define CATCH_CONFIG_MAIN
+#include <cstdio>
+
+#define CATCH_CONFIG_RUNNER
 #include <catch2/catch.hpp>
+
+int main(int argc, char* argv[]) {
+#ifdef _WIN32
+    _setmaxstdio(1024);
+#endif
+
+    Catch::Session session;
+    return session.run(argc, argv);
+}

@@ -20,7 +20,14 @@
 
 namespace silkworm::rpc {
 
-class ProtocolErrorCategory : public boost::system::error_category {
+// avoid non-virtual-dtor warning, see generic_error_category.hpp
+/*
+#if ( defined( BOOST_GCC ) && BOOST_GCC >= 40600 ) || defined( BOOST_CLANG )
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
+#endif
+*/
+class ProtocolErrorCategory final : public boost::system::error_category {
   public:
     [[nodiscard]] const char* name() const noexcept override {
         return "rpc::ProtocolErrorCategory";
@@ -53,12 +60,18 @@ class ProtocolErrorCategory : public boost::system::error_category {
         }
     }
 
-    virtual ~ProtocolErrorCategory() = default;
+    static ProtocolErrorCategory instance;
 };
+/*
+#if ( defined( BOOST_GCC ) && BOOST_GCC >= 40600 ) || defined( BOOST_CLANG )
+#pragma GCC diagnostic pop
+#endif
+*/
+
+ProtocolErrorCategory ProtocolErrorCategory::instance;
 
 boost::system::error_code to_system_code(ErrorCode e) {
-    thread_local ProtocolErrorCategory tls_category_instance{};
-    return {static_cast<int>(e), tls_category_instance};
+    return {static_cast<int>(e), ProtocolErrorCategory::instance};
 }
 
 }  // namespace silkworm::rpc

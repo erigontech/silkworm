@@ -53,15 +53,17 @@ TEST_CASE("EliasFanoList32", "[silkworm][recsplit][elias_fano]") {
     std::stringstream str_stream;
     str_stream << ef_list;
     const std::string stream = str_stream.str();
-    CHECK(Bytes{stream.cbegin(), stream.cend()} ==
+    Bytes ef_bytes{stream.cbegin(), stream.cend()};
+    CHECK(ef_bytes ==
           *from_hex("0000000000000012"  // count
                     "000000000000003f"  // u
                     "81bc0000000000000000000000000000a952095445490200000000000000000000000000000000000000000000000000"));
 
-    std::vector<uint64_t> data{ef_list.data()};
-    EliasFanoList32 ef_list2{0x12, 0x3f, data};
+    constexpr std::size_t kParamsSize{2 * sizeof(uint64_t)};  // count + u length in bytes
+    std::span<uint8_t> data{ef_bytes.data() + kParamsSize, ef_bytes.size() - kParamsSize};
+    EliasFanoList32 ef_list_copy{0x12, 0x3f, data};
     for (uint64_t i{0}; i < offsets.size(); i++) {
-        const uint64_t x = ef_list2.get(i);
+        const uint64_t x = ef_list_copy.get(i);
         CHECK(x == offsets[i]);
     }
 }

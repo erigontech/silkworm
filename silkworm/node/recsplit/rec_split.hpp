@@ -294,7 +294,7 @@ class RecSplit {
             offset += kEliasFano32CountLength;
             const uint64_t u = endian::load_big_u64(address + offset);
             offset += kEliasFano32ULength;
-            Bytes remaining_data{address + offset, encoded_file_->length() - offset};  // copy to avoid UB
+            std::span<uint8_t> remaining_data{address + offset, encoded_file_->length() - offset};
             ef_offsets_ = std::make_unique<EliasFano>(count, u, remaining_data);
             offset += ef_offsets_->data().size() * sizeof(uint64_t);
         }

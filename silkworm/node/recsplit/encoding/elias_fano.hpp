@@ -107,7 +107,7 @@ class EliasFanoList32 {
         count_ = sequence_length - 1;
         max_offset_ = max_offset;
         u_ = max_offset + 1;
-        words_upper_bits_ = derive_fields();
+        derive_fields();
     }
 
     //! Create a new 32-bit EF list from an existing data sequence
@@ -116,7 +116,10 @@ class EliasFanoList32 {
     EliasFanoList32(uint64_t count, uint64_t u, std::span<uint8_t> data)
         : count_(count), u_(u) {
         max_offset_ = u_ - 1;
-        derive_fields(data);
+        const auto total_words = derive_fields();
+        SILKWORM_ASSERT(total_words * sizeof(uint64_t) <= data.size());
+        data = data.subspan(0, total_words * sizeof(uint64_t));
+        std::copy(data.begin(), data.end(), reinterpret_cast<uint8_t*>(data_.data()));
     }
 
     [[nodiscard]] std::size_t sequence_length() const { return count_ + 1; }
@@ -171,7 +174,7 @@ class EliasFanoList32 {
     }
 
     void build() {
-        for (uint64_t i{0}, c{0}, last_super_q{0}; i < words_upper_bits_; ++i) {
+        for (uint64_t i{0}, c{0}, last_super_q{0}; i < upper_bits_.size(); ++i) {
             for (uint64_t b{0}; b < 64; ++b) {
                 if ((upper_bits_[i] & (uint64_t(1) << b)) != 0) {
                     if ((c & kSuperQMask) == 0) {
@@ -223,31 +226,11 @@ class EliasFanoList32 {
         uint64_t jump_words = jump_size_words();
         uint64_t total_words = words_lower_bits + words_upper_bits + jump_words;
         data_.resize(total_words);
-        std::span data_span{data_.data(), data_.size()};
-        lower_bits_ = data_span.subspan(0, words_lower_bits);
-        upper_bits_ = data_span.subspan(words_lower_bits, words_upper_bits);
-        jump_ = data_span.subspan(words_lower_bits + words_upper_bits, jump_words);
-
-        return words_upper_bits;
-    }
-
-    uint64_t derive_fields(std::span<uint8_t> data) {
-        l_ = u_ / (count_ + 1) == 0 ? 0 : 63 ^ uint64_t(std::countl_zero(u_ / (count_ + 1)));
-        lower_bits_mask_ = (uint64_t(1) << l_) - 1;
-
-        uint64_t words_lower_bits = ((count_ + 1) * l_ + 63) / 64 + 1;
-        uint64_t words_upper_bits = ((count_ + 1) + (u_ >> l_) + 63) / 64;
-        uint64_t jump_words = jump_size_words();
-        uint64_t total_words = words_lower_bits + words_upper_bits + jump_words;
-        SILKWORM_ASSERT(total_words * sizeof(uint64_t) <= data.size());
-        data = data.subspan(0, total_words * sizeof(uint64_t));
-        data_.resize(total_words);
-        std::copy(data.begin(), data.end(), reinterpret_cast<uint8_t*>(data_.data()));
         lower_bits_ = std::span{data_.data(), words_lower_bits};
         upper_bits_ = std::span{data_.data() + words_lower_bits, words_upper_bits};
         jump_ = std::span{data_.data() + words_lower_bits + words_upper_bits, jump_words};
 
-        return words_upper_bits;
+        return total_words;
     }
 
     [[nodiscard]] inline uint64_t jump_size_words() const {
@@ -267,7 +250,6 @@ class EliasFanoList32 {
     uint64_t l_{0};
     uint64_t max_offset_{0};
     uint64_t i_{0};
-    uint64_t words_upper_bits_{0};
     Uint64Sequence data_;
 };
 

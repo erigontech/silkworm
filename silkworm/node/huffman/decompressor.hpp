@@ -243,10 +243,15 @@ class Decompressor {
         return compressed_file_->last_write_time();
     }
 
+    [[nodiscard]] bool is_open() const { return bool(compressed_file_); }
+
     void open();
 
     //! Read the data stream eagerly applying the specified function, expected read in sequential order
     bool read_ahead(ReadAheadFuncRef fn);
+
+    //! Get an iterator to the compressed data
+    [[nodiscard]] Iterator make_iterator() const { return Iterator{this}; }
 
     void close();
 

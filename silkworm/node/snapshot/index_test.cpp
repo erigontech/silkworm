@@ -31,6 +31,14 @@ TEST_CASE("Index::Index", "[silkworm][snapshot][index]") {
     CHECK_THROWS_AS(header_index.build(), std::logic_error);
 }
 
+TEST_CASE("BodyIndex::build OK", "[silkworm][snapshot][index]") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test::SampleBodySnapshotFile valid_body_snapshot{};
+    test::SampleBodySnapshotPath body_snapshot_path{valid_body_snapshot.path()};  // necessary to tweak the block numbers
+    BodyIndex body_index{body_snapshot_path};
+    CHECK_NOTHROW(body_index.build());
+}
+
 TEST_CASE("TransactionIndex::build KO: empty snapshot", "[silkworm][snapshot][index]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     constexpr const char* kBodiesSnapshotFileName{"v1-014500-015000-bodies.seg"};

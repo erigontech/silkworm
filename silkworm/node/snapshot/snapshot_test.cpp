@@ -93,4 +93,22 @@ TEST_CASE("Snapshot::close", "[silkworm][snapshot][snapshot]") {
     CHECK_NOTHROW(tmp_snapshot.close());
 }
 
+TEST_CASE("BodySnapshot::body_by_number OK", "[silkworm][snapshot][index]") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test::SampleBodySnapshotFile valid_body_snapshot{};
+    test::SampleBodySnapshotPath body_snapshot_path{valid_body_snapshot.path()};  // necessary to tweak the block numbers
+    BodyIndex body_index{body_snapshot_path};
+    CHECK_NOTHROW(body_index.build());
+
+    BodySnapshot body_snapshot{body_snapshot_path.path(), body_snapshot_path.block_from(), body_snapshot_path.block_to()};
+    body_snapshot.reopen_segment();
+    body_snapshot.reopen_index();
+    const auto body_for_storage = body_snapshot.stored_body_by_number(1'500'013);
+    CHECK(body_for_storage);
+    if (body_for_storage) {
+        CHECK(body_for_storage->base_txn_id == 7'341'273);
+        CHECK(body_for_storage->txn_count == 1);
+    }
+}
+
 }  // namespace silkworm::snapshot

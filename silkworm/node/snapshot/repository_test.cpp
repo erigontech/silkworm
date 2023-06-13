@@ -66,6 +66,10 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][snapshot][snapshot]") {
         CHECK(repository.view_header_segments(successful_walk) == 0);
         CHECK(repository.view_body_segments(successful_walk) == 0);
         CHECK(repository.view_tx_segments(successful_walk) == 0);
+
+        CHECK(repository.find_header_segment(14'500'000) == nullptr);
+        CHECK(repository.find_body_segment(11'500'000) == nullptr);
+        CHECK(repository.find_tx_segment(15'000'000) == nullptr);
     }
 
     SECTION("empty snapshots") {
@@ -81,6 +85,10 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][snapshot][snapshot]") {
         CHECK(repository.view_header_segments(successful_walk) == 0);  // empty snapshots are ignored by repository
         CHECK(repository.view_body_segments(successful_walk) == 0);    // empty snapshots are ignored by repository
         CHECK(repository.view_tx_segments(successful_walk) == 0);      // empty snapshots are ignored by repository
+
+        CHECK(repository.find_header_segment(14'500'000) == nullptr);
+        CHECK(repository.find_body_segment(11'500'000) == nullptr);
+        CHECK(repository.find_tx_segment(15'000'000) == nullptr);
     }
 
     SECTION("non-empty snapshots") {
@@ -103,6 +111,10 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][snapshot][snapshot]") {
         CHECK(repository.view_header_segments(successful_walk) == 1);
         CHECK(repository.view_body_segments(successful_walk) == 1);
         CHECK(repository.view_tx_segments(successful_walk) == 1);
+
+        CHECK(repository.find_header_segment(14'500'000) != nullptr);
+        CHECK(repository.find_body_segment(11'500'000) != nullptr);
+        CHECK(repository.find_tx_segment(15'000'000) != nullptr);
     }
 }
 

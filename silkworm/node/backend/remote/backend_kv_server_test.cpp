@@ -895,7 +895,10 @@ TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][no
 TEST_CASE("BackEndKvServer E2E: Tx max simultaneous readers exceeded", "[silkworm][node][rpc]") {
     // This check can be improved in Catch2 version 3.3.0 where SKIP is available
     if (os::max_file_descriptors() < 1024) {
-        FAIL("insufficient number of process file descriptors, increase to 1024 at least");
+        bool ok = os::set_max_file_descriptors(1024);
+        if (!ok) {
+            FAIL("insufficient number of process file descriptors, increase to 1024 has failed");
+        }
     }
 
     BackEndKvE2eTest test;

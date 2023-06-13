@@ -58,48 +58,18 @@ jobs:
       working-directory: C:\build
       run: cmake ${{runner.workspace}}\silkworm -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }}
 
-    - name: Build silkworm
+    - name: Build unit tests
       working-directory: C:\build
-      # Skip silkworm to avoid fatal error C1002: compiler is out of heap space in pass 2
-      # run: cmake --build . --config ${{ matrix.config.build_type }} --target silkworm -j 2
-      run: echo "Skip silkworm build to avoid fatal error C1002 compiler is out of heap space in pass 2"
-
-    - name: Build core_test
-      working-directory: C:\build
-      run: cmake --build . --config ${{ matrix.config.build_type }} --target core_test -j 2
-
-    - name: Build infra_test
-      working-directory: C:\build
-      run: cmake --build . --config ${{ matrix.config.build_type }} --target infra_test -j 2
-
-    - name: Build node_test
-      working-directory: C:\build
-      run: cmake --build . --config ${{ matrix.config.build_type }} --target node_test -j 2
-
-    - name: Build rpcdaemon_test
-      working-directory: C:\build
-      # Skip rpcdaemon_test to avoid fatal error C1002: compiler is out of heap space in pass 2
-      # run: cmake --build . --config ${{ matrix.config.build_type }} --target rpcdaemon_test -j 2
-      run: echo "Skip rpcdaemon_test build to avoid fatal error C1002 compiler is out of heap space in pass 2"
-
-    - name: Build sentry_test
-      working-directory: C:\build
-      run: cmake --build . --config ${{ matrix.config.build_type }} --target sentry_test -j 2
-
-    - name: Build sync_test
-      working-directory: C:\build
-      run: cmake --build . --config ${{ matrix.config.build_type }} --target sync_test -j 2
+      run: cmake --build . --config ${{ matrix.config.build_type }} --target all_unit_tests -j 1
 
     - name: Build Ethereum EL tests
       working-directory: C:\build
       run: cmake --build . --config ${{ matrix.config.build_type }} --target ethereum -j 2
 
-    - name: Test
+    - name: Unit tests
+      run: cmake -DSILKWORM_BUILD_DIR=C:\build -P cmake\run_unit_tests.cmake
+
+    - name: Ethereum EL tests
       working-directory: C:\build
       run: |
-        cmd/test/${{ matrix.config.build_type }}/core_test
-        cmd/test/${{ matrix.config.build_type }}/infra_test
-        cmd/test/${{ matrix.config.build_type }}/node_test
-        cmd/test/${{ matrix.config.build_type }}/sentry_test
-        cmd/test/${{ matrix.config.build_type }}/sync_test
         cmd/test/${{ matrix.config.build_type }}/ethereum --threads 4

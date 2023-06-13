@@ -197,6 +197,7 @@ TEST_CASE("PositionTable::operator<<", "[silkworm][snapshot][decompressor]") {
 TEST_CASE("Decompressor::Decompressor", "[silkworm][snapshot][decompressor]") {
     const auto tmp_file_path{silkworm::TemporaryDirectory::get_unique_temporary_path()};
     Decompressor decoder{tmp_file_path};
+    CHECK(!decoder.is_open());
     CHECK(decoder.compressed_path() == tmp_file_path);
     CHECK(decoder.words_count() == 0);
     CHECK(decoder.empty_words_count() == 0);
@@ -266,6 +267,7 @@ TEST_CASE("Decompressor::open valid files", "[silkworm][snapshot][decompressor]"
             test::TemporarySnapshotFile tmp_snapshot{header};
             Decompressor decoder{tmp_snapshot.path()};
             CHECK_NOTHROW(decoder.open());
+            CHECK(decoder.is_open());
         }
     }
 }
@@ -302,10 +304,12 @@ TEST_CASE("Decompressor::close", "[silkworm][snapshot][decompressor]") {
         .positions = std::vector<test::SnapshotPosition>{{0, 1}}};
     test::TemporarySnapshotFile tmp_snapshot{header};
     Decompressor decoder{tmp_snapshot.path()};
-    CHECK_NOTHROW(decoder.open());
+    REQUIRE_NOTHROW(decoder.open());
+    REQUIRE(decoder.is_open());
 
     SECTION("close after open") {
         CHECK_NOTHROW(decoder.close());
+        CHECK(!decoder.is_open());
     }
 
     SECTION("close after close") {
@@ -409,7 +413,8 @@ TEST_CASE("Decompressor: lorem ipsum next_uncompressed", "[silkworm][snapshot][d
     tmp_file.write(kLoremIpsumDict);
     Decompressor decoder{tmp_file.path()};
     CHECK_NOTHROW(decoder.open());
-    decoder.read_ahead([&](auto it) {
+
+    auto test_function = [&](auto it) {
         std::size_t i{0};
         while (it.has_next() && i < kLoremIpsumWords.size()) {
             if (i % 2 == 0) {
@@ -426,16 +431,23 @@ TEST_CASE("Decompressor: lorem ipsum next_uncompressed", "[silkworm][snapshot][d
         CHECK_FALSE(it.has_next());
         CHECK(i == kLoremIpsumWords.size());
         return true;
-    });
+    };
+    // Apply function using Decompressor::read_ahead
+    decoder.read_ahead(test_function);
+
+    // Obtain an iterator and manually apply function
+    auto it = decoder.make_iterator();
+    CHECK(test_function(it));
 }
 
-TEST_CASE("Decompressor: lorem ipsum skip", "[silkworm][snapshot][decompressor]") {
+TEST_CASE("Decompressor: lorem ipsum next", "[silkworm][snapshot][decompressor]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile tmp_file{};
     tmp_file.write(kLoremIpsumDict);
     Decompressor decoder{tmp_file.path()};
     CHECK_NOTHROW(decoder.open());
-    decoder.read_ahead([&](auto it) {
+
+    auto test_function = [&](auto it) {
         std::size_t i{0};
         while (it.has_next() && i < kLoremIpsumWords.size()) {
             if (i % 2 == 0) {
@@ -452,7 +464,13 @@ TEST_CASE("Decompressor: lorem ipsum skip", "[silkworm][snapshot][decompressor]"
         CHECK_FALSE(it.has_next());
         CHECK(i == kLoremIpsumWords.size());
         return true;
-    });
+    };
+    // Apply function using Decompressor::read_ahead
+    decoder.read_ahead(test_function);
+
+    // Obtain an iterator and manually apply function
+    auto it = decoder.make_iterator();
+    CHECK(test_function(it));
 }
 
 }  // namespace silkworm::huffman

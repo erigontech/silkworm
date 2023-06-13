@@ -173,7 +173,12 @@ class HelloWorldSnapshotFile : public TemporarySnapshotFile {
     };
 };
 
+// SampleBodySnapshotFile + SampleBodySnapshotFile + SampleTransactionSnapshotFile
+// Sample snapshot files for mainnet block 1'500'013 containing 1 tx: https://etherscan.io/block/1500013
+
 //! Sample Bodies snapshot file: it contains body for block 1'500'013 on mainnet
+//! The main simplification here is that this snapshot contains 14 repeated block bodies: the first
+//! 13 are fillers (all equal to 1'500'013 for simplicity) just for positioning the 14-th correctly
 class SampleBodySnapshotFile : public TemporarySnapshotFile {
   public:
     inline static constexpr const char* kBodiesSnapshotFileName{"v1-001500-001500-bodies.seg"};
@@ -213,29 +218,31 @@ class SampleTransactionSnapshotFile : public TemporarySnapshotFile {
           ) {}
 };
 
-class HeaderSnapshotPath : public SnapshotPath {
+class SampleSnapshotPath : public SnapshotPath {
   public:
-    HeaderSnapshotPath(std::filesystem::path path, BlockNum from, BlockNum to)
-        : SnapshotPath(std::move(path), /*.version=*/1, from, to, SnapshotType::headers) {}
+    SampleSnapshotPath(std::filesystem::path path, BlockNum from, BlockNum to, SnapshotType type)
+        : SnapshotPath(std::move(path), /*.version=*/1, from, to, type) {}
 };
 
-class BodySnapshotPath : public SnapshotPath {
+//! Sample Header snapshot path injecting custom from/to blocks to override 500'000 block range
+class SampleHeaderSnapshotPath : public SampleSnapshotPath {
   public:
-    BodySnapshotPath(std::filesystem::path path, BlockNum from, BlockNum to)
-        : SnapshotPath(std::move(path), /*.version=*/1, from, to, SnapshotType::bodies) {}
+    explicit SampleHeaderSnapshotPath(std::filesystem::path path)
+        : SampleSnapshotPath(std::move(path), 1'500'000, 1'500'014, SnapshotType::headers) {}
 };
 
-class TransactionSnapshotPath : public SnapshotPath {
+//! Sample Body snapshot path injecting custom from/to blocks to override 500'000 block range
+class SampleBodySnapshotPath : public SampleSnapshotPath {
   public:
-    TransactionSnapshotPath(std::filesystem::path path, BlockNum from, BlockNum to)
-        : SnapshotPath(std::move(path), /*.version=*/1, from, to, SnapshotType::transactions) {}
+    explicit SampleBodySnapshotPath(std::filesystem::path path)
+        : SampleSnapshotPath(std::move(path), 1'500'000, 1'500'014, SnapshotType::bodies) {}
 };
 
 //! Sample Transaction snapshot path injecting custom from/to blocks to override 500'000 block range
-class SampleTransactionSnapshotPath : public test::TransactionSnapshotPath {
+class SampleTransactionSnapshotPath : public SampleSnapshotPath {
   public:
     explicit SampleTransactionSnapshotPath(std::filesystem::path path)
-        : test::TransactionSnapshotPath(std::move(path), 1'500'000, 1'500'014) {}
+        : SampleSnapshotPath(std::move(path), 1'500'000, 1'500'014, SnapshotType::transactions) {}
 };
 
 }  // namespace silkworm::test

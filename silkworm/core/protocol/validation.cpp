@@ -41,7 +41,11 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
                                           const std::optional<intx::uint256>& base_fee_per_gas,
                                           const std::optional<intx::uint256>& data_gas_price) {
     if (txn.chain_id.has_value()) {
-        if (rev < EVMC_SPURIOUS_DRAGON || txn.chain_id.value() != chain_id) {
+        if (rev < EVMC_SPURIOUS_DRAGON) {
+            // EIP-155 transaction before EIP-155 was activated
+            return ValidationResult::kUnsupportedTransactionType;
+        }
+        if (txn.chain_id.value() != chain_id) {
             return ValidationResult::kWrongChainId;
         }
     }

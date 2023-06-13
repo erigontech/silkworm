@@ -101,6 +101,30 @@ SnapshotRepository::ViewResult SnapshotRepository::view_tx_segment(BlockNum numb
     return view(tx_segments_, number, walker);
 }
 
+std::size_t SnapshotRepository::view_header_segments(const HeaderSnapshotWalker& walker) {
+    return view(header_segments_, walker);
+}
+
+std::size_t SnapshotRepository::view_body_segments(const BodySnapshotWalker& walker) {
+    return view(body_segments_, walker);
+}
+
+std::size_t SnapshotRepository::view_tx_segments(const TransactionSnapshotWalker& walker) {
+    return view(tx_segments_, walker);
+}
+
+const HeaderSnapshot* SnapshotRepository::find_header_segment(BlockNum number) const {
+    return find_segment(header_segments_, number);
+}
+
+const BodySnapshot* SnapshotRepository::find_body_segment(BlockNum number) const {
+    return find_segment(body_segments_, number);
+}
+
+const TransactionSnapshot* SnapshotRepository::find_tx_segment(BlockNum number) const {
+    return find_segment(tx_segments_, number);
+}
+
 std::vector<std::shared_ptr<Index>> SnapshotRepository::missing_indexes() const {
     SnapshotPathList segment_files = get_segment_files();
     std::vector<std::shared_ptr<Index>> missing_index_list;
@@ -205,13 +229,42 @@ void SnapshotRepository::close_segments_not_in_list(const SnapshotPathList& /*se
 template <ConcreteSnapshot T>
 SnapshotRepository::ViewResult SnapshotRepository::view(const SnapshotsByPath<T>& segments, BlockNum number,
                                                         const SnapshotWalker<T>& walker) {
-    for (const auto& [_, snapshot] : segments) {
+    // Search for target segment in reverse order (from the newest segment to the oldest one)
+    for (auto it = segments.rbegin(); it != segments.rend(); ++it) {
+        const auto& snapshot = it->second;
+        // We're looking for the segment containing the target block number in its block range
         if (snapshot->block_from() <= number && number < snapshot->block_to()) {
             const bool walk_done = walker(snapshot.get());
             return walk_done ? kWalkSuccess : kWalkFailed;
         }
     }
     return kSnapshotNotFound;
+}
+
+template <ConcreteSnapshot T>
+std::size_t SnapshotRepository::view(const SnapshotsByPath<T>& segments, const SnapshotWalker<T>& walker) {
+    // Search for target segment in reverse order (from the newest segment to the oldest one)
+    std::size_t visited_views{0};
+    bool walk_done{false};
+    for (auto it = segments.rbegin(); it != segments.rend() && !walk_done; ++it) {
+        const auto& snapshot = it->second;
+        walk_done = walker(snapshot.get());
+        ++visited_views;
+    }
+    return visited_views;
+}
+
+template <ConcreteSnapshot T>
+const T* SnapshotRepository::find_segment(const SnapshotsByPath<T>& segments, BlockNum number) {
+    // Search for target segment in reverse order (from the newest segment to the oldest one)
+    for (auto it = segments.rbegin(); it != segments.rend(); ++it) {
+        const auto& snapshot = it->second;
+        // We're looking for the segment containing the target block number in its block range
+        if (snapshot->block_from() <= number && number < snapshot->block_to()) {
+            return snapshot.get();
+        }
+    }
+    return nullptr;
 }
 
 template <ConcreteSnapshot T>

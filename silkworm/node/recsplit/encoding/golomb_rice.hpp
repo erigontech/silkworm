@@ -50,6 +50,7 @@
 #include <iostream>
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/recsplit/encoding/sequence.hpp>
 #include <silkworm/node/recsplit/support/common.hpp>
 
@@ -118,7 +119,7 @@ class GolombRiceVector {
     GolombRiceVector() = default;
     explicit GolombRiceVector(std::vector<uint64_t>&& input_data) : data(std::move(input_data)) {}
 
-    [[nodiscard]] size_t size() const { return data.size(); }
+    [[nodiscard]] std::size_t size() const { return data.size(); }
 
     class Reader {
       public:
@@ -146,14 +147,18 @@ class GolombRiceVector {
             result += pos;
             result <<= log2golomb;
 
-            uint64_t fixed;
-            std::memcpy(&fixed, reinterpret_cast<const uint8_t*>(data.data()) + curr_fixed_offset / 8, 8);
-            result |= (fixed >> curr_fixed_offset % 8) & ((uint64_t(1) << log2golomb) - 1);
+            std::size_t idx64 = curr_fixed_offset >> 6;
+            uint64_t shift = curr_fixed_offset & 63;
+            uint64_t fixed = data[idx64] >> shift;
+            if (shift + log2golomb > 64) {
+                fixed |= data[idx64 + 1] << (64 - shift);
+            }
+            result |= fixed & ((uint64_t(1) << log2golomb) - 1);
             curr_fixed_offset += log2golomb;
             return result;
         }
 
-        void skip_subtree(const size_t nodes, const size_t fixed_len) {
+        void skip_subtree(const std::size_t nodes, const std::size_t fixed_len) {
             SILKWORM_ASSERT(nodes > 0);
             std::size_t missing = nodes, cnt;
             while ((cnt = static_cast<std::size_t>(nu(curr_window_unary))) < missing) {
@@ -169,10 +174,9 @@ class GolombRiceVector {
             curr_fixed_offset += fixed_len;
         }
 
-        void read_reset(const size_t bit_pos, const size_t unary_offset) {
-            // assert(bit_pos < bit_count);
+        void read_reset(const std::size_t bit_pos, const std::size_t unary_offset) {
             curr_fixed_offset = bit_pos;
-            size_t unary_pos = bit_pos + unary_offset;
+            std::size_t unary_pos = bit_pos + unary_offset;
             curr_ptr_unary = data.data() + unary_pos / 64;
             curr_window_unary = *(curr_ptr_unary++) >> (unary_pos & 63);
             valid_lower_bits_unary = 64 - (unary_pos & 63);

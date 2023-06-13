@@ -231,6 +231,7 @@ jobs:
     environment:
       BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=address,undefined
       ASAN_OPTIONS: alloc_dealloc_mismatch=0 # https://github.com/llvm/llvm-project/issues/59432
+      UBSAN_OPTIONS: print_stacktrace=1
     machine:
       image: ubuntu-2204:2023.04.2
     resource_class: xlarge

@@ -79,6 +79,14 @@ class SnapshotRepository {
     ViewResult view_body_segment(BlockNum number, const BodySnapshotWalker& walker);
     ViewResult view_tx_segment(BlockNum number, const TransactionSnapshotWalker& walker);
 
+    std::size_t view_header_segments(const HeaderSnapshotWalker& walker);
+    std::size_t view_body_segments(const BodySnapshotWalker& walker);
+    std::size_t view_tx_segments(const TransactionSnapshotWalker& walker);
+
+    [[nodiscard]] const HeaderSnapshot* find_header_segment(BlockNum number) const;
+    [[nodiscard]] const BodySnapshot* find_body_segment(BlockNum number) const;
+    [[nodiscard]] const TransactionSnapshot* find_tx_segment(BlockNum number) const;
+
     [[nodiscard]] std::vector<std::shared_ptr<Index>> missing_indexes() const;
 
     [[nodiscard]] BlockNum segment_max_block() const { return segment_max_block_; }
@@ -95,6 +103,12 @@ class SnapshotRepository {
 
     template <ConcreteSnapshot T>
     static ViewResult view(const SnapshotsByPath<T>& segments, BlockNum number, const SnapshotWalker<T>& walker);
+
+    template <ConcreteSnapshot T>
+    static std::size_t view(const SnapshotsByPath<T>& segments, const SnapshotWalker<T>& walker);
+
+    template <ConcreteSnapshot T>
+    static const T* find_segment(const SnapshotsByPath<T>& segments, BlockNum number);
 
     template <ConcreteSnapshot T>
     static bool reopen(SnapshotsByPath<T>& segments, const SnapshotPath& seg_file);

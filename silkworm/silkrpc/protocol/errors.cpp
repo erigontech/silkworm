@@ -20,6 +20,12 @@
 
 namespace silkworm::rpc {
 
+// avoid GCC non-virtual-dtor warning
+#if (defined(BOOST_GCC) && BOOST_GCC >= 40600) || defined(BOOST_CLANG)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
+#endif
+
 class ProtocolErrorCategory final : public boost::system::error_category {
   public:
     [[nodiscard]] const char* name() const noexcept override {
@@ -55,6 +61,10 @@ class ProtocolErrorCategory final : public boost::system::error_category {
 
     static ProtocolErrorCategory instance;
 };
+
+#if (defined(BOOST_GCC) && BOOST_GCC >= 40600) || defined(BOOST_CLANG)
+#pragma GCC diagnostic pop
+#endif
 
 ProtocolErrorCategory ProtocolErrorCategory::instance;
 

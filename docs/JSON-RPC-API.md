@@ -82,9 +82,10 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | engine_newPayloadV1                        | Yes          |                                            |
 | engine_newPayloadV2                        | Yes          |                                            |
 | engine_forkchoiceUpdatedV1                 | Yes          |                                            |
-| engine_forkchoiceUpdatedV2                 | -            | not yet implemented                        |
+| engine_forkchoiceUpdatedV2                 | Yes          |                                            |
 | engine_getPayloadV1                        | Yes          |                                            |
 | engine_getPayloadV2                        | Yes          |                                            |
+| engine_exchangeCapabilities                | Yes          |                                            |
 | engine_exchangeTransitionConfigurationV1   | Yes          |                                            |
 |                                            |              |                                            |
 | debug_accountRange                         | Yes          |                                            |

@@ -403,7 +403,7 @@ TEST_CASE("ExecutionEngine") {
     }
 
     SECTION("full stages validation") {
-        Environment::set_stop_before_stage("");  // all the stages
+        Environment::set_stop_before_stage("");                            // all the stages
         chain_config.protocol_rule_set = protocol::RuleSetType::kNoProof;  // skip seal validation
 
         // generate block 1
@@ -437,9 +437,9 @@ TEST_CASE("ExecutionEngine") {
         auto verification = exec_engine.verify_chain(block3_hash).get();  // FAILS at execution stage because "from" address has zero gas
 
         // todo: make this test pass
-        //REQUIRE(holds_alternative<ValidChain>(verification));
-        //auto valid_chain = std::get<ValidChain>(verification);
-        //CHECK(valid_chain.current_head == BlockId{3, block3_hash});
+        // REQUIRE(holds_alternative<ValidChain>(verification));
+        // auto valid_chain = std::get<ValidChain>(verification);
+        // CHECK(valid_chain.current_head == BlockId{3, block3_hash});
     }
 }
 

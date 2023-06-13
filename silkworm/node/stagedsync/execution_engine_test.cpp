@@ -22,11 +22,14 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/cast.hpp>
+#include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/core/protocol/validation.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/test/log.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
+#include <silkworm/node/db/access_layer.hpp>
+#include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/test/context.hpp>
@@ -35,63 +38,89 @@ namespace silkworm {
 
 namespace asio = boost::asio;
 using namespace stagedsync;
+using namespace intx;  // for literals
 
-static std::shared_ptr<Block> generateSampleChildrenBlock(const BlockHeader& parent) {
+static std::shared_ptr<Block> generateSampleBlock(const BlockHeader& parent, const ChainConfig& config) {
     auto block = std::make_shared<Block>();
     auto parent_hash = parent.hash();
 
+    uint64_t pseudo_random_gas_limit = parent.gas_limit + parent.number;
+    if (pseudo_random_gas_limit > parent.gas_limit / 1024) pseudo_random_gas_limit = parent.gas_limit;
+
     // BlockHeader
     block->header.number = parent.number + 1;
-    block->header.difficulty = 17'000'000'000 + block->header.number;
     block->header.parent_hash = parent_hash;
     block->header.beneficiary = 0xc8ebccc5f5689fa8659d83713341e5ad19349448_address;
     block->header.state_root = kEmptyRoot;
     block->header.receipts_root = kEmptyRoot;
-    block->header.gas_limit = 10'000'000;
+    block->header.gas_limit = pseudo_random_gas_limit;
     block->header.gas_used = 0;
     block->header.timestamp = parent.timestamp + 12;
     block->header.extra_data = {};
+    block->header.difficulty = protocol::EthashRuleSet::difficulty(
+        block->header.number, block->header.timestamp, parent.difficulty, parent.timestamp, false /*parent has uncles*/, config);
 
-    /*
     // BlockBody: transactions
-    block.transactions.resize(1);
-    if (block.header.number % 2 == 0) {
-        block.transactions[0].nonce = 172339;
-        block.transactions[0].max_priority_fee_per_gas = 50 * kGiga;
-        block.transactions[0].max_fee_per_gas = 50 * kGiga;
-        block.transactions[0].gas_limit = 90'000;
-        block.transactions[0].to = 0xe5ef458d37212a06e3f59d40c454e76150ae7c32_address;
-        block.transactions[0].value = 1'027'501'080 * kGiga;
-        block.transactions[0].data = {};
-        CHECK(block.transactions[0].set_v(27));
-        block.transactions[0].r = 0x48b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353_u256;
-        block.transactions[0].s = 0x1fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804_u256;
-    }
-    else {
-        block.transactions[0].type = TransactionType::kEip1559;
-        block.transactions[0].nonce = 1;
-        block.transactions[0].max_priority_fee_per_gas = 5 * kGiga;
-        block.transactions[0].max_fee_per_gas = 30 * kGiga;
-        block.transactions[0].gas_limit = 1'000'000;
-        block.transactions[0].to = {};
-        block.transactions[0].value = 0;
-        block.transactions[0].data = *from_hex("602a6000556101c960015560068060166000396000f3600035600055");
-        CHECK(block.transactions[0].set_v(37));
-        block.transactions[0].r = 0x52f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afb_u256;
-        block.transactions[0].s = 0x52f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afb_u256;
-    }
+    block->transactions.resize(1);
+    block->transactions[0].nonce = parent.number;
+    block->transactions[0].max_priority_fee_per_gas = 50 * kGiga;
+    block->transactions[0].max_fee_per_gas = 50 * kGiga;
+    block->transactions[0].gas_limit = 90'000;
+    block->transactions[0].to = 0xe5ef458d37212a06e3f59d40c454e76150ae7c32_address;
+    block->transactions[0].value = 1'027'501'080 * kGiga;
+    block->transactions[0].data = {};
+    CHECK(block->transactions[0].set_v(27));
+    block->transactions[0].r = 0x48b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353_u256;
+    block->transactions[0].s = 0x1fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804_u256;
 
-    block.header.transactions_root = protocol::compute_transaction_root(block);
+    block->header.transactions_root = protocol::compute_transaction_root(*block);
+
+    // BlockBody: ommers - doesn't work yet
+    //    block->ommers.resize(1);
+    //    block->ommers[0].parent_hash = parent_hash;
+    //    block->ommers[0].ommers_hash = kEmptyListHash;
+    //    block->ommers[0].beneficiary = 0x0c729be7c39543c3d549282a40395299d987cec2_address;
+    //    block->ommers[0].state_root = 0xc2bcdfd012534fa0b19ffba5fae6fc81edd390e9b7d5007d1e92e8e835286e9d_bytes32;
+    //    block->ommers[0].transactions_root = kEmptyRoot;
+    //    block->ommers[0].receipts_root = kEmptyRoot;
+    //    block->ommers[0].number = parent.number + 1;
+    //    block->ommers[0].gas_limit = pseudo_random_gas_limit;
+    //    block->ommers[0].gas_used = 0;
+    //    block->ommers[0].timestamp = 1455404305;
+    //    block->ommers[0].prev_randao = 0xf0a53dfdd6c2f2a661e718ef29092de60d81d45f84044bec7bf4b36630b2bc08_bytes32;
+    //    block->ommers[0].nonce[7] = 35;
+    //    block->ommers[0].difficulty = protocol::EthashRuleSet::difficulty(
+    //        block->ommers[0].number, block->ommers[0].timestamp, parent.difficulty, parent.timestamp, true /*parent has uncles*/, config);
+    //
+    //    block->header.ommers_hash = protocol::compute_ommers_hash(*block);
+
+    return block;
+}
+
+static std::shared_ptr<Block> generateSampleBlockWithOmmers(const BlockHeader& parent, const BlockHeader& ommer_parent, const ChainConfig& config) {
+    auto block = generateSampleBlock(parent, config);
+
+    uint64_t pseudo_random_gas_limit = ommer_parent.gas_limit + ommer_parent.number;
+    if (pseudo_random_gas_limit > ommer_parent.gas_limit / 1024) pseudo_random_gas_limit = ommer_parent.gas_limit;
 
     // BlockBody: ommers
-    block.ommers.resize(1);
-    block.ommers[0].parent_hash = parent_hash;
-    block.ommers[0].ommers_hash = kEmptyListHash;
-    block.ommers[0].beneficiary = 0x0c729be7c39543c3d549282a40395299d987cec2_address;
-    block.ommers[0].state_root = 0xc2bcdfd012534fa0b19ffba5fae6fc81edd390e9b7d5007d1e92e8e835286e9d_bytes32;
+    block->ommers.resize(1);
+    block->ommers[0].parent_hash = ommer_parent.hash();
+    block->ommers[0].ommers_hash = kEmptyListHash;
+    block->ommers[0].beneficiary = 0x0c729be7c39543c3d549282a40395299d987cec2_address;
+    block->ommers[0].state_root = 0xc2bcdfd012534fa0b19ffba5fae6fc81edd390e9b7d5007d1e92e8e835286e9d_bytes32;
+    block->ommers[0].transactions_root = kEmptyRoot;
+    block->ommers[0].receipts_root = kEmptyRoot;
+    block->ommers[0].number = ommer_parent.number + 1;
+    block->ommers[0].gas_limit = pseudo_random_gas_limit;
+    block->ommers[0].gas_used = 0;
+    block->ommers[0].timestamp = 1455404305;
+    block->ommers[0].prev_randao = 0xf0a53dfdd6c2f2a661e718ef29092de60d81d45f84044bec7bf4b36630b2bc08_bytes32;
+    block->ommers[0].nonce[7] = 35;
+    block->ommers[0].difficulty = protocol::EthashRuleSet::difficulty(
+        block->ommers[0].number, block->ommers[0].timestamp, ommer_parent.difficulty, ommer_parent.timestamp, true /*parent has uncles*/, config);
 
-    block.header.ommers_hash = protocol::compute_ommers_hash(block);
-    */
+    block->header.ommers_hash = protocol::compute_ommers_hash(*block);
 
     return block;
 }
@@ -113,8 +142,10 @@ TEST_CASE("ExecutionEngine") {
     context.add_genesis_data();
     context.commit_txn();
 
-    PreverifiedHashes::current.clear();                           // disable preverified hashes
-    Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
+    ChainConfig& chain_config = *context.node_settings().chain_config;
+    chain_config.protocol_rule_set = protocol::RuleSetType::kNoProof;  // skip seal validation
+
+    PreverifiedHashes::current.clear();  // disable preverified hashes
 
     db::RWAccess db_access{context.env()};
     ExecutionEngine_ForTest exec_engine{io, context.node_settings(), db_access};
@@ -137,6 +168,8 @@ TEST_CASE("ExecutionEngine") {
      */
 
     SECTION("one invalid body after the genesis") {
+        Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
+
         auto block1 = std::make_shared<Block>();
         block1->header.number = 1;
         block1->header.difficulty = 17'171'480'576;  // a random value
@@ -200,6 +233,8 @@ TEST_CASE("ExecutionEngine") {
     }
 
     SECTION("one valid body after the genesis") {
+        Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
+
         std::string raw_header1 =
             "f90211a0d4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3a01dcc4de8dec75d7aab85b567b6ccd41a"
             "d312451b948a7413f0a142fd40d493479405a56e2d52c817161883f50c441c3228cfe54d9fa0d67e4d450343046425ae4271474353"
@@ -261,13 +296,16 @@ TEST_CASE("ExecutionEngine") {
     }
 
     SECTION("a block that creates a fork") {
-        auto block1 = generateSampleChildrenBlock(*header0);
+        Environment::set_stop_before_stage(db::stages::kSendersKey);  // only headers, block hashes and bodies
+
+        // generating a chain
+        auto block1 = generateSampleBlock(*header0, chain_config);
         auto block1_hash = block1->header.hash();
 
-        auto block2 = generateSampleChildrenBlock(block1->header);
+        auto block2 = generateSampleBlock(block1->header, chain_config);
         auto block2_hash = block2->header.hash();
 
-        auto block3 = generateSampleChildrenBlock(block2->header);
+        auto block3 = generateSampleBlock(block2->header, chain_config);
         auto block3_hash = block3->header.hash();
 
         // inserting & verifying the block
@@ -297,7 +335,7 @@ TEST_CASE("ExecutionEngine") {
         CHECK(head_hash == block3_hash);
 
         // creating and reintegrating a fork
-        auto block4 = generateSampleChildrenBlock(block3->header);
+        auto block4 = generateSampleBlock(block3->header, chain_config);
         auto block4_hash = block4->header.hash();
         {
             // inserting & verifying the block
@@ -328,7 +366,7 @@ TEST_CASE("ExecutionEngine") {
         }
 
         // creating a fork and changing the head (trigger unwind)
-        auto block2b = generateSampleChildrenBlock(block1->header);
+        auto block2b = generateSampleBlock(block1->header, chain_config);
         block2b->header.extra_data = string_view_to_byte_view("I'm different");  // to make it different from block2
         auto block2b_hash = block2b->header.hash();
         {
@@ -363,6 +401,45 @@ TEST_CASE("ExecutionEngine") {
         CHECK(exec_engine.get_header(block3_hash).has_value());   // we do not remove old blocks
         CHECK(exec_engine.get_header(block4_hash).has_value());   // we do not remove old blocks
     }
+
+    //    SECTION("full stages validation") {
+    //        Environment::set_stop_before_stage("");  // all the stages
+    //        chain_config.protocol_rule_set = protocol::RuleSetType::kNoProof;  // skip seal validation
+    //
+    //        // generate block 1
+    //        auto block1 = generateSampleBlock(*header0, chain_config);
+    //        auto block1_hash = block1->header.hash();
+    //
+    //        // block generation check
+    //        auto validation_result = protocol::pre_validate_transactions(*block1, *context.node_settings().chain_config);
+    //        CHECK(validation_result == ValidationResult::kOk);
+    //        auto rule_set = protocol::rule_set_factory(*context.node_settings().chain_config);
+    //        db::Buffer chain_state{tx, /*prune_history_threshold=*/0, /*historical_block=null*/};
+    //
+    //        chain_state.insert_block(*block1, block1_hash);  // to validate next blocks
+    //
+    //        // generate block 2 & 3
+    //        auto block2 = generateSampleBlock(block1->header, chain_config);
+    //        auto block2_hash = block2->header.hash();
+    //
+    //        chain_state.insert_block(*block2, block2_hash);  // to validate next blocks
+    //
+    //        auto block3 = generateSampleBlockWithOmmers(block2->header, block1->header, chain_config);
+    //        auto block3_hash = block3->header.hash();
+    //
+    //        validation_result = rule_set->validate_ommers(*block3, chain_state);
+    //        CHECK(validation_result == ValidationResult::kOk);
+    //
+    //        // inserting & verifying the block
+    //        exec_engine.insert_block(block1);
+    //        exec_engine.insert_block(block2);
+    //        exec_engine.insert_block(block3);
+    //        auto verification = exec_engine.verify_chain(block3_hash).get();  // FAILS at execution stage because "from" address has zero gas
+    //
+    //        REQUIRE(holds_alternative<ValidChain>(verification));
+    //        auto valid_chain = std::get<ValidChain>(verification);
+    //        CHECK(valid_chain.current_head == BlockId{3, block3_hash});
+    //    }
 }
 
 }  // namespace silkworm

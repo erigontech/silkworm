@@ -26,6 +26,9 @@
 
 namespace silkworm::succinct {
 
+// Exclude tests from Windows build due to access issues with files in OS temporary dir
+#ifndef _WIN32
+
 //! Make the MPHF predictable just for testing
 constexpr int kTestSalt{1};
 
@@ -215,5 +218,7 @@ TEST_CASE("RecSplit8: double index lookup", "[silkworm][recsplit][.]") {
         CHECK(rs2.ordinal_lookup(enumeration_index) == i * 17);
     }
 }
+
+#endif  // _WIN32
 
 }  // namespace silkworm::succinct

@@ -402,44 +402,45 @@ TEST_CASE("ExecutionEngine") {
         CHECK(exec_engine.get_header(block4_hash).has_value());   // we do not remove old blocks
     }
 
-    //    SECTION("full stages validation") {
-    //        Environment::set_stop_before_stage("");  // all the stages
-    //        chain_config.protocol_rule_set = protocol::RuleSetType::kNoProof;  // skip seal validation
-    //
-    //        // generate block 1
-    //        auto block1 = generateSampleBlock(*header0, chain_config);
-    //        auto block1_hash = block1->header.hash();
-    //
-    //        // block generation check
-    //        auto validation_result = protocol::pre_validate_transactions(*block1, *context.node_settings().chain_config);
-    //        CHECK(validation_result == ValidationResult::kOk);
-    //        auto rule_set = protocol::rule_set_factory(*context.node_settings().chain_config);
-    //        db::Buffer chain_state{tx, /*prune_history_threshold=*/0, /*historical_block=null*/};
-    //
-    //        chain_state.insert_block(*block1, block1_hash);  // to validate next blocks
-    //
-    //        // generate block 2 & 3
-    //        auto block2 = generateSampleBlock(block1->header, chain_config);
-    //        auto block2_hash = block2->header.hash();
-    //
-    //        chain_state.insert_block(*block2, block2_hash);  // to validate next blocks
-    //
-    //        auto block3 = generateSampleBlockWithOmmers(block2->header, block1->header, chain_config);
-    //        auto block3_hash = block3->header.hash();
-    //
-    //        validation_result = rule_set->validate_ommers(*block3, chain_state);
-    //        CHECK(validation_result == ValidationResult::kOk);
-    //
-    //        // inserting & verifying the block
-    //        exec_engine.insert_block(block1);
-    //        exec_engine.insert_block(block2);
-    //        exec_engine.insert_block(block3);
-    //        auto verification = exec_engine.verify_chain(block3_hash).get();  // FAILS at execution stage because "from" address has zero gas
-    //
-    //        REQUIRE(holds_alternative<ValidChain>(verification));
-    //        auto valid_chain = std::get<ValidChain>(verification);
-    //        CHECK(valid_chain.current_head == BlockId{3, block3_hash});
-    //    }
+    SECTION("full stages validation") {
+        Environment::set_stop_before_stage("");  // all the stages
+        chain_config.protocol_rule_set = protocol::RuleSetType::kNoProof;  // skip seal validation
+
+        // generate block 1
+        auto block1 = generateSampleBlock(*header0, chain_config);
+        auto block1_hash = block1->header.hash();
+
+        // block generation check
+        auto validation_result = protocol::pre_validate_transactions(*block1, *context.node_settings().chain_config);
+        CHECK(validation_result == ValidationResult::kOk);
+        auto rule_set = protocol::rule_set_factory(*context.node_settings().chain_config);
+        db::Buffer chain_state{tx, /*prune_history_threshold=*/0, /*historical_block=null*/};
+
+        chain_state.insert_block(*block1, block1_hash);  // to validate next blocks
+
+        // generate block 2 & 3
+        auto block2 = generateSampleBlock(block1->header, chain_config);
+        auto block2_hash = block2->header.hash();
+
+        chain_state.insert_block(*block2, block2_hash);  // to validate next blocks
+
+        auto block3 = generateSampleBlockWithOmmers(block2->header, block1->header, chain_config);
+        auto block3_hash = block3->header.hash();
+
+        validation_result = rule_set->validate_ommers(*block3, chain_state);
+        CHECK(validation_result == ValidationResult::kOk);
+
+        // inserting & verifying the block
+        exec_engine.insert_block(block1);
+        exec_engine.insert_block(block2);
+        exec_engine.insert_block(block3);
+        auto verification = exec_engine.verify_chain(block3_hash).get();  // FAILS at execution stage because "from" address has zero gas
+
+        // todo: make this test pass
+        //REQUIRE(holds_alternative<ValidChain>(verification));
+        //auto valid_chain = std::get<ValidChain>(verification);
+        //CHECK(valid_chain.current_head == BlockId{3, block3_hash});
+    }
 }
 
 }  // namespace silkworm

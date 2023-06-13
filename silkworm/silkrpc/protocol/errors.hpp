@@ -18,6 +18,8 @@
 
 #include <cstdint>
 
+#include <boost/system/system_error.hpp>
+
 namespace silkworm::rpc {
 
 enum ErrorCode : int64_t {
@@ -35,5 +37,9 @@ enum ErrorCode : int64_t {
     kInvalidPayloadAttributes = -38003,  // Payload attributes are invalid / inconsistent
     kTooLargeRequest = -38004,           // Number of requested entities is too large
 };
+
+// To raise a boost::system::system_error exception:
+//    throw boost::system::system_error{rpc::to_system_code(rpc::ErrorCode::kSomething)};
+boost::system::error_code to_system_code(ErrorCode e);
 
 }  // namespace silkworm::rpc

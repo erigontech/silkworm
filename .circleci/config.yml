@@ -118,31 +118,8 @@ commands:
         default: true
     steps:
       - run:
-          name: "Core unit tests"
-          working_directory: ~/build
-          command: |
-            ulimit -s unlimited
-            cmd/test/core_test
-      - run:
-          name: "Infra unit tests"
-          working_directory: ~/build
-          command: cmd/test/infra_test
-      - run:
-          name: "Node unit tests"
-          working_directory: ~/build
-          command: cmd/test/node_test
-      - run:
-          name: "RpcDaemon unit tests"
-          working_directory: ~/build
-          command: cmd/test/rpcdaemon_test
-      - run:
-          name: "Sentry unit tests"
-          working_directory: ~/build
-          command: cmd/test/sentry_test
-      - run:
-          name: "Sync unit tests"
-          working_directory: ~/build
-          command: cmd/test/sync_test
+          name: "Unit tests"
+          command: make "SILKWORM_BUILD_DIR=$HOME/build" run_unit_tests
       - when:
           condition: <<parameters.ethereum_tests>>
           steps:
@@ -256,41 +233,18 @@ jobs:
           compiler_id: clang
           compiler_version: <<pipeline.parameters.clang_version_latest>>
       - run:
-          name: "Core unit tests"
-          working_directory: ~/build
-          command: LLVM_PROFILE_FILE=core_test.profraw cmd/test/core_test
-      - run:
-          name: "Infra unit tests"
-          working_directory: ~/build
-          command: LLVM_PROFILE_FILE=infra_test.profraw cmd/test/infra_test
-      - run:
-          name: "Node unit tests"
-          working_directory: ~/build
-          command: LLVM_PROFILE_FILE=node_test.profraw cmd/test/node_test
-      - run:
-          name: "RpcDaemon unit tests"
-          working_directory: ~/build
-          command: LLVM_PROFILE_FILE=rpcdaemon_test.profraw cmd/test/rpcdaemon_test
-      - run:
-          name: "Sentry unit tests"
-          working_directory: ~/build
-          command: LLVM_PROFILE_FILE=sentry_test.profraw cmd/test/sentry_test
-      - run:
-          name: "Sync unit tests"
-          working_directory: ~/build
-          command: LLVM_PROFILE_FILE=sync_test.profraw cmd/test/sync_test
+          name: "Unit tests"
+          command: make "SILKWORM_BUILD_DIR=$HOME/build" SILKWORM_CLANG_COVERAGE=ON run_unit_tests
       - run:
           name: "Ethereum EL tests"
-          working_directory: ~/build
           no_output_timeout: 30m
-          command: LLVM_PROFILE_FILE=ethereum.profraw cmd/test/ethereum
+          command: LLVM_PROFILE_FILE=ethereum.profraw ~/build/cmd/test/ethereum
       - run:
           name: "Coverage"
-          working_directory: ~/build
           command: |
             llvm-profdata merge *.profraw -o profdata
-            llvm-cov export -instr-profile profdata cmd/silkworm '-ignore-filename-regex=(third_party|silkworm/interfaces|test)' -format=lcov > /tmp/silkworm.lcov
-            llvm-cov report -instr-profile profdata cmd/silkworm '-ignore-filename-regex=(third_party|silkworm/interfaces|test)' > /tmp/report.txt
+            llvm-cov export -instr-profile profdata ~/build/cmd/silkworm '-ignore-filename-regex=(third_party|silkworm/interfaces|test)' -format=lcov > /tmp/silkworm.lcov
+            llvm-cov report -instr-profile profdata ~/build/cmd/silkworm '-ignore-filename-regex=(third_party|silkworm/interfaces|test)' > /tmp/report.txt
       - store_artifacts:
           path: /tmp/silkworm.lcov
       - store_artifacts:

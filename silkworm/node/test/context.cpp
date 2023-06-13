@@ -47,4 +47,10 @@ void Context::add_genesis_data() {
     db::initialize_genesis(*txn_, genesis_json, allow_exceptions);
 }
 
+bool Context::add_custom_genesis_data(std::string source_data) {
+    bool allow_exceptions = false;
+    auto genesis_json = nlohmann::json::parse(source_data, nullptr, allow_exceptions);
+    return db::initialize_genesis(*txn_, genesis_json, allow_exceptions);
+}
+
 }  // namespace silkworm::test

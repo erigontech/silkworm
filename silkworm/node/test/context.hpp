@@ -34,6 +34,7 @@ class Context {
     Context& operator=(const Context&) = delete;
 
     void add_genesis_data();
+    bool add_custom_genesis_data(std::string source_data);
 
     [[nodiscard]] NodeSettings& node_settings() { return node_settings_; }
 

@@ -382,6 +382,90 @@ TEST_CASE("ExecutionEngine") {
         CHECK(exec_engine.get_header(block3_hash).has_value());   // we do not remove old blocks
         CHECK(exec_engine.get_header(block4_hash).has_value());   // we do not remove old blocks
     }
+}
+
+TEST_CASE("ExecutionEngine-full-stages") {
+    test::SetLogVerbosityGuard log_guard(log::Level::kNone);
+
+    asio::io_context io;
+    asio::executor_work_guard<decltype(io.get_executor())> work{io.get_executor()};
+
+    std::string genesis_data = R"(
+    {
+    "alloc": {
+            "3282791d6fd713f1e94f4bfd565eaa78b3a0599d": {
+                    "balance": "1337000000000000000000"
+            },
+            "ddf5810a0eb2fb2e32323bb2c99509ab320f24ac": {
+                    "balance": "17900000000000000000000"
+            },
+            "2489ac126934d4d6a94df08743da7b7691e9798e": {
+                    "balance": "1000000000000000000000"
+            },
+            "f42f905231c770f0a406f2b768877fb49eee0f21": {
+                    "balance": "197000000000000000000"
+            },
+            "756f45e3fa69347a9a973a725e3c98bc4db0b5a0": {
+                    "balance": "200000000000000000000"
+            }
+    },
+    "coinbase": "0x0000000000000000000000000000000000000000",
+    "config": {
+            "chainId": 111,
+            "homesteadBlock": 1150000,
+            "daoForkBlock": 1920000,
+            "daoForkSupport": true,
+            "eip150Block": 2463000,
+            "eip150Hash": "0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0",
+            "eip155Block": 2675000,
+            "eip158Block": 2675000,
+            "byzantiumBlock": 4370000,
+            "constantinopleBlock": 7280000,
+            "petersburgBlock": 7280000,
+            "istanbulBlock": 9069000,
+            "muirGlacierBlock": 9200000,
+            "berlinBlock": 12244000,
+            "londonBlock": 12965000,
+            "arrowGlacierBlock": 13773000,
+            "grayGlacierBlock": 15050000,
+            "terminalTotalDifficulty": "58750000000000000000000",
+            "shanghaiTime": 1681338455,
+            "ethash": {}
+    },
+    "difficulty": "0x0400000000",
+    "extraData": "0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa",
+    "gasLimit": "0x1388",
+    "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "nonce": "0x0000000000000042",
+    "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "timestamp": "0x00"
+    }
+    )";
+
+    test::Context context;
+    bool genesis_data_valid = context.add_custom_genesis_data(genesis_data);
+    REQUIRE(genesis_data_valid);
+    // context.add_genesis_data();
+    context.commit_txn();
+
+    ChainConfig& chain_config = *context.node_settings().chain_config;
+    chain_config.protocol_rule_set = protocol::RuleSetType::kNoProof;  // skip seal validation
+
+    PreverifiedHashes::current.clear();  // disable preverified hashes
+
+    db::RWAccess db_access{context.env()};
+    ExecutionEngine_ForTest exec_engine{io, context.node_settings(), db_access};
+    exec_engine.open();
+
+    auto& tx = exec_engine.main_chain_.tx();  // mdbx refuses to open a ROTxn when there is a RWTxn in the same thread
+
+    auto header0_hash = db::read_canonical_hash(tx, 0);
+    REQUIRE(header0_hash.has_value());
+
+    auto header0 = db::read_canonical_header(tx, 0);
+    REQUIRE(header0.has_value());
+
+    // BlockId block0_id{0, *header0_hash};
 
     SECTION("full stages validation") {
         Environment::set_stop_before_stage("");                            // all the stages

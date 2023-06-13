@@ -75,25 +75,6 @@ static std::shared_ptr<Block> generateSampleBlock(const BlockHeader& parent, con
 
     block->header.transactions_root = protocol::compute_transaction_root(*block);
 
-    // BlockBody: ommers - doesn't work yet
-    //    block->ommers.resize(1);
-    //    block->ommers[0].parent_hash = parent_hash;
-    //    block->ommers[0].ommers_hash = kEmptyListHash;
-    //    block->ommers[0].beneficiary = 0x0c729be7c39543c3d549282a40395299d987cec2_address;
-    //    block->ommers[0].state_root = 0xc2bcdfd012534fa0b19ffba5fae6fc81edd390e9b7d5007d1e92e8e835286e9d_bytes32;
-    //    block->ommers[0].transactions_root = kEmptyRoot;
-    //    block->ommers[0].receipts_root = kEmptyRoot;
-    //    block->ommers[0].number = parent.number + 1;
-    //    block->ommers[0].gas_limit = pseudo_random_gas_limit;
-    //    block->ommers[0].gas_used = 0;
-    //    block->ommers[0].timestamp = 1455404305;
-    //    block->ommers[0].prev_randao = 0xf0a53dfdd6c2f2a661e718ef29092de60d81d45f84044bec7bf4b36630b2bc08_bytes32;
-    //    block->ommers[0].nonce[7] = 35;
-    //    block->ommers[0].difficulty = protocol::EthashRuleSet::difficulty(
-    //        block->ommers[0].number, block->ommers[0].timestamp, parent.difficulty, parent.timestamp, true /*parent has uncles*/, config);
-    //
-    //    block->header.ommers_hash = protocol::compute_ommers_hash(*block);
-
     return block;
 }
 

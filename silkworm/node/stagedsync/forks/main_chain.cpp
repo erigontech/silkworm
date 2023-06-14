@@ -102,7 +102,7 @@ auto MainChain::is_canonical(BlockId block) const -> bool {
 }
 
 Hash MainChain::insert_header(const BlockHeader& header) {
-    return db::write_header_ex(tx_, header, /*with_header_numbers=*/false);  // kHeaderNumbers table will be updated by stage blockhashes
+    return db::write_header_ex(tx_, header, true);
 }
 
 void MainChain::insert_body(const Block& block, const Hash& block_hash) {
@@ -286,7 +286,7 @@ auto MainChain::get_header(Hash header_hash) const -> std::optional<BlockHeader>
     // if (cached) {
     //     return *cached;
     // }
-    std::optional<BlockHeader> header = db::read_header(tx_, header_hash);
+    std::optional<BlockHeader> header = data_model_.read_header(header_hash);
     return header;
 }
 
@@ -295,7 +295,7 @@ auto MainChain::get_header(BlockNum header_height, Hash header_hash) const -> st
     // if (cached) {
     //     return *cached;
     // }
-    std::optional<BlockHeader> header = db::read_header(tx_, header_height, header_hash);
+    std::optional<BlockHeader> header = data_model_.read_header(header_height, header_hash);
     return header;
 }
 
@@ -316,7 +316,7 @@ auto MainChain::get_header_td(Hash header_hash) const -> std::optional<TotalDiff
 
 auto MainChain::get_body(Hash header_hash) const -> std::optional<BlockBody> {
     BlockBody body;
-    bool found = read_body(tx_, header_hash, body);
+    bool found = data_model_.read_body(header_hash, body);
     if (!found) return {};
     return body;
 }

@@ -52,7 +52,7 @@ TEST_CASE("print type-2 transaction", "[silkrpc][types][transaction]") {
     // https://etherscan.io/tx/0x4b408a48f927f03a63502fb63f7d42c5c4783737ebe8d084cef157575d40f344
     Transaction txn{
         {
-            {.type = TransactionType::kEip1559,
+            {.type = TransactionType::kDynamicFee,
              .chain_id = 1,
              .nonce = 371,
              .max_priority_fee_per_gas = 1 * kGiga,
@@ -77,7 +77,7 @@ TEST_CASE("print type-2 transaction", "[silkrpc][types][transaction]") {
 TEST_CASE("print type-2 silkworm::transaction", "[silkrpc][types][silkworm::transaction]") {
     // https://etherscan.io/tx/0x4b408a48f927f03a63502fb63f7d42c5c4783737ebe8d084cef157575d40f344
     silkworm::Transaction txn{
-        {.type = TransactionType::kEip1559,
+        {.type = TransactionType::kDynamicFee,
          .chain_id = 1,
          .nonce = 371,
          .max_priority_fee_per_gas = 1 * kGiga,

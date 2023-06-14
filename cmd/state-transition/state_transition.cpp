@@ -205,7 +205,7 @@ Transaction StateTransition::get_transaction(const ExpectedSubState& expected_su
         txn.max_fee_per_gas = intx::from_string<intx::uint256>(j_transaction.at("gasPrice").get<std::string>());
         txn.max_priority_fee_per_gas = intx::from_string<intx::uint256>(j_transaction.at("gasPrice").get<std::string>());
     } else {
-        txn.type = TransactionType::kEip1559;
+        txn.type = TransactionType::kDynamicFee;
         txn.max_fee_per_gas = intx::from_string<intx::uint256>(j_transaction.at("maxFeePerGas").get<std::string>());
         txn.max_priority_fee_per_gas = intx::from_string<intx::uint256>(j_transaction.at("maxPriorityFeePerGas").get<std::string>());
     }
@@ -248,7 +248,7 @@ Transaction StateTransition::get_transaction(const ExpectedSubState& expected_su
         }
 
         if (txn.type == TransactionType::kLegacy) {
-            txn.type = TransactionType::kEip2930;
+            txn.type = TransactionType::kAccessList;
         }
     }
 

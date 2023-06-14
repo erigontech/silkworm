@@ -134,7 +134,7 @@ TEST_CASE("check_tx_fee_less_cap returns false", "[silkrpc][common][util]") {
 
 TEST_CASE("is_replay_protected(tx legacy) returns true", "[silkrpc][common][util]") {
     const Transaction txn{
-        {.type = TransactionType::kEip2930,
+        {.type = TransactionType::kAccessList,
          .nonce = 0,
          .max_priority_fee_per_gas = 50'000 * kGiga,
          .max_fee_per_gas = 50'000 * kGiga,

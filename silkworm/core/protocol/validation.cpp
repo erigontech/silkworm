@@ -29,9 +29,9 @@ namespace silkworm::protocol {
 bool transaction_type_is_supported(TransactionType type, evmc_revision rev) {
     static constexpr evmc_revision kMinRevisionByType[]{
         EVMC_FRONTIER,  // kLegacy
-        EVMC_BERLIN,    // kEip2930
-        EVMC_LONDON,    // kEip1559
-        EVMC_CANCUN,    // kEip4844
+        EVMC_BERLIN,    // kAccessList
+        EVMC_LONDON,    // kDynamicFee
+        EVMC_CANCUN,    // kBlob
     };
     const auto i{static_cast<std::size_t>(type)};
     return i < std::size(kMinRevisionByType) && rev >= kMinRevisionByType[i];
@@ -91,7 +91,7 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
     }
 
     // EIP-4844: Shard Blob Transactions
-    if (txn.type == TransactionType::kEip4844) {
+    if (txn.type == TransactionType::kBlob) {
         if (txn.blob_versioned_hashes.empty()) {
             return ValidationResult::kNoBlobs;
         }

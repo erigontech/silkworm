@@ -41,7 +41,7 @@ TEST_CASE("Validate transaction types") {
     CHECK(pre_validate_transaction(txn, EVMC_LONDON, 1, base_fee_per_gas, data_gas_price) ==
           ValidationResult::kUnsupportedTransactionType);
 
-    txn.type = TransactionType::kEip2930;
+    txn.type = TransactionType::kAccessList;
     CHECK(pre_validate_transaction(txn, EVMC_ISTANBUL, 1, base_fee_per_gas, data_gas_price) ==
           ValidationResult::kUnsupportedTransactionType);
     CHECK(pre_validate_transaction(txn, EVMC_BERLIN, 1, base_fee_per_gas, data_gas_price) !=
@@ -49,7 +49,7 @@ TEST_CASE("Validate transaction types") {
     CHECK(pre_validate_transaction(txn, EVMC_LONDON, 1, base_fee_per_gas, data_gas_price) !=
           ValidationResult::kUnsupportedTransactionType);
 
-    txn.type = TransactionType::kEip1559;
+    txn.type = TransactionType::kDynamicFee;
     CHECK(pre_validate_transaction(txn, EVMC_ISTANBUL, 1, base_fee_per_gas, data_gas_price) ==
           ValidationResult::kUnsupportedTransactionType);
     CHECK(pre_validate_transaction(txn, EVMC_BERLIN, 1, base_fee_per_gas, data_gas_price) ==
@@ -63,7 +63,7 @@ TEST_CASE("Validate max_fee_per_gas") {
     const std::optional<intx::uint256> data_gas_price{std::nullopt};
 
     Transaction txn;
-    txn.type = TransactionType::kEip1559;
+    txn.type = TransactionType::kDynamicFee;
 
     txn.max_priority_fee_per_gas = 500'000'000;
     txn.max_fee_per_gas = 700'000'000;

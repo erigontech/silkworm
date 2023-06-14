@@ -73,7 +73,7 @@ TEST_CASE("Legacy Transaction RLP") {
 
 TEST_CASE("EIP-2930 Transaction RLP") {
     Transaction txn{
-        {.type = TransactionType::kEip2930,
+        {.type = TransactionType::kAccessList,
          .chain_id = 5,
          .nonce = 7,
          .max_priority_fee_per_gas = 30000000000,
@@ -139,7 +139,7 @@ TEST_CASE("EIP-2930 Transaction RLP") {
 
 TEST_CASE("EIP-1559 Transaction RLP") {
     Transaction txn{
-        {.type = TransactionType::kEip1559,
+        {.type = TransactionType::kDynamicFee,
          .chain_id = 5,
          .nonce = 7,
          .max_priority_fee_per_gas = 10000000000,
@@ -166,7 +166,7 @@ TEST_CASE("EIP-1559 Transaction RLP") {
 
 TEST_CASE("EIP-4844 Transaction RLP") {
     Transaction txn{
-        {.type = TransactionType::kEip4844,
+        {.type = TransactionType::kBlob,
          .chain_id = 5,
          .nonce = 7,
          .max_priority_fee_per_gas = 10000000000,

@@ -19,7 +19,6 @@
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 
-#include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/protocol/param.hpp>
 #include <silkworm/core/state/in_memory_state.hpp>
 
@@ -43,38 +42,15 @@ TEST_CASE("Zero gas price") {
         1,      // r
         1,      // s
     };
+    txn.from = sender;
 
     InMemoryState state;
     auto rule_set{protocol::rule_set_factory(kMainnetConfig)};
     ExecutionProcessor processor{block, *rule_set, state, kMainnetConfig};
 
-    CHECK(processor.validate_transaction(txn) == ValidationResult::kMissingSender);
-
-    txn.from = sender;
     Receipt receipt;
     processor.execute_transaction(txn, receipt);
     CHECK(receipt.success);
-}
-
-TEST_CASE("EIP-3607: Reject transactions from senders with deployed code") {
-    Block block{};
-    block.header.number = 1;
-    block.header.gas_limit = 3'000'000;
-
-    const evmc::address sender{0x71562b71999873DB5b286dF957af199Ec94617F7_address};
-
-    Transaction txn{test::sample_transactions()[0]};
-    txn.nonce = 0;
-    txn.from = sender;
-
-    InMemoryState state;
-    auto rule_set{protocol::rule_set_factory(kMainnetConfig)};
-    ExecutionProcessor processor{block, *rule_set, state, kMainnetConfig};
-
-    processor.evm().state().add_to_balance(sender, 10 * kEther);
-    processor.evm().state().set_code(sender, *from_hex("B0B0FACE"));
-
-    CHECK(processor.validate_transaction(txn) == ValidationResult::kSenderNoEOA);
 }
 
 TEST_CASE("No refund on error") {

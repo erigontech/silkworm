@@ -36,13 +36,6 @@ class ExecutionProcessor {
     ExecutionProcessor(const Block& block, protocol::IRuleSet& rule_set, State& state, const ChainConfig& config);
 
     /**
-     * Preconditions:
-     * 1) RuleSet's pre_validate_transaction(txn) must return kOk
-     * 2) txn.from must be recovered, otherwise kMissingSender will be returned
-     */
-    ValidationResult validate_transaction(const Transaction& txn) const noexcept;
-
-    /**
      * Execute a transaction, but do not write to the DB yet.
      * Precondition: transaction must be valid.
      */
@@ -53,7 +46,7 @@ class ExecutionProcessor {
     //! \pre RuleSet's validate_block_header & pre_validate_block_body must return kOk.
     [[nodiscard]] ValidationResult execute_and_write_block(std::vector<Receipt>& receipts) noexcept;
 
-    uint64_t cumulative_gas_used() const noexcept { return cumulative_gas_used_; }
+    uint64_t available_gas() const noexcept;
 
     EVM& evm() noexcept { return evm_; }
     const EVM& evm() const noexcept { return evm_; }
@@ -66,7 +59,6 @@ class ExecutionProcessor {
      */
     [[nodiscard]] ValidationResult execute_block_no_post_validation(std::vector<Receipt>& receipts) noexcept;
 
-    uint64_t available_gas() const noexcept;
     uint64_t refund_gas(const Transaction& txn, uint64_t gas_left, uint64_t refund_gas) noexcept;
 
     uint64_t cumulative_gas_used_{0};

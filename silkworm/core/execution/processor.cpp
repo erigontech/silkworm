@@ -31,38 +31,8 @@ ExecutionProcessor::ExecutionProcessor(const Block& block, protocol::IRuleSet& r
     evm_.beneficiary = rule_set.get_beneficiary(block.header);
 }
 
-ValidationResult ExecutionProcessor::validate_transaction(const Transaction& txn) const noexcept {
-    if (!txn.from) {
-        return ValidationResult::kMissingSender;
-    }
-
-    if (state_.get_code_hash(*txn.from) != kEmptyHash) {
-        return ValidationResult::kSenderNoEOA;  // EIP-3607
-    }
-
-    const uint64_t nonce{state_.get_nonce(*txn.from)};
-    if (nonce != txn.nonce) {
-        return ValidationResult::kWrongNonce;
-    }
-
-    // See YP, Eq (61) in Section 6.2 "Execution"
-    const intx::uint512 v0{txn.maximum_gas_cost() + txn.value};
-    if (state_.get_balance(*txn.from) < v0) {
-        return ValidationResult::kInsufficientFunds;
-    }
-
-    if (available_gas() < txn.gas_limit) {
-        // Corresponds to the final condition of Eq (58) in Yellow Paper Section 6.2 "Execution".
-        // The sum of the transaction’s gas limit and the gas utilized in this block prior
-        // must be no greater than the block’s gas limit.
-        return ValidationResult::kBlockGasLimitExceeded;
-    }
-
-    return ValidationResult::kOk;
-}
-
 void ExecutionProcessor::execute_transaction(const Transaction& txn, Receipt& receipt) noexcept {
-    assert(validate_transaction(txn) == ValidationResult::kOk);
+    assert(protocol::validate_transaction(txn, state_, available_gas()) == ValidationResult::kOk);
 
     // Optimization: since receipt.logs might have some capacity, let's reuse it.
     std::swap(receipt.logs, state_.logs());
@@ -159,7 +129,7 @@ ValidationResult ExecutionProcessor::execute_block_no_post_validation(std::vecto
     receipts.resize(block.transactions.size());
     auto receipt_it{receipts.begin()};
     for (const auto& txn : block.transactions) {
-        const ValidationResult err{validate_transaction(txn)};
+        const ValidationResult err{protocol::validate_transaction(txn, state_, available_gas())};
         if (err != ValidationResult::kOk) {
             return err;
         }
@@ -183,7 +153,7 @@ ValidationResult ExecutionProcessor::execute_and_write_block(std::vector<Receipt
 
     const auto& header{evm_.block().header};
 
-    if (cumulative_gas_used() != header.gas_used) {
+    if (cumulative_gas_used_ != header.gas_used) {
         return ValidationResult::kWrongBlockGas;
     }
 

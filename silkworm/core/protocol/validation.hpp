@@ -20,6 +20,7 @@
 
 #include <evmc/evmc.h>
 
+#include <silkworm/core/state/intra_block_state.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
 
@@ -102,7 +103,8 @@ namespace protocol {
 
     bool transaction_type_is_supported(TransactionType, evmc_revision);
 
-    //! \brief Performs validation of a transaction that can be done prior to sender recovery and block execution.
+    //! \brief First part of transaction validation that can be done prior to sender recovery
+    //! and without access to the state.
     //! \remarks Should sender of transaction not yet recovered a check on signature's validity is performed
     //! \remarks These function is agnostic to whole block validity
     ValidationResult pre_validate_transaction(const Transaction& txn, evmc_revision revision, uint64_t chain_id,
@@ -110,6 +112,14 @@ namespace protocol {
                                               const std::optional<intx::uint256>& data_gas_price);
 
     ValidationResult pre_validate_transactions(const Block& block, const ChainConfig& config);
+
+    //! \brief Final part of transaction validation that requires access to the state.
+    //!
+    //! Preconditions:
+    //! 1) pre_validate_transaction(txn) must return kOk
+    //! 2) txn.from must be recovered, otherwise kMissingSender will be returned
+    ValidationResult validate_transaction(const Transaction& txn, const IntraBlockState& state,
+                                          uint64_t available_gas) noexcept;
 
     //! \see EIP-1559: Fee market change for ETH 1.0 chain
     std::optional<intx::uint256> expected_base_fee_per_gas(const BlockHeader& parent, const evmc_revision);

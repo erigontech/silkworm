@@ -112,6 +112,37 @@ ValidationResult pre_validate_transaction(const Transaction& txn, const evmc_rev
     return ValidationResult::kOk;
 }
 
+ValidationResult validate_transaction(const Transaction& txn, const IntraBlockState& state,
+                                      uint64_t available_gas) noexcept {
+    if (!txn.from) {
+        return ValidationResult::kMissingSender;
+    }
+
+    if (state.get_code_hash(*txn.from) != kEmptyHash) {
+        return ValidationResult::kSenderNoEOA;  // EIP-3607
+    }
+
+    const uint64_t nonce{state.get_nonce(*txn.from)};
+    if (nonce != txn.nonce) {
+        return ValidationResult::kWrongNonce;
+    }
+
+    // See YP, Eq (61) in Section 6.2 "Execution"
+    const intx::uint512 v0{txn.maximum_gas_cost() + txn.value};
+    if (state.get_balance(*txn.from) < v0) {
+        return ValidationResult::kInsufficientFunds;
+    }
+
+    if (available_gas < txn.gas_limit) {
+        // Corresponds to the final condition of Eq (58) in Yellow Paper Section 6.2 "Execution".
+        // The sum of the transaction’s gas limit and the gas utilized in this block prior
+        // must be no greater than the block’s gas limit.
+        return ValidationResult::kBlockGasLimitExceeded;
+    }
+
+    return ValidationResult::kOk;
+}
+
 ValidationResult pre_validate_transactions(const Block& block, const ChainConfig& config) {
     const BlockHeader& header{block.header};
     const evmc_revision rev{config.revision(header.number, header.timestamp)};

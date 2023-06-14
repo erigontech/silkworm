@@ -122,7 +122,7 @@ class BodySnapshot : public Snapshot {
 
     std::pair<uint64_t, uint64_t> compute_txs_amount();
 
-    [[nodiscard]] std::optional<StoredBlockBody> stored_body_by_number(BlockNum block_height) const;
+    [[nodiscard]] std::optional<StoredBlockBody> body_by_number(BlockNum block_height) const;
 
     void reopen_index() override;
 
@@ -148,7 +148,7 @@ class TransactionSnapshot : public Snapshot {
 
     [[nodiscard]] std::optional<Transaction> next_txn(uint64_t offset) const;
 
-    [[nodiscard]] std::optional<Transaction> txn_by_hash(const Hash& block_hash) const;
+    [[nodiscard]] std::optional<Transaction> txn_by_hash(const Hash& txn_hash) const;
     [[nodiscard]] std::optional<Transaction> txn_by_id(uint64_t txn_id) const;
 
     void reopen_index() override;

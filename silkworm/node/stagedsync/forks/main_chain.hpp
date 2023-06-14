@@ -99,6 +99,7 @@ class MainChain {
     NodeSettings& node_settings_;
     db::RWAccess db_access_;
     mutable db::RWTxn tx_;
+    db::DataModel data_model_;
     bool is_first_sync_{true};
 
     ExecutionPipeline pipeline_;

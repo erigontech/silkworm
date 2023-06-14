@@ -32,6 +32,7 @@ MainChain::MainChain(asio::io_context& ctx, NodeSettings& ns, const db::RWAccess
       node_settings_{ns},
       db_access_{dba},
       tx_{db_access_.start_rw_tx()},
+      data_model_{tx_},
       pipeline_{&ns},
       canonical_chain_(tx_) {
     auto last_finalized_hash = db::read_last_finalized_block(tx_);
@@ -108,7 +109,7 @@ void MainChain::insert_body(const Block& block, const Hash& block_hash) {
     // avoid calculation of block.header.hash() because is computationally expensive
     BlockNum block_num = block.header.number;
 
-    if (db::has_body(tx_, block_num, block_hash)) return;
+    if (data_model_.has_body(block_num, block_hash)) return;
 
     db::write_body(tx_, block, block_hash, block_num);
 }

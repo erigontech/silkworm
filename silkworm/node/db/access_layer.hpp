@@ -29,6 +29,7 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/db/util.hpp>
+#include <silkworm/node/snapshot/repository.hpp>
 
 namespace silkworm::db {
 
@@ -238,5 +239,62 @@ void write_last_safe_block(RWTxn& txn, const evmc::bytes32& hash);
 
 //! \brief Write the last finalized block as stated by the last FCU
 void write_last_finalized_block(RWTxn& txn, const evmc::bytes32& hash);
+
+class DataModel {
+  public:
+    static void set_snapshot_repository(snapshot::SnapshotRepository* repository);
+
+    explicit DataModel(db::ROTxn& txn);
+    ~DataModel() = default;
+
+    // Not copyable nor movable
+    DataModel(const DataModel&) = delete;
+    DataModel& operator=(const DataModel&) = delete;
+
+    //! Read block header with the specified key (block number, hash)
+    std::optional<BlockHeader> read_header(BlockNum block_number, const uint8_t (&block_hash)[kHashLength]);
+
+    //! Read block header with the specified key (block number, hash)
+    std::optional<BlockHeader> read_header(BlockNum block_number, const evmc::bytes32& block_hash);
+
+    //! Read block header with the specified hash
+    std::optional<BlockHeader> read_header(const evmc::bytes32& block_hash);
+
+    //! Read block number from hash
+    std::optional<BlockNum> read_block_number(const evmc::bytes32& hash);
+
+    //! Read block body in output parameter returning true on success and false on missing block
+    [[nodiscard]] bool read_body(const Bytes& key, bool read_senders, BlockBody& out);
+    [[nodiscard]] bool read_body(BlockNum block_number, const uint8_t (&hash)[kHashLength],
+                                 bool read_senders, BlockBody& out);
+    [[nodiscard]] bool read_body(const evmc::bytes32& hash, BlockNum bn, BlockBody& body);
+    [[nodiscard]] bool read_body(const evmc::bytes32& hash, BlockBody& body);
+
+    //! Read the canonical block at specified height
+    [[nodiscard]] bool read_canonical_block(BlockNum height, Block& block);
+
+    //! Check the presence of a block body using block number and hash
+    [[nodiscard]] bool has_body(BlockNum block_number, const uint8_t (&hash)[kHashLength]);
+    [[nodiscard]] bool has_body(BlockNum block_number, const evmc::bytes32& hash);
+
+    //! Check the presence of a block with the same number
+    [[nodiscard]] bool has_sibling(BlockNum block_number);
+
+    //! Read canonical block returning true on success and false on missing block
+    [[nodiscard]] bool read_block_by_number(BlockNum number, bool read_senders, Block& block);
+
+    //! Read block returning true on success and false on missing block
+    [[nodiscard]] bool read_block(std::span<const uint8_t, kHashLength> hash, BlockNum number,
+                                  bool read_senders, Block& block);
+    [[nodiscard]] bool read_block(const evmc::bytes32& hash, BlockNum number, Block& block);
+
+  private:
+    static std::optional<BlockHeader> read_header_from_snapshot(BlockNum block_height);
+    static std::optional<BlockHeader> read_header_from_snapshot(const evmc::bytes32& block_hash);
+
+    static inline snapshot::SnapshotRepository* repository_{nullptr};
+
+    db::ROTxn& txn_;
+};
 
 }  // namespace silkworm::db

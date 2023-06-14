@@ -94,6 +94,8 @@ struct Transaction : public UnsignedTransaction {
     //! https://eips.ethereum.org/EIPS/eip-155.
     //! If recovery fails the from field is set to null.
     void recover_sender();
+
+    [[nodiscard]] evmc::bytes32 hash() const;
 };
 
 namespace rlp {

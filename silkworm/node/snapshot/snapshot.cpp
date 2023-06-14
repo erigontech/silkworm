@@ -124,7 +124,12 @@ std::optional<BlockHeader> HeaderSnapshot::header_by_hash(const Hash& block_hash
     // Then, get the header offset in snapshot by using ordinal lookup
     const auto block_header_offset = idx_header_hash_->ordinal_lookup(block_header_position);
     // Finally, read the next header at specified offset
-    return next_header(block_header_offset);
+    auto header = next_header(block_header_offset);
+    // We *must* ensure that the retrieved header hash matches because there is no way to know if key exists in MPHF
+    if (header and header->hash() != block_hash) {
+        return {};
+    }
+    return header;
 }
 
 std::optional<BlockHeader> HeaderSnapshot::header_by_number(BlockNum block_height) const {
@@ -221,7 +226,7 @@ std::optional<StoredBlockBody> BodySnapshot::next_body(uint64_t offset) const {
     return stored_body;
 }
 
-std::optional<StoredBlockBody> BodySnapshot::stored_body_by_number(BlockNum block_height) const {
+std::optional<StoredBlockBody> BodySnapshot::body_by_number(BlockNum block_height) const {
     if (!idx_body_number_) {
         return {};
     }
@@ -279,17 +284,22 @@ SnapshotPath TransactionSnapshot::path() const {
     return transaction;
 }
 
-std::optional<Transaction> TransactionSnapshot::txn_by_hash(const Hash& block_hash) const {
+std::optional<Transaction> TransactionSnapshot::txn_by_hash(const Hash& txn_hash) const {
     if (!idx_txn_hash_) {
         return {};
     }
 
     // First, get the transaction ordinal position in snapshot by using block hash as MPHF index
-    const auto txn_position = idx_txn_hash_->lookup(block_hash);
+    const auto txn_position = idx_txn_hash_->lookup(txn_hash);
     // Then, get the transaction offset in snapshot by using ordinal lookup
     const auto txn_offset = idx_txn_hash_->ordinal_lookup(txn_position);
     // Finally, read the next transaction at specified offset
-    return next_txn(txn_offset);
+    auto txn = next_txn(txn_offset);
+    // We *must* ensure that the retrieved txn hash matches because there is no way to know if key exists in MPHF
+    if (txn and txn->hash() != txn_hash) {
+        return {};
+    }
+    return txn;
 }
 
 std::optional<Transaction> TransactionSnapshot::txn_by_id(uint64_t txn_id) const {

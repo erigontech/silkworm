@@ -90,6 +90,9 @@ TEST_CASE("gpr_silkworm_log", "[silkworm][rpc][util]") {
         gpr_set_log_verbosity(GPR_LOG_SEVERITY_DEBUG);
         CHECK_NOTHROW(gpr_log(FILE_NAME, LINE_NUMBER, GPR_LOG_SEVERITY_DEBUG, "debug message"));
     }
+
+    // restore the GRPC default log level to not affect logging coming from the other tests
+    gpr_set_log_verbosity(GPR_LOG_SEVERITY_ERROR);
 }
 #endif  // SILKWORM_SANITIZE
 

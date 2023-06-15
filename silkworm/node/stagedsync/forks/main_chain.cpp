@@ -102,7 +102,7 @@ auto MainChain::is_canonical(BlockId block) const -> bool {
 }
 
 Hash MainChain::insert_header(const BlockHeader& header) {
-    return db::write_header_ex(tx_, header, true);
+    return db::write_header_ex(tx_, header, /*with_header_numbers=*/false);  // kHeaderNumbers table will be updated by stage blockhashes
 }
 
 void MainChain::insert_body(const Block& block, const Hash& block_hash) {

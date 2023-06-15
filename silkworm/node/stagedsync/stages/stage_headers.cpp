@@ -60,10 +60,10 @@ void HeadersStage::HeaderDataModel::update_tables(const BlockHeader& header) {
     auto td = previous_td_ + header.difficulty;
 
     // Save progress
-    db::write_total_difficulty(tx_, height, hash, td);  // maybe it should be moved to ExecEngine
-                                                        // insert_headers to write td for every header
+    db::write_total_difficulty(tx_, height, hash, td);
+
     // Save header number
-    db::write_header_number(tx_, hash.bytes, header.number);  // maybe it should be moved to ExecEngine
+    db::write_header_number(tx_, hash.bytes, header.number);  // todo: already done in stage block-hashes?
 
     previous_hash_ = hash;
     previous_td_ = td;

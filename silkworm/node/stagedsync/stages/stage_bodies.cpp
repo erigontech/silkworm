@@ -116,7 +116,7 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
 
             // process header and ommers at current height
             Block block;
-            bool present = read_canonical_block(tx, current_height_, block);
+            bool present = data_model.read_canonical_block(current_height_, block);
             if (!present) throw std::logic_error("table Bodies has a hole");
 
             body_persistence.update_tables(block);

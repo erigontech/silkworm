@@ -98,7 +98,7 @@ BlockNum Fork::distance_from_root(const BlockId& block) const {
 }
 
 Hash Fork::insert_header(const BlockHeader& header) {
-    return db::write_header_ex(memory_tx_, header, true);
+    return db::write_header_ex(memory_tx_, header, /*with_header_numbers=*/false);  // kHeaderNumbers table will be updated by stage blockhashes
 }
 
 void Fork::insert_body(const Block& block, const Hash& block_hash) {

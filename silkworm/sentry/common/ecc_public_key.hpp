@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <functional>
 #include <string>
 #include <string_view>
 
@@ -44,4 +45,21 @@ class EccPublicKey {
     Bytes data_;
 };
 
+//! for using EccPublicKey as a key of std::map
+bool operator<(const EccPublicKey& lhs, const EccPublicKey& rhs);
+
 }  // namespace silkworm::sentry::common
+
+namespace std {
+
+//! for using EccPublicKey as a key of std::unordered_map
+template <>
+struct hash<silkworm::sentry::common::EccPublicKey> {
+    size_t operator()(const silkworm::sentry::common::EccPublicKey& public_key) const noexcept {
+        silkworm::ByteView data = public_key.data();
+        std::string_view data_str{reinterpret_cast<const char*>(data.data()), data.size()};
+        return std::hash<std::string_view>{}(data_str);
+    }
+};
+
+}  // namespace std

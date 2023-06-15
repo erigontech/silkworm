@@ -68,4 +68,8 @@ EccPublicKey EccPublicKey::deserialize_hex(std::string_view hex) {
     return deserialize(data_opt.value());
 }
 
+bool operator<(const EccPublicKey& lhs, const EccPublicKey& rhs) {
+    return lhs.data() < rhs.data();
+}
+
 }  // namespace silkworm::sentry::common

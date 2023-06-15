@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <span>
 #include <string>
 
 #include <evmc/evmc.hpp>
@@ -47,6 +48,9 @@ class Hash : public evmc::bytes32 {
 
     static_assert(sizeof(evmc::bytes32) == 32);
 };
+
+using HashAsSpan = std::span<const uint8_t, kHashLength>;
+using HashAsArray = const uint8_t (&)[kHashLength];
 
 // RLP encoding: usually same as ByteView, some tricks for MSVC overload resolution
 namespace rlp {

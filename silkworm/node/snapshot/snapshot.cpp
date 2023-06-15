@@ -19,6 +19,7 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/core/types/transaction.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
@@ -223,6 +224,8 @@ std::optional<StoredBlockBody> BodySnapshot::next_body(uint64_t offset) const {
     if (!decode_ok) {
         return {};
     }
+    ensure(stored_body->base_txn_id >= idx_body_number_->base_data_id(),
+           path().index_file().filename() + " has wrong base data ID for base txn ID: " + std::to_string(stored_body->base_txn_id));
     return stored_body;
 }
 
@@ -313,6 +316,67 @@ std::optional<Transaction> TransactionSnapshot::txn_by_id(uint64_t txn_id) const
     const auto txn_offset = idx_txn_hash_->ordinal_lookup(txn_position);
     // Finally, read the next transaction at specified offset
     return next_txn(txn_offset);
+}
+
+std::vector<Transaction> TransactionSnapshot::txn_range(uint64_t base_txn_id, uint64_t txn_count, bool read_senders) const {
+    std::vector<Transaction> transactions;
+    if (!idx_txn_hash_) {
+        return transactions;
+    }
+    ensure(base_txn_id >= idx_txn_hash_->base_data_id(),
+           path().index_file().filename() + " has wrong base data ID for base txn ID: " + std::to_string(base_txn_id));
+
+    if (txn_count == 0) {
+        return transactions;
+    }
+    transactions.reserve(txn_count);
+
+    // Skip first byte plus address length for transaction decoding
+    constexpr int kTxFirstByteAndAddressLength{1 + kAddressLength};
+
+    // First, calculate the first transaction ordinal position relative to the first block height within snapshot
+    const auto first_txn_position = base_txn_id - idx_txn_hash_->base_data_id();
+
+    // Then, get the first transaction offset in snapshot by using ordinal lookup
+    const auto first_txn_offset = idx_txn_hash_->ordinal_lookup(first_txn_position);
+
+    //
+    for (uint64_t i{0}, offset{first_txn_offset}; i < txn_count; ++i) {
+        const auto item = next_item(offset);
+        ensure(item.has_value(), "TransactionSnapshot: record not found at offset=" + std::to_string(offset));
+        const auto& buffer{item->value};
+        const auto buffer_size{buffer.size()};
+        // Skip first byte in data as it is encoding start tag.
+        ensure(buffer_size >= kTxFirstByteAndAddressLength, "TransactionSnapshot: too short record: " + std::to_string(buffer_size));
+
+        const Bytes tx_envelope{buffer.substr(kTxFirstByteAndAddressLength)};
+        ByteView tx_envelope_view{tx_envelope};
+
+        rlp::Header tx_header;
+        TransactionType tx_type;
+        const auto envelope_result = rlp::decode_transaction_header_and_type(tx_envelope_view, tx_header, tx_type);
+        ensure(envelope_result.has_value(),
+               "TransactionSnapshot: cannot decode tx envelope: " + to_hex(tx_envelope) + " i: " + std::to_string(i) +
+                   " error: " + std::string(magic_enum::enum_name(envelope_result.error())));
+        const std::size_t tx_payload_offset = tx_type == TransactionType::kLegacy ? 0 : (tx_envelope.length() - tx_header.payload_length);
+
+        const Bytes tx_payload{buffer.substr(kTxFirstByteAndAddressLength + tx_payload_offset)};
+        ByteView tx_payload_view{tx_envelope};
+        Transaction transaction;
+        const auto payload_result = rlp::decode(tx_payload_view, transaction);
+        ensure(payload_result.has_value(),
+               "TransactionSnapshot: cannot decode tx payload: " + to_hex(tx_payload) + " i: " + std::to_string(i) +
+                   " error: " + std::string(magic_enum::enum_name(payload_result.error())));
+
+        if (read_senders) {
+            transaction.from = to_evmc_address({buffer.data() + 1, kAddressLength});
+        }
+
+        transactions.push_back(std::move(transaction));
+
+        offset = item->offset;
+    }
+    return transactions;
 }
 
 DecodingResult TransactionSnapshot::decode_txn(const Snapshot::WordItem& item, Transaction& tx) const {

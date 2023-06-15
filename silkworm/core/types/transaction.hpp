@@ -27,7 +27,7 @@
 
 namespace silkworm {
 
-// https://eips.ethereum.org/EIPS/eip-2930
+// EIP-2930: Optional access lists
 struct AccessListEntry {
     evmc::address account{};
     std::vector<evmc::bytes32> storage_keys{};
@@ -39,9 +39,9 @@ struct AccessListEntry {
 // https://github.com/ethereum/eth1.0-specs/tree/master/lists/signature-types
 enum class TransactionType : uint8_t {
     kLegacy = 0,
-    kEip2930 = 1,
-    kEip1559 = 2,
-    kEip4844 = 3,
+    kAccessList = 1,  // EIP-2930
+    kDynamicFee = 2,  // EIP-1559
+    kBlob = 3,        // EIP-4844
 };
 
 struct UnsignedTransaction {

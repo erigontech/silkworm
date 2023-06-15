@@ -33,7 +33,7 @@ TEST_CASE("EIP-2930 intrinsic gas") {
     };
 
     UnsignedTransaction txn{
-        .type = TransactionType::kEip2930,
+        .type = TransactionType::kAccessList,
         .chain_id = 5,
         .nonce = 7,
         .max_priority_fee_per_gas = 30000000000,

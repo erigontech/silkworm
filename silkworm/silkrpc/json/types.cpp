@@ -238,7 +238,7 @@ void to_json(nlohmann::json& json, const Transaction& transaction) {
     }
     json["type"] = rpc::to_quantity(uint64_t(transaction.type));
 
-    if (transaction.type == silkworm::TransactionType::kEip1559) {
+    if (transaction.type == silkworm::TransactionType::kDynamicFee) {
         json["maxPriorityFeePerGas"] = rpc::to_quantity(transaction.max_priority_fee_per_gas);
         json["maxFeePerGas"] = rpc::to_quantity(transaction.max_fee_per_gas);
     }

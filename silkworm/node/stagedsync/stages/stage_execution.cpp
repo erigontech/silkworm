@@ -183,7 +183,7 @@ void Execution::prefetch_blocks(db::RWTxn& txn, const BlockNum from, const Block
             const auto hash_ptr{value.data()};
             prefetched_blocks_.push_back();
             if (!data_model.read_block(std::span<const uint8_t, kHashLength>{hash_ptr, kHashLength}, block_num,
-                                /*read_senders=*/true, prefetched_blocks_.back())) {
+                                       /*read_senders=*/true, prefetched_blocks_.back())) {
                 throw std::runtime_error("Unable to read block " + std::to_string(block_num));
             }
             ++block_num;

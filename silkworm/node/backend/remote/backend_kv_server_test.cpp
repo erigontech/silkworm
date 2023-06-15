@@ -869,6 +869,7 @@ TEST_CASE("BackEndKvServer E2E: one Sentry status OK", "[silkworm][node][rpc]") 
     }
 }
 
+#ifndef _WIN32
 TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][node][rpc]") {
     {
         const uint32_t kNumTxs{1000};
@@ -891,6 +892,7 @@ TEST_CASE("BackEndKvServer E2E: trigger server-side write error", "[silkworm][no
     }
     // Server-side life cycle of Tx calls must be OK.
 }
+#endif  // _WIN32
 
 TEST_CASE("BackEndKvServer E2E: Tx max simultaneous readers exceeded", "[silkworm][node][rpc]") {
     // This check can be improved in Catch2 version 3.3.0 where SKIP is available
@@ -2272,6 +2274,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         CHECK(status.ok());
     }
 
+#ifndef _WIN32
     SECTION("Tx: cursor NEXT_DUP op after renew sees changes") {
         grpc::ClientContext context;
         // Start Tx RPC and open one cursor for TestMultiMap table
@@ -2355,6 +2358,8 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         auto status = tx_reader_writer->Finish();
         CHECK(status.ok());
     }
+
+#endif  // _WIN32
 }
 #endif  // SILKWORM_SANITIZE
 

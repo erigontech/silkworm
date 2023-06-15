@@ -35,6 +35,7 @@ namespace silkworm::stagedsync {
 //! \brief The information to compute the sender address from transaction signature
 struct AddressRecovery {
     BlockNum block_num{0};       // Number of block containing the transaction
+    Hash hash;                   // Hash of the block containing the transaction
     bool odd_y_parity{false};    // Whether y parity is odd (https://eips.ethereum.org/EIPS/eip-155)
     uint8_t tx_signature[64]{};  // Signature of the transaction
     evmc::address tx_from;       // Recovered sender address
@@ -56,8 +57,7 @@ class Senders final : public Stage {
   private:
     Stage::Result parallel_recover(db::RWTxn& txn);
 
-    Stage::Result read_canonical_hashes(db::ROTxn& txn, BlockNum from, BlockNum to) noexcept;
-    Stage::Result add_to_batch(BlockNum block_num, std::vector<Transaction>&& transactions);
+    Stage::Result add_to_batch(BlockNum block_num, Hash block_hash, std::vector<Transaction>&& transactions);
     void recover_batch(ThreadPool& worker_pool, secp256k1_context* context, BlockNum from);
     void collect_senders(BlockNum from);
     void collect_senders(BlockNum from, std::shared_ptr<AddressRecoveryBatch>& batch);
@@ -67,7 +67,7 @@ class Senders final : public Stage {
     void increment_total_collected_transactions(std::size_t delta);
 
     //! The canonical hashes of the current block range
-    std::vector<evmc::bytes32> canonical_hashes_;
+    //std::vector<evmc::bytes32> canonical_hashes_;
 
     //! The size of recovery batches
     std::size_t max_batch_size_;

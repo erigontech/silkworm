@@ -329,7 +329,7 @@ TEST_CASE("serialize block with baseFeePerGas", "[silkrpc][to_json]") {
     body.transactions[0].s =
         intx::from_string<intx::uint256>("0x1fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804");
 
-    body.transactions[1].type = TransactionType::kEip1559;
+    body.transactions[1].type = TransactionType::kDynamicFee;
     body.transactions[1].nonce = 1;
     body.transactions[1].max_priority_fee_per_gas = 5 * kGiga;
     body.transactions[1].max_fee_per_gas = 30 * kGiga;
@@ -874,7 +874,7 @@ TEST_CASE("serialize legacy transaction (type=0)", "[silkrpc][to_json]") {
 
 TEST_CASE("serialize EIP-2930 transaction (type=1)", "[silkrpc][to_json]") {
     silkworm::Transaction txn1{
-        {.type = TransactionType::kEip2930,
+        {.type = TransactionType::kAccessList,
          .chain_id = 1,
          .nonce = 0,
          .max_priority_fee_per_gas = 20000000000,
@@ -916,7 +916,7 @@ TEST_CASE("serialize EIP-2930 transaction (type=1)", "[silkrpc][to_json]") {
 
     silkworm::rpc::Transaction txn2{
         {
-            {.type = TransactionType::kEip2930,
+            {.type = TransactionType::kAccessList,
              .chain_id = 1,
              .nonce = 0,
              .max_priority_fee_per_gas = 20000000000,
@@ -971,7 +971,7 @@ TEST_CASE("serialize EIP-2930 transaction (type=1)", "[silkrpc][to_json]") {
 
 TEST_CASE("serialize EIP-1559 transaction (type=2)", "[silkrpc][to_json]") {
     silkworm::Transaction txn1{
-        {.type = TransactionType::kEip1559,
+        {.type = TransactionType::kDynamicFee,
          .chain_id = 1,
          .nonce = 0,
          .max_priority_fee_per_gas = 50'000 * kGiga,

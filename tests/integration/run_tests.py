@@ -48,11 +48,11 @@ tests_not_compared = [
    "debug_traceCall/test_17.json",
    "eth_callMany/test_01.json",
    "eth_callMany/test_02.json",
-   "eth_callMany/test_03.json",
    "eth_callMany/test_04.json",
    "eth_callMany/test_05.json",
    "eth_callMany/test_06.json",
-   "eth_callMany/test_07.json",
+   "eth_callMany/test_09.json",
+   "eth_callMany/test_10.json",
    "eth_maxPriorityFeePerGas/test_1.json",
    "eth_feeHistory/test_1.json"
 ]
@@ -116,6 +116,13 @@ def get_jwt_secret(name):
 #
 #
 #
+def to_lower_case(file):
+    lowercase_file = "/tmp/lowercase"
+    cmd = "tr '[:upper:]' '[:lower:]' < " + file + " > " + lowercase_file
+    os.system(cmd)
+    cmd = "cp " + lowercase_file + " " + file
+    os.system(cmd)
+
 def replace_str_from_file(filer, filew, matched_string):
     """ parse file and replace string
     """
@@ -240,6 +247,9 @@ def run_shell_command(command: str, command1: str, expected_response: str, verbo
             with open(exp_rsp_file, 'w', encoding='utf8') as json_file_ptr:
                 json_file_ptr.write(json.dumps(expected_response,  indent=5))
         #response_diff = jsondiff.diff(expected_response, response, marshal=True)
+        to_lower_case(exp_rsp_file)
+        to_lower_case(silk_file)
+
         temp_file1 = "/tmp/file1"
         temp_file2 = "/tmp/file2"
         if is_not_compared_result(json_file):

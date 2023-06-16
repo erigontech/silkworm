@@ -90,7 +90,7 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig* c
             blockContext.block.header.number = block_override.block_number.value();
         }
         if (block_override.coin_base) {
-            // blockContext.block.header.number = block_override.coin_base.value();
+            blockContext.block.header.beneficiary = block_override.coin_base.value();
         }
         if (block_override.timestamp) {
             blockContext.block.header.timestamp = block_override.timestamp.value();

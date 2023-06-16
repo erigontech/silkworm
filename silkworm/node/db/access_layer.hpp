@@ -287,6 +287,7 @@ class DataModel {
     [[nodiscard]] bool read_block(const evmc::bytes32& hash, BlockNum number, Block& block) const;
 
     [[nodiscard]] bool read_rlp_encoded_txes(BlockNum number, const Hash& hash, std::vector<Bytes>& txes) const;
+
   private:
     static bool read_block_from_snapshot(BlockNum height, bool read_senders, Block& block);
     static std::optional<BlockHeader> read_header_from_snapshot(BlockNum height);

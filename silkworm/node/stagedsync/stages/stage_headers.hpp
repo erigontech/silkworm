@@ -91,6 +91,7 @@ class HeadersStage : public Stage {
         [[nodiscard]] intx::uint256 total_difficulty() const;
 
         std::optional<BlockHeader> get_canonical_header(BlockNum height) const;
+
       private:
         db::RWTxn& tx_;
         db::DataModel data_model_;

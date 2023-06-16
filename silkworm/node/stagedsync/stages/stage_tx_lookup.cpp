@@ -353,7 +353,7 @@ void TxLookup::collect_transaction_hashes_from_canonical_bodies(db::RWTxn& txn,
             etl_value.assign(zeroless_view(block_num_as_bytes));
         }
 
-        for(auto& rlp_encoded_tx: rlp_encoded_txs) {
+        for (auto& rlp_encoded_tx : rlp_encoded_txs) {
             // Hash transaction rlp
             auto transaction_hash = keccak256(rlp_encoded_tx);  // see Transaction::hash()
             collector_->collect({Bytes(transaction_hash.bytes, kHashLength), etl_value});

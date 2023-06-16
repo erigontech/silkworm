@@ -23,6 +23,7 @@
 
 #include <silkworm/core/types/hash.hpp>
 #include <silkworm/infra/common/log.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/etl/collector.hpp>
@@ -41,7 +42,7 @@ SnapshotSync::SnapshotSync(const SnapshotSettings& settings, const ChainConfig& 
       client_{settings_.bittorrent_settings} {}
 
 SnapshotSync::~SnapshotSync() {
-    stop();
+    SnapshotSync::stop();
 }
 
 bool SnapshotSync::download_and_index_snapshots(db::RWTxn& txn) {
@@ -257,9 +258,9 @@ bool SnapshotSync::save(db::RWTxn& txn, BlockNum max_block_available) {
     }
 
     // Update head block header in kHeadHeader table
-    // TODO(canepat) Get canonical hash from block reader
-    const Hash canonical_hash{};
-    db::write_head_header_hash(txn, canonical_hash);
+    const auto canonical_hash{db::read_canonical_hash(txn, repository_.max_block_available())};
+    ensure(canonical_hash.has_value(), "SnapshotSync::save no canonical head hash found");
+    db::write_head_header_hash(txn, *canonical_hash);
 
     // Update progress for related stages
     db::stages::write_stage_progress(txn, db::stages::kHeadersKey, max_block_available);

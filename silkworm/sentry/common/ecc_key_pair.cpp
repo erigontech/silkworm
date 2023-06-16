@@ -20,7 +20,8 @@
 
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/secp256k1_context.hpp>
-#include <silkworm/sentry/common/random.hpp>
+
+#include "random.hpp"
 
 namespace silkworm::sentry::common {
 

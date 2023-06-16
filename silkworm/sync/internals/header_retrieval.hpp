@@ -44,6 +44,7 @@ class HeaderRetrieval {
 
   protected:
     db::ROTxn db_tx_;
+    db::DataModel data_model_;
 };
 
 }  // namespace silkworm

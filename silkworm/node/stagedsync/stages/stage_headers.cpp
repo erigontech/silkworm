@@ -128,7 +128,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
             current_height_++;
 
             // process header and ommers at current height
-            auto header = db::read_canonical_header(tx, current_height_);
+            auto header = data_model.read_canonical_header(tx, current_height_);
             if (!header) throw std::logic_error("table Headers has a hole");
 
             data_model.update_tables(*header);

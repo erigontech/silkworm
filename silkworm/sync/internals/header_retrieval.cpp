@@ -42,7 +42,7 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_hash(Hash origin, uint64_t 
 
     // followings
     do {
-        // compute next hash & number - todo: understand and improve readability
+        // compute next hash & number - understand and improve readability
         if (!reverse) {
             BlockNum current = header->number;
             BlockNum next = current + skip + 1;
@@ -72,7 +72,7 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_hash(Hash origin, uint64_t 
                 std::tie(hash, block_num) = get_ancestor(hash, block_num, ancestor_delta, max_non_canonical);
         }
 
-        // end todo: understand
+        // end understand
 
         if (unknown) break;
 

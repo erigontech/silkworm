@@ -22,8 +22,8 @@
 #include <magic_enum.hpp>
 
 #include <silkworm/core/types/hash.hpp>
-#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/ensure.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/thread_pool.hpp>
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/etl/collector.hpp>

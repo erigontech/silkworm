@@ -63,7 +63,7 @@ void HeadersStage::HeaderDataModel::update_tables(const BlockHeader& header) {
     db::write_total_difficulty(tx_, height, hash, td);
 
     // Save header number
-    //db::write_header_number(tx_, hash.bytes, header.number);  // already done in stage block-hashes
+    // db::write_header_number(tx_, hash.bytes, header.number);  // already done in stage block-hashes
 
     previous_hash_ = hash;
     previous_td_ = td;

@@ -30,7 +30,7 @@ CanonicalChain::CanonicalChain(db::RWTxn& tx, size_t cache_size)
       data_model_{tx_},  // todo: put an header cache into the data_model_ and share the data_model_ with the owner
       canonical_hash_cache_{std::make_unique<lru_cache<BlockNum, Hash>>(cache_size)} {
     // Read head of canonical chain
-    std::tie(initial_head_.number, initial_head_.hash) = data_model_.read_canonical_head();
+    std::tie(initial_head_.number, initial_head_.hash) = db::read_canonical_head(tx_);
     // Set current status
     current_head_ = initial_head_;
 }
@@ -42,7 +42,7 @@ CanonicalChain::CanonicalChain(const CanonicalChain& copy, db::RWTxn& new_tx)
       current_head_{copy.current_head_},
       canonical_hash_cache_{std::make_unique<lru_cache<BlockNum, Hash>>(copy.canonical_hash_cache_->size())} {
     // Read head of canonical chain
-    std::tie(initial_head_.number, initial_head_.hash) = data_model_.read_canonical_head();
+    std::tie(initial_head_.number, initial_head_.hash) = db::read_canonical_head(tx_);
     // Set current status
     current_head_ = initial_head_;
 }

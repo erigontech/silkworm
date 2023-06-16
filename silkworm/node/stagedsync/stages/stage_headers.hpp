@@ -90,8 +90,10 @@ class HeadersStage : public Stage {
         [[nodiscard]] Hash highest_hash() const;
         [[nodiscard]] intx::uint256 total_difficulty() const;
 
+        std::optional<BlockHeader> get_canonical_header(BlockNum height) const;
       private:
         db::RWTxn& tx_;
+        db::DataModel data_model_;
         Hash previous_hash_;
         intx::uint256 previous_td_{0};
         BlockNum previous_height_{0};

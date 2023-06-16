@@ -272,6 +272,9 @@ class DataModel {
     //! Read the canonical block header at specified height
     [[nodiscard]] std::optional<BlockHeader> read_canonical_header(BlockNum height) const;
 
+    //! Read the canonical block body at specified height
+    [[nodiscard]] bool read_canonical_body(BlockNum height, BlockBody& body) const;
+
     //! Read the canonical block at specified height
     [[nodiscard]] bool read_canonical_block(BlockNum height, Block& block) const;
 
@@ -283,6 +286,7 @@ class DataModel {
     [[nodiscard]] bool read_block(HashAsSpan hash, BlockNum height, bool read_senders, Block& block) const;
     [[nodiscard]] bool read_block(const evmc::bytes32& hash, BlockNum number, Block& block) const;
 
+    [[nodiscard]] bool read_rlp_encoded_txes(BlockNum number, const Hash& hash, std::vector<Bytes>& txes) const;
   private:
     static bool read_block_from_snapshot(BlockNum height, bool read_senders, Block& block);
     static std::optional<BlockHeader> read_header_from_snapshot(BlockNum height);

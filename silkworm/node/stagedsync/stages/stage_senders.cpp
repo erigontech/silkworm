@@ -288,11 +288,11 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
 
         // Start from first block and read all in sequence
         for (auto current_block_num = start_block_num; current_block_num <= target_block_num; ++current_block_num) {
-            auto current_hash = data_model.read_canonical_hash(current_block_num);
+            auto current_hash = db::read_canonical_hash(txn, current_block_num);
             if (!current_hash) throw StageError(Stage::Result::kBadChainSequence,
                                                 "Canonical hash at height " + std::to_string(current_block_num) + " not found");
             BlockBody block_body;
-            auto found = data_model.read_body(current_block_num, current_hash, block_body);
+            auto found = data_model.read_body(*current_hash, current_block_num, block_body);
             if (!found) throw StageError(Stage::Result::kBadChainSequence,
                                          "Canonical block at height " + std::to_string(current_block_num) + " not found");
 
@@ -305,24 +305,24 @@ Stage::Result Senders::parallel_recover(db::RWTxn& txn) {
             if (block_body.transactions.empty()) continue;
 
             total_collected_senders += block_body.transactions.size();
-            success_or_throw(add_to_batch(current_block_num, current_hash, std::move(block_body.transactions)));
+            success_or_throw(add_to_batch(current_block_num, *current_hash, std::move(block_body.transactions)));
 
             // Process batch in parallel if max size has been reached
             if (batch_->size() >= max_batch_size_) {
                 increment_total_collected_transactions(batch_->size());
-                recover_batch(worker_pool, context, start_block_num);
+                recover_batch(worker_pool, context);
             }
         }
 
         // Recover last incomplete batch [likely]
         if (!batch_->empty()) {
             increment_total_collected_transactions(batch_->size());
-            recover_batch(worker_pool, context, start_block_num);
+            recover_batch(worker_pool, context);
         }
 
         // Wait for all senders to be recovered and collected in ETL
         while (collected_senders_ != total_collected_senders) {
-            collect_senders(start_block_num);
+            collect_senders();
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
 
@@ -402,7 +402,7 @@ Stage::Result Senders::add_to_batch(BlockNum block_num, Hash block_hash, std::ve
     return is_stopping() ? Stage::Result::kAborted : Stage::Result::kSuccess;
 }
 
-void Senders::recover_batch(ThreadPool& worker_pool, secp256k1_context* context, BlockNum from) {
+void Senders::recover_batch(ThreadPool& worker_pool, secp256k1_context* context) {
     // Launch parallel senders recovery
     log::Trace(log_prefix_, {"op", "recover_batch", "first", std::to_string(batch_->cbegin()->block_num)});
 
@@ -432,7 +432,7 @@ void Senders::recover_batch(ThreadPool& worker_pool, secp256k1_context* context,
     results_.emplace_back(std::move(batch_result));
 
     // Check completed batch of senders and collect them
-    collect_senders(from);
+    collect_senders();
 
     const auto [end, _] = sw.lap();
     log::Trace(log_prefix_, {"op", "recover_batch", "elapsed", sw.format(end - start)});
@@ -440,12 +440,12 @@ void Senders::recover_batch(ThreadPool& worker_pool, secp256k1_context* context,
     if (is_stopping()) throw StageError(Stage::Result::kAborted);
 }
 
-void Senders::collect_senders(BlockNum from) {
+void Senders::collect_senders() {
     std::erase_if(results_, [&](auto& future_completed_batch) {
         if (future_completed_batch.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
             auto completed_batch = future_completed_batch.get();
             // Put recovered senders into ETL
-            collect_senders(from, completed_batch);
+            collect_senders(completed_batch);
             // Update count of collected senders
             collected_senders_ += completed_batch->size();
             return true;
@@ -454,7 +454,7 @@ void Senders::collect_senders(BlockNum from) {
     });
 }
 
-void Senders::collect_senders(BlockNum from, std::shared_ptr<AddressRecoveryBatch>& batch) {
+void Senders::collect_senders(std::shared_ptr<AddressRecoveryBatch>& batch) {
     StopWatch sw;
     const auto start = sw.start();
 

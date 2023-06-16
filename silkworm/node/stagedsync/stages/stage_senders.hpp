@@ -58,9 +58,9 @@ class Senders final : public Stage {
     Stage::Result parallel_recover(db::RWTxn& txn);
 
     Stage::Result add_to_batch(BlockNum block_num, Hash block_hash, std::vector<Transaction>&& transactions);
-    void recover_batch(ThreadPool& worker_pool, secp256k1_context* context, BlockNum from);
-    void collect_senders(BlockNum from);
-    void collect_senders(BlockNum from, std::shared_ptr<AddressRecoveryBatch>& batch);
+    void recover_batch(ThreadPool& worker_pool, secp256k1_context* context);
+    void collect_senders();
+    void collect_senders(std::shared_ptr<AddressRecoveryBatch>& batch);
     void store_senders(db::RWTxn& txn);
 
     void increment_total_processed_blocks();

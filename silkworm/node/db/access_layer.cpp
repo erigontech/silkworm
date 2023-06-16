@@ -981,6 +981,13 @@ std::optional<BlockHeader> DataModel::read_canonical_header(BlockNum height) con
     return read_header(height, *canonical_hash);
 }
 
+bool DataModel::read_canonical_body(BlockNum height, BlockBody& body) const {
+    const auto canonical_hash{db::read_canonical_hash(txn_, height)};
+    if (!canonical_hash) return {};
+
+    return read_body(*canonical_hash, height, body);
+}
+
 bool DataModel::read_canonical_block(BlockNum height, Block& block) const {
     const auto canonical_hash{db::read_canonical_hash(txn_, height)};
     if (!canonical_hash) return {};
@@ -1105,6 +1112,10 @@ std::vector<Transaction> DataModel::read_transactions_from_snapshot(BlockNum hei
     }
 
     return transactions;
+}
+
+bool DataModel::read_rlp_encoded_txes(BlockNum, const Hash&, std::vector<Bytes>&) const {
+    throw std::runtime_error("read_rlp_encoded_txes not implemented");
 }
 
 }  // namespace silkworm::db

@@ -269,9 +269,6 @@ class DataModel {
     [[nodiscard]] bool read_body(const Hash& hash, BlockNum height, BlockBody& body) const;
     [[nodiscard]] bool read_body(const Hash& hash, BlockBody& body) const;
 
-    //! Read the canonical block hash at specified height
-    [[nodiscard]] std::optional<evmc::bytes32> read_canonical_hash(BlockNum height) const;
-
     //! Read the canonical block header at specified height
     [[nodiscard]] std::optional<BlockHeader> read_canonical_header(BlockNum height) const;
 
@@ -286,8 +283,8 @@ class DataModel {
     [[nodiscard]] bool read_block_by_number(BlockNum number, bool read_senders, Block& block);
 
     //! Read block returning true on success and false on missing block
-    [[nodiscard]] bool read_block(HashAsSpan hash, BlockNum height, bool read_senders, Block& block);
-    [[nodiscard]] bool read_block(const evmc::bytes32& hash, BlockNum number, Block& block);
+    [[nodiscard]] bool read_block(HashAsSpan hash, BlockNum height, bool read_senders, Block& block) const;
+    [[nodiscard]] bool read_block(const evmc::bytes32& hash, BlockNum number, Block& block) const;
 
   private:
     static bool read_block_from_snapshot(BlockNum height, bool read_senders, Block& block);

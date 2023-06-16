@@ -974,38 +974,18 @@ bool DataModel::read_body(const Hash& hash, BlockBody& body) const {
     return false;
 }
 
-std::optional<evmc::bytes32> DataModel::read_canonical_hash(BlockNum height) const {
-    // Canonical chain is likely on db: first lookup there
-    auto canonical_hash{db::read_canonical_hash(txn_, height)};
-    if (canonical_hash) return canonical_hash;
-
-    // Then search for it in the snapshots (if any)
-    if (const auto block_header{read_header_from_snapshot(height)}; block_header) {
-        canonical_hash = block_header->hash();
-    }
-    return canonical_hash;
-}
-
 std::optional<BlockHeader> DataModel::read_canonical_header(BlockNum height) const {
-    // Canonical chain is likely on db: first lookup there
-    auto canonical_header{db::read_canonical_header(txn_, height)};
-    if (canonical_header) return canonical_header;
+    const auto canonical_hash{db::read_canonical_hash(txn_, height)};
+    if (!canonical_hash) return {};
 
-    // Then search for it in the snapshots (if any)
-    return read_header_from_snapshot(height);
+    return read_header(height, *canonical_hash);
 }
 
 bool DataModel::read_canonical_block(BlockNum height, Block& block) const {
-    const bool found = db::read_canonical_block(txn_, height, block);
-    if (found) return found;
+    const auto canonical_hash{db::read_canonical_hash(txn_, height)};
+    if (!canonical_hash) return {};
 
-    auto block_header{read_header_from_snapshot(height)};
-    if (!block_header) return false;
-
-    const auto hash{block_header->hash()};
-    block.header = std::move(*block_header);
-
-    return read_body(height, hash.bytes, /*read_senders=*/false, block);
+    return read_block(*canonical_hash, height, block);
 }
 
 bool DataModel::has_body(BlockNum height, HashAsArray hash) {
@@ -1023,14 +1003,14 @@ bool DataModel::read_block_by_number(BlockNum number, bool read_senders, Block& 
     return db::read_block_by_number(txn_, number, read_senders, block);
 }
 
-bool DataModel::read_block(HashAsSpan hash, BlockNum height, bool read_senders, Block& block) {
+bool DataModel::read_block(HashAsSpan hash, BlockNum height, bool read_senders, Block& block) const {
     const bool found = db::read_block(txn_, hash, height, read_senders, block);
     if (found) return found;
 
     return read_block_from_snapshot(height, read_senders, block);
 }
 
-bool DataModel::read_block(const evmc::bytes32& hash, BlockNum height, Block& block) {
+bool DataModel::read_block(const evmc::bytes32& hash, BlockNum height, Block& block) const {
     const bool found = db::read_block(txn_, hash, height, block);
     if (found) return found;
 

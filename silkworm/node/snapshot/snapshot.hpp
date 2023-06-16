@@ -151,11 +151,15 @@ class TransactionSnapshot : public Snapshot {
     [[nodiscard]] std::optional<Transaction> txn_by_hash(const Hash& txn_hash) const;
     [[nodiscard]] std::optional<Transaction> txn_by_id(uint64_t txn_id) const;
     [[nodiscard]] std::vector<Transaction> txn_range(uint64_t base_txn_id, uint64_t txn_count, bool read_senders) const;
+    [[nodiscard]] std::vector<Bytes> txn_rlp_range(uint64_t base_txn_id, uint64_t txn_count) const;
 
     void reopen_index() override;
 
   protected:
     DecodingResult decode_txn(const Snapshot::WordItem& item, Transaction& tx) const;
+
+    using Walker = std::function<bool(uint64_t i, ByteView senders_data, ByteView txn_rlp)>;
+    void for_each_txn(uint64_t base_txn_id, uint64_t txn_count, const Walker& walker) const;
 
     void close_index() override;
 

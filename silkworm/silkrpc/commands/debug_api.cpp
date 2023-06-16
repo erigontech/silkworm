@@ -356,6 +356,84 @@ awaitable<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& reque
     co_return;
 }
 
+// https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_tracecallmany
+awaitable<void> DebugRpcApi::handle_debug_trace_call_many(const nlohmann::json& request, json::Stream& stream) {
+    if (!request.contains("params")) {
+        auto error_msg = "missing value for required arguments";
+        SILK_ERROR << error_msg << request.dump();
+        const auto reply = make_json_error(request["id"], 100, error_msg);
+        stream.write_json(reply);
+
+        co_return;
+    }
+
+    const auto& params = request["params"];
+    if (params.size() < 2) {
+        auto error_msg = "invalid debug_traceCallMany params: " + params.dump();
+        SILK_ERROR << error_msg;
+        const auto reply = make_json_error(request["id"], 100, error_msg);
+        stream.write_json(reply);
+
+        co_return;
+    }
+    const auto bundles = params[0].get<Bundles>();
+
+    if (bundles.empty()) {
+        const auto error_msg = "invalid debug_traceCallMany bundle list: " + params.dump();
+        SILK_ERROR << error_msg;
+        const auto reply = make_json_error(request["id"], 100, error_msg);
+        stream.write_json(reply);
+
+        co_return;
+    }
+
+    const auto simulation_context = params[1].get<SimulationContext>();
+
+    debug::DebugConfig config;
+    if (params.size() > 2) {
+        config = params[2].get<debug::DebugConfig>();
+    }
+
+    SILK_DEBUG << "bundles: " << bundles << " simulation_context: " << simulation_context << " config: {" << config << "}";
+
+    stream.open_object();
+    stream.write_field("id", request["id"]);
+    stream.write_field("jsonrpc", "2.0");
+
+    auto tx = co_await database_->begin();
+
+    // try {
+    //     ethdb::TransactionDatabase tx_database{*tx};
+    //     ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
+
+    //     const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, tx_database, block_number_or_hash);
+    //     const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash->block.header.number, tx_database);
+    //     const core::rawdb::DatabaseReader& db_reader =
+    //         is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
+    //     debug::DebugExecutor executor{db_reader, workers_, config};
+
+    //     stream.write_field("result");
+    //     stream.open_object();
+    //     co_await executor.execute(stream, block_with_hash->block, call);
+    //     stream.close_object();
+    // } catch (const std::exception& e) {
+    //     SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+    //     std::ostringstream oss;
+    //     oss << "block " << block_number_or_hash.number() << "(" << block_number_or_hash.hash() << ") not found";
+    //     const Error error{-32000, oss.str()};
+    //     stream.write_field("error", error);
+    // } catch (...) {
+    //     SILK_ERROR << "unexpected exception processing request: " << request.dump();
+    //     const Error error{100, "unexpected exception"};
+    //     stream.write_field("error", error);
+    // }
+
+    stream.close_object();
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+    co_return;
+}
+
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_traceblockbynumber
 awaitable<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::json& request, json::Stream& stream) {
     const auto& params = request["params"];

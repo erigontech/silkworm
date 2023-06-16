@@ -113,7 +113,7 @@ boost::asio::awaitable<uint64_t> read_block_number_by_transaction_hash(const Dat
         throw std::invalid_argument{"empty block number value in read_block_by_transaction_hash"};
     }
     SILK_TRACE << "Block number bytes " << silkworm::to_hex(block_number_bytes) << " for transaction hash " << transaction_hash;
-    co_return std::stoul(silkworm::to_hex(block_number_bytes), 0, 16);
+    co_return std::stoul(silkworm::to_hex(block_number_bytes), nullptr, 16);
 }
 
 boost::asio::awaitable<std::shared_ptr<BlockWithHash>> read_block(const DatabaseReader& reader, const evmc::bytes32& block_hash, uint64_t block_number) {
@@ -200,10 +200,14 @@ boost::asio::awaitable<silkworm::BlockBody> read_body(const DatabaseReader& read
     try {
         silkworm::ByteView data_view{data};
         auto stored_body{silkworm::db::detail::decode_stored_block_body(data_view)};
-        // 1 system txn in the begining of block, and 1 at the end
+        // If block contains no txn, we're done
+        if (stored_body.txn_count == 0) {
+            co_return BlockBody{{}, std::move(stored_body.ommers), std::move(stored_body.withdrawals)};
+        }
+        // 1 system txn at the beginning of block and 1 at the end
         SILK_DEBUG << "base_txn_id: " << stored_body.base_txn_id + 1 << " txn_count: " << stored_body.txn_count - 2;
         auto transactions = co_await read_canonical_transactions(reader, stored_body.base_txn_id + 1, stored_body.txn_count - 2);
-        if (transactions.size() != 0) {
+        if (!transactions.empty()) {
             const auto senders = co_await read_senders(reader, block_hash, block_number);
             if (senders.size() == transactions.size()) {
                 // Fill sender in transactions
@@ -215,8 +219,7 @@ boost::asio::awaitable<silkworm::BlockBody> read_body(const DatabaseReader& read
                 SILK_WARN << "#senders: " << senders.size() << " and #txns " << transactions.size() << " do not match";
             }
         }
-        silkworm::BlockBody body{std::move(transactions), std::move(stored_body.ommers), std::move(stored_body.withdrawals)};
-        co_return body;
+        co_return BlockBody{std::move(transactions), std::move(stored_body.ommers), std::move(stored_body.withdrawals)};
     } catch (const silkworm::DecodingException& error) {
         SILK_ERROR << "RLP decoding error for block body #" << block_number << " [" << error.what() << "]";
         throw std::runtime_error{"RLP decoding error for block body [" + std::string(error.what()) + "]"};
@@ -400,7 +403,7 @@ boost::asio::awaitable<intx::uint256> read_total_issued(const core::rawdb::Datab
     const auto value = co_await reader.get_one(db::table::kIssuanceName, block_key);
     intx::uint256 total_issued = 0;
     if (!value.empty()) {
-        total_issued = std::stoul(silkworm::to_hex(value), 0, 16);
+        total_issued = std::stoul(silkworm::to_hex(value), nullptr, 16);
     }
     SILK_DEBUG << "rawdb::read_total_issued: " << total_issued;
     co_return total_issued;
@@ -414,7 +417,7 @@ boost::asio::awaitable<intx::uint256> read_total_burnt(const core::rawdb::Databa
     const auto value = co_await reader.get_one(db::table::kIssuanceName, key);
     intx::uint256 total_burnt = 0;
     if (!value.empty()) {
-        total_burnt = std::stoul(silkworm::to_hex(value), 0, 16);
+        total_burnt = std::stoul(silkworm::to_hex(value), nullptr, 16);
     }
     SILK_DEBUG << "rawdb::read_total_burnt: " << total_burnt;
     co_return total_burnt;
@@ -425,7 +428,7 @@ boost::asio::awaitable<intx::uint256> read_cumulative_gas_used(const core::rawdb
     const auto value = co_await reader.get_one(db::table::kCumulativeGasIndexName, block_key);
     intx::uint256 cumulative_gas_index = 0;
     if (!value.empty()) {
-        cumulative_gas_index = std::stoul(silkworm::to_hex(value), 0, 16);
+        cumulative_gas_index = std::stoul(silkworm::to_hex(value), nullptr, 16);
     }
     SILK_DEBUG << "rawdb::read_cumulative_gas_used: " << cumulative_gas_index;
     co_return cumulative_gas_index;

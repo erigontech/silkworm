@@ -27,6 +27,7 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/core/types/hash.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/db/util.hpp>
 #include <silkworm/node/snapshot/repository.hpp>
@@ -113,15 +114,9 @@ size_t process_blocks_at_height(ROTxn& txn, BlockNum height, std::function<void(
 [[nodiscard]] bool has_body(ROTxn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
 [[nodiscard]] bool has_body(ROTxn& txn, BlockNum block_number, const evmc::bytes32& hash);
 
-//! \brief Check the presence of a block with the same number
-[[nodiscard]] bool has_sibling(ROTxn& txn, BlockNum block_number);
-
 //! \brief Writes block body in table::kBlockBodies
 void write_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, BlockNum bn);
 void write_body(RWTxn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], BlockNum number);
-
-//! \brief Writes block body in table::kBlockBodies and transactions in table::KNonCanonicalTransactions
-void write_sibling(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, BlockNum bn);
 
 // See Erigon ReadTd
 std::optional<intx::uint256> read_total_difficulty(ROTxn& txn, BlockNum, const evmc::bytes32& hash);
@@ -251,46 +246,51 @@ class DataModel {
     DataModel(const DataModel&) = delete;
     DataModel& operator=(const DataModel&) = delete;
 
-    //! Read block header with the specified key (block number, hash)
-    std::optional<BlockHeader> read_header(BlockNum block_number, const uint8_t (&block_hash)[kHashLength]);
+    //! Get the highest block number
+    [[nodiscard]] BlockNum highest_block_number() const;
 
     //! Read block header with the specified key (block number, hash)
-    std::optional<BlockHeader> read_header(BlockNum block_number, const evmc::bytes32& block_hash);
+    [[nodiscard]] std::optional<BlockHeader> read_header(BlockNum block_number, HashAsArray hash) const;
+
+    //! Read block header with the specified key (block number, hash)
+    [[nodiscard]] std::optional<BlockHeader> read_header(BlockNum block_number, const Hash& block_hash) const;
 
     //! Read block header with the specified hash
-    std::optional<BlockHeader> read_header(const evmc::bytes32& block_hash);
+    [[nodiscard]] std::optional<BlockHeader> read_header(const Hash& block_hash) const;
 
     //! Read block number from hash
-    std::optional<BlockNum> read_block_number(const evmc::bytes32& hash);
+    [[nodiscard]] std::optional<BlockNum> read_block_number(const Hash& block_hash) const;
+
+    //! Read all sibling block headers at specified height
+    [[nodiscard]] std::vector<BlockHeader> read_sibling_headers(BlockNum block_number) const;
 
     //! Read block body in output parameter returning true on success and false on missing block
-    [[nodiscard]] bool read_body(const Bytes& key, bool read_senders, BlockBody& out);
-    [[nodiscard]] bool read_body(BlockNum block_number, const uint8_t (&hash)[kHashLength],
-                                 bool read_senders, BlockBody& out);
-    [[nodiscard]] bool read_body(const evmc::bytes32& hash, BlockNum bn, BlockBody& body);
-    [[nodiscard]] bool read_body(const evmc::bytes32& hash, BlockBody& body);
+    [[nodiscard]] bool read_body(BlockNum height, HashAsArray hash, bool read_senders, BlockBody& body) const;
+    [[nodiscard]] bool read_body(const Hash& hash, BlockNum height, BlockBody& body) const;
+    [[nodiscard]] bool read_body(const Hash& hash, BlockBody& body) const;
+
+    //! Read the canonical block header at specified height
+    [[nodiscard]] std::optional<BlockHeader> read_canonical_header(BlockNum height) const;
 
     //! Read the canonical block at specified height
-    [[nodiscard]] bool read_canonical_block(BlockNum height, Block& block);
+    [[nodiscard]] bool read_canonical_block(BlockNum height, Block& block) const;
 
     //! Check the presence of a block body using block number and hash
-    [[nodiscard]] bool has_body(BlockNum block_number, const uint8_t (&hash)[kHashLength]);
-    [[nodiscard]] bool has_body(BlockNum block_number, const evmc::bytes32& hash);
-
-    //! Check the presence of a block with the same number
-    [[nodiscard]] bool has_sibling(BlockNum block_number);
-
-    //! Read canonical block returning true on success and false on missing block
-    [[nodiscard]] bool read_block_by_number(BlockNum number, bool read_senders, Block& block);
+    [[nodiscard]] bool has_body(BlockNum height, HashAsArray hash);
+    [[nodiscard]] bool has_body(BlockNum height, const Hash& hash);
 
     //! Read block returning true on success and false on missing block
-    [[nodiscard]] bool read_block(std::span<const uint8_t, kHashLength> hash, BlockNum number,
-                                  bool read_senders, Block& block);
-    [[nodiscard]] bool read_block(const evmc::bytes32& hash, BlockNum number, Block& block);
+    [[nodiscard]] bool read_block(HashAsSpan hash, BlockNum height, bool read_senders, Block& block) const;
+    [[nodiscard]] bool read_block(const evmc::bytes32& hash, BlockNum number, Block& block) const;
 
   private:
-    static std::optional<BlockHeader> read_header_from_snapshot(BlockNum block_height);
-    static std::optional<BlockHeader> read_header_from_snapshot(const evmc::bytes32& block_hash);
+    static bool read_block_from_snapshot(BlockNum height, bool read_senders, Block& block);
+    static std::optional<BlockHeader> read_header_from_snapshot(BlockNum height);
+    static std::optional<BlockHeader> read_header_from_snapshot(const Hash& hash);
+    static bool read_body_from_snapshot(BlockNum height, bool read_senders, BlockBody& body);
+    static bool is_body_in_snapshot(BlockNum height);
+    static std::vector<Transaction> read_transactions_from_snapshot(BlockNum height, uint64_t base_txn_id,
+                                                                    uint64_t txn_count, bool read_senders);
 
     static inline snapshot::SnapshotRepository* repository_{nullptr};
 

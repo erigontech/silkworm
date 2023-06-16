@@ -18,7 +18,9 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 
+#include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/udp.hpp>
 
 #include <silkworm/core/common/base.hpp>
@@ -36,5 +38,8 @@ size_t length(const NodeAddress&);
 //! RLP encode
 void encode(Bytes& to, const NodeAddress&);
 DecodingResult decode(ByteView& from, NodeAddress& to, rlp::Leftover mode) noexcept;
+
+Bytes ip_address_to_bytes(const boost::asio::ip::address& ip);
+std::optional<boost::asio::ip::address> ip_address_from_bytes(ByteView ip_bytes) noexcept;
 
 }  // namespace silkworm::sentry::discovery::disc_v4::disc_v4_common

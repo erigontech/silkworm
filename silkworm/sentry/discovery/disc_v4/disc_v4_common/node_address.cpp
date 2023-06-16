@@ -17,14 +17,13 @@
 #include "node_address.hpp"
 
 #include <cstring>
-#include <optional>
 
 #include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 
 namespace silkworm::sentry::discovery::disc_v4::disc_v4_common {
 
-static Bytes ip_address_to_bytes(const boost::asio::ip::address& ip) {
+Bytes ip_address_to_bytes(const boost::asio::ip::address& ip) {
     if (ip.is_v4()) {
         auto ip_bytes = ip.to_v4().to_bytes();
         return Bytes{reinterpret_cast<uint8_t*>(ip_bytes.data()), ip_bytes.size()};
@@ -36,7 +35,7 @@ static Bytes ip_address_to_bytes(const boost::asio::ip::address& ip) {
     return {};
 }
 
-static std::optional<boost::asio::ip::address> ip_address_from_bytes(ByteView ip_bytes) noexcept {
+std::optional<boost::asio::ip::address> ip_address_from_bytes(ByteView ip_bytes) noexcept {
     if (ip_bytes.size() == sizeof(boost::asio::ip::address_v4::bytes_type)) {
         boost::asio::ip::address_v4::bytes_type ip_bytes_array;
         memcpy(ip_bytes_array.data(), ip_bytes.data(), ip_bytes.size());

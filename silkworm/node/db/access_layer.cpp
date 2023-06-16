@@ -999,10 +999,6 @@ bool DataModel::has_body(BlockNum height, const Hash& hash) {
     return has_body(height, hash.bytes);
 }
 
-bool DataModel::read_block_by_number(BlockNum number, bool read_senders, Block& block) {
-    return db::read_block_by_number(txn_, number, read_senders, block);
-}
-
 bool DataModel::read_block(HashAsSpan hash, BlockNum height, bool read_senders, Block& block) const {
     const bool found = db::read_block(txn_, hash, height, read_senders, block);
     if (found) return found;

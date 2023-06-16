@@ -279,9 +279,6 @@ class DataModel {
     [[nodiscard]] bool has_body(BlockNum height, HashAsArray hash);
     [[nodiscard]] bool has_body(BlockNum height, const Hash& hash);
 
-    //! Read canonical block returning true on success and false on missing block
-    [[nodiscard]] bool read_block_by_number(BlockNum number, bool read_senders, Block& block);
-
     //! Read block returning true on success and false on missing block
     [[nodiscard]] bool read_block(HashAsSpan hash, BlockNum height, bool read_senders, Block& block) const;
     [[nodiscard]] bool read_block(const evmc::bytes32& hash, BlockNum number, Block& block) const;

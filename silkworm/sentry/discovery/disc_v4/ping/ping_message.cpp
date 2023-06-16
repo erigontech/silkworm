@@ -1,0 +1,64 @@
+/*
+   Copyright 2023 The Silkworm Authors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+#include "ping_message.hpp"
+
+#include <silkworm/core/rlp/decode_vector.hpp>
+#include <silkworm/core/rlp/encode_vector.hpp>
+#include <silkworm/infra/common/decoding_exception.hpp>
+#include <silkworm/sentry/discovery/disc_v4/disc_v4_common/node_address.hpp>
+#include <silkworm/sentry/discovery/disc_v4/disc_v4_common/unix_timestamp.hpp>
+
+namespace silkworm::sentry::discovery::disc_v4::ping {
+
+using namespace disc_v4_common;
+
+Bytes PingMessage::rlp_encode() const {
+    Bytes data;
+    const int kDiscVersion = 4;
+    NodeAddress sender_address{sender_endpoint, sender_port_rlpx};
+    NodeAddress recipient_address{recipient_endpoint, 0};
+    auto expiration_ts = unix_timestamp_from_time_point(expiration);
+    rlp::encode(data, kDiscVersion, sender_address, recipient_address, expiration_ts);
+    return data;
+}
+
+PingMessage PingMessage::rlp_decode(ByteView data) {
+    unsigned int disc_version;
+    NodeAddress sender_address;
+    NodeAddress recipient_address;
+    uint64_t expiration_ts;
+
+    auto result = rlp::decode(
+        data,
+        rlp::Leftover::kAllow,
+        disc_version,
+        sender_address,
+        recipient_address,
+        expiration_ts);
+    if (!result && (result.error() != DecodingError::kUnexpectedListElements)) {
+        throw DecodingException(result.error(), "Failed to decode PingMessage RLP");
+    }
+
+    return PingMessage{
+        std::move(sender_address.endpoint),
+        sender_address.port_rlpx,
+        std::move(recipient_address.endpoint),
+        time_point_from_unix_timestamp(expiration_ts),
+    };
+}
+
+}  // namespace silkworm::sentry::discovery::disc_v4::ping

@@ -22,8 +22,7 @@
 #include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
-#include <silkworm/infra/common/secp256k1_context.hpp>
-#include <silkworm/sentry/common/ecc_key_pair.hpp>
+#include <silkworm/sentry/common/crypto/ecdsa_signature.hpp>
 #include <silkworm/sentry/common/random.hpp>
 #include <silkworm/sentry/rlpx/crypto/xor.hpp>
 
@@ -31,40 +30,7 @@
 
 namespace silkworm::sentry::rlpx::auth {
 
-static Bytes sign(ByteView data, ByteView private_key) {
-    SecP256K1Context ctx{/* allow_verify = */ false, /* allow_sign = */ true};
-    secp256k1_ecdsa_recoverable_signature signature;
-    bool ok = ctx.sign_recoverable(&signature, data, private_key);
-    if (!ok) {
-        throw std::runtime_error("rlpx::auth::sign failed to sign an AuthMessage");
-    }
-
-    auto [signature_data, recovery_id] = ctx.serialize_recoverable_signature(&signature);
-    signature_data.push_back(recovery_id);
-    return signature_data;
-}
-
-static common::EccPublicKey recover_and_verify(ByteView data, ByteView signature_and_recovery_id) {
-    if (signature_and_recovery_id.empty()) {
-        throw std::runtime_error("rlpx::auth::recover_and_verify: AuthMessage signature is empty");
-    }
-    uint8_t recovery_id = signature_and_recovery_id.back();
-    ByteView signature_data = {signature_and_recovery_id.data(), signature_and_recovery_id.size() - 1};
-
-    SecP256K1Context ctx;
-    secp256k1_ecdsa_recoverable_signature signature;
-    bool ok = ctx.parse_recoverable_signature(&signature, signature_data, recovery_id);
-    if (!ok) {
-        throw std::runtime_error("rlpx::auth::recover_and_verify: failed to parse an AuthMessage signature");
-    }
-
-    secp256k1_pubkey public_key;
-    ok = ctx.recover_signature_public_key(&public_key, &signature, data);
-    if (!ok) {
-        throw std::runtime_error("rlpx::auth::recover_and_verify: failed to recover a public key from an AuthMessage signature");
-    }
-    return common::EccPublicKey{Bytes{public_key.data, sizeof(public_key.data)}};
-}
+using namespace common::crypto::ecdsa_signature;
 
 const uint8_t AuthMessage::version = 4;
 

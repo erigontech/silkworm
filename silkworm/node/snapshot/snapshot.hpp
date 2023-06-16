@@ -150,6 +150,7 @@ class TransactionSnapshot : public Snapshot {
 
     [[nodiscard]] std::optional<Transaction> txn_by_hash(const Hash& txn_hash) const;
     [[nodiscard]] std::optional<Transaction> txn_by_id(uint64_t txn_id) const;
+    [[nodiscard]] std::vector<Transaction> txn_range(uint64_t base_txn_id, uint64_t txn_count, bool read_senders) const;
 
     void reopen_index() override;
 

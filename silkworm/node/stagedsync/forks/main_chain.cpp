@@ -110,11 +110,7 @@ void MainChain::insert_body(const Block& block, const Hash& block_hash) {
 
     if (db::has_body(tx_, block_num, block_hash)) return;
 
-    if (db::has_sibling(tx_, block_num)) {
-        db::write_sibling(tx_, block, block_hash, block_num);
-    } else {
-        db::write_body(tx_, block, block_hash, block_num);
-    }
+    db::write_body(tx_, block, block_hash, block_num);
 }
 
 void MainChain::insert_block(const Block& block) {

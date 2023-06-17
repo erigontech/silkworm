@@ -89,21 +89,20 @@ boost::asio::awaitable<intx::uint256> EstimateGasOracle::estimate_gas(const Call
                     auto mid = (hi + lo) / 2;
                     transaction.gas_limit = mid;
 
-                    auto failed = try_execution(executor, block, transaction);
+                    auto success = try_execution(executor, block, transaction);
 
-                    if (failed) {
-                        lo = mid;
-                    } else {
+                    if (success) {
                         hi = mid;
+                    } else {
+                        lo = mid;
                     }
                 }
 
                 if (hi == cap) {
                     transaction.gas_limit = hi;
-                    auto failed = try_execution(executor, block, transaction);
-                    SILK_DEBUG << "HI == cap tested again with " << (failed ? "failure" : "succeed");
-
-                    if (failed) {
+                    auto success = try_execution(executor, block, transaction);
+                    SILK_DEBUG << "HI == cap tested again with " << (success ? "succeed" : "failed");
+                    if (!success) {
                         throw EstimateGasException{-1, "gas required exceeds allowance (" + std::to_string(cap) + ")"};
                     }
                 }
@@ -123,12 +122,12 @@ boost::asio::awaitable<intx::uint256> EstimateGasOracle::estimate_gas(const Call
 bool EstimateGasOracle::try_execution(EVMExecutor& executor, const silkworm::Block& block, const silkworm::Transaction& transaction) {
     auto result = executor.call_sync(block, transaction);
 
-    bool failed = true;
+    bool success = false;
     if (result.pre_check_error) {
         SILK_DEBUG << "result error " << result.pre_check_error.value();
     } else if (result.error_code == evmc_status_code::EVMC_SUCCESS) {
         SILK_DEBUG << "result SUCCESS";
-        failed = false;
+        success = true;
     } else if (result.error_code == evmc_status_code::EVMC_INSUFFICIENT_BALANCE) {
         SILK_DEBUG << "result INSUFFICIENT BALANCE";
     } else {
@@ -141,7 +140,7 @@ bool EstimateGasOracle::try_execution(EVMExecutor& executor, const silkworm::Blo
         }
     }
 
-    return failed;
+    return success;
 }
 
 }  // namespace silkworm::rpc

@@ -72,17 +72,19 @@ class MainChain {
 
     // header/body retrieval
     auto get_block_progress() const -> BlockNum;
-    auto get_header(Hash) const -> std::optional<BlockHeader>;
     auto get_header(BlockNum, Hash) const -> std::optional<BlockHeader>;
     auto get_canonical_hash(BlockNum) const -> std::optional<Hash>;
     auto get_header_td(BlockNum, Hash) const -> std::optional<TotalDifficulty>;
-    auto get_header_td(Hash) const -> std::optional<TotalDifficulty>;
-    auto get_body(Hash) const -> std::optional<BlockBody>;
     auto get_last_headers(BlockNum limit) const -> std::vector<BlockHeader>;
     auto extends_last_fork_choice(BlockNum, Hash) const -> bool;
     auto extends(BlockId block, BlockId supposed_parent) const -> bool;
     auto is_ancestor(BlockId supposed_parent, BlockId block) const -> bool;
     auto is_canonical(Hash) const -> bool;
+    // Warning: this getters use kHeaderNumbers so will return only header processed by the pipeline
+    auto get_header(Hash) const -> std::optional<BlockHeader>;
+    auto get_header_td(Hash) const -> std::optional<TotalDifficulty>;
+    auto get_body(Hash) const -> std::optional<BlockBody>;
+    auto get_block_number(Hash) const -> std::optional<BlockNum>;
 
     NodeSettings& node_settings();
     db::RWTxn& tx();  // only for testing purposes due to MDBX limitations

@@ -102,7 +102,10 @@ auto MainChain::is_canonical(BlockId block) const -> bool {
 }
 
 Hash MainChain::insert_header(const BlockHeader& header) {
-    return db::write_header_ex(tx_, header, /*with_header_numbers=*/false);  // kHeaderNumbers table will be updated by stage blockhashes
+    return db::write_header_ex(tx_, header, /*with_header_numbers=*/true);
+    // with_header_numbers=true is necessary at the moment because many getters here rely on kHeaderNumbers table;
+    // that table is updated by stage block-hashes so only after a pipeline run
+    // todo: remove getters that take only an hash as input and use with_header_numbers=false here
 }
 
 void MainChain::insert_body(const Block& block, const Hash& block_hash) {
@@ -118,7 +121,7 @@ void MainChain::insert_block(const Block& block) {
     Hash header_hash = insert_header(block.header);
     insert_body(block, header_hash);
 
-    auto parent = get_header(header_hash);  // only for debug
+    auto parent = get_header(block.header.number, header_hash);  // remove in production?
     ensure_invariant(parent.has_value(), "inserting block must have parent");
 }
 
@@ -339,6 +342,10 @@ auto MainChain::get_last_headers(BlockNum limit) const -> std::vector<BlockHeade
     });
 
     return headers;
+}
+
+auto MainChain::get_block_number(Hash header_hash) const -> std::optional<BlockNum> {
+    return db::read_block_number(tx_, header_hash);
 }
 
 auto MainChain::is_ancestor(BlockId supposed_parent, BlockId block) const -> bool {

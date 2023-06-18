@@ -343,20 +343,25 @@ TEST_CASE("estimate gas") {
         CHECK(estimate_gas == kTxGas);
     }
 
-#ifdef notdef
     SECTION("Call with too high value, exception") {
         call.value = intx::uint256{2'000'000'000};
 
-        EXPECT_CALL(estimate_gas_oracle, try_execution(_, _, _)).Times(16).WillRepeatedly(Return(false));
         try {
+            EXPECT_CALL(estimate_gas_oracle, try_execution(_, _, _)).Times(16).WillRepeatedly(Return(false));
             auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block), boost::asio::use_future);
-            // result.get();
-            // CHECK_THROWS_AS(result.get(), silkworm::rpc::EstimateGasException);
+            result.get();
+            CHECK(false);
+        } catch (const silkworm::rpc::EstimateGasException&) {
+            printf("\nexception1\n");
+            CHECK(true);
         } catch (const std::exception&) {
+            printf("\nexception2\n");
+            CHECK(true);
+        } catch (...) {
+            printf("\nexception3\n");
             CHECK(true);
         }
     }
-#endif
 }
 
 }  // namespace silkworm::rpc

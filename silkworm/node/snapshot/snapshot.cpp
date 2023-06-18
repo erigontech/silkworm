@@ -147,15 +147,19 @@ std::optional<BlockHeader> HeaderSnapshot::header_by_number(BlockNum block_heigh
 }
 
 bool HeaderSnapshot::decode_header(const Snapshot::WordItem& item, BlockHeader& header) const {
-    // Skip first byte in data as it is encoding start tag.
+    // First byte in data is first byte of header hash.
+    ensure(!item.value.empty(), "HeaderSnapshot: hash first byte missing at offset=" + std::to_string(item.offset));
+    // Skip hash first byte to obtain encoded header RLP data
     ByteView encoded_header{item.value.data() + 1, item.value.length() - 1};
-    SILK_TRACE << "decode_header number: " << (block_from_ + item.position) << " encoded_header: " << to_hex(encoded_header);
+    SILK_TRACE << "decode_header encoded_header: " << to_hex(encoded_header) << " offset:" << std::to_string(item.offset);
     const auto decode_result = rlp::decode(encoded_header, header);
     if (!decode_result) {
-        SILK_TRACE << "decode_header number: " << (block_from_ + item.position) << " error: " << magic_enum::enum_name(decode_result.error());
+        SILK_TRACE << "decode_header offset: " << item.offset << " error: " << magic_enum::enum_name(decode_result.error());
         return false;
     }
-    SILKWORM_ASSERT(header.number == (block_from_ + item.position));
+    SILK_TRACE << "decode_header header number: " << header.number << " offset:" << std::to_string(item.offset);
+    ensure(header.number >= block_from_,
+           "HeaderSnapshot: number=" + std::to_string(header.number) + " < block_from=" + std::to_string(block_from_));
     SILK_TRACE << "decode_header header number: " << header.number << " hash:" << to_hex(header.hash());
     return true;
 }

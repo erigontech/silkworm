@@ -19,6 +19,7 @@
 #include <set>
 #include <thread>
 
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/environment.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/measure.hpp>
@@ -28,12 +29,14 @@
 
 namespace silkworm::stagedsync {
 
-HeadersStage::HeaderDataModel::HeaderDataModel(db::RWTxn& tx, BlockNum headers_height) : tx_(tx) {
+HeadersStage::HeaderDataModel::HeaderDataModel(db::RWTxn& tx, BlockNum headers_height) : tx_(tx), data_model_(tx) {
     auto headers_hash = db::read_canonical_hash(tx, headers_height);
-    if (!headers_hash) throw std::logic_error("Headers stage, canonical must be consistent, not found hash at height " + std::to_string(headers_height));
+    ensure(headers_hash.has_value(), "Headers stage, inconsistent canonical table: not found hash at height " +
+                                         std::to_string(headers_height));
 
     std::optional<intx::uint256> headers_head_td = db::read_total_difficulty(tx, headers_height, *headers_hash);
-    if (!headers_head_td) throw std::logic_error("Headers stage, not found total difficulty of canonical hash at height " + std::to_string(headers_height));
+    ensure(headers_head_td.has_value(), "Headers stage, inconsistent total-difficulty table: not found td at height " +
+                                            std::to_string(headers_height));
 
     previous_hash_ = *headers_hash;
     previous_td_ = *headers_head_td;
@@ -51,19 +54,18 @@ void HeadersStage::HeaderDataModel::update_tables(const BlockHeader& header) {
     Hash hash = header.hash();
 
     // Admittance conditions
-    if (header.parent_hash != previous_hash_) {
-        throw std::logic_error("HeadersStage invariant violation: headers to process must be consecutive, at height=" +
-                               std::to_string(height) + ", prev.hash=" + previous_hash_.to_hex() + ", curr.hash=" + hash.to_hex());
-    }
+    ensure_invariant(header.parent_hash == previous_hash_,
+                     "Headers stage invariant violation: headers to process must be consecutive, at height=" +
+                         std::to_string(height) + ", prev.hash=" + previous_hash_.to_hex() + ", curr.hash=" + hash.to_hex());
 
     // Calculate total difficulty of this header
     auto td = previous_td_ + header.difficulty;
 
     // Save progress
-    db::write_total_difficulty(tx_, height, hash, td);  // maybe it should be moved to ExecEngine
-                                                        // insert_headers to write td for every header
+    db::write_total_difficulty(tx_, height, hash, td);
+
     // Save header number
-    db::write_header_number(tx_, hash.bytes, header.number);  // maybe it should be moved to ExecEngine
+    // db::write_header_number(tx_, hash.bytes, header.number);  // already done in stage block-hashes
 
     previous_hash_ = hash;
     previous_td_ = td;
@@ -72,12 +74,15 @@ void HeadersStage::HeaderDataModel::update_tables(const BlockHeader& header) {
 
 void HeadersStage::HeaderDataModel::remove_headers(BlockNum unwind_point, db::RWTxn& tx) {
     auto canonical_hash = db::read_canonical_hash(tx, unwind_point);
-    if (!canonical_hash) {
-        throw std::logic_error("Headers stage, expected canonical hash at height " + std::to_string(unwind_point));
-    }
+    ensure(canonical_hash.has_value(), "Headers stage, expected canonical hash at height " + std::to_string(unwind_point));
+
     db::write_head_header_hash(tx, *canonical_hash);
 
     // maybe we should remove only the bad header
+}
+
+std::optional<BlockHeader> HeadersStage::HeaderDataModel::get_canonical_header(BlockNum height) const {
+    return data_model_.read_canonical_header(height);
 }
 
 // HeadersStage
@@ -104,7 +109,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
         auto initial_height = current_height_ = db::stages::read_stage_progress(tx, db::stages::kHeadersKey);
         BlockNum target_height = sync_context_->target_height;
 
-        HeaderDataModel data_model(tx, current_height_);
+        HeaderDataModel header_persistence(tx, current_height_);
 
         if (forced_target_block_ && current_height_ >= *forced_target_block_) {
             tx.commit();
@@ -128,15 +133,15 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
             current_height_++;
 
             // process header and ommers at current height
-            auto header = db::read_canonical_header(tx, current_height_);
+            auto header = header_persistence.get_canonical_header(current_height_);
             if (!header) throw std::logic_error("table Headers has a hole");
 
-            data_model.update_tables(*header);
+            header_persistence.update_tables(*header);
 
             height_progress.set(current_height_);
         }
 
-        db::write_head_header_hash(tx, data_model.highest_hash());
+        db::write_head_header_hash(tx, header_persistence.highest_hash());
 
         db::stages::write_stage_progress(tx, db::stages::kHeadersKey, current_height_);
         result = Stage::Result::kSuccess;  // no reason to raise unwind

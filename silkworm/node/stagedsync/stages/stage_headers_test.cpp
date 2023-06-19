@@ -75,7 +75,7 @@ TEST_CASE("HeadersStage - data model") {
         // check db content
         // REQUIRE(db::read_head_header_hash(tx) == header1_hash);
         REQUIRE(db::read_total_difficulty(tx, header1.number, header1.hash()) == td);
-        REQUIRE(db::read_block_number(tx, header1.hash()) == header1.number);
+        // REQUIRE(db::read_block_number(tx, header1.hash()) == header1.number); block numbers will be added by stage block-hashes
     }
 
     /* status:

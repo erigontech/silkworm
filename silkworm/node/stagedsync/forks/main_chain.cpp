@@ -32,6 +32,7 @@ MainChain::MainChain(asio::io_context& ctx, NodeSettings& ns, const db::RWAccess
       node_settings_{ns},
       db_access_{dba},
       tx_{db_access_.start_rw_tx()},
+      data_model_{tx_},
       pipeline_{&ns},
       canonical_chain_(tx_) {
     auto last_finalized_hash = db::read_last_finalized_block(tx_);
@@ -101,14 +102,17 @@ auto MainChain::is_canonical(BlockId block) const -> bool {
 }
 
 Hash MainChain::insert_header(const BlockHeader& header) {
-    return db::write_header_ex(tx_, header, true);
+    return db::write_header_ex(tx_, header, /*with_header_numbers=*/true);
+    // with_header_numbers=true is necessary at the moment because many getters here rely on kHeaderNumbers table;
+    // that table is updated by stage block-hashes so only after a pipeline run
+    // todo: remove getters that take only an hash as input and use with_header_numbers=false here
 }
 
 void MainChain::insert_body(const Block& block, const Hash& block_hash) {
     // avoid calculation of block.header.hash() because is computationally expensive
     BlockNum block_num = block.header.number;
 
-    if (db::has_body(tx_, block_num, block_hash)) return;
+    if (data_model_.has_body(block_num, block_hash)) return;
 
     db::write_body(tx_, block, block_hash, block_num);
 }
@@ -117,7 +121,7 @@ void MainChain::insert_block(const Block& block) {
     Hash header_hash = insert_header(block.header);
     insert_body(block, header_hash);
 
-    auto parent = get_header(header_hash);  // only for debug
+    auto parent = get_header(block.header.number, header_hash);  // remove in production?
     ensure_invariant(parent.has_value(), "inserting block must have parent");
 }
 
@@ -285,7 +289,7 @@ auto MainChain::get_header(Hash header_hash) const -> std::optional<BlockHeader>
     // if (cached) {
     //     return *cached;
     // }
-    std::optional<BlockHeader> header = db::read_header(tx_, header_hash);
+    std::optional<BlockHeader> header = data_model_.read_header(header_hash);
     return header;
 }
 
@@ -294,7 +298,7 @@ auto MainChain::get_header(BlockNum header_height, Hash header_hash) const -> st
     // if (cached) {
     //     return *cached;
     // }
-    std::optional<BlockHeader> header = db::read_header(tx_, header_height, header_hash);
+    std::optional<BlockHeader> header = data_model_.read_header(header_height, header_hash);
     return header;
 }
 
@@ -315,7 +319,7 @@ auto MainChain::get_header_td(Hash header_hash) const -> std::optional<TotalDiff
 
 auto MainChain::get_body(Hash header_hash) const -> std::optional<BlockBody> {
     BlockBody body;
-    bool found = read_body(tx_, header_hash, body);
+    bool found = data_model_.read_body(header_hash, body);
     if (!found) return {};
     return body;
 }
@@ -338,6 +342,10 @@ auto MainChain::get_last_headers(BlockNum limit) const -> std::vector<BlockHeade
     });
 
     return headers;
+}
+
+auto MainChain::get_block_number(Hash header_hash) const -> std::optional<BlockNum> {
+    return data_model_.read_block_number(header_hash);
 }
 
 auto MainChain::is_ancestor(BlockId supposed_parent, BlockId block) const -> bool {

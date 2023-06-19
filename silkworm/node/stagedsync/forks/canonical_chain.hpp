@@ -27,6 +27,7 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/common/asio_timer.hpp>
 #include <silkworm/infra/common/stopwatch.hpp>
+#include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/stagedsync/execution_pipeline.hpp>
 #include <silkworm/node/stagedsync/stages/stage.hpp>
 
@@ -57,6 +58,7 @@ class CanonicalChain {
 
   private:
     db::RWTxn& tx_;
+    db::DataModel data_model_;
 
     BlockId initial_head_{};
     BlockId current_head_{};

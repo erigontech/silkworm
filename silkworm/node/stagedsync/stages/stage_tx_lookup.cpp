@@ -319,88 +319,45 @@ void TxLookup::collect_transaction_hashes_from_canonical_bodies(db::RWTxn& txn,
     using namespace std::chrono_literals;
     auto log_time{std::chrono::steady_clock::now()};
 
-    const BlockNum max_block_number{std::max(from, to)};
-    BlockNum expected_block_number{std::min(from, to) + 1};
-    BlockNum reached_block_number{0};
+    db::DataModel data_model{txn};
 
-    auto start_key{db::block_key(expected_block_number)};
+    BlockNum target_block_num{std::max(from, to)};
+    BlockNum start_block_num{std::min(from, to) + 1};
+
     Bytes etl_value{};
-    auto canonicals = txn.ro_cursor(db::table::kCanonicalHashes);
-    auto bodies = txn.ro_cursor(db::table::kBlockBodies);
-    auto transactions = txn.ro_cursor(db::table::kBlockTransactions);
 
-    auto canonical_data{canonicals->find(db::to_slice(start_key), /*throw_notfound=*/false)};
-    if (!canonical_data) {
-        throw StageError(Stage::Result::kBadChainSequence,
-                         "Missing canonical hash for block " + std::to_string(expected_block_number));
-    }
-    while (canonical_data) {
-        reached_block_number = endian::load_big_u64(static_cast<const uint8_t*>(canonical_data.key.data()));
-        check_block_sequence(reached_block_number, expected_block_number);
-        if (reached_block_number > max_block_number) break;
+    for (BlockNum current_block_num = start_block_num; current_block_num <= target_block_num; ++current_block_num) {
+        auto current_hash = db::read_canonical_hash(txn, current_block_num);
+        if (!current_hash) throw StageError(Stage::Result::kBadChainSequence,
+                                            "Canonical hash at height " + std::to_string(current_block_num) + " not found");
+        std::vector<Bytes> rlp_encoded_txs;
+        auto found = data_model.read_rlp_encoded_transactions(current_block_num, *current_hash, rlp_encoded_txs);
+        if (!found) throw StageError(Stage::Result::kBadChainSequence,
+                                     "Canonical block at height " + std::to_string(current_block_num) + " not found");
 
         // Log and abort check
         if (const auto now{std::chrono::steady_clock::now()}; log_time <= now) {
             throw_if_stopping();
             std::unique_lock log_lck(sl_mutex_);
-            current_key_ = std::to_string(reached_block_number);
+            current_key_ = std::to_string(current_block_num);
             log_time = now + 5s;
         }
 
-        if (canonical_data.value.length() != kHashLength) {
-            throw StageError(Stage::Result::kDbError,
-                             "Invalid value length for canonical hash at block " + std::to_string(reached_block_number));
+        if (rlp_encoded_txs.empty()) continue;
+
+        // The same loop is used for forward and for unwind
+        // In the latter two records must be deleted hence we set etl_value only if deletion is not required
+        if (!for_deletion) {
+            Bytes block_num_as_bytes(sizeof(BlockNum), '\0');
+            endian::store_big_u64(block_num_as_bytes.data(), current_block_num);
+            etl_value.assign(zeroless_view(block_num_as_bytes));
         }
 
-        const evmc::bytes32 header_hash{to_bytes32(db::from_slice(canonical_data.value))};
-        const auto body_key{db::block_key(reached_block_number, header_hash.bytes)};
-        const auto body_data{bodies->find(db::to_slice(body_key), /*throw_notfound=*/false)};
-        if (!body_data) {
-            throw StageError(Stage::Result::kDbError,
-                             "Could not load block body " + std::to_string(reached_block_number));
+        for (auto& rlp_encoded_tx : rlp_encoded_txs) {
+            // Hash transaction rlp
+            auto transaction_hash = keccak256(rlp_encoded_tx);  // see Transaction::hash()
+            collector_->collect({Bytes(transaction_hash.bytes, kHashLength), etl_value});
         }
-        auto body_data_key_view{db::from_slice(body_data.key)};
-        auto body_data_value_view{db::from_slice(body_data.value)};
-        const auto block_body{db::detail::decode_stored_block_body(body_data_value_view)};
-        if (block_body.txn_count) {
-            // The same loop is used for forward and for unwind
-            // In the latter two records must be deleted hence we set etl_value only if deletion
-            // is not required
-            if (!for_deletion) {
-                etl_value.assign(zeroless_view(body_data_key_view.substr(0, sizeof(BlockNum))));
-            }
-
-            size_t max_transaction_id{block_body.base_txn_id + block_body.txn_count - 1};
-            size_t processed_transactions{0};
-
-            const Bytes transactions_base_key{db::block_key(block_body.base_txn_id)};
-            auto transactions_data{
-                transactions->lower_bound(db::to_slice(transactions_base_key), /*throw_notfound=*/false)};
-            while (transactions_data) {
-                const auto reached_transaction_id{
-                    endian::load_big_u64(static_cast<uint8_t*>(transactions_data.key.data()))};
-                if (reached_transaction_id > max_transaction_id) break;
-
-                // Hash transaction rlp
-                auto transaction_data_value_view{db::from_slice(transactions_data.value)};
-                auto transaction_hash{keccak256(transaction_data_value_view)};
-                collector_->collect({Bytes(transaction_hash.bytes, kHashLength), etl_value});
-
-                ++processed_transactions;
-                transactions_data = transactions->to_next(/*throw_notfound=*/false);
-            }
-
-            if (processed_transactions != block_body.txn_count) {
-                log::Error("Mismatching tx count",
-                           {"block", std::to_string(reached_block_number),
-                            "expected txs", std::to_string(block_body.txn_count),
-                            "got", std::to_string(processed_transactions)});
-                throw std::runtime_error("Mismatching tx count");
-            }
-        }
-
-        ++expected_block_number;
-        canonical_data = canonicals->to_next(/*throw_notfound=*/false);
     }
 }
 

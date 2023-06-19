@@ -829,5 +829,36 @@ namespace db {
         CHECK(db::read_last_finalized_block(txn) == hash3);
     }
 
+    TEST_CASE("read rlp encoded transactions") {
+        test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+        test::Context context;
+        auto& txn{context.rw_txn()};
+
+        uint64_t block_num{11'054'435};
+
+        BlockHeader header;
+        header.number = block_num;
+        header.beneficiary = 0x09ab1303d3ccaf5f018cd511146b07a240c70294_address;
+        header.gas_limit = 12'451'080;
+        header.gas_used = 12'443'619;
+
+        auto hash = header.hash();
+
+        BlockBody body{sample_block_body()};
+        CHECK_NOTHROW(write_body(txn, body, hash.bytes, header.number));
+
+        std::vector<Bytes> rlp_transactions;
+        bool found = read_rlp_encoded_transactions(txn, header.number, hash, rlp_transactions);
+
+        REQUIRE(found);
+        REQUIRE(rlp_transactions.size() == body.transactions.size());
+
+        for (size_t i = 0; i < rlp_transactions.size(); i++) {
+            Bytes rlp_tx;
+            CHECK_NOTHROW(rlp::encode(rlp_tx, body.transactions[i]));
+            CHECK(rlp_transactions[i] == rlp_tx);
+        }
+    }
+
 }  // namespace db
 }  // namespace silkworm

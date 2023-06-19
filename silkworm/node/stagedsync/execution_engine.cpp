@@ -280,9 +280,7 @@ auto ExecutionEngine::get_canonical_body(BlockNum bn) const -> std::optional<Blo
 auto ExecutionEngine::get_block_number(Hash header_hash) const -> std::optional<BlockNum> {
     auto cached_block = block_cache_.get_as_copy(header_hash);
     if (cached_block) return (*cached_block)->header.number;
-    auto header = main_chain_.get_header(header_hash);
-    if (!header) return {};
-    return header->number;
+    return main_chain_.get_block_number(header_hash);
 }
 
 bool ExecutionEngine::is_canonical(Hash header_hash) const {

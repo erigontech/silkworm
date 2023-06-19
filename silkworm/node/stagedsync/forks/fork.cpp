@@ -32,6 +32,7 @@ Fork::Fork(BlockId forking_point, db::ROTxn&& main_chain_tx, NodeSettings& ns)
     : main_tx_{std::move(main_chain_tx)},
       memory_db_{TemporaryDirectory::get_unique_temporary_path(ns.data_directory->forks().path()), &main_tx_},
       memory_tx_{memory_db_},
+      data_model_{memory_tx_},
       pipeline_{&ns},
       canonical_chain_(memory_tx_) {
     // actual head
@@ -97,14 +98,14 @@ BlockNum Fork::distance_from_root(const BlockId& block) const {
 }
 
 Hash Fork::insert_header(const BlockHeader& header) {
-    return db::write_header_ex(memory_tx_, header, true);
+    return db::write_header_ex(memory_tx_, header, /*with_header_numbers=*/false);  // kHeaderNumbers table will be updated by stage blockhashes
 }
 
 void Fork::insert_body(const Block& block, const Hash& block_hash) {
     // avoid calculation of block.header.hash() because is computationally expensive
     BlockNum block_num = block.header.number;
 
-    if (!db::has_body(memory_tx_, block_num, block_hash)) {
+    if (!data_model_.has_body(block_num, block_hash)) {
         db::write_body(memory_tx_, block, block_hash, block_num);
     }
 }
@@ -260,7 +261,7 @@ std::set<Hash> Fork::collect_bad_headers(InvalidChain& invalid_chain) {
 }
 
 auto Fork::get_header(Hash header_hash) const -> std::optional<BlockHeader> {
-    std::optional<BlockHeader> header = db::read_header(memory_tx_, header_hash);
+    std::optional<BlockHeader> header = data_model_.read_header(header_hash);
     return header;
 }
 

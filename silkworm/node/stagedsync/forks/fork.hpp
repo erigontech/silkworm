@@ -74,6 +74,7 @@ class Fork {
     db::ROTxn main_tx_;
     db::MemoryOverlay memory_db_;
     mutable db::MemoryMutation memory_tx_;
+    db::DataModel data_model_;
 
     ExecutionPipeline pipeline_;
     CanonicalChain canonical_chain_;

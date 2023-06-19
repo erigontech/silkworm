@@ -37,6 +37,7 @@ Stage::Result InterHashes::forward(db::RWTxn& txn) {
 
     try {
         throw_if_stopping();
+        db::DataModel data_model{txn};
 
         // Check stage boundaries from previous execution and previous stage execution
         auto previous_progress{get_progress(txn)};
@@ -69,7 +70,7 @@ Stage::Result InterHashes::forward(db::RWTxn& txn) {
             throw std::runtime_error("Could not find hash for canonical header " +
                                      std::to_string(hashstate_stage_progress));
         }
-        auto header{db::read_header(txn, hashstate_stage_progress, header_hash->bytes)};
+        auto header{data_model.read_header(hashstate_stage_progress, header_hash->bytes)};
         if (!header_hash.has_value()) {
             throw std::runtime_error("Could not find canonical header number " +
                                      std::to_string(hashstate_stage_progress) +
@@ -129,6 +130,8 @@ Stage::Result InterHashes::unwind(db::RWTxn& txn) {
 
     try {
         throw_if_stopping();
+        db::DataModel data_model{txn};
+
         BlockNum previous_progress{get_progress(txn)};
         if (to >= previous_progress) {
             // Actually nothing to unwind
@@ -152,7 +155,7 @@ Stage::Result InterHashes::unwind(db::RWTxn& txn) {
             throw std::runtime_error("Could not find hash for canonical header " +
                                      std::to_string(to));
         }
-        auto header{db::read_header(txn, to, header_hash->bytes)};
+        auto header{data_model.read_header(to, header_hash->bytes)};
         if (!header_hash.has_value()) {
             throw std::runtime_error("Could not find canonical header number " +
                                      std::to_string(to) +

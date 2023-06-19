@@ -20,7 +20,7 @@
 
 namespace silkworm {
 
-HeaderRetrieval::HeaderRetrieval(db::ROAccess db_access) : db_tx_{db_access.start_ro_tx()} {}
+HeaderRetrieval::HeaderRetrieval(db::ROAccess db_access) : db_tx_{db_access.start_ro_tx()}, data_model_{db_tx_} {}
 
 void HeaderRetrieval::close() { db_tx_.abort(); }
 
@@ -34,7 +34,7 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_hash(Hash origin, uint64_t 
     bool unknown = false;
 
     // first
-    optional<BlockHeader> header = read_header(db_tx_, hash);
+    optional<BlockHeader> header = data_model_.read_header(hash);
     if (!header) return headers;
     BlockNum block_num = header->number;
     headers.push_back(*header);
@@ -42,7 +42,7 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_hash(Hash origin, uint64_t 
 
     // followings
     do {
-        // compute next hash & number - todo: understand and improve readability
+        // compute next hash & number - understand and improve readability
         if (!reverse) {
             BlockNum current = header->number;
             BlockNum next = current + skip + 1;
@@ -51,7 +51,7 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_hash(Hash origin, uint64_t 
                 log::Warning("HeaderStage") << "GetBlockHeaders skip overflow attack:"
                                             << " current=" << current << ", skip=" << skip << ", next=" << next;
             } else {
-                header = db::read_canonical_header(db_tx_, next);
+                header = data_model_.read_canonical_header(next);
                 if (!header)
                     unknown = true;
                 else {
@@ -72,11 +72,11 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_hash(Hash origin, uint64_t 
                 std::tie(hash, block_num) = get_ancestor(hash, block_num, ancestor_delta, max_non_canonical);
         }
 
-        // end todo: understand
+        // end understand
 
         if (unknown) break;
 
-        header = read_header(db_tx_, block_num, hash);
+        header = data_model_.read_header(block_num, hash);
         if (!header) break;
         headers.push_back(*header);
         bytes += est_header_rlp_size;
@@ -95,7 +95,7 @@ std::vector<BlockHeader> HeaderRetrieval::recover_by_number(BlockNum origin, uin
     BlockNum block_num = origin;
 
     do {
-        optional<BlockHeader> header = db::read_canonical_header(db_tx_, block_num);
+        optional<BlockHeader> header = data_model_.read_canonical_header(block_num);
         if (!header) break;
 
         headers.push_back(*header);
@@ -117,7 +117,7 @@ std::tuple<Hash, BlockNum> HeaderRetrieval::get_ancestor(Hash hash, BlockNum blo
     if (ancestor_delta > block_num) return {Hash{}, 0};
 
     if (ancestor_delta == 1) {
-        auto header = db::read_header(db_tx_, block_num, hash);
+        auto header = data_model_.read_header(block_num, hash);
         if (header) {
             return {header->parent_hash, block_num - 1};
         } else {
@@ -126,7 +126,7 @@ std::tuple<Hash, BlockNum> HeaderRetrieval::get_ancestor(Hash hash, BlockNum blo
     }
 
     while (ancestor_delta != 0) {
-        auto h = read_canonical_hash(db_tx_, block_num);
+        auto h = db::read_canonical_hash(db_tx_, block_num);
         if (h == hash) {
             auto ancestorHash = db::read_canonical_hash(db_tx_, block_num - ancestor_delta);
             if (!ancestorHash)
@@ -137,7 +137,7 @@ std::tuple<Hash, BlockNum> HeaderRetrieval::get_ancestor(Hash hash, BlockNum blo
         if (max_non_canonical == 0) return {Hash{}, 0};
         max_non_canonical--;
         ancestor_delta--;
-        auto header = db::read_header(db_tx_, block_num, hash);
+        auto header = data_model_.read_header(block_num, hash);
         if (!header) return {Hash{}, 0};
         hash = header->parent_hash;
         block_num--;

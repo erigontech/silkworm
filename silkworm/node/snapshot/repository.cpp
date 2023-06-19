@@ -21,6 +21,7 @@
 #include <utility>
 
 #include <silkworm/core/common/assert.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 
 namespace silkworm::snapshot {
@@ -282,7 +283,10 @@ bool SnapshotRepository::reopen(SnapshotsByPath<T>& segments, const SnapshotPath
 }
 
 SnapshotPathList SnapshotRepository::get_files(const std::string& ext) const {
-    SILKWORM_ASSERT(fs::exists(settings_.repository_dir) && fs::is_directory(settings_.repository_dir));
+    ensure(fs::exists(settings_.repository_dir),
+           "SnapshotRepository: " + settings_.repository_dir.string() + " does not exist");
+    ensure(fs::is_directory(settings_.repository_dir),
+           "SnapshotRepository: " + settings_.repository_dir.string() + " is a not folder");
 
     // Load the resulting files w/ desired extension ensuring they are snapshots
     SnapshotPathList snapshot_files;

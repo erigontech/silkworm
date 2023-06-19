@@ -84,9 +84,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
     auto& snapshot_settings = settings.snapshot_settings;
     auto& bittorrent_settings = settings.download_settings;
 
-    const std::filesystem::path kSnapshotDir{"../erigon-snapshot/main"};
-    snapshot_settings.repository_dir = kSnapshotDir;
-    bittorrent_settings.repository_path = kSnapshotDir / ".torrent";
+    bittorrent_settings.repository_path = snapshot_settings.repository_dir / ".torrent";
     bittorrent_settings.magnets_file_path = ".magnet_links";
 
     add_logging_options(app, log_settings);
@@ -155,8 +153,8 @@ void decode_segment(const SnapSettings& settings, int repetitions) {
     }
 }
 
-void count_bodies(int repetitions) {
-    SnapshotRepository snapshot_repo{SnapshotSettings{"../erigon-snapshot/main", false, false}};
+void count_bodies(const SnapSettings& settings, int repetitions) {
+    SnapshotRepository snapshot_repo{settings};
     snapshot_repo.reopen_folder();
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     int num_bodies{0};
@@ -174,17 +172,17 @@ void count_bodies(int repetitions) {
     SILK_INFO << "How many bodies: " << num_bodies << " txs: " << num_txns << " duration: " << duration << " msec";
 }
 
-void count_headers(int repetitions) {
-    SnapshotRepository snapshot_repo{{"../erigon-snapshot/main",
-                                      false,
-                                      false}};
+void count_headers(const SnapSettings& settings, int repetitions) {
+    SnapshotRepository snapshot_repo{settings};
     snapshot_repo.reopen_folder();
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     int count{0};
     for (int i{0}; i < repetitions; ++i) {
         snapshot_repo.for_each_header([&count](const BlockHeader* h) -> bool {
-            SILK_DEBUG << "Header number: " << h->number << " hash: " << to_hex(h->hash());
             ++count;
+            if (h->number % 500'000 == 0) {
+                SILK_INFO << "Header number: " << h->number << " hash: " << to_hex(h->hash());
+            }
             return true;
         });
     }
@@ -282,9 +280,9 @@ int main(int argc, char* argv[]) {
         log::init(log_settings);
 
         if (settings.tool == SnapshotTool::count_bodies) {
-            count_bodies(settings.repetitions);
+            count_bodies(settings.snapshot_settings, settings.repetitions);
         } else if (settings.tool == SnapshotTool::count_headers) {
-            count_headers(settings.repetitions);
+            count_headers(settings.snapshot_settings, settings.repetitions);
         } else if (settings.tool == SnapshotTool::create_index) {
             create_index(settings.snapshot_settings, settings.repetitions);
         } else if (settings.tool == SnapshotTool::decode_segment) {

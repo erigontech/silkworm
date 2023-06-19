@@ -352,14 +352,11 @@ TEST_CASE("estimate gas") {
             result.get();
             CHECK(false);
         } catch (const silkworm::rpc::EstimateGasException&) {
-            printf("\nexception1\n");
             CHECK(true);
         } catch (const std::exception&) {
-            printf("\nexception2\n");
-            CHECK(true);
+            CHECK(false);
         } catch (...) {
-            printf("\nexception3\n");
-            CHECK(true);
+            CHECK(false);
         }
     }
 }

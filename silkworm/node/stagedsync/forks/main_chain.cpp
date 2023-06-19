@@ -345,7 +345,7 @@ auto MainChain::get_last_headers(BlockNum limit) const -> std::vector<BlockHeade
 }
 
 auto MainChain::get_block_number(Hash header_hash) const -> std::optional<BlockNum> {
-    return db::read_block_number(tx_, header_hash);
+    return data_model_.read_block_number(header_hash);
 }
 
 auto MainChain::is_ancestor(BlockId supposed_parent, BlockId block) const -> bool {

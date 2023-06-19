@@ -337,6 +337,23 @@ void read_transactions(ROCursor& txn_table, uint64_t base_id, uint64_t count, st
     SILKWORM_ASSERT(i == count);
 }
 
+void read_rlp_encoded_transactions(ROTxn& txn, uint64_t base_id, uint64_t count, std::vector<Bytes>& v) {
+    v.resize(count);
+    if (count == 0) {
+        return;
+    }
+
+    auto key{db::block_key(base_id)};
+    auto cursor = txn.ro_cursor(table::kBlockTransactions);
+    uint64_t i{0};
+    for (auto data{cursor->find(to_slice(key), false)}; data.done && i < count;
+         data = cursor->to_next(/*throw_notfound = */ false), ++i) {
+        ByteView data_view{from_slice(data.value)};
+        v.at(i) = data_view;
+    }
+    SILKWORM_ASSERT(i == count);
+}
+
 bool read_block_by_number(ROTxn& txn, BlockNum number, bool read_senders, Block& block) {
     auto canonical_hashes_cursor = txn.ro_cursor(table::kCanonicalHashes);
     const Bytes key{block_key(number)};
@@ -427,6 +444,20 @@ bool read_body(ROTxn& txn, const Bytes& key, bool read_senders, BlockBody& out) 
     if (!out.transactions.empty() && read_senders) {
         parse_senders(txn, key, out.transactions);
     }
+    return true;
+}
+
+bool read_rlp_encoded_transactions(ROTxn& txn, BlockNum block_number, const evmc::bytes32& hash, std::vector<Bytes>& transactions) {
+    auto key{block_key(block_number, hash.bytes)};
+    auto cursor = txn.ro_cursor(table::kBlockBodies);
+    auto data{cursor->find(to_slice(key), false)};
+    if (!data) return false;
+
+    ByteView data_view{from_slice(data.value)};
+    auto body{detail::decode_stored_block_body(data_view)};
+
+    read_rlp_encoded_transactions(txn, body.base_txn_id, body.txn_count, transactions);
+
     return true;
 }
 
@@ -1114,8 +1145,34 @@ std::vector<Transaction> DataModel::read_transactions_from_snapshot(BlockNum hei
     return transactions;
 }
 
-bool DataModel::read_rlp_encoded_txes(BlockNum, const Hash&, std::vector<Bytes>&) const {
-    throw std::runtime_error("read_rlp_encoded_txes not implemented");
+bool DataModel::read_rlp_encoded_transactions_from_snapshot(BlockNum height, std::vector<Bytes>& transactions) {
+    const auto body_snapshot = repository_->find_body_segment(height);
+    if (body_snapshot) {
+        auto stored_body = body_snapshot->body_by_number(height);
+        if (!stored_body) return false;
+
+        // Skip first and last *system transactions* in block body
+        const auto base_txn_id{stored_body->base_txn_id + 1};
+        const auto txn_count{stored_body->txn_count >= 2 ? stored_body->txn_count - 2 : stored_body->txn_count};
+
+        if (txn_count == 0) return true;
+
+        const auto tx_snapshot = repository_->find_tx_segment(height);
+        if (tx_snapshot) {
+            transactions = tx_snapshot->txn_rlp_range(base_txn_id, txn_count);
+        }  // no else?
+
+        return true;
+    }
+
+    return false;
+}
+
+bool DataModel::read_rlp_encoded_transactions(BlockNum height, const evmc::bytes32& hash, std::vector<Bytes>& transactions) const {
+    bool found = db::read_rlp_encoded_transactions(txn_, height, hash, transactions);
+    if (found) return true;
+
+    return read_rlp_encoded_transactions_from_snapshot(height, transactions);
 }
 
 }  // namespace silkworm::db

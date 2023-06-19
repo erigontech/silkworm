@@ -148,6 +148,8 @@ void parse_senders(ROTxn& txn, const Bytes& key, std::vector<Transaction>& out);
 void read_transactions(ROTxn& txn, uint64_t base_id, uint64_t count, std::vector<Transaction>& out);
 void read_transactions(ROCursor& txn_table, uint64_t base_id, uint64_t count, std::vector<Transaction>& out);
 
+bool read_rlp_encoded_transactions(ROTxn& txn, BlockNum height, const evmc::bytes32& hash, std::vector<Bytes>& out);
+
 //! \brief Persist transactions into db's bucket table::kBlockTransactions.
 //! The key starts from base_id and is incremented by 1 for each transaction.
 //! \remarks Before calling this ensure you got a proper base_id by incrementing sequence for table::kBlockTransactions.
@@ -286,7 +288,7 @@ class DataModel {
     [[nodiscard]] bool read_block(HashAsSpan hash, BlockNum height, bool read_senders, Block& block) const;
     [[nodiscard]] bool read_block(const evmc::bytes32& hash, BlockNum number, Block& block) const;
 
-    [[nodiscard]] bool read_rlp_encoded_txes(BlockNum number, const Hash& hash, std::vector<Bytes>& txes) const;
+    [[nodiscard]] bool read_rlp_encoded_transactions(BlockNum height, const evmc::bytes32& hash, std::vector<Bytes>& txes) const;
 
   private:
     static bool read_block_from_snapshot(BlockNum height, bool read_senders, Block& block);
@@ -294,6 +296,7 @@ class DataModel {
     static std::optional<BlockHeader> read_header_from_snapshot(const Hash& hash);
     static bool read_body_from_snapshot(BlockNum height, bool read_senders, BlockBody& body);
     static bool is_body_in_snapshot(BlockNum height);
+    static bool read_rlp_encoded_transactions_from_snapshot(BlockNum height, std::vector<Bytes>& transactions);
     static std::vector<Transaction> read_transactions_from_snapshot(BlockNum height, uint64_t base_txn_id,
                                                                     uint64_t txn_count, bool read_senders);
 

@@ -379,7 +379,7 @@ auto MainChain::is_canonical(Hash block_hash) const -> bool {
 
 /*
 auto MainChain::get_canonical_head_from_db() -> ChainHead {
-    auto [height, hash] = data_model_.read_canonical_head(tx_);
+    auto [height, hash] = db::read_canonical_head(tx_);
 
     std::optional<TotalDifficulty> td = db::read_total_difficulty(tx_, height, hash);
     ensure_invariant(td.has_value(),

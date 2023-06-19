@@ -69,20 +69,20 @@ boost::asio::awaitable<intx::uint256> EstimateGasOracle::estimate_gas(const Call
         }
     }
 
+    if (hi > kGasCap) {
+        SILK_WARN << "caller gas above allowance, capping: requested " << hi << ", cap " << kGasCap;
+        hi = kGasCap;
+    }
+    auto cap = hi;
+
+    SILK_DEBUG << "hi: " << hi << ", lo: " << lo << ", cap: " << cap;
+
     auto this_executor = co_await boost::asio::this_coro::executor;
-    co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(uint64_t)>(
+    auto ret_success = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(bool)>(
         [&](auto&& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
                 auto state = transaction_.create_state(this_executor, tx_database_, block_number);
                 EVMExecutor executor{config_, workers_, state};
-
-                if (hi > kGasCap) {
-                    SILK_WARN << "caller gas above allowance, capping: requested " << hi << ", cap " << kGasCap;
-                    hi = kGasCap;
-                }
-                auto cap = hi;
-
-                SILK_DEBUG << "hi: " << hi << ", lo: " << lo << ", cap: " << cap;
 
                 silkworm::Transaction transaction{call.to_transaction()};
                 while (lo + 1 < hi) {
@@ -90,7 +90,6 @@ boost::asio::awaitable<intx::uint256> EstimateGasOracle::estimate_gas(const Call
                     transaction.gas_limit = mid;
 
                     auto success = try_execution(executor, block, transaction);
-
                     if (success) {
                         hi = mid;
                     } else {
@@ -98,24 +97,25 @@ boost::asio::awaitable<intx::uint256> EstimateGasOracle::estimate_gas(const Call
                     }
                 }
 
+                auto last_success = true;
                 if (hi == cap) {
                     transaction.gas_limit = hi;
-                    auto success = try_execution(executor, block, transaction);
-                    SILK_DEBUG << "HI == cap tested again with " << (success ? "succeed" : "failed");
-                    if (!success) {
-                        throw EstimateGasException{-1, "gas required exceeds allowance (" + std::to_string(cap) + ")"};
-                    }
+                    last_success = try_execution(executor, block, transaction);
+                    SILK_DEBUG << "HI == cap tested again with " << (last_success ? "succeed" : "failed");
                 }
 
                 SILK_DEBUG << "EstimateGasOracle::estimate_gas returns " << hi;
 
-                boost::asio::post(this_executor, [hi, self = std::move(self)]() mutable {
-                    self.complete(hi);
+                boost::asio::post(this_executor, [last_success, self = std::move(self)]() mutable {
+                    self.complete(last_success);
                 });
             });
         },
         boost::asio::use_awaitable);
 
+    if (!ret_success) {
+        throw EstimateGasException{-1, "gas required exceeds allowance (" + std::to_string(cap) + ")"};
+    }
     co_return hi;
 }
 

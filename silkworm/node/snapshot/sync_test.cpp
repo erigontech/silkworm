@@ -28,7 +28,8 @@ namespace silkworm::snapshot {
 
 TEST_CASE("SnapshotSync::SnapshotSync", "[silkworm][snapshot][sync]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
-    CHECK_NOTHROW(SnapshotSync{SnapshotSettings{}, kMainnetConfig});
+    SnapshotRepository repository{SnapshotSettings{}};
+    CHECK_NOTHROW(SnapshotSync{&repository, kMainnetConfig});
 }
 
 TEST_CASE("SnapshotSync::download_and_index_snapshots", "[silkworm][snapshot][sync]") {
@@ -45,7 +46,8 @@ TEST_CASE("SnapshotSync::download_and_index_snapshots", "[silkworm][snapshot][sy
             .enabled = false,
             .bittorrent_settings = bittorrent_settings,
         };
-        SnapshotSync sync{settings, kMainnetConfig};
+        SnapshotRepository repository{settings};
+        SnapshotSync sync{&repository, kMainnetConfig};
         CHECK(sync.download_and_index_snapshots(context.rw_txn()));
     }
 
@@ -55,7 +57,8 @@ TEST_CASE("SnapshotSync::download_and_index_snapshots", "[silkworm][snapshot][sy
             .no_downloader = true,
             .bittorrent_settings = bittorrent_settings,
         };
-        SnapshotSync sync{settings, kMainnetConfig};
+        SnapshotRepository repository{settings};
+        SnapshotSync sync{&repository, kMainnetConfig};
         CHECK(sync.download_and_index_snapshots(context.rw_txn()));
     }
 
@@ -66,7 +69,8 @@ TEST_CASE("SnapshotSync::download_and_index_snapshots", "[silkworm][snapshot][sy
             .bittorrent_settings = bittorrent_settings,
         };
         settings.bittorrent_settings.verify_on_startup = true;
-        SnapshotSync sync{settings, kMainnetConfig};
+        SnapshotRepository repository{settings};
+        SnapshotSync sync{&repository, kMainnetConfig};
         CHECK(sync.download_and_index_snapshots(context.rw_txn()));
     }
 }

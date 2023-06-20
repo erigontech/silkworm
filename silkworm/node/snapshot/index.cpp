@@ -207,7 +207,7 @@ void TransactionIndex::build() {
                         tx_hash_rs.add_key(tx_hash.bytes, kHashLength, offset);
                         tx_hash_to_block_rs.add_key(tx_hash.bytes, kHashLength, block_number);
                     } else {
-                        // Skip first byte plus address length for transaction decoding
+                        // Skip tx hash first byte plus address length for transaction decoding
                         constexpr int kTxFirstByteAndAddressLength{1 + kAddressLength};
                         const Bytes tx_envelope{tx_buffer.substr(kTxFirstByteAndAddressLength)};
                         ByteView tx_envelope_view{tx_envelope};

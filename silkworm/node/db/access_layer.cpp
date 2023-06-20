@@ -337,19 +337,18 @@ void read_transactions(ROCursor& txn_table, uint64_t base_id, uint64_t count, st
     SILKWORM_ASSERT(i == count);
 }
 
-void read_rlp_encoded_transactions(ROTxn& txn, uint64_t base_id, uint64_t count, std::vector<Bytes>& v) {
-    v.resize(count);
+void read_rlp_transactions(ROTxn& txn, uint64_t base_id, uint64_t count, std::vector<Bytes>& rlp_txs) {
+    rlp_txs.resize(count);
     if (count == 0) {
         return;
     }
 
-    auto key{db::block_key(base_id)};
+    const auto key{db::block_key(base_id)};
     auto cursor = txn.ro_cursor(table::kBlockTransactions);
     uint64_t i{0};
     for (auto data{cursor->find(to_slice(key), false)}; data.done && i < count;
          data = cursor->to_next(/*throw_notfound = */ false), ++i) {
-        ByteView data_view{from_slice(data.value)};
-        v.at(i) = data_view;
+        rlp_txs[i] = from_slice(data.value);
     }
     SILKWORM_ASSERT(i == count);
 }
@@ -447,16 +446,16 @@ bool read_body(ROTxn& txn, const Bytes& key, bool read_senders, BlockBody& out) 
     return true;
 }
 
-bool read_rlp_encoded_transactions(ROTxn& txn, BlockNum block_number, const evmc::bytes32& hash, std::vector<Bytes>& transactions) {
-    auto key{block_key(block_number, hash.bytes)};
+bool read_rlp_transactions(ROTxn& txn, BlockNum block_number, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) {
+    const auto key{block_key(block_number, hash.bytes)};
     auto cursor = txn.ro_cursor(table::kBlockBodies);
-    auto data{cursor->find(to_slice(key), false)};
+    const auto data{cursor->find(to_slice(key), false)};
     if (!data) return false;
 
     ByteView data_view{from_slice(data.value)};
-    auto body{detail::decode_stored_block_body(data_view)};
+    const auto body{detail::decode_stored_block_body(data_view)};
 
-    read_rlp_encoded_transactions(txn, body.base_txn_id, body.txn_count, transactions);
+    read_rlp_transactions(txn, body.base_txn_id, body.txn_count, rlp_txs);
 
     return true;
 }
@@ -1099,23 +1098,23 @@ bool DataModel::read_body_from_snapshot(BlockNum height, bool read_senders, Bloc
 
     // We know the body snapshot in advance: find it based on target block number
     const auto body_snapshot = repository_->find_body_segment(height);
-    if (body_snapshot) {
-        auto stored_body = body_snapshot->body_by_number(height);
-        if (!stored_body) return false;
+    if (!body_snapshot) return false;
 
-        // Skip first and last *system transactions* in block body
-        const auto base_txn_id{stored_body->base_txn_id + 1};
-        const auto txn_count{stored_body->txn_count >= 2 ? stored_body->txn_count - 2 : stored_body->txn_count};
+    auto stored_body = body_snapshot->body_by_number(height);
+    if (!stored_body) return false;
 
-        auto transactions{read_transactions_from_snapshot(height, base_txn_id, txn_count, read_senders)};
+    // Skip first and last *system transactions* in block body
+    const auto base_txn_id{stored_body->base_txn_id + 1};
+    const auto txn_count{stored_body->txn_count >= 2 ? stored_body->txn_count - 2 : stored_body->txn_count};
 
-        body.transactions = std::move(transactions);
-        body.ommers = std::move(stored_body->ommers);
-        body.withdrawals = std::move(stored_body->withdrawals);
-        return true;
-    }
+    std::vector<Transaction> transactions;
+    const auto read_ok{read_transactions_from_snapshot(height, base_txn_id, txn_count, read_senders, transactions)};
+    if (!read_ok) return false;
 
-    return false;
+    body.transactions = std::move(transactions);
+    body.ommers = std::move(stored_body->ommers);
+    body.withdrawals = std::move(stored_body->withdrawals);
+    return true;
 }
 
 bool DataModel::is_body_in_snapshot(BlockNum height) {
@@ -1133,19 +1132,22 @@ bool DataModel::is_body_in_snapshot(BlockNum height) {
     return false;
 }
 
-std::vector<Transaction> DataModel::read_transactions_from_snapshot(BlockNum height, uint64_t base_txn_id,
-                                                                    uint64_t txn_count, bool read_senders) {
-    std::vector<Transaction> transactions;
-
-    const auto tx_snapshot = repository_->find_tx_segment(height);
-    if (tx_snapshot) {
-        transactions = tx_snapshot->txn_range(base_txn_id, txn_count, read_senders);
+bool DataModel::read_transactions_from_snapshot(BlockNum height, uint64_t base_txn_id, uint64_t txn_count,
+                                                bool read_senders, std::vector<Transaction> txs) {
+    txs.reserve(txn_count);
+    if (txn_count == 0) {
+        return true;
     }
 
-    return transactions;
+    const auto tx_snapshot = repository_->find_tx_segment(height);
+    if (!tx_snapshot) return false;
+
+    txs = tx_snapshot->txn_range(base_txn_id, txn_count, read_senders);
+
+    return true;
 }
 
-bool DataModel::read_rlp_encoded_transactions_from_snapshot(BlockNum height, std::vector<Bytes>& transactions) {
+bool DataModel::read_rlp_transactions_from_snapshot(BlockNum height, std::vector<Bytes>& rlp_txs) {
     const auto body_snapshot = repository_->find_body_segment(height);
     if (body_snapshot) {
         auto stored_body = body_snapshot->body_by_number(height);
@@ -1158,9 +1160,9 @@ bool DataModel::read_rlp_encoded_transactions_from_snapshot(BlockNum height, std
         if (txn_count == 0) return true;
 
         const auto tx_snapshot = repository_->find_tx_segment(height);
-        if (tx_snapshot) {
-            transactions = tx_snapshot->txn_rlp_range(base_txn_id, txn_count);
-        }  // no else?
+        if (!tx_snapshot) return false;
+
+        rlp_txs = tx_snapshot->txn_rlp_range(base_txn_id, txn_count);
 
         return true;
     }
@@ -1168,11 +1170,11 @@ bool DataModel::read_rlp_encoded_transactions_from_snapshot(BlockNum height, std
     return false;
 }
 
-bool DataModel::read_rlp_encoded_transactions(BlockNum height, const evmc::bytes32& hash, std::vector<Bytes>& transactions) const {
-    bool found = db::read_rlp_encoded_transactions(txn_, height, hash, transactions);
+bool DataModel::read_rlp_transactions(BlockNum height, const evmc::bytes32& hash, std::vector<Bytes>& transactions) const {
+    bool found = db::read_rlp_transactions(txn_, height, hash, transactions);
     if (found) return true;
 
-    return read_rlp_encoded_transactions_from_snapshot(height, transactions);
+    return read_rlp_transactions_from_snapshot(height, transactions);
 }
 
 }  // namespace silkworm::db

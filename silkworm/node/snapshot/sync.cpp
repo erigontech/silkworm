@@ -35,11 +35,13 @@ namespace silkworm::snapshot {
 //! Interval between successive checks for either completion or stop requested
 static constexpr std::chrono::seconds kCheckCompletionInterval{1};
 
-SnapshotSync::SnapshotSync(const SnapshotSettings& settings, const ChainConfig& config)
-    : settings_(settings),
+SnapshotSync::SnapshotSync(SnapshotRepository* repository, const ChainConfig& config)
+    : repository_{repository},
+      settings_{repository_->settings()},
       config_(config),
-      repository_{settings},
-      client_{settings_.bittorrent_settings} {}
+      client_{settings_.bittorrent_settings} {
+    ensure(repository_, "SnapshotSync: SnapshotRepository is null");
+}
 
 SnapshotSync::~SnapshotSync() {
     SnapshotSync::stop();
@@ -73,21 +75,21 @@ bool SnapshotSync::download_and_index_snapshots(db::RWTxn& txn) {
 }
 
 void SnapshotSync::reopen() {
-    repository_.reopen_folder();
+    repository_->reopen_folder();
     log::Info() << "[Snapshots] open_and_verify completed"
-                << log::Args{"segment_max_block", std::to_string(repository_.segment_max_block()),
-                             "idx_max_block", std::to_string(repository_.idx_max_block())};
+                << log::Args{"segment_max_block", std::to_string(repository_->segment_max_block()),
+                             "idx_max_block", std::to_string(repository_->idx_max_block())};
 }
 
 bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_file_names) {
-    const auto missing_block_ranges = repository_.missing_block_ranges();
+    const auto missing_block_ranges = repository_->missing_block_ranges();
     if (not missing_block_ranges.empty()) {
         SILK_WARN << "[Snapshots] downloading missing snapshots";
     }
 
     for (auto [block_from, block_to] : missing_block_ranges) {
         for (const auto type : magic_enum::enum_values<SnapshotType>()) {
-            auto snapshot_path = SnapshotPath::from(repository_.path(), kSnapshotV1, block_from, block_to, type);
+            auto snapshot_path = SnapshotPath::from(repository_->path(), kSnapshotV1, block_from, block_to, type);
             if (!snapshot_path.torrent_file_needed()) {
                 continue;
             }
@@ -159,16 +161,16 @@ bool SnapshotSync::index_snapshots(db::RWTxn& txn, const std::vector<std::string
     }
 
     // Build any missing snapshot index if needed, then reopen
-    if (repository_.idx_max_block() < repository_.segment_max_block()) {
+    if (repository_->idx_max_block() < repository_->segment_max_block()) {
         log::Info() << "[Snapshots] missing indexes detected, rebuild started";
         build_missing_indexes();
-        repository_.reopen_folder();
+        repository_->reopen_folder();
     }
 
-    const auto max_block_available = repository_.max_block_available();
+    const auto max_block_available = repository_->max_block_available();
     log::Info() << "[Snapshots] max block available: " << max_block_available
-                << " (segment max block: " << repository_.segment_max_block()
-                << ", idx max block: " << repository_.idx_max_block() << ")";
+                << " (segment max block: " << repository_->segment_max_block()
+                << ", idx max block: " << repository_->idx_max_block() << ")";
 
     const auto snapshot_config = snapshot::Config::lookup_known_config(config_.chain_id, snapshot_file_names);
     const auto configured_max_block_number = snapshot_config->max_block_number();
@@ -196,7 +198,7 @@ void SnapshotSync::build_missing_indexes() {
     ThreadPool workers;
 
     // Determine the missing indexes and build them in parallel
-    const auto missing_indexes = repository_.missing_indexes();
+    const auto missing_indexes = repository_->missing_indexes();
     for (const auto& index : missing_indexes) {
         workers.push_task([=]() {
             log::Info() << "[Snapshots] Build index: " << index->path().filename() << " start";
@@ -219,7 +221,7 @@ bool SnapshotSync::save(db::RWTxn& txn, BlockNum max_block_available) {
     etl::Collector hash2bn_collector{};
     intx::uint256 total_difficulty{0};
     uint64_t block_count{0};
-    repository_.for_each_header([&](const BlockHeader* header) -> bool {
+    repository_->for_each_header([&](const BlockHeader* header) -> bool {
         SILK_DEBUG << "Header number: " << header->number << " hash: " << to_hex(header->hash());
         const auto block_number = header->number;
         const auto block_hash = header->hash();
@@ -229,7 +231,7 @@ bool SnapshotSync::save(db::RWTxn& txn, BlockNum max_block_available) {
         db::write_total_difficulty(txn, block_number, block_hash, total_difficulty);
 
         // Write block header into kCanonicalHashes table
-        db::write_canonical_hash(txn, block_number, block_hash);
+        // db::write_canonical_hash(txn, block_number, block_hash);
 
         // Collect entries for later loading kHeaderNumbers table
         Bytes encoded_block_number{sizeof(uint64_t), '\0'};
@@ -247,7 +249,7 @@ bool SnapshotSync::save(db::RWTxn& txn, BlockNum max_block_available) {
     hash2bn_collector.load(header_numbers_cursor);
 
     // Reset sequence for kBlockTransactions table
-    const auto view_result = repository_.view_tx_segment(max_block_available, [&](const auto* tx_sn) {
+    const auto view_result = repository_->view_tx_segment(max_block_available, [&](const auto* tx_sn) {
         const auto last_tx_id = tx_sn->idx_txn_hash()->base_data_id() + tx_sn->item_count();
         db::reset_map_sequence(txn, db::table::kBlockTransactions.name, last_tx_id + 1);
         return true;
@@ -258,7 +260,7 @@ bool SnapshotSync::save(db::RWTxn& txn, BlockNum max_block_available) {
     }
 
     // Update head block header in kHeadHeader table
-    const auto canonical_hash{db::read_canonical_hash(txn, repository_.max_block_available())};
+    const auto canonical_hash{db::read_canonical_hash(txn, repository_->max_block_available())};
     ensure(canonical_hash.has_value(), "SnapshotSync::save no canonical head hash found");
     db::write_head_header_hash(txn, *canonical_hash);
 

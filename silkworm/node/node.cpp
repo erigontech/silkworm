@@ -60,6 +60,9 @@ class NodeImpl final {
     Settings& settings_;
     mdbx::env& chaindata_db_;
 
+    //! The repository for snapshots
+    snapshot::SnapshotRepository snapshot_repository_;
+
     //! The execution layer server engine
     execution::Server execution_server_;
     execution::LocalClient execution_local_client_;
@@ -72,6 +75,7 @@ class NodeImpl final {
 NodeImpl::NodeImpl(Settings& settings, SentryClientPtr sentry_client, mdbx::env& chaindata_db)
     : settings_{settings},
       chaindata_db_{chaindata_db},
+      snapshot_repository_{settings_.snapshot_settings},
       execution_server_{settings_, db::RWAccess{chaindata_db_}},
       execution_local_client_{execution_server_},
       sentry_client_{std::move(sentry_client)},
@@ -98,12 +102,13 @@ void NodeImpl::setup_snapshots() {
         db::RWTxn rw_txn{chaindata_db_};
 
         // Snapshot sync - download chain from peers using snapshot files
-        snapshot::SnapshotSync snapshot_sync{
-            settings_.snapshot_settings,
-            settings_.chain_config.value()};
+        snapshot::SnapshotSync snapshot_sync{&snapshot_repository_, settings_.chain_config.value()};
         snapshot_sync.download_and_index_snapshots(rw_txn);
 
         rw_txn.commit_and_stop();
+
+        // Set snapshot repository into snapshot-aware database access
+        db::DataModel::set_snapshot_repository(&snapshot_repository_);
     } else {
         log::Info() << "Snapshot sync disabled, no snapshot must be downloaded";
     }

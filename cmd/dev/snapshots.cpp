@@ -52,6 +52,7 @@ constexpr int kDefaultRepetitions{1};
 struct SnapSettings : public SnapshotSettings {
     std::vector<std::string> snapshot_file_names{kDefaultSnapshotFiles};
     int page_size{kDefaultPageSize};
+    bool skip_system_txs{true};
 };
 
 //! The settings for handling BitTorrent protocol customized for this tool
@@ -161,7 +162,11 @@ void count_bodies(const SnapSettings& settings, int repetitions) {
     uint64_t num_txns{0};
     for (int i{0}; i < repetitions; ++i) {
         snapshot_repo.for_each_body([&](BlockNum number, const db::detail::BlockBodyForStorage* b) -> bool {
-            SILK_DEBUG << "Body number: " << number << " txn_count: " << b->txn_count << " #ommers: " << b->ommers.size();
+            // If *system transactions* should not be counted, skip first and last tx in block body
+            const auto base_txn_id{settings.skip_system_txs ? b->base_txn_id + 1 : b->base_txn_id};
+            const auto txn_count{settings.skip_system_txs and b->txn_count >= 2 ? b->txn_count - 2 : b->txn_count};
+            SILK_DEBUG << "Body number: " << number << " base_txn_id: " << base_txn_id << " txn_count: " << txn_count
+                       << " #ommers: " << b->ommers.size();
             num_bodies++;
             num_txns += b->txn_count;
             return true;
@@ -254,7 +259,8 @@ void download(const BitTorrentSettings& settings) {
 void sync(const SnapSettings& snapshot_settings) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
-    SnapshotSync snapshot_sync{snapshot_settings, kMainnetConfig};
+    SnapshotRepository snapshot_repository{snapshot_settings};
+    SnapshotSync snapshot_sync{&snapshot_repository, kMainnetConfig};
     snapshot_sync.download_snapshots(snapshot_settings.snapshot_file_names);
 
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};

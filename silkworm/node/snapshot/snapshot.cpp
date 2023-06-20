@@ -38,9 +38,8 @@ Snapshot::Snapshot(std::filesystem::path path, BlockNum block_from, BlockNum blo
 
 void Snapshot::reopen_segment() {
     close_segment();
-    // TODO(canepat) consider extracting MemoryMappedFile from Decompressor and keep it here
-    // TODO(canepat) so that we open/close the file more explicitly and wrap Decompressor around it
-    // Open decompressor that in turn opens mapped file
+
+    // Open decompressor that opens the mapped file in turns
     decoder_.open();
 }
 
@@ -82,7 +81,7 @@ void Snapshot::close() {
 }
 
 void Snapshot::close_segment() {
-    // Close decompressor that in turn closes mapped file
+    // Close decompressor that closes the mapped file in turns
     decoder_.close();
 }
 
@@ -246,11 +245,11 @@ std::optional<StoredBlockBody> BodySnapshot::body_by_number(BlockNum block_heigh
     return next_body(block_body_offset);
 }
 
-DecodingResult BodySnapshot::decode_body(const Snapshot::WordItem& item, StoredBlockBody& body) const {
+DecodingResult BodySnapshot::decode_body(const Snapshot::WordItem& item, StoredBlockBody& body) {
     ByteView body_rlp{item.value.data(), item.value.length()};
-    SILK_TRACE << "decode_body number: " << (block_from_ + item.position) << " body_rlp: " << to_hex(body_rlp);
+    SILK_TRACE << "decode_body offset: " << item.offset << " body_rlp: " << to_hex(body_rlp);
     const auto result = db::detail::decode_stored_block_body(body_rlp, body);
-    SILK_TRACE << "decode_body number: " << (block_from_ + item.position) << " txn_count: " << body.txn_count << " base_txn_id:" << body.base_txn_id;
+    SILK_TRACE << "decode_body offset: " << item.offset << " txn_count: " << body.txn_count << " base_txn_id:" << body.base_txn_id;
     return result;
 }
 
@@ -380,11 +379,27 @@ std::vector<Bytes> TransactionSnapshot::txn_rlp_range(uint64_t base_txn_id, uint
     return rlp_txs;
 }
 
-DecodingResult TransactionSnapshot::decode_txn(const Snapshot::WordItem& item, Transaction& tx) const {
-    ByteView tx_rlp{item.value.data(), item.value.length()};
-    SILK_TRACE << "decode_txn number: " << (block_from_ + item.position) << " tx_rlp: " << to_hex(tx_rlp);
+//! Decode transaction from snapshot word. Format is: tx_hash_1byte + sender_address_20byte + tx_rlp_bytes
+DecodingResult TransactionSnapshot::decode_txn(const Snapshot::WordItem& item, Transaction& tx) {
+    // Skip first byte of tx hash plus sender address length for transaction decoding
+    constexpr int kTxRlpDataOffset{1 + kAddressLength};
+
+    const auto& buffer{item.value};
+    const auto buffer_size{buffer.size()};
+    SILK_TRACE << "decode_txn offset: " << item.offset << " buffer: " << to_hex(buffer);
+
+    // Skip first byte in data as it is encoding start tag.
+    ensure(buffer_size >= kTxRlpDataOffset, "TransactionSnapshot: too short record: " + std::to_string(buffer_size));
+
+    ByteView senders_data{buffer.data() + 1, kAddressLength};
+    tx.from = to_evmc_address(senders_data);
+
+    ByteView tx_rlp{buffer.data() + kTxRlpDataOffset, buffer_size - kTxRlpDataOffset};
+
+    SILK_TRACE << "decode_txn offset: " << item.offset << " tx_hash_first_byte: " << to_hex(buffer[0])
+               << " senders_data: " << to_hex(senders_data) << " tx_rlp: " << to_hex(tx_rlp);
     const auto result = rlp::decode(tx_rlp, tx);
-    SILK_TRACE << "decode_txn number: " << (block_from_ + item.position);
+    SILK_TRACE << "decode_txn offset: " << item.offset;
     return result;
 }
 
@@ -402,8 +417,8 @@ void TransactionSnapshot::for_each_txn(uint64_t base_txn_id, uint64_t txn_count,
     // Then, get the first transaction offset in snapshot by using ordinal lookup
     const auto first_txn_offset = idx_txn_hash_->ordinal_lookup(first_txn_position);
 
-    // Skip first byte plus address length for transaction decoding
-    constexpr int kTxFirstByteAndAddressLength{1 + kAddressLength};
+    // Skip first byte of tx hash plus sender address length for transaction decoding
+    constexpr int kTxRlpDataOffset{1 + kAddressLength};
 
     // Iterate over each encoded transaction item
     for (uint64_t i{0}, offset{first_txn_offset}; i < txn_count; ++i) {
@@ -412,13 +427,14 @@ void TransactionSnapshot::for_each_txn(uint64_t base_txn_id, uint64_t txn_count,
 
         const auto& buffer{item->value};
         const auto buffer_size{buffer.size()};
+
         // Skip first byte in data as it is encoding start tag.
-        ensure(buffer_size >= kTxFirstByteAndAddressLength, "TransactionSnapshot: too short record: " + std::to_string(buffer_size));
+        ensure(buffer_size >= kTxRlpDataOffset, "TransactionSnapshot: too short record: " + std::to_string(buffer_size));
 
         ByteView senders_data{buffer.data() + 1, kAddressLength};
-        ByteView txn_rlp{buffer.substr(kTxFirstByteAndAddressLength)};
+        ByteView tx_rlp{buffer.data() + kTxRlpDataOffset, buffer_size - kTxRlpDataOffset};
 
-        const bool go_on{walker(i, senders_data, txn_rlp)};
+        const bool go_on{walker(i, senders_data, tx_rlp)};
         if (!go_on) return;
 
         offset = item->offset;

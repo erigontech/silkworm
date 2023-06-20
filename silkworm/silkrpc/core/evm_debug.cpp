@@ -27,8 +27,10 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
+#include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/evm_executor.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
+#include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkworm::rpc::debug {
@@ -358,6 +360,59 @@ awaitable<void> DebugExecutor::execute(json::Stream& stream, uint64_t block_numb
         stream.write_field("gas", transaction.gas_limit - execution_result.gas_left);
         stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
     }
+
+    co_return;
+}
+
+boost::asio::awaitable<void> DebugExecutor::trace_block(json::Stream& stream, std::uint64_t block_number) {
+    // ethdb::TransactionDatabase tx_database{transaction_};
+
+    // const auto chain_id = co_await core::rawdb::read_chain_id(tx_database);
+    // /*const auto chain_config_ptr = */lookup_chain_config(chain_id);
+
+    const auto block_with_hash = co_await rpc::core::read_block_by_number(block_cache_, database_reader_, block_number);
+    stream.write_field("result");
+    stream.open_array();
+    co_await execute(stream, block_with_hash->block);
+    stream.close_array();
+
+    co_return;
+}
+
+boost::asio::awaitable<void> DebugExecutor::trace_block(json::Stream& stream, const evmc::bytes32& block_hash) {
+    // ethdb::TransactionDatabase tx_database{transaction_};
+
+    // const auto chain_id = co_await core::rawdb::read_chain_id(tx_database);
+    // /*const auto chain_config_ptr = */lookup_chain_config(chain_id);
+
+    const auto block_with_hash = co_await rpc::core::read_block_by_hash(block_cache_, database_reader_, block_hash);
+
+    stream.write_field("result");
+    stream.open_array();
+    co_await execute(stream, block_with_hash->block);
+    stream.close_array();
+
+    co_return;
+}
+
+boost::asio::awaitable<void> DebugExecutor::trace_call(json::Stream& /*stream*/, const BlockNumberOrHash& bnoh, const Call& /*call*/) {
+    ethdb::TransactionDatabase tx_database{transaction_};
+
+    const auto chain_id = co_await core::rawdb::read_chain_id(tx_database);
+    /*const auto chain_config_ptr = */ lookup_chain_config(chain_id);
+
+    const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, tx_database, bnoh);
+
+    co_return;
+}
+
+boost::asio::awaitable<void> DebugExecutor::trace_transaction(json::Stream& /*stream*/, const evmc::bytes32& tx_hash) {
+    ethdb::TransactionDatabase tx_database{transaction_};
+
+    const auto chain_id = co_await core::rawdb::read_chain_id(tx_database);
+    /*const auto chain_config_ptr = */ lookup_chain_config(chain_id);
+
+    const auto tx_with_block = co_await rpc::core::read_transaction_by_hash(block_cache_, tx_database, tx_hash);
 
     co_return;
 }

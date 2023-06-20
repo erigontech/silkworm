@@ -32,7 +32,9 @@
 #include <silkworm/core/execution/evm.hpp>
 #pragma GCC diagnostic pop
 #include <silkworm/core/state/intra_block_state.hpp>
+#include <silkworm/silkrpc/common/block_cache.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
+#include <silkworm/silkrpc/ethdb/transaction.hpp>
 #include <silkworm/silkrpc/json/stream.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/call.hpp>
@@ -98,9 +100,17 @@ class DebugExecutor {
   public:
     explicit DebugExecutor(
         const core::rawdb::DatabaseReader& database_reader,
+        ethdb::Transaction& transaction,
+        BlockCache& block_cache,
         boost::asio::thread_pool& workers,
         DebugConfig config = {})
-        : database_reader_(database_reader), workers_{workers}, config_{config} {}
+        : database_reader_(database_reader), transaction_(transaction), block_cache_(block_cache), workers_{workers}, config_{config} {}
+    // explicit DebugExecutor(
+    //     ethdb::Transaction& transaction,
+    //     BlockCache& block_cache,
+    //     boost::asio::thread_pool& workers,
+    //     DebugConfig config = {})
+    //     : transaction_(transaction), block_cache_(block_cache), workers_{workers}, config_{config} {}
     virtual ~DebugExecutor() = default;
 
     DebugExecutor(const DebugExecutor&) = delete;
@@ -112,11 +122,18 @@ class DebugExecutor {
         return execute(stream, block.header.number - 1, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index));
     }
 
+    boost::asio::awaitable<void> trace_block(json::Stream& stream, std::uint64_t block_number);
+    boost::asio::awaitable<void> trace_block(json::Stream& stream, const evmc::bytes32& block_hash);
+    boost::asio::awaitable<void> trace_call(json::Stream& stream, const BlockNumberOrHash& bnoh, const Call& call);
+    boost::asio::awaitable<void> trace_transaction(json::Stream& stream, const evmc::bytes32& tx_hash);
+
   private:
     boost::asio::awaitable<void> execute(json::Stream& stream, std::uint64_t block_number,
                                          const silkworm::Block& block, const Transaction& transaction, int32_t = -1);
 
     const core::rawdb::DatabaseReader& database_reader_;
+    ethdb::Transaction& transaction_;
+    BlockCache& block_cache_;
     boost::asio::thread_pool& workers_;
     DebugConfig config_;
 };

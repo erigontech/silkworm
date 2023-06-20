@@ -55,12 +55,13 @@ class SnapshotRepository {
     explicit SnapshotRepository(SnapshotSettings settings = {});
     ~SnapshotRepository();
 
+    [[nodiscard]] const SnapshotSettings& settings() const { return settings_; }
+    [[nodiscard]] std::filesystem::path path() const { return settings_.repository_dir; }
+
     [[nodiscard]] BlockNum max_block_available() const { return std::min(segment_max_block_, idx_max_block_); }
 
     void reopen_folder();
     void close();
-
-    [[nodiscard]] std::filesystem::path path() const { return settings_.repository_dir; }
 
     bool for_each_header(const HeaderSnapshot::Walker& fn);
     bool for_each_body(const BodySnapshot::Walker& fn);

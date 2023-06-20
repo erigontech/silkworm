@@ -127,7 +127,7 @@ class BodySnapshot : public Snapshot {
     void reopen_index() override;
 
   protected:
-    DecodingResult decode_body(const Snapshot::WordItem& item, StoredBlockBody& body) const;
+    static DecodingResult decode_body(const Snapshot::WordItem& item, StoredBlockBody& body);
 
     void close_index() override;
 
@@ -156,7 +156,7 @@ class TransactionSnapshot : public Snapshot {
     void reopen_index() override;
 
   protected:
-    DecodingResult decode_txn(const Snapshot::WordItem& item, Transaction& tx) const;
+    static DecodingResult decode_txn(const Snapshot::WordItem& item, Transaction& tx);
 
     using Walker = std::function<bool(uint64_t i, ByteView senders_data, ByteView txn_rlp)>;
     void for_each_txn(uint64_t base_txn_id, uint64_t txn_count, const Walker& walker) const;

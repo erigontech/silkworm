@@ -28,6 +28,7 @@
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/transaction.hpp>
 #include <silkworm/silkrpc/json/access_list_entry.hpp>
+#include <silkworm/silkrpc/json/block.hpp>
 #include <silkworm/silkrpc/json/call.hpp>
 #include <silkworm/silkrpc/json/execution_payload.hpp>
 #include <silkworm/silkrpc/json/filter.hpp>
@@ -103,8 +104,6 @@ void to_json(nlohmann::json& json, const SyncingData& syncing_data);
 void to_json(nlohmann::json& json, const StageData& stage_data);
 
 void to_json(nlohmann::json& json, const Rlp& rlp);
-
-void to_json(nlohmann::json& json, const Block& b);
 
 void to_json(nlohmann::json& json, const BlockDetailsResponse& b);
 

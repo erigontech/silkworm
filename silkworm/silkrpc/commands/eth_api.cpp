@@ -885,14 +885,6 @@ awaitable<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& re
         const auto latest_block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, latest_block_number);
         const auto latest_block = latest_block_with_hash->block;
         StateReader state_reader(cached_database);
-        auto state = co_await tx->create_state(cached_database, latest_block.header.number);
-
-        Tracers tracers;
-        EVMExecutor evm_executor{*chain_config_ptr, workers_, state};
-
-        rpc::Executor executor = [&latest_block, &evm_executor, &tracers](const silkworm::Transaction& transaction) {
-            return evm_executor.call(latest_block, transaction, tracers);
-        };
 
         rpc::BlockHeaderProvider block_header_provider = [&cached_database](uint64_t block_number) {
             return core::rawdb::read_header_by_number(cached_database, block_number);
@@ -902,9 +894,9 @@ awaitable<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& re
             return state_reader.read_account(address, block_number + 1);
         };
 
-        rpc::EstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, executor};
+        rpc::EstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, *chain_config_ptr, workers_, *tx, tx_database};
 
-        auto estimated_gas = co_await estimate_gas_oracle.estimate_gas(call, latest_block_number);
+        auto estimated_gas = co_await estimate_gas_oracle.estimate_gas(call, latest_block);
 
         reply = make_json_content(request["id"], to_quantity(estimated_gas));
     } catch (const rpc::EstimateGasException& e) {

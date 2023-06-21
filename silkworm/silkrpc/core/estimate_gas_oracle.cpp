@@ -18,6 +18,8 @@
 
 #include <string>
 
+#include <boost/asio/compose.hpp>
+#include <boost/asio/post.hpp>
 #include <boost/asio/use_awaitable.hpp>
 
 #include <silkworm/infra/common/log.hpp>
@@ -25,8 +27,10 @@
 
 namespace silkworm::rpc {
 
-boost::asio::awaitable<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, uint64_t block_number) {
+boost::asio::awaitable<intx::uint256> EstimateGasOracle::estimate_gas(const Call& call, const silkworm::Block& block) {
     SILK_DEBUG << "EstimateGasOracle::estimate_gas called";
+
+    auto block_number = block.header.number;
 
     uint64_t hi;
     uint64_t lo = kTxGas - 1;
@@ -73,43 +77,57 @@ boost::asio::awaitable<intx::uint256> EstimateGasOracle::estimate_gas(const Call
 
     SILK_DEBUG << "hi: " << hi << ", lo: " << lo << ", cap: " << cap;
 
-    silkworm::Transaction transaction{call.to_transaction()};
-    while (lo + 1 < hi) {
-        auto mid = (hi + lo) / 2;
-        transaction.gas_limit = mid;
+    auto this_executor = co_await boost::asio::this_coro::executor;
+    auto ret_success = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(bool)>(
+        [&](auto&& self) {
+            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
+                auto state = transaction_.create_state(this_executor, tx_database_, block_number);
+                EVMExecutor executor{config_, workers_, state};
 
-        auto failed = co_await try_execution(transaction);
+                silkworm::Transaction transaction{call.to_transaction()};
+                while (lo + 1 < hi) {
+                    auto mid = (hi + lo) / 2;
+                    transaction.gas_limit = mid;
 
-        if (failed) {
-            lo = mid;
-        } else {
-            hi = mid;
-        }
+                    auto success = try_execution(executor, block, transaction);
+                    if (success) {
+                        hi = mid;
+                    } else {
+                        lo = mid;
+                    }
+                }
+
+                auto last_success = true;
+                if (hi == cap) {
+                    transaction.gas_limit = hi;
+                    last_success = try_execution(executor, block, transaction);
+                    SILK_DEBUG << "HI == cap tested again with " << (last_success ? "succeed" : "failed");
+                }
+
+                SILK_DEBUG << "EstimateGasOracle::estimate_gas returns " << hi;
+
+                boost::asio::post(this_executor, [last_success, self = std::move(self)]() mutable {
+                    self.complete(last_success);
+                });
+            });
+        },
+        boost::asio::use_awaitable);
+
+    if (!ret_success) {
+        throw EstimateGasException{-1, "gas required exceeds allowance (" + std::to_string(cap) + ")"};
     }
-
-    if (hi == cap) {
-        transaction.gas_limit = hi;
-        auto failed = co_await try_execution(transaction);
-        SILK_DEBUG << "HI == cap tested again with " << (failed ? "failure" : "succeed");
-
-        if (failed) {
-            throw EstimateGasException{-1, "gas required exceeds allowance (" + std::to_string(cap) + ")"};
-        }
-    }
-
-    SILK_DEBUG << "EstimateGasOracle::estimate_gas returns " << hi;
     co_return hi;
 }
 
-boost::asio::awaitable<bool> EstimateGasOracle::try_execution(const silkworm::Transaction& transaction) {
-    const auto result = co_await executor_(transaction);
+bool EstimateGasOracle::try_execution(EVMExecutor& executor, const silkworm::Block& block, const silkworm::Transaction& transaction) {
+    auto result = executor.call_sync(block, transaction);
 
-    bool failed = true;
+    bool success = false;
     if (result.pre_check_error) {
         SILK_DEBUG << "result error " << result.pre_check_error.value();
     } else if (result.error_code == evmc_status_code::EVMC_SUCCESS) {
         SILK_DEBUG << "result SUCCESS";
-        failed = false;
+        success = true;
     } else if (result.error_code == evmc_status_code::EVMC_INSUFFICIENT_BALANCE) {
         SILK_DEBUG << "result INSUFFICIENT BALANCE";
     } else {
@@ -122,7 +140,7 @@ boost::asio::awaitable<bool> EstimateGasOracle::try_execution(const silkworm::Tr
         }
     }
 
-    co_return failed;
+    return success;
 }
 
 }  // namespace silkworm::rpc

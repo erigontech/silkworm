@@ -31,6 +31,8 @@
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/test/context_test_base.hpp>
+#include <silkworm/silkrpc/test/dummy_transaction.hpp>
+#include <silkworm/silkrpc/test/mock_cursor.hpp>
 #include <silkworm/silkrpc/test/mock_database_reader.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
 
@@ -120,7 +122,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call precompil
 
         TraceConfig config{true, true, true};
         BlockCache block_cache;
-        TraceCallExecutor executor{block_cache, db_reader, workers};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(!result.pre_check_error);
@@ -290,7 +294,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
 
         TraceConfig config{false, false, false};
         BlockCache block_cache;
-        TraceCallExecutor executor{block_cache, db_reader, workers};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == true);
@@ -343,7 +349,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
 
         TraceConfig config{true, true, true};
         BlockCache block_cache;
-        TraceCallExecutor executor{block_cache, db_reader, workers};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
@@ -525,7 +533,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
 
         TraceConfig config{false, true, true};
         BlockCache block_cache;
-        TraceCallExecutor executor{block_cache, db_reader, workers};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
@@ -644,7 +654,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
 
         TraceConfig config{true, false, true};
         BlockCache block_cache;
-        TraceCallExecutor executor{block_cache, db_reader, workers};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
@@ -809,7 +821,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
 
         TraceConfig config{true, true, false};
         BlockCache block_cache;
-        TraceCallExecutor executor{block_cache, db_reader, workers};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
@@ -947,7 +961,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 1") {
 
         TraceConfig config{false, false, false};
         BlockCache block_cache;
-        TraceCallExecutor executor{block_cache, db_reader, workers};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
         CHECK(result.pre_check_error.has_value() == false);
@@ -1140,7 +1156,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call 2") {
 
         TraceConfig config{true, true, true};
         BlockCache block_cache;
-        TraceCallExecutor executor{block_cache, db_reader, workers};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
 
         const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
@@ -1387,7 +1405,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_call with erro
 
     TraceConfig config{true, true, true};
     BlockCache block_cache;
-    TraceCallExecutor executor{block_cache, db_reader, workers};
+    std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+    test::DummyTransaction tx{0, mock_cursor};
+    TraceCallExecutor executor{block_cache, db_reader, workers, tx};
     const auto result = spawn_and_wait(executor.trace_call(block, call, config));
 
     CHECK(result.pre_check_error.has_value() == false);
@@ -1606,7 +1626,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
         block.header.number = block_number;
 
         BlockCache block_cache;
-        TraceCallExecutor executor{block_cache, db_reader, workers};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
         const auto result = spawn_and_wait(executor.trace_calls(block, calls));
 
         CHECK(result.pre_check_error.has_value() == true);
@@ -1662,7 +1684,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_calls") {
         block.header.number = block_number;
 
         BlockCache block_cache;
-        TraceCallExecutor executor{block_cache, db_reader, workers};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
         const auto result = spawn_and_wait(executor.trace_calls(block, calls));
 
         CHECK(result.pre_check_error.has_value() == false);
@@ -1969,7 +1993,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block_transact
 
     TraceConfig config{true, true, true};
     BlockCache block_cache;
-    TraceCallExecutor executor{block_cache, db_reader, workers};
+    std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+    test::DummyTransaction tx{0, mock_cursor};
+    TraceCallExecutor executor{block_cache, db_reader, workers, tx};
     const auto result = spawn_and_wait(executor.trace_block_transactions(block, config));
 
     CHECK(nlohmann::json(result) == R"([
@@ -2511,7 +2537,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_block") {
     block_with_hash.block.transactions.push_back(transaction);
 
     BlockCache block_cache;
-    TraceCallExecutor executor{block_cache, db_reader, workers};
+    std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+    test::DummyTransaction tx{0, mock_cursor};
+    TraceCallExecutor executor{block_cache, db_reader, workers, tx};
 
     Filter filter;
     const auto result = spawn_and_wait(executor.trace_block(block_with_hash, filter));
@@ -2726,7 +2754,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
 
     SECTION("Call: only vmTrace") {
         BlockCache block_cache;
-        TraceCallExecutor executor{block_cache, db_reader, workers};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
         TraceConfig config{.vm_trace = true, .trace = false, .state_diff = false};
         const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash.block, transaction, config));
 
@@ -3042,7 +3072,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
 
     SECTION("Call: only trace") {
         BlockCache block_cache;
-        TraceCallExecutor executor{block_cache, db_reader, workers};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
         TraceConfig config{.vm_trace = false, .trace = true, .state_diff = false};
         const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash.block, transaction, config));
 
@@ -3072,7 +3104,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
     }
     SECTION("Call: only stateDiff") {
         BlockCache block_cache;
-        TraceCallExecutor executor{block_cache, db_reader, workers};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
         TraceConfig config{.vm_trace = false, .trace = false, .state_diff = true};
         const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash.block, transaction, config));
 
@@ -3125,7 +3159,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_replayTransact
     }
     SECTION("Call: full output") {
         BlockCache block_cache;
-        TraceCallExecutor executor{block_cache, db_reader, workers};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
         TraceConfig config{.vm_trace = true, .trace = true, .state_diff = true};
         const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash.block, transaction, config));
 
@@ -3669,7 +3705,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_transaction") 
     block_with_hash.block.transactions.push_back(transaction);
 
     BlockCache block_cache;
-    TraceCallExecutor executor{block_cache, db_reader, workers};
+    std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+    test::DummyTransaction tx{0, mock_cursor};
+    TraceCallExecutor executor{block_cache, db_reader, workers, tx};
     const auto result = spawn_and_wait(executor.trace_transaction(block_with_hash, transaction));
 
     CHECK(nlohmann::json(result) == R"([
@@ -5213,7 +5251,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
         })"_json;
 
         BlockCache block_cache;
-        TraceCallExecutor executor{block_cache, db_reader, workers};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
 
         stream.open_object();
         spawn_and_wait(executor.trace_filter(trace_filter, &stream));
@@ -5272,7 +5312,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
             }));
 
         BlockCache block_cache;
-        TraceCallExecutor executor{block_cache, db_reader, workers};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
 
         stream.open_object();
         spawn_and_wait(executor.trace_filter(trace_filter, &stream));
@@ -5354,7 +5396,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
             }));
 
         BlockCache block_cache;
-        TraceCallExecutor executor{block_cache, db_reader, workers};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
 
         stream.open_object();
         spawn_and_wait(executor.trace_filter(trace_filter, &stream));
@@ -5410,7 +5454,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
             }));
 
         BlockCache block_cache;
-        TraceCallExecutor executor{block_cache, db_reader, workers};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
 
         stream.open_object();
         spawn_and_wait(executor.trace_filter(trace_filter, &stream));
@@ -5430,7 +5476,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
         })"_json;
 
         BlockCache block_cache;
-        TraceCallExecutor executor{block_cache, db_reader, workers};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
 
         stream.open_object();
         spawn_and_wait(executor.trace_filter(trace_filter, &stream));
@@ -5450,7 +5498,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
         })"_json;
 
         BlockCache block_cache;
-        TraceCallExecutor executor{block_cache, db_reader, workers};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
 
         stream.open_object();
         spawn_and_wait(executor.trace_filter(trace_filter, &stream));
@@ -5519,7 +5569,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
             }));
 
         BlockCache block_cache;
-        TraceCallExecutor executor{block_cache, db_reader, workers};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
 
         stream.open_object();
         spawn_and_wait(executor.trace_filter(trace_filter, &stream));
@@ -5601,7 +5653,9 @@ TEST_CASE_METHOD(TraceCallExecutorTest, "TraceCallExecutor::trace_filter") {
             }));
 
         BlockCache block_cache;
-        TraceCallExecutor executor{block_cache, db_reader, workers};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        TraceCallExecutor executor{block_cache, db_reader, workers, tx};
 
         stream.open_object();
         spawn_and_wait(executor.trace_filter(trace_filter, &stream));

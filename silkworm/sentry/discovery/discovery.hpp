@@ -16,19 +16,31 @@
 
 #pragma once
 
+#include <functional>
+#include <memory>
 #include <vector>
 
 #include <silkworm/infra/concurrency/task.hpp>
 
+#include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 
 namespace silkworm::sentry::discovery {
 
+class DiscoveryImpl;
+
 class Discovery {
   public:
-    Discovery(std::vector<common::EnodeUrl> peer_urls);
+    explicit Discovery(
+        std::vector<common::EnodeUrl> peer_urls,
+        std::function<common::EccKeyPair()> node_key,
+        uint16_t disc_v4_port);
+    ~Discovery();
 
-    Task<void> start();
+    Discovery(const Discovery&) = delete;
+    Discovery& operator=(const Discovery&) = delete;
+
+    Task<void> run();
 
     Task<std::vector<common::EnodeUrl>> request_peer_urls(
         size_t max_count,
@@ -38,6 +50,7 @@ class Discovery {
 
   private:
     const std::vector<common::EnodeUrl> peer_urls_;
+    std::unique_ptr<DiscoveryImpl> p_impl_;
 };
 
 }  // namespace silkworm::sentry::discovery

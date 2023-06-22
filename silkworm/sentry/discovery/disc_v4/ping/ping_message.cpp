@@ -20,11 +20,14 @@
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/sentry/discovery/disc_v4/disc_v4_common/node_address.hpp>
+#include <silkworm/sentry/discovery/disc_v4/disc_v4_common/packet_type.hpp>
 #include <silkworm/sentry/discovery/disc_v4/disc_v4_common/unix_timestamp.hpp>
 
 namespace silkworm::sentry::discovery::disc_v4::ping {
 
 using namespace disc_v4_common;
+
+const uint8_t PingMessage::kId = static_cast<uint8_t>(PacketType::kPing);
 
 Bytes PingMessage::rlp_encode() const {
     Bytes data;

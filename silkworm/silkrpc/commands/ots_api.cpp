@@ -478,7 +478,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_contract_creator(const nl
         ethdb::TransactionDatabase tx_database{*tx};
         auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_found);
 
-        trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_};
+        trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_, *tx};
         const auto result = co_await executor.trace_deploy_transaction(block_with_hash->block, contract_address);
 
         reply = make_json_content(request["id"], result);
@@ -515,7 +515,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_trace_transaction(const nlohm
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-        trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_};
+        trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_, *tx};
 
         const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, tx_database, transaction_hash);
 
@@ -561,7 +561,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_transaction_error(const n
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-        trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_};
+        trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_, *tx};
 
         const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, tx_database, transaction_hash);
 

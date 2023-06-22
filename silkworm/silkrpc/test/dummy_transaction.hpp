@@ -23,6 +23,7 @@
 #include <boost/asio/awaitable.hpp>
 
 #include <silkworm/silkrpc/common/util.hpp>
+#include <silkworm/silkrpc/core/remote_state.hpp>
 #include <silkworm/silkrpc/ethdb/cursor.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
 
@@ -46,8 +47,8 @@ class DummyTransaction : public ethdb::Transaction {
         co_return cursor_;
     }
 
-    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor&, const core::rawdb::DatabaseReader&, uint64_t) override {
-        return nullptr;
+    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const core::rawdb::DatabaseReader& db_reader, uint64_t block_number) override {
+        return std::make_shared<silkworm::rpc::state::RemoteState>(executor, db_reader, block_number);
     }
 
     boost::asio::awaitable<void> close() override { co_return; }

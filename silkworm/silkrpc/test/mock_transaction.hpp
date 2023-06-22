@@ -35,8 +35,6 @@ class MockTransaction : public ethdb::Transaction {
     MOCK_METHOD((boost::asio::awaitable<void>), open, ());
     MOCK_METHOD((boost::asio::awaitable<std::shared_ptr<ethdb::Cursor>>), cursor, (const std::string&));
     MOCK_METHOD((boost::asio::awaitable<std::shared_ptr<ethdb::CursorDupSort>>), cursor_dup_sort, (const std::string&));
-    MOCK_METHOD((boost::asio::awaitable<std::shared_ptr<silkworm::State>>), create_state,
-                (const core::rawdb::DatabaseReader&, uint64_t));
     MOCK_METHOD((std::shared_ptr<silkworm::State>), create_state,
                 (boost::asio::any_io_executor&, const core::rawdb::DatabaseReader&, uint64_t));
     MOCK_METHOD((boost::asio::awaitable<void>), close, ());

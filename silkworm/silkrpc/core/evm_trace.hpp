@@ -40,6 +40,7 @@
 #include <silkworm/silkrpc/common/block_cache.hpp>
 #include <silkworm/silkrpc/core/evm_executor.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
+#include <silkworm/silkrpc/ethdb/transaction.hpp>
 #include <silkworm/silkrpc/json/stream.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/call.hpp>
@@ -422,8 +423,9 @@ class TraceCallExecutor {
   public:
     explicit TraceCallExecutor(silkworm::BlockCache& block_cache,
                                const core::rawdb::DatabaseReader& database_reader,
-                               boost::asio::thread_pool& workers)
-        : block_cache_(block_cache), database_reader_(database_reader), workers_{workers} {}
+                               boost::asio::thread_pool& workers,
+                               ethdb::Transaction& tx)
+        : block_cache_(block_cache), database_reader_(database_reader), workers_{workers}, tx_{tx} {}
     virtual ~TraceCallExecutor() = default;
 
     TraceCallExecutor(const TraceCallExecutor&) = delete;
@@ -449,6 +451,7 @@ class TraceCallExecutor {
     silkworm::BlockCache& block_cache_;
     const core::rawdb::DatabaseReader& database_reader_;
     boost::asio::thread_pool& workers_;
+    ethdb::Transaction& tx_;
 };
 
 }  // namespace silkworm::rpc::trace

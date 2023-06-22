@@ -1219,7 +1219,7 @@ awaitable<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transacti
 
     auto current_executor = co_await boost::asio::this_coro::executor;
 
-    const auto result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::vector<TraceCallResult>)>(
+    const auto call_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::vector<TraceCallResult>)>(
         [&](auto&& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
                 auto state = tx_.create_state(current_executor, database_reader_, block_number - 1);
@@ -1277,7 +1277,7 @@ awaitable<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transacti
         },
         boost::asio::use_awaitable);
 
-    co_return result;
+    co_return call_result;
 }
 
 awaitable<TraceCallResult> TraceCallExecutor::trace_call(const silkworm::Block& block, const Call& call, const TraceConfig& config) {

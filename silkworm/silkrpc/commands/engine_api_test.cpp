@@ -74,10 +74,6 @@ namespace {
             co_return nullptr;
         }
 
-        awaitable<std::shared_ptr<silkworm::State>> create_state(const core::rawdb::DatabaseReader& /* db_reader */, uint64_t /* block_number */) override {
-            co_return nullptr;
-        }
-
         std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor&, const core::rawdb::DatabaseReader&, uint64_t) override {
             return nullptr;
         }

@@ -1296,54 +1296,63 @@ awaitable<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Bl
     const auto chain_config_ptr = lookup_chain_config(chain_id);
 
     auto current_executor = co_await boost::asio::this_coro::executor;
-    state::RemoteState remote_state{current_executor, database_reader_, block_number};
-    silkworm::IntraBlockState initial_ibs{remote_state};
-    StateAddresses state_addresses(initial_ibs);
+    const auto ret_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(TraceManyCallResult)>(
+        [&](auto&& self) {
+            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
+                auto state = tx_.create_state(current_executor, database_reader_, block_number);
+                silkworm::IntraBlockState initial_ibs{*state};
+                StateAddresses state_addresses(initial_ibs);
 
-    state::RemoteState curr_remote_state{current_executor, database_reader_, block_number};
-    EVMExecutor executor{*chain_config_ptr, workers_, remote_state};
+                auto curr_state = tx_.create_state(current_executor, database_reader_, block_number);
+                EVMExecutor executor{*chain_config_ptr, workers_, state};
 
-    std::shared_ptr<silkworm::EvmTracer> ibs_tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
+                std::shared_ptr<silkworm::EvmTracer> ibs_tracer = std::make_shared<trace::IntraBlockStateTracer>(state_addresses);
 
-    TraceManyCallResult result;
-    for (std::size_t index{0}; index < calls.size(); index++) {
-        const auto& config = calls[index].trace_config;
+                TraceManyCallResult result;
+                for (std::size_t index{0}; index < calls.size(); index++) {
+                    const auto& config = calls[index].trace_config;
 
-        silkworm::Transaction transaction{calls[index].call.to_transaction()};
+                    silkworm::Transaction transaction{calls[index].call.to_transaction()};
 
-        Tracers tracers;
-        TraceCallTraces traces;
-        if (config.vm_trace) {
-            traces.vm_trace.emplace();
-            std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::VmTraceTracer>(traces.vm_trace.value(), index);
-            tracers.push_back(tracer);
-        }
-        if (config.trace) {
-            std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::TraceTracer>(traces.trace, initial_ibs);
-            tracers.push_back(tracer);
-        }
-        if (config.state_diff) {
-            traces.state_diff.emplace();
+                    Tracers tracers;
+                    TraceCallTraces traces;
+                    if (config.vm_trace) {
+                        traces.vm_trace.emplace();
+                        std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::VmTraceTracer>(traces.vm_trace.value(), index);
+                        tracers.push_back(tracer);
+                    }
+                    if (config.trace) {
+                        std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::TraceTracer>(traces.trace, initial_ibs);
+                        tracers.push_back(tracer);
+                    }
+                    if (config.state_diff) {
+                        traces.state_diff.emplace();
 
-            std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::StateDiffTracer>(traces.state_diff.value(), state_addresses);
-            tracers.push_back(tracer);
-        }
-        tracers.push_back(ibs_tracer);
+                        std::shared_ptr<silkworm::EvmTracer> tracer = std::make_shared<trace::StateDiffTracer>(traces.state_diff.value(), state_addresses);
+                        tracers.push_back(tracer);
+                    }
+                    tracers.push_back(ibs_tracer);
 
-        auto execution_result = co_await executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+                    auto execution_result = executor.call_sync(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
 
-        if (execution_result.pre_check_error) {
-            result.pre_check_error = "first run for txIndex " + std::to_string(index) + " error: " + execution_result.pre_check_error.value();
-            result.traces.clear();
-            break;
-        }
-        traces.output = "0x" + silkworm::to_hex(execution_result.data);
-        result.traces.push_back(traces);
+                    if (execution_result.pre_check_error) {
+                        result.pre_check_error = "first run for txIndex " + std::to_string(index) + " error: " + execution_result.pre_check_error.value();
+                        result.traces.clear();
+                        break;
+                    }
+                    traces.output = "0x" + silkworm::to_hex(execution_result.data);
+                    result.traces.push_back(traces);
 
-        executor.reset();
-    }
+                    executor.reset();
+                }
+                boost::asio::post(current_executor, [result, self = std::move(self)]() mutable {
+                    self.complete(result);
+                });
+            });
+        },
+        boost::asio::use_awaitable);
 
-    co_return result;
+    co_return ret_result;
 }
 
 boost::asio::awaitable<TraceDeployResult> TraceCallExecutor::trace_deploy_transaction(const silkworm::Block& block, const evmc::address& contract_address) {

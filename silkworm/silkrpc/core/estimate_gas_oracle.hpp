@@ -89,9 +89,11 @@ class EstimateGasOracle {
     boost::asio::awaitable<intx::uint256> estimate_gas(const Call& call, const silkworm::Block& latest_block);
 
   protected:
-    virtual bool try_execution(EVMExecutor& executor, const silkworm::Block& _block, const silkworm::Transaction& transaction);
+    virtual ExecutionResult try_execution(EVMExecutor& executor, const silkworm::Block& _block, const silkworm::Transaction& transaction);
 
   private:
+    void arise_exception(ExecutionResult& result, uint64_t cap);
+
     const BlockHeaderProvider& block_header_provider_;
     const AccountReader& account_reader_;
     const silkworm::ChainConfig& config_;

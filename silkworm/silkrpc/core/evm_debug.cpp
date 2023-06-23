@@ -27,8 +27,10 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
+#include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/evm_executor.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
+#include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 
 namespace silkworm::rpc::debug {
@@ -259,6 +261,68 @@ void DebugTracer::write_log(const DebugLog& log) {
     }
 
     stream_.write_json(json);
+}
+
+boost::asio::awaitable<void> DebugExecutor::trace_block(json::Stream& stream, std::uint64_t block_number) {
+    const auto block_with_hash = co_await rpc::core::read_block_by_number(block_cache_, database_reader_, block_number);
+    stream.write_field("result");
+    stream.open_array();
+    co_await execute(stream, block_with_hash->block);
+    stream.close_array();
+
+    co_return;
+}
+
+boost::asio::awaitable<void> DebugExecutor::trace_block(json::Stream& stream, const evmc::bytes32& block_hash) {
+    const auto block_with_hash = co_await rpc::core::read_block_by_hash(block_cache_, database_reader_, block_hash);
+
+    stream.write_field("result");
+    stream.open_array();
+    co_await execute(stream, block_with_hash->block);
+    stream.close_array();
+
+    co_return;
+}
+
+boost::asio::awaitable<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumberOrHash& bnoh, const Call& call) {
+    ethdb::TransactionDatabase tx_database{transaction_};
+
+    const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, tx_database, bnoh);
+    rpc::Transaction transaction{call.to_transaction()};
+
+    const auto& block = block_with_hash->block;
+    const auto number = block.header.number;
+
+    stream.write_field("result");
+    stream.open_object();
+    co_await execute(stream, number, block, transaction, -1);
+    stream.close_object();
+
+    co_return;
+}
+
+boost::asio::awaitable<void> DebugExecutor::trace_transaction(json::Stream& stream, const evmc::bytes32& tx_hash) {
+    ethdb::TransactionDatabase tx_database{transaction_};
+
+    const auto tx_with_block = co_await rpc::core::read_transaction_by_hash(block_cache_, tx_database, tx_hash);
+
+    if (!tx_with_block) {
+        std::ostringstream oss;
+        oss << "transaction 0x" << tx_hash << " not found";
+        const Error error{-32000, oss.str()};
+        stream.write_field("error", error);
+    } else {
+        const auto& block = tx_with_block->block_with_hash.block;
+        const auto& transaction = tx_with_block->transaction;
+        const auto number = block.header.number - 1;
+
+        stream.write_field("result");
+        stream.open_object();
+        co_await execute(stream, number, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index));
+        stream.close_object();
+    }
+
+    co_return;
 }
 
 awaitable<void> DebugExecutor::execute(json::Stream& stream, const silkworm::Block& block) {

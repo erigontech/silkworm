@@ -16,33 +16,27 @@
 
 #pragma once
 
-#include <functional>
+#include <filesystem>
 #include <memory>
 
-#include <silkworm/infra/concurrency/task.hpp>
+#include "node_db.hpp"
 
-#include <silkworm/sentry/common/ecc_key_pair.hpp>
-#include <silkworm/sentry/discovery/node_db/node_db.hpp>
+namespace silkworm::sentry::discovery::node_db {
 
-namespace silkworm::sentry::discovery::disc_v4 {
+class NodeDbSqliteImpl;
 
-class DiscoveryImpl;
-
-class Discovery {
+class NodeDbSqlite {
   public:
-    Discovery(
-        uint16_t server_port,
-        std::function<common::EccKeyPair()> node_key,
-        node_db::NodeDb& node_db);
-    ~Discovery();
+    NodeDbSqlite();
+    ~NodeDbSqlite();
 
-    Discovery(const Discovery&) = delete;
-    Discovery& operator=(const Discovery&) = delete;
+    void setup(const std::filesystem::path& db_dir_path);
+    void setup_in_memory();
 
-    Task<void> run();
+    [[nodiscard]] NodeDb& interface();
 
   private:
-    std::unique_ptr<DiscoveryImpl> p_impl_;
+    std::unique_ptr<NodeDbSqliteImpl> p_impl_;
 };
 
-}  // namespace silkworm::sentry::discovery::disc_v4
+}  // namespace silkworm::sentry::discovery::node_db

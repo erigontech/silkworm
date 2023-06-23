@@ -26,8 +26,12 @@ namespace silkworm::sentry::discovery::disc_v4 {
 
 class DiscoveryImpl : private MessageHandler {
   public:
-    DiscoveryImpl(uint16_t server_port, std::function<common::EccKeyPair()> node_key)
-        : server_(server_port, std::move(node_key), *this) {}
+    DiscoveryImpl(
+        uint16_t server_port,
+        std::function<common::EccKeyPair()> node_key,
+        node_db::NodeDb& node_db)
+        : server_(server_port, std::move(node_key), *this),
+          node_db_(node_db) {}
     ~DiscoveryImpl() override = default;
 
     DiscoveryImpl(const DiscoveryImpl&) = delete;
@@ -56,10 +60,14 @@ class DiscoveryImpl : private MessageHandler {
 
   private:
     Server server_;
+    [[maybe_unused]] node_db::NodeDb& node_db_;
 };
 
-Discovery::Discovery(uint16_t server_port, std::function<common::EccKeyPair()> node_key)
-    : p_impl_(std::make_unique<DiscoveryImpl>(server_port, std::move(node_key))) {}
+Discovery::Discovery(
+    uint16_t server_port,
+    std::function<common::EccKeyPair()> node_key,
+    node_db::NodeDb& node_db)
+    : p_impl_(std::make_unique<DiscoveryImpl>(server_port, std::move(node_key), node_db)) {}
 
 Discovery::~Discovery() {
     log::Trace("sentry") << "silkworm::sentry::discovery::disc_v4::Discovery::~Discovery";

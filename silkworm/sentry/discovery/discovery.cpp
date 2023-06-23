@@ -19,10 +19,12 @@
 #include <algorithm>
 #include <iterator>
 
+#include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/sentry/common/random.hpp>
 
 #include "disc_v4/discovery.hpp"
+#include "node_db/node_db_sqlite.hpp"
 
 namespace silkworm::sentry::discovery {
 
@@ -33,6 +35,7 @@ class DiscoveryImpl {
     explicit DiscoveryImpl(
         std::vector<common::EnodeUrl> peer_urls,
         bool with_dynamic_discovery,
+        const std::filesystem::path& data_dir_path,
         std::function<common::EccKeyPair()> node_key,
         uint16_t disc_v4_port);
 
@@ -48,25 +51,38 @@ class DiscoveryImpl {
     bool is_static_peer_url(const common::EnodeUrl& peer_url);
 
   private:
+    void setup_node_db();
+
     const std::vector<common::EnodeUrl> peer_urls_;
     bool with_dynamic_discovery_;
+    std::filesystem::path data_dir_path_;
+    node_db::NodeDbSqlite node_db_;
     disc_v4::Discovery disc_v4_discovery_;
 };
 
 DiscoveryImpl::DiscoveryImpl(
     std::vector<common::EnodeUrl> peer_urls,
     bool with_dynamic_discovery,
+    const std::filesystem::path& data_dir_path,
     std::function<common::EccKeyPair()> node_key,
     uint16_t disc_v4_port)
     : peer_urls_(std::move(peer_urls)),
       with_dynamic_discovery_(with_dynamic_discovery),
-      disc_v4_discovery_(disc_v4_port, node_key) {
+      data_dir_path_(data_dir_path),
+      disc_v4_discovery_(disc_v4_port, node_key, node_db_.interface()) {
 }
 
 Task<void> DiscoveryImpl::run() {
+    setup_node_db();
+
     if (with_dynamic_discovery_) {
         co_await disc_v4_discovery_.run();
     }
+}
+
+void DiscoveryImpl::setup_node_db() {
+    DataDirectory data_dir{data_dir_path_, true};
+    node_db_.setup(data_dir.nodes().path());
 }
 
 template <typename T>
@@ -99,11 +115,13 @@ bool DiscoveryImpl::is_static_peer_url(const common::EnodeUrl& peer_url) {
 Discovery::Discovery(
     std::vector<common::EnodeUrl> peer_urls,
     bool with_dynamic_discovery,
+    const std::filesystem::path& data_dir_path,
     std::function<common::EccKeyPair()> node_key,
     uint16_t disc_v4_port)
     : p_impl_(std::make_unique<DiscoveryImpl>(
           std::move(peer_urls),
           with_dynamic_discovery,
+          data_dir_path,
           std::move(node_key),
           disc_v4_port)) {}
 

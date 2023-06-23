@@ -23,10 +23,10 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/common/unix_timestamp.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 
 #include "disc_v4_common/packet_type.hpp"
-#include "disc_v4_common/unix_timestamp.hpp"
 #include "find/find_node_message.hpp"
 #include "find/neighbors_message.hpp"
 #include "ping/ping_message.hpp"

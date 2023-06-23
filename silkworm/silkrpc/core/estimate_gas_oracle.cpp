@@ -78,58 +78,61 @@ boost::asio::awaitable<intx::uint256> EstimateGasOracle::estimate_gas(const Call
     SILK_DEBUG << "hi: " << hi << ", lo: " << lo << ", cap: " << cap;
 
     auto this_executor = co_await boost::asio::this_coro::executor;
-    auto ret_success = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(bool)>(
+    auto exec_result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(ExecutionResult)>(
         [&](auto&& self) {
             boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
                 auto state = transaction_.create_state(this_executor, tx_database_, block_number);
                 EVMExecutor executor{config_, workers_, state};
 
+                ExecutionResult result{evmc_status_code::EVMC_SUCCESS};
                 silkworm::Transaction transaction{call.to_transaction()};
                 while (lo + 1 < hi) {
                     auto mid = (hi + lo) / 2;
                     transaction.gas_limit = mid;
 
-                    auto success = try_execution(executor, block, transaction);
-                    if (success) {
+                    result = try_execution(executor, block, transaction);
+                    if (result.error_code == evmc_status_code::EVMC_SUCCESS) {
                         hi = mid;
                     } else {
                         lo = mid;
+                        if (result.pre_check_error == std::nullopt) {
+                            break;
+                        }
                     }
                 }
+                result.error_code = evmc_status_code::EVMC_SUCCESS;
 
-                auto last_success = true;
                 if (hi == cap) {
                     transaction.gas_limit = hi;
-                    last_success = try_execution(executor, block, transaction);
-                    SILK_DEBUG << "HI == cap tested again with " << (last_success ? "succeed" : "failed");
+                    result = try_execution(executor, block, transaction);
+                    SILK_DEBUG << "HI == cap tested again with " << (result.error_code == evmc_status_code::EVMC_SUCCESS ? "succeed" : "failed");
                 }
 
                 SILK_DEBUG << "EstimateGasOracle::estimate_gas returns " << hi;
 
-                boost::asio::post(this_executor, [last_success, self = std::move(self)]() mutable {
-                    self.complete(last_success);
+                boost::asio::post(this_executor, [result, self = std::move(self)]() mutable {
+                    self.complete(result);
                 });
             });
         },
         boost::asio::use_awaitable);
 
-    if (!ret_success) {
-        throw EstimateGasException{-1, "gas required exceeds allowance (" + std::to_string(cap) + ")"};
+    if (exec_result.error_code != evmc_status_code::EVMC_SUCCESS) {
+        arise_exception(exec_result, cap);
     }
     co_return hi;
 }
 
-bool EstimateGasOracle::try_execution(EVMExecutor& executor, const silkworm::Block& block, const silkworm::Transaction& transaction) {
-    auto result = executor.call_sync(block, transaction);
+ExecutionResult EstimateGasOracle::try_execution(EVMExecutor& executor, const silkworm::Block& block, const silkworm::Transaction& transaction) {
+    return executor.call_sync(block, transaction);
+}
 
-    bool success = false;
-    if (result.pre_check_error) {
+void EstimateGasOracle::arise_exception(ExecutionResult& result, uint64_t cap) {
+    if (result.error_code == evmc_status_code::EVMC_SUCCESS) {
+        SILK_DEBUG << "result SUCCESS \n";
+    } else if (result.pre_check_error) {
         SILK_DEBUG << "result error " << result.pre_check_error.value();
-    } else if (result.error_code == evmc_status_code::EVMC_SUCCESS) {
-        SILK_DEBUG << "result SUCCESS";
-        success = true;
-    } else if (result.error_code == evmc_status_code::EVMC_INSUFFICIENT_BALANCE) {
-        SILK_DEBUG << "result INSUFFICIENT BALANCE";
+        throw EstimateGasException{-1, "gas required exceeds allowance (" + std::to_string(cap) + ")"};
     } else {
         const auto error_message = EVMExecutor::get_error_message(result.error_code, result.data);
         SILK_DEBUG << "result message " << error_message << ", code " << result.error_code;
@@ -139,8 +142,5 @@ bool EstimateGasOracle::try_execution(EVMExecutor& executor, const silkworm::Blo
             throw EstimateGasException{3, error_message, result.data};
         }
     }
-
-    return success;
 }
-
 }  // namespace silkworm::rpc

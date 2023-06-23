@@ -119,8 +119,8 @@ boost::asio::awaitable<intx::uint256> EstimateGasOracle::estimate_gas(const Call
         },
         boost::asio::use_awaitable);
 
-    if (exec_result.error_code != evmc_status_code::EVMC_SUCCESS) {
-        arise_exception(exec_result, cap);
+    if (exec_result.error_code != evmc_status_code::EVMC_SUCCESS || exec_result.pre_check_error) {
+        throw_exception(exec_result, cap);
     }
     co_return hi;
 }
@@ -129,11 +129,11 @@ ExecutionResult EstimateGasOracle::try_execution(EVMExecutor& executor, const si
     return executor.call_sync(block, transaction);
 }
 
-void EstimateGasOracle::arise_exception(ExecutionResult& result, uint64_t cap) {
-    if (result.error_code == pre_check_error && result.pre_check_error) {
+void EstimateGasOracle::throw_exception(ExecutionResult& result, uint64_t cap) {
+    if (result.pre_check_error) {
         SILK_DEBUG << "result error " << result.pre_check_error.value();
         throw EstimateGasException{-1, "gas required exceeds allowance (" + std::to_string(cap) + ")"};
-    } else if (result.error_code != pre_check_error) {
+    } else {
         const auto error_message = EVMExecutor::get_error_message(result.error_code, result.data);
         SILK_DEBUG << "result message " << error_message << ", code " << result.error_code;
         if (result.data.empty()) {

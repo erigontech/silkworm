@@ -101,24 +101,26 @@ TEST_CASE("estimate gas") {
     MockEstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, config, workers, *tx, tx_database};
 
     SECTION("Call empty, always fails but success in last step") {
+        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS, .pre_check_error = std::nullopt};
+        ExecutionResult expect_result_fail{.error_code = 1000, .pre_check_error = "intrisic gas"};
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _, _))
             .Times(16)
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(true));
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillRepeatedly(Return(expect_result_ok));
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
 
@@ -126,29 +128,32 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call empty, always succeeds") {
-        EXPECT_CALL(estimate_gas_oracle, try_execution(_, _, _)).Times(14).WillRepeatedly(Return(true));
+        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS, .pre_check_error = std::nullopt};
+        EXPECT_CALL(estimate_gas_oracle, try_execution(_, _, _)).Times(14).WillRepeatedly(Return(expect_result_ok));
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
         CHECK(estimate_gas == kTxGas);
     }
 
     SECTION("Call empty, alternatively fails and succeeds") {
+        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS, .pre_check_error = std::nullopt};
+        ExecutionResult expect_result_fail{.error_code = 1000, .pre_check_error = "intrisic gas"};
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _, _))
             .Times(14)
-            .WillOnce(Return(false))
-            .WillOnce(Return(true))
-            .WillOnce(Return(false))
-            .WillOnce(Return(true))
-            .WillOnce(Return(false))
-            .WillOnce(Return(true))
-            .WillOnce(Return(false))
-            .WillOnce(Return(true))
-            .WillOnce(Return(false))
-            .WillOnce(Return(true))
-            .WillOnce(Return(false))
-            .WillOnce(Return(true))
-            .WillOnce(Return(false))
-            .WillOnce(Return(true));
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_ok))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_ok))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_ok))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_ok))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_ok))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_ok))
+            .WillOnce(Return(expect_result_fail))
+            .WillRepeatedly(Return(expect_result_ok));
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
 
@@ -156,22 +161,24 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call empty, alternatively succeeds and fails") {
+        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS, .pre_check_error = std::nullopt};
+        ExecutionResult expect_result_fail{.error_code = 1000, .pre_check_error = "intrisic gas"};
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _, _))
             .Times(14)
-            .WillOnce(Return(true))
-            .WillOnce(Return(false))
-            .WillOnce(Return(true))
-            .WillOnce(Return(false))
-            .WillOnce(Return(true))
-            .WillOnce(Return(false))
-            .WillOnce(Return(true))
-            .WillOnce(Return(false))
-            .WillOnce(Return(true))
-            .WillOnce(Return(false))
-            .WillOnce(Return(true))
-            .WillOnce(Return(false))
-            .WillOnce(Return(true))
-            .WillOnce(Return(false));
+            .WillOnce(Return(expect_result_ok))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_ok))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_ok))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_ok))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_ok))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_ok))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_ok))
+            .WillRepeatedly(Return(expect_result_fail));
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
 
@@ -180,25 +187,27 @@ TEST_CASE("estimate gas") {
 
     SECTION("Call with gas, always fails but succes last step") {
         call.gas = kTxGas * 4;
+        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS, .pre_check_error = std::nullopt};
+        ExecutionResult expect_result_fail{.error_code = 1000, .pre_check_error = "intrisic gas"};
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _, _))
             .Times(17)
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillRepeatedly(Return(true));
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillRepeatedly(Return(expect_result_ok));
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
 
@@ -207,9 +216,10 @@ TEST_CASE("estimate gas") {
 
     SECTION("Call with gas, always succeeds") {
         call.gas = kTxGas * 4;
+        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS, .pre_check_error = std::nullopt};
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _, _))
             .Times(15)
-            .WillRepeatedly(Return(true));
+            .WillRepeatedly(Return(expect_result_ok));
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
 
@@ -217,27 +227,29 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call with gas_price, gas not capped") {
+        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS, .pre_check_error = std::nullopt};
+        ExecutionResult expect_result_fail{.error_code = 1000, .pre_check_error = "intrisic gas"};
         call.gas = kTxGas * 2;
         call.gas_price = intx::uint256{10'000};
 
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _, _))
             .Times(16)
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillRepeatedly(Return(true));
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillRepeatedly(Return(expect_result_ok));
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
 
@@ -245,24 +257,26 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call with gas_price, gas capped") {
+        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS, .pre_check_error = std::nullopt};
+        ExecutionResult expect_result_fail{.error_code = 1000, .pre_check_error = "intrisic gas"};
         call.gas = kTxGas * 2;
         call.gas_price = intx::uint256{40'000};
 
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _, _))
             .Times(13)
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillRepeatedly(Return(true));
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillRepeatedly(Return(expect_result_ok));
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
 
@@ -270,28 +284,30 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call with gas_price and value, gas not capped") {
+        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS, .pre_check_error = std::nullopt};
+        ExecutionResult expect_result_fail{.error_code = 1000, .pre_check_error = "intrisic gas"};
         call.gas = kTxGas * 2;
         call.gas_price = intx::uint256{10'000};
         call.value = intx::uint256{500'000'000};
 
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _, _))
             .Times(16)
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillRepeatedly(Return(true));
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillRepeatedly(Return(expect_result_ok));
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
 
@@ -299,25 +315,27 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call with gas_price and value, gas capped") {
+        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS, .pre_check_error = std::nullopt};
+        ExecutionResult expect_result_fail{.error_code = 1000, .pre_check_error = "intrisic gas"};
         call.gas = kTxGas * 2;
         call.gas_price = intx::uint256{20'000};
         call.value = intx::uint256{500'000'000};
 
         EXPECT_CALL(estimate_gas_oracle, try_execution(_, _, _))
             .Times(13)
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillOnce(Return(false))
-            .WillRepeatedly(Return(true));
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillOnce(Return(expect_result_fail))
+            .WillRepeatedly(Return(expect_result_ok));
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
 
@@ -325,8 +343,9 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call gas above allowance, always succeeds, gas capped") {
+        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS, .pre_check_error = std::nullopt};
         call.gas = kGasCap * 2;
-        EXPECT_CALL(estimate_gas_oracle, try_execution(_, _, _)).Times(24).WillRepeatedly(Return(true));
+        EXPECT_CALL(estimate_gas_oracle, try_execution(_, _, _)).Times(24).WillRepeatedly(Return(expect_result_ok));
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
 
@@ -334,9 +353,10 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call gas below minimum, always succeeds") {
+        ExecutionResult expect_result_ok{.error_code = evmc_status_code::EVMC_SUCCESS, .pre_check_error = std::nullopt};
         call.gas = kTxGas / 2;
 
-        EXPECT_CALL(estimate_gas_oracle, try_execution(_, _, _)).Times(14).WillRepeatedly(Return(true));
+        EXPECT_CALL(estimate_gas_oracle, try_execution(_, _, _)).Times(14).WillRepeatedly(Return(expect_result_ok));
         auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block), boost::asio::use_future);
         const intx::uint256& estimate_gas = result.get();
 
@@ -344,10 +364,11 @@ TEST_CASE("estimate gas") {
     }
 
     SECTION("Call with too high value, exception") {
+        ExecutionResult expect_result_fail{.error_code = 1000, .pre_check_error = "intrisic gas"};
         call.value = intx::uint256{2'000'000'000};
 
         try {
-            EXPECT_CALL(estimate_gas_oracle, try_execution(_, _, _)).Times(16).WillRepeatedly(Return(false));
+            EXPECT_CALL(estimate_gas_oracle, try_execution(_, _, _)).Times(16).WillRepeatedly(Return(expect_result_fail));
             auto result = boost::asio::co_spawn(pool, estimate_gas_oracle.estimate_gas(call, block), boost::asio::use_future);
             result.get();
             CHECK(false);

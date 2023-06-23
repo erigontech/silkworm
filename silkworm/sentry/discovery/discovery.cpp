@@ -32,6 +32,7 @@ class DiscoveryImpl {
   public:
     explicit DiscoveryImpl(
         std::vector<common::EnodeUrl> peer_urls,
+        bool with_dynamic_discovery,
         std::function<common::EccKeyPair()> node_key,
         uint16_t disc_v4_port);
 
@@ -48,19 +49,24 @@ class DiscoveryImpl {
 
   private:
     const std::vector<common::EnodeUrl> peer_urls_;
+    bool with_dynamic_discovery_;
     disc_v4::Discovery disc_v4_discovery_;
 };
 
 DiscoveryImpl::DiscoveryImpl(
     std::vector<common::EnodeUrl> peer_urls,
+    bool with_dynamic_discovery,
     std::function<common::EccKeyPair()> node_key,
     uint16_t disc_v4_port)
     : peer_urls_(std::move(peer_urls)),
+      with_dynamic_discovery_(with_dynamic_discovery),
       disc_v4_discovery_(disc_v4_port, node_key) {
 }
 
 Task<void> DiscoveryImpl::run() {
-    co_await disc_v4_discovery_.run();
+    if (with_dynamic_discovery_) {
+        co_await disc_v4_discovery_.run();
+    }
 }
 
 template <typename T>
@@ -92,9 +98,14 @@ bool DiscoveryImpl::is_static_peer_url(const common::EnodeUrl& peer_url) {
 
 Discovery::Discovery(
     std::vector<common::EnodeUrl> peer_urls,
+    bool with_dynamic_discovery,
     std::function<common::EccKeyPair()> node_key,
     uint16_t disc_v4_port)
-    : p_impl_(std::make_unique<DiscoveryImpl>(std::move(peer_urls), std::move(node_key), disc_v4_port)) {}
+    : p_impl_(std::make_unique<DiscoveryImpl>(
+          std::move(peer_urls),
+          with_dynamic_discovery,
+          std::move(node_key),
+          disc_v4_port)) {}
 
 Discovery::~Discovery() {
     log::Trace("sentry") << "silkworm::sentry::discovery::Discovery::~Discovery";

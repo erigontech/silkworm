@@ -81,6 +81,9 @@ void add_sentry_options(CLI::App& cli, silkworm::sentry::Settings& settings) {
     static_peers_option->description("Peers enode URLs to connect to without discovery");
     static_peers_option->type_size(1, INT_MAX);
 
+    cli.add_flag("--nodiscover", settings.no_discover)
+        ->description("Disables automatic peer discovery");
+
     cli.add_option("--maxpeers", settings.max_peers)
         ->description("Maximum number of P2P network peers")
         ->check(CLI::Range(0, 1000))

@@ -49,7 +49,6 @@ class Discovery {
     bool is_static_peer_url(const common::EnodeUrl& peer_url);
 
   private:
-    const std::vector<common::EnodeUrl> peer_urls_;
     std::unique_ptr<DiscoveryImpl> p_impl_;
 };
 

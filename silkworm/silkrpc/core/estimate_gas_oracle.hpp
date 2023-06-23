@@ -93,7 +93,7 @@ class EstimateGasOracle {
     virtual ExecutionResult try_execution(EVMExecutor& executor, const silkworm::Block& _block, const silkworm::Transaction& transaction);
 
   private:
-    void arise_exception(ExecutionResult& result, uint64_t cap);
+    void throw_exception(ExecutionResult& result, uint64_t cap);
 
     const BlockHeaderProvider& block_header_provider_;
     const AccountReader& account_reader_;

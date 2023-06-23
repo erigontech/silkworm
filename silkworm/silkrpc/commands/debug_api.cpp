@@ -284,20 +284,8 @@ awaitable<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-        const auto tx_with_block = co_await core::read_transaction_by_hash(*block_cache_, tx_database, transaction_hash);
-        if (!tx_with_block) {
-            std::ostringstream oss;
-            oss << "transaction 0x" << transaction_hash << " not found";
-            const Error error{-32000, oss.str()};
-            stream.write_field("error", error);
-        } else {
-            debug::DebugExecutor executor{tx_database, *tx, *block_cache_, workers_, config};
-
-            stream.write_field("result");
-            stream.open_object();
-            co_await executor.execute(stream, tx_with_block->block_with_hash.block, tx_with_block->transaction);
-            stream.close_object();
-        }
+        debug::DebugExecutor executor{tx_database, *tx, *block_cache_, workers_, config};
+        co_await executor.trace_transaction(stream, transaction_hash);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         const Error error{100, e.what()};
@@ -344,16 +332,12 @@ awaitable<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& reque
         ethdb::TransactionDatabase tx_database{*tx};
         ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
 
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, tx_database, block_number_or_hash);
-        const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash->block.header.number, tx_database);
+        const bool is_latest_block = co_await core::is_latest_block_number(block_number_or_hash, tx_database);
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
-        debug::DebugExecutor executor{db_reader, *tx, *block_cache_, workers_, config};
 
-        stream.write_field("result");
-        stream.open_object();
-        co_await executor.execute(stream, block_with_hash->block, call);
-        stream.close_object();
+        debug::DebugExecutor executor{db_reader, *tx, *block_cache_, workers_, config};
+        co_await executor.trace_call(stream, block_number_or_hash, call);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         std::ostringstream oss;
@@ -400,15 +384,8 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::
     try {
         ethdb::TransactionDatabase tx_database{*tx};
 
-        // const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
-
         debug::DebugExecutor executor{tx_database, *tx, *block_cache_, workers_, config};
         co_await executor.trace_block(stream, block_number);
-
-        // stream.write_field("result");
-        // stream.open_array();
-        // co_await executor.execute(stream, block_with_hash->block);
-        // stream.close_array();
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         std::ostringstream oss;
@@ -459,15 +436,8 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::js
     try {
         ethdb::TransactionDatabase tx_database{*tx};
 
-        // const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
-
         debug::DebugExecutor executor{tx_database, *tx, *block_cache_, workers_, config};
         co_await executor.trace_block(stream, block_hash);
-
-        // stream.write_field("result");
-        // stream.open_array();
-        // co_await executor.execute(stream, block_with_hash->block);
-        // stream.close_array();
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         std::ostringstream oss;

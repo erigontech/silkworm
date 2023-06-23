@@ -105,29 +105,20 @@ class DebugExecutor {
         boost::asio::thread_pool& workers,
         DebugConfig config = {})
         : database_reader_(database_reader), transaction_(transaction), block_cache_(block_cache), workers_{workers}, config_{config} {}
-    // explicit DebugExecutor(
-    //     ethdb::Transaction& transaction,
-    //     BlockCache& block_cache,
-    //     boost::asio::thread_pool& workers,
-    //     DebugConfig config = {})
-    //     : transaction_(transaction), block_cache_(block_cache), workers_{workers}, config_{config} {}
     virtual ~DebugExecutor() = default;
 
     DebugExecutor(const DebugExecutor&) = delete;
     DebugExecutor& operator=(const DebugExecutor&) = delete;
-
-    boost::asio::awaitable<void> execute(json::Stream& stream, const silkworm::Block& block);
-    boost::asio::awaitable<void> execute(json::Stream& stream, const silkworm::Block& block, const Call& call);
-    boost::asio::awaitable<void> execute(json::Stream& stream, const silkworm::Block& block, const Transaction& transaction) {
-        return execute(stream, block.header.number - 1, block, transaction, gsl::narrow<int32_t>(transaction.transaction_index));
-    }
 
     boost::asio::awaitable<void> trace_block(json::Stream& stream, std::uint64_t block_number);
     boost::asio::awaitable<void> trace_block(json::Stream& stream, const evmc::bytes32& block_hash);
     boost::asio::awaitable<void> trace_call(json::Stream& stream, const BlockNumberOrHash& bnoh, const Call& call);
     boost::asio::awaitable<void> trace_transaction(json::Stream& stream, const evmc::bytes32& tx_hash);
 
+    boost::asio::awaitable<void> execute(json::Stream& stream, const silkworm::Block& block, const Call& call);
+
   private:
+    boost::asio::awaitable<void> execute(json::Stream& stream, const silkworm::Block& block);
     boost::asio::awaitable<void> execute(json::Stream& stream, std::uint64_t block_number,
                                          const silkworm::Block& block, const Transaction& transaction, int32_t = -1);
 

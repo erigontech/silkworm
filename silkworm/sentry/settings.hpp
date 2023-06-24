@@ -39,7 +39,7 @@ struct Settings {
 
     std::string api_address{"127.0.0.1:9091"};
 
-    // RLPx TCP port
+    // RLPx TCP port and disc v4 UDP port
     uint16_t port{30303};
 
     nat::NatOption nat;

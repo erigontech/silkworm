@@ -15,26 +15,11 @@
 */
 
 #pragma once
-
 #include <chrono>
-#include <cstdint>
 
-#include <boost/asio/ip/udp.hpp>
+namespace silkworm::sentry::discovery::disc_v4::disc_v4_common {
 
-#include <silkworm/core/common/base.hpp>
+std::chrono::time_point<std::chrono::system_clock> make_message_expiration();
+bool is_expired_message_expiration(std::chrono::time_point<std::chrono::system_clock> expiration);
 
-namespace silkworm::sentry::discovery::disc_v4::ping {
-
-struct PingMessage {
-    boost::asio::ip::udp::endpoint sender_endpoint;
-    uint16_t sender_port_rlpx{};
-    boost::asio::ip::udp::endpoint recipient_endpoint;
-    std::chrono::time_point<std::chrono::system_clock> expiration;
-
-    [[nodiscard]] Bytes rlp_encode() const;
-    [[nodiscard]] static PingMessage rlp_decode(ByteView data);
-
-    static const uint8_t kId;
-};
-
-}  // namespace silkworm::sentry::discovery::disc_v4::ping
+}  // namespace silkworm::sentry::discovery::disc_v4::disc_v4_common

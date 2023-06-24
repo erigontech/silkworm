@@ -16,6 +16,7 @@
 
 #include "sentry.hpp"
 
+#include <cassert>
 #include <functional>
 #include <optional>
 #include <string>
@@ -26,6 +27,7 @@
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
+#include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 
 #include "api/api_common/node_info.hpp"
@@ -80,6 +82,7 @@ class SentryImpl final {
     [[nodiscard]] common::EnodeUrl make_node_url() const;
     [[nodiscard]] api::api_common::NodeInfo make_node_info() const;
     [[nodiscard]] std::function<api::api_common::NodeInfo()> node_info_provider() const;
+    [[nodiscard]] std::function<common::EccKeyPair()> node_key_provider() const;
 
     Settings settings_;
     std::optional<NodeKey> node_key_;
@@ -134,7 +137,7 @@ SentryImpl::SentryImpl(Settings settings, silkworm::rpc::ServerContextPool& cont
       context_pool_(context_pool),
       status_manager_(context_pool_.next_io_context()),
       rlpx_server_(context_pool_.next_io_context(), settings_.port),
-      discovery_(settings_.static_peers),
+      discovery_(settings_.static_peers, node_key_provider(), settings_.port),
       peer_manager_(context_pool_.next_io_context(), settings_.max_peers, context_pool_),
       message_sender_(context_pool_.next_io_context()),
       message_receiver_(std::make_shared<MessageReceiver>(context_pool_.next_io_context(), settings_.max_peers)),
@@ -203,7 +206,7 @@ std::function<std::unique_ptr<rlpx::Client>()> SentryImpl::client_factory() {
 }
 
 Task<void> SentryImpl::start_discovery() {
-    return discovery_.start();
+    return discovery_.run();
 }
 
 Task<void> SentryImpl::start_peer_manager() {
@@ -242,6 +245,8 @@ std::string SentryImpl::client_id() const {
 }
 
 common::EnodeUrl SentryImpl::make_node_url() const {
+    assert(node_key_);
+    assert(public_ip_);
     return common::EnodeUrl{
         node_key_.value().public_key(),
         public_ip_.value(),
@@ -260,6 +265,13 @@ api::api_common::NodeInfo SentryImpl::make_node_info() const {
 
 std::function<api::api_common::NodeInfo()> SentryImpl::node_info_provider() const {
     return [this] { return this->make_node_info(); };
+}
+
+std::function<common::EccKeyPair()> SentryImpl::node_key_provider() const {
+    return [this] {
+        assert(this->node_key_);
+        return this->node_key_.value();
+    };
 }
 
 Sentry::Sentry(Settings settings, silkworm::rpc::ServerContextPool& context_pool)

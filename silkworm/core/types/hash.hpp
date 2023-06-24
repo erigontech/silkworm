@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <optional>
 #include <span>
 #include <string>
 
@@ -41,7 +42,7 @@ class Hash : public evmc::bytes32 {
     static constexpr size_t length() { return sizeof(evmc::bytes32); }
 
     [[nodiscard]] std::string to_hex() const { return silkworm::to_hex(*this); }
-    static Hash from_hex(const std::string& hex) { return {evmc::from_hex<Hash>(hex).value()}; }
+    static std::optional<Hash> from_hex(const std::string& hex) { return evmc::from_hex<Hash>(hex); }
 
     // conversion to ByteView is handled in ByteView class,
     // conversion operator Byte() { return {bytes, length()}; } is handled elsewhere
@@ -51,17 +52,6 @@ class Hash : public evmc::bytes32 {
 
 using HashAsSpan = std::span<const uint8_t, kHashLength>;
 using HashAsArray = const uint8_t (&)[kHashLength];
-
-// RLP encoding: usually same as ByteView, some tricks for MSVC overload resolution
-namespace rlp {
-    inline size_t length_hash(const Hash&) { return kHashLength + 1; }
-
-    void encode_hash(Bytes& to, const Hash& h);
-
-    // template <>
-    DecodingResult decode_hash(ByteView& from, Hash& to) noexcept;
-
-}  // namespace rlp
 
 }  // namespace silkworm
 

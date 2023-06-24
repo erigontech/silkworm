@@ -65,7 +65,7 @@ TEST_CASE("NewBlockHashesPacket encoding") {
     NewBlockHashesPacket packet;
 
     NewBlockHash newBlock;
-    newBlock.hash = Hash::from_hex("eb2c33963824bf97d01cff8a65f00dc402fbf64f473cb4778a547ac08cebc354");
+    newBlock.hash = *Hash::from_hex("eb2c33963824bf97d01cff8a65f00dc402fbf64f473cb4778a547ac08cebc354");
     newBlock.number = 12'420'112;
     packet.push_back(newBlock);
 
@@ -1026,8 +1026,8 @@ TEST_CASE("GetBlockBodiesPacket (eth/66) encoding") {
     GetBlockBodiesPacket66 packet;
 
     packet.requestId = 0xae9405dbeebf3f01;
-    packet.request.push_back(Hash::from_hex("a36b1595c5acd878b63f83d3b62f6882edd27b757582f5319aebc17bc3e98246"));
-    packet.request.push_back(Hash::from_hex("9f20a871bf5151959fff4c88783bf4ef27b170a4cbe92b8f63ca1fe7d6ab829c"));
+    packet.request.push_back(*Hash::from_hex("a36b1595c5acd878b63f83d3b62f6882edd27b757582f5319aebc17bc3e98246"));
+    packet.request.push_back(*Hash::from_hex("9f20a871bf5151959fff4c88783bf4ef27b170a4cbe92b8f63ca1fe7d6ab829c"));
 
     Bytes encoded;
     rlp::encode(encoded, packet);

@@ -61,6 +61,7 @@ class RemoteClient : public Client {
 
     // header/body retrieval
     auto get_header(Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>> override;
+    auto get_header(BlockNum height, Hash hash) -> asio::awaitable<std::optional<BlockHeader>> override;
     auto get_body(Hash block_hash) -> asio::awaitable<std::optional<BlockBody>> override;
     auto get_body(BlockNum block_number) -> asio::awaitable<std::optional<BlockBody>> override;
 

@@ -49,9 +49,10 @@ class Server : public ActiveComponent {
     auto last_fork_choice() -> asio::awaitable<BlockId>;
 
     // header/body retrieval
-    auto get_header(Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>>;    // [[thorax-compliant]]
-    auto get_body(Hash block_hash) -> asio::awaitable<std::optional<BlockBody>>;        // [[thorax-compliant]]
-    auto get_body(BlockNum block_number) -> asio::awaitable<std::optional<BlockBody>>;  // [[thorax-compliant]]
+    auto get_header(Hash block_hash) -> asio::awaitable<std::optional<BlockHeader>>;             // [[thorax-compliant]]
+    auto get_header(BlockNum height, Hash hash) -> asio::awaitable<std::optional<BlockHeader>>;  // [[thorax-compliant]]
+    auto get_body(Hash block_hash) -> asio::awaitable<std::optional<BlockBody>>;                 // [[thorax-compliant]]
+    auto get_body(BlockNum block_number) -> asio::awaitable<std::optional<BlockBody>>;           // [[thorax-compliant]]
 
     auto is_canonical(Hash block_hash) -> asio::awaitable<bool>;                      // [[thorax-compliant]]
     auto get_block_num(Hash block_hash) -> asio::awaitable<std::optional<BlockNum>>;  // [[thorax-compliant]]

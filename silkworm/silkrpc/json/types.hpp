@@ -37,6 +37,7 @@
 #include <silkworm/silkrpc/json/node_info.hpp>
 #include <silkworm/silkrpc/json/payload_attributes.hpp>
 #include <silkworm/silkrpc/json/receipt.hpp>
+#include <silkworm/silkrpc/json/transaction.hpp>
 #include <silkworm/silkrpc/json/transition_configuration.hpp>
 #include <silkworm/silkrpc/json/withdrawal.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
@@ -74,8 +75,6 @@ namespace silkworm {
 
 void to_json(nlohmann::json& json, const BlockHeader& ommer);
 
-void to_json(nlohmann::json& json, const Transaction& transaction);
-
 }  // namespace silkworm
 
 namespace silkworm::rpc {
@@ -108,8 +107,6 @@ void to_json(nlohmann::json& json, const Rlp& rlp);
 void to_json(nlohmann::json& json, const BlockDetailsResponse& b);
 
 void to_json(nlohmann::json& json, const BlockTransactionsResponse& b);
-
-void to_json(nlohmann::json& json, const Transaction& transaction);
 
 void to_json(nlohmann::json& json, const PayloadStatus& payload_status);
 

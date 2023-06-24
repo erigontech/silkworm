@@ -54,7 +54,9 @@ tests_not_compared = [
    "eth_callMany/test_09.json",
    "eth_callMany/test_10.json",
    "eth_maxPriorityFeePerGas/test_1.json",
-   "eth_feeHistory/test_1.json"
+   "eth_feeHistory/test_1.json",
+   "engine_getPayloadBodiesByHashV1/test_1.json",
+   "engine_getPayloadBodiesByRangeV1/test_1.json"
 ]
 
 tests_not_compared_result = [

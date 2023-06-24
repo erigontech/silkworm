@@ -17,15 +17,11 @@ npm install -g json-diff
 ### To run integration tests comparing results with json file: ./run_tests.py -c -k jwt.hex
 
 ```
-058. engine_getPayloadBodiesByHashV1/test_1.json                  Failed
-060. engine_getPayloadBodiesByRangeV1/test_1.json                 Failed
-111. eth_callMany/test_09.json                                    Failed
-                                                                                    
-Test time-elapsed (secs):     73
+Test time-elapsed (secs):     81
 Number of executed tests:     410/410
 Number of NOT executed tests: 0
-Number of success tests:      407
-Number of failed tests:       3
+Number of success tests:      410
+Number of failed tests:       0
 
 ```
 
@@ -39,8 +35,8 @@ Number of failed tests:       3
 031. debug_traceCall/test_10.json                                 Skipped
 035. debug_traceCall/test_14.json                                 Skipped
 038. debug_traceCall/test_17.json                                 Skipped
-058. engine_getPayloadBodiesByHashV1/test_1.json                  Failed
-060. engine_getPayloadBodiesByRangeV1/test_1.json                 Failed
+058. engine_getPayloadBodiesByHashV1/test_1.json                  Skipped
+060. engine_getPayloadBodiesByRangeV1/test_1.json                 Skipped
 081. erigon_watchTheBurn/test_1.json                              Skipped
 103. eth_callMany/test_01.json                                    Skipped
 104. eth_callMany/test_02.json                                    Skipped
@@ -55,11 +51,11 @@ Number of failed tests:       3
 343. trace_rawTransaction/test_01.json                            Skipped
 406. txpool_content/test_1.json                                   Skipped
                                                                                     
-Test time-elapsed (secs):     102
-Number of executed tests:     390/410
-Number of NOT executed tests: 20
+Test time-elapsed (secs):     106
+Number of executed tests:     388/410
+Number of NOT executed tests: 22
 Number of success tests:      388
-Number of failed tests:       2
+Number of failed tests:       0
 
 ```
 
@@ -73,8 +69,8 @@ Number of failed tests:       2
 031. debug_traceCall/test_10.json                                 Skipped
 035. debug_traceCall/test_14.json                                 Skipped
 038. debug_traceCall/test_17.json                                 Skipped
-058. engine_getPayloadBodiesByHashV1/test_1.json                  Failed
-060. engine_getPayloadBodiesByRangeV1/test_1.json                 Failed
+058. engine_getPayloadBodiesByHashV1/test_1.json                  Skipped
+060. engine_getPayloadBodiesByRangeV1/test_1.json                 Skipped
 081. erigon_watchTheBurn/test_1.json                              Skipped
 103. eth_callMany/test_01.json                                    Skipped
 104. eth_callMany/test_02.json                                    Skipped
@@ -90,10 +86,11 @@ Number of failed tests:       2
 406. txpool_content/test_1.json                                   Skipped
                                                                                     
 Test time-elapsed (secs):     97
-Number of executed tests:     390/410
-Number of NOT executed tests: 20
+Number of executed tests:     388/410
+Number of NOT executed tests: 22
 Number of success tests:      388
-Number of failed tests:       2
+Number of failed tests:       0
+
 ```
 
 

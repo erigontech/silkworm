@@ -198,7 +198,7 @@ auto PoSSync::new_payload(const rpc::ExecutionPayload& payload) -> asio::awaitab
         auto parent_td = chain_fork_view_.get_total_difficulty(block->header.number - 1, block->header.parent_hash);
         if (!parent_td) {
             // if not found, try to get it from the execution engine
-            auto parent = co_await exec_engine_.get_header(block->header.parent_hash);
+            auto parent = co_await exec_engine_.get_header(block->header.number - 1, block->header.parent_hash);
             if (!parent) {
                 // send payload to the block exchange to extend the chain up to it
                 block_exchange_.new_target_block(*block);

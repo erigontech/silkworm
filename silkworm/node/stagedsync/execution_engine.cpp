@@ -236,6 +236,13 @@ auto ExecutionEngine::get_header(Hash header_hash) const -> std::optional<BlockH
     return main_chain_.get_header(header_hash);
 }
 
+auto ExecutionEngine::get_header(BlockNum height, Hash hash) const -> std::optional<BlockHeader> {
+    // read from cache, then from main_chain_
+    auto block = block_cache_.get_as_copy(hash);
+    if (block) return (*block)->header;
+    return main_chain_.get_header(height, hash);
+}
+
 auto ExecutionEngine::get_last_headers(BlockNum limit) const -> std::vector<BlockHeader> {
     ensure_invariant(!fork_tracking_active_, "actual get_last_headers() impl assume it is called only at beginning");
     // if fork_tracking_active_ is true, we should read blocks from cache where they are not ordered on block number

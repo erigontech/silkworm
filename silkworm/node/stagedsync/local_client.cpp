@@ -60,6 +60,10 @@ awaitable<std::optional<BlockHeader>> LocalClient::get_header(Hash block_hash) {
     co_return co_await local_server_.get_header(block_hash);
 }
 
+awaitable<std::optional<BlockHeader>> LocalClient::get_header(BlockNum height, Hash hash) {
+    co_return co_await local_server_.get_header(height, hash);
+}
+
 awaitable<std::optional<BlockBody>> LocalClient::get_body(Hash block_hash) {
     co_return co_await local_server_.get_body(block_hash);
 }

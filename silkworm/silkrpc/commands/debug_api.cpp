@@ -284,7 +284,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-        debug::DebugExecutor executor{tx_database, *tx, *block_cache_, workers_, config};
+        debug::DebugExecutor executor{tx_database, *block_cache_, workers_, config};
         co_await executor.trace_transaction(stream, transaction_hash);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -336,7 +336,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& reque
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
 
-        debug::DebugExecutor executor{db_reader, *tx, *block_cache_, workers_, config};
+        debug::DebugExecutor executor{db_reader, *block_cache_, workers_, config};
         co_await executor.trace_call(stream, block_number_or_hash, call);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -404,7 +404,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_call_many(const nlohmann::json& 
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-        debug::DebugExecutor executor{tx_database, *tx, *block_cache_, workers_, config};
+        debug::DebugExecutor executor{tx_database, *block_cache_, workers_, config};
         co_await executor.trace_call_many(stream, bundles, simulation_context);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
@@ -446,7 +446,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::
     try {
         ethdb::TransactionDatabase tx_database{*tx};
 
-        debug::DebugExecutor executor{tx_database, *tx, *block_cache_, workers_, config};
+        debug::DebugExecutor executor{tx_database, *block_cache_, workers_, config};
         co_await executor.trace_block(stream, block_number);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -498,7 +498,7 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::js
     try {
         ethdb::TransactionDatabase tx_database{*tx};
 
-        debug::DebugExecutor executor{tx_database, *tx, *block_cache_, workers_, config};
+        debug::DebugExecutor executor{tx_database, *block_cache_, workers_, config};
         co_await executor.trace_block(stream, block_hash);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();

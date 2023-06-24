@@ -285,9 +285,9 @@ boost::asio::awaitable<void> DebugExecutor::trace_block(json::Stream& stream, co
 }
 
 boost::asio::awaitable<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumberOrHash& bnoh, const Call& call) {
-    ethdb::TransactionDatabase tx_database{transaction_};
+    // ethdb::TransactionDatabase tx_database{transaction_};
 
-    const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, tx_database, bnoh);
+    const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, database_reader_, bnoh);
     rpc::Transaction transaction{call.to_transaction()};
 
     const auto& block = block_with_hash->block;
@@ -302,9 +302,9 @@ boost::asio::awaitable<void> DebugExecutor::trace_call(json::Stream& stream, con
 }
 
 boost::asio::awaitable<void> DebugExecutor::trace_transaction(json::Stream& stream, const evmc::bytes32& tx_hash) {
-    ethdb::TransactionDatabase tx_database{transaction_};
+    // ethdb::TransactionDatabase tx_database{transaction_};
 
-    const auto tx_with_block = co_await rpc::core::read_transaction_by_hash(block_cache_, tx_database, tx_hash);
+    const auto tx_with_block = co_await rpc::core::read_transaction_by_hash(block_cache_, database_reader_, tx_hash);
 
     if (!tx_with_block) {
         std::ostringstream oss;
@@ -459,9 +459,10 @@ awaitable<void> DebugExecutor::execute(json::Stream& stream,
     const auto chain_config_ptr = lookup_chain_config(chain_id);
 
     auto current_executor = co_await boost::asio::this_coro::executor;
-    auto state = transaction_.create_state(current_executor, database_reader_, block.header.number);
+    // auto state = transaction_.create_state(current_executor, database_reader_, block.header.number);
+    state::RemoteState remote_state{current_executor, database_reader_, block.header.number};
 
-    EVMExecutor executor{*chain_config_ptr, workers_, state};
+    EVMExecutor executor{*chain_config_ptr, workers_, remote_state};
 
     for (auto idx{0}; idx < transaction_index; idx++) {
         silkworm::Transaction txn{block_transactions[std::size_t(idx)]};

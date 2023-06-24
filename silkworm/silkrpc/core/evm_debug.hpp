@@ -101,11 +101,10 @@ class DebugExecutor {
   public:
     explicit DebugExecutor(
         const core::rawdb::DatabaseReader& database_reader,
-        ethdb::Transaction& transaction,
         BlockCache& block_cache,
         boost::asio::thread_pool& workers,
         DebugConfig config = {})
-        : database_reader_(database_reader), transaction_(transaction), block_cache_(block_cache), workers_{workers}, config_{config} {}
+        : database_reader_(database_reader), block_cache_(block_cache), workers_{workers}, config_{config} {}
     virtual ~DebugExecutor() = default;
 
     DebugExecutor(const DebugExecutor&) = delete;
@@ -130,7 +129,6 @@ class DebugExecutor {
                                          int32_t transaction_index);
 
     const core::rawdb::DatabaseReader& database_reader_;
-    ethdb::Transaction& transaction_;
     BlockCache& block_cache_;
     boost::asio::thread_pool& workers_;
     DebugConfig config_;

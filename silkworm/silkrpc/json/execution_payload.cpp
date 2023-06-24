@@ -56,10 +56,15 @@ void from_json(const nlohmann::json& json, ExecutionPayload& execution_payload) 
                 silkworm::from_hex(json.at("logsBloom").get<std::string>())->data(),
                 silkworm::kBloomByteLength);
     // Parse transactions
-    std::vector<silkworm::Bytes> transactions;
+    std::vector<Bytes> transactions;
     for (const auto& hex_transaction : json.at("transactions")) {
-        transactions.push_back(
-            *silkworm::from_hex(hex_transaction.get<std::string>()));
+        const auto hex_bytes{from_hex(hex_transaction.get<std::string>())};
+        if (hex_bytes) {
+            transactions.push_back(*hex_bytes);
+        } else {
+            throw std::system_error{std::make_error_code(std::errc::invalid_argument),
+                                    "ExecutionPayload: invalid hex transaction: " + hex_transaction.dump()};
+        }
     }
     // Optionally parse withdrawals
     std::optional<std::vector<Withdrawal>> withdrawals;

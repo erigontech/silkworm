@@ -17,11 +17,15 @@ npm install -g json-diff
 ### To run integration tests comparing results with json file: ./run_tests.py -c -k jwt.hex
 
 ```
-Test time-elapsed (secs):     74
-Number of executed tests:     389/389
+058. engine_getPayloadBodiesByHashV1/test_1.json                  Failed
+060. engine_getPayloadBodiesByRangeV1/test_1.json                 Failed
+111. eth_callMany/test_09.json                                    Failed
+                                                                                    
+Test time-elapsed (secs):     73
+Number of executed tests:     410/410
 Number of NOT executed tests: 0
-Number of success tests:      389
-Number of failed tests:       0
+Number of success tests:      407
+Number of failed tests:       3
 
 ```
 
@@ -35,19 +39,28 @@ Number of failed tests:       0
 031. debug_traceCall/test_10.json                                 Skipped
 035. debug_traceCall/test_14.json                                 Skipped
 038. debug_traceCall/test_17.json                                 Skipped
-054. engine_exchangeCapabilities/test_1.json                      Failed
-076. erigon_watchTheBurn/test_1.json                              Skipped
-108. eth_feeHistory/test_1.json                                   Skipped
-197. eth_maxPriorityFeePerGas/test_1.json                         Skipped
-222. parity_getBlockReceipts/test_1.json                          Skipped
-322. trace_rawTransaction/test_01.json                            Skipped
-385. txpool_content/test_1.json                                   Skipped
+058. engine_getPayloadBodiesByHashV1/test_1.json                  Failed
+060. engine_getPayloadBodiesByRangeV1/test_1.json                 Failed
+081. erigon_watchTheBurn/test_1.json                              Skipped
+103. eth_callMany/test_01.json                                    Skipped
+104. eth_callMany/test_02.json                                    Skipped
+106. eth_callMany/test_04.json                                    Skipped
+107. eth_callMany/test_05.json                                    Skipped
+108. eth_callMany/test_06.json                                    Skipped
+111. eth_callMany/test_09.json                                    Skipped
+112. eth_callMany/test_10.json                                    Skipped
+126. eth_feeHistory/test_1.json                                   Skipped
+217. eth_maxPriorityFeePerGas/test_1.json                         Skipped
+243. parity_getBlockReceipts/test_1.json                          Skipped
+343. trace_rawTransaction/test_01.json                            Skipped
+406. txpool_content/test_1.json                                   Skipped
                                                                                     
-Test time-elapsed (secs):     98
-Number of executed tests:     376/389
-Number of NOT executed tests: 13
-Number of success tests:      375
-Number of failed tests:       1
+Test time-elapsed (secs):     102
+Number of executed tests:     390/410
+Number of NOT executed tests: 20
+Number of success tests:      388
+Number of failed tests:       2
+
 ```
 
 ### To run integration tests comparing results with local DB: ./run_tests.py -d -c -k jwt.hex
@@ -60,20 +73,27 @@ Number of failed tests:       1
 031. debug_traceCall/test_10.json                                 Skipped
 035. debug_traceCall/test_14.json                                 Skipped
 038. debug_traceCall/test_17.json                                 Skipped
-054. engine_exchangeCapabilities/test_1.json                      Failed
-076. erigon_watchTheBurn/test_1.json                              Skipped
-108. eth_feeHistory/test_1.json                                   Skipped
-197. eth_maxPriorityFeePerGas/test_1.json                         Skipped
-222. parity_getBlockReceipts/test_1.json                          Skipped
-322. trace_rawTransaction/test_01.json                            Skipped
-385. txpool_content/test_1.json                                   Skipped
+058. engine_getPayloadBodiesByHashV1/test_1.json                  Failed
+060. engine_getPayloadBodiesByRangeV1/test_1.json                 Failed
+081. erigon_watchTheBurn/test_1.json                              Skipped
+103. eth_callMany/test_01.json                                    Skipped
+104. eth_callMany/test_02.json                                    Skipped
+106. eth_callMany/test_04.json                                    Skipped
+107. eth_callMany/test_05.json                                    Skipped
+108. eth_callMany/test_06.json                                    Skipped
+111. eth_callMany/test_09.json                                    Skipped
+112. eth_callMany/test_10.json                                    Skipped
+126. eth_feeHistory/test_1.json                                   Skipped
+217. eth_maxPriorityFeePerGas/test_1.json                         Skipped
+243. parity_getBlockReceipts/test_1.json                          Skipped
+343. trace_rawTransaction/test_01.json                            Skipped
+406. txpool_content/test_1.json                                   Skipped
                                                                                     
-Test time-elapsed (secs):     99
-Number of executed tests:     376/389
-Number of NOT executed tests: 13
-Number of success tests:      375
-Number of failed tests:       1
-
+Test time-elapsed (secs):     97
+Number of executed tests:     390/410
+Number of NOT executed tests: 20
+Number of success tests:      388
+Number of failed tests:       2
 ```
 
 

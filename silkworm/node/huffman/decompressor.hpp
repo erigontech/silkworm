@@ -28,6 +28,7 @@
 #include <absl/functional/function_ref.h>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 
 namespace silkworm::huffman {
@@ -234,6 +235,8 @@ class Decompressor {
     ~Decompressor();
 
     [[nodiscard]] const std::filesystem::path& compressed_path() const { return compressed_path_; }
+
+    [[nodiscard]] const std::string compressed_filename() const { return compressed_path_.filename().string(); }
 
     [[nodiscard]] uint64_t words_count() const { return words_count_; }
 

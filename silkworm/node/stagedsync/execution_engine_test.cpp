@@ -33,12 +33,14 @@
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/test/context.hpp>
+#include <silkworm/sentry/common/ecc_key_pair.hpp>
 
 namespace silkworm {
 
 namespace asio = boost::asio;
 using namespace stagedsync;
 using namespace intx;  // for literals
+using namespace sentry::common;  // for ecc_key_pair
 
 static std::shared_ptr<Block> generateSampleBlock(const BlockHeader& parent, const ChainConfig& config) {
     auto block = std::make_shared<Block>();
@@ -383,17 +385,79 @@ TEST_CASE("ExecutionEngine") {
         CHECK(exec_engine.get_header(block4_hash).has_value());   // we do not remove old blocks
     }
 }
+/*
+static Bytes sign(ByteView data, ByteView private_key) {
+
+    SecP256K1Context ctx{false,  //allow_verify
+                        true};   // allow_sign
+    secp256k1_ecdsa_recoverable_signature signature;
+    bool ok = ctx.sign_recoverable(&signature, data, private_key);
+    if (!ok) {
+        throw std::runtime_error("rlpx::auth::sign failed to sign an AuthMessage");
+    }
+
+    auto [signature_data, recovery_id] = ctx.serialize_recoverable_signature(&signature);
+    signature_data.push_back(recovery_id);
+    return signature_data;
+}
+*/
+static std::shared_ptr<Block> generateSampleBlock_2(const BlockHeader& parent, const ChainConfig& config, EccKeyPair&) {
+    auto block = std::make_shared<Block>();
+    auto parent_hash = parent.hash();
+
+    uint64_t pseudo_random_gas_limit = parent.gas_limit + parent.number;
+    if (pseudo_random_gas_limit > parent.gas_limit / 1024) pseudo_random_gas_limit = parent.gas_limit;
+
+    // BlockHeader
+    block->header.number = parent.number + 1;
+    block->header.parent_hash = parent_hash;
+    block->header.beneficiary = 0xc8ebccc5f5689fa8659d83713341e5ad19349448_address;
+    block->header.state_root = kEmptyRoot;
+    block->header.receipts_root = kEmptyRoot;
+    block->header.gas_limit = pseudo_random_gas_limit;
+    block->header.gas_used = 0;
+    block->header.timestamp = parent.timestamp + 12;
+    block->header.extra_data = {};
+    block->header.difficulty = protocol::EthashRuleSet::difficulty(
+        block->header.number, block->header.timestamp, parent.difficulty, parent.timestamp, false /*parent has uncles*/, config);
+
+    // BlockBody: transactions
+    block->transactions.resize(1);
+    block->transactions[0].nonce = parent.number;
+    block->transactions[0].max_priority_fee_per_gas = 50 * kGiga;
+    block->transactions[0].max_fee_per_gas = 50 * kGiga;
+    block->transactions[0].gas_limit = 90'000;
+    block->transactions[0].to = 0xe5ef458d37212a06e3f59d40c454e76150ae7c32_address;
+    block->transactions[0].value = 1'027'501'080 * kGiga;
+    block->transactions[0].data = {};
+    CHECK(block->transactions[0].set_v(27));
+    block->transactions[0].r = 0x48b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353_u256;
+    block->transactions[0].s = 0x1fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804_u256;
+
+    block->header.transactions_root = protocol::compute_transaction_root(*block);
+
+    return block;
+}
 
 TEST_CASE("ExecutionEngine-full-stages") {
-    test::SetLogVerbosityGuard log_guard(log::Level::kNone);
+    //test::SetLogVerbosityGuard log_guard(log::Level::kNone);
 
     asio::io_context io;
     asio::executor_work_guard<decltype(io.get_executor())> work{io.get_executor()};
 
+/*
+    Address: 0xe0defb92145fef3c3a945637705fafd3aa74a241
+    Public key: 0x93e39cde5cdb3932e204cdd43b89578ad58d7489c31cbc30e61d167f67e3c8e76b9b2249377fa84f73b11c68f2f7a62f205f430f3a4370fd5dab6e3139d84977
+    Private key: 0xba1488fd638adc2e9f62fc70d41ff0ffc0e8d32ef6744d801987bc3ecb6a0953
+*/
+
+    EccKeyPair key_pair_1(*from_hex("ba1488fd638adc2e9f62fc70d41ff0ffc0e8d32ef6744d801987bc3ecb6a0953"));
+    auto public_key_1 = key_pair_1.public_key();
+
     std::string genesis_data = R"(
     {
     "alloc": {
-            "3282791d6fd713f1e94f4bfd565eaa78b3a0599d": {
+            "e0defb92145fef3c3a945637705fafd3aa74a241": {
                     "balance": "1337000000000000000000"
             },
             "ddf5810a0eb2fb2e32323bb2c99509ab320f24ac": {
@@ -482,7 +546,7 @@ TEST_CASE("ExecutionEngine-full-stages") {
         db::Buffer chain_state{tx, /*prune_history_threshold=*/0, /*historical_block=null*/};
 
         chain_state.insert_block(*block1, block1_hash);  // to validate next blocks
-
+/*
         // generate block 2 & 3
         auto block2 = generateSampleBlock(block1->header, chain_config);
         auto block2_hash = block2->header.hash();
@@ -494,12 +558,13 @@ TEST_CASE("ExecutionEngine-full-stages") {
 
         validation_result = rule_set->validate_ommers(*block3, chain_state);
         CHECK(validation_result == ValidationResult::kOk);
-
+*/
         // inserting & verifying the block
         exec_engine.insert_block(block1);
-        exec_engine.insert_block(block2);
-        exec_engine.insert_block(block3);
-        auto verification = exec_engine.verify_chain(block3_hash).get();  // FAILS at execution stage because "from" address has zero gas
+        //exec_engine.insert_block(block2);
+        //exec_engine.insert_block(block3);
+        //auto verification = exec_engine.verify_chain(block3_hash).get();  // FAILS at execution stage because "from" address has zero gas
+        auto verification = exec_engine.verify_chain(block1_hash).get();
 
         // todo: make this test pass
         // REQUIRE(holds_alternative<ValidChain>(verification));

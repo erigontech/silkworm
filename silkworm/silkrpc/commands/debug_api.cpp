@@ -402,31 +402,15 @@ awaitable<void> DebugRpcApi::handle_debug_trace_call_many(const nlohmann::json& 
 
     auto tx = co_await database_->begin();
 
-    // try {
-    //     ethdb::TransactionDatabase tx_database{*tx};
-    //     ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
-
-    //     const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, tx_database, block_number_or_hash);
-    //     const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash->block.header.number, tx_database);
-    //     const core::rawdb::DatabaseReader& db_reader =
-    //         is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
-    //     debug::DebugExecutor executor{db_reader, workers_, config};
-
-    //     stream.write_field("result");
-    //     stream.open_object();
-    //     co_await executor.execute(stream, block_with_hash->block, call);
-    //     stream.close_object();
-    // } catch (const std::exception& e) {
-    //     SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
-    //     std::ostringstream oss;
-    //     oss << "block " << block_number_or_hash.number() << "(" << block_number_or_hash.hash() << ") not found";
-    //     const Error error{-32000, oss.str()};
-    //     stream.write_field("error", error);
-    // } catch (...) {
-    //     SILK_ERROR << "unexpected exception processing request: " << request.dump();
-    //     const Error error{100, "unexpected exception"};
-    //     stream.write_field("error", error);
-    // }
+    try {
+        ethdb::TransactionDatabase tx_database{*tx};
+        debug::DebugExecutor executor{tx_database, *tx, *block_cache_, workers_, config};
+        co_await executor.trace_call_many(stream, bundles, simulation_context);
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        const Error error{100, "unexpected exception"};
+        stream.write_field("error", error);
+    }
 
     stream.close_object();
 

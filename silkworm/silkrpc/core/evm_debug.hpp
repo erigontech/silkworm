@@ -35,6 +35,7 @@
 #include <silkworm/silkrpc/common/block_cache.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
+#include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/stream.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/call.hpp>
@@ -114,6 +115,7 @@ class DebugExecutor {
     boost::asio::awaitable<void> trace_block(json::Stream& stream, const evmc::bytes32& block_hash);
     boost::asio::awaitable<void> trace_call(json::Stream& stream, const BlockNumberOrHash& bnoh, const Call& call);
     boost::asio::awaitable<void> trace_transaction(json::Stream& stream, const evmc::bytes32& tx_hash);
+    boost::asio::awaitable<void> trace_call_many(json::Stream& stream, const Bundles& bundles, const SimulationContext& context);
 
     boost::asio::awaitable<void> execute(json::Stream& stream, const silkworm::Block& block, const Call& call);
 
@@ -121,6 +123,11 @@ class DebugExecutor {
     boost::asio::awaitable<void> execute(json::Stream& stream, const silkworm::Block& block);
     boost::asio::awaitable<void> execute(json::Stream& stream, std::uint64_t block_number,
                                          const silkworm::Block& block, const Transaction& transaction, int32_t = -1);
+
+    boost::asio::awaitable<void> execute(json::Stream& stream,
+                                         const silkworm::BlockWithHash& block_with_hash,
+                                         const Bundles& bundles,
+                                         int32_t transaction_index);
 
     const core::rawdb::DatabaseReader& database_reader_;
     ethdb::Transaction& transaction_;

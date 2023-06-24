@@ -396,7 +396,7 @@ class EccKeyPairEx : public EccKeyPair {
     using EccKeyPair::public_key;
 
     Bytes sign(ByteView data) {
-        SecP256K1Context ctx{false, true}; // allow_verify=false, allow_sign=true
+        SecP256K1Context ctx{false, true};  // allow_verify=false, allow_sign=true
 
         secp256k1_ecdsa_signature signature;
         bool ok = secp256k1_ecdsa_sign(ctx.raw(), &signature, data.data(), private_key_.data(), nullptr, nullptr);
@@ -410,7 +410,7 @@ class EccKeyPairEx : public EccKeyPair {
     }
 
     Bytes sign_in_recoverable_way(ByteView data) {
-        SecP256K1Context ctx{false, true}; // allow_verify=false, allow_sign=true
+        SecP256K1Context ctx{false, true};  // allow_verify=false, allow_sign=true
 
         secp256k1_ecdsa_recoverable_signature signature;
         bool ok = ctx.sign_recoverable(&signature, data, private_key_);
@@ -424,7 +424,7 @@ class EccKeyPairEx : public EccKeyPair {
 
     using dest_type = const uint8_t (&)[32];
 
-    std::pair<intx::uint256,intx::uint256> get_r_and_s(ByteView signature) {
+    std::pair<intx::uint256, intx::uint256> get_r_and_s(ByteView signature) {
         uint8_t r[32];
         memcpy(r, signature.data(), 32);
 
@@ -470,7 +470,7 @@ static std::shared_ptr<Block> generate_sample_block(const BlockHeader& parent, c
     block->transactions[0].to = 0xe5ef458d37212a06e3f59d40c454e76150ae7c32_address;
     block->transactions[0].value = 1'027'501'080 * kGiga;
     block->transactions[0].data = {};
-    //CHECK(block->transactions[0].set_v(27));
+    // CHECK(block->transactions[0].set_v(27));
 
     Bytes rlp_tx;
     rlp::encode(rlp_tx, block->transactions[0]);

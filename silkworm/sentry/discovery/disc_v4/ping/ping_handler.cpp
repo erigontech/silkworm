@@ -14,27 +14,32 @@
    limitations under the License.
 */
 
-#pragma once
+#include "ping_handler.hpp"
 
-#include <chrono>
-#include <cstdint>
+#include <silkworm/sentry/discovery/disc_v4/disc_v4_common/message_expiration.hpp>
 
-#include <boost/asio/ip/udp.hpp>
-
-#include <silkworm/core/common/base.hpp>
+#include "pong_message.hpp"
 
 namespace silkworm::sentry::discovery::disc_v4::ping {
 
-struct PingMessage {
-    boost::asio::ip::udp::endpoint sender_endpoint;
-    uint16_t sender_port_rlpx{};
-    boost::asio::ip::udp::endpoint recipient_endpoint;
-    std::chrono::time_point<std::chrono::system_clock> expiration;
+using namespace disc_v4_common;
 
-    [[nodiscard]] Bytes rlp_encode() const;
-    [[nodiscard]] static PingMessage rlp_decode(ByteView data);
+Task<void> PingHandler::handle(
+    PingMessage message,
+    boost::asio::ip::udp::endpoint sender_endpoint,
+    Bytes ping_packet_hash,
+    MessageSender& sender) {
+    if (is_expired_message_expiration(message.expiration)) {
+        co_return;
+    }
 
-    static const uint8_t kId;
-};
+    auto& recipient = sender_endpoint;
+    PongMessage pong{
+        recipient,
+        ping_packet_hash,
+        make_message_expiration(),
+    };
+    co_await sender.send_pong(std::move(pong), recipient);
+}
 
 }  // namespace silkworm::sentry::discovery::disc_v4::ping

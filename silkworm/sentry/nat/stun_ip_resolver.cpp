@@ -29,7 +29,6 @@
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/timeout.hpp>
 #include <silkworm/sentry/common/random.hpp>
-#include <silkworm/sentry/common/socket_stream.hpp>
 
 #include "address_util.hpp"
 

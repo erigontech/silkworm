@@ -16,25 +16,29 @@
 
 #pragma once
 
-#include <chrono>
-#include <cstdint>
+#include <functional>
+#include <memory>
 
-#include <boost/asio/ip/udp.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <silkworm/core/common/base.hpp>
+#include <silkworm/sentry/common/ecc_key_pair.hpp>
 
-namespace silkworm::sentry::discovery::disc_v4::ping {
+namespace silkworm::sentry::discovery::disc_v4 {
 
-struct PingMessage {
-    boost::asio::ip::udp::endpoint sender_endpoint;
-    uint16_t sender_port_rlpx{};
-    boost::asio::ip::udp::endpoint recipient_endpoint;
-    std::chrono::time_point<std::chrono::system_clock> expiration;
+class DiscoveryImpl;
 
-    [[nodiscard]] Bytes rlp_encode() const;
-    [[nodiscard]] static PingMessage rlp_decode(ByteView data);
+class Discovery {
+  public:
+    Discovery(uint16_t server_port, std::function<common::EccKeyPair()> node_key);
+    ~Discovery();
 
-    static const uint8_t kId;
+    Discovery(const Discovery&) = delete;
+    Discovery& operator=(const Discovery&) = delete;
+
+    Task<void> run();
+
+  private:
+    std::unique_ptr<DiscoveryImpl> p_impl_;
 };
 
-}  // namespace silkworm::sentry::discovery::disc_v4::ping
+}  // namespace silkworm::sentry::discovery::disc_v4

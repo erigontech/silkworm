@@ -19,18 +19,48 @@
 #include <algorithm>
 #include <iterator>
 
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/sentry/common/random.hpp>
+
+#include "disc_v4/discovery.hpp"
 
 namespace silkworm::sentry::discovery {
 
 using namespace boost::asio;
 
-Discovery::Discovery(std::vector<common::EnodeUrl> peer_urls)
-    : peer_urls_(std::move(peer_urls)) {
+class DiscoveryImpl {
+  public:
+    explicit DiscoveryImpl(
+        std::vector<common::EnodeUrl> peer_urls,
+        std::function<common::EccKeyPair()> node_key,
+        uint16_t disc_v4_port);
+
+    DiscoveryImpl(const DiscoveryImpl&) = delete;
+    DiscoveryImpl& operator=(const DiscoveryImpl&) = delete;
+
+    Task<void> run();
+
+    Task<std::vector<common::EnodeUrl>> request_peer_urls(
+        size_t max_count,
+        std::vector<common::EnodeUrl> exclude_urls);
+
+    bool is_static_peer_url(const common::EnodeUrl& peer_url);
+
+  private:
+    const std::vector<common::EnodeUrl> peer_urls_;
+    disc_v4::Discovery disc_v4_discovery_;
+};
+
+DiscoveryImpl::DiscoveryImpl(
+    std::vector<common::EnodeUrl> peer_urls,
+    std::function<common::EccKeyPair()> node_key,
+    uint16_t disc_v4_port)
+    : peer_urls_(std::move(peer_urls)),
+      disc_v4_discovery_(disc_v4_port, node_key) {
 }
 
-Task<void> Discovery::start() {
-    co_return;
+Task<void> DiscoveryImpl::run() {
+    co_await disc_v4_discovery_.run();
 }
 
 template <typename T>
@@ -47,17 +77,41 @@ static std::vector<T> exclude_vector_items(
     return remaining_items;
 }
 
-Task<std::vector<common::EnodeUrl>> Discovery::request_peer_urls(
+Task<std::vector<common::EnodeUrl>> DiscoveryImpl::request_peer_urls(
     size_t max_count,
     std::vector<common::EnodeUrl> exclude_urls) {
     auto peer_urls = exclude_vector_items(peer_urls_, std::move(exclude_urls));
     co_return common::random_vector_items(peer_urls, max_count);
 }
 
-bool Discovery::is_static_peer_url(const common::EnodeUrl& peer_url) {
+bool DiscoveryImpl::is_static_peer_url(const common::EnodeUrl& peer_url) {
     return std::any_of(peer_urls_.cbegin(), peer_urls_.cend(), [&peer_url](const common::EnodeUrl& it) {
         return it == peer_url;
     });
+}
+
+Discovery::Discovery(
+    std::vector<common::EnodeUrl> peer_urls,
+    std::function<common::EccKeyPair()> node_key,
+    uint16_t disc_v4_port)
+    : p_impl_(std::make_unique<DiscoveryImpl>(std::move(peer_urls), std::move(node_key), disc_v4_port)) {}
+
+Discovery::~Discovery() {
+    log::Trace("sentry") << "silkworm::sentry::discovery::Discovery::~Discovery";
+}
+
+Task<void> Discovery::run() {
+    return p_impl_->run();
+}
+
+Task<std::vector<common::EnodeUrl>> Discovery::request_peer_urls(
+    size_t max_count,
+    std::vector<common::EnodeUrl> exclude_urls) {
+    return p_impl_->request_peer_urls(max_count, std::move(exclude_urls));
+}
+
+bool Discovery::is_static_peer_url(const common::EnodeUrl& peer_url) {
+    return p_impl_->is_static_peer_url(peer_url);
 }
 
 }  // namespace silkworm::sentry::discovery

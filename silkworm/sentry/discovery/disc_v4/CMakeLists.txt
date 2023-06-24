@@ -28,8 +28,8 @@ target_include_directories(${TARGET} PUBLIC "${SILKWORM_MAIN_DIR}")
 
 target_link_libraries(
   ${TARGET}
-  PUBLIC silkworm_infra
-  PRIVATE Boost::thread stbrumme_keccak silkworm_core silkworm_sentry_common
+  PUBLIC silkworm_infra silkworm_sentry_common
+  PRIVATE Boost::thread stbrumme_keccak silkworm_core
 )
 
 # unit tests

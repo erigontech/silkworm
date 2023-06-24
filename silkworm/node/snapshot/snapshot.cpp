@@ -63,6 +63,7 @@ bool Snapshot::for_each_item(const Snapshot::WordItemFunc& fn) {
 }
 
 std::optional<Snapshot::WordItem> Snapshot::next_item(uint64_t offset) const {
+    SILK_TRACE << "Snapshot::next_item offset: " << offset;
     auto data_iterator = decoder_.make_iterator();
     data_iterator.reset(offset);
 
@@ -71,7 +72,13 @@ std::optional<Snapshot::WordItem> Snapshot::next_item(uint64_t offset) const {
         return item;
     }
     item = WordItem{};
-    item->offset = data_iterator.next(item->value);
+    try {
+        item->offset = data_iterator.next(item->value);
+    } catch (const std::runtime_error& re) {
+        SILK_WARN << "Snapshot::next_item invalid offset: " << offset << " what: " << re.what();
+        return {};
+    }
+
     return item;
 }
 
@@ -121,13 +128,15 @@ std::optional<BlockHeader> HeaderSnapshot::header_by_hash(const Hash& block_hash
 
     // First, get the header ordinal position in snapshot by using block hash as MPHF index
     const auto block_header_position = idx_header_hash_->lookup(block_hash);
+    SILK_TRACE << "HeaderSnapshot::header_by_hash block_hash: " << block_hash.to_hex() << " block_header_position: " << block_header_position;
     // Then, get the header offset in snapshot by using ordinal lookup
     const auto block_header_offset = idx_header_hash_->ordinal_lookup(block_header_position);
+    SILK_TRACE << "HeaderSnapshot::header_by_hash block_header_offset: " << block_header_offset;
     // Finally, read the next header at specified offset
     auto header = next_header(block_header_offset);
     // We *must* ensure that the retrieved header hash matches because there is no way to know if key exists in MPHF
     if (header and header->hash() != block_hash) {
-        return {};
+        header.reset();
     }
     return header;
 }

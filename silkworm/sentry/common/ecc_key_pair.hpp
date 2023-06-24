@@ -35,7 +35,7 @@ class EccKeyPair {
 
     [[nodiscard]] std::string private_key_hex() const;
 
-  private:
+  protected:
     Bytes private_key_;
 };
 

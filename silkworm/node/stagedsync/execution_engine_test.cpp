@@ -22,10 +22,12 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/cast.hpp>
+#include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/protocol/ethash_rule_set.hpp>
 #include <silkworm/core/protocol/validation.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/common/environment.hpp>
+#include <silkworm/infra/common/secp256k1_context.hpp>
 #include <silkworm/infra/test/log.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/db/access_layer.hpp>
@@ -39,7 +41,7 @@ namespace silkworm {
 
 namespace asio = boost::asio;
 using namespace stagedsync;
-using namespace intx;  // for literals
+using namespace intx;            // for literals
 using namespace sentry::common;  // for ecc_key_pair
 
 static std::shared_ptr<Block> generateSampleBlock(const BlockHeader& parent, const ChainConfig& config) {
@@ -385,23 +387,61 @@ TEST_CASE("ExecutionEngine") {
         CHECK(exec_engine.get_header(block4_hash).has_value());   // we do not remove old blocks
     }
 }
-/*
-static Bytes sign(ByteView data, ByteView private_key) {
 
-    SecP256K1Context ctx{false,  //allow_verify
-                        true};   // allow_sign
-    secp256k1_ecdsa_recoverable_signature signature;
-    bool ok = ctx.sign_recoverable(&signature, data, private_key);
-    if (!ok) {
-        throw std::runtime_error("rlpx::auth::sign failed to sign an AuthMessage");
+class EccKeyPairEx : public EccKeyPair {
+  public:
+    using EccKeyPair::EccKeyPair;
+    using EccKeyPair::private_key;
+    using EccKeyPair::private_key_hex;
+    using EccKeyPair::public_key;
+
+    Bytes sign(ByteView data) {
+        SecP256K1Context ctx{false, true}; // allow_verify=false, allow_sign=true
+
+        secp256k1_ecdsa_signature signature;
+        bool ok = secp256k1_ecdsa_sign(ctx.raw(), &signature, data.data(), private_key_.data(), nullptr, nullptr);
+        if (!ok) throw std::runtime_error("EccKeyPairEx::sign failed");
+
+        Bytes serialized_signature(64, 0);
+        ok = secp256k1_ecdsa_signature_serialize_compact(ctx.raw(), serialized_signature.data(), &signature);
+        if (!ok) throw std::runtime_error("EccKeyPairEx::sign failed");
+
+        return serialized_signature;
     }
 
-    auto [signature_data, recovery_id] = ctx.serialize_recoverable_signature(&signature);
-    signature_data.push_back(recovery_id);
-    return signature_data;
-}
-*/
-static std::shared_ptr<Block> generateSampleBlock_2(const BlockHeader& parent, const ChainConfig& config, EccKeyPair&) {
+    Bytes sign_in_recoverable_way(ByteView data) {
+        SecP256K1Context ctx{false, true}; // allow_verify=false, allow_sign=true
+
+        secp256k1_ecdsa_recoverable_signature signature;
+        bool ok = ctx.sign_recoverable(&signature, data, private_key_);
+        if (!ok) throw std::runtime_error("EccKeyPairEx::sign_in_recoverable_way failed");
+
+        auto [signature_data, recovery_id] = ctx.serialize_recoverable_signature(&signature);
+        signature_data.push_back(recovery_id);
+
+        return signature_data;
+    }
+
+    using dest_type = const uint8_t (&)[32];
+
+    std::pair<intx::uint256,intx::uint256> get_r_and_s(ByteView signature) {
+        uint8_t r[32];
+        memcpy(r, signature.data(), 32);
+
+        uint8_t s[32];
+        memcpy(r, signature.data() + 32, 32);
+
+        // Load the first 32 bytes (the r value) into a intx::uint256
+        intx::uint256 r_value = intx::be::load<intx::uint256>(r);
+
+        // Load the second 32 bytes (the s value) into a intx::uint256
+        intx::uint256 s_value = intx::be::load<intx::uint256>(s);
+
+        return std::make_pair(r_value, s_value);
+    }
+};
+
+static std::shared_ptr<Block> generate_sample_block(const BlockHeader& parent, const ChainConfig& config, EccKeyPairEx& key_pair) {
     auto block = std::make_shared<Block>();
     auto parent_hash = parent.hash();
 
@@ -430,28 +470,32 @@ static std::shared_ptr<Block> generateSampleBlock_2(const BlockHeader& parent, c
     block->transactions[0].to = 0xe5ef458d37212a06e3f59d40c454e76150ae7c32_address;
     block->transactions[0].value = 1'027'501'080 * kGiga;
     block->transactions[0].data = {};
-    CHECK(block->transactions[0].set_v(27));
-    block->transactions[0].r = 0x48b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353_u256;
-    block->transactions[0].s = 0x1fffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804_u256;
+    //CHECK(block->transactions[0].set_v(27));
 
+    Bytes rlp_tx;
+    rlp::encode(rlp_tx, block->transactions[0]);
+    auto signature = key_pair.sign(rlp_tx);
+    std::tie(block->transactions[0].r, block->transactions[0].s) = key_pair.get_r_and_s(signature);
+
+    // root hash
     block->header.transactions_root = protocol::compute_transaction_root(*block);
 
     return block;
 }
 
 TEST_CASE("ExecutionEngine-full-stages") {
-    //test::SetLogVerbosityGuard log_guard(log::Level::kNone);
+    // test::SetLogVerbosityGuard log_guard(log::Level::kNone);
 
     asio::io_context io;
     asio::executor_work_guard<decltype(io.get_executor())> work{io.get_executor()};
 
-/*
-    Address: 0xe0defb92145fef3c3a945637705fafd3aa74a241
-    Public key: 0x93e39cde5cdb3932e204cdd43b89578ad58d7489c31cbc30e61d167f67e3c8e76b9b2249377fa84f73b11c68f2f7a62f205f430f3a4370fd5dab6e3139d84977
-    Private key: 0xba1488fd638adc2e9f62fc70d41ff0ffc0e8d32ef6744d801987bc3ecb6a0953
-*/
+    /*
+        Address: 0xe0defb92145fef3c3a945637705fafd3aa74a241
+        Public key: 0x93e39cde5cdb3932e204cdd43b89578ad58d7489c31cbc30e61d167f67e3c8e76b9b2249377fa84f73b11c68f2f7a62f205f430f3a4370fd5dab6e3139d84977
+        Private key: 0xba1488fd638adc2e9f62fc70d41ff0ffc0e8d32ef6744d801987bc3ecb6a0953
+    */
 
-    EccKeyPair key_pair_1(*from_hex("ba1488fd638adc2e9f62fc70d41ff0ffc0e8d32ef6744d801987bc3ecb6a0953"));
+    EccKeyPairEx key_pair_1(*from_hex("ba1488fd638adc2e9f62fc70d41ff0ffc0e8d32ef6744d801987bc3ecb6a0953"));
     auto public_key_1 = key_pair_1.public_key();
 
     std::string genesis_data = R"(
@@ -536,7 +580,7 @@ TEST_CASE("ExecutionEngine-full-stages") {
         chain_config.protocol_rule_set = protocol::RuleSetType::kNoProof;  // skip seal validation
 
         // generate block 1
-        auto block1 = generateSampleBlock(*header0, chain_config);
+        auto block1 = generate_sample_block(*header0, chain_config, key_pair_1);
         auto block1_hash = block1->header.hash();
 
         // block generation check
@@ -546,24 +590,27 @@ TEST_CASE("ExecutionEngine-full-stages") {
         db::Buffer chain_state{tx, /*prune_history_threshold=*/0, /*historical_block=null*/};
 
         chain_state.insert_block(*block1, block1_hash);  // to validate next blocks
-/*
+
+        // delete this row
+        generateSampleBlockWithOmmers(block1->header, block1->header, chain_config);  // dummy, suppress warning of unused generateSampleBlockWithOmmers
+
         // generate block 2 & 3
-        auto block2 = generateSampleBlock(block1->header, chain_config);
-        auto block2_hash = block2->header.hash();
+        // auto block2 = generateSampleBlock(block1->header, chain_config);
+        // auto block2_hash = block2->header.hash();
+        //
+        // chain_state.insert_block(*block2, block2_hash);  // to validate next blocks
+        //
+        // auto block3 = generateSampleBlockWithOmmers(block2->header, block1->header, chain_config);
+        // auto block3_hash = block3->header.hash();
+        //
+        // validation_result = rule_set->validate_ommers(*block3, chain_state);
+        // CHECK(validation_result == ValidationResult::kOk);
 
-        chain_state.insert_block(*block2, block2_hash);  // to validate next blocks
-
-        auto block3 = generateSampleBlockWithOmmers(block2->header, block1->header, chain_config);
-        auto block3_hash = block3->header.hash();
-
-        validation_result = rule_set->validate_ommers(*block3, chain_state);
-        CHECK(validation_result == ValidationResult::kOk);
-*/
         // inserting & verifying the block
         exec_engine.insert_block(block1);
-        //exec_engine.insert_block(block2);
-        //exec_engine.insert_block(block3);
-        //auto verification = exec_engine.verify_chain(block3_hash).get();  // FAILS at execution stage because "from" address has zero gas
+        // exec_engine.insert_block(block2);
+        // exec_engine.insert_block(block3);
+        // auto verification = exec_engine.verify_chain(block3_hash).get();  // FAILS at execution stage because "from" address has zero gas
         auto verification = exec_engine.verify_chain(block1_hash).get();
 
         // todo: make this test pass

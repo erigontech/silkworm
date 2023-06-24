@@ -56,6 +56,7 @@
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/recsplit/encoding/sequence.hpp>
 #include <silkworm/node/recsplit/support/common.hpp>
@@ -103,7 +104,7 @@ class EliasFanoList32 {
   public:
     //! Create an empty new 32-bit EF list prepared for specified sequence length and max offset
     EliasFanoList32(uint64_t sequence_length, uint64_t max_offset) {
-        if (sequence_length == 0) throw std::logic_error{"sequence length is zero"};
+        ensure(sequence_length > 0, "sequence length is zero");
         count_ = sequence_length - 1;
         max_offset_ = max_offset;
         u_ = max_offset + 1;

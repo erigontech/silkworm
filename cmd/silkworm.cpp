@@ -202,11 +202,12 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
     if (cli["--prune.c.before"]->count()) beforeCallTraces.emplace(cli["--prune.c.before"]->as<BlockNum>());
 
     node_settings.prune_mode =
-        sw_db::parse_prune_mode(prune_mode,  //
+        sw_db::parse_prune_mode(prune_mode,
                                 olderHistory, olderReceipts, olderSenders, olderTxIndex, olderCallTraces, beforeHistory,
                                 beforeReceipts, beforeSenders, beforeTxIndex, beforeCallTraces);
 
     auto& snapshot_settings = node_settings.snapshot_settings;
+    snapshot_settings.repository_dir = node_settings.data_directory->snapshots().path();
     snapshot_settings.bittorrent_settings.repository_path = snapshot_settings.repository_dir;
 }
 

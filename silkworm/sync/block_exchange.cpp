@@ -42,7 +42,7 @@ BlockExchange::BlockExchange(SentryClient& sentry, const db::ROAccess& dba, cons
 }
 
 BlockExchange::~BlockExchange() {
-    stop();
+    BlockExchange::stop();
 }
 
 const ChainConfig& BlockExchange::chain_config() const { return chain_config_; }
@@ -284,11 +284,11 @@ void BlockExchange::stop_downloading() {
     downloading_active_ = false;
 }
 
-void BlockExchange::new_target_block(const Block& block) {
+void BlockExchange::new_target_block(std::shared_ptr<Block> block) {
     auto message = std::make_shared<InternalMessage<void>>(
-        [=](HeaderChain& hc, BodySequence& bc) {
-            hc.add_header(block.header, std::chrono::system_clock::now());
-            bc.accept_new_block(block, no_peer);
+        [block = std::move(block)](HeaderChain& hc, BodySequence& bc) {
+            hc.add_header(block->header, std::chrono::system_clock::now());
+            bc.accept_new_block(*block, no_peer);
         });
 
     accept(message);

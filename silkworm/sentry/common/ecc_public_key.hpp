@@ -34,6 +34,8 @@ class EccPublicKey {
     [[nodiscard]] Bytes serialized() const;
     [[nodiscard]] std::string hex() const;
 
+    [[nodiscard]] Bytes address() const;
+
     [[nodiscard]] static EccPublicKey deserialize_std(ByteView serialized_data);
     [[nodiscard]] static EccPublicKey deserialize(ByteView serialized_data);
     [[nodiscard]] static EccPublicKey deserialize_hex(std::string_view hex);

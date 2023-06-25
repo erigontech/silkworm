@@ -424,7 +424,13 @@ class EccKeyPairEx : public EccKeyPair {
 
     using dest_type = const uint8_t (&)[32];
 
-    std::pair<intx::uint256, intx::uint256> get_r_and_s(ByteView signature) {
+    void sign_in_recoverable_way(Transaction& tx) {
+        Bytes rlp_tx;
+        rlp::encode(rlp_tx, tx);
+        const auto tx_hash{keccak256(rlp_tx)};
+        ByteView hash{tx_hash.bytes};
+        auto signature = sign_in_recoverable_way(hash);
+
         uint8_t r[32];
         memcpy(r, signature.data(), 32);
 
@@ -432,12 +438,12 @@ class EccKeyPairEx : public EccKeyPair {
         memcpy(r, signature.data() + 32, 32);
 
         // Load the first 32 bytes (the r value) into a intx::uint256
-        intx::uint256 r_value = intx::be::load<intx::uint256>(r);
+        tx.r = intx::be::load<intx::uint256>(r);
 
         // Load the second 32 bytes (the s value) into a intx::uint256
-        intx::uint256 s_value = intx::be::load<intx::uint256>(s);
+        tx.s = intx::be::load<intx::uint256>(s);
 
-        return std::make_pair(r_value, s_value);
+        tx.odd_y_parity = signature[64] % 2;
     }
 };
 
@@ -472,15 +478,27 @@ static std::shared_ptr<Block> generate_sample_block(const BlockHeader& parent, c
     block->transactions[0].data = {};
     // CHECK(block->transactions[0].set_v(27));
 
-    Bytes rlp_tx;
-    rlp::encode(rlp_tx, block->transactions[0]);
-    auto signature = key_pair.sign(rlp_tx);
-    std::tie(block->transactions[0].r, block->transactions[0].s) = key_pair.get_r_and_s(signature);
+    key_pair.sign_in_recoverable_way(block->transactions[0]);
 
     // root hash
     block->header.transactions_root = protocol::compute_transaction_root(*block);
 
     return block;
+}
+
+// Method to get the address of the public key
+std::string getAddress(EccPublicKey& public_key)  {
+    // We hash the data using Keccak-256
+    auto hash = ethash::keccak256(public_key.data().data(), public_key.data().size());
+
+    // The Ethereum address is the last 20 bytes (40 characters in hex format) of the hashed public key
+    // So we convert the relevant part of the hash to a hex string
+    std::stringstream address;
+    for (int i = 12; i < 32; ++i) {  // Ethereum addresses are 20 bytes, so skip the first 12 bytes of the 32-byte hash
+        address << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(hash.bytes[i]);
+    }
+
+    return address.str();
 }
 
 TEST_CASE("ExecutionEngine-full-stages") {
@@ -497,11 +515,14 @@ TEST_CASE("ExecutionEngine-full-stages") {
 
     EccKeyPairEx key_pair_1(*from_hex("ba1488fd638adc2e9f62fc70d41ff0ffc0e8d32ef6744d801987bc3ecb6a0953"));
     auto public_key_1 = key_pair_1.public_key();
+    auto address_1 = public_key_1.address();
+    log::Info() << "address " << to_hex(address_1) << "\n";
+    log::Info() << "address " << getAddress(public_key_1) << "\n";  // 83307331c0063dbba7e2fa8232ce54f0afbbda37
 
     std::string genesis_data = R"(
     {
     "alloc": {
-            "e0defb92145fef3c3a945637705fafd3aa74a241": {
+            "83307331c0063dbba7e2fa8232ce54f0afbbda37": {
                     "balance": "1337000000000000000000"
             },
             "ddf5810a0eb2fb2e32323bb2c99509ab320f24ac": {

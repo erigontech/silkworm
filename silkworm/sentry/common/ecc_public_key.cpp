@@ -68,4 +68,11 @@ EccPublicKey EccPublicKey::deserialize_hex(std::string_view hex) {
     return deserialize(data_opt.value());
 }
 
+Bytes EccPublicKey::address() const {
+    Bytes address(20, uint8_t(0));
+    const union ethash_hash256 key_hash = ethash_keccak256(data_.data(), 64);
+    memcpy(address.data(), &key_hash.bytes[12], 20);
+    return address;
+}
+
 }  // namespace silkworm::sentry::common

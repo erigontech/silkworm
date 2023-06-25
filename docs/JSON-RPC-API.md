@@ -97,7 +97,7 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | debug_traceBlockByNumber                   | Yes          | uses JSON streaming                        |
 | debug_traceTransaction                     | Yes          | uses JSON streaming                        |
 | debug_traceCall                            | Yes          | uses JSON streaming                        |
-| debug_traceCallMany                        | Yes          |                                            |
+| debug_traceCallMany                        | Yes          | uses JSON streaming                        |
 |                                            |              |                                            |
 | trace_call                                 | Yes          |                                            |
 | trace_callMany                             | Yes          |                                            |

@@ -260,6 +260,9 @@ class DataModel {
     //! Read block header with the specified hash
     [[nodiscard]] std::optional<BlockHeader> read_header(const Hash& block_hash) const;
 
+    //! Read block header with the specified block number
+    [[nodiscard]] std::optional<BlockHeader> read_header(BlockNum block_number) const;
+
     //! Read block number from hash
     [[nodiscard]] std::optional<BlockNum> read_block_number(const Hash& block_hash) const;
 

@@ -325,19 +325,13 @@ auto MainChain::get_body(Hash header_hash) const -> std::optional<BlockBody> {
 }
 
 auto MainChain::get_block_progress() const -> BlockNum {
-    BlockNum block_progress = 0;
-
-    read_headers_in_reverse_order(tx_, 1, [&block_progress](BlockHeader&& header) {
-        block_progress = header.number;
-    });
-
-    return block_progress;
+    return data_model_.highest_block_number();
 }
 
 auto MainChain::get_last_headers(BlockNum limit) const -> std::vector<BlockHeader> {
     std::vector<BlockHeader> headers;
 
-    read_headers_in_reverse_order(tx_, limit, [&headers](BlockHeader&& header) {
+    for_last_n_headers(data_model_, limit, [&headers](BlockHeader&& header) {
         headers.emplace_back(std::move(header));
     });
 

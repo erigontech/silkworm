@@ -914,7 +914,7 @@ BlockNum DataModel::highest_block_number() const {
     // Assume last block is likely on db: first lookup there
     const auto header_cursor{txn_.ro_cursor(db::table::kHeaders)};
     const auto data{header_cursor->to_last(/*.throw_not_found*/ false)};
-    if (data.done) {
+    if (data.done && data.key.size() >= sizeof(uint64_t)) {
         return endian::load_big_u64(static_cast<const unsigned char*>(data.key.data()));
     }
 
@@ -923,21 +923,28 @@ BlockNum DataModel::highest_block_number() const {
 }
 
 std::optional<BlockHeader> DataModel::read_header(BlockNum block_number, HashAsArray block_hash) const {
-    // Assume recent blocks are more probable: first lookup the block header in the db
-    auto block_header{db::read_header(txn_, block_number, block_hash)};
-    if (block_header) return block_header;
-
-    // Then search for it into the snapshots (if any)
-    return read_header_from_snapshot(block_number);
+    return read_header(block_number, Hash(block_hash));
 }
 
 std::optional<BlockHeader> DataModel::read_header(BlockNum block_number, const Hash& block_hash) const {
-    // Assume recent blocks are more probable: first lookup the block header in the db
-    auto block_header{db::read_header(txn_, block_number, block_hash)};
-    if (block_header) return block_header;
+    if (repository_ && block_number <= repository_->max_block_available()) {
+        auto header = read_header_from_snapshot(block_number);  // todo: check if it is more efficient reading using hash
+        if (header && header->hash() == block_hash) {           // reading using hash avoid this heavy hash calculation
+            return header;
+        }
+        return {};
+    } else {
+        return db::read_header(txn_, block_number, block_hash);
+    }
+}
 
-    // Then search for it in the snapshots (if any)
-    return read_header_from_snapshot(block_number);
+std::optional<BlockHeader> DataModel::read_header(BlockNum block_number) const {
+    if (repository_ && block_number <= repository_->max_block_available()) {
+        return read_header_from_snapshot(block_number);
+    } else {
+        auto hash = db::read_canonical_hash(txn_, block_number);
+        return db::read_header(txn_, block_number, *hash);
+    }
 }
 
 std::optional<BlockHeader> DataModel::read_header(const Hash& block_hash) const {

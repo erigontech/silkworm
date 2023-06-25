@@ -163,10 +163,10 @@ class HelloWorldSnapshotFile : public TemporarySnapshotFile {
     inline static const test::SnapshotHeader kHeader{
         .words_count = 1,  // number of non-empty words
         .empty_words_count = 0,
-        .patterns = std::vector<test::SnapshotPattern>{},
+        .patterns = std::vector<test::SnapshotPattern>{},  // zero patterns
         .positions = std::vector<test::SnapshotPosition>{
-            {1, 0},  // 1: position 0: zero encoded data (no pattern)
-            {1, 13}  // 1: position 13: unencoded data length (including position encoding)
+            {1, 0},  // 1: depth 0: value
+            {1, 13}  // 1: depth 13: unencoded data length (including position encoding)
         }};
     inline static const test::SnapshotBody kBody{
         *from_hex("0168656C6C6F2C20776F726C64")  // 0x01: position 0x68656C6C6F2C20776F726C64: "hello, world"

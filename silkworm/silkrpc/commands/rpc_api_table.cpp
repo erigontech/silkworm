@@ -103,6 +103,7 @@ void RpcApiTable::add_debug_handlers() {
     method_handlers_[http::method::k_debug_storageRangeAt] = &commands::RpcApi::handle_debug_storage_range_at;
 
     stream_handlers_[http::method::k_debug_traceCall] = &commands::RpcApi::handle_debug_trace_call;
+    stream_handlers_[http::method::k_debug_traceCallMany] = &commands::RpcApi::handle_debug_trace_call_many;
     stream_handlers_[http::method::k_debug_traceTransaction] = &commands::RpcApi::handle_debug_trace_transaction;
     stream_handlers_[http::method::k_debug_traceBlockByNumber] = &commands::RpcApi::handle_debug_trace_block_by_number;
     stream_handlers_[http::method::k_debug_traceBlockByHash] = &commands::RpcApi::handle_debug_trace_block_by_hash;

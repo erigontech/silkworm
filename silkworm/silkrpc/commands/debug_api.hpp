@@ -62,6 +62,7 @@ class DebugRpcApi {
 
     awaitable<void> handle_debug_trace_transaction(const nlohmann::json& request, json::Stream& stream);
     awaitable<void> handle_debug_trace_call(const nlohmann::json& request, json::Stream& stream);
+    awaitable<void> handle_debug_trace_call_many(const nlohmann::json& request, json::Stream& stream);
     awaitable<void> handle_debug_trace_block_by_number(const nlohmann::json& request, json::Stream& stream);
     awaitable<void> handle_debug_trace_block_by_hash(const nlohmann::json& request, json::Stream& stream);
 

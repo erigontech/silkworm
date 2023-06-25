@@ -32,7 +32,34 @@ namespace silkworm::succinct {
 //! Make the MPHF predictable just for testing
 constexpr int kTestSalt{1};
 
-TEST_CASE("RecSplit8", "[silkworm][recsplit]") {
+TEST_CASE("RecSplit8: key_count=0", "[silkworm][node][recsplit]") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test::TemporaryFile index_file;
+    RecSplitSettings settings{
+        .keys_count = 0,
+        .bucket_size = 10,
+        .index_path = index_file.path(),
+        .base_data_id = 0};
+    RecSplit8 rs{settings, /*.salt=*/kTestSalt};
+    CHECK_THROWS_AS(rs.build(), std::logic_error);
+    CHECK_THROWS_AS(rs("first_key"), std::logic_error);
+}
+
+TEST_CASE("RecSplit8: key_count=1", "[silkworm][node][recsplit]") {
+    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test::TemporaryFile index_file;
+    RecSplitSettings settings{
+        .keys_count = 1,
+        .bucket_size = 10,
+        .index_path = index_file.path(),
+        .base_data_id = 0};
+    RecSplit8 rs{settings, /*.salt=*/kTestSalt};
+    CHECK_NOTHROW(rs.add_key("first_key", 0));
+    CHECK_NOTHROW(rs.build());
+    CHECK_NOTHROW(rs("first_key"));
+}
+
+TEST_CASE("RecSplit8: key_count=2", "[silkworm][node][recsplit]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
     RecSplitSettings settings{
@@ -45,8 +72,11 @@ TEST_CASE("RecSplit8", "[silkworm][recsplit]") {
     SECTION("keys") {
         CHECK_NOTHROW(rs.add_key("first_key", 0));
         CHECK_THROWS_AS(rs.build(), std::logic_error);
+        CHECK_THROWS_AS(rs("first_key"), std::logic_error);
         CHECK_NOTHROW(rs.add_key("second_key", 0));
         CHECK(rs.build() == false /*collision_detected*/);
+        CHECK_NOTHROW(rs("first_key"));
+        CHECK_NOTHROW(rs("second_key"));
     }
 
     SECTION("duplicated keys") {
@@ -88,7 +118,7 @@ const std::size_t RecSplit4::kUpperAggregationBound = RecSplit4::SplitStrategy::
 template <>
 const std::array<uint32_t, kMaxBucketSize> RecSplit4::memo = RecSplit4::fill_golomb_rice();
 
-TEST_CASE("RecSplit4: keys=1000 buckets=128", "[silkworm][recsplit]") {
+TEST_CASE("RecSplit4: keys=1000 buckets=128", "[silkworm][node][recsplit]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
 
@@ -126,7 +156,7 @@ TEST_CASE("RecSplit4: keys=1000 buckets=128", "[silkworm][recsplit]") {
     }
 }
 
-TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][recsplit]") {
+TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][node][recsplit]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
 
@@ -173,7 +203,7 @@ TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][recsplit]") {
     }
 }
 
-TEST_CASE("RecSplit8: index lookup", "[silkworm][recsplit][.]") {
+TEST_CASE("RecSplit8: index lookup", "[silkworm][node][recsplit][.]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
     RecSplitSettings settings{
@@ -196,7 +226,7 @@ TEST_CASE("RecSplit8: index lookup", "[silkworm][recsplit][.]") {
     }
 }
 
-TEST_CASE("RecSplit8: double index lookup", "[silkworm][recsplit][.]") {
+TEST_CASE("RecSplit8: double index lookup", "[silkworm][node][recsplit][.]") {
     test::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
     RecSplitSettings settings{

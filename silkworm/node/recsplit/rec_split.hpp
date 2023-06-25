@@ -68,6 +68,7 @@
 
 #include <silkworm/core/common/assert.hpp>
 #include <silkworm/core/common/endian.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/memory_mapped_file.hpp>
 #include <silkworm/node/etl/collector.hpp>
@@ -543,7 +544,12 @@ class RecSplit {
      * @return the associated value.
      */
     std::size_t operator()(const hash128_t& hash) const {
-        if (!built_) throw std::logic_error{"perfect hash function not built yet"};
+        ensure(built_, "RecSplit: perfect hash function not built yet");
+        ensure(key_count_ > 0, "RecSplit: invalid lookup with zero keys, use empty() to guard");
+
+        if (key_count_ == 1) {
+            return 0;
+        }
 
         const std::size_t bucket = hash128_to_bucket(hash);
         uint64_t cum_keys, cum_keys_next, bit_pos;
@@ -610,6 +616,8 @@ class RecSplit {
         const auto position = 1 + 8 + bytes_per_record_ * (record + 1);
 
         const auto address = encoded_file_->address();
+        ensure(position + sizeof(uint64_t) < encoded_file_->length(),
+               "position: " + std::to_string(position) + " plus 8 exceeds file length");
         return endian::load_big_u64(address + position) & record_mask_;
     }
 

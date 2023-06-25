@@ -306,6 +306,10 @@ TEST_CASE("MainChain") {
         main_chain.insert_block(block1);
         main_chain.insert_block(block2);
         main_chain.insert_block(block3);
+
+        auto block_progress = main_chain.get_block_progress();
+        REQUIRE(block_progress == block3.header.number);
+
         auto verification = main_chain.verify_chain(block3_hash);
 
         REQUIRE(holds_alternative<ValidChain>(verification));

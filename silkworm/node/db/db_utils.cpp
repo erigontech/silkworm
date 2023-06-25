@@ -22,26 +22,18 @@
 
 namespace silkworm {
 
-// Read all headers up to limit, in reverse order from last, processing each via a user defined callback
-// alternative implementation: use cursor_for_count(cursor, WalkFuncRef, size_t max_count, CursorMoveDirection)
-void read_headers_in_reverse_order(db::ROTxn& txn, size_t limit, std::function<void(BlockHeader&&)> callback) {
-    db::PooledCursor header_table(txn, db::table::kHeaders);
+// Read all headers up to limit in reverse order from last, processing each one via a user defined callback
+// This implementation uses DataModel and is snapshot aware
+void for_last_n_headers(const db::DataModel& data_model, size_t n, std::function<void(BlockHeader&&)> callback) {
+    auto highest_block_num = data_model.highest_block_number();
 
-    bool throw_notfound = false;
-    size_t read = 0;
-    auto data = header_table.to_last(throw_notfound);
-    while (data && read < limit) {
-        // read header
-        BlockHeader header;
-        ByteView data_view = db::from_slice(data.value);
-        success_or_throw(rlp::decode(data_view, header));
-        read++;
-        // consume header
-        callback(std::move(header));
-        // move backward
-        data = header_table.to_previous(throw_notfound);
+    auto first_block_num = highest_block_num > n ? highest_block_num - n + 1 : 0;
+    for (auto i = first_block_num; i <= highest_block_num; i++) {
+        auto header = data_model.read_header(i);
+        if (!header) throw std::logic_error("the headers table must not have any holes");
+        callback(std::move(*header));
     }
-}  // note: maybe we can simplify/replace the implementation with db::cursor_for_count plus lambda
+}
 
 // Return (block-num, hash) of the header with the biggest total difficulty skipping bad headers
 // see Erigon's HeadersUnwind method for the implementation

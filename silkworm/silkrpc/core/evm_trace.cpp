@@ -1446,7 +1446,7 @@ boost::asio::awaitable<TraceEntriesResult> TraceCallExecutor::trace_transaction_
                 silkworm::IntraBlockState initial_ibs{*state};
 
                 auto curr_state = tx_.create_state(current_executor, database_reader_, block_number - 1);
-                EVMExecutor executor{*chain_config_ptr, workers_, *curr_state};
+                EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
 
                 auto entry_tracer = std::make_shared<trace::EntryTracer>(initial_ibs);
 

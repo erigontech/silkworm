@@ -65,13 +65,23 @@ bool SnapshotSync::download_and_index_snapshots(db::RWTxn& txn) {
     const bool download_completed = download_snapshots(snapshot_file_names);
     if (!download_completed) return false;
 
-    reopen();
-
     db::write_snapshots(txn, snapshot_file_names);
 
     log::Info() << "[Snapshots] file names saved into db" << log::Args{"count", std::to_string(snapshot_file_names.size())};
 
-    index_snapshots(txn, snapshot_file_names);
+    index_snapshots();
+
+    const auto max_block_available = repository_->max_block_available();
+    log::Info() << "[Snapshots] max block available: " << max_block_available
+                << " (segment max block: " << repository_->segment_max_block()
+                << ", idx max block: " << repository_->idx_max_block() << ")";
+
+    const auto snapshot_config = snapshot::Config::lookup_known_config(config_.chain_id, snapshot_file_names);
+    const auto configured_max_block_number = snapshot_config->max_block_number();
+    log::Info() << "[Snapshots] configured max block: " << configured_max_block_number;
+
+    // Update chain and stage progresses in database according to available snapshots
+    update_database(txn, max_block_available);
 
     return true;
 }
@@ -153,10 +163,11 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
 
     log::Info() << "[Snapshots] sync completed: [" << num_snapshots << "/" << num_snapshots << "]";
 
+    reopen();
     return true;
 }
 
-void SnapshotSync::index_snapshots(db::RWTxn& txn, const std::vector<std::string>& snapshot_file_names) {
+void SnapshotSync::index_snapshots() {
     if (!settings_.enabled) {
         log::Info() << "[Snapshots] snapshot sync disabled, no index must be created";
         return;
@@ -166,20 +177,8 @@ void SnapshotSync::index_snapshots(db::RWTxn& txn, const std::vector<std::string
     if (repository_->idx_max_block() < repository_->segment_max_block()) {
         log::Info() << "[Snapshots] missing indexes detected, rebuild started";
         build_missing_indexes();
-        repository_->reopen_folder();
+        reopen();
     }
-
-    const auto max_block_available = repository_->max_block_available();
-    log::Info() << "[Snapshots] max block available: " << max_block_available
-                << " (segment max block: " << repository_->segment_max_block()
-                << ", idx max block: " << repository_->idx_max_block() << ")";
-
-    const auto snapshot_config = snapshot::Config::lookup_known_config(config_.chain_id, snapshot_file_names);
-    const auto configured_max_block_number = snapshot_config->max_block_number();
-    log::Info() << "[Snapshots] configured max block: " << configured_max_block_number;
-
-    // Update chain and stage progresses in database according to available snapshots
-    update_database(txn, max_block_available);
 }
 
 bool SnapshotSync::stop() {

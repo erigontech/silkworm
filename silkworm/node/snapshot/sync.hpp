@@ -38,7 +38,7 @@ class SnapshotSync : public Stoppable {
 
     bool download_and_index_snapshots(db::RWTxn& txn);
     bool download_snapshots(const std::vector<std::string>& snapshot_file_names);
-    void index_snapshots(db::RWTxn& txn, const std::vector<std::string>& snapshot_file_names);
+    void index_snapshots();
 
   private:
     void reopen();

@@ -487,7 +487,7 @@ static std::shared_ptr<Block> generate_sample_block(const BlockHeader& parent, c
 }
 
 // Method to get the address of the public key
-std::string getAddress(EccPublicKey& public_key)  {
+std::string getAddress(EccPublicKey& public_key) {
     // We hash the data using Keccak-256
     auto hash = ethash::keccak256(public_key.data().data(), public_key.data().size());
 

@@ -29,6 +29,8 @@
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
 #include <silkworm/infra/test/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
+#include <silkworm/silkrpc/test/dummy_transaction.hpp>
+#include <silkworm/silkrpc/test/mock_cursor.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
 
 namespace silkworm::rpc {
@@ -39,7 +41,7 @@ using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("EVMExecutor") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     class StubDatabase : public core::rawdb::DatabaseReader {
         [[nodiscard]] awaitable<KeyValue> get(const std::string& /*table*/, silkworm::ByteView /*key*/) const override {
@@ -75,8 +77,10 @@ TEST_CASE("EVMExecutor") {
         block.header.number = block_number;
 
         boost::asio::any_io_executor current_executor = my_pool.next_io_context().get_executor();
-        state::RemoteState remote_state{current_executor, tx_database, block_number};
-        EVMExecutor executor{*chain_config_ptr, workers, remote_state};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        auto state = tx.create_state(current_executor, tx_database, block_number);
+        EVMExecutor executor{*chain_config_ptr, workers, state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}), boost::asio::use_future);
         auto result = execution_result.get();
         my_pool.stop();
@@ -103,8 +107,10 @@ TEST_CASE("EVMExecutor") {
         txn.from = 0xa872626373628737383927236382161739290870_address;
 
         boost::asio::any_io_executor current_executor = my_pool.next_io_context().get_executor();
-        state::RemoteState remote_state{current_executor, tx_database, block_number};
-        EVMExecutor executor{*chain_config_ptr, workers, remote_state};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        auto state = tx.create_state(current_executor, tx_database, block_number);
+        EVMExecutor executor{*chain_config_ptr, workers, state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}), boost::asio::use_future);
         auto result = execution_result.get();
         my_pool.stop();
@@ -132,8 +138,10 @@ TEST_CASE("EVMExecutor") {
         txn.max_priority_fee_per_gas = 0x18;
 
         boost::asio::any_io_executor current_executor = my_pool.next_io_context().get_executor();
-        state::RemoteState remote_state{current_executor, tx_database, block_number};
-        EVMExecutor executor{*chain_config_ptr, workers, remote_state};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        auto state = tx.create_state(current_executor, tx_database, block_number);
+        EVMExecutor executor{*chain_config_ptr, workers, state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}), boost::asio::use_future);
         auto result = execution_result.get();
         my_pool.stop();
@@ -161,8 +169,10 @@ TEST_CASE("EVMExecutor") {
         txn.from = 0xa872626373628737383927236382161739290870_address;
 
         boost::asio::any_io_executor current_executor = my_pool.next_io_context().get_executor();
-        state::RemoteState remote_state{current_executor, tx_database, block_number};
-        EVMExecutor executor{*chain_config_ptr, workers, remote_state};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        auto state = tx.create_state(current_executor, tx_database, block_number);
+        EVMExecutor executor{*chain_config_ptr, workers, state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}), boost::asio::use_future);
         auto result = execution_result.get();
         my_pool.stop();
@@ -190,8 +200,10 @@ TEST_CASE("EVMExecutor") {
         txn.from = 0xa872626373628737383927236382161739290870_address;
 
         boost::asio::any_io_executor current_executor = my_pool.next_io_context().get_executor();
-        state::RemoteState remote_state{current_executor, tx_database, block_number};
-        EVMExecutor executor{*chain_config_ptr, workers, remote_state};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        auto state = tx.create_state(current_executor, tx_database, block_number);
+        EVMExecutor executor{*chain_config_ptr, workers, state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}, false, /* gasBailout */ true), boost::asio::use_future);
         auto result = execution_result.get();
         executor.reset();
@@ -227,8 +239,10 @@ TEST_CASE("EVMExecutor") {
         txn.access_list = access_list;
 
         boost::asio::any_io_executor current_executor = my_pool.next_io_context().get_executor();
-        state::RemoteState remote_state{current_executor, tx_database, block_number};
-        EVMExecutor executor{*chain_config_ptr, workers, remote_state};
+        std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
+        test::DummyTransaction tx{0, mock_cursor};
+        auto state = tx.create_state(current_executor, tx_database, block_number);
+        EVMExecutor executor{*chain_config_ptr, workers, state};
         auto execution_result = boost::asio::co_spawn(my_pool.next_io_context().get_executor(), executor.call(block, txn, {}, true, true), boost::asio::use_future);
         auto result = execution_result.get();
         my_pool.stop();

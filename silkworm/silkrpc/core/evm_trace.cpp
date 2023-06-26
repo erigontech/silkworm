@@ -1273,7 +1273,7 @@ awaitable<std::vector<TraceCallResult>> TraceCallExecutor::trace_block_transacti
 
                     tracers.push_back(ibs_tracer);
 
-                    auto execution_result = executor.call_sync(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+                    auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
                     if (execution_result.pre_check_error) {
                         result.pre_check_error = execution_result.pre_check_error.value();
                     } else {
@@ -1344,7 +1344,7 @@ awaitable<TraceManyCallResult> TraceCallExecutor::trace_calls(const silkworm::Bl
                     }
                     tracers.push_back(ibs_tracer);
 
-                    auto execution_result = executor.call_sync(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+                    auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
 
                     if (execution_result.pre_check_error) {
                         result.pre_check_error = "first run for txIndex " + std::to_string(index) + " error: " + execution_result.pre_check_error.value();
@@ -1398,7 +1398,7 @@ boost::asio::awaitable<TraceDeployResult> TraceCallExecutor::trace_deploy_transa
                         transaction.recover_sender();
                     }
 
-                    executor.call_sync(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+                    executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
                     executor.reset();
 
                     if (create_tracer->found()) {
@@ -1463,7 +1463,7 @@ boost::asio::awaitable<TraceEntriesResult> TraceCallExecutor::trace_transaction_
 
                 Tracers tracers{entry_tracer};
 
-                executor.call_sync(transaction_with_block.block_with_hash.block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+                executor.call(transaction_with_block.block_with_hash.block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
 
                 boost::asio::post(current_executor, [entry_tracer, self = std::move(self)]() mutable {
                     self.complete(entry_tracer);
@@ -1493,7 +1493,7 @@ boost::asio::awaitable<std::string> TraceCallExecutor::trace_transaction_error(c
                 EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
                 Tracers tracers{};
 
-                auto execution_result = executor.call_sync(transaction_with_block.block_with_hash.block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+                auto execution_result = executor.call(transaction_with_block.block_with_hash.block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
 
                 std::string result = "0x";
                 if (execution_result.error_code != evmc_status_code::EVMC_SUCCESS) {
@@ -1613,7 +1613,7 @@ awaitable<TraceCallResult> TraceCallExecutor::execute(std::uint64_t block_number
                     if (!txn.from) {
                         txn.recover_sender();
                     }
-                    const auto execution_result = executor.call_sync(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/true);
+                    const auto execution_result = executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/true);
                     if (execution_result.pre_check_error) {
                         SILK_ERROR << "execution failed for tx " << idx << " due to pre-check error: " << *execution_result.pre_check_error;
                     }
@@ -1635,7 +1635,7 @@ awaitable<TraceCallResult> TraceCallExecutor::execute(std::uint64_t block_number
 
                     tracers.push_back(std::make_shared<trace::StateDiffTracer>(traces.state_diff.value(), state_addresses));
                 }
-                const auto execution_result = executor.call_sync(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+                const auto execution_result = executor.call(block, transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
 
                 if (execution_result.pre_check_error) {
                     result.pre_check_error = execution_result.pre_check_error.value();

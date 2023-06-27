@@ -231,7 +231,7 @@ ExecutionResult EVMExecutor::call(
     const auto error = pre_check(evm, txn, base_fee_per_gas, g0);
     if (error) {
         Bytes data{};
-        return {1000, txn.gas_limit, data, *error};
+        return {std::nullopt, txn.gas_limit, data, *error};
     }
 
     intx::uint256 want;
@@ -248,7 +248,7 @@ ExecutionResult EVMExecutor::call(
             Bytes data{};
             std::string from = to_hex(*txn.from);
             std::string msg = "insufficient funds for gas * price + value: address 0x" + from + " have " + intx::to_string(have) + " want " + intx::to_string(want + txn.value);
-            return {1000, txn.gas_limit, data, msg};
+            return {std::nullopt, txn.gas_limit, data, msg};
         }
     } else {
         ibs_state_.subtract_from_balance(*txn.from, want);
@@ -289,7 +289,7 @@ ExecutionResult EVMExecutor::call(
 
     ExecutionResult exec_result{result.status, gas_left, result.data};
 
-    SILK_DEBUG << "EVMExecutor::call call_result: " << exec_result.error_code << " #data: " << exec_result.data.size() << " end";
+    SILK_DEBUG << "EVMExecutor::call call_result: " << exec_result.error_message() << " #data: " << exec_result.data.size() << " end";
 
     return exec_result;
 }

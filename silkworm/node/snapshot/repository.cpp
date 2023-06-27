@@ -164,7 +164,7 @@ void SnapshotRepository::reopen_list(const SnapshotPathList& segment_files, bool
     BlockNum segment_max_block{0};
     for (const auto& seg_file : segment_files) {
         try {
-            SILK_INFO << "Reopen segment file: " << seg_file.path();
+            SILK_INFO << "Reopen segment file: " << seg_file.path().filename().string();
             bool snapshot_added{false};
             switch (seg_file.type()) {
                 case SnapshotType::headers: {
@@ -256,7 +256,11 @@ std::size_t SnapshotRepository::view(const SnapshotsByPath<T>& segments, const S
 }
 
 template <ConcreteSnapshot T>
-const T* SnapshotRepository::find_segment(const SnapshotsByPath<T>& segments, BlockNum number) {
+const T* SnapshotRepository::find_segment(const SnapshotsByPath<T>& segments, BlockNum number) const {
+    if (number > max_block_available()) {
+        return nullptr;
+    }
+
     // Search for target segment in reverse order (from the newest segment to the oldest one)
     for (auto it = segments.rbegin(); it != segments.rend(); ++it) {
         const auto& snapshot = it->second;

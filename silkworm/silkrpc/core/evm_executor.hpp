@@ -110,23 +110,23 @@ class EVMExecutor {
 };
 
 struct ExecutionResult {
-    int64_t error_code;
+    std::optional<int64_t> error_code{std::nullopt};
     uint64_t gas_left;
     Bytes data;
     std::optional<std::string> pre_check_error{std::nullopt};
 
     bool success() const {
-        return (error_code == evmc_status_code::EVMC_SUCCESS && pre_check_error == std::nullopt);
+        return ((error_code == std::nullopt || *error_code == evmc_status_code::EVMC_SUCCESS) && pre_check_error == std::nullopt);
     }
 
-    std::string error_message() const {
+    std::string error_message(bool full_error = true) const {
         if (pre_check_error) {
             return *pre_check_error;
         }
-        if (error_code != evmc_status_code::EVMC_SUCCESS) {
-            return silkworm::rpc::EVMExecutor::get_error_message(error_code, data);
+        if (error_code) {
+            return silkworm::rpc::EVMExecutor::get_error_message(*error_code, data, full_error);
         }
-        return "";
+        return "SUCCESS";
     }
 };
 

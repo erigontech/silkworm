@@ -42,12 +42,7 @@
 
 namespace silkworm::rpc {
 
-struct ExecutionResult {
-    int64_t error_code;
-    uint64_t gas_left;
-    Bytes data;
-    std::optional<std::string> pre_check_error{std::nullopt};
-};
+struct ExecutionResult;
 
 constexpr int kCacheSize = 32000;
 
@@ -112,6 +107,27 @@ class EVMExecutor {
     std::shared_ptr<silkworm::State> state_;
     IntraBlockState ibs_state_;
     protocol::RuleSetPtr rule_set_;
+};
+
+struct ExecutionResult {
+    int64_t error_code;
+    uint64_t gas_left;
+    Bytes data;
+    std::optional<std::string> pre_check_error{std::nullopt};
+
+    bool success() const {
+        return (error_code == evmc_status_code::EVMC_SUCCESS && pre_check_error == std::nullopt);
+    }
+
+    std::string error_message() const {
+        if (pre_check_error) {
+            return *pre_check_error;
+        }
+        if (error_code != evmc_status_code::EVMC_SUCCESS) {
+            return silkworm::rpc::EVMExecutor::get_error_message(error_code, data);
+        }
+        return "";
+    }
 };
 
 }  // namespace silkworm::rpc

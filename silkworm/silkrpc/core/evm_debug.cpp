@@ -376,15 +376,12 @@ awaitable<void> DebugExecutor::execute(json::Stream& stream, const silkworm::Blo
                     debug_tracer->flush_logs();
                     stream.close_array();
 
-                    if (execution_result.pre_check_error) {
-                        SILK_DEBUG << "debug failed: " << execution_result.pre_check_error.value();
-
-                        stream.write_field("failed", true);
-                    } else {
-                        stream.write_field("failed", execution_result.error_code != evmc_status_code::EVMC_SUCCESS);
+                    stream.write_field("failed", !execution_result.success());
+                    if (!execution_result.pre_check_error) {
                         stream.write_field("gas", txn.gas_limit - execution_result.gas_left);
                         stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
                     }
+
                     stream.close_object();
                     stream.close_object();
                 }
@@ -442,12 +439,11 @@ awaitable<void> DebugExecutor::execute(json::Stream& stream, uint64_t block_numb
 
                 debug_tracer->flush_logs();
                 stream.close_array();
-                if (execution_result.pre_check_error) {
-                    SILK_DEBUG << "debug failed: " << execution_result.pre_check_error.value();
 
-                    stream.write_field("failed", true);
-                } else {
-                    stream.write_field("failed", execution_result.error_code != evmc_status_code::EVMC_SUCCESS);
+                SILK_DEBUG << "debug return: " << execution_result.error_message();
+
+                stream.write_field("failed", !execution_result.success());
+                if (!execution_result.pre_check_error) {
                     stream.write_field("gas", transaction.gas_limit - execution_result.gas_left);
                     stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
                 }
@@ -536,12 +532,10 @@ awaitable<void> DebugExecutor::execute(json::Stream& stream,
                         debug_tracer->flush_logs();
                         stream.close_array();
 
-                        if (execution_result.pre_check_error) {
-                            SILK_DEBUG << "debug failed: " << execution_result.pre_check_error.value();
+                        SILK_DEBUG << "debug return: " << execution_result.error_message();
 
-                            stream.write_field("failed", true);
-                        } else {
-                            stream.write_field("failed", execution_result.error_code != evmc_status_code::EVMC_SUCCESS);
+                        stream.write_field("failed", !execution_result.success());
+                        if (!execution_result.pre_check_error) {
                             stream.write_field("gas", txn.gas_limit - execution_result.gas_left);
                             stream.write_field("returnValue", silkworm::to_hex(execution_result.data));
                         }

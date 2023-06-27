@@ -84,7 +84,7 @@ TEST_CASE("EVMExecutor") {
         auto result = executor.call(block, txn, {});
         my_pool.stop();
         my_pool.join();
-        CHECK(result.error_code == 1000);
+        CHECK(result.error_code == std::nullopt);
         CHECK(result.pre_check_error.value() == "intrinsic gas too low: have 0, want 53000");
     }
 
@@ -113,7 +113,7 @@ TEST_CASE("EVMExecutor") {
         auto result = executor.call(block, txn, {});
         my_pool.stop();
         my_pool.join();
-        CHECK(result.error_code == 1000);
+        CHECK(result.error_code == std::nullopt);
         CHECK(result.pre_check_error.value() == "fee cap less than block base fee: address 0xa872626373628737383927236382161739290870, gasFeeCap: 2 baseFee: 7");
     }
 
@@ -143,7 +143,7 @@ TEST_CASE("EVMExecutor") {
         auto result = executor.call(block, txn, {});
         my_pool.stop();
         my_pool.join();
-        CHECK(result.error_code == 1000);
+        CHECK(result.error_code == std::nullopt);
         CHECK(result.pre_check_error.value() == "tip higher than fee cap: address 0xa872626373628737383927236382161739290870, tip: 24 gasFeeCap: 2");
     }
 
@@ -173,7 +173,7 @@ TEST_CASE("EVMExecutor") {
         auto result = executor.call(block, txn, {});
         my_pool.stop();
         my_pool.join();
-        CHECK(result.error_code == 1000);
+        CHECK(result.error_code == std::nullopt);
         CHECK(result.pre_check_error.value() == "insufficient funds for gas * price + value: address 0xa872626373628737383927236382161739290870 have 0 want 60000");
     }
 

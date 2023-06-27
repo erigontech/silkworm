@@ -109,7 +109,7 @@ class SnapshotRepository {
     static std::size_t view(const SnapshotsByPath<T>& segments, const SnapshotWalker<T>& walker);
 
     template <ConcreteSnapshot T>
-    static const T* find_segment(const SnapshotsByPath<T>& segments, BlockNum number);
+    const T* find_segment(const SnapshotsByPath<T>& segments, BlockNum number) const;
 
     template <ConcreteSnapshot T>
     static bool reopen(SnapshotsByPath<T>& segments, const SnapshotPath& seg_file);

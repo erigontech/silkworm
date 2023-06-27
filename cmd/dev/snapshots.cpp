@@ -53,6 +53,7 @@ struct SnapSettings : public SnapshotSettings {
     std::vector<std::string> snapshot_file_names{kDefaultSnapshotFiles};
     int page_size{kDefaultPageSize};
     bool skip_system_txs{true};
+    std::string lookup_hash;
 };
 
 //! The settings for handling BitTorrent protocol customized for this tool
@@ -67,6 +68,7 @@ enum class SnapshotTool {
     create_index,
     decode_segment,
     download,
+    lookup_header,
     sync
 };
 
@@ -77,6 +79,16 @@ struct SnapshotToolboxSettings {
     DownloadSettings download_settings;
     SnapshotTool tool{SnapshotTool::download};
     int repetitions{kDefaultRepetitions};
+};
+
+struct HashValidator : public CLI::Validator {
+    explicit HashValidator() {
+        func_ = [&](const std::string& value) -> std::string {
+            const auto hash{Hash::from_hex(value)};
+            if (!hash) return "Value " + value + " is not a valid 32-byte hash";
+            return {};
+        };
+    }
 };
 
 //! Parse the command-line arguments into the snapshot toolbox settings
@@ -96,6 +108,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
         {"create_index", SnapshotTool::create_index},
         {"decode_segment", SnapshotTool::decode_segment},
         {"download", SnapshotTool::download},
+        {"lookup_header", SnapshotTool::lookup_header},
         {"sync", SnapshotTool::sync},
     };
     app.add_option("--tool", settings.tool, "The snapshot tool to use")
@@ -126,8 +139,11 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
     app.add_option("--active_downloads", bittorrent_settings.active_downloads, "The max number of downloads active simultaneously")
         ->capture_default_str()
         ->check(CLI::Range(3, 20));
-    app.add_flag("--seeding", bittorrent_settings.seeding, "Flag indicating if torrents should be seeded when donw")
+    app.add_flag("--seeding", bittorrent_settings.seeding, "Flag indicating if torrents should be seeded when download is finished")
         ->capture_default_str();
+    app.add_option("--hash", snapshot_settings.lookup_hash, "The hash to lookup in snapshot files")
+        ->capture_default_str()
+        ->check(HashValidator{});
 
     app.parse(argc, argv);
 }
@@ -168,7 +184,7 @@ void count_bodies(const SnapSettings& settings, int repetitions) {
             SILK_DEBUG << "Body number: " << number << " base_txn_id: " << base_txn_id << " txn_count: " << txn_count
                        << " #ommers: " << b->ommers.size();
             num_bodies++;
-            num_txns += b->txn_count;
+            num_txns += txn_count;
             return true;
         });
     }
@@ -256,6 +272,31 @@ void download(const BitTorrentSettings& settings) {
     SILK_INFO << "Download elapsed: " << duration_as<std::chrono::seconds>(elapsed) << " sec";
 }
 
+void lookup_header(const SnapSettings& settings) {
+    const auto hash{Hash::from_hex(settings.lookup_hash)};
+    SILK_INFO << "Lookup header hash: " << hash->to_hex();
+    std::chrono::time_point start{std::chrono::steady_clock::now()};
+
+    const HeaderSnapshot* matching_snapshot{nullptr};
+    SnapshotRepository snapshot_repository{settings};
+    snapshot_repository.reopen_folder();
+    snapshot_repository.view_header_segments([&](const HeaderSnapshot* snapshot) -> bool {
+        const auto header{snapshot->header_by_hash(*hash)};
+        if (header) {
+            matching_snapshot = snapshot;
+        }
+        return header.has_value();
+    });
+    if (matching_snapshot) {
+        SILK_INFO << "Lookup header hash: " << hash->to_hex() << " found in: " << matching_snapshot->path().filename();
+    } else {
+        SILK_INFO << "Lookup header hash: " << hash->to_hex() << " NOT found";
+    }
+
+    std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
+    SILK_INFO << "Lookup header elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
+}
+
 void sync(const SnapSettings& snapshot_settings) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
@@ -295,6 +336,8 @@ int main(int argc, char* argv[]) {
             decode_segment(settings.snapshot_settings, settings.repetitions);
         } else if (settings.tool == SnapshotTool::download) {
             download(settings.download_settings);
+        } else if (settings.tool == SnapshotTool::lookup_header) {
+            lookup_header(settings.snapshot_settings);
         } else if (settings.tool == SnapshotTool::sync) {
             sync(settings.snapshot_settings);
         } else {

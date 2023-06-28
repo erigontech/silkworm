@@ -275,10 +275,20 @@ ExecutionResult EVMExecutor::call(
             ibs_state_.access_storage(ae.account, key);
         }
     }
-
-    SILK_DEBUG << "EVMExecutor::call execute on EVM txn: " << &txn << " g0: " << static_cast<uint64_t>(g0) << " start";
-    const auto result{evm.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0))};
-    SILK_DEBUG << "EVMExecutor::call execute on EVM txn: " << &txn << " gas_left: " << result.gas_left << " end";
+    silkworm::CallResult result;
+    try {
+        SILK_DEBUG << "EVMExecutor::call execute on EVM txn: " << &txn << " g0: " << static_cast<uint64_t>(g0) << " start";
+        result = evm.execute(txn, txn.gas_limit - static_cast<uint64_t>(g0));
+        SILK_DEBUG << "EVMExecutor::call execute on EVM txn: " << &txn << " gas_left: " << result.gas_left << " end";
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: evm_execute: " << e.what() << "\n";
+        std::string error_msg = "evm.execute: ";
+        error_msg.append(e.what());
+        return {std::nullopt, txn.gas_limit, /* data */ {}, error_msg};
+    } catch (...) {
+        SILK_ERROR << "exception: evm_execute: unexpected exception\n";
+        return {std::nullopt, txn.gas_limit, /* data */ {}, "evm.execute: unknown exception"};
+    }
 
     uint64_t gas_left = result.gas_left;
     const uint64_t gas_used{txn.gas_limit - refund_gas(evm, txn, result.gas_left, result.gas_refund)};

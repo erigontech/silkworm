@@ -547,7 +547,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_trace_transaction(const nlohm
 boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_transaction_error(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 1) {
-        const auto error_msg = "invalid ots_get_transaction_error params: " + params.dump();
+        const auto error_msg = "invalid ots_getTransactionError params: " + params.dump();
         SILK_ERROR << error_msg << "\n";
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
@@ -593,7 +593,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_transaction_error(const n
 boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_internal_operations(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 1) {
-        const auto error_msg = "invalid ots_get_internal_operations params: " + params.dump();
+        const auto error_msg = "invalid ots_getInternalOperations params: " + params.dump();
         SILK_ERROR << error_msg << "\n";
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;

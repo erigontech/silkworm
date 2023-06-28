@@ -43,10 +43,16 @@
 namespace silkworm::rpc {
 
 struct ExecutionResult {
-    int64_t error_code;
+    std::optional<int64_t> error_code;
     uint64_t gas_left;
     Bytes data;
-    std::optional<std::string> pre_check_error{std::nullopt};
+    std::optional<std::string> pre_check_error;
+
+    bool success() const {
+        return ((error_code == std::nullopt || *error_code == evmc_status_code::EVMC_SUCCESS) && pre_check_error == std::nullopt);
+    }
+
+    std::string error_message(bool full_error = true) const;
 };
 
 constexpr int kCacheSize = 32000;

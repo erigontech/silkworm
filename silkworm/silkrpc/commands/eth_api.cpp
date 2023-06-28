@@ -1118,12 +1118,10 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
                 return tx->create_state(io_executor, db_reader, block_num);
             });
 
-        if (execution_result.pre_check_error) {
-            make_glaze_json_error(reply, request["id"], -32000, execution_result.pre_check_error.value());
-        } else if (execution_result.error_code == evmc_status_code::EVMC_SUCCESS) {
+        if (execution_result.success()) {
             make_glaze_json_content(reply, request["id"], execution_result.data);
         } else {
-            const auto error_message = EVMExecutor::get_error_message(execution_result.error_code, execution_result.data);
+            const auto error_message = execution_result.error_message();
             if (execution_result.data.empty()) {
                 make_glaze_json_error(reply, request["id"], -32000, error_message);
             } else {
@@ -1313,9 +1311,8 @@ awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::js
                 AccessListResult access_list_result;
                 access_list_result.access_list = current_access_list;
                 access_list_result.gas_used = txn.gas_limit - execution_result.gas_left;
-                if (execution_result.error_code != evmc_status_code::EVMC_SUCCESS) {
-                    const auto error_message = EVMExecutor::get_error_message(execution_result.error_code, execution_result.data, false /* full_error */);
-                    access_list_result.error = error_message;
+                if (execution_result.success() == false) {
+                    access_list_result.error = execution_result.error_message(false /* full_error */);
                 }
                 reply = make_json_content(request["id"], access_list_result);
                 break;
@@ -1408,9 +1405,8 @@ awaitable<void> EthereumRpcApi::handle_eth_call_bundle(const nlohmann::json& req
             tx_info.gas_used = tx_with_block->transaction.gas_limit - execution_result.gas_left;
             tx_info.hash = hash_of_transaction(tx_with_block->transaction);
 
-            if (execution_result.error_code != evmc_status_code::EVMC_SUCCESS) {
-                const auto error_message = EVMExecutor::get_error_message(execution_result.error_code, execution_result.data, false /* full_error */);
-                tx_info.error_message = error_message;
+            if (execution_result.success() == false) {
+                tx_info.error_message = execution_result.error_message(false /* full_error */);
             } else {
                 tx_info.value = silkworm::to_bytes32(execution_result.data);
             }

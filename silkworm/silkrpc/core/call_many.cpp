@@ -128,7 +128,7 @@ CallManyResult CallExecutor::executes_all_bundles(const silkworm::ChainConfig* c
             if (call_execution_result.error_code == evmc_status_code::EVMC_SUCCESS) {
                 reply["value"] = "0x" + silkworm::to_hex(call_execution_result.data);
             } else {
-                const auto error_message = EVMExecutor::get_error_message(call_execution_result.error_code, call_execution_result.data);
+                const auto error_message = call_execution_result.error_message();
                 if (call_execution_result.data.empty()) {
                     reply["error"] = error_message;
                 } else {

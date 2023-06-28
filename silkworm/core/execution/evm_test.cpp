@@ -375,7 +375,6 @@ class TestTracer : public EvmTracer {
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view bytecode) noexcept override {
         execution_start_called_ = true;
         rev_ = rev;
-        // msg_ = msg;
         msg_stack_.push_back(msg);
         bytecode_ = Bytes{bytecode};
     }
@@ -415,7 +414,6 @@ class TestTracer : public EvmTracer {
     [[nodiscard]] bool creation_completed_called() const { return creation_completed_called_; }
     [[nodiscard]] const Bytes& bytecode() const { return bytecode_; }
     [[nodiscard]] const evmc_revision& rev() const { return rev_; }
-    //[[nodiscard]] const evmc_message& msg() const { return msg_stack_.at(0); }
     [[nodiscard]] const std::vector<evmc_message>& msg_stack() const { return msg_stack_; }
     [[nodiscard]] const std::vector<uint32_t>& pc_stack() const { return pc_stack_; }
     [[nodiscard]] const std::map<uint32_t, std::size_t>& memory_size_stack() const { return memory_size_stack_; }

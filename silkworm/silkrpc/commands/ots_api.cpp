@@ -547,7 +547,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_trace_transaction(const nlohm
 boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_transaction_error(const nlohmann::json& request, nlohmann::json& reply) {
     const auto& params = request["params"];
     if (params.size() != 1) {
-        const auto error_msg = "invalid ots_get_transaction_error params: " + params.dump();
+        const auto error_msg = "invalid ots_getTransactionError params: " + params.dump();
         SILK_ERROR << error_msg << "\n";
         reply = make_json_error(request["id"], 100, error_msg);
         co_return;
@@ -572,6 +572,52 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_transaction_error(const n
         }
 
         const auto result = co_await executor.trace_transaction_error(transaction_with_block.value());
+
+        reply = make_json_content(request["id"], result);
+
+    } catch (const std::invalid_argument& iv) {
+        SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
+        reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        reply = make_json_error(request["id"], 100, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+    co_return;
+}
+
+boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_internal_operations(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request["params"];
+    if (params.size() != 1) {
+        const auto error_msg = "invalid ots_getInternalOperations params: " + params.dump();
+        SILK_ERROR << error_msg << "\n";
+        reply = make_json_error(request["id"], 100, error_msg);
+        co_return;
+    }
+
+    const auto transaction_hash = params[0].get<evmc::bytes32>();
+
+    SILK_DEBUG << "transaction_hash: " << transaction_hash;
+
+    auto tx = co_await database_->begin();
+
+    try {
+        ethdb::TransactionDatabase tx_database{*tx};
+        trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_, *tx};
+
+        const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, tx_database, transaction_hash);
+
+        if (!transaction_with_block.has_value()) {
+            reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+            co_await tx->close();
+            co_return;
+        }
+
+        const auto result = co_await executor.trace_operations(transaction_with_block.value());
 
         reply = make_json_content(request["id"], result);
 

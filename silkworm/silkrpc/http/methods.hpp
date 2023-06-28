@@ -145,5 +145,6 @@ constexpr const char* k_ots_getTransactionBySenderAndNonce{"ots_getTransactionBy
 constexpr const char* k_ots_getContractCreator{"ots_getContractCreator"};
 constexpr const char* k_ots_traceTransaction{"ots_traceTransaction"};
 constexpr const char* k_ots_getTransactionError{"ots_getTransactionError"};
+constexpr const char* k_ots_getInternalOperations{"ots_getInternalOperations"};
 
 }  // namespace silkworm::rpc::http::method

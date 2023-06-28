@@ -303,6 +303,17 @@ void to_json(nlohmann::json& json, const TraceEntry& trace_entry) {
     json["input"] = trace_entry.input;
 }
 
+void to_json(nlohmann::json& json, const InternalOperation& trace_operation) {
+    json["type"] = trace_operation.type;
+    json["from"] = trace_operation.from;
+    json["to"] = trace_operation.to;
+    if (trace_operation.value.empty()) {
+        json["value"] = nullptr;
+    } else {
+        json["value"] = trace_operation.value;
+    }
+}
+
 int get_stack_count(std::uint8_t op_code) {
     int count;
     switch (op_code) {
@@ -1498,6 +1509,26 @@ boost::asio::awaitable<std::string> TraceCallExecutor::trace_transaction_error(c
     co_return ret_result;
 }
 
+boost::asio::awaitable<TraceOperationsResult> TraceCallExecutor::trace_operations(const TransactionWithBlock& transaction_with_block) {
+    auto block_number = transaction_with_block.block_with_hash.block.header.number;
+
+    const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
+    const auto chain_config_ptr = lookup_chain_config(chain_id);
+
+    auto current_executor = co_await boost::asio::this_coro::executor;
+    auto state = tx_.create_state(current_executor, database_reader_, block_number - 1);
+    silkworm::IntraBlockState initial_ibs{*state};
+
+    auto curr_state = tx_.create_state(current_executor, database_reader_, block_number - 1);
+    EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
+    auto tracer = std::make_shared<trace::OperationTracer>(initial_ibs);
+    Tracers tracers{tracer};
+
+    auto execution_result = executor.call(transaction_with_block.block_with_hash.block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+
+    co_return tracer->result();
+}
+
 awaitable<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, json::Stream* stream) {
     SILK_INFO << "TraceCallExecutor::trace_filter: filter " << trace_filter;
 
@@ -1657,7 +1688,15 @@ void EntryTracer::on_execution_start(evmc_revision, const evmc_message& msg, evm
     }
 
     if (create) {
-        result_.push_back(TraceEntry{"CALL", msg.depth, sender, recipient, str_value, str_input});
+        if (msg.depth > 0) {
+            if (msg.kind == evmc_call_kind::EVMC_CREATE) {
+                result_.push_back(TraceEntry{"CREATE", msg.depth, sender, recipient, str_value, str_input});
+            } else if (msg.kind == evmc_call_kind::EVMC_CREATE2) {
+                result_.push_back(TraceEntry{"CREATE2", msg.depth, sender, recipient, str_value, str_input});
+            }
+        } else {
+            result_.push_back(TraceEntry{"CALL", msg.depth, sender, recipient, str_value, str_input});
+        }
     } else {
         bool in_static_mode = (msg.flags & evmc_flags::EVMC_STATIC) != 0;
         switch (msg.kind) {
@@ -1680,6 +1719,39 @@ void EntryTracer::on_execution_start(evmc_revision, const evmc_message& msg, evm
                << " create: " << create
                << ", msg.depth: " << msg.depth
                << ", msg.kind: " << msg.kind
+               << ", sender: " << sender
+               << ", recipient: " << recipient << " (created: " << create << ")"
+               << ", code_address: " << code_address
+               << ", msg.value: " << intx::hex(intx::be::load<intx::uint256>(msg.value))
+               << ", code: " << silkworm::to_hex(code)
+               << ", msg.input_data: " << to_hex(ByteView{msg.input_data, msg.input_size});
+}
+
+void OperationTracer::on_execution_start(evmc_revision, const evmc_message& msg, evmone::bytes_view code) noexcept {
+    auto sender = evmc::address{msg.sender};
+    auto recipient = evmc::address{msg.recipient};
+    auto code_address = evmc::address{msg.code_address};
+
+    auto depth = msg.depth;
+    auto kind = msg.kind;
+
+    bool create = (!initial_ibs_.exists(recipient) && recipient != code_address);
+    auto str_value = "0x" + intx::hex(intx::be::load<intx::uint256>(msg.value));
+
+    if (create && msg.depth > 0) {
+        if (msg.kind == evmc_call_kind::EVMC_CREATE) {
+            result_.push_back(InternalOperation{OperationType::OP_CREATE, sender, recipient, str_value});
+        } else if (msg.kind == evmc_call_kind::EVMC_CREATE2) {
+            result_.push_back(InternalOperation{OperationType::OP_CREATE2, sender, recipient, str_value});
+        } else if (msg.kind == evmc_call_kind::EVMC_CALL && intx::be::load<intx::uint256>(msg.value) > 0) {
+            result_.push_back(InternalOperation{OperationType::OP_TRANSFER, sender, recipient, str_value});
+        }
+    }
+
+    SILK_DEBUG << "OperationTracer::on_execution_start: gas: " << std::dec << msg.gas
+               << " create: " << create
+               << ", msg.depth: " << depth
+               << ", msg.kind: " << kind
                << ", sender: " << sender
                << ", recipient: " << recipient << " (created: " << create << ")"
                << ", code_address: " << code_address

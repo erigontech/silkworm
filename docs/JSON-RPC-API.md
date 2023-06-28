@@ -160,7 +160,7 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | parity_listStorageKeys                     | Yes          |                                            |
 |                                            |              |                                            |
 | ots_getApiLevel                            | Yes          |                                            |
-| ots_getInternalOperations                  | -            | not yet implemented                        |
+| ots_getInternalOperations                  | Yes          |                                            |
 | ots_searchTransactionsBefore               | -            | not yet implemented                        |
 | ots_searchTransactionsAfter                | -            | not yet implemented                        |
 | ots_getBlockDetails                        | Yes          |                                            |

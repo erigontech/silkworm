@@ -370,12 +370,12 @@ class TestTracer : public EvmTracer {
   public:
     explicit TestTracer(std::optional<evmc::address> contract_address = std::nullopt,
                         std::optional<evmc::bytes32> key = std::nullopt)
-        : contract_address_(contract_address), key_(key), rev_{}, msg_{} {}
+        : contract_address_(contract_address), key_(key), rev_{} {}
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view bytecode) noexcept override {
         execution_start_called_ = true;
         rev_ = rev;
-        msg_ = msg;
+        msg_stack_.push_back(msg);
         bytecode_ = Bytes{bytecode};
     }
     void on_instruction_start(uint32_t pc, const intx::uint256* /*stack_top*/, int /*stack_height*/,
@@ -414,7 +414,7 @@ class TestTracer : public EvmTracer {
     [[nodiscard]] bool creation_completed_called() const { return creation_completed_called_; }
     [[nodiscard]] const Bytes& bytecode() const { return bytecode_; }
     [[nodiscard]] const evmc_revision& rev() const { return rev_; }
-    [[nodiscard]] const evmc_message& msg() const { return msg_; }
+    [[nodiscard]] const std::vector<evmc_message>& msg_stack() const { return msg_stack_; }
     [[nodiscard]] const std::vector<uint32_t>& pc_stack() const { return pc_stack_; }
     [[nodiscard]] const std::map<uint32_t, std::size_t>& memory_size_stack() const { return memory_size_stack_; }
     [[nodiscard]] const std::map<uint32_t, evmc::bytes32>& storage_stack() const { return storage_stack_; }
@@ -427,7 +427,7 @@ class TestTracer : public EvmTracer {
     std::optional<evmc::address> contract_address_;
     std::optional<evmc::bytes32> key_;
     evmc_revision rev_;
-    evmc_message msg_;
+    std::vector<evmc_message> msg_stack_;
     Bytes bytecode_;
     std::vector<uint32_t> pc_stack_;
     std::map<uint32_t, std::size_t> memory_size_stack_;
@@ -485,10 +485,10 @@ TEST_CASE("Tracing smart contract with storage") {
 
     CHECK((tracer1.execution_start_called() && tracer1.execution_end_called() && tracer1.creation_completed_called()));
     CHECK(tracer1.rev() == evmc_revision::EVMC_ISTANBUL);
-    CHECK(tracer1.msg().kind == evmc_call_kind::EVMC_CALL);
-    CHECK(tracer1.msg().flags == 0);
-    CHECK(tracer1.msg().depth == 0);
-    CHECK(tracer1.msg().gas == 0);
+    CHECK(tracer1.msg_stack().at(0).kind == evmc_call_kind::EVMC_CALL);
+    CHECK(tracer1.msg_stack().at(0).flags == 0);
+    CHECK(tracer1.msg_stack().at(0).depth == 0);
+    CHECK(tracer1.msg_stack().at(0).gas == 0);
     CHECK(tracer1.bytecode() == code);
     CHECK(tracer1.pc_stack() == std::vector<uint32_t>{0});
     CHECK(tracer1.memory_size_stack() == std::map<uint32_t, std::size_t>{{0, 0}});
@@ -508,10 +508,10 @@ TEST_CASE("Tracing smart contract with storage") {
 
     CHECK((tracer2.execution_start_called() && tracer2.execution_end_called()));
     CHECK(tracer2.rev() == evmc_revision::EVMC_ISTANBUL);
-    CHECK(tracer2.msg().kind == evmc_call_kind::EVMC_CALL);
-    CHECK(tracer2.msg().flags == 0);
-    CHECK(tracer2.msg().depth == 0);
-    CHECK(tracer2.msg().gas == 50'000);
+    CHECK(tracer2.msg_stack().at(0).kind == evmc_call_kind::EVMC_CALL);
+    CHECK(tracer2.msg_stack().at(0).flags == 0);
+    CHECK(tracer2.msg_stack().at(0).depth == 0);
+    CHECK(tracer2.msg_stack().at(0).gas == 50'000);
     CHECK(tracer2.bytecode() == code);
     CHECK(tracer2.pc_stack() == std::vector<uint32_t>{0, 2, 4, 5, 8, 10, 11, 13, 14, 16, 18, 19, 21});
     CHECK(tracer2.memory_size_stack() == std::map<uint32_t, std::size_t>{{0, 0},
@@ -551,10 +551,10 @@ TEST_CASE("Tracing smart contract with storage") {
 
     CHECK((tracer3.execution_start_called() && tracer3.execution_end_called()));
     CHECK(tracer3.rev() == evmc_revision::EVMC_ISTANBUL);
-    CHECK(tracer3.msg().kind == evmc_call_kind::EVMC_CALL);
-    CHECK(tracer3.msg().flags == 0);
-    CHECK(tracer3.msg().depth == 0);
-    CHECK(tracer3.msg().gas == 50'000);
+    CHECK(tracer3.msg_stack().at(0).kind == evmc_call_kind::EVMC_CALL);
+    CHECK(tracer3.msg_stack().at(0).flags == 0);
+    CHECK(tracer3.msg_stack().at(0).depth == 0);
+    CHECK(tracer3.msg_stack().at(0).gas == 50'000);
     CHECK(tracer3.storage_stack() == std::map<uint32_t, evmc::bytes32>{
                                          {0, to_bytes32(*from_hex("2a"))},
                                          {2, to_bytes32(*from_hex("2a"))},
@@ -566,6 +566,53 @@ TEST_CASE("Tracing smart contract with storage") {
     CHECK(tracer3.result().status == EVMC_SUCCESS);
     CHECK(tracer3.result().gas_left == 49191);
     CHECK(tracer3.result().data.empty());
+}
+
+TEST_CASE("Tracing creation smart contract with CREATE2") {
+    Block block{};
+    block.header.number = 10'336'006;
+    evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
+
+    Bytes code{*from_hex(
+        "6080604052348015600f57600080fd5b506000801b604051601e906043565b81"
+        "90604051809103906000f5905080158015603d573d6000803e3d6000fd5b5050"
+        "604f565b605c8061009c83390190565b603f8061005d6000396000f3fe608060"
+        "4052600080fdfea2646970667358221220ffaf2d6fdd061c3273248388b99d0e"
+        "48f13466b078ba552718eb14d618127f5f64736f6c6343000813003360806040"
+        "52348015600f57600080fd5b50603f80601d6000396000f3fe60806040526000"
+        "80fdfea2646970667358221220ea2cccbd9b69291ff50e3244e6b74392bb58de"
+        "7268abedc75e862628e939d32e64736f6c63430008130033")};
+    // pragma solidity 0.8.19;
+    //
+    // contract Factory {
+    //     constructor() {
+    //         new TestContract{salt: 0}();
+    //     }
+    // }
+    // contract TestContract {
+    //     constructor() {}
+    // }
+
+    InMemoryState db;
+    IntraBlockState state{db};
+    EVM evm{block, state, kMainnetConfig};
+
+    Transaction txn{};
+    txn.from = caller;
+    txn.data = code;
+
+    TestTracer tracer;
+    evm.add_tracer(tracer);
+    CHECK(evm.tracers().size() == 1);
+
+    uint64_t gas = {100'000};
+    CallResult res{evm.execute(txn, gas)};
+
+    CHECK(tracer.msg_stack().at(0).depth == 0);
+    CHECK(tracer.msg_stack().at(1).depth == 1);
+
+    CHECK(tracer.msg_stack().at(0).kind == evmc_call_kind::EVMC_CALL);
+    CHECK(tracer.msg_stack().at(1).kind == evmc_call_kind::EVMC_CREATE2);
 }
 
 TEST_CASE("Tracing smart contract w/o code") {

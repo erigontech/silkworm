@@ -607,7 +607,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_internal_operations(const
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-        trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_};
+        trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_, *tx};
 
         const auto transaction_with_block = co_await core::read_transaction_by_hash(*block_cache_, tx_database, transaction_hash);
 

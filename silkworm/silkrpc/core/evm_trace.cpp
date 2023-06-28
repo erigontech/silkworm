@@ -1516,18 +1516,15 @@ boost::asio::awaitable<TraceOperationsResult> TraceCallExecutor::trace_operation
     const auto chain_config_ptr = lookup_chain_config(chain_id);
 
     auto current_executor = co_await boost::asio::this_coro::executor;
-    state::RemoteState remote_state{current_executor, database_reader_, block_number - 1};
+    auto state = tx_.create_state(current_executor, database_reader_, block_number - 1);
+    silkworm::IntraBlockState initial_ibs{*state};
 
-    silkworm::IntraBlockState initial_ibs{remote_state};
-
-    state::RemoteState curr_remote_state{current_executor, database_reader_, block_number - 1};
-    EVMExecutor executor{*chain_config_ptr, workers_, curr_remote_state};
-
+    auto curr_state = tx_.create_state(current_executor, database_reader_, block_number - 1);
+    EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
     auto tracer = std::make_shared<trace::OperationTracer>(initial_ibs);
-
     Tracers tracers{tracer};
 
-    auto execution_result = co_await executor.call(transaction_with_block.block_with_hash.block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
+    auto execution_result = executor.call(transaction_with_block.block_with_hash.block, transaction_with_block.transaction, tracers, /*refund=*/true, /*gas_bailout=*/true);
 
     co_return tracer->result();
 }

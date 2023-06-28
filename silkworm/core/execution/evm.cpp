@@ -148,7 +148,8 @@ evmc::Result EVM::create(const evmc_message& message) noexcept {
         .recipient = contract_addr,
         .sender = message.sender,
         .value = message.value,
-        .create2_salt = message.create2_salt};
+        .create2_salt = message.create2_salt,
+    };
 
     auto evm_res{execute(deploy_message, ByteView{message.input_data, message.input_size}, /*code_hash=*/nullptr)};
 

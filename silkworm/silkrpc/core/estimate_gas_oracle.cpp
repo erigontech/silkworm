@@ -91,7 +91,7 @@ boost::asio::awaitable<intx::uint256> EstimateGasOracle::estimate_gas(const Call
                     transaction.gas_limit = mid;
 
                     result = try_execution(executor, block, transaction);
-                    if (result.error_code == evmc_status_code::EVMC_SUCCESS) {
+                    if (result.success()) {
                         hi = mid;
                     } else {
                         lo = mid;
@@ -105,7 +105,7 @@ boost::asio::awaitable<intx::uint256> EstimateGasOracle::estimate_gas(const Call
                     transaction.gas_limit = hi;
                     result = try_execution(executor, block, transaction);
                     SILK_DEBUG << "HI == cap tested again with " << (result.error_code == evmc_status_code::EVMC_SUCCESS ? "succeed" : "failed");
-                } else if (result.error_code == pre_check_error) {
+                } else if (result.error_code == std::nullopt) {
                     result.pre_check_error = std::nullopt;
                     result.error_code = evmc_status_code::EVMC_SUCCESS;
                 }
@@ -119,7 +119,7 @@ boost::asio::awaitable<intx::uint256> EstimateGasOracle::estimate_gas(const Call
         },
         boost::asio::use_awaitable);
 
-    if (exec_result.error_code != evmc_status_code::EVMC_SUCCESS || exec_result.pre_check_error) {
+    if (exec_result.success() == false) {
         throw_exception(exec_result, cap);
     }
     co_return hi;
@@ -134,8 +134,8 @@ void EstimateGasOracle::throw_exception(ExecutionResult& result, uint64_t cap) {
         SILK_DEBUG << "result error " << result.pre_check_error.value();
         throw EstimateGasException{-1, "gas required exceeds allowance (" + std::to_string(cap) + ")"};
     } else {
-        const auto error_message = EVMExecutor::get_error_message(result.error_code, result.data);
-        SILK_DEBUG << "result message " << error_message << ", code " << result.error_code;
+        auto error_message = result.error_message();
+        SILK_DEBUG << "result message: " << error_message << ", code " << *result.error_code;
         if (result.data.empty()) {
             throw EstimateGasException{-32000, error_message};
         } else {

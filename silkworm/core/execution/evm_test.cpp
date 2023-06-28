@@ -370,7 +370,7 @@ class TestTracer : public EvmTracer {
   public:
     explicit TestTracer(std::optional<evmc::address> contract_address = std::nullopt,
                         std::optional<evmc::bytes32> key = std::nullopt)
-        : contract_address_(contract_address), key_(key), rev_{} /*, msg_{}*/ {}
+        : contract_address_(contract_address), key_(key), rev_{} {}
 
     void on_execution_start(evmc_revision rev, const evmc_message& msg, evmone::bytes_view bytecode) noexcept override {
         execution_start_called_ = true;
@@ -573,7 +573,15 @@ TEST_CASE("Tracing creation smart contract with CREATE2") {
     block.header.number = 10'336'006;
     evmc::address caller{0x0a6bb546b9208cfab9e8fa2b9b2c042b18df7030_address};
 
-    Bytes code{*from_hex("6080604052348015600f57600080fd5b506000801b604051601e906043565b8190604051809103906000f5905080158015603d573d6000803e3d6000fd5b5050604f565b605c8061009c83390190565b603f8061005d6000396000f3fe6080604052600080fdfea2646970667358221220ffaf2d6fdd061c3273248388b99d0e48f13466b078ba552718eb14d618127f5f64736f6c634300081300336080604052348015600f57600080fd5b50603f80601d6000396000f3fe6080604052600080fdfea2646970667358221220ea2cccbd9b69291ff50e3244e6b74392bb58de7268abedc75e862628e939d32e64736f6c63430008130033")};
+    Bytes code{*from_hex(
+        "6080604052348015600f57600080fd5b506000801b604051601e906043565b81"
+        "90604051809103906000f5905080158015603d573d6000803e3d6000fd5b5050"
+        "604f565b605c8061009c83390190565b603f8061005d6000396000f3fe608060"
+        "4052600080fdfea2646970667358221220ffaf2d6fdd061c3273248388b99d0e"
+        "48f13466b078ba552718eb14d618127f5f64736f6c6343000813003360806040"
+        "52348015600f57600080fd5b50603f80601d6000396000f3fe60806040526000"
+        "80fdfea2646970667358221220ea2cccbd9b69291ff50e3244e6b74392bb58de"
+        "7268abedc75e862628e939d32e64736f6c63430008130033")};
     // pragma solidity 0.8.19;
     //
     // contract Factory {

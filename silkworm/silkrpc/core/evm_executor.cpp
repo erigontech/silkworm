@@ -36,6 +36,16 @@
 
 namespace silkworm::rpc {
 
+std::string ExecutionResult::error_message(bool full_error) const {
+    if (pre_check_error) {
+        return *pre_check_error;
+    }
+    if (error_code) {
+        return silkworm::rpc::EVMExecutor::get_error_message(*error_code, data, full_error);
+    }
+    return "";
+}
+
 static Bytes build_abi_selector(const std::string& signature) {
     const auto signature_hash = hash_of(byte_view_of_string(signature));
     return {std::begin(signature_hash.bytes), std::begin(signature_hash.bytes) + 4};

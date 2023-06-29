@@ -27,7 +27,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/db/tables.hpp>
-// #include <silkworm/infra/test/log.hpp>
+// #include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/silkrpc/stagedsync/stages.hpp>
 #include <silkworm/silkrpc/test/mock_database_reader.hpp>
 
@@ -55,7 +55,7 @@ static silkworm::Bytes kHeader{*silkworm::from_hex(
     "00000000000000000000000000000000000000000000880000000000000000")};
 
 TEST_CASE("get_block_number latest_required", "[silkrpc][core][blocks]") {
-    // SILK_LOG_STREAMS(test::null_stream(), test::null_stream());
+    // SILK_LOG_STREAMS(test_util::null_stream(), test_util::null_stream());
     const silkworm::ByteView kExecutionStage{stages::kExecution};
     test::MockDatabaseReader db_reader;
     boost::asio::thread_pool pool{1};

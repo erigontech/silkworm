@@ -27,7 +27,7 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/test/dummy_transaction.hpp>
 #include <silkworm/silkrpc/test/mock_cursor.hpp>
@@ -41,7 +41,7 @@ using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("EVMExecutor") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     class StubDatabase : public core::rawdb::DatabaseReader {
         [[nodiscard]] awaitable<KeyValue> get(const std::string& /*table*/, silkworm::ByteView /*key*/) const override {

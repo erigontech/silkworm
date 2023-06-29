@@ -25,7 +25,7 @@
 #include <silkworm/core/protocol/validation.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/common/environment.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/db/stages.hpp>
@@ -104,7 +104,7 @@ class ExecutionEngine_ForTest : public stagedsync::ExecutionEngine {
 };
 
 TEST_CASE("ExecutionEngine") {
-    test::SetLogVerbosityGuard log_guard(log::Level::kNone);
+    test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
 
     asio::io_context io;
     asio::executor_work_guard<decltype(io.get_executor())> work{io.get_executor()};

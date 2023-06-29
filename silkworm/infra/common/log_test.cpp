@@ -22,7 +22,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::log {
 
@@ -52,17 +52,6 @@ void check_log_not_empty() {
     CHECK(log_buffer.content().find("test") != std::string::npos);
 }
 
-//! Utility class using RAII to swap the underlying buffers of the provided streams
-class StreamSwap {
-  public:
-    StreamSwap(std::ostream& o1, std::ostream& o2) : buffer_(o1.rdbuf()), stream_(o1) { o1.rdbuf(o2.rdbuf()); }
-    ~StreamSwap() { stream_.rdbuf(buffer_); }
-
-  private:
-    std::streambuf* buffer_;
-    std::ostream& stream_;
-};
-
 //! Build the prettified key-value pair using color scheme
 static std::string prettified_key_value(const std::string& key, const std::string& value) {
     std::string kv_pair{kColorGreen};
@@ -77,8 +66,8 @@ static std::string prettified_key_value(const std::string& key, const std::strin
 
 TEST_CASE("LogBuffer", "[silkworm][common][log]") {
     // Temporarily override std::cout and std::cerr with null stream to avoid terminal output
-    StreamSwap cout_swap{std::cout, test::null_stream()};
-    StreamSwap cerr_swap{std::cerr, test::null_stream()};
+    test_util::StreamSwap cout_swap{std::cout, test_util::null_stream()};
+    test_util::StreamSwap cerr_swap{std::cerr, test_util::null_stream()};
 
     SECTION("LogBuffer stores nothing for verbosity higher than default") {
         check_log_empty<Level::kDebug>();
@@ -94,14 +83,14 @@ TEST_CASE("LogBuffer", "[silkworm][common][log]") {
     }
 
     SECTION("LogBuffer stores nothing for verbosity higher than configured one") {
-        test::SetLogVerbosityGuard guard{Level::kWarning};
+        test_util::SetLogVerbosityGuard guard{Level::kWarning};
         check_log_empty<Level::kInfo>();
         check_log_empty<Level::kDebug>();
         check_log_empty<Level::kTrace>();
     }
 
     SECTION("LogBuffer stores content for verbosity lower than or equal to configured one") {
-        test::SetLogVerbosityGuard guard{Level::kWarning};
+        test_util::SetLogVerbosityGuard guard{Level::kWarning};
         check_log_not_empty<Level::kWarning>();
         check_log_not_empty<Level::kError>();
         check_log_not_empty<Level::kCritical>();

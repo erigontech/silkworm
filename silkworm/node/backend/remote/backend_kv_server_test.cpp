@@ -33,7 +33,7 @@
 #include <silkworm/infra/common/os.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
 #include <silkworm/infra/grpc/common/util.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/interfaces/types/types.pb.h>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/remote/grpc/backend_calls.hpp>
@@ -376,7 +376,7 @@ struct BackEndKvE2eTest {
         server->join();
     }
 
-    test::SetLogVerbosityGuard set_verbosity_log_guard;
+    test_util::SetLogVerbosityGuard set_verbosity_log_guard;
     rpc::Grpc2SilkwormLogGuard grpc2silkworm_log_guard;
     std::unique_ptr<remote::ETHBACKEND::Stub> ethbackend_stub;
     std::unique_ptr<BackEndClient> backend_client;
@@ -397,7 +397,7 @@ namespace silkworm::rpc {
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("BackEndKvServer", "[silkworm][node][rpc]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     Grpc2SilkwormLogGuard log_guard;
     ServerSettings srv_config;
     srv_config.address_uri = kTestAddressUri;

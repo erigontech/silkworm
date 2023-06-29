@@ -23,12 +23,12 @@
 
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::succinct {
 
 TEST_CASE("EliasFanoList32", "[silkworm][recsplit][elias_fano]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     std::vector<uint64_t> offsets{1, 4, 6, 8, 10, 14, 16, 19, 22, 34, 37, 39, 41, 43, 48, 51, 54, 58, 62};
 
@@ -72,7 +72,7 @@ TEST_CASE("EliasFanoList32", "[silkworm][recsplit][elias_fano]") {
 }
 
 TEST_CASE("DoubleEliasFanoList16", "[silkworm][recsplit][elias_fano]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     DoubleEliasFanoList16 double_ef_list;
     std::vector<uint64_t> cum_keys{1, 1, 2, 6, 7, 11, 13, 20};
     std::vector<uint64_t> position{1, 2, 5, 5, 6, 7, 9, 9};

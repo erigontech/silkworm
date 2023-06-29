@@ -20,7 +20,7 @@
 
 #include <silkworm/infra/common/log.hpp>
 
-namespace silkworm::test {
+namespace silkworm::test_util {
 
 //! Utility class using RAII to change the log verbosity level (necessary to make tests work in shuffled order)
 class SetLogVerbosityGuard {
@@ -56,4 +56,4 @@ class StreamSwap {
     std::ostream& stream_;
 };
 
-}  // namespace silkworm::test
+}  // namespace silkworm::test_util

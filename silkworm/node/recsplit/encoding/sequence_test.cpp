@@ -20,12 +20,12 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::succinct {
 
 TEST_CASE("Uint64Sequence", "[silkworm][recsplit][sequence]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     Uint64Sequence output_sequence{0, 11, 21, 31, 41, 51, 61};
 
     std::stringstream ss;

@@ -29,7 +29,7 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/filter_storage.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>
@@ -208,7 +208,7 @@ class DummyDatabase : public ethdb::Database {
 
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("DebugRpcApi") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     boost::asio::io_context ioc;
     add_shared_service(ioc, std::make_shared<BlockCache>());

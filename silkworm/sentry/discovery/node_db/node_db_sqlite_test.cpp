@@ -16,35 +16,14 @@
 
 #include "node_db_sqlite.hpp"
 
-#include <chrono>
-#include <future>
-
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/use_future.hpp>
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/util.hpp>
+#include <silkworm/infra/test_util/task_runner.hpp>
 
 namespace silkworm::sentry::discovery::node_db {
 
 using namespace boost::asio;
-
-template <typename TResult>
-static void poll_context_until_future_is_ready(io_context& context, std::future<TResult>& future) {
-    using namespace std::chrono_literals;
-    context.restart();
-    while (future.wait_for(0s) != std::future_status::ready) {
-        context.poll_one();
-    }
-}
-
-template <typename TResult>
-static TResult run(io_context& context, Task<TResult> task) {
-    auto future = co_spawn(context, std::move(task), use_future);
-    poll_context_until_future_is_ready(context, future);
-    return future.get();
-}
 
 bool operator==(const NodeAddress& lhs, const NodeAddress& rhs) {
     return (lhs.ip == rhs.ip) &&
@@ -53,7 +32,7 @@ bool operator==(const NodeAddress& lhs, const NodeAddress& rhs) {
 }
 
 TEST_CASE("NodeDbSqlite") {
-    io_context context;
+    test_util::TaskRunner runner;
 
     NodeDbSqlite db_sqlite;
     db_sqlite.setup_in_memory();
@@ -67,33 +46,33 @@ TEST_CASE("NodeDbSqlite") {
     };
 
     SECTION("insert_and_find_address.v4") {
-        run(context, db.upsert_node_address(test_id, test_address));
-        auto address = run(context, db.find_node_address_v4(test_id));
+        runner.run(db.upsert_node_address(test_id, test_address));
+        auto address = runner.run(db.find_node_address_v4(test_id));
         REQUIRE(address.has_value());
         CHECK(*address == test_address);
-        auto address_v6 = run(context, db.find_node_address_v6(test_id));
+        auto address_v6 = runner.run(db.find_node_address_v6(test_id));
         CHECK_FALSE(address_v6.has_value());
     }
 
     SECTION("insert_and_find_address.v6") {
         test_address.ip = ip::make_address("::ffff:a00:110");
-        run(context, db.upsert_node_address(test_id, test_address));
-        auto address = run(context, db.find_node_address_v6(test_id));
+        runner.run(db.upsert_node_address(test_id, test_address));
+        auto address = runner.run(db.find_node_address_v6(test_id));
         REQUIRE(address.has_value());
         CHECK(*address == test_address);
-        auto address_v4 = run(context, db.find_node_address_v4(test_id));
+        auto address_v4 = runner.run(db.find_node_address_v4(test_id));
         CHECK_FALSE(address_v4.has_value());
     }
 
     SECTION("update_address") {
-        run(context, db.upsert_node_address(test_id, test_address));
+        runner.run(db.upsert_node_address(test_id, test_address));
         NodeAddress test_address2{
             ip::make_address("10.0.1.17"),
             30306,
             30305,
         };
-        run(context, db.upsert_node_address(test_id, test_address2));
-        auto address = run(context, db.find_node_address_v4(test_id));
+        runner.run(db.upsert_node_address(test_id, test_address2));
+        auto address = runner.run(db.find_node_address_v4(test_id));
         REQUIRE(address.has_value());
         CHECK(*address == test_address2);
     }
@@ -101,22 +80,22 @@ TEST_CASE("NodeDbSqlite") {
     SECTION("insert_address_with_zero_ports") {
         test_address.port_disc = 0;
         test_address.port_rlpx = 0;
-        run(context, db.upsert_node_address(test_id, test_address));
-        auto address = run(context, db.find_node_address_v4(test_id));
+        runner.run(db.upsert_node_address(test_id, test_address));
+        auto address = runner.run(db.find_node_address_v4(test_id));
         REQUIRE(address.has_value());
         CHECK(*address == test_address);
     }
 
     SECTION("insert_and_delete_node") {
-        run(context, db.upsert_node_address(test_id, test_address));
-        run(context, db.delete_node(test_id));
-        auto address = run(context, db.find_node_address_v4(test_id));
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.delete_node(test_id));
+        auto address = runner.run(db.find_node_address_v4(test_id));
         CHECK_FALSE(address.has_value());
     }
 
     SECTION("update_last_pong_time") {
-        run(context, db.upsert_node_address(test_id, test_address));
-        run(context, db.update_last_pong_time(test_id, std::chrono::system_clock::system_clock::now()));
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.update_last_pong_time(test_id, std::chrono::system_clock::system_clock::now()));
     }
 }
 

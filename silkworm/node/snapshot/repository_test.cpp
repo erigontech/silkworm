@@ -20,18 +20,18 @@
 
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/test/snapshots.hpp>
 
 namespace silkworm::snapshot {
 
 TEST_CASE("SnapshotRepository::SnapshotRepository", "[silkworm][snapshot][snapshot]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     CHECK_NOTHROW(SnapshotRepository{SnapshotSettings{}});
 }
 
 TEST_CASE("SnapshotRepository::reopen_folder", "[silkworm][snapshot][snapshot]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     const auto tmp_dir = TemporaryDirectory::get_unique_temporary_path();
     std::filesystem::create_directories(tmp_dir);
@@ -48,7 +48,7 @@ TEST_CASE("SnapshotRepository::reopen_folder", "[silkworm][snapshot][snapshot]")
 }
 
 TEST_CASE("SnapshotRepository::view", "[silkworm][snapshot][snapshot]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     const auto tmp_dir = TemporaryDirectory::get_unique_temporary_path();
     std::filesystem::create_directories(tmp_dir);
     SnapshotSettings settings{tmp_dir};
@@ -119,7 +119,7 @@ TEST_CASE("SnapshotRepository::view", "[silkworm][snapshot][snapshot]") {
 }
 
 TEST_CASE("SnapshotRepository::missing_block_ranges", "[silkworm][snapshot][snapshot]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     const auto tmp_dir = TemporaryDirectory::get_unique_temporary_path();
     std::filesystem::create_directories(tmp_dir);
     SnapshotSettings settings{tmp_dir};

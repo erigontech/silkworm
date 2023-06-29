@@ -33,7 +33,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/conversion.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/silkrpc/core/rawdb/util.hpp>
 #include <silkworm/silkrpc/test/dummy_transaction.hpp>
 #include <silkworm/silkrpc/test/mock_cursor.hpp>
@@ -248,7 +248,7 @@ TEST_CASE("CoherentStateCache::CoherentStateCache", "[silkrpc][ethdb][kv][state_
 }
 
 TEST_CASE("CoherentStateCache::get_view returns no view", "[silkrpc][ethdb][kv][state_cache]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
 
     SECTION("no batch") {
@@ -279,7 +279,7 @@ TEST_CASE("CoherentStateCache::get_view returns no view", "[silkrpc][ethdb][kv][
 }
 
 TEST_CASE("CoherentStateCache::get_view one view", "[silkrpc][ethdb][kv][state_cache]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     CoherentStateCache cache;
     boost::asio::thread_pool pool{1};
 
@@ -470,7 +470,7 @@ TEST_CASE("CoherentStateCache::get_view one view", "[silkrpc][ethdb][kv][state_c
 }
 
 TEST_CASE("CoherentStateCache::get_view two views", "[silkrpc][ethdb][kv][state_cache]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     CoherentStateCache cache;
 
     SECTION("two single-upsert change batches => two search hits in different views") {
@@ -532,7 +532,7 @@ TEST_CASE("CoherentStateCache::get_view two views", "[silkrpc][ethdb][kv][state_
 }
 
 TEST_CASE("CoherentStateCache::on_new_block exceed max views", "[silkrpc][ethdb][kv][state_cache]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     const CoherentCacheConfig config;
     const auto kMaxViews{config.max_views};
     CoherentStateCache cache{config};
@@ -560,7 +560,7 @@ TEST_CASE("CoherentStateCache::on_new_block exceed max views", "[silkrpc][ethdb]
 }
 
 TEST_CASE("CoherentStateCache::on_new_block exceed max keys", "[silkrpc][ethdb][kv][state_cache]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     constexpr auto kMaxKeys{2u};
     const CoherentCacheConfig config{kDefaultMaxViews, /*with_storage=*/true, kMaxKeys, kMaxKeys};
     CoherentStateCache cache{config};
@@ -583,7 +583,7 @@ TEST_CASE("CoherentStateCache::on_new_block exceed max keys", "[silkrpc][ethdb][
 }
 
 TEST_CASE("CoherentStateCache::on_new_block clear the cache on view ID wrapping", "[silkrpc][ethdb][kv][state_cache]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     const CoherentCacheConfig config;
     const auto kMaxViews{config.max_views};
     CoherentStateCache cache{config};

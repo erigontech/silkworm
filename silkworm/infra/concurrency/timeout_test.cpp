@@ -19,22 +19,19 @@
 #include <exception>
 #include <stdexcept>
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/awaitable.hpp>
-#include <boost/asio/co_spawn.hpp>
 #include <boost/asio/deadline_timer.hpp>
 #include <boost/asio/experimental/awaitable_operators.hpp>
-#include <boost/asio/io_context.hpp>
 #include <boost/asio/multiple_exceptions.hpp>
 #include <boost/asio/this_coro.hpp>
-#include <boost/asio/use_future.hpp>
 #include <boost/date_time/posix_time/posix_time_duration.hpp>
 #include <boost/system/system_error.hpp>
 #include <catch2/catch.hpp>
 
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
+#include <silkworm/infra/test_util/task_runner.hpp>
 
 namespace silkworm::concurrency {
 
@@ -94,17 +91,8 @@ awaitable<void> wait_until_cancelled_bad() {
 
 template <typename TResult>
 TResult run(awaitable<TResult> awaitable1) {
-    io_context context;
-    auto task = co_spawn(
-        context,
-        std::move(awaitable1),
-        boost::asio::use_future);
-
-    while (task.wait_for(0s) != std::future_status::ready) {
-        context.poll_one();
-    }
-
-    return task.get();
+    test_util::TaskRunner runner;
+    return runner.run(std::move(awaitable1));
 }
 
 TEST_CASE("Timeout.value") {

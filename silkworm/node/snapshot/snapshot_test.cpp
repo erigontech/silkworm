@@ -23,7 +23,7 @@
 
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/test/snapshots.hpp>
 
 namespace silkworm::snapshot {
@@ -62,14 +62,14 @@ TEST_CASE("Snapshot::Snapshot", "[silkworm][snapshot][snapshot]") {
 }
 
 TEST_CASE("Snapshot::reopen_segment", "[silkworm][snapshot][snapshot]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporarySnapshotFile tmp_snapshot_file{test::SnapshotHeader{}};
     auto snapshot{std::make_unique<Snapshot_ForTest>(tmp_snapshot_file.path(), 0, 0)};
     snapshot->reopen_segment();
 }
 
 TEST_CASE("Snapshot::for_each_item", "[silkworm][snapshot][snapshot]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::HelloWorldSnapshotFile hello_world_snapshot_file{};
     huffman::Decompressor decoder{hello_world_snapshot_file.path()};
     Snapshot_ForTest tmp_snapshot{hello_world_snapshot_file.path(), 1'000, 2'000};
@@ -85,7 +85,7 @@ TEST_CASE("Snapshot::for_each_item", "[silkworm][snapshot][snapshot]") {
 }
 
 TEST_CASE("Snapshot::close", "[silkworm][snapshot][snapshot]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::HelloWorldSnapshotFile hello_world_snapshot_file{};
     huffman::Decompressor decoder{hello_world_snapshot_file.path()};
     Snapshot_ForTest tmp_snapshot{hello_world_snapshot_file.path(), 1'000, 2'000};
@@ -95,7 +95,7 @@ TEST_CASE("Snapshot::close", "[silkworm][snapshot][snapshot]") {
 
 // https://etherscan.io/block/1500013
 TEST_CASE("HeaderSnapshot::header_by_number OK", "[silkworm][snapshot][index][.]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::SampleHeaderSnapshotFile valid_header_snapshot{};
     test::SampleHeaderSnapshotPath header_snapshot_path{valid_header_snapshot.path()};  // necessary to tweak the block numbers
     HeaderIndex header_index{header_snapshot_path};
@@ -129,7 +129,7 @@ TEST_CASE("HeaderSnapshot::header_by_number OK", "[silkworm][snapshot][index][.]
 
 // https://etherscan.io/block/1500013
 TEST_CASE("BodySnapshot::body_by_number OK", "[silkworm][snapshot][index]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::SampleBodySnapshotFile valid_body_snapshot{};
     test::SampleBodySnapshotPath body_snapshot_path{valid_body_snapshot.path()};  // necessary to tweak the block numbers
     BodyIndex body_index{body_snapshot_path};

@@ -1,4 +1,4 @@
-/*
+#[[
    Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,19 +12,14 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-*/
+]]
 
-#include "util.hpp"
+find_package(Boost REQUIRED thread)
 
-#include <catch2/catch.hpp>
+set(TARGET silkworm_infra_test_util)
 
-#include <silkworm/infra/test_util/log.hpp>
+file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
 
-namespace silkworm {
+add_library(${TARGET} ${SRC})
 
-TEST_CASE("print grpc::Status", "[silkrpc][grpc][util]") {
-    CHECK_NOTHROW(test_util::null_stream() << grpc::Status::OK);
-    CHECK_NOTHROW(test_util::null_stream() << grpc::Status::CANCELLED);
-}
-
-}  // namespace silkworm
+target_link_libraries(${TARGET} PUBLIC silkworm_infra Boost::thread)

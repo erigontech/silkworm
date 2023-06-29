@@ -19,7 +19,7 @@
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::rpc {
 
@@ -34,7 +34,7 @@ TEST_CASE("create empty log", "[silkrpc][types][log]") {
 
 TEST_CASE("print empty log", "[silkrpc][types][log]") {
     Log l{};
-    CHECK_NOTHROW(silkworm::test::null_stream() << l);
+    CHECK_NOTHROW(silkworm::test_util::null_stream() << l);
 }
 
 }  // namespace silkworm::rpc

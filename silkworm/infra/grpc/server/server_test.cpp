@@ -26,7 +26,7 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/common/util.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::rpc {
 
@@ -54,7 +54,7 @@ static const std::string kTestAddressUri{"localhost:12345"};
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("Barebone gRPC Server", "[silkworm][node][rpc]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     grpc::ServerBuilder builder;
     // Add *at least one non-empty* ServerCompletionQueue (otherwise: ASAN SIGSEGV error in Shutdown)
     std::unique_ptr<grpc::ServerCompletionQueue> cq = builder.AddCompletionQueue();
@@ -75,7 +75,7 @@ TEST_CASE("Barebone gRPC Server", "[silkworm][node][rpc]") {
 }
 
 TEST_CASE("Server::Server", "[silkworm][node][rpc]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     SECTION("OK: create an empty Server", "[silkworm][node][rpc]") {
         ServerSettings settings;
@@ -85,7 +85,7 @@ TEST_CASE("Server::Server", "[silkworm][node][rpc]") {
 }
 
 TEST_CASE("Server::build_and_start", "[silkworm][node][rpc]") {
-    test::SetLogVerbosityGuard set_log_verbosity_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard set_log_verbosity_guard{log::Level::kNone};
 
     // TODO(canepat): use GMock
     class TestServer : public EmptyServer {
@@ -140,7 +140,7 @@ TEST_CASE("Server::build_and_start", "[silkworm][node][rpc]") {
 }
 
 TEST_CASE("Server::shutdown", "[silkworm][node][rpc]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     ServerSettings settings;
     settings.address_uri = kTestAddressUri;
     EmptyServer server{settings};
@@ -158,7 +158,7 @@ TEST_CASE("Server::shutdown", "[silkworm][node][rpc]") {
 }
 
 TEST_CASE("Server::join", "[silkworm][node][rpc]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     ServerSettings settings;
     settings.address_uri = kTestAddressUri;
     EmptyServer server{settings};

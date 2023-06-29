@@ -24,7 +24,7 @@
 
 #include <silkworm/core/common/cast.hpp>
 #include <silkworm/infra/common/environment.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/node/db/stages.hpp>
@@ -69,7 +69,7 @@ static Block generateSampleChildrenBlock(const BlockHeader& parent) {
 }
 
 TEST_CASE("Fork") {
-    test::SetLogVerbosityGuard log_guard(log::Level::kNone);
+    test_util::SetLogVerbosityGuard log_guard(log::Level::kNone);
 
     test::Context context;
     context.add_genesis_data();

@@ -21,7 +21,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/base.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::rpc {
 
@@ -212,7 +212,7 @@ TEST_CASE("check size of EIP-2718 block from RLP", "[silkrpc][types][block]") {
     CHECK(view.empty());
 
     CHECK(rpc_block_with_hash.get_block_size() == rlp_bytes.size());
-    CHECK_NOTHROW(test::null_stream() << rpc_block_with_hash);
+    CHECK_NOTHROW(test_util::null_stream() << rpc_block_with_hash);
 }
 
 }  // namespace silkworm::rpc

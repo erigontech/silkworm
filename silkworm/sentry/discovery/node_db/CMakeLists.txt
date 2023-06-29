@@ -16,8 +16,9 @@
 
 find_package(Boost REQUIRED thread)
 find_package(Catch2 REQUIRED)
+find_package(SQLiteCpp REQUIRED)
 
-set(TARGET silkworm_sentry_disc_v4)
+set(TARGET silkworm_sentry_node_db)
 
 file(GLOB_RECURSE SRC CONFIGURE_DEPENDS "*.cpp" "*.hpp")
 list(FILTER SRC EXCLUDE REGEX "_test\\.cpp$")
@@ -29,7 +30,7 @@ target_include_directories(${TARGET} PUBLIC "${SILKWORM_MAIN_DIR}")
 target_link_libraries(
   ${TARGET}
   PUBLIC silkworm_infra silkworm_sentry_common
-  PRIVATE Boost::thread stbrumme_keccak silkworm_core silkworm_sentry_node_db
+  PRIVATE Boost::thread SQLiteCpp::SQLiteCpp
 )
 
 # unit tests

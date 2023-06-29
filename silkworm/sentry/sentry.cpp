@@ -137,7 +137,7 @@ SentryImpl::SentryImpl(Settings settings, silkworm::rpc::ServerContextPool& cont
       context_pool_(context_pool),
       status_manager_(context_pool_.next_io_context()),
       rlpx_server_(context_pool_.next_io_context(), settings_.port),
-      discovery_(settings_.static_peers, !settings_.no_discover, node_key_provider(), settings_.port),
+      discovery_(settings_.static_peers, !settings_.no_discover, settings_.data_dir_path, node_key_provider(), settings_.port),
       peer_manager_(context_pool_.next_io_context(), settings_.max_peers, context_pool_),
       message_sender_(context_pool_.next_io_context()),
       message_receiver_(std::make_shared<MessageReceiver>(context_pool_.next_io_context(), settings_.max_peers)),

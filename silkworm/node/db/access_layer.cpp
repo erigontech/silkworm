@@ -916,7 +916,7 @@ BlockNum DataModel::highest_block_number() const {
     const auto data{header_cursor->to_last(/*.throw_not_found*/ false)};
     if (data.done && data.key.size() >= sizeof(uint64_t)) {
         ByteView key = from_slice(data.key);
-        //ByteView value = from_slice(data.value);
+        // ByteView value = from_slice(data.value);
         ByteView block_num = key.substr(0, sizeof(BlockNum));
         return endian::load_big_u64(block_num.data());
     }

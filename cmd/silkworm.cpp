@@ -35,7 +35,7 @@
 #include <silkworm/infra/grpc/server/server_context_pool.hpp>
 #include <silkworm/node/db/eth_status_data_provider.hpp>
 #include <silkworm/node/node.hpp>
-#include <silkworm/sentry/api/api_common/sentry_client.hpp>
+#include <silkworm/sentry/api/common/sentry_client.hpp>
 #include <silkworm/sentry/grpc/client/sentry_client.hpp>
 #include <silkworm/sentry/multi_sentry_client.hpp>
 #include <silkworm/sentry/sentry.hpp>
@@ -215,7 +215,7 @@ void parse_silkworm_command_line(CLI::App& cli, int argc, char* argv[], Silkworm
 class DummyServerCompletionQueue : public grpc::ServerCompletionQueue {
 };
 
-using SentryClientPtr = std::shared_ptr<sentry::api::api_common::SentryClient>;
+using SentryClientPtr = std::shared_ptr<sentry::api::SentryClient>;
 using SentryServerPtr = std::shared_ptr<sentry::Sentry>;
 using SentryPtrPair = std::tuple<SentryClientPtr, SentryServerPtr>;
 

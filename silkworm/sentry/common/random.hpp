@@ -25,7 +25,7 @@
 
 #include <silkworm/core/common/base.hpp>
 
-namespace silkworm::sentry::common {
+namespace silkworm::sentry {
 
 Bytes random_bytes(Bytes::size_type size);
 
@@ -74,4 +74,4 @@ std::vector<T> random_vector_items(std::vector<T>& l, size_t max_count) {
     return out;
 }
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::sentry

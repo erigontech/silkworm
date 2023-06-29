@@ -28,16 +28,16 @@ namespace silkworm::sentry::rlpx::auth {
 
 class AuthInitiator {
   public:
-    AuthInitiator(common::EccKeyPair initiator_key_pair, common::EccPublicKey recipient_public_key)
+    AuthInitiator(EccKeyPair initiator_key_pair, EccPublicKey recipient_public_key)
         : initiator_key_pair_(std::move(initiator_key_pair)),
           recipient_public_key_(std::move(recipient_public_key)) {}
 
-    Task<AuthKeys> execute(common::SocketStream& stream);
+    Task<AuthKeys> execute(SocketStream& stream);
 
   private:
-    common::EccKeyPair initiator_key_pair_;
-    common::EccPublicKey recipient_public_key_;
-    common::EccKeyPair initiator_ephemeral_key_pair_;
+    EccKeyPair initiator_key_pair_;
+    EccPublicKey recipient_public_key_;
+    EccKeyPair initiator_ephemeral_key_pair_;
 };
 
 }  // namespace silkworm::sentry::rlpx::auth

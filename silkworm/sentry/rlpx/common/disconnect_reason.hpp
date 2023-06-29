@@ -1,5 +1,5 @@
 /*
-   Copyright 2023 The Silkworm Authors
+   Copyright 2022 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -18,16 +18,14 @@
 
 #include <cstdint>
 
-namespace silkworm::sentry::discovery::disc_v4::disc_v4_common {
+namespace silkworm::sentry::rlpx {
 
-enum class PacketType : uint8_t {
-    kPing = 1,
-    kPong,
-    kFindNode,
-    kNeighbors,
-    kEnrRequest,
-    kEnrResponse,
-    kMaxValue = kEnrResponse,
+enum class DisconnectReason : uint8_t {
+    DisconnectRequested = 0,
+    UselessPeer = 3,
+    TooManyPeers = 4,
+    ClientQuitting = 8,
+    PingTimeout = 11,
 };
 
-}  // namespace silkworm::sentry::discovery::disc_v4::disc_v4_common
+}  // namespace silkworm::sentry::rlpx

@@ -32,7 +32,7 @@ class ServerImpl;
 
 class Server : public MessageSender {
   public:
-    Server(uint16_t port, std::function<common::EccKeyPair()> node_key, MessageHandler& handler);
+    Server(uint16_t port, std::function<EccKeyPair()> node_key, MessageHandler& handler);
     ~Server() override;
 
     Server(const Server&) = delete;

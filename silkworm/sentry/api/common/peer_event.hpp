@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,16 +16,20 @@
 
 #pragma once
 
-#include <cstdint>
+#include <optional>
 
-namespace silkworm::sentry::rlpx::rlpx_common {
+#include <silkworm/sentry/common/ecc_public_key.hpp>
 
-enum class DisconnectReason : uint8_t {
-    DisconnectRequested = 0,
-    UselessPeer = 3,
-    TooManyPeers = 4,
-    ClientQuitting = 8,
-    PingTimeout = 11,
+namespace silkworm::sentry::api {
+
+enum class PeerEventId {
+    kAdded,
+    kRemoved,
 };
 
-}  // namespace silkworm::sentry::rlpx::rlpx_common
+struct PeerEvent {
+    std::optional<sentry::EccPublicKey> peer_public_key;
+    PeerEventId event_id;
+};
+
+}  // namespace silkworm::sentry::api

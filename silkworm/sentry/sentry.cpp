@@ -30,8 +30,8 @@
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/enode_url.hpp>
 
-#include "api/api_common/node_info.hpp"
-#include "api/api_common/service.hpp"
+#include "api/common/node_info.hpp"
+#include "api/common/service.hpp"
 #include "api/router/direct_service.hpp"
 #include "api/router/service_router.hpp"
 #include "discovery/discovery.hpp"
@@ -61,7 +61,7 @@ class SentryImpl final {
 
     Task<void> run();
 
-    [[nodiscard]] std::shared_ptr<api::api_common::Service> service() { return direct_service_; }
+    [[nodiscard]] std::shared_ptr<api::Service> service() { return direct_service_; }
 
   private:
     void setup_node_key();
@@ -79,10 +79,10 @@ class SentryImpl final {
     std::unique_ptr<rlpx::Client> make_client();
     std::function<std::unique_ptr<rlpx::Client>()> client_factory();
     [[nodiscard]] std::string client_id() const;
-    [[nodiscard]] common::EnodeUrl make_node_url() const;
-    [[nodiscard]] api::api_common::NodeInfo make_node_info() const;
-    [[nodiscard]] std::function<api::api_common::NodeInfo()> node_info_provider() const;
-    [[nodiscard]] std::function<common::EccKeyPair()> node_key_provider() const;
+    [[nodiscard]] EnodeUrl make_node_url() const;
+    [[nodiscard]] api::NodeInfo make_node_info() const;
+    [[nodiscard]] std::function<api::NodeInfo()> node_info_provider() const;
+    [[nodiscard]] std::function<EccKeyPair()> node_key_provider() const;
 
     Settings settings_;
     std::optional<NodeKey> node_key_;
@@ -117,7 +117,7 @@ static api::router::ServiceRouter make_service_router(
     MessageSender& message_sender,
     MessageReceiver& message_receiver,
     PeerManagerApi& peer_manager_api,
-    std::function<api::api_common::NodeInfo()> node_info_provider) {
+    std::function<api::NodeInfo()> node_info_provider) {
     return api::router::ServiceRouter{
         eth::Protocol::kVersion,
         status_channel,
@@ -244,17 +244,17 @@ std::string SentryImpl::client_id() const {
     return "silkworm";
 }
 
-common::EnodeUrl SentryImpl::make_node_url() const {
+EnodeUrl SentryImpl::make_node_url() const {
     assert(node_key_);
     assert(public_ip_);
-    return common::EnodeUrl{
+    return EnodeUrl{
         node_key_.value().public_key(),
         public_ip_.value(),
         settings_.port,
     };
 }
 
-api::api_common::NodeInfo SentryImpl::make_node_info() const {
+api::NodeInfo SentryImpl::make_node_info() const {
     return {
         make_node_url(),
         client_id(),
@@ -263,11 +263,11 @@ api::api_common::NodeInfo SentryImpl::make_node_info() const {
     };
 }
 
-std::function<api::api_common::NodeInfo()> SentryImpl::node_info_provider() const {
+std::function<api::NodeInfo()> SentryImpl::node_info_provider() const {
     return [this] { return this->make_node_info(); };
 }
 
-std::function<common::EccKeyPair()> SentryImpl::node_key_provider() const {
+std::function<EccKeyPair()> SentryImpl::node_key_provider() const {
     return [this] {
         assert(this->node_key_);
         return this->node_key_.value();
@@ -286,7 +286,7 @@ Task<void> Sentry::run() {
     return p_impl_->run();
 }
 
-Task<std::shared_ptr<api::api_common::Service>> Sentry::service() {
+Task<std::shared_ptr<api::Service>> Sentry::service() {
     co_return p_impl_->service();
 }
 

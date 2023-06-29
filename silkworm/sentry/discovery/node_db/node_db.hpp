@@ -27,7 +27,7 @@
 
 namespace silkworm::sentry::discovery::node_db {
 
-using NodeId = common::EccPublicKey;
+using NodeId = EccPublicKey;
 using Time = std::chrono::time_point<std::chrono::system_clock>;
 
 struct NodeAddress {

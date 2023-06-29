@@ -67,7 +67,7 @@ Task<ip::address> stun_ip_resolver() {
     int retry_count = 3;
     while (retry_count > 0) {
         try {
-            Bytes transaction_id = common::random_bytes(12);
+            Bytes transaction_id = random_bytes(12);
             stun::message binding_request{stun::message::binding_request, transaction_id.data()};
             ByteView request_data(binding_request.data(), binding_request.size());
 

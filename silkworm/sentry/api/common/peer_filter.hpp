@@ -16,22 +16,23 @@
 
 #pragma once
 
-#include <silkworm/core/common/base.hpp>
-#include <silkworm/sentry/common/message.hpp>
+#include <optional>
 
-#include "disconnect_reason.hpp"
+#include <silkworm/sentry/common/ecc_public_key.hpp>
 
-namespace silkworm::sentry::rlpx::rlpx_common {
+namespace silkworm::sentry::api {
 
-struct DisconnectMessage {
-    [[nodiscard]] Bytes rlp_encode() const;
-    [[nodiscard]] static DisconnectMessage rlp_decode(ByteView data);
+struct PeerFilter {
+    std::optional<size_t> max_peers;
+    std::optional<sentry::EccPublicKey> peer_public_key;
 
-    [[nodiscard]] sentry::common::Message to_message() const;
-    [[nodiscard]] static DisconnectMessage from_message(const sentry::common::Message& message);
+    static PeerFilter with_max_peers(size_t max_peers) {
+        return {{max_peers}, std::nullopt};
+    }
 
-    static const uint8_t kId;
-    DisconnectReason reason{DisconnectReason::DisconnectRequested};
+    static PeerFilter with_peer_public_key(sentry::EccPublicKey public_key) {
+        return {std::nullopt, {std::move(public_key)}};
+    }
 };
 
-}  // namespace silkworm::sentry::rlpx::rlpx_common
+}  // namespace silkworm::sentry::api

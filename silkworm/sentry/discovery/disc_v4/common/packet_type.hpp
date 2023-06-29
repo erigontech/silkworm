@@ -14,18 +14,20 @@
    limitations under the License.
 */
 
-#include "message_expiration.hpp"
+#pragma once
 
-namespace silkworm::sentry::discovery::disc_v4::disc_v4_common {
+#include <cstdint>
 
-std::chrono::time_point<std::chrono::system_clock> make_message_expiration() {
-    using namespace std::chrono_literals;
-    static const auto ttl = 20s;
-    return std::chrono::system_clock::now() + ttl;
-}
+namespace silkworm::sentry::discovery::disc_v4 {
 
-bool is_expired_message_expiration(std::chrono::time_point<std::chrono::system_clock> expiration) {
-    return expiration < std::chrono::system_clock::now();
-}
+enum class PacketType : uint8_t {
+    kPing = 1,
+    kPong,
+    kFindNode,
+    kNeighbors,
+    kEnrRequest,
+    kEnrResponse,
+    kMaxValue = kEnrResponse,
+};
 
-}  // namespace silkworm::sentry::discovery::disc_v4::disc_v4_common
+}  // namespace silkworm::sentry::discovery::disc_v4

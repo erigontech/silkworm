@@ -36,11 +36,11 @@ namespace silkworm::sentry::rlpx::auth {
 class Handshake {
   public:
     explicit Handshake(
-        common::EccKeyPair node_key,
+        EccKeyPair node_key,
         std::string client_id,
         uint16_t node_listen_port,
         std::pair<std::string, uint8_t> required_capability,
-        std::optional<common::EccPublicKey> peer_public_key)
+        std::optional<EccPublicKey> peer_public_key)
         : node_key_(std::move(node_key)),
           client_id_(std::move(client_id)),
           node_listen_port_(node_listen_port),
@@ -50,11 +50,11 @@ class Handshake {
 
     struct HandshakeResult {
         framing::MessageStream message_stream;
-        common::EccPublicKey peer_public_key;
+        EccPublicKey peer_public_key;
         HelloMessage hello_reply_message;
     };
 
-    Task<HandshakeResult> execute(common::SocketStream& stream);
+    Task<HandshakeResult> execute(SocketStream& stream);
 
     class DisconnectError : public std::runtime_error {
       public:
@@ -62,14 +62,14 @@ class Handshake {
     };
 
   private:
-    Task<AuthKeys> auth(common::SocketStream& stream);
+    Task<AuthKeys> auth(SocketStream& stream);
 
-    common::EccKeyPair node_key_;
+    EccKeyPair node_key_;
     std::string client_id_;
     uint16_t node_listen_port_;
     std::pair<std::string, uint8_t> required_capability_;
     const bool is_initiator_;
-    std::optional<common::EccPublicKey> peer_public_key_;
+    std::optional<EccPublicKey> peer_public_key_;
 };
 
 }  // namespace silkworm::sentry::rlpx::auth

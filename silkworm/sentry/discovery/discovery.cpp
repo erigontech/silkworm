@@ -33,10 +33,10 @@ using namespace boost::asio;
 class DiscoveryImpl {
   public:
     explicit DiscoveryImpl(
-        std::vector<common::EnodeUrl> peer_urls,
+        std::vector<EnodeUrl> peer_urls,
         bool with_dynamic_discovery,
         const std::filesystem::path& data_dir_path,
-        std::function<common::EccKeyPair()> node_key,
+        std::function<EccKeyPair()> node_key,
         uint16_t disc_v4_port);
 
     DiscoveryImpl(const DiscoveryImpl&) = delete;
@@ -44,16 +44,16 @@ class DiscoveryImpl {
 
     Task<void> run();
 
-    Task<std::vector<common::EnodeUrl>> request_peer_urls(
+    Task<std::vector<EnodeUrl>> request_peer_urls(
         size_t max_count,
-        std::vector<common::EnodeUrl> exclude_urls);
+        std::vector<EnodeUrl> exclude_urls);
 
-    bool is_static_peer_url(const common::EnodeUrl& peer_url);
+    bool is_static_peer_url(const EnodeUrl& peer_url);
 
   private:
     void setup_node_db();
 
-    const std::vector<common::EnodeUrl> peer_urls_;
+    const std::vector<EnodeUrl> peer_urls_;
     bool with_dynamic_discovery_;
     std::filesystem::path data_dir_path_;
     node_db::NodeDbSqlite node_db_;
@@ -61,10 +61,10 @@ class DiscoveryImpl {
 };
 
 DiscoveryImpl::DiscoveryImpl(
-    std::vector<common::EnodeUrl> peer_urls,
+    std::vector<EnodeUrl> peer_urls,
     bool with_dynamic_discovery,
     const std::filesystem::path& data_dir_path,
-    std::function<common::EccKeyPair()> node_key,
+    std::function<EccKeyPair()> node_key,
     uint16_t disc_v4_port)
     : peer_urls_(std::move(peer_urls)),
       with_dynamic_discovery_(with_dynamic_discovery),
@@ -99,24 +99,24 @@ static std::vector<T> exclude_vector_items(
     return remaining_items;
 }
 
-Task<std::vector<common::EnodeUrl>> DiscoveryImpl::request_peer_urls(
+Task<std::vector<EnodeUrl>> DiscoveryImpl::request_peer_urls(
     size_t max_count,
-    std::vector<common::EnodeUrl> exclude_urls) {
+    std::vector<EnodeUrl> exclude_urls) {
     auto peer_urls = exclude_vector_items(peer_urls_, std::move(exclude_urls));
-    co_return common::random_vector_items(peer_urls, max_count);
+    co_return random_vector_items(peer_urls, max_count);
 }
 
-bool DiscoveryImpl::is_static_peer_url(const common::EnodeUrl& peer_url) {
-    return std::any_of(peer_urls_.cbegin(), peer_urls_.cend(), [&peer_url](const common::EnodeUrl& it) {
+bool DiscoveryImpl::is_static_peer_url(const EnodeUrl& peer_url) {
+    return std::any_of(peer_urls_.cbegin(), peer_urls_.cend(), [&peer_url](const EnodeUrl& it) {
         return it == peer_url;
     });
 }
 
 Discovery::Discovery(
-    std::vector<common::EnodeUrl> peer_urls,
+    std::vector<EnodeUrl> peer_urls,
     bool with_dynamic_discovery,
     const std::filesystem::path& data_dir_path,
-    std::function<common::EccKeyPair()> node_key,
+    std::function<EccKeyPair()> node_key,
     uint16_t disc_v4_port)
     : p_impl_(std::make_unique<DiscoveryImpl>(
           std::move(peer_urls),
@@ -133,13 +133,13 @@ Task<void> Discovery::run() {
     return p_impl_->run();
 }
 
-Task<std::vector<common::EnodeUrl>> Discovery::request_peer_urls(
+Task<std::vector<EnodeUrl>> Discovery::request_peer_urls(
     size_t max_count,
-    std::vector<common::EnodeUrl> exclude_urls) {
+    std::vector<EnodeUrl> exclude_urls) {
     return p_impl_->request_peer_urls(max_count, std::move(exclude_urls));
 }
 
-bool Discovery::is_static_peer_url(const common::EnodeUrl& peer_url) {
+bool Discovery::is_static_peer_url(const EnodeUrl& peer_url) {
     return p_impl_->is_static_peer_url(peer_url);
 }
 

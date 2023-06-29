@@ -16,20 +16,25 @@
 
 #pragma once
 
-#include <optional>
+#include <string>
+#include <vector>
 
-#include <silkworm/sentry/common/ecc_public_key.hpp>
+#include <boost/asio/ip/tcp.hpp>
 
-namespace silkworm::sentry::api::api_common {
+#include <silkworm/sentry/common/enode_url.hpp>
 
-enum class PeerEventId {
-    kAdded,
-    kRemoved,
+namespace silkworm::sentry::api {
+
+struct PeerInfo {
+    sentry::EnodeUrl url;
+    boost::asio::ip::tcp::endpoint local_endpoint;
+    boost::asio::ip::tcp::endpoint remote_endpoint;
+    bool is_inbound;
+    bool is_static;
+    std::string client_id;
+    std::vector<std::string> capabilities;
 };
 
-struct PeerEvent {
-    std::optional<sentry::common::EccPublicKey> peer_public_key;
-    PeerEventId event_id;
-};
+using PeerInfos = std::vector<PeerInfo>;
 
-}  // namespace silkworm::sentry::api::api_common
+}  // namespace silkworm::sentry::api

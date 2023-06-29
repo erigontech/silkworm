@@ -31,24 +31,23 @@
 #include <silkworm/sentry/common/sleep.hpp>
 
 #include "auth/handshake.hpp"
+#include "common/disconnect_message.hpp"
 #include "ping_message.hpp"
-#include "rlpx_common/disconnect_message.hpp"
 
 namespace silkworm::sentry::rlpx {
 
 using namespace std::chrono_literals;
 using namespace boost::asio;
-using namespace rlpx_common;
 
 Peer::Peer(
     any_io_executor&& executor,
-    common::SocketStream stream,
-    common::EccKeyPair node_key,
+    SocketStream stream,
+    EccKeyPair node_key,
     std::string client_id,
     uint16_t node_listen_port,
     std::unique_ptr<Protocol> protocol,
-    std::optional<common::EnodeUrl> url,
-    std::optional<common::EccPublicKey> peer_public_key,
+    std::optional<EnodeUrl> url,
+    std::optional<EccPublicKey> peer_public_key,
     bool is_inbound,
     bool is_static)
     : stream_(std::move(stream)),
@@ -271,7 +270,7 @@ void Peer::close() {
     }
 }
 
-void Peer::post_message(const std::shared_ptr<Peer>& peer, const common::Message& message) {
+void Peer::post_message(const std::shared_ptr<Peer>& peer, const Message& message) {
     peer->send_message_tasks_.spawn(peer->strand_, Peer::send_message(peer, message));
 }
 
@@ -279,7 +278,7 @@ Task<void> Peer::send_message_tasks_wait(std::shared_ptr<Peer> self) {
     co_await self->send_message_tasks_.wait();
 }
 
-Task<void> Peer::send_message(std::shared_ptr<Peer> peer, common::Message message) {
+Task<void> Peer::send_message(std::shared_ptr<Peer> peer, Message message) {
     try {
         co_await peer->send_message(std::move(message));
     } catch (const DisconnectedError& ex) {
@@ -297,7 +296,7 @@ Task<void> Peer::send_message(std::shared_ptr<Peer> peer, common::Message messag
     }
 }
 
-Task<void> Peer::send_message(common::Message message) {
+Task<void> Peer::send_message(Message message) {
     try {
         co_await send_message_channel_.send(std::move(message));
     } catch (const boost::system::system_error& ex) {
@@ -310,7 +309,7 @@ Task<void> Peer::send_message(common::Message message) {
 Task<void> Peer::send_messages(framing::MessageStream& message_stream) {
     // loop until message_stream exception
     while (true) {
-        common::Message message;
+        Message message;
         try {
             message = co_await send_message_channel_.receive();
         } catch (const boost::system::system_error& ex) {
@@ -322,7 +321,7 @@ Task<void> Peer::send_messages(framing::MessageStream& message_stream) {
     }
 }
 
-Task<common::Message> Peer::receive_message() {
+Task<Message> Peer::receive_message() {
     try {
         co_return (co_await receive_message_channel_.receive());
     } catch (const boost::system::system_error& ex) {
@@ -368,7 +367,7 @@ Task<void> Peer::ping_periodically(framing::MessageStream& message_stream) {
 
     // loop until message_stream exception
     while (true) {
-        co_await common::sleep(kPeerPingInterval);
+        co_await sleep(kPeerPingInterval);
 
         co_await message_stream.send(PingMessage{}.to_message());
 

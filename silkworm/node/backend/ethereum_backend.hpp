@@ -25,7 +25,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/node/backend/state_change_collection.hpp>
 #include <silkworm/node/common/settings.hpp>
-#include <silkworm/sentry/api/api_common/sentry_client.hpp>
+#include <silkworm/sentry/api/common/sentry_client.hpp>
 
 namespace silkworm {
 
@@ -36,7 +36,7 @@ class EthereumBackEnd {
     explicit EthereumBackEnd(
         const NodeSettings& node_settings,
         mdbx::env* chaindata_env,
-        std::shared_ptr<sentry::api::api_common::SentryClient> sentry_client);
+        std::shared_ptr<sentry::api::SentryClient> sentry_client);
     ~EthereumBackEnd();
 
     EthereumBackEnd(const EthereumBackEnd&) = delete;
@@ -46,7 +46,7 @@ class EthereumBackEnd {
     [[nodiscard]] const std::string& node_name() const noexcept { return node_name_; }
     [[nodiscard]] std::optional<uint64_t> chain_id() const noexcept { return chain_id_; }
     [[nodiscard]] std::optional<evmc::address> etherbase() const noexcept { return node_settings_.etherbase; }
-    [[nodiscard]] std::shared_ptr<sentry::api::api_common::SentryClient> sentry_client() const noexcept { return sentry_client_; }
+    [[nodiscard]] std::shared_ptr<sentry::api::SentryClient> sentry_client() const noexcept { return sentry_client_; }
     [[nodiscard]] StateChangeCollection* state_change_source() const noexcept { return state_change_collection_.get(); }
 
     void set_node_name(const std::string& node_name) noexcept;
@@ -58,7 +58,7 @@ class EthereumBackEnd {
     EthereumBackEnd(
         const NodeSettings& node_settings,
         mdbx::env* chaindata_env,
-        std::shared_ptr<sentry::api::api_common::SentryClient> sentry_client,
+        std::shared_ptr<sentry::api::SentryClient> sentry_client,
         std::unique_ptr<StateChangeCollection> state_change_collection);
 
   private:
@@ -66,7 +66,7 @@ class EthereumBackEnd {
     mdbx::env* chaindata_env_;
     std::string node_name_{kDefaultNodeName};
     std::optional<uint64_t> chain_id_{std::nullopt};
-    std::shared_ptr<sentry::api::api_common::SentryClient> sentry_client_;
+    std::shared_ptr<sentry::api::SentryClient> sentry_client_;
     std::unique_ptr<StateChangeCollection> state_change_collection_;
 };
 

@@ -21,7 +21,7 @@
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/secp256k1_context.hpp>
 
-namespace silkworm::sentry::common {
+namespace silkworm::sentry {
 
 Bytes EccPublicKey::serialized_std() const {
     auto& data = data_;
@@ -72,4 +72,4 @@ bool operator<(const EccPublicKey& lhs, const EccPublicKey& rhs) {
     return lhs.data() < rhs.data();
 }
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::sentry

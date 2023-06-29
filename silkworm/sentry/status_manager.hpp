@@ -47,7 +47,7 @@ class StatusManager {
 
   private:
     concurrency::Channel<eth::StatusData> status_channel_;
-    common::AtomicValue<eth::StatusData> status_;
+    AtomicValue<eth::StatusData> status_;
 };
 
 }  // namespace silkworm::sentry

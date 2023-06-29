@@ -17,9 +17,9 @@
 #pragma once
 #include <chrono>
 
-namespace silkworm::sentry::discovery::disc_v4::disc_v4_common {
+namespace silkworm::sentry::discovery::disc_v4 {
 
 std::chrono::time_point<std::chrono::system_clock> make_message_expiration();
 bool is_expired_message_expiration(std::chrono::time_point<std::chrono::system_clock> expiration);
 
-}  // namespace silkworm::sentry::discovery::disc_v4::disc_v4_common
+}  // namespace silkworm::sentry::discovery::disc_v4

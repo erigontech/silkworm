@@ -19,7 +19,7 @@
 #include <functional>
 #include <mutex>
 
-namespace silkworm::sentry::common {
+namespace silkworm::sentry {
 
 template <typename T>
 class AtomicValue {
@@ -45,4 +45,4 @@ class AtomicValue {
     std::mutex mutex_;
 };
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::sentry

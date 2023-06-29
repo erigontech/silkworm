@@ -20,7 +20,7 @@
 
 #include <silkworm/core/common/util.hpp>
 
-namespace silkworm::sentry::common {
+namespace silkworm::sentry {
 
 TEST_CASE("EccKeyPair.public_key_hex") {
     CHECK(
@@ -33,4 +33,4 @@ TEST_CASE("EccKeyPair.public_key_hex") {
             .hex() == "24bfa2cdce7c6a41184fa0809ad8d76969b7280952e9aa46179d90cfbab90f7d2b004928f0364389a1aa8d5166281f2ff7568493c1f719e8f6148ef8cf8af42d");
 }
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::sentry

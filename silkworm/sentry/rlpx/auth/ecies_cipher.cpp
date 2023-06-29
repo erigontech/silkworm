@@ -54,7 +54,7 @@ EciesCipher::Message EciesCipher::encrypt_message(
     ByteView plain_text,
     PublicKeyView public_key_view,
     ByteView mac_extra_data) {
-    common::EccKeyPair ephemeral_key_pair;
+    EccKeyPair ephemeral_key_pair;
 
     Bytes shared_secret = kdf(compute_shared_secret(public_key_view, ephemeral_key_pair.private_key()));
     ByteView aes_key(shared_secret.data(), kKeySize);
@@ -144,7 +144,7 @@ EciesCipher::Message EciesCipher::deserialize_message(ByteView message_data) {
     Bytes cipher_text{&message_data[key_size + iv_size], cipher_text_size};
     Bytes mac{&message_data[key_size + iv_size + cipher_text_size], mac_size};
 
-    auto ephemeral_public_key = common::EccPublicKey::deserialize_std(key_data);
+    auto ephemeral_public_key = EccPublicKey::deserialize_std(key_data);
 
     return {
         std::move(ephemeral_public_key),

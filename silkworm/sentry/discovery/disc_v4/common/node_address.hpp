@@ -26,7 +26,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/rlp/decode.hpp>
 
-namespace silkworm::sentry::discovery::disc_v4::disc_v4_common {
+namespace silkworm::sentry::discovery::disc_v4 {
 
 struct NodeAddress {
     boost::asio::ip::udp::endpoint endpoint;
@@ -42,4 +42,4 @@ DecodingResult decode(ByteView& from, NodeAddress& to, rlp::Leftover mode) noexc
 Bytes ip_address_to_bytes(const boost::asio::ip::address& ip);
 std::optional<boost::asio::ip::address> ip_address_from_bytes(ByteView ip_bytes) noexcept;
 
-}  // namespace silkworm::sentry::discovery::disc_v4::disc_v4_common
+}  // namespace silkworm::sentry::discovery::disc_v4

@@ -19,11 +19,11 @@
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/message.hpp>
 
-namespace silkworm::sentry::api::api_common {
+namespace silkworm::sentry::api {
 
 struct MessageFromPeer {
-    sentry::common::Message message;
-    std::optional<sentry::common::EccPublicKey> peer_public_key;
+    sentry::Message message;
+    std::optional<sentry::EccPublicKey> peer_public_key;
 };
 
-}  // namespace silkworm::sentry::api::api_common
+}  // namespace silkworm::sentry::api

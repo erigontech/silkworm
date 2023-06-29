@@ -31,17 +31,16 @@
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/timeout.hpp>
 
-#include "disc_v4_common/packet_type.hpp"
+#include "common/packet_type.hpp"
 #include "message_codec.hpp"
 
 namespace silkworm::sentry::discovery::disc_v4 {
 
 using namespace boost::asio;
-using namespace disc_v4_common;
 
 class ServerImpl {
   public:
-    explicit ServerImpl(uint16_t port, std::function<common::EccKeyPair()> node_key, MessageHandler& handler)
+    explicit ServerImpl(uint16_t port, std::function<EccKeyPair()> node_key, MessageHandler& handler)
         : ip_(ip::address{ip::address_v4::any()}),
           port_(port),
           node_key_(std::move(node_key)),
@@ -121,7 +120,7 @@ class ServerImpl {
     template <class TMessage>
     Task<void> send_message(TMessage message, ip::udp::endpoint recipient) {
         auto packet_data = MessageCodec::encode(
-            common::Message{TMessage::kId, message.rlp_encode()},
+            Message{TMessage::kId, message.rlp_encode()},
             node_key_().private_key());
         co_await send_packet(std::move(packet_data), recipient);
     }
@@ -143,11 +142,11 @@ class ServerImpl {
 
     boost::asio::ip::address ip_;
     uint16_t port_;
-    std::function<common::EccKeyPair()> node_key_;
+    std::function<EccKeyPair()> node_key_;
     MessageHandler& handler_;
 };
 
-Server::Server(uint16_t port, std::function<common::EccKeyPair()> node_key, MessageHandler& handler)
+Server::Server(uint16_t port, std::function<EccKeyPair()> node_key, MessageHandler& handler)
     : p_impl_(std::make_unique<ServerImpl>(port, std::move(node_key), handler)) {}
 
 Server::~Server() {

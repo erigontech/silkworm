@@ -113,11 +113,11 @@ int parse_command_line(int argc, char* argv[], CLI::App& app, StandaloneBackEndK
     return 0;
 }
 
-std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> make_sentry_client(
+std::shared_ptr<silkworm::sentry::api::SentryClient> make_sentry_client(
     const NodeSettings& node_settings,
     rpc::ClientContextPool& context_pool,
     db::ROAccess db_access) {
-    std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> sentry_client;
+    std::shared_ptr<silkworm::sentry::api::SentryClient> sentry_client;
 
     db::EthStatusDataProvider eth_status_data_provider{db_access, node_settings.chain_config.value()};
 
@@ -133,7 +133,7 @@ std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> make_sentry_cli
             remote_sentry_client,
             eth_status_data_provider.to_factory_function());
     } else {
-        std::vector<std::shared_ptr<silkworm::sentry::api::api_common::SentryClient>> clients;
+        std::vector<std::shared_ptr<silkworm::sentry::api::SentryClient>> clients;
 
         for (const auto& address_uri : node_settings.remote_sentry_addresses) {
             // remote client

@@ -342,8 +342,8 @@ bool BitTorrentClient::handle_alert(const lt::alert* alert) {
         if (!sta->status.empty()) {
             for (const auto& ts : sta->status) {
                 SILK_INFO << "Torrent: " << ts.name << " id: " << ts.handle.id() << " state: " << magic_enum::enum_name(ts.state) << " "
-                           << (ts.download_payload_rate / 1'000'000) << " MB/s " << (ts.total_done / 1'000'000) << " MB ("
-                           << (ts.progress_ppm / 10'000) << "%) downloaded (" << ts.num_peers << " peers)";
+                          << (ts.download_payload_rate / 1'000'000) << " MB/s " << (ts.total_done / 1'000'000) << " MB ("
+                          << (ts.progress_ppm / 10'000) << "%) downloaded (" << ts.num_peers << " peers)";
             }
         } else {
             SILK_DEBUG << "Empty state update alert:" << sta->message();

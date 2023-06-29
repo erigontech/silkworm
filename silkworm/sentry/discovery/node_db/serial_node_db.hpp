@@ -16,30 +16,31 @@
 
 #pragma once
 
-#include <filesystem>
-#include <memory>
-
 #include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/strand.hpp>
 
 #include "node_db.hpp"
 
 namespace silkworm::sentry::discovery::node_db {
 
-class NodeDbSqliteImpl;
-
-class NodeDbSqlite {
+class SerialNodeDb : public NodeDb {
   public:
-    explicit NodeDbSqlite(boost::asio::any_io_executor executor);
-    ~NodeDbSqlite();
+    SerialNodeDb(
+        NodeDb& db,
+        boost::asio::any_io_executor executor)
+        : db_(db),
+          strand_(boost::asio::make_strand(std::move(executor))) {}
+    ~SerialNodeDb() override = default;
 
-    void setup(const std::filesystem::path& db_dir_path);
-    void setup_in_memory();
-
-    [[nodiscard]] NodeDb& interface();
+    Task<void> upsert_node_address(NodeId id, NodeAddress address) override;
+    Task<std::optional<NodeAddress>> find_node_address_v4(NodeId id) override;
+    Task<std::optional<NodeAddress>> find_node_address_v6(NodeId id) override;
+    Task<void> update_last_pong_time(NodeId id, Time value) override;
+    Task<void> delete_node(NodeId id) override;
 
   private:
-    std::unique_ptr<NodeDbSqliteImpl> p_impl_;
-    std::unique_ptr<NodeDb> interface_;
+    NodeDb& db_;
+    boost::asio::strand<boost::asio::any_io_executor> strand_;
 };
 
 }  // namespace silkworm::sentry::discovery::node_db

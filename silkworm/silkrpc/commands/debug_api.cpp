@@ -337,7 +337,9 @@ awaitable<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& reque
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
 
         debug::DebugExecutor executor{db_reader, *block_cache_, workers_, *tx, config};
+        std::cout << "** START EXECUTOR ************************************************************************************\n";
         co_await executor.trace_call(stream, block_number_or_hash, call);
+        std::cout << "** END EXECUTOR ************************************************************************************\n";
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         std::ostringstream oss;

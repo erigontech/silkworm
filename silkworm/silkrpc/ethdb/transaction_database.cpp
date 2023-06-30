@@ -28,6 +28,12 @@ awaitable<KeyValue> TransactionDatabase::get(const std::string& table, ByteView 
     const auto cursor = co_await tx_.cursor(table);
     SILK_TRACE << "TransactionDatabase::get cursor_id: " << cursor->cursor_id();
     const auto kv_pair = co_await cursor->seek(key);
+
+    std::cout << "TransactionDatabase::get: TABLE " << table << " **** START *******\n"
+        << "static silkworm::Bytes k" << table << "Key{*silkworm::from_hex(\"" << silkworm::to_hex(key) << "\")};\n"
+        << "static silkworm::Bytes k" << table << "Value{*silkworm::from_hex(\"" << silkworm::to_hex(kv_pair.value) << "\")};\n"
+        << "TransactionDatabase::get: TABLE " << table << " **** END *******\n\n" << std::flush;
+
     co_return kv_pair;
 }
 
@@ -35,6 +41,12 @@ awaitable<silkworm::Bytes> TransactionDatabase::get_one(const std::string& table
     const auto cursor = co_await tx_.cursor(table);
     SILK_TRACE << "TransactionDatabase::get_one cursor_id: " << cursor->cursor_id();
     const auto kv_pair = co_await cursor->seek_exact(key);
+
+    std::cout << "TransactionDatabase::get_one: TABLE " << table << " **** START *******\n"
+        << "static silkworm::Bytes k" << table << "Key{*silkworm::from_hex(\"" << silkworm::to_hex(key) << "\")};\n"
+        << "static silkworm::Bytes k" << table << "Value{*silkworm::from_hex(\"" << silkworm::to_hex(kv_pair.value) << "\")};\n"
+        << "TransactionDatabase::get_one: TABLE " << table << " **** END *******\n\n" << std::flush;
+
     co_return kv_pair.value;
 }
 
@@ -45,8 +57,21 @@ awaitable<std::optional<Bytes>> TransactionDatabase::get_both_range(const std::s
     SILK_DEBUG << "TransactionDatabase::get_both_range value: " << value << " subkey: " << subkey;
     if (value.substr(0, subkey.size()) != subkey) {
         SILK_DEBUG << "TransactionDatabase::get_both_range value: " << value << " subkey: " << subkey;
+
+        std::cout << "TransactionDatabase::get_both_range: TABLE " << table << " **** START *******\n"
+            << "static silkworm::Bytes k" << table << "Key{*silkworm::from_hex(\"" << silkworm::to_hex(key) << "\")};\n"
+            << "static silkworm::Bytes k" << table << "Subkey{*silkworm::from_hex(\"" << silkworm::to_hex(subkey) << "\")};\n"
+            << "static silkworm::Bytes k" << table << "Value{*silkworm::from_hex(\"\")};\n"
+            << "TransactionDatabase::get_both_range: TABLE " << table << " **** END *******\n\n" << std::flush;
+
         co_return std::nullopt;
     }
+    std::cout << "TransactionDatabase::get_both_range: TABLE " << table << " **** START *******\n"
+        << "static silkworm::Bytes k" << table << "Key{*silkworm::from_hex(\"" << silkworm::to_hex(key) << "\")};\n"
+        << "static silkworm::Bytes k" << table << "Subkey{*silkworm::from_hex(\"" << silkworm::to_hex(subkey) << "\")};\n"
+        << "static silkworm::Bytes k" << table << "Value{*silkworm::from_hex(\"" << silkworm::to_hex(value.substr(subkey.length())) << "\")};\n"
+        << "TransactionDatabase::get_both_range: TABLE " << table << " **** END *******\n\n" << std::flush;
+
     co_return value.substr(subkey.length());
 }
 
@@ -66,6 +91,12 @@ awaitable<void> TransactionDatabase::walk(const std::string& table, ByteView sta
     auto k = kv_pair.key;
     auto v = kv_pair.value;
     SILK_TRACE << "k: " << k << " v: " << v;
+
+    std::cout << "TransactionDatabase::walk: TABLE " << table << " **** START *******\n"
+        << "static silkworm::Bytes k" << table << "Key{*silkworm::from_hex(\"" << silkworm::to_hex(start_key) << "\")};\n"
+        << "static uint32_t k" << table << "FixedBits{" << fixed_bits << "};\n"
+        << "static silkworm::Bytes k" << table << "Value{*silkworm::from_hex(\"" << silkworm::to_hex(kv_pair.value) << "\")};\n";
+
     while (
         !k.empty() &&
         k.size() >= fixed_bytes &&
@@ -78,6 +109,7 @@ awaitable<void> TransactionDatabase::walk(const std::string& table, ByteView sta
         k = kv_pair.key;
         v = kv_pair.value;
     }
+    std::cout << "TransactionDatabase::walk: TABLE " << table << " **** END *******\n\n" << std::flush;
 
     co_return;
 }

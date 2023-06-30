@@ -16,6 +16,8 @@
 
 #include "discovery.hpp"
 
+#include <boost/signals2.hpp>
+
 #include <silkworm/infra/common/log.hpp>
 
 #include "message_handler.hpp"
@@ -29,8 +31,10 @@ class DiscoveryImpl : private MessageHandler {
     DiscoveryImpl(
         uint16_t server_port,
         std::function<EccKeyPair()> node_key,
+        std::function<EnodeUrl()> node_url,
         node_db::NodeDb& node_db)
         : server_(server_port, std::move(node_key), *this),
+          node_url_(std::move(node_url)),
           node_db_(node_db) {}
     ~DiscoveryImpl() override = default;
 
@@ -54,20 +58,24 @@ class DiscoveryImpl : private MessageHandler {
         return ping::PingHandler::handle(std::move(message), std::move(sender_endpoint), std::move(ping_packet_hash), server_);
     }
 
-    Task<void> on_pong(ping::PongMessage /*message*/) override {
+    Task<void> on_pong(ping::PongMessage message, EccPublicKey sender_public_key) override {
+        on_pong_signal(message, sender_public_key);
         co_return;
     }
 
   private:
     Server server_;
+    [[maybe_unused]] std::function<EnodeUrl()> node_url_;
     [[maybe_unused]] node_db::NodeDb& node_db_;
+    boost::signals2::signal<void(ping::PongMessage, EccPublicKey)> on_pong_signal;
 };
 
 Discovery::Discovery(
     uint16_t server_port,
     std::function<EccKeyPair()> node_key,
+    std::function<EnodeUrl()> node_url,
     node_db::NodeDb& node_db)
-    : p_impl_(std::make_unique<DiscoveryImpl>(server_port, std::move(node_key), node_db)) {}
+    : p_impl_(std::make_unique<DiscoveryImpl>(server_port, std::move(node_key), std::move(node_url), node_db)) {}
 
 Discovery::~Discovery() {
     log::Trace("sentry") << "silkworm::sentry::discovery::disc_v4::Discovery::~Discovery";

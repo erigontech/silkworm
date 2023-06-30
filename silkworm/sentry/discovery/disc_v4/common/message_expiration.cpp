@@ -25,7 +25,11 @@ std::chrono::time_point<std::chrono::system_clock> make_message_expiration() {
 }
 
 bool is_expired_message_expiration(std::chrono::time_point<std::chrono::system_clock> expiration) {
-    return expiration < std::chrono::system_clock::now();
+    return is_time_in_past(expiration);
+}
+
+bool is_time_in_past(std::chrono::time_point<std::chrono::system_clock> time) {
+    return time < std::chrono::system_clock::now();
 }
 
 }  // namespace silkworm::sentry::discovery::disc_v4

@@ -35,8 +35,20 @@ Task<std::optional<NodeAddress>> SerialNodeDb::find_node_address_v6(NodeId id) {
     return co_spawn(strand_, db_.find_node_address_v6(std::move(id)), use_awaitable);
 }
 
+Task<void> SerialNodeDb::update_last_ping_time(NodeId id, Time value) {
+    return co_spawn(strand_, db_.update_last_ping_time(std::move(id), std::move(value)), use_awaitable);
+}
+
+Task<std::optional<Time>> SerialNodeDb::find_last_ping_time(NodeId id) {
+    return co_spawn(strand_, db_.find_last_ping_time(std::move(id)), use_awaitable);
+}
+
 Task<void> SerialNodeDb::update_last_pong_time(NodeId id, Time value) {
     return co_spawn(strand_, db_.update_last_pong_time(std::move(id), std::move(value)), use_awaitable);
+}
+
+Task<std::optional<Time>> SerialNodeDb::find_last_pong_time(NodeId id) {
+    return co_spawn(strand_, db_.find_last_pong_time(std::move(id)), use_awaitable);
 }
 
 Task<void> SerialNodeDb::delete_node(NodeId id) {

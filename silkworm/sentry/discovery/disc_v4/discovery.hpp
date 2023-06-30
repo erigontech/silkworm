@@ -22,6 +22,7 @@
 #include <silkworm/infra/concurrency/task.hpp>
 
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
+#include <silkworm/sentry/common/enode_url.hpp>
 #include <silkworm/sentry/discovery/node_db/node_db.hpp>
 
 namespace silkworm::sentry::discovery::disc_v4 {
@@ -33,6 +34,7 @@ class Discovery {
     Discovery(
         uint16_t server_port,
         std::function<EccKeyPair()> node_key,
+        std::function<EnodeUrl()> node_url,
         node_db::NodeDb& node_db);
     ~Discovery();
 

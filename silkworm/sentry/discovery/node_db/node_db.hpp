@@ -43,7 +43,11 @@ struct NodeDb {
     virtual Task<std::optional<NodeAddress>> find_node_address_v4(NodeId id) = 0;
     virtual Task<std::optional<NodeAddress>> find_node_address_v6(NodeId id) = 0;
 
+    virtual Task<void> update_last_ping_time(NodeId id, Time value) = 0;
+    virtual Task<std::optional<Time>> find_last_ping_time(NodeId id) = 0;
+
     virtual Task<void> update_last_pong_time(NodeId id, Time value) = 0;
+    virtual Task<std::optional<Time>> find_last_pong_time(NodeId id) = 0;
 
     virtual Task<void> delete_node(NodeId id) = 0;
 };

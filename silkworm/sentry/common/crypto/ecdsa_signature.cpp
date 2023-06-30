@@ -20,7 +20,7 @@
 
 #include <silkworm/infra/common/secp256k1_context.hpp>
 
-namespace silkworm::sentry::common::crypto::ecdsa_signature {
+namespace silkworm::sentry::crypto::ecdsa_signature {
 
 Bytes sign(ByteView data, ByteView private_key) {
     SecP256K1Context ctx{/* allow_verify = */ false, /* allow_sign = */ true};
@@ -35,7 +35,7 @@ Bytes sign(ByteView data, ByteView private_key) {
     return signature_data;
 }
 
-common::EccPublicKey recover_and_verify(ByteView data, ByteView signature_and_recovery_id) {
+EccPublicKey recover_and_verify(ByteView data, ByteView signature_and_recovery_id) {
     if (signature_and_recovery_id.empty()) {
         throw std::runtime_error("rlpx::auth::recover_and_verify: AuthMessage signature is empty");
     }
@@ -54,7 +54,7 @@ common::EccPublicKey recover_and_verify(ByteView data, ByteView signature_and_re
     if (!ok) {
         throw std::runtime_error("rlpx::auth::recover_and_verify: failed to recover a public key from an AuthMessage signature");
     }
-    return common::EccPublicKey{Bytes{public_key.data, sizeof(public_key.data)}};
+    return EccPublicKey{Bytes{public_key.data, sizeof(public_key.data)}};
 }
 
-}  // namespace silkworm::sentry::common::crypto::ecdsa_signature
+}  // namespace silkworm::sentry::crypto::ecdsa_signature

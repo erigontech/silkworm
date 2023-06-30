@@ -23,9 +23,9 @@
 
 namespace silkworm::sentry::grpc::interfaces {
 
-sentry::common::EccPublicKey peer_public_key_from_id(const ::types::H512& peer_id);
-::types::H512 peer_id_from_public_key(const sentry::common::EccPublicKey& key);
+sentry::EccPublicKey peer_public_key_from_id(const ::types::H512& peer_id);
+::types::H512 peer_id_from_public_key(const sentry::EccPublicKey& key);
 
-std::string peer_id_string_from_public_key(const sentry::common::EccPublicKey& key);
+std::string peer_id_string_from_public_key(const sentry::EccPublicKey& key);
 
 }  // namespace silkworm::sentry::grpc::interfaces

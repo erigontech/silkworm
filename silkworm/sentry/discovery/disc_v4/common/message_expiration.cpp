@@ -14,12 +14,18 @@
    limitations under the License.
 */
 
-#pragma once
+#include "message_expiration.hpp"
 
-#include <set>
+namespace silkworm::sentry::discovery::disc_v4 {
 
-namespace silkworm::sentry::api::api_common {
+std::chrono::time_point<std::chrono::system_clock> make_message_expiration() {
+    using namespace std::chrono_literals;
+    static const auto ttl = 20s;
+    return std::chrono::system_clock::now() + ttl;
+}
 
-using MessageIdSet = std::set<uint8_t>;
+bool is_expired_message_expiration(std::chrono::time_point<std::chrono::system_clock> expiration) {
+    return expiration < std::chrono::system_clock::now();
+}
 
-}  // namespace silkworm::sentry::api::api_common
+}  // namespace silkworm::sentry::discovery::disc_v4

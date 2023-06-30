@@ -26,23 +26,22 @@
 #include <silkworm/infra/common/unix_timestamp.hpp>
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 
-#include "disc_v4_common/packet_type.hpp"
+#include "common/packet_type.hpp"
 #include "find/find_node_message.hpp"
 #include "find/neighbors_message.hpp"
 #include "ping/ping_message.hpp"
 
 namespace silkworm::sentry::discovery::disc_v4 {
 
-using namespace disc_v4_common;
 using namespace boost::asio::ip;
 
-static common::EccKeyPair test_key_pair() {
+static EccKeyPair test_key_pair() {
     constexpr std::string_view kPrivateKey = "b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291";
-    return common::EccKeyPair{from_hex(kPrivateKey).value()};
+    return EccKeyPair{from_hex(kPrivateKey).value()};
 }
 
 TEST_CASE("MessageCodec.ping_encode_and_decode") {
-    common::EccKeyPair key_pair = test_key_pair();
+    EccKeyPair key_pair = test_key_pair();
     ping::PingMessage expected_ping_message{
         udp::endpoint{make_address("10.0.0.1"), 100},
         101,
@@ -50,7 +49,7 @@ TEST_CASE("MessageCodec.ping_encode_and_decode") {
         std::chrono::system_clock::now(),
     };
 
-    common::Message expected_message{static_cast<uint8_t>(PacketType::kPing), expected_ping_message.rlp_encode()};
+    Message expected_message{static_cast<uint8_t>(PacketType::kPing), expected_ping_message.rlp_encode()};
     Bytes expected_message_data = MessageCodec::encode(expected_message, key_pair.private_key());
 
     auto [decoded_message, decoded_public_key, decoded_packet_hash] = MessageCodec::decode(expected_message_data);
@@ -135,7 +134,7 @@ TEST_CASE("MessageCodec.neighbors_decode") {
     };
 
     for (const auto& [expected_public_key_hex, expected_address] : expected_nodes) {
-        auto expected_public_key = common::EccPublicKey::deserialize_hex(expected_public_key_hex);
+        auto expected_public_key = EccPublicKey::deserialize_hex(expected_public_key_hex);
         REQUIRE(neighbors_message.node_addresses.count(expected_public_key));
         auto& address = neighbors_message.node_addresses[expected_public_key];
         CHECK(address.endpoint == expected_address.endpoint);

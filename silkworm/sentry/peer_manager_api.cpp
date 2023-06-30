@@ -29,7 +29,7 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
-#include <silkworm/sentry/rlpx/rlpx_common/disconnect_reason.hpp>
+#include <silkworm/sentry/rlpx/common/disconnect_reason.hpp>
 
 namespace silkworm::sentry {
 
@@ -60,7 +60,7 @@ Task<void> PeerManagerApi::handle_peer_count_calls() {
     }
 }
 
-static std::optional<api::api_common::PeerInfo> make_peer_info(rlpx::Peer& peer) {
+static std::optional<api::PeerInfo> make_peer_info(rlpx::Peer& peer) {
     auto url_opt = peer.url();
     if (!url_opt) return std::nullopt;
     auto peer_public_key_opt = peer.peer_public_key();
@@ -74,7 +74,7 @@ static std::optional<api::api_common::PeerInfo> make_peer_info(rlpx::Peer& peer)
         capabilities.push_back(capability.to_string());
     }
 
-    return api::api_common::PeerInfo{
+    return api::PeerInfo{
         url_opt.value(),
         peer.local_endpoint(),
         peer.remote_endpoint(),
@@ -90,7 +90,7 @@ Task<void> PeerManagerApi::handle_peers_calls() {
     while (true) {
         auto call = co_await peers_calls_channel_.receive();
 
-        api::api_common::PeerInfos peers;
+        api::PeerInfos peers;
         co_await peer_manager_.enumerate_peers([&peers](std::shared_ptr<rlpx::Peer> peer) {
             auto info_opt = make_peer_info(*peer);
             if (info_opt) {
@@ -108,7 +108,7 @@ Task<void> PeerManagerApi::handle_peer_calls() {
         auto call = co_await peer_calls_channel_.receive();
         auto peer_public_key_opt = call.peer_public_key;
 
-        std::optional<api::api_common::PeerInfo> info_opt;
+        std::optional<api::PeerInfo> info_opt;
         co_await peer_manager_.enumerate_peers([&info_opt, peer_public_key_opt](std::shared_ptr<rlpx::Peer> peer) {
             auto key_opt = peer->peer_public_key();
             if (key_opt && peer_public_key_opt && (key_opt.value() == peer_public_key_opt.value())) {
@@ -128,7 +128,7 @@ Task<void> PeerManagerApi::handle_peer_penalize_calls() {
         co_await peer_manager_.enumerate_peers([peer_public_key_opt](std::shared_ptr<rlpx::Peer> peer) {
             auto key_opt = peer->peer_public_key();
             if (key_opt && peer_public_key_opt && (key_opt.value() == peer_public_key_opt.value())) {
-                peer->disconnect(rlpx::rlpx_common::DisconnectReason::DisconnectRequested);
+                peer->disconnect(rlpx::DisconnectReason::DisconnectRequested);
             }
         });
     }
@@ -143,7 +143,7 @@ Task<void> PeerManagerApi::handle_peer_events_calls() {
 
         log::Trace("sentry") << "PeerManagerApi::handle_peer_events_calls adding subscription";
 
-        auto events_channel = std::make_shared<concurrency::Channel<api::api_common::PeerEvent>>(executor);
+        auto events_channel = std::make_shared<concurrency::Channel<api::PeerEvent>>(executor);
 
         events_subscriptions_.push_back({
             events_channel,
@@ -202,9 +202,9 @@ Task<void> PeerManagerApi::forward_peer_events() {
 
 // PeerManagerObserver
 void PeerManagerApi::on_peer_added(std::shared_ptr<rlpx::Peer> peer) {
-    api::api_common::PeerEvent event{
+    api::PeerEvent event{
         peer->peer_public_key(),
-        api::api_common::PeerEventId::kAdded,
+        api::PeerEventId::kAdded,
     };
     bool ok = peer_events_channel_.try_send(std::move(event));
     if (!ok) {
@@ -214,9 +214,9 @@ void PeerManagerApi::on_peer_added(std::shared_ptr<rlpx::Peer> peer) {
 
 // PeerManagerObserver
 void PeerManagerApi::on_peer_removed(std::shared_ptr<rlpx::Peer> peer) {
-    api::api_common::PeerEvent event{
+    api::PeerEvent event{
         peer->peer_public_key(),
-        api::api_common::PeerEventId::kRemoved,
+        api::PeerEventId::kRemoved,
     };
     bool ok = peer_events_channel_.try_send(std::move(event));
     if (!ok) {

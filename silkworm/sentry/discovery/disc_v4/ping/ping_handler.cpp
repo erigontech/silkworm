@@ -16,13 +16,11 @@
 
 #include "ping_handler.hpp"
 
-#include <silkworm/sentry/discovery/disc_v4/disc_v4_common/message_expiration.hpp>
+#include <silkworm/sentry/discovery/disc_v4/common/message_expiration.hpp>
 
 #include "pong_message.hpp"
 
 namespace silkworm::sentry::discovery::disc_v4::ping {
-
-using namespace disc_v4_common;
 
 Task<void> PingHandler::handle(
     PingMessage message,

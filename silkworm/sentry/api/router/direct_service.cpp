@@ -22,7 +22,7 @@
 #include <gsl/util>
 
 #include <silkworm/infra/concurrency/awaitable_future.hpp>
-#include <silkworm/sentry/api/api_common/peer_filter.hpp>
+#include <silkworm/sentry/api/common/peer_filter.hpp>
 
 #include "messages_call.hpp"
 #include "peer_call.hpp"
@@ -42,44 +42,44 @@ Task<uint8_t> DirectService::handshake() {
     co_return router_.eth_version;
 }
 
-Task<api_common::Service::NodeInfos> DirectService::node_infos() {
-    co_return api_common::Service::NodeInfos{router_.node_info_provider()};
+Task<Service::NodeInfos> DirectService::node_infos() {
+    co_return Service::NodeInfos{router_.node_info_provider()};
 }
 
-static Task<api_common::Service::PeerKeys> do_send_message_call(
+static Task<Service::PeerKeys> do_send_message_call(
     const ServiceRouter& router,
-    common::Message message,
-    api_common::PeerFilter peer_filter) {
+    Message message,
+    PeerFilter peer_filter) {
     auto executor = co_await this_coro::executor;
     SendMessageCall call{std::move(message), std::move(peer_filter), executor};
     co_await router.send_message_channel.send(call);
     co_return (co_await call.result());
 }
 
-Task<api_common::Service::PeerKeys> DirectService::send_message_by_id(common::Message message, common::EccPublicKey public_key) {
-    co_return (co_await do_send_message_call(router_, std::move(message), api_common::PeerFilter::with_peer_public_key(std::move(public_key))));
+Task<Service::PeerKeys> DirectService::send_message_by_id(Message message, EccPublicKey public_key) {
+    co_return (co_await do_send_message_call(router_, std::move(message), PeerFilter::with_peer_public_key(std::move(public_key))));
 }
 
-Task<api_common::Service::PeerKeys> DirectService::send_message_to_random_peers(common::Message message, size_t max_peers) {
-    co_return (co_await do_send_message_call(router_, std::move(message), api_common::PeerFilter::with_max_peers(max_peers)));
+Task<Service::PeerKeys> DirectService::send_message_to_random_peers(Message message, size_t max_peers) {
+    co_return (co_await do_send_message_call(router_, std::move(message), PeerFilter::with_max_peers(max_peers)));
 }
 
-Task<api_common::Service::PeerKeys> DirectService::send_message_to_all(common::Message message) {
-    co_return (co_await do_send_message_call(router_, std::move(message), api::api_common::PeerFilter{}));
+Task<Service::PeerKeys> DirectService::send_message_to_all(Message message) {
+    co_return (co_await do_send_message_call(router_, std::move(message), api::PeerFilter{}));
 }
 
-Task<api_common::Service::PeerKeys> DirectService::send_message_by_min_block(common::Message message, size_t max_peers) {
-    co_return (co_await do_send_message_call(router_, std::move(message), api_common::PeerFilter::with_max_peers(max_peers)));
+Task<Service::PeerKeys> DirectService::send_message_by_min_block(Message message, size_t max_peers) {
+    co_return (co_await do_send_message_call(router_, std::move(message), PeerFilter::with_max_peers(max_peers)));
 }
 
-Task<void> DirectService::peer_min_block(common::EccPublicKey /*public_key*/) {
+Task<void> DirectService::peer_min_block(EccPublicKey /*public_key*/) {
     // TODO: implement
     co_return;
 }
 
 Task<void> DirectService::messages(
-    api_common::MessageIdSet message_id_filter,
-    std::function<Task<void>(api_common::MessageFromPeer)> consumer) {
+    MessageIdSet message_id_filter,
+    std::function<Task<void>(MessageFromPeer)> consumer) {
     auto executor = co_await this_coro::executor;
     MessagesCall call{std::move(message_id_filter), executor};
 
@@ -96,9 +96,9 @@ Task<void> DirectService::messages(
     }
 }
 
-Task<api_common::PeerInfos> DirectService::peers() {
+Task<PeerInfos> DirectService::peers() {
     auto executor = co_await this_coro::executor;
-    auto call = std::make_shared<concurrency::AwaitablePromise<api_common::PeerInfos>>(executor);
+    auto call = std::make_shared<concurrency::AwaitablePromise<PeerInfos>>(executor);
     auto call_future = call->get_future();
     co_await router_.peers_calls_channel.send(call);
     co_return (co_await call_future.get_async());
@@ -112,7 +112,7 @@ Task<size_t> DirectService::peer_count() {
     co_return (co_await call_future.get_async());
 }
 
-Task<std::optional<api_common::PeerInfo>> DirectService::peer_by_id(common::EccPublicKey public_key) {
+Task<std::optional<PeerInfo>> DirectService::peer_by_id(EccPublicKey public_key) {
     auto executor = co_await this_coro::executor;
     PeerCall call{std::move(public_key), executor};
     auto call_future = call.result_promise->get_future();
@@ -120,12 +120,12 @@ Task<std::optional<api_common::PeerInfo>> DirectService::peer_by_id(common::EccP
     co_return (co_await call_future.get_async());
 }
 
-Task<void> DirectService::penalize_peer(common::EccPublicKey public_key) {
+Task<void> DirectService::penalize_peer(EccPublicKey public_key) {
     co_await router_.peer_penalize_calls_channel.send({std::move(public_key)});
 }
 
 Task<void> DirectService::peer_events(
-    std::function<Task<void>(api_common::PeerEvent)> consumer) {
+    std::function<Task<void>(PeerEvent)> consumer) {
     auto executor = co_await this_coro::executor;
     PeerEventsCall call{executor};
     auto call_future = call.result_promise->get_future();

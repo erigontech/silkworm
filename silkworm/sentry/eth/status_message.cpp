@@ -24,8 +24,6 @@
 
 namespace silkworm::sentry::eth {
 
-using common::Message;
-
 const uint8_t StatusMessage::kId = 16;
 
 Bytes StatusMessage::rlp_encode() const {

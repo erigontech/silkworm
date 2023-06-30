@@ -25,15 +25,15 @@ namespace silkworm::sentry::rlpx::auth {
 class AuthAckMessage {
   public:
     AuthAckMessage(
-        common::EccPublicKey initiator_public_key,
-        common::EccPublicKey ephemeral_public_key);
+        EccPublicKey initiator_public_key,
+        EccPublicKey ephemeral_public_key);
     AuthAckMessage(
         ByteView data,
-        const common::EccKeyPair& initiator_key_pair);
+        const EccKeyPair& initiator_key_pair);
 
     [[nodiscard]] Bytes serialize() const;
 
-    [[nodiscard]] const common::EccPublicKey& ephemeral_public_key() const {
+    [[nodiscard]] const EccPublicKey& ephemeral_public_key() const {
         return ephemeral_public_key_;
     }
 
@@ -46,8 +46,8 @@ class AuthAckMessage {
     static Bytes serialize_size(size_t body_size);
     static Bytes decrypt_body(ByteView data, ByteView initiator_private_key);
 
-    common::EccPublicKey initiator_public_key_;
-    common::EccPublicKey ephemeral_public_key_;
+    EccPublicKey initiator_public_key_;
+    EccPublicKey ephemeral_public_key_;
     Bytes nonce_;
     static const uint8_t version;
 };

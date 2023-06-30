@@ -38,7 +38,7 @@ TEST_CASE("EthereumBackEnd", "[silkworm][backend][ethereum_backend]") {
 
     NodeSettings node_settings;
 
-    std::shared_ptr<sentry::api::api_common::SentryClient> null_sentry_client;
+    std::shared_ptr<sentry::api::SentryClient> null_sentry_client;
 
     SECTION("EthereumBackEnd::EthereumBackEnd", "[silkworm][backend][ethereum_backend]") {
         EthereumBackEnd backend{node_settings, &database_env, null_sentry_client};

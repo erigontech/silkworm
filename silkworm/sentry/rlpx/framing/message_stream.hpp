@@ -28,20 +28,20 @@ namespace silkworm::sentry::rlpx::framing {
 
 class MessageStream {
   public:
-    MessageStream(FramingCipher cipher, common::SocketStream& stream)
+    MessageStream(FramingCipher cipher, SocketStream& stream)
         : cipher_(std::move(cipher)),
           stream_(stream) {}
 
     MessageStream(MessageStream&&) = default;
 
-    Task<void> send(common::Message message);
-    Task<common::Message> receive();
+    Task<void> send(Message message);
+    Task<Message> receive();
 
     void enable_compression();
 
   private:
     FramingCipher cipher_;
-    common::SocketStream& stream_;
+    SocketStream& stream_;
     MessageFrameCodec message_frame_codec_;
 };
 

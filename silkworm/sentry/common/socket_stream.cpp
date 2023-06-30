@@ -23,7 +23,7 @@
 
 #include <silkworm/core/common/endian.hpp>
 
-namespace silkworm::sentry::common {
+namespace silkworm::sentry {
 
 using namespace boost::asio;
 
@@ -55,4 +55,4 @@ Task<ByteView> SocketStream::receive_size_and_data(Bytes& raw_data) {
     co_return ByteView(data_ptr, size);
 }
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::sentry

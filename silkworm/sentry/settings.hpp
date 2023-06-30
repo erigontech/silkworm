@@ -51,7 +51,7 @@ struct Settings {
 
     std::optional<std::variant<std::filesystem::path, Bytes>> node_key;
 
-    std::vector<common::EnodeUrl> static_peers;
+    std::vector<EnodeUrl> static_peers;
 
     bool no_discover{true};
 

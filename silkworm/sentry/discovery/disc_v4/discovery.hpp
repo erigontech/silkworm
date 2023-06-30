@@ -32,7 +32,7 @@ class Discovery {
   public:
     Discovery(
         uint16_t server_port,
-        std::function<common::EccKeyPair()> node_key,
+        std::function<EccKeyPair()> node_key,
         node_db::NodeDb& node_db);
     ~Discovery();
 

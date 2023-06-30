@@ -43,7 +43,7 @@ class Server final {
 
     Task<void> start(
         silkworm::rpc::ServerContextPool& context_pool,
-        common::EccKeyPair node_key,
+        EccKeyPair node_key,
         std::string client_id,
         std::function<std::unique_ptr<Protocol>()> protocol_factory);
 

@@ -33,7 +33,7 @@
 #include "peer_event.hpp"
 #include "peer_info.hpp"
 
-namespace silkworm::sentry::api::api_common {
+namespace silkworm::sentry::api {
 
 struct Service {
     virtual ~Service() = default;
@@ -49,22 +49,22 @@ struct Service {
     // rpc NodeInfo(google.protobuf.Empty) returns(types.NodeInfoReply);
     virtual Task<NodeInfos> node_infos() = 0;
 
-    using PeerKeys = std::vector<sentry::common::EccPublicKey>;
+    using PeerKeys = std::vector<sentry::EccPublicKey>;
 
     // rpc SendMessageById(SendMessageByIdRequest) returns (SentPeers);
-    virtual Task<PeerKeys> send_message_by_id(common::Message message, common::EccPublicKey public_key) = 0;
+    virtual Task<PeerKeys> send_message_by_id(Message message, EccPublicKey public_key) = 0;
 
     // rpc SendMessageToRandomPeers(SendMessageToRandomPeersRequest) returns (SentPeers);
-    virtual Task<PeerKeys> send_message_to_random_peers(common::Message message, size_t max_peers) = 0;
+    virtual Task<PeerKeys> send_message_to_random_peers(Message message, size_t max_peers) = 0;
 
     // rpc SendMessageToAll(OutboundMessageData) returns (SentPeers);
-    virtual Task<PeerKeys> send_message_to_all(common::Message message) = 0;
+    virtual Task<PeerKeys> send_message_to_all(Message message) = 0;
 
     // rpc SendMessageByMinBlock(SendMessageByMinBlockRequest) returns (SentPeers);
-    virtual Task<PeerKeys> send_message_by_min_block(common::Message message, size_t max_peers) = 0;
+    virtual Task<PeerKeys> send_message_by_min_block(Message message, size_t max_peers) = 0;
 
     // rpc PeerMinBlock(PeerMinBlockRequest) returns (google.protobuf.Empty);
-    virtual Task<void> peer_min_block(common::EccPublicKey public_key) = 0;
+    virtual Task<void> peer_min_block(EccPublicKey public_key) = 0;
 
     // rpc Messages(MessagesRequest) returns (stream InboundMessage);
     virtual Task<void> messages(
@@ -78,13 +78,13 @@ struct Service {
     virtual Task<size_t> peer_count() = 0;
 
     // rpc PeerById(PeerByIdRequest) returns (PeerByIdReply);
-    virtual Task<std::optional<PeerInfo>> peer_by_id(common::EccPublicKey public_key) = 0;
+    virtual Task<std::optional<PeerInfo>> peer_by_id(EccPublicKey public_key) = 0;
 
     // rpc PenalizePeer(PenalizePeerRequest) returns (google.protobuf.Empty);
-    virtual Task<void> penalize_peer(common::EccPublicKey public_key) = 0;
+    virtual Task<void> penalize_peer(EccPublicKey public_key) = 0;
 
     // rpc PeerEvents(PeerEventsRequest) returns (stream PeerEvent);
     virtual Task<void> peer_events(std::function<Task<void>(PeerEvent)> consumer) = 0;
 };
 
-}  // namespace silkworm::sentry::api::api_common
+}  // namespace silkworm::sentry::api

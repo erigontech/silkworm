@@ -21,23 +21,23 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <silkworm/sentry/api/api_common/sentry_client.hpp>
+#include <silkworm/sentry/api/common/sentry_client.hpp>
 #include <silkworm/sentry/eth/status_data.hpp>
 
 namespace silkworm::sentry {
 
 class SessionSentryClientImpl;
 
-class SessionSentryClient : public api::api_common::SentryClient {
+class SessionSentryClient : public api::SentryClient {
   public:
     using StatusDataProvider = std::function<Task<eth::StatusData>(uint8_t eth_version)>;
 
     SessionSentryClient(
-        std::shared_ptr<api::api_common::SentryClient> sentry_client,
+        std::shared_ptr<api::SentryClient> sentry_client,
         StatusDataProvider status_data_provider);
     ~SessionSentryClient() override;
 
-    Task<std::shared_ptr<api::api_common::Service>> service() override;
+    Task<std::shared_ptr<api::Service>> service() override;
 
     [[nodiscard]] bool is_ready() override;
     void on_disconnect(std::function<Task<void>()> callback) override;

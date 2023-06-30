@@ -23,12 +23,12 @@
 #include <silkworm/infra/concurrency/awaitable_future.hpp>
 #include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/infra/concurrency/event_notifier.hpp>
-#include <silkworm/sentry/api/api_common/peer_event.hpp>
+#include <silkworm/sentry/api/common/peer_event.hpp>
 
 namespace silkworm::sentry::api::router {
 
 struct PeerEventsCall {
-    using TResult = std::shared_ptr<concurrency::Channel<api_common::PeerEvent>>;
+    using TResult = std::shared_ptr<concurrency::Channel<PeerEvent>>;
 
     std::shared_ptr<concurrency::AwaitablePromise<TResult>> result_promise;
     std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal;

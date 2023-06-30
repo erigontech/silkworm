@@ -33,16 +33,16 @@
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/parallel_group_utils.hpp>
 #include <silkworm/infra/concurrency/timeout.hpp>
-#include <silkworm/sentry/api/api_common/service.hpp>
+#include <silkworm/sentry/api/common/service.hpp>
 #include <silkworm/sentry/common/atomic_value.hpp>
 
 namespace silkworm::sentry {
 
 using namespace boost::asio;
 using namespace boost::asio::experimental;
-using namespace api::api_common;
+using namespace api;
 
-class MultiSentryClientImpl : public api::api_common::Service {
+class MultiSentryClientImpl : public api::Service {
   public:
     explicit MultiSentryClientImpl(
         std::vector<std::shared_ptr<SentryClient>> clients)
@@ -53,7 +53,7 @@ class MultiSentryClientImpl : public api::api_common::Service {
     Task<void> for_each_client(
         std::vector<std::shared_ptr<SentryClient>> clients,
         std::chrono::milliseconds timeout,
-        std::function<Task<void>(std::shared_ptr<api::api_common::Service>)> callback) {
+        std::function<Task<void>(std::shared_ptr<api::Service>)> callback) {
         using namespace concurrency::awaitable_wait_for_one;
 
         auto executor = co_await this_coro::executor;
@@ -84,7 +84,7 @@ class MultiSentryClientImpl : public api::api_common::Service {
     }
 
     Task<void> for_each_client(
-        std::function<Task<void>(std::shared_ptr<api::api_common::Service>)> callback) {
+        std::function<Task<void>(std::shared_ptr<api::Service>)> callback) {
         using namespace std::chrono_literals;
 
         auto clients = this->ready_clients();
@@ -125,7 +125,7 @@ class MultiSentryClientImpl : public api::api_common::Service {
     }
 
     // rpc SendMessageById(SendMessageByIdRequest) returns (SentPeers);
-    Task<PeerKeys> send_message_by_id(common::Message message, common::EccPublicKey public_key) override {
+    Task<PeerKeys> send_message_by_id(Message message, EccPublicKey public_key) override {
         PeerKeys all_peer_keys;
         std::mutex all_peer_keys_mutex;
 
@@ -139,7 +139,7 @@ class MultiSentryClientImpl : public api::api_common::Service {
     }
 
     // rpc SendMessageToRandomPeers(SendMessageToRandomPeersRequest) returns (SentPeers);
-    Task<PeerKeys> send_message_to_random_peers(common::Message message, size_t max_peers) override {
+    Task<PeerKeys> send_message_to_random_peers(Message message, size_t max_peers) override {
         PeerKeys all_peer_keys;
         std::mutex all_peer_keys_mutex;
 
@@ -153,7 +153,7 @@ class MultiSentryClientImpl : public api::api_common::Service {
     }
 
     // rpc SendMessageToAll(OutboundMessageData) returns (SentPeers);
-    Task<PeerKeys> send_message_to_all(common::Message message) override {
+    Task<PeerKeys> send_message_to_all(Message message) override {
         PeerKeys all_peer_keys;
         std::mutex all_peer_keys_mutex;
 
@@ -167,7 +167,7 @@ class MultiSentryClientImpl : public api::api_common::Service {
     }
 
     // rpc SendMessageByMinBlock(SendMessageByMinBlockRequest) returns (SentPeers);
-    Task<PeerKeys> send_message_by_min_block(common::Message message, size_t max_peers) override {
+    Task<PeerKeys> send_message_by_min_block(Message message, size_t max_peers) override {
         PeerKeys all_peer_keys;
         std::mutex all_peer_keys_mutex;
 
@@ -181,7 +181,7 @@ class MultiSentryClientImpl : public api::api_common::Service {
     }
 
     // rpc PeerMinBlock(PeerMinBlockRequest) returns (google.protobuf.Empty);
-    Task<void> peer_min_block(common::EccPublicKey public_key) override {
+    Task<void> peer_min_block(EccPublicKey public_key) override {
         co_await for_each_client([&public_key](auto service) -> Task<void> {
             co_await service->peer_min_block(public_key);
         });
@@ -220,8 +220,8 @@ class MultiSentryClientImpl : public api::api_common::Service {
     }
 
     // rpc PeerById(PeerByIdRequest) returns (PeerByIdReply);
-    Task<std::optional<PeerInfo>> peer_by_id(common::EccPublicKey public_key) override {
-        common::AtomicValue<std::optional<PeerInfo>> found_peer{std::nullopt};
+    Task<std::optional<PeerInfo>> peer_by_id(EccPublicKey public_key) override {
+        AtomicValue<std::optional<PeerInfo>> found_peer{std::nullopt};
         co_await for_each_client([&public_key, &found_peer](auto service) -> Task<void> {
             auto peer = co_await service->peer_by_id(public_key);
             if (peer) {
@@ -232,7 +232,7 @@ class MultiSentryClientImpl : public api::api_common::Service {
     }
 
     // rpc PenalizePeer(PenalizePeerRequest) returns (google.protobuf.Empty);
-    Task<void> penalize_peer(common::EccPublicKey public_key) override {
+    Task<void> penalize_peer(EccPublicKey public_key) override {
         co_await for_each_client([&public_key](auto service) -> Task<void> {
             co_await service->penalize_peer(public_key);
         });
@@ -271,7 +271,7 @@ MultiSentryClient::~MultiSentryClient() {
     [[maybe_unused]] int non_trivial_destructor;  // silent clang-tidy
 }
 
-Task<std::shared_ptr<api::api_common::Service>> MultiSentryClient::service() {
+Task<std::shared_ptr<api::Service>> MultiSentryClient::service() {
     co_return p_impl_;
 }
 

@@ -20,11 +20,9 @@
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/infra/common/unix_timestamp.hpp>
-#include <silkworm/sentry/discovery/disc_v4/disc_v4_common/packet_type.hpp>
+#include <silkworm/sentry/discovery/disc_v4/common/packet_type.hpp>
 
 namespace silkworm::sentry::discovery::disc_v4::find {
-
-using namespace disc_v4_common;
 
 const uint8_t FindNodeMessage::kId = static_cast<uint8_t>(PacketType::kFindNode);
 
@@ -49,7 +47,7 @@ FindNodeMessage FindNodeMessage::rlp_decode(ByteView data) {
     }
 
     return FindNodeMessage{
-        common::EccPublicKey::deserialize(target_public_key_data),
+        EccPublicKey::deserialize(target_public_key_data),
         time_point_from_unix_timestamp(expiration_ts),
     };
 }

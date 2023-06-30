@@ -21,13 +21,13 @@
 
 #include <agrpc/detail/forward.hpp>
 
-#include <silkworm/sentry/api/api_common/sentry_client.hpp>
+#include <silkworm/sentry/api/common/sentry_client.hpp>
 
 namespace silkworm::sentry::grpc::client {
 
 class SentryClientImpl;
 
-class SentryClient : public api::api_common::SentryClient {
+class SentryClient : public api::SentryClient {
   public:
     explicit SentryClient(const std::string& address_uri, agrpc::GrpcContext& grpc_context);
     ~SentryClient() override;
@@ -35,7 +35,7 @@ class SentryClient : public api::api_common::SentryClient {
     SentryClient(SentryClient&&) = default;
     SentryClient& operator=(SentryClient&&) = default;
 
-    Task<std::shared_ptr<api::api_common::Service>> service() override;
+    Task<std::shared_ptr<api::Service>> service() override;
 
     [[nodiscard]] bool is_ready() override;
     void on_disconnect(std::function<Task<void>()> callback) override;

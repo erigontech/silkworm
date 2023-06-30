@@ -32,7 +32,7 @@ using namespace std::chrono_literals;
 using namespace boost::asio;
 
 Task<std::unique_ptr<Peer>> Client::connect(
-    common::EnodeUrl peer_url,
+    EnodeUrl peer_url,
     bool is_static_peer) {
     log::Debug("sentry") << "rlpx::Client connecting to " << peer_url.to_string();
 
@@ -45,7 +45,7 @@ Task<std::unique_ptr<Peer>> Client::connect(
         use_awaitable);
     const ip::tcp::endpoint& endpoint = *endpoints.cbegin();
 
-    common::SocketStream stream{client_context};
+    SocketStream stream{client_context};
 
     bool is_connected = false;
     while (!is_connected) {
@@ -61,8 +61,8 @@ Task<std::unique_ptr<Peer>> Client::connect(
                                    << ", reconnecting...";
         }
         if (!is_connected) {
-            stream = common::SocketStream{client_context};
-            co_await common::sleep(10s);
+            stream = SocketStream{client_context};
+            co_await sleep(10s);
         }
     }
 

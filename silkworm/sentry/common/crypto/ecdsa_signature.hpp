@@ -19,9 +19,9 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 
-namespace silkworm::sentry::common::crypto::ecdsa_signature {
+namespace silkworm::sentry::crypto::ecdsa_signature {
 
 Bytes sign(ByteView data, ByteView private_key);
-common::EccPublicKey recover_and_verify(ByteView data, ByteView signature_and_recovery_id);
+EccPublicKey recover_and_verify(ByteView data, ByteView signature_and_recovery_id);
 
-}  // namespace silkworm::sentry::common::crypto::ecdsa_signature
+}  // namespace silkworm::sentry::crypto::ecdsa_signature

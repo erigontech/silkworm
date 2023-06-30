@@ -25,7 +25,7 @@
 #include <silkworm/node/settings.hpp>
 #include <silkworm/node/snapshot/settings.hpp>
 #include <silkworm/node/stagedsync/local_client.hpp>
-#include <silkworm/sentry/api/api_common/sentry_client.hpp>
+#include <silkworm/sentry/api/common/sentry_client.hpp>
 #include <silkworm/sentry/settings.hpp>
 
 namespace silkworm::node {
@@ -34,7 +34,7 @@ class NodeImpl;
 
 class Node {
   public:
-    Node(Settings&, std::shared_ptr<sentry::api::api_common::SentryClient>, mdbx::env&);
+    Node(Settings&, std::shared_ptr<sentry::api::SentryClient>, mdbx::env&);
     ~Node();
 
     Node(const Node&) = delete;

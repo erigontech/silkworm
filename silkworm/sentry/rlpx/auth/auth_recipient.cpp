@@ -28,7 +28,7 @@ namespace silkworm::sentry::rlpx::auth {
 using namespace std::chrono_literals;
 using namespace concurrency::awaitable_wait_for_one;
 
-Task<AuthKeys> AuthRecipient::execute(common::SocketStream& stream) {
+Task<AuthKeys> AuthRecipient::execute(SocketStream& stream) {
     Bytes auth_data_raw;
     auto auth_data = std::get<ByteView>(co_await (stream.receive_size_and_data(auth_data_raw) || concurrency::timeout(5s)));
     AuthMessage auth_message{auth_data, recipient_key_pair_};

@@ -31,7 +31,7 @@
 
 namespace silkworm {
 
-using silkworm::sentry::api::api_common::MessageFromPeer;
+using silkworm::sentry::api::MessageFromPeer;
 
 BlockExchange::BlockExchange(SentryClient& sentry, const db::ROAccess& dba, const ChainConfig& chain_config)
     : db_access_{dba},

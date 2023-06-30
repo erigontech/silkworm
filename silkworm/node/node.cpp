@@ -32,7 +32,7 @@ namespace silkworm::node {
 
 constexpr uint64_t kMaxFileDescriptors{10'240};
 
-using SentryClientPtr = std::shared_ptr<sentry::api::api_common::SentryClient>;
+using SentryClientPtr = std::shared_ptr<sentry::api::SentryClient>;
 
 class NodeImpl final {
   public:
@@ -42,7 +42,7 @@ class NodeImpl final {
     NodeImpl& operator=(const NodeImpl&) = delete;
 
     execution::LocalClient& execution_local_client() { return execution_local_client_; }
-    std::shared_ptr<sentry::api::api_common::SentryClient> sentry_client() { return sentry_client_; }
+    std::shared_ptr<sentry::api::SentryClient> sentry_client() { return sentry_client_; }
 
     void setup();
 

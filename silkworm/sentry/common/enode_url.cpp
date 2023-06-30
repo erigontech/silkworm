@@ -22,7 +22,7 @@
 
 #include <boost/lexical_cast.hpp>
 
-namespace silkworm::sentry::common {
+namespace silkworm::sentry {
 
 using namespace std;
 
@@ -44,7 +44,7 @@ EnodeUrl::EnodeUrl(const string& url_str)
 
     auto port = boost::lexical_cast<uint16_t>(port_str);
 
-    public_key_ = common::EccPublicKey::deserialize_hex(pub_key_hex);
+    public_key_ = EccPublicKey::deserialize_hex(pub_key_hex);
     ip_ = ip;
     port_ = port;
 }
@@ -62,4 +62,4 @@ bool EnodeUrl::operator<(const EnodeUrl& other) const {
     return to_string() < other.to_string();
 }
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::sentry

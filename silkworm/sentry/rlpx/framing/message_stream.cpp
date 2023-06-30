@@ -22,11 +22,11 @@
 
 namespace silkworm::sentry::rlpx::framing {
 
-Task<void> MessageStream::send(common::Message message) {
+Task<void> MessageStream::send(Message message) {
     co_await stream_.send(cipher_.encrypt_frame(message_frame_codec_.encode(message)));
 }
 
-Task<common::Message> MessageStream::receive() {
+Task<Message> MessageStream::receive() {
     Bytes header_data = co_await stream_.receive_fixed(FramingCipher::header_size());
     size_t header_frame_size = cipher_.decrypt_header(header_data);
 

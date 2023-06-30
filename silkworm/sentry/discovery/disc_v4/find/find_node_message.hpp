@@ -24,7 +24,7 @@
 namespace silkworm::sentry::discovery::disc_v4::find {
 
 struct FindNodeMessage {
-    common::EccPublicKey target_public_key;
+    EccPublicKey target_public_key;
     std::chrono::time_point<std::chrono::system_clock> expiration;
 
     [[nodiscard]] Bytes rlp_encode() const;

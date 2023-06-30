@@ -16,24 +16,19 @@
 
 #pragma once
 
-#include <functional>
-#include <memory>
+#include <string>
 
-#include <silkworm/infra/concurrency/task.hpp>
+#include <boost/asio/ip/tcp.hpp>
 
-#include "service.hpp"
+#include <silkworm/sentry/common/enode_url.hpp>
 
-namespace silkworm::sentry::api::api_common {
+namespace silkworm::sentry::api {
 
-struct SentryClient {
-    virtual ~SentryClient() = default;
-
-    virtual Task<std::shared_ptr<Service>> service() = 0;
-
-    //! Connected or just created an ready to handle calls. service() is unlikely to block for long.
-    [[nodiscard]] virtual bool is_ready() = 0;
-    virtual void on_disconnect(std::function<Task<void>()> callback) = 0;
-    virtual Task<void> reconnect() = 0;
+struct NodeInfo {
+    sentry::EnodeUrl node_url;
+    std::string client_id;
+    boost::asio::ip::tcp::endpoint rlpx_server_listen_endpoint;
+    uint16_t rlpx_server_port;
 };
 
-}  // namespace silkworm::sentry::api::api_common
+}  // namespace silkworm::sentry::api

@@ -22,18 +22,18 @@
 
 #include "ecc_public_key.hpp"
 
-namespace silkworm::sentry::common {
+namespace silkworm::sentry {
 
 class EnodeUrl {
   public:
     explicit EnodeUrl(const std::string& url_str);
 
-    EnodeUrl(common::EccPublicKey public_key, boost::asio::ip::address ip, uint16_t port)
+    EnodeUrl(EccPublicKey public_key, boost::asio::ip::address ip, uint16_t port)
         : public_key_(std::move(public_key)),
           ip_(std::move(ip)),
           port_(port) {}
 
-    [[nodiscard]] const common::EccPublicKey& public_key() const { return public_key_; }
+    [[nodiscard]] const EccPublicKey& public_key() const { return public_key_; }
     [[nodiscard]] const boost::asio::ip::address& ip() const { return ip_; }
     [[nodiscard]] uint16_t port() const { return port_; }
 
@@ -43,9 +43,9 @@ class EnodeUrl {
     friend bool operator==(const EnodeUrl&, const EnodeUrl&) = default;
 
   private:
-    common::EccPublicKey public_key_;
+    EccPublicKey public_key_;
     boost::asio::ip::address ip_;
     uint16_t port_;
 };
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::sentry

@@ -28,8 +28,8 @@ namespace silkworm::sentry::rlpx {
 struct Protocol {
     virtual ~Protocol() = default;
     [[nodiscard]] virtual std::pair<std::string, uint8_t> capability() = 0;
-    [[nodiscard]] virtual common::Message first_message() = 0;
-    virtual void handle_peer_first_message(const common::Message& message) = 0;
+    [[nodiscard]] virtual Message first_message() = 0;
+    virtual void handle_peer_first_message(const Message& message) = 0;
 
     class IncompatiblePeerError : public std::runtime_error {
       public:

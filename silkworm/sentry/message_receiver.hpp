@@ -27,8 +27,8 @@
 #include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/infra/concurrency/event_notifier.hpp>
 #include <silkworm/infra/concurrency/task_group.hpp>
-#include <silkworm/sentry/api/api_common/message_from_peer.hpp>
-#include <silkworm/sentry/api/api_common/message_id_set.hpp>
+#include <silkworm/sentry/api/common/message_from_peer.hpp>
+#include <silkworm/sentry/api/common/message_id_set.hpp>
 #include <silkworm/sentry/api/router/messages_call.hpp>
 
 #include "peer_manager.hpp"
@@ -67,8 +67,8 @@ class MessageReceiver : public PeerManagerObserver {
     concurrency::TaskGroup unsubscription_tasks_;
 
     struct Subscription {
-        std::shared_ptr<concurrency::Channel<api::api_common::MessageFromPeer>> messages_channel;
-        api::api_common::MessageIdSet message_id_filter;
+        std::shared_ptr<concurrency::Channel<api::MessageFromPeer>> messages_channel;
+        api::MessageIdSet message_id_filter;
         std::shared_ptr<concurrency::EventNotifier> unsubscribe_signal;
     };
 

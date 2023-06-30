@@ -20,8 +20,8 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-namespace silkworm::sentry::common {
+namespace silkworm::sentry {
 
 Task<void> sleep(std::chrono::milliseconds duration);
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::sentry

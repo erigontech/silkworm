@@ -21,14 +21,14 @@ namespace silkworm {
 EthereumBackEnd::EthereumBackEnd(
     const NodeSettings& node_settings,
     mdbx::env* chaindata_env,
-    std::shared_ptr<sentry::api::api_common::SentryClient> sentry_client)
+    std::shared_ptr<sentry::api::SentryClient> sentry_client)
     : EthereumBackEnd(node_settings, chaindata_env, std::move(sentry_client), std::make_unique<StateChangeCollection>()) {
 }
 
 EthereumBackEnd::EthereumBackEnd(
     const NodeSettings& node_settings,
     mdbx::env* chaindata_env,
-    std::shared_ptr<sentry::api::api_common::SentryClient> sentry_client,
+    std::shared_ptr<sentry::api::SentryClient> sentry_client,
     std::unique_ptr<StateChangeCollection> state_change_collection)
     : node_settings_(node_settings),
       chaindata_env_(chaindata_env),

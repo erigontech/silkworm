@@ -23,13 +23,13 @@
 namespace silkworm::sentry::discovery::disc_v4 {
 
 struct MessageEnvelope {
-    common::Message message;
-    common::EccPublicKey public_key;
+    Message message;
+    EccPublicKey public_key;
     Bytes packet_hash;
 };
 
 struct MessageCodec {
-    static Bytes encode(const common::Message& message, ByteView private_key);
+    static Bytes encode(const Message& message, ByteView private_key);
     static ByteView encoded_packet_hash(ByteView packet_data);
     static MessageEnvelope decode(ByteView packet_data);
 };

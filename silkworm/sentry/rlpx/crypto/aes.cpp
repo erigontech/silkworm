@@ -116,7 +116,7 @@ Bytes aes_decrypt(ByteView cipher_text, ByteView key, ByteView iv) {
 }
 
 Bytes aes_make_iv() {
-    return common::random_bytes(AES_BLOCK_SIZE);
+    return random_bytes(AES_BLOCK_SIZE);
 }
 
 size_t aes_round_up_to_block_size(size_t size) {

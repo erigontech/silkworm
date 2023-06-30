@@ -21,7 +21,7 @@
 #include <silkworm/core/rlp/decode_vector.hpp>
 #include <silkworm/core/rlp/encode_vector.hpp>
 
-namespace silkworm::sentry::discovery::disc_v4::disc_v4_common {
+namespace silkworm::sentry::discovery::disc_v4 {
 
 Bytes ip_address_to_bytes(const boost::asio::ip::address& ip) {
     if (ip.is_v4()) {
@@ -77,4 +77,4 @@ DecodingResult decode(ByteView& from, NodeAddress& to, rlp::Leftover mode) noexc
     return result;
 }
 
-}  // namespace silkworm::sentry::discovery::disc_v4::disc_v4_common
+}  // namespace silkworm::sentry::discovery::disc_v4

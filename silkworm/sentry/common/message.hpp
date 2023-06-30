@@ -18,11 +18,11 @@
 
 #include <silkworm/core/common/base.hpp>
 
-namespace silkworm::sentry::common {
+namespace silkworm::sentry {
 
 struct Message {
     uint8_t id{0};
     Bytes data;
 };
 
-}  // namespace silkworm::sentry::common
+}  // namespace silkworm::sentry

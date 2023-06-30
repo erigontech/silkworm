@@ -28,7 +28,7 @@ class DiscoveryImpl : private MessageHandler {
   public:
     DiscoveryImpl(
         uint16_t server_port,
-        std::function<common::EccKeyPair()> node_key,
+        std::function<EccKeyPair()> node_key,
         node_db::NodeDb& node_db)
         : server_(server_port, std::move(node_key), *this),
           node_db_(node_db) {}
@@ -65,7 +65,7 @@ class DiscoveryImpl : private MessageHandler {
 
 Discovery::Discovery(
     uint16_t server_port,
-    std::function<common::EccKeyPair()> node_key,
+    std::function<EccKeyPair()> node_key,
     node_db::NodeDb& node_db)
     : p_impl_(std::make_unique<DiscoveryImpl>(server_port, std::move(node_key), node_db)) {}
 

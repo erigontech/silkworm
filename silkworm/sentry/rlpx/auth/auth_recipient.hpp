@@ -28,14 +28,14 @@ namespace silkworm::sentry::rlpx::auth {
 
 class AuthRecipient {
   public:
-    explicit AuthRecipient(common::EccKeyPair recipient_key_pair)
+    explicit AuthRecipient(EccKeyPair recipient_key_pair)
         : recipient_key_pair_(std::move(recipient_key_pair)) {}
 
-    Task<AuthKeys> execute(common::SocketStream& stream);
+    Task<AuthKeys> execute(SocketStream& stream);
 
   private:
-    common::EccKeyPair recipient_key_pair_;
-    common::EccKeyPair recipient_ephemeral_key_pair_;
+    EccKeyPair recipient_key_pair_;
+    EccKeyPair recipient_ephemeral_key_pair_;
 };
 
 }  // namespace silkworm::sentry::rlpx::auth

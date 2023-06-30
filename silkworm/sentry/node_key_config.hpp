@@ -26,7 +26,7 @@
 
 namespace silkworm::sentry {
 
-using NodeKey = common::EccKeyPair;
+using NodeKey = EccKeyPair;
 
 class NodeKeyConfig {
   public:

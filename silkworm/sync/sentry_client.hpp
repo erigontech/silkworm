@@ -29,9 +29,9 @@
 #include <boost/signals2.hpp>
 
 #include <silkworm/infra/concurrency/task_group.hpp>
-#include <silkworm/sentry/api/api_common/message_from_peer.hpp>
-#include <silkworm/sentry/api/api_common/peer_event.hpp>
-#include <silkworm/sentry/api/api_common/sentry_client.hpp>
+#include <silkworm/sentry/api/common/message_from_peer.hpp>
+#include <silkworm/sentry/api/common/peer_event.hpp>
+#include <silkworm/sentry/api/common/sentry_client.hpp>
 #include <silkworm/sync/internals/types.hpp>
 #include <silkworm/sync/messages/inbound_message.hpp>
 #include <silkworm/sync/messages/outbound_message.hpp>
@@ -45,7 +45,7 @@ class SentryClient {
   public:
     explicit SentryClient(
         boost::asio::io_context& io_context,
-        std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> sentry_client);
+        std::shared_ptr<silkworm::sentry::api::SentryClient> sentry_client);
 
     SentryClient(const SentryClient&) = delete;
     SentryClient(SentryClient&&) = delete;
@@ -107,10 +107,10 @@ class SentryClient {
     boost::asio::awaitable<void> receive_peer_events();
 
     // notifying registered subscribers
-    boost::asio::awaitable<void> publish(const silkworm::sentry::api::api_common::MessageFromPeer& message_from_peer);
+    boost::asio::awaitable<void> publish(const silkworm::sentry::api::MessageFromPeer& message_from_peer);
 
     boost::asio::io_context& io_context_;
-    std::shared_ptr<silkworm::sentry::api::api_common::SentryClient> sentry_client_;
+    std::shared_ptr<silkworm::sentry::api::SentryClient> sentry_client_;
     concurrency::TaskGroup tasks_;
 
     std::atomic<uint64_t> active_peers_{0};

@@ -53,6 +53,7 @@ EthStatusDataProvider::HeadInfo EthStatusDataProvider::read_head_info(ROTxn& db_
         head_info.hash = head_hash.value();
     } else {
         log::Warning("EthStatusDataProvider") << "canonical hash at height " << std::to_string(head_height) << " not found in db";
+        return head_info;
     }
 
     auto head_total_difficulty = db::read_total_difficulty(db_tx_, head_height, *head_hash);

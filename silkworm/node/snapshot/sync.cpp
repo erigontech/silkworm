@@ -235,6 +235,8 @@ void SnapshotSync::update_block_headers(db::RWTxn& txn, BlockNum max_block_avail
     repository_->for_each_header([&](const BlockHeader* header) -> bool {
         log::Debug() << "[Snapshots] Header number: " << header->number << " hash: " << to_hex(header->hash());
         const auto block_number = header->number;
+        if (block_number > max_block_available) return true;
+
         const auto block_hash = header->hash();
 
         // Write block header into kDifficulty table
@@ -242,7 +244,7 @@ void SnapshotSync::update_block_headers(db::RWTxn& txn, BlockNum max_block_avail
         db::write_total_difficulty(txn, block_number, block_hash, total_difficulty);
 
         // Write block header into kCanonicalHashes table
-        // db::write_canonical_hash(txn, block_number, block_hash);
+        db::write_canonical_hash(txn, block_number, block_hash);
 
         // Collect entries for later loading kHeaderNumbers table
         Bytes encoded_block_number{sizeof(uint64_t), '\0'};

@@ -23,7 +23,7 @@
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/trie/vector_root.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/db/genesis.hpp>
@@ -51,7 +51,7 @@ TEST_CASE("Sync Stages") {
                              std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt,
                              std::nullopt, std::nullopt, std::nullopt, std::nullopt, std::nullopt);
 
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto chaindata_env{db::open_env(node_settings.chaindata_env_config)};
     db::RWTxn txn(chaindata_env);

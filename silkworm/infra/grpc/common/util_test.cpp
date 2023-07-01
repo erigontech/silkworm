@@ -19,7 +19,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::rpc {
 
@@ -72,7 +72,7 @@ TEST_CASE("GrpcLogGuard", "[silkworm][rpc][util]") {
 }
 
 TEST_CASE("gpr_silkworm_log", "[silkworm][rpc][util]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     const char* FILE_NAME{"file.cpp"};
     const int LINE_NUMBER{10};
     Grpc2SilkwormLogGuard log_guard;

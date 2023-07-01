@@ -20,7 +20,7 @@
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/execution/address.hpp>
 #include <silkworm/core/execution/execution.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/bitmap.hpp>
 #include <silkworm/node/db/buffer.hpp>
@@ -34,8 +34,8 @@ namespace silkworm {
 
 TEST_CASE("Stage History Index") {
     // Temporarily override std::cout and std::cerr with null stream to avoid terminal output
-    test::StreamSwap cout_swap{std::cout, test::null_stream()};
-    test::StreamSwap cerr_swap{std::cerr, test::null_stream()};
+    test_util::StreamSwap cout_swap{std::cout, test_util::null_stream()};
+    test_util::StreamSwap cerr_swap{std::cerr, test_util::null_stream()};
 
     test::Context context;
     db::RWTxn& txn{context.rw_txn()};

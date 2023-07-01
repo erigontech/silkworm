@@ -25,7 +25,7 @@
 #include <silkworm/core/common/test_util.hpp>
 #include <silkworm/core/execution/execution.hpp>
 #include <silkworm/core/protocol/param.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/buffer.hpp>
 #include <silkworm/node/db/prune_mode.hpp>
 #include <silkworm/node/db/tables.hpp>
@@ -89,7 +89,7 @@ static BlockBody sample_block_body() {
 namespace silkworm::db {
 
 TEST_CASE("Db Opening") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     // Empty dir
     std::string empty{};
     db::EnvConfig db_config{empty};
@@ -134,7 +134,7 @@ TEST_CASE("Db Opening") {
 }
 
 TEST_CASE("Methods cursor_for_each/cursor_for_count") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.rw_txn()};
 
@@ -171,7 +171,7 @@ TEST_CASE("VersionBase primitives") {
 }
 
 TEST_CASE("Sequences") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.rw_txn()};
 
@@ -218,7 +218,7 @@ TEST_CASE("Sequences") {
 }
 
 TEST_CASE("Schema Version") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context(/*with_create_tables=*/false);
 
     SECTION("Read/Write") {
@@ -256,7 +256,7 @@ TEST_CASE("Schema Version") {
 }
 
 TEST_CASE("Storage and Prune Modes") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.txn()};
 
@@ -383,7 +383,7 @@ TEST_CASE("Storage and Prune Modes") {
 }
 
 TEST_CASE("Stages") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.rw_txn()};
 
@@ -448,7 +448,7 @@ TEST_CASE("Difficulty") {
 }
 
 TEST_CASE("Headers and bodies") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.rw_txn()};
 
@@ -569,7 +569,7 @@ TEST_CASE("Headers and bodies") {
 }
 
 TEST_CASE("Account") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     db::RWTxn& txn{context.rw_txn()};
 
@@ -613,7 +613,7 @@ TEST_CASE("Account") {
 }
 
 TEST_CASE("Storage") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.rw_txn()};
 
@@ -701,7 +701,7 @@ TEST_CASE("Account_changes") {
 }
 
 TEST_CASE("Storage changes") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.rw_txn()};
 
@@ -781,7 +781,7 @@ TEST_CASE("Storage changes") {
 }
 
 TEST_CASE("Chain config") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.rw_txn()};
 
@@ -804,7 +804,7 @@ TEST_CASE("Chain config") {
 }
 
 TEST_CASE("Head header") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.rw_txn()};
 
@@ -814,7 +814,7 @@ TEST_CASE("Head header") {
 }
 
 TEST_CASE("Last Fork Choice") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.rw_txn()};
 
@@ -832,7 +832,7 @@ TEST_CASE("Last Fork Choice") {
 }
 
 TEST_CASE("read rlp encoded transactions") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.rw_txn()};
 

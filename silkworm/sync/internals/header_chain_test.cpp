@@ -21,7 +21,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/cast.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm {
 // Useful definitions
@@ -47,7 +47,7 @@ class HeaderChainForTest : public HeaderChain {
 // ----------------------------------------------------------------------------
 
 TEST_CASE("HeaderList - split_into_segments - No headers") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     std::vector<BlockHeader> headers;
     auto headerList = HeaderList::make(headers);
@@ -59,7 +59,7 @@ TEST_CASE("HeaderList - split_into_segments - No headers") {
 }
 
 TEST_CASE("HeaderList - split_into_segments - Single header") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     std::vector<BlockHeader> headers;
     BlockHeader header;
@@ -75,7 +75,7 @@ TEST_CASE("HeaderList - split_into_segments - Single header") {
 }
 
 TEST_CASE("HeaderList - split_into_segments - Single header repeated twice") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     std::vector<BlockHeader> headers;
     BlockHeader header;
@@ -92,7 +92,7 @@ TEST_CASE("HeaderList - split_into_segments - Single header repeated twice") {
 }
 
 TEST_CASE("HeaderList - split_into_segments - Two connected headers") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -118,7 +118,7 @@ TEST_CASE("HeaderList - split_into_segments - Two connected headers") {
 }
 
 TEST_CASE("HeaderList - split_into_segments - Two connected headers with wrong numbers") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -147,7 +147,7 @@ TEST_CASE("HeaderList - split_into_segments - Two connected headers with wrong n
  *         3 segments: {h3}, {h2}, {h1}   (in this order)
  */
 TEST_CASE("HeaderList - split_into_segments - Two headers connected to the third header") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -184,7 +184,7 @@ TEST_CASE("HeaderList - split_into_segments - Two headers connected to the third
 }
 
 TEST_CASE("HeaderList - split_into_segments - Same three headers, but in a reverse order") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -226,7 +226,7 @@ TEST_CASE("HeaderList - split_into_segments - Same three headers, but in a rever
  *         2 segments: {h3?}, {h2?}
  */
 TEST_CASE("HeaderList - split_into_segments - Two headers not connected to each other") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -265,7 +265,7 @@ TEST_CASE("HeaderList - split_into_segments - Two headers not connected to each 
  *        1 segment: {h3, h2, h1}   (with header in this order)
  */
 TEST_CASE("HeaderList - split_into_segments - Three headers connected") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -305,7 +305,7 @@ TEST_CASE("HeaderList - split_into_segments - Three headers connected") {
  *        3 segments: {h3?}, {h4?}, {h2, h1}
  */
 TEST_CASE("HeaderList - split_into_segments - Four headers connected") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     std::vector<BlockHeader> headers;
 
     BlockHeader header1;
@@ -351,7 +351,7 @@ TEST_CASE("HeaderList - split_into_segments - Four headers connected") {
 
 TEST_CASE("HeaderChain - process_segment - (1) simple chain") {
     using namespace std;
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     ChainConfig chain_config{kMainnetConfig};
     chain_config.genesis_hash.emplace(kMainnetGenesisHash);
@@ -1221,7 +1221,7 @@ TEST_CASE("HeaderChain - process_segment - (6) (malicious) siblings") {
 }
 
 TEST_CASE("HeaderChain - process_segment - (7) invalidating anchor") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     using namespace std;
 
     ChainConfig chain_config{kMainnetConfig};
@@ -1319,7 +1319,7 @@ TEST_CASE("HeaderChain - process_segment - (7) invalidating anchor") {
 }
 
 TEST_CASE("HeaderChain - process_segment - (8) sibling with anchor invalidation and links reduction") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     using namespace std;
 
     ChainConfig chain_config{kMainnetConfig};

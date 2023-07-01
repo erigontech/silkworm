@@ -20,7 +20,7 @@
 
 #include <catch2/catch.hpp>
 
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/test/files.hpp>
 #include <silkworm/node/test/xoroshiro128pp.hpp>
 
@@ -33,7 +33,7 @@ namespace silkworm::succinct {
 constexpr int kTestSalt{1};
 
 TEST_CASE("RecSplit8: key_count=0", "[silkworm][node][recsplit]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
     RecSplitSettings settings{
         .keys_count = 0,
@@ -46,7 +46,7 @@ TEST_CASE("RecSplit8: key_count=0", "[silkworm][node][recsplit]") {
 }
 
 TEST_CASE("RecSplit8: key_count=1", "[silkworm][node][recsplit]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
     RecSplitSettings settings{
         .keys_count = 1,
@@ -60,7 +60,7 @@ TEST_CASE("RecSplit8: key_count=1", "[silkworm][node][recsplit]") {
 }
 
 TEST_CASE("RecSplit8: key_count=2", "[silkworm][node][recsplit]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
     RecSplitSettings settings{
         .keys_count = 2,
@@ -119,7 +119,7 @@ template <>
 const std::array<uint32_t, kMaxBucketSize> RecSplit4::memo = RecSplit4::fill_golomb_rice();
 
 TEST_CASE("RecSplit4: keys=1000 buckets=128", "[silkworm][node][recsplit]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
 
     constexpr int kTestNumKeys{1'000};
@@ -157,7 +157,7 @@ TEST_CASE("RecSplit4: keys=1000 buckets=128", "[silkworm][node][recsplit]") {
 }
 
 TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][node][recsplit]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
 
     struct RecSplitParams {
@@ -204,7 +204,7 @@ TEST_CASE("RecSplit4: multiple keys-buckets", "[silkworm][node][recsplit]") {
 }
 
 TEST_CASE("RecSplit8: index lookup", "[silkworm][node][recsplit][.]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
     RecSplitSettings settings{
         .keys_count = 100,
@@ -227,7 +227,7 @@ TEST_CASE("RecSplit8: index lookup", "[silkworm][node][recsplit][.]") {
 }
 
 TEST_CASE("RecSplit8: double index lookup", "[silkworm][node][recsplit][.]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile index_file;
     RecSplitSettings settings{
         .keys_count = 100,

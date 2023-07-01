@@ -24,7 +24,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::rpc {
 
@@ -33,7 +33,7 @@ using namespace concurrency;
 // Exclude gRPC tests from sanitizer builds due to data race warnings inside gRPC library
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("ServerContext", "[silkworm][infra][grpc][server][server_context]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     grpc::ServerBuilder builder;
     std::unique_ptr<grpc::ServerCompletionQueue> scq = builder.AddCompletionQueue();
     grpc::ServerCompletionQueue* scq_ptr = scq.get();
@@ -74,12 +74,12 @@ TEST_CASE("ServerContext", "[silkworm][infra][grpc][server][server_context]") {
     }
 
     SECTION("print") {
-        CHECK_NOTHROW(test::null_stream() << server_context);
+        CHECK_NOTHROW(test_util::null_stream() << server_context);
     }
 }
 
 TEST_CASE("ServerContextPool", "[silkworm][infra][grpc][server][server_context]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     grpc::ServerBuilder builder;
 
     SECTION("ServerContextPool OK") {

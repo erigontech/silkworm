@@ -35,7 +35,7 @@
 
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm {
 
@@ -154,7 +154,7 @@ TEST_CASE("BitTorrentClient::BitTorrentClient", "[silkworm][snapshot][bittorrent
 }
 
 TEST_CASE("BitTorrentClient::add_info_hash", "[silkworm][snapshot][bittorrent]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     TestRepository repo;
     BitTorrentSettings settings{};
@@ -183,7 +183,7 @@ TEST_CASE("BitTorrentClient::add_info_hash", "[silkworm][snapshot][bittorrent]")
 }
 
 TEST_CASE("BitTorrentClient::execute_loop", "[silkworm][snapshot][bittorrent]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     TestRepository repo;
     BitTorrentSettings settings{};
@@ -286,7 +286,7 @@ TEST_CASE("BitTorrentClient::process_alerts", "[silkworm][snapshot][bittorrent]"
 }
 
 TEST_CASE("BitTorrentClient::handle_alert", "[silkworm][snapshot][bittorrent]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     TestRepository repo;
     BitTorrentSettings settings{};

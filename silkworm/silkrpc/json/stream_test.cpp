@@ -19,12 +19,12 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::rpc::json {
 
 TEST_CASE("JsonStream", "[json]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     StringWriter string_writer;
     ChunksWriter chunks_writer(string_writer, 16);
@@ -69,7 +69,7 @@ TEST_CASE("JsonStream", "[json]") {
 }
 
 TEST_CASE("JsonStream calls") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     StringWriter string_writer;
     Stream stream(string_writer);

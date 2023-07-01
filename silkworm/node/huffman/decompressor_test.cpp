@@ -31,7 +31,7 @@
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/common/directories.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/test/snapshots.hpp>
 
 using Catch::Matchers::Message;
@@ -172,10 +172,10 @@ TEST_CASE("PatternTable::search_condensed", "[silkworm][snapshot][decompressor]"
 
 TEST_CASE("PatternTable::operator<<", "[silkworm][snapshot][decompressor]") {
     PatternTable table1{0};
-    CHECK_NOTHROW(test::null_stream() << table1);
+    CHECK_NOTHROW(test_util::null_stream() << table1);
     SetCondensedTableBitLengthThresholdGuard bit_length_threshold_guard{1};
     PatternTable table2{0};
-    CHECK_NOTHROW(test::null_stream() << table2);
+    CHECK_NOTHROW(test_util::null_stream() << table2);
 }
 
 TEST_CASE("PositionTable::PositionTable", "[silkworm][snapshot][decompressor]") {
@@ -191,7 +191,7 @@ TEST_CASE("PositionTable::PositionTable", "[silkworm][snapshot][decompressor]") 
 
 TEST_CASE("PositionTable::operator<<", "[silkworm][snapshot][decompressor]") {
     PositionTable table{0};
-    CHECK_NOTHROW(test::null_stream() << table);
+    CHECK_NOTHROW(test_util::null_stream() << table);
 }
 
 TEST_CASE("Decompressor::Decompressor", "[silkworm][snapshot][decompressor]") {
@@ -204,7 +204,7 @@ TEST_CASE("Decompressor::Decompressor", "[silkworm][snapshot][decompressor]") {
 }
 
 TEST_CASE("Decompressor::open invalid files", "[silkworm][snapshot][decompressor]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     SECTION("empty file") {
         test::TemporaryFile tmp_file;
@@ -232,7 +232,7 @@ TEST_CASE("Decompressor::open invalid files", "[silkworm][snapshot][decompressor
 }
 
 TEST_CASE("Decompressor::open valid files", "[silkworm][snapshot][decompressor]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     std::map<std::string, test::SnapshotHeader> header_tests{
         {"zero patterns and zero positions",
@@ -273,7 +273,7 @@ TEST_CASE("Decompressor::open valid files", "[silkworm][snapshot][decompressor]"
 }
 
 TEST_CASE("Decompressor::read_ahead", "[silkworm][snapshot][decompressor]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::SnapshotHeader header{
         .words_count = 0,
         .empty_words_count = 0,
@@ -296,7 +296,7 @@ TEST_CASE("Decompressor::read_ahead", "[silkworm][snapshot][decompressor]") {
 }
 
 TEST_CASE("Decompressor::close", "[silkworm][snapshot][decompressor]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::SnapshotHeader header{
         .words_count = 0,
         .empty_words_count = 0,
@@ -319,7 +319,7 @@ TEST_CASE("Decompressor::close", "[silkworm][snapshot][decompressor]") {
 }
 
 TEST_CASE("Iterator::Iterator empty data", "[silkworm][snapshot][decompressor]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::SnapshotHeader header{
         .words_count = 0,
         .empty_words_count = 0,
@@ -408,7 +408,7 @@ const Bytes kLoremIpsumDict{*from_hex(
     "73742036340d6c61626f72756d203635")};
 
 TEST_CASE("Decompressor: lorem ipsum next_uncompressed", "[silkworm][snapshot][decompressor]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile tmp_file{};
     tmp_file.write(kLoremIpsumDict);
     Decompressor decoder{tmp_file.path()};
@@ -441,7 +441,7 @@ TEST_CASE("Decompressor: lorem ipsum next_uncompressed", "[silkworm][snapshot][d
 }
 
 TEST_CASE("Decompressor: lorem ipsum next", "[silkworm][snapshot][decompressor]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile tmp_file{};
     tmp_file.write(kLoremIpsumDict);
     Decompressor decoder{tmp_file.path()};

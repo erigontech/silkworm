@@ -29,7 +29,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/silkrpc/ethdb/transaction_database.hpp>
 #include <silkworm/silkrpc/json/types.hpp>
 #include <silkworm/silkrpc/test/api_test_base.hpp>
@@ -223,7 +223,7 @@ TEST_CASE_METHOD(EngineRpcApiTest, "EngineRpcApi::handle_engine_exchange_capabil
 }
 
 TEST_CASE("handle_engine_get_payload_v1 succeeds if request is expected payload", "[silkworm][rpc][commands][engine_api]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock;
     EXPECT_CALL(*backend, engine_get_payload(1)).WillOnce(InvokeWithoutArgs([]() -> awaitable<ExecutionPayloadAndValue> {
@@ -282,7 +282,7 @@ TEST_CASE("handle_engine_get_payload_v1 succeeds if request is expected payload"
 }
 
 TEST_CASE("handle_engine_get_payload_v1 fails with invalid amount of params", "[silkworm][rpc][commands][engine_api]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     nlohmann::json reply;
     nlohmann::json request = R"({
@@ -323,7 +323,7 @@ TEST_CASE("handle_engine_get_payload_v1 fails with invalid amount of params", "[
 }
 
 TEST_CASE("handle_engine_new_payload_v1 succeeds if request is expected payload status", "[silkworm][rpc][commands][engine_api]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock;
     EXPECT_CALL(*backend, engine_new_payload(testing::_)).WillOnce(InvokeWithoutArgs([]() -> awaitable<PayloadStatus> {
@@ -389,7 +389,7 @@ TEST_CASE("handle_engine_new_payload_v1 succeeds if request is expected payload 
 }
 
 TEST_CASE("handle_engine_new_payload_v1 fails with invalid amount of params", "[silkworm][rpc][commands][engine_api]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     nlohmann::json reply;
     nlohmann::json request = R"({
@@ -430,7 +430,7 @@ TEST_CASE("handle_engine_new_payload_v1 fails with invalid amount of params", "[
 }
 
 TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds only with forkchoiceState", "[silkworm][rpc][commands][engine_api]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock;
     EXPECT_CALL(*backend, engine_forkchoice_updated(testing::_)).WillOnce(InvokeWithoutArgs([]() -> awaitable<ForkChoiceUpdatedReply> {
@@ -488,7 +488,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds only with forkchoiceStat
 }
 
 TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params", "[silkworm][rpc][commands][engine_api]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock;
     EXPECT_CALL(*backend, engine_forkchoice_updated(testing::_)).WillOnce(InvokeWithoutArgs([]() -> awaitable<ForkChoiceUpdatedReply> {
@@ -551,7 +551,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params", "[sil
 }
 
 TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params and second set to null", "[silkworm][rpc][commands][engine_api]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock;
     EXPECT_CALL(*backend, engine_forkchoice_updated(testing::_)).WillOnce(InvokeWithoutArgs([]() -> awaitable<ForkChoiceUpdatedReply> {
@@ -610,7 +610,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params and sec
 }
 
 TEST_CASE("handle_engine_forkchoice_updated_v1 fails with invalid amount of params", "[silkworm][rpc][commands][engine_api]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     nlohmann::json reply;
     nlohmann::json request = R"({
@@ -651,7 +651,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with invalid amount of para
 }
 
 TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty finalized block hash", "[silkworm][rpc][commands][engine_api]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock();
     nlohmann::json reply;
@@ -697,7 +697,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty finalized block 
 }
 
 TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty safe block hash", "[silkworm][rpc][commands][engine_api]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock();
     nlohmann::json reply;
@@ -743,7 +743,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 fails with empty safe block hash"
 }
 
 TEST_CASE("handle_engine_transition_configuration_v1 succeeds if EL configurations has the same request configuration", "[silkworm][rpc][commands][engine_api]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     ClientContextPool context_pool{1};
     context_pool.start();
@@ -802,7 +802,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 succeeds if EL configuratio
 }
 
 TEST_CASE("handle_engine_transition_configuration_v1 succeeds and default terminal block number to zero if chain config doesn't specify it", "[silkworm][rpc][commands][engine_api]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     ClientContextPool context_pool{1};
     context_pool.start();
@@ -861,7 +861,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 succeeds and default termin
 }
 
 TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect terminal total difficulty", "[silkworm][rpc][commands][engine_api]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     ClientContextPool context_pool{1};
     context_pool.start();
@@ -918,7 +918,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect terminal
 }
 
 TEST_CASE("handle_engine_transition_configuration_v1 fails if execution layer does not have terminal total difficulty", "[silkworm][rpc][commands][engine_api]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     ClientContextPool context_pool{1};
     context_pool.start();
@@ -975,7 +975,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if execution layer do
 }
 
 TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer sends wrong terminal total difficulty", "[silkworm][rpc][commands][engine_api]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     ClientContextPool context_pool{1};
     context_pool.start();
@@ -1032,7 +1032,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer se
 }
 
 TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer sends wrong terminal block hash", "[silkworm][rpc][commands][engine_api]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     ClientContextPool context_pool{1};
     context_pool.start();
@@ -1089,7 +1089,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer se
 }
 
 TEST_CASE("handle_engine_transition_configuration_v1 succeeds w/o matching terminal block number", "[silkworm][rpc][commands][engine_api]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     ClientContextPool context_pool{1};
     context_pool.start();
@@ -1147,7 +1147,7 @@ TEST_CASE("handle_engine_transition_configuration_v1 succeeds w/o matching termi
 }
 
 TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect params", "[silkworm][rpc][commands][engine_api]") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     ClientContextPool context_pool{1};
     context_pool.start();

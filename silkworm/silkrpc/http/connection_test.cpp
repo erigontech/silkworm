@@ -20,7 +20,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/silkrpc/commands/rpc_api_table.hpp>
 
 namespace silkworm::rpc::http {
@@ -33,7 +33,7 @@ using Catch::Matchers::Message;
 // - previous write of size 1 by main thread
 #ifndef SILKWORM_SANITIZE
 TEST_CASE("connection creation", "[silkrpc][http][connection]") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     SECTION("field initialization") {
         ClientContextPool context_pool{1};

@@ -22,7 +22,7 @@
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/silkrpc/types/log.hpp>
 #include <silkworm/silkrpc/types/receipt.hpp>
 
@@ -41,21 +41,21 @@ using evmc::literals::operator""_address, evmc::literals::operator""_bytes32;
 using std::string_literals::operator""s;
 
 TEST_CASE("decode logs from empty bytes", "[silkrpc][ethdb][cbor]") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     Logs logs{};
     CHECK_NOTHROW(cbor_decode(*silkworm::from_hex(""), logs));
     CHECK(logs.empty());
 }
 
 TEST_CASE("decode logs from empty array", "[silkrpc][ethdb][cbor]") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     Logs logs{};
     CHECK_NOTHROW(cbor_decode(*silkworm::from_hex("80"), logs));
     CHECK(logs.empty());
 }
 
 TEST_CASE("decode logs from CBOR 1", "[silkrpc][ethdb][cbor]") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     Logs logs{};
     CHECK_NOTHROW(cbor_decode(*silkworm::from_hex("818354000000000000000000000000000000000000000080f6"), logs));
     CHECK(logs.size() == 1);
@@ -65,7 +65,7 @@ TEST_CASE("decode logs from CBOR 1", "[silkrpc][ethdb][cbor]") {
 }
 
 TEST_CASE("decode logs from CBOR 2", "[silkrpc][ethdb][cbor]") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     Logs logs{};
     CHECK_NOTHROW(cbor_decode(*silkworm::from_hex(
                                   "82"
@@ -82,7 +82,7 @@ TEST_CASE("decode logs from CBOR 2", "[silkrpc][ethdb][cbor]") {
 }
 
 TEST_CASE("decode logs from CBOR 3", "[silkrpc][ethdb][cbor]") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     Logs logs{};
     auto bytes = *silkworm::from_hex("818354ea674fdde714fd979de3edf0f56aa9716b898ec88043010043");
     CHECK_NOTHROW(cbor_decode(bytes, logs));
@@ -93,7 +93,7 @@ TEST_CASE("decode logs from CBOR 3", "[silkrpc][ethdb][cbor]") {
 }
 
 TEST_CASE("decode logs from CBOR 4", "[silkrpc][ethdb][cbor]") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     Logs logs{};
     auto bytes = *silkworm::from_hex(
         "81835456c0369e002852c2570ca0cc3442e26df98e01a2835820ddf252ad1be2c89b69c2b068fc37"
@@ -113,7 +113,7 @@ TEST_CASE("decode logs from CBOR 4", "[silkrpc][ethdb][cbor]") {
 }
 
 TEST_CASE("decode logs from incorrect bytes", "[silkrpc][ethdb][cbor]") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     Logs logs{};
     const auto b1 = *silkworm::from_hex("81");
     CHECK(!cbor_decode(b1, logs));
@@ -122,21 +122,21 @@ TEST_CASE("decode logs from incorrect bytes", "[silkrpc][ethdb][cbor]") {
 }
 
 TEST_CASE("decode receipts from empty bytes", "[silkrpc][ethdb][cbor]") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     Receipts receipts{};
     CHECK_NOTHROW(cbor_decode(*silkworm::from_hex(""), receipts));
     CHECK(receipts.empty());
 }
 
 TEST_CASE("decode receipts from empty array", "[silkrpc][ethdb][cbor]") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     Receipts receipts{};
     CHECK_NOTHROW(cbor_decode(*silkworm::from_hex("80"), receipts));
     CHECK(receipts.empty());
 }
 
 TEST_CASE("decode receipts from CBOR 1", "[silkrpc][ethdb][cbor]") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     Receipts receipts{};
     CHECK_NOTHROW(cbor_decode(*silkworm::from_hex("818400f60101"), receipts));
     CHECK(receipts.size() == 1);
@@ -146,7 +146,7 @@ TEST_CASE("decode receipts from CBOR 1", "[silkrpc][ethdb][cbor]") {
 }
 
 TEST_CASE("decode receipts from CBOR 2", "[silkrpc][ethdb][cbor]") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     Receipts receipts{};
     CHECK_NOTHROW(cbor_decode(*silkworm::from_hex(
                                   "82"
@@ -163,7 +163,7 @@ TEST_CASE("decode receipts from CBOR 2", "[silkrpc][ethdb][cbor]") {
 }
 
 TEST_CASE("decode receipts from CBOR 3", "[silkrpc][ethdb][cbor]") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     Receipts receipts{};
     auto bytes = *silkworm::from_hex("838400f601196d398400f6011a00371b0b8400f6011a003947f4");
     CHECK_NOTHROW(cbor_decode(bytes, receipts));
@@ -177,7 +177,7 @@ TEST_CASE("decode receipts from CBOR 3", "[silkrpc][ethdb][cbor]") {
 }
 
 TEST_CASE("decode receipts from incorrect bytes", "[silkrpc][ethdb][cbor]") {
-    test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     Receipts receipts{};
     const auto b1 = *silkworm::from_hex("81");
     CHECK_THROWS(cbor_decode(b1, receipts));

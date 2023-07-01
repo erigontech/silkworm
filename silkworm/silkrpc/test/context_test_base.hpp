@@ -28,7 +28,7 @@
 
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/grpc/client/client_context_pool.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::rpc::test {
 
@@ -52,7 +52,7 @@ class ContextTestBase {
 
     ~ContextTestBase();
 
-    silkworm::test::SetLogVerbosityGuard log_guard_;
+    silkworm::test_util::SetLogVerbosityGuard log_guard_;
     ClientContext context_;
     boost::asio::io_context& io_context_;
     agrpc::GrpcContext& grpc_context_;

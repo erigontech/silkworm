@@ -20,20 +20,20 @@
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/test/context.hpp>
 #include <silkworm/node/test/files.hpp>
 
 namespace silkworm::snapshot {
 
 TEST_CASE("SnapshotSync::SnapshotSync", "[silkworm][snapshot][sync]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     SnapshotRepository repository{SnapshotSettings{}};
     CHECK_NOTHROW(SnapshotSync{&repository, kMainnetConfig});
 }
 
 TEST_CASE("SnapshotSync::download_and_index_snapshots", "[silkworm][snapshot][sync]") {
-    test::SetLogVerbosityGuard guard{log::Level::kNone};
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::Context context;
     const auto tmp_dir{TemporaryDirectory::get_unique_temporary_path()};
     BitTorrentSettings bittorrent_settings{

@@ -32,14 +32,6 @@ endif()
 if(NOT SILKWORM_CORE_ONLY)
   find_package(GTest REQUIRED)
 
-  # Silkworm Infra Tests
-  file(GLOB_RECURSE SILKWORM_INFRA_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/infra/*_test.cpp")
-  add_executable(infra_test "unit_test.cpp;${SILKWORM_INFRA_TESTS}")
-  if(SILKWORM_SANITIZE)
-    target_compile_definitions(infra_test PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
-  endif()
-  target_link_libraries(infra_test silkworm_infra Catch2::Catch2 GTest::gmock)
-
   # Silkworm Node Tests
   file(GLOB_RECURSE SILKWORM_NODE_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/node/*_test.cpp")
   add_executable(node_test unit_test.cpp ${SILKWORM_NODE_TESTS})

@@ -19,14 +19,14 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::rpc::fee_history {
 
 using Catch::Matchers::Message;
 
 TEST_CASE("FeeHistory: json serialization") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     SECTION("default value") {
         FeeHistory fh;

@@ -28,7 +28,7 @@
 #include <evmc/evmc.hpp>
 #include <gmock/gmock.h>
 
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/silkrpc/ethdb/kv/remote_database.hpp>
 #include <silkworm/silkrpc/ethdb/kv/remote_transaction.hpp>
 #include <silkworm/silkrpc/test/kv_test_base.hpp>
@@ -50,7 +50,7 @@ using testing::InvokeWithoutArgs;
 using testing::Return;
 
 TEST_CASE("EstimateGasException") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     SECTION("EstimateGasException(int64_t, std::string const&)") {
         const char* kErrorMessage{"insufficient funds for transfer"};
@@ -73,7 +73,7 @@ TEST_CASE("EstimateGasException") {
 }
 
 TEST_CASE("estimate gas") {
-    silkworm::test::SetLogVerbosityGuard log_guard{log::Level::kNone};
+    silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     boost::asio::thread_pool pool{1};
     boost::asio::thread_pool workers{1};
 

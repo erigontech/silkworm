@@ -19,7 +19,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/util.hpp>
-#include <silkworm/infra/test/log.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/types/log.hpp>
 
@@ -38,7 +38,7 @@ TEST_CASE("create empty receipt", "[silkrpc][types][receipt]") {
 
 TEST_CASE("print empty receipt", "[silkrpc][types][receipt]") {
     Receipt r{};
-    CHECK_NOTHROW(silkworm::test::null_stream() << r);
+    CHECK_NOTHROW(silkworm::test_util::null_stream() << r);
 }
 
 TEST_CASE("print receipt", "[silkrpc][types][receipt]") {
@@ -51,7 +51,7 @@ TEST_CASE("print receipt", "[silkrpc][types][receipt]") {
     r.from = 0x0715a7794a1dc8e42615f059dd6e406a6594651a_address;
     r.to = 0x0715a7794a1dc8e42615f059dd6e406a6594651a_address;
     r.type = 2;
-    CHECK_NOTHROW(silkworm::test::null_stream() << r);
+    CHECK_NOTHROW(silkworm::test_util::null_stream() << r);
 }
 
 TEST_CASE("bloom from empty logs", "[silkrpc][types][receipt]") {

@@ -48,8 +48,8 @@ void from_json(const nlohmann::json& json, DebugConfig& tc) {
 
 std::ostream& operator<<(std::ostream& out, const DebugConfig& tc) {
     out << "disableStorage: " << std::boolalpha << tc.disableStorage;
-    out << " disableMemory: " << std::boolalpha << tc.disableMemory;
-    out << " disableStack: " << std::boolalpha << tc.disableStack;
+    out << ", disableMemory: " << std::boolalpha << tc.disableMemory;
+    out << ", disableStack: " << std::boolalpha << tc.disableStack;
 
     return out;
 }
@@ -268,6 +268,11 @@ void DebugTracer::write_log(const DebugLog& log) {
 
 boost::asio::awaitable<void> DebugExecutor::trace_block(json::Stream& stream, std::uint64_t block_number) {
     const auto block_with_hash = co_await rpc::core::read_block_by_number(block_cache_, database_reader_, block_number);
+
+    const auto& block = block_with_hash->block;
+
+    SILK_DEBUG << "read block by number: " << block_number << " (#txns: " << block.transactions.size() << "), calling execute...";
+
     stream.write_field("result");
     stream.open_array();
     co_await execute(stream, block_with_hash->block);
@@ -278,6 +283,11 @@ boost::asio::awaitable<void> DebugExecutor::trace_block(json::Stream& stream, st
 
 boost::asio::awaitable<void> DebugExecutor::trace_block(json::Stream& stream, const evmc::bytes32& block_hash) {
     const auto block_with_hash = co_await rpc::core::read_block_by_hash(block_cache_, database_reader_, block_hash);
+
+    const auto& block = block_with_hash->block;
+    const auto number = block.header.number;
+
+    SILK_DEBUG << "read block by hash: " << block_hash << " (block number: " << number << " #txns: " << block.transactions.size() << "), calling execute...";
 
     stream.write_field("result");
     stream.open_array();
@@ -294,6 +304,8 @@ boost::asio::awaitable<void> DebugExecutor::trace_call(json::Stream& stream, con
     const auto& block = block_with_hash->block;
     const auto number = block.header.number;
 
+    SILK_DEBUG << "read block: " << number << " (#txns: " << block.transactions.size() << "), calling execute...";
+
     stream.write_field("result");
     stream.open_object();
     co_await execute(stream, number, block, transaction, -1);
@@ -304,6 +316,8 @@ boost::asio::awaitable<void> DebugExecutor::trace_call(json::Stream& stream, con
 
 boost::asio::awaitable<void> DebugExecutor::trace_transaction(json::Stream& stream, const evmc::bytes32& tx_hash) {
     const auto tx_with_block = co_await rpc::core::read_transaction_by_hash(block_cache_, database_reader_, tx_hash);
+
+    SILK_DEBUG << "read transaction by hash: " << tx_hash << ", calling execute...";
 
     if (!tx_with_block) {
         std::ostringstream oss;
@@ -343,7 +357,7 @@ awaitable<void> DebugExecutor::execute(json::Stream& stream, const silkworm::Blo
     auto block_number = block.header.number;
     const auto& transactions = block.transactions;
 
-    SILK_DEBUG << "execute: block_number: " << block_number << " #txns: " << transactions.size() << " config: " << config_;
+    SILK_DEBUG << "execute: block_number: " << block_number << " #txns: " << transactions.size() << " config: {" << config_ << "}";
 
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     const auto chain_config_ptr = lookup_chain_config(chain_id);
@@ -407,7 +421,7 @@ awaitable<void> DebugExecutor::execute(json::Stream& stream, uint64_t block_numb
               << " block_number: " << block_number
               << " transaction: {" << transaction << "}"
               << " index: " << std::dec << index
-              << " config: " << config_;
+              << " config: {" << config_ << "}";
 
     const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
     const auto chain_config_ptr = lookup_chain_config(chain_id);

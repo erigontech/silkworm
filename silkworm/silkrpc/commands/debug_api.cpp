@@ -330,13 +330,13 @@ awaitable<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& reque
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-        ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
+        // ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
 
-        const bool is_latest_block = co_await core::is_latest_block_number(block_number_or_hash, tx_database);
-        const core::rawdb::DatabaseReader& db_reader =
-            is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
+        // const bool is_latest_block = co_await core::is_latest_block_number(block_number_or_hash, tx_database);
+        // const core::rawdb::DatabaseReader& db_reader =
+        //     is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
 
-        debug::DebugExecutor executor{db_reader, *block_cache_, workers_, *tx, config};
+        debug::DebugExecutor executor{tx_database, *block_cache_, workers_, *tx, config};
         std::cout << "** START EXECUTOR ************************************************************************************\n";
         co_await executor.trace_call(stream, block_number_or_hash, call);
         std::cout << "** END EXECUTOR ************************************************************************************\n";

@@ -916,8 +916,11 @@ BlockNum DataModel::highest_block_number() const {
     const auto data{header_cursor->to_last(/*.throw_not_found*/ false)};
     if (data.done && data.key.size() >= sizeof(uint64_t)) {
         ByteView key = from_slice(data.key);
-        ByteView block_num = key.substr(0, sizeof(BlockNum));
-        return endian::load_big_u64(block_num.data());
+        ByteView block_num_data = key.substr(0, sizeof(BlockNum));
+        BlockNum block_num = endian::load_big_u64(block_num_data.data());
+        if (block_num > 0) {  // skip genesis block if present
+            return block_num;
+        }
     }
 
     // If none is found on db, then ask the snapshot repository (if any) for highest block

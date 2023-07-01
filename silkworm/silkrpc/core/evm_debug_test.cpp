@@ -395,7 +395,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
         }));
 
     const auto block_number = 5'405'095;  // 0x5279A7
-    
+
     Call call;
     call.from = 0xe0a2Bd4258D2768837BAa26A28fE71Dc079f84c7_address;
     call.gas = 118'936;
@@ -954,7 +954,6 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
             ]
         })"_json);
     }
-
 }
 
 TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 3") {

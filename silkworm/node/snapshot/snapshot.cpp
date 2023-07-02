@@ -31,9 +31,7 @@ namespace fs = std::filesystem;
 
 Snapshot::Snapshot(std::filesystem::path path, BlockNum block_from, BlockNum block_to)
     : path_(std::move(path)), block_from_(block_from), block_to_(block_to), decoder_{path_} {
-    if (block_to < block_from) {
-        throw std::logic_error{"invalid block range: block_to less than block_from"};
-    }
+    ensure(block_to >= block_from, "Snapshot: invalid block range: block_to less than block_from");
 }
 
 void Snapshot::reopen_segment() {
@@ -50,7 +48,7 @@ bool Snapshot::for_each_item(const Snapshot::WordItemFunc& fn) {
         while (it.has_next()) {
             const uint64_t next_offset = it.next(item.value);
             item.position = word_count;
-            SILK_DEBUG << "for_each_item item: offset=" << item.offset << " position=" << item.position
+            SILK_TRACE << "for_each_item item: offset=" << item.offset << " position=" << item.position
                        << " value=" << to_hex(item.value);
             const bool result = fn(item);
             if (!result) return false;
@@ -142,7 +140,7 @@ std::optional<BlockHeader> HeaderSnapshot::header_by_hash(const Hash& block_hash
 }
 
 std::optional<BlockHeader> HeaderSnapshot::header_by_number(BlockNum block_height) const {
-    if (!idx_header_hash_) {
+    if (!idx_header_hash_ or block_height < block_from_ or block_height >= block_to_) {
         return {};
     }
 
@@ -157,18 +155,17 @@ std::optional<BlockHeader> HeaderSnapshot::header_by_number(BlockNum block_heigh
 bool HeaderSnapshot::decode_header(const Snapshot::WordItem& item, BlockHeader& header) const {
     // First byte in data is first byte of header hash.
     ensure(!item.value.empty(), "HeaderSnapshot: hash first byte missing at offset=" + std::to_string(item.offset));
+
     // Skip hash first byte to obtain encoded header RLP data
     ByteView encoded_header{item.value.data() + 1, item.value.length() - 1};
-    SILK_TRACE << "decode_header encoded_header: " << to_hex(encoded_header) << " offset:" << std::to_string(item.offset);
     const auto decode_result = rlp::decode(encoded_header, header);
     if (!decode_result) {
         SILK_TRACE << "decode_header offset: " << item.offset << " error: " << magic_enum::enum_name(decode_result.error());
         return false;
     }
-    SILK_TRACE << "decode_header header number: " << header.number << " offset:" << std::to_string(item.offset);
+
     ensure(header.number >= block_from_,
            "HeaderSnapshot: number=" + std::to_string(header.number) + " < block_from=" + std::to_string(block_from_));
-    SILK_TRACE << "decode_header header number: " << header.number << " hash:" << to_hex(header.hash());
     return true;
 }
 
@@ -220,7 +217,7 @@ std::pair<uint64_t, uint64_t> BodySnapshot::compute_txs_amount() {
     if (!read_ok) throw std::runtime_error{"error computing txs amount in: " + path_.string()};
     if (first_tx_id == 0 && last_tx_id == 0) throw std::runtime_error{"empty body snapshot: " + path_.string()};
 
-    SILK_DEBUG << "first_tx_id: " << first_tx_id << " last_tx_id: " << last_tx_id << " last_txs_amount: " << last_txs_amount;
+    SILK_TRACE << "first_tx_id: " << first_tx_id << " last_tx_id: " << last_tx_id << " last_txs_amount: " << last_txs_amount;
 
     return {first_tx_id, last_tx_id + last_txs_amount - first_tx_id};
 }

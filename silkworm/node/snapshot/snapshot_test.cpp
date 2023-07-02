@@ -104,6 +104,9 @@ TEST_CASE("HeaderSnapshot::header_by_number OK", "[silkworm][snapshot][index][.]
     HeaderSnapshot header_snapshot{header_snapshot_path.path(), header_snapshot_path.block_from(), header_snapshot_path.block_to()};
     header_snapshot.reopen_segment();
     header_snapshot.reopen_index();
+
+    CHECK(!header_snapshot.header_by_number(1'500'011));
+    CHECK(header_snapshot.header_by_number(1'500'012));
     const auto header = header_snapshot.header_by_number(1'500'013);
     CHECK(header.has_value());
     if (header) {
@@ -125,6 +128,7 @@ TEST_CASE("HeaderSnapshot::header_by_number OK", "[silkworm][snapshot][index][.]
         CHECK(header->prev_randao == 0x799895e28a837bbdf28b8ecf5fc0e6251398ecb0ffc7ff5bbb457c21b14ce982_bytes32);
         CHECK(header->nonce == std::array<uint8_t, 8>{0x86, 0x98, 0x76, 0x20, 0x12, 0xb4, 0x6f, 0xef});
     }
+    CHECK(!header_snapshot.header_by_number(1'500'014));
 }
 
 // https://etherscan.io/block/1500013

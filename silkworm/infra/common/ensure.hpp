@@ -23,7 +23,7 @@ namespace silkworm {
 
 //! Ensure that condition is met, otherwise raise a logic error with specified message
 inline void ensure(bool condition, const std::string& message) {
-    if (!condition) {
+    if (!condition) [[unlikely]] {
         throw std::logic_error(message);
     }
 }

@@ -17,57 +17,117 @@
 #include "elias_fano.hpp"
 
 #include <algorithm>
-#include <utility>
 
+#include <boost/endian/conversion.hpp>
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/test_util/log.hpp>
 
 namespace silkworm::succinct {
 
+struct EliasFanoList32Test {
+    std::vector<uint64_t> offsets;
+    uint64_t expected_u;
+    Uint64Sequence expected_data;
+};
+
+static std::string le_hex(uint64_t value) {
+    uint8_t full_be[sizeof(uint64_t)];
+    boost::endian::store_little_u64(full_be, value);
+    return to_hex(full_be);
+}
+
+static std::string be_hex(uint64_t value) {
+    uint8_t full_be[sizeof(uint64_t)];
+    endian::store_big_u64(full_be, value);
+    return to_hex(full_be);
+}
+
+static std::string hex(const Uint64Sequence& value_sequence) {
+    std::string hex;
+    for (const auto value : value_sequence) {
+        hex += le_hex(value);
+    }
+    return hex;
+}
+
+static std::string to_expected_hex(uint64_t count, uint64_t u, const Uint64Sequence& data) {
+    return be_hex(count) + be_hex(u) + hex(data);
+}
+
+static std::vector<uint64_t> generate_contiguous_offsets(uint64_t count) {
+    std::vector<uint64_t> offsets;
+    offsets.reserve(count);
+    for (size_t i{0}; i < count; ++i) {
+        offsets.push_back(i);
+    }
+    return offsets;
+}
+
 TEST_CASE("EliasFanoList32", "[silkworm][recsplit][elias_fano]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
-    std::vector<uint64_t> offsets{1, 4, 6, 8, 10, 14, 16, 19, 22, 34, 37, 39, 41, 43, 48, 51, 54, 58, 62};
+    std::vector<EliasFanoList32Test> ef_test_vector{
+        // Test Pattern 1
+        {
+            {1, 4, 6, 8, 10, 14, 16, 19, 22, 34, 37, 39, 41, 43, 48, 51, 54, 58, 62},  // offsets
+            0x3f,  // u
+            {0xbc81, 0x0, 0x24945540952a9, 0x0, 0x0, 0x0},  // data
+        },
 
-    // Encode monotone ascending integer sequence using Elias-Fano representation
-    uint64_t max_offset = *std::max_element(offsets.cbegin(), offsets.cend());
-    EliasFanoList32 ef_list{offsets.size(), max_offset};
-    for (const auto offset : offsets) {
-        ef_list.add_offset(offset);
-    }
-    ef_list.build();
+        // Test Pattern 2
+        {
+            {1, 4, 14'800'000'000'000'000},  // offsets
+            0x0034948586ad0001,  // u
+            {18'014'398'509'481'985, 12'465'963'768'561'532'928u, 76842374, 0, 35, 0, 0, 0},  // data
+        },
 
-    CHECK(ef_list.min() == offsets.at(0));
-    CHECK(ef_list.max() == max_offset);
-    CHECK(ef_list.count() == offsets.size() - 1);
-    CHECK(ef_list.sequence_length() == offsets.size());
+        // Test Pattern 3 [mask uint32 overflow (i>256)]
+        {
+            generate_contiguous_offsets(260),  // offsets
+            260,  // u
+            {0, 0x5555555555555555, 0x5555555555555555, 0x5555555555555555, 0x5555555555555555, 0x5555555555555555,
+             0x5555555555555555, 0x5555555555555555, 0x5555555555555555, 85, 0, 0x20000000000, 0 },  // data
+        },
+    };
+    for (const auto& ef_test : ef_test_vector) {
+        // Encode monotone ascending integer sequence using Elias-Fano representation
+        const uint64_t max_offset = *std::max_element(ef_test.offsets.cbegin(), ef_test.offsets.cend());
+        EliasFanoList32 ef_list{ef_test.offsets.size(), max_offset};
+        for (const auto offset : ef_test.offsets) {
+            ef_list.add_offset(offset);
+        }
+        ef_list.build();
 
-    for (uint64_t i{0}; i < offsets.size(); i++) {
-        const uint64_t x = ef_list.get(i);
-        CHECK(x == offsets[i]);
-    }
+        CHECK(ef_list.min() == ef_test.offsets.at(0));
+        CHECK(ef_list.max() == max_offset);
+        CHECK(ef_list.count() == ef_test.offsets.size() - 1);
+        CHECK(ef_list.sequence_length() == ef_test.offsets.size());
 
-    CHECK(ef_list.data() == Uint64Sequence{0xbc81, 0x0, 0x24945540952a9, 0x0, 0x0, 0x0});
+        for (uint64_t i{0}; i < ef_test.offsets.size(); i++) {
+            const uint64_t x = ef_list.get(i);
+            CHECK(x == ef_test.offsets[i]);
+        }
 
-    std::stringstream str_stream;
-    str_stream << ef_list;
-    const std::string stream = str_stream.str();
-    Bytes ef_bytes{stream.cbegin(), stream.cend()};
-    CHECK(ef_bytes ==
-          *from_hex("0000000000000012"  // count
-                    "000000000000003f"  // u
-                    "81bc0000000000000000000000000000a952095445490200000000000000000000000000000000000000000000000000"));
+        CHECK(ef_list.data() == ef_test.expected_data);
 
-    // Decode monotone ascending integer sequence from Elias-Fano representation and compare with original
-    constexpr std::size_t kParamsSize{2 * sizeof(uint64_t)};  // count + u length in bytes
-    std::span<uint8_t> data{ef_bytes.data() + kParamsSize, ef_bytes.size() - kParamsSize};
-    EliasFanoList32 ef_list_copy{0x12, 0x3f, data};
-    for (uint64_t i{0}; i < offsets.size(); i++) {
-        const uint64_t x = ef_list_copy.get(i);
-        CHECK(x == offsets[i]);
+        std::stringstream str_stream;
+        str_stream << ef_list;
+        const std::string stream = str_stream.str();
+        Bytes ef_bytes{stream.cbegin(), stream.cend()};
+        CHECK(to_hex(ef_bytes) == to_expected_hex(ef_test.offsets.size() - 1, ef_test.expected_u, ef_test.expected_data));
+
+        // Decode monotone ascending integer sequence from Elias-Fano representation and compare with original
+        constexpr std::size_t kParamsSize{2 * sizeof(uint64_t)};  // count + u length in bytes
+        std::span<uint8_t> data{ef_bytes.data() + kParamsSize, ef_bytes.size() - kParamsSize};
+        EliasFanoList32 ef_list_copy{ef_test.offsets.size() - 1, ef_test.expected_u, data};
+        for (uint64_t i{0}; i < ef_test.offsets.size(); i++) {
+            const uint64_t x = ef_list_copy.get(i);
+            CHECK(x == ef_test.offsets[i]);
+        }
     }
 }
 

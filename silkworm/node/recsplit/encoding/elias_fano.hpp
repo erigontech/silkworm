@@ -148,15 +148,19 @@ class EliasFanoList32 {
         const uint64_t jump_inside_super_q = (i % kSuperQ) / kQ;
         idx64 = jump_super_q + 1 + (jump_inside_super_q >> 1);
         shift = 32 * (jump_inside_super_q % 2);
-        const uint64_t mask = 0xffffffff << shift;
+        const uint64_t mask = 0xfffffffful << shift;
+        SILKWORM_ASSERT(jump_super_q < jump_.size());
+        SILKWORM_ASSERT(idx64 < jump_.size());
         const uint64_t jump = jump_[jump_super_q] + ((jump_[idx64] & mask) >> shift);
 
         uint64_t current_word = jump / 64;
+        SILKWORM_ASSERT(current_word < upper_bits_.size());
         uint64_t window = upper_bits_[current_word] & (0xffffffffffffffff << (jump % 64));
         uint64_t d = i & kQMask;
 
         for (auto bit_count{std::popcount(window)}; uint64_t(bit_count) <= d; bit_count = std::popcount(window)) {
             current_word++;
+            SILKWORM_ASSERT(current_word < upper_bits_.size());
             window = upper_bits_[current_word];
             d -= uint64_t(bit_count);
         }

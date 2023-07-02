@@ -31,7 +31,7 @@ namespace fs = std::filesystem;
 
 Snapshot::Snapshot(std::filesystem::path path, BlockNum block_from, BlockNum block_to)
     : path_(std::move(path)), block_from_(block_from), block_to_(block_to), decoder_{path_} {
-    ensure(block_to < block_from, "Snapshot: invalid block range: block_to less than block_from");
+    ensure(block_to >= block_from, "Snapshot: invalid block range: block_to less than block_from");
 }
 
 void Snapshot::reopen_segment() {

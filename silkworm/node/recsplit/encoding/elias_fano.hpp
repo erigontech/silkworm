@@ -148,7 +148,7 @@ class EliasFanoList32 {
         const uint64_t jump_inside_super_q = (i % kSuperQ) / kQ;
         idx64 = jump_super_q + 1 + (jump_inside_super_q >> 1);
         shift = 32 * (jump_inside_super_q % 2);
-        const uint64_t mask = 0xfffffffful << shift;
+        const uint64_t mask = uint64_t(0xffffffff) << shift;
         SILKWORM_ASSERT(jump_super_q < jump_.size());
         SILKWORM_ASSERT(idx64 < jump_.size());
         const uint64_t jump = jump_[jump_super_q] + ((jump_[idx64] & mask) >> shift);

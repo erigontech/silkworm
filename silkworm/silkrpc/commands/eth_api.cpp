@@ -259,7 +259,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::jso
 
 // https://eth.wiki/json-rpc/API#eth_getblockbynumber
 awaitable<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::json& request, nlohmann::json& reply) {
-    auto params = request["params"];
+    const auto& params = request["params"];
     if (params.size() != 2) {
         auto error_msg = "invalid getBlockByNumber params: " + params.dump();
         SILK_ERROR << error_msg;

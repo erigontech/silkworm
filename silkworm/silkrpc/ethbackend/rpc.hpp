@@ -16,20 +16,11 @@
 
 #pragma once
 
-#include <silkworm/infra/concurrency/coroutine.hpp>
+#include <silkworm/interfaces/remote/ethbackend.grpc.pb.h>
+#include <silkworm/silkrpc/grpc/unary_rpc.hpp>
 
-#include <boost/asio/awaitable.hpp>
-#include <boost/asio/use_awaitable.hpp>
+namespace silkworm::rpc {
 
-/// Use just \silkworm as namespace here to make these definitions available everywhere
-/// So that we can write Task<void> foo(); instead of concurrency::Task<void> foo();
-namespace silkworm {
+using GetBlockRpc = UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncBlock>;
 
-//! Asynchronous task returned by any coroutine, i.e. asynchronous operation
-template <typename T>
-using Task = boost::asio::awaitable<T>;
-
-//! Namespace for the current coroutine types
-namespace ThisTask = boost::asio::this_coro;
-
-}  // namespace silkworm
+}  // namespace silkworm::rpc

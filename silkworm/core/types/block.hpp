@@ -36,7 +36,7 @@ namespace silkworm {
 
 using TotalDifficulty = intx::uint256;
 
-struct BlockId {
+struct BlockId {  // TODO(canepat) rename BlockNumberAndHash
     BlockNum number{};
     Hash hash;
 };

@@ -42,18 +42,19 @@ using evmc::literals::operator""_bytes32;
 
 class BackEndMock : public ethbackend::BackEnd {  // NOLINT
   public:
-    MOCK_METHOD((awaitable<evmc::address>), etherbase, ());
-    MOCK_METHOD((awaitable<uint64_t>), protocol_version, ());
-    MOCK_METHOD((awaitable<uint64_t>), net_version, ());
-    MOCK_METHOD((awaitable<std::string>), client_version, ());
-    MOCK_METHOD((awaitable<uint64_t>), net_peer_count, ());
-    MOCK_METHOD((awaitable<ExecutionPayloadAndValue>), engine_get_payload, (uint64_t));
-    MOCK_METHOD((awaitable<PayloadStatus>), engine_new_payload, (const ExecutionPayload&));
-    MOCK_METHOD((awaitable<ForkChoiceUpdatedReply>), engine_forkchoice_updated, (const ForkChoiceUpdatedRequest&));
-    MOCK_METHOD((awaitable<ExecutionPayloadBodies>), engine_get_payload_bodies_by_hash, (const std::vector<Hash>&));
-    MOCK_METHOD((awaitable<ExecutionPayloadBodies>), engine_get_payload_bodies_by_range, (BlockNum start, uint64_t count));
-    MOCK_METHOD((awaitable<NodeInfos>), engine_node_info, ());
-    MOCK_METHOD((awaitable<PeerInfos>), peers, ());
+    MOCK_METHOD((Task<evmc::address>), etherbase, ());
+    MOCK_METHOD((Task<uint64_t>), protocol_version, ());
+    MOCK_METHOD((Task<uint64_t>), net_version, ());
+    MOCK_METHOD((Task<std::string>), client_version, ());
+    MOCK_METHOD((Task<uint64_t>), net_peer_count, ());
+    MOCK_METHOD((Task<ExecutionPayloadAndValue>), engine_get_payload, (uint64_t));
+    MOCK_METHOD((Task<PayloadStatus>), engine_new_payload, (const ExecutionPayload&));
+    MOCK_METHOD((Task<ForkChoiceUpdatedReply>), engine_forkchoice_updated, (const ForkChoiceUpdatedRequest&));
+    MOCK_METHOD((Task<ExecutionPayloadBodies>), engine_get_payload_bodies_by_hash, (const std::vector<Hash>&));
+    MOCK_METHOD((Task<ExecutionPayloadBodies>), engine_get_payload_bodies_by_range, (BlockNum start, uint64_t count));
+    MOCK_METHOD((Task<NodeInfos>), engine_node_info, ());
+    MOCK_METHOD((Task<PeerInfos>), peers, ());
+    MOCK_METHOD((Task<bool>), get_block, (BlockIdentifier, bool, silkworm::Block&));
 };
 
 namespace {
@@ -75,6 +76,10 @@ namespace {
         }
 
         std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor&, const core::rawdb::DatabaseReader&, uint64_t) override {
+            return nullptr;
+        }
+
+        std::shared_ptr<node::ChainStorage> get_storage(const core::rawdb::DatabaseReader&) override {
             return nullptr;
         }
 

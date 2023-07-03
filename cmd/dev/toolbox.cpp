@@ -869,11 +869,9 @@ void do_chainconfig(db::EnvConfig& config) {
         throw std::runtime_error("Not an initialized Silkworm db or unknown/custom chain ");
     }
     const auto& chain{chain_config.value()};
-    std::cout << "\n Chain id " << chain.chain_id << "\n Settings (json) : \n"
-              << chain.to_json().dump() << "\n"
-              << std::endl;
-
-    env.close(config.shared);
+    std::cout << "\n Chain ID: " << chain.chain_id
+              << "\n Settings (json): \n"
+              << chain.to_json().dump(/*indent=*/2) << "\n\n";
 }
 
 void do_first_byte_analysis(db::EnvConfig& config) {

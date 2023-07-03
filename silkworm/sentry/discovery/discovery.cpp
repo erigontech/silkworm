@@ -36,6 +36,7 @@ class DiscoveryImpl {
         std::vector<EnodeUrl> peer_urls,
         bool with_dynamic_discovery,
         const std::filesystem::path& data_dir_path,
+        boost::asio::any_io_executor node_db_executor,
         std::function<EccKeyPair()> node_key,
         uint16_t disc_v4_port);
 
@@ -64,11 +65,13 @@ DiscoveryImpl::DiscoveryImpl(
     std::vector<EnodeUrl> peer_urls,
     bool with_dynamic_discovery,
     const std::filesystem::path& data_dir_path,
+    boost::asio::any_io_executor node_db_executor,
     std::function<EccKeyPair()> node_key,
     uint16_t disc_v4_port)
     : peer_urls_(std::move(peer_urls)),
       with_dynamic_discovery_(with_dynamic_discovery),
       data_dir_path_(data_dir_path),
+      node_db_(std::move(node_db_executor)),
       disc_v4_discovery_(disc_v4_port, node_key, node_db_.interface()) {
 }
 
@@ -116,12 +119,14 @@ Discovery::Discovery(
     std::vector<EnodeUrl> peer_urls,
     bool with_dynamic_discovery,
     const std::filesystem::path& data_dir_path,
+    boost::asio::any_io_executor node_db_executor,
     std::function<EccKeyPair()> node_key,
     uint16_t disc_v4_port)
     : p_impl_(std::make_unique<DiscoveryImpl>(
           std::move(peer_urls),
           with_dynamic_discovery,
           data_dir_path,
+          std::move(node_db_executor),
           std::move(node_key),
           disc_v4_port)) {}
 

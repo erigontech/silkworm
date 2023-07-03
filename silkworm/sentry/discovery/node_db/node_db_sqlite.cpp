@@ -25,6 +25,8 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/common/unix_timestamp.hpp>
 
+#include "serial_node_db.hpp"
+
 namespace silkworm::sentry::discovery::node_db {
 
 static const char* kSqlCreateSchema = R"sql(
@@ -197,7 +199,9 @@ class NodeDbSqliteImpl : public NodeDb {
     std::unique_ptr<SQLite::Database> db_;
 };
 
-NodeDbSqlite::NodeDbSqlite() : p_impl_(std::make_unique<NodeDbSqliteImpl>()) {
+NodeDbSqlite::NodeDbSqlite(boost::asio::any_io_executor executor)
+    : p_impl_(std::make_unique<NodeDbSqliteImpl>()),
+      interface_(std::make_unique<SerialNodeDb>(*p_impl_, std::move(executor))) {
 }
 
 NodeDbSqlite::~NodeDbSqlite() {
@@ -213,7 +217,7 @@ void NodeDbSqlite::setup_in_memory() {
 }
 
 NodeDb& NodeDbSqlite::interface() {
-    return *p_impl_;
+    return *interface_;
 }
 
 }  // namespace silkworm::sentry::discovery::node_db

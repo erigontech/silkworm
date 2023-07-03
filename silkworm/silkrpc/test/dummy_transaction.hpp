@@ -51,10 +51,6 @@ class DummyTransaction : public ethdb::Transaction {
         return std::make_shared<silkworm::rpc::state::RemoteState>(executor, db_reader, block_number);
     }
 
-    std::shared_ptr<node::ChainStorage> get_storage(const core::rawdb::DatabaseReader&) override {
-        return nullptr;
-    }
-
     boost::asio::awaitable<void> close() override { co_return; }
 
   private:

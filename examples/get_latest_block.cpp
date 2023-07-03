@@ -95,8 +95,7 @@ int main(int argc, char* argv[]) {
         auto io_context = context.io_context();
 
         auto channel{::grpc::CreateChannel(target, ::grpc::InsecureChannelCredentials())};
-        auto backend{std::make_shared<ethbackend::RemoteBackEnd>(*context.io_context(), channel, *context.grpc_context())};
-        auto database = std::make_unique<ethdb::kv::RemoteDatabase>(*context.grpc_context(), channel, backend.get());
+        auto database = std::make_unique<ethdb::kv::RemoteDatabase>(*context.grpc_context(), channel);
 
         auto context_pool_thread = std::thread([&]() { context_pool.run(); });
 

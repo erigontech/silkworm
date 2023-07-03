@@ -51,8 +51,6 @@ class LocalTransaction : public Transaction {
 
     std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const core::rawdb::DatabaseReader& db_reader, uint64_t block_number) override;
 
-    std::shared_ptr<node::ChainStorage> get_storage(const DatabaseReader& reader) override;
-
     boost::asio::awaitable<void> close() override;
 
   private:

@@ -16,11 +16,6 @@
 
 #include "local_transaction.hpp"
 
-#include <utility>
-
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <silkworm/node/storage/local_chain_storage.hpp>
 #include <silkworm/silkrpc/core/local_state.hpp>
 
 namespace silkworm::rpc::ethdb::file {
@@ -66,10 +61,6 @@ boost::asio::awaitable<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cur
 
 std::shared_ptr<silkworm::State> LocalTransaction::create_state(boost::asio::any_io_executor&, const core::rawdb::DatabaseReader&, uint64_t block_number) {
     return std::make_shared<silkworm::rpc::state::LocalState>(block_number, chaindata_env_);
-}
-
-std::shared_ptr<node::ChainStorage> LocalTransaction::get_storage(const DatabaseReader&) {
-    return std::make_shared<node::LocalChainStorage>(txn_);
 }
 
 }  // namespace silkworm::rpc::ethdb::file

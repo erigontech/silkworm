@@ -23,7 +23,6 @@
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <boost/asio/use_future.hpp>
-#include <boost/endian/conversion.hpp>
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 #include <gmock/gmock.h>
@@ -41,7 +40,7 @@ struct RemoteDatabaseTest : test::KVTestBase {
   public:
     // RemoteDatabase holds the KV stub by std::unique_ptr, so we cannot rely on mock stub from base class
     StrictMockKVStub* kv_stub_ = new StrictMockKVStub;
-    ethdb::kv::RemoteDatabase remote_db_{grpc_context_, std::unique_ptr<StrictMockKVStub>{kv_stub_}, nullptr};
+    ethdb::kv::RemoteDatabase remote_db_{grpc_context_, std::unique_ptr<StrictMockKVStub>{kv_stub_}};
 };
 
 using Catch::Matchers::Message;
@@ -96,9 +95,7 @@ TEST_CASE("estimate gas") {
     const silkworm::Block block;
     const silkworm::ChainConfig config;
     RemoteDatabaseTest remote_db_test;
-    auto channel = ::grpc::CreateChannel("localhost:12345", ::grpc::InsecureChannelCredentials());
-    auto backend = std::make_shared<ethbackend::RemoteBackEnd>(remote_db_test.io_context_, channel, remote_db_test.grpc_context_);
-    auto tx = std::make_unique<ethdb::kv::RemoteTransaction>(*remote_db_test.stub_, backend.get(), remote_db_test.grpc_context_);
+    auto tx = std::make_unique<ethdb::kv::RemoteTransaction>(*remote_db_test.stub_, remote_db_test.grpc_context_);
     ethdb::TransactionDatabase tx_database{*tx};
     MockEstimateGasOracle estimate_gas_oracle{block_header_provider, account_reader, config, workers, *tx, tx_database};
 

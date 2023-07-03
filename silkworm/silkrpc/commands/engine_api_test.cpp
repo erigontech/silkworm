@@ -65,13 +65,13 @@ namespace {
 
         [[nodiscard]] uint64_t view_id() const override { return 0; }
 
-        awaitable<void> open() override { co_return; }
+        Task<void> open() override { co_return; }
 
-        awaitable<std::shared_ptr<ethdb::Cursor>> cursor(const std::string& /*table*/) override {
+        Task<std::shared_ptr<ethdb::Cursor>> cursor(const std::string& /*table*/) override {
             co_return cursor_;
         }
 
-        awaitable<std::shared_ptr<ethdb::CursorDupSort>> cursor_dup_sort(const std::string& /*table*/) override {
+        Task<std::shared_ptr<ethdb::CursorDupSort>> cursor_dup_sort(const std::string& /*table*/) override {
             co_return nullptr;
         }
 
@@ -79,11 +79,7 @@ namespace {
             return nullptr;
         }
 
-        std::shared_ptr<node::ChainStorage> get_storage(const core::rawdb::DatabaseReader&) override {
-            return nullptr;
-        }
-
-        awaitable<void> close() override { co_return; }
+        Task<void> close() override { co_return; }
 
       private:
         std::shared_ptr<ethdb::Cursor> cursor_;
@@ -94,7 +90,7 @@ namespace {
       public:
         explicit DummyDatabase(std::shared_ptr<ethdb::Cursor> cursor) : cursor_(std::move(cursor)) {}
 
-        awaitable<std::unique_ptr<ethdb::Transaction>> begin() override {
+        Task<std::unique_ptr<ethdb::Transaction>> begin() override {
             co_return std::make_unique<DummyTransaction>(cursor_);
         }
 
@@ -231,7 +227,7 @@ TEST_CASE("handle_engine_get_payload_v1 succeeds if request is expected payload"
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock;
-    EXPECT_CALL(*backend, engine_get_payload(1)).WillOnce(InvokeWithoutArgs([]() -> awaitable<ExecutionPayloadAndValue> {
+    EXPECT_CALL(*backend, engine_get_payload(1)).WillOnce(InvokeWithoutArgs([]() -> Task<ExecutionPayloadAndValue> {
         co_return ExecutionPayloadAndValue{ExecutionPayload{.number = 1}, 0};
     }));
 
@@ -331,7 +327,7 @@ TEST_CASE("handle_engine_new_payload_v1 succeeds if request is expected payload 
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock;
-    EXPECT_CALL(*backend, engine_new_payload(testing::_)).WillOnce(InvokeWithoutArgs([]() -> awaitable<PayloadStatus> {
+    EXPECT_CALL(*backend, engine_new_payload(testing::_)).WillOnce(InvokeWithoutArgs([]() -> Task<PayloadStatus> {
         co_return PayloadStatus{
             .status = "INVALID",
             .latest_valid_hash = 0x0000000000000000000000000000000000000000000000000000000000000040_bytes32,
@@ -438,7 +434,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds only with forkchoiceStat
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock;
-    EXPECT_CALL(*backend, engine_forkchoice_updated(testing::_)).WillOnce(InvokeWithoutArgs([]() -> awaitable<ForkChoiceUpdatedReply> {
+    EXPECT_CALL(*backend, engine_forkchoice_updated(testing::_)).WillOnce(InvokeWithoutArgs([]() -> Task<ForkChoiceUpdatedReply> {
         co_return ForkChoiceUpdatedReply{
             .payload_status = PayloadStatus{
                 .status = "INVALID",
@@ -496,7 +492,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params", "[sil
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock;
-    EXPECT_CALL(*backend, engine_forkchoice_updated(testing::_)).WillOnce(InvokeWithoutArgs([]() -> awaitable<ForkChoiceUpdatedReply> {
+    EXPECT_CALL(*backend, engine_forkchoice_updated(testing::_)).WillOnce(InvokeWithoutArgs([]() -> Task<ForkChoiceUpdatedReply> {
         co_return ForkChoiceUpdatedReply{
             .payload_status = PayloadStatus{
                 .status = "INVALID",
@@ -559,7 +555,7 @@ TEST_CASE("handle_engine_forkchoice_updated_v1 succeeds with both params and sec
     silkworm::test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto* backend = new BackEndMock;
-    EXPECT_CALL(*backend, engine_forkchoice_updated(testing::_)).WillOnce(InvokeWithoutArgs([]() -> awaitable<ForkChoiceUpdatedReply> {
+    EXPECT_CALL(*backend, engine_forkchoice_updated(testing::_)).WillOnce(InvokeWithoutArgs([]() -> Task<ForkChoiceUpdatedReply> {
         co_return ForkChoiceUpdatedReply{
             .payload_status = PayloadStatus{
                 .status = "INVALID",
@@ -757,13 +753,13 @@ TEST_CASE("handle_engine_transition_configuration_v1 succeeds if EL configuratio
 
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
-    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> awaitable<KeyValue> {
+    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
         co_return KeyValue{silkworm::Bytes{}, kBlockHash};
     }));
 
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
-    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> awaitable<KeyValue> {
+    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
         co_return KeyValue{silkworm::Bytes{}, kChainConfig};
     }));
 
@@ -816,13 +812,13 @@ TEST_CASE("handle_engine_transition_configuration_v1 succeeds and default termin
 
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
-    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> awaitable<KeyValue> {
+    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
         co_return KeyValue{silkworm::Bytes{}, kBlockHash};
     }));
 
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
-    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> awaitable<KeyValue> {
+    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
         co_return KeyValue{silkworm::Bytes{}, kChainConfigNoTerminalBlockNumber};
     }));
 
@@ -875,13 +871,13 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if incorrect terminal
 
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
-    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> awaitable<KeyValue> {
+    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
         co_return KeyValue{silkworm::Bytes{}, kBlockHash};
     }));
 
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
-    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> awaitable<KeyValue> {
+    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
         co_return KeyValue{silkworm::Bytes{}, kChainConfig};
     }));
 
@@ -932,13 +928,13 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if execution layer do
 
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
-    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> awaitable<KeyValue> {
+    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
         co_return KeyValue{silkworm::Bytes{}, kBlockHash};
     }));
 
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
-    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> awaitable<KeyValue> {
+    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
         co_return KeyValue{silkworm::Bytes{}, kChainConfigNoTerminalTotalDifficulty};
     }));
 
@@ -989,13 +985,13 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer se
 
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
-    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> awaitable<KeyValue> {
+    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
         co_return KeyValue{silkworm::Bytes{}, kBlockHash};
     }));
 
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
-    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> awaitable<KeyValue> {
+    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
         co_return KeyValue{silkworm::Bytes{}, kChainConfig};
     }));
 
@@ -1046,13 +1042,13 @@ TEST_CASE("handle_engine_transition_configuration_v1 fails if consensus layer se
 
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
-    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> awaitable<KeyValue> {
+    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
         co_return KeyValue{silkworm::Bytes{}, kBlockHash};
     }));
 
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
-    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> awaitable<KeyValue> {
+    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
         co_return KeyValue{silkworm::Bytes{}, kChainConfig};
     }));
 
@@ -1103,13 +1099,13 @@ TEST_CASE("handle_engine_transition_configuration_v1 succeeds w/o matching termi
 
     const silkworm::Bytes block_number{*silkworm::from_hex("0000000000000000")};
     const silkworm::ByteView block_key{block_number};
-    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> awaitable<KeyValue> {
+    EXPECT_CALL(*mock_cursor, seek_exact(block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
         co_return KeyValue{silkworm::Bytes{}, kBlockHash};
     }));
 
     const silkworm::Bytes genesis_block_hash{*silkworm::from_hex("0000000000000000000000000000000000000000000000000000000000000000")};
     const silkworm::ByteView genesis_block_key{genesis_block_hash};
-    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> awaitable<KeyValue> {
+    EXPECT_CALL(*mock_cursor, seek_exact(genesis_block_key)).WillOnce(InvokeWithoutArgs([&]() -> Task<KeyValue> {
         co_return KeyValue{silkworm::Bytes{}, kChainConfig};
     }));
 

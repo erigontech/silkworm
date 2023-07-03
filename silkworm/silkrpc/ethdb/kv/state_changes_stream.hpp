@@ -70,7 +70,7 @@ class StateChangesStream {
     //! Close down the stream, stopping the register-and-receive loop
     void close();
 
-    // The register-and-receive asynchronous loop
+    //! The register-and-receive asynchronous loop
     boost::asio::awaitable<void> run();
 
   private:

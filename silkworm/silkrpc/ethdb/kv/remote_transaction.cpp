@@ -16,15 +16,9 @@
 
 #include "remote_transaction.hpp"
 
-#include <utility>
-
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
-#include <boost/asio/this_coro.hpp>
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/silkrpc/core/remote_state.hpp>
-#include <silkworm/silkrpc/storage/remote_chain_storage.hpp>
 
 namespace silkworm::rpc::ethdb::kv {
 
@@ -70,10 +64,6 @@ boost::asio::awaitable<std::shared_ptr<CursorDupSort>> RemoteTransaction::get_cu
 
 std::shared_ptr<silkworm::State> RemoteTransaction::create_state(boost::asio::any_io_executor& executor, const DatabaseReader& db_reader, uint64_t block_number) {
     return std::make_shared<silkworm::rpc::state::RemoteState>(executor, db_reader, block_number);
-}
-
-std::shared_ptr<node::ChainStorage> RemoteTransaction::get_storage(const DatabaseReader& reader) {
-    return std::make_shared<RemoteChainStorage>(reader, backend_);
 }
 
 }  // namespace silkworm::rpc::ethdb::kv

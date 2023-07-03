@@ -220,13 +220,13 @@ void Daemon::add_private_services() {
         auto& io_context{*context.io_context()};
         auto& grpc_context{*context.grpc_context()};
 
-        auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(io_context, grpc_channel, grpc_context)};
         std::unique_ptr<ethdb::Database> database;
         if (chaindata_env_) {
             database = std::make_unique<ethdb::file::LocalDatabase>(chaindata_env_);
         } else {
-            database = std::make_unique<ethdb::kv::RemoteDatabase>(grpc_context, grpc_channel, backend.get());
+            database = std::make_unique<ethdb::kv::RemoteDatabase>(grpc_context, grpc_channel);
         }
+        auto backend{std::make_unique<rpc::ethbackend::RemoteBackEnd>(io_context, grpc_channel, grpc_context)};
         auto tx_pool{std::make_unique<txpool::TransactionPool>(io_context, grpc_channel, grpc_context)};
         auto miner{std::make_unique<txpool::Miner>(io_context, grpc_channel, grpc_context)};
 

@@ -281,6 +281,9 @@ class DataModel {
     [[nodiscard]] bool read_body(const Hash& hash, BlockBody& body) const;
 
     //! Read the canonical block header at specified height
+    [[nodiscard]] std::optional<Hash> read_canonical_hash(BlockNum height) const;
+
+    //! Read the canonical block header at specified height
     [[nodiscard]] std::optional<BlockHeader> read_canonical_header(BlockNum height) const;
 
     //! Read the canonical block body at specified height

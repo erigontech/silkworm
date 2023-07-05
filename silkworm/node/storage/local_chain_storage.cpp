@@ -85,12 +85,7 @@ Task<bool> LocalChainStorage::read_body(const Hash& hash, BlockBody& body) const
 }
 
 Task<std::optional<Hash>> LocalChainStorage::read_canonical_hash(BlockNum number) const {
-    auto header{data_model_.read_canonical_header(number)};
-    std::optional<Hash> canonical_hash;
-    if (header) {
-        canonical_hash = header->hash();
-    }
-    co_return canonical_hash;
+    co_return data_model_.read_canonical_hash(number);
 }
 
 Task<std::optional<BlockHeader>> LocalChainStorage::read_canonical_header(BlockNum number) const {

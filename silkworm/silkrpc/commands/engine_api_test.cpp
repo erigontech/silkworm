@@ -79,6 +79,10 @@ namespace {
             return nullptr;
         }
 
+        std::shared_ptr<node::ChainStorage> create_storage(const core::rawdb::DatabaseReader&, ethbackend::BackEnd*) override {
+            return nullptr;
+        }
+
         Task<void> close() override { co_return; }
 
       private:

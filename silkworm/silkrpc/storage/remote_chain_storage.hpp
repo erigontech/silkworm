@@ -20,7 +20,7 @@
 
 #include <silkworm/node/storage/chain_storage.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
-#include <silkworm/silkrpc/ethbackend/remote_backend.hpp>
+#include <silkworm/silkrpc/ethbackend/backend.hpp>
 
 namespace silkworm::rpc {
 
@@ -30,7 +30,7 @@ using core::rawdb::DatabaseReader;
 //! in remote database (accessed via gRPC KV I/F) or remote snapshot files (accessed via gRPC ETHBACKEND I/F)
 class RemoteChainStorage : public node::ChainStorage {
   public:
-    RemoteChainStorage(const DatabaseReader& reader, ethbackend::RemoteBackEnd* backend);
+    RemoteChainStorage(const DatabaseReader& reader, ethbackend::BackEnd* backend);
     ~RemoteChainStorage() override = default;
 
     [[nodiscard]] Task<std::optional<silkworm::ChainConfig>> read_chain_config() const override;
@@ -72,7 +72,7 @@ class RemoteChainStorage : public node::ChainStorage {
 
   private:
     const DatabaseReader& reader_;
-    ethbackend::RemoteBackEnd* backend_;
+    ethbackend::BackEnd* backend_;
 };
 
 }  // namespace silkworm::rpc

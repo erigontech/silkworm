@@ -172,6 +172,10 @@ class DummyTransaction : public ethdb::Transaction {
         return nullptr;
     }
 
+    std::shared_ptr<node::ChainStorage> create_storage(const core::rawdb::DatabaseReader&, ethbackend::BackEnd*) override {
+        return nullptr;
+    }
+
     boost::asio::awaitable<void> close() override {
         co_return;
     }

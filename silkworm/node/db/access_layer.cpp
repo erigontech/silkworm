@@ -1029,6 +1029,10 @@ bool DataModel::read_body(const Hash& hash, BlockBody& body) const {
     return false;
 }
 
+std::optional<Hash> DataModel::read_canonical_hash(BlockNum height) const {
+    return db::read_canonical_hash(txn_, height);
+}
+
 std::optional<BlockHeader> DataModel::read_canonical_header(BlockNum height) const {
     const auto canonical_hash{db::read_canonical_hash(txn_, height)};
     if (!canonical_hash) return {};

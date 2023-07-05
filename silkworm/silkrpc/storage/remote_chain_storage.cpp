@@ -24,7 +24,7 @@ namespace silkworm::rpc {
 
 // TODO(canepat) reading from db remotely for recent blocks is still missing
 
-RemoteChainStorage::RemoteChainStorage(const DatabaseReader& reader, ethbackend::RemoteBackEnd* backend)
+RemoteChainStorage::RemoteChainStorage(const DatabaseReader& reader, ethbackend::BackEnd* backend)
     : reader_{reader}, backend_{backend} {}
 
 Task<std::optional<silkworm::ChainConfig>> RemoteChainStorage::read_chain_config() const {

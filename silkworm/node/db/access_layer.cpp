@@ -910,6 +910,19 @@ void DataModel::set_snapshot_repository(snapshot::SnapshotRepository* repository
 
 DataModel::DataModel(ROTxn& txn) : txn_{txn} {}
 
+std::optional<ChainConfig> DataModel::read_chain_config() const {
+    return db::read_chain_config(txn_);
+}
+
+std::optional<ChainId> DataModel::read_chain_id() const {
+    const auto chain_config{read_chain_config()};
+    std::optional<ChainId> chain_id;
+    if (chain_config) {
+        chain_id = chain_config->chain_id;
+    }
+    return chain_id;
+}
+
 BlockNum DataModel::highest_block_number() const {
     // Assume last block is likely on db: first lookup there
     const auto header_cursor{txn_.ro_cursor(db::table::kHeaders)};
@@ -1016,6 +1029,10 @@ bool DataModel::read_body(const Hash& hash, BlockBody& body) const {
     return false;
 }
 
+std::optional<Hash> DataModel::read_canonical_hash(BlockNum height) const {
+    return db::read_canonical_hash(txn_, height);
+}
+
 std::optional<BlockHeader> DataModel::read_canonical_header(BlockNum height) const {
     const auto canonical_hash{db::read_canonical_hash(txn_, height)};
     if (!canonical_hash) return {};
@@ -1037,14 +1054,14 @@ bool DataModel::read_canonical_block(BlockNum height, Block& block) const {
     return read_block(*canonical_hash, height, block);
 }
 
-bool DataModel::has_body(BlockNum height, HashAsArray hash) {
+bool DataModel::has_body(BlockNum height, HashAsArray hash) const {
     const bool found = db::has_body(txn_, height, hash);
     if (found) return found;
 
     return is_body_in_snapshot(height);
 }
 
-bool DataModel::has_body(BlockNum height, const Hash& hash) {
+bool DataModel::has_body(BlockNum height, const Hash& hash) const {
     return has_body(height, hash.bytes);
 }
 

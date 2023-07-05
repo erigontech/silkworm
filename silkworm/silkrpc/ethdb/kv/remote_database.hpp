@@ -23,6 +23,7 @@
 #include <grpcpp/grpcpp.h>
 
 #include <silkworm/interfaces/remote/kv.grpc.pb.h>
+#include <silkworm/silkrpc/ethbackend/remote_backend.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethdb/transaction.hpp>
 
@@ -30,10 +31,9 @@ namespace silkworm::rpc::ethdb::kv {
 
 class RemoteDatabase : public Database {
   public:
-    RemoteDatabase(agrpc::GrpcContext& grpc_context, std::shared_ptr<grpc::Channel> channel);
+    RemoteDatabase(agrpc::GrpcContext& grpc_context, const std::shared_ptr<grpc::Channel>& channel);
     RemoteDatabase(agrpc::GrpcContext& grpc_context, std::unique_ptr<remote::KV::StubInterface>&& stub);
-
-    ~RemoteDatabase();
+    ~RemoteDatabase() override;
 
     RemoteDatabase(const RemoteDatabase&) = delete;
     RemoteDatabase& operator=(const RemoteDatabase&) = delete;

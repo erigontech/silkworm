@@ -16,10 +16,7 @@
 
 #include "local_transaction.hpp"
 
-#include <utility>
-
-#include <silkworm/infra/concurrency/coroutine.hpp>
-
+#include <silkworm/node/storage/local_chain_storage.hpp>
 #include <silkworm/silkrpc/core/local_state.hpp>
 
 namespace silkworm::rpc::ethdb::file {
@@ -53,7 +50,7 @@ boost::asio::awaitable<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cur
             co_return cursor_it->second;
         }
     }
-    auto cursor = std::make_shared<LocalCursor>(rtxn_, ++last_cursor_id_, table);
+    auto cursor = std::make_shared<LocalCursor>(txn_, ++last_cursor_id_, table);
     co_await cursor->open_cursor(table, is_cursor_sorted);
     if (is_cursor_sorted) {
         dup_cursors_[table] = cursor;
@@ -65,6 +62,10 @@ boost::asio::awaitable<std::shared_ptr<CursorDupSort>> LocalTransaction::get_cur
 
 std::shared_ptr<silkworm::State> LocalTransaction::create_state(boost::asio::any_io_executor&, const core::rawdb::DatabaseReader&, uint64_t block_number) {
     return std::make_shared<silkworm::rpc::state::LocalState>(block_number, chaindata_env_);
+}
+
+std::shared_ptr<node::ChainStorage> LocalTransaction::create_storage(const DatabaseReader&, ethbackend::BackEnd*) {
+    return std::make_shared<node::LocalChainStorage>(txn_);
 }
 
 }  // namespace silkworm::rpc::ethdb::file

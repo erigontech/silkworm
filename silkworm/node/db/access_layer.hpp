@@ -248,6 +248,12 @@ class DataModel {
     DataModel(const DataModel&) = delete;
     DataModel& operator=(const DataModel&) = delete;
 
+    //! Retrieve the chain configuration for which database is populated
+    [[nodiscard]] std::optional<ChainConfig> read_chain_config() const;
+
+    //! Retrieve the chain unique identifier for which database is populated
+    [[nodiscard]] std::optional<ChainId> read_chain_id() const;
+
     //! Get the highest block number
     [[nodiscard]] BlockNum highest_block_number() const;
 
@@ -275,6 +281,9 @@ class DataModel {
     [[nodiscard]] bool read_body(const Hash& hash, BlockBody& body) const;
 
     //! Read the canonical block header at specified height
+    [[nodiscard]] std::optional<Hash> read_canonical_hash(BlockNum height) const;
+
+    //! Read the canonical block header at specified height
     [[nodiscard]] std::optional<BlockHeader> read_canonical_header(BlockNum height) const;
 
     //! Read the canonical block body at specified height
@@ -284,8 +293,8 @@ class DataModel {
     [[nodiscard]] bool read_canonical_block(BlockNum height, Block& block) const;
 
     //! Check the presence of a block body using block number and hash
-    [[nodiscard]] bool has_body(BlockNum height, HashAsArray hash);
-    [[nodiscard]] bool has_body(BlockNum height, const Hash& hash);
+    [[nodiscard]] bool has_body(BlockNum height, HashAsArray hash) const;
+    [[nodiscard]] bool has_body(BlockNum height, const Hash& hash) const;
 
     //! Read block returning true on success and false on missing block
     [[nodiscard]] bool read_block(HashAsSpan hash, BlockNum height, bool read_senders, Block& block) const;

@@ -23,7 +23,6 @@
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <boost/asio/use_future.hpp>
-#include <boost/endian/conversion.hpp>
 #include <catch2/catch.hpp>
 #include <evmc/evmc.hpp>
 #include <gmock/gmock.h>
@@ -39,7 +38,7 @@ namespace silkworm::rpc {
 
 struct RemoteDatabaseTest : test::KVTestBase {
   public:
-    // RemoteDatabase holds the KV stub by std::unique_ptr so we cannot rely on mock stub from base class
+    // RemoteDatabase holds the KV stub by std::unique_ptr, so we cannot rely on mock stub from base class
     StrictMockKVStub* kv_stub_ = new StrictMockKVStub;
     ethdb::kv::RemoteDatabase remote_db_{grpc_context_, std::unique_ptr<StrictMockKVStub>{kv_stub_}};
 };

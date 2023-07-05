@@ -21,7 +21,7 @@
 
 namespace silkworm::rpc::ethdb::kv {
 
-RemoteDatabase::RemoteDatabase(agrpc::GrpcContext& grpc_context, std::shared_ptr<grpc::Channel> channel)
+RemoteDatabase::RemoteDatabase(agrpc::GrpcContext& grpc_context, const std::shared_ptr<grpc::Channel>& channel)
     : grpc_context_(grpc_context), stub_{remote::KV::NewStub(channel)} {
     SILK_TRACE << "RemoteDatabase::ctor " << this;
 }

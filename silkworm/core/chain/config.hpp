@@ -42,10 +42,12 @@ namespace protocol {
 
 }  // namespace protocol
 
+using ChainId = uint64_t;
+
 struct ChainConfig {
     //! \brief Returns the chain identifier
     //! \see https://eips.ethereum.org/EIPS/eip-155
-    uint64_t chain_id{0};
+    ChainId chain_id{0};
 
     //! \brief Holds the hash of genesis block
     std::optional<evmc::bytes32> genesis_hash;

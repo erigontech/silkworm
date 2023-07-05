@@ -37,7 +37,7 @@ namespace silkworm::rpc::ethdb::kv {
 
 class RemoteTransaction : public Transaction {
   public:
-    explicit RemoteTransaction(remote::KV::StubInterface& stub, agrpc::GrpcContext& grpc_context)
+    RemoteTransaction(::remote::KV::StubInterface& stub, agrpc::GrpcContext& grpc_context)
         : tx_rpc_{stub, grpc_context} {}
 
     ~RemoteTransaction() override = default;
@@ -50,7 +50,9 @@ class RemoteTransaction : public Transaction {
 
     boost::asio::awaitable<std::shared_ptr<CursorDupSort>> cursor_dup_sort(const std::string& table) override;
 
-    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const core::rawdb::DatabaseReader& db_reader, uint64_t block_number) override;
+    std::shared_ptr<silkworm::State> create_state(boost::asio::any_io_executor& executor, const DatabaseReader& db_reader, uint64_t block_number) override;
+
+    std::shared_ptr<node::ChainStorage> create_storage(const DatabaseReader& db_reader, ethbackend::BackEnd* backend) override;
 
     boost::asio::awaitable<void> close() override;
 

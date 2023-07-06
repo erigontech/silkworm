@@ -1206,4 +1206,8 @@ bool DataModel::read_rlp_transactions(BlockNum height, const evmc::bytes32& hash
     return read_rlp_transactions_from_snapshot(height, transactions);
 }
 
+std::optional<intx::uint256> DataModel::read_total_difficulty(BlockNum height, const evmc::bytes32& hash) const {
+    return db::read_total_difficulty(txn_, height, hash);
+}
+
 }  // namespace silkworm::db

@@ -303,6 +303,9 @@ class DataModel {
     //! Read the RLP encoded block transactions at specified height
     [[nodiscard]] bool read_rlp_transactions(BlockNum height, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) const;
 
+    //! Read total difficulty at specified height
+    [[nodiscard]] std::optional<intx::uint256> read_total_difficulty(BlockNum height, const evmc::bytes32& hash) const;
+
   private:
     static bool read_block_from_snapshot(BlockNum height, bool read_senders, Block& block);
     static std::optional<BlockHeader> read_header_from_snapshot(BlockNum height);

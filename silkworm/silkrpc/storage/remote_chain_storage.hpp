@@ -68,7 +68,7 @@ class RemoteChainStorage : public node::ChainStorage {
 
     Task<bool> read_rlp_transactions(BlockNum number, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) const override;
 
-    [[nodiscard]] Task<intx::uint256> read_total_difficulty(const Hash& block_hash, BlockNum block_number) const override;
+    [[nodiscard]] Task<std::optional<intx::uint256>> read_total_difficulty(const Hash& block_hash, BlockNum block_number) const override;
 
   private:
     const DatabaseReader& reader_;

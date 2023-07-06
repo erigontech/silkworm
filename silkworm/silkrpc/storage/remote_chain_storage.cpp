@@ -181,7 +181,7 @@ Task<bool> RemoteChainStorage::read_rlp_transactions(BlockNum number, const evmc
     co_return true;
 }
 
-Task<intx::uint256> RemoteChainStorage::read_total_difficulty(const Hash& /*block_hash*/, BlockNum /*block_number*/) const {
+Task<std::optional<intx::uint256>> RemoteChainStorage::read_total_difficulty(const Hash& /*block_hash*/, BlockNum /*block_number*/) const {
     throw std::logic_error{"RemoteChainStorage::read_total_difficulty"};
 }
 

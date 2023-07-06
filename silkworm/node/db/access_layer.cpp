@@ -1210,4 +1210,12 @@ std::optional<intx::uint256> DataModel::read_total_difficulty(BlockNum height, c
     return db::read_total_difficulty(txn_, height, hash);
 }
 
+std::optional<intx::uint256> DataModel::read_total_difficulty(BlockNum height, HashAsArray hash) const {
+    return db::read_total_difficulty(txn_, height, hash);
+}
+
+std::optional<intx::uint256> DataModel::read_total_difficulty(ByteView key) const {
+    return db::read_total_difficulty(txn_, key);
+}
+
 }  // namespace silkworm::db

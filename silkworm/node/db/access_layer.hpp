@@ -305,6 +305,8 @@ class DataModel {
 
     //! Read total difficulty at specified height
     [[nodiscard]] std::optional<intx::uint256> read_total_difficulty(BlockNum height, const evmc::bytes32& hash) const;
+    [[nodiscard]] std::optional<intx::uint256> read_total_difficulty(BlockNum, HashAsArray hash) const;
+    [[nodiscard]] std::optional<intx::uint256> read_total_difficulty(ByteView key) const;
 
   private:
     static bool read_block_from_snapshot(BlockNum height, bool read_senders, Block& block);

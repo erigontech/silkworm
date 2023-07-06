@@ -445,6 +445,8 @@ TEST_CASE("Difficulty") {
 
     write_total_difficulty(txn, block_num, hash, difficulty);
     CHECK(read_total_difficulty(txn, block_num, hash) == difficulty);
+    DataModel model{txn};
+    CHECK(model.read_total_difficulty(block_num, hash) == difficulty);
 }
 
 TEST_CASE("Headers and bodies") {

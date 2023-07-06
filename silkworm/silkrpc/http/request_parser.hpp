@@ -51,21 +51,12 @@ class RequestParser {
      * required. The InputIterator return value indicates how much of the input
      * has been consumed.
      */
-    template <typename InputIterator>
-    ResultType parse(Request& req, InputIterator begin, InputIterator end) {
-        while (begin != end) {
-            ResultType result = consume(req, *begin++);
-            if (result == ResultType::good || result == ResultType::bad || result == ResultType::processing_continue) {
-                return result;
-            }
-        }
-
-        return ResultType::indeterminate;
-    }
+    //    template <typename InputIterator>
+    ResultType parse(Request& req, const char* begin, const char* end);
 
   private:
     //! Handle the next character of input.
-    ResultType consume(Request& req, char input);
+    ResultType consume(Request& req, const char* begin, const char* end);
 
     //! Check if a byte is an HTTP character.
     static bool is_char(int c);

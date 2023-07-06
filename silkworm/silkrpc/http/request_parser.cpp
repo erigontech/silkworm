@@ -47,22 +47,17 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
 }
 
 #ifdef notdef
-POST / HTTP / 1.1 
-Host : localhost : 51515 
-User - 
-Agent : curl / 7.81.0 
-Accept : 
-Content - Type : application / json 
-Content - Length : 52
+POST / HTTP / 1.1 Host : localhost : 51515 User -
+    Agent : curl / 7.81.0 Accept : Content - Type : application / json Content - Length : 52
 #endif
 
-RequestParser::ResultType
-RequestParser::consume(Request& req, const char* begin, const char* end) {
+    RequestParser::ResultType
+    RequestParser::consume(Request& req, const char* begin, const char* end) {
     auto increase = 1;
     for (auto ptr = begin; ptr < end; ptr++) {
-       printf ("%c",*ptr);
+        printf("%c", *ptr);
     }
-    printf ("\n"); 
+    printf("\n");
     fflush(stdout);
     for (; begin != end; begin += increase) {
         increase = 1;
@@ -74,8 +69,7 @@ RequestParser::consume(Request& req, const char* begin, const char* end) {
                     increase = 7;
                     state_ = http_version_h;
                     continue;
-                }
-                else if (!is_char(input) || is_ctl(input) || is_tspecial(input)) {
+                } else if (!is_char(input) || is_ctl(input) || is_tspecial(input)) {
                     return ResultType::bad;
                 } else {
                     state_ = method;
@@ -292,9 +286,9 @@ RequestParser::consume(Request& req, const char* begin, const char* end) {
                 }
 
                 for (size_t i = 0; i < bytes_to_be_copied; i++) {
-                   req.content.push_back(*begin++);
+                    req.content.push_back(*begin++);
                 }
-                //memcpy(req.content.data() + req.content.length(), begin, bytes_to_be_copied);
+                // memcpy(req.content.data() + req.content.length(), begin, bytes_to_be_copied);
 
                 if (req.content.length() == req.content_length) {
                     return ResultType::good;

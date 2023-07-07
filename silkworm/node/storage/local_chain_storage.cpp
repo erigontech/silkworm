@@ -112,8 +112,8 @@ Task<bool> LocalChainStorage::read_rlp_transactions(BlockNum number, const evmc:
     co_return data_model_.read_rlp_transactions(number, hash, rlp_txs);
 }
 
-Task<intx::uint256> LocalChainStorage::read_total_difficulty(const Hash& /*block_hash*/, BlockNum /*block_number*/) const {
-    throw std::logic_error{"LocalChainStorage::read_total_difficulty"};
+Task<std::optional<intx::uint256>> LocalChainStorage::read_total_difficulty(const Hash& hash, BlockNum number) const {
+    co_return data_model_.read_total_difficulty(number, hash);
 }
 
 }  // namespace silkworm::node

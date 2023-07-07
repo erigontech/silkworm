@@ -16,6 +16,7 @@
 
 #include <chrono>
 #include <fstream>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
@@ -26,6 +27,7 @@
 
 #include <silkworm/buildinfo.h>
 #include <silkworm/core/chain/config.hpp>
+#include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/node/bittorrent/client.hpp>
 #include <silkworm/node/snapshot/index.hpp>
@@ -40,20 +42,17 @@ using namespace silkworm;
 using namespace silkworm::cmd::common;
 using namespace silkworm::snapshot;
 
-const std::vector<std::string> kDefaultSnapshotFiles{
-    "v1-000000-000500-bodies.seg",
-    "v1-000000-000500-headers.seg",
-    "v1-000000-000500-transactions.seg",
-};
+const std::string kDefaultSnapshotFile{"v1-000000-000500-headers.seg"};
 constexpr int kDefaultPageSize{4 * 1024};  // 4kB
 constexpr int kDefaultRepetitions{1};
 
 //! The settings for handling Thorax snapshots customized for this tool
 struct SnapSettings : public SnapshotSettings {
-    std::vector<std::string> snapshot_file_names{kDefaultSnapshotFiles};
+    std::string snapshot_file_name{kDefaultSnapshotFile};
     int page_size{kDefaultPageSize};
     bool skip_system_txs{true};
-    std::string lookup_hash;
+    std::optional<std::string> lookup_hash;
+    std::optional<BlockNum> lookup_number;
 };
 
 //! The settings for handling BitTorrent protocol customized for this tool
@@ -66,6 +65,7 @@ enum class SnapshotTool {
     count_bodies,
     count_headers,
     create_index,
+    open_index,
     decode_segment,
     download,
     lookup_header,
@@ -91,6 +91,19 @@ struct HashValidator : public CLI::Validator {
     }
 };
 
+struct BlockNumberValidator : public CLI::Validator {
+    explicit BlockNumberValidator() {
+        func_ = [&](const std::string& value) -> std::string {
+            try {
+                std::stoul(value);
+            } catch (const std::exception& ex) {
+                return "Value " + value + " is not a valid block number: " + ex.what();
+            }
+            return {};
+        };
+    }
+};
+
 //! Parse the command-line arguments into the snapshot toolbox settings
 void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSettings& settings) {
     auto& log_settings = settings.log_settings;
@@ -106,6 +119,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
         {"count_bodies", SnapshotTool::count_bodies},
         {"count_headers", SnapshotTool::count_headers},
         {"create_index", SnapshotTool::create_index},
+        {"open_index", SnapshotTool::open_index},
         {"decode_segment", SnapshotTool::decode_segment},
         {"download", SnapshotTool::download},
         {"lookup_header", SnapshotTool::lookup_header},
@@ -119,7 +133,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
     app.add_option("--repetitions", settings.repetitions, "The test repetitions")
         ->capture_default_str()
         ->check(CLI::Range(1, 100));
-    app.add_option("--files", snapshot_settings.snapshot_file_names, "The path to snapshot files")
+    app.add_option("--snapshot_file", snapshot_settings.snapshot_file_name, "The path to snapshot file")
         ->capture_default_str();
     app.add_option("--page", snapshot_settings.page_size, "The page size in kB")
         ->capture_default_str()
@@ -144,6 +158,9 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
     app.add_option("--hash", snapshot_settings.lookup_hash, "The hash to lookup in snapshot files")
         ->capture_default_str()
         ->check(HashValidator{});
+    app.add_option("--number", snapshot_settings.lookup_number, "The block number to lookup in snapshot files")
+        ->capture_default_str()
+        ->check(BlockNumberValidator{});
 
     app.parse(argc, argv);
 }
@@ -155,19 +172,17 @@ auto duration_as(const std::chrono::duration<R, P>& elapsed) {
 }
 
 void decode_segment(const SnapSettings& settings, int repetitions) {
-    for (const auto& snapshot_file_name : settings.snapshot_file_names) {
-        SILK_INFO << "Decode snapshot: " << snapshot_file_name;
-        std::chrono::time_point start{std::chrono::steady_clock::now()};
-        const auto snap_file{SnapshotPath::parse(std::filesystem::path{snapshot_file_name})};
-        if (snap_file) {
-            for (int i{0}; i < repetitions; ++i) {
-                HeaderSnapshot header_segment{snap_file->path(), snap_file->block_from(), snap_file->block_to()};
-                header_segment.reopen_segment();
-            }
+    SILK_INFO << "Decode snapshot: " << settings.snapshot_file_name;
+    std::chrono::time_point start{std::chrono::steady_clock::now()};
+    const auto snap_file{SnapshotPath::parse(std::filesystem::path{settings.snapshot_file_name})};
+    if (snap_file) {
+        for (int i{0}; i < repetitions; ++i) {
+            HeaderSnapshot header_segment{snap_file->path(), snap_file->block_from(), snap_file->block_to()};
+            header_segment.reopen_segment();
         }
-        std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
-        SILK_INFO << "Decode snapshot elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
     }
+    std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
+    SILK_INFO << "Decode snapshot elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
 }
 
 void count_bodies(const SnapSettings& settings, int repetitions) {
@@ -177,7 +192,7 @@ void count_bodies(const SnapSettings& settings, int repetitions) {
     int num_bodies{0};
     uint64_t num_txns{0};
     for (int i{0}; i < repetitions; ++i) {
-        snapshot_repo.for_each_body([&](BlockNum number, const db::detail::BlockBodyForStorage* b) -> bool {
+        snapshot_repo.for_each_body([&](BlockNum number, const db::detail::BlockBodyForStorage* b) -> bool {  // NOLINT
             // If *system transactions* should not be counted, skip first and last tx in block body
             const auto base_txn_id{settings.skip_system_txs ? b->base_txn_id + 1 : b->base_txn_id};
             const auto txn_count{settings.skip_system_txs and b->txn_count >= 2 ? b->txn_count - 2 : b->txn_count};
@@ -199,52 +214,75 @@ void count_headers(const SnapSettings& settings, int repetitions) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
     int count{0};
     for (int i{0}; i < repetitions; ++i) {
-        snapshot_repo.for_each_header([&count](const BlockHeader* h) -> bool {
+        const bool success = snapshot_repo.for_each_header([&count](const BlockHeader* h) -> bool {
             ++count;
-            if (h->number % 500'000 == 0) {
+            if (h->number % 50'000 == 0) {
                 SILK_INFO << "Header number: " << h->number << " hash: " << to_hex(h->hash());
             }
             return true;
         });
+        ensure(success, "count_headers: for_each_header failed");
     }
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
     SILK_INFO << "How many headers: " << count << " duration: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
 }
 
 void create_index(const SnapSettings& settings, int repetitions) {
-    for (const auto& snapshot_file_name : settings.snapshot_file_names) {
-        SILK_INFO << "Create index for snapshot: " << snapshot_file_name;
-        std::chrono::time_point start{std::chrono::steady_clock::now()};
-        const auto snap_file{SnapshotPath::parse(std::filesystem::path{snapshot_file_name})};
-        if (snap_file) {
-            for (int i{0}; i < repetitions; ++i) {
-                switch (snap_file->type()) {
-                    case SnapshotType::headers: {
-                        HeaderIndex index{*snap_file};
-                        index.build();
-                        break;
-                    }
-                    case SnapshotType::bodies: {
-                        BodyIndex index{*snap_file};
-                        index.build();
-                        break;
-                    }
-                    case SnapshotType::transactions: {
-                        TransactionIndex index{*snap_file};
-                        index.build();
-                        break;
-                    }
-                    default: {
-                        SILKWORM_ASSERT(false);
-                    }
+    SILK_INFO << "Create index for snapshot: " << settings.snapshot_file_name;
+    std::chrono::time_point start{std::chrono::steady_clock::now()};
+    const auto snap_file{SnapshotPath::parse(std::filesystem::path{settings.snapshot_file_name})};
+    if (snap_file) {
+        for (int i{0}; i < repetitions; ++i) {
+            switch (snap_file->type()) {
+                case SnapshotType::headers: {
+                    HeaderIndex index{*snap_file};
+                    index.build();
+                    break;
+                }
+                case SnapshotType::bodies: {
+                    BodyIndex index{*snap_file};
+                    index.build();
+                    break;
+                }
+                case SnapshotType::transactions: {
+                    TransactionIndex index{*snap_file};
+                    index.build();
+                    break;
+                }
+                default: {
+                    SILKWORM_ASSERT(false);
                 }
             }
-        } else {
-            SILK_ERROR << "Invalid snapshot file: " << snapshot_file_name;
         }
-        std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
-        SILK_INFO << "Create index elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
+    } else {
+        SILK_ERROR << "Invalid snapshot file: " << settings.snapshot_file_name;
     }
+    std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
+    SILK_INFO << "Create index elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
+}
+
+void open_index(const SnapSettings& settings) {
+    std::filesystem::path segment_file_path{settings.repository_dir / settings.snapshot_file_name};
+    SILK_INFO << "Open index for snapshot: " << segment_file_path;
+    const auto snapshot_path{snapshot::SnapshotPath::parse(segment_file_path)};
+    ensure(snapshot_path.has_value(), "open_index: invalid snapshot file " + segment_file_path.filename().string());
+    const auto index_path{snapshot_path->index_file()};
+    std::chrono::time_point start{std::chrono::steady_clock::now()};
+    succinct::RecSplitIndex idx{index_path.path()};
+    if (settings.lookup_number) {
+        BlockNum number{*settings.lookup_number};
+        SILK_INFO << "Open index offset for " << number << ": " << idx.ordinal_lookup(number);
+    } else {
+        for (size_t n{snapshot_path->block_from()}; n < snapshot_path->block_to(); ++n) {
+            if ((n - snapshot_path->block_from()) % 50'000 == 0) {
+                SILK_INFO << "Open index offset for " << n << ": " << idx.ordinal_lookup(n);
+            }
+        }
+        const auto last{snapshot_path->block_to() - 1};
+        SILK_INFO << "Open index offset for " << last << ": " << idx.ordinal_lookup(last);
+    }
+    std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
+    SILK_INFO << "Open index elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
 }
 
 void download(const BitTorrentSettings& settings) {
@@ -272,8 +310,9 @@ void download(const BitTorrentSettings& settings) {
     SILK_INFO << "Download elapsed: " << duration_as<std::chrono::seconds>(elapsed) << " sec";
 }
 
-void lookup_header(const SnapSettings& settings) {
-    const auto hash{Hash::from_hex(settings.lookup_hash)};
+void lookup_header_by_hash(const SnapSettings& settings) {
+    const auto hash{Hash::from_hex(*settings.lookup_hash)};
+    ensure(hash.has_value(), "lookup_header_by_hash: lookup_hash is not a valid hash");
     SILK_INFO << "Lookup header hash: " << hash->to_hex();
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
@@ -297,12 +336,42 @@ void lookup_header(const SnapSettings& settings) {
     SILK_INFO << "Lookup header elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
 }
 
+void lookup_header_by_number(const SnapSettings& settings) {
+    const auto block_number{*settings.lookup_number};
+    SILK_INFO << "Lookup header number: " << block_number;
+    std::chrono::time_point start{std::chrono::steady_clock::now()};
+
+    SnapshotRepository snapshot_repository{settings};
+    snapshot_repository.reopen_folder();
+    const auto header_snapshot{snapshot_repository.find_header_segment(block_number)};
+    if (header_snapshot) {
+        const auto header{header_snapshot->header_by_number(block_number)};
+        ensure(header.has_value(),
+               "lookup_header_by_number: " + std::to_string(block_number) + " NOT found in " + header_snapshot->path().filename());
+        SILK_INFO << "Lookup header number: " << block_number << " found in: " << header_snapshot->path().filename();
+    } else {
+        SILK_INFO << "Lookup header number: " << block_number << " NOT found";
+    }
+
+    std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
+    SILK_INFO << "Lookup header elapsed: " << duration_as<std::chrono::milliseconds>(elapsed) << " msec";
+}
+
+void lookup_header(const SnapSettings& settings) {
+    ensure(settings.lookup_hash or settings.lookup_number, "lookup_header: either --hash or --number must be used");
+    if (settings.lookup_hash) {
+        lookup_header_by_hash(settings);
+    } else {
+        lookup_header_by_number(settings);
+    }
+}
+
 void sync(const SnapSettings& snapshot_settings) {
     std::chrono::time_point start{std::chrono::steady_clock::now()};
 
     SnapshotRepository snapshot_repository{snapshot_settings};
     SnapshotSync snapshot_sync{&snapshot_repository, kMainnetConfig};
-    snapshot_sync.download_snapshots(snapshot_settings.snapshot_file_names);
+    snapshot_sync.download_snapshots({snapshot_settings.snapshot_file_name});
 
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
     SILK_INFO << "Sync elapsed: " << duration_as<std::chrono::seconds>(elapsed) << " sec";
@@ -332,6 +401,8 @@ int main(int argc, char* argv[]) {
             count_headers(settings.snapshot_settings, settings.repetitions);
         } else if (settings.tool == SnapshotTool::create_index) {
             create_index(settings.snapshot_settings, settings.repetitions);
+        } else if (settings.tool == SnapshotTool::open_index) {
+            open_index(settings.snapshot_settings);
         } else if (settings.tool == SnapshotTool::decode_segment) {
             decode_segment(settings.snapshot_settings, settings.repetitions);
         } else if (settings.tool == SnapshotTool::download) {

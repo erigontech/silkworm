@@ -54,11 +54,6 @@ POST / HTTP / 1.1 Host : localhost : 51515 User -
     RequestParser::ResultType
     RequestParser::consume(Request& req, const char* begin, const char* end) {
     auto increase = 1;
-    for (auto ptr = begin; ptr < end; ptr++) {
-        printf("%c", *ptr);
-    }
-    printf("\n");
-    fflush(stdout);
     for (; begin != end; begin += increase) {
         increase = 1;
         auto input = *begin;

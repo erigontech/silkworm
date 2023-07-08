@@ -30,6 +30,9 @@
 
 namespace silkworm::rpc::http {
 
+static const char PostString[] = "POST / ";
+static const char HttpString[] = "HTTP/";
+
 RequestParser::RequestParser() : state_(method_start) {
 }
 
@@ -46,20 +49,15 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
     return ResultType::indeterminate;
 }
 
-#ifdef notdef
-POST / HTTP / 1.1 Host : localhost : 51515 User -
-    Agent : curl / 7.81.0 Accept : Content - Type : application / json Content - Length : 52
-#endif
-
-    RequestParser::ResultType
-    RequestParser::consume(Request& req, const char* begin, const char* end) {
+RequestParser::ResultType
+RequestParser::consume(Request& req, const char* begin, const char* end) {
     auto increase = 1;
     for (; begin != end; begin += increase) {
         increase = 1;
         auto input = *begin;
         switch (state_) {
             case method_start:
-                if (memcmp(begin, "POST / ", 7) == 0) {
+                if (static_cast<long unsigned int>(end - begin) >= sizeof(PostString) - 1 && memcmp(begin, PostString, sizeof(PostString) - 1) == 0) {
                     req.method = "POST";
                     increase = 7;
                     state_ = http_version_h;
@@ -92,7 +90,7 @@ POST / HTTP / 1.1 Host : localhost : 51515 User -
                     continue;
                 }
             case http_version_h:
-                if (memcmp(begin, "HTTP/", 5) == 0) {
+                if (static_cast<long unsigned int>(end - begin) >= sizeof(HttpString) - 1 && memcmp(begin, HttpString, sizeof(HttpString) - 1) == 0) {
                     req.http_version_major = 0;
                     req.http_version_minor = 0;
                     state_ = http_version_major_start;
@@ -283,7 +281,6 @@ POST / HTTP / 1.1 Host : localhost : 51515 User -
                 for (size_t i = 0; i < bytes_to_be_copied; i++) {
                     req.content.push_back(*begin++);
                 }
-                // memcpy(req.content.data() + req.content.length(), begin, bytes_to_be_copied);
 
                 if (req.content.length() == req.content_length) {
                     return ResultType::good;
@@ -295,7 +292,7 @@ POST / HTTP / 1.1 Host : localhost : 51515 User -
 }
 
 inline bool RequestParser::is_char(int c) {
-    return c >= 0 && c <= 127;
+    return (c >= 0 && c <= 127);
 }
 
 inline bool RequestParser::is_ctl(int c) {

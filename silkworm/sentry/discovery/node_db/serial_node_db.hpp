@@ -35,7 +35,10 @@ class SerialNodeDb : public NodeDb {
     Task<void> upsert_node_address(NodeId id, NodeAddress address) override;
     Task<std::optional<NodeAddress>> find_node_address_v4(NodeId id) override;
     Task<std::optional<NodeAddress>> find_node_address_v6(NodeId id) override;
+    Task<void> update_last_ping_time(NodeId id, Time value) override;
+    Task<std::optional<Time>> find_last_ping_time(NodeId id) override;
     Task<void> update_last_pong_time(NodeId id, Time value) override;
+    Task<std::optional<Time>> find_last_pong_time(NodeId id) override;
     Task<void> delete_node(NodeId id) override;
 
   private:

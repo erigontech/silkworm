@@ -40,6 +40,7 @@ class Discovery {
         const std::filesystem::path& data_dir_path,
         boost::asio::any_io_executor node_db_executor,
         std::function<EccKeyPair()> node_key,
+        std::function<EnodeUrl()> node_url,
         uint16_t disc_v4_port);
     ~Discovery();
 

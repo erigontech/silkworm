@@ -14,7 +14,7 @@
    limitations under the License.
 ]]
 
-find_package(Boost REQUIRED thread)
+find_package(Boost REQUIRED headers thread)
 find_package(Catch2 REQUIRED)
 
 set(TARGET silkworm_sentry_disc_v4)
@@ -29,7 +29,7 @@ target_include_directories(${TARGET} PUBLIC "${SILKWORM_MAIN_DIR}")
 target_link_libraries(
   ${TARGET}
   PUBLIC silkworm_infra silkworm_sentry_common
-  PRIVATE Boost::thread stbrumme_keccak silkworm_core silkworm_sentry_node_db
+  PRIVATE Boost::headers Boost::thread stbrumme_keccak silkworm_core silkworm_sentry_node_db
 )
 
 # unit tests

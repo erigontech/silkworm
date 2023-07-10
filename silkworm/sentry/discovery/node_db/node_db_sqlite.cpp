@@ -43,11 +43,13 @@ CREATE TABLE IF NOT EXISTS nodes (
     ip_v6_port_disc INTEGER,
     ip_v6_port_rlpx INTEGER,
 
+    last_ping_time INTEGER,
     last_pong_time INTEGER
 );
 
 CREATE INDEX IF NOT EXISTS idx_nodes_ip ON nodes (ip);
 CREATE INDEX IF NOT EXISTS idx_nodes_ip_v6 ON nodes (ip_v6);
+CREATE INDEX IF NOT EXISTS idx_last_ping_time ON nodes (last_ping_time);
 CREATE INDEX IF NOT EXISTS idx_last_pong_time ON nodes (last_pong_time);
 
 )sql";
@@ -171,6 +173,39 @@ class NodeDbSqliteImpl : public NodeDb {
         return find_node_address(id, sql);
     }
 
+    Task<void> update_last_ping_time(NodeId id, Time value) override {
+        static const char* sql = R"sql(
+            UPDATE nodes SET last_ping_time = ? WHERE id = ?
+        )sql";
+
+        SQLite::Statement statement{*db_, sql};
+        statement.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(value)));
+        statement.bind(2, id.hex());
+
+        statement.exec();
+        co_return;
+    }
+
+    Task<std::optional<Time>> find_last_ping_time(NodeId id) override {
+        static const char* sql = R"sql(
+            SELECT last_ping_time FROM nodes WHERE id = ?
+        )sql";
+
+        SQLite::Statement query{*db_, sql};
+        query.bind(1, id.hex());
+
+        if (!query.executeStep()) {
+            co_return std::nullopt;
+        }
+
+        if (query.isColumnNull(0)) {
+            co_return std::nullopt;
+        }
+        int64_t value = query.getColumn(0);
+
+        co_return time_point_from_unix_timestamp(static_cast<uint64_t>(value));
+    }
+
     Task<void> update_last_pong_time(NodeId id, Time value) override {
         static const char* sql = R"sql(
             UPDATE nodes SET last_pong_time = ? WHERE id = ?
@@ -182,6 +217,26 @@ class NodeDbSqliteImpl : public NodeDb {
 
         statement.exec();
         co_return;
+    }
+
+    Task<std::optional<Time>> find_last_pong_time(NodeId id) override {
+        static const char* sql = R"sql(
+            SELECT last_pong_time FROM nodes WHERE id = ?
+        )sql";
+
+        SQLite::Statement query{*db_, sql};
+        query.bind(1, id.hex());
+
+        if (!query.executeStep()) {
+            co_return std::nullopt;
+        }
+
+        if (query.isColumnNull(0)) {
+            co_return std::nullopt;
+        }
+        int64_t value = query.getColumn(0);
+
+        co_return time_point_from_unix_timestamp(static_cast<uint64_t>(value));
     }
 
     Task<void> delete_node(NodeId id) override {

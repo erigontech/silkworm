@@ -16,9 +16,10 @@
 
 #include "node_db_sqlite.hpp"
 
+#include <chrono>
+
 #include <catch2/catch.hpp>
 
-#include <silkworm/core/common/util.hpp>
 #include <silkworm/infra/test_util/task_runner.hpp>
 
 namespace silkworm::sentry::discovery::node_db {
@@ -38,7 +39,7 @@ TEST_CASE("NodeDbSqlite") {
     db_sqlite.setup_in_memory();
     NodeDb& db = db_sqlite.interface();
 
-    NodeId test_id{from_hex("ba85011c70bcc5c04d8607d3a0ed29aa6179c092cbdda10d5d32684fb33ed01bd94f588ca8f91ac48318087dcb02eaf36773a7a453f0eedd6742af668097b29c").value()};
+    NodeId test_id = NodeId::deserialize_hex("ba85011c70bcc5c04d8607d3a0ed29aa6179c092cbdda10d5d32684fb33ed01bd94f588ca8f91ac48318087dcb02eaf36773a7a453f0eedd6742af668097b29c");
     NodeAddress test_address{
         ip::make_address("10.0.1.16"),
         30304,
@@ -93,9 +94,22 @@ TEST_CASE("NodeDbSqlite") {
         CHECK_FALSE(address.has_value());
     }
 
-    SECTION("update_last_pong_time") {
+    SECTION("update_and_find_last_ping_time") {
         runner.run(db.upsert_node_address(test_id, test_address));
-        runner.run(db.update_last_pong_time(test_id, std::chrono::system_clock::system_clock::now()));
+        auto expected_value = std::chrono::system_clock::system_clock::now();
+        runner.run(db.update_last_ping_time(test_id, expected_value));
+        auto actual_value = runner.run(db.find_last_ping_time(test_id));
+        REQUIRE(actual_value.has_value());
+        CHECK(std::chrono::duration_cast<std::chrono::seconds>(*actual_value - expected_value).count() == 0);
+    }
+
+    SECTION("update_and_find_last_pong_time") {
+        runner.run(db.upsert_node_address(test_id, test_address));
+        auto expected_value = std::chrono::system_clock::system_clock::now();
+        runner.run(db.update_last_pong_time(test_id, expected_value));
+        auto actual_value = runner.run(db.find_last_pong_time(test_id));
+        REQUIRE(actual_value.has_value());
+        CHECK(std::chrono::duration_cast<std::chrono::seconds>(*actual_value - expected_value).count() == 0);
     }
 }
 

@@ -83,6 +83,7 @@ class SentryImpl final {
     [[nodiscard]] api::NodeInfo make_node_info() const;
     [[nodiscard]] std::function<api::NodeInfo()> node_info_provider() const;
     [[nodiscard]] std::function<EccKeyPair()> node_key_provider() const;
+    [[nodiscard]] std::function<EnodeUrl()> node_url_provider() const;
 
     Settings settings_;
     std::optional<NodeKey> node_key_;
@@ -143,6 +144,7 @@ SentryImpl::SentryImpl(Settings settings, silkworm::rpc::ServerContextPool& cont
           settings_.data_dir_path,
           boost::asio::any_io_executor(context_pool_.next_io_context().get_executor()),
           node_key_provider(),
+          node_url_provider(),
           settings_.port),
       peer_manager_(context_pool_.next_io_context(), settings_.max_peers, context_pool_),
       message_sender_(context_pool_.next_io_context()),
@@ -278,6 +280,10 @@ std::function<EccKeyPair()> SentryImpl::node_key_provider() const {
         assert(this->node_key_);
         return this->node_key_.value();
     };
+}
+
+std::function<EnodeUrl()> SentryImpl::node_url_provider() const {
+    return [this] { return this->make_node_url(); };
 }
 
 Sentry::Sentry(Settings settings, silkworm::rpc::ServerContextPool& context_pool)

@@ -36,6 +36,7 @@ class EnodeUrl {
     [[nodiscard]] const EccPublicKey& public_key() const { return public_key_; }
     [[nodiscard]] const boost::asio::ip::address& ip() const { return ip_; }
     [[nodiscard]] uint16_t port() const { return port_; }
+    [[nodiscard]] uint16_t port_rlpx() const { return port_; }
 
     [[nodiscard]] std::string to_string() const;
 

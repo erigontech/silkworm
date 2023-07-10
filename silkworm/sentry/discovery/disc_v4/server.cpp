@@ -98,7 +98,9 @@ class ServerImpl {
                             std::move(envelope->packet_hash));
                         break;
                     case PacketType::kPong:
-                        co_await handler_.on_pong(ping::PongMessage::rlp_decode(data));
+                        co_await handler_.on_pong(
+                            ping::PongMessage::rlp_decode(data),
+                            std::move(envelope->public_key));
                         break;
                     case PacketType::kFindNode:
                         co_await handler_.on_find_node(find::FindNodeMessage::rlp_decode(data));
@@ -135,7 +137,9 @@ class ServerImpl {
         using namespace concurrency::awaitable_wait_for_one;
 
         auto executor = co_await this_coro::executor;
-        ip::udp::socket socket{executor};
+        ip::udp::socket socket{executor, recipient.protocol()};
+        socket.set_option(ip::udp::socket::reuse_address(true));
+        socket.bind(listen_endpoint());
         co_await socket.async_connect(recipient, use_awaitable);
         co_await (socket.async_send(buffer(data), use_awaitable) || concurrency::timeout(1s));
     }

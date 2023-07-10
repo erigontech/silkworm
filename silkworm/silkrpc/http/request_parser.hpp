@@ -51,7 +51,7 @@ class RequestParser {
      * required. The InputIterator return value indicates how much of the input
      * has been consumed.
      */
-    ResultType parse(Request& req, const char *begin, const char *end);
+    ResultType parse(Request& req, const char* begin, const char* end);
 
   private:
     //! Handle the next character of input.

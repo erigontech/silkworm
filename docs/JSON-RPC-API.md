@@ -59,7 +59,6 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | eth_uninstallFilter                        | Yes          |                                            |
 | eth_getLogs                                | Yes          |                                            |
 |                                            |              |                                            |
-| eth_getAccount                             | -            | not yet implemented                        |
 | eth_accounts                               | No           | deprecated                                 |
 | eth_sendRawTransaction                     | Yes          | remote only                                |
 | eth_sendTransaction                        | -            | not yet implemented                        |

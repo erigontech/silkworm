@@ -256,6 +256,48 @@ awaitable<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json&
     co_return;
 }
 
+// https://github.com/ethereum/retesteth/wiki/RPC-Methods#debugdebugaccountat
+awaitable<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request["params"];
+    if (params.empty() || params.size() < 3) {
+        auto error_msg = "invalid debug_accountAt params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request["id"], 100, error_msg);
+        co_return;
+    }
+
+    auto block_hash = params[0].get<evmc::bytes32>();
+    auto tx_index = params[1].get<std::uint64_t>();
+    auto address = params[2].get<evmc::address>();
+
+    SILK_DEBUG << "block_hash: 0x" << silkworm::to_hex(block_hash)
+               << " tx_index: " << tx_index
+               << " address: 0x" << silkworm::to_hex(address);
+
+    auto tx = co_await database_->begin();
+
+    try {
+        ethdb::TransactionDatabase tx_database{*tx};
+
+        // const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
+        // auto block_number = block_with_hash->block.header.number - 1;
+
+        reply = make_json_content(request["id"], to_quantity(0));
+    } catch (const std::invalid_argument& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request["id"], -32000, e.what());
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        reply = make_json_error(request["id"], 100, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+    co_return;
+}
+
 // https://github.com/ethereum/retesteth/wiki/RPC-Methods#debug_tracetransaction
 awaitable<void> DebugRpcApi::handle_debug_trace_transaction(const nlohmann::json& request, json::Stream& stream) {
     const auto& params = request["params"];

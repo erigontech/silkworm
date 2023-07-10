@@ -57,8 +57,9 @@ class DebugRpcApi {
   protected:
     awaitable<void> handle_debug_account_range(const nlohmann::json& request, nlohmann::json& reply);
     awaitable<void> handle_debug_get_modified_accounts_by_number(const nlohmann::json& request, nlohmann::json& reply);
-    awaitable<void> handle_debug_get_modified_accounts_by_hash(const nlohmann::json& request, nlohmann::json& reply);
     awaitable<void> handle_debug_storage_range_at(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_debug_account_at(const nlohmann::json& request, nlohmann::json& reply);
+    awaitable<void> handle_debug_get_modified_accounts_by_hash(const nlohmann::json& request, nlohmann::json& reply);
 
     awaitable<void> handle_debug_trace_transaction(const nlohmann::json& request, json::Stream& stream);
     awaitable<void> handle_debug_trace_call(const nlohmann::json& request, json::Stream& stream);

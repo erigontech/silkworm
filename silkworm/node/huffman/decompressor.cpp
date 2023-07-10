@@ -475,6 +475,85 @@ ByteView Decompressor::Iterator::data() const {
     return ByteView{decoder_->words_start_, decoder_->words_length_};
 }
 
+[[nodiscard]] bool Decompressor::Iterator::has_prefix(ByteView prefix) {
+    const auto prefix_size{prefix.size()};
+
+    const auto start_offset = word_offset_;
+    auto _ = gsl::finally([&]() { word_offset_ = start_offset; bit_position_ = 0; });
+
+    uint64_t next_data_position = next_position(true);
+    if (next_data_position == 0) {
+        throw std::runtime_error{"invalid zero next position in: " + decoder_->compressed_filename()};
+    }
+    const auto word_length = --next_data_position;  // because when we create HT we do ++ (0 is terminator)
+    SILK_TRACE << "Iterator::has_prefix start_offset=" << start_offset << " word_length=" << word_length;
+    if (word_length == 0 or word_length < prefix_size) {
+        if (bit_position_ > 0) {
+            ++word_offset_;
+            bit_position_ = 0;
+        }
+        return prefix_size == word_length;
+    }
+
+    // First pass: we only check the patterns. Only run this loop as far as prefix goes, no need to go any further
+    std::size_t buffer_position{0};
+    for (auto pos{next_position(false)}; pos != 0; pos = next_position(false)) {
+        // Positions where to insert patterns are encoded relative to one another
+        buffer_position += pos - 1;
+        const ByteView pattern = next_pattern();
+        SILK_TRACE << "Iterator::has_prefix data-from-patterns pos=" << pos << " pattern=" << to_hex(pattern);
+        const auto comparison_size{std::min(prefix_size - buffer_position, pattern.size())};
+        if (buffer_position < prefix_size) {
+            if (prefix.substr(buffer_position, comparison_size) != pattern.substr(0, comparison_size)) {
+                return false;
+            }
+        }
+    }
+    if (bit_position_ > 0) {
+        ++word_offset_;
+        bit_position_ = 0;
+    }
+    uint64_t post_loop_offset = word_offset_;
+    word_offset_ = start_offset;
+    bit_position_ = 0;
+
+    // Reset the iterator state
+    (void)next_position(true);
+
+    // Second pass: we check spaces not covered by the patterns
+    std::size_t last_uncovered{0};
+    buffer_position = 0;
+    for (auto pos{next_position(false)}; pos != 0 and last_uncovered < prefix_size; pos = next_position(false)) {
+        // Positions where to insert patterns are encoded relative to one another
+        buffer_position += pos - 1;
+        if (buffer_position > last_uncovered) {
+            const std::size_t position_diff = buffer_position - last_uncovered;
+            SILK_TRACE << "Iterator::has_prefix other-data pos=" << pos << " last_uncovered=" << last_uncovered
+                       << " buffer_position=" << buffer_position << " position_diff=" << position_diff
+                       << " data=" << to_hex(ByteView{data().data() + post_loop_offset, position_diff});
+            const auto comparison_size{std::min(prefix_size - last_uncovered, position_diff)};
+            if (prefix.substr(last_uncovered, comparison_size) != data().substr(post_loop_offset, comparison_size)) {
+                return false;
+            }
+            post_loop_offset += position_diff;
+        }
+        last_uncovered = buffer_position + next_pattern().size();
+    }
+    if (prefix_size > last_uncovered and word_length > last_uncovered) {
+        const std::size_t position_diff = word_length - last_uncovered;
+        SILK_TRACE << "Iterator::has_prefix other-data last_uncovered=" << last_uncovered
+                   << " buffer_position=" << buffer_position << " position_diff=" << position_diff
+                   << " data=" << to_hex(ByteView{data().data() + post_loop_offset, position_diff});
+        const auto comparison_size{prefix_size < word_length ? prefix_size - last_uncovered : position_diff};
+        if (prefix.substr(last_uncovered, comparison_size) != data().substr(post_loop_offset, comparison_size)) {
+            return false;
+        }
+        post_loop_offset += position_diff;
+    }
+    SILK_TRACE << "Iterator::has_prefix word_offset_=" << word_offset_;
+    return true;
+}
+
 uint64_t Decompressor::Iterator::next(Bytes& buffer) {
     const auto start_offset = word_offset_;
 

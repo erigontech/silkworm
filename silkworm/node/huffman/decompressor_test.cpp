@@ -26,7 +26,6 @@
 
 #include <absl/strings/str_split.h>
 #include <catch2/catch.hpp>
-#include <gsl/util>
 
 #include <silkworm/core/common/endian.hpp>
 #include <silkworm/core/common/util.hpp>
@@ -56,7 +55,7 @@ class SetCondensedTableBitLengthThresholdGuard {
     }
 };
 
-TEST_CASE("DecodingTable::DecodingTable", "[silkworm][snapshot][decompressor]") {
+TEST_CASE("DecodingTable::DecodingTable", "[silkworm][node][huffman][decompressor]") {
     std::map<std::string, std::pair<std::size_t, std::size_t>> test_params{
         {"max depth is 0", {0, 0}},
         {"max depth is < kMaxTableBitLength", {DecodingTable::kMaxTableBitLength - 1, DecodingTable::kMaxTableBitLength - 1}},
@@ -72,7 +71,7 @@ TEST_CASE("DecodingTable::DecodingTable", "[silkworm][snapshot][decompressor]") 
     }
 }
 
-TEST_CASE("CodeWord::CodeWord", "[silkworm][snapshot][decompressor]") {
+TEST_CASE("CodeWord::CodeWord", "[silkworm][node][huffman][decompressor]") {
     std::vector<CodeWord> codewords{};
     codewords.emplace_back();
     codewords.emplace_back(0, 0, ByteView{});
@@ -86,7 +85,7 @@ TEST_CASE("CodeWord::CodeWord", "[silkworm][snapshot][decompressor]") {
     }
 }
 
-TEST_CASE("CodeWord::reset_content", "[silkworm][snapshot][decompressor]") {
+TEST_CASE("CodeWord::reset_content", "[silkworm][node][huffman][decompressor]") {
     CodeWord parent_cw{};
 
     uint16_t old_code{121};
@@ -113,7 +112,7 @@ TEST_CASE("CodeWord::reset_content", "[silkworm][snapshot][decompressor]") {
     CHECK(cw.next() == &parent_cw);
 }
 
-TEST_CASE("CodeWord::set_next", "[silkworm][snapshot][decompressor]") {
+TEST_CASE("CodeWord::set_next", "[silkworm][node][huffman][decompressor]") {
     CodeWord parent1_cw{}, parent2_cw{};
     CodeWord cw{0, 0, Bytes{}, std::make_unique<PatternTable>(3), &parent1_cw};
     CHECK(cw.next() == &parent1_cw);
@@ -123,7 +122,7 @@ TEST_CASE("CodeWord::set_next", "[silkworm][snapshot][decompressor]") {
     CHECK(cw.next() == &parent2_cw);
 }
 
-TEST_CASE("PatternTable::set_condensed_table_bit_length_threshold", "[silkworm][snapshot][decompressor]") {
+TEST_CASE("PatternTable::set_condensed_table_bit_length_threshold", "[silkworm][node][huffman][decompressor]") {
     SECTION("condensed_table_bit_length_threshold < kMaxTableBitLength") {
         CHECK_NOTHROW(SetCondensedTableBitLengthThresholdGuard(PatternTable::kMaxTableBitLength - 1));
     }
@@ -135,14 +134,14 @@ TEST_CASE("PatternTable::set_condensed_table_bit_length_threshold", "[silkworm][
     }
 }
 
-TEST_CASE("PatternTable::PatternTable", "[silkworm][snapshot][decompressor]") {
+TEST_CASE("PatternTable::PatternTable", "[silkworm][node][huffman][decompressor]") {
     PatternTable table{0};
     CHECK(table.num_codewords() == 1);
     CHECK(table.codeword(0) == nullptr);
     CHECK(table.codeword(table.num_codewords()) == nullptr);
 }
 
-TEST_CASE("PatternTable::build_condensed", "[silkworm][snapshot][decompressor]") {
+TEST_CASE("PatternTable::build_condensed", "[silkworm][node][huffman][decompressor]") {
     PatternTable table1{0};
 
     std::span<Pattern> patterns0{};
@@ -163,14 +162,14 @@ TEST_CASE("PatternTable::build_condensed", "[silkworm][snapshot][decompressor]")
     }
 }
 
-TEST_CASE("PatternTable::search_condensed", "[silkworm][snapshot][decompressor]") {
+TEST_CASE("PatternTable::search_condensed", "[silkworm][node][huffman][decompressor]") {
     PatternTable table1{0};
     CHECK(table1.search_condensed(0) == nullptr);
     PatternTable table2{DecodingTable::kMaxTableBitLength + 1};
     CHECK(table2.search_condensed(0) == nullptr);
 }
 
-TEST_CASE("PatternTable::operator<<", "[silkworm][snapshot][decompressor]") {
+TEST_CASE("PatternTable::operator<<", "[silkworm][node][huffman][decompressor]") {
     PatternTable table1{0};
     CHECK_NOTHROW(test_util::null_stream() << table1);
     SetCondensedTableBitLengthThresholdGuard bit_length_threshold_guard{1};
@@ -178,7 +177,7 @@ TEST_CASE("PatternTable::operator<<", "[silkworm][snapshot][decompressor]") {
     CHECK_NOTHROW(test_util::null_stream() << table2);
 }
 
-TEST_CASE("PositionTable::PositionTable", "[silkworm][snapshot][decompressor]") {
+TEST_CASE("PositionTable::PositionTable", "[silkworm][node][huffman][decompressor]") {
     PositionTable table{0};
     CHECK(table.num_positions() == 1);
     CHECK(table.position(0) == 0);
@@ -189,12 +188,12 @@ TEST_CASE("PositionTable::PositionTable", "[silkworm][snapshot][decompressor]") 
     CHECK(table.child(table.num_positions()) == nullptr);
 }
 
-TEST_CASE("PositionTable::operator<<", "[silkworm][snapshot][decompressor]") {
+TEST_CASE("PositionTable::operator<<", "[silkworm][node][huffman][decompressor]") {
     PositionTable table{0};
     CHECK_NOTHROW(test_util::null_stream() << table);
 }
 
-TEST_CASE("Decompressor::Decompressor", "[silkworm][snapshot][decompressor]") {
+TEST_CASE("Decompressor::Decompressor", "[silkworm][node][huffman][decompressor]") {
     const auto tmp_file_path{silkworm::TemporaryDirectory::get_unique_temporary_path()};
     Decompressor decoder{tmp_file_path};
     CHECK(!decoder.is_open());
@@ -203,7 +202,7 @@ TEST_CASE("Decompressor::Decompressor", "[silkworm][snapshot][decompressor]") {
     CHECK(decoder.empty_words_count() == 0);
 }
 
-TEST_CASE("Decompressor::open invalid files", "[silkworm][snapshot][decompressor]") {
+TEST_CASE("Decompressor::open invalid files", "[silkworm][node][huffman][decompressor]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     SECTION("empty file") {
@@ -231,7 +230,7 @@ TEST_CASE("Decompressor::open invalid files", "[silkworm][snapshot][decompressor
     }
 }
 
-TEST_CASE("Decompressor::open valid files", "[silkworm][snapshot][decompressor]") {
+TEST_CASE("Decompressor::open valid files", "[silkworm][node][huffman][decompressor]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
 
     std::map<std::string, test::SnapshotHeader> header_tests{
@@ -272,7 +271,7 @@ TEST_CASE("Decompressor::open valid files", "[silkworm][snapshot][decompressor]"
     }
 }
 
-TEST_CASE("Decompressor::read_ahead", "[silkworm][snapshot][decompressor]") {
+TEST_CASE("Decompressor::read_ahead", "[silkworm][node][huffman][decompressor]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::SnapshotHeader header{
         .words_count = 0,
@@ -295,7 +294,7 @@ TEST_CASE("Decompressor::read_ahead", "[silkworm][snapshot][decompressor]") {
     }
 }
 
-TEST_CASE("Decompressor::close", "[silkworm][snapshot][decompressor]") {
+TEST_CASE("Decompressor::close", "[silkworm][node][huffman][decompressor]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::SnapshotHeader header{
         .words_count = 0,
@@ -318,7 +317,7 @@ TEST_CASE("Decompressor::close", "[silkworm][snapshot][decompressor]") {
     }
 }
 
-TEST_CASE("Iterator::Iterator empty data", "[silkworm][snapshot][decompressor]") {
+TEST_CASE("Iterator::Iterator empty data", "[silkworm][node][huffman][decompressor]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::SnapshotHeader header{
         .words_count = 0,
@@ -407,7 +406,7 @@ const Bytes kLoremIpsumDict{*from_hex(
     "756e74203630036d6f6c6c69742036310f616e696d2036320169642036330765"
     "73742036340d6c61626f72756d203635")};
 
-TEST_CASE("Decompressor: lorem ipsum next_uncompressed", "[silkworm][snapshot][decompressor]") {
+TEST_CASE("Decompressor: lorem ipsum next_uncompressed", "[silkworm][node][huffman][decompressor]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile tmp_file{};
     tmp_file.write(kLoremIpsumDict);
@@ -421,7 +420,7 @@ TEST_CASE("Decompressor: lorem ipsum next_uncompressed", "[silkworm][snapshot][d
                 it.skip_uncompressed();
             } else {
                 const std::string word_plus_index{kLoremIpsumWords[i] + " " + std::to_string(i)};
-                Bytes expected_word{word_plus_index.cbegin(), word_plus_index.cend()};
+                const Bytes expected_word{word_plus_index.cbegin(), word_plus_index.cend()};
                 Bytes decoded_word;
                 it.next_uncompressed(decoded_word);
                 CHECK(decoded_word == expected_word);
@@ -440,7 +439,7 @@ TEST_CASE("Decompressor: lorem ipsum next_uncompressed", "[silkworm][snapshot][d
     CHECK(test_function(it));
 }
 
-TEST_CASE("Decompressor: lorem ipsum next", "[silkworm][snapshot][decompressor]") {
+TEST_CASE("Decompressor: lorem ipsum next", "[silkworm][node][huffman][decompressor]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporaryFile tmp_file{};
     tmp_file.write(kLoremIpsumDict);
@@ -454,7 +453,7 @@ TEST_CASE("Decompressor: lorem ipsum next", "[silkworm][snapshot][decompressor]"
                 it.skip();
             } else {
                 const std::string word_plus_index{kLoremIpsumWords[i] + " " + std::to_string(i)};
-                Bytes expected_word{word_plus_index.cbegin(), word_plus_index.cend()};
+                const Bytes expected_word{word_plus_index.cbegin(), word_plus_index.cend()};
                 Bytes decoded_word;
                 it.next(decoded_word);
                 CHECK(decoded_word == expected_word);
@@ -462,6 +461,38 @@ TEST_CASE("Decompressor: lorem ipsum next", "[silkworm][snapshot][decompressor]"
             ++i;
         }
         CHECK_FALSE(it.has_next());
+        CHECK(i == kLoremIpsumWords.size());
+        return true;
+    };
+    // Apply function using Decompressor::read_ahead
+    decoder.read_ahead(test_function);
+
+    // Obtain an iterator and manually apply function
+    auto it = decoder.make_iterator();
+    CHECK(test_function(it));
+}
+
+TEST_CASE("Decompressor: lorem ipsum has_prefix", "[silkworm][node][huffman][decompressor]") {
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    test::TemporaryFile tmp_file{};
+    tmp_file.write(kLoremIpsumDict);
+    Decompressor decoder{tmp_file.path()};
+    CHECK_NOTHROW(decoder.open());
+
+    auto test_function = [&](auto it) {
+        std::size_t i{0};
+        while (it.has_next() && i < kLoremIpsumWords.size()) {
+            const std::string word_plus_index{kLoremIpsumWords[i] + " " + std::to_string(i)};
+            const Bytes expected_word{word_plus_index.cbegin(), word_plus_index.cend()};
+            CHECK(it.has_prefix(expected_word.substr(0, expected_word.size() / 2)));
+            if (not expected_word.empty()) {
+                Bytes modified_word{expected_word};
+                modified_word[expected_word.size() - 1]++;
+                CHECK(!it.has_prefix(modified_word));
+            }
+            it.skip();
+            ++i;
+        }
         CHECK(i == kLoremIpsumWords.size());
         return true;
     };

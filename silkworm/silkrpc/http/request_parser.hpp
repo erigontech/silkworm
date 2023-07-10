@@ -51,17 +51,7 @@ class RequestParser {
      * required. The InputIterator return value indicates how much of the input
      * has been consumed.
      */
-    template <typename InputIterator>
-    ResultType parse(Request& req, InputIterator begin, InputIterator end) {
-        while (begin != end) {
-            ResultType result = consume(req, *begin++);
-            if (result == ResultType::good || result == ResultType::bad || result == ResultType::processing_continue) {
-                return result;
-            }
-        }
-
-        return ResultType::indeterminate;
-    }
+    ResultType parse(Request& req, const char *begin, const char *end);
 
   private:
     //! Handle the next character of input.

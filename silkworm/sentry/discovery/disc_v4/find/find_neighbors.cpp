@@ -26,6 +26,7 @@
 #include <silkworm/infra/concurrency/awaitable_future.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/timeout.hpp>
+#include <silkworm/sentry/discovery/disc_v4/common/ip_classify.hpp>
 #include <silkworm/sentry/discovery/disc_v4/common/message_expiration.hpp>
 #include <silkworm/sentry/discovery/disc_v4/common/node_address.hpp>
 
@@ -78,8 +79,13 @@ Task<size_t> find_neighbors(
     }
 
     for (auto& [neighbor_id, neighbor_node_address] : neighbors_node_addresses) {
+        auto ip = neighbor_node_address.endpoint.address();
+        if (ip_classify(ip) != IpAddressType::kRegular) {
+            continue;
+        }
+
         node_db::NodeAddress address{
-            neighbor_node_address.endpoint.address(),
+            std::move(ip),
             neighbor_node_address.endpoint.port(),
             neighbor_node_address.port_rlpx,
         };

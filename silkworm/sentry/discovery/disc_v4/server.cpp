@@ -106,7 +106,9 @@ class ServerImpl {
                         co_await handler_.on_find_node(find::FindNodeMessage::rlp_decode(data));
                         break;
                     case PacketType::kNeighbors:
-                        co_await handler_.on_neighbors(find::NeighborsMessage::rlp_decode(data));
+                        co_await handler_.on_neighbors(
+                            find::NeighborsMessage::rlp_decode(data),
+                            std::move(envelope->public_key));
                         break;
                     case PacketType::kEnrRequest:
                         break;
@@ -128,7 +130,7 @@ class ServerImpl {
     }
 
   private:
-    ip::udp::endpoint listen_endpoint() const {
+    [[nodiscard]] ip::udp::endpoint listen_endpoint() const {
         return ip::udp::endpoint{ip_, port_};
     }
 

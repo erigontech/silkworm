@@ -50,7 +50,8 @@ class DiscoveryImpl : private MessageHandler {
         co_return;
     }
 
-    Task<void> on_neighbors(find::NeighborsMessage /*message*/) override {
+    Task<void> on_neighbors(find::NeighborsMessage message, EccPublicKey sender_public_key) override {
+        on_neighbors_signal(std::move(message), std::move(sender_public_key));
         co_return;
     }
 
@@ -59,7 +60,7 @@ class DiscoveryImpl : private MessageHandler {
     }
 
     Task<void> on_pong(ping::PongMessage message, EccPublicKey sender_public_key) override {
-        on_pong_signal(message, sender_public_key);
+        on_pong_signal(std::move(message), std::move(sender_public_key));
         co_return;
     }
 
@@ -67,6 +68,7 @@ class DiscoveryImpl : private MessageHandler {
     Server server_;
     [[maybe_unused]] std::function<EnodeUrl()> node_url_;
     [[maybe_unused]] node_db::NodeDb& node_db_;
+    boost::signals2::signal<void(find::NeighborsMessage, EccPublicKey)> on_neighbors_signal;
     boost::signals2::signal<void(ping::PongMessage, EccPublicKey)> on_pong_signal;
 };
 

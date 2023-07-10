@@ -57,6 +57,25 @@ static Bytes kConfigValue{*silkworm::from_hex(
 struct DebugExecutorTest : public test::ContextTestBase {
 };
 
+class TestDebugExecutor : DebugExecutor {
+  public:
+    explicit TestDebugExecutor(
+        const core::rawdb::DatabaseReader& database_reader,
+        BlockCache& block_cache,
+        boost::asio::thread_pool& workers,
+        ethdb::Transaction& tx,
+        DebugConfig config = {})
+        : DebugExecutor(database_reader, block_cache, workers, tx, config) {}
+    virtual ~TestDebugExecutor() = default;
+
+    TestDebugExecutor(const TestDebugExecutor&) = delete;
+    TestDebugExecutor& operator=(const TestDebugExecutor&) = delete;
+
+    boost::asio::awaitable<void> execute(json::Stream& stream, const silkworm::Block& block, const Call& call) {
+        return DebugExecutor::execute(stream, block, call);
+    }
+};
+
 #ifndef SILKWORM_SANITIZE
 TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
     static Bytes kAccountHistoryKey1{*silkworm::from_hex("0a6bb546b9208cfab9e8fa2b9b2c042b18df703000000000009db707")};
@@ -124,7 +143,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute precompiled") {
 
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        DebugExecutor executor{db_reader, cache, workers, tx};
+        TestDebugExecutor executor{db_reader, cache, workers, tx};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, block, call));
@@ -273,7 +292,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
 
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        DebugExecutor executor{db_reader, cache, workers, tx};
+        TestDebugExecutor executor{db_reader, cache, workers, tx};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, block, call));
@@ -334,7 +353,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
 
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        DebugExecutor executor{db_reader, cache, workers, tx};
+        TestDebugExecutor executor{db_reader, cache, workers, tx};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, block, call));
@@ -443,7 +462,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         DebugConfig config{false, false, true};
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        DebugExecutor executor{db_reader, cache, workers, tx, config};
+        TestDebugExecutor executor{db_reader, cache, workers, tx, config};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, block, call));
@@ -543,7 +562,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         DebugConfig config{false, true, false};
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        DebugExecutor executor{db_reader, cache, workers, tx, config};
+        TestDebugExecutor executor{db_reader, cache, workers, tx, config};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, block, call));
@@ -648,7 +667,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         DebugConfig config{true, false, false};
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        DebugExecutor executor{db_reader, cache, workers, tx, config};
+        TestDebugExecutor executor{db_reader, cache, workers, tx, config};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, block, call));
@@ -754,7 +773,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         DebugConfig config{true, true, true};
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        DebugExecutor executor{db_reader, cache, workers, tx, config};
+        TestDebugExecutor executor{db_reader, cache, workers, tx, config};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, block, call));
@@ -847,7 +866,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 1") {
         DebugConfig config{true, true, true};
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        DebugExecutor executor{db_reader, cache, workers, tx, config};
+        TestDebugExecutor executor{db_reader, cache, workers, tx, config};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, block, call));
@@ -1052,7 +1071,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call 2") {
 
         std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
         test::DummyTransaction tx{0, mock_cursor};
-        DebugExecutor executor{db_reader, cache, workers, tx};
+        TestDebugExecutor executor{db_reader, cache, workers, tx};
 
         stream.open_object();
         spawn_and_wait(executor.execute(stream, block, call));
@@ -1207,7 +1226,7 @@ TEST_CASE_METHOD(DebugExecutorTest, "DebugExecutor::execute call with error") {
 
     std::shared_ptr<test::MockCursorDupSort> mock_cursor = std::make_shared<test::MockCursorDupSort>();
     test::DummyTransaction tx{0, mock_cursor};
-    DebugExecutor executor{db_reader, cache, workers, tx};
+    TestDebugExecutor executor{db_reader, cache, workers, tx};
 
     stream.open_object();
     spawn_and_wait(executor.execute(stream, block, call));

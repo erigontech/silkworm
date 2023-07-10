@@ -117,6 +117,7 @@ class DebugExecutor {
     boost::asio::awaitable<void> trace_transaction(json::Stream& stream, const evmc::bytes32& tx_hash);
     boost::asio::awaitable<void> trace_call_many(json::Stream& stream, const Bundles& bundles, const SimulationContext& context);
 
+  protected:
     boost::asio::awaitable<void> execute(json::Stream& stream, const silkworm::Block& block, const Call& call);
 
   private:

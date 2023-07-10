@@ -24,11 +24,102 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <cstring>
+
+#include "picohttpparser.h"
 
 namespace silkworm::rpc::http {
 
 RequestParser::RequestParser() : state_(method_start) {
 }
+
+//if (result == ResultType::good || result == ResultType::bad || result == ResultType::processing_continue) {
+
+RequestParser::ResultType RequestParser::parse(Request& req, const char *begin, const char *end) {
+    const char *method_name;
+    size_t method_len;
+    const char *path;
+    size_t path_len;
+    int minor_version;
+    struct phr_header headers[100];
+    size_t num_headers;
+    size_t last_len = 0;
+
+    size_t slen = static_cast<size_t>(end - begin);
+
+    if (req.content_length != 0 && req.content.length() < req.content_length) {
+       for (size_t ii = 0; ii < slen; ii++) {
+          req.content.push_back(begin[ii]);
+       }
+       if (req.content.length() < req.content_length)
+           return ResultType::indeterminate;
+       else
+          return ResultType::good;
+    }
+
+    //for (size_t ii = 0; ii < slen; ii++) {
+    //   printf ("%c",begin[ii]);
+    //}
+    //printf ("\n");
+    //fflush(stdout);
+
+    num_headers = sizeof(headers) / sizeof(headers[0]); 
+    auto res = phr_parse_request(begin, slen, &method_name, &method_len, &path, &path_len, &minor_version, headers, &num_headers, last_len);
+    if (res < 0) {
+       printf ("Parse error %d \n",res);
+       return ResultType::bad;
+    }
+
+    //char mmm[1000];
+    //strncpy(mmm,method_name, method_len);
+    //mmm[method_len] = 0;
+    bool authorization = false; 
+
+    for (size_t ii = 0; ii < num_headers; ii++) {
+       //req.headers.emplace_back();
+       //for (size_t index = 0; index < static_cast<size_t>(headers[ii].name_len); index++) {
+       //    req.headers.back().name.push_back(headers[ii].name[index]);
+       //}
+       //for (size_t index = 0; index < static_cast<size_t>(headers[ii].value_len); index++) {
+       //    req.headers.back().value.push_back(headers[ii].value[index]);
+       //}
+       //char tmp[1000];
+       //strncpy (tmp, headers[ii].name, headers[ii].name_len);
+       //tmp[headers[ii].name_len] = 0;
+       //printf ("Headers.name %s\n",tmp);
+
+       if (strncmp(headers[ii].name, "Content-Length", headers[ii].name_len) == 0) {
+          req.content_length = static_cast<uint32_t>(atoi (headers[ii].value));
+       }
+
+       else if (strncmp(headers[ii].name, "Expect", headers[ii].name_len) == 0) {
+           authorization = true; 
+       }
+
+       else if (strncmp(headers[ii].name, "Authorization", headers[ii].name_len) == 0) {
+          req.headers.emplace_back();
+          for (size_t index = 0; index < static_cast<size_t>(headers[ii].name_len); index++) {
+             req.headers.back().name.push_back(headers[ii].name[index]);
+          }
+          for (size_t index = 0; index < static_cast<size_t>(headers[ii].value_len); index++) {
+            req.headers.back().value.push_back(headers[ii].value[index]);
+          }
+       }
+    }
+
+    for (size_t ii = static_cast<size_t>(res); ii < slen; ii++) {
+       req.content.push_back(begin[ii]);
+    }
+    
+    if (authorization == true) 
+        return ResultType::processing_continue;
+
+    if (req.content.length() < req.content_length)
+        return ResultType::indeterminate;
+    else
+        return ResultType::good;
+}
+
 
 void RequestParser::reset() {
     state_ = method_start;

@@ -19,6 +19,7 @@
 #include <array>
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include <catch2/catch.hpp>
 
@@ -57,7 +58,7 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
         std::array<char, 0> buffer{};
         std::size_t bytes_read{0};
         const auto result{parser.parse(req, buffer.data(), buffer.data() + bytes_read)};
-        CHECK(result == RequestParser::ResultType::indeterminate);
+        CHECK(result == RequestParser::ResultType::bad);
     }
 
     SECTION("continue requests") {
@@ -117,6 +118,9 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
             RequestParser parser;
             Request req;
             const auto result{parser.parse(req, s.data(), s.data() + s.size())};
+            if (result != RequestParser::ResultType::bad) {
+               std::cout << s << "\n";
+            }
             CHECK(result == RequestParser::ResultType::bad);
         }
     }

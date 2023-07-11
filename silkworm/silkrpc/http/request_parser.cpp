@@ -62,10 +62,12 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
     }
 
     bool expect_request = false;
+    bool content_length_present = false;
 
     for (size_t ii = 0; ii < num_headers; ii++) {
         if (memcmp(headers[ii].name, "Content-Length", headers[ii].name_len) == 0) {
             req.content_length = static_cast<uint32_t>(atoi(headers[ii].value));
+            content_length_present = true;
         }
 
         else if (memcmp(headers[ii].name, "Expect", headers[ii].name_len) == 0) {
@@ -83,13 +85,21 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
         }
     }
 
+    if (content_length_present == false) {
+        return ResultType::bad;
+    }
+
+    if (req.content_length == 0) {
+        return ResultType::good;
+    }
+
     req.content.resize(slen - static_cast<size_t>(res));
     memcpy(req.content.data(), &begin[res], slen - static_cast<size_t>(res));
     if (expect_request == true)
         return ResultType::processing_continue;
     else if (req.content.length() < req.content_length)
         return ResultType::indeterminate;
-    else
+    else 
         return ResultType::good;
 }
 

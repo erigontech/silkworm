@@ -275,6 +275,21 @@ class NodeDbSqliteImpl : public NodeDb {
         co_return static_cast<size_t>(value);
     }
 
+    Task<std::vector<NodeId>> find_peer_candidates(size_t limit) override {
+        // TODO
+        co_return std::vector<NodeId>{};
+    }
+
+    Task<void> mark_taken_peer_candidates(const std::vector<NodeId>& ids, Time time) override {
+        // TODO
+        co_return;
+    }
+
+    Task<std::vector<NodeId>> take_peer_candidates(size_t limit, Time time) override {
+        // TODO
+        co_return std::vector<NodeId>{};
+    }
+
     Task<void> delete_node(NodeId id) override {
         static const char* sql = R"sql(
             DELETE FROM nodes WHERE id = ?

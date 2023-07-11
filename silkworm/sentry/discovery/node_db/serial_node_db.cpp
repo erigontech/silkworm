@@ -59,6 +59,18 @@ Task<std::optional<size_t>> SerialNodeDb::find_distance(NodeId id) {
     return co_spawn(strand_, db_.find_distance(std::move(id)), use_awaitable);
 }
 
+Task<std::vector<NodeId>> SerialNodeDb::find_peer_candidates(size_t limit) {
+    return co_spawn(strand_, db_.find_peer_candidates(limit), use_awaitable);
+}
+
+Task<void> SerialNodeDb::mark_taken_peer_candidates(const std::vector<NodeId>& ids, Time time) {
+    return co_spawn(strand_, db_.mark_taken_peer_candidates(ids, std::move(time)), use_awaitable);
+}
+
+Task<std::vector<NodeId>> SerialNodeDb::take_peer_candidates(size_t limit, Time time) {
+    return co_spawn(strand_, db_.take_peer_candidates(limit, std::move(time)), use_awaitable);
+}
+
 Task<void> SerialNodeDb::delete_node(NodeId id) {
     return co_spawn(strand_, db_.delete_node(std::move(id)), use_awaitable);
 }

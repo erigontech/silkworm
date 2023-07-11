@@ -35,10 +35,10 @@ class DiscoveryImpl;
 class Discovery {
   public:
     explicit Discovery(
+        std::function<boost::asio::any_io_executor()> executor_pool,
         std::vector<EnodeUrl> peer_urls,
         bool with_dynamic_discovery,
         const std::filesystem::path& data_dir_path,
-        boost::asio::any_io_executor node_db_executor,
         std::function<EccKeyPair()> node_key,
         std::function<EnodeUrl()> node_url,
         uint16_t disc_v4_port);

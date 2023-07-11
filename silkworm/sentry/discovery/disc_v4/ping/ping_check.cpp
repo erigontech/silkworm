@@ -72,7 +72,7 @@ Task<bool> ping_check(
     boost::signals2::scoped_connection pong_subscription(on_pong_signal.connect(on_pong_handler));
 
     PingMessage ping_message{
-        boost::asio::ip::udp::endpoint{local_node_url.ip(), local_node_url.port()},
+        boost::asio::ip::udp::endpoint{local_node_url.ip(), local_node_url.port_disc()},
         local_node_url.port_rlpx(),
         endpoint,
         make_message_expiration(),

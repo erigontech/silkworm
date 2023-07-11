@@ -41,7 +41,7 @@ Task<std::unique_ptr<Peer>> Client::connect(
     ip::tcp::resolver resolver{client_context};
     auto endpoints = co_await resolver.async_resolve(
         peer_url.ip().to_string(),
-        std::to_string(peer_url.port()),
+        std::to_string(peer_url.port_rlpx()),
         use_awaitable);
     const ip::tcp::endpoint& endpoint = *endpoints.cbegin();
 

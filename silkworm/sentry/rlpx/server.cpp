@@ -62,7 +62,7 @@ Task<void> Server::start(
     acceptor.bind(endpoint);
     acceptor.listen();
 
-    EnodeUrl node_url{node_key.public_key(), endpoint.address(), port_};
+    EnodeUrl node_url{node_key.public_key(), endpoint.address(), port_, port_};
     log::Info("sentry") << "rlpx::Server is listening at " << node_url.to_string();
 
     while (acceptor.is_open()) {

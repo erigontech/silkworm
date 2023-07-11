@@ -18,6 +18,7 @@
 
 #include <chrono>
 #include <optional>
+#include <vector>
 
 #include <silkworm/infra/concurrency/task.hpp>
 
@@ -51,6 +52,10 @@ struct NodeDb {
 
     virtual Task<void> update_distance(NodeId id, size_t value) = 0;
     virtual Task<std::optional<size_t>> find_distance(NodeId id) = 0;
+
+    virtual Task<std::vector<NodeId>> find_peer_candidates(size_t limit) = 0;
+    virtual Task<void> mark_taken_peer_candidates(const std::vector<NodeId>& ids, Time time) = 0;
+    virtual Task<std::vector<NodeId>> take_peer_candidates(size_t limit, Time time) = 0;
 
     virtual Task<void> delete_node(NodeId id) = 0;
 };

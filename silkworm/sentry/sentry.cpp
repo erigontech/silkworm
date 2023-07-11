@@ -139,10 +139,10 @@ SentryImpl::SentryImpl(Settings settings, silkworm::rpc::ServerContextPool& cont
       status_manager_(context_pool_.next_io_context()),
       rlpx_server_(context_pool_.next_io_context(), settings_.port),
       discovery_(
+          [this] { return boost::asio::any_io_executor(context_pool_.next_io_context().get_executor()); },
           settings_.static_peers,
           !settings_.no_discover,
           settings_.data_dir_path,
-          boost::asio::any_io_executor(context_pool_.next_io_context().get_executor()),
           node_key_provider(),
           node_url_provider(),
           settings_.port),
@@ -258,6 +258,7 @@ EnodeUrl SentryImpl::make_node_url() const {
     return EnodeUrl{
         node_key_.value().public_key(),
         public_ip_.value(),
+        settings_.port,
         settings_.port,
     };
 }

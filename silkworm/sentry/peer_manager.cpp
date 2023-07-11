@@ -24,6 +24,7 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/sentry/common/random.hpp>
+#include <silkworm/sentry/common/sleep.hpp>
 
 namespace silkworm::sentry {
 
@@ -52,7 +53,7 @@ Task<void> PeerManager::start_in_strand(concurrency::Channel<std::shared_ptr<rlp
     while (true) {
         auto peer = co_await peer_channel.receive();
 
-        if (peers_.size() + starting_peers_.size() >= max_peers_) {
+        if (peers_.size() + handshaking_peers_.size() >= max_peers_) {
             if (drop_peer_tasks_count_ < kMaxSimultaneousDropPeerTasks) {
                 drop_peer_tasks_count_++;
                 drop_peer_tasks_.spawn(strand_, drop_peer(peer, rlpx::DisconnectReason::TooManyPeers));
@@ -62,7 +63,7 @@ Task<void> PeerManager::start_in_strand(concurrency::Channel<std::shared_ptr<rlp
             continue;
         }
 
-        starting_peers_.push_back(peer);
+        handshaking_peers_.push_back(peer);
         peer_tasks_.spawn(strand_, start_peer(peer));
     }
 }
@@ -82,7 +83,7 @@ Task<void> PeerManager::start_peer(std::shared_ptr<rlpx::Peer> peer) {
         log::Error("sentry") << "PeerManager::start_peer Peer::start exception: " << ex.what();
     }
 
-    starting_peers_.remove(peer);
+    handshaking_peers_.remove(peer);
     if (peers_.remove(peer)) {
         on_peer_removed(peer);
     }
@@ -92,7 +93,7 @@ Task<void> PeerManager::start_peer(std::shared_ptr<rlpx::Peer> peer) {
 
 Task<void> PeerManager::wait_for_peer_handshake(std::shared_ptr<rlpx::Peer> peer) {
     bool ok = co_await rlpx::Peer::wait_for_handshake(peer);
-    if (starting_peers_.remove(peer) && ok) {
+    if (handshaking_peers_.remove(peer) && ok) {
         peers_.push_back(peer);
         on_peer_added(peer);
     }
@@ -189,25 +190,34 @@ std::vector<EnodeUrl> PeerManager::peer_urls(const std::list<std::shared_ptr<rlp
 Task<void> PeerManager::discover_peers(
     discovery::Discovery& discovery,
     std::function<std::unique_ptr<rlpx::Client>()> client_factory) {
+    using namespace std::chrono_literals;
+
     // loop until a cancelled exception
     while (true) {
-        co_await need_peers_notifier_.wait();
-
-        size_t ongoing_peers_count = peers_.size() + starting_peers_.size() + connecting_peer_urls_.size();
-        if (ongoing_peers_count >= max_peers_) continue;
+        size_t ongoing_peers_count = peers_.size() + handshaking_peers_.size() + connecting_peer_urls_.size();
+        // when full wait until someone drops
+        if (ongoing_peers_count >= max_peers_) {
+            co_await need_peers_notifier_.wait();
+            continue;
+        }
         size_t needed_count = max_peers_ - ongoing_peers_count;
 
         auto ongoing_peers_urls = peer_urls(peers_);
-        auto starting_peer_urls = peer_urls(starting_peers_);
-        ongoing_peers_urls.insert(ongoing_peers_urls.end(), starting_peer_urls.begin(), starting_peer_urls.end());
+        auto handshaking_peer_urls = peer_urls(handshaking_peers_);
+        ongoing_peers_urls.insert(ongoing_peers_urls.end(), handshaking_peer_urls.begin(), handshaking_peer_urls.end());
         ongoing_peers_urls.insert(ongoing_peers_urls.end(), connecting_peer_urls_.begin(), connecting_peer_urls_.end());
 
-        auto discovered_peer_urls = co_await discovery.request_peer_urls(needed_count, ongoing_peers_urls);
+        std::vector<EnodeUrl> discovered_peer_urls = co_await discovery.request_peer_urls(needed_count, ongoing_peers_urls);
 
         for (auto& peer_url : discovered_peer_urls) {
             connecting_peer_urls_.insert(peer_url);
             bool is_static_peer = discovery.is_static_peer_url(peer_url);
             connect_peer_tasks_.spawn(strand_, connect_peer(peer_url, is_static_peer, client_factory()));
+        }
+
+        // if nothing new retry after a delay
+        if (discovered_peer_urls.empty()) {
+            co_await sleep(10s);
         }
     }
 }
@@ -226,8 +236,10 @@ Task<void> PeerManager::connect_peer(EnodeUrl peer_url, bool is_static_peer, std
         } else {
             log::Error("sentry") << "PeerManager::connect_peer system_error: " << ex.what();
         }
+        need_peers_notifier_.notify();
     } catch (const std::exception& ex) {
         log::Error("sentry") << "PeerManager::connect_peer exception: " << ex.what();
+        need_peers_notifier_.notify();
     }
 }
 

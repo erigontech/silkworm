@@ -100,7 +100,7 @@ class PeerManager {
         std::unique_ptr<rlpx::Client> client);
 
     std::list<std::shared_ptr<rlpx::Peer>> peers_;
-    std::list<std::shared_ptr<rlpx::Peer>> starting_peers_;
+    std::list<std::shared_ptr<rlpx::Peer>> handshaking_peers_;
     size_t max_peers_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     concurrency::TaskGroup peer_tasks_;

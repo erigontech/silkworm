@@ -17,9 +17,9 @@
 #include "request_parser.hpp"
 
 #include <array>
+#include <iostream>
 #include <string>
 #include <vector>
-#include <iostream>
 
 #include <catch2/catch.hpp>
 
@@ -119,7 +119,7 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
             Request req;
             const auto result{parser.parse(req, s.data(), s.data() + s.size())};
             if (result != RequestParser::ResultType::bad) {
-               std::cout << s << "\n";
+                std::cout << s << "\n";
             }
             CHECK(result == RequestParser::ResultType::bad);
         }

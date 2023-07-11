@@ -29,6 +29,7 @@
 #include <silkworm/sentry/discovery/disc_v4/common/ip_classify.hpp>
 #include <silkworm/sentry/discovery/disc_v4/common/message_expiration.hpp>
 #include <silkworm/sentry/discovery/disc_v4/common/node_address.hpp>
+#include <silkworm/sentry/discovery/disc_v4/common/node_distance.hpp>
 
 namespace silkworm::sentry::discovery::disc_v4::find {
 
@@ -89,7 +90,11 @@ Task<size_t> find_neighbors(
             neighbor_node_address.endpoint.port(),
             neighbor_node_address.port_rlpx,
         };
+
+        auto distance = node_distance(node_id, local_node_id);
+
         co_await db.upsert_node_address(node_id, std::move(address));
+        co_await db.update_distance(node_id, distance);
     }
 
     co_return neighbors_node_addresses.size();

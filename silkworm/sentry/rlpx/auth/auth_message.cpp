@@ -23,8 +23,8 @@
 #include <silkworm/core/rlp/encode_vector.hpp>
 #include <silkworm/infra/common/decoding_exception.hpp>
 #include <silkworm/sentry/common/crypto/ecdsa_signature.hpp>
+#include <silkworm/sentry/common/crypto/xor.hpp>
 #include <silkworm/sentry/common/random.hpp>
-#include <silkworm/sentry/rlpx/crypto/xor.hpp>
 
 #include "ecies_cipher.hpp"
 

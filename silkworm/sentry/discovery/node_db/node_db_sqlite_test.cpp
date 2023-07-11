@@ -111,6 +111,15 @@ TEST_CASE("NodeDbSqlite") {
         REQUIRE(actual_value.has_value());
         CHECK(std::chrono::duration_cast<std::chrono::seconds>(*actual_value - expected_value).count() == 0);
     }
+
+    SECTION("update_and_find_distance") {
+        runner.run(db.upsert_node_address(test_id, test_address));
+        size_t expected_value = 123;
+        runner.run(db.update_distance(test_id, expected_value));
+        auto actual_value = runner.run(db.find_distance(test_id));
+        REQUIRE(actual_value.has_value());
+        CHECK(*actual_value == expected_value);
+    }
 }
 
 }  // namespace silkworm::sentry::discovery::node_db

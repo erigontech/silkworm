@@ -25,6 +25,7 @@
 #include <silkworm/infra/concurrency/event_notifier.hpp>
 #include <silkworm/infra/concurrency/timeout.hpp>
 #include <silkworm/sentry/discovery/disc_v4/common/message_expiration.hpp>
+#include <silkworm/sentry/discovery/disc_v4/common/node_distance.hpp>
 
 namespace silkworm::sentry::discovery::disc_v4::ping {
 
@@ -93,7 +94,10 @@ Task<bool> ping_check(
                 endpoint.port(),
                 /* port_rlpx = */ 0,
             };
+            auto distance = node_distance(node_id, local_node_url.public_key());
+
             co_await db.upsert_node_address(node_id, std::move(address));
+            co_await db.update_distance(node_id, distance);
         }
     }
 

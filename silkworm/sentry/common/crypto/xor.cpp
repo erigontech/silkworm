@@ -19,11 +19,11 @@
 #include <algorithm>
 #include <functional>
 
-namespace silkworm::sentry::rlpx::crypto {
+namespace silkworm::sentry::crypto {
 
 void xor_bytes(Bytes& data1, ByteView data2) {
     assert(data1.size() <= data2.size());
     std::transform(data1.cbegin(), data1.cend(), data2.cbegin(), data1.begin(), std::bit_xor<>{});
 }
 
-}  // namespace silkworm::sentry::rlpx::crypto
+}  // namespace silkworm::sentry::crypto

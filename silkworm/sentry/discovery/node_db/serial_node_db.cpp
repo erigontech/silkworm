@@ -51,6 +51,14 @@ Task<std::optional<Time>> SerialNodeDb::find_last_pong_time(NodeId id) {
     return co_spawn(strand_, db_.find_last_pong_time(std::move(id)), use_awaitable);
 }
 
+Task<void> SerialNodeDb::update_distance(NodeId id, size_t value) {
+    return co_spawn(strand_, db_.update_distance(std::move(id), value), use_awaitable);
+}
+
+Task<std::optional<size_t>> SerialNodeDb::find_distance(NodeId id) {
+    return co_spawn(strand_, db_.find_distance(std::move(id)), use_awaitable);
+}
+
 Task<void> SerialNodeDb::delete_node(NodeId id) {
     return co_spawn(strand_, db_.delete_node(std::move(id)), use_awaitable);
 }

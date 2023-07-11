@@ -44,13 +44,16 @@ CREATE TABLE IF NOT EXISTS nodes (
     ip_v6_port_rlpx INTEGER,
 
     last_ping_time INTEGER,
-    last_pong_time INTEGER
+    last_pong_time INTEGER,
+
+    distance INTEGER NON NULL DEFAULT 256
 );
 
 CREATE INDEX IF NOT EXISTS idx_nodes_ip ON nodes (ip);
 CREATE INDEX IF NOT EXISTS idx_nodes_ip_v6 ON nodes (ip_v6);
 CREATE INDEX IF NOT EXISTS idx_last_ping_time ON nodes (last_ping_time);
 CREATE INDEX IF NOT EXISTS idx_last_pong_time ON nodes (last_pong_time);
+CREATE INDEX IF NOT EXISTS idx_distance ON nodes (distance);
 
 )sql";
 
@@ -237,6 +240,39 @@ class NodeDbSqliteImpl : public NodeDb {
         int64_t value = query.getColumn(0);
 
         co_return time_point_from_unix_timestamp(static_cast<uint64_t>(value));
+    }
+
+    Task<void> update_distance(NodeId id, size_t value) override {
+        static const char* sql = R"sql(
+            UPDATE nodes SET distance = ? WHERE id = ?
+        )sql";
+
+        SQLite::Statement statement{*db_, sql};
+        statement.bind(1, static_cast<int64_t>(value));
+        statement.bind(2, id.hex());
+
+        statement.exec();
+        co_return;
+    }
+
+    Task<std::optional<size_t>> find_distance(NodeId id) override {
+        static const char* sql = R"sql(
+            SELECT distance FROM nodes WHERE id = ?
+        )sql";
+
+        SQLite::Statement query{*db_, sql};
+        query.bind(1, id.hex());
+
+        if (!query.executeStep()) {
+            co_return std::nullopt;
+        }
+
+        if (query.isColumnNull(0)) {
+            co_return std::nullopt;
+        }
+        int64_t value = query.getColumn(0);
+
+        co_return static_cast<size_t>(value);
     }
 
     Task<void> delete_node(NodeId id) override {

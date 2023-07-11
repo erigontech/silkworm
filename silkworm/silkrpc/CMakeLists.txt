@@ -35,6 +35,10 @@ file(
 )
 list(FILTER SILKRPC_SRC EXCLUDE REGEX "main\\.cpp$|_test\\.cpp$|\\.pb\\.cc|\\.pb\\.h")
 
+# picohttpparse
+add_library(picohttpparse "${SILKWORM_MAIN_DIR}/third_party/libreactor/src/picohttpparser/picohttpparser.c")
+
+
 set(SILKRPC_PUBLIC_LIBRARIES
     silkworm_node
     silkworm_core
@@ -50,6 +54,7 @@ set(SILKRPC_PUBLIC_LIBRARIES
     Boost::thread
     protobuf::libprotobuf
     intx::intx
+    picohttpparse
 )
 
 set(SILKRPC_PRIVATE_LIBRARIES evmc::instructions roaring::roaring)
@@ -66,6 +71,7 @@ endif()
 target_include_directories(
   silkrpc
   PUBLIC "${SILKWORM_MAIN_DIR}"
+         "${SILKWORM_MAIN_DIR}/third_party/libreactor/src/picohttpparser"
          "${SILKWORM_MAIN_DIR}/third_party/cbor-cpp"
          "${SILKWORM_MAIN_DIR}/third_party/glaze/include"
          "${SILKWORM_MAIN_DIR}/third_party/evmone/lib"

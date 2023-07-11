@@ -32,7 +32,7 @@ namespace silkworm::rpc::http {
 class RequestParser {
   public:
     //! Construct ready to parse the request method.
-    RequestParser() {};
+    RequestParser(){};
 
     //! Result of parse.
     enum class ResultType {
@@ -49,7 +49,6 @@ class RequestParser {
      * has been consumed.
      */
     ResultType parse(Request& req, const char* begin, const char* end);
-
 };
 
 }  // namespace silkworm::rpc::http

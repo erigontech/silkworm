@@ -96,7 +96,7 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
         return ResultType::processing_continue;
     else if (req.content.length() < req.content_length)
         return ResultType::indeterminate;
-    else 
+    else
         return ResultType::good;
 }
 

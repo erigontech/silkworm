@@ -60,7 +60,9 @@ Sync::Sync(boost::asio::io_context& io_context,
 
         // Create the synchronization algorithm based on Casper + LMD-GHOST, i.e. PoS
         auto pos_sync = std::make_unique<PoSSync>(block_exchange_, execution);
-        engine_rpc_server_->add_backend_service(std::make_unique<EngineApiBackend>(*pos_sync));
+        std::vector<std::unique_ptr<rpc::ethbackend::BackEnd>> backends;
+        backends.push_back(std::make_unique<EngineApiBackend>(*pos_sync));  // just one PoS-based Engine backend
+        engine_rpc_server_->add_backend_services(std::move(backends));
         chain_sync_ = std::move(pos_sync);
     } else {
         // Create the synchronization algorithm based on GHOST, i.e. PoW

@@ -39,7 +39,6 @@ list(FILTER SILKRPC_SRC EXCLUDE REGEX "main\\.cpp$|_test\\.cpp$|\\.pb\\.cc|\\.pb
 add_library(picohttpparse "${SILKWORM_MAIN_DIR}/third_party/libreactor/src/picohttpparser/picohttpparser.c")
 target_compile_options(picohttpparse PRIVATE -Wno-error)
 
-
 set(SILKRPC_PUBLIC_LIBRARIES
     silkworm_node
     silkworm_core

@@ -21,8 +21,8 @@
 extern const char* bor_mainnet_toml_data();
 extern size_t bor_mainnet_toml_size();
 
-extern const char* bsc_toml_data();
-extern size_t bsc_toml_size();
+extern const char* chiado_toml_data();
+extern size_t chiado_toml_size();
 
 extern const char* gnosis_toml_data();
 extern size_t gnosis_toml_size();

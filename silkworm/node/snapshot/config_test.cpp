@@ -40,7 +40,7 @@ TEST_CASE("from_toml", "[silkworm][snapshot][from_toml]") {
     SECTION("valid") {
         const std::string_view kValidSnapshotTomlData[]{
             {bor_mainnet_toml_data(), bor_mainnet_toml_size()},
-            {bsc_toml_data(), bsc_toml_size()},
+            {chiado_toml_data(), chiado_toml_size()},
             {gnosis_toml_data(), gnosis_toml_size()},
             {goerli_toml_data(), goerli_toml_size()},
             {mainnet_toml_data(), mainnet_toml_size()},
@@ -62,7 +62,7 @@ TEST_CASE("Config::lookup_known_config", "[silkworm][snapshot][config]") {
     }
 
     SECTION("mainnet") {
-        constexpr std::size_t kExpectedMaxBlockNumber{16'000'000};
+        constexpr std::size_t kExpectedMaxBlockNumber{17'000'000};
         const int kSnapshotSegmentCount{magic_enum::enum_count<SnapshotType>() - 1};  // transactions2block has no segments
         const auto mainnet_snapshot_config = Config::lookup_known_config(1, {});
         CHECK(mainnet_snapshot_config->preverified_snapshots().size() ==

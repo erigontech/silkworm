@@ -23,9 +23,9 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/common/base.hpp>
+#include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/infra/concurrency/private_service.hpp>
 #include <silkworm/infra/concurrency/shared_service.hpp>
-#include <silkworm/silkrpc/common/block_cache.hpp>
 #include <silkworm/silkrpc/ethbackend/backend.hpp>
 #include <silkworm/silkrpc/ethdb/database.hpp>
 #include <silkworm/silkrpc/ethdb/kv/state_cache.hpp>

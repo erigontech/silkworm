@@ -260,29 +260,8 @@ class RWTxn : public ROTxn {
     virtual std::unique_ptr<RWCursor> rw_cursor(const MapConfig& config);
     virtual std::unique_ptr<RWCursorDupSort> rw_cursor_dup_sort(const MapConfig& config);
 
-    void commit(const bool renew = true) {
-        /*
-         * renew is required here due to RAII
-         * RWTxn txn(env);
-         * txn.commit();
-         * env.close();
-         * causes a segfault for tx being aborted when the env is already closed
-         *
-         * Workarounds
-         * - either pass renew==false to last commit
-         * - or keep RWTxn in a lower scope
-         * */
-
-        if (!commit_disabled_) {
-            mdbx::env env = db();
-            managed_txn_.commit();
-            if (renew) {
-                managed_txn_ = env.start_write();  // renew transaction
-            }
-        }
-    }
-    void commit_and_renew() { commit(true); }
-    void commit_and_stop() { commit(false); }
+    void commit_and_renew();
+    void commit_and_stop();
 
     void reopen(mdbx::env& env) { managed_txn_ = env.start_write(); }
 

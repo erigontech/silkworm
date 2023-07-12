@@ -62,7 +62,7 @@ void run_db_checklist(NodeSettings& node_settings, bool init_if_empty) {
             }
             log::Message("Priming database", {"network id", std::to_string(node_settings.network_id)});
             db::initialize_genesis(tx, genesis_json, /*allow_exceptions=*/true);
-            tx.commit();
+            tx.commit_and_renew();
             node_settings.chain_config = db::read_chain_config(tx);
         }
 
@@ -153,7 +153,7 @@ void run_db_checklist(NodeSettings& node_settings, bool init_if_empty) {
 
             if (new_members_added || old_members_changed) {
                 db::update_chain_config(tx, *(known_chain->second));
-                tx.commit();
+                tx.commit_and_renew();
                 node_settings.chain_config = *(known_chain->second);
             }
         }
@@ -183,7 +183,7 @@ void run_db_checklist(NodeSettings& node_settings, bool init_if_empty) {
         log::Message("Effective pruning", {"mode", node_settings.prune_mode->to_string()});
     }
 
-    tx.commit(/*renew=*/false);
+    tx.commit_and_stop();
     chaindata_env.close();
     node_settings.chaindata_env_config.exclusive = chaindata_exclusive;
     node_settings.chaindata_env_config.create = false;  // Has already been created

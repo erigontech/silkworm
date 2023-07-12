@@ -67,15 +67,15 @@ Stage::Result HistoryIndex::forward(db::RWTxn& txn) {
         collector_ = std::make_unique<etl::Collector>(node_settings_);
         if (previous_progress_accounts < target_progress) {
             success_or_throw(forward_impl(txn, previous_progress_accounts, target_progress, false));
-            txn.commit();
+            txn.commit_and_renew();
         }
         if (previous_progress_storage < target_progress) {
             success_or_throw(forward_impl(txn, previous_progress_storage, target_progress, true));
-            txn.commit();
+            txn.commit_and_renew();
         }
         reset_log_progress();
         update_progress(txn, target_progress);
-        txn.commit();
+        txn.commit_and_renew();
 
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
@@ -140,7 +140,7 @@ Stage::Result HistoryIndex::unwind(db::RWTxn& txn) {
 
         reset_log_progress();
         update_progress(txn, to);
-        txn.commit();
+        txn.commit_and_renew();
 
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
@@ -213,7 +213,7 @@ Stage::Result HistoryIndex::prune(db::RWTxn& txn) {
 
         reset_log_progress();
         db::stages::write_stage_prune_progress(txn, stage_name_, forward_progress);
-        txn.commit();
+        txn.commit_and_renew();
 
     } catch (const StageError& ex) {
         log::Error(log_prefix_,

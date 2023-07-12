@@ -48,7 +48,7 @@ Stage::Result Senders::forward(db::RWTxn& txn) {
 
     const auto res{parallel_recover(txn)};
     if (res == Stage::Result::kSuccess) {
-        txn.commit();
+        txn.commit_and_renew();
     }
 
     log_lock.lock();
@@ -121,7 +121,7 @@ Stage::Result Senders::unwind(db::RWTxn& txn) {
         }
 
         update_progress(txn, to);
-        txn.commit();
+        txn.commit_and_renew();
 
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
@@ -213,7 +213,7 @@ Stage::Result Senders::prune(db::RWTxn& txn) {
             log::Trace(log_prefix_, {"source", db::table::kSenders.name, "erased", std::to_string(erased), "in", StopWatch::format(duration)});
         }
         db::stages::write_stage_prune_progress(txn, stage_name_, forward_progress);
-        txn.commit();
+        txn.commit_and_renew();
 
     } catch (const StageError& ex) {
         log::Error(log_prefix_,

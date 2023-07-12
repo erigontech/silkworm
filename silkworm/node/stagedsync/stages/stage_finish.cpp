@@ -44,7 +44,7 @@ Stage::Result Finish::forward(db::RWTxn& txn) {
             Bytes build_info{byte_ptr_cast(node_settings_->build_info.data())};
             db::write_build_info_height(txn, build_info, execution_stage_progress);
         }
-        txn.commit();
+        txn.commit_and_renew();
 
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
@@ -78,7 +78,7 @@ Stage::Result Finish::unwind(db::RWTxn& txn) {
         if (to >= previous_progress) return ret;
         throw_if_stopping();
         update_progress(txn, to);
-        txn.commit();
+        txn.commit_and_renew();
 
     } catch (const StageError& ex) {
         log::Error(log_prefix_,

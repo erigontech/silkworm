@@ -143,7 +143,7 @@ Stage::Result BodiesStage::forward(db::RWTxn& tx) {
 
         body_persistence.close();
 
-        tx.commit();  // this will commit if the tx was started here
+        tx.commit_and_renew();
 
     } catch (const std::exception& e) {
         log::Error(log_prefix_) << "Forward aborted due to exception: " << e.what();
@@ -174,7 +174,7 @@ Stage::Result BodiesStage::unwind(db::RWTxn& tx) {
 
         current_height_ = new_height;
 
-        tx.commit();
+        tx.commit_and_renew();
 
         result = Stage::Result::kSuccess;
 

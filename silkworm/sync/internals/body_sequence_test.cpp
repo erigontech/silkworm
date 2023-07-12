@@ -451,7 +451,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         db::write_canonical_header_hash(txn2, header2.hash().bytes, 1);
         db::write_canonical_header(txn2, header2);
         db::write_header(txn2, header2, true);
-        txn2.commit();
+        txn2.commit_and_renew();
         bs.download_bodies({make_shared<BlockHeader>(header2)});
 
         std::shared_ptr<OutboundMessage> message2 = bs.request_bodies(tp);

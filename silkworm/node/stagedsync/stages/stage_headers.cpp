@@ -112,14 +112,14 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
         HeaderDataModel header_persistence(tx, current_height_);
 
         if (forced_target_block_ && current_height_ >= *forced_target_block_) {
-            tx.commit();
+            tx.commit_and_renew();
             log::Info(log_prefix_) << "End, forward skipped due to 'stop-at-block', current block= "
                                    << current_height_.load() << ")";
             return Stage::Result::kSuccess;
         }
 
         if (current_height_ >= target_height) {
-            tx.commit();
+            tx.commit_and_renew();
             log::Info(log_prefix_) << "End, forward skipped, we are already at the target block (" << target_height << ")";
             return Stage::Result::kSuccess;
         }
@@ -150,7 +150,7 @@ auto HeadersStage::forward(db::RWTxn& tx) -> Stage::Result {
         log::Info(log_prefix_) << "Updating completed, wrote " << headers_processed << " headers,"
                                << " last=" << current_height_;
 
-        tx.commit();  // this will commit or not depending on the creator of txn
+        tx.commit_and_renew();
 
     } catch (const std::exception& e) {
         log::Error(log_prefix_) << "Forward aborted due to exception: " << e.what();
@@ -184,7 +184,7 @@ auto HeadersStage::unwind(db::RWTxn& tx) -> Stage::Result {
 
         result = Stage::Result::kSuccess;
 
-        tx.commit();
+        tx.commit_and_renew();
 
     } catch (const std::exception& e) {
         log::Error(log_prefix_) << "Unwind aborted due to exception: " << e.what();

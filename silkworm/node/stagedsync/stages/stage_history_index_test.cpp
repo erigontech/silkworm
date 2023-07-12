@@ -363,14 +363,14 @@ TEST_CASE("Stage History Index") {
             }
         }
         db::stages::write_stage_progress(txn, db::stages::kExecutionKey, block - 1);
-        txn.commit();
+        txn.commit_and_renew();
 
         REQUIRE(stage_history_index.forward(txn) == stagedsync::Stage::Result::kSuccess);
 
         account_history.bind(txn, db::table::kAccountHistory);
         REQUIRE(batch_1 < account_history.size());
         check_addresses(addresses);
-        txn.commit();
+        txn.commit_and_renew();
 
         // Unwind to 4000 and ensure account 4 has been removed from history
         sync_context.unwind_point.emplace(4'000);

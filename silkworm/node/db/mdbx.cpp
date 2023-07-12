@@ -251,7 +251,6 @@ void RWTxn::commit_and_renew() {
 
 void RWTxn::commit_and_stop() {
     if (!commit_disabled_) {
-        mdbx::env env = db();
         managed_txn_.commit();
     }
 }

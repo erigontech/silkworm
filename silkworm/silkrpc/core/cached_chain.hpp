@@ -21,7 +21,7 @@
 #include <boost/asio/awaitable.hpp>
 #include <evmc/evmc.hpp>
 
-#include <silkworm/silkrpc/common/block_cache.hpp>
+#include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>

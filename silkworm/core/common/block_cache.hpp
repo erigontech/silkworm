@@ -17,19 +17,13 @@
 #pragma once
 
 #include <cstddef>
-#include <mutex>
-#include <optional>
+#include <memory>
 
 #include <evmc/evmc.hpp>
 
-#include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/common/lru_cache.hpp>
-#include <silkworm/core/common/util.hpp>
-#include <silkworm/core/execution/address.hpp>
-#include <silkworm/core/types/receipt.hpp>
-#include <silkworm/core/types/transaction.hpp>
-#include <silkworm/node/db/util.hpp>
+#include <silkworm/core/types/block.hpp>
 
 namespace silkworm {
 
@@ -38,16 +32,16 @@ class BlockCache {
     explicit BlockCache(std::size_t capacity = 1024, bool shared_cache = true)
         : block_cache_(capacity, shared_cache) {}
 
-    std::optional<std::shared_ptr<silkworm::BlockWithHash>> get(const evmc::bytes32& key) {
+    std::optional<std::shared_ptr<BlockWithHash>> get(const evmc::bytes32& key) {
         return block_cache_.get_as_copy(key);
     }
 
-    void insert(const evmc::bytes32& key, const std::shared_ptr<silkworm::BlockWithHash> block) {
+    void insert(const evmc::bytes32& key, const std::shared_ptr<BlockWithHash>& block) {
         block_cache_.put(key, block);
     }
 
   private:
-    lru_cache<evmc::bytes32, std::shared_ptr<silkworm::BlockWithHash>> block_cache_;
+    lru_cache<evmc::bytes32, std::shared_ptr<BlockWithHash>> block_cache_;
 };
 
 }  // namespace silkworm

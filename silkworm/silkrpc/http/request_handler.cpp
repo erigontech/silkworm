@@ -46,7 +46,7 @@ boost::asio::awaitable<void> RequestHandler::handle(const http::Request& request
         reply.content = "";
         reply.status = http::StatusType::no_content;
     } else {
-        SILK_DEBUG << "handle_user_request content: " << request.content;
+        SILK_TRACE << "handle HTTP request content #size: " << request.content.size();
 
         const auto request_json = nlohmann::json::parse(request.content);
 
@@ -97,7 +97,7 @@ boost::asio::awaitable<void> RequestHandler::handle(const http::Request& request
 
     co_await do_write(reply);
 
-    SILK_INFO << "handle_user_request t=" << clock_time::since(start) << "ns";
+    SILK_TRACE << "handle HTTP request t=" << clock_time::since(start) << "ns";
 }
 
 boost::asio::awaitable<void> RequestHandler::handle_request_and_create_reply(const nlohmann::json& request_json, http::Reply& reply) {
@@ -119,16 +119,19 @@ boost::asio::awaitable<void> RequestHandler::handle_request_and_create_reply(con
     const auto json_glaze_handler = rpc_api_table_.find_json_glaze_handler(method);
     if (json_glaze_handler) {
         co_await handle_request(request_id, *json_glaze_handler, request_json, reply);
+        SILK_TRACE << "handle RPC request: " << method;
         co_return;
     }
     const auto json_handler = rpc_api_table_.find_json_handler(method);
     if (json_handler) {
         co_await handle_request(request_id, *json_handler, request_json, reply);
+        SILK_TRACE << "handle RPC request: " << method;
         co_return;
     }
     const auto stream_handler = rpc_api_table_.find_stream_handler(method);
     if (stream_handler) {
         co_await handle_request(*stream_handler, request_json);
+        SILK_TRACE << "handle RPC stream request: " << method;
         co_return;
     }
 

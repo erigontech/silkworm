@@ -54,7 +54,7 @@ class Daemon {
     Daemon(const Daemon&) = delete;
     Daemon& operator=(const Daemon&) = delete;
 
-    void add_backend_service(std::unique_ptr<ethbackend::BackEnd>&& backend);
+    void add_backend_services(std::vector<std::unique_ptr<ethbackend::BackEnd>>&& backends);
 
     DaemonChecklist run_checklist();
 

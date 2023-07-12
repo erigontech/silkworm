@@ -58,33 +58,70 @@ Options:
 ```
 
 Currently available tools are:
+- `count_bodies`
 - `count_headers`
 - `create_index`
+- `open_index`
 - `decode_segment`
 - `download`
+- `lookup_header`
+- `lookup_body`
+- `lookup_transaction`
+- `sync`
 
 #### Examples
 
 Download one snapshot from its magnet link and put it in torrent folder:
 
 ```
-cmd/snapshots --tool download --magnet "magnet:?xt=urn:btih:83112dec4bec180cff67e01d6345c88c3134fd26&dn=v1-014500-015000-transactions.seg&tr=udp%3a%2f%2ftracker.opentrackr.org%3a1337%2fannounce&tr=udp%3a%2f%2f9.rarbg.com%3a2810%2fannounce&tr=udp%3a%2f%2ftracker.openbittorrent.com%3a6969%2fannounce&tr=http%3a%2f%2ftracker.openbittorrent.com%3a80%2fannounce&tr=https%3a%2f%2fopentracker.i2p.rocks%3a443%2fannounce&tr=udp%3a%2f%2fopen.stealth.si%3a80%2fannounce&tr=udp%3a%2f%2ftracker.torrent.eu.org%3a451%2fannounce&tr=udp%3a%2f%2ftracker.tiny-vps.com%3a6969%2fannounce&tr=udp%3a%2f%2ftracker.pomf.se%3a80%2fannounce&tr=udp%3a%2f%2ftracker.dler.org%3a6969%2fannounce&tr=udp%3a%2f%2fopen.demonii.com%3a1337%2fannounce&tr=udp%3a%2f%2fexplodie.org%3a6969%2fannounce&tr=udp%3a%2f%2fexodus.desync.com%3a6969%2fannounce&tr=https%3a%2f%2ftracker.nanoha.org%3a443%2fannounce&tr=https%3a%2f%2ftracker.lilithraws.org%3a443%2fannounce&tr=https%3a%2f%2ftr.burnabyhighstar.com%3a443%2fannounce&tr=http%3a%2f%2ftracker.mywaifu.best%3a6969%2fannounce&tr=http%3a%2f%2fbt.okmp3.ru%3a2710%2fannounce&tr=udp%3a%2f%2fzecircle.xyz%3a6969%2fannounce&tr=udp%3a%2f%2fyahor.ftp.sh%3a6969%2fannounce"
+cmd/dev/snapshots --tool download --magnet "magnet:?xt=urn:btih:83112dec4bec180cff67e01d6345c88c3134fd26&dn=v1-014500-015000-transactions.seg&tr=udp%3a%2f%2ftracker.opentrackr.org%3a1337%2fannounce&tr=udp%3a%2f%2f9.rarbg.com%3a2810%2fannounce&tr=udp%3a%2f%2ftracker.openbittorrent.com%3a6969%2fannounce&tr=http%3a%2f%2ftracker.openbittorrent.com%3a80%2fannounce&tr=https%3a%2f%2fopentracker.i2p.rocks%3a443%2fannounce&tr=udp%3a%2f%2fopen.stealth.si%3a80%2fannounce&tr=udp%3a%2f%2ftracker.torrent.eu.org%3a451%2fannounce&tr=udp%3a%2f%2ftracker.tiny-vps.com%3a6969%2fannounce&tr=udp%3a%2f%2ftracker.pomf.se%3a80%2fannounce&tr=udp%3a%2f%2ftracker.dler.org%3a6969%2fannounce&tr=udp%3a%2f%2fopen.demonii.com%3a1337%2fannounce&tr=udp%3a%2f%2fexplodie.org%3a6969%2fannounce&tr=udp%3a%2f%2fexodus.desync.com%3a6969%2fannounce&tr=https%3a%2f%2ftracker.nanoha.org%3a443%2fannounce&tr=https%3a%2f%2ftracker.lilithraws.org%3a443%2fannounce&tr=https%3a%2f%2ftr.burnabyhighstar.com%3a443%2fannounce&tr=http%3a%2f%2ftracker.mywaifu.best%3a6969%2fannounce&tr=http%3a%2f%2fbt.okmp3.ru%3a2710%2fannounce&tr=udp%3a%2f%2fzecircle.xyz%3a6969%2fannounce&tr=udp%3a%2f%2fyahor.ftp.sh%3a6969%2fannounce"
 ```
 
 Download all snapshots from the magnet links contained in magnet file and put them in torrent folder:
 
 ```
-cmd/snapshots --tool download --magnet_file .magnet_links --log.verbosity debug --active_downloads 3
+cmd/dev/snapshots --tool download --magnet_file .magnet_links --log.verbosity debug --active_downloads 3
 ```
 
 Count how many block headers are present in header snapshots under torrent folder:
 
 ```
-cmd/snapshots --tool count_headers --repetitions 1 --log.verbosity info
+cmd/dev/snapshots --tool count_headers --repetitions 1 --log.verbosity info
 ```
 
 Create indexes for target snapshot under torrent folder:
 
 ```
-cmd/snapshots --tool create_index --file v1-000000-000500-headers.seg --log.verbosity info
+cmd/dev/snapshots --tool create_index --file v1-000000-000500-headers.seg --log.verbosity info
+```
+
+Search block header by number in one snapshot
+
+```
+cmd/dev/snapshots --tool lookup_header --snapshot_file v1-001500-002000-headers.seg --number 1500013
+```
+
+Search block body by number in all snapshots
+
+```
+cmd/dev/snapshots --tool lookup_body --number 1500012
+```
+
+Search block body by number in one snapshot
+
+```
+cmd/dev/snapshots --tool lookup_body --snapshot_file v1-001500-002000-bodies.seg --number 1500012
+```
+
+Search transaction by hash in all snapshots
+
+```
+cmd/dev/snapshots --tool lookup_transaction --hash 0x3ba9a1f95b96d0a43093b1ade1174133ea88ca395e60fe9fd8144098ff7a441f
+```
+
+Search transaction by hash or by progressive identifier in one snapshot
+
+```
+cmd/dev/snapshots --tool lookup_transaction --snapshot_file v1-001500-002000-transactions.seg --hash 0x3ba9a1f95b96d0a43093b1ade1174133ea88ca395e60fe9fd8144098ff7a441f
+cmd/dev/snapshots --tool lookup_transaction --snapshot_file v1-001500-002000-transactions.seg --number 7341272
 ```

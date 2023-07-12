@@ -118,7 +118,7 @@ Stage::Result Execution::forward(db::RWTxn& txn) {
             }
 
             (void)commit_stopwatch.start(/*with_reset=*/true);
-            txn.commit();
+            txn.commit_and_renew();
             auto [_, duration]{commit_stopwatch.stop()};
             log::Info(log_prefix_ + " commit", {"batch time", StopWatch::format(duration)});
 
@@ -370,7 +370,7 @@ Stage::Result Execution::unwind(db::RWTxn& txn) {
             log::Info() << "Erased " << erased << " records from " << map_config.name;
         }
         db::stages::write_stage_progress(txn, db::stages::kExecutionKey, to);
-        txn.commit();
+        txn.commit_and_renew();
 
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
@@ -522,7 +522,7 @@ Stage::Result Execution::prune(db::RWTxn& txn) {
         }
 
         db::stages::write_stage_prune_progress(txn, db::stages::kExecutionKey, forward_progress);
-        txn.commit();
+        txn.commit_and_renew();
 
     } catch (const StageError& ex) {
         log::Error(log_prefix_,

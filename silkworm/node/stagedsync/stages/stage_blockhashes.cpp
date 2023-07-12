@@ -61,7 +61,7 @@ Stage::Result BlockHashes::forward(db::RWTxn& txn) {
         collector_ = std::make_unique<etl::Collector>(node_settings_);
         collect_and_load(txn, previous_progress, headers_stage_progress);
         update_progress(txn, reached_block_num_);
-        txn.commit();
+        txn.commit_and_renew();
 
     } catch (const mdbx::exception& ex) {
         log::Error(log_prefix_,
@@ -125,7 +125,7 @@ Stage::Result BlockHashes::unwind(db::RWTxn& txn) {
         collector_ = std::make_unique<etl::Collector>(node_settings_);
         collect_and_load(txn, to, previous_progress);
         update_progress(txn, to);
-        txn.commit();
+        txn.commit_and_renew();
 
     } catch (const mdbx::exception& ex) {
         log::Error(log_prefix_,

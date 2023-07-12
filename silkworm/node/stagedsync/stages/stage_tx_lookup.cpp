@@ -65,7 +65,7 @@ Stage::Result TxLookup::forward(db::RWTxn& txn) {
 
         reset_log_progress();
         update_progress(txn, target_progress);
-        txn.commit();
+        txn.commit_and_renew();
 
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
@@ -124,7 +124,7 @@ Stage::Result TxLookup::unwind(db::RWTxn& txn) {
 
         reset_log_progress();
         update_progress(txn, to);
-        txn.commit();
+        txn.commit_and_renew();
 
     } catch (const StageError& ex) {
         log::Error(log_prefix_,
@@ -193,7 +193,7 @@ Stage::Result TxLookup::prune(db::RWTxn& txn) {
 
         reset_log_progress();
         db::stages::write_stage_prune_progress(txn, stage_name_, forward_progress);
-        txn.commit();
+        txn.commit_and_renew();
 
     } catch (const StageError& ex) {
         log::Error(log_prefix_,

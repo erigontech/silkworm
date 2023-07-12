@@ -73,6 +73,7 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
 
     SECTION("KO: invalid position depth") {
         test::SampleBodySnapshotFile invalid_bodies_snapshot{
+            TemporaryDirectory::get_os_temporary_path(),
             "000000000000000e000000000000000000000000000000000000000000000004"
             "c100010801c6837004d980c001c6837004d980c001c6837004d980c001c68370"  // {c1, 00} <- c1 instead of 01
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
@@ -86,6 +87,7 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
 
     SECTION("KO: invalid position value") {
         test::SampleBodySnapshotFile invalid_bodies_snapshot{
+            TemporaryDirectory::get_os_temporary_path(),
             "000000000000000e000000000000000000000000000000000000000000000004"
             "01ff010801c6837004d980c001c6837004d980c001c6837004d980c001c68370"  // {01, ff} <- ff instead of 00
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
@@ -99,6 +101,7 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
 
     SECTION("KO: invalid positions count") {
         test::SampleBodySnapshotFile invalid_bodies_snapshot{
+            TemporaryDirectory::get_os_temporary_path(),
             "000000000000000e000000000000000000000000000000000000000000000005"  // POSITIONS=5 <- 5 instead of 4
             "0100010801c6837004d980c001c6837004d980c001c6837004d980c001c68370"
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c68370"
@@ -112,6 +115,7 @@ TEST_CASE("TransactionIndex::build KO: invalid snapshot", "[silkworm][snapshot][
 
     SECTION("KO: invalid RLP") {
         test::SampleBodySnapshotFile invalid_bodies_snapshot{
+            TemporaryDirectory::get_os_temporary_path(),
             "000000000000000e000000000000000000000000000000000000000000000004"
             "0100010801c6837004d980c001c6837004d980c001c6837004d980c001c68370"
             "04d980c001c6837004d980c001c6837004d980c001c6837004d980c001c78370"  // {01, c7837004d980c0} <- c7 instead of c6

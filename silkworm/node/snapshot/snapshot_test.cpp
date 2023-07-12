@@ -42,7 +42,7 @@ class Snapshot_ForTest : public Snapshot {
     void close_index() override {}
 };
 
-TEST_CASE("Snapshot::Snapshot", "[silkworm][snapshot][snapshot]") {
+TEST_CASE("Snapshot::Snapshot", "[silkworm][node][snapshot][snapshot]") {
     SECTION("valid") {
         std::vector<std::pair<BlockNum, BlockNum>> block_ranges{
             {0, 0},
@@ -61,14 +61,14 @@ TEST_CASE("Snapshot::Snapshot", "[silkworm][snapshot][snapshot]") {
     }
 }
 
-TEST_CASE("Snapshot::reopen_segment", "[silkworm][snapshot][snapshot]") {
+TEST_CASE("Snapshot::reopen_segment", "[silkworm][node][snapshot][snapshot]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporarySnapshotFile tmp_snapshot_file{test::SnapshotHeader{}};
     auto snapshot{std::make_unique<Snapshot_ForTest>(tmp_snapshot_file.path(), 0, 0)};
     snapshot->reopen_segment();
 }
 
-TEST_CASE("Snapshot::for_each_item", "[silkworm][snapshot][snapshot]") {
+TEST_CASE("Snapshot::for_each_item", "[silkworm][node][snapshot][snapshot]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::HelloWorldSnapshotFile hello_world_snapshot_file{};
     huffman::Decompressor decoder{hello_world_snapshot_file.path()};
@@ -84,7 +84,7 @@ TEST_CASE("Snapshot::for_each_item", "[silkworm][snapshot][snapshot]") {
     });
 }
 
-TEST_CASE("Snapshot::close", "[silkworm][snapshot][snapshot]") {
+TEST_CASE("Snapshot::close", "[silkworm][node][snapshot][snapshot]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::HelloWorldSnapshotFile hello_world_snapshot_file{};
     huffman::Decompressor decoder{hello_world_snapshot_file.path()};
@@ -94,9 +94,9 @@ TEST_CASE("Snapshot::close", "[silkworm][snapshot][snapshot]") {
 }
 
 // https://etherscan.io/block/1500013
-TEST_CASE("HeaderSnapshot::header_by_number OK", "[silkworm][snapshot][index][.]") {
+TEST_CASE("HeaderSnapshot::header_by_number OK", "[silkworm][node][snapshot][index]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-    test::SampleHeaderSnapshotFile valid_header_snapshot{};
+    test::SampleHeaderSnapshotFile valid_header_snapshot{};                             // contains headers for [1'500'012, 1'500'013]
     test::SampleHeaderSnapshotPath header_snapshot_path{valid_header_snapshot.path()};  // necessary to tweak the block numbers
     HeaderIndex header_index{header_snapshot_path};
     REQUIRE_NOTHROW(header_index.build());
@@ -132,21 +132,45 @@ TEST_CASE("HeaderSnapshot::header_by_number OK", "[silkworm][snapshot][index][.]
 }
 
 // https://etherscan.io/block/1500013
-TEST_CASE("BodySnapshot::body_by_number OK", "[silkworm][snapshot][index]") {
+TEST_CASE("BodySnapshot::body_by_number OK", "[silkworm][node][snapshot][index]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-    test::SampleBodySnapshotFile valid_body_snapshot{};
+    test::SampleBodySnapshotFile valid_body_snapshot{};                           // contains bodies for [1'500'012, 1'500'013]
     test::SampleBodySnapshotPath body_snapshot_path{valid_body_snapshot.path()};  // necessary to tweak the block numbers
     BodyIndex body_index{body_snapshot_path};
-    CHECK_NOTHROW(body_index.build());
+    REQUIRE_NOTHROW(body_index.build());
 
     BodySnapshot body_snapshot{body_snapshot_path.path(), body_snapshot_path.block_from(), body_snapshot_path.block_to()};
     body_snapshot.reopen_segment();
     body_snapshot.reopen_index();
+
+    CHECK(!body_snapshot.body_by_number(1'500'011));
+    CHECK(body_snapshot.body_by_number(1'500'012));
     const auto body_for_storage = body_snapshot.body_by_number(1'500'013);
     CHECK(body_for_storage.has_value());
     if (body_for_storage) {
-        CHECK(body_for_storage->base_txn_id == 7'341'273);
-        CHECK(body_for_storage->txn_count == 1);
+        CHECK(body_for_storage->base_txn_id == 7'341'271);
+        CHECK(body_for_storage->txn_count == 2 + 1);  // 2 system txs + 1 tx
+    }
+    // CHECK(!body_snapshot.body_by_number(1'500'014)); // TODO(canepat) assert in EF, should return std::nullopt instead
+}
+
+// https://etherscan.io/block/1500013
+TEST_CASE("TransactionSnapshot::txn_by_id OK", "[silkworm][node][snapshot][index]") {
+    test_util::SetLogVerbosityGuard guard{log::Level::kNone};
+    test::SampleTransactionSnapshotFile valid_tx_snapshot{};                         // contains txs for [1'500'012, 1'500'013]
+    test::SampleTransactionSnapshotPath tx_snapshot_path{valid_tx_snapshot.path()};  // necessary to tweak the block numbers
+    TransactionIndex tx_index{tx_snapshot_path};
+    REQUIRE_NOTHROW(tx_index.build());
+
+    TransactionSnapshot tx_snapshot{tx_snapshot_path.path(), tx_snapshot_path.block_from(), tx_snapshot_path.block_to()};
+    tx_snapshot.reopen_segment();
+    tx_snapshot.reopen_index();
+    const auto transaction = tx_snapshot.txn_by_id(7'341'272);
+    CHECK(transaction.has_value());
+    if (transaction) {
+        CHECK(transaction->type == TransactionType::kLegacy);
+        CHECK(transaction->from == 0x68795c4aa09d6f4ed3e5deddf8c2ad3049a601da_address);
+        CHECK(transaction->to == 0xe9ae6ec1117bbfeb89302ce7e632597bc595efae_address);
     }
 }
 

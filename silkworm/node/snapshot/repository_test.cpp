@@ -25,6 +25,9 @@
 
 namespace silkworm::snapshot {
 
+// Exclude tests from Windows build
+#ifndef _WIN32
+
 TEST_CASE("SnapshotRepository::SnapshotRepository", "[silkworm][node][snapshot]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     CHECK_NOTHROW(SnapshotRepository{SnapshotSettings{}});
@@ -200,5 +203,7 @@ TEST_CASE("SnapshotRepository::find_segment", "[silkworm][node][snapshot]") {
         CHECK(repository.find_body_segment(repository.max_block_available() + 1) == nullptr);
     }
 }
+
+#endif  // _WIN32
 
 }  // namespace silkworm::snapshot

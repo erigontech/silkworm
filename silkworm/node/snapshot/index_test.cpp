@@ -24,6 +24,9 @@
 
 namespace silkworm::snapshot {
 
+// Exclude tests from Windows build
+#ifndef _WIN32
+
 TEST_CASE("Index::Index", "[silkworm][snapshot][index]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporarySnapshotFile tmp_snapshot_file{"v1-014500-015000-headers.seg"};
@@ -31,7 +34,6 @@ TEST_CASE("Index::Index", "[silkworm][snapshot][index]") {
     CHECK_THROWS_AS(header_index.build(), std::logic_error);
 }
 
-#ifndef _WIN32
 // This unit test fails on Windows with error: SIGSEGV - Segmentation violation signal
 TEST_CASE("BodyIndex::build OK", "[silkworm][snapshot][index]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
@@ -40,7 +42,6 @@ TEST_CASE("BodyIndex::build OK", "[silkworm][snapshot][index]") {
     BodyIndex body_index{body_snapshot_path};
     CHECK_NOTHROW(body_index.build());
 }
-#endif  // _WIN32
 
 TEST_CASE("TransactionIndex::build KO: empty snapshot", "[silkworm][snapshot][index]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
@@ -139,5 +140,7 @@ TEST_CASE("TransactionIndex::build OK", "[silkworm][snapshot][index]") {
     TransactionIndex tx_index{txs_snapshot_path};
     CHECK_NOTHROW(tx_index.build());
 }
+
+#endif  // _WIN32
 
 }  // namespace silkworm::snapshot

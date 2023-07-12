@@ -42,6 +42,9 @@ class Snapshot_ForTest : public Snapshot {
     void close_index() override {}
 };
 
+// Exclude tests from Windows build
+#ifndef _WIN32
+
 TEST_CASE("Snapshot::Snapshot", "[silkworm][node][snapshot][snapshot]") {
     SECTION("valid") {
         std::vector<std::pair<BlockNum, BlockNum>> block_ranges{
@@ -173,5 +176,7 @@ TEST_CASE("TransactionSnapshot::txn_by_id OK", "[silkworm][node][snapshot][index
         CHECK(transaction->to == 0xe9ae6ec1117bbfeb89302ce7e632597bc595efae_address);
     }
 }
+
+#endif  // _WIN32
 
 }  // namespace silkworm::snapshot

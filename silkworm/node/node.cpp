@@ -99,7 +99,7 @@ void NodeImpl::setup_snapshots() {
             throw std::runtime_error{"Cannot increase max file descriptor up to " + std::to_string(kMaxFileDescriptors)};
         }
 
-        db::RWTxn rw_txn{chaindata_db_};
+        db::RWTxnManaged rw_txn{chaindata_db_};
 
         // Snapshot sync - download chain from peers using snapshot files
         snapshot::SnapshotSync snapshot_sync{&snapshot_repository_, settings_.chain_config.value()};

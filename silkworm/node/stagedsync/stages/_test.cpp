@@ -54,7 +54,7 @@ TEST_CASE("Sync Stages") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
 
     auto chaindata_env{db::open_env(node_settings.chaindata_env_config)};
-    db::RWTxn txn(chaindata_env);
+    db::RWTxnManaged txn(chaindata_env);
     db::table::check_or_create_chaindata_tables(txn);
     txn.commit_and_renew();
 

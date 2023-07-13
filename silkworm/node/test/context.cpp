@@ -34,7 +34,7 @@ Context::Context(bool with_create_tables, bool in_memory) {
                       .in_memory = in_memory};
     node_settings_.prune_mode = std::make_unique<db::PruneMode>();
     env_ = db::open_env(node_settings_.chaindata_env_config);
-    txn_ = std::make_unique<db::RWTxn>(env_);
+    txn_ = std::make_unique<db::RWTxnManaged>(env_);
     if (with_create_tables) {
         db::table::check_or_create_chaindata_tables(*txn_);
     }

@@ -35,7 +35,7 @@ namespace db {
 
         auto db = db::open_env(db_config);
         db::RWAccess rw_access(db);
-        db::RWTxn tx = rw_access.start_rw_tx();
+        db::RWTxnManaged tx = rw_access.start_rw_tx();
 
         db::table::check_or_create_chaindata_tables(tx);
 

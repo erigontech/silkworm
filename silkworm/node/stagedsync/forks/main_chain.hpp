@@ -100,7 +100,7 @@ class MainChain {
     asio::io_context& io_context_;
     NodeSettings& node_settings_;
     db::RWAccess db_access_;
-    mutable db::RWTxn tx_;
+    mutable db::RWTxnManaged tx_;
     db::DataModel data_model_;
     bool is_first_sync_{true};
 

@@ -28,7 +28,7 @@
 
 namespace silkworm::stagedsync {
 
-Fork::Fork(BlockId forking_point, db::ROTxn&& main_chain_tx, NodeSettings& ns)
+Fork::Fork(BlockId forking_point, db::ROTxnManaged&& main_chain_tx, NodeSettings& ns)
     : main_tx_{std::move(main_chain_tx)},
       memory_db_{TemporaryDirectory::get_unique_temporary_path(ns.data_directory->forks().path()), &main_tx_},
       memory_tx_{memory_db_},

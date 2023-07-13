@@ -146,7 +146,7 @@ class TxCall : public server::BidiStreamingCall<remote::Cursor, remote::Pair> {
 
     static std::chrono::milliseconds max_ttl_duration_;
 
-    db::ROTxn read_only_txn_;
+    db::ROTxnManaged read_only_txn_;
     std::map<uint32_t, TxCursor> cursors_;
     uint32_t last_cursor_id_{0};
 };

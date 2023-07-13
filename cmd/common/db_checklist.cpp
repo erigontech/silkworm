@@ -40,7 +40,7 @@ void run_db_checklist(NodeSettings& node_settings, bool init_if_empty) {
     // Open chaindata environment and check tables are consistent
     log::Message("Opening database", {"path", node_settings.data_directory->chaindata().path().string()});
     auto chaindata_env{db::open_env(node_settings.chaindata_env_config)};
-    db::RWTxn tx(chaindata_env);
+    db::RWTxnManaged tx(chaindata_env);
 
     // Ensures all tables are present
     db::table::check_or_create_chaindata_tables(tx);

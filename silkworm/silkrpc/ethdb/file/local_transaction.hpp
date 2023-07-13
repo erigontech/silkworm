@@ -63,7 +63,7 @@ class LocalTransaction : public Transaction {
 
     std::shared_ptr<mdbx::env_managed> chaindata_env_;
     uint32_t last_cursor_id_;
-    db::ROTxn txn_;
+    db::ROTxnManaged txn_;
 };
 
 }  // namespace silkworm::rpc::ethdb::file

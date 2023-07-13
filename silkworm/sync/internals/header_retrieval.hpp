@@ -43,7 +43,7 @@ class HeaderRetrieval {
                                             uint64_t& max_non_canonical);
 
   protected:
-    db::ROTxn db_tx_;
+    db::ROTxnManaged db_tx_;
     db::DataModel data_model_;
 };
 

@@ -62,7 +62,7 @@ void ExtendingFork::start_with(BlockId new_head, std::list<std::shared_ptr<Block
         try {
             if (exception_) return;
             fork_ = std::make_unique<Fork>(forking_point_,
-                                           db::ROTxn(main_chain_.tx().db()),
+                                           db::ROTxnManaged(main_chain_.tx().db()),
                                            main_chain_.node_settings());  // create the real fork
             fork_->extend_with(blocks_);                                  // extend it with the blocks
             ensure(fork_->current_head() == new_head, "fork head mismatch");

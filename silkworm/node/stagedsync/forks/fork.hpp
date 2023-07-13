@@ -35,7 +35,7 @@ class MainChain;
 
 class Fork {
   public:
-    explicit Fork(BlockId forking_point, db::ROTxn&& main_chain_tx, NodeSettings&);
+    explicit Fork(BlockId forking_point, db::ROTxnManaged&& main_chain_tx, NodeSettings&);
     Fork(const Fork&) = delete;
 
     void close();
@@ -71,7 +71,7 @@ class Fork {
 
     std::set<Hash> collect_bad_headers(InvalidChain& invalid_chain);
 
-    db::ROTxn main_tx_;
+    db::ROTxnManaged main_tx_;
     db::MemoryOverlay memory_db_;
     mutable db::MemoryMutation memory_tx_;
     db::DataModel data_model_;

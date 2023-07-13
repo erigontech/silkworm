@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
         data_dir.deploy();
         db::EnvConfig db_config{data_dir.chaindata().path().string()};
         auto env{db::open_env(db_config)};
-        db::RWTxn txn{env};
+        db::RWTxnManaged txn{env};
         auto chain_config{db::read_chain_config(txn)};
         if (!chain_config) {
             throw std::runtime_error("Unable to retrieve chain config");

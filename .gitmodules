@@ -45,12 +45,6 @@
 [submodule "third_party/stun-msg"]
 	path = third_party/stun-msg
 	url = https://github.com/battlmonstr/stun-msg.git
-[submodule "libreactor"]
-	path = libreactor
-	url = https://github.com/fredrikwidlund/libreactor
-[submodule "third_party/libreactor"]
-	path = third_party/libreactor
-	url = https://github.com/fredrikwidlund/libreactor
-[submodule "third_party/libreactor"]
-        path = third_party/libreactor
-        url = https://github.com/fredrikwidlund/libreactor
+[submodule "third_party/picohttpparser"]
+	path = third_party/picohttpparser
+	url = https://github.com/h2o/picohttpparser

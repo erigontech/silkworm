@@ -224,4 +224,8 @@ void PeerManagerApi::on_peer_removed(std::shared_ptr<rlpx::Peer> peer) {
     }
 }
 
+// PeerManagerObserver
+void PeerManagerApi::on_peer_connect_error(const EnodeUrl& /*peer_url*/) {
+}
+
 }  // namespace silkworm::sentry

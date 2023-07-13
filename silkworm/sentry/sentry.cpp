@@ -41,6 +41,7 @@
 #include "message_sender.hpp"
 #include "nat/ip_resolver.hpp"
 #include "node_key_config.hpp"
+#include "peer_discovery_feedback.hpp"
 #include "peer_manager.hpp"
 #include "peer_manager_api.hpp"
 #include "rlpx/client.hpp"
@@ -73,6 +74,7 @@ class SentryImpl final {
     Task<void> start_message_sender();
     Task<void> start_message_receiver();
     Task<void> start_peer_manager_api();
+    Task<void> run_peer_discovery_feedback();
     Task<void> start_grpc_server();
     std::unique_ptr<rlpx::Protocol> make_protocol();
     std::function<std::unique_ptr<rlpx::Protocol>()> protocol_factory();
@@ -99,6 +101,7 @@ class SentryImpl final {
     MessageSender message_sender_;
     std::shared_ptr<MessageReceiver> message_receiver_;
     std::shared_ptr<PeerManagerApi> peer_manager_api_;
+    std::shared_ptr<PeerDiscoveryFeedback> peer_discovery_feedback_;
 
     api::router::ServiceRouter service_router_;
     std::shared_ptr<api::router::DirectService> direct_service_;
@@ -150,6 +153,7 @@ SentryImpl::SentryImpl(Settings settings, silkworm::rpc::ServerContextPool& cont
       message_sender_(context_pool_.next_io_context()),
       message_receiver_(std::make_shared<MessageReceiver>(context_pool_.next_io_context(), settings_.max_peers)),
       peer_manager_api_(std::make_shared<PeerManagerApi>(context_pool_.next_io_context(), peer_manager_)),
+      peer_discovery_feedback_(std::make_shared<PeerDiscoveryFeedback>(boost::asio::any_io_executor(context_pool_.next_io_context().get_executor()), settings_.max_peers)),
       service_router_(make_service_router(status_manager_.status_channel(), message_sender_, *message_receiver_, *peer_manager_api_, node_info_provider())),
       direct_service_(std::make_shared<api::router::DirectService>(service_router_)),
       grpc_server_(make_server_config(settings_), service_router_) {
@@ -186,7 +190,8 @@ Task<void> SentryImpl::run_tasks() {
         start_peer_manager() &&
         start_message_sender() &&
         start_message_receiver() &&
-        start_peer_manager_api());
+        start_peer_manager_api() &&
+        run_peer_discovery_feedback());
 }
 
 std::unique_ptr<rlpx::Protocol> SentryImpl::make_protocol() {
@@ -206,7 +211,12 @@ Task<void> SentryImpl::start_server() {
 }
 
 std::unique_ptr<rlpx::Client> SentryImpl::make_client() {
-    return std::make_unique<rlpx::Client>(node_key_.value(), client_id(), settings_.port, protocol_factory());
+    return std::make_unique<rlpx::Client>(
+        node_key_.value(),
+        client_id(),
+        settings_.port,
+        /* max_retries = */ 2,
+        protocol_factory());
 }
 
 std::function<std::unique_ptr<rlpx::Client>()> SentryImpl::client_factory() {
@@ -231,6 +241,10 @@ Task<void> SentryImpl::start_message_receiver() {
 
 Task<void> SentryImpl::start_peer_manager_api() {
     return PeerManagerApi::start(peer_manager_api_);
+}
+
+Task<void> SentryImpl::run_peer_discovery_feedback() {
+    return PeerDiscoveryFeedback::run(peer_discovery_feedback_, peer_manager_, discovery_);
 }
 
 Task<void> SentryImpl::start_grpc_server() {

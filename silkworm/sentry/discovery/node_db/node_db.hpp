@@ -50,6 +50,12 @@ struct NodeDb {
     virtual Task<void> update_last_pong_time(NodeId id, Time value) = 0;
     virtual Task<std::optional<Time>> find_last_pong_time(NodeId id) = 0;
 
+    virtual Task<void> update_peer_disconnected_time(NodeId id, Time value) = 0;
+    virtual Task<std::optional<Time>> find_peer_disconnected_time(NodeId id) = 0;
+
+    virtual Task<void> update_peer_is_useless(NodeId id, bool value) = 0;
+    virtual Task<std::optional<bool>> find_peer_is_useless(NodeId id) = 0;
+
     virtual Task<void> update_distance(NodeId id, size_t value) = 0;
     virtual Task<std::optional<size_t>> find_distance(NodeId id) = 0;
 

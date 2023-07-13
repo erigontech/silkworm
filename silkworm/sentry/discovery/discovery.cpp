@@ -50,6 +50,8 @@ class DiscoveryImpl {
 
     bool is_static_peer_url(const EnodeUrl& peer_url);
 
+    Task<void> on_peer_disconnected(EccPublicKey peer_public_key, bool is_useless);
+
   private:
     void setup_node_db();
 
@@ -130,6 +132,14 @@ bool DiscoveryImpl::is_static_peer_url(const EnodeUrl& peer_url) {
     });
 }
 
+Task<void> DiscoveryImpl::on_peer_disconnected(EccPublicKey peer_public_key, bool is_useless) {
+    auto now = std::chrono::system_clock::now();
+    co_await node_db_.interface().update_peer_disconnected_time(peer_public_key, now);
+    if (is_useless) {
+        co_await node_db_.interface().update_peer_is_useless(peer_public_key, is_useless);
+    }
+}
+
 Discovery::Discovery(
     std::function<boost::asio::any_io_executor()> executor_pool,
     std::vector<EnodeUrl> peer_urls,
@@ -163,6 +173,10 @@ Task<std::vector<EnodeUrl>> Discovery::request_peer_urls(
 
 bool Discovery::is_static_peer_url(const EnodeUrl& peer_url) {
     return p_impl_->is_static_peer_url(peer_url);
+}
+
+Task<void> Discovery::on_peer_disconnected(EccPublicKey peer_public_key, bool is_useless) {
+    return p_impl_->on_peer_disconnected(std::move(peer_public_key), is_useless);
 }
 
 }  // namespace silkworm::sentry::discovery

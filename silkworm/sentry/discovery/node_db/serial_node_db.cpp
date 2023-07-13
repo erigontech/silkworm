@@ -51,6 +51,22 @@ Task<std::optional<Time>> SerialNodeDb::find_last_pong_time(NodeId id) {
     return co_spawn(strand_, db_.find_last_pong_time(std::move(id)), use_awaitable);
 }
 
+Task<void> SerialNodeDb::update_peer_disconnected_time(NodeId id, Time value) {
+    return co_spawn(strand_, db_.update_peer_disconnected_time(std::move(id), std::move(value)), use_awaitable);
+}
+
+Task<std::optional<Time>> SerialNodeDb::find_peer_disconnected_time(NodeId id) {
+    return co_spawn(strand_, db_.find_peer_disconnected_time(std::move(id)), use_awaitable);
+}
+
+Task<void> SerialNodeDb::update_peer_is_useless(NodeId id, bool value) {
+    return co_spawn(strand_, db_.update_peer_is_useless(std::move(id), std::move(value)), use_awaitable);
+}
+
+Task<std::optional<bool>> SerialNodeDb::find_peer_is_useless(NodeId id) {
+    return co_spawn(strand_, db_.find_peer_is_useless(std::move(id)), use_awaitable);
+}
+
 Task<void> SerialNodeDb::update_distance(NodeId id, size_t value) {
     return co_spawn(strand_, db_.update_distance(std::move(id), value), use_awaitable);
 }

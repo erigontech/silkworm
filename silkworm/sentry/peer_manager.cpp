@@ -26,6 +26,8 @@
 #include <silkworm/sentry/common/random.hpp>
 #include <silkworm/sentry/common/sleep.hpp>
 
+#include "peer_manager_observer.hpp"
+
 namespace silkworm::sentry {
 
 using namespace boost::asio;
@@ -176,6 +178,12 @@ void PeerManager::on_peer_removed(const std::shared_ptr<rlpx::Peer>& peer) {
     }
 }
 
+void PeerManager::on_peer_connect_error(const EnodeUrl& peer_url) {
+    for (auto& observer : observers()) {
+        observer->on_peer_connect_error(peer_url);
+    }
+}
+
 std::vector<EnodeUrl> PeerManager::peer_urls(const std::list<std::shared_ptr<rlpx::Peer>>& peers) {
     std::vector<EnodeUrl> urls;
     for (auto& peer : peers) {
@@ -234,9 +242,12 @@ Task<void> PeerManager::connect_peer(EnodeUrl peer_url, bool is_static_peer, std
         if (ex.code() == boost::system::errc::operation_canceled) {
             log::Debug("sentry") << "PeerManager::connect_peer cancelled";
         } else {
-            log::Error("sentry") << "PeerManager::connect_peer system_error: " << ex.what();
+            log::Warning("sentry") << "PeerManager::connect_peer failed to connect"
+                                   << " to " << peer_url.to_string()
+                                   << " due to exception: " << ex.what();
+            on_peer_connect_error(peer_url);
+            need_peers_notifier_.notify();
         }
-        need_peers_notifier_.notify();
     } catch (const std::exception& ex) {
         log::Error("sentry") << "PeerManager::connect_peer exception: " << ex.what();
         need_peers_notifier_.notify();

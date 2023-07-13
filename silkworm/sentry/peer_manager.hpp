@@ -42,7 +42,7 @@
 
 namespace silkworm::sentry {
 
-class PeerManagerObserver;
+struct PeerManagerObserver;
 
 class PeerManager {
   public:
@@ -89,6 +89,7 @@ class PeerManager {
     [[nodiscard]] std::list<std::shared_ptr<PeerManagerObserver>> observers();
     void on_peer_added(const std::shared_ptr<rlpx::Peer>& peer);
     void on_peer_removed(const std::shared_ptr<rlpx::Peer>& peer);
+    void on_peer_connect_error(const EnodeUrl& peer_url);
 
     static std::vector<EnodeUrl> peer_urls(const std::list<std::shared_ptr<rlpx::Peer>>& peers);
     Task<void> discover_peers(
@@ -115,13 +116,6 @@ class PeerManager {
 
     std::list<std::weak_ptr<PeerManagerObserver>> observers_;
     std::mutex observers_mutex_;
-};
-
-class PeerManagerObserver {
-  public:
-    virtual ~PeerManagerObserver() = default;
-    virtual void on_peer_added(std::shared_ptr<rlpx::Peer> peer) = 0;
-    virtual void on_peer_removed(std::shared_ptr<rlpx::Peer> peer) = 0;
 };
 
 }  // namespace silkworm::sentry

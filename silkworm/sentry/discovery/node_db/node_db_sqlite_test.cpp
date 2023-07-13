@@ -112,6 +112,24 @@ TEST_CASE("NodeDbSqlite") {
         CHECK(std::chrono::duration_cast<std::chrono::seconds>(*actual_value - expected_value).count() == 0);
     }
 
+    SECTION("update_and_find_peer_disconnected_time") {
+        runner.run(db.upsert_node_address(test_id, test_address));
+        auto expected_value = std::chrono::system_clock::system_clock::now();
+        runner.run(db.update_peer_disconnected_time(test_id, expected_value));
+        auto actual_value = runner.run(db.find_peer_disconnected_time(test_id));
+        REQUIRE(actual_value.has_value());
+        CHECK(std::chrono::duration_cast<std::chrono::seconds>(*actual_value - expected_value).count() == 0);
+    }
+
+    SECTION("update_and_find_peer_is_useless") {
+        runner.run(db.upsert_node_address(test_id, test_address));
+        auto expected_value = true;
+        runner.run(db.update_peer_is_useless(test_id, expected_value));
+        auto actual_value = runner.run(db.find_peer_is_useless(test_id));
+        REQUIRE(actual_value.has_value());
+        CHECK(*actual_value == expected_value);
+    }
+
     SECTION("update_and_find_distance") {
         runner.run(db.upsert_node_address(test_id, test_address));
         size_t expected_value = 123;

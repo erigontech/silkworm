@@ -32,6 +32,7 @@
 #include <silkworm/sentry/api/router/messages_call.hpp>
 
 #include "peer_manager.hpp"
+#include "peer_manager_observer.hpp"
 
 namespace silkworm::sentry {
 
@@ -59,6 +60,7 @@ class MessageReceiver : public PeerManagerObserver {
     // PeerManagerObserver
     void on_peer_added(std::shared_ptr<rlpx::Peer> peer) override;
     void on_peer_removed(std::shared_ptr<rlpx::Peer> peer) override;
+    void on_peer_connect_error(const EnodeUrl& peer_url) override;
     Task<void> on_peer_added_in_strand(std::shared_ptr<rlpx::Peer> peer);
 
     concurrency::Channel<api::router::MessagesCall> message_calls_channel_;

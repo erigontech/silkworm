@@ -35,15 +35,26 @@ class SerialNodeDb : public NodeDb {
     Task<void> upsert_node_address(NodeId id, NodeAddress address) override;
     Task<std::optional<NodeAddress>> find_node_address_v4(NodeId id) override;
     Task<std::optional<NodeAddress>> find_node_address_v6(NodeId id) override;
+
     Task<void> update_last_ping_time(NodeId id, Time value) override;
     Task<std::optional<Time>> find_last_ping_time(NodeId id) override;
+
     Task<void> update_last_pong_time(NodeId id, Time value) override;
     Task<std::optional<Time>> find_last_pong_time(NodeId id) override;
+
+    Task<void> update_peer_disconnected_time(NodeId id, Time value) override;
+    Task<std::optional<Time>> find_peer_disconnected_time(NodeId id) override;
+
+    Task<void> update_peer_is_useless(NodeId id, bool value) override;
+    Task<std::optional<bool>> find_peer_is_useless(NodeId id) override;
+
     Task<void> update_distance(NodeId id, size_t value) override;
     Task<std::optional<size_t>> find_distance(NodeId id) override;
+
     Task<std::vector<NodeId>> find_peer_candidates(size_t limit) override;
     Task<void> mark_taken_peer_candidates(const std::vector<NodeId>& ids, Time time) override;
     Task<std::vector<NodeId>> take_peer_candidates(size_t limit, Time time) override;
+
     Task<void> delete_node(NodeId id) override;
 
   private:

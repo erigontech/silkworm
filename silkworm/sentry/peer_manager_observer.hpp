@@ -1,5 +1,5 @@
 /*
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -16,17 +16,18 @@
 
 #pragma once
 
-#include <cstdint>
+#include <memory>
 
-namespace silkworm::sentry::rlpx {
+#include <silkworm/sentry/common/enode_url.hpp>
+#include <silkworm/sentry/rlpx/peer.hpp>
 
-enum class DisconnectReason : uint8_t {
-    DisconnectRequested = 0,
-    NetworkError = 1,
-    UselessPeer = 3,
-    TooManyPeers = 4,
-    ClientQuitting = 8,
-    PingTimeout = 11,
+namespace silkworm::sentry {
+
+struct PeerManagerObserver {
+    virtual ~PeerManagerObserver() = default;
+    virtual void on_peer_added(std::shared_ptr<silkworm::sentry::rlpx::Peer> peer) = 0;
+    virtual void on_peer_removed(std::shared_ptr<silkworm::sentry::rlpx::Peer> peer) = 0;
+    virtual void on_peer_connect_error(const EnodeUrl& peer_url) = 0;
 };
 
-}  // namespace silkworm::sentry::rlpx
+}  // namespace silkworm::sentry

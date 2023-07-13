@@ -134,6 +134,10 @@ void MessageReceiver::on_peer_added(std::shared_ptr<rlpx::Peer> peer) {
 void MessageReceiver::on_peer_removed(std::shared_ptr<rlpx::Peer> /*peer*/) {
 }
 
+// PeerManagerObserver
+void MessageReceiver::on_peer_connect_error(const EnodeUrl& /*peer_url*/) {
+}
+
 Task<void> MessageReceiver::on_peer_added_in_strand(std::shared_ptr<rlpx::Peer> peer) {
     try {
         co_await receive_messages(peer);

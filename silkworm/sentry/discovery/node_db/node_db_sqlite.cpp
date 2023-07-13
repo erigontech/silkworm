@@ -48,6 +48,9 @@ CREATE TABLE IF NOT EXISTS nodes (
     last_ping_time INTEGER,
     last_pong_time INTEGER,
 
+    peer_disconnected_time INTEGER,
+    peer_is_useless INTEGER,
+
     taken_time INTEGER,
 
     distance INTEGER NON NULL DEFAULT 256
@@ -57,6 +60,9 @@ CREATE INDEX IF NOT EXISTS idx_nodes_ip ON nodes (ip);
 CREATE INDEX IF NOT EXISTS idx_nodes_ip_v6 ON nodes (ip_v6);
 CREATE INDEX IF NOT EXISTS idx_last_ping_time ON nodes (last_ping_time);
 CREATE INDEX IF NOT EXISTS idx_last_pong_time ON nodes (last_pong_time);
+CREATE INDEX IF NOT EXISTS idx_peer_disconnected_time ON nodes (peer_disconnected_time);
+CREATE INDEX IF NOT EXISTS idx_peer_is_useless ON nodes (peer_is_useless);
+CREATE INDEX IF NOT EXISTS idx_taken_time ON nodes (taken_time);
 CREATE INDEX IF NOT EXISTS idx_distance ON nodes (distance);
 
 )sql";
@@ -212,6 +218,45 @@ class NodeDbSqliteImpl : public NodeDb {
         )sql";
 
         co_return get_node_property_time(id, sql);
+    }
+
+    Task<void> update_peer_disconnected_time(NodeId id, Time value) override {
+        static const char* sql = R"sql(
+            UPDATE nodes SET peer_disconnected_time = ? WHERE id = ?
+        )sql";
+
+        set_node_property_time(id, sql, value);
+        co_return;
+    }
+
+    Task<std::optional<Time>> find_peer_disconnected_time(NodeId id) override {
+        static const char* sql = R"sql(
+            SELECT peer_disconnected_time FROM nodes WHERE id = ?
+        )sql";
+
+        co_return get_node_property_time(id, sql);
+    }
+
+    Task<void> update_peer_is_useless(NodeId id, bool value) override {
+        static const char* sql = R"sql(
+            UPDATE nodes SET peer_is_useless = ? WHERE id = ?
+        )sql";
+
+        set_node_property_int(id, sql, value ? 1 : 0);
+        co_return;
+    }
+
+    Task<std::optional<bool>> find_peer_is_useless(NodeId id) override {
+        static const char* sql = R"sql(
+            SELECT peer_is_useless FROM nodes WHERE id = ?
+        )sql";
+
+        auto value = get_node_property_int(id, sql);
+        if (value) {
+            co_return *value;
+        } else {
+            co_return std::nullopt;
+        }
     }
 
     Task<void> update_distance(NodeId id, size_t value) override {

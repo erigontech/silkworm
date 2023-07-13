@@ -26,6 +26,7 @@
 #include <silkworm/sentry/common/ecc_key_pair.hpp>
 #include <silkworm/sentry/common/ecc_public_key.hpp>
 #include <silkworm/sentry/common/socket_stream.hpp>
+#include <silkworm/sentry/rlpx/common/disconnect_reason.hpp>
 #include <silkworm/sentry/rlpx/framing/message_stream.hpp>
 
 #include "auth_keys.hpp"
@@ -58,7 +59,13 @@ class Handshake {
 
     class DisconnectError : public std::runtime_error {
       public:
-        DisconnectError() : std::runtime_error("rlpx::auth::Handshake: Disconnect received") {}
+        DisconnectError(DisconnectReason reason)
+            : std::runtime_error("rlpx::auth::Handshake: Disconnect received"),
+              reason_(reason) {}
+        [[nodiscard]] DisconnectReason reason() const { return reason_; }
+
+      private:
+        DisconnectReason reason_;
     };
 
   private:

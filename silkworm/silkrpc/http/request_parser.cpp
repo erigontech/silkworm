@@ -26,18 +26,18 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "picohttpparser.h"
+#include <picohttpparser.h>
 
 namespace silkworm::rpc::http {
 
 RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, const char* end) {
-    const char* method_name;
-    size_t method_len;
-    const char* path;
-    size_t path_len;
-    int minor_version;
+    const char* method_name; // uninitialised here because phr_parse_request initialises it
+    size_t method_len;       // uninitialised here because phr_parse_request initialises it
+    const char* path;        // uninitialised here because phr_parse_request initialises it
+    size_t path_len;         // uninitialised here because phr_parse_request initialises it
+    int minor_version;       // uninitialised here because phr_parse_request initialises it
     struct phr_header headers[100];
-    size_t num_headers;
+    size_t num_headers = sizeof(headers) / sizeof(headers[0]);
     size_t last_len = 0;
 
     size_t slen = static_cast<size_t>(end - begin);
@@ -52,8 +52,7 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
             return ResultType::good;
     }
 
-    num_headers = sizeof(headers) / sizeof(headers[0]);
-    auto res = phr_parse_request(begin, slen, &method_name, &method_len, &path, &path_len, &minor_version, headers, &num_headers, last_len);
+    const auto res = phr_parse_request(begin, slen, &method_name, &method_len, &path, &path_len, &minor_version, headers, &num_headers, last_len);
     if (res < 0) {
         return ResultType::bad;
     }
@@ -62,7 +61,7 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
     bool content_length_present = false;
 
     for (size_t ii = 0; ii < num_headers; ii++) {
-        if (memcmp(headers[ii].name, "Content-Length", headers[ii].name_len) == 0) {
+        if (std::memcmp(headers[ii].name, "Content-Length", headers[ii].name_len) == 0) {
             req.content_length = static_cast<uint32_t>(atoi(headers[ii].value));
             content_length_present = true;
         }
@@ -91,7 +90,7 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
     }
 
     req.content.resize(slen - static_cast<size_t>(res));
-    memcpy(req.content.data(), &begin[res], slen - static_cast<size_t>(res));
+    std::memcpy(req.content.data(), &begin[res], slen - static_cast<size_t>(res));
     if (expect_request == true)
         return ResultType::processing_continue;
     else if (req.content.length() < req.content_length)

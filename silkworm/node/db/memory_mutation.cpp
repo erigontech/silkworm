@@ -39,7 +39,7 @@ MemoryDatabase::MemoryDatabase(const std::filesystem::path& tmp_dir) {
     memory_env_ = db::open_env(memory_config);
 
     // Create predefined tables for chaindata schema
-    RWTxn txn{memory_env_};
+    RWTxnManaged txn{memory_env_};
     table::check_or_create_chaindata_tables(txn);
     txn.commit_and_stop();
 }
@@ -69,7 +69,7 @@ void MemoryOverlay::update_txn(ROTxn* txn) {
 }
 
 MemoryMutation::MemoryMutation(MemoryOverlay& overlay)
-    : RWTxn{overlay.start_rw_txn()}, overlay_(overlay) {
+    : RWTxnManaged{overlay.start_rw_txn()}, overlay_(overlay) {
     // Initialize sequences
     db::PooledCursor cursor{*overlay_.external_txn(), db::table::kSequence};
     db::PooledCursor memory_cursor{managed_txn_, db::table::kSequence};

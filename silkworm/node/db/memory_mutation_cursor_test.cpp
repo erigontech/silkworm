@@ -25,7 +25,7 @@ namespace silkworm::db {
 
 static mdbx::env_managed create_main_env(const db::EnvConfig& main_db_config) {
     auto main_env = db::open_env(main_db_config);
-    RWTxn main_txn{main_env};
+    RWTxnManaged main_txn{main_env};
     table::check_or_create_chaindata_tables(main_txn);
     open_map(main_txn, db::table::kCode);
     open_map(main_txn, db::table::kAccountChangeSet);
@@ -85,7 +85,7 @@ struct MemoryMutationCursorTest {
         .in_memory = true,
     };
     mdbx::env_managed main_env{create_main_env(main_db_config)};
-    RWTxn main_txn{main_env};
+    RWTxnManaged main_txn{main_env};
     MemoryOverlay overlay{tmp_dir.path(), &main_txn};
     MemoryMutation mutation{overlay};
     test_util::SetLogVerbosityGuard log_guard_{log::Level::kNone};

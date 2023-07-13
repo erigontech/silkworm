@@ -188,7 +188,7 @@ int main(int argc, char* argv[]) {
         SILK_INFO << "BackEndKvServer MDBX max readers: " << database_env.max_readers();
 
         // Read chain config from database (this allows for custom config)
-        db::ROTxn ro_txn{database_env};
+        db::ROTxnManaged ro_txn{database_env};
         node_settings.chain_config = db::read_chain_config(ro_txn);
         if (!node_settings.chain_config.has_value()) {
             throw std::runtime_error("invalid chain config in database");

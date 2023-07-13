@@ -447,7 +447,7 @@ TEST_CASE("body downloading", "[silkworm][sync][BodySequence]") {
         BlockHeader header2;
         header2.number = 2;
         header2.parent_hash = header1_hash;
-        db::RWTxn txn2{context.env()};
+        db::RWTxnManaged txn2{context.env()};
         db::write_canonical_header_hash(txn2, header2.hash().bytes, 1);
         db::write_canonical_header(txn2, header2);
         db::write_header(txn2, header2, true);

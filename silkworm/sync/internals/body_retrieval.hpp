@@ -32,7 +32,7 @@ class BodyRetrieval {
     std::vector<BlockBody> recover(std::vector<Hash>);
 
   protected:
-    db::ROTxn db_tx_;
+    db::ROTxnManaged db_tx_;
 };
 
 }  // namespace silkworm

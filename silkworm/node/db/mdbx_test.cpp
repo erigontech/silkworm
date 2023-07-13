@@ -218,7 +218,7 @@ TEST_CASE("RWTxn") {
 
     SECTION("Managed") {
         {
-            auto tx{db::RWTxn(env)};
+            auto tx{db::RWTxnManaged(env)};
             db::PooledCursor table_cursor(*tx, {table_name});
 
             // populate table
@@ -235,19 +235,19 @@ TEST_CASE("RWTxn") {
     }
 
     SECTION("External") {
-        RWTxn tx{env};
+        RWTxnManaged tx{env};
         tx.disable_commit();
         {
             (void)tx->create_map(table_name, mdbx::key_mode::usual, mdbx::value_mode::single);
             tx.commit_and_renew();  // Does not have any effect
         }
         tx.abort();
-        RWTxn tx2{env};
+        RWTxnManaged tx2{env};
         REQUIRE(db::has_map(tx2, table_name) == false);
     }
 
     SECTION("Cursor from RWTxn") {
-        auto tx{db::RWTxn(env)};
+        auto tx{db::RWTxnManaged(env)};
         db::PooledCursor table_cursor(tx, {table_name});
         REQUIRE(table_cursor.empty());
         REQUIRE_NOTHROW(table_cursor.bind(tx, {table_name}));

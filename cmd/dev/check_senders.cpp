@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
     etl::Collector collector(data_dir.etl().path().string().c_str(), /* flush size */ 512 * kMebi);
 
     auto env{db::open_env(db_config)};
-    db::ROTxn txn{env};
+    db::ROTxnManaged txn{env};
 
     auto canonical_hashes_cursor = txn.ro_cursor(db::table::kCanonicalHashes);
     auto bodies_cursor = txn.ro_cursor(db::table::kBlockBodies);

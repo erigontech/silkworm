@@ -133,7 +133,7 @@ TEST_CASE("Fork") {
                 BlockId forking_point = main_chain.last_chosen_head();
 
                 Fork_ForTest fork{forking_point,
-                                  db::ROTxn(main_chain.tx().db()),  // this need to be on a different thread than main_chain
+                                  db::ROTxnManaged(main_chain.tx().db()),  // this need to be on a different thread than main_chain
                                   context.node_settings()};
 
                 CHECK(db::stages::read_stage_progress(fork.memory_tx_, db::stages::kHeadersKey) == 3);

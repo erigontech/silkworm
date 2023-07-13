@@ -457,7 +457,7 @@ void do_stage_set(db::EnvConfig& config, std::string&& stage_name, uint32_t new_
     }
 
     auto env{silkworm::db::open_env(config)};
-    db::RWTxn txn{env};
+    db::RWTxnManaged txn{env};
     if (!db::stages::is_known_stage(stage_name.c_str())) {
         throw std::runtime_error("Stage name " + stage_name + " is not known");
     }
@@ -551,7 +551,7 @@ void do_freelist(db::EnvConfig& config, bool detail) {
 
 void do_schema(db::EnvConfig& config) {
     auto env{silkworm::db::open_env(config)};
-    db::ROTxn txn{env};
+    db::ROTxnManaged txn{env};
 
     auto schema_version{db::read_schema_version(txn)};
     if (!schema_version.has_value()) {
@@ -845,7 +845,7 @@ void do_init_genesis(DataDirectory& data_dir, const std::string&& json_file, uin
     // Prime database
     db::EnvConfig config{data_dir.chaindata().path().string(), /*create*/ true};
     auto env{db::open_env(config)};
-    db::RWTxn txn{env};
+    db::RWTxnManaged txn{env};
     db::table::check_or_create_chaindata_tables(txn);
     db::initialize_genesis(txn, genesis_json, /*allow_exceptions=*/true);
 
@@ -863,7 +863,7 @@ void do_init_genesis(DataDirectory& data_dir, const std::string&& json_file, uin
 
 void do_chainconfig(db::EnvConfig& config) {
     auto env{silkworm::db::open_env(config)};
-    db::ROTxn txn{env};
+    db::ROTxnManaged txn{env};
     auto chain_config{db::read_chain_config(txn)};
     if (!chain_config.has_value()) {
         throw std::runtime_error("Not an initialized Silkworm db or unknown/custom chain ");
@@ -882,7 +882,7 @@ void do_first_byte_analysis(db::EnvConfig& config) {
     }
 
     auto env{silkworm::db::open_env(config)};
-    db::ROTxn txn{env};
+    db::ROTxnManaged txn{env};
 
     std::cout << "\n"
               << (boost::format(fmt_hdr) % "Table name" % "%") << "\n"
@@ -945,7 +945,7 @@ void do_extract_headers(db::EnvConfig& config, const std::string& file_name, uin
     }
 
     auto env{silkworm::db::open_env(config)};
-    db::ROTxn txn{env};
+    db::ROTxnManaged txn{env};
 
     // We can store all header hashes into a single byte array given all
     // hashes are same in length. By consequence we only need to assert
@@ -1401,7 +1401,7 @@ void do_trie_reset(db::EnvConfig& config, bool always_yes) {
     }
 
     auto env{silkworm::db::open_env(config)};
-    db::RWTxn txn{env};
+    db::RWTxnManaged txn{env};
     log::Info("Clearing ...", {"table", db::table::kTrieOfAccounts.name});
     txn->clear_map(db::table::kTrieOfAccounts.name);
     log::Info("Clearing ...", {"table", db::table::kTrieOfStorage.name});
@@ -1420,7 +1420,7 @@ void do_trie_root(db::EnvConfig& config) {
     }
 
     auto env{silkworm::db::open_env(config)};
-    db::ROTxn txn{env};
+    db::ROTxnManaged txn{env};
     db::PooledCursor trie_accounts(txn, db::table::kTrieOfAccounts);
     std::string source{db::table::kTrieOfAccounts.name};
 
@@ -1473,7 +1473,7 @@ void do_reset_to_download(db::EnvConfig& config, bool keep_senders) {
     log::Info() << "Ok boss ... you say it. Please be patient...";
 
     auto env{silkworm::db::open_env(config)};
-    db::RWTxn txn(env);
+    db::RWTxnManaged txn(env);
 
     StopWatch sw(/*auto_start=*/true);
     // Void finish stage

@@ -181,11 +181,7 @@ class NodeDbSqliteImpl : public NodeDb {
             UPDATE nodes SET last_ping_time = ? WHERE id = ?
         )sql";
 
-        SQLite::Statement statement{*db_, sql};
-        statement.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(value)));
-        statement.bind(2, id.hex());
-
-        statement.exec();
+        set_node_property_time(id, sql, value);
         co_return;
     }
 
@@ -194,19 +190,7 @@ class NodeDbSqliteImpl : public NodeDb {
             SELECT last_ping_time FROM nodes WHERE id = ?
         )sql";
 
-        SQLite::Statement query{*db_, sql};
-        query.bind(1, id.hex());
-
-        if (!query.executeStep()) {
-            co_return std::nullopt;
-        }
-
-        if (query.isColumnNull(0)) {
-            co_return std::nullopt;
-        }
-        int64_t value = query.getColumn(0);
-
-        co_return time_point_from_unix_timestamp(static_cast<uint64_t>(value));
+        co_return get_node_property_time(id, sql);
     }
 
     Task<void> update_last_pong_time(NodeId id, Time value) override {
@@ -214,11 +198,7 @@ class NodeDbSqliteImpl : public NodeDb {
             UPDATE nodes SET last_pong_time = ? WHERE id = ?
         )sql";
 
-        SQLite::Statement statement{*db_, sql};
-        statement.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(value)));
-        statement.bind(2, id.hex());
-
-        statement.exec();
+        set_node_property_time(id, sql, value);
         co_return;
     }
 
@@ -227,19 +207,7 @@ class NodeDbSqliteImpl : public NodeDb {
             SELECT last_pong_time FROM nodes WHERE id = ?
         )sql";
 
-        SQLite::Statement query{*db_, sql};
-        query.bind(1, id.hex());
-
-        if (!query.executeStep()) {
-            co_return std::nullopt;
-        }
-
-        if (query.isColumnNull(0)) {
-            co_return std::nullopt;
-        }
-        int64_t value = query.getColumn(0);
-
-        co_return time_point_from_unix_timestamp(static_cast<uint64_t>(value));
+        co_return get_node_property_time(id, sql);
     }
 
     Task<void> update_distance(NodeId id, size_t value) override {
@@ -247,11 +215,7 @@ class NodeDbSqliteImpl : public NodeDb {
             UPDATE nodes SET distance = ? WHERE id = ?
         )sql";
 
-        SQLite::Statement statement{*db_, sql};
-        statement.bind(1, static_cast<int64_t>(value));
-        statement.bind(2, id.hex());
-
-        statement.exec();
+        set_node_property_int(id, sql, static_cast<int64_t>(value));
         co_return;
     }
 
@@ -260,19 +224,12 @@ class NodeDbSqliteImpl : public NodeDb {
             SELECT distance FROM nodes WHERE id = ?
         )sql";
 
-        SQLite::Statement query{*db_, sql};
-        query.bind(1, id.hex());
-
-        if (!query.executeStep()) {
+        auto value = get_node_property_int(id, sql);
+        if (value) {
+            co_return static_cast<size_t>(*value);
+        } else {
             co_return std::nullopt;
         }
-
-        if (query.isColumnNull(0)) {
-            co_return std::nullopt;
-        }
-        int64_t value = query.getColumn(0);
-
-        co_return static_cast<size_t>(value);
     }
 
     Task<std::vector<NodeId>> find_peer_candidates(size_t limit) override {
@@ -302,6 +259,41 @@ class NodeDbSqliteImpl : public NodeDb {
     }
 
   private:
+    std::optional<int64_t> get_node_property_int(const NodeId& id, const char* sql) {
+        SQLite::Statement query{*db_, sql};
+        query.bind(1, id.hex());
+
+        if (!query.executeStep()) {
+            return std::nullopt;
+        }
+
+        if (query.isColumnNull(0)) {
+            return std::nullopt;
+        }
+        int64_t value = query.getColumn(0);
+        return {value};
+    }
+
+    void set_node_property_int(const NodeId& id, const char* sql, int64_t value) {
+        SQLite::Statement statement{*db_, sql};
+        statement.bind(1, value);
+        statement.bind(2, id.hex());
+        statement.exec();
+    }
+
+    std::optional<Time> get_node_property_time(const NodeId& id, const char* sql) {
+        auto value = get_node_property_int(id, sql);
+        if (value) {
+            return time_point_from_unix_timestamp(static_cast<uint64_t>(*value));
+        } else {
+            return std::nullopt;
+        }
+    }
+
+    void set_node_property_time(const NodeId& id, const char* sql, Time value) {
+        set_node_property_int(id, sql, static_cast<int64_t>(unix_timestamp_from_time_point(value)));
+    }
+
     std::unique_ptr<SQLite::Database> db_;
 };
 

@@ -16,7 +16,9 @@
 
 #include "node_db_sqlite.hpp"
 
+#include <algorithm>
 #include <cassert>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -45,6 +47,8 @@ CREATE TABLE IF NOT EXISTS nodes (
 
     last_ping_time INTEGER,
     last_pong_time INTEGER,
+
+    taken_time INTEGER,
 
     distance INTEGER NON NULL DEFAULT 256
 );
@@ -238,13 +242,36 @@ class NodeDbSqliteImpl : public NodeDb {
     }
 
     Task<void> mark_taken_peer_candidates(const std::vector<NodeId>& ids, Time time) override {
-        // TODO
+        if (ids.empty())
+            co_return;
+
+        static const char* sql_template = R"sql(
+            UPDATE nodes SET taken_time = ? WHERE id IN (???)
+        )sql";
+
+        std::ostringstream placeholders_stream;
+        std::fill_n(std::ostream_iterator<std::string>(placeholders_stream), ids.size(), "?,");
+        auto placeholders = placeholders_stream.str();
+        placeholders.pop_back();  // remove the last comma
+
+        std::string sql{sql_template};
+        sql.replace(sql.find("???"), 3, placeholders);
+
+        SQLite::Statement statement{*db_, sql};
+        statement.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(time)));
+        for (size_t i = 0; i < ids.size(); i++) {
+            statement.bind(static_cast<int>(i + 2), ids[i].hex());
+        }
+        statement.exec();
         co_return;
     }
 
     Task<std::vector<NodeId>> take_peer_candidates(size_t limit, Time time) override {
-        // TODO
-        co_return std::vector<NodeId>{};
+        SQLite::Transaction transaction{*db_};
+        auto candidates = co_await find_peer_candidates(limit);
+        co_await mark_taken_peer_candidates(candidates, time);
+        transaction.commit();
+        co_return candidates;
     }
 
     Task<void> delete_node(NodeId id) override {

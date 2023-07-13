@@ -22,20 +22,20 @@
 
 #include "request_parser.hpp"
 
+#include <picohttpparser.h>
+
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
 
-#include <picohttpparser.h>
-
 namespace silkworm::rpc::http {
 
 RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, const char* end) {
-    const char* method_name; // uninitialised here because phr_parse_request initialises it
-    size_t method_len;       // uninitialised here because phr_parse_request initialises it
-    const char* path;        // uninitialised here because phr_parse_request initialises it
-    size_t path_len;         // uninitialised here because phr_parse_request initialises it
-    int minor_version;       // uninitialised here because phr_parse_request initialises it
+    const char* method_name;  // uninitialised here because phr_parse_request initialises it
+    size_t method_len;        // uninitialised here because phr_parse_request initialises it
+    const char* path;         // uninitialised here because phr_parse_request initialises it
+    size_t path_len;          // uninitialised here because phr_parse_request initialises it
+    int minor_version;        // uninitialised here because phr_parse_request initialises it
     struct phr_header headers[100];
     size_t num_headers = sizeof(headers) / sizeof(headers[0]);
     size_t last_len = 0;

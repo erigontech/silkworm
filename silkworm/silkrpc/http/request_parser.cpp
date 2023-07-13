@@ -66,11 +66,11 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
             content_length_present = true;
         }
 
-        else if (memcmp(headers[ii].name, "Expect", headers[ii].name_len) == 0) {
+        else if (std::memcmp(headers[ii].name, "Expect", headers[ii].name_len) == 0) {
             expect_request = true;
         }
 
-        else if (memcmp(headers[ii].name, "Authorization", headers[ii].name_len) == 0) {
+        else if (std::memcmp(headers[ii].name, "Authorization", headers[ii].name_len) == 0) {
             req.headers.emplace_back();
             for (size_t index = 0; index < static_cast<size_t>(headers[ii].name_len); index++) {
                 req.headers.back().name.push_back(headers[ii].name[index]);

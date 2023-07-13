@@ -59,9 +59,17 @@ struct NodeDb {
     virtual Task<void> update_distance(NodeId id, size_t value) = 0;
     virtual Task<std::optional<size_t>> find_distance(NodeId id) = 0;
 
-    virtual Task<std::vector<NodeId>> find_peer_candidates(size_t limit) = 0;
+    struct FindPeerCandidatesQuery {
+        Time min_pong_time;
+        Time max_peer_disconnected_time;
+        Time max_taken_time;
+        std::vector<NodeId> exclude_ids;
+        size_t limit{};
+    };
+
+    virtual Task<std::vector<NodeId>> find_peer_candidates(FindPeerCandidatesQuery query) = 0;
     virtual Task<void> mark_taken_peer_candidates(const std::vector<NodeId>& ids, Time time) = 0;
-    virtual Task<std::vector<NodeId>> take_peer_candidates(size_t limit, Time time) = 0;
+    virtual Task<std::vector<NodeId>> take_peer_candidates(FindPeerCandidatesQuery query, Time time) = 0;
 
     virtual Task<void> delete_node(NodeId id) = 0;
 };

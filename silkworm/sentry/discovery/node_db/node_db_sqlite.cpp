@@ -67,6 +67,30 @@ CREATE INDEX IF NOT EXISTS idx_distance ON nodes (distance);
 
 )sql";
 
+/**
+ * Replaces `placeholder` in `sql` with `count` comma-separated question marks, e.g.: "?,?,?"
+ * If `count` is zero, `placeholder` is replaced with an `empty_value`.
+ */
+static std::string replace_placeholders(
+    const char* sql_template,
+    std::string_view placeholder,
+    size_t count,
+    std::string_view empty_value) {
+    std::string placeholders;
+    if (count > 0) {
+        std::ostringstream placeholders_stream;
+        std::fill_n(std::ostream_iterator<std::string>(placeholders_stream), count, "?,");
+        placeholders = placeholders_stream.str();
+        placeholders.pop_back();  // remove the last comma
+    } else {
+        placeholders = empty_value;
+    }
+
+    std::string sql{sql_template};
+    sql.replace(sql.find(placeholder), placeholder.size(), placeholders);
+    return sql;
+}
+
 class NodeDbSqliteImpl : public NodeDb {
   public:
     NodeDbSqliteImpl() = default;
@@ -281,9 +305,36 @@ class NodeDbSqliteImpl : public NodeDb {
         }
     }
 
-    Task<std::vector<NodeId>> find_peer_candidates(size_t limit) override {
-        // TODO
-        co_return std::vector<NodeId>{};
+    Task<std::vector<NodeId>> find_peer_candidates(FindPeerCandidatesQuery query_params) override {
+        static const char* sql_template = R"sql(
+            SELECT id FROM nodes
+            WHERE ((last_pong_time IS NOT NULL) AND (last_pong_time > ?))
+                AND ((peer_disconnected_time IS NULL) OR (peer_disconnected_time < ?))
+                AND ((peer_is_useless IS NULL) OR (peer_is_useless == 0))
+                AND ((taken_time IS NULL) OR (taken_time < ?))
+                AND (id NOT IN (???))
+            ORDER BY distance, RANDOM()
+            LIMIT :limit
+        )sql";
+        auto sql = replace_placeholders(sql_template, "???", query_params.exclude_ids.size(), "''");
+
+        SQLite::Statement query{*db_, sql};
+        query.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(query_params.min_pong_time)));
+        query.bind(2, static_cast<int64_t>(unix_timestamp_from_time_point(query_params.max_peer_disconnected_time)));
+        query.bind(3, static_cast<int64_t>(unix_timestamp_from_time_point(query_params.max_taken_time)));
+        for (size_t i = 0; i < query_params.exclude_ids.size(); i++) {
+            query.bind(static_cast<int>(i + 4), query_params.exclude_ids[i].hex());
+        }
+        query.bind(":limit", static_cast<int64_t>(query_params.limit));
+
+        std::vector<NodeId> ids;
+        while (query.executeStep()) {
+            std::string id_hex = query.getColumn(0);
+            auto id = EccPublicKey::deserialize_hex(id_hex);
+            ids.push_back(std::move(id));
+        }
+
+        co_return ids;
     }
 
     Task<void> mark_taken_peer_candidates(const std::vector<NodeId>& ids, Time time) override {
@@ -293,14 +344,7 @@ class NodeDbSqliteImpl : public NodeDb {
         static const char* sql_template = R"sql(
             UPDATE nodes SET taken_time = ? WHERE id IN (???)
         )sql";
-
-        std::ostringstream placeholders_stream;
-        std::fill_n(std::ostream_iterator<std::string>(placeholders_stream), ids.size(), "?,");
-        auto placeholders = placeholders_stream.str();
-        placeholders.pop_back();  // remove the last comma
-
-        std::string sql{sql_template};
-        sql.replace(sql.find("???"), 3, placeholders);
+        auto sql = replace_placeholders(sql_template, "???", ids.size(), "NULL");
 
         SQLite::Statement statement{*db_, sql};
         statement.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(time)));
@@ -311,9 +355,9 @@ class NodeDbSqliteImpl : public NodeDb {
         co_return;
     }
 
-    Task<std::vector<NodeId>> take_peer_candidates(size_t limit, Time time) override {
+    Task<std::vector<NodeId>> take_peer_candidates(FindPeerCandidatesQuery query, Time time) override {
         SQLite::Transaction transaction{*db_};
-        auto candidates = co_await find_peer_candidates(limit);
+        auto candidates = co_await find_peer_candidates(std::move(query));
         co_await mark_taken_peer_candidates(candidates, time);
         transaction.commit();
         co_return candidates;

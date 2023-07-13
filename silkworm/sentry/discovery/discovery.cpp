@@ -99,8 +99,21 @@ void DiscoveryImpl::setup_node_db() {
 Task<std::vector<EnodeUrl>> DiscoveryImpl::request_peer_urls(
     size_t max_count,
     std::vector<EnodeUrl> exclude_urls) {
+    using namespace std::chrono_literals;
+
+    std::vector<node_db::NodeId> exclude_ids;
+    for (auto& url : exclude_urls)
+        exclude_ids.push_back(url.public_key());
+
     auto now = std::chrono::system_clock::now();
-    auto peer_ids = co_await node_db_.interface().take_peer_candidates(max_count, now);
+    node_db::NodeDb::FindPeerCandidatesQuery query{
+        /* min_pong_time = */ now - 12h,
+        /* max_peer_disconnected_time = */ now - 60s,
+        /* max_taken_time = */ now - 30s,
+        std::move(exclude_ids),
+        max_count,
+    };
+    auto peer_ids = co_await node_db_.interface().take_peer_candidates(std::move(query), now);
 
     std::vector<EnodeUrl> peer_urls;
     for (auto& peer_id : peer_ids) {

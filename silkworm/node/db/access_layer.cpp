@@ -401,7 +401,10 @@ size_t process_blocks_at_height(ROTxn& txn, BlockNum height, std::function<void(
             auto body_for_storage = detail::decode_stored_block_body(raw_body);
             std::swap(block.ommers, body_for_storage.ommers);
             // ...transactions
-            read_transactions(txn, body_for_storage.base_txn_id, body_for_storage.txn_count, block.transactions);
+            read_transactions(txn,
+                              body_for_storage.base_txn_id + 1,
+                              body_for_storage.txn_count > 0 ? body_for_storage.txn_count - 2 : 0,
+                              block.transactions);
             // ...senders
             if (!block.transactions.empty() && read_senders) {
                 Bytes kkey{key.data(), key.length()};
@@ -439,7 +442,8 @@ bool read_body(ROTxn& txn, const Bytes& key, bool read_senders, BlockBody& out) 
     auto body{detail::decode_stored_block_body(data_view)};
 
     std::swap(out.ommers, body.ommers);
-    read_transactions(txn, body.base_txn_id, body.txn_count, out.transactions);
+    std::swap(out.withdrawals, body.withdrawals);
+    read_transactions(txn, body.base_txn_id + 1, body.txn_count > 0 ? body.txn_count - 2 : 0, out.transactions);
     if (!out.transactions.empty() && read_senders) {
         parse_senders(txn, key, out.transactions);
     }
@@ -455,7 +459,7 @@ bool read_rlp_transactions(ROTxn& txn, BlockNum block_number, const evmc::bytes3
     ByteView data_view{from_slice(data.value)};
     const auto body{detail::decode_stored_block_body(data_view)};
 
-    read_rlp_transactions(txn, body.base_txn_id, body.txn_count, rlp_txs);
+    read_rlp_transactions(txn, body.base_txn_id + 1, body.txn_count > 0 ? body.txn_count - 2 : 0, rlp_txs);
 
     return true;
 }

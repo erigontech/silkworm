@@ -264,7 +264,7 @@ PooledCursor::PooledCursor() {
     }
 }
 
-PooledCursor::PooledCursor(RWTxn& txn, ::mdbx::map_handle map) {
+PooledCursor::PooledCursor(ROTxn& txn, ::mdbx::map_handle map) {
     handle_ = handles_pool_.acquire();
     if (!handle_) {
         handle_ = ::mdbx_cursor_create(nullptr);

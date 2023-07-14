@@ -386,8 +386,9 @@ size_t max_value_size_for_leaf_page(const ::mdbx::txn& txn, size_t key_size);
 class PooledCursor : public RWCursorDupSort, protected ::mdbx::cursor {
   public:
     explicit PooledCursor();
-    explicit PooledCursor(RWTxn& txn, ::mdbx::map_handle map);
+    explicit PooledCursor(ROTxn& txn, ::mdbx::map_handle map);
     explicit PooledCursor(::mdbx::txn& txn, const MapConfig& config);
+    explicit PooledCursor(ROTxn& txn, const MapConfig& config) : PooledCursor(*txn, config) {}
     ~PooledCursor() override;
 
     PooledCursor(PooledCursor&& other) noexcept;

@@ -242,6 +242,13 @@ void DebugTracer::flush_logs() {
     }
 }
 
+void AccountTracer::on_execution_end(const evmc_result& /*result*/, const silkworm::IntraBlockState& intra_block_state) noexcept {
+    nonce = intra_block_state.get_nonce(address_);
+    balance = intra_block_state.get_balance(address_);
+    code_hash = intra_block_state.get_code_hash(address_);
+    code = intra_block_state.get_code(address_);
+}
+
 void DebugTracer::write_log(const DebugLog& log) {
     nlohmann::json json;
 

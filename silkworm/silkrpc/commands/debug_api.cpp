@@ -23,6 +23,9 @@
 #include <string>
 #include <vector>
 
+#include <boost/asio/compose.hpp>
+#include <boost/asio/post.hpp>
+
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/common/endian.hpp>
@@ -35,6 +38,7 @@
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>
 #include <silkworm/silkrpc/core/evm_debug.hpp>
+#include <silkworm/silkrpc/core/evm_executor.hpp>
 #include <silkworm/silkrpc/core/rawdb/chain.hpp>
 #include <silkworm/silkrpc/core/state_reader.hpp>
 #include <silkworm/silkrpc/core/storage_walker.hpp>
@@ -47,6 +51,8 @@
 #include <silkworm/silkrpc/types/dump_account.hpp>
 
 namespace silkworm::rpc::commands {
+
+using boost::asio::awaitable;
 
 static constexpr int16_t kAccountRangeMaxResults{256};
 
@@ -279,10 +285,67 @@ awaitable<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& reque
     try {
         ethdb::TransactionDatabase tx_database{*tx};
 
-        // const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
-        // auto block_number = block_with_hash->block.header.number - 1;
+        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
 
-        reply = make_json_content(request["id"], to_quantity(0));
+        const auto& block = block_with_hash->block;
+        auto block_number = block.header.number - 1;
+        const auto& transactions = block.transactions;
+
+        SILK_DEBUG << "Block number: " << block_number << " #tnx: " << transactions.size();
+
+        const auto chain_id = co_await core::rawdb::read_chain_id(tx_database);
+        const auto chain_config_ptr = lookup_chain_config(chain_id);
+        auto this_executor = co_await boost::asio::this_coro::executor;
+
+        auto result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(nlohmann::json)>(
+            [&](auto&& self) {
+                boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
+
+                    auto state = tx->create_state(this_executor, tx_database, block_number - 1);
+                    auto account_opt = state->read_account(address);
+                    account_opt.value_or(silkworm::Account{});
+
+                    EVMExecutor executor{*chain_config_ptr, workers_, state};
+                    
+                    // std::uint64_t index = std::min(transactions.size(), tx_index);
+                    for (std::uint64_t idx{0}; idx < transactions.size(); idx++) {
+                        SILK_LOG << "Txn number: " << idx;
+
+                        rpc::Transaction txn{transactions[idx]};
+                        if (!txn.from) {
+                            txn.recover_sender();
+                        }
+                        executor.call(block, txn);
+                        if (idx == tx_index) {
+                            break;
+                        }
+                    }
+
+                    const auto& ibs = executor.get_ibs_state();
+
+                    nlohmann::json json_result;
+                    if (ibs.exists(address)) {
+                        std::ostringstream oss;
+                        oss << ibs.get_nonce(address);
+                        json_result["nonce"] = "0x" + oss.str();
+                        json_result["balance"] = "0x" + intx::to_string(ibs.get_balance(address));
+                        json_result["codeHash"] = ibs.get_code_hash(address);
+                        json_result["code"] = "0x" + silkworm::to_hex(ibs.get_code(address));
+                    } else {
+                        json_result["balance"] = "0x0";
+                        json_result["code"] = "0x";
+                        json_result["codeHash"] = "0x0000000000000000000000000000000000000000000000000000000000000000";
+                        json_result["nonce"] = "0x0";
+                    }
+
+                    boost::asio::post(this_executor, [json_result, self = std::move(self)]() mutable {
+                        self.complete(json_result);
+                    });
+                });
+            },
+            boost::asio::use_awaitable);
+
+        reply = make_json_content(request["id"], result);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], -32000, e.what());

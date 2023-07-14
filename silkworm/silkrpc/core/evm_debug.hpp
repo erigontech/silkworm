@@ -104,12 +104,12 @@ class AccountTracer : public silkworm::EvmTracer {
     AccountTracer(const AccountTracer&) = delete;
     AccountTracer& operator=(const AccountTracer&) = delete;
 
-    void on_execution_start(evmc_revision, const evmc_message&, evmone::bytes_view) noexcept override {};
+    void on_execution_start(evmc_revision, const evmc_message&, evmone::bytes_view) noexcept override{};
 
     void on_instruction_start(uint32_t, const intx::uint256*, int, int64_t,
-                              const evmone::ExecutionState&, const silkworm::IntraBlockState&) noexcept override {};
+                              const evmone::ExecutionState&, const silkworm::IntraBlockState&) noexcept override{};
     void on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
-    void on_precompiled_run(const evmc_result&, int64_t, const silkworm::IntraBlockState&) noexcept override {};
+    void on_precompiled_run(const evmc_result&, int64_t, const silkworm::IntraBlockState&) noexcept override{};
     void on_reward_granted(const silkworm::CallResult& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
     void on_creation_completed(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
 

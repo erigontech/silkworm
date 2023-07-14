@@ -25,7 +25,6 @@
 
 #include <boost/asio/compose.hpp>
 #include <boost/asio/post.hpp>
-
 #include <evmc/evmc.hpp>
 
 #include <silkworm/core/common/endian.hpp>
@@ -300,13 +299,12 @@ awaitable<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& reque
         auto result = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(nlohmann::json)>(
             [&](auto&& self) {
                 boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
-
                     auto state = tx->create_state(this_executor, tx_database, block_number - 1);
                     auto account_opt = state->read_account(address);
                     account_opt.value_or(silkworm::Account{});
 
                     EVMExecutor executor{*chain_config_ptr, workers_, state};
-                    
+
                     // std::uint64_t index = std::min(transactions.size(), tx_index);
                     for (std::uint64_t idx{0}; idx < transactions.size(); idx++) {
                         SILK_LOG << "Txn number: " << idx;

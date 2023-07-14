@@ -636,6 +636,244 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_get_internal_operations(const
     co_return;
 }
 
+boost::asio::awaitable<void> OtsRpcApi::handle_ots_search_transactions_before(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request["params"];
+    if (params.size() != 3) {
+        const auto error_msg = "invalid ots_search_transactions_before params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request["id"], 100, error_msg);
+        co_return;
+    }
+
+    const auto address = params[0].get<evmc::address>();
+    auto block_number = params[1].get<uint64_t>();
+    const auto page_size = params[2].get<uint64_t>();
+
+    SILK_DEBUG << "address: " << silkworm::to_hex(address) << " block_number: " << block_number << " page_size: " << page_size;
+    auto tx = co_await database_->begin();
+
+    try {
+        auto call_from_cursor = co_await tx->cursor(db::table::kCallFromIndexName);
+        auto call_to_cursor = co_await tx->cursor(db::table::kCallToIndexName);
+
+        bool is_first_page = false;
+
+        if (block_number == 0) {
+            is_first_page = true;
+        } else {
+            // Internal search code considers blockNum [including], so adjust the value
+            block_number--;
+        }
+
+        BackwardBlockProvider from_provider{call_from_cursor.get(), address, block_number};
+        BackwardBlockProvider to_provider{call_to_cursor.get(), address, block_number};
+        FromToBlockProvider from_to_provider{false, &from_provider, &to_provider};
+
+        std::vector<silkworm::rpc::Receipt> receipts;
+        std::vector<silkworm::Transaction> transactions;
+        std::vector<BlockDetails> blocks;
+
+        uint64_t result_count = 0;
+        bool has_more = true;
+
+        while (!(result_count >= page_size || !has_more)) {
+            std::vector<TransactionsWithReceipts> transactions_with_receipts_vec;
+
+            has_more = co_await trace_blocks(from_to_provider, *tx, address, page_size, result_count, transactions_with_receipts_vec);
+
+            for (const auto& item : transactions_with_receipts_vec) {
+                for (uint64_t i = item.transactions.size() - 1; i > 0 && i < item.transactions.size(); i--) {
+                    receipts.push_back(item.receipts.at(i));
+                    transactions.push_back(item.transactions.at(i));
+                    blocks.push_back(item.blocks.at(i));
+                }
+
+                if (item.transactions.size() > 0) {
+                    receipts.push_back(item.receipts.at(0));
+                    transactions.push_back(item.transactions.at(0));
+                    blocks.push_back(item.blocks.at(0));
+                }
+
+                result_count += item.transactions.size();
+
+                if (result_count >= page_size) {
+                    break;
+                }
+            }
+        }
+
+        TransactionsWithReceipts results{is_first_page, !has_more, receipts, transactions, blocks};
+        reply = make_json_content(request["id"], results);
+
+    } catch (const std::invalid_argument& iv) {
+        SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
+        reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        reply = make_json_error(request["id"], 100, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+    co_return;
+}
+
+boost::asio::awaitable<void> OtsRpcApi::handle_ots_search_transactions_after(const nlohmann::json& request, nlohmann::json& reply) {
+    const auto& params = request["params"];
+    if (params.size() != 3) {
+        const auto error_msg = "invalid handle_ots_search_transactions_after params: " + params.dump();
+        SILK_ERROR << error_msg;
+        reply = make_json_error(request["id"], 100, error_msg);
+        co_return;
+    }
+
+    const auto address = params[0].get<evmc::address>();
+    auto block_number = params[1].get<uint64_t>();
+    const auto page_size = params[2].get<uint64_t>();
+
+    SILK_DEBUG << "address: " << silkworm::to_hex(address) << " block_number: " << block_number << " page_size: " << page_size;
+    auto tx = co_await database_->begin();
+
+    try {
+        auto call_from_cursor = co_await tx->cursor(db::table::kCallFromIndexName);
+        auto call_to_cursor = co_await tx->cursor(db::table::kCallToIndexName);
+
+        bool is_last_page = false;
+
+        if (block_number == 0) {
+            is_last_page = true;
+        } else {
+            // Internal search code considers blockNum [including], so adjust the value
+            block_number++;
+        }
+
+        ForwardBlockProvider from_provider{call_from_cursor.get(), address, block_number};
+        ForwardBlockProvider to_provider{call_to_cursor.get(), address, block_number};
+        FromToBlockProvider from_to_provider{true, &from_provider, &to_provider};
+
+        std::vector<silkworm::rpc::Receipt> receipts;
+        std::vector<silkworm::Transaction> transactions;
+        std::vector<BlockDetails> blocks;
+
+        uint64_t result_count = 0;
+        bool has_more = true;
+
+        while (!(result_count >= page_size || !has_more)) {
+            std::vector<TransactionsWithReceipts> transactions_with_receipts_vec;
+
+            has_more = co_await trace_blocks(from_to_provider, *tx, address, page_size, result_count, transactions_with_receipts_vec);
+
+            for (const auto& item : transactions_with_receipts_vec) {
+                receipts.insert(receipts.end(), item.receipts.begin(), item.receipts.end());
+                transactions.insert(transactions.end(), item.transactions.begin(), item.transactions.end());
+                blocks.insert(blocks.end(), item.blocks.begin(), item.blocks.end());
+
+                result_count += item.transactions.size();
+
+                if (result_count >= page_size) {
+                    break;
+                }
+            }
+        }
+
+        auto txs_size = transactions.size();
+
+        // Reverse results
+        for (size_t i = 0; i < txs_size / 2; i++) {
+            auto tx_temp = transactions[i];
+            auto receipts_temp = receipts[i];
+            auto blocks_temp = blocks[i];
+            transactions[i] = transactions[txs_size - 1 - i];
+            transactions[txs_size - 1 - i] = tx_temp;
+            receipts[i] = receipts[txs_size - 1 - i];
+            receipts[txs_size - 1 - i] = receipts_temp;
+            blocks[i] = blocks[txs_size - 1 - i];
+            blocks[txs_size - 1 - i] = blocks_temp;
+        }
+
+        TransactionsWithReceipts results{is_last_page, !has_more, receipts, transactions, blocks};
+
+        reply = make_json_content(request["id"], results);
+
+    } catch (const std::invalid_argument& iv) {
+        SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
+        reply = make_json_content(request["id"], nlohmann::detail::value_t::null);
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
+        reply = make_json_error(request["id"], 100, e.what());
+    } catch (...) {
+        SILK_ERROR << "unexpected exception processing request: " << request.dump();
+        reply = make_json_error(request["id"], 100, "unexpected exception");
+    }
+
+    co_await tx->close();  // RAII not (yet) available with coroutines
+    co_return;
+}
+
+boost::asio::awaitable<bool> OtsRpcApi::trace_blocks(FromToBlockProvider& from_to_provider,
+                                                     ethdb::Transaction& tx,
+                                                     evmc::address address,
+                                                     uint64_t page_size,
+                                                     uint64_t result_count,
+                                                     std::vector<TransactionsWithReceipts>& results) {
+    uint64_t est_blocks_to_trace = page_size - result_count;
+    uint64_t total_blocks_traced = 0;
+    bool has_more = true;
+
+    results.clear();
+    results.resize(est_blocks_to_trace);
+
+    for (uint64_t i = 0; i < est_blocks_to_trace; i++) {
+        auto from_to_response = co_await from_to_provider.get();  // extract_next_block(from_cursor,to_cursor);
+        auto next_block = from_to_response.block_number;
+        if (next_block == 0) {
+            has_more = false;
+            break;
+        }
+
+        total_blocks_traced++;
+        co_await search_trace_block(tx, address, i, next_block, results);
+    }
+
+    results.resize(total_blocks_traced);
+
+    co_return has_more;
+}
+
+boost::asio::awaitable<void> OtsRpcApi::search_trace_block(ethdb::Transaction& tx, evmc::address address, unsigned long index, uint64_t block_number, std::vector<TransactionsWithReceipts>& results) {
+    TransactionsWithReceipts transactions_with_receipts;
+    co_await trace_block(tx, block_number, address, transactions_with_receipts);
+    results[index] = transactions_with_receipts;
+    co_return;
+}
+
+boost::asio::awaitable<void> OtsRpcApi::trace_block(ethdb::Transaction& tx, uint64_t block_number, evmc::address search_addr, TransactionsWithReceipts& results) {
+    ethdb::TransactionDatabase tx_database{tx};
+
+    const auto block_hash = co_await core::rawdb::read_canonical_block_hash(tx_database, block_number);
+    const auto total_difficulty = co_await core::rawdb::read_total_difficulty(tx_database, block_hash, block_number);
+    const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
+    auto receipts = co_await core::get_receipts(tx_database, *block_with_hash);
+    const Block extended_block{*block_with_hash, total_difficulty, false};
+    auto block_size = extended_block.get_block_size();
+
+    for (uint64_t i = 0; i < block_with_hash->block.transactions.size(); i++) {
+        const auto& transaction = block_with_hash->block.transactions.at(i);
+        trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_, tx};
+        const auto found = co_await executor.trace_touch_transaction(block_with_hash->block, transaction, search_addr);
+
+        if (found) {
+            const BlockDetails block_details{block_size, block_hash, block_with_hash->block.header, total_difficulty, block_with_hash->block.transactions.size(), block_with_hash->block.ommers};
+            results.transactions.push_back(transaction);
+            results.receipts.push_back(receipts.at(i));
+            results.blocks.push_back(block_details);
+        }
+    }
+    co_return;
+}
+
 IssuanceDetails OtsRpcApi::get_issuance(const ChainConfig& chain_config, const silkworm::BlockWithHash& block) {
     auto config = silkworm::ChainConfig::from_json(chain_config.config).value();
 

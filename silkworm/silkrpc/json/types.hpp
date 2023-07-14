@@ -108,6 +108,8 @@ void to_json(nlohmann::json& json, const BlockDetailsResponse& b);
 
 void to_json(nlohmann::json& json, const BlockTransactionsResponse& b);
 
+void to_json(nlohmann::json& json, const TransactionsWithReceipts& b);
+
 void to_json(nlohmann::json& json, const PayloadStatus& payload_status);
 
 void to_json(nlohmann::json& json, const Forks& forks);

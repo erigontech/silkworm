@@ -236,6 +236,8 @@ void RpcApiTable::add_ots_handlers() {
     method_handlers_[http::method::k_ots_traceTransaction] = &commands::RpcApi::handle_ots_trace_transaction;
     method_handlers_[http::method::k_ots_getTransactionError] = &commands::RpcApi::handle_ots_get_transaction_error;
     method_handlers_[http::method::k_ots_getInternalOperations] = &commands::RpcApi::handle_ots_get_internal_operations;
+    method_handlers_[http::method::k_ots_search_transactions_before] = &commands::RpcApi::handle_ots_search_transactions_before;
+    method_handlers_[http::method::k_ots_search_transactions_after] = &commands::RpcApi::handle_ots_search_transactions_after;
 }
 
 }  // namespace silkworm::rpc::commands

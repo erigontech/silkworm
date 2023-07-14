@@ -79,6 +79,18 @@ boost::asio::awaitable<KeyValue> RemoteCursor::next() {
     co_return KeyValue{k, v};
 }
 
+boost::asio::awaitable<KeyValue> RemoteCursor::previous() {
+    const auto start_time = clock_time::now();
+    auto next_message = remote::Cursor{};
+    next_message.set_op(remote::Op::PREV);
+    next_message.set_cursor(cursor_id_);
+    auto next_pair = co_await tx_rpc_.write_and_read(next_message);
+    const auto k = silkworm::bytes_of_string(next_pair.k());
+    const auto v = silkworm::bytes_of_string(next_pair.v());
+    SILK_DEBUG << "RemoteCursor::previous k: " << k << " v: " << v << " c=" << cursor_id_ << " t=" << clock_time::since(start_time);
+    co_return KeyValue{k, v};
+}
+
 boost::asio::awaitable<KeyValue> RemoteCursor::next_dup() {
     const auto start_time = clock_time::now();
     auto next_message = remote::Cursor{};

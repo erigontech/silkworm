@@ -83,6 +83,22 @@ boost::asio::awaitable<KeyValue> LocalCursor::next() {
     co_return KeyValue{};
 }
 
+boost::asio::awaitable<KeyValue> LocalCursor::previous() {
+    SILK_DEBUG << "LocalCursor::previous: " << cursor_id_;
+
+    const auto result = db_cursor_.to_previous(/*throw_notfound=*/false);
+    SILK_DEBUG << "LocalCursor::previous result: " << db::detail::dump_mdbx_result(result);
+
+    if (result) {
+        SILK_DEBUG << "LocalCursor::previous: "
+                   << " key: " << byte_view_of_string(result.key.as_string()) << " value: " << byte_view_of_string(result.value.as_string());
+        co_return KeyValue{bytes_of_string(result.key.as_string()), bytes_of_string(result.value.as_string())};
+    } else {
+        SILK_ERROR << "LocalCursor::previous !result";
+    }
+    co_return KeyValue{};
+}
+
 boost::asio::awaitable<KeyValue> LocalCursor::next_dup() {
     SILK_DEBUG << "LocalCursor::next_dup: " << cursor_id_;
 

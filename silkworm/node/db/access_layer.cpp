@@ -393,27 +393,25 @@ size_t process_blocks_at_height(ROTxn& txn, BlockNum height, std::function<void(
 
     auto count = db::cursor_for_prefix(
         *bodies_cursor, key_prefix,
-        [&process_func, &txn, &read_senders](ByteView key, ByteView raw_body) {
+        [&process_func, &txn, &height, &read_senders](ByteView key, ByteView raw_body) {
             if (raw_body.empty()) throw std::logic_error("empty header in table Headers");
             // read block...
             Block block;
             // ...ommers
-            auto body_for_storage = detail::decode_stored_block_body(raw_body);
-            std::swap(block.ommers, body_for_storage.ommers);
+            auto body = detail::decode_stored_block_body(raw_body);
+            std::swap(block.ommers, body.ommers);
             // ...transactions
-            read_transactions(txn,
-                              body_for_storage.base_txn_id + 1,
-                              body_for_storage.txn_count > 0 ? body_for_storage.txn_count - 2 : 0,
-                              block.transactions);
+            ensure(body.txn_count > 1, "unexpected txn_count=" + std::to_string(body.txn_count) + " for number=" + std::to_string(height));
+            read_transactions(txn, body.base_txn_id + 1, body.txn_count - 2, block.transactions);
             // ...senders
             if (!block.transactions.empty() && read_senders) {
-                Bytes kkey{key.data(), key.length()};
-                db::parse_senders(txn, kkey, block.transactions);
+                Bytes key_bytes{key.data(), key.length()};  // TODO(canepat) avoid unnecessary copy by changing read_senders API
+                db::parse_senders(txn, key_bytes, block.transactions);
             }
             // ...header
             auto [block_num, hash] = split_block_key(key);
-            bool present = read_header(txn, hash, block_num, block.header);
-            if (!present) throw std::logic_error("header not found for body number= " + std::to_string(block_num) + ", hash= " + to_hex(hash));
+            const bool present = read_header(txn, hash, block_num, block.header);
+            ensure(present, "header not found for body number= " + std::to_string(block_num) + ", hash= " + to_hex(hash));
             // invoke handler
             process_func(block);
         },
@@ -443,7 +441,8 @@ bool read_body(ROTxn& txn, const Bytes& key, bool read_senders, BlockBody& out) 
 
     std::swap(out.ommers, body.ommers);
     std::swap(out.withdrawals, body.withdrawals);
-    read_transactions(txn, body.base_txn_id + 1, body.txn_count > 0 ? body.txn_count - 2 : 0, out.transactions);
+    ensure(body.txn_count > 1, "unexpected txn_count=" + std::to_string(body.txn_count) + " for key=" + to_hex(key));
+    read_transactions(txn, body.base_txn_id + 1, body.txn_count - 2, out.transactions);
     if (!out.transactions.empty() && read_senders) {
         parse_senders(txn, key, out.transactions);
     }
@@ -458,8 +457,8 @@ bool read_rlp_transactions(ROTxn& txn, BlockNum block_number, const evmc::bytes3
 
     ByteView data_view{from_slice(data.value)};
     const auto body{detail::decode_stored_block_body(data_view)};
-
-    read_rlp_transactions(txn, body.base_txn_id + 1, body.txn_count > 0 ? body.txn_count - 2 : 0, rlp_txs);
+    ensure(body.txn_count > 1, "unexpected txn_count=" + std::to_string(body.txn_count) + " for key=" + std::to_string(block_number));
+    read_rlp_transactions(txn, body.base_txn_id + 1, body.txn_count - 2, rlp_txs);
 
     return true;
 }
@@ -499,7 +498,7 @@ void write_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, Bl
 void write_body(RWTxn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], const BlockNum number) {
     detail::BlockBodyForStorage body_for_storage{};
     body_for_storage.ommers = body.ommers;
-    body_for_storage.txn_count = body.transactions.size();
+    body_for_storage.txn_count = body.transactions.size() + 2;
     body_for_storage.base_txn_id =
         increment_map_sequence(txn, table::kBlockTransactions.name, body_for_storage.txn_count);
     Bytes value{body_for_storage.encode()};
@@ -508,7 +507,7 @@ void write_body(RWTxn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLe
     auto target = txn.rw_cursor(table::kBlockBodies);
     target->upsert(to_slice(key), to_slice(value));
 
-    write_transactions(txn, body.transactions, body_for_storage.base_txn_id);
+    write_transactions(txn, body.transactions, body_for_storage.base_txn_id + 1);
 }
 
 static ByteView read_senders_raw(ROTxn& txn, const Bytes& key) {

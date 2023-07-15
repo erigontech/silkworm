@@ -24,12 +24,6 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <boost/asio/co_spawn.hpp>
-#include <boost/asio/deferred.hpp>
-#include <boost/asio/experimental/parallel_group.hpp>
-#include <boost/asio/this_coro.hpp>
-#include <boost/asio/use_awaitable.hpp>
-
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/parallel_group_utils.hpp>
 #include <silkworm/infra/concurrency/timeout.hpp>
@@ -56,29 +50,16 @@ class MultiSentryClientImpl : public api::Service {
         std::function<Task<void>(std::shared_ptr<api::Service>)> callback) {
         using namespace concurrency::awaitable_wait_for_one;
 
-        auto executor = co_await this_coro::executor;
-        using OperationType = decltype(co_spawn(executor, ([]() -> Task<void> { co_return; })(), deferred));
-        std::vector<OperationType> calls;
+        std::function<Task<void>(size_t)> call_factory = [&clients, &callback](size_t index) -> Task<void> {
+            auto client = clients[index];
+            auto service = co_await client->service();
+            co_await callback(service);
+        };
 
-        for (auto client : clients) {
-            auto call = [client, &callback]() -> Task<void> {
-                auto service = co_await client->service();
-                co_await callback(service);
-            };
-            calls.push_back(co_spawn(executor, call(), deferred));
-        }
-
-        auto group = make_parallel_group(std::move(calls));
-        auto group_wait = group.async_wait(wait_for_one_error(), use_awaitable);
+        auto group_task = concurrency::generate_parallel_group_task(clients.size(), std::move(call_factory));
 
         try {
-            auto results = co_await (std::move(group_wait) || concurrency::timeout(timeout));
-
-            // std::vector<size_t> order;
-            // std::vector<std::exception_ptr> exceptions;
-            auto [order, exceptions] = std::get<0>(std::move(results));
-
-            concurrency::rethrow_first_exception_if_any(exceptions, order);
+            co_await (std::move(group_task) || concurrency::timeout(timeout));
         } catch (const concurrency::TimeoutExpiredError&) {
         }
     }

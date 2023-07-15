@@ -51,6 +51,10 @@ class SerialNodeDb : public NodeDb {
     Task<void> update_distance(NodeId id, size_t value) override;
     Task<std::optional<size_t>> find_distance(NodeId id) override;
 
+    Task<std::vector<NodeId>> find_lookup_candidates(FindLookupCandidatesQuery query) override;
+    Task<void> mark_taken_lookup_candidates(const std::vector<NodeId>& ids, Time time) override;
+    Task<std::vector<NodeId>> take_lookup_candidates(FindLookupCandidatesQuery query, Time time) override;
+
     Task<std::vector<NodeId>> find_peer_candidates(FindPeerCandidatesQuery query) override;
     Task<void> mark_taken_peer_candidates(const std::vector<NodeId>& ids, Time time) override;
     Task<std::vector<NodeId>> take_peer_candidates(FindPeerCandidatesQuery query, Time time) override;

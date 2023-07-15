@@ -18,10 +18,18 @@
 
 #include <stdexcept>
 
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/deferred.hpp>
+#include <boost/asio/experimental/cancellation_condition.hpp>
+#include <boost/asio/experimental/parallel_group.hpp>
+#include <boost/asio/this_coro.hpp>
 #include <boost/system/errc.hpp>
 #include <boost/system/system_error.hpp>
 
 namespace silkworm::concurrency {
+
+using namespace boost::asio;
+using namespace boost::asio::experimental;
 
 static bool is_operation_cancelled_error(const std::exception_ptr& ex_ptr) {
     try {
@@ -103,6 +111,23 @@ void rethrow_first_exception_if_any(
     if (first_cancelled_exception) {
         std::rethrow_exception(first_cancelled_exception);
     }
+}
+
+Task<void> generate_parallel_group_task(size_t count, std::function<Task<void>(size_t)> task_factory) {
+    auto executor = co_await this_coro::executor;
+    using OperationType = decltype(co_spawn(executor, ([]() -> Task<void> { co_return; })(), deferred));
+    std::vector<OperationType> operations;
+
+    for (size_t i = 0; i < count; i++) {
+        operations.push_back(co_spawn(executor, task_factory(i), deferred));
+    }
+
+    auto group = make_parallel_group(std::move(operations));
+
+    // std::vector<size_t> order;
+    // std::vector<std::exception_ptr> exceptions;
+    auto [order, exceptions] = co_await group.async_wait(wait_for_one_error(), use_awaitable);
+    rethrow_first_exception_if_any(exceptions, order);
 }
 
 }  // namespace silkworm::concurrency

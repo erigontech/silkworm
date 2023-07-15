@@ -259,6 +259,91 @@ TEST_CASE("NodeDbSqlite") {
         auto results = runner.run(db.take_peer_candidates(query, now));
         CHECK(results.empty());
     }
+
+    SECTION("find_lookup_candidates.default") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.update_last_pong_time(test_id, now));
+        NodeDb::FindLookupCandidatesQuery query;
+        query.limit = 1;
+        auto results = runner.run(db.find_lookup_candidates(query));
+        REQUIRE_FALSE(results.empty());
+        CHECK(results[0] == test_id);
+    }
+
+    SECTION("find_lookup_candidates.min_pong_time") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.update_last_pong_time(test_id, now));
+        NodeDb::FindLookupCandidatesQuery query;
+        query.limit = 1;
+
+        query.min_pong_time = now + 1h;
+        auto results = runner.run(db.find_lookup_candidates(query));
+        CHECK(results.empty());
+
+        query.min_pong_time = now - 1h;
+        auto results2 = runner.run(db.find_lookup_candidates(query));
+        REQUIRE_FALSE(results2.empty());
+        CHECK(results2[0] == test_id);
+    }
+
+    SECTION("find_lookup_candidates.max_lookup_time") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.update_last_pong_time(test_id, now));
+        runner.run(db.mark_taken_lookup_candidates({test_id}, now));
+        NodeDb::FindLookupCandidatesQuery query;
+        query.limit = 1;
+
+        query.max_lookup_time = now - 1h;
+        auto results = runner.run(db.find_lookup_candidates(query));
+        CHECK(results.empty());
+
+        query.max_lookup_time = now + 1h;
+        auto results2 = runner.run(db.find_lookup_candidates(query));
+        REQUIRE_FALSE(results2.empty());
+        CHECK(results2[0] == test_id);
+    }
+
+    SECTION("find_lookup_candidates.peer_is_useless") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.update_last_pong_time(test_id, now));
+        NodeDb::FindLookupCandidatesQuery query;
+        query.limit = 1;
+
+        runner.run(db.update_peer_is_useless(test_id, true));
+        auto results = runner.run(db.find_lookup_candidates(query));
+        CHECK(results.empty());
+
+        runner.run(db.update_peer_is_useless(test_id, false));
+        auto results2 = runner.run(db.find_lookup_candidates(query));
+        REQUIRE_FALSE(results2.empty());
+        CHECK(results2[0] == test_id);
+    }
+
+    SECTION("mark_taken_lookup_candidates") {
+        NodeId test_id2 = NodeId::deserialize_hex("24bfa2cdce7c6a41184fa0809ad8d76969b7280952e9aa46179d90cfbab90f7d2b004928f0364389a1aa8d5166281f2ff7568493c1f719e8f6148ef8cf8af42d");
+        NodeAddress test_address2{
+            ip::make_address("10.0.1.17"),
+            30304,
+            30303,
+        };
+
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.upsert_node_address(test_id2, test_address2));
+
+        auto expected_value = std::chrono::system_clock::system_clock::now();
+        runner.run(db.mark_taken_lookup_candidates({test_id, test_id2}, expected_value));
+    }
+
+    SECTION("take_lookup_candidates.empty") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        NodeDb::FindLookupCandidatesQuery query;
+        auto results = runner.run(db.take_lookup_candidates(query, now));
+        CHECK(results.empty());
+    }
 }
 
 }  // namespace silkworm::sentry::discovery::node_db

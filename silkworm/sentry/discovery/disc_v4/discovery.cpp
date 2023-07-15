@@ -21,7 +21,9 @@
 #include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/infra/concurrency/event_notifier.hpp>
+#include <silkworm/sentry/common/sleep.hpp>
 
+#include "find/lookup.hpp"
 #include "message_handler.hpp"
 #include "ping/ping_handler.hpp"
 #include "server.hpp"
@@ -74,10 +76,18 @@ class DiscoveryImpl : private MessageHandler {
     }
 
     Task<void> discover_more() {
+        using namespace std::chrono_literals;
+        auto local_node_id = node_url_().public_key();
+
         while (true) {
             co_await discover_more_needed_notifier_.wait();
 
-            // TODO: lookup round
+            auto total_neighbors = co_await find::lookup(local_node_id, server_, on_neighbors_signal_, node_db_);
+
+            if (total_neighbors == 0) {
+                co_await sleep(10s);
+                discover_more_needed_notifier_.notify();
+            }
         }
     }
 

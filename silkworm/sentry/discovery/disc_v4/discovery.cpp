@@ -25,6 +25,7 @@
 
 #include "find/lookup.hpp"
 #include "message_handler.hpp"
+#include "ping/ping_check.hpp"
 #include "ping/ping_handler.hpp"
 #include "server.hpp"
 
@@ -49,7 +50,7 @@ class DiscoveryImpl : private MessageHandler {
 
     Task<void> run() {
         using namespace concurrency::awaitable_wait_for_all;
-        co_await (server_.run() && discover_more());
+        co_await (server_.run() && discover_more() && periodic_ping_check());
     }
 
     void discover_more_needed() {
@@ -87,6 +88,24 @@ class DiscoveryImpl : private MessageHandler {
             if (total_neighbors == 0) {
                 co_await sleep(10s);
                 discover_more_needed_notifier_.notify();
+            }
+        }
+    }
+
+    Task<void> periodic_ping_check() {
+        using namespace std::chrono_literals;
+        auto local_node_url = node_url_();
+
+        while (true) {
+            auto now = std::chrono::system_clock::now();
+            auto node_ids = co_await node_db_.find_ping_candidates(now, 10);
+            if (node_ids.empty()) {
+                co_await sleep(10s);
+                continue;
+            }
+
+            for (auto& node_id : node_ids) {
+                co_await ping::ping_check(node_id, std::nullopt, local_node_url, server_, on_pong_signal_, node_db_);
             }
         }
     }

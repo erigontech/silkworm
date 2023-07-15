@@ -17,7 +17,6 @@
 #include "ping_check.hpp"
 
 #include <cassert>
-#include <chrono>
 #include <stdexcept>
 
 #include <boost/asio/this_coro.hpp>
@@ -30,10 +29,27 @@
 
 namespace silkworm::sentry::discovery::disc_v4::ping {
 
+static const std::chrono::hours kPongValidityPeriod{24};
+
 static std::chrono::time_point<std::chrono::system_clock> pong_expiration(std::chrono::time_point<std::chrono::system_clock> last_pong_time) {
+    return last_pong_time + kPongValidityPeriod;
+}
+
+std::chrono::time_point<std::chrono::system_clock> min_valid_pong_time(std::chrono::time_point<std::chrono::system_clock> now) {
+    return now - kPongValidityPeriod;
+}
+
+static std::chrono::minutes next_ping_delay(size_t ping_fails) {
     using namespace std::chrono_literals;
-    static const auto kValidityPeriod = 24h;
-    return last_pong_time + kValidityPeriod;
+    if (ping_fails < 3)
+        return 10min;
+
+    // back off: double for each next retry
+    return std::chrono::hours(1 << (ping_fails - 3));
+}
+
+static std::chrono::time_point<std::chrono::system_clock> next_ping_time(std::chrono::time_point<std::chrono::system_clock> now, size_t ping_fails) {
+    return now + next_ping_delay(ping_fails);
 }
 
 Task<bool> ping_check(
@@ -107,10 +123,14 @@ Task<bool> ping_check(
         }
     }
 
-    co_await db.update_last_ping_time(node_id, std::chrono::system_clock::now());
+    auto now = std::chrono::system_clock::now();
     if (is_pong_received) {
-        co_await db.update_last_pong_time(node_id, std::chrono::system_clock::now());
+        co_await db.update_last_pong_time(node_id, now);
     }
+
+    size_t ping_fails_count = is_pong_received ? 0 : (co_await db.find_ping_fails(node_id)).value_or(0) + 1;
+    co_await db.update_ping_fails(node_id, ping_fails_count);
+    co_await db.update_next_ping_time(node_id, next_ping_time(now, ping_fails_count));
 
     co_return is_pong_received;
 }

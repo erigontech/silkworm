@@ -21,6 +21,7 @@
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/parallel_group_utils.hpp>
 #include <silkworm/infra/concurrency/timeout.hpp>
+#include <silkworm/sentry/discovery/disc_v4/ping/ping_check.hpp>
 
 #include "find_neighbors.hpp"
 
@@ -36,7 +37,7 @@ Task<size_t> lookup(
 
     auto now = std::chrono::system_clock::now();
     node_db::NodeDb::FindLookupCandidatesQuery query{
-        /* min_pong_time = */ now - 12h,
+        /* min_pong_time = */ ping::min_valid_pong_time(now),
         /* max_lookup_time = */ now - 10min,
         /* limit = */ 3,
     };

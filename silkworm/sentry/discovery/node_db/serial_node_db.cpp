@@ -35,12 +35,12 @@ Task<std::optional<NodeAddress>> SerialNodeDb::find_node_address_v6(NodeId id) {
     return co_spawn(strand_, db_.find_node_address_v6(std::move(id)), use_awaitable);
 }
 
-Task<void> SerialNodeDb::update_last_ping_time(NodeId id, Time value) {
-    return co_spawn(strand_, db_.update_last_ping_time(std::move(id), std::move(value)), use_awaitable);
+Task<void> SerialNodeDb::update_next_ping_time(NodeId id, Time value) {
+    return co_spawn(strand_, db_.update_next_ping_time(std::move(id), std::move(value)), use_awaitable);
 }
 
-Task<std::optional<Time>> SerialNodeDb::find_last_ping_time(NodeId id) {
-    return co_spawn(strand_, db_.find_last_ping_time(std::move(id)), use_awaitable);
+Task<std::optional<Time>> SerialNodeDb::find_next_ping_time(NodeId id) {
+    return co_spawn(strand_, db_.find_next_ping_time(std::move(id)), use_awaitable);
 }
 
 Task<void> SerialNodeDb::update_last_pong_time(NodeId id, Time value) {
@@ -49,6 +49,14 @@ Task<void> SerialNodeDb::update_last_pong_time(NodeId id, Time value) {
 
 Task<std::optional<Time>> SerialNodeDb::find_last_pong_time(NodeId id) {
     return co_spawn(strand_, db_.find_last_pong_time(std::move(id)), use_awaitable);
+}
+
+Task<void> SerialNodeDb::update_ping_fails(NodeId id, size_t value) {
+    return co_spawn(strand_, db_.update_ping_fails(std::move(id), std::move(value)), use_awaitable);
+}
+
+Task<std::optional<size_t>> SerialNodeDb::find_ping_fails(NodeId id) {
+    return co_spawn(strand_, db_.find_ping_fails(std::move(id)), use_awaitable);
 }
 
 Task<void> SerialNodeDb::update_peer_disconnected_time(NodeId id, Time value) {
@@ -73,6 +81,10 @@ Task<void> SerialNodeDb::update_distance(NodeId id, size_t value) {
 
 Task<std::optional<size_t>> SerialNodeDb::find_distance(NodeId id) {
     return co_spawn(strand_, db_.find_distance(std::move(id)), use_awaitable);
+}
+
+Task<std::vector<NodeId>> SerialNodeDb::find_ping_candidates(Time time, size_t limit) {
+    return co_spawn(strand_, db_.find_ping_candidates(std::move(time), limit), use_awaitable);
 }
 
 Task<std::vector<NodeId>> SerialNodeDb::find_lookup_candidates(FindLookupCandidatesQuery query) {

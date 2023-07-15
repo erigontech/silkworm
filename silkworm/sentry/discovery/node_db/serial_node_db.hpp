@@ -36,11 +36,14 @@ class SerialNodeDb : public NodeDb {
     Task<std::optional<NodeAddress>> find_node_address_v4(NodeId id) override;
     Task<std::optional<NodeAddress>> find_node_address_v6(NodeId id) override;
 
-    Task<void> update_last_ping_time(NodeId id, Time value) override;
-    Task<std::optional<Time>> find_last_ping_time(NodeId id) override;
+    Task<void> update_next_ping_time(NodeId id, Time value) override;
+    Task<std::optional<Time>> find_next_ping_time(NodeId id) override;
 
     Task<void> update_last_pong_time(NodeId id, Time value) override;
     Task<std::optional<Time>> find_last_pong_time(NodeId id) override;
+
+    Task<void> update_ping_fails(NodeId id, size_t value) override;
+    Task<std::optional<size_t>> find_ping_fails(NodeId id) override;
 
     Task<void> update_peer_disconnected_time(NodeId id, Time value) override;
     Task<std::optional<Time>> find_peer_disconnected_time(NodeId id) override;
@@ -50,6 +53,8 @@ class SerialNodeDb : public NodeDb {
 
     Task<void> update_distance(NodeId id, size_t value) override;
     Task<std::optional<size_t>> find_distance(NodeId id) override;
+
+    Task<std::vector<NodeId>> find_ping_candidates(Time time, size_t limit) override;
 
     Task<std::vector<NodeId>> find_lookup_candidates(FindLookupCandidatesQuery query) override;
     Task<void> mark_taken_lookup_candidates(const std::vector<NodeId>& ids, Time time) override;

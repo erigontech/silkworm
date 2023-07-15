@@ -22,6 +22,7 @@
 #include <silkworm/infra/common/log.hpp>
 
 #include "disc_v4/discovery.hpp"
+#include "disc_v4/ping/ping_check.hpp"
 #include "node_db/node_db_sqlite.hpp"
 
 namespace silkworm::sentry::discovery {
@@ -107,7 +108,7 @@ Task<std::vector<EnodeUrl>> DiscoveryImpl::request_peer_urls(
 
     auto now = std::chrono::system_clock::now();
     node_db::NodeDb::FindPeerCandidatesQuery query{
-        /* min_pong_time = */ now - 12h,
+        /* min_pong_time = */ disc_v4::ping::min_valid_pong_time(now),
         /* max_peer_disconnected_time = */ now - 60s,
         /* max_taken_time = */ now - 30s,
         std::move(exclude_ids),

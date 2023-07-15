@@ -45,8 +45,9 @@ CREATE TABLE IF NOT EXISTS nodes (
     ip_v6_port_disc INTEGER,
     ip_v6_port_rlpx INTEGER,
 
-    last_ping_time INTEGER,
+    next_ping_time INTEGER,
     last_pong_time INTEGER,
+    ping_fails INTEGER NOT NULL DEFAULT 0,
     lookup_time INTEGER,
 
     peer_disconnected_time INTEGER,
@@ -58,7 +59,7 @@ CREATE TABLE IF NOT EXISTS nodes (
 
 CREATE INDEX IF NOT EXISTS idx_nodes_ip ON nodes (ip);
 CREATE INDEX IF NOT EXISTS idx_nodes_ip_v6 ON nodes (ip_v6);
-CREATE INDEX IF NOT EXISTS idx_last_ping_time ON nodes (last_ping_time);
+CREATE INDEX IF NOT EXISTS idx_next_ping_time ON nodes (next_ping_time);
 CREATE INDEX IF NOT EXISTS idx_last_pong_time ON nodes (last_pong_time);
 CREATE INDEX IF NOT EXISTS idx_lookup_time ON nodes (lookup_time);
 CREATE INDEX IF NOT EXISTS idx_peer_disconnected_time ON nodes (peer_disconnected_time);
@@ -211,18 +212,18 @@ class NodeDbSqliteImpl : public NodeDb {
         return find_node_address(id, sql);
     }
 
-    Task<void> update_last_ping_time(NodeId id, Time value) override {
+    Task<void> update_next_ping_time(NodeId id, Time value) override {
         static const char* sql = R"sql(
-            UPDATE nodes SET last_ping_time = ? WHERE id = ?
+            UPDATE nodes SET next_ping_time = ? WHERE id = ?
         )sql";
 
         set_node_property_time(id, sql, value);
         co_return;
     }
 
-    Task<std::optional<Time>> find_last_ping_time(NodeId id) override {
+    Task<std::optional<Time>> find_next_ping_time(NodeId id) override {
         static const char* sql = R"sql(
-            SELECT last_ping_time FROM nodes WHERE id = ?
+            SELECT next_ping_time FROM nodes WHERE id = ?
         )sql";
 
         co_return get_node_property_time(id, sql);
@@ -243,6 +244,28 @@ class NodeDbSqliteImpl : public NodeDb {
         )sql";
 
         co_return get_node_property_time(id, sql);
+    }
+
+    Task<void> update_ping_fails(NodeId id, size_t value) override {
+        static const char* sql = R"sql(
+            UPDATE nodes SET ping_fails = ? WHERE id = ?
+        )sql";
+
+        set_node_property_int(id, sql, static_cast<int64_t>(value));
+        co_return;
+    }
+
+    Task<std::optional<size_t>> find_ping_fails(NodeId id) override {
+        static const char* sql = R"sql(
+            SELECT ping_fails FROM nodes WHERE id = ?
+        )sql";
+
+        auto value = get_node_property_int(id, sql);
+        if (value) {
+            co_return static_cast<size_t>(*value);
+        } else {
+            co_return std::nullopt;
+        }
     }
 
     Task<void> update_peer_disconnected_time(NodeId id, Time value) override {
@@ -304,6 +327,29 @@ class NodeDbSqliteImpl : public NodeDb {
         } else {
             co_return std::nullopt;
         }
+    }
+
+    Task<std::vector<NodeId>> find_ping_candidates(Time time, size_t limit) override {
+        static const char* sql = R"sql(
+            SELECT id FROM nodes
+            WHERE ((next_ping_time IS NULL) OR (next_ping_time < ?))
+                AND ((peer_is_useless IS NULL) OR (peer_is_useless == 0))
+            ORDER BY next_ping_time
+            LIMIT ?
+        )sql";
+
+        SQLite::Statement query{*db_, sql};
+        query.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(time)));
+        query.bind(2, static_cast<int64_t>(limit));
+
+        std::vector<NodeId> ids;
+        while (query.executeStep()) {
+            std::string id_hex = query.getColumn(0);
+            auto id = EccPublicKey::deserialize_hex(id_hex);
+            ids.push_back(std::move(id));
+        }
+
+        co_return ids;
     }
 
     Task<std::vector<NodeId>> find_lookup_candidates(FindLookupCandidatesQuery query_params) override {

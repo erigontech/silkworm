@@ -95,11 +95,11 @@ TEST_CASE("NodeDbSqlite") {
         CHECK_FALSE(address.has_value());
     }
 
-    SECTION("update_and_find_last_ping_time") {
+    SECTION("update_and_find_next_ping_time") {
         runner.run(db.upsert_node_address(test_id, test_address));
         auto expected_value = std::chrono::system_clock::system_clock::now();
-        runner.run(db.update_last_ping_time(test_id, expected_value));
-        auto actual_value = runner.run(db.find_last_ping_time(test_id));
+        runner.run(db.update_next_ping_time(test_id, expected_value));
+        auto actual_value = runner.run(db.find_next_ping_time(test_id));
         REQUIRE(actual_value.has_value());
         CHECK(std::chrono::duration_cast<std::chrono::seconds>(*actual_value - expected_value).count() == 0);
     }
@@ -111,6 +111,15 @@ TEST_CASE("NodeDbSqlite") {
         auto actual_value = runner.run(db.find_last_pong_time(test_id));
         REQUIRE(actual_value.has_value());
         CHECK(std::chrono::duration_cast<std::chrono::seconds>(*actual_value - expected_value).count() == 0);
+    }
+
+    SECTION("update_and_find_ping_fails") {
+        runner.run(db.upsert_node_address(test_id, test_address));
+        size_t expected_value = 5;
+        runner.run(db.update_ping_fails(test_id, expected_value));
+        auto actual_value = runner.run(db.find_ping_fails(test_id));
+        REQUIRE(actual_value.has_value());
+        CHECK(*actual_value == expected_value);
     }
 
     SECTION("update_and_find_peer_disconnected_time") {
@@ -138,6 +147,41 @@ TEST_CASE("NodeDbSqlite") {
         auto actual_value = runner.run(db.find_distance(test_id));
         REQUIRE(actual_value.has_value());
         CHECK(*actual_value == expected_value);
+    }
+
+    SECTION("find_ping_candidates.default") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        auto results = runner.run(db.find_ping_candidates(now, 1));
+        REQUIRE_FALSE(results.empty());
+        CHECK(results[0] == test_id);
+    }
+
+    SECTION("find_ping_candidates.next_ping_time") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.update_next_ping_time(test_id, now));
+
+        auto results = runner.run(db.find_ping_candidates(now - 1h, 1));
+        CHECK(results.empty());
+
+        auto results2 = runner.run(db.find_ping_candidates(now + 1h, 1));
+        REQUIRE_FALSE(results2.empty());
+        CHECK(results2[0] == test_id);
+    }
+
+    SECTION("find_ping_candidates.peer_is_useless") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+
+        runner.run(db.update_peer_is_useless(test_id, true));
+        auto results = runner.run(db.find_ping_candidates(now, 1));
+        CHECK(results.empty());
+
+        runner.run(db.update_peer_is_useless(test_id, false));
+        auto results2 = runner.run(db.find_ping_candidates(now, 1));
+        REQUIRE_FALSE(results2.empty());
+        CHECK(results2[0] == test_id);
     }
 
     SECTION("find_peer_candidates.default") {

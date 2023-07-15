@@ -84,6 +84,9 @@ Task<size_t> find_neighbors(
         if (ip_classify(ip) != IpAddressType::kRegular) {
             continue;
         }
+        if (neighbor_id == local_node_id) {
+            continue;
+        }
 
         node_db::NodeAddress address{
             std::move(ip),
@@ -91,10 +94,10 @@ Task<size_t> find_neighbors(
             neighbor_node_address.port_rlpx,
         };
 
-        auto distance = node_distance(node_id, local_node_id);
+        auto distance = node_distance(neighbor_id, local_node_id);
 
-        co_await db.upsert_node_address(node_id, std::move(address));
-        co_await db.update_distance(node_id, distance);
+        co_await db.upsert_node_address(neighbor_id, std::move(address));
+        co_await db.update_distance(neighbor_id, distance);
     }
 
     co_return neighbors_node_addresses.size();

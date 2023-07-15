@@ -16,6 +16,7 @@
 
 #include "ping_check.hpp"
 
+#include <cassert>
 #include <chrono>
 #include <stdexcept>
 
@@ -44,6 +45,11 @@ Task<bool> ping_check(
     node_db::NodeDb& db) {
     using namespace std::chrono_literals;
     using namespace concurrency::awaitable_wait_for_one;
+
+    if (node_id == local_node_url.public_key()) {
+        assert(false);
+        co_return false;
+    }
 
     auto last_pong_time = co_await db.find_last_pong_time(node_id);
     if (last_pong_time && !is_time_in_past(pong_expiration(*last_pong_time))) {

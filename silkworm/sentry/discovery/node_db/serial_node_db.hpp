@@ -55,6 +55,7 @@ class SerialNodeDb : public NodeDb {
     Task<std::optional<size_t>> find_distance(NodeId id) override;
 
     Task<std::vector<NodeId>> find_ping_candidates(Time time, size_t limit) override;
+    Task<std::vector<NodeId>> find_useful_nodes(Time min_pong_time, size_t limit) override;
 
     Task<std::vector<NodeId>> find_lookup_candidates(FindLookupCandidatesQuery query) override;
     Task<void> mark_taken_lookup_candidates(const std::vector<NodeId>& ids, Time time) override;

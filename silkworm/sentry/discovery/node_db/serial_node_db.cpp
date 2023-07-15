@@ -87,6 +87,10 @@ Task<std::vector<NodeId>> SerialNodeDb::find_ping_candidates(Time time, size_t l
     return co_spawn(strand_, db_.find_ping_candidates(std::move(time), limit), use_awaitable);
 }
 
+Task<std::vector<NodeId>> SerialNodeDb::find_useful_nodes(Time min_pong_time, size_t limit) {
+    return co_spawn(strand_, db_.find_useful_nodes(std::move(min_pong_time), limit), use_awaitable);
+}
+
 Task<std::vector<NodeId>> SerialNodeDb::find_lookup_candidates(FindLookupCandidatesQuery query) {
     return co_spawn(strand_, db_.find_lookup_candidates(std::move(query)), use_awaitable);
 }

@@ -18,17 +18,22 @@
 
 #include <silkworm/infra/concurrency/task.hpp>
 
-#include <silkworm/sentry/common/ecc_public_key.hpp>
+#include <boost/asio/ip/udp.hpp>
+
+#include <silkworm/sentry/discovery/node_db/node_db.hpp>
 
 #include "find_node_message.hpp"
-#include "neighbors_message.hpp"
+#include "message_sender.hpp"
 
 namespace silkworm::sentry::discovery::disc_v4::find {
 
-struct MessageHandler {
-    virtual ~MessageHandler() = default;
-    virtual Task<void> on_find_node(FindNodeMessage message, EccPublicKey sender_public_key, boost::asio::ip::udp::endpoint sender_endpoint) = 0;
-    virtual Task<void> on_neighbors(NeighborsMessage message, EccPublicKey sender_public_key) = 0;
+struct FindNodeHandler {
+    static Task<void> handle(
+        FindNodeMessage message,
+        EccPublicKey sender_public_key,
+        boost::asio::ip::udp::endpoint sender_endpoint,
+        MessageSender& sender,
+        node_db::NodeDb& db);
 };
 
 }  // namespace silkworm::sentry::discovery::disc_v4::find

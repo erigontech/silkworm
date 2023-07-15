@@ -23,6 +23,7 @@
 #include <silkworm/infra/concurrency/event_notifier.hpp>
 #include <silkworm/sentry/common/sleep.hpp>
 
+#include "find/find_node_handler.hpp"
 #include "find/lookup.hpp"
 #include "message_handler.hpp"
 #include "ping/ping_check.hpp"
@@ -58,8 +59,8 @@ class DiscoveryImpl : private MessageHandler {
     }
 
   private:
-    Task<void> on_find_node(find::FindNodeMessage /*message*/) override {
-        co_return;
+    Task<void> on_find_node(find::FindNodeMessage message, EccPublicKey sender_public_key, boost::asio::ip::udp::endpoint sender_endpoint) override {
+        return find::FindNodeHandler::handle(std::move(message), std::move(sender_public_key), std::move(sender_endpoint), server_, node_db_);
     }
 
     Task<void> on_neighbors(find::NeighborsMessage message, EccPublicKey sender_public_key) override {

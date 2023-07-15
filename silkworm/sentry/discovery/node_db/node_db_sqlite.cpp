@@ -352,6 +352,29 @@ class NodeDbSqliteImpl : public NodeDb {
         co_return ids;
     }
 
+    Task<std::vector<NodeId>> find_useful_nodes(Time min_pong_time, size_t limit) override {
+        static const char* sql = R"sql(
+            SELECT id FROM nodes
+            WHERE ((last_pong_time IS NOT NULL) AND (last_pong_time > ?))
+                AND ((peer_is_useless IS NULL) OR (peer_is_useless == 0))
+            ORDER BY RANDOM()
+            LIMIT ?
+        )sql";
+
+        SQLite::Statement query{*db_, sql};
+        query.bind(1, static_cast<int64_t>(unix_timestamp_from_time_point(min_pong_time)));
+        query.bind(2, static_cast<int64_t>(limit));
+
+        std::vector<NodeId> ids;
+        while (query.executeStep()) {
+            std::string id_hex = query.getColumn(0);
+            auto id = EccPublicKey::deserialize_hex(id_hex);
+            ids.push_back(std::move(id));
+        }
+
+        co_return ids;
+    }
+
     Task<std::vector<NodeId>> find_lookup_candidates(FindLookupCandidatesQuery query_params) override {
         static const char* sql = R"sql(
             SELECT id FROM nodes

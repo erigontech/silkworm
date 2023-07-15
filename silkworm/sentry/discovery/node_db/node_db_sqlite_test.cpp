@@ -184,6 +184,45 @@ TEST_CASE("NodeDbSqlite") {
         CHECK(results2[0] == test_id);
     }
 
+    SECTION("find_useful_nodes.default") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.update_last_pong_time(test_id, now));
+        auto results = runner.run(db.find_useful_nodes(now - 1h, 1));
+        REQUIRE_FALSE(results.empty());
+        CHECK(results[0] == test_id);
+    }
+
+    SECTION("find_useful_nodes.min_pong_time") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.update_last_pong_time(test_id, now));
+
+        auto min_pong_time = now + 1h;
+        auto results = runner.run(db.find_useful_nodes(min_pong_time, 1));
+        CHECK(results.empty());
+
+        auto min_pong_time2 = now - 1h;
+        auto results2 = runner.run(db.find_useful_nodes(min_pong_time2, 1));
+        REQUIRE_FALSE(results2.empty());
+        CHECK(results2[0] == test_id);
+    }
+
+    SECTION("find_useful_nodes.peer_is_useless") {
+        auto now = std::chrono::system_clock::system_clock::now();
+        runner.run(db.upsert_node_address(test_id, test_address));
+        runner.run(db.update_last_pong_time(test_id, now));
+
+        runner.run(db.update_peer_is_useless(test_id, true));
+        auto results = runner.run(db.find_useful_nodes(now - 1h, 1));
+        CHECK(results.empty());
+
+        runner.run(db.update_peer_is_useless(test_id, false));
+        auto results2 = runner.run(db.find_useful_nodes(now - 1h, 1));
+        REQUIRE_FALSE(results2.empty());
+        CHECK(results2[0] == test_id);
+    }
+
     SECTION("find_peer_candidates.default") {
         auto now = std::chrono::system_clock::system_clock::now();
         runner.run(db.upsert_node_address(test_id, test_address));

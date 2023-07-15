@@ -103,7 +103,10 @@ class ServerImpl {
                             std::move(envelope->public_key));
                         break;
                     case PacketType::kFindNode:
-                        co_await handler_.on_find_node(find::FindNodeMessage::rlp_decode(data));
+                        co_await handler_.on_find_node(
+                            find::FindNodeMessage::rlp_decode(data),
+                            std::move(envelope->public_key),
+                            std::move(sender_endpoint));
                         break;
                     case PacketType::kNeighbors:
                         co_await handler_.on_neighbors(

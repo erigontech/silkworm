@@ -63,6 +63,7 @@ struct NodeDb {
     virtual Task<std::optional<size_t>> find_distance(NodeId id) = 0;
 
     virtual Task<std::vector<NodeId>> find_ping_candidates(Time time, size_t limit) = 0;
+    virtual Task<std::vector<NodeId>> find_useful_nodes(Time min_pong_time, size_t limit) = 0;
 
     struct FindLookupCandidatesQuery {
         Time min_pong_time;

@@ -130,6 +130,11 @@ TEST_CASE("ExecutionEngine") {
 
     BlockId block0_id{0, *header0_hash};
 
+    // check db
+    BlockBody block0_body;
+    const bool block0_present = db::read_body(tx, *header0_hash, block0_id.number, block0_body);
+    CHECK(block0_present);
+
     /* status:
      *         h0
      * input:
@@ -156,8 +161,8 @@ TEST_CASE("ExecutionEngine") {
 
         // check db
         BlockBody saved_body;
-        bool present = db::read_body(tx, header1_hash, block1->header.number, saved_body);
-        CHECK(present);
+        const bool block1_present = db::read_body(tx, header1_hash, block1->header.number, saved_body);
+        CHECK(block1_present);
 
         auto progress = exec_engine.block_progress();
         CHECK(progress == 1);

@@ -66,11 +66,9 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
         if (std::memcmp(header.name, "Content-Length", std::min(header.name_len, sizeof("Content-Length"))) == 0) {
             req.content_length = static_cast<uint32_t>(atoi(header.value));
             content_length_present = true;
-        }
-        else if (std::memcmp(header.name, "Expect", std::min(header.name_len, sizeof("Expect"))) == 0) {
+        } else if (std::memcmp(header.name, "Expect", std::min(header.name_len, sizeof("Expect"))) == 0) {
             expect_request = true;
-        }
-        else if (std::memcmp(header.name, "Authorization", std::min(header.name_len, sizeof("Authorization"))) == 0) {
+        } else if (std::memcmp(header.name, "Authorization", std::min(header.name_len, sizeof("Authorization"))) == 0) {
             req.headers.emplace_back();
             for (size_t index = 0; index < static_cast<size_t>(header.name_len); index++) {
                 req.headers.back().name.push_back(header.name[index]);

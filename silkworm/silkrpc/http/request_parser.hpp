@@ -31,9 +31,6 @@ namespace silkworm::rpc::http {
 //! Parser for incoming requests.
 class RequestParser {
   public:
-    //! Construct ready to parse the request method.
-    RequestParser(){};
-
     //! Result of parse.
     enum class ResultType {
         good,

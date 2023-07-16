@@ -24,7 +24,6 @@
 
 #include <picohttpparser.h>
 
-#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 
@@ -40,10 +39,10 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
     size_t num_headers = sizeof(headers) / sizeof(headers[0]);
     size_t last_len = 0;
 
-    size_t slen = static_cast<size_t>(end - begin);
+    const auto len = static_cast<size_t>(end - begin);
 
     if (req.content_length != 0 && req.content.length() < req.content_length) {
-        for (size_t ii = 0; ii < slen; ii++) {
+        for (size_t ii = 0; ii < len; ii++) {
             req.content.push_back(begin[ii]);
         }
         if (req.content.length() < req.content_length)
@@ -52,7 +51,7 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
             return ResultType::good;
     }
 
-    const auto res = phr_parse_request(begin, slen, &method_name, &method_len, &path, &path_len, &minor_version, headers, &num_headers, last_len);
+    const auto res = phr_parse_request(begin, len, &method_name, &method_len, &path, &path_len, &minor_version, headers, &num_headers, last_len);
     if (res < 0) {
         return ResultType::bad;
     }
@@ -81,7 +80,7 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
         }
     }
 
-    if (content_length_present == false) {
+    if (!content_length_present) {
         return ResultType::bad;
     }
 
@@ -89,9 +88,9 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
         return ResultType::good;
     }
 
-    req.content.resize(slen - static_cast<size_t>(res));
-    std::memcpy(req.content.data(), &begin[res], slen - static_cast<size_t>(res));
-    if (expect_request == true)
+    req.content.resize(len - static_cast<size_t>(res));
+    std::memcpy(req.content.data(), &begin[res], len - static_cast<size_t>(res));
+    if (expect_request)
         return ResultType::processing_continue;
     else if (req.content.length() < req.content_length)
         return ResultType::indeterminate;

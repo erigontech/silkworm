@@ -37,7 +37,11 @@ list(FILTER SILKRPC_SRC EXCLUDE REGEX "main\\.cpp$|_test\\.cpp$|\\.pb\\.cc|\\.pb
 
 # pico_http_parser
 add_library(pico_http_parser "${SILKWORM_MAIN_DIR}/third_party/picohttpparser/picohttpparser.c")
-target_compile_options(pico_http_parser PRIVATE -Wno-error)
+if(MSVC)
+  target_compile_options(pico_http_parser PRIVATE /w)
+else()
+  target_compile_options(pico_http_parser PRIVATE -Wno-error)
+endif(MSVC)
 
 set(SILKRPC_PUBLIC_LIBRARIES
     silkworm_node

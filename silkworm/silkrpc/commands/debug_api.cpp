@@ -305,18 +305,13 @@ awaitable<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& reque
 
                     EVMExecutor executor{*chain_config_ptr, workers_, state};
 
-                    // std::uint64_t index = std::min(transactions.size(), tx_index);
-                    for (std::uint64_t idx{0}; idx < transactions.size(); idx++) {
-                        SILK_LOG << "Txn number: " << idx;
-
+                    std::uint64_t index = std::min(transactions.size(), tx_index + 1);
+                    for (std::uint64_t idx{0}; idx < index; idx++) {
                         rpc::Transaction txn{transactions[idx]};
                         if (!txn.from) {
                             txn.recover_sender();
                         }
                         executor.call(block, txn);
-                        if (idx == tx_index) {
-                            break;
-                        }
                     }
 
                     const auto& ibs = executor.get_ibs_state();

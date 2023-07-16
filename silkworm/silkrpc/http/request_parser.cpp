@@ -61,20 +61,22 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
     bool content_length_present = false;
 
     for (size_t i{0}; i < num_headers; ++i) {
-        if (std::memcmp(headers[i].name, "Content-Length", std::min(headers[i].name_len, sizeof("Content-Length"))) == 0) {
-            req.content_length = static_cast<uint32_t>(atoi(headers[i].value));
+        const auto& header{headers[i]};
+        if (header.name_len == 0) continue;
+        if (std::memcmp(header.name, "Content-Length", std::min(header.name_len, sizeof("Content-Length"))) == 0) {
+            req.content_length = static_cast<uint32_t>(atoi(header.value));
             content_length_present = true;
         }
-        else if (std::memcmp(headers[i].name, "Expect", std::min(headers[i].name_len, sizeof("Expect"))) == 0) {
+        else if (std::memcmp(header.name, "Expect", std::min(header.name_len, sizeof("Expect"))) == 0) {
             expect_request = true;
         }
-        else if (std::memcmp(headers[i].name, "Authorization", std::min(headers[i].name_len, sizeof("Authorization"))) == 0) {
+        else if (std::memcmp(header.name, "Authorization", std::min(header.name_len, sizeof("Authorization"))) == 0) {
             req.headers.emplace_back();
-            for (size_t index = 0; index < static_cast<size_t>(headers[i].name_len); index++) {
-                req.headers.back().name.push_back(headers[i].name[index]);
+            for (size_t index = 0; index < static_cast<size_t>(header.name_len); index++) {
+                req.headers.back().name.push_back(header.name[index]);
             }
-            for (size_t index = 0; index < static_cast<size_t>(headers[i].value_len); index++) {
-                req.headers.back().value.push_back(headers[i].value[index]);
+            for (size_t index = 0; index < static_cast<size_t>(header.value_len); index++) {
+                req.headers.back().value.push_back(header.value[index]);
             }
         }
     }

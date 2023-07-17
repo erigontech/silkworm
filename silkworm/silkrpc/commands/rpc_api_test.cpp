@@ -154,19 +154,19 @@ TEST_CASE("rpc_api load state", "[silkrpc][rpc_api][global]") {
     txn.commit_and_stop();
 
     // Set schema version
-//    silkworm::db::VersionBase v{3, 0, 0};
-//    db::write_schema_version(txn, v);
+    //    silkworm::db::VersionBase v{3, 0, 0};
+    //    db::write_schema_version(txn, v);
 
     RpcApiTestBase<RequestHandler_ForTest> test_base{db};
 
     SECTION("wrapper") {
-                SECTION("test1") {
-                    auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_getBlockTransactionCountByHash","params":["0xfe21bb173f43067a9f90cfc59bbb6830a7a2929b5de4a61f372a9db28e87f9ae"]})"_json;
-                    http::Reply reply;
+        SECTION("test1") {
+            auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_getBlockTransactionCountByHash","params":["0xfe21bb173f43067a9f90cfc59bbb6830a7a2929b5de4a61f372a9db28e87f9ae"]})"_json;
+            http::Reply reply;
 
-                    test_base.run<&RequestHandler_ForTest::request_and_create_reply>(request, reply);
-                    CHECK(nlohmann::json::parse(reply.content) == R"({"jsonrpc":"2.0","id":1,"result":"0x1"})"_json);
-                }
+            test_base.run<&RequestHandler_ForTest::request_and_create_reply>(request, reply);
+            CHECK(nlohmann::json::parse(reply.content) == R"({"jsonrpc":"2.0","id":1,"result":"0x1"})"_json);
+        }
 
         SECTION("test2") {
             auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_getCode","params":["0xaa00000000000000000000000000000000000000","latest"]})"_json;

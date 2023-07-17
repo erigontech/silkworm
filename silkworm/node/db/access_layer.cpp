@@ -64,7 +64,7 @@ void write_schema_version(RWTxn& txn, const VersionBase& schema_version) {
     src.upsert(mdbx::slice{kDbSchemaVersionKey}, to_slice(value));
 }
 
-void write_build_info_height(RWTxn& txn, Bytes key, BlockNum height) {
+void write_build_info_height(RWTxn& txn, const Bytes& key, BlockNum height) {
     auto cursor = txn.rw_cursor(db::table::kDatabaseInfo);
     Bytes value{db::block_key(height)};
     cursor->upsert(db::to_slice(key), db::to_slice(value));
@@ -548,6 +548,21 @@ void parse_senders(ROTxn& txn, const Bytes& key, std::vector<Transaction>& out) 
             transaction.recover_sender();
         }
     }
+}
+
+void write_senders(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& block_number, const Block& block) {
+    auto key{db::block_key(block_number, hash.bytes)};
+    auto target = txn.rw_cursor(table::kSenders);
+    Bytes data;
+    for (const auto& block_txn : block.transactions) {
+        if (block_txn.from.has_value()) {
+            data.append(block_txn.from.value().bytes, kAddressLength);
+        } else {
+            throw std::runtime_error("Missing senders for block " + std::to_string(block_number));
+        }
+    }
+
+    target->upsert(to_slice(key), to_slice(data));
 }
 
 std::optional<ByteView> read_code(ROTxn& txn, const evmc::bytes32& code_hash) {

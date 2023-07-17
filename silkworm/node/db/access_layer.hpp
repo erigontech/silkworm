@@ -43,7 +43,7 @@ void write_schema_version(RWTxn& txn, const VersionBase& schema_version);
 //! \brief Updates database info with build info at provided height
 //! \details Is useful to track whether increasing heights have been affected by
 //! upgrades or downgrades of Silkworm's build
-void write_build_info_height(RWTxn& txn, Bytes key, BlockNum height);
+void write_build_info_height(RWTxn& txn, const Bytes& key, BlockNum height);
 
 //! \brief Read the list of snapshot file names
 std::vector<std::string> read_snapshots(ROTxn& txn);
@@ -143,6 +143,7 @@ std::vector<evmc::address> read_senders(ROTxn& txn, const Bytes& key);
 std::vector<evmc::address> read_senders(ROTxn& txn, BlockNum block_number, const uint8_t (&hash)[kHashLength]);
 //! \brief Fills transactions' senders addresses directly in place
 void parse_senders(ROTxn& txn, const Bytes& key, std::vector<Transaction>& out);
+void write_senders(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& number, const Block& block);
 
 // See Erigon ReadTransactions
 void read_transactions(ROTxn& txn, uint64_t base_id, uint64_t count, std::vector<Transaction>& out);

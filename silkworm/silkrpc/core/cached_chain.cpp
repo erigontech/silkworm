@@ -28,7 +28,7 @@ awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache
         co_return cached_block.value();
     }
     auto block_with_hash = co_await rawdb::read_block(reader, block_hash, block_number);
-    if (block_with_hash->block.transactions.size() != 0) {
+    if (!block_with_hash->block.transactions.empty()) {
         // don't save empty (without txs) blocks to cache, if block become non-canonical (not in main chain), we remove it's transactions,
         // but block can in the future become canonical(inserted in main chain) with its transactions
         cache.insert(block_hash, block_with_hash);
@@ -42,7 +42,7 @@ awaitable<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, 
         co_return cached_block.value();
     }
     auto block_with_hash = co_await rawdb::read_block_by_hash(reader, block_hash);
-    if (block_with_hash->block.transactions.size() != 0) {
+    if (!block_with_hash->block.transactions.empty()) {
         // don't save empty (without txs) blocks to cache, if block become non-canonical (not in main chain), we remove it's transactions,
         // but block can in the future become canonical(inserted in main chain) with its transactions
         cache.insert(block_hash, block_with_hash);
@@ -56,7 +56,7 @@ awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number_or_hash(BlockCach
     } else if (bnoh.is_hash()) {
         co_return co_await read_block_by_hash(cache, reader, bnoh.hash());
     } else if (bnoh.is_tag()) {
-        auto [block_number, ignore] = co_await get_block_number(bnoh.tag(), reader, /*latest_required=*/false);
+        auto [block_number, ignore] = co_await get_block_number(bnoh.tag(), reader, /*latest_is_required=*/false);
         co_return co_await read_block_by_number(cache, reader, block_number);
     }
     throw std::runtime_error{"invalid block_number_or_hash value"};

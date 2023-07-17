@@ -23,6 +23,7 @@
 #include <silkworm/core/trie/hash_builder.hpp>
 #include <silkworm/core/trie/nibbles.hpp>
 
+#include "silkworm/core/common/cast.hpp"
 #include "tables.hpp"
 
 namespace silkworm::db {
@@ -144,12 +145,36 @@ bool initialize_genesis(RWTxn& txn, const nlohmann::json& genesis_json, bool all
         if (genesis_json.contains("alloc")) {
             auto expected_allocations{genesis_json["alloc"].size()};
 
-            for (auto& item : genesis_json["alloc"].items()) {
+            for (const auto& item : genesis_json["alloc"].items()) {
+                const auto& account_alloc_json = item.value();
+
                 auto address_bytes{from_hex(item.key())};
                 evmc::address account_address = to_evmc_address(*address_bytes);
-                auto balance_str{item.value()["balance"].get<std::string>()};
-                Account account{0, intx::from_string<intx::uint256>(balance_str)};
+                const auto acc_balance{intx::from_string<intx::uint256>(account_alloc_json.at("balance"))};
+
+                intx::uint256 acc_nonce{0};
+                if (account_alloc_json.contains("nonce")) {
+                    acc_nonce = intx::from_string<intx::uint256>(account_alloc_json.at("nonce"));
+                }
+
+                Account account{acc_nonce[0], acc_balance};
+
+                if (account_alloc_json.contains("code")) {
+                    const auto acc_code{from_hex(std::string(account_alloc_json.at("code"))).value()};
+                    const auto acc_codehash{bit_cast<evmc_bytes32>(keccak256(acc_code))};
+                    account.code_hash = acc_codehash;
+                    state_buffer.update_account_code(account_address, account.incarnation, acc_codehash, acc_code);
+                }
+
                 state_buffer.update_account(account_address, std::nullopt, account);
+
+                if (account_alloc_json.contains("storage")) {
+                    for (const auto& storage_json : account_alloc_json.at("storage").items()) {
+                        Bytes key{from_hex(storage_json.key()).value()};
+                        Bytes value{from_hex(storage_json.value().get<std::string>()).value()};
+                        state_buffer.update_storage(account_address, account.incarnation, to_bytes32(key), /*initial=*/{}, to_bytes32(value));
+                    }
+                }
             }
 
             auto applied_allocations{static_cast<size_t>(state_buffer.account_changes().at(0).size())};
@@ -159,27 +184,21 @@ bool initialize_genesis(RWTxn& txn, const nlohmann::json& genesis_json, bool all
             }
 
             // Write allocations to db - no changes only accounts
-            // Also compute state_root_hash in a single pass
-            std::map<evmc::bytes32, Bytes> account_rlp;
             auto state_table{db::open_cursor(txn, db::table::kPlainState)};
+            auto code_table{db::open_cursor(txn, db::table::kCode)};
             for (const auto& [address, account] : state_buffer.accounts()) {
                 // Store account plain state
                 Bytes encoded{account.encode_for_storage()};
                 state_table.upsert(db::to_slice(address), db::to_slice(encoded));
 
-                // First pass for state_root_hash
-                ethash::hash256 hash{keccak256(address)};
-                account_rlp[to_bytes32(hash.bytes)] = account.rlp(kEmptyRoot);
+                if (account.code_hash != kEmptyHash) {
+                    auto code = state_buffer.read_code(account.code_hash);
+                    code_table.upsert(db::to_slice(account.code_hash), db::to_slice(code));
+                }
             }
-
-            trie::HashBuilder hb;
-            for (const auto& [hash, rlp] : account_rlp) {
-                hb.add_leaf(trie::unpack_nibbles(hash), rlp);
-            }
-            state_root_hash = hb.root_hash();
         }
 
-        const BlockHeader header{read_genesis_header(genesis_json, state_root_hash)};
+        const BlockHeader header{read_genesis_header(genesis_json, state_buffer.state_root_hash())};
 
         auto block_hash{header.hash()};
         auto block_hash_key{db::block_key(header.number, block_hash.bytes)};

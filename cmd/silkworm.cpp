@@ -345,7 +345,7 @@ int main(int argc, char* argv[]) {
             .private_api_addr = settings.rpcdaemon_settings.private_api_addr,
             .log_verbosity = settings.log_settings.log_verbosity,
             .wait_mode = settings.rpcdaemon_settings.context_pool_settings.wait_mode,
-            .jwt_secret_file = settings.rpcdaemon_settings.jwt_secret_file.value(),
+            .jwt_secret_file = settings.rpcdaemon_settings.jwt_secret_file,
         };
         chainsync::Sync chain_sync_process{
             context_pool.next_io_context(),

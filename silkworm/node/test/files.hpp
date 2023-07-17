@@ -30,9 +30,9 @@ class TemporaryFile {
   public:
     explicit TemporaryFile() : path_{TemporaryDirectory::get_unique_temporary_path()}, stream_{path_, std::ios::binary} {}
     explicit TemporaryFile(const std::string& filename)
-        : path_{TemporaryDirectory::get_os_temporary_path() / filename}, stream_{path_} {}
+        : path_{TemporaryDirectory::get_os_temporary_path() / filename}, stream_{path_, std::ios::binary} {}
     explicit TemporaryFile(const std::filesystem::path& tmp_dir, const std::string& filename)
-        : path_{tmp_dir / filename}, stream_{path_} {}
+        : path_{tmp_dir / filename}, stream_{path_, std::ios::binary} {}
     ~TemporaryFile() { stream_.close(); }
 
     const std::filesystem::path& path() const noexcept { return path_; }

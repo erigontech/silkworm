@@ -20,7 +20,10 @@
 #include <stdexcept>
 
 #include <boost/asio/this_coro.hpp>
+#include <boost/system/errc.hpp>
+#include <boost/system/system_error.hpp>
 
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/event_notifier.hpp>
 #include <silkworm/infra/concurrency/timeout.hpp>
@@ -100,7 +103,15 @@ Task<bool> ping_check(
         make_message_expiration(),
     };
 
-    co_await message_sender.send_ping(std::move(ping_message), endpoint);
+    try {
+        co_await message_sender.send_ping(std::move(ping_message), endpoint);
+    } catch (const boost::system::system_error& ex) {
+        if (ex.code() == boost::system::errc::operation_canceled)
+            throw;
+        log::Debug("disc_v4") << "ping_check failed to send_ping"
+                              << " to " << endpoint
+                              << " due to exception: " << ex.what();
+    }
 
     bool is_pong_received = false;
     try {

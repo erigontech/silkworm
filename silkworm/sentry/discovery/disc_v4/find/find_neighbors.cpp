@@ -22,7 +22,10 @@
 #include <variant>
 
 #include <boost/asio/this_coro.hpp>
+#include <boost/system/errc.hpp>
+#include <boost/system/system_error.hpp>
 
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/infra/concurrency/awaitable_future.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
 #include <silkworm/infra/concurrency/timeout.hpp>
@@ -70,7 +73,16 @@ Task<size_t> find_neighbors(
         make_message_expiration(),
     };
 
-    co_await message_sender.send_find_node(std::move(find_node_message), endpoint);
+    try {
+        co_await message_sender.send_find_node(std::move(find_node_message), endpoint);
+    } catch (const boost::system::system_error& ex) {
+        if (ex.code() == boost::system::errc::operation_canceled)
+            throw;
+        log::Debug("disc_v4") << "find_neighbors failed to send_find_node"
+                              << " to " << endpoint
+                              << " due to exception: " << ex.what();
+        co_return 0;
+    }
 
     std::map<EccPublicKey, NodeAddress> neighbors_node_addresses;
     try {

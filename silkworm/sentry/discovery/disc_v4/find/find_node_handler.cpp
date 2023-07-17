@@ -19,6 +19,10 @@
 #include <chrono>
 #include <map>
 
+#include <boost/system/errc.hpp>
+#include <boost/system/system_error.hpp>
+
+#include <silkworm/infra/common/log.hpp>
 #include <silkworm/sentry/discovery/disc_v4/common/message_expiration.hpp>
 #include <silkworm/sentry/discovery/disc_v4/common/node_address.hpp>
 #include <silkworm/sentry/discovery/disc_v4/common/node_distance.hpp>
@@ -75,12 +79,21 @@ Task<void> FindNodeHandler::handle(
         }
     }
 
+    auto& recipient = sender_endpoint;
     NeighborsMessage neighbors{
         std::move(node_addresses),
         make_message_expiration(),
     };
 
-    co_await sender.send_neighbors(std::move(neighbors), std::move(sender_endpoint));
+    try {
+        co_await sender.send_neighbors(std::move(neighbors), recipient);
+    } catch (const boost::system::system_error& ex) {
+        if (ex.code() == boost::system::errc::operation_canceled)
+            throw;
+        log::Warning("disc_v4") << "FindNodeHandler::handle failed to reply"
+                                << " to " << recipient
+                                << " due to exception: " << ex.what();
+    }
 }
 
 }  // namespace silkworm::sentry::discovery::disc_v4::find

@@ -82,9 +82,13 @@ Task<void> DiscoveryImpl::run() {
     setup_node_db();
 
     for (auto& url : peer_urls_) {
-        co_await node_db_.interface().upsert_node_address(
+        auto& db = node_db_.interface();
+        co_await db.upsert_node_address(
             url.public_key(),
             node_db::NodeAddress{url.ip(), url.port_disc(), url.port_rlpx()});
+        if (!with_dynamic_discovery_) {
+            co_await db.update_last_pong_time(url.public_key(), std::chrono::system_clock::now() + std::chrono::years(1));
+        }
     }
 
     if (with_dynamic_discovery_) {

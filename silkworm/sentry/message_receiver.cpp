@@ -71,7 +71,7 @@ Task<void> MessageReceiver::unsubscribe_on_signal(std::shared_ptr<concurrency::E
         co_await unsubscribe_signal->wait();
     } catch (const boost::system::system_error& ex) {
         if (ex.code() == boost::system::errc::operation_canceled) {
-            log::Debug("sentry") << "MessageReceiver::unsubscribe_on_signal cancelled";
+            log::Trace("sentry") << "MessageReceiver::unsubscribe_on_signal cancelled";
             co_return;
         }
         log::Error("sentry") << "MessageReceiver::unsubscribe_on_signal system_error: " << ex.what();

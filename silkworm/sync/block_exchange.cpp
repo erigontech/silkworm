@@ -142,7 +142,7 @@ void BlockExchange::execution_loop() {
             }
         }
 
-        log::Warning("BlockExchange") << "execution_loop is stopping...";
+        log::Debug("BlockExchange") << "execution_loop is stopping...";
     } catch (std::exception& e) {
         log::Error("BlockExchange") << "execution loop aborted due to exception: " << e.what();
     }

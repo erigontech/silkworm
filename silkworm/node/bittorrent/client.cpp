@@ -57,7 +57,7 @@ std::vector<char> BitTorrentClient::load_file(const fs::path& filename) {
 }
 
 void BitTorrentClient::save_file(const fs::path& filename, const std::vector<char>& data) {
-    SILK_DEBUG << "Save #data=" << data.size() << " in file: " << filename;
+    SILK_TRACE << "Save #data=" << data.size() << " in file: " << filename;
     std::ofstream output_file_stream{filename, std::ios_base::binary};
     output_file_stream.unsetf(std::ios_base::skipws);
     output_file_stream.write(data.data(), static_cast<std::streamsize>(data.size()));
@@ -86,7 +86,7 @@ void BitTorrentClient::add_info_hash(const std::string& name, const std::string&
     lt::aux::from_hex(info_hash, sha1_info_hash.data());
     lt::info_hash_t info_hashes{sha1_info_hash};
     if (exists_resume_file(info_hashes)) {
-        SILK_DEBUG << "Resume file found: " << resume_file_path(info_hashes);
+        SILK_TRACE << "Resume file found: " << resume_file_path(info_hashes);
         return;
     }
     lt::add_torrent_params torrent;
@@ -95,7 +95,7 @@ void BitTorrentClient::add_info_hash(const std::string& name, const std::string&
     torrent.save_path = settings_.repository_path.string();
     torrent.trackers = kBestTrackers;
     session_.async_add_torrent(std::move(torrent));
-    SILK_DEBUG << "BitTorrentClient::add info_hash: " << info_hash << " added";
+    SILK_TRACE << "BitTorrentClient::add info_hash: " << info_hash << " added";
 }
 
 void BitTorrentClient::stop() {
@@ -145,7 +145,7 @@ std::vector<lt::add_torrent_params> BitTorrentClient::resume_or_create_magnets()
         if (!fs::is_regular_file(file.path()) || file.path().extension() != kResumeFileExt) {
             continue;
         }
-        SILK_DEBUG << "File path: " << file.path() << " name: " << file.path().filename();
+        SILK_TRACE << "File path: " << file.path() << " name: " << file.path().filename();
         const auto resume_data = load_file(file.path().string());
         if (!resume_data.empty()) {
             auto add_magnet = lt::read_resume_data(resume_data);
@@ -164,7 +164,7 @@ std::vector<lt::add_torrent_params> BitTorrentClient::resume_or_create_magnets()
         SILK_DEBUG << "Magnet URI from file: " << magnet_uri;
         lt::add_torrent_params add_magnet = lt::parse_magnet_uri(magnet_uri);
         if (exists_resume_file(add_magnet.info_hashes)) {
-            SILK_DEBUG << "Resume file found: " << resume_file_path(add_magnet.info_hashes);
+            SILK_TRACE << "Resume file found: " << resume_file_path(add_magnet.info_hashes);
             continue;
         }
         add_magnet.save_path = settings_.repository_path.string();
@@ -178,7 +178,7 @@ fs::path BitTorrentClient::resume_file_path(const lt::info_hash_t& info_hashes) 
     const lt::sha1_hash torrent_best_hash{info_hashes.get_best()};
     auto resume_file_name = to_hex({reinterpret_cast<const uint8_t*>(torrent_best_hash.data()), lt::sha1_hash::size()});
     resume_file_name.append(kResumeFileExt);
-    SILK_DEBUG << "Resume file name: " << resume_file_name;
+    SILK_TRACE << "Resume file name: " << resume_file_name;
     return resume_dir_ / resume_file_name;
 }
 
@@ -314,7 +314,7 @@ bool BitTorrentClient::handle_alert(const lt::alert* alert) {
     }
 
     if (const auto* mra = alert_cast<lt::metadata_received_alert>(alert)) {
-        SILK_DEBUG << "Torrent: " << mra->torrent_name() << " metadata received";
+        SILK_TRACE << "Torrent: " << mra->torrent_name() << " metadata received";
         mra->handle.save_resume_data(lt::torrent_handle::save_info_dict);
         ++outstanding_resume_requests_;
         handled = true;
@@ -324,13 +324,13 @@ bool BitTorrentClient::handle_alert(const lt::alert* alert) {
     if (const auto* rda = lt::alert_cast<lt::save_resume_data_alert>(alert)) {
         const auto resume_params_data{lt::write_resume_data_buf(rda->params)};
         BitTorrentClient::save_file(resume_file_path(rda->params.info_hashes), resume_params_data);
-        SILK_DEBUG << "Torrent: " << rda->torrent_name() << " resume data saved";
+        SILK_TRACE << "Torrent: " << rda->torrent_name() << " resume data saved";
         --outstanding_resume_requests_;
         handled = true;
     }
 
     if (const auto fa = lt::alert_cast<lt::save_resume_data_failed_alert>(alert)) {
-        SILK_DEBUG << "Torrent: " << fa->torrent_name() << " save resume data failed ["
+        SILK_TRACE << "Torrent: " << fa->torrent_name() << " save resume data failed ["
                    << (fa->error == lt::errors::resume_data_not_modified ? "not modified" : ("error=" + fa->error.to_string()))
                    << "]";
         --outstanding_resume_requests_;
@@ -365,7 +365,7 @@ bool BitTorrentClient::handle_alert(const lt::alert* alert) {
 
     // Finally, if an alert has not been unhandled yet, just log it for debug purposes
     if (!handled) {
-        SILK_DEBUG << alert->message();
+        SILK_TRACE << alert->message();
     }
 
     return handled;

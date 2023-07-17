@@ -50,7 +50,7 @@ void BackEndKvServer::setup_backend_calls(const EthereumBackEnd& backend) {
 }
 
 void BackEndKvServer::register_backend_request_calls(agrpc::GrpcContext* grpc_context) {
-    SILK_DEBUG << "BackEndService::register_backend_request_calls START";
+    SILK_TRACE << "BackEndService::register_backend_request_calls START";
     auto service = &backend_async_service_;
     auto& backend = backend_;
 
@@ -87,7 +87,7 @@ void BackEndKvServer::register_backend_request_calls(agrpc::GrpcContext* grpc_co
                        [&backend](auto&&... args) -> awaitable<void> {
                            co_await NodeInfoCall{std::forward<decltype(args)>(args)...}(backend);
                        });
-    SILK_DEBUG << "BackEndService::register_backend_request_calls END";
+    SILK_TRACE << "BackEndService::register_backend_request_calls END";
 }
 
 void BackEndKvServer::setup_kv_calls() {
@@ -95,7 +95,7 @@ void BackEndKvServer::setup_kv_calls() {
 }
 
 void BackEndKvServer::register_kv_request_calls(agrpc::GrpcContext* grpc_context) {
-    SILK_DEBUG << "BackEndKvServer::register_kv_request_calls START";
+    SILK_TRACE << "BackEndKvServer::register_kv_request_calls START";
     auto service = &kv_async_service_;
     auto& backend = backend_;
 
@@ -112,7 +112,7 @@ void BackEndKvServer::register_kv_request_calls(agrpc::GrpcContext* grpc_context
                        [&backend](auto&&... args) -> awaitable<void> {
                            co_await StateChangesCall{std::forward<decltype(args)>(args)...}(backend);
                        });
-    SILK_DEBUG << "BackEndKvServer::register_kv_request_calls END";
+    SILK_TRACE << "BackEndKvServer::register_kv_request_calls END";
 }
 
 //! Start server-side RPC requests as required by gRPC async model: one RPC per type is requested in advance.

@@ -121,7 +121,7 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
     }
 
     auto log_added = [](const std::filesystem::path& snapshot_file) {
-        SILK_INFO << "SnapshotSync: download started for: " << snapshot_file.filename().string();
+        SILK_TRACE << "SnapshotSync: download started for: " << snapshot_file.filename().string();
     };
     client_.added_subscription.connect(log_added);
 

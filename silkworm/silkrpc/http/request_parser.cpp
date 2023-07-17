@@ -24,7 +24,6 @@
 
 #include <picohttpparser.h>
 
-#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 
@@ -40,11 +39,11 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
     size_t num_headers = sizeof(headers) / sizeof(headers[0]);
     size_t last_len = 0;
 
-    size_t slen = static_cast<size_t>(end - begin);
+    const auto len = static_cast<size_t>(end - begin);
 
     if (req.content_length != 0 && req.content.length() < req.content_length) {
-        for (size_t ii = 0; ii < slen; ii++) {
-            req.content.push_back(begin[ii]);
+        for (size_t i{0}; i < len; ++i) {
+            req.content.push_back(begin[i]);
         }
         if (req.content.length() < req.content_length)
             return ResultType::indeterminate;
@@ -52,7 +51,8 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
             return ResultType::good;
     }
 
-    const auto res = phr_parse_request(begin, slen, &method_name, &method_len, &path, &path_len, &minor_version, headers, &num_headers, last_len);
+    const auto res = phr_parse_request(
+        begin, len, &method_name, &method_len, &path, &path_len, &minor_version, headers, &num_headers, last_len);
     if (res < 0) {
         return ResultType::bad;
     }
@@ -60,28 +60,26 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
     bool expect_request = false;
     bool content_length_present = false;
 
-    for (size_t ii = 0; ii < num_headers; ii++) {
-        if (std::memcmp(headers[ii].name, "Content-Length", headers[ii].name_len) == 0) {
-            req.content_length = static_cast<uint32_t>(atoi(headers[ii].value));
+    for (size_t i{0}; i < num_headers; ++i) {
+        const auto& header{headers[i]};
+        if (header.name_len == 0) continue;
+        if (std::memcmp(header.name, "Content-Length", std::min(header.name_len, sizeof("Content-Length"))) == 0) {
+            req.content_length = static_cast<uint32_t>(atoi(header.value));
             content_length_present = true;
-        }
-
-        else if (std::memcmp(headers[ii].name, "Expect", headers[ii].name_len) == 0) {
+        } else if (std::memcmp(header.name, "Expect", std::min(header.name_len, sizeof("Expect"))) == 0) {
             expect_request = true;
-        }
-
-        else if (std::memcmp(headers[ii].name, "Authorization", headers[ii].name_len) == 0) {
+        } else if (std::memcmp(header.name, "Authorization", std::min(header.name_len, sizeof("Authorization"))) == 0) {
             req.headers.emplace_back();
-            for (size_t index = 0; index < static_cast<size_t>(headers[ii].name_len); index++) {
-                req.headers.back().name.push_back(headers[ii].name[index]);
+            for (size_t index = 0; index < static_cast<size_t>(header.name_len); index++) {
+                req.headers.back().name.push_back(header.name[index]);
             }
-            for (size_t index = 0; index < static_cast<size_t>(headers[ii].value_len); index++) {
-                req.headers.back().value.push_back(headers[ii].value[index]);
+            for (size_t index = 0; index < static_cast<size_t>(header.value_len); index++) {
+                req.headers.back().value.push_back(header.value[index]);
             }
         }
     }
 
-    if (content_length_present == false) {
+    if (!content_length_present) {
         return ResultType::bad;
     }
 
@@ -89,9 +87,9 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
         return ResultType::good;
     }
 
-    req.content.resize(slen - static_cast<size_t>(res));
-    std::memcpy(req.content.data(), &begin[res], slen - static_cast<size_t>(res));
-    if (expect_request == true)
+    req.content.resize(len - static_cast<size_t>(res));
+    std::memcpy(req.content.data(), begin + res, len - static_cast<size_t>(res));
+    if (expect_request)
         return ResultType::processing_continue;
     else if (req.content.length() < req.content_length)
         return ResultType::indeterminate;

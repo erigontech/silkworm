@@ -971,10 +971,10 @@ boost::asio::awaitable<ChunkLocatorResponse> ChunkLocator::get(uint64_t min_bloc
             co_return ChunkLocatorResponse{ChunkProvider{cursor_, address_, navigate_forward_, key_value}, false, false};
         }
 
-        co_return ChunkLocatorResponse(ChunkProvider{cursor_, address_, navigate_forward_, key_value}, true, false);
+        co_return ChunkLocatorResponse{ChunkProvider{cursor_, address_, navigate_forward_, key_value}, true, false};
 
     } catch (const std::exception& e) {
-        co_return ChunkLocatorResponse(ChunkProvider{cursor_, address_, navigate_forward_, key_value}, false, true);
+        co_return ChunkLocatorResponse{ChunkProvider{cursor_, address_, navigate_forward_, key_value}, false, true};
     }
 }
 

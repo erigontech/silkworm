@@ -181,7 +181,8 @@ TEST_CASE("rpc_api io", "[silkrpc][rpc_api]") {
     for (const auto& test_file : std::filesystem::recursive_directory_iterator(testsDir)) {
         if (!test_file.is_directory() && test_file.path().extension() == ".io") {
             // std::cout << "Running test " << test_file.path() << std::endl;
-            auto test_name = test_file.path().filename();
+            auto test_name = test_file.path().filename().string();
+            auto group_name = test_file.path().parent_path().filename().string();
 
             std::ifstream test_stream(test_file.path());
 
@@ -190,7 +191,7 @@ TEST_CASE("rpc_api io", "[silkrpc][rpc_api]") {
                 throw "dupa";
             }
 
-            SECTION("RPC IO test " + test_name.string()) {
+            SECTION("RPC IO test " + group_name + "|" + test_name) {
                 std::string line_out;
                 std::string line_in;
 

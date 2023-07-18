@@ -59,16 +59,22 @@ Task<bool> RemoteChainStorage::read_block(const Hash& hash, silkworm::Block& blo
 }
 
 Task<std::optional<BlockHeader>> RemoteChainStorage::read_header(BlockNum number, HashAsArray& hash) const {
-    Hash hash_type{hash};
-    co_return co_await core::rawdb::read_header(reader_, hash_type, number);
+    silkworm::Block block;
+    auto success = co_await backend_->get_block(number, hash, /*.read_senders=*/false, block);
+    std::optional<BlockHeader> header;
+    if (success) {
+        header = std::move(block.header);
+    }
+    co_return header;
 }
 
 Task<std::optional<BlockHeader>> RemoteChainStorage::read_header(BlockNum number, const Hash& hash) const {
-    co_return co_await core::rawdb::read_header(reader_, hash, number);
+    co_return co_await read_header(number, hash.bytes);
 }
 
 Task<std::optional<BlockHeader>> RemoteChainStorage::read_header(const Hash& hash) const {
-    co_return co_await core::rawdb::read_header_by_hash(reader_, hash);
+    const auto number = co_await core::rawdb::read_header_number(reader_, hash);
+    co_return co_await read_header(number, hash.bytes);
 }
 
 Task<std::vector<BlockHeader>> RemoteChainStorage::read_sibling_headers(BlockNum /*number*/) const {
@@ -92,25 +98,23 @@ Task<bool> RemoteChainStorage::read_body(const Hash& hash, BlockNum number, Bloc
 }
 
 Task<bool> RemoteChainStorage::read_body(const Hash& hash, BlockBody& body) const {
-    silkworm::Block block;
     const auto number = co_await core::rawdb::read_header_number(reader_, hash);
-    const bool success = co_await backend_->get_block(number, hash.bytes, /*.read_senders=*/false, block);
-    if (!success) {
-        co_return false;
-    }
-    body.transactions = std::move(block.transactions);
-    body.ommers = std::move(block.ommers);
-    body.withdrawals = std::move(block.withdrawals);
-    co_return true;
+    co_return co_await read_body(number, hash.bytes, /*.read_senders=*/false, body);
 }
 
 Task<std::optional<Hash>> RemoteChainStorage::read_canonical_hash(BlockNum number) const {
-    const auto hash = co_await core::rawdb::read_canonical_block_hash(reader_, number);
-    co_return hash;
+    co_return co_await core::rawdb::read_canonical_block_hash(reader_, number);
 }
 
 Task<std::optional<BlockHeader>> RemoteChainStorage::read_canonical_header(BlockNum number) const {
-    co_return co_await core::rawdb::read_header_by_number(reader_, number);
+    silkworm::Block block;
+    const auto hash = co_await core::rawdb::read_canonical_block_hash(reader_, number);
+    const bool success = co_await backend_->get_block(number, hash.bytes, /*.read_senders=*/false, block);
+    std::optional<BlockHeader> header;
+    if (success) {
+        header = std::move(block.header);
+    }
+    co_return header;
 }
 
 Task<bool> RemoteChainStorage::read_canonical_body(BlockNum number, BlockBody& body) const {

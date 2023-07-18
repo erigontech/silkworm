@@ -23,6 +23,7 @@
 #include <silkworm/infra/concurrency/awaitable_wait_for_all.hpp>
 #include <silkworm/node/backend/ethereum_backend.hpp>
 #include <silkworm/node/backend/remote/backend_kv_server.hpp>
+#include <silkworm/node/bittorrent/client.hpp>
 #include <silkworm/node/common/preverified_hashes.hpp>
 #include <silkworm/node/common/resource_usage.hpp>
 #include <silkworm/node/snapshot/sync.hpp>
@@ -54,6 +55,7 @@ class NodeImpl final {
     Task<void> run_tasks();
     Task<void> start_execution_server();
     Task<void> start_backend_kv_grpc_server();
+    Task<void> start_bittorrent_client();
     Task<void> start_resource_usage_log();
     Task<void> start_execution_log_timer();
 
@@ -70,6 +72,7 @@ class NodeImpl final {
     std::unique_ptr<EthereumBackEnd> backend_;
     std::unique_ptr<rpc::BackEndKvServer> backend_kv_rpc_server_;
     ResourceUsageLog resource_usage_log_;
+    std::unique_ptr<BitTorrentClient> bittorrent_client_;
 };
 
 NodeImpl::NodeImpl(Settings& settings, SentryClientPtr sentry_client, mdbx::env& chaindata_db)
@@ -83,6 +86,7 @@ NodeImpl::NodeImpl(Settings& settings, SentryClientPtr sentry_client, mdbx::env&
     backend_ = std::make_unique<EthereumBackEnd>(settings_, &chaindata_db_, sentry_client_);
     backend_->set_node_name(settings_.node_name);
     backend_kv_rpc_server_ = std::make_unique<rpc::BackEndKvServer>(settings.server_settings, *backend_);
+    bittorrent_client_ = std::make_unique<BitTorrentClient>(settings_.snapshot_settings.bittorrent_settings);
 }
 
 void NodeImpl::setup() {
@@ -116,7 +120,7 @@ void NodeImpl::setup_snapshots() {
 
 Task<void> NodeImpl::run() {
     using namespace concurrency::awaitable_wait_for_all;
-    return (run_tasks() && start_backend_kv_grpc_server());
+    return (run_tasks() && start_backend_kv_grpc_server() && start_bittorrent_client());
 }
 
 Task<void> NodeImpl::run_tasks() {
@@ -137,6 +141,18 @@ Task<void> NodeImpl::start_backend_kv_grpc_server() {
         backend_kv_rpc_server_->shutdown();
     };
     co_await concurrency::async_thread(std::move(run), std::move(stop));
+}
+
+Task<void> NodeImpl::start_bittorrent_client() {
+    if (settings_.snapshot_settings.bittorrent_settings.seeding) {
+        auto run = [this]() {
+            bittorrent_client_->execute_loop();
+        };
+        auto stop = [this]() {
+            bittorrent_client_->stop();
+        };
+        co_await concurrency::async_thread(std::move(run), std::move(stop));
+    }
 }
 
 Task<void> NodeImpl::start_resource_usage_log() {

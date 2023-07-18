@@ -14,6 +14,7 @@
    limitations under the License.
 ]]
 
+
 find_package(Catch2 REQUIRED)
 find_package(magic_enum REQUIRED)
 
@@ -41,7 +42,7 @@ if(NOT SILKWORM_CORE_ONLY)
   target_link_libraries(node_test silkworm_node Catch2::Catch2)
 
   # Silkworm RpcDaemon Tests
-  file(GLOB_RECURSE SILKWORM_RPCDAEMON_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/silkrpc/*_test.cpp")
+  file(GLOB_RECURSE SILKWORM_RPCDAEMON_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/silkrpc/commands/*_test.cpp")
   add_executable(rpcdaemon_test unit_test.cpp ${SILKWORM_RPCDAEMON_TESTS})
   if(SILKWORM_SANITIZE)
     target_compile_definitions(rpcdaemon_test PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
@@ -50,6 +51,19 @@ if(NOT SILKWORM_CORE_ONLY)
     rpcdaemon_test PRIVATE ${SILKWORM_MAIN_DIR} ${SILKWORM_MAIN_DIR}/third_party/evmone/evmc/include
   )
   target_link_libraries(rpcdaemon_test silkrpc Catch2::Catch2 GTest::gmock)
+
+
+  # jacek Silkworm RpcDaemon Tests
+  file(GLOB_RECURSE JACEK_SILKWORM_RPCDAEMON_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/silkrpc/commands/rpc_api_test.cpp")
+  add_executable(jacek_rpcdaemon_test unit_test.cpp ${JACEK_SILKWORM_RPCDAEMON_TESTS})
+  
+  if(SILKWORM_SANITIZE)
+    target_compile_definitions(jacek_rpcdaemon_test PRIVATE GRPC_ASAN_SUPPRESSED GRPC_TSAN_SUPPRESSED)
+  endif()
+  target_include_directories(
+          jacek_rpcdaemon_test PRIVATE ${SILKWORM_MAIN_DIR} ${SILKWORM_MAIN_DIR}/third_party/evmone/evmc/include
+  )
+  target_link_libraries(jacek_rpcdaemon_test PRIVATE silkrpc Catch2::Catch2 GTest::gmock)
 
   # Silkworm Sync Tests
   file(GLOB_RECURSE SILKWORM_SYNC_TESTS CONFIGURE_DEPENDS "${SILKWORM_MAIN_SRC_DIR}/sync/*_test.cpp")

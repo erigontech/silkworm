@@ -52,57 +52,15 @@ class ChunkProvider {
     bool navigate_forward_;
     silkworm::KeyValue first_seek_key_value_;
 
-    bool first = true;
-    bool eof = false;
-    bool error = false;
+    bool first_ = true;
+    bool eof_ = false;
+    bool error_ = false;
 
   public:
     ChunkProvider() {}
-    ChunkProvider(silkworm::rpc::ethdb::Cursor* cursor, evmc::address address, bool navigate_forward, silkworm::KeyValue first_seek_key_value) {
-        cursor_ = cursor;
-        address_ = address;
-        navigate_forward_ = navigate_forward;
-        first_seek_key_value_ = first_seek_key_value;
-    }
+    ChunkProvider(silkworm::rpc::ethdb::Cursor* cursor, evmc::address address, bool navigate_forward, silkworm::KeyValue first_seek_key_value);
 
-    boost::asio::awaitable<ChunkProviderResponse> get() {
-        if (error) {
-            co_return ChunkProviderResponse{Bytes{0}, false, true};
-        }
-
-        if (eof) {
-            co_return ChunkProviderResponse{Bytes{0}, false, false};
-        }
-
-        silkworm::KeyValue key_value;
-
-        try {
-            if (first) {
-                first = false;
-                key_value = first_seek_key_value_;
-            } else {
-                if (navigate_forward_) {
-                    key_value = co_await cursor_->next();
-                } else {
-                    key_value = co_await cursor_->previous();
-                }
-            }
-        } catch (const std::exception& e) {
-            error = true;
-        }
-
-        if (error) {
-            eof = true;
-            co_return ChunkProviderResponse{Bytes{0}, false, true};
-        }
-
-        if (key_value.key.empty() || !key_value.key.starts_with(address_)) {
-            eof = true;
-            co_return ChunkProviderResponse{Bytes{0}, false, false};
-        }
-
-        co_return ChunkProviderResponse{key_value.value, true, false};
-    }
+    boost::asio::awaitable<ChunkProviderResponse> get();
 };
 
 struct ChunkLocatorResponse {
@@ -118,27 +76,9 @@ class ChunkLocator {
     bool navigate_forward_;
 
   public:
-    ChunkLocator(silkworm::rpc::ethdb::Cursor* cursor, evmc::address address, bool navigate_forward) {
-        cursor_ = cursor;
-        address_ = address;
-        navigate_forward_ = navigate_forward;
-    }
+    ChunkLocator(silkworm::rpc::ethdb::Cursor* cursor, evmc::address address, bool navigate_forward);
 
-    boost::asio::awaitable<ChunkLocatorResponse> get(uint64_t min_block) {
-        KeyValue key_value;
-        try {
-            key_value = co_await cursor_->seek(db::account_history_key(address_, min_block));
-
-            if (key_value.key.empty()) {
-                co_return ChunkLocatorResponse(ChunkProvider(cursor_, address_, navigate_forward_, key_value), false, false);
-            }
-
-            co_return ChunkLocatorResponse(ChunkProvider(cursor_, address_, navigate_forward_, key_value), true, false);
-
-        } catch (const std::exception& e) {
-            co_return ChunkLocatorResponse(ChunkProvider(cursor_, address_, navigate_forward_, key_value), false, true);
-        }
-    }
+    boost::asio::awaitable<ChunkLocatorResponse> get(uint64_t min_block);
 };
 
 struct BlockProviderResponse {
@@ -168,30 +108,13 @@ class ForwardBlockProvider : public BlockProvider {
 
     uint64_t bitmap_index_;
 
-    bool has_next() {
-        return bitmap_index_ < bitmap_vector_.size();
-    }
+    bool has_next();
 
-    uint64_t next() {
-        uint64_t result = bitmap_vector_.at(bitmap_index_);
-        bitmap_index_++;
-        return result;
-    }
+    uint64_t next();
 
-    void iterator(roaring::Roaring64Map& bitmap) {
-        bitmap_vector_.resize(bitmap.cardinality());
-        bitmap.toUint64Array(bitmap_vector_.data());
-        bitmap_index_ = 0;
-    }
+    void iterator(roaring::Roaring64Map& bitmap);
 
-    void advance_if_needed(uint64_t min_block) {
-        for (uint64_t i = bitmap_index_; i < bitmap_vector_.size(); i++) {
-            if (bitmap_vector_.at(i) >= min_block) {
-                bitmap_index_ = i;
-                break;
-            }
-        }
-    }
+    void advance_if_needed(uint64_t min_block);
 
   public:
     ForwardBlockProvider(silkworm::rpc::ethdb::Cursor* cursor, evmc::address address, uint64_t min_block) : chunk_locator_(cursor, address, false), chunk_provider_() {
@@ -203,90 +126,7 @@ class ForwardBlockProvider : public BlockProvider {
         finished_ = false;
     }
 
-    boost::asio::awaitable<BlockProviderResponse> get() {
-        if (finished_) {
-            co_return BlockProviderResponse{0, false, false};
-        }
-
-        if (is_first_) {
-            is_first_ = false;
-
-            auto chunk_loc_res = co_await chunk_locator_.get(min_block_);
-            chunk_provider_ = chunk_loc_res.chunk_provider;
-
-            if (chunk_loc_res.error) {
-                finished_ = true;
-                co_return BlockProviderResponse{0, false, true};
-            }
-
-            if (!chunk_loc_res.ok) {
-                finished_ = true;
-                co_return BlockProviderResponse{0, false, false};
-            }
-
-            auto chunk_provider_res = co_await chunk_loc_res.chunk_provider.get();
-
-            if (chunk_provider_res.error) {
-                finished_ = true;
-                co_return BlockProviderResponse{0, false, true};
-            }
-
-            if (!chunk_provider_res.ok) {
-                finished_ = true;
-                co_return BlockProviderResponse{0, false, false};
-            }
-
-            try {
-                roaring::Roaring64Map bitmap = db::bitmap::parse(chunk_provider_res.chunk);
-
-                iterator(bitmap);
-
-                // It can happen that on the first chunk we'll get a chunk that contains
-                // the first block >= minBlock in the middle of the chunk/bitmap, so we
-                // skip all previous blocks before it.
-                advance_if_needed(min_block_);
-
-                // This means it is the last chunk and the min block is > the last one
-                if (!has_next()) {
-                    finished_ = true;
-                    co_return BlockProviderResponse{0, false, false};
-                }
-
-            } catch (std::exception& e) {
-                finished_ = true;
-                co_return BlockProviderResponse{0, false, true};
-            }
-        }
-
-        uint64_t next_block = next();
-        bool has_next_ = has_next();
-
-        if (!has_next_) {
-            auto chunk_provider_res = co_await chunk_provider_.get();
-
-            if (chunk_provider_res.error) {
-                co_return BlockProviderResponse{0, false, true};
-            }
-
-            if (!chunk_provider_res.ok) {
-                finished_ = true;
-                co_return BlockProviderResponse{next_block, false, false};
-            }
-
-            has_next_ = true;
-
-            try {
-                auto bitmap = db::bitmap::parse(chunk_provider_res.chunk);
-                iterator(bitmap);
-
-            } catch (std::exception& e) {
-                finished_ = true;
-                co_return BlockProviderResponse{0, false, true};
-            }
-        }
-
-        co_return BlockProviderResponse{next_block, has_next_, false};
-    }
+    boost::asio::awaitable<BlockProviderResponse> get();
 };
 
 class BackwardBlockProvider : public BlockProvider {
@@ -304,22 +144,11 @@ class BackwardBlockProvider : public BlockProvider {
 
     uint64_t bitmap_index_;
 
-    bool has_next() {
-        return bitmap_index_ < bitmap_vector_.size();
-    }
+    bool has_next();
 
-    uint64_t next() {
-        uint64_t result = bitmap_vector_.at(bitmap_index_);
-        bitmap_index_++;
-        return result;
-    }
+    uint64_t next();
 
-    void reverse_iterator(roaring::Roaring64Map& bitmap) {
-        bitmap_vector_.resize(bitmap.cardinality());
-        bitmap.toUint64Array(bitmap_vector_.data());
-        std::reverse(bitmap_vector_.begin(), bitmap_vector_.end());
-        bitmap_index_ = 0;
-    }
+    void reverse_iterator(roaring::Roaring64Map& bitmap);
 
   public:
     BackwardBlockProvider(silkworm::rpc::ethdb::Cursor* cursor, evmc::address address, uint64_t max_block) : chunk_locator_(cursor, address, false), chunk_provider_() {
@@ -335,105 +164,7 @@ class BackwardBlockProvider : public BlockProvider {
         finished_ = false;
     }
 
-    boost::asio::awaitable<BlockProviderResponse> get() {
-        if (finished_) {
-            co_return BlockProviderResponse{0, false, false};
-        }
-
-        if (is_first_) {
-            is_first_ = false;
-
-            auto chunk_loc_res = co_await chunk_locator_.get(max_block_);
-            chunk_provider_ = chunk_loc_res.chunk_provider;
-
-            if (chunk_loc_res.error) {
-                finished_ = true;
-                co_return BlockProviderResponse{0, false, true};
-            }
-
-            if (!chunk_loc_res.ok) {
-                finished_ = true;
-                co_return BlockProviderResponse{0, false, false};
-            }
-
-            auto chunk_provider_res = co_await chunk_loc_res.chunk_provider.get();
-
-            if (chunk_provider_res.error) {
-                finished_ = true;
-                co_return BlockProviderResponse{0, false, true};
-            }
-
-            if (!chunk_provider_res.ok) {
-                finished_ = true;
-                co_return BlockProviderResponse{0, false, false};
-            }
-
-            try {
-                roaring::Roaring64Map bitmap = db::bitmap::parse(chunk_provider_res.chunk);
-
-                // It can happen that on the first chunk we'll get a chunk that contains
-                // the last block <= maxBlock in the middle of the chunk/bitmap, so we
-                // remove all blocks after it (since there is no AdvanceIfNeeded() in
-                // IntIterable64)
-                if (max_block_ != std::numeric_limits<uint64_t>::max()) {
-                    // bm.RemoveRange(maxBlock+1, MaxBlockNum)
-                    bitmap.removeRange(max_block_ + 1, std::numeric_limits<uint64_t>::max());
-                }
-
-                reverse_iterator(bitmap);
-
-                if (!has_next()) {
-                    chunk_provider_res = co_await chunk_loc_res.chunk_provider.get();
-
-                    if (chunk_provider_res.error) {
-                        finished_ = true;
-                        co_return BlockProviderResponse{0, false, true};
-                    }
-
-                    if (!chunk_provider_res.ok) {
-                        finished_ = true;
-                        co_return BlockProviderResponse{0, false, false};
-                    }
-
-                    bitmap = db::bitmap::parse(chunk_provider_res.chunk);
-                    reverse_iterator(bitmap);
-                }
-
-            } catch (std::exception& e) {
-                finished_ = true;
-                co_return BlockProviderResponse{0, false, true};
-            }
-        }
-
-        uint64_t next_block = next();
-        bool has_next_ = has_next();
-
-        if (!has_next_) {
-            auto chunk_provider_res = co_await chunk_provider_.get();
-
-            if (chunk_provider_res.error) {
-                co_return BlockProviderResponse{0, false, true};
-            }
-
-            if (!chunk_provider_res.ok) {
-                finished_ = true;
-                co_return BlockProviderResponse{next_block, false, false};
-            }
-
-            has_next_ = true;
-
-            try {
-                auto bitmap = db::bitmap::parse(chunk_provider_res.chunk);
-                reverse_iterator(bitmap);
-
-            } catch (std::exception& e) {
-                finished_ = true;
-                co_return BlockProviderResponse{0, false, true};
-            }
-        }
-
-        co_return BlockProviderResponse{next_block, has_next_, false};
-    }
+    boost::asio::awaitable<BlockProviderResponse> get();
 };
 
 class FromToBlockProvider : public BlockProvider {
@@ -442,89 +173,16 @@ class FromToBlockProvider : public BlockProvider {
     BlockProvider* callFromProvider_;
     BlockProvider* callToProvider_;
 
-    uint64_t next_from;
-    uint64_t next_to;
-    bool has_more_from;
-    bool has_more_to;
+    uint64_t next_from_;
+    uint64_t next_to_;
+    bool has_more_from_;
+    bool has_more_to_;
     bool initialized_;
 
   public:
-    FromToBlockProvider(bool is_backwards, BlockProvider* callFromProvider, BlockProvider* callToProvider) {
-        is_backwards_ = is_backwards;
-        callFromProvider_ = callFromProvider;
-        callToProvider_ = callToProvider;
-        initialized_ = false;
-    }
+    FromToBlockProvider(bool is_backwards, BlockProvider* callFromProvider, BlockProvider* callToProvider);
 
-    boost::asio::awaitable<BlockProviderResponse> get() {
-        if (!initialized_) {
-            initialized_ = true;
-
-            auto from_prov_res = co_await callFromProvider_->get();
-            if (from_prov_res.error) {
-                co_return BlockProviderResponse{0, false, true};
-            }
-
-            auto to_prov_res = co_await callToProvider_->get();
-            if (to_prov_res.error) {
-                co_return BlockProviderResponse{0, false, true};
-            }
-
-            next_from = from_prov_res.block_number;
-            next_to = to_prov_res.block_number;
-
-            has_more_from = has_more_from || next_from != 0;
-            has_more_to = has_more_to || next_to != 0;
-        }
-
-        if (!has_more_from && !has_more_to) {
-            co_return BlockProviderResponse{0, false, true};
-        }
-
-        uint64_t block_num{0};
-
-        if (!has_more_from) {
-            block_num = next_to;
-        } else if (!has_more_to) {
-            block_num = next_from;
-        } else {
-            block_num = next_from;
-            if (is_backwards_) {
-                if (next_to < next_from) {
-                    block_num = next_to;
-                }
-            } else {
-                if (next_to > next_from) {
-                    block_num = next_to;
-                }
-            }
-        }
-
-        // Pull next; it may be that from AND to contains the same blockNum
-        if (has_more_from && block_num == next_from) {
-            auto from_prov_res = co_await callFromProvider_->get();
-
-            if (from_prov_res.error) {
-                co_return BlockProviderResponse{0, false, true};
-            }
-
-            next_from = from_prov_res.block_number;
-            has_more_from = has_more_from || next_from != 0;
-        }
-
-        if (has_more_to && block_num == next_to) {
-            auto to_prov_res = co_await callToProvider_->get();
-
-            if (to_prov_res.error) {
-                co_return BlockProviderResponse{0, false, true};
-            }
-
-            next_to = to_prov_res.block_number;
-            has_more_to = has_more_to || next_to != 0;
-        }
-
-        co_return BlockProviderResponse{block_num, has_more_from || has_more_to, false};
-    }
+    boost::asio::awaitable<BlockProviderResponse> get();
 };
 
 class OtsRpcApi {

@@ -46,6 +46,8 @@ class Cursor {
 
     virtual boost::asio::awaitable<KeyValue> next() = 0;
 
+    virtual boost::asio::awaitable<KeyValue> previous() = 0;
+
     virtual boost::asio::awaitable<void> close_cursor() = 0;
 };
 

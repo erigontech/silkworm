@@ -116,4 +116,12 @@ struct BlockTransactionsResponse {
     std::vector<silkworm::Transaction> transactions;
 };
 
+struct TransactionsWithReceipts {
+    bool first_page;
+    bool last_page;
+    std::vector<silkworm::rpc::Receipt> receipts;
+    std::vector<silkworm::Transaction> transactions;
+    std::vector<BlockDetails> blocks;
+};
+
 }  // namespace silkworm::rpc

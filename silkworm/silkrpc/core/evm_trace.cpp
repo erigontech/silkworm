@@ -1529,6 +1529,38 @@ boost::asio::awaitable<TraceOperationsResult> TraceCallExecutor::trace_operation
     co_return tracer->result();
 }
 
+boost::asio::awaitable<bool> TraceCallExecutor::trace_touch_transaction(const silkworm::Block& block, const silkworm::Transaction& txn, const evmc::address& address) {
+    auto block_number = block.header.number;
+
+    const auto chain_id = co_await core::rawdb::read_chain_id(database_reader_);
+    const auto chain_config_ptr = lookup_chain_config(chain_id);
+
+    auto current_executor = co_await boost::asio::this_coro::executor;
+
+    const auto ret_entry_tracer = co_await boost::asio::async_compose<decltype(boost::asio::use_awaitable), void(std::shared_ptr<trace::TouchTracer>)>(
+        [&](auto&& self) {
+            boost::asio::post(workers_, [&, self = std::move(self)]() mutable {
+                auto state = tx_.create_state(current_executor, database_reader_, block_number - 1);
+                silkworm::IntraBlockState initial_ibs{*state};
+
+                auto curr_state = tx_.create_state(current_executor, database_reader_, block_number - 1);
+                EVMExecutor executor{*chain_config_ptr, workers_, curr_state};
+
+                auto tracer = std::make_shared<trace::TouchTracer>(address, initial_ibs);
+                Tracers tracers{tracer};
+
+                executor.call(block, txn, tracers, /*refund=*/true, /*gas_bailout=*/true);
+
+                boost::asio::post(current_executor, [tracer, self = std::move(self)]() mutable {
+                    self.complete(tracer);
+                });
+            });
+        },
+        boost::asio::use_awaitable);
+
+    co_return ret_entry_tracer->found();
+}
+
 awaitable<void> TraceCallExecutor::trace_filter(const TraceFilter& trace_filter, json::Stream* stream) {
     SILK_INFO << "TraceCallExecutor::trace_filter: filter " << trace_filter;
 
@@ -1758,6 +1790,31 @@ void OperationTracer::on_execution_start(evmc_revision, const evmc_message& msg,
                << ", msg.value: " << intx::hex(intx::be::load<intx::uint256>(msg.value))
                << ", code: " << silkworm::to_hex(code)
                << ", msg.input_data: " << to_hex(ByteView{msg.input_data, msg.input_size});
+}
+
+void TouchTracer::on_execution_start(evmc_revision, const evmc_message& msg, evmone::bytes_view code) noexcept {
+    if (found_) {
+        return;
+    }
+    auto sender = evmc::address{msg.sender};
+    auto recipient = evmc::address{msg.recipient};
+    auto code_address = evmc::address{msg.code_address};
+
+    bool create = (!initial_ibs_.exists(recipient) && recipient != code_address);
+
+    if (!found_ && (sender == address_ || recipient == address_ || code_address == address_)) {
+        this->found_ = true;
+    }
+
+    SILK_DEBUG << "TouchTracer::on_execution_start: gas: " << std::dec << msg.gas
+               << " create: " << create
+               << ", msg.depth: " << msg.depth
+               << ", msg.kind: " << msg.kind
+               << ", sender: " << sender
+               << ", recipient: " << recipient << " (created: " << create << ")"
+               << ", code_address: " << code_address
+               << ", msg.value: " << intx::hex(intx::be::load<intx::uint256>(msg.value))
+               << ", code: " << silkworm::to_hex(code);
 }
 
 }  // namespace silkworm::rpc::trace

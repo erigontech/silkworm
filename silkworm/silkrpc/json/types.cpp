@@ -378,6 +378,25 @@ void to_json(nlohmann::json& json, const BlockTransactionsResponse& b) {
     }
 }
 
+void to_json(nlohmann::json& json, const TransactionsWithReceipts& b) {
+    json["firstPage"] = b.first_page;
+    json["lastPage"] = b.last_page;
+    json["txs"] = b.transactions;
+    for (std::size_t i{0}; i < json["txs"].size(); i++) {
+        auto& json_txn = json["txs"][i];
+        json_txn["transactionIndex"] = to_quantity(b.receipts.at(i).tx_index);
+        json_txn["blockHash"] = b.blocks.at(i).hash;
+        json_txn["blockNumber"] = to_quantity(b.blocks.at(i).header.number);
+        json_txn["gasPrice"] = to_quantity(b.transactions[i].effective_gas_price(b.blocks.at(i).header.base_fee_per_gas.value_or(0)));
+    }
+    json["receipts"] = b.receipts;
+    for (std::size_t i{0}; i < json["receipts"].size(); i++) {
+        auto& json_txn = json["receipts"][i];
+        json_txn["effectiveGasPrice"] = to_quantity(b.transactions[i].effective_gas_price(b.blocks.at(i).header.base_fee_per_gas.value_or(0)));
+        json_txn["timestamp"] = b.blocks.at(i).header.timestamp;
+    }
+}
+
 void to_json(nlohmann::json& json, const PayloadStatus& payload_status) {
     json["status"] = payload_status.status;
 

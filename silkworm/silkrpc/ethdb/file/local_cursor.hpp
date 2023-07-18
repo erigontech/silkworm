@@ -50,6 +50,8 @@ class LocalCursor : public CursorDupSort {
 
     boost::asio::awaitable<KeyValue> next() override;
 
+    boost::asio::awaitable<KeyValue> previous() override;
+
     boost::asio::awaitable<KeyValue> next_dup() override;
 
     boost::asio::awaitable<void> close_cursor() override;

@@ -105,6 +105,18 @@ class DummyCursor : public ethdb::CursorDupSort {
         co_return out;
     }
 
+    boost::asio::awaitable<KeyValue> previous() override {
+        KeyValue out;
+
+        if (--itr_ != table_.begin()) {
+            auto key{*silkworm::from_hex(itr_.key())};
+            auto value{*silkworm::from_hex(itr_.value().get<std::string>())};
+            out = KeyValue{key, value};
+        }
+
+        co_return out;
+    }
+
     boost::asio::awaitable<KeyValue> next_dup() override {
         KeyValue out;
 

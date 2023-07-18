@@ -1123,6 +1123,14 @@ void DataModel::for_last_n_headers(size_t n, std::function<void(BlockHeader&&)> 
     }
 }
 
+bool DataModel::read_block(BlockNum number, bool read_senders, Block& block) const {
+    const auto hash{db::read_canonical_hash(txn_, number)};
+    if (!hash) {
+        return false;
+    }
+    return read_block(hash->bytes, number, read_senders, block);
+}
+
 bool DataModel::read_block_from_snapshot(BlockNum height, bool read_senders, Block& block) {
     if (!repository_) {
         return false;

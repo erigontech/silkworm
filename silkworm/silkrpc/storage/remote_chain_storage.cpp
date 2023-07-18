@@ -58,9 +58,13 @@ Task<bool> RemoteChainStorage::read_block(const Hash& hash, silkworm::Block& blo
     co_return co_await backend_->get_block(block_number, hash.bytes, /*.read_senders=*/false, block);
 }
 
+Task<bool> RemoteChainStorage::read_block(BlockNum number, bool read_senders, silkworm::Block& block) const {
+    co_return co_await backend_->get_block({.number = number}, read_senders, block);
+}
+
 Task<std::optional<BlockHeader>> RemoteChainStorage::read_header(BlockNum number, HashAsArray& hash) const {
     silkworm::Block block;
-    auto success = co_await backend_->get_block(number, hash, /*.read_senders=*/false, block);
+    const bool success = co_await backend_->get_block(number, hash, /*.read_senders=*/false, block);
     std::optional<BlockHeader> header;
     if (success) {
         header = std::move(block.header);

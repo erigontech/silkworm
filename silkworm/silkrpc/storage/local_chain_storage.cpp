@@ -20,8 +20,6 @@
 
 namespace silkworm::rpc {
 
-// TODO(canepat) moving here DataModel implementation and get rid of DataModel
-
 LocalChainStorage::LocalChainStorage(db::ROTxn& txn) : data_model_{txn} {}
 
 Task<std::optional<ChainConfig>> LocalChainStorage::read_chain_config() const {
@@ -54,6 +52,10 @@ Task<bool> LocalChainStorage::read_block(const Hash& hash, Block& block) const {
         co_return false;
     }
     co_return co_await read_block(hash, *number, block);
+}
+
+Task<bool> LocalChainStorage::read_block(BlockNum number, bool read_senders, Block& block) const {
+    co_return data_model_.read_block(number, read_senders, block);
 }
 
 Task<std::optional<BlockHeader>> LocalChainStorage::read_header(BlockNum number, HashAsArray hash) const {

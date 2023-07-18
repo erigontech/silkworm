@@ -16,6 +16,7 @@
 
 #include "rpc_api.hpp"
 
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <thread>
@@ -45,6 +46,8 @@ using Catch::Matchers::Message;
 std::shared_ptr<mdbx::env_managed> open_db() {
     //        std::string chaindata_dir{DataDirectory{}.chaindata().path().string()};
     std::string chaindata_dir{TemporaryDirectory::get_unique_temporary_path()};
+    INFO("chaindata_dir: " << chaindata_dir);
+
     db::EnvConfig chain_conf{
         .path = chaindata_dir,
         .create = true,
@@ -145,28 +148,89 @@ class RpcApiTestBase : public LocalContextTestBase {
     commands::RpcApiTable rpc_api_table;
 };
 
-TEST_CASE("rpc_api load state", "[silkrpc][rpc_api][global]") {
+TEST_CASE("rpc_api io", "[silkrpc][rpc_api]") {
+    auto workingDir = std::filesystem::current_path();
+    // std::cout << "Current path is " << workingDir << '\n';
+
+    while (!std::filesystem::exists(workingDir / "third_party" / "execution-apis") && workingDir != "/") {
+        workingDir = workingDir.parent_path();
+    }
+
+    REQUIRE(std::filesystem::exists(workingDir / "third_party" / "execution-apis"));
+
+    auto testsDir = workingDir / "third_party" / "execution-apis" / "tests";
+
     auto db = open_db();
-    db::RWTxn txn{*db};
+    db::RWTxnManaged txn{*db};
     db::table::check_or_create_chaindata_tables(txn);
     populate_genesis(txn);
     populate_blocks(txn);
     txn.commit_and_stop();
 
     // Set schema version
-//    silkworm::db::VersionBase v{3, 0, 0};
-//    db::write_schema_version(txn, v);
+    //    silkworm::db::VersionBase v{3, 0, 0};
+    //    db::write_schema_version(txn, v);
+
+    RpcApiTestBase<RequestHandler_ForTest> test_base{db};
+
+    for (const auto& test_file : std::filesystem::recursive_directory_iterator(testsDir)) {
+        if (!test_file.is_directory() && test_file.path().extension() == ".io") {
+            // std::cout << "Running test " << test_file.path() << std::endl;
+            auto test_name = test_file.path().filename();
+
+            std::ifstream test_stream(test_file.path());
+
+            if (!test_stream.is_open()) {
+                std::cerr << "Failed to open the file." << std::endl;
+                throw "dupa";
+            }
+
+            SECTION("RPC IO test " + test_name.string()) {
+                std::string line_out;
+                std::string line_in;
+
+                while (std::getline(test_stream, line_out) && std::getline(test_stream, line_in)) {
+                    if (!line_out.starts_with(">> ") || !line_in.starts_with("<< ")) {
+                        FAIL("Invalid test file format");
+                    }
+
+                    auto request = nlohmann::json::parse(line_out.substr(3));
+                    auto expected = nlohmann::json::parse(line_in.substr(3));
+
+                    http::Reply reply;
+                    test_base.run<&RequestHandler_ForTest::request_and_create_reply>(request, reply);
+                    INFO("Request: " << request.dump());
+                    CHECK(nlohmann::json::parse(reply.content) == expected);
+                }
+            }
+        }
+    }
+
+    db->close();
+}
+
+TEST_CASE("rpc_api io (individual)", "[silkrpc][rpc_api]") {
+    auto db = open_db();
+    db::RWTxnManaged txn{*db};
+    db::table::check_or_create_chaindata_tables(txn);
+    populate_genesis(txn);
+    populate_blocks(txn);
+    txn.commit_and_stop();
+
+    // Set schema version
+    //    silkworm::db::VersionBase v{3, 0, 0};
+    //    db::write_schema_version(txn, v);
 
     RpcApiTestBase<RequestHandler_ForTest> test_base{db};
 
     SECTION("wrapper") {
-                SECTION("test1") {
-                    auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_getBlockTransactionCountByHash","params":["0xfe21bb173f43067a9f90cfc59bbb6830a7a2929b5de4a61f372a9db28e87f9ae"]})"_json;
-                    http::Reply reply;
+        SECTION("test1") {
+            auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_getBlockTransactionCountByHash","params":["0xfe21bb173f43067a9f90cfc59bbb6830a7a2929b5de4a61f372a9db28e87f9ae"]})"_json;
+            http::Reply reply;
 
-                    test_base.run<&RequestHandler_ForTest::request_and_create_reply>(request, reply);
-                    CHECK(nlohmann::json::parse(reply.content) == R"({"jsonrpc":"2.0","id":1,"result":"0x1"})"_json);
-                }
+            test_base.run<&RequestHandler_ForTest::request_and_create_reply>(request, reply);
+            CHECK(nlohmann::json::parse(reply.content) == R"({"jsonrpc":"2.0","id":1,"result":"0x1"})"_json);
+        }
 
         SECTION("test2") {
             auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_getCode","params":["0xaa00000000000000000000000000000000000000","latest"]})"_json;

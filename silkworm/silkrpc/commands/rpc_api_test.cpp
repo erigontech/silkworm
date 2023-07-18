@@ -88,17 +88,17 @@ void populate_blocks(db::RWTxn& txn) {
             throw "Failed to decode RLP file";
         }
 
-        //store original hashes
+        // store original hashes
         auto block_hash = block.header.hash();
         auto block_hash_key = db::block_key(block.header.number, block_hash.bytes);
 
-        //FIX 1: populate senders table
+        // FIX 1: populate senders table
         for (auto& block_txn : block.transactions) {
             block_txn.recover_sender();
         }
         db::write_senders(txn, block_hash, block.header.number, block);
 
-        //FIX 2: insert system transactions
+        // FIX 2: insert system transactions
         block.transactions.emplace(block.transactions.begin(), silkworm::Transaction{});
         block.transactions.emplace_back(silkworm::Transaction{});
 
@@ -230,7 +230,6 @@ TEST_CASE("rpc_api io (individual)", "[silkrpc][rpc_api]") {
     RpcApiTestBase<RequestHandler_ForTest> test_base{db};
 
     SECTION("wrapper") {
-
         SECTION("manual") {
             auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_call","params":[{"from":"0xaa00000000000000000000000000000000000000","to":"0xaa00000000000000000000000000000000000000"},"latest"]})"_json;
             http::Reply reply;

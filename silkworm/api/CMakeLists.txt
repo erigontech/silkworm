@@ -35,6 +35,7 @@ target_include_directories(silkworm_api PUBLIC ${SILKWORM_MAIN_DIR})
 get_target_property(silkworm_api_LINK_OPTIONS silkworm_api LINK_OPTIONS)
 list(REMOVE_ITEM silkworm_api_LINK_OPTIONS "-Wl,-stack_size")
 list(REMOVE_ITEM silkworm_api_LINK_OPTIONS "-Wl,${SILKWORM_STACK_SIZE}")
+set_property(TARGET silkworm_api PROPERTY POSITION_INDEPENDENT_CODE TRUE)
 set_target_properties(silkworm_api PROPERTIES LINK_OPTIONS "${silkworm_api_LINK_OPTIONS}")
 
 set(SILKWORM_API_PUBLIC_LIBS "")

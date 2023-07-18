@@ -28,6 +28,7 @@ static const std::vector<std::pair<std::string, const ChainConfig*>> kKnownChain
     {"mainnet", &kMainnetConfig},
     {"goerli", &kGoerliConfig},
     {"sepolia", &kSepoliaConfig},
+    {"gethtestnet", &kGethTestnetConfig},
 };
 
 constexpr const char* kTerminalTotalDifficulty{"terminalTotalDifficulty"};

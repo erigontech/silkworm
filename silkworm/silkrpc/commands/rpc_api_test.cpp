@@ -85,22 +85,27 @@ void populate_blocks(db::RWTxn& txn) {
         silkworm::Block block;
 
         if (!silkworm::rlp::decode(view, block, silkworm::rlp::Leftover::kAllow)) {
-            std::cerr << "Failed to open the file." << std::endl;
-            throw "dupa";
+            throw "Failed to decode RLP file";
         }
 
+        //store original hashes
+        auto block_hash = block.header.hash();
+        auto block_hash_key = db::block_key(block.header.number, block_hash.bytes);
+
+        //FIX 1: populate senders table
         for (auto& block_txn : block.transactions) {
             block_txn.recover_sender();
         }
+        db::write_senders(txn, block_hash, block.header.number, block);
 
-        auto block_hash = block.header.hash();
-        auto block_hash_key = db::block_key(block.header.number, block_hash.bytes);
+        //FIX 2: insert system transactions
+        block.transactions.emplace(block.transactions.begin(), silkworm::Transaction{});
+        block.transactions.emplace_back(silkworm::Transaction{});
 
         db::write_header(txn, block.header, /*with_header_numbers=*/true);            // Write table::kHeaders and table::kHeaderNumbers
         db::write_canonical_header_hash(txn, block_hash.bytes, block.header.number);  // Insert header hash as canonical
         db::write_total_difficulty(txn, block_hash_key, block.header.difficulty);     // Write initial difficulty
         db::write_body(txn, block, block_hash, block.header.number);
-        db::write_senders(txn, block_hash, block.header.number, block);
         db::write_head_header_hash(txn, block_hash.bytes);  // Update head header in config
         db::write_last_head_block(txn, block_hash);         // Update head block in config
         db::write_last_safe_block(txn, block_hash);         // Update last safe block in config
@@ -224,6 +229,15 @@ TEST_CASE("rpc_api io (individual)", "[silkrpc][rpc_api]") {
     RpcApiTestBase<RequestHandler_ForTest> test_base{db};
 
     SECTION("wrapper") {
+
+        SECTION("manual") {
+            auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_call","params":[{"from":"0xaa00000000000000000000000000000000000000","to":"0xaa00000000000000000000000000000000000000"},"latest"]})"_json;
+            http::Reply reply;
+
+            test_base.run<&RequestHandler_ForTest::request_and_create_reply>(request, reply);
+            CHECK(nlohmann::json::parse(reply.content) == R"({"jsonrpc":"2.0","id":1,"result":"0x"})"_json);
+        }
+
         SECTION("test1") {
             auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_getBlockTransactionCountByHash","params":["0xfe21bb173f43067a9f90cfc59bbb6830a7a2929b5de4a61f372a9db28e87f9ae"]})"_json;
             http::Reply reply;

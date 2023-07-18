@@ -36,23 +36,6 @@
 
 namespace silkworm::rpc::core::rawdb {
 
-Addresses addresses_from_binary(const silkworm::Bytes& bytes) {
-    Addresses addresses;
-    for (size_t i{0}; i < bytes.length(); i += kAddressLength) {
-        auto data = bytes.substr(i, kAddressLength);
-        addresses.push_back(silkworm::to_evmc_address(silkworm::ByteView{data}));
-    }
-    return addresses;
-}
-
-silkworm::Bytes addresses_to_binary(const Addresses& addresses) {
-    silkworm::Bytes bytes;
-    for (const auto& address : addresses) {
-        bytes.append(address.bytes, kAddressLength);
-    }
-    return bytes;
-}
-
 boost::asio::awaitable<uint64_t> read_header_number(const DatabaseReader& reader, const evmc::bytes32& block_hash) {
     const silkworm::ByteView block_hash_bytes{block_hash.bytes, silkworm::kHashLength};
     const auto value{co_await reader.get_one(db::table::kHeaderNumbersName, block_hash_bytes)};
@@ -224,7 +207,6 @@ boost::asio::awaitable<silkworm::BlockBody> read_body(const DatabaseReader& read
         // 1 system txn at the beginning of block and 1 at the end
         SILK_DEBUG << "base_txn_id: " << stored_body.base_txn_id + 1 << " txn_count: " << stored_body.txn_count - 2;
         auto transactions = co_await read_canonical_transactions(reader, stored_body.base_txn_id + 1, stored_body.txn_count - 2);
-        // auto transactions = co_await read_canonical_transactions(reader, stored_body.base_txn_id, stored_body.txn_count);
         if (!transactions.empty()) {
             const auto senders = co_await read_senders(reader, block_hash, block_number);
             if (senders.size() == transactions.size()) {

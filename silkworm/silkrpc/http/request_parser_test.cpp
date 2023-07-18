@@ -54,7 +54,9 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
     SECTION("empty request") {
         RequestParser parser;
         Request req;
-        std::array<char, 0> buffer{};
+        // Non-empty buffer is required to avoid runtime error: applying zero offset to null pointer
+        // UndefinedBehaviorSanitizer: undefined-behavior /home/circleci/project/third_party/picohttpparser/picohttpparser.c:404:55
+        std::array<char, 1> buffer{};
         std::size_t bytes_read{0};
         const auto result{parser.parse(req, buffer.data(), buffer.data() + bytes_read)};
         CHECK(result == RequestParser::ResultType::bad);

@@ -76,7 +76,7 @@ void SnapshotRepository::reopen_folder() {
 }
 
 void SnapshotRepository::close() {
-    SILK_INFO << "Close snapshot repository folder: " << settings_.repository_dir.string();
+    SILK_DEBUG << "Close snapshot repository folder: " << settings_.repository_dir.string();
     for (const auto& [_, header_seg] : this->header_segments_) {
         header_seg->close();
     }
@@ -321,7 +321,7 @@ SnapshotPathList SnapshotRepository::get_files(const std::string& ext) const {
         if (!fs::is_regular_file(file.path()) || file.path().extension().string() != ext) {
             continue;
         }
-        SILK_DEBUG << "Path: " << file.path() << " name: " << file.path().filename();
+        SILK_TRACE << "Path: " << file.path() << " name: " << file.path().filename();
         const auto snapshot_file = SnapshotPath::parse(file);
         if (snapshot_file) {
             snapshot_files.push_back(snapshot_file.value());

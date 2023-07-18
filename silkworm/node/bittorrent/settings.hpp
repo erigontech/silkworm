@@ -25,8 +25,8 @@ namespace silkworm {
 //! The settings for handling BitTorrent protocol
 struct BitTorrentSettings {
     inline const static std::filesystem::path kDefaultTorrentRepoPath{".torrent"};
-    constexpr static std::chrono::seconds kDefaultWaitBetweenAlertPolls{10};
-    constexpr static int kDefaultNumberOfPollsBetweenStats{3};
+    constexpr static std::chrono::seconds kDefaultWaitBetweenAlertPolls{1};
+    constexpr static int kDefaultNumberOfPollsBetweenStats{30};
     constexpr static std::chrono::seconds kDefaultResumeDataSaveInterval{60};
     constexpr static bool kDefaultVerifyOnStartup{false};
     constexpr static bool kDefaultSeeding{false};

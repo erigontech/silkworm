@@ -17,6 +17,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/io_context.hpp>
@@ -40,7 +41,7 @@ struct EngineRpcSettings {
     std::string private_api_addr{kDefaultPrivateApiAddr};
     log::Level log_verbosity{log::Level::kInfo};
     concurrency::WaitMode wait_mode{concurrency::WaitMode::blocking};
-    std::string jwt_secret_file;
+    std::optional<std::string> jwt_secret_file;
 };
 
 class Sync {

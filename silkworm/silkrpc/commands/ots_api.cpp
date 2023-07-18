@@ -676,7 +676,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_search_transactions_before(co
         uint64_t result_count = 0;
         bool has_more = true;
 
-        while (!(result_count >= page_size || !has_more)) {
+        while (result_count < page_size && has_more) {
             std::vector<TransactionsWithReceipts> transactions_with_receipts_vec;
 
             has_more = co_await trace_blocks(from_to_provider, *tx, address, page_size, result_count, transactions_with_receipts_vec);
@@ -760,7 +760,7 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_search_transactions_after(con
         uint64_t result_count = 0;
         bool has_more = true;
 
-        while (!(result_count >= page_size || !has_more)) {
+        while (result_count < page_size && has_more) {
             std::vector<TransactionsWithReceipts> transactions_with_receipts_vec;
 
             has_more = co_await trace_blocks(from_to_provider, *tx, address, page_size, result_count, transactions_with_receipts_vec);
@@ -778,20 +778,10 @@ boost::asio::awaitable<void> OtsRpcApi::handle_ots_search_transactions_after(con
             }
         }
 
-        auto txs_size = transactions.size();
-
         // Reverse results
-        for (size_t i = 0; i < txs_size / 2; i++) {
-            auto tx_temp = transactions[i];
-            auto receipts_temp = receipts[i];
-            auto blocks_temp = blocks[i];
-            transactions[i] = transactions[txs_size - 1 - i];
-            transactions[txs_size - 1 - i] = tx_temp;
-            receipts[i] = receipts[txs_size - 1 - i];
-            receipts[txs_size - 1 - i] = receipts_temp;
-            blocks[i] = blocks[txs_size - 1 - i];
-            blocks[txs_size - 1 - i] = blocks_temp;
-        }
+        std::reverse(transactions.begin(), transactions.end());
+        std::reverse(receipts.begin(), receipts.end());
+        std::reverse(blocks.begin(), blocks.end());
 
         TransactionsWithReceipts results{is_last_page, !has_more, receipts, transactions, blocks};
 

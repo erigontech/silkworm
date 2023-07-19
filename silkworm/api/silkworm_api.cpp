@@ -17,8 +17,9 @@
 #include "silkworm_api.h"
 
 #include <cassert>
+#include <vector>
 
-#include <gsl/gsl_util>
+#include <gsl/util>
 
 #include <silkworm/core/chain/config.hpp>
 #include <silkworm/core/execution/execution.hpp>
@@ -54,12 +55,15 @@ class RWTxnUnmanaged : public RWTxn, protected ::mdbx::txn {
 
 SILKWORM_EXPORT
 SilkwormStatusCode silkworm_execute_blocks(MDBX_txn* mdbx_txn, uint64_t chain_id, uint64_t start_block, uint64_t max_block,
-                                           uint64_t batch_size, bool /*write_receipts*/, uint64_t* last_executed_block,
+                                           uint64_t batch_size, bool write_receipts, uint64_t* last_executed_block,
                                            int* mdbx_error_code) SILKWORM_NOEXCEPT {
     assert(mdbx_txn);
 
     using namespace silkworm;
 
+    if (start_block > max_block) {
+        return kSilkwormInvalidBlockRange;
+    }
     const auto chain_info = lookup_known_chain(chain_id);
     if (!chain_info) {
         return kSilkwormUnknownChainId;
@@ -67,50 +71,50 @@ SilkwormStatusCode silkworm_execute_blocks(MDBX_txn* mdbx_txn, uint64_t chain_id
     const ChainConfig* chain_config{chain_info->second};
 
     try {
+        // Wrap MDBX txn into an internal *unmanaged* txn, i.e. MDBX txn is only used but neither aborted nor committed
         db::RWTxnUnmanaged txn{mdbx_txn};
-        // mdbx::txn txn{mdbx_txn};
-        // lmdb::Transaction txn{/*parent=*/nullptr, mdb_txn, /*flags=*/0};
-        // auto cleanup{gsl::finally([&txn] { (*txn).handle() = nullptr; })};  // avoid aborting mdb_txn
 
-        db::Buffer buffer{txn, /*prune_history_threshold=*/0};
+        db::Buffer state_buffer{txn, /*prune_history_threshold=*/0};
         db::DataModel data_model{txn};
 
-        // TODO(canepat) prefetch blocks like in execution stage
-
-        for (uint64_t block_num{start_block}; block_num <= max_block; ++block_num) {
-            Block block;
-            const bool success{data_model.read_block(block_num, /*read_senders=*/true, block)};
+        // Preload all requested block from storage, i.e. from MDBX database or snapshots
+        std::vector<Block> prefetched_blocks;
+        prefetched_blocks.reserve(max_block - start_block);
+        for (BlockNum block_number{start_block}; block_number <= max_block; ++block_number) {
+            prefetched_blocks.emplace_back();
+            const bool success{data_model.read_block(block_number, /*read_senders=*/true, prefetched_blocks.back())};
             if (!success) {
                 return kSilkwormBlockNotFound;
             }
+        }
 
-            const auto validation_result{execute_block(block, buffer, *chain_config)};
+        for (const auto& block : prefetched_blocks) {
+            std::vector<Receipt> receipts;
+            const auto validation_result{execute_block(block, state_buffer, *chain_config, receipts)};
             if (validation_result != ValidationResult::kOk) {
                 return kSilkwormInvalidBlock;
             }
 
-            // TODO(canepat) check if writing receipts to state is necessary
-            // std::vector<Receipt> receipts{execute_block(bh->block, buffer)};
-            /*if (write_receipts) {
-                buffer.insert_receipts(block_num, receipts);
-            }*/
-
-            if (last_executed_block) {
-                *last_executed_block = block_num;
+            if (write_receipts) {
+                state_buffer.insert_receipts(block.header.number, receipts);
             }
 
-            if (block_num % 1000 == 0) {
-                SILK_INFO << "Blocks <= " << block_num << " executed";
+            if (last_executed_block) {
+                *last_executed_block = block.header.number;
+            }
+
+            if (block.header.number % 1000 == 0) {
+                SILK_INFO << "Blocks <= " << block.header.number << " executed";
             }
 
             // TODO(canepat) was buffer.current_batch_size() so check execution stage
-            if (buffer.current_batch_state_size() >= batch_size) {
-                buffer.write_to_db();
+            if (state_buffer.current_batch_state_size() >= batch_size) {
+                state_buffer.write_to_db();
                 return kSilkwormSuccess;
             }
         }
 
-        buffer.write_to_db();
+        state_buffer.write_to_db();
         return kSilkwormSuccess;
     } catch (const mdbx::exception& e) {
         if (mdbx_error_code) {

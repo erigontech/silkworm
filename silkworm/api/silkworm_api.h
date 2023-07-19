@@ -45,10 +45,10 @@ extern "C" {
 
 enum SilkwormStatusCode {
     kSilkwormSuccess = 0,
-    kSilkwormBlockNotFound = 1,
-    kSilkwormUnknownChainId = 2,
-    kSilkwormMdbxError = 3,
-    kSilkwormMissingSenders = 4,
+    kSilkwormInvalidBlockRange = 1,
+    kSilkwormBlockNotFound = 2,
+    kSilkwormUnknownChainId = 3,
+    kSilkwormMdbxError = 4,
     kSilkwormInvalidBlock = 5,
     kSilkwormDecodingError = 6,
     kSilkwormUnknownError = -1
@@ -76,9 +76,10 @@ enum SilkwormStatusCode {
  * (blocks up to and incl. last_executed_block were still executed).
  */
 SILKWORM_EXPORT
-SilkwormStatusCode silkworm_execute_blocks(MDBX_txn* txn, uint64_t chain_id, uint64_t start_block, uint64_t max_block,
-                                           uint64_t batch_size, bool write_receipts, uint64_t* last_executed_block,
-                                           int* mdbx_error_code) SILKWORM_NOEXCEPT;
+enum SilkwormStatusCode silkworm_execute_blocks(
+    MDBX_txn* txn, uint64_t chain_id, uint64_t start_block, uint64_t max_block,
+    uint64_t batch_size, bool write_receipts, uint64_t* last_executed_block,
+    int* mdbx_error_code) SILKWORM_NOEXCEPT;
 
 #if __cplusplus
 }

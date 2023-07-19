@@ -38,6 +38,10 @@ class RequestParser {
      * has been consumed.
      */
     ResultType parse(Request& req, const char* begin, const char* end);
+
+  private:
+    uint64_t last_len_{0};
+    char* buffer_{0};
 };
 
 }  // namespace silkworm::rpc::http

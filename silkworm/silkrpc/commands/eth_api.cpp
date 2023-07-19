@@ -238,23 +238,26 @@ awaitable<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::jso
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-        auto chain_storage = tx->create_storage(tx_database, backend_);
+
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
         const auto cached_block = block_cache_->get(block_hash);
-        uint64_t block_number{0};
-        bool block_read = true;
+        bool block_found{true};
         std::shared_ptr<BlockWithHash> block_with_hash;
         if (cached_block) {
             block_with_hash = *cached_block;
         } else {
             block_with_hash = std::make_shared<BlockWithHash>();
-            block_read = co_await chain_storage->read_block(block_hash, block_with_hash->block);
-            if (block_read) {
+            block_found = co_await chain_storage->read_block(block_hash, block_with_hash->block);
+            if (block_found) {
                 block_with_hash->hash = block_with_hash->block.header.hash();
+                if (not block_with_hash->block.transactions.empty()) {  // Don't save empty (i.e. without txs) blocks to cache
+                    block_cache_->insert(block_with_hash->hash, block_with_hash);
+                }
             }
         }
 
-        if (block_read) {
-            block_number = block_with_hash->block.header.number;
+        if (block_found) {
+            BlockNum block_number = block_with_hash->block.header.number;
             const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
             ensure_post_condition(total_difficulty.has_value(), "no difficulty for block number=" + std::to_string(block_number));
             const Block extended_block{*block_with_hash, *total_difficulty, full_tx};
@@ -296,11 +299,9 @@ awaitable<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::j
         ethdb::TransactionDatabase tx_database{*tx};
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
 
-        auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
         const auto block_hash{co_await chain_storage->read_canonical_hash(block_number)};
         if (block_hash) {
-            ensure_pre_condition(block_hash.has_value(), "block number " + std::to_string(block_number) + " is not canonical");
-
             const auto cached_block = block_cache_->get(*block_hash);
             std::shared_ptr<BlockWithHash> block_with_hash;
             if (cached_block) {
@@ -310,6 +311,9 @@ awaitable<void> EthereumRpcApi::handle_eth_get_block_by_number(const nlohmann::j
                 const bool block_read = co_await chain_storage->read_block(*block_hash, block_number, block_with_hash->block);
                 ensure(block_read, "cannot find block for number " + std::to_string(block_number));
                 block_with_hash->hash = block_with_hash->block.header.hash();
+                if (not block_with_hash->block.transactions.empty()) {  // Don't save empty (i.e. without txs) blocks to cache
+                    block_cache_->insert(block_with_hash->hash, block_with_hash);
+                }
             }
             const auto total_difficulty{co_await chain_storage->read_total_difficulty(block_with_hash->hash, block_number)};
             ensure_post_condition(total_difficulty.has_value(), "no difficulty for block number=" + std::to_string(block_number));
@@ -1158,6 +1162,9 @@ awaitable<void> EthereumRpcApi::handle_eth_call(const nlohmann::json& request, s
             const bool block_read = co_await chain_storage->read_block(*block_hash, block_number, block_with_hash->block);
             ensure(block_read, "cannot find block for number " + std::to_string(block_number));
             block_with_hash->hash = block_with_hash->block.header.hash();
+            if (not block_with_hash->block.transactions.empty()) {  // Don't save empty (i.e. without txs) blocks to cache
+                block_cache_->insert(block_with_hash->hash, block_with_hash);
+            }
         }
         silkworm::Transaction txn{call.to_transaction()};
 

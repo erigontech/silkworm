@@ -17,8 +17,8 @@
 find_package(Boost REQUIRED)
 find_package(CLI11 REQUIRED)
 
-# add_executable(execute execute.c)
-# target_include_directories(execute PUBLIC ${CMAKE_SOURCE_DIR} "${SILKWORM_MAIN_DIR}/third_party/libmdbx")
+# add_executable(execute execute.c) target_include_directories(execute PUBLIC ${CMAKE_SOURCE_DIR}
+# "${SILKWORM_MAIN_DIR}/third_party/libmdbx")
 
 add_executable(execute_cpp execute.cpp)
 target_include_directories(execute_cpp PUBLIC ${CMAKE_SOURCE_DIR} "${SILKWORM_MAIN_DIR}/third_party/libmdbx")

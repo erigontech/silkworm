@@ -77,22 +77,22 @@ class Server {
         }
 
         // gRPC async model requires the server to register the RPC services first.
-        SILK_DEBUG << "Server " << this << " registering async services";
+        SILK_TRACE << "Server " << this << " registering async services";
         register_async_services(builder);
 
         server_ = builder.BuildAndStart();
-        SILK_DEBUG << "Server " << this << " bound at selected port: " << selected_port;
+        SILK_TRACE << "Server " << this << " bound at selected port: " << selected_port;
         if (server_ == nullptr) {
             SILK_ERROR << "Server " << this << " BuildAndStart failed [" << settings_.address_uri << "]";
             throw std::runtime_error("cannot start gRPC server at " + settings_.address_uri);
         }
 
         // gRPC async model requires the server to register one request call for each RPC in advance.
-        SILK_DEBUG << "Server " << this << " registering request calls";
+        SILK_TRACE << "Server " << this << " registering request calls";
         register_request_calls();
 
         // Start the server execution: the context pool will spawn the context threads.
-        SILK_DEBUG << "Server " << this << " starting execution loop";
+        SILK_TRACE << "Server " << this << " starting execution loop";
         context_pool_.start();
 
         SILK_TRACE << "Server::build_and_start " << this << " END";
@@ -115,7 +115,7 @@ class Server {
         }
         shutdown_ = true;
 
-        SILK_DEBUG << "Server::shutdown " << this << " shutting down server immediately";
+        SILK_TRACE << "Server::shutdown " << this << " shutting down server immediately";
 
         // Order matters here: 1) shutdown the server (immediate deadline)
         if (server_) {
@@ -123,7 +123,7 @@ class Server {
             server_->Wait();
         }
 
-        SILK_DEBUG << "Server::shutdown " << this << " stopping context pool";
+        SILK_TRACE << "Server::shutdown " << this << " stopping context pool";
 
         // Order matters here: 2) shutdown and drain the queues
         context_pool_.stop();

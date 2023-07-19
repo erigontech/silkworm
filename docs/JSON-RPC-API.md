@@ -88,7 +88,7 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | engine_exchangeTransitionConfigurationV1   | Yes          |                                            |
 |                                            |              |                                            |
 | debug_accountRange                         | Yes          |                                            |
-| debug_accountAt                            | -            | not yet implemented                        |
+| debug_accountAt                            | Yes          |                                            |
 | debug_getModifiedAccountsByHash            | Yes          |                                            |
 | debug_getModifiedAccountsByNumber          | Yes          |                                            |
 | debug_storageRangeAt                       | Yes          |                                            |

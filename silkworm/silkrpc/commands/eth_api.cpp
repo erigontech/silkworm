@@ -347,9 +347,9 @@ awaitable<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_hash(c
     try {
         ethdb::TransactionDatabase tx_database{*tx};
         auto chain_storage = tx->create_storage(tx_database, backend_);
-        const auto cached_block = block_cache_->get(block_hash);
         bool block_read = true;
         std::shared_ptr<BlockWithHash> block_with_hash;
+        const auto cached_block = block_cache_->get(block_hash);
         if (cached_block) {
             block_with_hash = *cached_block;
         } else {
@@ -394,8 +394,6 @@ awaitable<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_number
         auto chain_storage = tx->create_storage(tx_database, backend_);
         const auto block_hash{co_await chain_storage->read_canonical_hash(block_number)};
         if (block_hash) {
-            ensure_pre_condition(block_hash.has_value(), "block number " + std::to_string(block_number) + " is not canonical");
-
             const auto cached_block = block_cache_->get(*block_hash);
             bool block_read = true;
             std::shared_ptr<BlockWithHash> block_with_hash;
@@ -404,9 +402,6 @@ awaitable<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_number
             } else {
                 block_with_hash = std::make_shared<BlockWithHash>();
                 block_read = co_await chain_storage->read_block(*block_hash, block_with_hash->block);
-                if (block_read) {
-                    block_with_hash->hash = block_with_hash->block.header.hash();
-                }
             }
             uint64_t tx_count = 0;
             if (block_read) {

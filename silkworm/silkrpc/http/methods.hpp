@@ -92,6 +92,7 @@ constexpr const char* k_debug_accountRange{"debug_accountRange"};
 constexpr const char* k_debug_getModifiedAccountsByNumber{"debug_getModifiedAccountsByNumber"};
 constexpr const char* k_debug_getModifiedAccountsByHash{"debug_getModifiedAccountsByHash"};
 constexpr const char* k_debug_storageRangeAt{"debug_storageRangeAt"};
+constexpr const char* k_debug_accountAt{"debug_accountAt"};
 constexpr const char* k_debug_traceTransaction{"debug_traceTransaction"};
 constexpr const char* k_debug_traceCall{"debug_traceCall"};
 constexpr const char* k_debug_traceCallMany{"debug_traceCallMany"};

@@ -101,6 +101,7 @@ void RpcApiTable::add_debug_handlers() {
     method_handlers_[http::method::k_debug_getModifiedAccountsByNumber] = &commands::RpcApi::handle_debug_get_modified_accounts_by_number;
     method_handlers_[http::method::k_debug_getModifiedAccountsByHash] = &commands::RpcApi::handle_debug_get_modified_accounts_by_hash;
     method_handlers_[http::method::k_debug_storageRangeAt] = &commands::RpcApi::handle_debug_storage_range_at;
+    method_handlers_[http::method::k_debug_accountAt] = &commands::RpcApi::handle_debug_account_at;
 
     stream_handlers_[http::method::k_debug_traceCall] = &commands::RpcApi::handle_debug_trace_call;
     stream_handlers_[http::method::k_debug_traceCallMany] = &commands::RpcApi::handle_debug_trace_call_many;

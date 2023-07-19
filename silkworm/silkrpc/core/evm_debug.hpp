@@ -97,6 +97,30 @@ class DebugTracer : public silkworm::EvmTracer {
     std::int64_t gas_on_precompiled_{0};
 };
 
+class AccountTracer : public silkworm::EvmTracer {
+  public:
+    explicit AccountTracer(const evmc::address& address) : address_{address} {}
+
+    AccountTracer(const AccountTracer&) = delete;
+    AccountTracer& operator=(const AccountTracer&) = delete;
+
+    void on_execution_start(evmc_revision, const evmc_message&, evmone::bytes_view) noexcept override{};
+
+    void on_instruction_start(uint32_t, const intx::uint256*, int, int64_t,
+                              const evmone::ExecutionState&, const silkworm::IntraBlockState&) noexcept override{};
+    void on_execution_end(const evmc_result& result, const silkworm::IntraBlockState& intra_block_state) noexcept override;
+    void on_precompiled_run(const evmc_result&, int64_t, const silkworm::IntraBlockState&) noexcept override{};
+    void on_reward_granted(const silkworm::CallResult& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+    void on_creation_completed(const evmc_result& /*result*/, const silkworm::IntraBlockState& /*intra_block_state*/) noexcept override {}
+
+  private:
+    const evmc::address& address_;
+    uint64_t nonce{0};
+    intx::uint256 balance;
+    evmc::bytes32 code_hash{kEmptyHash};
+    silkworm::Bytes code;
+};
+
 class DebugExecutor {
   public:
     explicit DebugExecutor(

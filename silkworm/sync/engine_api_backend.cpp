@@ -66,7 +66,7 @@ Task<rpc::PeerInfos> EngineApiBackend::peers() {
     throw std::logic_error{"EngineApiBackend::peers not implemented"};
 }
 
-Task<bool> EngineApiBackend::get_block(BlockIdentifier /*block_id*/, bool /*read_senders*/, silkworm::Block& /*block*/) {
+Task<bool> EngineApiBackend::get_block(uint64_t /* block_number*/, const HashAsSpan& /* hash */, bool /*read_senders*/, silkworm::Block& /*block*/) {
     throw std::logic_error{"EngineApiBackend::get_block not implemented"};
 }
 

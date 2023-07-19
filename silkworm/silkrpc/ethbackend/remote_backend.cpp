@@ -220,18 +220,13 @@ Task<PeerInfos> RemoteBackEnd::peers() {
     co_return peer_infos;
 }
 
-Task<bool> RemoteBackEnd::get_block(BlockIdentifier block_id, bool read_senders, silkworm::Block& block) {
+Task<bool> RemoteBackEnd::get_block(uint64_t block_number, const HashAsSpan& hash, bool read_senders, silkworm::Block& block) {
     const auto start_time = clock_time::now();
-    ensure(block_id.number or block_id.hash, "RemoteBackEnd: neither block number nor block hash specified");
     UnaryRpc<&::remote::ETHBACKEND::StubInterface::AsyncBlock> get_block_rpc{*stub_, grpc_context_};
     ::remote::BlockRequest request;
-    if (block_id.number) {
-        request.set_block_height(*block_id.number);
-    }
-    if (block_id.hash) {
-        request.set_allocated_block_hash(H256_from_bytes(*block_id.hash).release());
-    }
-    const auto reply = co_await get_block_rpc.finish_on(co_await ThisTask::executor, request);
+    request.set_block_height(block_number);
+    request.set_allocated_block_hash(H256_from_bytes(hash).release());
+    const auto reply = co_await get_block_rpc.finish_on(executor_, request);
     ByteView block_rlp{byte_view_of_string(reply.block_rlp())};
     if (const auto decode_result{rlp::decode(block_rlp, block)}; !decode_result) {
         co_return false;

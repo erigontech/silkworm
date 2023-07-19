@@ -37,12 +37,10 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
     int minor_version;        // uninitialised here because phr_parse_request initialises it
     struct phr_header headers[100];
     size_t num_headers = sizeof(headers) / sizeof(headers[0]);
-    size_t last_len = 0;
-
-    const auto len = static_cast<size_t>(end - begin);
+    auto current_len = static_cast<size_t>(end - begin);
 
     if (req.content_length != 0 && req.content.length() < req.content_length) {
-        for (size_t i{0}; i < len; ++i) {
+        for (size_t i{0}; i < current_len; ++i) {
             req.content.push_back(begin[i]);
         }
         if (req.content.length() < req.content_length)
@@ -51,10 +49,29 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
             return ResultType::good;
     }
 
-    const auto res = phr_parse_request(
-        begin, len, &method_name, &method_len, &path, &path_len, &minor_version, headers, &num_headers, last_len);
-    if (res < 0) {
+    if (last_len_) {
+        auto saved_buffer = buffer_;
+        buffer_ = new char[last_len_ + current_len];
+        std::memcpy(buffer_, saved_buffer, last_len_);
+        std::memcpy(buffer_ + last_len_, begin, current_len);
+        if (saved_buffer) {
+            delete[] saved_buffer;
+        }
+        begin = buffer_;
+        current_len += last_len_;
+    }
+
+    const auto res = phr_parse_request(begin, current_len, &method_name, &method_len, &path, &path_len, &minor_version, headers, &num_headers, last_len_);
+    if (res == -1) {
         return ResultType::bad;
+    } else if (res == -2) {
+        auto saved_buffer = buffer_;
+        buffer_ = new char[current_len];
+        std::memcpy(buffer_, begin, current_len);
+        last_len_ = current_len;
+        if (saved_buffer)
+            delete[] saved_buffer;
+        return ResultType::indeterminate;
     }
 
     bool expect_request = false;
@@ -87,8 +104,14 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
         return ResultType::good;
     }
 
-    req.content.resize(len - static_cast<size_t>(res));
-    std::memcpy(req.content.data(), begin + res, len - static_cast<size_t>(res));
+    req.content.resize(current_len - static_cast<size_t>(res));
+    std::memcpy(req.content.data(), begin + res, current_len - static_cast<size_t>(res));
+    if (last_len_) {
+        last_len_ = 0;
+        delete[] buffer_;
+        buffer_ = 0;
+    }
+
     if (expect_request)
         return ResultType::processing_continue;
     else if (req.content.length() < req.content_length)

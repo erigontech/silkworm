@@ -346,18 +346,18 @@ awaitable<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_hash(c
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-        auto chain_storage = tx->create_storage(tx_database, backend_);
-        bool block_read = true;
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        bool block_found{true};
         std::shared_ptr<BlockWithHash> block_with_hash;
         const auto cached_block = block_cache_->get(block_hash);
         if (cached_block) {
             block_with_hash = *cached_block;
         } else {
             block_with_hash = std::make_shared<BlockWithHash>();
-            block_read = co_await chain_storage->read_block(block_hash, block_with_hash->block);
+            block_found = co_await chain_storage->read_block(block_hash, block_with_hash->block);
         }
-        uint64_t tx_count = 0;
-        if (block_read) {
+        uint64_t tx_count{0};
+        if (block_found) {
             tx_count = block_with_hash->block.transactions.size();
         }
         reply = make_json_content(request["id"], to_quantity(tx_count));
@@ -391,20 +391,20 @@ awaitable<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_number
         ethdb::TransactionDatabase tx_database{*tx};
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
-        auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
         const auto block_hash{co_await chain_storage->read_canonical_hash(block_number)};
         if (block_hash) {
             const auto cached_block = block_cache_->get(*block_hash);
-            bool block_read = true;
+            bool block_found{true};
             std::shared_ptr<BlockWithHash> block_with_hash;
             if (cached_block) {
                 block_with_hash = *cached_block;
             } else {
                 block_with_hash = std::make_shared<BlockWithHash>();
-                block_read = co_await chain_storage->read_block(*block_hash, block_with_hash->block);
+                block_found = co_await chain_storage->read_block(*block_hash, block_with_hash->block);
             }
-            uint64_t tx_count = 0;
-            if (block_read) {
+            uint64_t tx_count{0};
+            if (block_found) {
                 tx_count = block_with_hash->block.transactions.size();
             }
             reply = make_json_content(request["id"], to_quantity(tx_count));

@@ -193,6 +193,7 @@ void HeaderSnapshot::reopen_index() {
         idx_header_hash_ = std::make_unique<succinct::RecSplitIndex>(header_index_path.path());
         if (idx_header_hash_->last_write_time() < decoder_.last_write_time()) {
             // Index has been created before the segment file, needs to be ignored (and rebuilt) as inconsistent
+            std::filesystem::remove(path().index_file().path());
             close_index();
         }
     }
@@ -283,6 +284,7 @@ void BodySnapshot::reopen_index() {
         idx_body_number_ = std::make_unique<succinct::RecSplitIndex>(body_index_path.path());
         if (idx_body_number_->last_write_time() < decoder_.last_write_time()) {
             // Index has been created before the segment file, needs to be ignored (and rebuilt) as inconsistent
+            std::filesystem::remove(path().index_file().path());
             close_index();
         }
     }
@@ -469,6 +471,7 @@ void TransactionSnapshot::reopen_index() {
         idx_txn_hash_ = std::make_unique<succinct::RecSplitIndex>(tx_hash_index_path.path());
         if (idx_txn_hash_->last_write_time() < decoder_.last_write_time()) {
             // Index has been created before the segment file, needs to be ignored (and rebuilt) as inconsistent
+            std::filesystem::remove(path().index_file().path());
             close_index();
         }
     }
@@ -478,6 +481,7 @@ void TransactionSnapshot::reopen_index() {
         idx_txn_hash_2_block_ = std::make_unique<succinct::RecSplitIndex>(tx_hash_2_block_index_path.path());
         if (idx_txn_hash_2_block_->last_write_time() < decoder_.last_write_time()) {
             // Index has been created before the segment file, needs to be ignored (and rebuilt) as inconsistent
+            std::filesystem::remove(path().index_file_for_type(SnapshotType::transactions2block).path());
             close_index();
         }
     }

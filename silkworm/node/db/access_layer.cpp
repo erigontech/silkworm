@@ -439,6 +439,7 @@ bool read_body(ROTxn& txn, const Bytes& key, bool read_senders, BlockBody& out) 
     auto body{detail::decode_stored_block_body(data_view)};
 
     std::swap(out.ommers, body.ommers);
+    std::swap(out.withdrawals, body.withdrawals);
     read_transactions(txn, body.base_txn_id, body.txn_count, out.transactions);
     if (!out.transactions.empty() && read_senders) {
         parse_senders(txn, key, out.transactions);
@@ -495,6 +496,7 @@ void write_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, Bl
 void write_body(RWTxn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], const BlockNum number) {
     detail::BlockBodyForStorage body_for_storage{};
     body_for_storage.ommers = body.ommers;
+    body_for_storage.withdrawals = body.withdrawals;
     body_for_storage.txn_count = body.transactions.size();
     body_for_storage.base_txn_id =
         increment_map_sequence(txn, table::kBlockTransactions.name, body_for_storage.txn_count);
@@ -563,6 +565,17 @@ void write_senders(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& block_
     }
 
     target->upsert(to_slice(key), to_slice(data));
+}
+
+void write_tx_lookup(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& block_number, const Block& block) {
+    auto key{db::block_key(block_number, hash.bytes)};
+    auto target = txn.rw_cursor(table::kTxLookup);
+    Bytes data;
+    for (const auto& block_txn : block.transactions) {
+        auto tx_key = block_txn.hash();
+        auto tx_data = intx::uint256{block.header.number};
+//        target->upsert(to_slice(tx_key.bytes), to_slice(tx_data.));
+    }
 }
 
 std::optional<ByteView> read_code(ROTxn& txn, const evmc::bytes32& code_hash) {

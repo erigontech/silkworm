@@ -38,7 +38,7 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
             const auto result{parser.parse(req, buffer.data(), buffer.data() + bytes_read)};
             CHECK(result == RequestParser::ResultType::bad);
         }
-    }
+    }  // namespace silkworm::rpc::http
 
     SECTION("invalid request with control character") {
         //        std::array<char, 33> ctrl_chars{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 127};
@@ -49,8 +49,6 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
             std::array<char, 1> buffer{c};
             std::size_t bytes_read{1};
             const auto result{parser.parse(req, buffer.data(), buffer.data() + bytes_read)};
-            if (result == RequestParser::ResultType::indeterminate)
-                std::cout << "chr: " << static_cast<int>(c) << "\n";
             CHECK(result == RequestParser::ResultType::bad);
         }
     }
@@ -79,7 +77,6 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
         }
     }
 
-#ifdef notdef
     SECTION("bad requests") {
         std::vector<std::string> bad_requests{
             "(",
@@ -99,22 +96,14 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
             "=",
             "{",
             "}",
-            " ",
             "\t",  // special character strings
             "P@",
             "POST \t",
-            "POST / *",
-            "POST / H*",
-            "POST / HT*",
-            "POST / HTT*",
-            "POST / HTTP*",
-            "POST / HTTP/*",
-            "POST / HTTP/1*",
-            "POST / HTTP/1.*",
+            "POST / HTTP/1.10\r\nHost: localhost:8545",
+            "POST / HTTP/11.1\r\nHost: localhost:8545",
             "POST / HTTP/1.1*",
             "POST / HTTP/1.1\r*",
             "POST / HTTP/1.1\r\n\r\n",
-            "POST / HTTP/1.1\r\nHost:*",
             "POST / HTTP/1.1\r\nHost: localhost:8545\r*",
             "POST / HTTP/1.1\r\nHost: localhost:8545\r\nUser-Agent: curl/7.68.0\r\nAccept: */*\r\nContent-Type: application/json\r\nContent-Length: 0\r\n\r\t",  // invalid char instead of \n
             "POST / HTTP/1.1\r\nHost: localhost:8545\r\nUser-Agent: curl/7.68.0\r\nAccept: */*\r\nContent-Type: application/json\r\nContent-Length: 0\r\n{",     // missing \r\n
@@ -135,8 +124,6 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
             "POST / HTTP/1.1\r\nHost: localhost:8545\r\nUser-Agent: curl/7.68.0\r\nAccept: */*",
             "POST / HTTP/1.1\r\nHost: localhost:8545\r\nUser-Agent: curl/7.68.0\r\nAccept: */*\r\nContent-Type: application/json",
             "POST / HTTP/1.1\r\nHost: localhost:8545\r\nUser-Agent: curl/7.68.0\r\nAccept: */*\r\nContent-Type: application/json\r\nContent-Length: 0",
-            "POST / HTTP/11.1\r\nHost: localhost:8545",
-            "POST / HTTP/1.10\r\nHost: localhost:8545",
             "POST / HTTP/1.1\r\nHost: localhost:8545 \r\nUser-Agent: curl/7.68.0",
             "POST / HTTP/1.1\r\nHost: localhost:8545  \r\nUser-Agent: curl/7.68.0",
         };
@@ -144,13 +131,9 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
             RequestParser parser;
             Request req;
             const auto result{parser.parse(req, s.data(), s.data() + s.size())};
-            if (result != RequestParser::ResultType::indeterminate) {
-                std::cout << s << "\n";
-            }
-            // CHECK(result == RequestParser::ResultType::indeterminate);
+            CHECK(result == RequestParser::ResultType::indeterminate);
         }
     }
-#endif
 
     SECTION("good requests") {
         std::vector<std::string> good_requests{
@@ -167,6 +150,44 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
             const auto result{parser.parse(req, s.data(), s.data() + s.size())};
             CHECK(result == RequestParser::ResultType::good);
         }
+    }
+
+    SECTION("segemented http request 2 segs") {
+        std::string seg1{"POST / HTTP/1.1\r\nHost: localhost:8545\r\n User-Agent: curl/7.68.0\r\n Accept: */*\r\n"};
+        std::string seg2{"Content-Type: application/json\r\nContent-Length: 15\r\n\r\n{\"json\": \"2.0\"}"};
+        RequestParser parser;
+        Request req;
+        const auto result1{parser.parse(req, seg1.data(), seg1.data() + seg1.size())};
+        CHECK(result1 == RequestParser::ResultType::indeterminate);
+        const auto result2{parser.parse(req, seg2.data(), seg2.data() + seg2.length())};
+        CHECK(result2 == RequestParser::ResultType::good);
+    }
+
+    SECTION("segemented http request 3 segs") {
+        std::string seg1{"POST / HTTP/1.1\r\nHost: localhost:8545\r\n User-Agent: curl/7.68.0\r\n Accept: */*\r\n"};
+        std::string seg2{"Content-Type: application/json\r\nContent-Length: 15\r\n\r\n"};
+        std::string seg3{"{\"json\": \"2.0\"}"};
+        RequestParser parser;
+        Request req;
+        const auto result1{parser.parse(req, seg1.data(), seg1.data() + seg1.size())};
+        CHECK(result1 == RequestParser::ResultType::indeterminate);
+        const auto result2{parser.parse(req, seg2.data(), seg2.data() + seg2.length())};
+        CHECK(result2 == RequestParser::ResultType::indeterminate);
+        const auto result3{parser.parse(req, seg3.data(), seg3.data() + seg3.length())};
+        CHECK(result3 == RequestParser::ResultType::good);
+    }
+}
+
+TEST_CASE("reset", "[silkrpc][http][request_parser]") {
+    RequestParser parser;
+
+    SECTION("empty parser") {
+        CHECK_NOTHROW(parser.reset());
+    }
+
+    SECTION("idempotent") {
+        CHECK_NOTHROW(parser.reset());
+        CHECK_NOTHROW(parser.reset());
     }
 }
 

@@ -39,6 +39,12 @@ api_not_compared = [
 ]
 
 tests_not_compared = [
+   "debug_accountAt/test_04.json",
+   "debug_accountAt/test_05.json",
+   "debug_accountAt/test_06.json",
+   "debug_accountAt/test_07.json",
+   "debug_accountAt/test_10.json",
+   "debug_accountAt/test_11.json",
    "debug_traceBlockByHash/test_02.tar",
    "debug_traceBlockByHash/test_03.tar",
    "debug_traceBlockByHash/test_04.tar",

@@ -198,27 +198,32 @@ class ROTxn {
     virtual ~ROTxn() = default;
 
     // Access to the underling raw mdbx transaction
-    virtual mdbx::txn& operator*() = 0;
-    virtual mdbx::txn* operator->() = 0;
-    virtual operator mdbx::txn&() = 0;  // NOLINT(google-explicit-constructor)
+    mdbx::txn& operator*() { return txn_ref_; }
+    mdbx::txn* operator->() { return &txn_ref_; }
+    operator mdbx::txn&() { return txn_ref_; }  // NOLINT(google-explicit-constructor)
 
-    [[nodiscard]] virtual uint64_t id() const = 0;
-    [[nodiscard]] virtual bool is_open() const = 0;
-    [[nodiscard]] virtual mdbx::env db() const = 0;
+    [[nodiscard]] uint64_t id() const { return txn_ref_.id(); }
+    [[nodiscard]] virtual bool is_open() const { return txn_ref_.txn::operator bool(); }
+    [[nodiscard]] virtual mdbx::env db() const { return txn_ref_.env(); }
 
-    virtual std::unique_ptr<ROCursor> ro_cursor(const MapConfig& config) = 0;
-    virtual std::unique_ptr<ROCursorDupSort> ro_cursor_dup_sort(const MapConfig& config) = 0;
+    virtual std::unique_ptr<ROCursor> ro_cursor(const MapConfig& config);
+    virtual std::unique_ptr<ROCursorDupSort> ro_cursor_dup_sort(const MapConfig& config);
 
     virtual void abort() = 0;
+
+  protected:
+    explicit ROTxn(::mdbx::txn& txn_ref) : txn_ref_{txn_ref} {}
+
+    ::mdbx::txn& txn_ref_;
 };
 
 //! \brief ROTxnManaged wraps a *managed* read-only transaction, which means the underlying transaction lifecycle
 //! is entirely managed by this class.
-class ROTxnManaged : public virtual ROTxn {
+class ROTxnManaged : public ROTxn {
   public:
-    explicit ROTxnManaged() = default;
-    explicit ROTxnManaged(mdbx::env& env) : managed_txn_{env.start_read()} {}
-    explicit ROTxnManaged(mdbx::env&& env) : managed_txn_{env.start_read()} {}
+    explicit ROTxnManaged() : ROTxn{managed_txn_} {}
+    explicit ROTxnManaged(mdbx::env& env) : ROTxn{managed_txn_}, managed_txn_{env.start_read()} {}
+    explicit ROTxnManaged(mdbx::env&& env) : ROTxn{managed_txn_}, managed_txn_{env.start_read()} {}
     ~ROTxnManaged() override = default;
 
     // Not copyable
@@ -226,28 +231,16 @@ class ROTxnManaged : public virtual ROTxn {
     ROTxnManaged& operator=(const ROTxnManaged&) = delete;
 
     // Only movable
-    ROTxnManaged(ROTxnManaged&& source) noexcept : managed_txn_(std::move(source.managed_txn_)) {}
+    ROTxnManaged(ROTxnManaged&& source) noexcept : ROTxn{managed_txn_}, managed_txn_{std::move(source.managed_txn_)} {}
     ROTxnManaged& operator=(ROTxnManaged&& other) noexcept {
         managed_txn_ = std::move(other.managed_txn_);
         return *this;
     }
 
-    // Access to the underling raw mdbx transaction
-    mdbx::txn& operator*() override { return managed_txn_; }
-    mdbx::txn* operator->() override { return &managed_txn_; }
-    operator mdbx::txn&() override { return managed_txn_; }  // NOLINT(google-explicit-constructor)
-
-    [[nodiscard]] uint64_t id() const override { return managed_txn_.id(); }
-    [[nodiscard]] bool is_open() const override { return managed_txn_.txn::operator bool(); }
-    [[nodiscard]] mdbx::env db() const override { return managed_txn_.env(); }
-
-    std::unique_ptr<ROCursor> ro_cursor(const MapConfig& config) override;
-    std::unique_ptr<ROCursorDupSort> ro_cursor_dup_sort(const MapConfig& config) override;
-
     void abort() override { managed_txn_.abort(); }
 
   protected:
-    explicit ROTxnManaged(mdbx::txn_managed&& source) : managed_txn_{std::move(source)} {}
+    explicit ROTxnManaged(mdbx::txn_managed&& source) : ROTxn{managed_txn_}, managed_txn_{std::move(source)} {}
 
     mdbx::txn_managed managed_txn_;
 };
@@ -256,27 +249,35 @@ class ROTxnManaged : public virtual ROTxn {
 //! It is used in function signatures to clarify that read-write access is required.
 //! It supports explicit disable/enable of commit capabilities.
 //! Disabling commit is useful for running several stages on a handful of blocks atomically.
-class RWTxn : public virtual ROTxn {
+class RWTxn : public ROTxn {
   public:
     ~RWTxn() override = default;
 
-    virtual void disable_commit() = 0;
-    virtual void enable_commit() = 0;
+    [[nodiscard]] bool commit_disabled() const { return commit_disabled_; }
 
-    virtual std::unique_ptr<RWCursor> rw_cursor(const MapConfig& config) = 0;
-    virtual std::unique_ptr<RWCursorDupSort> rw_cursor_dup_sort(const MapConfig& config) = 0;
+    void disable_commit() { commit_disabled_ = true; }
+    void enable_commit() { commit_disabled_ = false; }
+
+    virtual std::unique_ptr<RWCursor> rw_cursor(const MapConfig& config);
+    virtual std::unique_ptr<RWCursorDupSort> rw_cursor_dup_sort(const MapConfig& config);
 
     virtual void commit_and_renew() = 0;
     virtual void commit_and_stop() = 0;
+
+  protected:
+    explicit RWTxn(::mdbx::txn& txn_ref, bool commit_disabled = false)
+        : ROTxn{txn_ref}, commit_disabled_{commit_disabled} {}
+
+    bool commit_disabled_;
 };
 
 //! \brief RWTxnManaged wraps a *managed* read-write transaction, which means the underlying transaction lifecycle
 //! is entirely managed by this class.
-class RWTxnManaged : public RWTxn, public ROTxnManaged {
+class RWTxnManaged : public RWTxn {
   public:
-    explicit RWTxnManaged() = default;
-    // This variant creates new mdbx transactions as need be.
-    explicit RWTxnManaged(mdbx::env& env) : ROTxnManaged{env.start_write()} {}
+    explicit RWTxnManaged() : RWTxn{managed_txn_} {}
+    explicit RWTxnManaged(mdbx::env& env) : RWTxn{managed_txn_}, managed_txn_{env.start_write()} {}
+    explicit RWTxnManaged(mdbx::env&& env) : RWTxn{managed_txn_}, managed_txn_{env.start_write()} {}
     ~RWTxnManaged() override = default;
 
     // Not copyable
@@ -285,18 +286,14 @@ class RWTxnManaged : public RWTxn, public ROTxnManaged {
 
     // Only movable
     RWTxnManaged(RWTxnManaged&& source) noexcept
-        : ROTxnManaged(std::move(source)), commit_disabled_{source.commit_disabled_} {}
+        : RWTxn{managed_txn_, source.commit_disabled_}, managed_txn_{std::move(source.managed_txn_)} {}
     RWTxnManaged& operator=(RWTxnManaged&& other) noexcept {
         commit_disabled_ = other.commit_disabled_;
-        ROTxnManaged::operator=(std::move(other));
+        managed_txn_ = std::move(other.managed_txn_);
         return *this;
     }
 
-    void disable_commit() override { commit_disabled_ = true; }
-    void enable_commit() override { commit_disabled_ = false; }
-
-    std::unique_ptr<RWCursor> rw_cursor(const MapConfig& config) override;
-    std::unique_ptr<RWCursorDupSort> rw_cursor_dup_sort(const MapConfig& config) override;
+    void abort() override { managed_txn_.abort(); }
 
     void commit_and_renew() override;
     void commit_and_stop() override;
@@ -304,9 +301,9 @@ class RWTxnManaged : public RWTxn, public ROTxnManaged {
     void reopen(mdbx::env& env) { managed_txn_ = env.start_write(); }
 
   protected:
-    explicit RWTxnManaged(mdbx::txn_managed&& source) : ROTxnManaged{std::move(source)} {}
+    explicit RWTxnManaged(mdbx::txn_managed&& source) : RWTxn{managed_txn_}, managed_txn_{std::move(source)} {}
 
-    bool commit_disabled_{false};
+    mdbx::txn_managed managed_txn_;
 };
 
 //! \brief This class create ROTxn(s) on demand, it is used to enforce in some method signatures the type of db access

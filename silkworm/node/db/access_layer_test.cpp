@@ -88,7 +88,7 @@ static BlockBody sample_block_body() {
 
 namespace silkworm::db {
 
-TEST_CASE("Db Opening") {
+TEST_CASE("Db Opening", "[silkworm][node][db][access_layer]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     // Empty dir
     std::string empty{};
@@ -133,7 +133,7 @@ TEST_CASE("Db Opening") {
     env.close();
 }
 
-TEST_CASE("Methods cursor_for_each/cursor_for_count") {
+TEST_CASE("Methods cursor_for_each/cursor_for_count", "[silkworm][node][db][access_layer]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.rw_txn()};
@@ -159,7 +159,7 @@ TEST_CASE("Methods cursor_for_each/cursor_for_count") {
     CHECK(table_names.size() == max_count);
 }
 
-TEST_CASE("VersionBase primitives") {
+TEST_CASE("VersionBase primitives", "[silkworm][node][db][access_layer]") {
     VersionBase v1{0, 0, 0};
     VersionBase v2{0, 0, 1};
     VersionBase v3{0, 0, 1};
@@ -170,7 +170,7 @@ TEST_CASE("VersionBase primitives") {
     CHECK(v2 == v3);
 }
 
-TEST_CASE("Sequences") {
+TEST_CASE("Sequences", "[silkworm][node][db][access_layer]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.rw_txn()};
@@ -217,7 +217,7 @@ TEST_CASE("Sequences") {
     CHECK(thrown);
 }
 
-TEST_CASE("Schema Version") {
+TEST_CASE("Schema Version", "[silkworm][node][db][access_layer]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context(/*with_create_tables=*/false);
 
@@ -255,7 +255,7 @@ TEST_CASE("Schema Version") {
     }
 }
 
-TEST_CASE("Storage and Prune Modes") {
+TEST_CASE("Storage and Prune Modes", "[silkworm][node][db][access_layer]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.txn()};
@@ -382,7 +382,7 @@ TEST_CASE("Storage and Prune Modes") {
     }
 }
 
-TEST_CASE("Stages") {
+TEST_CASE("Stages", "[silkworm][node][db][access_layer]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.rw_txn()};
@@ -421,7 +421,7 @@ TEST_CASE("Stages") {
     CHECK(stages::read_stage_prune_progress(txn, stages::kBlockBodiesKey) == 0);
 }
 
-TEST_CASE("Snapshots") {
+TEST_CASE("Snapshots", "[silkworm][node][db][access_layer]") {
     test::Context context;
     auto& txn{context.rw_txn()};
 
@@ -435,7 +435,7 @@ TEST_CASE("Snapshots") {
     CHECK(read_snapshots(txn) == snapshot_list);
 }
 
-TEST_CASE("Difficulty") {
+TEST_CASE("Difficulty", "[silkworm][node][db][access_layer]") {
     test::Context context;
     auto& txn{context.rw_txn()};
 
@@ -449,7 +449,7 @@ TEST_CASE("Difficulty") {
     CHECK(model.read_total_difficulty(block_num, hash) == difficulty);
 }
 
-TEST_CASE("Headers and bodies") {
+TEST_CASE("Headers and bodies", "[silkworm][node][db][access_layer]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.rw_txn()};
@@ -570,7 +570,7 @@ TEST_CASE("Headers and bodies") {
     }
 }
 
-TEST_CASE("Account") {
+TEST_CASE("Account", "[silkworm][node][db][access_layer]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     db::RWTxn& txn{context.rw_txn()};
@@ -614,7 +614,7 @@ TEST_CASE("Account") {
     CHECK(intx::to_string(historical_account->balance) == std::to_string(protocol::kBlockRewardFrontier));
 }
 
-TEST_CASE("Storage") {
+TEST_CASE("Storage", "[silkworm][node][db][access_layer]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.rw_txn()};
@@ -643,7 +643,7 @@ TEST_CASE("Storage") {
     CHECK(db::read_storage(txn, addr, kDefaultIncarnation, loc4) == evmc::bytes32{});
 }
 
-TEST_CASE("Account_changes") {
+TEST_CASE("Account_changes", "[silkworm][node][db][access_layer]") {
     test::Context context;
     auto& txn{context.rw_txn()};
 
@@ -702,7 +702,7 @@ TEST_CASE("Account_changes") {
     CHECK(changes.empty());
 }
 
-TEST_CASE("Storage changes") {
+TEST_CASE("Storage changes", "[silkworm][node][db][access_layer]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.rw_txn()};
@@ -782,7 +782,7 @@ TEST_CASE("Storage changes") {
     CHECK(db_changes == expected_changes3);
 }
 
-TEST_CASE("Chain config") {
+TEST_CASE("Chain config", "[silkworm][node][db][access_layer]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.rw_txn()};
@@ -805,7 +805,7 @@ TEST_CASE("Chain config") {
     CHECK(chain_config3 == kSepoliaConfig);
 }
 
-TEST_CASE("Head header") {
+TEST_CASE("Head header", "[silkworm][node][db][access_layer]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.rw_txn()};
@@ -815,7 +815,7 @@ TEST_CASE("Head header") {
     REQUIRE(db::read_head_header_hash(txn).value() == kSepoliaGenesisHash);
 }
 
-TEST_CASE("Last Fork Choice") {
+TEST_CASE("Last Fork Choice", "[silkworm][node][db][access_layer]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.rw_txn()};
@@ -833,7 +833,7 @@ TEST_CASE("Last Fork Choice") {
     CHECK(db::read_last_finalized_block(txn) == hash3);
 }
 
-TEST_CASE("read rlp encoded transactions") {
+TEST_CASE("read rlp encoded transactions", "[silkworm][node][db][access_layer]") {
     test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
     test::Context context;
     auto& txn{context.rw_txn()};

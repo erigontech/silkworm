@@ -59,7 +59,6 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | eth_uninstallFilter                        | Yes          |                                            |
 | eth_getLogs                                | Yes          |                                            |
 |                                            |              |                                            |
-| eth_getAccount                             | -            | not yet implemented                        |
 | eth_accounts                               | No           | deprecated                                 |
 | eth_sendRawTransaction                     | Yes          | remote only                                |
 | eth_sendTransaction                        | -            | not yet implemented                        |
@@ -89,7 +88,7 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 | engine_exchangeTransitionConfigurationV1   | Yes          |                                            |
 |                                            |              |                                            |
 | debug_accountRange                         | Yes          |                                            |
-| debug_accountAt                            | -            | not yet implemented                        |
+| debug_accountAt                            | Yes          |                                            |
 | debug_getModifiedAccountsByHash            | Yes          |                                            |
 | debug_getModifiedAccountsByNumber          | Yes          |                                            |
 | debug_storageRangeAt                       | Yes          |                                            |
@@ -161,8 +160,8 @@ The following table shows the current [JSON RPC API](https://eth.wiki/json-rpc/A
 |                                            |              |                                            |
 | ots_getApiLevel                            | Yes          |                                            |
 | ots_getInternalOperations                  | Yes          |                                            |
-| ots_searchTransactionsBefore               | -            | not yet implemented                        |
-| ots_searchTransactionsAfter                | -            | not yet implemented                        |
+| ots_searchTransactionsBefore               | Yes          |                                            |
+| ots_searchTransactionsAfter                | Yes          |                                            |
 | ots_getBlockDetails                        | Yes          |                                            |
 | ots_getBlockDetailsByHash                  | Yes          |                                            |
 | ots_getBlockTransactions                   | Yes          |                                            |

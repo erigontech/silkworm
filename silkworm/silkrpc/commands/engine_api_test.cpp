@@ -54,7 +54,7 @@ class BackEndMock : public ethbackend::BackEnd {  // NOLINT
     MOCK_METHOD((Task<ExecutionPayloadBodies>), engine_get_payload_bodies_by_range, (BlockNum start, uint64_t count));
     MOCK_METHOD((Task<NodeInfos>), engine_node_info, ());
     MOCK_METHOD((Task<PeerInfos>), peers, ());
-    MOCK_METHOD((Task<bool>), get_block, (BlockIdentifier, bool, silkworm::Block&));
+    MOCK_METHOD((Task<bool>), get_block, (uint64_t block_number, const HashAsSpan& hash, bool, silkworm::Block&));
 };
 
 namespace {

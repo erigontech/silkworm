@@ -17,6 +17,7 @@
 #include <catch2/catch.hpp>
 
 #include <silkworm/core/common/test_util.hpp>
+#include <silkworm/infra/test_util/log.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/stagedsync/stages/stage_tx_lookup.hpp>
 #include <silkworm/node/test/context.hpp>
@@ -26,6 +27,8 @@ using namespace evmc::literals;
 namespace silkworm {
 
 TEST_CASE("Stage Transaction Lookups") {
+    test_util::SetLogVerbosityGuard log_guard{log::Level::kNone};
+
     static constexpr evmc::bytes32 hash_0{0x3ac225168df54212a25c1c01fd35bebfea408fdac2e31ddd6f80a4bbf9a5f1cb_bytes32};
     static constexpr evmc::bytes32 hash_1{0xb5553de315e0edf504d9150af82dafa5c4667fa618ed0a6f19c69b41166c5510_bytes32};
 
@@ -43,7 +46,8 @@ TEST_CASE("Stage Transaction Lookups") {
     db::detail::BlockBodyForStorage block{};
     auto transactions{test::sample_transactions()};
     block.base_txn_id = 1;
-    block.txn_count = 1;
+    block.txn_count = 1 + 2;  // + 2: 2 system txs (1 at the beginning and 1 at the end)
+
     // ---------------------------------------
     // Push first block
     // ---------------------------------------
@@ -51,20 +55,19 @@ TEST_CASE("Stage Transaction Lookups") {
     rlp::encode(tx_rlp, transactions[0]);
     auto tx_hash_1{keccak256(tx_rlp)};
 
-    transactions_table.upsert(db::to_slice(db::block_key(1)), db::to_slice(tx_rlp));
+    transactions_table.upsert(db::to_slice(db::block_key(block.base_txn_id + 1)), db::to_slice(tx_rlp));
     bodies_table.upsert(db::to_slice(db::block_key(1, hash_0.bytes)), db::to_slice(block.encode()));
     REQUIRE_NOTHROW(db::write_canonical_header_hash(txn, hash_0.bytes, 1));
 
     // ---------------------------------------
     // Push second block
     // ---------------------------------------
-
-    block.base_txn_id = 2;
+    block.base_txn_id += block.txn_count;
 
     rlp::encode(tx_rlp, transactions[1]);
     auto tx_hash_2{keccak256(tx_rlp)};
 
-    transactions_table.upsert(db::to_slice(db::block_key(2)), db::to_slice(tx_rlp));
+    transactions_table.upsert(db::to_slice(db::block_key(block.base_txn_id + 1)), db::to_slice(tx_rlp));
     bodies_table.upsert(db::to_slice(db::block_key(2, hash_1.bytes)), db::to_slice(block.encode()));
     REQUIRE_NOTHROW(db::write_canonical_header_hash(txn, hash_1.bytes, 2));
 

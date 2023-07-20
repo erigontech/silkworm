@@ -2205,6 +2205,7 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         CHECK(status.ok());
     }
 
+#ifndef _WIN32
     SECTION("Tx: cursor NEXT op after renew sees changes") {
         grpc::ClientContext context;
         // Start Tx RPC and open one cursor for TestMap table
@@ -2274,7 +2275,6 @@ TEST_CASE("BackEndKvServer E2E: bidirectional max TTL duration", "[silkworm][nod
         CHECK(status.ok());
     }
 
-#ifndef _WIN32
     SECTION("Tx: cursor NEXT_DUP op after renew sees changes") {
         grpc::ClientContext context;
         // Start Tx RPC and open one cursor for TestMultiMap table

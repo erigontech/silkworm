@@ -225,25 +225,25 @@ size_t max_value_size_for_leaf_page(const mdbx::txn& txn, const size_t key_size)
     return max_value_size_for_leaf_page(page_size, key_size);
 }
 
-std::unique_ptr<ROCursor> ROTxnManaged::ro_cursor(const MapConfig& config) {
+std::unique_ptr<ROCursor> ROTxn::ro_cursor(const MapConfig& config) {
     return std::make_unique<PooledCursor>(*this, config);
 }
 
-std::unique_ptr<ROCursorDupSort> ROTxnManaged::ro_cursor_dup_sort(const MapConfig& config) {
+std::unique_ptr<ROCursorDupSort> ROTxn::ro_cursor_dup_sort(const MapConfig& config) {
     return std::make_unique<PooledCursor>(*this, config);
 }
 
-std::unique_ptr<RWCursor> RWTxnManaged::rw_cursor(const MapConfig& config) {
+std::unique_ptr<RWCursor> RWTxn::rw_cursor(const MapConfig& config) {
     return std::make_unique<PooledCursor>(*this, config);
 }
 
-std::unique_ptr<RWCursorDupSort> RWTxnManaged::rw_cursor_dup_sort(const MapConfig& config) {
+std::unique_ptr<RWCursorDupSort> RWTxn::rw_cursor_dup_sort(const MapConfig& config) {
     return std::make_unique<PooledCursor>(*this, config);
 }
 
 void RWTxnManaged::commit_and_renew() {
     if (!commit_disabled_) {
-        mdbx::env env = ROTxnManaged::db();
+        mdbx::env env = db();
         managed_txn_.commit();
         managed_txn_ = env.start_write();  // renew transaction
     }

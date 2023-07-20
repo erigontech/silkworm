@@ -34,6 +34,7 @@ class MockCursor : public ethdb::Cursor {
     MOCK_METHOD((boost::asio::awaitable<KeyValue>), seek, (silkworm::ByteView key));
     MOCK_METHOD((boost::asio::awaitable<KeyValue>), seek_exact, (silkworm::ByteView key));
     MOCK_METHOD((boost::asio::awaitable<KeyValue>), next, ());
+    MOCK_METHOD((boost::asio::awaitable<KeyValue>), previous, ());
     MOCK_METHOD((boost::asio::awaitable<void>), close_cursor, ());
 };
 
@@ -44,6 +45,7 @@ class MockCursorDupSort : public ethdb::CursorDupSort {
     MOCK_METHOD((boost::asio::awaitable<KeyValue>), seek, (silkworm::ByteView key));
     MOCK_METHOD((boost::asio::awaitable<KeyValue>), seek_exact, (silkworm::ByteView key));
     MOCK_METHOD((boost::asio::awaitable<KeyValue>), next, ());
+    MOCK_METHOD((boost::asio::awaitable<KeyValue>), previous, ());
     MOCK_METHOD((boost::asio::awaitable<KeyValue>), next_dup, ());
     MOCK_METHOD((boost::asio::awaitable<void>), close_cursor, ());
     MOCK_METHOD((boost::asio::awaitable<silkworm::Bytes>), seek_both, (silkworm::ByteView, silkworm::ByteView));

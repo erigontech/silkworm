@@ -67,8 +67,6 @@ and adding its binary to PATH:
 
     export "PATH=$HOME/Library/Python/3.9/bin:$PATH"
 
-* Tools for [gmplib](https://gmplib.org/): `sudo apt-get install -y m4 texinfo bison`
-
 
 Once the prerequisites are installed, bootstrap cmake by running
 ```

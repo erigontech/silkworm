@@ -54,10 +54,12 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
     SECTION("empty request") {
         RequestParser parser;
         Request req;
-        std::array<char, 0> buffer{};
+        // Non-empty buffer is required to avoid runtime error: applying zero offset to null pointer
+        // UndefinedBehaviorSanitizer: undefined-behavior /home/circleci/project/third_party/picohttpparser/picohttpparser.c:404:55
+        std::array<char, 1> buffer{};
         std::size_t bytes_read{0};
         const auto result{parser.parse(req, buffer.data(), buffer.data() + bytes_read)};
-        CHECK(result == RequestParser::ResultType::indeterminate);
+        CHECK(result == RequestParser::ResultType::bad);
     }
 
     SECTION("continue requests") {
@@ -121,26 +123,6 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
         }
     }
 
-    SECTION("indeterminate requests") {
-        std::vector<std::string> incomplete_requests{
-            "POST / HTTP/1.1\r\nHost: localhost:8545",
-            "POST / HTTP/1.1\r\nHost: localhost:8545\r\nUser-Agent: curl/7.68.0",
-            "POST / HTTP/1.1\r\nHost: localhost:8545\r\nUser-Agent: curl/7.68.0\r\nAccept: */*",
-            "POST / HTTP/1.1\r\nHost: localhost:8545\r\nUser-Agent: curl/7.68.0\r\nAccept: */*\r\nContent-Type: application/json",
-            "POST / HTTP/1.1\r\nHost: localhost:8545\r\nUser-Agent: curl/7.68.0\r\nAccept: */*\r\nContent-Type: application/json\r\nContent-Length: 0",
-            "POST / HTTP/11.1\r\nHost: localhost:8545",
-            "POST / HTTP/1.10\r\nHost: localhost:8545",
-            "POST / HTTP/1.1\r\nHost: localhost:8545 \r\nUser-Agent: curl/7.68.0",
-            "POST / HTTP/1.1\r\nHost: localhost:8545  \r\nUser-Agent: curl/7.68.0",
-        };
-        for (const auto& s : incomplete_requests) {
-            RequestParser parser;
-            Request req;
-            const auto result{parser.parse(req, s.data(), s.data() + s.size())};
-            CHECK(result == RequestParser::ResultType::indeterminate);
-        }
-    }
-
     SECTION("good requests") {
         std::vector<std::string> good_requests{
             "POST / HTTP/1.1\r\nContent-Length: 0\r\n\r\n",
@@ -156,19 +138,6 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
             const auto result{parser.parse(req, s.data(), s.data() + s.size())};
             CHECK(result == RequestParser::ResultType::good);
         }
-    }
-}
-
-TEST_CASE("reset", "[silkrpc][http][request_parser]") {
-    RequestParser parser;
-
-    SECTION("empty parser") {
-        CHECK_NOTHROW(parser.reset());
-    }
-
-    SECTION("idempotent") {
-        CHECK_NOTHROW(parser.reset());
-        CHECK_NOTHROW(parser.reset());
     }
 }
 

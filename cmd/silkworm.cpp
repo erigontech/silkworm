@@ -298,7 +298,7 @@ int main(int argc, char* argv[]) {
             " " + std::string(build_info->compiler_version);
         node_settings.node_name = get_node_name_from_build_info(build_info);
 
-        sw_log::Message(
+        sw_log::Info(
             "Silkworm",
             {"version", std::string(build_info->git_branch) + std::string(build_info->project_version),
              "build",
@@ -310,8 +310,8 @@ int main(int argc, char* argv[]) {
         // Output mdbx build info
         auto mdbx_ver{mdbx::get_version()};
         auto mdbx_bld{mdbx::get_build()};
-        sw_log::Message("libmdbx",
-                        {"version", mdbx_ver.git.describe, "build", mdbx_bld.target, "compiler", mdbx_bld.compiler});
+        sw_log::Debug("libmdbx",
+                      {"version", mdbx_ver.git.describe, "build", mdbx_bld.target, "compiler", mdbx_bld.compiler});
 
         // Prepare database for takeoff
         cmd::common::run_db_checklist(node_settings);
@@ -345,7 +345,7 @@ int main(int argc, char* argv[]) {
             .private_api_addr = settings.rpcdaemon_settings.private_api_addr,
             .log_verbosity = settings.log_settings.log_verbosity,
             .wait_mode = settings.rpcdaemon_settings.context_pool_settings.wait_mode,
-            .jwt_secret_file = settings.rpcdaemon_settings.jwt_secret_file.value(),
+            .jwt_secret_file = settings.rpcdaemon_settings.jwt_secret_file,
         };
         chainsync::Sync chain_sync_process{
             context_pool.next_io_context(),
@@ -373,13 +373,13 @@ int main(int argc, char* argv[]) {
             std::move(tasks) || shutdown_signal.wait(),
             boost::asio::use_future);
         context_pool.start();
-        sw_log::Message() << "Silkworm is now running";
+        sw_log::Info() << "Silkworm is now running";
 
         // Wait for shutdown signal or an exception from tasks
         run_future.get();
 
         // Graceful exit after user shutdown signal
-        sw_log::Message() << "Exiting Silkworm";
+        sw_log::Info() << "Exiting Silkworm";
         return 0;
     } catch (const CLI::ParseError& ex) {
         // Let CLI11 handle any error occurred parsing command-line args

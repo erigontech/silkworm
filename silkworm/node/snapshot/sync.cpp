@@ -121,10 +121,14 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
     }
 
     auto log_added = [](const std::filesystem::path& snapshot_file) {
-        SILK_INFO << "SnapshotSync: download started for: " << snapshot_file.filename().string();
+        SILK_TRACE << "SnapshotSync: download started for: " << snapshot_file.filename().string();
     };
-    client_.added_subscription.connect(log_added);
+    const auto added_connection = client_.added_subscription.connect(log_added);
 
+    const auto num_snapshots{std::ptrdiff_t(snapshot_config->preverified_snapshots().size())};
+    SILK_INFO << "SnapshotSync: sync started: [0/" << num_snapshots << "]";
+
+    static int completed{0};
     auto log_stats = [&](lt::span<const int64_t> counters) {
         std::string counters_dump;
         for (int i{0}; i < counters.size(); ++i) {
@@ -134,21 +138,18 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
             counters_dump.append(std::to_string(counters[i]));
             if (i != counters.size() - 1) counters_dump.append(", ");
         }
-        SILK_TRACE << "SnapshotSync: download progress: [" << counters_dump << "]";
+        SILK_INFO << "SnapshotSync: sync in progress: [" << completed << "/" << num_snapshots << "]";
+        SILK_TRACE << "SnapshotSync: counters dump [" << counters_dump << "]";
     };
-    client_.stats_subscription.connect(log_stats);
-
-    const auto num_snapshots{std::ptrdiff_t(snapshot_config->preverified_snapshots().size())};
-    SILK_INFO << "SnapshotSync: sync started: [0/" << num_snapshots << "]";
+    const auto stats_connection = client_.stats_subscription.connect(log_stats);
 
     std::latch download_done{num_snapshots};
     auto log_completed = [&](const std::filesystem::path& snapshot_file) {
-        static int completed{0};
         SILK_INFO << "SnapshotSync: download completed for: " << snapshot_file.filename().string()
                   << " [" << ++completed << "/" << num_snapshots << "]";
         download_done.count_down();
     };
-    client_.completed_subscription.connect(log_completed);
+    const auto completed_connection = client_.completed_subscription.connect(log_completed);
 
     client_thread_ = std::thread([&]() {
         log::set_thread_name("bit-torrent");
@@ -161,6 +162,10 @@ bool SnapshotSync::download_snapshots(const std::vector<std::string>& snapshot_f
     }
 
     SILK_INFO << "SnapshotSync: sync completed: [" << num_snapshots << "/" << num_snapshots << "]";
+
+    added_connection.disconnect();
+    completed_connection.disconnect();
+    stats_connection.disconnect();
 
     reopen();
     return true;

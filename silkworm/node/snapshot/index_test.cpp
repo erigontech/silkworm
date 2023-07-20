@@ -24,9 +24,6 @@
 
 namespace silkworm::snapshot {
 
-// Exclude tests from Windows build
-#ifndef _WIN32
-
 TEST_CASE("Index::Index", "[silkworm][snapshot][index]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
     test::TemporarySnapshotFile tmp_snapshot_file{"v1-014500-015000-headers.seg"};
@@ -140,7 +137,5 @@ TEST_CASE("TransactionIndex::build OK", "[silkworm][snapshot][index]") {
     TransactionIndex tx_index{txs_snapshot_path};
     CHECK_NOTHROW(tx_index.build());
 }
-
-#endif  // _WIN32
 
 }  // namespace silkworm::snapshot

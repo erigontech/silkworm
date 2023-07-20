@@ -188,8 +188,11 @@ TEST_CASE("HeaderSnapshot::reopen_index regeneration", "[silkworm][node][snapsho
 
     // Remove and create again sample snapshot to change its timestamp
     std::filesystem::remove(sample_header_snapshot1.path());
+    CHECK(not std::filesystem::exists(sample_header_snapshot1.path()));
+    CHECK(not std::filesystem::exists(header_snapshot_path.path()));
     test::SampleHeaderSnapshotFile sample_header_snapshot2{};
     test::SampleHeaderSnapshotPath header_snapshot_path2{sample_header_snapshot2.path()};
+    CHECK(std::filesystem::exists(header_snapshot_path.path()));
 
     // Verify that reopening the index removes the index file if created in the past
     CHECK(std::filesystem::exists(header_snapshot.path().index_file().path()));

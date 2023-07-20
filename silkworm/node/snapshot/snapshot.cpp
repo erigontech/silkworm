@@ -193,7 +193,8 @@ void HeaderSnapshot::reopen_index() {
         idx_header_hash_ = std::make_unique<succinct::RecSplitIndex>(header_index_path.path());
         if (idx_header_hash_->last_write_time() < decoder_.last_write_time()) {
             // Index has been created before the segment file, needs to be ignored (and rebuilt) as inconsistent
-            std::filesystem::remove(path().index_file().path());
+            const bool removed = std::filesystem::remove(header_index_path.path());
+            ensure(removed, "HeaderSnapshot::reopen_index cannot remove index file");
             close_index();
         }
     }

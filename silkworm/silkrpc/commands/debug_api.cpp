@@ -16,6 +16,7 @@
 
 #include "debug_api.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <ostream>
 #include <set>
@@ -272,7 +273,7 @@ awaitable<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& reque
     }
 
     auto block_hash = params[0].get<evmc::bytes32>();
-    auto tx_index = params[1].get<std::uint64_t>();
+    auto tx_index = params[1].get<uint64_t>();
     auto address = params[2].get<evmc::address>();
 
     SILK_DEBUG << "block_hash: 0x" << silkworm::to_hex(block_hash)
@@ -305,8 +306,8 @@ awaitable<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& reque
 
                     EVMExecutor executor{*chain_config_ptr, workers_, state};
 
-                    std::uint64_t index = std::min(transactions.size(), tx_index + 1);
-                    for (std::uint64_t idx{0}; idx < index; idx++) {
+                    uint64_t index = std::min(static_cast<uint64_t>(transactions.size()), tx_index + 1);
+                    for (uint64_t idx{0}; idx < index; idx++) {
                         rpc::Transaction txn{transactions[idx]};
                         if (!txn.from) {
                             txn.recover_sender();

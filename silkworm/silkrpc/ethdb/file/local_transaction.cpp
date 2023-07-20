@@ -16,8 +16,8 @@
 
 #include "local_transaction.hpp"
 
-#include <silkworm/node/storage/local_chain_storage.hpp>
 #include <silkworm/silkrpc/core/local_state.hpp>
+#include <silkworm/silkrpc/storage/local_chain_storage.hpp>
 
 namespace silkworm::rpc::ethdb::file {
 
@@ -64,8 +64,8 @@ std::shared_ptr<silkworm::State> LocalTransaction::create_state(boost::asio::any
     return std::make_shared<silkworm::rpc::state::LocalState>(block_number, chaindata_env_);
 }
 
-std::shared_ptr<node::ChainStorage> LocalTransaction::create_storage(const DatabaseReader&, ethbackend::BackEnd*) {
-    return std::make_shared<node::LocalChainStorage>(txn_);
+std::shared_ptr<ChainStorage> LocalTransaction::create_storage(const DatabaseReader&, ethbackend::BackEnd*) {
+    return std::make_shared<LocalChainStorage>(txn_);
 }
 
 }  // namespace silkworm::rpc::ethdb::file

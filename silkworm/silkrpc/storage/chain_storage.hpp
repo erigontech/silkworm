@@ -23,7 +23,7 @@
 #include <silkworm/core/common/base.hpp>
 #include <silkworm/core/types/block.hpp>
 
-namespace silkworm::node {
+namespace silkworm::rpc {
 
 //! ChainStorage represents the storage for blockchain primary data, namely: chain configuration, block headers,
 //! bodies and transactions.
@@ -44,9 +44,9 @@ class ChainStorage {
     [[nodiscard]] virtual Task<std::optional<BlockNum>> read_block_number(const Hash& hash) const = 0;
 
     //! Read block returning true on success and false on missing block
-    virtual Task<bool> read_block(HashAsSpan hash, BlockNum number, bool read_senders, Block& block) const = 0;
-    virtual Task<bool> read_block(const Hash& hash, BlockNum number, Block& block) const = 0;
-    virtual Task<bool> read_block(const Hash& hash, Block& block) const = 0;
+    virtual Task<bool> read_block(HashAsSpan hash, BlockNum number, bool read_senders, silkworm::Block& block) const = 0;
+    virtual Task<bool> read_block(const Hash& hash, BlockNum number, silkworm::Block& block) const = 0;
+    virtual Task<bool> read_block(const Hash& hash, silkworm::Block& block) const = 0;
 
     //! Read block header with the specified key (block number, hash)
     [[nodiscard]] virtual Task<std::optional<BlockHeader>> read_header(BlockNum number, HashAsArray hash) const = 0;
@@ -75,7 +75,7 @@ class ChainStorage {
     virtual Task<bool> read_canonical_body(BlockNum height, BlockBody& body) const = 0;
 
     //! Read the canonical block at specified height
-    virtual Task<bool> read_canonical_block(BlockNum height, Block& block) const = 0;
+    virtual Task<bool> read_canonical_block(BlockNum height, silkworm::Block& block) const = 0;
 
     //! Check the presence of a block body using block number and hash
     [[nodiscard]] virtual Task<bool> has_body(BlockNum number, HashAsArray hash) const = 0;
@@ -116,4 +116,4 @@ class ChainStorage {
     // Task<intx::uint256> read_cumulative_gas_used(uint64_t block_number);
 };
 
-}  // namespace silkworm::node
+}  // namespace silkworm::rpc

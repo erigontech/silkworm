@@ -187,7 +187,7 @@ class DummyTransaction : public ethdb::Transaction {
         return nullptr;
     }
 
-    std::shared_ptr<node::ChainStorage> create_storage(const core::rawdb::DatabaseReader&, ethbackend::BackEnd*) override {
+    std::shared_ptr<ChainStorage> create_storage(const core::rawdb::DatabaseReader&, ethbackend::BackEnd*) override {
         return nullptr;
     }
 

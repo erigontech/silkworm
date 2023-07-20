@@ -38,7 +38,6 @@
 #include <silkworm/node/db/stages.hpp>
 #include <silkworm/node/db/tables.hpp>
 #include <silkworm/node/db/util.hpp>
-#include <silkworm/node/storage/chain_storage.hpp>
 #include <silkworm/silkrpc/common/util.hpp>
 #include <silkworm/silkrpc/core/blocks.hpp>
 #include <silkworm/silkrpc/core/cached_chain.hpp>

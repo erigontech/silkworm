@@ -29,6 +29,19 @@
 
 namespace silkworm::rpc::http {
 
+void RequestParser::reset() {
+    if (last_len_) {
+        last_len_ = 0;
+        delete[] buffer_;
+        buffer_ = 0;
+    }
+}
+
+RequestParser::RequestParser() {
+    last_len_ = 0;
+    buffer_ = 0;
+}
+
 RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, const char* end) {
     const char* method_name;  // uninitialised here because phr_parse_request initialises it
     size_t method_len;        // uninitialised here because phr_parse_request initialises it
@@ -106,18 +119,14 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
 
     req.content.resize(current_len - static_cast<size_t>(res));
     std::memcpy(req.content.data(), begin + res, current_len - static_cast<size_t>(res));
-    if (last_len_) {
-        last_len_ = 0;
-        delete[] buffer_;
-        buffer_ = 0;
-    }
 
-    if (expect_request)
+    if (expect_request) {
         return ResultType::processing_continue;
-    else if (req.content.length() < req.content_length)
+    } else if (req.content.length() < req.content_length) {
         return ResultType::indeterminate;
-    else
+    } else {
         return ResultType::good;
+    }
 }
 
 }  // namespace silkworm::rpc::http

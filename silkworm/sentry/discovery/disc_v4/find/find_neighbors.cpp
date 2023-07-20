@@ -26,8 +26,8 @@
 #include <boost/system/system_error.hpp>
 
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/infra/concurrency/awaitable_future.hpp>
 #include <silkworm/infra/concurrency/awaitable_wait_for_one.hpp>
+#include <silkworm/infra/concurrency/channel.hpp>
 #include <silkworm/infra/concurrency/timeout.hpp>
 #include <silkworm/sentry/discovery/disc_v4/common/ip_classify.hpp>
 #include <silkworm/sentry/discovery/disc_v4/common/message_expiration.hpp>
@@ -58,11 +58,10 @@ Task<size_t> find_neighbors(
     }
 
     auto executor = co_await boost::asio::this_coro::executor;
-    concurrency::AwaitablePromise<std::map<EccPublicKey, NodeAddress>> neighbors_promise{executor};
-    auto neighbors_future = neighbors_promise.get_future();
+    concurrency::Channel<std::map<EccPublicKey, NodeAddress>> neighbors_channel{executor, 2};
     auto on_neighbors_handler = [&](NeighborsMessage message, EccPublicKey sender_node_id) {
         if ((sender_node_id == node_id) && !is_expired_message_expiration(message.expiration)) {
-            neighbors_promise.set_value(std::move(message.node_addresses));
+            neighbors_channel.try_send(std::move(message.node_addresses));
         }
     };
 
@@ -86,7 +85,7 @@ Task<size_t> find_neighbors(
 
     std::map<EccPublicKey, NodeAddress> neighbors_node_addresses;
     try {
-        neighbors_node_addresses = std::get<0>(co_await (neighbors_future.get_async() || concurrency::timeout(500ms)));
+        neighbors_node_addresses = std::get<0>(co_await (neighbors_channel.receive() || concurrency::timeout(500ms)));
     } catch (const concurrency::TimeoutExpiredError&) {
         co_return 0;
     }

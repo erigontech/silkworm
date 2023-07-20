@@ -576,7 +576,7 @@ void write_tx_lookup(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& bloc
     for (const auto& block_txn : block.transactions) {
         auto tx_key = block_txn.hash();
         auto tx_data = intx::uint256{block.header.number};
-//        target->upsert(to_slice(tx_key.bytes), to_slice(tx_data.));
+        //        target->upsert(to_slice(tx_key.bytes), to_slice(tx_data.));
     }
 }
 

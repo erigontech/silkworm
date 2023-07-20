@@ -18,7 +18,7 @@
 
 #include <silkworm/node/db/access_layer.hpp>
 
-namespace silkworm::node {
+namespace silkworm::rpc {
 
 // TODO(canepat) moving here DataModel implementation and get rid of DataModel
 
@@ -116,4 +116,4 @@ Task<std::optional<intx::uint256>> LocalChainStorage::read_total_difficulty(cons
     co_return data_model_.read_total_difficulty(number, hash);
 }
 
-}  // namespace silkworm::node
+}  // namespace silkworm::rpc

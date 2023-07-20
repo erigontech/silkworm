@@ -41,7 +41,6 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
     }  // namespace silkworm::rpc::http
 
     SECTION("invalid request with control character") {
-        //        std::array<char, 33> ctrl_chars{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 127};
         std::array<char, 33> ctrl_chars{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 127};
         for (auto c : ctrl_chars) {
             RequestParser parser;
@@ -117,6 +116,14 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
         }
     }
 
+    SECTION("bad requests with segments") {
+        std::string seg1{"POST / HT**/1.1\r\nHost: localhost:8545\r\n User-Agent: curl/7.68.0\r\n Accept: */*\r\n"};
+        RequestParser parser;
+        Request req;
+        const auto result1{parser.parse(req, seg1.data(), seg1.data() + seg1.size())};
+        CHECK(result1 == RequestParser::ResultType::bad);
+    }
+
     SECTION("indeterminate requests") {
         std::vector<std::string> incomplete_requests{
             "POST / HTTP/1.1\r\nHost: localhost:8545",
@@ -175,6 +182,23 @@ TEST_CASE("parse", "[silkrpc][http][request_parser]") {
         CHECK(result2 == RequestParser::ResultType::indeterminate);
         const auto result3{parser.parse(req, seg3.data(), seg3.data() + seg3.length())};
         CHECK(result3 == RequestParser::ResultType::good);
+    }
+
+    SECTION("segemented http request 4 segs") {
+        std::string seg1{"POST / HTTP/1.1\r\nHost: localhost:8545\r\n User-Agent: curl/7.68.0\r\n Accept: */*\r\n"};
+        std::string seg2{"Content-Type: application/json\r\nContent-Length: 15\r\n\r\n"};
+        std::string seg3{"{\"json\""};
+        std::string seg4{"\": \"2.0\"}"};
+        RequestParser parser;
+        Request req;
+        const auto result1{parser.parse(req, seg1.data(), seg1.data() + seg1.size())};
+        CHECK(result1 == RequestParser::ResultType::indeterminate);
+        const auto result2{parser.parse(req, seg2.data(), seg2.data() + seg2.length())};
+        CHECK(result2 == RequestParser::ResultType::indeterminate);
+        const auto result3{parser.parse(req, seg3.data(), seg3.data() + seg3.length())};
+        CHECK(result3 == RequestParser::ResultType::indeterminate);
+        const auto result4{parser.parse(req, seg4.data(), seg4.data() + seg4.length())};
+        CHECK(result4 == RequestParser::ResultType::good);
     }
 }
 

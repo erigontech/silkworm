@@ -28,6 +28,7 @@
 #include <nlohmann/json.hpp>
 
 #include <silkworm/core/types/block.hpp>
+#include <silkworm/core/types/receipt.hpp>
 #include <silkworm/infra/common/directories.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 #include <silkworm/node/db/genesis.hpp>
@@ -95,21 +96,33 @@ void populate_blocks(db::RWTxn& txn) {
         // FIX 1: populate senders table
         for (auto& block_txn : block.transactions) {
             block_txn.recover_sender();
-
-            auto th = to_hex_no_leading_zeros( block_txn.hash());
-            auto th2 = to_hex_no_leading_zeros(hash_of_transaction(block_txn).bytes);
-            std::cout << "th: " << th << " th2: " << th2 << std::endl;
         }
         db::write_senders(txn, block_hash, block.header.number, block);
 
-        // FIX 2: insert system transactions
+        // FIX 2: populate tx lookup table and create receipts
+        std::vector<silkworm::Receipt> receipts;
+        uint64_t cumulative_gas_used = 0;
+        for (auto& block_txn : block.transactions) {
+            db::write_tx_lookup(txn, block_txn.hash(), block.header.number, block);
+
+            silkworm::Receipt receipt;
+            cumulative_gas_used += block_txn.gas_limit;
+            receipt.type = block_txn.type;
+            receipt.success = true;
+            receipt.cumulative_gas_used = cumulative_gas_used;
+            receipt.bloom = block.header.logs_bloom;
+            receipts.emplace_back(receipt);
+        }
+        db::write_receipts(txn, receipts, block.header.number);
+
+        // FIX 3: insert system transactions
         intx::uint256 max_priority_fee_per_gas = block.transactions.empty() ? block.header.base_fee_per_gas.value_or(0) : block.transactions[0].max_priority_fee_per_gas;
         intx::uint256 max_fee_per_gas = block.transactions.empty() ? block.header.base_fee_per_gas.value_or(0) : block.transactions[0].max_fee_per_gas;
         silkworm::Transaction system_transaction;
         system_transaction.max_priority_fee_per_gas = max_priority_fee_per_gas;
         system_transaction.max_fee_per_gas = max_fee_per_gas;
         block.transactions.emplace(block.transactions.begin(), system_transaction);
-        block.transactions.emplace_back(silkworm::Transaction{system_transaction});
+        block.transactions.emplace_back(system_transaction);
 
         db::write_header(txn, block.header, /*with_header_numbers=*/true);            // Write table::kHeaders and table::kHeaderNumbers
         db::write_canonical_header_hash(txn, block_hash.bytes, block.header.number);  // Insert header hash as canonical
@@ -118,7 +131,7 @@ void populate_blocks(db::RWTxn& txn) {
         // db::write_total_difficulty(txn, block_hash_key, block.header.difficulty);     // Write initial difficulty
         db::write_total_difficulty(txn, block_hash_key, 1);  // Write initial difficulty
 
-        db::write_body(txn, block, block_hash, block.header.number);
+        db::write_raw_body(txn, block, block_hash, block.header.number);
         db::write_head_header_hash(txn, block_hash.bytes);  // Update head header in config
         db::write_last_head_block(txn, block_hash);         // Update head block in config
         db::write_last_safe_block(txn, block_hash);         // Update last safe block in config
@@ -243,21 +256,12 @@ TEST_CASE("rpc_api io (individual)", "[silkrpc][rpc_api]") {
 
     RpcApiTestBase<RequestHandler_ForTest> test_base{db};
 
-    SECTION("wrapper") {
-        SECTION("test1") {
-            auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_getBlockTransactionCountByHash","params":["0xfe21bb173f43067a9f90cfc59bbb6830a7a2929b5de4a61f372a9db28e87f9ae"]})"_json;
-            http::Reply reply;
+    SECTION("sample test") {
+        auto request = R"({"id":1,"jsonrpc":"2.0","method":"eth_getTransactionReceipt","params":["0x0d9ba049a158972e7fc1066122ceb31e431483ebf84f90f845f02e326942d467"]})"_json;
+        http::Reply reply;
 
-            test_base.run<&RequestHandler_ForTest::request_and_create_reply>(request, reply);
-            CHECK(nlohmann::json::parse(reply.content) == R"({"jsonrpc":"2.0","id":1,"result":"0x1"})"_json);
-        }
-
-        SECTION("test2") {
-            auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_getBlockByNumber","params":["0x2",true]})"_json;
-            http::Reply reply;
-            test_base.run<&RequestHandler_ForTest::request_and_create_reply>(request, reply);
-            CHECK(nlohmann::json::parse(reply.content) == R"({"jsonrpc":"2.0","id":1,"result":{"baseFeePerGas":"0x2db08786","difficulty":"0x0","extraData":"0x","gasLimit":"0x4c4b40","gasUsed":"0x5208","hash":"0xfe21bb173f43067a9f90cfc59bbb6830a7a2929b5de4a61f372a9db28e87f9ae","logsBloom":"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","miner":"0x0000000000000000000000000000000000000000","mixHash":"0x0000000000000000000000000000000000000000000000000000000000000000","nonce":"0x0000000000000000","number":"0x2","parentHash":"0x898753d8fdd8d92c1907ca21e68c7970abd290c647a202091181deec3f30a0b2","receiptsRoot":"0x056b23fbba480696b65fe5a59b8f2148a1299103c4f57df839233af2cf4ca2d2","sha3Uncles":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347","size":"0x2bf","stateRoot":"0xeb3709201a2eed4c86610af6beafb09fe914ff1eb0feaa5acb7747880c123d2f","timestamp":"0x14","totalDifficulty":"0x1","transactions":[{"blockHash":"0xfe21bb173f43067a9f90cfc59bbb6830a7a2929b5de4a61f372a9db28e87f9ae","blockNumber":"0x2","from":"0x658bdf435d810c91414ec09147daa6db62406379","gas":"0x5208","gasPrice":"0x2db08787","hash":"0x0d9ba049a158972e7fc1066122ceb31e431483ebf84f90f845f02e326942d467","input":"0x","nonce":"0x1","to":"0x658bdf435d810c91414ec09147daa6db62406379","transactionIndex":"0x0","value":"0x3e8","type":"0x0","chainId":"0x539","v":"0xa95","r":"0x52a6f622013359249316f4c017a67bc2c659f513dac5efea43a84b6ce4e462b1","s":"0x55ba2a779eaf62efa7d641a32ea329faabf9f097d376e2e400115a5151b9470"}],"transactionsRoot":"0x14488a14ae59174bedee90344854fb9b6a308143ce4bf688c00f2e81a9aae2a3","uncles":[],"withdrawals":[{"index":"0x0","validatorIndex":"0x2a","address":"0xee00000000000000000000000000000000000000","amount":"0x539"},{"index":"0x1","validatorIndex":"0xd","address":"0xee00000000000000000000000000000000000000","amount":"0x1"}],"withdrawalsRoot":"0x625ee608ff633ca6371503f9a8159a9e158f3fa9585650418562ef7bd1d1dfc9"}})"_json);
-        }
+        test_base.run<&RequestHandler_ForTest::request_and_create_reply>(request, reply);
+        CHECK(nlohmann::json::parse(reply.content) == R"({"id":1,"jsonrpc":"2.0","result":{"blockHash":"0xfe21bb173f43067a9f90cfc59bbb6830a7a2929b5de4a61f372a9db28e87f9ae","blockNumber":"0x2","contractAddress":null,"cumulativeGasUsed":"0x5208","effectiveGasPrice":"0x2db08787","from":"0x658bdf435d810c91414ec09147daa6db62406379","gasUsed":"0x5208","logs":[],"logsBloom":"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","status":"0x1","to":"0x658bdf435d810c91414ec09147daa6db62406379","transactionHash":"0x0d9ba049a158972e7fc1066122ceb31e431483ebf84f90f845f02e326942d467","transactionIndex":"0x0","type":"0x0"}})"_json);
     }
 
     db->close();

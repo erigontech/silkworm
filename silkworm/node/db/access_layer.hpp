@@ -31,6 +31,7 @@
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/db/util.hpp>
 #include <silkworm/node/snapshot/repository.hpp>
+#include <silkworm/core/types/receipt.hpp>
 
 namespace silkworm::db {
 
@@ -117,6 +118,7 @@ size_t process_blocks_at_height(ROTxn& txn, BlockNum height, std::function<void(
 //! \brief Writes block body in table::kBlockBodies
 void write_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, BlockNum bn);
 void write_body(RWTxn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLength], BlockNum number);
+void write_raw_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, BlockNum bn);
 
 // See Erigon ReadTd
 std::optional<intx::uint256> read_total_difficulty(ROTxn& txn, BlockNum, const evmc::bytes32& hash);
@@ -144,6 +146,9 @@ std::vector<evmc::address> read_senders(ROTxn& txn, BlockNum block_number, const
 //! \brief Fills transactions' senders addresses directly in place
 void parse_senders(ROTxn& txn, const Bytes& key, std::vector<Transaction>& out);
 void write_senders(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& number, const Block& block);
+
+void write_tx_lookup(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& block_number, const Block& block);
+void write_receipts(RWTxn& txn, const std::vector<silkworm::Receipt>& receipts, const BlockNum& block_number);
 
 // See Erigon ReadTransactions
 void read_transactions(ROTxn& txn, uint64_t base_id, uint64_t count, std::vector<Transaction>& out);

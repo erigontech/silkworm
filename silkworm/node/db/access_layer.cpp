@@ -25,6 +25,7 @@
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/node/db/bitmap.hpp>
 #include <silkworm/node/db/tables.hpp>
+#include <silkworm/node/types/receipt_cbor.hpp>
 
 namespace silkworm::db {
 
@@ -511,6 +512,22 @@ void write_body(RWTxn& txn, const BlockBody& body, const uint8_t (&hash)[kHashLe
     write_transactions(txn, body.transactions, body_for_storage.base_txn_id + 1);
 }
 
+void write_raw_body(RWTxn& txn, const BlockBody& body, const evmc::bytes32& hash, BlockNum bn) {
+    detail::BlockBodyForStorage body_for_storage{};
+    body_for_storage.ommers = body.ommers;
+    body_for_storage.withdrawals = body.withdrawals;
+    body_for_storage.txn_count = body.transactions.size();
+    body_for_storage.base_txn_id =
+        increment_map_sequence(txn, table::kBlockTransactions.name, body_for_storage.txn_count);
+    Bytes value{body_for_storage.encode()};
+    auto key{db::block_key(bn, hash.bytes)};
+
+    auto target = txn.rw_cursor(table::kBlockBodies);
+    target->upsert(to_slice(key), to_slice(value));
+
+    write_transactions(txn, body.transactions, body_for_storage.base_txn_id);
+}
+
 static ByteView read_senders_raw(ROTxn& txn, const Bytes& key) {
     auto cursor = txn.ro_cursor(table::kSenders);
     auto data{cursor->find(to_slice(key), /*throw_notfound = */ false)};
@@ -572,12 +589,18 @@ void write_senders(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& block_
 void write_tx_lookup(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& block_number, const Block& block) {
     auto key{db::block_key(block_number, hash.bytes)};
     auto target = txn.rw_cursor(table::kTxLookup);
-    Bytes data;
     for (const auto& block_txn : block.transactions) {
         auto tx_key = block_txn.hash();
-        auto tx_data = intx::uint256{block.header.number};
-//        target->upsert(to_slice(tx_key.bytes), to_slice(tx_data.));
+        auto tx_data = db::block_key(block_number);
+        target->upsert(to_slice(tx_key.bytes), to_slice(tx_data));
     }
+}
+
+void write_receipts(RWTxn& txn, const std::vector<silkworm::Receipt>& receipts, const BlockNum& block_number) {
+        auto target = txn.rw_cursor(table::kBlockReceipts);
+        auto key{db::block_key(block_number)};
+        Bytes value{cbor_encode(receipts)};
+        target->upsert(to_slice(key), to_slice(value));
 }
 
 std::optional<ByteView> read_code(ROTxn& txn, const evmc::bytes32& code_hash) {

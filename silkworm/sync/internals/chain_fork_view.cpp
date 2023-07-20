@@ -19,7 +19,6 @@
 #include <silkworm/core/chain/genesis.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/infra/common/log.hpp>
-#include <silkworm/node/db/stages.hpp>
 
 namespace silkworm::chainsync {
 
@@ -79,7 +78,6 @@ TotalDifficulty ChainForkView::add(const BlockHeader& header, TotalDifficulty pa
         current_head_.total_difficulty = td;  // this makes sure we end up choosing the chain with the max total difficulty
     }
 
-    previous_hash_ = hash;
     td_cache_.put(hash, td);
 
     return td;

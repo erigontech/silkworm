@@ -452,7 +452,6 @@ awaitable<void> EthereumRpcApi::handle_eth_get_uncle_by_block_number_and_index(c
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, tx_database, block_number);
         if (block_with_hash) {
-        
             const auto ommers = block_with_hash->block.ommers;
 
             const auto idx = std::stoul(index, nullptr, 16);
@@ -469,7 +468,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_uncle_by_block_number_and_index(c
                 reply = make_json_content(request["id"], uncle_block_with_hash_and_td);
             }
         } else {
-             reply = make_json_content(request["id"], {});
+            reply = make_json_content(request["id"], {});
         }
     } catch (const std::invalid_argument& iv) {
         reply = make_json_content(request["id"], {});

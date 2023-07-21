@@ -105,7 +105,7 @@ void populate_blocks(db::RWTxn& txn) {
         for (auto& block_txn : block.transactions) {
             db::write_tx_lookup(txn, block_txn.hash(), block.header.number, block);
             cumulative_gas_used += block_txn.gas_limit;
-            silkworm::Receipt receipt {.type = block_txn.type, .success = true, .cumulative_gas_used = cumulative_gas_used, .bloom = block.header.logs_bloom};
+            silkworm::Receipt receipt{.type = block_txn.type, .success = true, .cumulative_gas_used = cumulative_gas_used, .bloom = block.header.logs_bloom};
             receipts.emplace_back(receipt);
         }
         db::write_receipts(txn, receipts, block.header.number);

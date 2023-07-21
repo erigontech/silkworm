@@ -45,7 +45,7 @@ TEST_CASE("cannot create forks from empty chain config", "[silkrpc][types][chain
 
 TEST_CASE("create forks from chain config", "[silkrpc][types][chain_config]") {
     ChainConfig chain_config{
-        0x1bc2f617598835dae98009c0a862eb9a5208a1cc103edf98a92248b3ee9f33e2_bytes32,
+        0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3_bytes32,
         R"({
             "berlinBlock":12244000,
             "byzantiumBlock":4370000,
@@ -62,7 +62,7 @@ TEST_CASE("create forks from chain config", "[silkrpc][types][chain_config]") {
             "petersburgBlock":7280000
         })"_json};
     Forks forks{chain_config};
-    CHECK(forks.genesis_hash == 0x1bc2f617598835dae98009c0a862eb9a5208a1cc103edf98a92248b3ee9f33e2_bytes32);
+    CHECK(forks.genesis_hash == 0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3_bytes32);
     CHECK(forks.block_numbers[0] == 1'150'000);
     CHECK(forks.block_numbers[1] == 1'920'000);
     CHECK(forks.block_numbers[2] == 2'463'000);

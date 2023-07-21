@@ -79,7 +79,6 @@ BlockHeader read_genesis_header(const nlohmann::json& genesis_json, const evmc::
     }
 
     header.ommers_hash = kEmptyListHash;
-    header.withdrawals_root = kEmptyRoot;
     header.state_root = state_root;
     header.transactions_root = kEmptyRoot;
     header.receipts_root = kEmptyRoot;

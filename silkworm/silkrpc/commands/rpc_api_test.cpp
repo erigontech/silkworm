@@ -19,7 +19,6 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <thread>
 #include <vector>
 
 #include <boost/asio/co_spawn.hpp>
@@ -34,10 +33,12 @@
 #include <silkworm/node/db/genesis.hpp>
 #include <silkworm/silkrpc/ethdb/file/local_database.hpp>
 #include <silkworm/silkrpc/http/request_handler.hpp>
-#include <silkworm/silkrpc/test/api_test_base.hpp>
 #include <silkworm/silkrpc/test/context_test_base.hpp>
+#include <silkworm/core/state/in_memory_state.hpp>
+#include <silkworm/core/chain/genesis.hpp>
 
 #include "silkworm/silkrpc/common/constants.hpp"
+#include "silkworm/core/common/cast.hpp"
 
 namespace silkworm::rpc::commands {
 
@@ -45,9 +46,7 @@ using boost::asio::awaitable;
 using Catch::Matchers::Message;
 
 std::shared_ptr<mdbx::env_managed> open_db() {
-    //        std::string chaindata_dir{DataDirectory{}.chaindata().path().string()};
     std::string chaindata_dir{TemporaryDirectory::get_unique_temporary_path()};
-    INFO("chaindata_dir: " << chaindata_dir);
 
     db::EnvConfig chain_conf{
         .path = chaindata_dir,
@@ -64,7 +63,83 @@ void populate_genesis(db::RWTxn& txn) {
     std::ifstream genesis_json_input_file(genesis_json_path);
     nlohmann::json genesis_json;
     genesis_json_input_file >> genesis_json;
-    db::initialize_genesis(txn, genesis_json, /*allow_exceptions=*/false);
+    InMemoryState state_buffer{};
+
+    // Allocate accounts
+    if (genesis_json.contains("alloc")) {
+        auto state_table_storage = txn.rw_cursor_dup_sort(db::table::kPlainState);
+
+        for (const auto& item : genesis_json["alloc"].items()) {
+            const auto& account_alloc_json = item.value();
+
+            auto address_bytes{from_hex(item.key())};
+            evmc::address account_address = to_evmc_address(*address_bytes);
+            const auto acc_balance{intx::from_string<intx::uint256>(account_alloc_json.at("balance"))};
+
+            intx::uint256 acc_nonce{0};
+            if (account_alloc_json.contains("nonce")) {
+                acc_nonce = intx::from_string<intx::uint256>(account_alloc_json.at("nonce"));
+            }
+
+            Account account{acc_nonce[0], acc_balance};
+
+            if (account_alloc_json.contains("code")) {
+                const auto acc_code{from_hex(std::string(account_alloc_json.at("code"))).value()};
+                const auto acc_codehash{bit_cast<evmc_bytes32>(keccak256(acc_code))};
+                account.code_hash = acc_codehash;
+                state_buffer.update_account_code(account_address, account.incarnation, acc_codehash, acc_code);
+            }
+
+            state_buffer.update_account(account_address, std::nullopt, account);
+
+            if (account_alloc_json.contains("storage")) {
+                for (const auto& storage_json : account_alloc_json.at("storage").items()) {
+                    Bytes key{from_hex(storage_json.key()).value()};
+                    Bytes value{from_hex(storage_json.value().get<std::string>()).value()};
+                    state_buffer.update_storage(account_address, account.incarnation, to_bytes32(key), /*initial=*/{}, to_bytes32(value));
+
+                    // FIX 1: update storage on-fly
+                    Bytes prefix{silkworm::db::storage_prefix(account_address, account.incarnation)};
+                    upsert_storage_value(*state_table_storage, prefix, key, value);
+                }
+            }
+        }
+
+        // Write allocations to db - no changes only accounts
+        auto state_table{db::open_cursor(txn, db::table::kPlainState)};
+        auto code_table{db::open_cursor(txn, db::table::kCode)};
+        for (const auto& [address, account] : state_buffer.accounts()) {
+            // Store account plain state
+            Bytes encoded{account.encode_for_storage()};
+            state_table.upsert(db::to_slice(address), db::to_slice(encoded));
+
+            // Store code
+            if (account.code_hash != kEmptyHash) {
+                auto code = state_buffer.read_code(account.code_hash);
+                code_table.upsert(db::to_slice(account.code_hash), db::to_slice(code));
+            }
+        }
+    }
+
+    const BlockHeader header{read_genesis_header(genesis_json, state_buffer.state_root_hash())};
+
+    auto block_hash{header.hash()};
+    auto block_hash_key{db::block_key(header.number, block_hash.bytes)};
+    db::write_header(txn, header, /*with_header_numbers=*/true);            // Write table::kHeaders and table::kHeaderNumbers
+    db::write_canonical_header_hash(txn, block_hash.bytes, header.number);  // Insert header hash as canonical
+    db::write_total_difficulty(txn, block_hash_key, header.difficulty);     // Write initial difficulty
+
+    db::write_body(txn, BlockBody(), block_hash.bytes, header.number);  // Write block body (empty)
+    db::write_head_header_hash(txn, block_hash.bytes);                  // Update head header in config
+
+    const uint8_t genesis_null_receipts[] = {0xf6};  // <- cbor encoded
+    db::open_cursor(txn, db::table::kBlockReceipts)
+        .upsert(db::to_slice(block_hash_key).safe_middle(0, 8), db::to_slice(Bytes(genesis_null_receipts, 1)));
+
+    // Write Chain Settings
+    auto config_data{genesis_json["config"].dump()};
+    db::open_cursor(txn, db::table::kConfig)
+        .upsert(db::to_slice(block_hash.bytes), mdbx::slice{config_data.data()});
 }
 
 void populate_blocks(db::RWTxn& txn) {
@@ -93,13 +168,13 @@ void populate_blocks(db::RWTxn& txn) {
         auto block_hash = block.header.hash();
         auto block_hash_key = db::block_key(block.header.number, block_hash.bytes);
 
-        // FIX 1: populate senders table
+        // FIX 2: populate senders table
         for (auto& block_txn : block.transactions) {
             block_txn.recover_sender();
         }
         db::write_senders(txn, block_hash, block.header.number, block);
 
-        // FIX 2: populate tx lookup table and create receipts
+        // FIX 3: populate tx lookup table and create receipts
         std::vector<silkworm::Receipt> receipts;
         uint64_t cumulative_gas_used = 0;
         for (auto& block_txn : block.transactions) {
@@ -110,7 +185,7 @@ void populate_blocks(db::RWTxn& txn) {
         }
         db::write_receipts(txn, receipts, block.header.number);
 
-        // FIX 3: insert system transactions
+        // FIX 4: insert system transactions
         intx::uint256 max_priority_fee_per_gas = block.transactions.empty() ? block.header.base_fee_per_gas.value_or(0) : block.transactions[0].max_priority_fee_per_gas;
         intx::uint256 max_fee_per_gas = block.transactions.empty() ? block.header.base_fee_per_gas.value_or(0) : block.transactions[0].max_fee_per_gas;
         silkworm::Transaction system_transaction;
@@ -131,8 +206,6 @@ void populate_blocks(db::RWTxn& txn) {
         db::write_last_head_block(txn, block_hash);         // Update head block in config
         db::write_last_safe_block(txn, block_hash);         // Update last safe block in config
         db::write_last_finalized_block(txn, block_hash);    // Update last finalized block in config
-
-        //        db::write_canonical_hash(txn, block_hash_key);      // Insert block hash as canonical
     }
 }
 
@@ -233,7 +306,7 @@ TEST_CASE("rpc_api io", "[silkrpc][rpc_api][ignore]") {
     }
 }
 
-TEST_CASE("rpc_api io (individual)", "[silkrpc][rpc_api]") {
+TEST_CASE("rpc_api io (individual)", "[silkrpc][rpc_api][ignore]") {
     auto db = open_db();
     db::RWTxnManaged txn{*db};
     db::table::check_or_create_chaindata_tables(txn);

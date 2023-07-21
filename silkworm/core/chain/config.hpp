@@ -115,7 +115,7 @@ struct ChainConfig {
 
 std::ostream& operator<<(std::ostream& out, const ChainConfig& obj);
 
-inline constexpr evmc::bytes32 kMainnetGenesisHash{0x1bc2f617598835dae98009c0a862eb9a5208a1cc103edf98a92248b3ee9f33e2_bytes32};
+inline constexpr evmc::bytes32 kMainnetGenesisHash{0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3_bytes32};
 inline constexpr ChainConfig kMainnetConfig{
     .chain_id = 1,
     .protocol_rule_set = protocol::RuleSetType::kEthash,
@@ -136,7 +136,7 @@ inline constexpr ChainConfig kMainnetConfig{
     .shanghai_time = 1681338455,
 };
 
-inline constexpr evmc::bytes32 kGoerliGenesisHash{0xe2c8d37cb436a25a58c3a50728647c3c1dea432d6cab10063a16b623de883893_bytes32};
+inline constexpr evmc::bytes32 kGoerliGenesisHash{0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a_bytes32};
 inline constexpr ChainConfig kGoerliConfig{
     .chain_id = 5,
     .protocol_rule_set = protocol::RuleSetType::kClique,
@@ -153,7 +153,7 @@ inline constexpr ChainConfig kGoerliConfig{
     .shanghai_time = 1678832736,
 };
 
-inline constexpr evmc::bytes32 kSepoliaGenesisHash{0xc58429872388c07c5dc97889153dd1a2571562b623f37d67a36225f714a0fe91_bytes32};
+inline constexpr evmc::bytes32 kSepoliaGenesisHash{0x25a5cc106eea7138acab33231d7160d69cb777ee0c2c553fcddf5138993e6dd9_bytes32};
 inline constexpr ChainConfig kSepoliaConfig{
     .chain_id = 11155111,
     .protocol_rule_set = protocol::RuleSetType::kEthash,

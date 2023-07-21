@@ -597,10 +597,10 @@ void write_tx_lookup(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& bloc
 }
 
 void write_receipts(RWTxn& txn, const std::vector<silkworm::Receipt>& receipts, const BlockNum& block_number) {
-        auto target = txn.rw_cursor(table::kBlockReceipts);
-        auto key{db::block_key(block_number)};
-        Bytes value{cbor_encode(receipts)};
-        target->upsert(to_slice(key), to_slice(value));
+    auto target = txn.rw_cursor(table::kBlockReceipts);
+    auto key{db::block_key(block_number)};
+    Bytes value{cbor_encode(receipts)};
+    target->upsert(to_slice(key), to_slice(value));
 }
 
 std::optional<ByteView> read_code(ROTxn& txn, const evmc::bytes32& code_hash) {

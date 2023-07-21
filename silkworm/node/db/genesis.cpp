@@ -145,6 +145,8 @@ bool initialize_genesis(RWTxn& txn, const nlohmann::json& genesis_json, bool all
         if (genesis_json.contains("alloc")) {
             auto expected_allocations{genesis_json["alloc"].size()};
 
+            auto state_table_storage = txn.rw_cursor_dup_sort(table::kPlainState);
+
             for (const auto& item : genesis_json["alloc"].items()) {
                 const auto& account_alloc_json = item.value();
 
@@ -173,6 +175,9 @@ bool initialize_genesis(RWTxn& txn, const nlohmann::json& genesis_json, bool all
                         Bytes key{from_hex(storage_json.key()).value()};
                         Bytes value{from_hex(storage_json.value().get<std::string>()).value()};
                         state_buffer.update_storage(account_address, account.incarnation, to_bytes32(key), /*initial=*/{}, to_bytes32(value));
+
+                        Bytes prefix{storage_prefix(account_address, account.incarnation)};
+                        upsert_storage_value(*state_table_storage, prefix, key, value);
                     }
                 }
             }
@@ -191,6 +196,7 @@ bool initialize_genesis(RWTxn& txn, const nlohmann::json& genesis_json, bool all
                 Bytes encoded{account.encode_for_storage()};
                 state_table.upsert(db::to_slice(address), db::to_slice(encoded));
 
+                // Store code
                 if (account.code_hash != kEmptyHash) {
                     auto code = state_buffer.read_code(account.code_hash);
                     code_table.upsert(db::to_slice(account.code_hash), db::to_slice(code));

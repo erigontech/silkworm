@@ -28,10 +28,10 @@
 #include <silkworm/core/types/account.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/hash.hpp>
+#include <silkworm/core/types/receipt.hpp>
 #include <silkworm/node/db/mdbx.hpp>
 #include <silkworm/node/db/util.hpp>
 #include <silkworm/node/snapshot/repository.hpp>
-#include <silkworm/core/types/receipt.hpp>
 
 namespace silkworm::db {
 

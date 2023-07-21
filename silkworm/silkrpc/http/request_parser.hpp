@@ -43,8 +43,8 @@ class RequestParser {
     void reset();
 
   private:
-    uint64_t last_len_{0};
-    char* buffer_{0};
+    uint64_t prev_len_{0};
+    std::vector<char> buffer_;
 };
 
 }  // namespace silkworm::rpc::http

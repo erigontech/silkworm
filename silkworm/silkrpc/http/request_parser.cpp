@@ -30,16 +30,14 @@
 namespace silkworm::rpc::http {
 
 void RequestParser::reset() {
-    if (last_len_) {
-        last_len_ = 0;
-        delete[] buffer_;
-        buffer_ = 0;
-    }
+    prev_len_ = 0;
+    buffer_.clear();
 }
 
 RequestParser::RequestParser() {
-    last_len_ = 0;
-    buffer_ = 0;
+    prev_len_ = 0;
+    buffer_.clear();
+    buffer_.resize(65536);
 }
 
 RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, const char* end) {
@@ -53,7 +51,7 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
     auto current_len = static_cast<size_t>(end - begin);
 
     if (req.content_length != 0 && req.content.length() < req.content_length) {
-        for (size_t i{0}; i < current_len; ++i) {
+        for (size_t i{0}; i < current_len; i++) {
             req.content.push_back(begin[i]);
         }
         if (req.content.length() < req.content_length)
@@ -62,33 +60,29 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
             return ResultType::good;
     }
 
-    if (last_len_) {
-        auto saved_buffer = buffer_;
-        buffer_ = new char[last_len_ + current_len];
-        std::memcpy(buffer_, saved_buffer, last_len_);
-        std::memcpy(buffer_ + last_len_, begin, current_len);
-        if (saved_buffer) {
-            delete[] saved_buffer;
+    if (prev_len_) {
+        for (size_t i = 0; i < current_len; i++) {
+            buffer_.push_back(*begin++);
         }
-        begin = buffer_;
-        current_len += last_len_;
+        begin = buffer_.data();
+        current_len = buffer_.size();
     }
 
-    const auto res = phr_parse_request(begin, current_len, &method_name, &method_len, &path, &path_len, &minor_version, headers, &num_headers, last_len_);
+    const auto res = phr_parse_request(begin, current_len, &method_name, &method_len, &path, &path_len, &minor_version, headers, &num_headers, prev_len_);
     if (res == -1) {
         return ResultType::bad;
     } else if (res == -2) {
-        auto saved_buffer = buffer_;
-        buffer_ = new char[current_len];
-        std::memcpy(buffer_, begin, current_len);
-        last_len_ = current_len;
-        if (saved_buffer)
-            delete[] saved_buffer;
+        buffer_.clear();
+        for (size_t i = 0; i < current_len; i++) {
+            buffer_.push_back(*begin++);
+        }
+        prev_len_ = buffer_.size();
         return ResultType::indeterminate;
     }
 
     bool expect_request = false;
     bool content_length_present = false;
+    req.http_version_minor = minor_version;
 
     for (size_t i{0}; i < num_headers; ++i) {
         const auto& header{headers[i]};

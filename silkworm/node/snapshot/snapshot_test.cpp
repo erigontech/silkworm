@@ -198,6 +198,9 @@ TEST_CASE("HeaderSnapshot::reopen_index regeneration", "[silkworm][node][snapsho
     std::cout << "index file: " << header_snapshot.path().index_file().path().string() << "\n";
     CHECK(std::filesystem::exists(header_snapshot.path().index_file().path()));
     std::cout << "before reopen_index: " << std::filesystem::exists(header_snapshot.path().index_file().path()) << "\n";
+    std::filesystem::permissions(header_snapshot.path().index_file().path(),
+                                 std::filesystem::perms::group_all,
+                                 std::filesystem::perm_options::remove);
     header_snapshot.reopen_index();
     std::cout << "after reopen_index: " << std::filesystem::exists(header_snapshot.path().index_file().path()) << "\n";
     CHECK(not std::filesystem::exists(header_snapshot.path().index_file().path()));

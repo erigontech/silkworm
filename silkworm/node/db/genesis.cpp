@@ -139,7 +139,6 @@ bool initialize_genesis(RWTxn& txn, const nlohmann::json& genesis_json, bool all
 
     try {
         InMemoryState state_buffer{};
-        evmc::bytes32 state_root_hash{kEmptyRoot};
 
         // Allocate accounts
         if (genesis_json.contains("alloc")) {

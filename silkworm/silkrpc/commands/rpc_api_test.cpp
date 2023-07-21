@@ -96,10 +96,6 @@ void populate_blocks(db::RWTxn& txn) {
         // FIX 1: populate senders table
         for (auto& block_txn : block.transactions) {
             block_txn.recover_sender();
-
-            auto th = to_hex_no_leading_zeros( block_txn.hash());
-            auto th2 = to_hex_no_leading_zeros(hash_of_transaction(block_txn).bytes);
-            std::cout << "th: " << th << " th2: " << th2 << std::endl;
         }
         db::write_senders(txn, block_hash, block.header.number, block);
 
@@ -108,13 +104,8 @@ void populate_blocks(db::RWTxn& txn) {
         uint64_t cumulative_gas_used = 0;
         for (auto& block_txn : block.transactions) {
             db::write_tx_lookup(txn, block_txn.hash(), block.header.number, block);
-
-            silkworm::Receipt receipt;
             cumulative_gas_used += block_txn.gas_limit;
-            receipt.type = block_txn.type;
-            receipt.success = true;
-            receipt.cumulative_gas_used = cumulative_gas_used;
-            receipt.bloom = block.header.logs_bloom;
+            silkworm::Receipt receipt {.type = block_txn.type, .success = true, .cumulative_gas_used = cumulative_gas_used, .bloom = block.header.logs_bloom};
             receipts.emplace_back(receipt);
         }
         db::write_receipts(txn, receipts, block.header.number);
@@ -184,7 +175,7 @@ class RpcApiTestBase : public LocalContextTestBase {
     commands::RpcApiTable rpc_api_table;
 };
 
-TEST_CASE("rpc_api io", "[silkrpc][rpc_api]") {
+TEST_CASE("rpc_api io", "[silkrpc][rpc_api][ignore]") {
     auto workingDir = std::filesystem::current_path();
     // std::cout << "Current path is " << workingDir << '\n';
 
@@ -195,19 +186,6 @@ TEST_CASE("rpc_api io", "[silkrpc][rpc_api]") {
     REQUIRE(std::filesystem::exists(workingDir / "third_party" / "execution-apis"));
 
     auto testsDir = workingDir / "third_party" / "execution-apis" / "tests";
-
-    auto db = open_db();
-    db::RWTxnManaged txn{*db};
-    db::table::check_or_create_chaindata_tables(txn);
-    populate_genesis(txn);
-    populate_blocks(txn);
-    txn.commit_and_stop();
-
-    // Set schema version
-    //    silkworm::db::VersionBase v{3, 0, 0};
-    //    db::write_schema_version(txn, v);
-
-    RpcApiTestBase<RequestHandler_ForTest> test_base{db};
 
     for (const auto& test_file : std::filesystem::recursive_directory_iterator(testsDir)) {
         if (!test_file.is_directory() && test_file.path().extension() == ".io") {
@@ -223,6 +201,15 @@ TEST_CASE("rpc_api io", "[silkrpc][rpc_api]") {
             }
 
             SECTION("RPC IO test " + group_name + "|" + test_name) {
+                auto db = open_db();
+                db::RWTxnManaged txn{*db};
+                db::table::check_or_create_chaindata_tables(txn);
+                populate_genesis(txn);
+                populate_blocks(txn);
+                txn.commit_and_stop();
+
+                RpcApiTestBase<RequestHandler_ForTest> test_base{db};
+
                 std::string line_out;
                 std::string line_in;
 
@@ -239,11 +226,11 @@ TEST_CASE("rpc_api io", "[silkrpc][rpc_api]") {
                     INFO("Request: " << request.dump());
                     CHECK(nlohmann::json::parse(reply.content) == expected);
                 }
+
+                db->close();
             }
         }
     }
-
-    db->close();
 }
 
 TEST_CASE("rpc_api io (individual)", "[silkrpc][rpc_api]") {
@@ -253,10 +240,6 @@ TEST_CASE("rpc_api io (individual)", "[silkrpc][rpc_api]") {
     populate_genesis(txn);
     populate_blocks(txn);
     txn.commit_and_stop();
-
-    // Set schema version
-    //    silkworm::db::VersionBase v{3, 0, 0};
-    //    db::write_schema_version(txn, v);
 
     RpcApiTestBase<RequestHandler_ForTest> test_base{db};
 

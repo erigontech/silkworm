@@ -97,7 +97,7 @@ void populate_blocks(db::RWTxn& txn) {
         for (auto& block_txn : block.transactions) {
             block_txn.recover_sender();
 
-            auto th = to_hex_no_leading_zeros( block_txn.hash());
+            auto th = to_hex_no_leading_zeros(block_txn.hash());
             auto th2 = to_hex_no_leading_zeros(hash_of_transaction(block_txn).bytes);
             std::cout << "th: " << th << " th2: " << th2 << std::endl;
         }

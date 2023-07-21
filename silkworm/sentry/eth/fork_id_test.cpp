@@ -84,13 +84,12 @@ namespace silkworm::sentry::eth {
             {2000000000, ForkId{0xdce96c2d, 0}},         // Future Shanghai block
         };
 
-    auto chain_config{kMainnetConfig};
-    chain_config.genesis_hash.emplace(kMainnetGenesisHash);
-    for (auto& example : examples) {
-        INFO(to_hex(fork_id_at(example.head_block_num, chain_config).hash(),true));
-        CHECK(fork_id_at(example.head_block_num, chain_config) == example.fork_id);
+        auto chain_config{kMainnetConfig};
+        chain_config.genesis_hash.emplace(kMainnetGenesisHash);
+        for (auto& example : examples) {
+            CHECK(fork_id_at(example.head_block_num, chain_config) == example.fork_id);
+        }
     }
-}
 
     TEST_CASE("ForkId.forks.goerli") {
         std::vector<ForksExampleSpec> examples = {
@@ -106,15 +105,12 @@ namespace silkworm::sentry::eth {
             {2000000000, ForkId{0xf9843abf, 0}},        // Future Shanghai block
         };
 
-    auto chain_config{kGoerliConfig};
-    chain_config.genesis_hash.emplace(kGoerliGenesisHash);
-    for (auto& example : examples) {
-        auto a = fork_id_at(example.head_block_num, chain_config);
-        INFO( to_hex(a.hash()));
-        INFO( to_hex(example.fork_id.hash()));
-        CHECK(a == example.fork_id);
+        auto chain_config{kGoerliConfig};
+        chain_config.genesis_hash.emplace(kGoerliGenesisHash);
+        for (auto& example : examples) {
+            CHECK(fork_id_at(example.head_block_num, chain_config) == example.fork_id);
+        }
     }
-}
 
     TEST_CASE("ForkId.forks.sepolia") {
         std::vector<ForksExampleSpec> examples = {
@@ -125,13 +121,12 @@ namespace silkworm::sentry::eth {
             {1677557088, ForkId{0xf7f9bc08, 0}},        // First Shanghai block
         };
 
-    auto chain_config{kSepoliaConfig};
-    chain_config.genesis_hash.emplace(kSepoliaGenesisHash);
-    for (auto& example : examples) {
-        INFO(to_hex(fork_id_at(example.head_block_num, chain_config).hash(),true));
-        CHECK(fork_id_at(example.head_block_num, chain_config) == example.fork_id);
+        auto chain_config{kSepoliaConfig};
+        chain_config.genesis_hash.emplace(kSepoliaGenesisHash);
+        for (auto& example : examples) {
+            CHECK(fork_id_at(example.head_block_num, chain_config) == example.fork_id);
+        }
     }
-}
 
     struct CompatibleForksExampleSpec {
         BlockNum head_block_num{0};
@@ -139,70 +134,70 @@ namespace silkworm::sentry::eth {
         bool is_compatible{false};
     };
 
-TEST_CASE("ForkId.is_compatible_with") {
-    std::vector<CompatibleForksExampleSpec> examples = {
-//        // Local is mainnet Petersburg, remote announces the same. No future fork is announced.
-//        {7987396, ForkId{0x124568c4, 0}, true},
-//
-//        // Local is mainnet Petersburg, remote announces the same. Remote also announces a next fork
-//        // at block 0xffffffff, but that is uncertain.
-//        {7987396, ForkId{0x124568c4, std::numeric_limits<uint64_t>::max()}, true},
-//
-//        // Local is mainnet currently in Byzantium only (so it's aware of Petersburg), remote announces
-//        // also Byzantium, but it's not yet aware of Petersburg (e.g. non updated node before the fork).
-//        // In this case we don't know if Petersburg passed yet or not.
-//        {7279999, ForkId{0x4cc6f70e, 0}, true},
-//
-//        // Local is mainnet currently in Byzantium only (so it's aware of Petersburg), remote announces
-//        // also Byzantium, and it's also aware of Petersburg (e.g. updated node before the fork). We
-//        // don't know if Petersburg passed yet (will pass) or not.
-//        {7279999, ForkId{0x4cc6f70e, 7280000}, true},
-//
-//        // Local is mainnet currently in Byzantium only (so it's aware of Petersburg), remote announces
-//        // also Byzantium, and it's also aware of some random fork (e.g. misconfigured Petersburg). As
-//        // neither forks passed at neither nodes, they may mismatch, but we still connect for now.
-//        {7279999, ForkId{0x4cc6f70e, std::numeric_limits<uint64_t>::max()}, true},
-//
-//        // Local is mainnet Petersburg, remote announces Byzantium + knowledge about Petersburg. Remote
-//        // is simply out of sync, accept.
-//        {7987396, ForkId{0x4cc6f70e, 7280000}, true},
+    TEST_CASE("ForkId.is_compatible_with") {
+        std::vector<CompatibleForksExampleSpec> examples = {
+            // Local is mainnet Petersburg, remote announces the same. No future fork is announced.
+            {7987396, ForkId{0x668db0af, 0}, true},
 
-        // Local is mainnet Petersburg, remote announces Spurious + knowledge about Byzantium. Remote
-        // is definitely out of sync. It may or may not need the Petersburg update, we don't know yet.
-        {7987396, ForkId{0x124568c4, 4370000}, true},
-//
-//        // Local is mainnet Byzantium, remote announces Petersburg. Local is out of sync, accept.
-//        {7279999, ForkId{0x4cc6f70e, 0}, true},
-//
-//        // Local is mainnet Spurious, remote announces Byzantium, but is not aware of Petersburg. Local
-//        // out of sync. Local also knows about a future fork, but that is uncertain yet.
-//        {4369999, ForkId{0x5da5293c, 0}, true},
-//
-//        // Local is mainnet Petersburg. remote announces Byzantium but is not aware of further forks.
-//        // Remote needs software update.
-//        {7987396, ForkId{0xa00bc324, 0}, false},
-//
-//        // Local is mainnet Petersburg, and isn't aware of more forks. Remote announces Petersburg +
-//        // 0xffffffff. Local needs software update, reject.
-//        {7987396, ForkId{0x5cddc0e1, 0}, false},
-//
-//        // Local is mainnet Byzantium, and is aware of Petersburg. Remote announces Petersburg +
-//        // 0xffffffff. Local needs software update, reject.
-//        {7279999, ForkId{0x5cddc0e1, 0}, false},
-//
-//        // Local is mainnet Petersburg, remote is Rinkeby Petersburg.
-//        {7987396, ForkId{0xafec6b27, 0}, false},
-//
-//        // Local is mainnet Petersburg, far in the future. Remote announces Gopherium (non-existing fork)
-//        // at some future block 88888888, for itself, but past block for local. Local is incompatible.
-//        //
-//        // This case detects non-upgraded nodes with majority hash power (typical Ropsten mess).
-//        {88888888, ForkId{0x668db0af, 88888888}, false},
-//
-//        // Local is mainnet Byzantium. Remote is also in Byzantium, but announces Gopherium (non-existing
-//        // fork) at block 7279999, before Petersburg. Local is incompatible.
-//        {7279999, ForkId{0xa00bc324, 7279999}, false},
-    };
+            // Local is mainnet Petersburg, remote announces the same. Remote also announces a next fork
+            // at block 0xffffffff, but that is uncertain.
+            {7987396, ForkId{0x668db0af, std::numeric_limits<uint64_t>::max()}, true},
+
+            // Local is mainnet currently in Byzantium only (so it's aware of Petersburg), remote announces
+            // also Byzantium, but it's not yet aware of Petersburg (e.g. non updated node before the fork).
+            // In this case we don't know if Petersburg passed yet or not.
+            {7279999, ForkId{0xa00bc324, 0}, true},
+
+            // Local is mainnet currently in Byzantium only (so it's aware of Petersburg), remote announces
+            // also Byzantium, and it's also aware of Petersburg (e.g. updated node before the fork). We
+            // don't know if Petersburg passed yet (will pass) or not.
+            {7279999, ForkId{0xa00bc324, 7280000}, true},
+
+            // Local is mainnet currently in Byzantium only (so it's aware of Petersburg), remote announces
+            // also Byzantium, and it's also aware of some random fork (e.g. misconfigured Petersburg). As
+            // neither forks passed at neither nodes, they may mismatch, but we still connect for now.
+            {7279999, ForkId{0xa00bc324, std::numeric_limits<uint64_t>::max()}, true},
+
+            // Local is mainnet Petersburg, remote announces Byzantium + knowledge about Petersburg. Remote
+            // is simply out of sync, accept.
+            {7987396, ForkId{0xa00bc324, 7280000}, true},
+
+            // Local is mainnet Petersburg, remote announces Spurious + knowledge about Byzantium. Remote
+            // is definitely out of sync. It may or may not need the Petersburg update, we don't know yet.
+            {7987396, ForkId{0x3edd5b10, 4370000}, true},
+
+            // Local is mainnet Byzantium, remote announces Petersburg. Local is out of sync, accept.
+            {7279999, ForkId{0x668db0af, 0}, true},
+
+            // Local is mainnet Spurious, remote announces Byzantium, but is not aware of Petersburg. Local
+            // out of sync. Local also knows about a future fork, but that is uncertain yet.
+            {4369999, ForkId{0xa00bc324, 0}, true},
+
+            // Local is mainnet Petersburg. remote announces Byzantium but is not aware of further forks.
+            // Remote needs software update.
+            {7987396, ForkId{0xa00bc324, 0}, false},
+
+            // Local is mainnet Petersburg, and isn't aware of more forks. Remote announces Petersburg +
+            // 0xffffffff. Local needs software update, reject.
+            {7987396, ForkId{0x5cddc0e1, 0}, false},
+
+            // Local is mainnet Byzantium, and is aware of Petersburg. Remote announces Petersburg +
+            // 0xffffffff. Local needs software update, reject.
+            {7279999, ForkId{0x5cddc0e1, 0}, false},
+
+            // Local is mainnet Petersburg, remote is Rinkeby Petersburg.
+            {7987396, ForkId{0xafec6b27, 0}, false},
+
+            // Local is mainnet Petersburg, far in the future. Remote announces Gopherium (non-existing fork)
+            // at some future block 88888888, for itself, but past block for local. Local is incompatible.
+            //
+            // This case detects non-upgraded nodes with majority hash power (typical Ropsten mess).
+            {88888888, ForkId{0x668db0af, 88888888}, false},
+
+            // Local is mainnet Byzantium. Remote is also in Byzantium, but announces Gopherium (non-existing
+            // fork) at block 7279999, before Petersburg. Local is incompatible.
+            {7279999, ForkId{0xa00bc324, 7279999}, false},
+        };
 
         auto chain_config{kMainnetConfig};
         chain_config.genesis_hash.emplace(kMainnetGenesisHash);
@@ -211,18 +206,14 @@ TEST_CASE("ForkId.is_compatible_with") {
         const auto fork_numbers = chain_config.distinct_fork_numbers();
         const auto fork_times = chain_config.distinct_fork_times();
 
-    for (auto& example : examples) {
-
-        INFO(to_hex(fork_id_at(example.head_block_num, chain_config).hash(),true));
-        INFO(to_hex(example.fork_id.hash(),true));
-
-        bool is_compatible = example.fork_id.is_compatible_with(
-            genesis_hash,
-            fork_numbers,
-            fork_times,
-            example.head_block_num);
-        CHECK(is_compatible == example.is_compatible);
+        for (auto& example : examples) {
+            bool is_compatible = example.fork_id.is_compatible_with(
+                genesis_hash,
+                fork_numbers,
+                fork_times,
+                example.head_block_num);
+            CHECK(is_compatible == example.is_compatible);
+        }
     }
-}
 
 }  // namespace silkworm::sentry::eth

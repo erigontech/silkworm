@@ -54,6 +54,8 @@ class Daemon {
     Daemon(const Daemon&) = delete;
     Daemon& operator=(const Daemon&) = delete;
 
+    ClientContextPool& context_pool() { return context_pool_; }
+
     void add_backend_services(std::vector<std::unique_ptr<ethbackend::BackEnd>>&& backends);
 
     DaemonChecklist run_checklist();

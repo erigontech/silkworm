@@ -18,9 +18,10 @@
 
 #include <agrpc/grpc_context.hpp>
 
-#include <silkworm/node/storage/chain_storage.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
 #include <silkworm/silkrpc/ethbackend/backend.hpp>
+
+#include "chain_storage.hpp"
 
 namespace silkworm::rpc {
 
@@ -28,7 +29,7 @@ using core::rawdb::DatabaseReader;
 
 //! RemoteChainStorage must be used when blockchain data is remote with respect to the running component, i.e. it is
 //! in remote database (accessed via gRPC KV I/F) or remote snapshot files (accessed via gRPC ETHBACKEND I/F)
-class RemoteChainStorage : public node::ChainStorage {
+class RemoteChainStorage : public ChainStorage {
   public:
     RemoteChainStorage(const DatabaseReader& reader, ethbackend::BackEnd* backend);
     ~RemoteChainStorage() override = default;

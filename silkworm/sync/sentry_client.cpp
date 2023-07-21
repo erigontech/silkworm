@@ -48,7 +48,7 @@ SentryClient::SentryClient(
 
 static std::unique_ptr<InboundMessage> decode_inbound_message(const silkworm::sentry::api::MessageFromPeer& message_from_peer) {
     using sentry::eth::MessageId;
-    auto eth_message_id = sentry::eth::eth_message_id_from_common_id(message_from_peer.message.id);
+    const auto eth_message_id = sentry::eth::eth_message_id_from_common_id(message_from_peer.message.id);
     PeerId peer_id = message_from_peer.peer_public_key->serialized();
     ByteView raw_message{message_from_peer.message.data};
     switch (eth_message_id) {
@@ -73,7 +73,7 @@ static constexpr std::string_view kLogTitle{"sync::SentryClient"};
 
 boost::asio::awaitable<void> SentryClient::publish(const silkworm::sentry::api::MessageFromPeer& message_from_peer) {
     using sentry::eth::MessageId;
-    auto eth_message_id = sentry::eth::eth_message_id_from_common_id(message_from_peer.message.id);
+    const auto eth_message_id = sentry::eth::eth_message_id_from_common_id(message_from_peer.message.id);
 
     std::shared_ptr<InboundMessage> message;
     std::optional<PeerId> penalize_peer_id;
@@ -82,8 +82,8 @@ boost::asio::awaitable<void> SentryClient::publish(const silkworm::sentry::api::
     } catch (DecodingException& error) {
         PeerId peer_id = message_from_peer.peer_public_key->serialized();
         log::Warning(kLogTitle) << "received and ignored a malformed message, peer= " << human_readable_id(peer_id)
-                                << ", msg-id= " << static_cast<int>(message_from_peer.message.id)
-                                << " - " << error.what();
+                                << ", msg id= " << static_cast<int>(message_from_peer.message.id)
+                                << " data= " << message_from_peer.message.data << " error= " << error.what();
         penalize_peer_id = std::move(peer_id);
     }
 

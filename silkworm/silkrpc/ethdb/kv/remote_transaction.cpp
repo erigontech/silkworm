@@ -67,7 +67,7 @@ std::shared_ptr<silkworm::State> RemoteTransaction::create_state(boost::asio::an
     return std::make_shared<silkworm::rpc::state::RemoteState>(executor, db_reader, block_number);
 }
 
-std::shared_ptr<node::ChainStorage> RemoteTransaction::create_storage(const DatabaseReader& db_reader, ethbackend::BackEnd* backend) {
+std::shared_ptr<ChainStorage> RemoteTransaction::create_storage(const DatabaseReader& db_reader, ethbackend::BackEnd* backend) {
     return std::make_shared<RemoteChainStorage>(db_reader, backend);
 }
 

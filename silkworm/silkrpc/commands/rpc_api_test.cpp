@@ -26,6 +26,8 @@
 #include <catch2/catch.hpp>
 #include <nlohmann/json.hpp>
 
+#include <silkworm/core/chain/genesis.hpp>
+#include <silkworm/core/state/in_memory_state.hpp>
 #include <silkworm/core/types/block.hpp>
 #include <silkworm/core/types/receipt.hpp>
 #include <silkworm/infra/common/directories.hpp>
@@ -34,11 +36,9 @@
 #include <silkworm/silkrpc/ethdb/file/local_database.hpp>
 #include <silkworm/silkrpc/http/request_handler.hpp>
 #include <silkworm/silkrpc/test/context_test_base.hpp>
-#include <silkworm/core/state/in_memory_state.hpp>
-#include <silkworm/core/chain/genesis.hpp>
 
-#include "silkworm/silkrpc/common/constants.hpp"
 #include "silkworm/core/common/cast.hpp"
+#include "silkworm/silkrpc/common/constants.hpp"
 
 namespace silkworm::rpc::commands {
 

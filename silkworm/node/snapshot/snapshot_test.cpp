@@ -195,9 +195,13 @@ TEST_CASE("HeaderSnapshot::reopen_index regeneration", "[silkworm][node][snapsho
     CHECK(std::filesystem::exists(header_snapshot_path.path()));
 
     // Verify that reopening the index removes the index file if created in the past
+    std::cout << "index file: " << header_snapshot.path().index_file().path().string() << "\n";
     CHECK(std::filesystem::exists(header_snapshot.path().index_file().path()));
+    std::cout << "before reopen_index: " << std::filesystem::exists(header_snapshot.path().index_file().path()) << "\n";
     header_snapshot.reopen_index();
+    std::cout << "after reopen_index: " << std::filesystem::exists(header_snapshot.path().index_file().path()) << "\n";
     CHECK(not std::filesystem::exists(header_snapshot.path().index_file().path()));
+    std::cout << "index file: " << header_snapshot.path().index_file().path().string() << "\n";
 }
 
 TEST_CASE("BodySnapshot::reopen_index regeneration", "[silkworm][node][snapshot][index]") {

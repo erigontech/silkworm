@@ -29,25 +29,22 @@
 
 namespace silkworm::rpc::http {
 
+//! The default size of HTTP character buffer used by the parser
+constexpr std::size_t kDefaultHttpBufferSize{65536};
+
+//! The maximum number of HTTP headers supported by the parser
+constexpr std::size_t kMaxHttpHeaders{100};
+
 void RequestParser::reset() {
     prev_len_ = 0;
     buffer_.clear();
 }
 
 RequestParser::RequestParser() {
-    prev_len_ = 0;
-    buffer_.clear();
-    buffer_.resize(65536);
+    buffer_.resize(kDefaultHttpBufferSize);
 }
 
 RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, const char* end) {
-    const char* method_name;  // uninitialised here because phr_parse_request initialises it
-    size_t method_len;        // uninitialised here because phr_parse_request initialises it
-    const char* path;         // uninitialised here because phr_parse_request initialises it
-    size_t path_len;          // uninitialised here because phr_parse_request initialises it
-    int minor_version;        // uninitialised here because phr_parse_request initialises it
-    struct phr_header headers[100];
-    size_t num_headers = sizeof(headers) / sizeof(headers[0]);
     auto current_len = static_cast<size_t>(end - begin);
 
     if (req.content_length != 0 && req.content.length() < req.content_length) {
@@ -68,6 +65,14 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
         current_len = buffer_.size();
     }
 
+    const char* method_name;  // uninitialised here because phr_parse_request initialises it
+    size_t method_len;        // uninitialised here because phr_parse_request initialises it
+    const char* path;         // uninitialised here because phr_parse_request initialises it
+    size_t path_len;          // uninitialised here because phr_parse_request initialises it
+    int minor_version;        // uninitialised here because phr_parse_request initialises it
+    struct phr_header headers[kMaxHttpHeaders];
+    size_t num_headers = sizeof(headers) / sizeof(headers[0]);
+
     const auto res = phr_parse_request(begin, current_len, &method_name, &method_len, &path, &path_len, &minor_version, headers, &num_headers, prev_len_);
     if (res == -1) {
         return ResultType::bad;
@@ -80,10 +85,10 @@ RequestParser::ResultType RequestParser::parse(Request& req, const char* begin, 
         return ResultType::indeterminate;
     }
 
-    bool expect_request = false;
-    bool content_length_present = false;
     req.http_version_minor = minor_version;
 
+    bool expect_request{false};
+    bool content_length_present{false};
     for (size_t i{0}; i < num_headers; ++i) {
         const auto& header{headers[i]};
         if (header.name_len == 0) continue;

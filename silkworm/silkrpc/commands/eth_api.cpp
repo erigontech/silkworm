@@ -249,6 +249,8 @@ awaitable<void> EthereumRpcApi::handle_eth_get_block_by_hash(const nlohmann::jso
         } else {
             reply = make_json_content(request["id"], {});
         }
+    } catch (const std::invalid_argument& iv) {
+        reply = make_json_content(request["id"], {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
@@ -327,6 +329,8 @@ awaitable<void> EthereumRpcApi::handle_eth_get_block_transaction_count_by_hash(c
             tx_count = block_with_hash->block.transactions.size();
         }
         reply = make_json_content(request["id"], to_quantity(tx_count));
+    } catch (const std::invalid_argument& iv) {
+        reply = make_json_content(request["id"], 0x0);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
@@ -416,8 +420,10 @@ awaitable<void> EthereumRpcApi::handle_eth_get_uncle_by_block_hash_and_index(con
                 reply = make_json_content(request["id"], uncle_block_with_hash_and_td);
             }
         } else {
-            reply = make_json_error(request["id"], {});
+            reply = make_json_content(request["id"], {});
         }
+    } catch (const std::invalid_argument& iv) {
+        reply = make_json_content(request["id"], {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
@@ -452,7 +458,6 @@ awaitable<void> EthereumRpcApi::handle_eth_get_uncle_by_block_number_and_index(c
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
         const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, tx_database, block_number);
         if (block_with_hash) {
-        
             const auto ommers = block_with_hash->block.ommers;
 
             const auto idx = std::stoul(index, nullptr, 16);
@@ -469,7 +474,7 @@ awaitable<void> EthereumRpcApi::handle_eth_get_uncle_by_block_number_and_index(c
                 reply = make_json_content(request["id"], uncle_block_with_hash_and_td);
             }
         } else {
-             reply = make_json_content(request["id"], {});
+            reply = make_json_content(request["id"], {});
         }
     } catch (const std::invalid_argument& iv) {
         reply = make_json_content(request["id"], {});

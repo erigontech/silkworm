@@ -28,6 +28,8 @@
 
 namespace silkworm::snapshot {
 
+using namespace std::chrono_literals;
+
 class Snapshot_ForTest : public Snapshot {
   public:
     Snapshot_ForTest(std::filesystem::path path, BlockNum block_from, BlockNum block_to)
@@ -41,6 +43,13 @@ class Snapshot_ForTest : public Snapshot {
     void reopen_index() override {}
     void close_index() override {}
 };
+
+template<class Rep, class Period>
+static auto move_last_write_time(const std::filesystem::path& p, const std::chrono::duration<Rep, Period>& d) {
+    const auto ftime = std::filesystem::last_write_time(p);
+    std::filesystem::last_write_time(p, ftime + d);
+    return std::filesystem::last_write_time(p) - ftime;
+}
 
 TEST_CASE("Snapshot::Snapshot", "[silkworm][node][snapshot][snapshot]") {
     SECTION("valid") {
@@ -176,41 +185,30 @@ TEST_CASE("TransactionSnapshot::txn_by_id OK", "[silkworm][node][snapshot][index
 
 TEST_CASE("HeaderSnapshot::reopen_index regeneration", "[silkworm][node][snapshot][index]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-    test::SampleHeaderSnapshotFile sample_header_snapshot1{};
-    test::SampleHeaderSnapshotPath header_snapshot_path{sample_header_snapshot1.path()};
+    test::SampleHeaderSnapshotFile sample_header_snapshot{};
+    test::SampleHeaderSnapshotPath header_snapshot_path{sample_header_snapshot.path()};
     HeaderIndex header_index{header_snapshot_path};
     REQUIRE_NOTHROW(header_index.build());
 
     HeaderSnapshot header_snapshot{header_snapshot_path.path(), header_snapshot_path.block_from(), header_snapshot_path.block_to()};
     header_snapshot.reopen_segment();
     header_snapshot.reopen_index();
-    CHECK(std::filesystem::exists(header_snapshot.path().index_file().path()));
+    REQUIRE(std::filesystem::exists(header_snapshot.path().index_file().path()));
 
-    // Remove and create again sample snapshot to change its timestamp
-    std::filesystem::remove(sample_header_snapshot1.path());
-    CHECK(not std::filesystem::exists(sample_header_snapshot1.path()));
-    CHECK(not std::filesystem::exists(header_snapshot_path.path()));
-    test::SampleHeaderSnapshotFile sample_header_snapshot2{};
-    test::SampleHeaderSnapshotPath header_snapshot_path2{sample_header_snapshot2.path()};
-    CHECK(std::filesystem::exists(header_snapshot_path.path()));
+    // Move 1 hour to the future the last write time for sample header snapshot
+    const auto last_write_time_diff = move_last_write_time(sample_header_snapshot.path(), 1h);
+    REQUIRE(last_write_time_diff > std::filesystem::file_time_type::duration::zero());
 
-    // Verify that reopening the index removes the index file if created in the past
-    std::cout << "index file: " << header_snapshot.path().index_file().path().string() << "\n";
+    // Verify that reopening the index removes the index file because it was created in the past
     CHECK(std::filesystem::exists(header_snapshot.path().index_file().path()));
-    std::cout << "before reopen_index: " << std::filesystem::exists(header_snapshot.path().index_file().path()) << "\n";
-    std::filesystem::permissions(header_snapshot.path().index_file().path(),
-                                 std::filesystem::perms::group_all,
-                                 std::filesystem::perm_options::remove);
     header_snapshot.reopen_index();
-    std::cout << "after reopen_index: " << std::filesystem::exists(header_snapshot.path().index_file().path()) << "\n";
     CHECK(not std::filesystem::exists(header_snapshot.path().index_file().path()));
-    std::cout << "index file: " << header_snapshot.path().index_file().path().string() << "\n";
 }
 
 TEST_CASE("BodySnapshot::reopen_index regeneration", "[silkworm][node][snapshot][index]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-    test::SampleBodySnapshotFile sample_body_snapshot1{};
-    test::SampleBodySnapshotPath body_snapshot_path{sample_body_snapshot1.path()};
+    test::SampleBodySnapshotFile sample_body_snapshot{};
+    test::SampleBodySnapshotPath body_snapshot_path{sample_body_snapshot.path()};
     BodyIndex body_index{body_snapshot_path};
     REQUIRE_NOTHROW(body_index.build());
 
@@ -219,10 +217,9 @@ TEST_CASE("BodySnapshot::reopen_index regeneration", "[silkworm][node][snapshot]
     body_snapshot.reopen_index();
     CHECK(std::filesystem::exists(body_snapshot.path().index_file().path()));
 
-    // Remove and create again sample snapshot to change its timestamp
-    std::filesystem::remove(sample_body_snapshot1.path());
-    test::SampleBodySnapshotFile sample_body_snapshot2{};
-    test::SampleBodySnapshotPath body_snapshot_path2{sample_body_snapshot2.path()};
+    // Move 1 hour to the future the last write time for sample body snapshot
+    const auto last_write_time_diff = move_last_write_time(sample_body_snapshot.path(), 1h);
+    REQUIRE(last_write_time_diff > std::filesystem::file_time_type::duration::zero());
 
     // Verify that reopening the index removes the index file if created in the past
     CHECK(std::filesystem::exists(body_snapshot.path().index_file().path()));
@@ -232,8 +229,8 @@ TEST_CASE("BodySnapshot::reopen_index regeneration", "[silkworm][node][snapshot]
 
 TEST_CASE("TransactionSnapshot::reopen_index regeneration", "[silkworm][node][snapshot][index]") {
     test_util::SetLogVerbosityGuard guard{log::Level::kNone};
-    test::SampleTransactionSnapshotFile sample_tx_snapshot1{};
-    test::SampleTransactionSnapshotPath tx_snapshot_path1{sample_tx_snapshot1.path()};
+    test::SampleTransactionSnapshotFile sample_tx_snapshot{};
+    test::SampleTransactionSnapshotPath tx_snapshot_path1{sample_tx_snapshot.path()};
     TransactionIndex tx_index{tx_snapshot_path1};
     REQUIRE_NOTHROW(tx_index.build());
 
@@ -242,11 +239,11 @@ TEST_CASE("TransactionSnapshot::reopen_index regeneration", "[silkworm][node][sn
     tx_snapshot.reopen_index();
     CHECK(std::filesystem::exists(tx_snapshot.path().index_file().path()));
 
-    // Remove and create again sample snapshot to change timestamp
-    std::filesystem::remove(sample_tx_snapshot1.path());
-    test::SampleTransactionSnapshotFile sample_tx_snapshot2{};
-    test::SampleTransactionSnapshotPath tx_snapshot_path2{sample_tx_snapshot2.path()};
+    // Move 1 hour to the future the last write time for sample tx snapshot
+    const auto last_write_time_diff = move_last_write_time(sample_tx_snapshot.path(), 1h);
+    REQUIRE(last_write_time_diff > std::filesystem::file_time_type::duration::zero());
 
+    // Verify that reopening the index removes the index file if created in the past
     CHECK(std::filesystem::exists(tx_snapshot.path().index_file().path()));
     tx_snapshot.reopen_index();
     CHECK(not std::filesystem::exists(tx_snapshot.path().index_file().path()));

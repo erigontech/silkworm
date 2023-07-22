@@ -1082,6 +1082,47 @@ bool DataModel::read_block(const evmc::bytes32& hash, BlockNum height, Block& bl
     return read_block_from_snapshot(height, /*read_senders=*/true, block);
 }
 
+void DataModel::for_last_n_headers(size_t n, std::function<void(BlockHeader&&)> callback) const {
+    constexpr bool throw_notfound{false};
+
+    // Try to read N headers from the database
+    size_t read_count{0};
+    std::optional<BlockNum> last_read_number_from_db;
+
+    const auto headers_cursor{txn_.ro_cursor(db::table::kHeaders)};
+    auto data = headers_cursor->to_last(throw_notfound);
+    while (data && read_count < n) {
+        // Read header
+        BlockHeader header;
+        ByteView data_view = db::from_slice(data.value);
+        success_or_throw(rlp::decode(data_view, header));
+        ++read_count;
+        last_read_number_from_db = header.number;
+        // Consume header
+        callback(std::move(header));
+        // Move backward
+        data = headers_cursor->to_previous(throw_notfound);
+    }
+    if (read_count == n) {
+        return;
+    }
+
+    // We've reached the first header in db but still need to read more from snapshots
+    if (last_read_number_from_db) {
+        ensure(*last_read_number_from_db == repository_->max_block_available() + 1,
+               "db and snapshot block numbers are not contiguous");
+    }
+    auto block_number_in_snapshots = repository_->max_block_available();
+    while (read_count < n) {
+        auto header{read_header_from_snapshot(block_number_in_snapshots)};
+        if (!header) return;
+        ++block_number_in_snapshots;
+        ++read_count;
+        // Consume header
+        callback(std::move(*header));
+    }
+}
+
 bool DataModel::read_block_from_snapshot(BlockNum height, bool read_senders, Block& block) {
     if (!repository_) {
         return false;

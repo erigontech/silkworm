@@ -27,7 +27,7 @@ awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache
     if (cached_block) {
         co_return cached_block.value();
     }
-    auto block_with_hash = co_await rawdb::read_block(reader, block_hash, block_number);
+    const auto block_with_hash = co_await rawdb::read_block(reader, block_hash, block_number);
     if (block_with_hash->block.transactions.size() != 0) {
         // don't save empty (without txs) blocks to cache, if block become non-canonical (not in main chain), we remove it's transactions,
         // but block can in the future become canonical(inserted in main chain) with its transactions
@@ -36,30 +36,24 @@ awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache
     co_return block_with_hash;
 }
 
-awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, const std::shared_ptr<ChainStorage> storage, const rawdb::DatabaseReader& reader, uint64_t block_number) {
-    evmc::bytes32 block_hash;
-    try {
-        block_hash = co_await rawdb::read_canonical_block_hash(reader, block_number);
-    } catch (const std::invalid_argument& iv) {
-        co_return nullptr;
-    }
+awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, const ChainStorage& storage, const rawdb::DatabaseReader& reader, uint64_t block_number) {
+    auto block_hash = co_await rawdb::read_canonical_block_hash(reader, block_number);
     const auto cached_block = cache.get(block_hash);
     if (cached_block) {
         co_return cached_block.value();
     }
-    auto block_with_hash = std::make_shared<BlockWithHash>();
-    auto block_found = co_await storage->read_block(block_hash, block_with_hash->block);
-    if (block_found) {
-        block_with_hash->hash = block_with_hash->block.header.hash();
-        if (block_with_hash->block.transactions.size() != 0) {
-            // don't save empty (without txs) blocks to cache, if block become non-canonical (not in main chain), we remove it's transactions,
-            // but block can in the future become canonical(inserted in main chain) with its transactions
-            cache.insert(block_hash, block_with_hash);
-        }
-        co_return block_with_hash;
-    } else {
+    const auto block_with_hash = std::make_shared<BlockWithHash>();
+    const auto block_found = co_await storage.read_block(block_hash, block_with_hash->block);
+    if (!block_found) {
         co_return nullptr;
     }
+    block_with_hash->hash = block_with_hash->block.header.hash();
+    if (block_with_hash->block.transactions.size() != 0) {
+        // don't save empty (without txs) blocks to cache, if block become non-canonical (not in main chain), we remove it's transactions,
+        // but block can in the future become canonical(inserted in main chain) with its transactions
+        cache.insert(block_hash, block_with_hash);
+    }
+    co_return block_with_hash;
 }
 
 awaitable<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, const rawdb::DatabaseReader& reader, const evmc::bytes32& block_hash) {
@@ -67,7 +61,7 @@ awaitable<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, 
     if (cached_block) {
         co_return cached_block.value();
     }
-    auto block_with_hash = co_await rawdb::read_block_by_hash(reader, block_hash);
+    const auto block_with_hash = co_await rawdb::read_block_by_hash(reader, block_hash);
     if (block_with_hash->block.transactions.size() != 0) {
         // don't save empty (without txs) blocks to cache, if block become non-canonical (not in main chain), we remove it's transactions,
         // but block can in the future become canonical(inserted in main chain) with its transactions
@@ -76,24 +70,23 @@ awaitable<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, 
     co_return block_with_hash;
 }
 
-awaitable<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, const std::shared_ptr<ChainStorage> storage, const evmc::bytes32& block_hash) {
+awaitable<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& block_hash) {
     const auto cached_block = cache.get(block_hash);
     if (cached_block) {
         co_return cached_block.value();
     }
     auto block_with_hash = std::make_shared<BlockWithHash>();
-    auto block_found = co_await storage->read_block(block_hash, block_with_hash->block);
-    if (block_found) {
-        block_with_hash->hash = block_with_hash->block.header.hash();
-        if (block_with_hash->block.transactions.size() != 0) {
-            // don't save empty (without txs) blocks to cache, if block become non-canonical (not in main chain), we remove it's transactions,
-            // but block can in the future become canonical(inserted in main chain) with its transactions
-            cache.insert(block_hash, block_with_hash);
-        }
-        co_return block_with_hash;
-    } else {
+    const auto block_found = co_await storage.read_block(block_hash, block_with_hash->block);
+    if (!block_found) {
         co_return nullptr;
     }
+    block_with_hash->hash = block_with_hash->block.header.hash();
+    if (block_with_hash->block.transactions.size() != 0) {
+        // don't save empty (without txs) blocks to cache, if block become non-canonical (not in main chain), we remove it's transactions,
+        // but block can in the future become canonical(inserted in main chain) with its transactions
+        cache.insert(block_hash, block_with_hash);
+    }
+    co_return block_with_hash;
 }
 
 awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number_or_hash(BlockCache& cache, const rawdb::DatabaseReader& reader, const BlockNumberOrHash& bnoh) {

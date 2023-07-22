@@ -44,7 +44,7 @@ class Snapshot_ForTest : public Snapshot {
     void close_index() override {}
 };
 
-template<class Rep, class Period>
+template <class Rep, class Period>
 static auto move_last_write_time(const std::filesystem::path& p, const std::chrono::duration<Rep, Period>& d) {
     const auto ftime = std::filesystem::last_write_time(p);
     std::filesystem::last_write_time(p, ftime + d);

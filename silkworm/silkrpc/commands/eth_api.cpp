@@ -1293,6 +1293,11 @@ awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::js
 
         const auto chain_storage{tx->create_storage(tx_database, backend_)};
         const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, tx_database, block_number_or_hash);
+        if (block_with_hash == nullptr) {
+            reply = make_json_content(request["id"], {});
+            co_await tx->close();  // RAII not (yet) available with coroutines
+            co_return;
+        }
 
         const auto chain_id = co_await chain_storage->read_chain_id();
         ensure(chain_id.has_value(), "cannot read chain ID");

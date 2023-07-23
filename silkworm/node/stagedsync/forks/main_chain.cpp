@@ -26,6 +26,9 @@
 
 namespace silkworm::stagedsync {
 
+//! The number of inserted blocks between two successive commits on db
+constexpr uint64_t kInsertedBlockBatch{1'000};
+
 MainChain::MainChain(asio::io_context& ctx, NodeSettings& ns, const db::RWAccess dba)
     : io_context_{ctx},
       node_settings_{ns},
@@ -120,8 +123,19 @@ void MainChain::insert_block(const Block& block) {
     Hash header_hash = insert_header(block.header);
     insert_body(block, header_hash);
 
-    auto parent = get_header(block.header.number, header_hash);  // remove in production?
+    // Check chain integrity also on execution side (remove in production?)
+    const auto parent = get_header(block.header.number - 1, block.header.parent_hash);
     ensure_invariant(parent.has_value(), "inserting block must have parent");
+
+    // Commit inserted blocks once in a while not to lose downloading progress on restart
+    static uint64_t block_count{0};
+    if (++block_count == kInsertedBlockBatch) {
+        block_count = 0;
+        StopWatch timing{StopWatch::kStart};
+        tx_.commit_and_renew();
+        SILK_INFO << "MainChain: commit " << kInsertedBlockBatch << " blocks up to " << block.header.number
+                  << " took " << StopWatch::format(timing.since_start());
+    }
 }
 
 auto MainChain::verify_chain(Hash head_block_hash) -> VerificationResult {

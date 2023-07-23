@@ -21,7 +21,6 @@
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/db/db_utils.hpp>
 
 #include "extending_fork.hpp"
 
@@ -126,7 +125,7 @@ void MainChain::insert_block(const Block& block) {
 }
 
 auto MainChain::verify_chain(Hash head_block_hash) -> VerificationResult {
-    SILK_TRACE << "MainChain: verifying chain " << head_block_hash.to_hex();
+    SILK_TRACE << "MainChain: verifying chain head=" << head_block_hash.to_hex();
 
     // retrieve the head header
     auto head_header = get_header(head_block_hash);
@@ -328,10 +327,10 @@ auto MainChain::get_block_progress() const -> BlockNum {
     return data_model_.highest_block_number();
 }
 
-auto MainChain::get_last_headers(BlockNum limit) const -> std::vector<BlockHeader> {
+auto MainChain::get_last_headers(uint64_t limit) const -> std::vector<BlockHeader> {
     std::vector<BlockHeader> headers;
 
-    for_last_n_headers(data_model_, limit, [&headers](BlockHeader&& header) {
+    data_model_.for_last_n_headers(limit, [&headers](BlockHeader&& header) {
         headers.emplace_back(std::move(header));
     });
 

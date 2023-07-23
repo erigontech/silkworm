@@ -23,6 +23,7 @@ namespace silkworm::rpc::http {
 //! Parser for incoming requests.
 class RequestParser {
   public:
+    RequestParser();
     //! Result of parse.
     enum class ResultType {
         good,
@@ -38,6 +39,12 @@ class RequestParser {
      * has been consumed.
      */
     ResultType parse(Request& req, const char* begin, const char* end);
+
+    void reset();
+
+  private:
+    uint64_t prev_len_{0};
+    std::vector<char> buffer_;
 };
 
 }  // namespace silkworm::rpc::http

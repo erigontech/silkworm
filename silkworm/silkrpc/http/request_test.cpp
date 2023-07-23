@@ -42,7 +42,7 @@ TEST_CASE("check reset method", "[silkrpc][http][request]") {
     req.reset();
     CHECK(req.method.empty());
     CHECK(req.uri.empty());
-    CHECK(req.http_version_major == 0);
+    CHECK(req.http_version_major == 1);
     CHECK(req.http_version_minor == 0);
     CHECK(req.headers.empty());
     CHECK(req.content.empty());

@@ -34,7 +34,7 @@ namespace silkworm::rpc::http {
 struct Request {
     std::string method;
     std::string uri;
-    int http_version_major;
+    int http_version_major{1};
     int http_version_minor;
     std::vector<Header> headers;
     uint32_t content_length{0};
@@ -43,7 +43,7 @@ struct Request {
     void reset() {
         method.resize(0);
         uri.resize(0);
-        http_version_major = 0;
+        http_version_major = 1;
         http_version_minor = 0;
         headers.resize(0);
         content_length = 0;

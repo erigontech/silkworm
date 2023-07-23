@@ -194,11 +194,12 @@ awaitable<void> EthereumRpcApi::handle_eth_gas_price(const nlohmann::json& reque
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
         const auto latest_block_number = co_await core::get_block_number(core::kLatestBlockId, tx_database);
         SILK_INFO << "latest_block_number " << latest_block_number;
 
-        BlockProvider block_provider = [this, &tx_database](uint64_t block_number) {
-            return core::read_block_by_number(*block_cache_, tx_database, block_number);
+        BlockProvider block_provider = [this, &tx_database, &chain_storage](uint64_t block_number) {
+            return core::read_block_by_number(*block_cache_, *chain_storage, tx_database, block_number);
         };
 
         GasPriceOracle gas_price_oracle{block_provider};
@@ -910,7 +911,6 @@ awaitable<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& re
         const BlockNumberOrHash block_number_or_hash{core::kLatestBlockId};
         ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
         ethdb::TransactionDatabase tx_database{*tx};
-
         const auto chain_id = co_await core::rawdb::read_chain_id(tx_database);
         const auto chain_config_ptr = lookup_chain_config(chain_id);
         const auto latest_block_number = co_await core::get_block_number(core::kLatestBlockId, tx_database);
@@ -919,7 +919,6 @@ awaitable<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& re
         const auto latest_block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, latest_block_number);
         const auto latest_block = latest_block_with_hash->block;
         StateReader state_reader(cached_database);
-
         rpc::BlockHeaderProvider block_header_provider = [&cached_database](uint64_t block_number) {
             return core::rawdb::read_header_by_number(cached_database, block_number);
         };
@@ -1292,9 +1291,12 @@ awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::js
         ethdb::TransactionDatabase tx_database{*tx};
         ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
 
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, tx_database, block_number_or_hash);
-        const auto chain_id = co_await core::rawdb::read_chain_id(tx_database);
-        const auto chain_config_ptr = lookup_chain_config(chain_id);
+        const auto chain_storage{tx->create_storage(tx_database, backend_)};
+        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, tx_database, block_number_or_hash);
+
+        const auto chain_id = co_await chain_storage->read_chain_id();
+        ensure(chain_id.has_value(), "cannot read chain ID");
+        const auto chain_config_ptr = lookup_chain_config(*chain_id);
 
         const bool is_latest_block = co_await core::get_latest_executed_block_number(tx_database) == block_with_hash->block.header.number;
         const core::rawdb::DatabaseReader& db_reader =
@@ -1356,6 +1358,8 @@ awaitable<void> EthereumRpcApi::handle_eth_create_access_list(const nlohmann::js
             }
             call.set_access_list(current_access_list);
         } while (!access_lists_match);
+    } catch (const std::invalid_argument& iv) {
+        reply = make_json_content(request["id"], {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());

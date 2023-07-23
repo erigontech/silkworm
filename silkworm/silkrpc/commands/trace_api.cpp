@@ -55,7 +55,9 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_call(const nlohmann::json
     try {
         ethdb::TransactionDatabase tx_database{*tx};
         ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, tx_database, block_number_or_hash);
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
+
+        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, tx_database, block_number_or_hash);
         const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash->block.header.number, tx_database);
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
@@ -98,7 +100,8 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_call_many(const nlohmann:
     try {
         ethdb::TransactionDatabase tx_database{*tx};
         ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, tx_database, block_number_or_hash);
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, tx_database, block_number_or_hash);
         const bool is_latest_block = co_await core::is_latest_block_number(block_with_hash->block.header.number, tx_database);
 
         const core::rawdb::DatabaseReader& db_reader =
@@ -185,7 +188,8 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_raw_transaction(const nlo
         ethdb::TransactionDatabase tx_database{*tx};
 
         const auto block_number = co_await core::get_latest_block_number(tx_database);
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, tx_database, block_number);
 
         trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_, *tx};
         const auto result = co_await executor.trace_transaction(block_with_hash->block, transaction, config);
@@ -225,8 +229,8 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_replay_block_transactions
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, tx_database, block_number_or_hash);
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, tx_database, block_number_or_hash);
 
         trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_, *tx};
         const auto result = co_await executor.trace_block_transactions(block_with_hash->block, config);
@@ -305,8 +309,8 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_block(const nlohmann::jso
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-
-        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, tx_database, block_number_or_hash);
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto block_with_hash = co_await core::read_block_by_number_or_hash(*block_cache_, *chain_storage, tx_database, block_number_or_hash);
 
         trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_, *tx};
         trace::Filter filter;
@@ -347,7 +351,6 @@ boost::asio::awaitable<void> TraceRpcApi::handle_trace_filter(const nlohmann::js
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
-
         trace::TraceCallExecutor executor{*block_cache_, tx_database, workers_, *tx};
 
         co_await executor.trace_filter(trace_filter, &stream);

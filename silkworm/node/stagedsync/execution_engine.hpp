@@ -83,7 +83,7 @@ class ExecutionEngine : public Stoppable {
     auto get_canonical_body(BlockNum) const -> std::optional<BlockBody>;
     bool is_canonical(Hash) const;
     auto get_block_number(Hash) const -> std::optional<BlockNum>;
-    auto get_last_headers(BlockNum limit) const -> std::vector<BlockHeader>;
+    auto get_last_headers(uint64_t limit) const -> std::vector<BlockHeader>;
     auto get_header_td(Hash, std::optional<BlockNum> = std::nullopt) const -> std::optional<TotalDifficulty>;
 
   protected:

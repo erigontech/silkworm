@@ -101,6 +101,18 @@ awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number_or_hash(BlockCach
     throw std::runtime_error{"invalid block_number_or_hash value"};
 }
 
+awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number_or_hash(BlockCache& cache, const ChainStorage& storage, const rawdb::DatabaseReader& reader, const BlockNumberOrHash& bnoh) {
+    if (bnoh.is_number()) {  // NOLINT(bugprone-branch-clone)
+        co_return co_await read_block_by_number(cache, storage, reader, bnoh.number());
+    } else if (bnoh.is_hash()) {
+        co_return co_await read_block_by_hash(cache, storage, bnoh.hash());
+    } else if (bnoh.is_tag()) {
+        auto [block_number, ignore] = co_await get_block_number(bnoh.tag(), reader, /*latest_required=*/false);
+        co_return co_await read_block_by_number(cache, storage, reader, block_number);
+    }
+    throw std::runtime_error{"invalid block_number_or_hash value"};
+}
+
 awaitable<BlockWithHash> read_block_by_transaction_hash(BlockCache& cache, const rawdb::DatabaseReader& reader, const evmc::bytes32& transaction_hash) {
     auto block_number = co_await rawdb::read_block_number_by_transaction_hash(reader, transaction_hash);
     auto block_by_hash = co_await read_block_by_number(cache, reader, block_number);

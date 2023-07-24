@@ -23,6 +23,7 @@
 
 #include <silkworm/core/common/block_cache.hpp>
 #include <silkworm/silkrpc/core/rawdb/accessors.hpp>
+#include <silkworm/silkrpc/storage/chain_storage.hpp>
 #include <silkworm/silkrpc/types/block.hpp>
 #include <silkworm/silkrpc/types/transaction.hpp>
 
@@ -31,8 +32,11 @@ namespace silkworm::rpc::core {
 using boost::asio::awaitable;
 
 awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, const rawdb::DatabaseReader& reader, uint64_t block_number);
+awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number(BlockCache& cache, const ChainStorage& storage, const rawdb::DatabaseReader& reader, uint64_t block_number);
 awaitable<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, const rawdb::DatabaseReader& reader, const evmc::bytes32& block_hash);
+awaitable<std::shared_ptr<BlockWithHash>> read_block_by_hash(BlockCache& cache, const ChainStorage& storage, const evmc::bytes32& block_hash);
 awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number_or_hash(BlockCache& cache, const rawdb::DatabaseReader& reader, const BlockNumberOrHash& bnoh);
+awaitable<std::shared_ptr<BlockWithHash>> read_block_by_number_or_hash(BlockCache& cache, const ChainStorage& storage, const rawdb::DatabaseReader& reader, const BlockNumberOrHash& bnoh);
 awaitable<BlockWithHash> read_block_by_transaction_hash(BlockCache& cache, const rawdb::DatabaseReader& reader, const evmc::bytes32& transaction_hash);
 awaitable<std::optional<TransactionWithBlock>> read_transaction_by_hash(BlockCache& cache, const rawdb::DatabaseReader& reader, const evmc::bytes32& transaction_hash);
 

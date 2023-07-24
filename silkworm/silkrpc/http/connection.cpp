@@ -105,6 +105,7 @@ boost::asio::awaitable<void> Connection::do_write() {
 
 void Connection::clean() {
     request_.reset();
+    request_parser_.reset();
     reply_.reset();
 }
 

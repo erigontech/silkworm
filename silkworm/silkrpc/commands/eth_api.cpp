@@ -956,8 +956,6 @@ awaitable<void> EthereumRpcApi::handle_eth_estimate_gas(const nlohmann::json& re
     co_return;
 }
 
-
-
 // https://eth.wiki/json-rpc/API#eth_getbalance
 awaitable<void> EthereumRpcApi::handle_eth_get_balance(const nlohmann::json& request, nlohmann::json& reply) {
     auto params = request["params"];

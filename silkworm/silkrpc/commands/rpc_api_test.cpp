@@ -136,7 +136,7 @@ void populate_genesis(db::RWTxn& txn) {
     db::write_total_difficulty(txn, block_hash_key, header.difficulty);     // Write initial difficulty
 
     db::write_body(txn, block_body, block_hash.bytes, header.number);  // Write block body (empty)
-    db::write_head_header_hash(txn, block_hash.bytes);                  // Update head header in config
+    db::write_head_header_hash(txn, block_hash.bytes);                 // Update head header in config
 
     const uint8_t genesis_null_receipts[] = {0xf6};  // <- cbor encoded
     db::open_cursor(txn, db::table::kBlockReceipts)

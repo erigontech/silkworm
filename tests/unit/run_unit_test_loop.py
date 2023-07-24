@@ -6,21 +6,26 @@ from enum import Enum
 import getopt
 import os
 import sys
-from typing import Dict, List
+from typing import List
 
 
 class UnitTestModule(str, Enum):
     """ The unit test modules"""
-    CORE_TEST = 'CORE_TEST'
-    NODE_TEST = 'NODE_TEST'
-    RPCDAEMON_TEST = 'RPCDAEMON_TEST'
-    SENTRY_TEST = 'SENTRY_TEST'
-    SYNC_TEST = 'SYNC_TEST'
+    core_test = 'core_test'
+    node_test = 'node_test'
+    rpcdaemon_test = 'rpcdaemon_test'
+    sentry_test = 'sentry_test'
+    sync_test = 'sync_test'
+
+    @classmethod
+    def item_names(cls) -> List[str]:
+        """ Return the list of enumeration item names """
+        return [member_name for member_name in UnitTestModule.__members__.keys()]
 
     @classmethod
     def has_item(cls, name: str) -> bool:
         """ Return true if name is a valid enumeration item, false otherwise """
-        return name in UnitTestModule._member_names_ # pylint: disable=no-member
+        return name in cls.item_names()
 
 
 class UnitTest:
@@ -31,12 +36,12 @@ class UnitTest:
         self.module = module
         self.build_dir = build_dir
 
-    def execute(self, num_iterations: int, test_name: str = None) -> None:
+    def execute(self, num_iterations: int, test_name: str = None, test_options: str = "") -> None:
         """ Execute the unit tests `num_iterations` times """
         cmd = self.build_dir + "/cmd/test/" + self.module.name.lower()
         if test_name is not None and test_name != '':
             cmd = cmd + " \"" + test_name + "\""
-        cmd = cmd + " -d yes"
+        cmd = cmd + " " + test_options
         print("Unit test runner: " + cmd + "\n")
 
         print("Unit test stress for " + self.module.name.lower() + " STARTED")
@@ -49,15 +54,8 @@ class UnitTest:
         print("Unit test stress for " + self.module.name.lower() + " COMPLETED [" + str(num_iterations) + "]")
 
 
-DEFAULT_TEST_NAME: str = None
 DEFAULT_NUM_ITERATIONS: int = 1000
-DEFAULT_MODULES: List[str] = [
-    UnitTestModule.CORE_TEST,
-    UnitTestModule.NODE_TEST,
-    UnitTestModule.RPCDAEMON_TEST,
-    UnitTestModule.SENTRY_TEST,
-    UnitTestModule.SYNC_TEST
-]
+DEFAULT_MODULES: List[str] = UnitTestModule.item_names()
 
 
 def usage(argv):
@@ -74,21 +72,24 @@ def usage(argv):
     print("  \tthe number of iterations for each configuration (default: " + str(DEFAULT_NUM_ITERATIONS) + ")")
     print("-m\tmodules")
     print("  \tthe list of unit test modules to launch (default: " + str(DEFAULT_MODULES) + ")")
+    print("-o\toptions")
+    print("  \tthe Catch2 options to pass to the launcher enclosed in string (default: \"\" i.e. none)")
     print("-t\ttest")
-    print("  \tthe name of the unique TEST to execute (default: run all tests)")
+    print("  \tthe name of the unique Catch2 TEST_CASE to execute (default: run all tests)")
     sys.exit(0)
 
 
 def main(argv) -> int:
     """ Main entry point """
-    opts, args = getopt.getopt(argv[1:], "hi:m:t:")
+    opts, args = getopt.getopt(argv[1:], "hi:m:o:t:")
 
     if len(args) == 0:
         usage(argv)
         return 1
 
     build_dir = args[0]
-    test_name = DEFAULT_TEST_NAME
+    test_name = None
+    test_options = ""
     iterations = DEFAULT_NUM_ITERATIONS
     modules = DEFAULT_MODULES
 
@@ -99,17 +100,20 @@ def main(argv) -> int:
             iterations = int(option_arg)
         elif option == "-m":
             modules = str(option_arg).split(",")
+        elif option == "-o":
+            test_options = option_arg
+            print("test_options=" + test_options)
         elif option == "-t":
             test_name = option_arg
 
     for module_name in modules:
-        module_name = module_name.upper()
+        module_name = module_name.lower()
         if not UnitTestModule.has_item(module_name):
             print("Invalid test module name [" + module_name + "], ignored")
             continue
         unit_test_module = UnitTestModule(module_name)
         unit_test = UnitTest(unit_test_module, build_dir)
-        unit_test.execute(iterations, test_name)
+        unit_test.execute(iterations, test_name, test_options)
 
     return 0
 

@@ -28,7 +28,7 @@ file(
 list(FILTER SILKWORM_API_SRC EXCLUDE REGEX "_test\\.cpp$")
 list(FILTER SILKWORM_API_SRC EXCLUDE REGEX "_benchmark\\.cpp$")
 
-add_library(silkworm_api MODULE ${SILKWORM_API_SRC})
+add_library(silkworm_api SHARED ${SILKWORM_API_SRC})
 target_include_directories(silkworm_api PUBLIC ${SILKWORM_MAIN_DIR})
 
 # Remove custom stack_size linker option for this target

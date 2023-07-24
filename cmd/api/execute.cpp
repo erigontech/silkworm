@@ -29,7 +29,7 @@ const char* kSilkwormExecuteBlocksSymbol = "silkworm_execute_blocks";
 
 //! Function signature for silkworm_execute_blocks C API
 using SilkwormExecuteBlocksSig =
-    SilkwormStatusCode(MDBX_txn*,uint64_t,uint64_t,uint64_t,uint64_t,bool,uint64_t*,int*);
+    SilkwormStatusCode(MDBX_txn*, uint64_t, uint64_t, uint64_t, uint64_t, bool, uint64_t*, int*);
 
 int main(int /*argc*/, char* /*argv*/[]) {
     CLI::App app{"Execute blocks"};

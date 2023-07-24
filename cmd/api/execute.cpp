@@ -21,8 +21,17 @@
 #include <CLI/CLI.hpp>
 #include <boost/dll.hpp>
 #include <boost/process/environment.hpp>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
+#include <mdbx.h++>
+#pragma GCC diagnostic pop
 
 #include <silkworm/api/silkworm_api.h>
+#include <silkworm/infra/common/directories.hpp>
+#include <silkworm/node/db/mdbx.hpp>
 
 const char* kSilkwormApiLibPath = "../../silkworm/api/libsilkworm_api.dylib";
 const char* kSilkwormExecuteBlocksSymbol = "silkworm_execute_blocks";
@@ -43,14 +52,23 @@ int main(int /*argc*/, char* /*argv*/[]) {
         const auto silkworm_execute_blocks{
             boost::dll::import_symbol<SilkwormExecuteBlocksSig>(kSilkwormApiLibPath, kSilkwormExecuteBlocksSymbol)};
 
+        silkworm::DataDirectory data_dir{};
+        silkworm::db::EnvConfig config{
+            .path = data_dir.chaindata().path().string(),
+            .readonly = false,
+            .exclusive = true
+        };
+        ::mdbx::env_managed env{silkworm::db::open_env(config)};
+        ::mdbx::txn_managed rw_txn{env.start_write()};
+
         uint64_t last_executed_block{std::numeric_limits<uint64_t>::max()};
         int mdbx_error_code{0};
         const auto status_code{
-            silkworm_execute_blocks(nullptr, 1, 0, 0, 1, false, &last_executed_block, &mdbx_error_code)};
+            silkworm_execute_blocks(&*rw_txn, 1, 1, 1, 1, false, &last_executed_block, &mdbx_error_code)};
         std::cout << "Execute blocks status code: " << std::to_string(status_code) << "\n";
 
         std::cout << "Execute blocks exiting [pid=" << std::to_string(pid) << "]\n";
-        return 0;
+        return status_code;
     } catch (const CLI::ParseError& pe) {
         return app.exit(pe);
     } catch (const std::exception& e) {

@@ -74,15 +74,20 @@ SilkwormStatusCode silkworm_execute_blocks(MDBX_txn* mdbx_txn, uint64_t chain_id
         // Wrap MDBX txn into an internal *unmanaged* txn, i.e. MDBX txn is only used but neither aborted nor committed
         db::RWTxnUnmanaged txn{mdbx_txn};
 
+        // TODO(txn and snapshot+index memory-mapped files in silkworm_init API)
+        snapshot::SnapshotRepository snapshot_repo;
+        snapshot_repo.reopen_folder();
+        db::DataModel::set_snapshot_repository(&snapshot_repo);
+
         db::Buffer state_buffer{txn, /*prune_history_threshold=*/0};
-        db::DataModel data_model{txn};
+        db::DataModel access_layer{txn};
 
         // Preload all requested block from storage, i.e. from MDBX database or snapshots
         std::vector<Block> prefetched_blocks;
         prefetched_blocks.reserve(max_block - start_block);
         for (BlockNum block_number{start_block}; block_number <= max_block; ++block_number) {
             prefetched_blocks.emplace_back();
-            const bool success{data_model.read_block(block_number, /*read_senders=*/true, prefetched_blocks.back())};
+            const bool success{access_layer.read_block(block_number, /*read_senders=*/true, prefetched_blocks.back())};
             if (!success) {
                 return kSilkwormBlockNotFound;
             }
@@ -123,6 +128,9 @@ SilkwormStatusCode silkworm_execute_blocks(MDBX_txn* mdbx_txn, uint64_t chain_id
         return kSilkwormMdbxError;
     } catch (const DecodingError&) {
         return kSilkwormDecodingError;
+    } catch (const std::exception& e) {
+        SILK_ERROR << "exception: " << e.what();
+        return kSilkwormUnknownError;
     } catch (...) {
         return kSilkwormUnknownError;
     }

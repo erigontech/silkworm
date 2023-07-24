@@ -56,8 +56,7 @@ int main(int /*argc*/, char* /*argv*/[]) {
         silkworm::db::EnvConfig config{
             .path = data_dir.chaindata().path().string(),
             .readonly = false,
-            .exclusive = true
-        };
+            .exclusive = true};
         ::mdbx::env_managed env{silkworm::db::open_env(config)};
         ::mdbx::txn_managed rw_txn{env.start_write()};
 

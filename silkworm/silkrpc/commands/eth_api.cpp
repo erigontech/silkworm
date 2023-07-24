@@ -507,8 +507,9 @@ awaitable<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_hash(const n
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
 
-        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
+        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         const auto ommers = block_with_hash->block.ommers;
 
         reply = make_json_content(request["id"], to_quantity(ommers.size()));
@@ -540,9 +541,10 @@ awaitable<void> EthereumRpcApi::handle_eth_get_uncle_count_by_block_number(const
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, tx_database, block_number);
         const auto ommers = block_with_hash->block.ommers;
 
         reply = make_json_content(request["id"], to_quantity(ommers.size()));
@@ -689,6 +691,8 @@ awaitable<void> EthereumRpcApi::handle_eth_get_transaction_by_block_hash_and_ind
             rpc::Transaction txn{transactions[idx], block_with_hash->hash, block_header.number, block_header.base_fee_per_gas, idx};
             reply = make_json_content(request["id"], txn);
         }
+    } catch (const std::invalid_argument& iv) {
+        reply = make_json_content(request["id"], {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
@@ -778,6 +782,8 @@ awaitable<void> EthereumRpcApi::handle_eth_get_transaction_by_block_number_and_i
             rpc::Transaction txn{transactions[idx], block_with_hash->hash, block_header.number, block_header.base_fee_per_gas, idx};
             reply = make_json_content(request["id"], txn);
         }
+    } catch (const std::invalid_argument& iv) {
+        reply = make_json_content(request["id"], {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());

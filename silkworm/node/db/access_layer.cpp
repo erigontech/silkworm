@@ -586,8 +586,7 @@ void write_senders(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& block_
     target->upsert(to_slice(key), to_slice(data));
 }
 
-void write_tx_lookup(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& block_number, const Block& block) {
-    auto key{db::block_key(block_number, hash.bytes)};
+void write_tx_lookup(RWTxn& txn, const BlockNum& block_number, const Block& block) {
     auto target = txn.rw_cursor(table::kTxLookup);
     Bytes data;
     for (const auto& block_txn : block.transactions) {

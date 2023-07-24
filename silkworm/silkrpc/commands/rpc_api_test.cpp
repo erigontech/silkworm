@@ -122,6 +122,9 @@ void populate_genesis(db::RWTxn& txn) {
     }
 
     BlockHeader header{read_genesis_header(genesis_json, state_buffer.state_root_hash())};
+    BlockBody block_body{
+        .withdrawals = std::vector<silkworm::Withdrawal>{0},
+    };
 
     // FIX 2: set empty receipts root, should be done in the main code, requires https://github.com/torquem-ch/silkworm/issues/1348
     header.withdrawals_root = kEmptyRoot;
@@ -132,7 +135,7 @@ void populate_genesis(db::RWTxn& txn) {
     db::write_canonical_header_hash(txn, block_hash.bytes, header.number);  // Insert header hash as canonical
     db::write_total_difficulty(txn, block_hash_key, header.difficulty);     // Write initial difficulty
 
-    db::write_body(txn, BlockBody(), block_hash.bytes, header.number);  // Write block body (empty)
+    db::write_body(txn, block_body, block_hash.bytes, header.number);  // Write block body (empty)
     db::write_head_header_hash(txn, block_hash.bytes);                  // Update head header in config
 
     const uint8_t genesis_null_receipts[] = {0xf6};  // <- cbor encoded
@@ -181,7 +184,7 @@ void populate_blocks(db::RWTxn& txn) {
         std::vector<silkworm::Receipt> receipts;
         uint64_t cumulative_gas_used = 0;
         for (auto& block_txn : block.transactions) {
-            db::write_tx_lookup(txn, block_txn.hash(), block.header.number, block);
+            db::write_tx_lookup(txn, block.header.number, block);
             cumulative_gas_used += block_txn.gas_limit;
             silkworm::Receipt receipt{.type = block_txn.type, .success = true, .cumulative_gas_used = cumulative_gas_used, .bloom = block.header.logs_bloom};
             receipts.emplace_back(receipt);
@@ -320,11 +323,27 @@ TEST_CASE("rpc_api io (individual)", "[silkrpc][rpc_api][ignore]") {
     RpcApiTestBase<RequestHandler_ForTest> test_base{db};
 
     SECTION("sample test") {
-        auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_getBlockByNumber","params":["0x3",true]})"_json;
+        auto request = R"({"jsonrpc":"2.0","id":1,"method":"debug_getRawTransaction","params":["0x74e41d593675913d6d5521f46523f1bd396dff1891bdb35f59be47c7e5e0b34b"]})"_json;
         http::Reply reply;
 
         test_base.run<&RequestHandler_ForTest::request_and_create_reply>(request, reply);
-        CHECK(nlohmann::json::parse(reply.content) == R"({"jsonrpc":"2.0","id":1,"result":{"baseFeePerGas":"0x2db08786","difficulty":"0x0","extraData":"0x","gasLimit":"0x4c4b40","gasUsed":"0x5208","hash":"0xfe21bb173f43067a9f90cfc59bbb6830a7a2929b5de4a61f372a9db28e87f9ae","logsBloom":"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","miner":"0x0000000000000000000000000000000000000000","mixHash":"0x0000000000000000000000000000000000000000000000000000000000000000","nonce":"0x0000000000000000","number":"0x2","parentHash":"0x898753d8fdd8d92c1907ca21e68c7970abd290c647a202091181deec3f30a0b2","receiptsRoot":"0x056b23fbba480696b65fe5a59b8f2148a1299103c4f57df839233af2cf4ca2d2","sha3Uncles":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347","size":"0x2bf","stateRoot":"0xeb3709201a2eed4c86610af6beafb09fe914ff1eb0feaa5acb7747880c123d2f","timestamp":"0x14","totalDifficulty":"0x1","transactions":[{"blockHash":"0xfe21bb173f43067a9f90cfc59bbb6830a7a2929b5de4a61f372a9db28e87f9ae","blockNumber":"0x2","from":"0x658bdf435d810c91414ec09147daa6db62406379","gas":"0x5208","gasPrice":"0x2db08787","hash":"0x0d9ba049a158972e7fc1066122ceb31e431483ebf84f90f845f02e326942d467","input":"0x","nonce":"0x1","to":"0x658bdf435d810c91414ec09147daa6db62406379","transactionIndex":"0x0","value":"0x3e8","type":"0x0","chainId":"0x539","v":"0xa95","r":"0x52a6f622013359249316f4c017a67bc2c659f513dac5efea43a84b6ce4e462b1","s":"0x55ba2a779eaf62efa7d641a32ea329faabf9f097d376e2e400115a5151b9470"}],"transactionsRoot":"0x14488a14ae59174bedee90344854fb9b6a308143ce4bf688c00f2e81a9aae2a3","uncles":[],"withdrawals":[{"index":"0x0","validatorIndex":"0x2a","address":"0xee00000000000000000000000000000000000000","amount":"0x539"},{"index":"0x1","validatorIndex":"0xd","address":"0xee00000000000000000000000000000000000000","amount":"0x1"}],"withdrawalsRoot":"0x625ee608ff633ca6371503f9a8159a9e158f3fa9585650418562ef7bd1d1dfc9"}})"_json);
+        CHECK(nlohmann::json::parse(reply.content) == R"({"jsonrpc":"2.0","id":1,"result":"0xf8678084342770c182520894658bdf435d810c91414ec09147daa6db624063798203e880820a95a0af5fc351b9e457a31f37c84e5cd99dd3c5de60af3de33c6f4160177a2c786a60a0201da7a21046af55837330a2c52fc1543cd4d9ead00ddf178dd96935b607ff9b"})"_json);
+    }
+
+    SECTION("sample test2") {
+        auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_getTransactionByHash","params":["0x0d9ba049a158972e7fc1066122ceb31e431483ebf84f90f845f02e326942d467"]})"_json;
+        http::Reply reply;
+
+        test_base.run<&RequestHandler_ForTest::request_and_create_reply>(request, reply);
+        CHECK(nlohmann::json::parse(reply.content) == R"({"jsonrpc":"2.0","id":1,"result":{"blockHash":"0xfe21bb173f43067a9f90cfc59bbb6830a7a2929b5de4a61f372a9db28e87f9ae","blockNumber":"0x2","from":"0x658bdf435d810c91414ec09147daa6db62406379","gas":"0x5208","gasPrice":"0x2db08787","hash":"0x0d9ba049a158972e7fc1066122ceb31e431483ebf84f90f845f02e326942d467","input":"0x","nonce":"0x1","to":"0x658bdf435d810c91414ec09147daa6db62406379","transactionIndex":"0x0","value":"0x3e8","type":"0x0","chainId":"0x539","v":"0xa95","r":"0x52a6f622013359249316f4c017a67bc2c659f513dac5efea43a84b6ce4e462b1","s":"0x55ba2a779eaf62efa7d641a32ea329faabf9f097d376e2e400115a5151b9470"}})"_json);
+    }
+
+    SECTION("sample test3") {
+        auto request = R"({"jsonrpc":"2.0","id":1,"method":"eth_getBlockByNumber","params":["0x0",true]})"_json;
+        http::Reply reply;
+
+        test_base.run<&RequestHandler_ForTest::request_and_create_reply>(request, reply);
+        CHECK(nlohmann::json::parse(reply.content) == R"({"jsonrpc":"2.0","id":1,"result":{"baseFeePerGas":"0x3b9aca00","difficulty":"0x1","extraData":"0x","gasLimit":"0x4c4b40","gasUsed":"0x0","hash":"0x1fc027d65f820d3eef441ebeec139ebe09e471cf98516dce7b5643ccb27f418c","logsBloom":"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","miner":"0x0000000000000000000000000000000000000000","mixHash":"0x0000000000000000000000000000000000000000000000000000000000000000","nonce":"0x0000000000000000","number":"0x0","parentHash":"0x0000000000000000000000000000000000000000000000000000000000000000","receiptsRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421","sha3Uncles":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347","size":"0x21f","stateRoot":"0x078dc6061b1d8eaa8493384b59c9c65ceb917201221d08b80c4de6770b6ec7e7","timestamp":"0x0","totalDifficulty":"0x1","transactions":[],"transactionsRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421","uncles":[],"withdrawals":[],"withdrawalsRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"}})"_json);
     }
 
     db->close();

@@ -79,7 +79,9 @@ void to_json(nlohmann::json& json, const Block& b) {
         SILK_DEBUG << "ommer_hashes[" << i << "]: " << silkworm::to_hex({ommer_hashes[i].bytes, silkworm::kHashLength});
     }
     json["uncles"] = ommer_hashes;
-    json["withdrawals"] = b.block.withdrawals ? *(b.block.withdrawals) : std::vector<Withdrawal>{};
+    if (b.block.withdrawals) {
+        json["withdrawals"] = *(b.block.withdrawals);
+    }
 }
 
 }  // namespace silkworm::rpc

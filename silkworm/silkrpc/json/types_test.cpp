@@ -381,7 +381,7 @@ TEST_CASE("serialize block with hydrated transactions", "[silkrpc][to_json]") {
         "parentHash":"0x8059c265f40cdb2d3b3245847c21ed154eebf299fd0ff01ee3afded43cdadc45",
         "receiptsRoot":"0x8c3d469c1fbce4e4144d5e5f91a81baca60b1fb6b5bdcf691b9dc40a5bf21b35",
         "sha3Uncles":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
-        "size":"0x486",
+        "size":"0x485",
         "stateRoot":"0x8add6cb86a4b4a4e5758ce21c8d156e4355917d29eae7c19f56d4a38f384401d",
         "timestamp":"0x5f7cd33d",
         "totalDifficulty":"0x4e33ae",
@@ -431,8 +431,7 @@ TEST_CASE("serialize block with hydrated transactions", "[silkrpc][to_json]") {
             }
         ],
         "transactionsRoot":"0x95e5f810e7a45d476d7416fbffbc931473cfdba2b90204e019067bcc6d136dc3",
-        "uncles":[],
-        "withdrawals":[]
+        "uncles":[]
     })"_json);
 }
 
@@ -485,14 +484,13 @@ TEST_CASE("serialize block body with ommers", "[silkrpc][to_json]") {
         "parentHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
         "receiptsRoot":"0x0000000000000000000000000000000000000000000000000000000000000000",
         "sha3Uncles":"0x0000000000000000000000000000000000000000000000000000000000000000",
-        "size":"0x40d",
+        "size":"0x40c",
         "stateRoot":"0x0000000000000000000000000000000000000000000000000000000000000000",
         "timestamp":"0x0",
         "totalDifficulty":"0x0",
         "transactions":[],
         "transactionsRoot":"0x0000000000000000000000000000000000000000000000000000000000000000",
-        "uncles":["0x5cd50096dbb856a6d1befa6de8f9c20decb299f375154427d90761dc0b101109"],
-        "withdrawals":[]
+        "uncles":["0x5cd50096dbb856a6d1befa6de8f9c20decb299f375154427d90761dc0b101109"]
     })"_json);
 }
 

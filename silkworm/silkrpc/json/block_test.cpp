@@ -115,15 +115,14 @@ TEST_CASE("serialize block with baseFeePerGas", "[silkrpc][to_json]") {
         "gasLimit":"0xf4240",
         "gasUsed":"0xf4240",
         "timestamp":"0x52795d",
-        "size":"0x208",
+        "size":"0x207",
         "extraData":"0x0001ff0100",
         "mixHash":"0x0000000000000000000000000000000000000000000000000000000000000001",
         "nonce":"0x00000000000000ff",
         "baseFeePerGas":"0x244428",
         "totalDifficulty":"0x0",
         "transactions":[],
-        "uncles":[],
-        "withdrawals":[]
+        "uncles":[]
     })"_json);
 }
 
@@ -153,11 +152,10 @@ TEST_CASE("serialize empty block", "[silkrpc][to_json]") {
         "extraData":"0x",
         "mixHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
         "hash":"0x0000000000000000000000000000000000000000000000000000000000000000",
-        "size":"0x1f6",
+        "size":"0x1f5",
         "totalDifficulty":"0x0",
         "transactions":[],
-        "uncles":[],
-        "withdrawals":[]
+        "uncles":[]
     })"_json);
 }
 
@@ -205,7 +203,7 @@ TEST_CASE("serialize EIP-2718 block", "[silkrpc][to_json]") {
         "parentHash":"0x0000000000000000000000000000000000000000000000000000000000000000",
         "receiptsRoot":"0xcafe75574d59780665a97fbfd11365c7545aa8f1abf4e5e12e8243334ef7286b",
         "sha3Uncles":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
-        "size":"0x31d",
+        "size":"0x31c",
         "stateRoot":"0xef1552a40b7165c3cd773806b9e0c165b75356e0314bf0706f279c729f51e017",
         "timestamp":"0x5506eb07",
         "totalDifficulty":"0x0",
@@ -214,8 +212,7 @@ TEST_CASE("serialize EIP-2718 block", "[silkrpc][to_json]") {
             "0x554af720acf477830f996f1bc5d11e54c38aa40042aeac6f66cb66f9084a959d"
         ],
         "transactionsRoot":"0xe6e49996c7ec59f7a23d22b83239a60151512c65613bf84a0d7da336399ebc4a",
-        "uncles":[],
-        "withdrawals":[]
+        "uncles":[]
     })"_json);
 }
 

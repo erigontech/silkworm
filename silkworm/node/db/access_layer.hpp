@@ -147,7 +147,7 @@ std::vector<evmc::address> read_senders(ROTxn& txn, BlockNum block_number, const
 void parse_senders(ROTxn& txn, const Bytes& key, std::vector<Transaction>& out);
 void write_senders(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& number, const Block& block);
 
-void write_tx_lookup(RWTxn& txn, const evmc::bytes32& hash, const BlockNum& block_number, const Block& block);
+void write_tx_lookup(RWTxn& txn, const BlockNum& block_number, const Block& block);
 void write_receipts(RWTxn& txn, const std::vector<silkworm::Receipt>& receipts, const BlockNum& block_number);
 
 // See Erigon ReadTransactions

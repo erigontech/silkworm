@@ -172,24 +172,6 @@ inline constexpr ChainConfig kSepoliaConfig{
     .shanghai_time = 1677557088,
 };
 
-inline constexpr ChainConfig kGethTestnetConfig{
-    .chain_id = 1337,
-    .protocol_rule_set = protocol::RuleSetType::kEthash,
-    .homestead_block = 0,
-    .tangerine_whistle_block = 0,
-    .spurious_dragon_block = 0,
-    .byzantium_block = 0,
-    .constantinople_block = 0,
-    .petersburg_block = 0,
-    .istanbul_block = 0,
-    .muir_glacier_block = 0,
-    .berlin_block = 0,
-    .london_block = 0,
-    .terminal_total_difficulty = 17000000000000000,
-    .merge_netsplit_block = 1'735'371,
-    .shanghai_time = 1677557088,
-};
-
 //! \brief Looks up a known chain config provided its chain ID
 std::optional<std::pair<const std::string, const ChainConfig*>> lookup_known_chain(uint64_t chain_id) noexcept;
 

@@ -215,8 +215,9 @@ awaitable<void> DebugRpcApi::handle_debug_storage_range_at(const nlohmann::json&
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
 
-        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
+        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         auto block_number = block_with_hash->block.header.number - 1;
 
         nlohmann::json storage({});
@@ -284,8 +285,9 @@ awaitable<void> DebugRpcApi::handle_debug_account_at(const nlohmann::json& reque
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
 
-        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
+        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
 
         const auto& block = block_with_hash->block;
         auto block_number = block.header.number - 1;
@@ -430,13 +432,14 @@ awaitable<void> DebugRpcApi::handle_debug_trace_call(const nlohmann::json& reque
     try {
         ethdb::TransactionDatabase tx_database{*tx};
         ethdb::kv::CachedDatabase cached_database{block_number_or_hash, *tx, *state_cache_};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
 
         const bool is_latest_block = co_await core::is_latest_block_number(block_number_or_hash, tx_database);
         const core::rawdb::DatabaseReader& db_reader =
             is_latest_block ? static_cast<core::rawdb::DatabaseReader&>(cached_database) : static_cast<core::rawdb::DatabaseReader&>(tx_database);
 
         debug::DebugExecutor executor{db_reader, *block_cache_, workers_, *tx, config};
-        co_await executor.trace_call(stream, block_number_or_hash, call);
+        co_await executor.trace_call(stream, block_number_or_hash, *chain_storage, call);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         std::ostringstream oss;
@@ -504,7 +507,8 @@ awaitable<void> DebugRpcApi::handle_debug_trace_call_many(const nlohmann::json& 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
         debug::DebugExecutor executor{tx_database, *block_cache_, workers_, *tx, config};
-        co_await executor.trace_call_many(stream, bundles, simulation_context);
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        co_await executor.trace_call_many(stream, *chain_storage, bundles, simulation_context);
     } catch (...) {
         SILK_ERROR << "unexpected exception processing request: " << request.dump();
         const Error error{100, "unexpected exception"};
@@ -544,9 +548,10 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_number(const nlohmann::
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
 
         debug::DebugExecutor executor{tx_database, *block_cache_, workers_, *tx, config};
-        co_await executor.trace_block(stream, block_number);
+        co_await executor.trace_block(stream, *chain_storage, block_number);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         std::ostringstream oss;
@@ -596,9 +601,10 @@ awaitable<void> DebugRpcApi::handle_debug_trace_block_by_hash(const nlohmann::js
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
 
         debug::DebugExecutor executor{tx_database, *block_cache_, workers_, *tx, config};
-        co_await executor.trace_block(stream, block_hash);
+        co_await executor.trace_block(stream, *chain_storage, block_hash);
     } catch (const std::invalid_argument& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         std::ostringstream oss;

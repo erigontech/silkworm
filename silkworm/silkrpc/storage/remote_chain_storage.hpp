@@ -47,9 +47,7 @@ class RemoteChainStorage : public ChainStorage {
     Task<bool> read_block(BlockNum number, bool read_senders, silkworm::Block& block) const override;
 
     [[nodiscard]] Task<std::optional<BlockHeader>> read_header(BlockNum number, HashAsArray hash) const override;
-
     [[nodiscard]] Task<std::optional<BlockHeader>> read_header(BlockNum number, const Hash& hash) const override;
-
     [[nodiscard]] Task<std::optional<BlockHeader>> read_header(const Hash& hash) const override;
 
     [[nodiscard]] Task<std::vector<BlockHeader>> read_sibling_headers(BlockNum number) const override;

@@ -598,7 +598,6 @@ awaitable<void> EthereumRpcApi::handle_eth_get_transaction_by_hash(const nlohman
             reply = make_json_content(request["id"], tx_with_block->transaction);
         }
     } catch (const std::invalid_argument& iv) {
-        SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
         reply = make_json_content(request["id"], {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -676,8 +675,9 @@ awaitable<void> EthereumRpcApi::handle_eth_get_transaction_by_block_hash_and_ind
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
 
-        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
+        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         const auto transactions = block_with_hash->block.transactions;
 
         const auto idx = std::stoul(index, nullptr, 16);
@@ -689,6 +689,8 @@ awaitable<void> EthereumRpcApi::handle_eth_get_transaction_by_block_hash_and_ind
             rpc::Transaction txn{transactions[idx], block_with_hash->hash, block_header.number, block_header.base_fee_per_gas, idx};
             reply = make_json_content(request["id"], txn);
         }
+    } catch (const std::invalid_argument& iv) {
+        reply = make_json_content(request["id"], nullptr);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
@@ -718,10 +720,10 @@ awaitable<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_hash_and
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
 
-        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, tx_database, block_hash);
+        const auto block_with_hash = co_await core::read_block_by_hash(*block_cache_, *chain_storage, block_hash);
         const auto transactions = block_with_hash->block.transactions;
-
         const auto idx = std::stoul(index, nullptr, 16);
         if (idx >= transactions.size()) {
             SILK_WARN << "Transaction not found for index: " << index;
@@ -764,9 +766,10 @@ awaitable<void> EthereumRpcApi::handle_eth_get_transaction_by_block_number_and_i
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, tx_database, block_number);
         const auto transactions = block_with_hash->block.transactions;
 
         const auto idx = std::stoul(index, nullptr, 16);
@@ -778,6 +781,9 @@ awaitable<void> EthereumRpcApi::handle_eth_get_transaction_by_block_number_and_i
             rpc::Transaction txn{transactions[idx], block_with_hash->hash, block_header.number, block_header.base_fee_per_gas, idx};
             reply = make_json_content(request["id"], txn);
         }
+    } catch (const std::invalid_argument& iv) {
+        Rlp rlp{};
+        reply = make_json_content(request["id"], rlp);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
@@ -809,7 +815,8 @@ awaitable<void> EthereumRpcApi::handle_eth_get_raw_transaction_by_block_number_a
         ethdb::TransactionDatabase tx_database{*tx};
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
-        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, tx_database, block_number);
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
+        const auto block_with_hash = co_await core::read_block_by_number(*block_cache_, *chain_storage, tx_database, block_number);
         const auto transactions = block_with_hash->block.transactions;
 
         const auto idx = std::stoul(index, nullptr, 16);
@@ -879,7 +886,6 @@ awaitable<void> EthereumRpcApi::handle_eth_get_transaction_receipt(const nlohman
         }
         reply = make_json_content(request["id"], receipts[*tx_index]);
     } catch (const std::invalid_argument& iv) {
-        SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
         reply = make_json_content(request["id"], {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -1507,7 +1513,6 @@ awaitable<void> EthereumRpcApi::handle_eth_new_filter(const nlohmann::json& requ
             reply = make_json_error(request["id"], -32000, "TODO");
         }
     } catch (const std::invalid_argument& iv) {
-        SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
         reply = make_json_content(request["id"], {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -1600,7 +1605,6 @@ awaitable<void> EthereumRpcApi::handle_eth_get_filter_logs(const nlohmann::json&
 
         reply = make_json_content(request["id"], filter.logs);
     } catch (const std::invalid_argument& iv) {
-        SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
         reply = make_json_content(request["id"], {});
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
@@ -1726,7 +1730,6 @@ awaitable<void> EthereumRpcApi::handle_eth_get_logs(const nlohmann::json& reques
 
         make_glaze_json_content(reply, request["id"], logs);
     } catch (const std::invalid_argument& iv) {
-        SILK_WARN << "invalid_argument: " << iv.what() << " processing request: " << request.dump();
         std::vector<silkworm::rpc::Log> log{};
         make_glaze_json_content(reply, request["id"], log);
     } catch (const std::exception& e) {

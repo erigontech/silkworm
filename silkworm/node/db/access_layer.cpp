@@ -1323,14 +1323,6 @@ std::optional<BlockNum> DataModel::read_tx_lookup_from_snapshot(const evmc::byte
     throw std::runtime_error("DataModel::read_tx_lookup_from_snapshot: not implemented");
 }
 
-bool DataModel::read_receipts(const BlockNum& block_number, const std::vector<silkworm::Receipt>& receipts) {
-    auto target = txn.rw_cursor(table::kBlockReceipts);
-    auto key{db::block_key(block_number)};
-    Bytes value{cbor_encode(receipts)};
-    cbor_encode()
-        target->upsert(to_slice(key), to_slice(value));
-}
-
 std::optional<intx::uint256> DataModel::read_total_difficulty(BlockNum height, const evmc::bytes32& hash) const {
     return db::read_total_difficulty(txn_, height, hash);
 }

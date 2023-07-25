@@ -300,6 +300,7 @@ class DataModel {
     //! Read block returning true on success and false on missing block
     [[nodiscard]] bool read_block(HashAsSpan hash, BlockNum height, bool read_senders, Block& block) const;
     [[nodiscard]] bool read_block(const evmc::bytes32& hash, BlockNum number, Block& block) const;
+    [[nodiscard]] bool read_block(BlockNum number, bool read_senders, Block& block) const;
 
     //! Read the RLP encoded block transactions at specified height
     [[nodiscard]] bool read_rlp_transactions(BlockNum height, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) const;

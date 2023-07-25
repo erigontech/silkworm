@@ -48,6 +48,9 @@ class ChainStorage {
     virtual Task<bool> read_block(const Hash& hash, BlockNum number, silkworm::Block& block) const = 0;
     virtual Task<bool> read_block(const Hash& hash, silkworm::Block& block) const = 0;
 
+    //! Read canonical block by number returning true on success and false on missing block
+    virtual Task<bool> read_block(BlockNum number, bool read_senders, Block& block) const = 0;
+
     //! Read block header with the specified key (block number, hash)
     [[nodiscard]] virtual Task<std::optional<BlockHeader>> read_header(BlockNum number, HashAsArray hash) const = 0;
 

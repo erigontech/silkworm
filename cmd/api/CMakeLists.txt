@@ -1,5 +1,5 @@
 #[[
-   Copyright 2022 The Silkworm Authors
+   Copyright 2023 The Silkworm Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,19 +14,12 @@
    limitations under the License.
 ]]
 
-# Silkworm itself
-add_subdirectory(core)
+find_package(Boost REQUIRED)
+find_package(CLI11 REQUIRED)
 
-if(NOT SILKWORM_CORE_ONLY)
-  add_subdirectory(api)
-  add_subdirectory(interfaces)
-  add_subdirectory(infra)
-  add_subdirectory(sentry)
-  add_subdirectory(sync)
-  add_subdirectory(node)
-  add_subdirectory(silkrpc)
-endif()
+# add_executable(execute execute.c) target_include_directories(execute PUBLIC ${CMAKE_SOURCE_DIR}
+# "${SILKWORM_MAIN_DIR}/third_party/libmdbx")
 
-if(SILKWORM_WASM_API)
-  add_subdirectory(wasm)
-endif()
+add_executable(execute_cpp execute.cpp)
+target_include_directories(execute_cpp PUBLIC ${CMAKE_SOURCE_DIR} "${SILKWORM_MAIN_DIR}/third_party/libmdbx")
+target_link_libraries(execute_cpp PRIVATE Boost::headers Boost::filesystem Boost::system CLI11::CLI11 silkworm_node)

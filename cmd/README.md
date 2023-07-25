@@ -66,7 +66,7 @@ Currently available tools are:
 - `download`
 - `lookup_header`
 - `lookup_body`
-- `lookup_transaction`
+- `lookup_txn`
 - `sync`
 
 #### Examples
@@ -116,12 +116,12 @@ cmd/dev/snapshots --tool lookup_body --snapshot_file v1-001500-002000-bodies.seg
 Search transaction by hash in all snapshots
 
 ```
-cmd/dev/snapshots --tool lookup_transaction --hash 0x3ba9a1f95b96d0a43093b1ade1174133ea88ca395e60fe9fd8144098ff7a441f
+cmd/dev/snapshots --tool lookup_txn --hash 0x3ba9a1f95b96d0a43093b1ade1174133ea88ca395e60fe9fd8144098ff7a441f
 ```
 
 Search transaction by hash or by progressive identifier in one snapshot
 
 ```
-cmd/dev/snapshots --tool lookup_transaction --snapshot_file v1-001500-002000-transactions.seg --hash 0x3ba9a1f95b96d0a43093b1ade1174133ea88ca395e60fe9fd8144098ff7a441f
-cmd/dev/snapshots --tool lookup_transaction --snapshot_file v1-001500-002000-transactions.seg --number 7341272
+cmd/dev/snapshots --tool lookup_txn --snapshot_file v1-001500-002000-transactions.seg --hash 0x3ba9a1f95b96d0a43093b1ade1174133ea88ca395e60fe9fd8144098ff7a441f
+cmd/dev/snapshots --tool lookup_txn --snapshot_file v1-001500-002000-transactions.seg --number 7341272
 ```

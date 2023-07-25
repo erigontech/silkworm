@@ -23,6 +23,7 @@
 #include <CLI/CLI.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/process/environment.hpp>
+#include <intx/intx.hpp>
 #include <magic_enum.hpp>
 
 #include <silkworm/buildinfo.h>
@@ -70,7 +71,7 @@ enum class SnapshotTool {
     download,
     lookup_header,
     lookup_body,
-    lookup_transaction,
+    lookup_txn,
     sync
 };
 
@@ -126,7 +127,7 @@ void parse_command_line(int argc, char* argv[], CLI::App& app, SnapshotToolboxSe
         {"download", SnapshotTool::download},
         {"lookup_header", SnapshotTool::lookup_header},
         {"lookup_body", SnapshotTool::lookup_body},
-        {"lookup_transaction", SnapshotTool::lookup_transaction},
+        {"lookup_txn", SnapshotTool::lookup_txn},
         {"sync", SnapshotTool::sync},
     };
     app.add_option("--tool", settings.tool, "The snapshot tool to use")
@@ -208,7 +209,7 @@ void count_bodies(const SnapSettings& settings, int repetitions) {
     int num_bodies{0};
     uint64_t num_txns{0};
     for (int i{0}; i < repetitions; ++i) {
-        snapshot_repo.for_each_body([&](BlockNum number, const db::detail::BlockBodyForStorage* b) -> bool {  // NOLINT
+        const bool success = snapshot_repo.for_each_body([&](BlockNum number, const db::detail::BlockBodyForStorage* b) -> bool {
             // If *system transactions* should not be counted, skip first and last tx in block body
             const auto base_txn_id{settings.skip_system_txs ? b->base_txn_id + 1 : b->base_txn_id};
             const auto txn_count{settings.skip_system_txs and b->txn_count >= 2 ? b->txn_count - 2 : b->txn_count};
@@ -218,6 +219,7 @@ void count_bodies(const SnapSettings& settings, int repetitions) {
             num_txns += txn_count;
             return true;
         });
+        ensure(success, "count_bodies: for_each_body failed");
     }
     std::chrono::duration elapsed{std::chrono::steady_clock::now() - start};
     const auto duration = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count());
@@ -328,9 +330,30 @@ void download(const BitTorrentSettings& settings) {
     SILK_INFO << "Download elapsed: " << duration_as<std::chrono::seconds>(elapsed) << " sec";
 }
 
-static void print_header(const BlockHeader& header) {
-    SILK_LOG << "Header hash=" << to_hex(header.hash()) << " parent_hash=" << to_hex(header.parent_hash)
-             << " rlp=" << to_hex([&]() { Bytes b; rlp::encode(b, header); return b; }());
+static void print_header(const BlockHeader& header, const std::string& snapshot_filename) {
+    std::cout << "Header found in: " << snapshot_filename << "\n"
+              << "hash=" << to_hex(header.hash()) << "\n"
+              << "parent_hash=" << to_hex(header.parent_hash) << "\n"
+              << "number=" << header.number << "\n"
+              << "beneficiary=" << to_hex(header.beneficiary) << "\n"
+              << "ommers_hash=" << to_hex(header.ommers_hash) << "\n"
+              << "state_root=" << to_hex(header.state_root) << "\n"
+              << "transactions_root=" << to_hex(header.transactions_root) << "\n"
+              << "receipts_root=" << to_hex(header.receipts_root) << "\n"
+              << "withdrawals_root=" << (header.withdrawals_root ? to_hex(*header.withdrawals_root) : "") << "\n"
+              << "beneficiary=" << to_hex(header.beneficiary) << "\n"
+              << "timestamp=" << header.timestamp << "\n"
+              << "nonce=" << to_hex(header.nonce) << "\n"
+              << "prev_randao=" << to_hex(header.prev_randao) << "\n"
+              << "base_fee_per_gas=" << (header.base_fee_per_gas ? intx::to_string(*header.base_fee_per_gas) : "") << "\n"
+              << "difficulty=" << intx::to_string(header.difficulty) << "\n"
+              << "gas_limit=" << header.gas_limit << "\n"
+              << "gas_used=" << header.gas_used << "\n"
+              << "data_gas_used=" << (header.data_gas_used ? *header.data_gas_used : 0) << "\n"
+              << "excess_data_gas=" << (header.excess_data_gas ? *header.excess_data_gas : 0) << "\n"
+              << "logs_bloom=" << to_hex(header.logs_bloom) << "\n"
+              << "extra_data=" << to_hex(header.extra_data) << "\n"
+              << "rlp=" << to_hex([&]() { Bytes b; rlp::encode(b, header); return b; }()) << "\n";
 }
 
 void lookup_header_by_hash(const SnapSettings& settings) {
@@ -354,7 +377,7 @@ void lookup_header_by_hash(const SnapSettings& settings) {
     if (matching_snapshot) {
         SILK_INFO << "Lookup header hash: " << hash->to_hex() << " found in: " << matching_snapshot->path().filename();
         if (matching_header and settings.print) {
-            print_header(*matching_header);
+            print_header(*matching_header, matching_snapshot->path().filename());
         }
     } else {
         SILK_WARN << "Lookup header hash: " << hash->to_hex() << " NOT found";
@@ -378,7 +401,7 @@ void lookup_header_by_number(const SnapSettings& settings) {
                "lookup_header_by_number: " + std::to_string(block_number) + " NOT found in " + header_snapshot->path().filename());
         SILK_INFO << "Lookup header number: " << block_number << " found in: " << header_snapshot->path().filename();
         if (settings.print) {
-            print_header(*header);
+            print_header(*header, header_snapshot->path().filename());
         }
     } else {
         SILK_WARN << "Lookup header number: " << block_number << " NOT found";
@@ -397,9 +420,11 @@ void lookup_header(const SnapSettings& settings) {
     }
 }
 
-static void print_body(const StoredBlockBody& body) {
-    SILK_LOG << "Body base_txn_id=" << body.base_txn_id << " txn_count=" << body.txn_count
-             << " rlp=" << to_hex(body.encode());
+static void print_body(const StoredBlockBody& body, const std::string& snapshot_filename) {
+    std::cout << "Body found in: " << snapshot_filename << "\n"
+              << "base_txn_id=" << body.base_txn_id << "\n"
+              << "txn_count=" << body.txn_count << "\n"
+              << "rlp=" << to_hex(body.encode()) << "\n";
 }
 
 void lookup_body_in_one(const SnapSettings& settings, BlockNum block_number, const std::string& file_name) {
@@ -415,7 +440,7 @@ void lookup_body_in_one(const SnapSettings& settings, BlockNum block_number, con
     if (body) {
         SILK_INFO << "Lookup body number: " << block_number << " found in: " << body_snapshot->path().filename();
         if (settings.print) {
-            print_body(*body);
+            print_body(*body, body_snapshot->path().filename());
         }
     } else {
         SILK_WARN << "Lookup body number: " << block_number << " NOT found in: " << body_snapshot->path().filename();
@@ -436,7 +461,7 @@ void lookup_body_in_all(const SnapSettings& settings, BlockNum block_number) {
                "lookup_body: " + std::to_string(block_number) + " NOT found in " + body_snapshot->path().filename());
         SILK_INFO << "Lookup body number: " << block_number << " found in: " << body_snapshot->path().filename();
         if (settings.print) {
-            print_body(*body);
+            print_body(*body, body_snapshot->path().filename());
         }
     } else {
         SILK_WARN << "Lookup body number: " << block_number << " NOT found";
@@ -458,9 +483,51 @@ void lookup_body(const SnapSettings& settings) {
     }
 }
 
-static void print_txn(const Transaction& txn) {
-    SILK_LOG << "Transaction hash=" << to_hex(txn.hash()) << " from=" << (txn.from ? to_hex(*txn.from) : "")
-             << " rlp=" << to_hex([&]() { Bytes b; rlp::encode(b, txn); return b; }());
+static void print_txn(const Transaction& txn, const std::string& snapshot_filename) {
+    std::cout << "Transaction found in: " << snapshot_filename << "\n"
+              << "hash=" << to_hex(txn.hash()) << "\n"
+              << "type=" << magic_enum::enum_name(txn.type) << "\n"
+              << "from=" << (txn.from ? to_hex(*txn.from) : "") << "\n"
+              << "to=" << (txn.to ? to_hex(*txn.to) : "") << "\n"
+              << "chain_id=" << (txn.chain_id ? intx::to_string(*txn.chain_id) : "") << "\n"
+              << "nonce=" << txn.nonce << "\n"
+              << "value=" << intx::to_string(txn.value) << "\n"
+              << "gas_limit=" << txn.gas_limit << "\n"
+              << "max_fee_per_gas=" << intx::to_string(txn.max_fee_per_gas) << "\n"
+              << "max_fee_per_data_gas=" << intx::to_string(txn.max_fee_per_data_gas) << "\n"
+              << "max_priority_fee_per_gas=" << intx::to_string(txn.max_priority_fee_per_gas) << "\n"
+              << "odd_y_parity=" << txn.odd_y_parity << "\n"
+              << "v=" << intx::to_string(txn.v()) << "\n"
+              << "r=" << intx::to_string(txn.r) << "\n"
+              << "s=" << intx::to_string(txn.s) << "\n"
+              << "data=" << to_hex(txn.data) << "\n"
+              << "access_list=" << ([&]() {
+                     std::string rep{"["};
+                     for (size_t i{0}; i < txn.access_list.size(); ++i) {
+                         const auto& access_entry{txn.access_list[i]};
+                         rep.append(to_hex(access_entry.account));
+                         rep.append(" : [");
+                         for (size_t j{0}; j < access_entry.storage_keys.size(); ++j) {
+                             rep.append(to_hex(access_entry.storage_keys[j].bytes));
+                             if (j != access_entry.storage_keys.size() - 1) rep.append(", ");
+                         }
+                         if (i != txn.access_list.size() - 1) rep.append("], ");
+                     }
+                     rep.append("]");
+                     return rep;
+                 }())
+              << "\n"
+              << "blob_versioned_hashes=" << ([&]() {
+                     std::string rep{"["};
+                     for (size_t i{0}; i < txn.blob_versioned_hashes.size(); ++i) {
+                         rep.append(to_hex(txn.blob_versioned_hashes[i]));
+                         if (i != txn.blob_versioned_hashes.size() - 1) rep.append(", ");
+                     }
+                     rep.append("]");
+                     return rep;
+                 }())
+              << "\n"
+              << "rlp=" << to_hex([&]() { Bytes b; rlp::encode(b, txn); return b; }()) << "\n";
 }
 
 void lookup_txn_by_hash_in_one(const SnapSettings& settings, const Hash& hash, const std::string& file_name) {
@@ -476,7 +543,7 @@ void lookup_txn_by_hash_in_one(const SnapSettings& settings, const Hash& hash, c
         if (transaction) {
             SILK_INFO << "Lookup txn hash: " << hash.to_hex() << " found in: " << tx_snapshot->path().filename();
             if (settings.print) {
-                print_txn(*transaction);
+                print_txn(*transaction, tx_snapshot->path().filename());
             }
         } else {
             SILK_WARN << "Lookup txn hash: " << hash.to_hex() << " NOT found in: " << tx_snapshot->path().filename();
@@ -497,7 +564,7 @@ void lookup_txn_by_hash_in_all(const SnapSettings& settings, const Hash& hash) {
         if (transaction) {
             matching_snapshot = snapshot;
             if (settings.print) {
-                print_txn(*transaction);
+                print_txn(*transaction, snapshot->path().filename());
             }
         }
         return transaction.has_value();
@@ -536,7 +603,7 @@ void lookup_txn_by_id_in_one(const SnapSettings& settings, uint64_t txn_id, cons
         if (transaction) {
             SILK_INFO << "Lookup txn ID: " << txn_id << " found in: " << tx_snapshot->path().filename();
             if (settings.print) {
-                print_txn(*transaction);
+                print_txn(*transaction, tx_snapshot->path().filename());
             }
         } else {
             SILK_WARN << "Lookup txn ID: " << txn_id << " NOT found in: " << tx_snapshot->path().filename();
@@ -557,7 +624,7 @@ void lookup_txn_by_id_in_all(const SnapSettings& settings, uint64_t txn_id) {
         if (transaction) {
             matching_snapshot = snapshot;
             if (settings.print) {
-                print_txn(*transaction);
+                print_txn(*transaction, snapshot->path().filename());
             }
         }
         return transaction.has_value();
@@ -611,16 +678,14 @@ int main(int argc, char* argv[]) {
         SnapshotToolboxSettings settings;
         parse_command_line(argc, argv, app, settings);
 
+        // Initialize logging with custom settings
+        log::init(settings.log_settings);
+
         const auto pid = boost::this_process::get_id();
-        SILK_LOG << "Snapshots toolbox starting [pid=" << std::to_string(pid) << "]";
+        SILK_INFO << "Snapshots toolbox starting [pid=" << std::to_string(pid) << "]";
 
         const auto node_name{get_node_name_from_build_info(silkworm_get_buildinfo())};
-        SILK_LOG << "Snapshots toolbox build info: " << node_name;
-
-        auto& log_settings = settings.log_settings;
-
-        // Initialize logging with custom settings
-        log::init(log_settings);
+        SILK_INFO << "Snapshots toolbox build info: " << node_name;
 
         if (settings.tool == SnapshotTool::count_bodies) {
             count_bodies(settings.snapshot_settings, settings.repetitions);
@@ -638,7 +703,7 @@ int main(int argc, char* argv[]) {
             lookup_header(settings.snapshot_settings);
         } else if (settings.tool == SnapshotTool::lookup_body) {
             lookup_body(settings.snapshot_settings);
-        } else if (settings.tool == SnapshotTool::lookup_transaction) {
+        } else if (settings.tool == SnapshotTool::lookup_txn) {
             lookup_transaction(settings.snapshot_settings);
         } else if (settings.tool == SnapshotTool::sync) {
             sync(settings.snapshot_settings);
@@ -646,7 +711,7 @@ int main(int argc, char* argv[]) {
             throw std::invalid_argument{"unknown tool: " + std::string{magic_enum::enum_name<>(settings.tool)}};
         }
 
-        SILK_LOG << "Snapshots toolbox exiting [pid=" << std::to_string(pid) << "]";
+        SILK_INFO << "Snapshots toolbox exiting [pid=" << std::to_string(pid) << "]";
         return 0;
     } catch (const CLI::ParseError& pe) {
         return app.exit(pe);

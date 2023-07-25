@@ -273,8 +273,8 @@ void DebugTracer::write_log(const DebugLog& log) {
     stream_.write_json(json);
 }
 
-boost::asio::awaitable<void> DebugExecutor::trace_block(json::Stream& stream, std::uint64_t block_number) {
-    const auto block_with_hash = co_await rpc::core::read_block_by_number(block_cache_, database_reader_, block_number);
+boost::asio::awaitable<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& storage, std::uint64_t block_number) {
+    const auto block_with_hash = co_await rpc::core::read_block_by_number(block_cache_, storage, database_reader_, block_number);
     stream.write_field("result");
     stream.open_array();
     co_await execute(stream, block_with_hash->block);
@@ -283,8 +283,8 @@ boost::asio::awaitable<void> DebugExecutor::trace_block(json::Stream& stream, st
     co_return;
 }
 
-boost::asio::awaitable<void> DebugExecutor::trace_block(json::Stream& stream, const evmc::bytes32& block_hash) {
-    const auto block_with_hash = co_await rpc::core::read_block_by_hash(block_cache_, database_reader_, block_hash);
+boost::asio::awaitable<void> DebugExecutor::trace_block(json::Stream& stream, const ChainStorage& storage, const evmc::bytes32& block_hash) {
+    const auto block_with_hash = co_await rpc::core::read_block_by_hash(block_cache_, storage, block_hash);
 
     stream.write_field("result");
     stream.open_array();
@@ -294,8 +294,8 @@ boost::asio::awaitable<void> DebugExecutor::trace_block(json::Stream& stream, co
     co_return;
 }
 
-boost::asio::awaitable<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumberOrHash& bnoh, const Call& call) {
-    const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, database_reader_, bnoh);
+boost::asio::awaitable<void> DebugExecutor::trace_call(json::Stream& stream, const BlockNumberOrHash& bnoh, const ChainStorage& storage, const Call& call) {
+    const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, storage, database_reader_, bnoh);
     rpc::Transaction transaction{call.to_transaction()};
 
     const auto& block = block_with_hash->block;
@@ -331,8 +331,8 @@ boost::asio::awaitable<void> DebugExecutor::trace_transaction(json::Stream& stre
     co_return;
 }
 
-boost::asio::awaitable<void> DebugExecutor::trace_call_many(json::Stream& stream, const Bundles& bundles, const SimulationContext& context) {
-    const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, database_reader_, context.block_number);
+boost::asio::awaitable<void> DebugExecutor::trace_call_many(json::Stream& stream, const ChainStorage& storage, const Bundles& bundles, const SimulationContext& context) {
+    const auto block_with_hash = co_await rpc::core::read_block_by_number_or_hash(block_cache_, storage, database_reader_, context.block_number);
     auto transaction_index = context.transaction_index;
     if (transaction_index == -1) {
         transaction_index = static_cast<std::int32_t>(block_with_hash->block.transactions.size());

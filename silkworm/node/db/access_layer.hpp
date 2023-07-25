@@ -19,6 +19,7 @@
 // Database Access Layer
 // See Erigon core/rawdb/accessors_chain.go
 
+#include <functional>
 #include <optional>
 #include <span>
 #include <string>
@@ -316,6 +317,9 @@ class DataModel {
     [[nodiscard]] std::optional<intx::uint256> read_total_difficulty(BlockNum height, const evmc::bytes32& hash) const;
     [[nodiscard]] std::optional<intx::uint256> read_total_difficulty(BlockNum, HashAsArray hash) const;
     [[nodiscard]] std::optional<intx::uint256> read_total_difficulty(ByteView key) const;
+
+    //! Read all block headers up to limit in reverse order from last, processing each one via a user defined callback
+    void for_last_n_headers(size_t n, std::function<void(BlockHeader&&)> callback) const;
 
   private:
     static bool read_block_from_snapshot(BlockNum height, bool read_senders, Block& block);

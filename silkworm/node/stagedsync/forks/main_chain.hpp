@@ -46,7 +46,6 @@ class ExtendingFork;
 class MainChain {
   public:
     explicit MainChain(asio::io_context&, NodeSettings&, db::RWAccess);
-    MainChain(MainChain&&);
 
     void open();  // needed to circumvent mdbx threading model limitations
     void close();
@@ -75,7 +74,7 @@ class MainChain {
     auto get_header(BlockNum, Hash) const -> std::optional<BlockHeader>;
     auto get_canonical_hash(BlockNum) const -> std::optional<Hash>;
     auto get_header_td(BlockNum, Hash) const -> std::optional<TotalDifficulty>;
-    auto get_last_headers(BlockNum limit) const -> std::vector<BlockHeader>;
+    auto get_last_headers(uint64_t limit) const -> std::vector<BlockHeader>;
     auto extends_last_fork_choice(BlockNum, Hash) const -> bool;
     auto extends(BlockId block, BlockId supposed_parent) const -> bool;
     auto is_ancestor(BlockId supposed_parent, BlockId block) const -> bool;

@@ -21,11 +21,13 @@
 #include <silkworm/core/common/as_range.hpp>
 #include <silkworm/infra/common/ensure.hpp>
 #include <silkworm/node/db/access_layer.hpp>
-#include <silkworm/node/db/db_utils.hpp>
 
 #include "extending_fork.hpp"
 
 namespace silkworm::stagedsync {
+
+//! The number of inserted blocks between two successive commits on db
+constexpr uint64_t kInsertedBlockBatch{1'000};
 
 MainChain::MainChain(asio::io_context& ctx, NodeSettings& ns, const db::RWAccess dba)
     : io_context_{ctx},
@@ -121,12 +123,23 @@ void MainChain::insert_block(const Block& block) {
     Hash header_hash = insert_header(block.header);
     insert_body(block, header_hash);
 
-    auto parent = get_header(block.header.number, header_hash);  // remove in production?
+    // Check chain integrity also on execution side (remove in production?)
+    const auto parent = get_header(block.header.number - 1, block.header.parent_hash);
     ensure_invariant(parent.has_value(), "inserting block must have parent");
+
+    // Commit inserted blocks once in a while not to lose downloading progress on restart
+    static uint64_t block_count{0};
+    if (++block_count == kInsertedBlockBatch) {
+        block_count = 0;
+        StopWatch timing{StopWatch::kStart};
+        tx_.commit_and_renew();
+        SILK_INFO << "MainChain: commit " << kInsertedBlockBatch << " blocks up to " << block.header.number
+                  << " took " << StopWatch::format(timing.since_start());
+    }
 }
 
 auto MainChain::verify_chain(Hash head_block_hash) -> VerificationResult {
-    SILK_TRACE << "MainChain: verifying chain " << head_block_hash.to_hex();
+    SILK_TRACE << "MainChain: verifying chain head=" << head_block_hash.to_hex();
 
     // retrieve the head header
     auto head_header = get_header(head_block_hash);
@@ -328,10 +341,10 @@ auto MainChain::get_block_progress() const -> BlockNum {
     return data_model_.highest_block_number();
 }
 
-auto MainChain::get_last_headers(BlockNum limit) const -> std::vector<BlockHeader> {
+auto MainChain::get_last_headers(uint64_t limit) const -> std::vector<BlockHeader> {
     std::vector<BlockHeader> headers;
 
-    for_last_n_headers(data_model_, limit, [&headers](BlockHeader&& header) {
+    data_model_.for_last_n_headers(limit, [&headers](BlockHeader&& header) {
         headers.emplace_back(std::move(header));
     });
 

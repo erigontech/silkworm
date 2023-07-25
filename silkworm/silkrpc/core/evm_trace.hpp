@@ -506,7 +506,7 @@ class TraceCallExecutor {
     boost::asio::awaitable<std::string> trace_transaction_error(const TransactionWithBlock& transaction_with_block);
     boost::asio::awaitable<TraceOperationsResult> trace_operations(const TransactionWithBlock& transaction_with_block);
     boost::asio::awaitable<bool> trace_touch_transaction(const silkworm::Block& block, const silkworm::Transaction& txn, const evmc::address& address);
-    boost::asio::awaitable<void> trace_filter(const TraceFilter& trace_filter, json::Stream* stream);
+    boost::asio::awaitable<void> trace_filter(const TraceFilter& trace_filter, const ChainStorage& storage, json::Stream* stream);
 
   private:
     boost::asio::awaitable<TraceCallResult> execute(std::uint64_t block_number, const silkworm::Block& block,

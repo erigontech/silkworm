@@ -166,7 +166,7 @@ jobs:
 
   linux-gcc-thread-sanitizer:
     environment:
-      BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=thread
+      BUILD_CMAKE_ARGS: -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DSILKWORM_SANITIZE=thread
     machine:
       image: ubuntu-2204:2023.04.2
     resource_class: xlarge
@@ -203,7 +203,7 @@ jobs:
 
   linux-clang-address-sanitizer:
     environment:
-      BUILD_CMAKE_ARGS: -DSILKWORM_SANITIZE=address,undefined
+      BUILD_CMAKE_ARGS: -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DSILKWORM_SANITIZE=address,undefined
       ASAN_OPTIONS: alloc_dealloc_mismatch=0 # https://github.com/llvm/llvm-project/issues/59432
       UBSAN_OPTIONS: print_stacktrace=1
     machine:
@@ -219,7 +219,7 @@ jobs:
 
   linux-clang-coverage:
     environment:
-      BUILD_CMAKE_ARGS: -DSILKWORM_CLANG_COVERAGE=ON
+      BUILD_CMAKE_ARGS: -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DSILKWORM_CLANG_COVERAGE=ON
     machine:
       image: ubuntu-2204:2023.04.2
     resource_class: xlarge
@@ -250,7 +250,7 @@ jobs:
   linux-clang-tidy:
     environment:
       # see: https://clang.llvm.org/extra/clang-tidy/
-      BUILD_CMAKE_ARGS: -DSILKWORM_CLANG_TIDY=ON
+      BUILD_CMAKE_ARGS: -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DSILKWORM_CLANG_TIDY=ON
     machine:
       image: ubuntu-2204:2023.04.2
     resource_class: xlarge

@@ -16,6 +16,8 @@
 
 #include "local_chain_storage.hpp"
 
+#include <silkworm/core/common/cast.hpp>
+#include <silkworm/core/types/transaction.hpp>
 #include <silkworm/node/db/access_layer.hpp>
 
 namespace silkworm::rpc {
@@ -110,6 +112,27 @@ Task<bool> LocalChainStorage::has_body(BlockNum number, const Hash& hash) const 
 
 Task<bool> LocalChainStorage::read_rlp_transactions(BlockNum number, const evmc::bytes32& hash, std::vector<Bytes>& rlp_txs) const {
     co_return data_model_.read_rlp_transactions(number, hash, rlp_txs);
+}
+
+Task<Bytes> LocalChainStorage::read_rlp_transaction(const evmc::bytes32& txn_hash) const {
+    auto block_id = data_model_.read_tx_lookup(txn_hash);
+    if (!block_id) {
+        co_return Bytes{};
+    }
+    auto block_hash = data_model_.read_canonical_hash(*block_id);
+    if (!block_hash) {
+        co_return Bytes{};
+    }
+    std::vector<Bytes> rlp_txs;
+    if (!co_await read_rlp_transactions(*block_id, *block_hash, rlp_txs)) {
+        co_return Bytes{};
+    }
+    for (const auto& rlp_tx : rlp_txs) {
+        if (bit_cast<evmc_bytes32>(keccak256(rlp_tx)) == txn_hash) {
+            co_return rlp_tx;
+        }
+    }
+    co_return Bytes{};
 }
 
 Task<std::optional<intx::uint256>> LocalChainStorage::read_total_difficulty(const Hash& hash, BlockNum number) const {

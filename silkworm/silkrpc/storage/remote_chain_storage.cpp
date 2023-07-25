@@ -167,6 +167,10 @@ Task<bool> RemoteChainStorage::read_rlp_transactions(BlockNum number, const evmc
     co_return true;
 }
 
+Task<Bytes> RemoteChainStorage::read_rlp_transaction(const evmc::bytes32& /*txn_hash*/) const {
+    throw std::logic_error{"RemoteChainStorage::read_rlp_transaction not implemented"};
+}
+
 Task<std::optional<intx::uint256>> RemoteChainStorage::read_total_difficulty(const Hash& hash, BlockNum number) const {
     co_return co_await core::rawdb::read_total_difficulty(reader_, hash, number);
 }

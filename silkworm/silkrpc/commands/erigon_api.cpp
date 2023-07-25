@@ -120,10 +120,11 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_header_by_hash(const nlohmann::j
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
 
-        const auto header{co_await core::rawdb::read_header_by_hash(tx_database, block_hash)};
+        const auto header{co_await chain_storage->read_header(block_hash)};
 
-        reply = make_json_content(request["id"], header);
+        reply = make_json_content(request["id"], *header);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());
@@ -160,11 +161,13 @@ awaitable<void> ErigonRpcApi::handle_erigon_get_header_by_number(const nlohmann:
 
     try {
         ethdb::TransactionDatabase tx_database{*tx};
+        const auto chain_storage = tx->create_storage(tx_database, backend_);
 
         const auto block_number = co_await core::get_block_number(block_id, tx_database);
-        const auto header{co_await core::rawdb::read_header_by_number(tx_database, block_number)};
+        const auto block_hash = co_await chain_storage->read_canonical_hash(block_number);
+        const auto header{co_await chain_storage->read_header(block_number, *block_hash)};
 
-        reply = make_json_content(request["id"], header);
+        reply = make_json_content(request["id"], *header);
     } catch (const std::exception& e) {
         SILK_ERROR << "exception: " << e.what() << " processing request: " << request.dump();
         reply = make_json_error(request["id"], 100, e.what());

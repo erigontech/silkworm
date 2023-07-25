@@ -82,6 +82,10 @@ SilkwormStatusCode silkworm_execute_blocks(MDBX_txn* mdbx_txn, uint64_t chain_id
         db::Buffer state_buffer{txn, /*prune_history_threshold=*/0};
         db::DataModel access_layer{txn};
 
+        // Transform batch size limit into gas units (Ggas = Giga gas, Tgas = Tera gas)
+        const size_t gas_max_history_size{batch_size * 1_Kibi / 2};  // 512MB -> 256Ggas roughly
+        const size_t gas_max_batch_size{gas_max_history_size * 20};  // 256Ggas -> 5Tgas roughly
+
         // Preload all requested block from storage, i.e. from MDBX database or snapshots
         std::vector<Block> prefetched_blocks;
         prefetched_blocks.reserve(max_block - start_block);
@@ -93,6 +97,8 @@ SilkwormStatusCode silkworm_execute_blocks(MDBX_txn* mdbx_txn, uint64_t chain_id
             }
         }
 
+        size_t gas_history_size{0};
+        size_t gas_batch_size{0};
         for (const auto& block : prefetched_blocks) {
             std::vector<Receipt> receipts;
             const auto validation_result{execute_block(block, state_buffer, *chain_config, receipts)};
@@ -112,10 +118,15 @@ SilkwormStatusCode silkworm_execute_blocks(MDBX_txn* mdbx_txn, uint64_t chain_id
                 SILK_INFO << "Blocks <= " << block.header.number << " executed";
             }
 
-            // TODO(canepat) was buffer.current_batch_size() so check execution stage
-            if (state_buffer.current_batch_state_size() >= batch_size) {
+            // Flush whole state buffer or just history if we've reached the target batch sizes in gas units
+            if (gas_batch_size >= gas_max_batch_size) {
+                SILK_TRACE << log::Args{"buffer", "state", "size", human_size(state_buffer.current_batch_state_size())};
                 state_buffer.write_to_db();
-                return kSilkwormSuccess;
+                gas_batch_size = 0;
+            } else if (gas_history_size >= gas_max_history_size) {
+                SILK_TRACE << log::Args{"buffer", "history", "size", human_size(state_buffer.current_batch_state_size())};
+                state_buffer.write_history_to_db();
+                gas_history_size = 0;
             }
         }
 
